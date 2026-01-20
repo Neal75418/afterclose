@@ -25,11 +25,20 @@ class PriceRepository {
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
     int? days,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
-    final lookback = days ?? RuleParams.lookbackPrice;
-    final startDate = DateTime.now().subtract(Duration(days: lookback + 30));
+    final effectiveStartDate =
+        startDate ??
+        DateTime.now().subtract(
+          Duration(days: (days ?? RuleParams.lookbackPrice) + 30),
+        );
 
-    return _db.getPriceHistory(symbol, startDate: startDate);
+    return _db.getPriceHistory(
+      symbol,
+      startDate: effectiveStartDate,
+      endDate: endDate,
+    );
   }
 
   /// Get latest price for a stock
@@ -70,6 +79,13 @@ class PriceRepository {
     } catch (e) {
       throw DatabaseException('Failed to sync prices for $symbol', e);
     }
+  }
+
+  /// Sync today's prices for all stocks (batch mode)
+  ///
+  /// Alias for [syncAllPricesForDate] with default date
+  Future<int> syncTodayPrices({DateTime? date}) {
+    return syncAllPricesForDate(date ?? DateTime.now());
   }
 
   /// Sync all prices for a date (batch mode)
