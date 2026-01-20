@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -28,6 +29,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     // Load data on first build
     Future.microtask(() {
       ref.read(todayProvider.notifier).loadData();
+      ref.read(watchlistProvider.notifier).loadData();
     });
   }
 
@@ -86,6 +88,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Widget _buildContent(TodayState state) {
     final theme = Theme.of(context);
+    final watchlistState = ref.watch(watchlistProvider);
+    final watchlistSymbols = watchlistState.items.map((i) => i.symbol).toSet();
 
     return CustomScrollView(
       slivers: [
@@ -143,6 +147,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             itemBuilder: (context, index) {
               final rec = state.recommendations[index];
               // RepaintBoundary for better scroll performance
+              final isInWatchlist = watchlistSymbols.contains(rec.symbol);
               final card = RepaintBoundary(
                 child: StockCard(
                   symbol: rec.symbol,
@@ -153,6 +158,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   reasons: rec.reasons.map((r) => r.reasonType).toList(),
                   trendState: rec.trendState,
                   recentPrices: rec.recentPrices,
+                  isInWatchlist: isInWatchlist,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     context.push('/stock/${rec.symbol}');
@@ -168,10 +174,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                         score: rec.score,
                         trendState: rec.trendState,
                         reasons: rec.reasons.map((r) => r.reasonType).toList(),
+                        isInWatchlist: isInWatchlist,
                       ),
                       onViewDetails: () => context.push('/stock/${rec.symbol}'),
+                      onToggleWatchlist: () =>
+                          _toggleWatchlist(rec.symbol, isInWatchlist),
                     );
                   },
+                  onWatchlistTap: () =>
+                      _toggleWatchlist(rec.symbol, isInWatchlist),
                 ),
               );
 
@@ -262,6 +273,41 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
+  }
+
+  Future<void> _toggleWatchlist(
+    String symbol,
+    bool currentlyInWatchlist,
+  ) async {
+    HapticFeedback.lightImpact();
+    final notifier = ref.read(watchlistProvider.notifier);
+
+    if (currentlyInWatchlist) {
+      await notifier.removeStock(symbol);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('已從自選移除 $symbol'),
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: '復原',
+              onPressed: () => notifier.restoreStock(symbol),
+            ),
+          ),
+        );
+      }
+    } else {
+      final success = await notifier.addStock(symbol);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? '已加入自選 $symbol' : '加入自選失敗'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: success ? null : Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _runUpdate() async {

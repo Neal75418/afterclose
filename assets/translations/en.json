@@ -15,7 +15,8 @@
     "done": "Done",
     "search": "Search",
     "refresh": "Refresh",
-    "settings": "Settings"
+    "settings": "Settings",
+    "next": "Next"
   },
   "nav": {
     "today": "Today",
@@ -171,6 +172,10 @@
     "triggered": "Alert triggered",
     "noAlerts": "No Price Alerts",
     "noAlertsHint": "Tap the button to add an alert",
+    "selectStock": "Select Stock",
+    "stockSymbol": "Stock Symbol",
+    "stockSymbolHint": "e.g., 2330",
+    "stockNotFound": "Stock not found",
     "manage": "Manage Alerts",
     "active": "Active",
     "inactive": "Inactive",

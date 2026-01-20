@@ -7,7 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
+import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/price_alert_dialog.dart';
 
 /// Screen for managing price alerts
 class AlertsScreen extends ConsumerStatefulWidget {
@@ -38,6 +40,11 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           : state.alerts.isEmpty
           ? _buildEmptyState()
           : _buildAlertsList(state.alerts, theme),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddAlertDialog(context),
+        tooltip: 'alert.create'.tr(),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
@@ -293,5 +300,126 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       ),
     );
     return result ?? false;
+  }
+
+  /// Show dialog to add a new price alert
+  Future<void> _showAddAlertDialog(BuildContext context) async {
+    final controller = TextEditingController();
+    final db = ref.read(databaseProvider);
+
+    final symbol = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        var isSearching = false;
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Text('alert.selectStock'.tr()),
+              content: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  labelText: 'alert.stockSymbol'.tr(),
+                  hintText: 'alert.stockSymbolHint'.tr(),
+                  errorText: errorText,
+                  border: const OutlineInputBorder(),
+                ),
+                autofocus: true,
+                enabled: !isSearching,
+                textCapitalization: TextCapitalization.characters,
+                onSubmitted: (_) async {
+                  final input = controller.text.trim().toUpperCase();
+                  if (input.isEmpty) return;
+
+                  setDialogState(() {
+                    isSearching = true;
+                    errorText = null;
+                  });
+
+                  final stock = await db.getStock(input);
+                  if (!dialogContext.mounted) return;
+
+                  if (stock != null) {
+                    Navigator.pop(dialogContext, input);
+                  } else {
+                    setDialogState(() {
+                      isSearching = false;
+                      errorText = 'alert.stockNotFound'.tr();
+                    });
+                  }
+                },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSearching
+                      ? null
+                      : () => Navigator.pop(dialogContext),
+                  child: Text('common.cancel'.tr()),
+                ),
+                FilledButton(
+                  onPressed: isSearching
+                      ? null
+                      : () async {
+                          final input = controller.text.trim().toUpperCase();
+                          if (input.isEmpty) return;
+
+                          setDialogState(() {
+                            isSearching = true;
+                            errorText = null;
+                          });
+
+                          final stock = await db.getStock(input);
+                          if (!dialogContext.mounted) return;
+
+                          if (stock != null) {
+                            Navigator.pop(dialogContext, input);
+                          } else {
+                            setDialogState(() {
+                              isSearching = false;
+                              errorText = 'alert.stockNotFound'.tr();
+                            });
+                          }
+                        },
+                  child: isSearching
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text('common.next'.tr()),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    controller.dispose();
+
+    if (symbol == null || !mounted) return;
+
+    // Get stock info for the dialog
+    final results = await Future.wait([
+      db.getStock(symbol),
+      db.getLatestPrice(symbol),
+    ]);
+
+    if (!context.mounted) return;
+
+    final stock = results[0] as StockMasterEntry?;
+    final latestPrice = results[1] as DailyPriceEntry?;
+
+    final created = await showCreatePriceAlertDialog(
+      context: context,
+      symbol: symbol,
+      stockName: stock?.name,
+      currentPrice: latestPrice?.close,
+    );
+
+    if (created == true) {
+      ref.read(priceAlertProvider.notifier).loadAlerts();
+    }
   }
 }
