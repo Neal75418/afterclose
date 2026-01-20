@@ -68,11 +68,11 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
 
   final AppDatabase _db;
 
-  /// Load all active alerts
+  /// Load all alerts (active and inactive)
   Future<void> loadAlerts() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final alerts = await _db.getActiveAlerts();
+      final alerts = await _db.getAllAlerts();
       state = state.copyWith(alerts: alerts, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());

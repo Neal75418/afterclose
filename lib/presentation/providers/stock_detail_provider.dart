@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // ==================================================
 // Stock Detail State
@@ -173,14 +174,18 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }
   }
 
-  /// Toggle watchlist
+  /// Toggle watchlist - also syncs with global watchlistProvider
   Future<void> toggleWatchlist() async {
+    final watchlistNotifier = _ref.read(watchlistProvider.notifier);
+
     if (state.isInWatchlist) {
-      await _db.removeFromWatchlist(_symbol);
+      // Use watchlistProvider to ensure global state sync
+      await watchlistNotifier.removeStock(_symbol);
     } else {
-      await _db.addToWatchlist(_symbol);
+      await watchlistNotifier.addStock(_symbol);
     }
 
+    // Update local state
     state = state.copyWith(isInWatchlist: !state.isInWatchlist);
   }
 }

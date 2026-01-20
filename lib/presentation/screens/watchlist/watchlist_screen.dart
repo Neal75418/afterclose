@@ -39,6 +39,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         SnackBar(
           content: Text('已從自選移除 $symbol'),
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+          showCloseIcon: true,
+          dismissDirection: DismissDirection.horizontal,
           action: SnackBarAction(
             label: '復原',
             onPressed: () async {

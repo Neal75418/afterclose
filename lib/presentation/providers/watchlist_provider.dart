@@ -150,19 +150,36 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       return false;
     }
 
+    // Optimistically add to state FIRST for immediate UI feedback
+    final existingSymbols = state.items.map((i) => i.symbol).toSet();
+    if (!existingSymbols.contains(symbol)) {
+      state = state.copyWith(
+        items: [
+          ...state.items,
+          WatchlistItemData(
+            symbol: symbol,
+            stockName: stock.name,
+            addedAt: DateTime.now(),
+          ),
+        ],
+      );
+    }
+
+    // Then persist to database and reload full data
     await _db.addToWatchlist(symbol);
-    await loadData();
+    await loadData(); // Reload to get full data (prices, analysis, etc.)
     return true;
   }
 
   /// Remove stock from watchlist
   Future<void> removeStock(String symbol) async {
-    await _db.removeFromWatchlist(symbol);
-
-    // Optimistically update the state
+    // Optimistically update the state FIRST for immediate UI feedback
     state = state.copyWith(
       items: state.items.where((item) => item.symbol != symbol).toList(),
     );
+
+    // Then persist to database
+    await _db.removeFromWatchlist(symbol);
   }
 
   /// Restore a removed stock

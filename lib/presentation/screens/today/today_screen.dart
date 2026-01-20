@@ -36,6 +36,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(todayProvider);
+    // Watch watchlistProvider in build() to ensure dependency is always registered
+    final watchlistState = ref.watch(watchlistProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -74,7 +76,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ? const StockListShimmer(itemCount: 5)
             : state.error != null
             ? _buildError(state.error!)
-            : _buildContent(state),
+            : _buildContent(state, watchlistState),
       ),
     );
   }
@@ -86,9 +88,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildContent(TodayState state) {
+  Widget _buildContent(TodayState state, WatchlistState watchlistState) {
     final theme = Theme.of(context);
-    final watchlistState = ref.watch(watchlistProvider);
     final watchlistSymbols = watchlistState.items.map((i) => i.symbol).toSet();
 
     return CustomScrollView(
@@ -149,6 +150,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               // RepaintBoundary for better scroll performance
               final isInWatchlist = watchlistSymbols.contains(rec.symbol);
               final card = RepaintBoundary(
+                // Key includes watchlist status to force rebuild when it changes
+                key: ValueKey('${rec.symbol}_$isInWatchlist'),
                 child: StockCard(
                   symbol: rec.symbol,
                   stockName: rec.stockName,
@@ -282,32 +285,55 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     HapticFeedback.lightImpact();
     final notifier = ref.read(watchlistProvider.notifier);
 
+    // Hide current SnackBar if any (gentler than clearSnackBars)
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     if (currentlyInWatchlist) {
       await notifier.removeStock(symbol);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('已從自選移除 $symbol'),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: '復原',
-              onPressed: () => notifier.restoreStock(symbol),
-            ),
+        _showSnackBar(
+          '已從自選移除 $symbol',
+          action: SnackBarAction(
+            label: '復原',
+            onPressed: () => notifier.restoreStock(symbol),
           ),
+          duration: const Duration(seconds: 3),
         );
       }
     } else {
       final success = await notifier.addStock(symbol);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(success ? '已加入自選 $symbol' : '加入自選失敗'),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: success ? null : Colors.red,
-          ),
+        _showSnackBar(
+          success ? '已加入自選 $symbol' : '加入自選失敗',
+          duration: const Duration(seconds: 2),
+          isError: !success,
         );
       }
     }
+  }
+
+  /// Show SnackBar after frame to avoid lifecycle issues
+  void _showSnackBar(
+    String message, {
+    SnackBarAction? action,
+    Duration duration = const Duration(seconds: 2),
+    bool isError = false,
+  }) {
+    // Use post frame callback to ensure SnackBar is shown after rebuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: duration,
+          action: action,
+          backgroundColor: isError ? Colors.red : null,
+          showCloseIcon: action != null, // Show close icon for SnackBars with actions
+          dismissDirection: DismissDirection.horizontal,
+        ),
+      );
+    });
   }
 
   Future<void> _runUpdate() async {

@@ -265,13 +265,13 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
   String _getAlertDescription(PriceAlertEntry alert, AlertType type) {
     return switch (type) {
       AlertType.above => 'alert.priceAbove'.tr(
-        args: [alert.targetValue.toStringAsFixed(2)],
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
       ),
       AlertType.below => 'alert.priceBelow'.tr(
-        args: [alert.targetValue.toStringAsFixed(2)],
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
       ),
       AlertType.changePct => 'alert.changeAbove'.tr(
-        args: [alert.targetValue.toStringAsFixed(1)],
+        namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
       ),
     };
   }
@@ -304,99 +304,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
 
   /// Show dialog to add a new price alert
   Future<void> _showAddAlertDialog(BuildContext context) async {
-    final controller = TextEditingController();
     final db = ref.read(databaseProvider);
 
     final symbol = await showDialog<String>(
       context: context,
-      builder: (dialogContext) {
-        var isSearching = false;
-        String? errorText;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Text('alert.selectStock'.tr()),
-              content: TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  labelText: 'alert.stockSymbol'.tr(),
-                  hintText: 'alert.stockSymbolHint'.tr(),
-                  errorText: errorText,
-                  border: const OutlineInputBorder(),
-                ),
-                autofocus: true,
-                enabled: !isSearching,
-                textCapitalization: TextCapitalization.characters,
-                onSubmitted: (_) async {
-                  final input = controller.text.trim().toUpperCase();
-                  if (input.isEmpty) return;
-
-                  setDialogState(() {
-                    isSearching = true;
-                    errorText = null;
-                  });
-
-                  final stock = await db.getStock(input);
-                  if (!dialogContext.mounted) return;
-
-                  if (stock != null) {
-                    Navigator.pop(dialogContext, input);
-                  } else {
-                    setDialogState(() {
-                      isSearching = false;
-                      errorText = 'alert.stockNotFound'.tr();
-                    });
-                  }
-                },
-              ),
-              actions: [
-                TextButton(
-                  onPressed: isSearching
-                      ? null
-                      : () => Navigator.pop(dialogContext),
-                  child: Text('common.cancel'.tr()),
-                ),
-                FilledButton(
-                  onPressed: isSearching
-                      ? null
-                      : () async {
-                          final input = controller.text.trim().toUpperCase();
-                          if (input.isEmpty) return;
-
-                          setDialogState(() {
-                            isSearching = true;
-                            errorText = null;
-                          });
-
-                          final stock = await db.getStock(input);
-                          if (!dialogContext.mounted) return;
-
-                          if (stock != null) {
-                            Navigator.pop(dialogContext, input);
-                          } else {
-                            setDialogState(() {
-                              isSearching = false;
-                              errorText = 'alert.stockNotFound'.tr();
-                            });
-                          }
-                        },
-                  child: isSearching
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text('common.next'.tr()),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (dialogContext) => _StockSymbolInputDialog(db: db),
     );
-
-    controller.dispose();
 
     if (symbol == null || !mounted) return;
 
@@ -421,5 +334,86 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     if (created == true) {
       ref.read(priceAlertProvider.notifier).loadAlerts();
     }
+  }
+}
+
+/// Separate StatefulWidget for stock symbol input dialog
+/// This ensures TextEditingController is properly managed with State lifecycle
+class _StockSymbolInputDialog extends StatefulWidget {
+  const _StockSymbolInputDialog({required this.db});
+
+  final AppDatabase db;
+
+  @override
+  State<_StockSymbolInputDialog> createState() => _StockSymbolInputDialogState();
+}
+
+class _StockSymbolInputDialogState extends State<_StockSymbolInputDialog> {
+  final _controller = TextEditingController();
+  bool _isSearching = false;
+  String? _errorText;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final input = _controller.text.trim().toUpperCase();
+    if (input.isEmpty) return;
+
+    setState(() {
+      _isSearching = true;
+      _errorText = null;
+    });
+
+    final stock = await widget.db.getStock(input);
+    if (!mounted) return;
+
+    if (stock != null) {
+      Navigator.pop(context, input);
+    } else {
+      setState(() {
+        _isSearching = false;
+        _errorText = 'alert.stockNotFound'.tr();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('alert.selectStock'.tr()),
+      content: TextField(
+        controller: _controller,
+        decoration: InputDecoration(
+          labelText: 'alert.stockSymbol'.tr(),
+          hintText: 'alert.stockSymbolHint'.tr(),
+          errorText: _errorText,
+          border: const OutlineInputBorder(),
+        ),
+        autofocus: true,
+        enabled: !_isSearching,
+        textCapitalization: TextCapitalization.characters,
+        onSubmitted: (_) => _search(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isSearching ? null : () => Navigator.pop(context),
+          child: Text('common.cancel'.tr()),
+        ),
+        FilledButton(
+          onPressed: _isSearching ? null : _search,
+          child: _isSearching
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text('common.next'.tr()),
+        ),
+      ],
+    );
   }
 }
