@@ -1,0 +1,16 @@
+targets:
+  $default:
+    builders:
+      # Drift configuration
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true
+          named_parameters: true
+          generate_connect_constructor: false
+
+      # JSON serialization
+      json_serializable:
+        options:
+          explicit_to_json: true
+          field_rename: snake
+          any_map: false
