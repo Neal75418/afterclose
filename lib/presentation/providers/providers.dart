@@ -1,0 +1,91 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/data/repositories/analysis_repository.dart';
+import 'package:afterclose/data/repositories/institutional_repository.dart';
+import 'package:afterclose/data/repositories/news_repository.dart';
+import 'package:afterclose/data/repositories/price_repository.dart';
+import 'package:afterclose/data/repositories/stock_repository.dart';
+import 'package:afterclose/domain/services/update_service.dart';
+
+// ==================================================
+// Core Infrastructure
+// ==================================================
+
+/// App database singleton
+final databaseProvider = Provider<AppDatabase>((ref) {
+  final db = AppDatabase();
+  ref.onDispose(() => db.close());
+  return db;
+});
+
+/// FinMind API client
+final finMindClientProvider = Provider<FinMindClient>((ref) {
+  return FinMindClient();
+});
+
+/// RSS parser
+final rssParserProvider = Provider<RssParser>((ref) {
+  return RssParser();
+});
+
+// ==================================================
+// Repositories
+// ==================================================
+
+/// Stock repository provider
+final stockRepositoryProvider = Provider<StockRepository>((ref) {
+  return StockRepository(
+    database: ref.watch(databaseProvider),
+    finMindClient: ref.watch(finMindClientProvider),
+  );
+});
+
+/// Price repository provider
+final priceRepositoryProvider = Provider<PriceRepository>((ref) {
+  return PriceRepository(
+    database: ref.watch(databaseProvider),
+    finMindClient: ref.watch(finMindClientProvider),
+  );
+});
+
+/// News repository provider
+final newsRepositoryProvider = Provider<NewsRepository>((ref) {
+  return NewsRepository(
+    database: ref.watch(databaseProvider),
+    rssParser: ref.watch(rssParserProvider),
+  );
+});
+
+/// Analysis repository provider
+final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
+  return AnalysisRepository(database: ref.watch(databaseProvider));
+});
+
+/// Institutional repository provider
+final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
+  ref,
+) {
+  return InstitutionalRepository(
+    database: ref.watch(databaseProvider),
+    finMindClient: ref.watch(finMindClientProvider),
+  );
+});
+
+// ==================================================
+// Services
+// ==================================================
+
+/// Update service provider
+final updateServiceProvider = Provider<UpdateService>((ref) {
+  return UpdateService(
+    database: ref.watch(databaseProvider),
+    stockRepository: ref.watch(stockRepositoryProvider),
+    priceRepository: ref.watch(priceRepositoryProvider),
+    newsRepository: ref.watch(newsRepositoryProvider),
+    analysisRepository: ref.watch(analysisRepositoryProvider),
+    institutionalRepository: ref.watch(institutionalRepositoryProvider),
+  );
+});

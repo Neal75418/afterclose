@@ -4,10 +4,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/main.dart';
 
 void main() {
-  testWidgets('App renders correctly', (WidgetTester tester) async {
+  testWidgets('App renders with navigation bar', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: AfterCloseApp()));
 
-    expect(find.text('AfterClose'), findsWidgets);
-    expect(find.text('Local-First 盤後台股掃描'), findsOneWidget);
+    // Check app title
+    expect(find.text('AfterClose'), findsOneWidget);
+
+    // Check bottom navigation destinations
+    expect(find.text('今日'), findsOneWidget);
+    expect(find.text('掃描'), findsOneWidget);
+    expect(find.text('自選'), findsOneWidget);
+    expect(find.text('新聞'), findsOneWidget);
   });
 }
