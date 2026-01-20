@@ -345,7 +345,8 @@ class _StockSymbolInputDialog extends StatefulWidget {
   final AppDatabase db;
 
   @override
-  State<_StockSymbolInputDialog> createState() => _StockSymbolInputDialogState();
+  State<_StockSymbolInputDialog> createState() =>
+      _StockSymbolInputDialogState();
 }
 
 class _StockSymbolInputDialogState extends State<_StockSymbolInputDialog> {

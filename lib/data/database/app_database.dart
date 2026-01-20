@@ -676,9 +676,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get all price alerts (active and inactive)
   Future<List<PriceAlertEntry>> getAllAlerts() {
-    return (select(priceAlert)
-          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-        .get();
+    return (select(
+      priceAlert,
+    )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
   }
 
   /// Get all alerts for a symbol

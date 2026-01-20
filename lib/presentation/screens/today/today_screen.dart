@@ -329,7 +329,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           duration: duration,
           action: action,
           backgroundColor: isError ? Colors.red : null,
-          showCloseIcon: action != null, // Show close icon for SnackBars with actions
+          showCloseIcon:
+              action != null, // Show close icon for SnackBars with actions
           dismissDirection: DismissDirection.horizontal,
         ),
       );
