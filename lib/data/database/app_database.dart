@@ -257,7 +257,8 @@ class AppDatabase extends _$AppDatabase {
   /// Get institutional data for multiple symbols (batch query)
   ///
   /// Returns a map of symbol -> institutional entry list, sorted by date ascending
-  Future<Map<String, List<DailyInstitutionalEntry>>> getInstitutionalHistoryBatch(
+  Future<Map<String, List<DailyInstitutionalEntry>>>
+  getInstitutionalHistoryBatch(
     List<String> symbols, {
     required DateTime startDate,
     DateTime? endDate,

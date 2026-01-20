@@ -102,9 +102,9 @@ class NewsRepository {
     final cutoff = DateTime.now().subtract(Duration(days: days));
 
     // Get news IDs mapped to this stock
-    final mappings = await (_db.select(_db.newsStockMap)
-          ..where((m) => m.symbol.equals(symbol)))
-        .get();
+    final mappings = await (_db.select(
+      _db.newsStockMap,
+    )..where((m) => m.symbol.equals(symbol))).get();
 
     if (mappings.isEmpty) return [];
 
@@ -130,9 +130,9 @@ class NewsRepository {
     final cutoff = DateTime.now().subtract(Duration(days: days));
 
     // Get all mappings for the given symbols
-    final mappings = await (_db.select(_db.newsStockMap)
-          ..where((m) => m.symbol.isIn(symbols)))
-        .get();
+    final mappings = await (_db.select(
+      _db.newsStockMap,
+    )..where((m) => m.symbol.isIn(symbols))).get();
 
     if (mappings.isEmpty) return {};
 
@@ -140,11 +140,12 @@ class NewsRepository {
     final newsIds = mappings.map((m) => m.newsId).toSet().toList();
 
     // Get all news items in one query with date filter
-    final newsItems = await (_db.select(_db.newsItem)
-          ..where((n) => n.id.isIn(newsIds))
-          ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
-          ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
-        .get();
+    final newsItems =
+        await (_db.select(_db.newsItem)
+              ..where((n) => n.id.isIn(newsIds))
+              ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
+              ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
+            .get();
 
     // Create a map for quick lookup
     final newsMap = {for (final item in newsItems) item.id: item};

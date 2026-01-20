@@ -238,7 +238,8 @@ class UpdateService {
     final scoredStocks = <ScoredStock>[];
 
     // Get recently recommended symbols for cooldown check (single query)
-    final recentlyRecommended = await _analysisRepo.getRecentlyRecommendedSymbols();
+    final recentlyRecommended = await _analysisRepo
+        .getRecentlyRecommendedSymbols();
 
     final startDate = date.subtract(
       const Duration(days: RuleParams.lookbackPrice + 10),
