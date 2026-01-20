@@ -84,7 +84,7 @@ void main() {
     group('checkBreakout', () {
       test('should trigger when close breaks resistance', () {
         final prices = _generatePrices(days: 30, basePrice: 100.0);
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           resistanceLevel: 100.0,
         );
@@ -107,7 +107,7 @@ void main() {
 
       test('should not trigger when close is below resistance', () {
         final prices = _generatePrices(days: 30, basePrice: 100.0);
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           resistanceLevel: 105.0, // Above current price
         );
@@ -121,7 +121,7 @@ void main() {
     group('checkBreakdown', () {
       test('should trigger when close breaks support', () {
         final prices = _generatePrices(days: 30, basePrice: 100.0);
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           supportLevel: 100.0,
         );
@@ -174,13 +174,13 @@ void main() {
     group('calculateScore', () {
       test('should sum all rule scores', () {
         final reasons = [
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.volumeSpike,
             score: 18,
             evidence: {},
             template: 'test',
           ),
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.priceSpike,
             score: 15,
             evidence: {},
@@ -195,13 +195,13 @@ void main() {
 
       test('should add bonus for breakout + volume spike', () {
         final reasons = [
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.techBreakout,
             score: 25,
             evidence: {},
             template: 'test',
           ),
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.volumeSpike,
             score: 18,
             evidence: {},
@@ -216,7 +216,7 @@ void main() {
 
       test('should apply cooldown multiplier', () {
         final reasons = [
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.volumeSpike,
             score: 18,
             evidence: {},
@@ -236,19 +236,19 @@ void main() {
     group('getTopReasons', () {
       test('should return max 2 reasons', () {
         final reasons = [
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.reversalW2S,
             score: 35,
             evidence: {},
             template: 'test',
           ),
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.techBreakout,
             score: 25,
             evidence: {},
             template: 'test',
           ),
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.volumeSpike,
             score: 18,
             evidence: {},
@@ -265,19 +265,19 @@ void main() {
 
       test('should deduplicate by category', () {
         final reasons = [
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.reversalW2S,
             score: 35,
             evidence: {},
             template: 'test',
           ),
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.reversalS2W,
             score: 35, // Same category as W2S
             evidence: {},
             template: 'test',
           ),
-          TriggeredReason(
+          const TriggeredReason(
             type: ReasonType.volumeSpike,
             score: 18,
             evidence: {},
