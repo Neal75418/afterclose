@@ -108,7 +108,8 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       final latestPricesMap = results[1] as Map<String, DailyPriceEntry>;
       final analysesMap = results[2] as Map<String, DailyAnalysisEntry>;
       final reasonsMap = results[3] as Map<String, List<DailyReasonEntry>>;
-      final priceHistoriesMap = results[4] as Map<String, List<DailyPriceEntry>>;
+      final priceHistoriesMap =
+          results[4] as Map<String, List<DailyPriceEntry>>;
 
       // Calculate price changes using utility
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(
@@ -174,5 +175,5 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
 /// Provider for watchlist screen state
 final watchlistProvider =
     StateNotifierProvider<WatchlistNotifier, WatchlistState>((ref) {
-  return WatchlistNotifier(ref);
-});
+      return WatchlistNotifier(ref);
+    });

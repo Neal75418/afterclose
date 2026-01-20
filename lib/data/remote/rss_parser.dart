@@ -182,23 +182,26 @@ class RssParser {
     'PDT': -7,
   };
 
+  /// Months lookup (case-insensitive)
+  static const _months = {
+    'jan': 1,
+    'feb': 2,
+    'mar': 3,
+    'apr': 4,
+    'may': 5,
+    'jun': 6,
+    'jul': 7,
+    'aug': 8,
+    'sep': 9,
+    'oct': 10,
+    'nov': 11,
+    'dec': 12,
+  };
+
   DateTime _parseRfc822(String dateStr) {
     // RFC 822 parser with timezone support
     // Format: "Mon, 01 Jan 2026 12:00:00 +0800" or "Mon, 01 Jan 2026 12:00:00 GMT"
-    const months = {
-      'Jan': 1,
-      'Feb': 2,
-      'Mar': 3,
-      'Apr': 4,
-      'May': 5,
-      'Jun': 6,
-      'Jul': 7,
-      'Aug': 8,
-      'Sep': 9,
-      'Oct': 10,
-      'Nov': 11,
-      'Dec': 12,
-    };
+    // Also handles: "01 Jan 26 12:00:00 +08:00" (2-digit year, colon in tz)
 
     // Remove optional day-of-week prefix
     var cleanedDate = dateStr.trim();
@@ -208,12 +211,34 @@ class RssParser {
 
     final parts = cleanedDate.split(RegExp(r'\s+'));
     if (parts.length < 4) {
-      throw const FormatException('Invalid RFC 822 date');
+      throw const FormatException('Invalid RFC 822 date: insufficient parts');
     }
 
-    final day = int.tryParse(parts[0]) ?? 1;
-    final month = months[parts[1]] ?? 1;
-    final year = int.tryParse(parts[2]) ?? DateTime.now().year;
+    // Parse day (1-31)
+    final day = int.tryParse(parts[0]);
+    if (day == null || day < 1 || day > 31) {
+      throw FormatException('Invalid RFC 822 date: invalid day "${parts[0]}"');
+    }
+
+    // Parse month (case-insensitive)
+    final monthStr = parts[1].toLowerCase();
+    final month = _months[monthStr];
+    if (month == null) {
+      throw FormatException(
+        'Invalid RFC 822 date: invalid month "${parts[1]}"',
+      );
+    }
+
+    // Parse year (handle 2-digit and 4-digit)
+    var year = int.tryParse(parts[2]);
+    if (year == null) {
+      throw FormatException('Invalid RFC 822 date: invalid year "${parts[2]}"');
+    }
+    // Convert 2-digit year to 4-digit (RFC 822 allows 2-digit years)
+    // Years 00-49 → 2000-2049, 50-99 → 1950-1999
+    if (year < 100) {
+      year = year < 50 ? 2000 + year : 1900 + year;
+    }
 
     var hour = 0;
     var minute = 0;
@@ -222,32 +247,67 @@ class RssParser {
 
     if (parts.length >= 4 && parts[3].contains(':')) {
       final timeParts = parts[3].split(':');
-      hour = int.tryParse(timeParts[0]) ?? 0;
-      minute = int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0;
-      second = int.tryParse(timeParts.length > 2 ? timeParts[2] : '0') ?? 0;
+      hour = _clamp(int.tryParse(timeParts[0]) ?? 0, 0, 23);
+      minute = _clamp(
+        int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0,
+        0,
+        59,
+      );
+      second = _clamp(
+        int.tryParse(timeParts.length > 2 ? timeParts[2] : '0') ?? 0,
+        0,
+        59,
+      );
 
       // Parse timezone if present
       if (parts.length >= 5) {
-        final tz = parts[4];
-        if (tz.startsWith('+') || tz.startsWith('-')) {
-          // Numeric timezone like +0800 or -0500
-          final sign = tz.startsWith('+') ? 1 : -1;
-          final tzValue = tz.substring(1);
-          if (tzValue.length >= 4) {
-            final tzHours = int.tryParse(tzValue.substring(0, 2)) ?? 0;
-            final tzMins = int.tryParse(tzValue.substring(2, 4)) ?? 0;
-            tzOffsetMinutes = sign * (tzHours * 60 + tzMins);
-          }
-        } else if (_timezoneOffsets.containsKey(tz.toUpperCase())) {
-          // Named timezone like GMT, EST, PST
-          tzOffsetMinutes = _timezoneOffsets[tz.toUpperCase()]! * 60;
-        }
+        tzOffsetMinutes = _parseTimezone(parts[4]);
       }
     }
 
+    // Validate day for the specific month
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final validDay = day <= daysInMonth ? day : daysInMonth;
+
     // Create UTC datetime and adjust for timezone
-    final utc = DateTime.utc(year, month, day, hour, minute, second);
+    final utc = DateTime.utc(year, month, validDay, hour, minute, second);
     return utc.subtract(Duration(minutes: tzOffsetMinutes));
+  }
+
+  /// Parse timezone string to offset in minutes
+  ///
+  /// Handles: +0800, -0500, +08:00, -05:00, GMT, EST, PST, etc.
+  int _parseTimezone(String tz) {
+    if (tz.startsWith('+') || tz.startsWith('-')) {
+      final sign = tz.startsWith('+') ? 1 : -1;
+      var tzValue = tz.substring(1);
+
+      // Handle colon format (+08:00 → 0800)
+      if (tzValue.contains(':')) {
+        tzValue = tzValue.replaceAll(':', '');
+      }
+
+      if (tzValue.length >= 4) {
+        final tzHours = int.tryParse(tzValue.substring(0, 2)) ?? 0;
+        final tzMins = int.tryParse(tzValue.substring(2, 4)) ?? 0;
+        return sign * (tzHours * 60 + tzMins);
+      } else if (tzValue.length >= 2) {
+        // Handle short format like +08 (hours only)
+        final tzHours = int.tryParse(tzValue.substring(0, 2)) ?? 0;
+        return sign * tzHours * 60;
+      }
+    } else if (_timezoneOffsets.containsKey(tz.toUpperCase())) {
+      // Named timezone like GMT, EST, PST
+      return _timezoneOffsets[tz.toUpperCase()]! * 60;
+    }
+    return 0;
+  }
+
+  /// Clamp value to range
+  int _clamp(int value, int min, int max) {
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
   }
 
   /// Generate a unique ID using a better hash algorithm

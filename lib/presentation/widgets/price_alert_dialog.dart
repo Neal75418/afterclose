@@ -142,10 +142,14 @@ class _CreatePriceAlertDialogState
               decoration: InputDecoration(
                 labelText: _getValueLabel(),
                 hintText: _getValueHint(),
-                suffixText: _selectedType == AlertType.changePct ? '%' : 'alert.currency'.tr(),
+                suffixText: _selectedType == AlertType.changePct
+                    ? '%'
+                    : 'alert.currency'.tr(),
                 border: const OutlineInputBorder(),
               ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
               ],
@@ -168,7 +172,9 @@ class _CreatePriceAlertDialogState
             if (widget.currentPrice != null) ...[
               const SizedBox(height: 12),
               Text(
-                'alert.currentPrice'.tr(args: [widget.currentPrice!.toStringAsFixed(2)]),
+                'alert.currentPrice'.tr(
+                  args: [widget.currentPrice!.toStringAsFixed(2)],
+                ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -234,7 +240,9 @@ class _CreatePriceAlertDialogState
 
     setState(() => _isCreating = true);
 
-    final success = await ref.read(priceAlertProvider.notifier).createAlert(
+    final success = await ref
+        .read(priceAlertProvider.notifier)
+        .createAlert(
           symbol: widget.symbol,
           alertType: _selectedType,
           targetValue: value,

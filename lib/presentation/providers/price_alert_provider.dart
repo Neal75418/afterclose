@@ -14,11 +14,26 @@ enum AlertType {
   final String value;
   final String label;
 
+  /// Parse AlertType from string value.
+  ///
+  /// Throws [ArgumentError] if the value is not a valid AlertType.
   static AlertType fromValue(String value) {
-    return AlertType.values.firstWhere(
-      (e) => e.value == value,
-      orElse: () => AlertType.above,
-    );
+    return tryFromValue(value) ??
+        (throw ArgumentError.value(
+          value,
+          'value',
+          'Invalid AlertType value. Valid values: ${AlertType.values.map((e) => e.value).join(", ")}',
+        ));
+  }
+
+  /// Try to parse AlertType from string value.
+  ///
+  /// Returns null if the value is not a valid AlertType.
+  static AlertType? tryFromValue(String value) {
+    for (final type in AlertType.values) {
+      if (type.value == value) return type;
+    }
+    return null;
   }
 }
 
@@ -147,13 +162,13 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
 /// Price alert provider
 final priceAlertProvider =
     StateNotifierProvider<PriceAlertNotifier, PriceAlertState>((ref) {
-  final db = ref.watch(databaseProvider);
-  return PriceAlertNotifier(db);
-});
+      final db = ref.watch(databaseProvider);
+      return PriceAlertNotifier(db);
+    });
 
 /// Get alerts for a specific symbol
 final alertsForSymbolProvider =
     FutureProvider.family<List<PriceAlertEntry>, String>((ref, symbol) async {
-  final db = ref.watch(databaseProvider);
-  return db.getAlertsForSymbol(symbol);
-});
+      final db = ref.watch(databaseProvider);
+      return db.getAlertsForSymbol(symbol);
+    });

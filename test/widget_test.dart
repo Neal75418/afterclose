@@ -23,7 +23,7 @@ void main() {
       expect(find.text('掃描'), findsOneWidget);
       expect(find.text('自選'), findsOneWidget);
       expect(find.text('新聞'), findsOneWidget);
-    // Skip: Repeating animations in EmptyState prevent test from settling
+      // Skip: Repeating animations in EmptyState prevent test from settling
     }, skip: true);
 
     testWidgets('has material 3 theme', (WidgetTester tester) async {
@@ -31,11 +31,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Find MaterialApp and verify theme
-      final materialApp = tester.widget<MaterialApp>(
-        find.byType(MaterialApp),
-      );
+      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
       expect(materialApp.theme?.useMaterial3, isTrue);
-    // Skip: Repeating animations in EmptyState prevent test from settling
+      // Skip: Repeating animations in EmptyState prevent test from settling
     }, skip: true);
   });
 
@@ -53,11 +51,7 @@ void main() {
     testWidgets('displays basic stock info', (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            stockName: '台積電',
-            latestClose: 580.0,
-          ),
+          const StockCard(symbol: '2330', stockName: '台積電', latestClose: 580.0),
         ),
       );
 
@@ -66,23 +60,21 @@ void main() {
       expect(find.text('580.00'), findsOneWidget);
     });
 
-    testWidgets('displays positive price change with red color',
-        (WidgetTester tester) async {
+    testWidgets('displays positive price change with red color', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            latestClose: 580.0,
-            priceChange: 3.5,
-          ),
+          const StockCard(symbol: '2330', latestClose: 580.0, priceChange: 3.5),
         ),
       );
 
       expect(find.text('+3.50%'), findsOneWidget);
     });
 
-    testWidgets('displays negative price change with green color',
-        (WidgetTester tester) async {
+    testWidgets('displays negative price change with green color', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
           const StockCard(
@@ -96,15 +88,11 @@ void main() {
       expect(find.text('-2.50%'), findsOneWidget);
     });
 
-    testWidgets('displays score badge when score is provided',
-        (WidgetTester tester) async {
+    testWidgets('displays score badge when score is provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            score: 45.0,
-          ),
-        ),
+        buildTestApp(const StockCard(symbol: '2330', score: 45.0)),
       );
 
       // Score ring displays just the number
@@ -113,12 +101,7 @@ void main() {
 
     testWidgets('displays reasons as tags', (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            reasons: ['弱轉強', '放量異常'],
-          ),
-        ),
+        buildTestApp(const StockCard(symbol: '2330', reasons: ['弱轉強', '放量異常'])),
       );
 
       expect(find.text('弱轉強'), findsOneWidget);
@@ -128,10 +111,7 @@ void main() {
     testWidgets('limits displayed reasons to 2', (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            reasons: ['弱轉強', '放量異常', '技術突破'],
-          ),
+          const StockCard(symbol: '2330', reasons: ['弱轉強', '放量異常', '技術突破']),
         ),
       );
 
@@ -140,60 +120,45 @@ void main() {
       expect(find.text('技術突破'), findsNothing);
     });
 
-    testWidgets('displays uptrend icon for UP trend state',
-        (WidgetTester tester) async {
+    testWidgets('displays uptrend icon for UP trend state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            trendState: 'UP',
-          ),
-        ),
+        buildTestApp(const StockCard(symbol: '2330', trendState: 'UP')),
       );
 
       // Now uses Material Icons instead of emoji
       expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     });
 
-    testWidgets('displays downtrend icon for DOWN trend state',
-        (WidgetTester tester) async {
+    testWidgets('displays downtrend icon for DOWN trend state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            trendState: 'DOWN',
-          ),
-        ),
+        buildTestApp(const StockCard(symbol: '2330', trendState: 'DOWN')),
       );
 
       // Now uses Material Icons instead of emoji
       expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
     });
 
-    testWidgets('displays range icon for null trend state',
-        (WidgetTester tester) async {
+    testWidgets('displays range icon for null trend state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            trendState: null,
-          ),
-        ),
+        buildTestApp(const StockCard(symbol: '2330', trendState: null)),
       );
 
       // Now uses Material Icons instead of emoji
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
     });
 
-    testWidgets('shows filled star when in watchlist',
-        (WidgetTester tester) async {
+    testWidgets('shows filled star when in watchlist', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
-          StockCard(
-            symbol: '2330',
-            isInWatchlist: true,
-            onWatchlistTap: () {},
-          ),
+          StockCard(symbol: '2330', isInWatchlist: true, onWatchlistTap: () {}),
         ),
       );
 
@@ -201,8 +166,9 @@ void main() {
       expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
     });
 
-    testWidgets('shows outlined star when not in watchlist',
-        (WidgetTester tester) async {
+    testWidgets('shows outlined star when not in watchlist', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         buildTestApp(
           StockCard(
@@ -221,20 +187,16 @@ void main() {
       var tapped = false;
 
       await tester.pumpWidget(
-        buildTestApp(
-          StockCard(
-            symbol: '2330',
-            onTap: () => tapped = true,
-          ),
-        ),
+        buildTestApp(StockCard(symbol: '2330', onTap: () => tapped = true)),
       );
 
       await tester.tap(find.byType(StockCard));
       expect(tapped, isTrue);
     });
 
-    testWidgets('calls onWatchlistTap when star is tapped',
-        (WidgetTester tester) async {
+    testWidgets('calls onWatchlistTap when star is tapped', (
+      WidgetTester tester,
+    ) async {
       var watchlistTapped = false;
 
       await tester.pumpWidget(
@@ -250,15 +212,11 @@ void main() {
       expect(watchlistTapped, isTrue);
     });
 
-    testWidgets('hides watchlist button when onWatchlistTap is null',
-        (WidgetTester tester) async {
+    testWidgets('hides watchlist button when onWatchlistTap is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            onWatchlistTap: null,
-          ),
-        ),
+        buildTestApp(const StockCard(symbol: '2330', onWatchlistTap: null)),
       );
 
       expect(find.byIcon(Icons.star_rounded), findsNothing);
@@ -268,9 +226,7 @@ void main() {
     group('score badge colors', () {
       testWidgets('red for score >= 50', (WidgetTester tester) async {
         await tester.pumpWidget(
-          buildTestApp(
-            const StockCard(symbol: '2330', score: 55.0),
-          ),
+          buildTestApp(const StockCard(symbol: '2330', score: 55.0)),
         );
 
         // Score ring displays just the number
@@ -279,9 +235,7 @@ void main() {
 
       testWidgets('orange for score >= 35', (WidgetTester tester) async {
         await tester.pumpWidget(
-          buildTestApp(
-            const StockCard(symbol: '2330', score: 40.0),
-          ),
+          buildTestApp(const StockCard(symbol: '2330', score: 40.0)),
         );
 
         expect(find.text('40'), findsOneWidget);
@@ -289,9 +243,7 @@ void main() {
 
       testWidgets('amber for score >= 20', (WidgetTester tester) async {
         await tester.pumpWidget(
-          buildTestApp(
-            const StockCard(symbol: '2330', score: 25.0),
-          ),
+          buildTestApp(const StockCard(symbol: '2330', score: 25.0)),
         );
 
         expect(find.text('25'), findsOneWidget);
@@ -299,9 +251,7 @@ void main() {
 
       testWidgets('grey for score < 20', (WidgetTester tester) async {
         await tester.pumpWidget(
-          buildTestApp(
-            const StockCard(symbol: '2330', score: 15.0),
-          ),
+          buildTestApp(const StockCard(symbol: '2330', score: 15.0)),
         );
 
         expect(find.text('15'), findsOneWidget);
@@ -310,13 +260,12 @@ void main() {
   });
 
   group('Loading Indicator', () {
-    testWidgets('CircularProgressIndicator displays correctly',
-        (WidgetTester tester) async {
+    testWidgets('CircularProgressIndicator displays correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          ),
+          home: Scaffold(body: Center(child: CircularProgressIndicator())),
         ),
       );
 

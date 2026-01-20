@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:intl/intl.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -17,14 +16,13 @@ class PriceRepository {
     required FinMindClient finMindClient,
     TwseClient? twseClient,
   }) : _db = database,
-       _finmindClient = finMindClient,
        _twseClient = twseClient ?? TwseClient();
 
   final AppDatabase _db;
-  final FinMindClient _finmindClient;
   final TwseClient _twseClient;
 
-  static final _dateFormat = DateFormat('yyyy-MM-dd');
+  // Note: FinMindClient kept in constructor for backward compatibility
+  // but no longer used - TWSE is now the primary data source
 
   /// Get price history for analysis
   ///
@@ -81,7 +79,10 @@ class PriceRepository {
         // Only fetch if we don't have data for this month
         // (or have very little - less than 10 trading days)
         final existingDaysInMonth = existingHistory
-            .where((p) => p.date.year == current.year && p.date.month == current.month)
+            .where(
+              (p) =>
+                  p.date.year == current.year && p.date.month == current.month,
+            )
             .length;
         if (existingDaysInMonth < 10) {
           monthsToFetch.add(current);
@@ -116,9 +117,9 @@ class PriceRepository {
       }
 
       // Filter to requested date range
-      final filteredPrices = allPrices.where((p) =>
-          !p.date.isBefore(startDate) &&
-          !p.date.isAfter(effectiveEndDate));
+      final filteredPrices = allPrices.where(
+        (p) => !p.date.isBefore(startDate) && !p.date.isAfter(effectiveEndDate),
+      );
 
       final entries = filteredPrices.map((price) {
         return DailyPriceCompanion.insert(
@@ -142,11 +143,6 @@ class PriceRepository {
     } catch (e) {
       throw DatabaseException('Failed to sync prices for $symbol', e);
     }
-  }
-
-  /// Calculate months between two dates
-  int _monthsBetween(DateTime start, DateTime end) {
-    return (end.year - start.year) * 12 + (end.month - start.month);
   }
 
   /// Sync today's prices for all stocks (batch mode)
@@ -192,9 +188,7 @@ class PriceRepository {
 
       // Build stock master entries from TWSE data (includes stock names!)
       // This ensures stock names are always available even without FinMind API
-      final stockEntries = prices
-          .where((p) => p.name.isNotEmpty)
-          .map((price) {
+      final stockEntries = prices.where((p) => p.name.isNotEmpty).map((price) {
         return StockMasterCompanion.insert(
           symbol: price.code,
           name: price.name,
@@ -251,38 +245,38 @@ class PriceRepository {
 
       // Criteria 1: Significant price movement (>= 2%)
       if (changePercent >= 2.0) {
-        candidates.add(_QuickCandidate(
-          symbol: price.code,
-          score: changePercent * 10, // Higher change = higher priority
-        ));
+        candidates.add(
+          _QuickCandidate(
+            symbol: price.code,
+            score: changePercent * 10, // Higher change = higher priority
+          ),
+        );
         continue;
       }
 
       // Criteria 2: Near limit (接近漲跌停, ~9-10%)
       if (changePercent >= 9.0) {
-        candidates.add(_QuickCandidate(
-          symbol: price.code,
-          score: 100.0, // High priority for limit moves
-        ));
+        candidates.add(
+          _QuickCandidate(
+            symbol: price.code,
+            score: 100.0, // High priority for limit moves
+          ),
+        );
         continue;
       }
 
       // Criteria 3: Moderate movement (1.5%+) - lower priority
       if (changePercent >= 1.5) {
-        candidates.add(_QuickCandidate(
-          symbol: price.code,
-          score: changePercent * 5,
-        ));
+        candidates.add(
+          _QuickCandidate(symbol: price.code, score: changePercent * 5),
+        );
       }
     }
 
     // Sort by score (highest first) and take top 100
     candidates.sort((a, b) => b.score.compareTo(a.score));
 
-    return candidates
-        .take(100)
-        .map((c) => c.symbol)
-        .toList();
+    return candidates.take(100).map((c) => c.symbol).toList();
   }
 
   /// Sync prices for a list of specific symbols (free account fallback)
@@ -384,11 +378,7 @@ class PriceRepository {
     required DateTime targetDate,
     void Function(int current, int total, String symbol)? onProgress,
   }) async {
-    return _syncPricesForSymbols(
-      symbols,
-      targetDate,
-      onProgress: onProgress,
-    );
+    return _syncPricesForSymbols(symbols, targetDate, onProgress: onProgress);
   }
 
   /// Get symbols that need price updates for a given date
@@ -503,14 +493,14 @@ class PriceRepository {
   /// More efficient than calling [getVolumeMA20] in a loop
   ///
   /// Throws [DatabaseException] if database query fails
-  Future<Map<String, double?>> getVolumeMA20Batch(
-    List<String> symbols,
-  ) async {
+  Future<Map<String, double?>> getVolumeMA20Batch(List<String> symbols) async {
     if (symbols.isEmpty) return {};
 
     try {
       final today = DateTime.now();
-      final startDate = today.subtract(const Duration(days: RuleParams.volMa + 10));
+      final startDate = today.subtract(
+        const Duration(days: RuleParams.volMa + 10),
+      );
 
       // Single batch query for all symbols
       final priceHistories = await _db.getPriceHistoryBatch(
@@ -540,7 +530,8 @@ class PriceRepository {
           continue;
         }
 
-        result[symbol] = validVolumes.reduce((a, b) => a + b) / validVolumes.length;
+        result[symbol] =
+            validVolumes.reduce((a, b) => a + b) / validVolumes.length;
       }
 
       return result;
@@ -552,10 +543,7 @@ class PriceRepository {
 
 /// Result of syncing all market prices
 class MarketSyncResult {
-  const MarketSyncResult({
-    required this.count,
-    required this.candidates,
-  });
+  const MarketSyncResult({required this.count, required this.candidates});
 
   /// Number of prices synced
   final int count;
@@ -566,10 +554,7 @@ class MarketSyncResult {
 
 /// Helper class for quick candidate filtering
 class _QuickCandidate {
-  const _QuickCandidate({
-    required this.symbol,
-    required this.score,
-  });
+  const _QuickCandidate({required this.symbol, required this.score});
 
   final String symbol;
   final double score;

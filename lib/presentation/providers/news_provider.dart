@@ -57,11 +57,7 @@ class NewsNotifier extends StateNotifier<NewsState> {
       final news = await newsRepo.getRecentNews(days: days);
 
       if (news.isEmpty) {
-        state = state.copyWith(
-          news: [],
-          newsStockMap: {},
-          isLoading: false,
-        );
+        state = state.copyWith(news: [], newsStockMap: {}, isLoading: false);
         return;
       }
 
@@ -77,10 +73,7 @@ class NewsNotifier extends StateNotifier<NewsState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
-        isLoading: false,
-      );
+      state = state.copyWith(error: e.toString(), isLoading: false);
     }
   }
 }

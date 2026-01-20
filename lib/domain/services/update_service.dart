@@ -120,7 +120,9 @@ class UpdateService {
       onProgress?.call(3, 10, '取得今日價格');
       var marketCandidates = <String>[];
       try {
-        final syncResult = await _priceRepo.syncAllPricesForDate(normalizedDate);
+        final syncResult = await _priceRepo.syncAllPricesForDate(
+          normalizedDate,
+        );
         result.pricesUpdated = syncResult.count;
         marketCandidates = syncResult.candidates;
       } catch (e) {
@@ -141,9 +143,8 @@ class UpdateService {
         }.toList();
 
         // Check which stocks need historical data
-        const requiredDays = RuleParams.lookbackPrice + 30;
         final historyStartDate = normalizedDate.subtract(
-          Duration(days: requiredDays),
+          const Duration(days: RuleParams.lookbackPrice + 30),
         );
 
         // Smart skip: Only check stocks that might need data
@@ -161,7 +162,9 @@ class UpdateService {
 
           // Smart skip: If data is less than 7 days old, skip
           // (it's likely complete enough for analysis)
-          final daysSinceLastUpdate = normalizedDate.difference(latestPrice.date).inDays;
+          final daysSinceLastUpdate = normalizedDate
+              .difference(latestPrice.date)
+              .inDays;
           if (daysSinceLastUpdate > 7) {
             symbolsNeedingData.add(symbol);
           }
@@ -184,7 +187,11 @@ class UpdateService {
             final batchEnd = (i + batchSize).clamp(0, total);
             final batch = symbolsNeedingData.sublist(i, batchEnd);
 
-            onProgress?.call(4, 10, '歷史資料 (${completed + 1}~$batchEnd / $total)');
+            onProgress?.call(
+              4,
+              10,
+              '歷史資料 (${completed + 1}~$batchEnd / $total)',
+            );
 
             // Fetch batch in parallel, tracking failures
             final futures = batch.map((symbol) async {

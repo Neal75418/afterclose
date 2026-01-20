@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -39,12 +40,12 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('市場新聞'),
+        title: const Text(S.newsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => ref.read(newsProvider.notifier).loadData(),
-            tooltip: '重新整理',
+            tooltip: S.refresh,
           ),
         ],
       ),
@@ -149,11 +150,11 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
     final diff = now.difference(dt);
 
     if (diff.inMinutes < 60) {
-      return '${diff.inMinutes} 分鐘前';
+      return S.newsMinutesAgo(diff.inMinutes);
     } else if (diff.inHours < 24) {
-      return '${diff.inHours} 小時前';
+      return S.newsHoursAgo(diff.inHours);
     } else if (diff.inDays < 7) {
-      return '${diff.inDays} 天前';
+      return S.newsDaysAgo(diff.inDays);
     } else {
       return '${dt.month}/${dt.day}';
     }

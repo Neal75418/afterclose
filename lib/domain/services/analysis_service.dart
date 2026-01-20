@@ -171,7 +171,8 @@ class AnalysisService {
 
     for (var i = 1; i < sorted.length; i++) {
       final point = sorted[i];
-      final zoneAvg = currentZonePoints.map((p) => p.price).reduce((a, b) => a + b) /
+      final zoneAvg =
+          currentZonePoints.map((p) => p.price).reduce((a, b) => a + b) /
           currentZonePoints.length;
 
       // Check if point is within 2% of zone average
@@ -206,7 +207,9 @@ class AnalysisService {
     final avgPrice = prices.reduce((a, b) => a + b) / points.length;
     final maxIndex = points.map((p) => p.index).reduce((a, b) => a > b ? a : b);
     // Recency weight: more recent = higher weight (0.0 to 1.0)
-    final recencyWeight = totalDataPoints > 0 ? maxIndex / totalDataPoints : 0.5;
+    final recencyWeight = totalDataPoints > 0
+        ? maxIndex / totalDataPoints
+        : 0.5;
 
     return _PriceZone(
       avgPrice: avgPrice,

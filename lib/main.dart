@@ -17,10 +17,7 @@ void main() async {
 
   runApp(
     EasyLocalization(
-      supportedLocales: const [
-        Locale('zh', 'TW'),
-        Locale('en'),
-      ],
+      supportedLocales: const [Locale('zh', 'TW'), Locale('en')],
       path: 'assets/translations',
       fallbackLocale: const Locale('zh', 'TW'),
       child: const ProviderScope(child: AfterCloseApp()),

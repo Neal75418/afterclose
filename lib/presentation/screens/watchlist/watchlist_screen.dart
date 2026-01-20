@@ -69,24 +69,19 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         child: state.isLoading
             ? const StockListShimmer(itemCount: 5)
             : state.error != null
-                ? EmptyStates.error(
-                    message: state.error!,
-                    onRetry: _onRefresh,
-                  )
-                : state.items.isEmpty
-                    ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
-                    : ListView.builder(
-                        // Performance optimizations
-                        cacheExtent: 500,
-                        addAutomaticKeepAlives: false,
-                        itemCount: state.items.length,
-                        itemBuilder: (context, index) {
-                          final item = state.items[index];
-                          return RepaintBoundary(
-                            child: _buildWatchlistTile(item),
-                          );
-                        },
-                      ),
+            ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
+            : state.items.isEmpty
+            ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
+            : ListView.builder(
+                // Performance optimizations
+                cacheExtent: 500,
+                addAutomaticKeepAlives: false,
+                itemCount: state.items.length,
+                itemBuilder: (context, index) {
+                  final item = state.items[index];
+                  return RepaintBoundary(child: _buildWatchlistTile(item));
+                },
+              ),
       ),
     );
   }

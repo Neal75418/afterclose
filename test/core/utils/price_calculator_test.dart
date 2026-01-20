@@ -145,9 +145,7 @@ void main() {
       });
 
       test('should return null for symbols with empty history', () {
-        final priceHistories = <String, List<DailyPriceEntry>>{
-          'AAAA': [],
-        };
+        final priceHistories = <String, List<DailyPriceEntry>>{'AAAA': []};
 
         final latestPrices = <String, DailyPriceEntry>{
           'AAAA': _createPrice(symbol: 'AAAA', close: 105.0),

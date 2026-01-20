@@ -26,7 +26,9 @@ class NotificationService {
     tz.initializeTimeZones();
 
     // Android settings
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     // iOS settings
     const iosSettings = DarwinInitializationSettings(
@@ -65,19 +67,17 @@ class NotificationService {
     if (Platform.isIOS || Platform.isMacOS) {
       final result = await _notifications
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
       return result ?? false;
     }
 
     if (Platform.isAndroid) {
       final androidPlugin = _notifications
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       final result = await androidPlugin?.requestNotificationsPermission();
       return result ?? false;
     }
@@ -93,6 +93,7 @@ class NotificationService {
     required String body,
     String? payload,
   }) async {
+    // ignore: prefer_const_constructors - AndroidNotificationDetails is not const
     final androidDetails = AndroidNotificationDetails(
       'price_alerts',
       'Price Alerts',

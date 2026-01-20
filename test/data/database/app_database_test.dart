@@ -203,10 +203,10 @@ void main() {
           ),
         ]);
 
-        final result = await db.getPriceHistoryBatch(
-          ['2330', '2317'],
-          startDate: today.subtract(const Duration(days: 5)),
-        );
+        final result = await db.getPriceHistoryBatch([
+          '2330',
+          '2317',
+        ], startDate: today.subtract(const Duration(days: 5)));
 
         expect(result['2330']?.length, 2);
         expect(result['2317']?.length, 1);
@@ -242,10 +242,9 @@ void main() {
         expect(result, isEmpty);
 
         // Query history for non-existent symbols
-        final historyResult = await db.getPriceHistoryBatch(
-          ['9999'],
-          startDate: today.subtract(const Duration(days: 5)),
-        );
+        final historyResult = await db.getPriceHistoryBatch([
+          '9999',
+        ], startDate: today.subtract(const Duration(days: 5)));
 
         expect(historyResult['9999'], isNull);
       });

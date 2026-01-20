@@ -48,7 +48,9 @@ class StockCard extends StatelessWidget {
     final parts = <String>[];
     parts.add('股票 $symbol');
     if (stockName != null) parts.add(stockName!);
-    if (latestClose != null) parts.add('價格 ${latestClose!.toStringAsFixed(2)} 元');
+    if (latestClose != null) {
+      parts.add('價格 ${latestClose!.toStringAsFixed(2)} 元');
+    }
     if (priceChange != null) {
       final direction = priceChange! >= 0 ? '上漲' : '下跌';
       parts.add('$direction ${priceChange!.abs().toStringAsFixed(2)} 百分比');
@@ -77,82 +79,81 @@ class StockCard extends StatelessWidget {
       button: true,
       enabled: true,
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF252536) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF3A3A4A) : const Color(0xFFE8E8F0),
-          width: 1,
-        ),
-        boxShadow: isDark
-            ? null
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.lightImpact();
-            onTap?.call();
-          },
-          onLongPress: () {
-            HapticFeedback.mediumImpact();
-            onLongPress?.call();
-          },
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF252536) : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                // Trend indicator with modern design
-                _buildTrendIndicator(theme, isDark),
-                const SizedBox(width: 14),
-
-                // Stock info section
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(theme),
-                      if (stockName != null) ...[
-                        const SizedBox(height: 2),
-                        _buildStockName(theme),
-                      ],
-                      if (reasons.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _buildReasonTags(theme, isDark),
-                      ],
-                    ],
+          border: Border.all(
+            color: isDark ? const Color(0xFF3A3A4A) : const Color(0xFFE8E8F0),
+            width: 1,
+          ),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-
-                const SizedBox(width: 12),
-
-                // Mini sparkline chart (need at least 7 days of data)
-                if (recentPrices != null && recentPrices!.length >= 7) ...[
-                  _buildSparkline(priceColor),
-                  const SizedBox(width: 8),
                 ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onTap?.call();
+            },
+            onLongPress: () {
+              HapticFeedback.mediumImpact();
+              onLongPress?.call();
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  // Trend indicator with modern design
+                  _buildTrendIndicator(theme, isDark),
+                  const SizedBox(width: 14),
 
-                // Price section with color coding
-                _buildPriceSection(theme, priceColor),
+                  // Stock info section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(theme),
+                        if (stockName != null) ...[
+                          const SizedBox(height: 2),
+                          _buildStockName(theme),
+                        ],
+                        if (reasons.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _buildReasonTags(theme, isDark),
+                        ],
+                      ],
+                    ),
+                  ),
 
-                // Watchlist button
-                if (onWatchlistTap != null)
-                  _buildWatchlistButton(theme),
-              ],
+                  const SizedBox(width: 12),
+
+                  // Mini sparkline chart (need at least 7 days of data)
+                  if (recentPrices != null && recentPrices!.length >= 7) ...[
+                    _buildSparkline(priceColor),
+                    const SizedBox(width: 8),
+                  ],
+
+                  // Price section with color coding
+                  _buildPriceSection(theme, priceColor),
+
+                  // Watchlist button
+                  if (onWatchlistTap != null) _buildWatchlistButton(theme),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 
@@ -167,13 +168,7 @@ class StockCard extends StatelessWidget {
         color: trendColor.withValues(alpha: isDark ? 0.15 : 0.1),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Center(
-        child: Icon(
-          icon,
-          color: trendColor,
-          size: 24,
-        ),
-      ),
+      child: Center(child: Icon(icon, color: trendColor, size: 24)),
     );
   }
 
@@ -240,10 +235,7 @@ class StockCard extends StatelessWidget {
   }
 
   Widget _buildSparkline(Color priceColor) {
-    return _MiniSparkline(
-      prices: recentPrices!,
-      color: priceColor,
-    );
+    return _MiniSparkline(prices: recentPrices!, color: priceColor);
   }
 
   Widget _buildPriceSection(ThemeData theme, Color priceColor) {
@@ -273,11 +265,14 @@ class StockCard extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Decorative icon - text already contains +/- sign
                 if (!isNeutral)
-                  Icon(
-                    isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                    color: priceColor,
-                    size: 18,
+                  ExcludeSemantics(
+                    child: Icon(
+                      isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                      color: priceColor,
+                      size: 18,
+                    ),
                   ),
                 Text(
                   '${isPositive && !isNeutral ? '+' : ''}${priceChange!.toStringAsFixed(2)}%',
@@ -304,7 +299,9 @@ class StockCard extends StatelessWidget {
         child: IconButton(
           icon: Icon(
             isInWatchlist ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: isInWatchlist ? Colors.amber : theme.colorScheme.onSurfaceVariant,
+            color: isInWatchlist
+                ? Colors.amber
+                : theme.colorScheme.onSurfaceVariant,
             size: 26,
           ),
           tooltip: tooltipText,
@@ -334,10 +331,7 @@ class StockCard extends StatelessWidget {
 /// 2. Data normalization done once in build
 /// 3. Minimal LineChartData configuration
 class _MiniSparkline extends StatelessWidget {
-  const _MiniSparkline({
-    required this.prices,
-    required this.color,
-  });
+  const _MiniSparkline({required this.prices, required this.color});
 
   final List<double> prices;
   final Color color;

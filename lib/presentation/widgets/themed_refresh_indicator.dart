@@ -45,9 +45,7 @@ class ThemedRefreshIndicator extends StatelessWidget {
       displacement: displacement,
       edgeOffset: edgeOffset,
       color: AppTheme.primaryColor,
-      backgroundColor: isDark
-          ? const Color(0xFF2A2A3A)
-          : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF2A2A3A) : Colors.white,
       strokeWidth: 2.5,
       child: child,
     );
@@ -70,7 +68,8 @@ class AnimatedRefreshIndicator extends StatefulWidget {
   final Duration timeout;
 
   @override
-  State<AnimatedRefreshIndicator> createState() => _AnimatedRefreshIndicatorState();
+  State<AnimatedRefreshIndicator> createState() =>
+      _AnimatedRefreshIndicatorState();
 }
 
 class _AnimatedRefreshIndicatorState extends State<AnimatedRefreshIndicator>

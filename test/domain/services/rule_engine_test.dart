@@ -101,7 +101,10 @@ void main() {
           ),
         ];
 
-        final result = ruleEngine.checkWeakToStrong(pricesWithBreakout, context);
+        final result = ruleEngine.checkWeakToStrong(
+          pricesWithBreakout,
+          context,
+        );
 
         expect(result, isNotNull);
         expect(result!.type, ReasonType.reversalW2S);
@@ -151,7 +154,10 @@ void main() {
           ),
         ];
 
-        final result = ruleEngine.checkStrongToWeak(pricesWithBreakdown, context);
+        final result = ruleEngine.checkStrongToWeak(
+          pricesWithBreakdown,
+          context,
+        );
 
         expect(result, isNotNull);
         expect(result!.type, ReasonType.reversalS2W);
@@ -175,7 +181,10 @@ void main() {
           ),
         ];
 
-        final result = ruleEngine.checkStrongToWeak(pricesWithBreakdown, context);
+        final result = ruleEngine.checkStrongToWeak(
+          pricesWithBreakdown,
+          context,
+        );
 
         expect(result, isNotNull);
         expect(result!.type, ReasonType.reversalS2W);
@@ -222,7 +231,10 @@ void main() {
 
       test('should not trigger when news has no relevant keywords', () {
         final news = <NewsItemEntry>[
-          createTestNewsItem(id: 'news1', title: 'Generic News Without Keywords'),
+          createTestNewsItem(
+            id: 'news1',
+            title: 'Generic News Without Keywords',
+          ),
         ];
 
         final result = ruleEngine.checkNewsRelated(news);

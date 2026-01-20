@@ -32,6 +32,10 @@ class AppTheme {
   /// Neutral/Unchanged - Grey (平盤)
   static const neutralColor = Color(0xFF747D8C);
 
+  /// Error color - Distinct from upColor for semantic clarity
+  /// Uses a deeper red-orange to differentiate from stock price increases
+  static const errorColor = Color(0xFFE74C3C);
+
   // Surface colors for dark theme
   static const _surfaceDark = Color(0xFF1E1E2E);
   static const _backgroundDark = Color(0xFF121218);
@@ -50,6 +54,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      // ignore: prefer_const_constructors - ColorScheme.dark is a factory constructor
       colorScheme: ColorScheme.dark(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -78,18 +83,14 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         color: _cardDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
 
       // ListTile
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: _cardDark,
       ),
 
@@ -135,7 +136,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
 
       // Chips
@@ -143,9 +147,7 @@ class AppTheme {
         backgroundColor: _cardDark,
         labelStyle: const TextStyle(fontSize: 12),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
       // Divider
@@ -161,17 +163,13 @@ class AppTheme {
         contentTextStyle: const TextStyle(color: Colors.white),
         actionTextColor: secondaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
       // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: _surfaceDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
@@ -184,6 +182,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      // ignore: prefer_const_constructors - ColorScheme.light is a factory constructor
       colorScheme: ColorScheme.light(
         primary: primaryColor,
         secondary: secondaryColor,
@@ -223,9 +222,7 @@ class AppTheme {
       // ListTile
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: _cardLight,
       ),
 
@@ -271,7 +268,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
       ),
 
       // Chips
@@ -298,17 +298,13 @@ class AppTheme {
         contentTextStyle: const TextStyle(color: Colors.white),
         actionTextColor: primaryColor,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
       // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: _backgroundLight,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
@@ -335,16 +331,16 @@ class AppTheme {
 
   /// Get gradient for backgrounds
   static LinearGradient get darkGradient => const LinearGradient(
-        colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+    colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   static LinearGradient get lightGradient => const LinearGradient(
-        colors: [Color(0xFFF8F9FA), Color(0xFFEEF2F7)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
+    colors: [Color(0xFFF8F9FA), Color(0xFFEEF2F7)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
 
   /// Card decoration with subtle border
   static BoxDecoration cardDecoration(BuildContext context) {

@@ -168,7 +168,7 @@ class RuleEngine {
       final breakoutLevel = context.rangeTop! * (1 + RuleParams.breakoutBuffer);
       if (todayClose > breakoutLevel &&
           (context.trendState == TrendState.down ||
-           context.trendState == TrendState.range)) {
+              context.trendState == TrendState.range)) {
         return TriggeredReason(
           type: ReasonType.reversalW2S,
           score: RuleScores.reversalW2S,
@@ -239,7 +239,7 @@ class RuleEngine {
           context.supportLevel! * (1 - RuleParams.breakoutBuffer);
       if (todayClose < breakdownLevel &&
           (context.trendState == TrendState.up ||
-           context.trendState == TrendState.range)) {
+              context.trendState == TrendState.range)) {
         return TriggeredReason(
           type: ReasonType.reversalS2W,
           score: RuleScores.reversalS2W,
@@ -506,14 +506,40 @@ class RuleEngine {
 
   /// Positive sentiment keywords (bullish signals)
   static const _positiveKeywords = [
-    '突破', '創高', '創新高', '漲停', '獲利', '營收成長', '法說', '利多',
-    '看好', '調升', '目標價', '買進', '強勢', '利好', '訂單', '擴產',
+    '突破',
+    '創高',
+    '創新高',
+    '漲停',
+    '獲利',
+    '營收成長',
+    '法說',
+    '利多',
+    '看好',
+    '調升',
+    '目標價',
+    '買進',
+    '強勢',
+    '利好',
+    '訂單',
+    '擴產',
   ];
 
   /// Negative sentiment keywords (bearish signals)
   static const _negativeKeywords = [
-    '跌停', '下跌', '虧損', '衰退', '違約', '警示', '利空', '調降',
-    '看壞', '減產', '裁員', '營收下滑', '產能過剩', '需求疲軟',
+    '跌停',
+    '下跌',
+    '虧損',
+    '衰退',
+    '違約',
+    '警示',
+    '利空',
+    '調降',
+    '看壞',
+    '減產',
+    '裁員',
+    '營收下滑',
+    '產能過剩',
+    '需求疲軟',
   ];
 
   /// Check for recent news mentions with keyword filtering

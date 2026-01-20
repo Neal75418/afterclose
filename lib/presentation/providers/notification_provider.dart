@@ -41,10 +41,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     try {
       await _service.initialize();
       final hasPermission = await _service.requestPermissions();
-      state = state.copyWith(
-        isInitialized: true,
-        hasPermission: hasPermission,
-      );
+      state = state.copyWith(isInitialized: true, hasPermission: hasPermission);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
@@ -91,14 +88,16 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
     final String body;
     if (alertsTriggered > 0) {
-      body = 'notification.updateWithAlerts'.tr(namedArgs: {
-        'recommendations': recommendationCount.toString(),
-        'alerts': alertsTriggered.toString(),
-      });
+      body = 'notification.updateWithAlerts'.tr(
+        namedArgs: {
+          'recommendations': recommendationCount.toString(),
+          'alerts': alertsTriggered.toString(),
+        },
+      );
     } else {
-      body = 'notification.updateNoAlerts'.tr(namedArgs: {
-        'recommendations': recommendationCount.toString(),
-      });
+      body = 'notification.updateNoAlerts'.tr(
+        namedArgs: {'recommendations': recommendationCount.toString()},
+      );
     }
 
     await _service.showNotification(
@@ -110,12 +109,15 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
   String _getAlertTitle(String symbol, AlertType alertType) {
     return switch (alertType) {
-      AlertType.above =>
-        'notification.priceAboveTarget'.tr(namedArgs: {'symbol': symbol}),
-      AlertType.below =>
-        'notification.priceBelowTarget'.tr(namedArgs: {'symbol': symbol}),
-      AlertType.changePct =>
-        'notification.priceChangeTarget'.tr(namedArgs: {'symbol': symbol}),
+      AlertType.above => 'notification.priceAboveTarget'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.below => 'notification.priceBelowTarget'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.changePct => 'notification.priceChangeTarget'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
     };
   }
 
@@ -125,21 +127,21 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     double? currentPrice,
   ) {
     final priceText = currentPrice != null
-        ? 'notification.currentPriceSuffix'.tr(namedArgs: {
-            'price': currentPrice.toStringAsFixed(2),
-          })
+        ? 'notification.currentPriceSuffix'.tr(
+            namedArgs: {'price': currentPrice.toStringAsFixed(2)},
+          )
         : '';
 
     final baseBody = switch (alertType) {
-      AlertType.above => 'notification.aboveBody'.tr(namedArgs: {
-          'price': alert.targetValue.toStringAsFixed(2),
-        }),
-      AlertType.below => 'notification.belowBody'.tr(namedArgs: {
-          'price': alert.targetValue.toStringAsFixed(2),
-        }),
-      AlertType.changePct => 'notification.changeBody'.tr(namedArgs: {
-          'percent': alert.targetValue.toStringAsFixed(1),
-        }),
+      AlertType.above => 'notification.aboveBody'.tr(
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+      ),
+      AlertType.below => 'notification.belowBody'.tr(
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+      ),
+      AlertType.changePct => 'notification.changeBody'.tr(
+        namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
+      ),
     };
 
     return '$baseBody$priceText';
@@ -159,5 +161,5 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 /// Notification provider
 final notificationProvider =
     StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-  return NotificationNotifier();
-});
+      return NotificationNotifier();
+    });

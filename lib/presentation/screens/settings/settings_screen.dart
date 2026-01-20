@@ -104,10 +104,7 @@ class SettingsScreen extends ConsumerWidget {
         .name;
 
     return ListTile(
-      leading: Icon(
-        Icons.language_rounded,
-        color: theme.colorScheme.primary,
-      ),
+      leading: Icon(Icons.language_rounded, color: theme.colorScheme.primary),
       title: Text('settings.language'.tr()),
       subtitle: Text(currentName),
       trailing: const Icon(Icons.chevron_right),
@@ -172,8 +169,12 @@ class SettingsScreen extends ConsumerWidget {
             final isSelected = mode == currentMode;
             return ListTile(
               leading: Icon(
-                isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: isSelected ? Theme.of(dialogContext).colorScheme.primary : null,
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                color: isSelected
+                    ? Theme.of(dialogContext).colorScheme.primary
+                    : null,
               ),
               title: Text(_getThemeModeLabel(mode)),
               trailing: Icon(_getThemeIcon(mode)),
@@ -189,10 +190,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showLanguageDialog(
-    BuildContext context,
-    Locale currentLocale,
-  ) {
+  void _showLanguageDialog(BuildContext context, Locale currentLocale) {
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
@@ -201,11 +199,16 @@ class SettingsScreen extends ConsumerWidget {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: _supportedLocales.map((item) {
-            final isSelected = item.locale.languageCode == currentLocale.languageCode;
+            final isSelected =
+                item.locale.languageCode == currentLocale.languageCode;
             return ListTile(
               leading: Icon(
-                isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: isSelected ? Theme.of(dialogContext).colorScheme.primary : null,
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                color: isSelected
+                    ? Theme.of(dialogContext).colorScheme.primary
+                    : null,
               ),
               title: Text(item.name),
               onTap: () {
@@ -231,10 +234,7 @@ class SettingsScreen extends ConsumerWidget {
         height: 64,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              AppTheme.primaryColor,
-              AppTheme.secondaryColor,
-            ],
+            colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -309,7 +309,9 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
         setState(() {
           _isTesting = false;
           _testSuccess = true;
-          _testResult = 'settings.apiTestSuccess'.tr(args: [stocks.length.toString()]);
+          _testResult = 'settings.apiTestSuccess'.tr(
+            args: [stocks.length.toString()],
+          );
         });
       }
     } catch (e) {
@@ -418,9 +420,9 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
         _testResult = null;
         _testSuccess = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('settings.apiTokenSaved'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('settings.apiTokenSaved'.tr())));
     }
   }
 
@@ -437,9 +439,9 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
         _testResult = null;
         _testSuccess = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('settings.apiTokenCleared'.tr())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('settings.apiTokenCleared'.tr())));
     }
   }
 
@@ -470,11 +472,15 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
         ListTile(
           leading: Icon(
             _hasToken ? Icons.key_rounded : Icons.key_off_rounded,
-            color: _hasToken ? Colors.green : theme.colorScheme.onSurfaceVariant,
+            color: _hasToken
+                ? Colors.green
+                : theme.colorScheme.onSurfaceVariant,
           ),
           title: Text('settings.apiToken'.tr()),
           subtitle: Text(
-            _hasToken ? 'settings.apiTokenSet'.tr() : 'settings.apiTokenNotSet'.tr(),
+            _hasToken
+                ? 'settings.apiTokenSet'.tr()
+                : 'settings.apiTokenNotSet'.tr(),
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: _showTokenDialog,
@@ -495,7 +501,9 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
                         )
                       : const Icon(Icons.wifi_tethering),
                   label: Text(
-                    _isTesting ? 'settings.apiTesting'.tr() : 'settings.apiTestConnection'.tr(),
+                    _isTesting
+                        ? 'settings.apiTesting'.tr()
+                        : 'settings.apiTestConnection'.tr(),
                   ),
                 ),
               ),

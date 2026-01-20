@@ -44,8 +44,17 @@ class S {
   static const String todayWatchlistStatus = '自選狀態';
   static const String todayUpdateData = '更新資料';
   static const String todayStartingUpdate = '開始更新...';
+  static const String todayPriceAlert = '價格提醒';
   static String todayLastUpdate(String time) => '最後更新: $time';
   static String todayUpdateFailed(String error) => '更新失敗: $error';
+
+  // ==================================================
+  // News Screen
+  // ==================================================
+  static const String newsTitle = '市場新聞';
+  static String newsMinutesAgo(int minutes) => '$minutes 分鐘前';
+  static String newsHoursAgo(int hours) => '$hours 小時前';
+  static String newsDaysAgo(int days) => '$days 天前';
 
   // ==================================================
   // Scan Screen
@@ -168,11 +177,13 @@ class S {
   // Accessibility
   // ==================================================
   static String accessibilityStock(String symbol) => '股票 $symbol';
-  static String accessibilityPrice(double price) => '價格 ${price.toStringAsFixed(2)} 元';
+  static String accessibilityPrice(double price) =>
+      '價格 ${price.toStringAsFixed(2)} 元';
   static String accessibilityPriceChange(double change) {
     final direction = change >= 0 ? '上漲' : '下跌';
     return '$direction ${change.abs().toStringAsFixed(2)} 百分比';
   }
+
   static String accessibilityScore(int score) => '評分 $score 分';
   static const String accessibilityAddToWatchlist = '加入自選';
   static const String accessibilityRemoveFromWatchlist = '從自選移除';

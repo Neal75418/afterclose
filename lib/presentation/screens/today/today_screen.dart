@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -34,7 +35,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AfterClose'),
+        title: const Text(S.appName),
         actions: [
           if (state.isUpdating)
             const Padding(
@@ -49,17 +50,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _runUpdate,
-              tooltip: '更新資料',
+              tooltip: S.todayUpdateData,
             ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => context.push('/alerts'),
-            tooltip: '價格提醒',
+            tooltip: S.todayPriceAlert,
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/settings'),
-            tooltip: '設定',
+            tooltip: S.settings,
           ),
         ],
       ),
@@ -115,7 +116,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               child: Text(
-                '最後更新: ${_formatDateTime(state.lastUpdate!)}',
+                S.todayLastUpdate(S.dateFormat(state.lastUpdate!)),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -132,7 +133,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 const Icon(Icons.trending_up, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  '今日推薦 Top 10',
+                  S.todayTop10,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -198,7 +199,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   const Icon(Icons.star, size: 20, color: Colors.amber),
                   const SizedBox(width: 8),
                   Text(
-                    '自選狀態',
+                    S.todayWatchlistStatus,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -237,7 +238,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ),
                 subtitle: status.hasSignal
                     ? Text(
-                        '有訊號: ${status.signalType ?? "異常"}',
+                        S.signalType(status.signalType),
                         style: TextStyle(color: theme.colorScheme.primary),
                       )
                     : null,
@@ -283,16 +284,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('更新失敗: $e'),
+            content: Text(S.todayUpdateFailed(e.toString())),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
         );
       }
     }
-  }
-
-  String _formatDateTime(DateTime dt) {
-    return '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

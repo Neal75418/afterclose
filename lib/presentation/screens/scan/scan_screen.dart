@@ -117,12 +117,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   : state.stocks.isEmpty
                   ? EmptyStates.noFilterResults(
                       onClearFilter: () {
-                        ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+                        ref
+                            .read(scanProvider.notifier)
+                            .setFilter(ScanFilter.all);
                       },
                     )
                   : ListView.builder(
                       // Performance optimizations
-                      cacheExtent: 500, // Pre-render more items for smoother scroll
+                      cacheExtent:
+                          500, // Pre-render more items for smoother scroll
                       addAutomaticKeepAlives: false, // Reduce memory usage
                       itemCount: state.stocks.length,
                       itemBuilder: (context, index) {
@@ -130,100 +133,101 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                         // RepaintBoundary isolates each card for better scroll performance
                         return RepaintBoundary(
                           child: Slidable(
-                          key: ValueKey(stock.symbol),
-                          // Left swipe → View details
-                          startActionPane: ActionPane(
-                            motion: const BehindMotion(),
-                            extentRatio: 0.25,
-                            children: [
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  context.push('/stock/${stock.symbol}');
-                                },
-                                backgroundColor: AppTheme.primaryColor,
-                                foregroundColor: Colors.white,
-                                icon: Icons.visibility_outlined,
-                                label: '查看',
-                                borderRadius: const BorderRadius.only(
-                                  topRight: Radius.circular(16),
-                                  bottomRight: Radius.circular(16),
+                            key: ValueKey(stock.symbol),
+                            // Left swipe → View details
+                            startActionPane: ActionPane(
+                              motion: const BehindMotion(),
+                              extentRatio: 0.25,
+                              children: [
+                                SlidableAction(
+                                  onPressed: (_) {
+                                    HapticFeedback.lightImpact();
+                                    context.push('/stock/${stock.symbol}');
+                                  },
+                                  backgroundColor: AppTheme.primaryColor,
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.visibility_outlined,
+                                  label: '查看',
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(16),
+                                    bottomRight: Radius.circular(16),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          // Right swipe → Toggle watchlist
-                          endActionPane: ActionPane(
-                            motion: const BehindMotion(),
-                            extentRatio: 0.25,
-                            children: [
-                              SlidableAction(
-                                onPressed: (_) {
-                                  HapticFeedback.lightImpact();
-                                  ref
-                                      .read(scanProvider.notifier)
-                                      .toggleWatchlist(stock.symbol);
-                                },
-                                backgroundColor: stock.isInWatchlist
-                                    ? Colors.red.shade400
-                                    : Colors.amber,
-                                foregroundColor: Colors.white,
-                                icon: stock.isInWatchlist
-                                    ? Icons.star_outline
-                                    : Icons.star,
-                                label: stock.isInWatchlist ? '移除' : '收藏',
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(16),
-                                  bottomLeft: Radius.circular(16),
+                              ],
+                            ),
+                            // Right swipe → Toggle watchlist
+                            endActionPane: ActionPane(
+                              motion: const BehindMotion(),
+                              extentRatio: 0.25,
+                              children: [
+                                SlidableAction(
+                                  onPressed: (_) {
+                                    HapticFeedback.lightImpact();
+                                    ref
+                                        .read(scanProvider.notifier)
+                                        .toggleWatchlist(stock.symbol);
+                                  },
+                                  backgroundColor: stock.isInWatchlist
+                                      ? Colors.red.shade400
+                                      : Colors.amber,
+                                  foregroundColor: Colors.white,
+                                  icon: stock.isInWatchlist
+                                      ? Icons.star_outline
+                                      : Icons.star,
+                                  label: stock.isInWatchlist ? '移除' : '收藏',
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    bottomLeft: Radius.circular(16),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                            child: StockCard(
+                              symbol: stock.symbol,
+                              stockName: stock.stockName,
+                              latestClose: stock.latestClose,
+                              priceChange: stock.priceChange,
+                              score: stock.score,
+                              reasons: stock.reasons
+                                  .map((r) => r.reasonType)
+                                  .toList(),
+                              trendState: stock.trendState,
+                              isInWatchlist: stock.isInWatchlist,
+                              recentPrices: stock.recentPrices,
+                              onTap: () =>
+                                  context.push('/stock/${stock.symbol}'),
+                              onLongPress: () {
+                                showStockPreviewSheet(
+                                  context: context,
+                                  data: StockPreviewData(
+                                    symbol: stock.symbol,
+                                    stockName: stock.stockName,
+                                    latestClose: stock.latestClose,
+                                    priceChange: stock.priceChange,
+                                    score: stock.score,
+                                    trendState: stock.trendState,
+                                    reasons: stock.reasons
+                                        .map((r) => r.reasonType)
+                                        .toList(),
+                                    isInWatchlist: stock.isInWatchlist,
+                                  ),
+                                  onViewDetails: () =>
+                                      context.push('/stock/${stock.symbol}'),
+                                  onToggleWatchlist: () {
+                                    ref
+                                        .read(scanProvider.notifier)
+                                        .toggleWatchlist(stock.symbol);
+                                  },
+                                );
+                              },
+                              onWatchlistTap: () {
+                                HapticFeedback.lightImpact();
+                                ref
+                                    .read(scanProvider.notifier)
+                                    .toggleWatchlist(stock.symbol);
+                              },
+                            ),
                           ),
-                          child: StockCard(
-                            symbol: stock.symbol,
-                            stockName: stock.stockName,
-                            latestClose: stock.latestClose,
-                            priceChange: stock.priceChange,
-                            score: stock.score,
-                            reasons: stock.reasons
-                                .map((r) => r.reasonType)
-                                .toList(),
-                            trendState: stock.trendState,
-                            isInWatchlist: stock.isInWatchlist,
-                            recentPrices: stock.recentPrices,
-                            onTap: () => context.push('/stock/${stock.symbol}'),
-                            onLongPress: () {
-                              showStockPreviewSheet(
-                                context: context,
-                                data: StockPreviewData(
-                                  symbol: stock.symbol,
-                                  stockName: stock.stockName,
-                                  latestClose: stock.latestClose,
-                                  priceChange: stock.priceChange,
-                                  score: stock.score,
-                                  trendState: stock.trendState,
-                                  reasons: stock.reasons
-                                      .map((r) => r.reasonType)
-                                      .toList(),
-                                  isInWatchlist: stock.isInWatchlist,
-                                ),
-                                onViewDetails: () =>
-                                    context.push('/stock/${stock.symbol}'),
-                                onToggleWatchlist: () {
-                                  ref
-                                      .read(scanProvider.notifier)
-                                      .toggleWatchlist(stock.symbol);
-                                },
-                              );
-                            },
-                            onWatchlistTap: () {
-                              HapticFeedback.lightImpact();
-                              ref
-                                  .read(scanProvider.notifier)
-                                  .toggleWatchlist(stock.symbol);
-                            },
-                          ),
-                        ),
                         );
                       },
                     ),

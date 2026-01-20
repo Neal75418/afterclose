@@ -37,7 +37,10 @@ class TwseClient {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => TwseDailyPrice.tryFromJson(json as Map<String, dynamic>))
+            .map(
+              (json) =>
+                  TwseDailyPrice.tryFromJson(json as Map<String, dynamic>),
+            )
             .whereType<TwseDailyPrice>()
             .toList();
       }
@@ -65,7 +68,10 @@ class TwseClient {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => TwseInstitutional.tryFromJson(json as Map<String, dynamic>))
+            .map(
+              (json) =>
+                  TwseInstitutional.tryFromJson(json as Map<String, dynamic>),
+            )
             .whereType<TwseInstitutional>()
             .toList();
       }
@@ -116,7 +122,11 @@ class TwseClient {
 
     // Validate month
     if (month < 1 || month > 12) {
-      throw ArgumentError.value(month, 'month', 'Month must be between 1 and 12');
+      throw ArgumentError.value(
+        month,
+        'month',
+        'Month must be between 1 and 12',
+      );
     }
 
     // Prevent future dates
@@ -131,11 +141,7 @@ class TwseClient {
 
       final response = await _dio.get(
         'https://www.twse.com.tw/exchangeReport/STOCK_DAY',
-        queryParameters: {
-          'response': 'json',
-          'date': dateStr,
-          'stockNo': code,
-        },
+        queryParameters: {'response': 'json', 'date': dateStr, 'stockNo': code},
       );
 
       if (response.statusCode == 200) {
@@ -289,7 +295,10 @@ class TwseClient {
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
         return data
-            .map((json) => TwseMarginTrading.tryFromJson(json as Map<String, dynamic>))
+            .map(
+              (json) =>
+                  TwseMarginTrading.tryFromJson(json as Map<String, dynamic>),
+            )
             .whereType<TwseMarginTrading>()
             .toList();
       }
@@ -423,7 +432,9 @@ class TwseInstitutional {
     }
 
     return TwseInstitutional(
-      date: dateStr != null ? TwseDailyPrice._parseRocDate(dateStr.toString()) : DateTime.now(),
+      date: dateStr != null
+          ? TwseDailyPrice._parseRocDate(dateStr.toString())
+          : DateTime.now(),
       code: code.toString(),
       name: json['Name']?.toString() ?? '',
       foreignBuy: _parseDouble(json['ForeignInvestorsBuy']) ?? 0,
@@ -496,7 +507,9 @@ class TwseMarginTrading {
     }
 
     return TwseMarginTrading(
-      date: dateStr != null ? TwseDailyPrice._parseRocDate(dateStr.toString()) : DateTime.now(),
+      date: dateStr != null
+          ? TwseDailyPrice._parseRocDate(dateStr.toString())
+          : DateTime.now(),
       code: code.toString(),
       name: json['Name']?.toString() ?? '',
       marginBuy: _parseDouble(json['MarginPurchase']) ?? 0,
@@ -519,11 +532,11 @@ class TwseMarginTrading {
   final DateTime date;
   final String code;
   final String name;
-  final double marginBuy;   // 融資買進
-  final double marginSell;  // 融資賣出
+  final double marginBuy; // 融資買進
+  final double marginSell; // 融資賣出
   final double marginBalance; // 融資餘額
-  final double shortBuy;    // 融券買進 (回補)
-  final double shortSell;   // 融券賣出
+  final double shortBuy; // 融券買進 (回補)
+  final double shortSell; // 融券賣出
   final double shortBalance; // 融券餘額
 
   /// Net margin change (融資增減)

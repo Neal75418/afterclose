@@ -1,9 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 
 import '../../helpers/price_data_generators.dart';
@@ -105,8 +102,9 @@ void main() {
         // Need swingWindow * 2 = 40 days minimum for swing detection
         final prices = generateSwingPrices(days: 50);
 
-        final (support, resistance) =
-            analysisService.findSupportResistance(prices);
+        final (support, resistance) = analysisService.findSupportResistance(
+          prices,
+        );
 
         expect(support, isNotNull);
         expect(resistance, isNotNull);
@@ -117,8 +115,9 @@ void main() {
         // Less than swingWindow * 2 = 40 days
         final prices = generateFlatPrices(days: 30, basePrice: 100.0);
 
-        final (support, resistance) =
-            analysisService.findSupportResistance(prices);
+        final (support, resistance) = analysisService.findSupportResistance(
+          prices,
+        );
 
         expect(support, isNull);
         expect(resistance, isNull);
@@ -263,7 +262,7 @@ void main() {
 
     group('buildContext', () {
       test('should build context from analysis result', () {
-        final result = const AnalysisResult(
+        const result = AnalysisResult(
           trendState: TrendState.up,
           reversalState: ReversalState.none,
           supportLevel: 95.0,

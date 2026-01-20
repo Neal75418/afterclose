@@ -86,7 +86,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       final themeModeIndex = prefs.getInt(_keyThemeMode);
       final localeString = prefs.getString(_keyLocale);
 
-      final themeMode = themeModeIndex != null && themeModeIndex < ThemeMode.values.length
+      final themeMode =
+          themeModeIndex != null && themeModeIndex < ThemeMode.values.length
           ? ThemeMode.values[themeModeIndex]
           : ThemeMode.system;
 
@@ -99,7 +100,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       );
 
       if (kDebugMode) {
-        print('Settings loaded: theme=$themeMode, locale=${locale.displayName}');
+        print(
+          'Settings loaded: theme=$themeMode, locale=${locale.displayName}',
+        );
       }
     } catch (e) {
       if (kDebugMode) {
@@ -156,10 +159,11 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 // ==================================================
 
 /// Settings provider
-final settingsProvider =
-    StateNotifierProvider<SettingsNotifier, SettingsState>((ref) {
-  return SettingsNotifier();
-});
+final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
+  (ref) {
+    return SettingsNotifier();
+  },
+);
 
 /// Theme mode provider (convenience)
 final themeModeProvider = Provider<ThemeMode>((ref) {
@@ -219,9 +223,7 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
   ApiTokenNotifier() : super(const ApiTokenState());
 
   /// Load token from secure storage
-  Future<void> loadToken(
-    Future<String?> Function() getToken,
-  ) async {
+  Future<void> loadToken(Future<String?> Function() getToken) async {
     final token = await getToken();
     state = state.copyWith(token: token, clearToken: token == null);
   }
@@ -232,22 +234,30 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
     Future<void> Function(String) setToken,
   ) async {
     await setToken(token);
-    state = state.copyWith(token: token, clearTestResult: true, clearTestError: true);
+    state = state.copyWith(
+      token: token,
+      clearTestResult: true,
+      clearTestError: true,
+    );
   }
 
   /// Clear token from secure storage
-  Future<void> clearToken(
-    Future<void> Function() deleteToken,
-  ) async {
+  Future<void> clearToken(Future<void> Function() deleteToken) async {
     await deleteToken();
-    state = state.copyWith(clearToken: true, clearTestResult: true, clearTestError: true);
+    state = state.copyWith(
+      clearToken: true,
+      clearTestResult: true,
+      clearTestError: true,
+    );
   }
 
   /// Test connection with current token
-  Future<void> testConnection(
-    Future<int> Function() testFn,
-  ) async {
-    state = state.copyWith(isLoading: true, clearTestResult: true, clearTestError: true);
+  Future<void> testConnection(Future<int> Function() testFn) async {
+    state = state.copyWith(
+      isLoading: true,
+      clearTestResult: true,
+      clearTestError: true,
+    );
     try {
       final count = await testFn();
       state = state.copyWith(isLoading: false, testResult: count);
@@ -263,7 +273,8 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
 }
 
 /// API Token provider
-final apiTokenProvider =
-    StateNotifierProvider<ApiTokenNotifier, ApiTokenState>((ref) {
-  return ApiTokenNotifier();
-});
+final apiTokenProvider = StateNotifierProvider<ApiTokenNotifier, ApiTokenState>(
+  (ref) {
+    return ApiTokenNotifier();
+  },
+);

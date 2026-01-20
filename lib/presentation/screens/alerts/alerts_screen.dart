@@ -32,14 +32,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('alert.title'.tr()),
-      ),
+      appBar: AppBar(title: Text('alert.title'.tr())),
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : state.alerts.isEmpty
-              ? _buildEmptyState()
-              : _buildAlertsList(state.alerts, theme),
+          ? _buildEmptyState()
+          : _buildAlertsList(state.alerts, theme),
     );
   }
 
@@ -118,18 +116,14 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
             ],
           ),
         ).animate().fadeIn(
-              delay: Duration(milliseconds: 50 * index),
-              duration: 300.ms,
-            );
+          delay: Duration(milliseconds: 50 * index),
+          duration: 300.ms,
+        );
       },
     );
   }
 
-  Widget _buildAlertTile(
-    PriceAlertEntry alert,
-    ThemeData theme,
-    int index,
-  ) {
+  Widget _buildAlertTile(PriceAlertEntry alert, ThemeData theme, int index) {
     final alertType = AlertType.fromValue(alert.alertType);
     final isActive = alert.isActive;
     final wasTriggered = alert.triggeredAt != null;
@@ -206,14 +200,14 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                     wasTriggered
                         ? 'alert.triggered'.tr()
                         : isActive
-                            ? 'alert.active'.tr()
-                            : 'alert.inactive'.tr(),
+                        ? 'alert.active'.tr()
+                        : 'alert.inactive'.tr(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: wasTriggered
                           ? Colors.orange
                           : isActive
-                              ? Colors.green
-                              : Colors.grey,
+                          ? Colors.green
+                          : Colors.grey,
                     ),
                   ),
                 ),
@@ -263,12 +257,15 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
 
   String _getAlertDescription(PriceAlertEntry alert, AlertType type) {
     return switch (type) {
-      AlertType.above => 'alert.priceAbove'
-          .tr(args: [alert.targetValue.toStringAsFixed(2)]),
-      AlertType.below => 'alert.priceBelow'
-          .tr(args: [alert.targetValue.toStringAsFixed(2)]),
-      AlertType.changePct => 'alert.changeAbove'
-          .tr(args: [alert.targetValue.toStringAsFixed(1)]),
+      AlertType.above => 'alert.priceAbove'.tr(
+        args: [alert.targetValue.toStringAsFixed(2)],
+      ),
+      AlertType.below => 'alert.priceBelow'.tr(
+        args: [alert.targetValue.toStringAsFixed(2)],
+      ),
+      AlertType.changePct => 'alert.changeAbove'.tr(
+        args: [alert.targetValue.toStringAsFixed(1)],
+      ),
     };
   }
 

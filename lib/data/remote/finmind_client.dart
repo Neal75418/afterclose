@@ -17,10 +17,10 @@ class FinMindClient {
     String? token,
     int maxRetries = 3,
     Duration baseDelay = const Duration(milliseconds: 500),
-  })  : _dio = dio ?? _createDio(),
-        _token = token,
-        _maxRetries = maxRetries,
-        _baseDelay = baseDelay;
+  }) : _dio = dio ?? _createDio(),
+       _token = token,
+       _maxRetries = maxRetries,
+       _baseDelay = baseDelay;
 
   static const String baseUrl = 'https://api.finmindtrade.com/api/v4/data';
 
@@ -165,7 +165,10 @@ class FinMindClient {
         // Convert to appropriate exception
         if (e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout) {
-          throw NetworkException('Connection timeout after $attempt attempts', e);
+          throw NetworkException(
+            'Connection timeout after $attempt attempts',
+            e,
+          );
         }
         if (e.response?.statusCode == 429) {
           throw const RateLimitException();
@@ -175,7 +178,9 @@ class FinMindClient {
         rethrow; // Don't retry rate limit errors
       } on ApiException catch (e) {
         // Don't retry client errors (except rate limit which is handled above)
-        if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+        if (e.statusCode != null &&
+            e.statusCode! >= 400 &&
+            e.statusCode! < 500) {
           rethrow;
         }
         lastError = e;
@@ -226,7 +231,9 @@ class FinMindClient {
     final exponentialDelay = _baseDelay.inMilliseconds * (1 << (attempt - 1));
     // Add jitter: ±25% of the delay
     final jitter = (_random.nextDouble() - 0.5) * 0.5 * exponentialDelay;
-    final totalDelay = Duration(milliseconds: (exponentialDelay + jitter).round());
+    final totalDelay = Duration(
+      milliseconds: (exponentialDelay + jitter).round(),
+    );
     await Future.delayed(totalDelay);
   }
 

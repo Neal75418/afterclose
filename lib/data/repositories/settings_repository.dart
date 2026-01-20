@@ -12,12 +12,15 @@ class SettingsRepository {
   SettingsRepository({
     required AppDatabase database,
     FlutterSecureStorage? secureStorage,
-  })  : _db = database,
-        _secureStorage = secureStorage ??
-            const FlutterSecureStorage(
-              aOptions: AndroidOptions(encryptedSharedPreferences: true),
-              iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
-            );
+  }) : _db = database,
+       _secureStorage =
+           secureStorage ??
+           const FlutterSecureStorage(
+             aOptions: AndroidOptions(encryptedSharedPreferences: true),
+             iOptions: IOSOptions(
+               accessibility: KeychainAccessibility.first_unlock,
+             ),
+           );
 
   final AppDatabase _db;
   final FlutterSecureStorage _secureStorage;
@@ -33,7 +36,10 @@ class SettingsRepository {
 
   /// Save the FinMind token (to secure storage)
   Future<void> setFinMindToken(String token) {
-    return _secureStorage.write(key: SecureStorageKeys.finmindToken, value: token);
+    return _secureStorage.write(
+      key: SecureStorageKeys.finmindToken,
+      value: token,
+    );
   }
 
   /// Clear the FinMind token (from secure storage)

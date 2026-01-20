@@ -156,15 +156,10 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
       // Get all analyses for today (with score > 0)
       final analyses = await _db.getAnalysisForDate(normalizedToday);
-      final validAnalyses =
-          analyses.where((a) => a.score > 0).toList();
+      final validAnalyses = analyses.where((a) => a.score > 0).toList();
 
       if (validAnalyses.isEmpty) {
-        state = state.copyWith(
-          allStocks: [],
-          stocks: [],
-          isLoading: false,
-        );
+        state = state.copyWith(allStocks: [], stocks: [], isLoading: false);
         return;
       }
 

@@ -30,85 +30,90 @@ class EmptyState extends StatelessWidget {
     final effectiveColor = iconColor ?? theme.colorScheme.primary;
 
     return Semantics(
-      label: '$title${subtitle != null ? ', $subtitle' : ''}${actionLabel != null ? ', 按鈕: $actionLabel' : ''}',
+      label:
+          '$title${subtitle != null ? ', $subtitle' : ''}${actionLabel != null ? ', 按鈕: $actionLabel' : ''}',
       child: Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated icon with background
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    effectiveColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                    effectiveColor.withValues(alpha: isDark ? 0.05 : 0.03),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: effectiveColor.withValues(alpha: 0.2),
-                  width: 2,
-                ),
-              ),
-              child: Icon(
-                icon,
-                size: 56,
-                color: effectiveColor.withValues(alpha: 0.7),
-              ),
-            )
-                .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                .scale(
-                  begin: const Offset(1, 1),
-                  end: const Offset(1.05, 1.05),
-                  duration: 2.seconds,
-                  curve: Curves.easeInOut,
-                ),
-            const SizedBox(height: 24),
-            // Title
-            Text(
-              title,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-              textAlign: TextAlign.center,
-            )
-                .animate()
-                .fadeIn(delay: 200.ms, duration: 400.ms)
-                .slideY(begin: 0.2, duration: 400.ms),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                subtitle!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              )
-                  .animate()
-                  .fadeIn(delay: 300.ms, duration: 400.ms)
-                  .slideY(begin: 0.2, duration: 400.ms),
-            ],
-            if (actionLabel != null && onAction != null) ...[
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated icon with background
+              Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          effectiveColor.withValues(alpha: isDark ? 0.15 : 0.1),
+                          effectiveColor.withValues(
+                            alpha: isDark ? 0.05 : 0.03,
+                          ),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: effectiveColor.withValues(alpha: 0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 56,
+                      color: effectiveColor.withValues(alpha: 0.7),
+                    ),
+                  )
+                  .animate(
+                    onPlay: (controller) => controller.repeat(reverse: true),
+                  )
+                  .scale(
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.05, 1.05),
+                    duration: 2.seconds,
+                    curve: Curves.easeInOut,
+                  ),
               const SizedBox(height: 24),
-              FilledButton.tonal(
-                onPressed: onAction,
-                child: Text(actionLabel!),
-              )
+              // Title
+              Text(
+                    title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  )
                   .animate()
-                  .fadeIn(delay: 400.ms, duration: 400.ms)
+                  .fadeIn(delay: 200.ms, duration: 400.ms)
                   .slideY(begin: 0.2, duration: 400.ms),
+              if (subtitle != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                      subtitle!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    )
+                    .animate()
+                    .fadeIn(delay: 300.ms, duration: 400.ms)
+                    .slideY(begin: 0.2, duration: 400.ms),
+              ],
+              if (actionLabel != null && onAction != null) ...[
+                const SizedBox(height: 24),
+                FilledButton.tonal(
+                      onPressed: onAction,
+                      child: Text(actionLabel!),
+                    )
+                    .animate()
+                    .fadeIn(delay: 400.ms, duration: 400.ms)
+                    .slideY(begin: 0.2, duration: 400.ms),
+              ],
             ],
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -176,7 +181,7 @@ class EmptyStates {
       subtitle: message,
       actionLabel: onRetry != null ? S.retry : null,
       onAction: onRetry,
-      iconColor: AppTheme.upColor,
+      iconColor: AppTheme.errorColor,
     );
   }
 
@@ -188,7 +193,7 @@ class EmptyStates {
       subtitle: S.emptyNetworkErrorHint,
       actionLabel: onRetry != null ? S.retry : null,
       onAction: onRetry,
-      iconColor: AppTheme.upColor,
+      iconColor: AppTheme.errorColor,
     );
   }
 }

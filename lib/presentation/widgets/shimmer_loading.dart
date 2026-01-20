@@ -1,12 +1,81 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+// ==================================================
+// Shimmer Dimension Constants
+// ==================================================
+
+/// Common shimmer dimensions for consistent UI
+abstract final class ShimmerDimensions {
+  // Card padding and margin
+  static const cardMarginH = 16.0;
+  static const cardMarginV = 8.0;
+  static const cardPadding = 16.0;
+  static const cardRadius = 16.0;
+
+  // Stock card skeleton
+  static const iconSize = 48.0;
+  static const iconRadius = 12.0;
+  static const symbolWidth = 80.0;
+  static const symbolHeight = 18.0;
+  static const nameWidth = 120.0;
+  static const nameHeight = 14.0;
+  static const tagWidth1 = 50.0;
+  static const tagWidth2 = 60.0;
+  static const tagHeight = 20.0;
+  static const tagRadius = 10.0;
+  static const priceWidth = 70.0;
+  static const priceHeight = 20.0;
+  static const changeWidth = 50.0;
+  static const changeHeight = 16.0;
+
+  // Detail page skeleton
+  static const headerTitleWidth = 150.0;
+  static const headerTitleHeight = 28.0;
+  static const headerSubWidth = 80.0;
+  static const headerSubHeight = 20.0;
+  static const headerPriceWidth = 100.0;
+  static const headerPriceHeight = 32.0;
+  static const headerChangeWidth = 70.0;
+  static const headerChangeHeight = 24.0;
+  static const chipWidth = 100.0;
+  static const chipHeight = 48.0;
+  static const sectionTitleWidth = 80.0;
+  static const sectionTitleHeight = 20.0;
+  static const cardHeight = 100.0;
+  static const listItemHeight = 72.0;
+
+  // News card skeleton
+  static const newsTitleHeight = 18.0;
+  static const newsTitleWidth2 = 200.0;
+  static const newsMetaWidth1 = 60.0;
+  static const newsMetaWidth2 = 80.0;
+  static const newsMetaHeight = 14.0;
+
+  // Common spacing
+  static const spacingXs = 4.0;
+  static const spacingSm = 6.0;
+  static const spacingMd = 8.0;
+  static const spacingLg = 12.0;
+  static const spacingXl = 16.0;
+  static const spacingXxl = 24.0;
+}
+
+/// Shimmer colors for light and dark themes
+abstract final class ShimmerColors {
+  static Color baseColor(bool isDark) =>
+      isDark ? Colors.grey[800]! : Colors.grey[300]!;
+  static Color highlightColor(bool isDark) =>
+      isDark ? Colors.grey[700]! : Colors.grey[100]!;
+}
+
+// ==================================================
+// Shimmer Widgets
+// ==================================================
+
 /// Shimmer loading skeleton for stock list
 class StockListShimmer extends StatelessWidget {
-  const StockListShimmer({
-    super.key,
-    this.itemCount = 5,
-  });
+  const StockListShimmer({super.key, this.itemCount = 5});
 
   final int itemCount;
 
@@ -15,8 +84,8 @@ class StockListShimmer extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+      baseColor: ShimmerColors.baseColor(isDark),
+      highlightColor: ShimmerColors.highlightColor(isDark),
       child: ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -34,24 +103,27 @@ class _StockCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(
+        horizontal: ShimmerDimensions.cardMarginH,
+        vertical: ShimmerDimensions.cardMarginV,
+      ),
+      padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ShimmerDimensions.cardRadius),
       ),
       child: Row(
         children: [
           // Leading icon placeholder
           Container(
-            width: 48,
-            height: 48,
+            width: ShimmerDimensions.iconSize,
+            height: ShimmerDimensions.iconSize,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(ShimmerDimensions.iconRadius),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: ShimmerDimensions.spacingLg),
           // Content area
           Expanded(
             child: Column(
@@ -59,42 +131,50 @@ class _StockCardSkeleton extends StatelessWidget {
               children: [
                 // Symbol
                 Container(
-                  width: 80,
-                  height: 18,
+                  width: ShimmerDimensions.symbolWidth,
+                  height: ShimmerDimensions.symbolHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.spacingXs,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ShimmerDimensions.spacingMd),
                 // Name
                 Container(
-                  width: 120,
-                  height: 14,
+                  width: ShimmerDimensions.nameWidth,
+                  height: ShimmerDimensions.nameHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.spacingXs,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: ShimmerDimensions.spacingMd),
                 // Tags
                 Row(
                   children: [
                     Container(
-                      width: 50,
-                      height: 20,
+                      width: ShimmerDimensions.tagWidth1,
+                      height: ShimmerDimensions.tagHeight,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(
+                          ShimmerDimensions.tagRadius,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: ShimmerDimensions.spacingMd),
                     Container(
-                      width: 60,
-                      height: 20,
+                      width: ShimmerDimensions.tagWidth2,
+                      height: ShimmerDimensions.tagHeight,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(
+                          ShimmerDimensions.tagRadius,
+                        ),
                       ),
                     ),
                   ],
@@ -107,20 +187,24 @@ class _StockCardSkeleton extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                width: 70,
-                height: 20,
+                width: ShimmerDimensions.priceWidth,
+                height: ShimmerDimensions.priceHeight,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.spacingXs,
+                  ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: ShimmerDimensions.spacingSm),
               Container(
-                width: 50,
-                height: 16,
+                width: ShimmerDimensions.changeWidth,
+                height: ShimmerDimensions.changeHeight,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.spacingXs,
+                  ),
                 ),
               ),
             ],
@@ -149,8 +233,8 @@ class ShimmerContainer extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+      baseColor: ShimmerColors.baseColor(isDark),
+      highlightColor: ShimmerColors.highlightColor(isDark),
       child: Container(
         width: width,
         height: height,
@@ -172,11 +256,11 @@ class StockDetailShimmer extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+      baseColor: ShimmerColors.baseColor(isDark),
+      highlightColor: ShimmerColors.highlightColor(isDark),
       child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -188,20 +272,24 @@ class StockDetailShimmer extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                        width: 150,
-                        height: 28,
+                        width: ShimmerDimensions.headerTitleWidth,
+                        height: ShimmerDimensions.headerTitleHeight,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(
+                            ShimmerDimensions.spacingSm,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: ShimmerDimensions.spacingMd),
                       Container(
-                        width: 80,
-                        height: 20,
+                        width: ShimmerDimensions.headerSubWidth,
+                        height: ShimmerDimensions.headerSubHeight,
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(
+                            ShimmerDimensions.spacingXs,
+                          ),
                         ),
                       ),
                     ],
@@ -211,91 +299,109 @@ class StockDetailShimmer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      width: 100,
-                      height: 32,
+                      width: ShimmerDimensions.headerPriceWidth,
+                      height: ShimmerDimensions.headerPriceHeight,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(
+                          ShimmerDimensions.spacingSm,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: ShimmerDimensions.spacingMd),
                     Container(
-                      width: 70,
-                      height: 24,
+                      width: ShimmerDimensions.headerChangeWidth,
+                      height: ShimmerDimensions.headerChangeHeight,
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(
+                          ShimmerDimensions.spacingXs,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: ShimmerDimensions.spacingXxl),
             // Trend chips
             Row(
               children: [
                 Container(
-                  width: 100,
-                  height: 48,
+                  width: ShimmerDimensions.chipWidth,
+                  height: ShimmerDimensions.chipHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.spacingMd,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: ShimmerDimensions.spacingMd),
                 Container(
-                  width: 100,
-                  height: 48,
+                  width: ShimmerDimensions.chipWidth,
+                  height: ShimmerDimensions.chipHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.spacingMd,
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: ShimmerDimensions.spacingXxl),
             // Section title
             Container(
-              width: 80,
-              height: 20,
+              width: ShimmerDimensions.sectionTitleWidth,
+              height: ShimmerDimensions.sectionTitleHeight,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(
+                  ShimmerDimensions.spacingXs,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ShimmerDimensions.spacingLg),
             // Card
             Container(
               width: double.infinity,
-              height: 100,
+              height: ShimmerDimensions.cardHeight,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(
+                  ShimmerDimensions.cardRadius,
+                ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: ShimmerDimensions.spacingXxl),
             // Section title
             Container(
-              width: 80,
-              height: 20,
+              width: ShimmerDimensions.sectionTitleWidth,
+              height: ShimmerDimensions.sectionTitleHeight,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(
+                  ShimmerDimensions.spacingXs,
+                ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: ShimmerDimensions.spacingLg),
             // Cards
             ...List.generate(
               3,
               (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(
+                  bottom: ShimmerDimensions.spacingMd,
+                ),
                 child: Container(
                   width: double.infinity,
-                  height: 72,
+                  height: ShimmerDimensions.listItemHeight,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.cardRadius,
+                    ),
                   ),
                 ),
               ),
@@ -309,10 +415,7 @@ class StockDetailShimmer extends StatelessWidget {
 
 /// Shimmer loading skeleton for news list
 class NewsListShimmer extends StatelessWidget {
-  const NewsListShimmer({
-    super.key,
-    this.itemCount = 5,
-  });
+  const NewsListShimmer({super.key, this.itemCount = 5});
 
   final int itemCount;
 
@@ -321,8 +424,8 @@ class NewsListShimmer extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Shimmer.fromColors(
-      baseColor: isDark ? Colors.grey[800]! : Colors.grey[300]!,
-      highlightColor: isDark ? Colors.grey[700]! : Colors.grey[100]!,
+      baseColor: ShimmerColors.baseColor(isDark),
+      highlightColor: ShimmerColors.highlightColor(isDark),
       child: ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -340,11 +443,14 @@ class _NewsCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(
+        horizontal: ShimmerDimensions.cardMarginH,
+        vertical: ShimmerDimensions.cardMarginV,
+      ),
+      padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(ShimmerDimensions.cardRadius),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,41 +458,45 @@ class _NewsCardSkeleton extends StatelessWidget {
           // Title line 1
           Container(
             width: double.infinity,
-            height: 18,
+            height: ShimmerDimensions.newsTitleHeight,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(ShimmerDimensions.spacingXs),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: ShimmerDimensions.spacingMd),
           // Title line 2
           Container(
-            width: 200,
-            height: 18,
+            width: ShimmerDimensions.newsTitleWidth2,
+            height: ShimmerDimensions.newsTitleHeight,
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(ShimmerDimensions.spacingXs),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: ShimmerDimensions.spacingLg),
           // Meta info
           Row(
             children: [
               Container(
-                width: 60,
-                height: 14,
+                width: ShimmerDimensions.newsMetaWidth1,
+                height: ShimmerDimensions.newsMetaHeight,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.spacingXs,
+                  ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: ShimmerDimensions.spacingXl),
               Container(
-                width: 80,
-                height: 14,
+                width: ShimmerDimensions.newsMetaWidth2,
+                height: ShimmerDimensions.newsMetaHeight,
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.spacingXs,
+                  ),
                 ),
               ),
             ],

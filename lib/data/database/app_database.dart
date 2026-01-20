@@ -118,9 +118,9 @@ class AppDatabase extends _$AppDatabase {
   ) async {
     if (symbols.isEmpty) return {};
 
-    final results = await (select(stockMaster)
-          ..where((t) => t.symbol.isIn(symbols)))
-        .get();
+    final results = await (select(
+      stockMaster,
+    )..where((t) => t.symbol.isIn(symbols))).get();
 
     return {for (final stock in results) stock.symbol: stock};
   }
@@ -173,7 +173,8 @@ class AppDatabase extends _$AppDatabase {
 
     // Use optimized query with subquery to get only latest price per symbol
     // This avoids fetching all historical prices (potentially millions of rows)
-    final query = '''
+    final query =
+        '''
       SELECT dp.*
       FROM daily_price dp
       INNER JOIN (
@@ -393,10 +394,11 @@ class AppDatabase extends _$AppDatabase {
   ) async {
     if (symbols.isEmpty) return {};
 
-    final results = await (select(dailyAnalysis)
-          ..where((t) => t.symbol.isIn(symbols))
-          ..where((t) => t.date.equals(date)))
-        .get();
+    final results =
+        await (select(dailyAnalysis)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.date.equals(date)))
+            .get();
 
     return {for (final analysis in results) analysis.symbol: analysis};
   }
@@ -423,14 +425,15 @@ class AppDatabase extends _$AppDatabase {
   ) async {
     if (symbols.isEmpty) return {};
 
-    final results = await (select(dailyReason)
-          ..where((t) => t.symbol.isIn(symbols))
-          ..where((t) => t.date.equals(date))
-          ..orderBy([
-            (t) => OrderingTerm.asc(t.symbol),
-            (t) => OrderingTerm.asc(t.rank),
-          ]))
-        .get();
+    final results =
+        await (select(dailyReason)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.date.equals(date))
+              ..orderBy([
+                (t) => OrderingTerm.asc(t.symbol),
+                (t) => OrderingTerm.asc(t.rank),
+              ]))
+            .get();
 
     // Group by symbol
     final grouped = <String, List<DailyReasonEntry>>{};
@@ -560,9 +563,9 @@ class AppDatabase extends _$AppDatabase {
   ) async {
     if (newsIds.isEmpty) return {};
 
-    final results = await (select(newsStockMap)
-          ..where((t) => t.newsId.isIn(newsIds)))
-        .get();
+    final results = await (select(
+      newsStockMap,
+    )..where((t) => t.newsId.isIn(newsIds))).get();
 
     // Group by newsId
     final grouped = <String, List<String>>{};

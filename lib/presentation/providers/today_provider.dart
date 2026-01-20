@@ -1,9 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+
+/// Maximum duration for daily update operation
+const _updateTimeout = Duration(minutes: 5);
 
 // ==================================================
 // Today Screen State
@@ -167,7 +172,8 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final latestPricesMap = results[1] as Map<String, DailyPriceEntry>;
       final analysesMap = results[2] as Map<String, DailyAnalysisEntry>;
       final reasonsMap = results[3] as Map<String, List<DailyReasonEntry>>;
-      final priceHistoriesMap = results[4] as Map<String, List<DailyPriceEntry>>;
+      final priceHistoriesMap =
+          results[4] as Map<String, List<DailyPriceEntry>>;
 
       // Calculate price changes using utility
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(
@@ -221,7 +227,9 @@ class TodayNotifier extends StateNotifier<TodayState> {
     }
   }
 
-  /// Run daily update
+  /// Run daily update with timeout protection
+  ///
+  /// Throws [TimeoutException] if update takes longer than [_updateTimeout].
   Future<UpdateResult> runUpdate({bool forceFetch = false}) async {
     state = state.copyWith(
       isUpdating: true,
@@ -233,18 +241,25 @@ class TodayNotifier extends StateNotifier<TodayState> {
     );
 
     try {
-      final result = await _updateService.runDailyUpdate(
-        forceFetch: forceFetch,
-        onProgress: (current, total, message) {
-          state = state.copyWith(
-            updateProgress: UpdateProgress(
-              currentStep: current,
-              totalSteps: total,
-              message: message,
-            ),
+      final result = await _updateService
+          .runDailyUpdate(
+            forceFetch: forceFetch,
+            onProgress: (current, total, message) {
+              state = state.copyWith(
+                updateProgress: UpdateProgress(
+                  currentStep: current,
+                  totalSteps: total,
+                  message: message,
+                ),
+              );
+            },
+          )
+          .timeout(
+            _updateTimeout,
+            onTimeout: () {
+              throw TimeoutException('更新作業超時，請檢查網路連線後重試', _updateTimeout);
+            },
           );
-        },
-      );
 
       state = state.copyWith(isUpdating: false, updateProgress: null);
 
@@ -252,6 +267,13 @@ class TodayNotifier extends StateNotifier<TodayState> {
       await loadData();
 
       return result;
+    } on TimeoutException catch (e) {
+      state = state.copyWith(
+        isUpdating: false,
+        updateProgress: null,
+        error: e.message ?? '更新超時',
+      );
+      rethrow;
     } catch (e) {
       state = state.copyWith(
         isUpdating: false,
