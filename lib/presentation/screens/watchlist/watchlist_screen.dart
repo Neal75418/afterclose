@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/score_ring.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
 /// Watchlist screen - shows user's selected stocks
 class WatchlistScreen extends ConsumerStatefulWidget {
@@ -13,86 +18,20 @@ class WatchlistScreen extends ConsumerStatefulWidget {
 }
 
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
-  List<WatchlistItemData> _items = [];
-  bool _isLoading = true;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
-    _loadData();
+    // Load data on first build
+    Future.microtask(() => ref.read(watchlistProvider.notifier).loadData());
   }
 
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final db = ref.read(databaseProvider);
-      final today = DateTime.now();
-      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
-
-      final watchlist = await db.getWatchlist();
-      final items = <WatchlistItemData>[];
-
-      for (final item in watchlist) {
-        final stock = await db.getStock(item.symbol);
-        final latestPrice = await db.getLatestPrice(item.symbol);
-        final analysis = await db.getAnalysis(item.symbol, normalizedToday);
-        final reasons = await db.getReasons(item.symbol, normalizedToday);
-
-        // Calculate price change
-        double? priceChange;
-        if (latestPrice?.close != null) {
-          final history = await db.getPriceHistory(
-            item.symbol,
-            startDate: normalizedToday.subtract(const Duration(days: 5)),
-            endDate: normalizedToday,
-          );
-          if (history.length >= 2) {
-            final prevClose = history[history.length - 2].close;
-            if (prevClose != null && prevClose > 0) {
-              priceChange =
-                  ((latestPrice!.close! - prevClose) / prevClose) * 100;
-            }
-          }
-        }
-
-        items.add(
-          WatchlistItemData(
-            symbol: item.symbol,
-            stockName: stock?.name,
-            latestClose: latestPrice?.close,
-            priceChange: priceChange,
-            trendState: analysis?.trendState,
-            score: analysis?.score,
-            hasSignal: reasons.isNotEmpty,
-            addedAt: item.createdAt,
-          ),
-        );
-      }
-
-      setState(() {
-        _items = items;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
+  Future<void> _onRefresh() async {
+    await ref.read(watchlistProvider.notifier).loadData();
   }
 
   Future<void> _removeFromWatchlist(String symbol) async {
-    final db = ref.read(databaseProvider);
-    await db.removeFromWatchlist(symbol);
-
-    setState(() {
-      _items.removeWhere((item) => item.symbol == symbol);
-    });
+    final notifier = ref.read(watchlistProvider.notifier);
+    await notifier.removeStock(symbol);
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,8 +41,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           action: SnackBarAction(
             label: '復原',
             onPressed: () async {
-              await db.addToWatchlist(symbol);
-              _loadData();
+              await notifier.restoreStock(symbol);
             },
           ),
         ),
@@ -113,7 +51,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final state = ref.watch(watchlistProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -126,61 +64,29 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(_error!),
-                    const SizedBox(height: 16),
-                    FilledButton(onPressed: _loadData, child: const Text('重試')),
-                  ],
-                ),
-              )
-            : _items.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.star_outline,
-                      size: 64,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '尚無自選股票',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+      body: ThemedRefreshIndicator(
+        onRefresh: _onRefresh,
+        child: state.isLoading
+            ? const StockListShimmer(itemCount: 5)
+            : state.error != null
+                ? EmptyStates.error(
+                    message: state.error!,
+                    onRetry: _onRefresh,
+                  )
+                : state.items.isEmpty
+                    ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
+                    : ListView.builder(
+                        // Performance optimizations
+                        cacheExtent: 500,
+                        addAutomaticKeepAlives: false,
+                        itemCount: state.items.length,
+                        itemBuilder: (context, index) {
+                          final item = state.items[index];
+                          return RepaintBoundary(
+                            child: _buildWatchlistTile(item),
+                          );
+                        },
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '點擊右上角 + 新增股票',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            : ListView.builder(
-                itemCount: _items.length,
-                itemBuilder: (context, index) {
-                  final item = _items[index];
-                  return _buildWatchlistTile(item);
-                },
-              ),
       ),
     );
   }
@@ -199,7 +105,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      onDismissed: (_) => _removeFromWatchlist(item.symbol),
+      onDismissed: (_) {
+        HapticFeedback.mediumImpact();
+        _removeFromWatchlist(item.symbol);
+      },
       child: ListTile(
         leading: Container(
           width: 40,
@@ -222,19 +131,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             ),
             if (item.score != null && item.score! > 0) ...[
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${item.score!.toInt()}分',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                ),
-              ),
+              ScoreRing(score: item.score!, size: ScoreRingSize.small),
             ],
           ],
         ),
@@ -255,7 +152,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               ),
           ],
         ),
-        onTap: () => context.push('/stock/${item.symbol}'),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/stock/${item.symbol}');
+        },
       ),
     );
   }
@@ -267,93 +167,91 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('新增自選'),
-          content: TextField(
-            controller: controller,
-            decoration: const InputDecoration(
-              labelText: '股票代號',
-              hintText: '例如: 2330',
-            ),
-            autofocus: true,
-            textCapitalization: TextCapitalization.characters,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final symbol = controller.text.trim().toUpperCase();
-                if (symbol.isEmpty) return;
+        var isLoading = false;
 
-                Navigator.pop(dialogContext);
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('新增自選'),
+              content: TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: '股票代號',
+                  hintText: '例如: 2330',
+                ),
+                autofocus: true,
+                enabled: !isLoading,
+                textCapitalization: TextCapitalization.characters,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          controller.dispose();
+                          Navigator.pop(dialogContext);
+                        },
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          final symbol = controller.text.trim().toUpperCase();
+                          if (symbol.isEmpty) return;
 
-                final db = ref.read(databaseProvider);
+                          setDialogState(() => isLoading = true);
 
-                // Check if stock exists
-                final stock = await db.getStock(symbol);
-                if (stock == null) {
-                  if (mounted) {
-                    messenger.showSnackBar(
-                      SnackBar(
-                        content: Text('找不到股票 $symbol'),
-                        behavior: SnackBarBehavior.floating,
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                  return;
-                }
+                          final notifier = ref.read(watchlistProvider.notifier);
+                          final success = await notifier.addStock(symbol);
 
-                await db.addToWatchlist(symbol);
-                _loadData();
+                          // Check if dialog is still mounted
+                          if (!dialogContext.mounted) return;
 
-                if (mounted) {
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text('已加入 $symbol'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-              },
-              child: const Text('新增'),
-            ),
-          ],
+                          controller.dispose();
+                          Navigator.pop(dialogContext);
+
+                          if (mounted) {
+                            if (success) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text('已加入 $symbol'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            } else {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text('找不到股票 $symbol'),
+                                  behavior: SnackBarBehavior.floating,
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('新增'),
+                ),
+              ],
+            );
+          },
         );
       },
-    );
-  }
-}
-
-/// Data class for watchlist item
-class WatchlistItemData {
-  const WatchlistItemData({
-    required this.symbol,
-    this.stockName,
-    this.latestClose,
-    this.priceChange,
-    this.trendState,
-    this.score,
-    this.hasSignal = false,
-    this.addedAt,
-  });
-
-  final String symbol;
-  final String? stockName;
-  final double? latestClose;
-  final double? priceChange;
-  final String? trendState;
-  final double? score;
-  final bool hasSignal;
-  final DateTime? addedAt;
-
-  String get statusIcon {
-    if (hasSignal) return '🔥';
-    if (priceChange != null && priceChange!.abs() >= 3) return '👀';
-    return '😴';
+    ).then((_) {
+      // Fallback disposal if dialog is dismissed by tapping outside
+      try {
+        controller.dispose();
+      } catch (_) {
+        // Already disposed, ignore
+      }
+    });
   }
 }

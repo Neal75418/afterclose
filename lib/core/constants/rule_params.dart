@@ -13,14 +13,14 @@ abstract final class RuleParams {
   /// Window for Swing High/Low detection
   static const int swingWindow = 20;
 
-  /// Price spike threshold percentage
-  static const double priceSpikePercent = 5.0;
+  /// Price spike threshold percentage (lowered for more signals)
+  static const double priceSpikePercent = 3.0;
 
-  /// Volume spike multiplier (vs 20-day average)
-  static const double volumeSpikeMult = 2.0;
+  /// Volume spike multiplier (vs 20-day average, lowered for more signals)
+  static const double volumeSpikeMult = 1.5;
 
-  /// Breakout buffer tolerance (0 ~ 0.5%)
-  static const double breakoutBuffer = 0.005;
+  /// Breakout buffer tolerance (0 ~ 0.3%, lowered for more signals)
+  static const double breakoutBuffer = 0.003;
 
   /// Cooldown days for repeated recommendations
   static const int cooldownDays = 2;

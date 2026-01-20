@@ -86,18 +86,39 @@ class NewsRepository {
   }
 
   /// Get recent news (last N days) - uses DB-level filtering
-  Future<List<NewsItemEntry>> getRecentNews({int days = 3}) async {
+  ///
+  /// [days] - Number of days to look back (default: 3)
+  /// [limit] - Maximum number of items to return (default: null = no limit)
+  /// [offset] - Number of items to skip (default: 0, for pagination)
+  Future<List<NewsItemEntry>> getRecentNews({
+    int days = 3,
+    int? limit,
+    int offset = 0,
+  }) async {
     final cutoff = DateTime.now().subtract(Duration(days: days));
-    return (_db.select(_db.newsItem)
-          ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
-          ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
-        .get();
+    final query = _db.select(_db.newsItem)
+      ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
+      ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]);
+
+    // Apply pagination if limit is specified
+    if (limit != null) {
+      query.limit(limit, offset: offset);
+    }
+
+    return query.get();
   }
 
   /// Get news for a specific stock - uses DB-level filtering
+  ///
+  /// [symbol] - Stock symbol
+  /// [days] - Number of days to look back (default: 3)
+  /// [limit] - Maximum number of items to return (default: null = no limit)
+  /// [offset] - Number of items to skip (default: 0, for pagination)
   Future<List<NewsItemEntry>> getNewsForStock(
     String symbol, {
     int days = 3,
+    int? limit,
+    int offset = 0,
   }) async {
     final cutoff = DateTime.now().subtract(Duration(days: days));
 
@@ -111,11 +132,17 @@ class NewsRepository {
     final newsIds = mappings.map((m) => m.newsId).toList();
 
     // Get news items with DB-level date filtering
-    return (_db.select(_db.newsItem)
-          ..where((n) => n.id.isIn(newsIds))
-          ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
-          ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
-        .get();
+    final query = _db.select(_db.newsItem)
+      ..where((n) => n.id.isIn(newsIds))
+      ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
+      ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]);
+
+    // Apply pagination if limit is specified
+    if (limit != null) {
+      query.limit(limit, offset: offset);
+    }
+
+    return query.get();
   }
 
   /// Get news for multiple stocks (batch query to avoid N+1)

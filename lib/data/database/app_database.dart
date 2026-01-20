@@ -34,6 +34,7 @@ part 'app_database.g.dart';
     StrategyCard,
     UpdateRun,
     AppSettings,
+    PriceAlert,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -43,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -51,7 +52,10 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      // Handle migrations for future versions
+      // v1 -> v2: Add PriceAlert table
+      if (from < 2) {
+        await m.createTable(priceAlert);
+      }
     },
   );
 
@@ -106,6 +110,21 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  /// Get multiple stocks by symbols (batch query)
+  ///
+  /// Returns a map of symbol -> stock entry
+  Future<Map<String, StockMasterEntry>> getStocksBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final results = await (select(stockMaster)
+          ..where((t) => t.symbol.isIn(symbols)))
+        .get();
+
+    return {for (final stock in results) stock.symbol: stock};
+  }
+
   // ==========================================
   // Daily Price Operations
   // ==========================================
@@ -136,6 +155,57 @@ class AppDatabase extends _$AppDatabase {
           ..orderBy([(t) => OrderingTerm.desc(t.date)])
           ..limit(1))
         .getSingleOrNull();
+  }
+
+  /// Get latest prices for multiple symbols (batch query)
+  ///
+  /// Returns a map of symbol -> latest price entry
+  ///
+  /// Uses optimized SQL with GROUP BY + MAX(date) subquery to avoid
+  /// fetching all historical prices into memory.
+  Future<Map<String, DailyPriceEntry>> getLatestPricesBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    // Build placeholders for SQL IN clause
+    final placeholders = List.filled(symbols.length, '?').join(', ');
+
+    // Use optimized query with subquery to get only latest price per symbol
+    // This avoids fetching all historical prices (potentially millions of rows)
+    final query = '''
+      SELECT dp.*
+      FROM daily_price dp
+      INNER JOIN (
+        SELECT symbol, MAX(date) as max_date
+        FROM daily_price
+        WHERE symbol IN ($placeholders)
+        GROUP BY symbol
+      ) latest ON dp.symbol = latest.symbol AND dp.date = latest.max_date
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: symbols.map((s) => Variable.withString(s)).toList(),
+      readsFrom: {dailyPrice},
+    ).get();
+
+    // Convert query rows to DailyPriceEntry objects
+    final result = <String, DailyPriceEntry>{};
+    for (final row in results) {
+      final entry = DailyPriceEntry(
+        symbol: row.read<String>('symbol'),
+        date: row.read<DateTime>('date'),
+        open: row.readNullable<double>('open'),
+        high: row.readNullable<double>('high'),
+        low: row.readNullable<double>('low'),
+        close: row.readNullable<double>('close'),
+        volume: row.readNullable<double>('volume'),
+      );
+      result[entry.symbol] = entry;
+    }
+
+    return result;
   }
 
   /// Batch insert prices
@@ -314,6 +384,23 @@ class AppDatabase extends _$AppDatabase {
     return into(dailyAnalysis).insertOnConflictUpdate(entry);
   }
 
+  /// Get analyses for multiple symbols on a date (batch query)
+  ///
+  /// Returns a map of symbol -> analysis entry
+  Future<Map<String, DailyAnalysisEntry>> getAnalysesBatch(
+    List<String> symbols,
+    DateTime date,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final results = await (select(dailyAnalysis)
+          ..where((t) => t.symbol.isIn(symbols))
+          ..where((t) => t.date.equals(date)))
+        .get();
+
+    return {for (final analysis in results) analysis.symbol: analysis};
+  }
+
   // ==========================================
   // Daily Reason Operations
   // ==========================================
@@ -325,6 +412,33 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.date.equals(date))
           ..orderBy([(t) => OrderingTerm.asc(t.rank)]))
         .get();
+  }
+
+  /// Get reasons for multiple symbols on a date (batch query)
+  ///
+  /// Returns a map of symbol -> list of reasons, sorted by rank
+  Future<Map<String, List<DailyReasonEntry>>> getReasonsBatch(
+    List<String> symbols,
+    DateTime date,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final results = await (select(dailyReason)
+          ..where((t) => t.symbol.isIn(symbols))
+          ..where((t) => t.date.equals(date))
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.symbol),
+            (t) => OrderingTerm.asc(t.rank),
+          ]))
+        .get();
+
+    // Group by symbol
+    final grouped = <String, List<DailyReasonEntry>>{};
+    for (final entry in results) {
+      grouped.putIfAbsent(entry.symbol, () => []).add(entry);
+    }
+
+    return grouped;
   }
 
   /// Insert reasons
@@ -435,6 +549,31 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
+  // News Operations
+  // ==========================================
+
+  /// Get news-to-stock mappings for multiple news IDs (batch query)
+  ///
+  /// Returns a map of newsId -> list of symbols
+  Future<Map<String, List<String>>> getNewsStockMappingsBatch(
+    List<String> newsIds,
+  ) async {
+    if (newsIds.isEmpty) return {};
+
+    final results = await (select(newsStockMap)
+          ..where((t) => t.newsId.isIn(newsIds)))
+        .get();
+
+    // Group by newsId
+    final grouped = <String, List<String>>{};
+    for (final entry in results) {
+      grouped.putIfAbsent(entry.newsId, () => []).add(entry.symbol);
+    }
+
+    return grouped;
+  }
+
+  // ==========================================
   // Watchlist Operations
   // ==========================================
 
@@ -518,6 +657,115 @@ class AppDatabase extends _$AppDatabase {
           ..orderBy([(t) => OrderingTerm.desc(t.id)])
           ..limit(1))
         .getSingleOrNull();
+  }
+
+  // ==========================================
+  // Price Alert Operations
+  // ==========================================
+
+  /// Get all active price alerts
+  Future<List<PriceAlertEntry>> getActiveAlerts() {
+    return (select(priceAlert)
+          ..where((t) => t.isActive.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  /// Get all alerts for a symbol
+  Future<List<PriceAlertEntry>> getAlertsForSymbol(String symbol) {
+    return (select(priceAlert)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  /// Get active alerts for a symbol
+  Future<List<PriceAlertEntry>> getActiveAlertsForSymbol(String symbol) {
+    return (select(priceAlert)
+          ..where((t) => t.symbol.equals(symbol))
+          ..where((t) => t.isActive.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  /// Create a new price alert
+  Future<int> createPriceAlert({
+    required String symbol,
+    required String alertType,
+    required double targetValue,
+    String? note,
+  }) {
+    return into(priceAlert).insert(
+      PriceAlertCompanion.insert(
+        symbol: symbol,
+        alertType: alertType,
+        targetValue: targetValue,
+        note: Value(note),
+      ),
+    );
+  }
+
+  /// Update price alert
+  Future<void> updatePriceAlert(int id, PriceAlertCompanion entry) {
+    return (update(priceAlert)..where((t) => t.id.equals(id))).write(entry);
+  }
+
+  /// Deactivate a price alert (mark as triggered)
+  Future<void> triggerAlert(int id) {
+    return (update(priceAlert)..where((t) => t.id.equals(id))).write(
+      PriceAlertCompanion(
+        isActive: const Value(false),
+        triggeredAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  /// Delete a price alert
+  Future<void> deletePriceAlert(int id) {
+    return (delete(priceAlert)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Delete all alerts for a symbol
+  Future<void> deleteAlertsForSymbol(String symbol) {
+    return (delete(priceAlert)..where((t) => t.symbol.equals(symbol))).go();
+  }
+
+  /// Check alerts against current prices and return triggered alerts
+  Future<List<PriceAlertEntry>> checkAlerts(
+    Map<String, double> currentPrices,
+    Map<String, double> priceChanges,
+  ) async {
+    final activeAlerts = await getActiveAlerts();
+    final triggered = <PriceAlertEntry>[];
+
+    for (final alert in activeAlerts) {
+      final currentPrice = currentPrices[alert.symbol];
+      final priceChange = priceChanges[alert.symbol];
+
+      if (currentPrice == null) continue;
+
+      bool shouldTrigger = false;
+
+      switch (alert.alertType) {
+        case 'ABOVE':
+          shouldTrigger = currentPrice >= alert.targetValue;
+          break;
+        case 'BELOW':
+          shouldTrigger = currentPrice <= alert.targetValue;
+          break;
+        case 'CHANGE_PCT':
+          if (priceChange != null) {
+            shouldTrigger = priceChange.abs() >= alert.targetValue;
+          }
+          break;
+      }
+
+      if (shouldTrigger) {
+        triggered.add(alert);
+      }
+    }
+
+    return triggered;
   }
 }
 

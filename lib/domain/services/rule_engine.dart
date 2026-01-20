@@ -31,18 +31,25 @@ class RuleEngine {
     final r2 = checkStrongToWeak(priceHistory, context);
 
     if (r1 != null && r2 != null) {
-      // Both triggered - this shouldn't happen logically
-      // Keep the one with stronger evidence (based on price action)
-      // W2S is typically stronger signal if price closed higher
+      // Both triggered - resolve conflict based on price action
+      // This can happen when technical patterns overlap
       final today = priceHistory.last;
       final yesterday = priceHistory[priceHistory.length - 2];
       final todayClose = today.close ?? 0;
       final yesterdayClose = yesterday.close ?? 0;
 
       if (todayClose > yesterdayClose) {
-        reasons.add(r1); // Price went up, keep W2S
+        // Price went up - favor W2S (bullish reversal)
+        reasons.add(r1);
+      } else if (todayClose < yesterdayClose) {
+        // Price went down - favor S2W (bearish reversal)
+        reasons.add(r2);
       } else {
-        reasons.add(r2); // Price went down, keep S2W
+        // Flat day (todayClose == yesterdayClose) - add both signals
+        // Direction is inconclusive, but both technical patterns were detected.
+        // The score is not reduced here; scoring adjustment happens in calculateScore().
+        reasons.add(r1);
+        reasons.add(r2);
       }
     } else if (r1 != null) {
       reasons.add(r1);
@@ -156,9 +163,12 @@ class RuleEngine {
     if (todayClose == null) return null;
 
     // Check: Breakout above range top
+    // Allow when in downtrend OR range (relaxed condition for more signals)
     if (context.rangeTop != null) {
       final breakoutLevel = context.rangeTop! * (1 + RuleParams.breakoutBuffer);
-      if (todayClose > breakoutLevel && context.trendState == TrendState.down) {
+      if (todayClose > breakoutLevel &&
+          (context.trendState == TrendState.down ||
+           context.trendState == TrendState.range)) {
         return TriggeredReason(
           type: ReasonType.reversalW2S,
           score: RuleScores.reversalW2S,
@@ -167,6 +177,7 @@ class RuleEngine {
             'range_top': context.rangeTop,
             'close': todayClose,
             'buffer': RuleParams.breakoutBuffer,
+            'trend': context.trendState.code,
           },
           template: '弱轉強：突破盤整區上緣 ${context.rangeTop?.toStringAsFixed(2)}',
         );
@@ -174,7 +185,9 @@ class RuleEngine {
     }
 
     // Check: Downtrend structure broken (no new low + higher low)
-    if (context.trendState == TrendState.down) {
+    // Also check when in range with recent weakness
+    if (context.trendState == TrendState.down ||
+        context.trendState == TrendState.range) {
       final recentPrices = prices.reversed
           .take(RuleParams.swingWindow)
           .toList();
@@ -220,10 +233,13 @@ class RuleEngine {
     if (todayClose == null) return null;
 
     // Check: Breakdown below support
+    // Allow when in uptrend OR range (relaxed condition for more signals)
     if (context.supportLevel != null) {
       final breakdownLevel =
           context.supportLevel! * (1 - RuleParams.breakoutBuffer);
-      if (todayClose < breakdownLevel && context.trendState == TrendState.up) {
+      if (todayClose < breakdownLevel &&
+          (context.trendState == TrendState.up ||
+           context.trendState == TrendState.range)) {
         return TriggeredReason(
           type: ReasonType.reversalS2W,
           score: RuleScores.reversalS2W,
@@ -232,6 +248,7 @@ class RuleEngine {
             'support': context.supportLevel,
             'close': todayClose,
             'buffer': RuleParams.breakoutBuffer,
+            'trend': context.trendState.code,
           },
           template: '強轉弱：跌破關鍵支撐 ${context.supportLevel?.toStringAsFixed(2)}',
         );
@@ -413,6 +430,10 @@ class RuleEngine {
   // ==========================================
 
   /// Check for institutional investor direction change
+  ///
+  /// Triggers when:
+  /// - Direction reverses from buy to sell or sell to buy
+  /// - Significant change from neutral to strong buy/sell (or vice versa)
   TriggeredReason? checkInstitutionalShift(
     List<DailyInstitutionalEntry> history,
   ) {
@@ -437,23 +458,42 @@ class RuleEngine {
           (entry.dealerNet ?? 0);
     }
 
-    // Check for direction reversal
-    final todayDir = todayNet > 0 ? 'buy' : (todayNet < 0 ? 'sell' : 'neutral');
-    final prevDir = prev3Net > 0 ? 'buy' : (prev3Net < 0 ? 'sell' : 'neutral');
+    // Use numeric direction for comparison: 1 = buy, -1 = sell, 0 = neutral
+    int getDirection(double netValue) {
+      if (netValue > 0) return 1;
+      if (netValue < 0) return -1;
+      return 0;
+    }
 
-    if ((todayDir == 'buy' && prevDir == 'sell') ||
-        (todayDir == 'sell' && prevDir == 'buy')) {
+    String getDirectionLabel(int dir) {
+      return switch (dir) {
+        1 => 'buy',
+        -1 => 'sell',
+        _ => 'neutral',
+      };
+    }
+
+    final todayDir = getDirection(todayNet);
+    final prevDir = getDirection(prev3Net);
+
+    // Check for meaningful direction change:
+    // 1. Direct reversal: buy ↔ sell
+    // 2. Transition involving neutral: neutral → buy/sell OR buy/sell → neutral
+    if (todayDir != prevDir && (todayDir != 0 || prevDir != 0)) {
+      final todayLabel = getDirectionLabel(todayDir);
+      final prevLabel = getDirectionLabel(prevDir);
+
       return TriggeredReason(
         type: ReasonType.institutionalShift,
         score: RuleScores.institutionalShift,
         evidence: {
           'foreign_net': today.foreignNet,
-          'dir_prev3': prevDir,
-          'dir_today': todayDir,
+          'dir_prev3': prevLabel,
+          'dir_today': todayLabel,
           'today_net': todayNet,
           'prev3_net': prev3Net,
         },
-        template: '法人變化：方向反轉（$prevDir → $todayDir）',
+        template: '法人變化：方向轉換（$prevLabel → $todayLabel）',
       );
     }
 
@@ -464,23 +504,100 @@ class RuleEngine {
   // R8: NEWS_RELATED +8
   // ==========================================
 
-  /// Check for recent news mentions
+  /// Positive sentiment keywords (bullish signals)
+  static const _positiveKeywords = [
+    '突破', '創高', '創新高', '漲停', '獲利', '營收成長', '法說', '利多',
+    '看好', '調升', '目標價', '買進', '強勢', '利好', '訂單', '擴產',
+  ];
+
+  /// Negative sentiment keywords (bearish signals)
+  static const _negativeKeywords = [
+    '跌停', '下跌', '虧損', '衰退', '違約', '警示', '利空', '調降',
+    '看壞', '減產', '裁員', '營收下滑', '產能過剩', '需求疲軟',
+  ];
+
+  /// Check for recent news mentions with keyword filtering
+  ///
+  /// Uses cumulative sentiment scoring instead of first-match:
+  /// - Counts all positive and negative keywords across all news
+  /// - Returns the net sentiment (positive count - negative count)
+  /// - Only triggers if there's a clear sentiment direction
+  ///
+  /// Returns null if news is generic or sentiment is neutral/mixed.
   TriggeredReason? checkNewsRelated(List<NewsItemEntry> news) {
     if (news.isEmpty) return null;
 
-    // Get the most recent news item
-    final latestNews = news.first;
+    // Cumulative sentiment scoring
+    int positiveCount = 0;
+    int negativeCount = 0;
+    NewsItemEntry? strongestNews;
+    String? strongestKeyword;
+    int strongestMatchCount = 0;
+
+    for (final item in news) {
+      final title = item.title.toLowerCase();
+      int itemPositive = 0;
+      int itemNegative = 0;
+      String? firstKeyword;
+
+      // Count all positive keywords in this title
+      for (final keyword in _positiveKeywords) {
+        if (title.contains(keyword)) {
+          itemPositive++;
+          firstKeyword ??= keyword;
+        }
+      }
+
+      // Count all negative keywords in this title
+      for (final keyword in _negativeKeywords) {
+        if (title.contains(keyword)) {
+          itemNegative++;
+          firstKeyword ??= keyword;
+        }
+      }
+
+      positiveCount += itemPositive;
+      negativeCount += itemNegative;
+
+      // Track the news item with strongest signal (most keyword matches)
+      final itemTotal = itemPositive + itemNegative;
+      if (itemTotal > strongestMatchCount) {
+        strongestMatchCount = itemTotal;
+        strongestNews = item;
+        strongestKeyword = firstKeyword;
+      }
+    }
+
+    // No relevant keywords found in any news
+    if (positiveCount == 0 && negativeCount == 0) return null;
+
+    // Calculate net sentiment (require clear direction)
+    final netSentiment = positiveCount - negativeCount;
+
+    // Neutral/mixed sentiment - don't trigger
+    if (netSentiment == 0) return null;
+
+    final isPositive = netSentiment > 0;
+    final sentiment = isPositive ? '利多' : '利空';
+
+    // Use the strongest news item for display
+    final displayNews = strongestNews ?? news.first;
 
     return TriggeredReason(
       type: ReasonType.newsRelated,
       score: RuleScores.newsRelated,
       evidence: {
-        'source': latestNews.source,
-        'title': latestNews.title,
-        'url': latestNews.url,
-        'published_at': latestNews.publishedAt.toIso8601String(),
+        'source': displayNews.source,
+        'title': displayNews.title,
+        'url': displayNews.url,
+        'published_at': displayNews.publishedAt.toIso8601String(),
+        'keyword': strongestKeyword ?? '',
+        'sentiment': sentiment,
+        'positive_count': positiveCount,
+        'negative_count': negativeCount,
+        'net_sentiment': netSentiment,
       },
-      template: '新聞關聯：${latestNews.source} - ${latestNews.title}',
+      template: '新聞$sentiment：${displayNews.source} - ${displayNews.title}',
     );
   }
 

@@ -1,35 +1,66 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+/// Keys for secure storage (sensitive data)
+class SecureStorageKeys {
+  static const finmindToken = 'finmind_token';
+}
 
 /// Repository for app settings (including token management)
 class SettingsRepository {
-  SettingsRepository({required AppDatabase database}) : _db = database;
+  SettingsRepository({
+    required AppDatabase database,
+    FlutterSecureStorage? secureStorage,
+  })  : _db = database,
+        _secureStorage = secureStorage ??
+            const FlutterSecureStorage(
+              aOptions: AndroidOptions(encryptedSharedPreferences: true),
+              iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+            );
 
   final AppDatabase _db;
+  final FlutterSecureStorage _secureStorage;
 
   // ==========================================
-  // FinMind Token Management
+  // FinMind Token Management (Secure Storage)
   // ==========================================
 
-  /// Get the stored FinMind token
+  /// Get the stored FinMind token (from secure storage)
   Future<String?> getFinMindToken() {
-    return _db.getSetting(SettingsKeys.finmindToken);
+    return _secureStorage.read(key: SecureStorageKeys.finmindToken);
   }
 
-  /// Save the FinMind token
+  /// Save the FinMind token (to secure storage)
   Future<void> setFinMindToken(String token) {
-    return _db.setSetting(SettingsKeys.finmindToken, token);
+    return _secureStorage.write(key: SecureStorageKeys.finmindToken, value: token);
   }
 
-  /// Clear the FinMind token
+  /// Clear the FinMind token (from secure storage)
   Future<void> clearFinMindToken() {
-    return _db.deleteSetting(SettingsKeys.finmindToken);
+    return _secureStorage.delete(key: SecureStorageKeys.finmindToken);
   }
 
   /// Check if token is configured
   Future<bool> hasFinMindToken() async {
     final token = await getFinMindToken();
     return token != null && token.isNotEmpty;
+  }
+
+  /// Migrate token from database to secure storage (one-time migration)
+  Future<void> migrateTokenToSecureStorage() async {
+    // Check if token exists in old database storage
+    final oldToken = await _db.getSetting(SettingsKeys.finmindToken);
+    if (oldToken != null && oldToken.isNotEmpty) {
+      // Check if already migrated
+      final existingSecure = await getFinMindToken();
+      if (existingSecure == null || existingSecure.isEmpty) {
+        // Migrate to secure storage
+        await setFinMindToken(oldToken);
+      }
+      // Clear from database (no longer needed)
+      await _db.deleteSetting(SettingsKeys.finmindToken);
+    }
   }
 
   // ==========================================

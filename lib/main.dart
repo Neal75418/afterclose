@@ -1,10 +1,31 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/app/router.dart';
+import 'package:afterclose/core/services/notification_service.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 
-void main() {
-  runApp(const ProviderScope(child: AfterCloseApp()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+
+  // Initialize notification service
+  await NotificationService.instance.initialize();
+  await NotificationService.instance.requestPermissions();
+
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [
+        Locale('zh', 'TW'),
+        Locale('en'),
+      ],
+      path: 'assets/translations',
+      fallbackLocale: const Locale('zh', 'TW'),
+      child: const ProviderScope(child: AfterCloseApp()),
+    ),
+  );
 }
 
 class AfterCloseApp extends ConsumerWidget {
@@ -12,20 +33,19 @@ class AfterCloseApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp.router(
-      title: 'AfterClose',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      title: 'AfterClose', // Static title for system-level use
+      onGenerateTitle: (context) => 'app.name'.tr(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
       routerConfig: router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

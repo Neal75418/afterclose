@@ -111,3 +111,33 @@ class AppSettings extends Table {
   @override
   Set<Column> get primaryKey => {key};
 }
+
+/// Price alerts for stocks
+/// Alert types: ABOVE (price goes above), BELOW (price goes below), CHANGE_PCT (daily % change)
+@DataClassName('PriceAlertEntry')
+class PriceAlert extends Table {
+  /// Auto-increment ID
+  IntColumn get id => integer().autoIncrement()();
+
+  /// Stock symbol
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// Alert type: ABOVE, BELOW, CHANGE_PCT
+  TextColumn get alertType => text()();
+
+  /// Target price (for ABOVE/BELOW) or percent (for CHANGE_PCT)
+  RealColumn get targetValue => real()();
+
+  /// Is this alert currently active
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+
+  /// When the alert was triggered (null if not yet triggered)
+  DateTimeColumn get triggeredAt => dateTime().nullable()();
+
+  /// Note or description for this alert
+  TextColumn get note => text().nullable()();
+
+  /// Created timestamp
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}

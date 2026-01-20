@@ -1,6 +1,18 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-/// Card widget displaying stock information
+import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/widgets/score_ring.dart';
+
+/// Modern card widget displaying stock information
+///
+/// Features:
+/// - Modern visual design with subtle gradients
+/// - Price color based on Taiwan convention (red = up, green = down)
+/// - Score badge with color coding
+/// - Trend indicator with icon
+/// - Optional sparkline chart placeholder
 class StockCard extends StatelessWidget {
   const StockCard({
     super.key,
@@ -13,7 +25,9 @@ class StockCard extends StatelessWidget {
     this.trendState,
     this.isInWatchlist = false,
     this.onTap,
+    this.onLongPress,
     this.onWatchlistTap,
+    this.recentPrices,
   });
 
   final String symbol;
@@ -25,184 +39,441 @@ class StockCard extends StatelessWidget {
   final String? trendState;
   final bool isInWatchlist;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final VoidCallback? onWatchlistTap;
+  final List<double>? recentPrices;
+
+  /// Build semantic label for accessibility
+  String _buildSemanticLabel() {
+    final parts = <String>[];
+    parts.add('股票 $symbol');
+    if (stockName != null) parts.add(stockName!);
+    if (latestClose != null) parts.add('價格 ${latestClose!.toStringAsFixed(2)} 元');
+    if (priceChange != null) {
+      final direction = priceChange! >= 0 ? '上漲' : '下跌';
+      parts.add('$direction ${priceChange!.abs().toStringAsFixed(2)} 百分比');
+    }
+    if (score != null && score! > 0) parts.add('評分 ${score!.toInt()} 分');
+    if (trendState != null) {
+      final trend = switch (trendState) {
+        'UP' => '上升趨勢',
+        'DOWN' => '下降趨勢',
+        _ => '盤整',
+      };
+      parts.add(trend);
+    }
+    if (reasons.isNotEmpty) parts.add('訊號: ${reasons.take(2).join(', ')}');
+    return parts.join(', ');
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isPositive = (priceChange ?? 0) >= 0;
-    final priceColor = isPositive ? Colors.red.shade700 : Colors.green.shade700;
+    final isDark = theme.brightness == Brightness.dark;
+    final priceColor = AppTheme.getPriceColor(priceChange);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              // Trend icon
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _getTrendColor(trendState).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+    return Semantics(
+      label: _buildSemanticLabel(),
+      button: true,
+      enabled: true,
+      child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF252536) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF3A3A4A) : const Color(0xFFE8E8F0),
+          width: 1,
+        ),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                child: Center(
-                  child: Text(
-                    _getTrendIcon(trendState),
-                    style: const TextStyle(fontSize: 20),
+              ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap?.call();
+          },
+          onLongPress: () {
+            HapticFeedback.mediumImpact();
+            onLongPress?.call();
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                // Trend indicator with modern design
+                _buildTrendIndicator(theme, isDark),
+                const SizedBox(width: 14),
+
+                // Stock info section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(theme),
+                      if (stockName != null) ...[
+                        const SizedBox(height: 2),
+                        _buildStockName(theme),
+                      ],
+                      if (reasons.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        _buildReasonTags(theme, isDark),
+                      ],
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
 
-              // Stock info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          symbol,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (score != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getScoreColor(score!),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '${score!.toInt()}分',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
+                const SizedBox(width: 12),
+
+                // Mini sparkline chart (need at least 7 days of data)
+                if (recentPrices != null && recentPrices!.length >= 7) ...[
+                  _buildSparkline(priceColor),
+                  const SizedBox(width: 8),
+                ],
+
+                // Price section with color coding
+                _buildPriceSection(theme, priceColor),
+
+                // Watchlist button
+                if (onWatchlistTap != null)
+                  _buildWatchlistButton(theme),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+    );
+  }
+
+  Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
+    final trendColor = _getTrendColor(trendState);
+    final icon = _getTrendIconData(trendState);
+
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: trendColor.withValues(alpha: isDark ? 0.15 : 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Icon(
+          icon,
+          color: trendColor,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  IconData _getTrendIconData(String? trend) {
+    return switch (trend) {
+      'UP' => Icons.trending_up_rounded,
+      'DOWN' => Icons.trending_down_rounded,
+      _ => Icons.trending_flat_rounded,
+    };
+  }
+
+  Widget _buildHeader(ThemeData theme) {
+    return Row(
+      children: [
+        Text(
+          symbol,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        if (score != null && score! > 0) ...[
+          const SizedBox(width: 10),
+          ScoreRing(score: score!, size: ScoreRingSize.medium),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildStockName(ThemeData theme) {
+    return Text(
+      stockName!,
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildReasonTags(ThemeData theme, bool isDark) {
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      children: reasons.take(2).map((r) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppTheme.secondaryColor.withValues(alpha: 0.15)
+                : AppTheme.primaryColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            r,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSparkline(Color priceColor) {
+    return _MiniSparkline(
+      prices: recentPrices!,
+      color: priceColor,
+    );
+  }
+
+  Widget _buildPriceSection(ThemeData theme, Color priceColor) {
+    final isPositive = (priceChange ?? 0) >= 0;
+    final isNeutral = priceChange == null || priceChange == 0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (latestClose != null)
+          Text(
+            latestClose!.toStringAsFixed(2),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.3,
+            ),
+          ),
+        if (priceChange != null) ...[
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: priceColor.withValues(alpha: isNeutral ? 0.1 : 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isNeutral)
+                  Icon(
+                    isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                    color: priceColor,
+                    size: 18,
+                  ),
+                Text(
+                  '${isPositive && !isNeutral ? '+' : ''}${priceChange!.toStringAsFixed(2)}%',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: priceColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildWatchlistButton(ThemeData theme) {
+    final tooltipText = isInWatchlist ? '從自選移除' : '加入自選';
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Semantics(
+        label: tooltipText,
+        button: true,
+        child: IconButton(
+          icon: Icon(
+            isInWatchlist ? Icons.star_rounded : Icons.star_outline_rounded,
+            color: isInWatchlist ? Colors.amber : theme.colorScheme.onSurfaceVariant,
+            size: 26,
+          ),
+          tooltip: tooltipText,
+          onPressed: () {
+            HapticFeedback.mediumImpact();
+            onWatchlistTap?.call();
+          },
+          splashRadius: 20,
+        ),
+      ),
+    );
+  }
+
+  Color _getTrendColor(String? trend) {
+    return switch (trend) {
+      'UP' => AppTheme.upColor,
+      'DOWN' => AppTheme.downColor,
+      _ => AppTheme.neutralColor,
+    };
+  }
+}
+
+/// Optimized mini sparkline chart widget
+///
+/// Performance optimizations:
+/// 1. RepaintBoundary isolates repaints from parent
+/// 2. Data normalization done once in build
+/// 3. Minimal LineChartData configuration
+class _MiniSparkline extends StatelessWidget {
+  const _MiniSparkline({
+    required this.prices,
+    required this.color,
+  });
+
+  final List<double> prices;
+  final Color color;
+
+  /// Maximum data points to display (for clear visualization)
+  static const int _maxDataPoints = 20;
+
+  /// Minimum data points required for meaningful chart
+  static const int _minDataPoints = 5;
+
+  /// Vertical padding percentage (10% top and bottom)
+  static const double _verticalPadding = 0.1;
+
+  /// Usable content range after padding (1.0 - 2 * padding)
+  static const double _contentRange = 0.8;
+
+  /// Minimum price variation percentage to show chart (0.3%)
+  static const double _minVariationPercent = 0.003;
+
+  /// Build semantic label for accessibility
+  String _buildSemanticLabel(List<double> sampledPrices) {
+    if (sampledPrices.length < 2) return '近期價格走勢圖';
+
+    final first = sampledPrices.first;
+    final last = sampledPrices.last;
+    final change = first > 0 ? ((last - first) / first * 100) : 0.0;
+    final days = sampledPrices.length;
+
+    if (change.abs() < 0.1) {
+      return '近 $days 日價格持平走勢圖';
+    }
+    final direction = change >= 0 ? '上漲' : '下跌';
+    return '近 $days 日價格 $direction ${change.abs().toStringAsFixed(1)} 百分比走勢圖';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Need at least 5 data points for meaningful visualization
+    if (prices.length < _minDataPoints) {
+      return const SizedBox.shrink();
+    }
+
+    // Sample to last N trading days for clearer visualization
+    final sampledPrices = _samplePrices(prices);
+
+    // Check if there's meaningful price variation
+    final result = _normalizeToSpots(sampledPrices);
+    if (result == null) {
+      // Not enough variation to show meaningful chart
+      return const SizedBox.shrink();
+    }
+
+    // Use RepaintBoundary to isolate chart repaints
+    return Semantics(
+      label: _buildSemanticLabel(sampledPrices),
+      image: true,
+      child: RepaintBoundary(
+        child: SizedBox(
+          width: 70,
+          height: 32,
+          child: LineChart(
+            LineChartData(
+              minY: 0,
+              maxY: 1,
+              lineBarsData: [
+                LineChartBarData(
+                  spots: result,
+                  isCurved: true,
+                  curveSmoothness: 0.35,
+                  color: color,
+                  barWidth: 2,
+                  isStrokeCapRound: true,
+                  dotData: const FlDotData(show: false),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        color.withValues(alpha: 0.25),
+                        color.withValues(alpha: 0.05),
                       ],
                     ),
-                    if (stockName != null)
-                      Text(
-                        stockName!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    if (reasons.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Wrap(
-                          spacing: 4,
-                          children: reasons
-                              .take(2)
-                              .map(
-                                (r) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.secondaryContainer,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    r,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme
-                                          .colorScheme
-                                          .onSecondaryContainer,
-                                    ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // Price info
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  if (latestClose != null)
-                    Text(
-                      latestClose!.toStringAsFixed(2),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  if (priceChange != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: priceColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${isPositive ? '+' : ''}${priceChange!.toStringAsFixed(2)}%',
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: priceColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              // Watchlist button
-              if (onWatchlistTap != null)
-                IconButton(
-                  icon: Icon(
-                    isInWatchlist ? Icons.star : Icons.star_border,
-                    color: isInWatchlist ? Colors.amber : null,
                   ),
-                  onPressed: onWatchlistTap,
                 ),
-            ],
+              ],
+              titlesData: const FlTitlesData(show: false),
+              borderData: FlBorderData(show: false),
+              gridData: const FlGridData(show: false),
+              lineTouchData: const LineTouchData(enabled: false),
+            ),
+            duration: Duration.zero, // Disable animations for performance
           ),
         ),
       ),
     );
   }
 
-  String _getTrendIcon(String? trend) {
-    return switch (trend) {
-      'UP' => '📈',
-      'DOWN' => '📉',
-      _ => '➡️',
-    };
+  /// Sample prices to last N data points for clearer visualization
+  List<double> _samplePrices(List<double> prices) {
+    if (prices.length <= _maxDataPoints) return prices;
+    // Take the last N prices (most recent trading days)
+    return prices.sublist(prices.length - _maxDataPoints);
   }
 
-  Color _getTrendColor(String? trend) {
-    return switch (trend) {
-      'UP' => Colors.red,
-      'DOWN' => Colors.green,
-      _ => Colors.grey,
-    };
-  }
+  /// Normalize prices to 0-1 range for consistent chart height
+  /// Returns null if there's not enough variation to show meaningful chart
+  List<FlSpot>? _normalizeToSpots(List<double> prices) {
+    if (prices.isEmpty) return null;
+    if (prices.length == 1) return null;
 
-  Color _getScoreColor(double score) {
-    if (score >= 50) return Colors.red.shade700;
-    if (score >= 35) return Colors.orange.shade700;
-    if (score >= 20) return Colors.amber.shade700;
-    return Colors.grey.shade600;
+    // Find min and max
+    var min = prices[0];
+    var max = prices[0];
+    for (final price in prices) {
+      if (price < min) min = price;
+      if (price > max) max = price;
+    }
+
+    // Check if there's meaningful variation (at least 0.3%)
+    final range = max - min;
+    final avgPrice = (max + min) / 2;
+    final variationPercent = avgPrice > 0 ? range / avgPrice : 0;
+
+    if (variationPercent < _minVariationPercent) {
+      // Not enough variation, don't show chart
+      return null;
+    }
+
+    // Normalize to 0-1 range with vertical padding
+    return List.generate(
+      prices.length,
+      (i) => FlSpot(
+        i.toDouble(),
+        ((prices[i] - min) / range) * _contentRange + _verticalPadding,
+      ),
+    );
   }
 }

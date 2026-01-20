@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
+import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 
@@ -21,9 +23,14 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-/// FinMind API client
+/// FinMind API client (for historical data)
 final finMindClientProvider = Provider<FinMindClient>((ref) {
   return FinMindClient();
+});
+
+/// TWSE Open Data client (for daily all-market prices)
+final twseClientProvider = Provider<TwseClient>((ref) {
+  return TwseClient();
 });
 
 /// RSS parser
@@ -44,10 +51,12 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
 });
 
 /// Price repository provider
+/// Uses TWSE for daily prices, FinMind for historical data
 final priceRepositoryProvider = Provider<PriceRepository>((ref) {
   return PriceRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
+    twseClient: ref.watch(twseClientProvider),
   );
 });
 
@@ -72,6 +81,11 @@ final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
   );
+});
+
+/// Settings repository provider (with secure storage for sensitive data)
+final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
+  return SettingsRepository(database: ref.watch(databaseProvider));
 });
 
 // ==================================================

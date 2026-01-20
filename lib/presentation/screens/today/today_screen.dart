@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
+import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
+import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
 /// Today screen - shows daily recommendations and watchlist status
 class TodayScreen extends ConsumerStatefulWidget {
@@ -46,12 +51,22 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               onPressed: _runUpdate,
               tooltip: '更新資料',
             ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => context.push('/alerts'),
+            tooltip: '價格提醒',
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: () => context.push('/settings'),
+            tooltip: '設定',
+          ),
         ],
       ),
-      body: RefreshIndicator(
+      body: ThemedRefreshIndicator(
         onRefresh: () => ref.read(todayProvider.notifier).loadData(),
         child: state.isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const StockListShimmer(itemCount: 5)
             : state.error != null
             ? _buildError(state.error!)
             : _buildContent(state),
@@ -60,25 +75,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Widget _buildError(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('載入失敗', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            Text(error, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => ref.read(todayProvider.notifier).loadData(),
-              child: const Text('重試'),
-            ),
-          ],
-        ),
-      ),
+    return EmptyStates.error(
+      message: error,
+      onRetry: () => ref.read(todayProvider.notifier).loadData(),
     );
   }
 
@@ -145,48 +144,46 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
         // Recommendations
         if (state.recommendations.isEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.inbox_outlined,
-                      size: 48,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '尚無今日推薦',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton.tonal(
-                      onPressed: _runUpdate,
-                      child: const Text('立即更新'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
           )
         else
           SliverList.builder(
             itemCount: state.recommendations.length,
             itemBuilder: (context, index) {
               final rec = state.recommendations[index];
-              return StockCard(
-                symbol: rec.symbol,
-                stockName: rec.stockName,
-                latestClose: rec.latestClose,
-                priceChange: rec.priceChange,
-                score: rec.score,
-                reasons: rec.reasons.map((r) => r.reasonType).toList(),
-                trendState: rec.trendState,
-                onTap: () => context.push('/stock/${rec.symbol}'),
+              // RepaintBoundary for better scroll performance
+              return RepaintBoundary(
+                child: StockCard(
+                  symbol: rec.symbol,
+                  stockName: rec.stockName,
+                  latestClose: rec.latestClose,
+                  priceChange: rec.priceChange,
+                  score: rec.score,
+                  reasons: rec.reasons.map((r) => r.reasonType).toList(),
+                  trendState: rec.trendState,
+                  recentPrices: rec.recentPrices,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/stock/${rec.symbol}');
+                  },
+                  onLongPress: () {
+                    showStockPreviewSheet(
+                      context: context,
+                      data: StockPreviewData(
+                        symbol: rec.symbol,
+                        stockName: rec.stockName,
+                        latestClose: rec.latestClose,
+                        priceChange: rec.priceChange,
+                        score: rec.score,
+                        trendState: rec.trendState,
+                        reasons: rec.reasons.map((r) => r.reasonType).toList(),
+                      ),
+                      onViewDetails: () => context.push('/stock/${rec.symbol}'),
+                    );
+                  },
+                ),
               );
             },
           ),
@@ -255,7 +252,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                         ),
                       )
                     : null,
-                onTap: () => context.push('/stock/${status.symbol}'),
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/stock/${status.symbol}');
+                },
               );
             },
           ),

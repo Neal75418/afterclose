@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
@@ -39,6 +42,26 @@ class UpdateService {
        _institutionalRepo = institutionalRepository,
        _analysisService = analysisService ?? const AnalysisService(),
        _ruleEngine = ruleEngine ?? const RuleEngine();
+
+  /// Default popular Taiwan stocks for free account fallback
+  /// These are high-volume stocks that are commonly tracked
+  static const _defaultPopularStocks = [
+    '2330', // 台積電
+    '2317', // 鴻海
+    '2454', // 聯發科
+    '2308', // 台達電
+    '2881', // 富邦金
+    '2882', // 國泰金
+    '2303', // 聯電
+    '3711', // 日月光投控
+    '2891', // 中信金
+    '2412', // 中華電
+    '2886', // 兆豐金
+    '1301', // 台塑
+    '2884', // 玉山金
+    '3037', // 欣興
+    '2357', // 華碩
+  ];
 
   final AppDatabase _db;
   final StockRepository _stockRepo;
@@ -93,15 +116,119 @@ class UpdateService {
         }
       }
 
-      // Step 3: Fetch daily prices
-      onProgress?.call(3, 10, '取得價格資料');
+      // Step 3: Fetch daily prices (TWSE - all market) and quick-filter candidates
+      onProgress?.call(3, 10, '取得今日價格');
+      var marketCandidates = <String>[];
       try {
-        final priceCount = await _priceRepo.syncTodayPrices(
-          date: normalizedDate,
-        );
-        result.pricesUpdated = priceCount;
+        final syncResult = await _priceRepo.syncAllPricesForDate(normalizedDate);
+        result.pricesUpdated = syncResult.count;
+        marketCandidates = syncResult.candidates;
       } catch (e) {
         result.errors.add('價格資料更新失敗: $e');
+      }
+
+      // Step 3.5: Ensure historical data exists for analysis
+      // Now includes: watchlist + popular stocks + market candidates (from quick filter)
+      // OPTIMIZED: Parallel fetching + smart skipping
+      onProgress?.call(4, 10, '取得歷史資料');
+      try {
+        // Combine all sources for historical data
+        final watchlist = await _db.getWatchlist();
+        final symbolsForHistory = <String>{
+          ...watchlist.map((w) => w.symbol),
+          ..._defaultPopularStocks,
+          ...marketCandidates, // Quick-filtered candidates from all market!
+        }.toList();
+
+        // Check which stocks need historical data
+        const requiredDays = RuleParams.lookbackPrice + 30;
+        final historyStartDate = normalizedDate.subtract(
+          Duration(days: requiredDays),
+        );
+
+        // Smart skip: Only check stocks that might need data
+        // Use batch query to check latest price dates
+        final latestPrices = await _db.getLatestPricesBatch(symbolsForHistory);
+
+        final symbolsNeedingData = <String>[];
+        for (final symbol in symbolsForHistory) {
+          final latestPrice = latestPrices[symbol];
+          if (latestPrice == null) {
+            // No data at all - need to fetch
+            symbolsNeedingData.add(symbol);
+            continue;
+          }
+
+          // Smart skip: If data is less than 7 days old, skip
+          // (it's likely complete enough for analysis)
+          final daysSinceLastUpdate = normalizedDate.difference(latestPrice.date).inDays;
+          if (daysSinceLastUpdate > 7) {
+            symbolsNeedingData.add(symbol);
+          }
+        }
+
+        // Only fetch for stocks that actually need it
+        if (symbolsNeedingData.isEmpty) {
+          onProgress?.call(4, 10, '歷史資料已完整');
+        } else {
+          // OPTIMIZATION: Parallel fetch with controlled concurrency
+          final total = symbolsNeedingData.length;
+          var completed = 0;
+          var historySynced = 0;
+
+          // Process in batches of 5 for parallel execution
+          const batchSize = 5;
+          final failedSymbols = <String>[];
+
+          for (var i = 0; i < total; i += batchSize) {
+            final batchEnd = (i + batchSize).clamp(0, total);
+            final batch = symbolsNeedingData.sublist(i, batchEnd);
+
+            onProgress?.call(4, 10, '歷史資料 (${completed + 1}~$batchEnd / $total)');
+
+            // Fetch batch in parallel, tracking failures
+            final futures = batch.map((symbol) async {
+              try {
+                final count = await _priceRepo.syncStockPrices(
+                  symbol,
+                  startDate: historyStartDate,
+                  endDate: normalizedDate,
+                );
+                return (symbol, count, null as Object?);
+              } catch (e) {
+                return (symbol, 0, e);
+              }
+            });
+
+            final results = await Future.wait(futures);
+
+            for (final (symbol, count, error) in results) {
+              if (error != null) {
+                failedSymbols.add(symbol);
+                // Log error for debugging (first 3 failures only to avoid log spam)
+                if (failedSymbols.length <= 3) {
+                  debugPrint('[UpdateService] Failed to sync $symbol: $error');
+                }
+              } else {
+                historySynced += count;
+              }
+            }
+            completed += batch.length;
+          }
+
+          // Report failed symbols if any
+          if (failedSymbols.isNotEmpty) {
+            result.errors.add(
+              '歷史資料同步失敗 (${failedSymbols.length} 檔): ${failedSymbols.take(5).join(", ")}${failedSymbols.length > 5 ? "..." : ""}',
+            );
+          }
+
+          if (historySynced > 0) {
+            result.pricesUpdated += historySynced;
+          }
+        }
+      } catch (e) {
+        result.errors.add('歷史資料更新失敗: $e');
       }
 
       // Step 4: Fetch institutional data (optional)
@@ -138,28 +265,60 @@ class UpdateService {
         result.errors.add('新聞更新失敗: $e');
       }
 
-      // Step 6: Filter candidates
+      // Step 6: Filter candidates (now includes market-wide candidates!)
       onProgress?.call(6, 10, '篩選候選股票');
-      final candidates = await _filterCandidates(normalizedDate);
-      result.candidatesFound = candidates.length;
+      var candidates = <String>[];
+      try {
+        // Include market candidates from quick filter
+        candidates = await _filterCandidates(
+          normalizedDate,
+          additionalSymbols: marketCandidates,
+        );
+        result.candidatesFound = candidates.length;
+
+        // Fallback: if no candidates meet strict criteria,
+        // use all stocks with sufficient historical data
+        if (candidates.isEmpty) {
+          final watchlist = await _db.getWatchlist();
+          candidates = <String>{
+            ...watchlist.map((w) => w.symbol),
+            ..._defaultPopularStocks,
+            ...marketCandidates,
+          }.toList();
+          result.candidatesFound = candidates.length;
+        }
+      } catch (e) {
+        result.errors.add('候選股票篩選失敗: $e');
+        // Continue with empty candidates - will result in no recommendations
+      }
 
       // Step 7-8: Run analysis and apply rule engine
       onProgress?.call(7, 10, '執行分析');
-      final scoredStocks = await _analyzeAndScore(
-        candidates,
-        normalizedDate,
-        onProgress: (current, total) {
-          onProgress?.call(7, 10, '分析中 ($current/$total)');
-        },
-      );
-      result.stocksAnalyzed = scoredStocks.length;
+      var scoredStocks = <ScoredStock>[];
+      try {
+        scoredStocks = await _analyzeAndScore(
+          candidates,
+          normalizedDate,
+          onProgress: (current, total) {
+            onProgress?.call(7, 10, '分析中 ($current/$total)');
+          },
+        );
+        result.stocksAnalyzed = scoredStocks.length;
+      } catch (e) {
+        result.errors.add('股票分析失敗: $e');
+        // Continue with empty scored stocks - will result in no recommendations
+      }
 
       // Step 9: Generate top 10 recommendations
       onProgress?.call(9, 10, '產生推薦');
-      await _generateRecommendations(scoredStocks, normalizedDate);
-      result.recommendationsGenerated = scoredStocks
-          .take(RuleParams.dailyTopN)
-          .length;
+      try {
+        await _generateRecommendations(scoredStocks, normalizedDate);
+        result.recommendationsGenerated = scoredStocks
+            .take(RuleParams.dailyTopN)
+            .length;
+      } catch (e) {
+        result.errors.add('推薦產生失敗: $e');
+      }
 
       // Step 10: Mark completion
       onProgress?.call(10, 10, '完成');
@@ -194,31 +353,44 @@ class UpdateService {
 
   /// Filter stocks that meet candidate criteria
   ///
-  /// Uses batch query to avoid N+1 problem
-  Future<List<String>> _filterCandidates(DateTime date) async {
+  /// Checks: watchlist + popular stocks + additional symbols (from market-wide filter)
+  ///
+  /// [additionalSymbols] - Extra symbols from quick market filter to include
+  Future<List<String>> _filterCandidates(
+    DateTime date, {
+    List<String> additionalSymbols = const [],
+  }) async {
     final candidates = <String>[];
-    final allStocks = await _stockRepo.getAllStocks();
 
-    if (allStocks.isEmpty) return candidates;
+    // Combine all sources: watchlist + popular + market candidates
+    final watchlist = await _db.getWatchlist();
+    final symbolsToCheck = <String>{
+      ...watchlist.map((w) => w.symbol),
+      ..._defaultPopularStocks,
+      ...additionalSymbols, // NEW: Include market-wide quick-filtered candidates
+    }.toList();
+
+    if (symbolsToCheck.isEmpty) return candidates;
 
     // Calculate date range for price history
     final startDate = date.subtract(
       const Duration(days: RuleParams.lookbackPrice + 10),
     );
 
-    // Batch load all prices in one query
-    final allPrices = await _db.getAllPricesInRange(
+    // Batch load prices for stocks we're checking
+    final pricesMap = await _db.getPriceHistoryBatch(
+      symbolsToCheck,
       startDate: startDate,
       endDate: date,
     );
 
-    for (final stock in allStocks) {
-      final prices = allPrices[stock.symbol];
+    for (final symbol in symbolsToCheck) {
+      final prices = pricesMap[symbol];
       if (prices == null || prices.isEmpty) continue;
 
       // Check if meets candidate criteria
       if (_analysisService.isCandidate(prices)) {
-        candidates.add(stock.symbol);
+        candidates.add(symbol);
       }
     }
 
@@ -246,26 +418,26 @@ class UpdateService {
     );
     final instStartDate = date.subtract(const Duration(days: 10));
 
-    // Batch load all required data upfront
-    final pricesMap = await _db.getPriceHistoryBatch(
-      candidates,
-      startDate: startDate,
-      endDate: date,
-    );
-
-    // Batch load institutional data if repository is available
-    Map<String, List<DailyInstitutionalEntry>> institutionalMap = {};
+    // Batch load all required data in parallel for better performance
     final instRepo = _institutionalRepo;
-    if (instRepo != null) {
-      institutionalMap = await _db.getInstitutionalHistoryBatch(
-        candidates,
-        startDate: instStartDate,
-        endDate: date,
-      );
-    }
+    final futures = <Future>[
+      _db.getPriceHistoryBatch(candidates, startDate: startDate, endDate: date),
+      _newsRepo.getNewsForStocksBatch(candidates, days: 2),
+      if (instRepo != null)
+        _db.getInstitutionalHistoryBatch(
+          candidates,
+          startDate: instStartDate,
+          endDate: date,
+        ),
+    ];
 
-    // Batch load news data
-    final newsMap = await _newsRepo.getNewsForStocksBatch(candidates, days: 2);
+    final results = await Future.wait(futures);
+
+    final pricesMap = results[0] as Map<String, List<DailyPriceEntry>>;
+    final newsMap = results[1] as Map<String, List<NewsItemEntry>>;
+    final institutionalMap = instRepo != null
+        ? results[2] as Map<String, List<DailyInstitutionalEntry>>
+        : <String, List<DailyInstitutionalEntry>>{};
 
     // Process each candidate with pre-loaded data
     for (var i = 0; i < candidates.length; i++) {
@@ -365,16 +537,10 @@ class UpdateService {
   }
 
   /// Check if date is a trading day (Taiwan market)
+  ///
+  /// Uses [TaiwanCalendar] to check for weekends and national holidays.
   bool _isTradingDay(DateTime date) {
-    // Skip weekends
-    if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
-      return false;
-    }
-
-    // TODO: Add Taiwan stock market holiday calendar
-    // For now, assume all weekdays are trading days
-
-    return true;
+    return TaiwanCalendar.isTradingDay(date);
   }
 
   /// Check if stock list should be updated (weekly)

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -60,6 +61,7 @@ class RecommendationWithDetails {
     this.priceChange,
     this.reasons = const [],
     this.trendState,
+    this.recentPrices,
   });
 
   final String symbol;
@@ -70,6 +72,7 @@ class RecommendationWithDetails {
   final double? priceChange;
   final List<DailyReasonEntry> reasons;
   final String? trendState;
+  final List<double>? recentPrices;
 }
 
 /// Status of a watchlist stock
@@ -134,84 +137,76 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final lastRun = await _db.getLatestUpdateRun();
       final today = DateTime.now();
       final normalizedToday = DateTime.utc(today.year, today.month, today.day);
+      final historyStart = normalizedToday.subtract(const Duration(days: 5));
 
       // Get today's recommendations
       final recommendations = await _db.getRecommendations(normalizedToday);
 
-      // Build recommendation details
-      final recWithDetails = <RecommendationWithDetails>[];
-      for (var i = 0; i < recommendations.length; i++) {
-        final rec = recommendations[i];
-        final stock = await _db.getStock(rec.symbol);
-        final latestPrice = await _db.getLatestPrice(rec.symbol);
-        final reasons = await _db.getReasons(rec.symbol, normalizedToday);
-        final analysis = await _db.getAnalysis(rec.symbol, normalizedToday);
-
-        // Calculate price change
-        double? priceChange;
-        if (latestPrice?.close != null) {
-          final history = await _db.getPriceHistory(
-            rec.symbol,
-            startDate: normalizedToday.subtract(const Duration(days: 5)),
-            endDate: normalizedToday,
-          );
-          if (history.length >= 2) {
-            final prevClose = history[history.length - 2].close;
-            if (prevClose != null && prevClose > 0) {
-              priceChange =
-                  ((latestPrice!.close! - prevClose) / prevClose) * 100;
-            }
-          }
-        }
-
-        recWithDetails.add(
-          RecommendationWithDetails(
-            symbol: rec.symbol,
-            score: rec.score,
-            rank: rec.rank,
-            stockName: stock?.name,
-            latestClose: latestPrice?.close,
-            priceChange: priceChange,
-            reasons: reasons,
-            trendState: analysis?.trendState,
-          ),
-        );
-      }
-
-      // Get watchlist status
+      // Get watchlist
       final watchlist = await _db.getWatchlist();
+
+      // Collect all symbols we need to load
+      final recSymbols = recommendations.map((r) => r.symbol).toList();
+      final watchlistSymbols = watchlist.map((w) => w.symbol).toList();
+      final allSymbols = {...recSymbols, ...watchlistSymbols}.toList();
+
+      // Batch load all data in parallel
+      final results = await Future.wait([
+        _db.getStocksBatch(allSymbols),
+        _db.getLatestPricesBatch(allSymbols),
+        _db.getAnalysesBatch(allSymbols, normalizedToday),
+        _db.getReasonsBatch(allSymbols, normalizedToday),
+        _db.getPriceHistoryBatch(
+          allSymbols,
+          startDate: historyStart,
+          endDate: normalizedToday,
+        ),
+      ]);
+
+      final stocksMap = results[0] as Map<String, StockMasterEntry>;
+      final latestPricesMap = results[1] as Map<String, DailyPriceEntry>;
+      final analysesMap = results[2] as Map<String, DailyAnalysisEntry>;
+      final reasonsMap = results[3] as Map<String, List<DailyReasonEntry>>;
+      final priceHistoriesMap = results[4] as Map<String, List<DailyPriceEntry>>;
+
+      // Calculate price changes using utility
+      final priceChanges = PriceCalculator.calculatePriceChangesBatch(
+        priceHistoriesMap,
+        latestPricesMap,
+      );
+
+      // Build recommendation details
+      final recWithDetails = recommendations.map((rec) {
+        final priceHistory = priceHistoriesMap[rec.symbol];
+        // Extract close prices for sparkline
+        final recentPrices = priceHistory
+            ?.map((p) => p.close)
+            .whereType<double>()
+            .toList();
+        return RecommendationWithDetails(
+          symbol: rec.symbol,
+          score: rec.score,
+          rank: rec.rank,
+          stockName: stocksMap[rec.symbol]?.name,
+          latestClose: latestPricesMap[rec.symbol]?.close,
+          priceChange: priceChanges[rec.symbol],
+          reasons: reasonsMap[rec.symbol] ?? [],
+          trendState: analysesMap[rec.symbol]?.trendState,
+          recentPrices: recentPrices,
+        );
+      }).toList();
+
+      // Build watchlist status
       final watchlistStatus = <String, WatchlistStockStatus>{};
-
       for (final item in watchlist) {
-        final stock = await _db.getStock(item.symbol);
-        final latestPrice = await _db.getLatestPrice(item.symbol);
-        final analysis = await _db.getAnalysis(item.symbol, normalizedToday);
-        final reasons = await _db.getReasons(item.symbol, normalizedToday);
-
-        // Calculate price change
-        double? priceChange;
-        if (latestPrice?.close != null) {
-          final history = await _db.getPriceHistory(
-            item.symbol,
-            startDate: normalizedToday.subtract(const Duration(days: 5)),
-            endDate: normalizedToday,
-          );
-          if (history.length >= 2) {
-            final prevClose = history[history.length - 2].close;
-            if (prevClose != null && prevClose > 0) {
-              priceChange =
-                  ((latestPrice!.close! - prevClose) / prevClose) * 100;
-            }
-          }
-        }
-
+        final reasons = reasonsMap[item.symbol] ?? [];
         watchlistStatus[item.symbol] = WatchlistStockStatus(
           symbol: item.symbol,
-          stockName: stock?.name,
-          latestClose: latestPrice?.close,
-          priceChange: priceChange,
+          stockName: stocksMap[item.symbol]?.name,
+          latestClose: latestPricesMap[item.symbol]?.close,
+          priceChange: priceChanges[item.symbol],
           hasSignal: reasons.isNotEmpty,
-          signalType: analysis?.trendState,
+          signalType: analysesMap[item.symbol]?.trendState,
         );
       }
 

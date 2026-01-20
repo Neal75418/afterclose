@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/presentation/screens/alerts/alerts_screen.dart';
 import 'package:afterclose/presentation/screens/news/news_screen.dart';
 import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
+import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 import 'package:afterclose/presentation/screens/stock_detail/stock_detail_screen.dart';
 import 'package:afterclose/presentation/screens/today/today_screen.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_screen.dart';
@@ -84,6 +86,20 @@ final router = GoRouter(
         final symbol = state.pathParameters['symbol']!;
         return StockDetailScreen(symbol: symbol);
       },
+    ),
+
+    // Settings (full screen, outside shell)
+    GoRoute(
+      path: '/settings',
+      name: 'settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
+
+    // Alerts (full screen, outside shell)
+    GoRoute(
+      path: '/alerts',
+      name: 'alerts',
+      builder: (context, state) => const AlertsScreen(),
     ),
   ],
 );

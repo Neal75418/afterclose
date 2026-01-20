@@ -1,3 +1,5 @@
+import 'dart:math' show Random;
+
 import 'package:dio/dio.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -10,9 +12,15 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 ///
 /// Each user should register and use their own token.
 class FinMindClient {
-  FinMindClient({Dio? dio, String? token})
-    : _dio = dio ?? _createDio(),
-      _token = token;
+  FinMindClient({
+    Dio? dio,
+    String? token,
+    int maxRetries = 3,
+    Duration baseDelay = const Duration(milliseconds: 500),
+  })  : _dio = dio ?? _createDio(),
+        _token = token,
+        _maxRetries = maxRetries,
+        _baseDelay = baseDelay;
 
   static const String baseUrl = 'https://api.finmindtrade.com/api/v4/data';
 
@@ -23,6 +31,9 @@ class FinMindClient {
   static final RegExp _tokenPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
 
   final Dio _dio;
+  final int _maxRetries;
+  final Duration _baseDelay;
+  final Random _random = Random();
 
   /// User's FinMind API token (optional but recommended)
   String? _token;
@@ -84,63 +95,153 @@ class FinMindClient {
     return result;
   }
 
-  /// Generic request handler with error mapping
+  /// Generic request handler with error mapping and retry logic
   Future<List<Map<String, dynamic>>> _request(
     Map<String, dynamic> params,
   ) async {
-    try {
-      final response = await _dio.get(
-        '',
-        queryParameters: _buildParams(params),
-      );
+    int attempt = 0;
+    Object? lastError;
 
-      if (response.statusCode == 200) {
-        final data = response.data;
+    while (attempt <= _maxRetries) {
+      try {
+        final response = await _dio.get(
+          '',
+          queryParameters: _buildParams(params),
+        );
 
-        // Check for API error response
-        if (data['status'] != null && data['status'] != 200) {
-          final msg = data['msg'] ?? 'Unknown API error';
+        if (response.statusCode == 200) {
+          final data = response.data;
 
-          // Rate limit check
-          if (msg.toString().contains('limit') ||
-              msg.toString().contains('quota')) {
-            throw const RateLimitException();
+          // Check for API error response
+          if (data['status'] != null && data['status'] != 200) {
+            final msg = data['msg'] ?? 'Unknown API error';
+
+            // Rate limit check
+            if (msg.toString().contains('limit') ||
+                msg.toString().contains('quota')) {
+              throw const RateLimitException();
+            }
+
+            throw ApiException(msg.toString(), data['status'] as int?);
           }
 
-          throw ApiException(msg.toString(), data['status'] as int?);
+          // Return data array
+          final dataList = data['data'];
+          if (dataList is List) {
+            return dataList.cast<Map<String, dynamic>>();
+          }
+          return [];
         }
 
-        // Return data array
-        final dataList = data['data'];
-        if (dataList is List) {
-          return dataList.cast<Map<String, dynamic>>();
+        // Server errors (5xx) are retryable
+        if (response.statusCode != null && response.statusCode! >= 500) {
+          lastError = ApiException(
+            'Server error: ${response.statusCode}',
+            response.statusCode,
+          );
+          attempt++;
+          if (attempt <= _maxRetries) {
+            await _delay(attempt);
+            continue;
+          }
         }
-        return [];
-      }
 
-      throw ApiException(
-        'Request failed with status: ${response.statusCode}',
-        response.statusCode,
-      );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        throw NetworkException('Connection timeout', e);
+        throw ApiException(
+          'Request failed with status: ${response.statusCode}',
+          response.statusCode,
+        );
+      } on DioException catch (e) {
+        lastError = e;
+
+        // Check if this error is retryable
+        if (_isRetryable(e)) {
+          attempt++;
+          if (attempt <= _maxRetries) {
+            await _delay(attempt);
+            continue;
+          }
+        }
+
+        // Convert to appropriate exception
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          throw NetworkException('Connection timeout after $attempt attempts', e);
+        }
+        if (e.response?.statusCode == 429) {
+          throw const RateLimitException();
+        }
+        throw NetworkException(e.message ?? 'Network error', e);
+      } on RateLimitException {
+        rethrow; // Don't retry rate limit errors
+      } on ApiException catch (e) {
+        // Don't retry client errors (except rate limit which is handled above)
+        if (e.statusCode != null && e.statusCode! >= 400 && e.statusCode! < 500) {
+          rethrow;
+        }
+        lastError = e;
+        attempt++;
+        if (attempt <= _maxRetries) {
+          await _delay(attempt);
+          continue;
+        }
+        rethrow;
       }
-      if (e.response?.statusCode == 429) {
-        throw const RateLimitException();
-      }
-      throw NetworkException(e.message ?? 'Network error', e);
     }
+
+    // All retries exhausted
+    if (lastError is Exception) {
+      throw lastError;
+    }
+    throw NetworkException('Request failed after $_maxRetries retries');
+  }
+
+  /// Check if a DioException is retryable
+  bool _isRetryable(DioException e) {
+    // Network-related errors are retryable
+    switch (e.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+        return true;
+      case DioExceptionType.badResponse:
+        // Retry on server errors (5xx) but not client errors (4xx)
+        final statusCode = e.response?.statusCode;
+        if (statusCode != null && statusCode >= 500) {
+          return true;
+        }
+        // Retry on 429 (rate limit) with backoff
+        if (statusCode == 429) {
+          return true;
+        }
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  /// Calculate delay with exponential backoff and jitter
+  Future<void> _delay(int attempt) async {
+    // Exponential backoff: baseDelay * 2^(attempt-1)
+    final exponentialDelay = _baseDelay.inMilliseconds * (1 << (attempt - 1));
+    // Add jitter: ±25% of the delay
+    final jitter = (_random.nextDouble() - 0.5) * 0.5 * exponentialDelay;
+    final totalDelay = Duration(milliseconds: (exponentialDelay + jitter).round());
+    await Future.delayed(totalDelay);
   }
 
   /// Get Taiwan stock list
   ///
   /// Dataset: TaiwanStockInfo
+  /// Note: Malformed records are silently skipped
   Future<List<FinMindStockInfo>> getStockList() async {
     final data = await _request({'dataset': 'TaiwanStockInfo'});
 
-    return data.map((json) => FinMindStockInfo.fromJson(json)).toList();
+    // Use tryFromJson to skip malformed records
+    return data
+        .map((json) => FinMindStockInfo.tryFromJson(json))
+        .whereType<FinMindStockInfo>()
+        .toList();
   }
 
   /// Get daily stock prices
@@ -165,12 +266,17 @@ class FinMindClient {
     }
 
     final data = await _request(params);
-    return data.map((json) => FinMindDailyPrice.fromJson(json)).toList();
+    // Use tryFromJson to skip malformed records
+    return data
+        .map((json) => FinMindDailyPrice.tryFromJson(json))
+        .whereType<FinMindDailyPrice>()
+        .toList();
   }
 
   /// Get all stock prices for a date range (batch)
   ///
   /// Use this for efficient bulk fetching
+  /// Note: Malformed records are silently skipped
   Future<List<FinMindDailyPrice>> getAllDailyPrices({
     required String startDate,
     String? endDate,
@@ -182,7 +288,11 @@ class FinMindClient {
     }
 
     final data = await _request(params);
-    return data.map((json) => FinMindDailyPrice.fromJson(json)).toList();
+    // Use tryFromJson to skip malformed records
+    return data
+        .map((json) => FinMindDailyPrice.tryFromJson(json))
+        .whereType<FinMindDailyPrice>()
+        .toList();
   }
 
   /// Get institutional investor trading data
@@ -204,7 +314,11 @@ class FinMindClient {
     }
 
     final data = await _request(params);
-    return data.map((json) => FinMindInstitutional.fromJson(json)).toList();
+    // Use tryFromJson to skip malformed records
+    return data
+        .map((json) => FinMindInstitutional.tryFromJson(json))
+        .whereType<FinMindInstitutional>()
+        .toList();
   }
 
   /// Check if token is configured
@@ -227,13 +341,30 @@ class FinMindStockInfo {
     required this.type,
   });
 
+  /// Parse from JSON with validation
+  ///
+  /// Throws [FormatException] if required fields are missing
   factory FinMindStockInfo.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+
     return FinMindStockInfo(
-      stockId: json['stock_id']?.toString() ?? '',
+      stockId: stockId.toString(),
       stockName: json['stock_name']?.toString() ?? '',
       industryCategory: json['industry_category']?.toString() ?? '',
-      type: json['type']?.toString() ?? '', // "twse" or "tpex"
+      type: json['type']?.toString() ?? 'twse',
     );
+  }
+
+  /// Try to parse from JSON, returns null on failure
+  static FinMindStockInfo? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindStockInfo.fromJson(json);
+    } catch (_) {
+      return null;
+    }
   }
 
   final String stockId;
@@ -257,16 +388,44 @@ class FinMindDailyPrice {
     required this.volume,
   });
 
+  /// Parse from JSON with validation
+  ///
+  /// Throws [FormatException] if required fields are missing
   factory FinMindDailyPrice.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    // Parse close price - this is critical for analysis
+    final close = _parseDouble(json['close']);
+    if (close == null) {
+      throw FormatException('Missing or invalid close price', json);
+    }
+
     return FinMindDailyPrice(
-      stockId: json['stock_id']?.toString() ?? '',
-      date: json['date']?.toString() ?? '',
+      stockId: stockId.toString(),
+      date: date.toString(),
       open: _parseDouble(json['open']),
       high: _parseDouble(json['max']),
       low: _parseDouble(json['min']),
-      close: _parseDouble(json['close']),
+      close: close,
       volume: _parseDouble(json['Trading_Volume']),
     );
+  }
+
+  /// Try to parse from JSON, returns null on failure
+  static FinMindDailyPrice? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindDailyPrice.fromJson(json);
+    } catch (_) {
+      return null;
+    }
   }
 
   final String stockId;
@@ -298,10 +457,23 @@ class FinMindInstitutional {
     required this.dealerSell,
   });
 
+  /// Parse from JSON with validation
+  ///
+  /// Throws [FormatException] if required fields are missing
   factory FinMindInstitutional.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
     return FinMindInstitutional(
-      stockId: json['stock_id']?.toString() ?? '',
-      date: json['date']?.toString() ?? '',
+      stockId: stockId.toString(),
+      date: date.toString(),
       foreignBuy: _parseDouble(json['Foreign_Investor_buy']) ?? 0,
       foreignSell: _parseDouble(json['Foreign_Investor_sell']) ?? 0,
       investmentTrustBuy: _parseDouble(json['Investment_Trust_buy']) ?? 0,
@@ -309,6 +481,15 @@ class FinMindInstitutional {
       dealerBuy: _parseDouble(json['Dealer_self_buy']) ?? 0,
       dealerSell: _parseDouble(json['Dealer_self_sell']) ?? 0,
     );
+  }
+
+  /// Try to parse from JSON, returns null on failure
+  static FinMindInstitutional? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindInstitutional.fromJson(json);
+    } catch (_) {
+      return null;
+    }
   }
 
   final String stockId;

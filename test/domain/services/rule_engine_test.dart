@@ -4,6 +4,8 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
+import '../../helpers/price_data_generators.dart';
+
 void main() {
   late RuleEngine ruleEngine;
 
@@ -13,11 +15,11 @@ void main() {
 
   group('RuleEngine', () {
     group('checkVolumeSpike', () {
-      test('should trigger when volume is 2x+ of 20-day average', () {
-        final prices = _generatePricesWithVolumeSpike(
+      test('should trigger when volume is 1.5x+ of 20-day average', () {
+        final prices = generatePricesWithVolumeSpike(
           days: 25,
           normalVolume: 1000,
-          spikeVolume: 2500, // 2.5x
+          spikeVolume: 2500, // 2.5x (above 1.5x threshold)
         );
 
         final result = ruleEngine.checkVolumeSpike(prices);
@@ -28,10 +30,10 @@ void main() {
       });
 
       test('should not trigger when volume is below threshold', () {
-        final prices = _generatePricesWithVolumeSpike(
+        final prices = generatePricesWithVolumeSpike(
           days: 25,
           normalVolume: 1000,
-          spikeVolume: 1500, // 1.5x, below 2x threshold
+          spikeVolume: 1400, // 1.4x (below 1.5x threshold)
         );
 
         final result = ruleEngine.checkVolumeSpike(prices);
@@ -41,11 +43,11 @@ void main() {
     });
 
     group('checkPriceSpike', () {
-      test('should trigger when price change >= 5%', () {
-        final prices = _generatePricesWithPriceSpike(
+      test('should trigger when price change >= 3%', () {
+        final prices = generatePricesWithPriceSpike(
           days: 5,
           basePrice: 100.0,
-          changePercent: 6.0, // 6% gain
+          changePercent: 6.0, // 6% gain (above 3% threshold)
         );
 
         final result = ruleEngine.checkPriceSpike(prices);
@@ -56,7 +58,7 @@ void main() {
       });
 
       test('should trigger on negative spike', () {
-        final prices = _generatePricesWithPriceSpike(
+        final prices = generatePricesWithPriceSpike(
           days: 5,
           basePrice: 100.0,
           changePercent: -7.0, // 7% loss
@@ -69,10 +71,10 @@ void main() {
       });
 
       test('should not trigger when change is below threshold', () {
-        final prices = _generatePricesWithPriceSpike(
+        final prices = generatePricesWithPriceSpike(
           days: 5,
           basePrice: 100.0,
-          changePercent: 3.0, // 3%, below 5% threshold
+          changePercent: 2.5, // 2.5%, below 3% threshold
         );
 
         final result = ruleEngine.checkPriceSpike(prices);
@@ -81,9 +83,202 @@ void main() {
       });
     });
 
+    group('checkWeakToStrong', () {
+      test('should trigger on range top breakout during downtrend', () {
+        // Need 60+ days for range lookback
+        final prices = generateDowntrendPrices(days: 65);
+        const context = AnalysisContext(
+          trendState: TrendState.down,
+          rangeTop: 100.0,
+        );
+
+        // Last price breaks out above range top (with buffer)
+        final pricesWithBreakout = [
+          ...prices.take(prices.length - 1),
+          createTestPrice(
+            date: DateTime.now(),
+            close: 101.0, // Above range top + 0.5% buffer
+          ),
+        ];
+
+        final result = ruleEngine.checkWeakToStrong(pricesWithBreakout, context);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.reversalW2S);
+        expect(result.score, RuleScores.reversalW2S);
+      });
+
+      test('should trigger on higher low formation during downtrend', () {
+        // Need 60+ days and 2 swing windows (40 days) for higher low detection
+        final prices = generateHigherLowPattern(days: 65);
+        const context = AnalysisContext(trendState: TrendState.down);
+
+        final result = ruleEngine.checkWeakToStrong(prices, context);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.reversalW2S);
+        expect(result.evidence['trigger'], 'higher_low');
+      });
+
+      test('should not trigger during uptrend', () {
+        final prices = generateConstantPrices(days: 65, basePrice: 100.0);
+        const context = AnalysisContext(
+          trendState: TrendState.up,
+          rangeTop: 100.0,
+        );
+
+        final result = ruleEngine.checkWeakToStrong(prices, context);
+
+        expect(result, isNull);
+      });
+    });
+
+    group('checkStrongToWeak', () {
+      test('should trigger on support breakdown during uptrend', () {
+        // Need 60+ days for range lookback
+        final prices = generateConstantPrices(days: 65, basePrice: 100.0);
+        const context = AnalysisContext(
+          trendState: TrendState.up,
+          supportLevel: 100.0,
+        );
+
+        // Last price breaks down (below support - 0.5% buffer)
+        final pricesWithBreakdown = [
+          ...prices.take(prices.length - 1),
+          createTestPrice(
+            date: DateTime.now(),
+            close: 99.0, // Below support * (1 - 0.005) = 99.5
+          ),
+        ];
+
+        final result = ruleEngine.checkStrongToWeak(pricesWithBreakdown, context);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.reversalS2W);
+        expect(result.score, RuleScores.reversalS2W);
+      });
+
+      test('should trigger on range bottom breakdown', () {
+        // Need 60+ days for range lookback
+        final prices = generateConstantPrices(days: 65, basePrice: 100.0);
+        const context = AnalysisContext(
+          trendState: TrendState.range,
+          rangeBottom: 100.0,
+        );
+
+        // Last price breaks below range bottom (with buffer)
+        final pricesWithBreakdown = [
+          ...prices.take(prices.length - 1),
+          createTestPrice(
+            date: DateTime.now(),
+            close: 99.0, // Below range bottom * (1 - 0.005) = 99.5
+          ),
+        ];
+
+        final result = ruleEngine.checkStrongToWeak(pricesWithBreakdown, context);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.reversalS2W);
+      });
+
+      test('should not trigger during downtrend', () {
+        final prices = generateConstantPrices(days: 65, basePrice: 100.0);
+        const context = AnalysisContext(
+          trendState: TrendState.down,
+          supportLevel: 100.0,
+        );
+
+        final result = ruleEngine.checkStrongToWeak(prices, context);
+
+        expect(result, isNull);
+      });
+    });
+
+    group('checkNewsRelated', () {
+      test('should trigger when news contains positive keyword', () {
+        final news = <NewsItemEntry>[
+          createTestNewsItem(id: 'news1', title: '台積電營收創新高'),
+        ];
+
+        final result = ruleEngine.checkNewsRelated(news);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.newsRelated);
+        expect(result.score, RuleScores.newsRelated);
+        expect(result.evidence['sentiment'], '利多');
+      });
+
+      test('should trigger when news contains negative keyword', () {
+        final news = <NewsItemEntry>[
+          createTestNewsItem(id: 'news1', title: '股價跌停'),
+        ];
+
+        final result = ruleEngine.checkNewsRelated(news);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.newsRelated);
+        expect(result.evidence['sentiment'], '利空');
+      });
+
+      test('should not trigger when news has no relevant keywords', () {
+        final news = <NewsItemEntry>[
+          createTestNewsItem(id: 'news1', title: 'Generic News Without Keywords'),
+        ];
+
+        final result = ruleEngine.checkNewsRelated(news);
+
+        expect(result, isNull);
+      });
+
+      test('should not trigger when no news', () {
+        final result = ruleEngine.checkNewsRelated([]);
+
+        expect(result, isNull);
+      });
+    });
+
+    group('evaluateStock', () {
+      test('should return multiple triggered reasons', () {
+        // Need at least swingWindow (20) days
+        final prices = generatePricesWithVolumeSpike(
+          days: 25,
+          normalVolume: 1000,
+          spikeVolume: 2500,
+        );
+        // Set resistance below current close (100.0) to trigger breakout
+        // breakoutLevel = 95.0 * 1.005 = 95.475, close 100.0 > 95.475
+        const context = AnalysisContext(
+          trendState: TrendState.range,
+          resistanceLevel: 95.0,
+        );
+
+        final reasons = ruleEngine.evaluateStock(
+          priceHistory: prices,
+          context: context,
+        );
+
+        expect(reasons, isNotEmpty);
+        expect(reasons.any((r) => r.type == ReasonType.volumeSpike), isTrue);
+        expect(reasons.any((r) => r.type == ReasonType.techBreakout), isTrue);
+      });
+
+      test('should return empty list when not enough data', () {
+        // Need swingWindow (20) days, so 15 is not enough
+        final prices = generateConstantPrices(days: 15, basePrice: 100.0);
+        const context = AnalysisContext(trendState: TrendState.range);
+
+        final reasons = ruleEngine.evaluateStock(
+          priceHistory: prices,
+          context: context,
+        );
+
+        expect(reasons, isEmpty);
+      });
+    });
+
     group('checkBreakout', () {
       test('should trigger when close breaks resistance', () {
-        final prices = _generatePrices(days: 30, basePrice: 100.0);
+        final prices = generateConstantPrices(days: 30, basePrice: 100.0);
         const context = AnalysisContext(
           trendState: TrendState.range,
           resistanceLevel: 100.0,
@@ -92,7 +287,7 @@ void main() {
         // Last price breaks out
         final pricesWithBreakout = [
           ...prices.take(prices.length - 1),
-          _createPrice(
+          createTestPrice(
             date: DateTime.now(),
             close: 101.0, // Above resistance + buffer
           ),
@@ -106,7 +301,7 @@ void main() {
       });
 
       test('should not trigger when close is below resistance', () {
-        final prices = _generatePrices(days: 30, basePrice: 100.0);
+        final prices = generateConstantPrices(days: 30, basePrice: 100.0);
         const context = AnalysisContext(
           trendState: TrendState.range,
           resistanceLevel: 105.0, // Above current price
@@ -120,7 +315,7 @@ void main() {
 
     group('checkBreakdown', () {
       test('should trigger when close breaks support', () {
-        final prices = _generatePrices(days: 30, basePrice: 100.0);
+        final prices = generateConstantPrices(days: 30, basePrice: 100.0);
         const context = AnalysisContext(
           trendState: TrendState.range,
           supportLevel: 100.0,
@@ -129,7 +324,7 @@ void main() {
         // Last price breaks down
         final pricesWithBreakdown = [
           ...prices.take(prices.length - 1),
-          _createPrice(
+          createTestPrice(
             date: DateTime.now(),
             close: 99.0, // Below support - buffer
           ),
@@ -145,7 +340,7 @@ void main() {
 
     group('checkInstitutionalShift', () {
       test('should trigger on direction reversal', () {
-        final history = _generateInstitutionalHistory(
+        final history = generateInstitutionalHistory(
           days: 5,
           prevDirection: -1000, // Selling
           todayDirection: 500, // Buying
@@ -159,7 +354,7 @@ void main() {
       });
 
       test('should not trigger when direction is same', () {
-        final history = _generateInstitutionalHistory(
+        final history = generateInstitutionalHistory(
           days: 5,
           prevDirection: 1000, // Buying
           todayDirection: 500, // Still buying
@@ -231,6 +426,55 @@ void main() {
 
         expect(score, 13); // 18 * 0.7 = 12.6, rounded to 13
       });
+
+      test('should add bonus for reversal + volume spike', () {
+        final reasons = [
+          const TriggeredReason(
+            type: ReasonType.reversalW2S,
+            score: 35,
+            evidence: {},
+            template: 'test',
+          ),
+          const TriggeredReason(
+            type: ReasonType.volumeSpike,
+            score: 18,
+            evidence: {},
+            template: 'test',
+          ),
+        ];
+
+        final score = ruleEngine.calculateScore(reasons);
+
+        expect(score, 59); // 35 + 18 + 6 reversal volume bonus
+      });
+
+      test('should add both bonuses when applicable', () {
+        final reasons = [
+          const TriggeredReason(
+            type: ReasonType.techBreakout,
+            score: 25,
+            evidence: {},
+            template: 'test',
+          ),
+          const TriggeredReason(
+            type: ReasonType.reversalW2S,
+            score: 35,
+            evidence: {},
+            template: 'test',
+          ),
+          const TriggeredReason(
+            type: ReasonType.volumeSpike,
+            score: 18,
+            evidence: {},
+            template: 'test',
+          ),
+        ];
+
+        final score = ruleEngine.calculateScore(reasons);
+
+        // 25 + 35 + 18 = 78, + 6 (breakout bonus) + 6 (reversal bonus) = 90
+        expect(score, 90);
+      });
     });
 
     group('getTopReasons', () {
@@ -293,95 +537,4 @@ void main() {
       });
     });
   });
-}
-
-// ==========================================
-// Test Helpers
-// ==========================================
-
-List<DailyPriceEntry> _generatePrices({
-  required int days,
-  required double basePrice,
-}) {
-  final now = DateTime.now();
-  return List.generate(days, (i) {
-    return _createPrice(
-      date: now.subtract(Duration(days: days - i - 1)),
-      open: basePrice,
-      high: basePrice * 1.01,
-      low: basePrice * 0.99,
-      close: basePrice,
-      volume: 1000,
-    );
-  });
-}
-
-List<DailyPriceEntry> _generatePricesWithVolumeSpike({
-  required int days,
-  required double normalVolume,
-  required double spikeVolume,
-}) {
-  final now = DateTime.now();
-  return List.generate(days, (i) {
-    final isToday = i == days - 1;
-    return _createPrice(
-      date: now.subtract(Duration(days: days - i - 1)),
-      close: 100.0,
-      volume: isToday ? spikeVolume : normalVolume,
-    );
-  });
-}
-
-List<DailyPriceEntry> _generatePricesWithPriceSpike({
-  required int days,
-  required double basePrice,
-  required double changePercent,
-}) {
-  final now = DateTime.now();
-  final todayPrice = basePrice * (1 + changePercent / 100);
-
-  return List.generate(days, (i) {
-    final isToday = i == days - 1;
-    return _createPrice(
-      date: now.subtract(Duration(days: days - i - 1)),
-      close: isToday ? todayPrice : basePrice,
-    );
-  });
-}
-
-List<DailyInstitutionalEntry> _generateInstitutionalHistory({
-  required int days,
-  required double prevDirection,
-  required double todayDirection,
-}) {
-  final now = DateTime.now();
-  return List.generate(days, (i) {
-    final isToday = i == days - 1;
-    return DailyInstitutionalEntry(
-      symbol: 'TEST',
-      date: now.subtract(Duration(days: days - i - 1)),
-      foreignNet: isToday ? todayDirection : prevDirection / 3,
-      investmentTrustNet: 0,
-      dealerNet: 0,
-    );
-  });
-}
-
-DailyPriceEntry _createPrice({
-  required DateTime date,
-  double? open,
-  double? high,
-  double? low,
-  double? close,
-  double? volume,
-}) {
-  return DailyPriceEntry(
-    symbol: 'TEST',
-    date: date,
-    open: open,
-    high: high ?? (close != null ? close * 1.01 : null),
-    low: low ?? (close != null ? close * 0.99 : null),
-    close: close,
-    volume: volume,
-  );
 }

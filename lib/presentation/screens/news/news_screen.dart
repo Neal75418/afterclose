@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/news_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
 /// News screen - shows recent market news
 class NewsScreen extends ConsumerStatefulWidget {
@@ -15,52 +16,13 @@ class NewsScreen extends ConsumerStatefulWidget {
 }
 
 class _NewsScreenState extends ConsumerState<NewsScreen> {
-  List<NewsItemEntry> _news = [];
-  Map<String, List<String>> _newsStockMap = {};
-  bool _isLoading = true;
-  String? _error;
-
   @override
   void initState() {
     super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
+    // Load data on first build
+    Future.microtask(() {
+      ref.read(newsProvider.notifier).loadData();
     });
-
-    try {
-      final newsRepo = ref.read(newsRepositoryProvider);
-      final db = ref.read(databaseProvider);
-
-      // Get recent news
-      final news = await newsRepo.getRecentNews(days: 7);
-
-      // Build news to stock mapping
-      final newsStockMap = <String, List<String>>{};
-      for (final item in news) {
-        final mappings = await (db.select(
-          db.newsStockMap,
-        )..where((m) => m.newsId.equals(item.id))).get();
-        if (mappings.isNotEmpty) {
-          newsStockMap[item.id] = mappings.map((m) => m.symbol).toList();
-        }
-      }
-
-      setState(() {
-        _news = news;
-        _newsStockMap = newsStockMap;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
   }
 
   Future<void> _openUrl(String url) async {
@@ -72,6 +34,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(newsProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -80,58 +43,42 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
+            onPressed: () => ref.read(newsProvider.notifier).loadData(),
             tooltip: '重新整理',
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: _loadData,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 48,
-                      color: Colors.red,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(_error!),
-                    const SizedBox(height: 16),
-                    FilledButton(onPressed: _loadData, child: const Text('重試')),
-                  ],
+        onRefresh: () => ref.read(newsProvider.notifier).loadData(),
+        child: state.isLoading
+            ? const StockListShimmer(itemCount: 8)
+            : state.error != null
+            // Wrap in scrollable so RefreshIndicator works on error state
+            ? SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () => ref.read(newsProvider.notifier).loadData(),
+                  ),
                 ),
               )
-            : _news.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.newspaper_outlined,
-                      size: 64,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '尚無新聞',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+            : state.news.isEmpty
+            // Wrap in scrollable so RefreshIndicator works on empty state
+            ? SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  child: EmptyStates.noNews(),
                 ),
               )
             : ListView.separated(
-                itemCount: _news.length,
+                itemCount: state.news.length,
                 separatorBuilder: (context, index) => const Divider(height: 1),
                 itemBuilder: (context, index) {
-                  final item = _news[index];
-                  final relatedStocks = _newsStockMap[item.id] ?? [];
+                  final item = state.news[index];
+                  final relatedStocks = state.newsStockMap[item.id] ?? [];
 
                   return ListTile(
                     title: Text(

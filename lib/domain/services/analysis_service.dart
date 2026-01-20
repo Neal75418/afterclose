@@ -53,7 +53,13 @@ class AnalysisService {
     );
   }
 
-  /// Find support and resistance levels using Swing High/Low method
+  /// Find support and resistance levels using Swing High/Low clustering
+  ///
+  /// Improved algorithm:
+  /// 1. Find all swing highs and lows
+  /// 2. Cluster nearby points into zones (within 2% of each other)
+  /// 3. Weight zones by number of touches (more touches = stronger level)
+  /// 4. Select the most relevant support below current price and resistance above
   ///
   /// Returns (support, resistance) tuple
   (double?, double?) findSupportResistance(List<DailyPriceEntry> prices) {
@@ -61,9 +67,9 @@ class AnalysisService {
       return (null, null);
     }
 
-    // Find swing highs and lows
-    final swingHighs = <double>[];
-    final swingLows = <double>[];
+    // Find all swing highs and lows with their indices
+    final swingHighs = <_SwingPoint>[];
+    final swingLows = <_SwingPoint>[];
 
     // Use half of swing window on each side
     const halfWindow = RuleParams.swingWindow ~/ 2;
@@ -83,24 +89,134 @@ class AnalysisService {
         if (j == i) continue;
         final other = prices[j];
 
-        if (other.high != null && other.high! >= high) {
+        // Use strict inequality (>) to allow equal prices to be swing points
+        if (isSwingHigh && other.high != null && other.high! > high) {
           isSwingHigh = false;
         }
-        if (other.low != null && other.low! <= low) {
+        if (isSwingLow && other.low != null && other.low! < low) {
           isSwingLow = false;
         }
+
+        // Early exit if neither condition can be met (performance optimization)
+        if (!isSwingHigh && !isSwingLow) break;
       }
 
-      if (isSwingHigh) swingHighs.add(high);
-      if (isSwingLow) swingLows.add(low);
+      if (isSwingHigh) swingHighs.add(_SwingPoint(price: high, index: i));
+      if (isSwingLow) swingLows.add(_SwingPoint(price: low, index: i));
     }
 
-    // Get most recent swing high/low as resistance/support
-    final resistance = swingHighs.isNotEmpty ? swingHighs.last : null;
-    final support = swingLows.isNotEmpty ? swingLows.last : null;
+    // Get current price for reference
+    final currentClose = prices.last.close;
+    if (currentClose == null) {
+      // Fallback to simple method if no current price
+      final resistance = swingHighs.isNotEmpty ? swingHighs.last.price : null;
+      final support = swingLows.isNotEmpty ? swingLows.last.price : null;
+      return (support, resistance);
+    }
+
+    // Cluster swing points and find the most significant levels
+    final resistanceZones = _clusterSwingPoints(swingHighs, prices.length);
+    final supportZones = _clusterSwingPoints(swingLows, prices.length);
+
+    // Find the nearest resistance above current price
+    double? resistance;
+    var bestResistanceScore = 0.0;
+    for (final zone in resistanceZones) {
+      if (zone.avgPrice > currentClose) {
+        // Score based on touches and recency
+        final score = zone.touches * (1 + zone.recencyWeight);
+        if (score > bestResistanceScore) {
+          bestResistanceScore = score;
+          resistance = zone.avgPrice;
+        }
+      }
+    }
+
+    // Find the nearest support below current price
+    double? support;
+    var bestSupportScore = 0.0;
+    for (final zone in supportZones) {
+      if (zone.avgPrice < currentClose) {
+        // Score based on touches and recency
+        final score = zone.touches * (1 + zone.recencyWeight);
+        if (score > bestSupportScore) {
+          bestSupportScore = score;
+          support = zone.avgPrice;
+        }
+      }
+    }
+
+    // Fallback to most recent if no level found relative to current price
+    resistance ??= swingHighs.isNotEmpty ? swingHighs.last.price : null;
+    support ??= swingLows.isNotEmpty ? swingLows.last.price : null;
 
     return (support, resistance);
   }
+
+  /// Cluster swing points into price zones
+  ///
+  /// Groups points within [_clusterThreshold] (2%) of each other
+  List<_PriceZone> _clusterSwingPoints(
+    List<_SwingPoint> points,
+    int totalDataPoints,
+  ) {
+    if (points.isEmpty) return [];
+
+    // Sort by price
+    final sorted = List<_SwingPoint>.from(points)
+      ..sort((a, b) => a.price.compareTo(b.price));
+
+    final zones = <_PriceZone>[];
+    var currentZonePoints = <_SwingPoint>[sorted.first];
+
+    for (var i = 1; i < sorted.length; i++) {
+      final point = sorted[i];
+      final zoneAvg = currentZonePoints.map((p) => p.price).reduce((a, b) => a + b) /
+          currentZonePoints.length;
+
+      // Check if point is within 2% of zone average
+      // Guard against division by zero (though prices should never be 0)
+      final isWithinThreshold = zoneAvg > 0
+          ? (point.price - zoneAvg).abs() / zoneAvg <= _clusterThreshold
+          : true; // If zoneAvg is 0, group all zero-price points together
+      if (isWithinThreshold) {
+        currentZonePoints.add(point);
+      } else {
+        // Save current zone and start new one
+        zones.add(_createZone(currentZonePoints, totalDataPoints));
+        currentZonePoints = [point];
+      }
+    }
+
+    // Don't forget the last zone
+    if (currentZonePoints.isNotEmpty) {
+      zones.add(_createZone(currentZonePoints, totalDataPoints));
+    }
+
+    return zones;
+  }
+
+  /// Create a price zone from a list of swing points
+  ///
+  /// Precondition: [points] must not be empty
+  _PriceZone _createZone(List<_SwingPoint> points, int totalDataPoints) {
+    assert(points.isNotEmpty, '_createZone called with empty points list');
+
+    final prices = points.map((p) => p.price);
+    final avgPrice = prices.reduce((a, b) => a + b) / points.length;
+    final maxIndex = points.map((p) => p.index).reduce((a, b) => a > b ? a : b);
+    // Recency weight: more recent = higher weight (0.0 to 1.0)
+    final recencyWeight = totalDataPoints > 0 ? maxIndex / totalDataPoints : 0.5;
+
+    return _PriceZone(
+      avgPrice: avgPrice,
+      touches: points.length,
+      recencyWeight: recencyWeight,
+    );
+  }
+
+  /// Cluster threshold for grouping swing points (2%)
+  static const _clusterThreshold = 0.02;
 
   /// Find 60-day price range
   ///
@@ -146,7 +262,9 @@ class AnalysisService {
     if (closes.length < 5) return TrendState.range;
 
     // Linear regression slope
-    final slope = _calculateSlope(closes);
+    // Note: closes are in newest-to-oldest order from reversed.take(),
+    // so we negate the slope to get the actual time-forward slope
+    final slope = -_calculateSlope(closes);
 
     // Normalize slope by average price (guard against division by zero)
     final avgPrice = closes.reduce((a, b) => a + b) / closes.length;
@@ -154,9 +272,9 @@ class AnalysisService {
 
     final normalizedSlope = (slope / avgPrice) * 100;
 
-    // Thresholds for trend detection
-    const upThreshold = 0.15; // 0.15% per day = ~3% over 20 days
-    const downThreshold = -0.15;
+    // Thresholds for trend detection (lowered for more signals)
+    const upThreshold = 0.08; // 0.08% per day = ~1.6% over 20 days
+    const downThreshold = -0.08;
 
     if (normalizedSlope > upThreshold) {
       return TrendState.up;
@@ -306,7 +424,9 @@ class AnalysisService {
     }
 
     final denominator = n * sumX2 - sumX * sumX;
-    if (denominator == 0) return 0;
+    // Use epsilon comparison for floating point safety
+    const epsilon = 1e-10;
+    if (denominator.abs() < epsilon) return 0;
 
     return (n * sumXY - sumX * sumY) / denominator;
   }
@@ -364,4 +484,34 @@ class AnalysisResult {
 
   /// Check if this is a potential reversal candidate
   bool get isReversalCandidate => reversalState != ReversalState.none;
+}
+
+// ==================================================
+// Private Helper Classes
+// ==================================================
+
+/// A swing point with price and position index
+class _SwingPoint {
+  const _SwingPoint({required this.price, required this.index});
+
+  final double price;
+  final int index;
+}
+
+/// A price zone representing clustered swing points
+class _PriceZone {
+  const _PriceZone({
+    required this.avgPrice,
+    required this.touches,
+    required this.recencyWeight,
+  });
+
+  /// Average price of all points in this zone
+  final double avgPrice;
+
+  /// Number of swing points that touched this zone
+  final int touches;
+
+  /// Weight based on how recent the touches are (0.0 to 1.0)
+  final double recencyWeight;
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -38,13 +39,15 @@ enum ScanSort {
 /// State for scan screen
 class ScanState {
   const ScanState({
-    this.stocks = const [],
+    this.allStocks = const [], // Original unfiltered data
+    this.stocks = const [], // Filtered/sorted view
     this.filter = ScanFilter.all,
     this.sort = ScanSort.scoreDesc,
     this.isLoading = false,
     this.error,
   });
 
+  final List<ScanStockItem> allStocks;
   final List<ScanStockItem> stocks;
   final ScanFilter filter;
   final ScanSort sort;
@@ -52,6 +55,7 @@ class ScanState {
   final String? error;
 
   ScanState copyWith({
+    List<ScanStockItem>? allStocks,
     List<ScanStockItem>? stocks,
     ScanFilter? filter,
     ScanSort? sort,
@@ -59,6 +63,7 @@ class ScanState {
     String? error,
   }) {
     return ScanState(
+      allStocks: allStocks ?? this.allStocks,
       stocks: stocks ?? this.stocks,
       filter: filter ?? this.filter,
       sort: sort ?? this.sort,
@@ -80,6 +85,7 @@ class ScanStockItem {
     this.trendState,
     this.reasons = const [],
     this.isInWatchlist = false,
+    this.recentPrices,
   });
 
   final String symbol;
@@ -91,6 +97,7 @@ class ScanStockItem {
   final String? trendState;
   final List<DailyReasonEntry> reasons;
   final bool isInWatchlist;
+  final List<double>? recentPrices;
 
   /// Get main reason label
   String? get mainReasonLabel {
@@ -108,6 +115,22 @@ class ScanStockItem {
       'DOWN' => '📉',
       _ => '➡️',
     };
+  }
+
+  /// Create a copy with modified fields
+  ScanStockItem copyWith({bool? isInWatchlist}) {
+    return ScanStockItem(
+      symbol: symbol,
+      score: score,
+      stockName: stockName,
+      latestClose: latestClose,
+      priceChange: priceChange,
+      volume: volume,
+      trendState: trendState,
+      reasons: reasons,
+      isInWatchlist: isInWatchlist ?? this.isInWatchlist,
+      recentPrices: recentPrices,
+    );
   }
 }
 
@@ -129,82 +152,108 @@ class ScanNotifier extends StateNotifier<ScanState> {
     try {
       final today = DateTime.now();
       final normalizedToday = DateTime.utc(today.year, today.month, today.day);
+      final historyStart = normalizedToday.subtract(const Duration(days: 5));
 
-      // Get all analyses for today
+      // Get all analyses for today (with score > 0)
       final analyses = await _db.getAnalysisForDate(normalizedToday);
+      final validAnalyses =
+          analyses.where((a) => a.score > 0).toList();
+
+      if (validAnalyses.isEmpty) {
+        state = state.copyWith(
+          allStocks: [],
+          stocks: [],
+          isLoading: false,
+        );
+        return;
+      }
 
       // Get watchlist for checking
       final watchlist = await _db.getWatchlist();
       final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
+      // Collect all symbols
+      final symbols = validAnalyses.map((a) => a.symbol).toList();
+
+      // Batch load all data in parallel
+      final results = await Future.wait([
+        _db.getStocksBatch(symbols),
+        _db.getLatestPricesBatch(symbols),
+        _db.getReasonsBatch(symbols, normalizedToday),
+        _db.getPriceHistoryBatch(
+          symbols,
+          startDate: historyStart,
+          endDate: normalizedToday,
+        ),
+      ]);
+
+      final stocksMap = results[0] as Map<String, StockMasterEntry>;
+      final latestPricesMap = results[1] as Map<String, DailyPriceEntry>;
+      final reasonsMap = results[2] as Map<String, List<DailyReasonEntry>>;
+      final priceHistoriesMap =
+          results[3] as Map<String, List<DailyPriceEntry>>;
+
+      // Calculate price changes using utility
+      final priceChanges = PriceCalculator.calculatePriceChangesBatch(
+        priceHistoriesMap,
+        latestPricesMap,
+      );
+
       // Build stock items
-      final items = <ScanStockItem>[];
-
-      for (final analysis in analyses) {
-        final stock = await _db.getStock(analysis.symbol);
-        final latestPrice = await _db.getLatestPrice(analysis.symbol);
-        final reasons = await _db.getReasons(analysis.symbol, normalizedToday);
-
-        // Skip if no score
-        if (analysis.score <= 0) continue;
-
-        // Calculate price change
-        double? priceChange;
-        if (latestPrice?.close != null) {
-          final history = await _db.getPriceHistory(
-            analysis.symbol,
-            startDate: normalizedToday.subtract(const Duration(days: 5)),
-            endDate: normalizedToday,
-          );
-          if (history.length >= 2) {
-            final prevClose = history[history.length - 2].close;
-            if (prevClose != null && prevClose > 0) {
-              priceChange =
-                  ((latestPrice!.close! - prevClose) / prevClose) * 100;
-            }
-          }
-        }
-
-        items.add(
-          ScanStockItem(
-            symbol: analysis.symbol,
-            score: analysis.score,
-            stockName: stock?.name,
-            latestClose: latestPrice?.close,
-            priceChange: priceChange,
-            volume: latestPrice?.volume,
-            trendState: analysis.trendState,
-            reasons: reasons,
-            isInWatchlist: watchlistSymbols.contains(analysis.symbol),
-          ),
+      final items = validAnalyses.map((analysis) {
+        final latestPrice = latestPricesMap[analysis.symbol];
+        final priceHistory = priceHistoriesMap[analysis.symbol];
+        // Extract close prices for sparkline (last 7 days)
+        final recentPrices = priceHistory
+            ?.map((p) => p.close)
+            .whereType<double>()
+            .toList();
+        return ScanStockItem(
+          symbol: analysis.symbol,
+          score: analysis.score,
+          stockName: stocksMap[analysis.symbol]?.name,
+          latestClose: latestPrice?.close,
+          priceChange: priceChanges[analysis.symbol],
+          volume: latestPrice?.volume,
+          trendState: analysis.trendState,
+          reasons: reasonsMap[analysis.symbol] ?? [],
+          isInWatchlist: watchlistSymbols.contains(analysis.symbol),
+          recentPrices: recentPrices,
         );
-      }
+      }).toList();
 
       // Apply filter and sort
       final filtered = _applyFilter(items, state.filter);
       final sorted = _applySort(filtered, state.sort);
 
-      state = state.copyWith(stocks: sorted, isLoading: false);
+      state = state.copyWith(
+        allStocks: items,
+        stocks: sorted,
+        isLoading: false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// Set filter and reload
+  /// Set filter - filters from original data, not already-filtered data
   void setFilter(ScanFilter filter) {
     if (filter == state.filter) return;
 
-    final filtered = _applyFilter(state.stocks, filter);
+    // Filter from original unfiltered data
+    final filtered = _applyFilter(state.allStocks, filter);
     final sorted = _applySort(filtered, state.sort);
 
     state = state.copyWith(filter: filter, stocks: sorted);
   }
 
-  /// Set sort and reload
+  /// Set sort
   void setSort(ScanSort sort) {
     if (sort == state.sort) return;
 
-    final sorted = _applySort(state.stocks, sort);
+    // Re-filter then sort to ensure consistent state
+    final filtered = _applyFilter(state.allStocks, state.filter);
+    final sorted = _applySort(filtered, sort);
 
     state = state.copyWith(sort: sort, stocks: sorted);
   }
@@ -215,7 +264,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
     ScanFilter filter,
   ) {
     if (filter == ScanFilter.all || filter.reasonCode == null) {
-      return stocks;
+      return List.from(stocks);
     }
 
     return stocks
@@ -259,25 +308,18 @@ class ScanNotifier extends StateNotifier<ScanState> {
       await _db.addToWatchlist(symbol);
     }
 
-    // Update state
-    final updated = state.stocks.map((s) {
-      if (s.symbol == symbol) {
-        return ScanStockItem(
-          symbol: s.symbol,
-          score: s.score,
-          stockName: s.stockName,
-          latestClose: s.latestClose,
-          priceChange: s.priceChange,
-          volume: s.volume,
-          trendState: s.trendState,
-          reasons: s.reasons,
-          isInWatchlist: !isInWatchlist,
-        );
-      }
+    // Update both allStocks and stocks using copyWith
+    final updatedAll = state.allStocks.map((s) {
+      if (s.symbol == symbol) return s.copyWith(isInWatchlist: !isInWatchlist);
       return s;
     }).toList();
 
-    state = state.copyWith(stocks: updated);
+    final updatedFiltered = state.stocks.map((s) {
+      if (s.symbol == symbol) return s.copyWith(isInWatchlist: !isInWatchlist);
+      return s;
+    }).toList();
+
+    state = state.copyWith(allStocks: updatedAll, stocks: updatedFiltered);
   }
 }
 

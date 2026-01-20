@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
 /// Stock detail screen - shows comprehensive stock information
 class StockDetailScreen extends ConsumerStatefulWidget {
@@ -46,26 +49,15 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
         ],
       ),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const StockDetailShimmer()
           : state.error != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(state.error!),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: () {
-                      ref
-                          .read(stockDetailProvider(widget.symbol).notifier)
-                          .loadData();
-                    },
-                    child: const Text('重試'),
-                  ),
-                ],
-              ),
+          ? EmptyStates.error(
+              message: state.error!,
+              onRetry: () {
+                ref
+                    .read(stockDetailProvider(widget.symbol).notifier)
+                    .loadData();
+              },
             )
           : _buildContent(state),
     );
@@ -75,14 +67,14 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     final theme = Theme.of(context);
     final priceChange = state.priceChange;
     final isPositive = (priceChange ?? 0) >= 0;
-    final priceColor = isPositive ? Colors.red.shade700 : Colors.green.shade700;
+    final priceColor = AppTheme.getPriceColor(priceChange);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stock header
+          // Stock header with Hero animations
           Row(
             children: [
               Expanded(

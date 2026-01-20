@@ -40,8 +40,9 @@ class DailyAnalysis extends Table {
 @DataClassName('DailyReasonEntry')
 @TableIndex(name: 'idx_daily_reason_symbol_date', columns: {#symbol, #date})
 class DailyReason extends Table {
-  /// Stock symbol
-  TextColumn get symbol => text()();
+  /// Stock symbol (foreign key to StockMaster)
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
   /// Analysis date
   DateTimeColumn get date => dateTime()();

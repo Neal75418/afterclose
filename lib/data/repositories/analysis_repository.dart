@@ -168,29 +168,48 @@ class AnalysisRepository {
   // Combined Queries for UI
   // ==========================================
 
-  /// Get recommendation with stock details
+  /// Get recommendation with stock details (optimized with batch queries)
+  ///
+  /// Uses batch queries to avoid N+1 problem:
+  /// - 1 query for recommendations
+  /// - 1 query for all stocks (batch)
+  /// - 1 query for all reasons (batch)
+  /// Total: 3 queries instead of 1 + N*2
   Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
     DateTime date,
   ) async {
     final recs = await getRecommendations(date);
-    final results = <RecommendationWithStock>[];
+    if (recs.isEmpty) return [];
 
+    // Collect all symbols for batch queries
+    final symbols = recs.map((r) => r.symbol).toList();
+    final normalizedDate = _normalizeDate(date);
+
+    // Execute batch queries in parallel
+    final results = await Future.wait([
+      _db.getStocksBatch(symbols),
+      _db.getReasonsBatch(symbols, normalizedDate),
+    ]);
+
+    final stocksMap = results[0] as Map<String, StockMasterEntry>;
+    final reasonsMap = results[1] as Map<String, List<DailyReasonEntry>>;
+
+    // Build results from batch data
+    final output = <RecommendationWithStock>[];
     for (final rec in recs) {
-      final stock = await _db.getStock(rec.symbol);
-      final reasons = await getReasons(rec.symbol, date);
-
+      final stock = stocksMap[rec.symbol];
       if (stock != null) {
-        results.add(
+        output.add(
           RecommendationWithStock(
             recommendation: rec,
             stock: stock,
-            reasons: reasons,
+            reasons: reasonsMap[rec.symbol] ?? [],
           ),
         );
       }
     }
 
-    return results;
+    return output;
   }
 
   /// Normalize date to start of day in UTC (remove time component)
