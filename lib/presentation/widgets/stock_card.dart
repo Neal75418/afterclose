@@ -12,8 +12,9 @@ import 'package:afterclose/presentation/widgets/score_ring.dart';
 /// - Price color based on Taiwan convention (red = up, green = down)
 /// - Score badge with color coding
 /// - Trend indicator with icon
-/// - Optional sparkline chart placeholder
-class StockCard extends StatelessWidget {
+/// - Micro-interaction: subtle press-to-scale animation
+/// - Optional sparkline chart
+class StockCard extends StatefulWidget {
   const StockCard({
     super.key,
     required this.symbol,
@@ -43,28 +44,41 @@ class StockCard extends StatelessWidget {
   final VoidCallback? onWatchlistTap;
   final List<double>? recentPrices;
 
+  @override
+  State<StockCard> createState() => _StockCardState();
+}
+
+class _StockCardState extends State<StockCard> {
+  bool _isPressed = false;
+
   /// Build semantic label for accessibility
   String _buildSemanticLabel() {
     final parts = <String>[];
-    parts.add('股票 $symbol');
-    if (stockName != null) parts.add(stockName!);
-    if (latestClose != null) {
-      parts.add('價格 ${latestClose!.toStringAsFixed(2)} 元');
+    parts.add('股票 ${widget.symbol}');
+    if (widget.stockName != null) parts.add(widget.stockName!);
+    if (widget.latestClose != null) {
+      parts.add('價格 ${widget.latestClose!.toStringAsFixed(2)} 元');
     }
-    if (priceChange != null) {
-      final direction = priceChange! >= 0 ? '上漲' : '下跌';
-      parts.add('$direction ${priceChange!.abs().toStringAsFixed(2)} 百分比');
+    if (widget.priceChange != null) {
+      final direction = widget.priceChange! >= 0 ? '上漲' : '下跌';
+      parts.add(
+        '$direction ${widget.priceChange!.abs().toStringAsFixed(2)} 百分比',
+      );
     }
-    if (score != null && score! > 0) parts.add('評分 ${score!.toInt()} 分');
-    if (trendState != null) {
-      final trend = switch (trendState) {
+    if (widget.score != null && widget.score! > 0) {
+      parts.add('評分 ${widget.score!.toInt()} 分');
+    }
+    if (widget.trendState != null) {
+      final trend = switch (widget.trendState) {
         'UP' => '上升趨勢',
         'DOWN' => '下降趨勢',
         _ => '盤整',
       };
       parts.add(trend);
     }
-    if (reasons.isNotEmpty) parts.add('訊號: ${reasons.take(2).join(', ')}');
+    if (widget.reasons.isNotEmpty) {
+      parts.add('訊號: ${widget.reasons.take(2).join(', ')}');
+    }
     return parts.join(', ');
   }
 
@@ -72,83 +86,97 @@ class StockCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final priceColor = AppTheme.getPriceColor(priceChange);
+    final priceColor = AppTheme.getPriceColor(widget.priceChange);
 
     return Semantics(
       label: _buildSemanticLabel(),
       button: true,
       enabled: true,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF252536) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? const Color(0xFF3A3A4A) : const Color(0xFFE8E8F0),
-            width: 1,
-          ),
-          boxShadow: isDark
-              ? null
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              onTap?.call();
-            },
-            onLongPress: () {
-              HapticFeedback.mediumImpact();
-              onLongPress?.call();
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  // Trend indicator with modern design
-                  _buildTrendIndicator(theme, isDark),
-                  const SizedBox(width: 14),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) => setState(() => _isPressed = false),
+        onTapCancel: () => setState(() => _isPressed = false),
+        child: AnimatedScale(
+          scale: _isPressed ? 0.98 : 1.0,
+          duration: const Duration(milliseconds: 100),
+          curve: Curves.easeOut,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF252536) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark
+                    ? const Color(0xFF3A3A4A)
+                    : const Color(0xFFE8E8F0),
+                width: 1,
+              ),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  widget.onTap?.call();
+                },
+                onLongPress: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onLongPress?.call();
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    children: [
+                      // Trend indicator with modern design
+                      _buildTrendIndicator(theme, isDark),
+                      const SizedBox(width: 14),
 
-                  // Stock info section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildHeader(theme),
-                        if (stockName != null) ...[
-                          const SizedBox(height: 2),
-                          _buildStockName(theme),
-                        ],
-                        if (reasons.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          _buildReasonTags(theme, isDark),
-                        ],
+                      // Stock info section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(theme),
+                            if (widget.stockName != null) ...[
+                              const SizedBox(height: 2),
+                              _buildStockName(theme),
+                            ],
+                            if (widget.reasons.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              _buildReasonTags(theme, isDark),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      // Mini sparkline chart (need at least 7 days of data)
+                      if (widget.recentPrices != null &&
+                          widget.recentPrices!.length >= 7) ...[
+                        _buildSparkline(priceColor),
+                        const SizedBox(width: 8),
                       ],
-                    ),
+
+                      // Price section with color coding
+                      _buildPriceSection(theme, priceColor),
+
+                      // Watchlist button
+                      if (widget.onWatchlistTap != null)
+                        _buildWatchlistButton(theme),
+                    ],
                   ),
-
-                  const SizedBox(width: 12),
-
-                  // Mini sparkline chart (need at least 7 days of data)
-                  if (recentPrices != null && recentPrices!.length >= 7) ...[
-                    _buildSparkline(priceColor),
-                    const SizedBox(width: 8),
-                  ],
-
-                  // Price section with color coding
-                  _buildPriceSection(theme, priceColor),
-
-                  // Watchlist button
-                  if (onWatchlistTap != null) _buildWatchlistButton(theme),
-                ],
+                ),
               ),
             ),
           ),
@@ -158,8 +186,8 @@ class StockCard extends StatelessWidget {
   }
 
   Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
-    final trendColor = _getTrendColor(trendState);
-    final icon = _getTrendIconData(trendState);
+    final trendColor = _getTrendColor(widget.trendState);
+    final icon = _getTrendIconData(widget.trendState);
 
     return Container(
       width: 44,
@@ -184,15 +212,15 @@ class StockCard extends StatelessWidget {
     return Row(
       children: [
         Text(
-          symbol,
+          widget.symbol,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
             letterSpacing: 0.5,
           ),
         ),
-        if (score != null && score! > 0) ...[
+        if (widget.score != null && widget.score! > 0) ...[
           const SizedBox(width: 10),
-          ScoreRing(score: score!, size: ScoreRingSize.medium),
+          ScoreRing(score: widget.score!, size: ScoreRingSize.medium),
         ],
       ],
     );
@@ -200,7 +228,7 @@ class StockCard extends StatelessWidget {
 
   Widget _buildStockName(ThemeData theme) {
     return Text(
-      stockName!,
+      widget.stockName!,
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
       ),
@@ -213,7 +241,7 @@ class StockCard extends StatelessWidget {
     return Wrap(
       spacing: 6,
       runSpacing: 4,
-      children: reasons.take(2).map((r) {
+      children: widget.reasons.take(2).map((r) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -235,26 +263,26 @@ class StockCard extends StatelessWidget {
   }
 
   Widget _buildSparkline(Color priceColor) {
-    return _MiniSparkline(prices: recentPrices!, color: priceColor);
+    return _MiniSparkline(prices: widget.recentPrices!, color: priceColor);
   }
 
   Widget _buildPriceSection(ThemeData theme, Color priceColor) {
-    final isPositive = (priceChange ?? 0) >= 0;
-    final isNeutral = priceChange == null || priceChange == 0;
+    final isPositive = (widget.priceChange ?? 0) >= 0;
+    final isNeutral = widget.priceChange == null || widget.priceChange == 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (latestClose != null)
+        if (widget.latestClose != null)
           Text(
-            latestClose!.toStringAsFixed(2),
+            widget.latestClose!.toStringAsFixed(2),
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               letterSpacing: 0.3,
             ),
           ),
-        if (priceChange != null) ...[
+        if (widget.priceChange != null) ...[
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -275,7 +303,7 @@ class StockCard extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  '${isPositive && !isNeutral ? '+' : ''}${priceChange!.toStringAsFixed(2)}%',
+                  '${isPositive && !isNeutral ? '+' : ''}${widget.priceChange!.toStringAsFixed(2)}%',
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: priceColor,
                     fontWeight: FontWeight.bold,
@@ -290,7 +318,7 @@ class StockCard extends StatelessWidget {
   }
 
   Widget _buildWatchlistButton(ThemeData theme) {
-    final tooltipText = isInWatchlist ? '從自選移除' : '加入自選';
+    final tooltipText = widget.isInWatchlist ? '從自選移除' : '加入自選';
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Semantics(
@@ -298,8 +326,10 @@ class StockCard extends StatelessWidget {
         button: true,
         child: IconButton(
           icon: Icon(
-            isInWatchlist ? Icons.star_rounded : Icons.star_outline_rounded,
-            color: isInWatchlist
+            widget.isInWatchlist
+                ? Icons.star_rounded
+                : Icons.star_outline_rounded,
+            color: widget.isInWatchlist
                 ? Colors.amber
                 : theme.colorScheme.onSurfaceVariant,
             size: 26,
@@ -307,7 +337,7 @@ class StockCard extends StatelessWidget {
           tooltip: tooltipText,
           onPressed: () {
             HapticFeedback.mediumImpact();
-            onWatchlistTap?.call();
+            widget.onWatchlistTap?.call();
           },
           splashRadius: 20,
         ),

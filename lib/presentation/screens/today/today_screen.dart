@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
@@ -125,22 +127,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
 
         // Top 10 section
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                const Icon(Icons.trending_up, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  S.todayTop10,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
+        const SliverToBoxAdapter(
+          child: SectionHeader(title: S.todayTop10, icon: Icons.trending_up),
         ),
 
         // Recommendations
@@ -155,7 +143,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             itemBuilder: (context, index) {
               final rec = state.recommendations[index];
               // RepaintBoundary for better scroll performance
-              return RepaintBoundary(
+              final card = RepaintBoundary(
                 child: StockCard(
                   symbol: rec.symbol,
                   stockName: rec.stockName,
@@ -186,25 +174,33 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   },
                 ),
               );
+
+              // Staggered entry animation for first 10 items
+              if (index < 10) {
+                return card
+                    .animate()
+                    .fadeIn(
+                      delay: Duration(milliseconds: 50 * index),
+                      duration: 400.ms,
+                    )
+                    .slideX(
+                      begin: 0.05,
+                      duration: 400.ms,
+                      curve: Curves.easeOutQuart,
+                    );
+              }
+              return card;
             },
           ),
 
         // Watchlist section
         if (state.watchlistStatus.isNotEmpty) ...[
-          SliverToBoxAdapter(
+          const SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.star, size: 20, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  Text(
-                    S.todayWatchlistStatus,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+              padding: EdgeInsets.only(top: 8),
+              child: SectionHeader(
+                title: S.todayWatchlistStatus,
+                icon: Icons.star,
               ),
             ),
           ),

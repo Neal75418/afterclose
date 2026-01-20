@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/update_service.dart';
+import 'package:afterclose/presentation/providers/notification_provider.dart';
+import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Maximum duration for daily update operation
@@ -263,6 +266,21 @@ class TodayNotifier extends StateNotifier<TodayState> {
 
       state = state.copyWith(isUpdating: false, updateProgress: null);
 
+      // Check price alerts and trigger notifications
+      final alertsTriggered = await _checkPriceAlerts(
+        result.currentPrices,
+        result.priceChanges,
+      );
+
+      // Show update complete notification if alerts were triggered
+      if (alertsTriggered > 0) {
+        final notificationNotifier = _ref.read(notificationProvider.notifier);
+        await notificationNotifier.showUpdateCompleteNotification(
+          recommendationCount: result.recommendationsGenerated,
+          alertsTriggered: alertsTriggered,
+        );
+      }
+
       // Reload data after update
       await loadData();
 
@@ -281,6 +299,47 @@ class TodayNotifier extends StateNotifier<TodayState> {
         error: e.toString(),
       );
       rethrow;
+    }
+  }
+
+  /// Check price alerts against current prices and trigger notifications
+  ///
+  /// Returns the number of alerts triggered.
+  Future<int> _checkPriceAlerts(
+    Map<String, double> currentPrices,
+    Map<String, double> priceChanges,
+  ) async {
+    if (currentPrices.isEmpty) return 0;
+
+    try {
+      // Ensure notification service is initialized
+      final notificationState = _ref.read(notificationProvider);
+      if (!notificationState.isInitialized) {
+        await _ref.read(notificationProvider.notifier).initialize();
+      }
+
+      final alertNotifier = _ref.read(priceAlertProvider.notifier);
+      final notificationNotifier = _ref.read(notificationProvider.notifier);
+
+      // Check and trigger alerts
+      final triggered = await alertNotifier.checkAndTriggerAlerts(
+        currentPrices,
+        priceChanges,
+      );
+
+      // Send notifications for each triggered alert
+      for (final alert in triggered) {
+        await notificationNotifier.showPriceAlertNotification(
+          alert,
+          currentPrice: currentPrices[alert.symbol],
+        );
+      }
+
+      return triggered.length;
+    } catch (e) {
+      // Non-critical: alert check failure shouldn't fail the update
+      debugPrint('[TodayNotifier] Price alert check failed: $e');
+      return 0;
     }
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -79,7 +80,25 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                 itemCount: state.items.length,
                 itemBuilder: (context, index) {
                   final item = state.items[index];
-                  return RepaintBoundary(child: _buildWatchlistTile(item));
+                  final tile = RepaintBoundary(
+                    child: _buildWatchlistTile(item),
+                  );
+
+                  // Staggered entry animation for first 10 items
+                  if (index < 10) {
+                    return tile
+                        .animate()
+                        .fadeIn(
+                          delay: Duration(milliseconds: 50 * index),
+                          duration: 400.ms,
+                        )
+                        .slideX(
+                          begin: 0.05,
+                          duration: 400.ms,
+                          curve: Curves.easeOutQuart,
+                        );
+                  }
+                  return tile;
                 },
               ),
       ),

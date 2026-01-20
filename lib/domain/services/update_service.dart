@@ -342,6 +342,44 @@ class UpdateService {
       result.success = true;
       result.message = '更新完成';
 
+      // Capture price data for alert checking
+      try {
+        final alertSymbols = (await _db.getActiveAlerts())
+            .map((a) => a.symbol)
+            .toSet()
+            .toList();
+
+        if (alertSymbols.isNotEmpty) {
+          final latestPrices = await _db.getLatestPricesBatch(alertSymbols);
+          final priceHistories = await _db.getPriceHistoryBatch(
+            alertSymbols,
+            startDate: normalizedDate.subtract(const Duration(days: 2)),
+            endDate: normalizedDate,
+          );
+
+          for (final symbol in alertSymbols) {
+            final price = latestPrices[symbol]?.close;
+            if (price != null) {
+              result.currentPrices[symbol] = price;
+
+              // Calculate price change percentage
+              final history = priceHistories[symbol];
+              if (history != null && history.length >= 2) {
+                final previousClose = history[history.length - 2].close;
+                if (previousClose != null && previousClose > 0) {
+                  final change =
+                      ((price - previousClose) / previousClose) * 100;
+                  result.priceChanges[symbol] = change;
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Non-critical: alert data capture failure shouldn't fail the update
+        debugPrint('[UpdateService] Alert price capture failed: $e');
+      }
+
       return result;
     } catch (e) {
       result.success = false;
@@ -582,6 +620,10 @@ class UpdateResult {
   int stocksAnalyzed = 0;
   int recommendationsGenerated = 0;
   List<String> errors = [];
+
+  /// Price data for alert checking (populated after price sync)
+  Map<String, double> currentPrices = {};
+  Map<String, double> priceChanges = {};
 
   /// Summary message
   String get summary {

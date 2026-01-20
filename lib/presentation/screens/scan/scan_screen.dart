@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
@@ -131,7 +132,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       itemBuilder: (context, index) {
                         final stock = state.stocks[index];
                         // RepaintBoundary isolates each card for better scroll performance
-                        return RepaintBoundary(
+                        final card = RepaintBoundary(
                           child: Slidable(
                             key: ValueKey(stock.symbol),
                             // Left swipe → View details
@@ -229,6 +230,22 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                             ),
                           ),
                         );
+
+                        // Staggered entry animation for first 10 items
+                        if (index < 10) {
+                          return card
+                              .animate()
+                              .fadeIn(
+                                delay: Duration(milliseconds: 50 * index),
+                                duration: 400.ms,
+                              )
+                              .slideX(
+                                begin: 0.05,
+                                duration: 400.ms,
+                                curve: Curves.easeOutQuart,
+                              );
+                        }
+                        return card;
                       },
                     ),
             ),
