@@ -4,9 +4,12 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 
 /// Daily analysis result (immutable per day)
 @DataClassName('DailyAnalysisEntry')
+@TableIndex(name: 'idx_daily_analysis_date', columns: {#date})
+@TableIndex(name: 'idx_daily_analysis_score', columns: {#score})
 class DailyAnalysis extends Table {
   /// Stock symbol
-  TextColumn get symbol => text().references(StockMaster, #symbol)();
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
   /// Analysis date
   DateTimeColumn get date => dateTime()();
@@ -35,6 +38,7 @@ class DailyAnalysis extends Table {
 
 /// Triggered reasons for a stock on a given day
 @DataClassName('DailyReasonEntry')
+@TableIndex(name: 'idx_daily_reason_symbol_date', columns: {#symbol, #date})
 class DailyReason extends Table {
   /// Stock symbol
   TextColumn get symbol => text()();
@@ -60,6 +64,8 @@ class DailyReason extends Table {
 
 /// Daily top N recommendations
 @DataClassName('DailyRecommendationEntry')
+@TableIndex(name: 'idx_daily_recommendation_date', columns: {#date})
+@TableIndex(name: 'idx_daily_recommendation_symbol', columns: {#symbol})
 class DailyRecommendation extends Table {
   /// Recommendation date
   DateTimeColumn get date => dateTime()();
@@ -68,7 +74,8 @@ class DailyRecommendation extends Table {
   IntColumn get rank => integer()();
 
   /// Stock symbol
-  TextColumn get symbol => text().references(StockMaster, #symbol)();
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
   /// Total score
   RealColumn get score => real()();

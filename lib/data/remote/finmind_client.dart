@@ -10,14 +10,58 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 ///
 /// Each user should register and use their own token.
 class FinMindClient {
-  FinMindClient({Dio? dio, this.token}) : _dio = dio ?? _createDio();
+  FinMindClient({Dio? dio, String? token})
+    : _dio = dio ?? _createDio(),
+      _token = token;
 
   static const String baseUrl = 'https://api.finmindtrade.com/api/v4/data';
+
+  /// Minimum valid token length
+  static const int _minTokenLength = 20;
+
+  /// Token format regex (alphanumeric with possible underscores/dashes)
+  static final RegExp _tokenPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
 
   final Dio _dio;
 
   /// User's FinMind API token (optional but recommended)
-  String? token;
+  String? _token;
+
+  /// Get the current token
+  String? get token => _token;
+
+  /// Set the token with validation
+  ///
+  /// Throws [InvalidTokenException] if token format is invalid
+  set token(String? value) {
+    if (value != null && value.isNotEmpty) {
+      _validateToken(value);
+    }
+    _token = value;
+  }
+
+  /// Validate token format
+  ///
+  /// Throws [InvalidTokenException] if validation fails
+  static void _validateToken(String token) {
+    if (token.length < _minTokenLength) {
+      throw InvalidTokenException(
+        'Token too short (minimum $_minTokenLength characters)',
+      );
+    }
+    if (!_tokenPattern.hasMatch(token)) {
+      throw const InvalidTokenException('Token contains invalid characters');
+    }
+  }
+
+  /// Validate a token without setting it
+  ///
+  /// Returns true if valid, false if invalid
+  static bool isValidTokenFormat(String? token) {
+    if (token == null || token.isEmpty) return false;
+    if (token.length < _minTokenLength) return false;
+    return _tokenPattern.hasMatch(token);
+  }
 
   static Dio _createDio() {
     return Dio(
@@ -33,8 +77,8 @@ class FinMindClient {
   /// Build query parameters with optional token
   Map<String, dynamic> _buildParams(Map<String, dynamic> params) {
     final result = Map<String, dynamic>.from(params);
-    if (token != null && token!.isNotEmpty) {
-      result['token'] = token;
+    if (_token != null && _token!.isNotEmpty) {
+      result['token'] = _token;
     }
     return result;
   }
@@ -163,7 +207,10 @@ class FinMindClient {
   }
 
   /// Check if token is configured
-  bool get hasToken => token != null && token!.isNotEmpty;
+  bool get hasToken => _token != null && _token!.isNotEmpty;
+
+  /// Check if token is configured and valid
+  bool get hasValidToken => hasToken && isValidTokenFormat(_token);
 }
 
 // ============================================

@@ -6,7 +6,8 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 @DataClassName('WatchlistEntry')
 class Watchlist extends Table {
   /// Stock symbol
-  TextColumn get symbol => text().references(StockMaster, #symbol)();
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
   /// When added to watchlist
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
@@ -22,7 +23,8 @@ class UserNote extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   /// Stock symbol
-  TextColumn get symbol => text().references(StockMaster, #symbol)();
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
   /// Optional date context for this note
   DateTimeColumn get date => dateTime().nullable()();
@@ -44,7 +46,8 @@ class StrategyCard extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   /// Stock symbol
-  TextColumn get symbol => text().references(StockMaster, #symbol)();
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
   /// Target date for this strategy
   DateTimeColumn get forDate => dateTime().nullable()();

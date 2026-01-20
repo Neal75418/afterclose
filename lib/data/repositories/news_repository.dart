@@ -21,39 +21,45 @@ class NewsRepository {
 
     var addedCount = 0;
 
+    // Pre-fetch all active stocks for efficient lookup
+    final activeStocks = await _db.getAllActiveStocks();
+    final stockSymbols = activeStocks.map((s) => s.symbol).toSet();
+
     for (final item in newsItems) {
-      // Insert news item
-      final companion = NewsItemCompanion.insert(
-        id: item.id,
-        source: item.source,
-        title: item.title,
-        url: item.url,
-        category: item.category,
-        publishedAt: item.publishedAt,
-      );
-
+      // Insert news item and its stock mappings in a transaction
       try {
-        await _db
-            .into(_db.newsItem)
-            .insert(companion, mode: InsertMode.insertOrIgnore);
-        addedCount++;
+        await _db.transaction(() async {
+          // Insert news item
+          final companion = NewsItemCompanion.insert(
+            id: item.id,
+            source: item.source,
+            title: item.title,
+            url: item.url,
+            category: item.category,
+            publishedAt: item.publishedAt,
+          );
 
-        // Extract and map stock codes from title
-        final stockCodes = item.extractStockCodes();
-        for (final code in stockCodes) {
-          // Check if stock exists before mapping
-          final stock = await _db.getStock(code);
-          if (stock != null) {
-            await _db
-                .into(_db.newsStockMap)
-                .insert(
-                  NewsStockMapCompanion.insert(newsId: item.id, symbol: code),
-                  mode: InsertMode.insertOrIgnore,
-                );
+          await _db
+              .into(_db.newsItem)
+              .insert(companion, mode: InsertMode.insertOrIgnore);
+
+          // Extract and map stock codes from title
+          final stockCodes = item.extractStockCodes();
+          for (final code in stockCodes) {
+            // Check if stock exists using pre-fetched set
+            if (stockSymbols.contains(code)) {
+              await _db
+                  .into(_db.newsStockMap)
+                  .insert(
+                    NewsStockMapCompanion.insert(newsId: item.id, symbol: code),
+                    mode: InsertMode.insertOrIgnore,
+                  );
+            }
           }
-        }
+        });
+        addedCount++;
       } catch (_) {
-        // Ignore duplicate inserts
+        // Ignore duplicate inserts and continue with next item
       }
     }
 

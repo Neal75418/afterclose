@@ -55,7 +55,7 @@ class AnalysisRepository {
     return _db.getReasons(symbol, _normalizeDate(date));
   }
 
-  /// Save reasons for a stock
+  /// Save reasons for a stock (replaces existing reasons atomically)
   Future<void> saveReasons(
     String symbol,
     DateTime date,
@@ -63,6 +63,7 @@ class AnalysisRepository {
   ) async {
     // Limit to max reasons
     final limitedReasons = reasons.take(RuleParams.maxReasonsPerStock).toList();
+    final normalizedDate = _normalizeDate(date);
 
     final entries = <DailyReasonCompanion>[];
     for (var i = 0; i < limitedReasons.length; i++) {
@@ -70,7 +71,7 @@ class AnalysisRepository {
       entries.add(
         DailyReasonCompanion.insert(
           symbol: symbol,
-          date: _normalizeDate(date),
+          date: normalizedDate,
           rank: i + 1,
           reasonType: reason.type,
           evidenceJson: reason.evidenceJson,
@@ -79,7 +80,8 @@ class AnalysisRepository {
       );
     }
 
-    await _db.insertReasons(entries);
+    // Use atomic replace to ensure consistency
+    await _db.replaceReasons(symbol, normalizedDate, entries);
   }
 
   // ==========================================
@@ -96,20 +98,21 @@ class AnalysisRepository {
     return _db.getRecommendations(_normalizeDate(date));
   }
 
-  /// Save daily recommendations
+  /// Save daily recommendations (replaces existing recommendations atomically)
   Future<void> saveRecommendations(
     DateTime date,
     List<RecommendationData> recommendations,
   ) async {
     // Limit to top N
     final limited = recommendations.take(RuleParams.dailyTopN).toList();
+    final normalizedDate = _normalizeDate(date);
 
     final entries = <DailyRecommendationCompanion>[];
     for (var i = 0; i < limited.length; i++) {
       final rec = limited[i];
       entries.add(
         DailyRecommendationCompanion.insert(
-          date: _normalizeDate(date),
+          date: normalizedDate,
           rank: i + 1,
           symbol: rec.symbol,
           score: rec.score,
@@ -117,7 +120,8 @@ class AnalysisRepository {
       );
     }
 
-    await _db.insertRecommendations(entries);
+    // Use atomic replace to ensure consistency
+    await _db.replaceRecommendations(normalizedDate, entries);
   }
 
   /// Check if recommendations exist for date
@@ -176,9 +180,11 @@ class AnalysisRepository {
     return results;
   }
 
-  /// Normalize date to start of day (remove time component)
+  /// Normalize date to start of day in UTC (remove time component)
+  ///
+  /// Using UTC ensures consistent behavior across timezones
   DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+    return DateTime.utc(date.year, date.month, date.day);
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
 
@@ -101,7 +103,7 @@ class RssParser {
     if (title == null || link == null) return null;
 
     return RssNewsItem(
-      id: _generateId(guid ?? link),
+      id: _generateId(guid ?? link, source: source.name),
       source: source.name,
       title: title,
       url: link,
@@ -122,7 +124,7 @@ class RssParser {
     if (title == null || link == null) return null;
 
     return RssNewsItem(
-      id: _generateId(id ?? link),
+      id: _generateId(id ?? link, source: source.name),
       source: source.name,
       title: title,
       url: link,
@@ -152,10 +154,25 @@ class RssParser {
     return null;
   }
 
+  /// Timezone offsets in hours
+  static const _timezoneOffsets = {
+    'GMT': 0,
+    'UTC': 0,
+    'UT': 0,
+    'EST': -5,
+    'EDT': -4,
+    'CST': -6,
+    'CDT': -5,
+    'MST': -7,
+    'MDT': -6,
+    'PST': -8,
+    'PDT': -7,
+  };
+
   DateTime _parseRfc822(String dateStr) {
-    // Simple RFC 822 parser
-    // Format: "Mon, 01 Jan 2026 12:00:00 +0800"
-    final months = {
+    // RFC 822 parser with timezone support
+    // Format: "Mon, 01 Jan 2026 12:00:00 +0800" or "Mon, 01 Jan 2026 12:00:00 GMT"
+    const months = {
       'Jan': 1,
       'Feb': 2,
       'Mar': 3,
@@ -170,33 +187,76 @@ class RssParser {
       'Dec': 12,
     };
 
-    final parts = dateStr.split(' ');
-    if (parts.length >= 5) {
-      final day = int.tryParse(parts[1]) ?? 1;
-      final month = months[parts[2]] ?? 1;
-      final year = int.tryParse(parts[3]) ?? DateTime.now().year;
-      final timeParts = parts[4].split(':');
-      final hour = int.tryParse(timeParts[0]) ?? 0;
-      final minute =
-          int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0;
-      final second =
-          int.tryParse(timeParts.length > 2 ? timeParts[2] : '0') ?? 0;
-
-      return DateTime(year, month, day, hour, minute, second);
+    // Remove optional day-of-week prefix
+    var cleanedDate = dateStr.trim();
+    if (cleanedDate.contains(',')) {
+      cleanedDate = cleanedDate.substring(cleanedDate.indexOf(',') + 1).trim();
     }
 
-    throw const FormatException('Invalid RFC 822 date');
+    final parts = cleanedDate.split(RegExp(r'\s+'));
+    if (parts.length < 4) {
+      throw const FormatException('Invalid RFC 822 date');
+    }
+
+    final day = int.tryParse(parts[0]) ?? 1;
+    final month = months[parts[1]] ?? 1;
+    final year = int.tryParse(parts[2]) ?? DateTime.now().year;
+
+    var hour = 0;
+    var minute = 0;
+    var second = 0;
+    var tzOffsetMinutes = 0;
+
+    if (parts.length >= 4 && parts[3].contains(':')) {
+      final timeParts = parts[3].split(':');
+      hour = int.tryParse(timeParts[0]) ?? 0;
+      minute = int.tryParse(timeParts.length > 1 ? timeParts[1] : '0') ?? 0;
+      second = int.tryParse(timeParts.length > 2 ? timeParts[2] : '0') ?? 0;
+
+      // Parse timezone if present
+      if (parts.length >= 5) {
+        final tz = parts[4];
+        if (tz.startsWith('+') || tz.startsWith('-')) {
+          // Numeric timezone like +0800 or -0500
+          final sign = tz.startsWith('+') ? 1 : -1;
+          final tzValue = tz.substring(1);
+          if (tzValue.length >= 4) {
+            final tzHours = int.tryParse(tzValue.substring(0, 2)) ?? 0;
+            final tzMins = int.tryParse(tzValue.substring(2, 4)) ?? 0;
+            tzOffsetMinutes = sign * (tzHours * 60 + tzMins);
+          }
+        } else if (_timezoneOffsets.containsKey(tz.toUpperCase())) {
+          // Named timezone like GMT, EST, PST
+          tzOffsetMinutes = _timezoneOffsets[tz.toUpperCase()]! * 60;
+        }
+      }
+    }
+
+    // Create UTC datetime and adjust for timezone
+    final utc = DateTime.utc(year, month, day, hour, minute, second);
+    return utc.subtract(Duration(minutes: tzOffsetMinutes));
   }
 
-  String _generateId(String input) {
-    // Simple hash for ID generation
-    var hash = 0;
-    for (var i = 0; i < input.length; i++) {
-      final char = input.codeUnitAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & 0xFFFFFFFF; // Convert to 32-bit integer
+  /// Generate a unique ID using a better hash algorithm
+  ///
+  /// Uses FNV-1a hash combined with source info to reduce collisions
+  String _generateId(String input, {String? source}) {
+    // FNV-1a hash parameters
+    const fnvPrime = 0x01000193;
+    const fnvOffset = 0x811c9dc5;
+
+    // Combine source with input for better uniqueness
+    final combined = source != null ? '$source:$input' : input;
+    final bytes = utf8.encode(combined);
+
+    var hash = fnvOffset;
+    for (final byte in bytes) {
+      hash ^= byte;
+      hash = (hash * fnvPrime) & 0xFFFFFFFF;
     }
-    return hash.toRadixString(16);
+
+    // Return as padded hex string for consistent length
+    return hash.toRadixString(16).padLeft(8, '0');
   }
 }
 

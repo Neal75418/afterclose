@@ -57,6 +57,11 @@ final class TokenNotConfiguredException extends ConfigException {
   ]);
 }
 
+/// Invalid token format
+final class InvalidTokenException extends ConfigException {
+  const InvalidTokenException([super.message = 'Invalid API token format']);
+}
+
 /// Analysis exceptions
 final class AnalysisException extends AppException {
   const AnalysisException(super.message, [super.cause]);

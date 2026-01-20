@@ -173,6 +173,30 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Replace reasons for a stock on a date (atomic operation)
+  Future<void> replaceReasons(
+    String symbol,
+    DateTime date,
+    List<DailyReasonCompanion> entries,
+  ) {
+    return transaction(() async {
+      // Delete existing reasons for this symbol/date
+      await (delete(dailyReason)
+            ..where((t) => t.symbol.equals(symbol))
+            ..where((t) => t.date.equals(date)))
+          .go();
+
+      // Insert new reasons
+      if (entries.isNotEmpty) {
+        await batch((b) {
+          for (final entry in entries) {
+            b.insert(dailyReason, entry);
+          }
+        });
+      }
+    });
+  }
+
   // ==========================================
   // Recommendation Operations
   // ==========================================
@@ -192,6 +216,28 @@ class AppDatabase extends _$AppDatabase {
     await batch((b) {
       for (final entry in entries) {
         b.insert(dailyRecommendation, entry, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  /// Replace recommendations for a date (atomic operation)
+  Future<void> replaceRecommendations(
+    DateTime date,
+    List<DailyRecommendationCompanion> entries,
+  ) {
+    return transaction(() async {
+      // Delete existing recommendations for this date
+      await (delete(
+        dailyRecommendation,
+      )..where((t) => t.date.equals(date))).go();
+
+      // Insert new recommendations
+      if (entries.isNotEmpty) {
+        await batch((b) {
+          for (final entry in entries) {
+            b.insert(dailyRecommendation, entry);
+          }
+        });
       }
     });
   }
