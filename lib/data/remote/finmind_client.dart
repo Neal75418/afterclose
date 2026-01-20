@@ -46,7 +46,9 @@ class FinMindClient {
   static void _validateToken(String token) {
     if (token.length < _minTokenLength) {
       // Use hardcoded value to allow const constructor
-      throw const InvalidTokenException('Token too short (minimum 20 characters)');
+      throw const InvalidTokenException(
+        'Token too short (minimum 20 characters)',
+      );
     }
     if (!_tokenPattern.hasMatch(token)) {
       throw const InvalidTokenException('Token contains invalid characters');
