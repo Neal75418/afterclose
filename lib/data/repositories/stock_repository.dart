@@ -52,21 +52,14 @@ class StockRepository {
     }
   }
 
-  /// Search stocks by name or symbol
-  Future<List<StockMasterEntry>> searchStocks(String query) async {
-    final allStocks = await getAllStocks();
-    final lowerQuery = query.toLowerCase();
-
-    return allStocks.where((stock) {
-      return stock.symbol.toLowerCase().contains(lowerQuery) ||
-          stock.name.toLowerCase().contains(lowerQuery);
-    }).toList();
+  /// Search stocks by name or symbol (uses DB-level filtering)
+  Future<List<StockMasterEntry>> searchStocks(String query) {
+    return _db.searchStocks(query);
   }
 
-  /// Get stocks by market
-  Future<List<StockMasterEntry>> getStocksByMarket(String market) async {
-    final allStocks = await getAllStocks();
-    return allStocks.where((stock) => stock.market == market).toList();
+  /// Get stocks by market (uses DB-level filtering)
+  Future<List<StockMasterEntry>> getStocksByMarket(String market) {
+    return _db.getStocksByMarket(market);
   }
 
   /// Check if stock exists

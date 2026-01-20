@@ -14,56 +14,75 @@ class NewsRepository {
 
   /// Sync news from all RSS feeds
   ///
-  /// Returns the number of new items added
-  Future<int> syncNews({List<RssFeedSource>? sources}) async {
+  /// Returns a [NewsSyncResult] containing count of items added and any errors
+  Future<NewsSyncResult> syncNews({List<RssFeedSource>? sources}) async {
     final feedSources = sources ?? RssFeedSource.defaultSources;
-    final newsItems = await _rssParser.parseAllFeeds(feedSources);
+    final parseResult = await _rssParser.parseAllFeeds(feedSources);
 
-    var addedCount = 0;
+    if (parseResult.items.isEmpty) {
+      return NewsSyncResult(itemsAdded: 0, errors: parseResult.errors);
+    }
+
+    final newsItems = parseResult.items;
 
     // Pre-fetch all active stocks for efficient lookup
     final activeStocks = await _db.getAllActiveStocks();
     final stockSymbols = activeStocks.map((s) => s.symbol).toSet();
 
+    // Prepare all entries
+    final newsCompanions = <NewsItemCompanion>[];
+    final mappingCompanions = <NewsStockMapCompanion>[];
+
     for (final item in newsItems) {
-      // Insert news item and its stock mappings in a transaction
-      try {
-        await _db.transaction(() async {
-          // Insert news item
-          final companion = NewsItemCompanion.insert(
-            id: item.id,
-            source: item.source,
-            title: item.title,
-            url: item.url,
-            category: item.category,
-            publishedAt: item.publishedAt,
+      newsCompanions.add(
+        NewsItemCompanion.insert(
+          id: item.id,
+          source: item.source,
+          title: item.title,
+          url: item.url,
+          category: item.category,
+          publishedAt: item.publishedAt,
+        ),
+      );
+
+      // Extract and map stock codes from title
+      final stockCodes = item.extractStockCodes();
+      for (final code in stockCodes) {
+        if (stockSymbols.contains(code)) {
+          mappingCompanions.add(
+            NewsStockMapCompanion.insert(newsId: item.id, symbol: code),
           );
-
-          await _db
-              .into(_db.newsItem)
-              .insert(companion, mode: InsertMode.insertOrIgnore);
-
-          // Extract and map stock codes from title
-          final stockCodes = item.extractStockCodes();
-          for (final code in stockCodes) {
-            // Check if stock exists using pre-fetched set
-            if (stockSymbols.contains(code)) {
-              await _db
-                  .into(_db.newsStockMap)
-                  .insert(
-                    NewsStockMapCompanion.insert(newsId: item.id, symbol: code),
-                    mode: InsertMode.insertOrIgnore,
-                  );
-            }
-          }
-        });
-        addedCount++;
-      } catch (_) {
-        // Ignore duplicate inserts and continue with next item
+        }
       }
     }
 
-    return addedCount;
+    // Insert all in a single transaction with batch operations
+    await _db.transaction(() async {
+      // Batch insert news items
+      await _db.batch((b) {
+        for (final companion in newsCompanions) {
+          b.insert(_db.newsItem, companion, mode: InsertMode.insertOrIgnore);
+        }
+      });
+
+      // Batch insert stock mappings
+      if (mappingCompanions.isNotEmpty) {
+        await _db.batch((b) {
+          for (final companion in mappingCompanions) {
+            b.insert(
+              _db.newsStockMap,
+              companion,
+              mode: InsertMode.insertOrIgnore,
+            );
+          }
+        });
+      }
+    });
+
+    return NewsSyncResult(
+      itemsAdded: newsCompanions.length,
+      errors: parseResult.errors,
+    );
   }
 
   /// Get recent news (last N days)
@@ -114,27 +133,28 @@ class NewsRepository {
   }
 
   /// Clean up old news (older than N days)
+  ///
+  /// Uses cascade delete - removing news items automatically removes mappings
   Future<int> cleanupOldNews({int olderThanDays = 30}) async {
     final cutoff = DateTime.now().subtract(Duration(days: olderThanDays));
 
-    // First delete mappings for old news
-    final oldNews = (await _db.select(_db.newsItem).get())
-        .where((n) => n.publishedAt.isBefore(cutoff))
-        .map((n) => n.id)
-        .toList();
-
-    if (oldNews.isEmpty) return 0;
-
-    // Delete mappings
-    for (final newsId in oldNews) {
-      await (_db.delete(
-        _db.newsStockMap,
-      )..where((m) => m.newsId.equals(newsId))).go();
-    }
-
-    // Delete news items
+    // Delete old news items - cascade delete will handle mappings
     return (_db.delete(
       _db.newsItem,
     )..where((n) => n.publishedAt.isSmallerThanValue(cutoff))).go();
   }
+}
+
+/// Result of news sync operation
+class NewsSyncResult {
+  const NewsSyncResult({required this.itemsAdded, required this.errors});
+
+  final int itemsAdded;
+  final List<RssFeedError> errors;
+
+  /// Whether any feeds failed to parse
+  bool get hasErrors => errors.isNotEmpty;
+
+  /// Whether sync was completely successful (no errors)
+  bool get isFullySuccessful => errors.isEmpty;
 }

@@ -43,28 +43,41 @@ class RssParser {
   }
 
   /// Parse multiple feeds concurrently
-  Future<List<RssNewsItem>> parseAllFeeds(List<RssFeedSource> sources) async {
+  ///
+  /// Returns a [RssParseResult] containing parsed items and any errors
+  Future<RssParseResult> parseAllFeeds(List<RssFeedSource> sources) async {
     final results = <RssNewsItem>[];
+    final errors = <RssFeedError>[];
 
     // Fetch feeds concurrently but don't fail all if one fails
     final futures = sources.map((source) async {
       try {
-        return await parseFeed(source);
-      } catch (_) {
-        // Log error but continue with other feeds
-        return <RssNewsItem>[];
+        return (items: await parseFeed(source), error: null, source: source);
+      } catch (e) {
+        // Capture error details for debugging
+        return (items: <RssNewsItem>[], error: e.toString(), source: source);
       }
     });
 
     final feedResults = await Future.wait(futures);
-    for (final items in feedResults) {
-      results.addAll(items);
+    for (final result in feedResults) {
+      results.addAll(result.items);
+      if (result.error != null) {
+        errors.add(
+          RssFeedError(
+            sourceName: result.source.name,
+            url: result.source.url,
+            error: result.error!,
+            timestamp: DateTime.now(),
+          ),
+        );
+      }
     }
 
     // Sort by published date, newest first
     results.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
 
-    return results;
+    return RssParseResult(items: results, errors: errors);
   }
 
   List<RssNewsItem> _parseXml(String xmlString, RssFeedSource source) {
@@ -285,6 +298,41 @@ class RssNewsItem {
     final matches = regex.allMatches(title);
     return matches.map((m) => m.group(1)!).toList();
   }
+}
+
+/// Result of parsing multiple RSS feeds
+class RssParseResult {
+  const RssParseResult({required this.items, required this.errors});
+
+  final List<RssNewsItem> items;
+  final List<RssFeedError> errors;
+
+  /// Whether any feeds failed to parse
+  bool get hasErrors => errors.isNotEmpty;
+
+  /// Number of successfully parsed items
+  int get successCount => items.length;
+
+  /// Number of failed feeds
+  int get errorCount => errors.length;
+}
+
+/// Error details for a failed RSS feed parse
+class RssFeedError {
+  const RssFeedError({
+    required this.sourceName,
+    required this.url,
+    required this.error,
+    required this.timestamp,
+  });
+
+  final String sourceName;
+  final String url;
+  final String error;
+  final DateTime timestamp;
+
+  @override
+  String toString() => '[$sourceName] $error ($url)';
 }
 
 /// RSS feed source configuration

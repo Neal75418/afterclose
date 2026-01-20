@@ -85,6 +85,27 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Search stocks by symbol or name (DB-level filtering)
+  Future<List<StockMasterEntry>> searchStocks(String query) {
+    final lowerQuery = '%${query.toLowerCase()}%';
+    return (select(stockMaster)
+          ..where((t) => t.isActive.equals(true))
+          ..where(
+            (t) =>
+                t.symbol.lower().like(lowerQuery) |
+                t.name.lower().like(lowerQuery),
+          ))
+        .get();
+  }
+
+  /// Get stocks by market (DB-level filtering)
+  Future<List<StockMasterEntry>> getStocksByMarket(String market) {
+    return (select(stockMaster)
+          ..where((t) => t.isActive.equals(true))
+          ..where((t) => t.market.equals(market)))
+        .get();
+  }
+
   // ==========================================
   // Daily Price Operations
   // ==========================================
@@ -122,6 +143,49 @@ class AppDatabase extends _$AppDatabase {
     await batch((b) {
       for (final entry in entries) {
         b.insert(dailyPrice, entry, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  // ==========================================
+  // Daily Institutional Operations
+  // ==========================================
+
+  /// Get institutional data history for a stock
+  Future<List<DailyInstitutionalEntry>> getInstitutionalHistory(
+    String symbol, {
+    required DateTime startDate,
+    DateTime? endDate,
+  }) {
+    final query = select(dailyInstitutional)
+      ..where((t) => t.symbol.equals(symbol))
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([(t) => OrderingTerm.asc(t.date)]);
+
+    return query.get();
+  }
+
+  /// Get latest institutional data for a stock
+  Future<DailyInstitutionalEntry?> getLatestInstitutional(String symbol) {
+    return (select(dailyInstitutional)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Batch insert institutional data
+  Future<void> insertInstitutionalData(
+    List<DailyInstitutionalCompanion> entries,
+  ) async {
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(dailyInstitutional, entry, mode: InsertMode.insertOrReplace);
       }
     });
   }
@@ -240,6 +304,35 @@ class AppDatabase extends _$AppDatabase {
         });
       }
     });
+  }
+
+  /// Check if a symbol was recommended within a date range (single query)
+  Future<bool> wasSymbolRecommendedInRange(
+    String symbol, {
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final result =
+        await (select(dailyRecommendation)
+              ..where((t) => t.symbol.equals(symbol))
+              ..where((t) => t.date.isBiggerOrEqualValue(startDate))
+              ..where((t) => t.date.isSmallerOrEqualValue(endDate))
+              ..limit(1))
+            .getSingleOrNull();
+    return result != null;
+  }
+
+  /// Get all symbols that were recommended within a date range (batch check)
+  Future<Set<String>> getRecommendedSymbolsInRange({
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final results =
+        await (select(dailyRecommendation)
+              ..where((t) => t.date.isBiggerOrEqualValue(startDate))
+              ..where((t) => t.date.isSmallerOrEqualValue(endDate)))
+            .get();
+    return results.map((r) => r.symbol).toSet();
   }
 
   // ==========================================

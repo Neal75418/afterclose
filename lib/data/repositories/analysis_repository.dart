@@ -134,21 +134,34 @@ class AnalysisRepository {
   // Cooldown Check
   // ==========================================
 
-  /// Check if a stock was recently recommended
+  /// Check if a stock was recently recommended (single query)
   Future<bool> wasRecentlyRecommended(
     String symbol, {
     int days = RuleParams.cooldownDays,
-  }) async {
-    // Check recommendations for past N days
-    for (var i = 0; i < days; i++) {
-      final checkDate = DateTime.now().subtract(Duration(days: i + 1));
-      final recs = await getRecommendations(checkDate);
-      if (recs.any((r) => r.symbol == symbol)) {
-        return true;
-      }
-    }
+  }) {
+    final now = DateTime.now();
+    final endDate = _normalizeDate(now.subtract(const Duration(days: 1)));
+    final startDate = _normalizeDate(now.subtract(Duration(days: days)));
 
-    return false;
+    return _db.wasSymbolRecommendedInRange(
+      symbol,
+      startDate: startDate,
+      endDate: endDate,
+    );
+  }
+
+  /// Get all symbols that were recently recommended (for batch cooldown check)
+  Future<Set<String>> getRecentlyRecommendedSymbols({
+    int days = RuleParams.cooldownDays,
+  }) {
+    final now = DateTime.now();
+    final endDate = _normalizeDate(now.subtract(const Duration(days: 1)));
+    final startDate = _normalizeDate(now.subtract(Duration(days: days)));
+
+    return _db.getRecommendedSymbolsInRange(
+      startDate: startDate,
+      endDate: endDate,
+    );
   }
 
   // ==========================================
