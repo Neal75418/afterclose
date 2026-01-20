@@ -25,13 +25,30 @@ class RuleEngine {
 
     final reasons = <TriggeredReason>[];
 
-    // R1: REVERSAL_W2S (Weak to Strong)
+    // R1 & R2: Reversal patterns (mutually exclusive)
+    // A stock cannot be both reversing up AND reversing down simultaneously
     final r1 = checkWeakToStrong(priceHistory, context);
-    if (r1 != null) reasons.add(r1);
-
-    // R2: REVERSAL_S2W (Strong to Weak)
     final r2 = checkStrongToWeak(priceHistory, context);
-    if (r2 != null) reasons.add(r2);
+
+    if (r1 != null && r2 != null) {
+      // Both triggered - this shouldn't happen logically
+      // Keep the one with stronger evidence (based on price action)
+      // W2S is typically stronger signal if price closed higher
+      final today = priceHistory.last;
+      final yesterday = priceHistory[priceHistory.length - 2];
+      final todayClose = today.close ?? 0;
+      final yesterdayClose = yesterday.close ?? 0;
+
+      if (todayClose > yesterdayClose) {
+        reasons.add(r1); // Price went up, keep W2S
+      } else {
+        reasons.add(r2); // Price went down, keep S2W
+      }
+    } else if (r1 != null) {
+      reasons.add(r1);
+    } else if (r2 != null) {
+      reasons.add(r2);
+    }
 
     // R3: TECH_BREAKOUT
     final r3 = checkBreakout(priceHistory, context);

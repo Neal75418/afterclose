@@ -148,8 +148,10 @@ class AnalysisService {
     // Linear regression slope
     final slope = _calculateSlope(closes);
 
-    // Normalize slope by average price
+    // Normalize slope by average price (guard against division by zero)
     final avgPrice = closes.reduce((a, b) => a + b) / closes.length;
+    if (avgPrice <= 0) return TrendState.range;
+
     final normalizedSlope = (slope / avgPrice) * 100;
 
     // Thresholds for trend detection

@@ -193,23 +193,28 @@ class UpdateService {
   }
 
   /// Filter stocks that meet candidate criteria
+  ///
+  /// Uses batch query to avoid N+1 problem
   Future<List<String>> _filterCandidates(DateTime date) async {
     final candidates = <String>[];
     final allStocks = await _stockRepo.getAllStocks();
+
+    if (allStocks.isEmpty) return candidates;
 
     // Calculate date range for price history
     final startDate = date.subtract(
       const Duration(days: RuleParams.lookbackPrice + 10),
     );
 
-    for (final stock in allStocks) {
-      final prices = await _priceRepo.getPriceHistory(
-        stock.symbol,
-        startDate: startDate,
-        endDate: date,
-      );
+    // Batch load all prices in one query
+    final allPrices = await _db.getAllPricesInRange(
+      startDate: startDate,
+      endDate: date,
+    );
 
-      if (prices.isEmpty) continue;
+    for (final stock in allStocks) {
+      final prices = allPrices[stock.symbol];
+      if (prices == null || prices.isEmpty) continue;
 
       // Check if meets candidate criteria
       if (_analysisService.isCandidate(prices)) {
@@ -221,33 +226,54 @@ class UpdateService {
   }
 
   /// Analyze candidates and calculate scores
+  ///
+  /// Uses batch queries to avoid N+1 problem
   Future<List<ScoredStock>> _analyzeAndScore(
     List<String> candidates,
     DateTime date, {
     void Function(int current, int total)? onProgress,
   }) async {
+    if (candidates.isEmpty) return [];
+
     final scoredStocks = <ScoredStock>[];
 
-    // Get recently recommended symbols for cooldown check
-    final recentlyRecommended = await _analysisRepo
-        .getRecentlyRecommendedSymbols();
+    // Get recently recommended symbols for cooldown check (single query)
+    final recentlyRecommended = await _analysisRepo.getRecentlyRecommendedSymbols();
 
     final startDate = date.subtract(
       const Duration(days: RuleParams.lookbackPrice + 10),
     );
+    final instStartDate = date.subtract(const Duration(days: 10));
 
+    // Batch load all required data upfront
+    final pricesMap = await _db.getPriceHistoryBatch(
+      candidates,
+      startDate: startDate,
+      endDate: date,
+    );
+
+    // Batch load institutional data if repository is available
+    Map<String, List<DailyInstitutionalEntry>> institutionalMap = {};
+    final instRepo = _institutionalRepo;
+    if (instRepo != null) {
+      institutionalMap = await _db.getInstitutionalHistoryBatch(
+        candidates,
+        startDate: instStartDate,
+        endDate: date,
+      );
+    }
+
+    // Batch load news data
+    final newsMap = await _newsRepo.getNewsForStocksBatch(candidates, days: 2);
+
+    // Process each candidate with pre-loaded data
     for (var i = 0; i < candidates.length; i++) {
       final symbol = candidates[i];
       onProgress?.call(i + 1, candidates.length);
 
-      // Get price history
-      final prices = await _priceRepo.getPriceHistory(
-        symbol,
-        startDate: startDate,
-        endDate: date,
-      );
-
-      if (prices.length < RuleParams.swingWindow) continue;
+      // Get price history from batch-loaded data
+      final prices = pricesMap[symbol];
+      if (prices == null || prices.length < RuleParams.swingWindow) continue;
 
       // Run analysis
       final analysisResult = _analysisService.analyzeStock(prices);
@@ -256,17 +282,9 @@ class UpdateService {
       // Build context for rule engine
       final context = _analysisService.buildContext(analysisResult);
 
-      // Get optional data
-      List<DailyInstitutionalEntry>? institutionalHistory;
-      final instRepo = _institutionalRepo;
-      if (instRepo != null) {
-        institutionalHistory = await instRepo.getInstitutionalHistory(
-          symbol,
-          days: 10,
-        );
-      }
-
-      final recentNews = await _newsRepo.getNewsForStock(symbol, days: 2);
+      // Get optional data from batch-loaded maps
+      final institutionalHistory = institutionalMap[symbol];
+      final recentNews = newsMap[symbol];
 
       // Run rule engine
       final reasons = _ruleEngine.evaluateStock(

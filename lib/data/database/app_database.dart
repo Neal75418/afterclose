@@ -147,6 +147,70 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// Get price history for multiple symbols (batch query to avoid N+1)
+  ///
+  /// Returns a map of symbol -> price list, sorted by date ascending
+  Future<Map<String, List<DailyPriceEntry>>> getPriceHistoryBatch(
+    List<String> symbols, {
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    final query = select(dailyPrice)
+      ..where((t) => t.symbol.isIn(symbols))
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([
+      (t) => OrderingTerm.asc(t.symbol),
+      (t) => OrderingTerm.asc(t.date),
+    ]);
+
+    final results = await query.get();
+
+    // Group by symbol
+    final grouped = <String, List<DailyPriceEntry>>{};
+    for (final entry in results) {
+      grouped.putIfAbsent(entry.symbol, () => []).add(entry);
+    }
+
+    return grouped;
+  }
+
+  /// Get all prices within a date range (for market-wide analysis)
+  ///
+  /// Returns prices grouped by symbol
+  Future<Map<String, List<DailyPriceEntry>>> getAllPricesInRange({
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    final query = select(dailyPrice)
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([
+      (t) => OrderingTerm.asc(t.symbol),
+      (t) => OrderingTerm.asc(t.date),
+    ]);
+
+    final results = await query.get();
+
+    // Group by symbol
+    final grouped = <String, List<DailyPriceEntry>>{};
+    for (final entry in results) {
+      grouped.putIfAbsent(entry.symbol, () => []).add(entry);
+    }
+
+    return grouped;
+  }
+
   // ==========================================
   // Daily Institutional Operations
   // ==========================================
@@ -188,6 +252,40 @@ class AppDatabase extends _$AppDatabase {
         b.insert(dailyInstitutional, entry, mode: InsertMode.insertOrReplace);
       }
     });
+  }
+
+  /// Get institutional data for multiple symbols (batch query)
+  ///
+  /// Returns a map of symbol -> institutional entry list, sorted by date ascending
+  Future<Map<String, List<DailyInstitutionalEntry>>> getInstitutionalHistoryBatch(
+    List<String> symbols, {
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    final query = select(dailyInstitutional)
+      ..where((t) => t.symbol.isIn(symbols))
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([
+      (t) => OrderingTerm.asc(t.symbol),
+      (t) => OrderingTerm.asc(t.date),
+    ]);
+
+    final results = await query.get();
+
+    // Group by symbol
+    final grouped = <String, List<DailyInstitutionalEntry>>{};
+    for (final entry in results) {
+      grouped.putIfAbsent(entry.symbol, () => []).add(entry);
+    }
+
+    return grouped;
   }
 
   // ==========================================

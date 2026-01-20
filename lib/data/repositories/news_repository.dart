@@ -85,16 +85,16 @@ class NewsRepository {
     );
   }
 
-  /// Get recent news (last N days)
+  /// Get recent news (last N days) - uses DB-level filtering
   Future<List<NewsItemEntry>> getRecentNews({int days = 3}) async {
     final cutoff = DateTime.now().subtract(Duration(days: days));
-    return (await _db.select(_db.newsItem).get())
-        .where((n) => n.publishedAt.isAfter(cutoff))
-        .toList()
-      ..sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+    return (_db.select(_db.newsItem)
+          ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
+          ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
+        .get();
   }
 
-  /// Get news for a specific stock
+  /// Get news for a specific stock - uses DB-level filtering
   Future<List<NewsItemEntry>> getNewsForStock(
     String symbol, {
     int days = 3,
@@ -102,21 +102,63 @@ class NewsRepository {
     final cutoff = DateTime.now().subtract(Duration(days: days));
 
     // Get news IDs mapped to this stock
-    final mappings = await (_db.select(
-      _db.newsStockMap,
-    )..where((m) => m.symbol.equals(symbol))).get();
+    final mappings = await (_db.select(_db.newsStockMap)
+          ..where((m) => m.symbol.equals(symbol)))
+        .get();
 
     if (mappings.isEmpty) return [];
 
-    final newsIds = mappings.map((m) => m.newsId).toSet();
+    final newsIds = mappings.map((m) => m.newsId).toList();
 
-    // Get the actual news items
-    final allNews = await _db.select(_db.newsItem).get();
+    // Get news items with DB-level date filtering
+    return (_db.select(_db.newsItem)
+          ..where((n) => n.id.isIn(newsIds))
+          ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
+          ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
+        .get();
+  }
 
-    return allNews
-        .where((n) => newsIds.contains(n.id) && n.publishedAt.isAfter(cutoff))
-        .toList()
-      ..sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
+  /// Get news for multiple stocks (batch query to avoid N+1)
+  ///
+  /// Returns a map of symbol -> news list
+  Future<Map<String, List<NewsItemEntry>>> getNewsForStocksBatch(
+    List<String> symbols, {
+    int days = 3,
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+
+    // Get all mappings for the given symbols
+    final mappings = await (_db.select(_db.newsStockMap)
+          ..where((m) => m.symbol.isIn(symbols)))
+        .get();
+
+    if (mappings.isEmpty) return {};
+
+    // Get all unique news IDs
+    final newsIds = mappings.map((m) => m.newsId).toSet().toList();
+
+    // Get all news items in one query with date filter
+    final newsItems = await (_db.select(_db.newsItem)
+          ..where((n) => n.id.isIn(newsIds))
+          ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
+          ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
+        .get();
+
+    // Create a map for quick lookup
+    final newsMap = {for (final item in newsItems) item.id: item};
+
+    // Group by symbol
+    final result = <String, List<NewsItemEntry>>{};
+    for (final mapping in mappings) {
+      final newsItem = newsMap[mapping.newsId];
+      if (newsItem != null) {
+        result.putIfAbsent(mapping.symbol, () => []).add(newsItem);
+      }
+    }
+
+    return result;
   }
 
   /// Check if stock has recent news
