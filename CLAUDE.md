@@ -41,14 +41,14 @@ flutter build ios --release        # iOS (requires macOS)
 
 ### Tech Stack (Planned)
 
-| Layer | Technology |
-|:------|:-----------|
-| Framework | Flutter 3.38 + Dart 3 |
-| State | Riverpod 2.0 (with code generation) |
-| Database | Drift (SQLite) |
-| Network | Dio |
-| Models | Freezed + json_serializable |
-| RSS | xml package |
+| Layer     | Technology                          |
+|:----------|:------------------------------------|
+| Framework | Flutter 3.38 + Dart 3               |
+| State     | Riverpod 2.0 (with code generation) |
+| Database  | Drift (SQLite)                      |
+| Network   | Dio                                 |
+| Models    | Freezed + json_serializable         |
+| RSS       | xml package                         |
 
 ### Directory Structure (Target)
 
@@ -80,26 +80,26 @@ API/RSS → Repository → Drift DB → Stream → Riverpod → UI
 
 ## Key Documentation
 
-| File | Description |
-|:-----|:------------|
-| [README.md](README.md) | Product specification, features, UI structure |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | Recommendation rules (R1-R8) + SQLite schema DDL |
-| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | Architecture patterns and coding standards |
+| File                                                                                                   | Description                                      |
+|:-------------------------------------------------------------------------------------------------------|:-------------------------------------------------|
+| [README.md](README.md)                                                                                 | Product specification, features, UI structure    |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | Recommendation rules (R1-R8) + SQLite schema DDL |
+| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | Architecture patterns and coding standards       |
 
 ## Rule Engine Summary
 
 8 rules for anomaly detection, each with a score:
 
-| Rule | Score | Trigger |
-|:-----|------:|:--------|
-| REVERSAL_W2S | +35 | Weak-to-strong reversal |
-| REVERSAL_S2W | +35 | Strong-to-weak reversal |
-| TECH_BREAKOUT | +25 | Price breaks resistance |
-| TECH_BREAKDOWN | +25 | Price breaks support |
-| VOLUME_SPIKE | +18 | Volume ≥ 2x 20-day average |
-| PRICE_SPIKE | +15 | Daily change ≥ 5% |
-| INSTITUTIONAL_SHIFT | +12 | Institutional flow reversal |
-| NEWS_RELATED | +8 | Related news detected |
+| Rule                | Score | Trigger                     |
+|:--------------------|------:|:----------------------------|
+| REVERSAL_W2S        |   +35 | Weak-to-strong reversal     |
+| REVERSAL_S2W        |   +35 | Strong-to-weak reversal     |
+| TECH_BREAKOUT       |   +25 | Price breaks resistance     |
+| TECH_BREAKDOWN      |   +25 | Price breaks support        |
+| VOLUME_SPIKE        |   +18 | Volume ≥ 2x 20-day average  |
+| PRICE_SPIKE         |   +15 | Daily change ≥ 5%           |
+| INSTITUTIONAL_SHIFT |   +12 | Institutional flow reversal |
+| NEWS_RELATED        |    +8 | Related news detected       |
 
 Output: Top 10 stocks daily, max 2 reasons per stock.
 
