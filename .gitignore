@@ -1,0 +1,106 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Flutter plugins file
+.flutter-plugins
+
+# Local configuration
+android/local.properties
+ios/.bundle/
+ios/Pods/
+ios/Podfile.lock
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+lib/generated/
+lib/**/*.g.dart
+
+# Keystore and signing
+*.jks
+*.keystore
+android/key.properties
+
+# macOS
+macos/Pods/
+macos/Podfile.lock
+
+# Coverage
+coverage/
+*.lcov
+
+# FVM (Flutter Version Management)
+.fvm/
+.fvmrc
+
+# Melos
+.melos/
+
+# Fastlane
+*/fastlane/report.xml
+*/fastlane/Preview.html
+*/fastlane/screenshots
+*/fastlane/test_output
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+
+# Generated localization
+lib/l10n/
+*.arb.dart
+
+# Secrets (add your secret files here)
+secrets/
+*.pem
+*.p12
