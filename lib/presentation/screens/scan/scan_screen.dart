@@ -82,6 +82,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                     padding: const EdgeInsets.only(right: 8),
                     child: FilterChip(
                       label: Text(filter.label),
+                      labelStyle: TextStyle(
+                        color: isSelected
+                            ? theme.colorScheme.onSecondaryContainer
+                            : theme.colorScheme.onSurface,
+                      ),
                       selected: isSelected,
                       onSelected: (_) {
                         ref.read(scanProvider.notifier).setFilter(filter);

@@ -277,7 +277,15 @@ class AppTheme {
       // Chips
       chipTheme: ChipThemeData(
         backgroundColor: _surfaceLight,
-        labelStyle: const TextStyle(fontSize: 12),
+        selectedColor: primaryColor.withValues(alpha: 0.15),
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF1A1A2E), // Ensure visible text in light mode
+        ),
+        secondaryLabelStyle: const TextStyle(
+          fontSize: 12,
+          color: Color(0xFF1A1A2E),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

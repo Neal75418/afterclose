@@ -326,6 +326,41 @@ class AppDatabase extends _$AppDatabase {
     return grouped;
   }
 
+  /// Get all symbols that have at least [minDays] of price data
+  ///
+  /// This is used for full-market analysis to find stocks that can be analyzed
+  /// without needing to fetch additional historical data.
+  ///
+  /// Returns list of symbols sorted by data count (most data first)
+  Future<List<String>> getSymbolsWithSufficientData({
+    required int minDays,
+    required DateTime startDate,
+    DateTime? endDate,
+  }) async {
+    // Use raw SQL for efficient GROUP BY with HAVING clause
+    final effectiveEndDate = endDate ?? DateTime.now();
+
+    const query = '''
+      SELECT symbol, COUNT(*) as cnt
+      FROM daily_price
+      WHERE date >= ? AND date <= ?
+      GROUP BY symbol
+      HAVING cnt >= ?
+      ORDER BY cnt DESC
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startDate),
+        Variable.withDateTime(effectiveEndDate),
+        Variable.withInt(minDays),
+      ],
+    ).get();
+
+    return results.map((row) => row.read<String>('symbol')).toList();
+  }
+
   // ==========================================
   // Daily Institutional Operations
   // ==========================================

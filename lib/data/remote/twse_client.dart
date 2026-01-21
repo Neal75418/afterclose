@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 
 /// TWSE (Taiwan Stock Exchange) API Client
 ///
@@ -25,7 +28,14 @@ class TwseClient {
         baseUrl: _baseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 60),
-        headers: {'Accept': 'application/json'},
+        headers: {
+          'Accept': 'application/json',
+          // Add User-Agent to mimic browser request
+          'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        },
+        // Ensure JSON response is parsed correctly on all platforms
+        responseType: ResponseType.json,
       ),
     );
   }
@@ -38,29 +48,72 @@ class TwseClient {
   /// Endpoint: /rwd/zh/afterTrading/STOCK_DAY_ALL
   Future<List<TwseDailyPrice>> getAllDailyPrices() async {
     try {
+      AppLogger.info('TwseClient', 'Fetching all daily prices from TWSE...');
+
       final response = await _dio.get(
         '/rwd/zh/afterTrading/STOCK_DAY_ALL',
         queryParameters: {'response': 'json'},
       );
 
+      AppLogger.info(
+        'TwseClient',
+        'TWSE response: statusCode=${response.statusCode}, '
+            'dataType=${response.data?.runtimeType}',
+      );
+
       if (response.statusCode == 200) {
-        final data = response.data;
+        // Handle both String and Map responses (iOS may return String)
+        var data = response.data;
+        if (data is String) {
+          AppLogger.info('TwseClient', 'Response is String, parsing as JSON');
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.error('TwseClient', 'Failed to parse JSON response', e);
+            return [];
+          }
+        }
+
+        if (data is! Map<String, dynamic>) {
+          AppLogger.warning(
+            'TwseClient',
+            'Unexpected data type: ${data.runtimeType}',
+          );
+          return [];
+        }
 
         // Check response status
-        if (data['stat'] != 'OK' || data['data'] == null) {
+        final stat = data['stat'];
+        final hasData = data['data'] != null;
+        AppLogger.info(
+          'TwseClient',
+          'TWSE response stat="$stat", hasData=$hasData',
+        );
+
+        if (stat != 'OK' || !hasData) {
+          AppLogger.warning(
+            'TwseClient',
+            'TWSE returned no data: stat=$stat, keys=${data.keys.toList()}',
+          );
           return [];
         }
 
         // Parse date from response (format: YYYYMMDD)
         final dateStr = data['date']?.toString() ?? '';
         final date = _parseAdDate(dateStr);
+        AppLogger.info('TwseClient', 'TWSE data date: $dateStr -> $date');
 
         // Parse data array (each row is a List, not a Map)
         final List<dynamic> rows = data['data'];
-        return rows
+        AppLogger.info('TwseClient', 'TWSE returned ${rows.length} rows');
+
+        final prices = rows
             .map((row) => _parseDailyPriceRow(row as List<dynamic>, date))
             .whereType<TwseDailyPrice>()
             .toList();
+
+        AppLogger.info('TwseClient', 'Parsed ${prices.length} valid prices');
+        return prices;
       }
 
       throw ApiException(
@@ -68,11 +121,20 @@ class TwseClient {
         response.statusCode,
       );
     } on DioException catch (e) {
+      AppLogger.error(
+        'TwseClient',
+        'DioException: type=${e.type}, message=${e.message}, '
+            'response=${e.response?.statusCode}',
+        e,
+      );
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
         throw NetworkException('TWSE connection timeout', e);
       }
       throw NetworkException(e.message ?? 'TWSE network error', e);
+    } catch (e, stack) {
+      AppLogger.error('TwseClient', 'Unexpected error', e, stack);
+      rethrow;
     }
   }
 
@@ -246,12 +308,29 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
+        // Handle iOS Dio returning String instead of Map
+        var data = response.data;
+        if (data is String) {
+          AppLogger.debug(
+            'TwseClient',
+            'getStockMonthlyPrices: Response is String, parsing as JSON',
+          );
+          data = jsonDecode(data);
+        }
+
         if (data['stat'] != 'OK' || data['data'] == null) {
+          AppLogger.debug(
+            'TwseClient',
+            'getStockMonthlyPrices: No data for $code ($year/$month), stat=${data['stat']}',
+          );
           return [];
         }
 
         final List<dynamic> rows = data['data'];
+        AppLogger.debug(
+          'TwseClient',
+          'getStockMonthlyPrices: $code ($year/$month) -> ${rows.length} rows',
+        );
         return rows
             .map((row) => _parseHistoricalRow(row as List<dynamic>, code))
             .whereType<TwseDailyPrice>()

@@ -93,8 +93,18 @@ class PriceRepository {
 
       // If no months need fetching, we're done
       if (monthsToFetch.isEmpty) {
+        AppLogger.debug(
+          'PriceRepo',
+          'syncStockPrices: $symbol already has complete data',
+        );
         return 0;
       }
+
+      AppLogger.debug(
+        'PriceRepo',
+        'syncStockPrices: $symbol needs ${monthsToFetch.length} months '
+            '(existing: ${existingHistory.length} days)',
+      );
 
       // Fetch only missing months
       final allPrices = <TwseDailyPrice>[];
@@ -144,6 +154,17 @@ class PriceRepository {
 
       if (entries.isNotEmpty) {
         await _db.insertPrices(entries);
+        AppLogger.debug(
+          'PriceRepo',
+          'syncStockPrices: $symbol inserted ${entries.length} prices '
+              '(fetched ${allPrices.length} from API)',
+        );
+      } else {
+        AppLogger.debug(
+          'PriceRepo',
+          'syncStockPrices: $symbol no prices to insert '
+              '(fetched ${allPrices.length} from API)',
+        );
       }
 
       return entries.length;
@@ -173,12 +194,17 @@ class PriceRepository {
     List<String>? fallbackSymbols,
   }) async {
     try {
+      AppLogger.info('PriceRepo', 'syncAllPricesForDate: date=$date');
+
       // Use TWSE Open Data - free, unlimited, all market in one call!
       final prices = await _twseClient.getAllDailyPrices();
+
+      AppLogger.info('PriceRepo', 'Got ${prices.length} prices from TWSE');
 
       if (prices.isEmpty) {
         // TWSE might not have data yet (before market close)
         // Or it's a non-trading day
+        AppLogger.warning('PriceRepo', 'TWSE returned empty prices');
         return const MarketSyncResult(count: 0, candidates: []);
       }
 
@@ -195,6 +221,8 @@ class PriceRepository {
         );
       }).toList();
 
+      AppLogger.info('PriceRepo', 'Built ${priceEntries.length} price entries');
+
       // Build stock master entries from TWSE data (includes stock names!)
       // This ensures stock names are always available even without FinMind API
       final stockEntries = prices.where((p) => p.name.isNotEmpty).map((price) {
@@ -206,14 +234,19 @@ class PriceRepository {
         );
       }).toList();
 
+      AppLogger.info('PriceRepo', 'Built ${stockEntries.length} stock entries');
+
       // Upsert both prices and stock master
+      AppLogger.info('PriceRepo', 'Inserting to database...');
       await Future.wait([
         _db.insertPrices(priceEntries),
         if (stockEntries.isNotEmpty) _db.upsertStocks(stockEntries),
       ]);
+      AppLogger.info('PriceRepo', 'Database insert complete');
 
       // Quick filter: find candidates based on today's data only
       final candidates = _quickFilterCandidates(prices);
+      AppLogger.info('PriceRepo', 'Quick filtered ${candidates.length} candidates');
 
       return MarketSyncResult(
         count: priceEntries.length,
@@ -221,7 +254,8 @@ class PriceRepository {
       );
     } on NetworkException {
       rethrow;
-    } catch (e) {
+    } catch (e, stack) {
+      AppLogger.error('PriceRepo', 'Failed to sync prices', e, stack);
       throw DatabaseException('Failed to sync prices from TWSE', e);
     }
   }

@@ -119,12 +119,19 @@ class UpdateService {
       onProgress?.call(3, 10, '取得今日價格');
       var marketCandidates = <String>[];
       try {
+        AppLogger.info('UpdateService', 'Step 3: Fetching daily prices...');
         final syncResult = await _priceRepo.syncAllPricesForDate(
           normalizedDate,
         );
         result.pricesUpdated = syncResult.count;
         marketCandidates = syncResult.candidates;
+        AppLogger.info(
+          'UpdateService',
+          'Step 3 complete: ${syncResult.count} prices, '
+              '${marketCandidates.length} candidates',
+        );
       } catch (e) {
+        AppLogger.error('UpdateService', 'Step 3 failed', e);
         result.errors.add('價格資料更新失敗: $e');
       }
 
@@ -133,6 +140,7 @@ class UpdateService {
       // OPTIMIZED: Parallel fetching + smart skipping
       onProgress?.call(4, 10, '取得歷史資料');
       try {
+        AppLogger.info('UpdateService', 'Step 3.5: Checking historical data...');
         // Combine all sources for historical data
         final watchlist = await _db.getWatchlist();
         final symbolsForHistory = <String>{
@@ -140,37 +148,46 @@ class UpdateService {
           ..._defaultPopularStocks,
           ...marketCandidates, // Quick-filtered candidates from all market!
         }.toList();
+        AppLogger.info(
+          'UpdateService',
+          'symbolsForHistory: ${symbolsForHistory.length} '
+              '(watchlist=${watchlist.length}, popular=${_defaultPopularStocks.length}, '
+              'candidates=${marketCandidates.length})',
+        );
 
         // Check which stocks need historical data
         final historyStartDate = normalizedDate.subtract(
           const Duration(days: RuleParams.lookbackPrice + 30),
         );
 
-        // Smart skip: Only check stocks that might need data
-        // Use batch query to check latest price dates
-        final latestPrices = await _db.getLatestPricesBatch(symbolsForHistory);
+        // FIX: Check actual data counts, not just latest date
+        // We need at least RuleParams.swingWindow days of data for analysis
+        final priceHistoryBatch = await _db.getPriceHistoryBatch(
+          symbolsForHistory,
+          startDate: historyStartDate,
+          endDate: normalizedDate,
+        );
 
         final symbolsNeedingData = <String>[];
         for (final symbol in symbolsForHistory) {
-          final latestPrice = latestPrices[symbol];
-          if (latestPrice == null) {
-            // No data at all - need to fetch
-            symbolsNeedingData.add(symbol);
-            continue;
-          }
+          final prices = priceHistoryBatch[symbol];
+          final priceCount = prices?.length ?? 0;
 
-          // Smart skip: If data is less than 7 days old, skip
-          // (it's likely complete enough for analysis)
-          final daysSinceLastUpdate = normalizedDate
-              .difference(latestPrice.date)
-              .inDays;
-          if (daysSinceLastUpdate > 7) {
+          // Need at least swingWindow days of data for analysis
+          if (priceCount < RuleParams.swingWindow) {
             symbolsNeedingData.add(symbol);
           }
         }
 
+        AppLogger.info(
+          'UpdateService',
+          'symbolsNeedingData: ${symbolsNeedingData.length} out of ${symbolsForHistory.length} '
+              '(need >= ${RuleParams.swingWindow} days)',
+        );
+
         // Only fetch for stocks that actually need it
         if (symbolsNeedingData.isEmpty) {
+          AppLogger.info('UpdateService', 'Historical data already complete');
           onProgress?.call(4, 10, '歷史資料已完整');
         } else {
           // OPTIMIZATION: Parallel fetch with controlled concurrency
@@ -271,29 +288,77 @@ class UpdateService {
         result.errors.add('新聞更新失敗: $e');
       }
 
-      // Step 6: Filter candidates (now includes market-wide candidates!)
+      // Step 6: Get ALL stocks with sufficient historical data for analysis
+      // This enables full-market analysis without extra API calls
       onProgress?.call(6, 10, '篩選候選股票');
       var candidates = <String>[];
       try {
-        // Include market candidates from quick filter
-        candidates = await _filterCandidates(
-          normalizedDate,
-          additionalSymbols: marketCandidates,
-        );
-        result.candidatesFound = candidates.length;
+        AppLogger.info('UpdateService', 'Step 6: Finding analyzable stocks...');
 
-        // Fallback: if no candidates meet strict criteria,
-        // use all stocks with sufficient historical data
-        if (candidates.isEmpty) {
-          final watchlist = await _db.getWatchlist();
-          candidates = <String>{
-            ...watchlist.map((w) => w.symbol),
-            ..._defaultPopularStocks,
-            ...marketCandidates,
-          }.toList();
-          result.candidatesFound = candidates.length;
+        // Query DB for all stocks with sufficient historical data
+        final historyStartDate = normalizedDate.subtract(
+          const Duration(days: RuleParams.lookbackPrice + 10),
+        );
+        final allAnalyzable = await _db.getSymbolsWithSufficientData(
+          minDays: RuleParams.swingWindow,
+          startDate: historyStartDate,
+          endDate: normalizedDate,
+        );
+
+        AppLogger.info(
+          'UpdateService',
+          'Step 6: Found ${allAnalyzable.length} stocks with sufficient data',
+        );
+
+        // Use all analyzable stocks as candidates
+        // Priority: watchlist first, then popular stocks, then rest of market
+        final watchlist = await _db.getWatchlist();
+        final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
+        final popularSet = _defaultPopularStocks.toSet();
+
+        // Build ordered candidate list
+        final orderedCandidates = <String>[];
+
+        // 1. Watchlist stocks first (if they have sufficient data)
+        for (final symbol in watchlistSymbols) {
+          if (allAnalyzable.contains(symbol)) {
+            orderedCandidates.add(symbol);
+          }
         }
+
+        // 2. Popular stocks second
+        for (final symbol in _defaultPopularStocks) {
+          if (allAnalyzable.contains(symbol) &&
+              !orderedCandidates.contains(symbol)) {
+            orderedCandidates.add(symbol);
+          }
+        }
+
+        // 3. Quick-filtered market candidates third
+        for (final symbol in marketCandidates) {
+          if (allAnalyzable.contains(symbol) &&
+              !orderedCandidates.contains(symbol)) {
+            orderedCandidates.add(symbol);
+          }
+        }
+
+        // 4. Rest of analyzable stocks
+        for (final symbol in allAnalyzable) {
+          if (!orderedCandidates.contains(symbol)) {
+            orderedCandidates.add(symbol);
+          }
+        }
+
+        candidates = orderedCandidates;
+        result.candidatesFound = candidates.length;
+        AppLogger.info(
+          'UpdateService',
+          'Step 6: ${candidates.length} candidates '
+              '(watchlist=${watchlistSymbols.length}, popular=${popularSet.length}, '
+              'market=${marketCandidates.length}, total analyzable=${allAnalyzable.length})',
+        );
       } catch (e) {
+        AppLogger.error('UpdateService', 'Step 6 failed', e);
         result.errors.add('候選股票篩選失敗: $e');
         // Continue with empty candidates - will result in no recommendations
       }
@@ -302,6 +367,10 @@ class UpdateService {
       onProgress?.call(7, 10, '執行分析');
       var scoredStocks = <ScoredStock>[];
       try {
+        AppLogger.info(
+          'UpdateService',
+          'Step 7-8: Analyzing ${candidates.length} candidates...',
+        );
         scoredStocks = await _analyzeAndScore(
           candidates,
           normalizedDate,
@@ -310,7 +379,12 @@ class UpdateService {
           },
         );
         result.stocksAnalyzed = scoredStocks.length;
+        AppLogger.info(
+          'UpdateService',
+          'Step 7-8 complete: ${scoredStocks.length} stocks scored',
+        );
       } catch (e) {
+        AppLogger.error('UpdateService', 'Step 7-8 failed', e);
         result.errors.add('股票分析失敗: $e');
         // Continue with empty scored stocks - will result in no recommendations
       }
@@ -318,16 +392,29 @@ class UpdateService {
       // Step 9: Generate top 10 recommendations
       onProgress?.call(9, 10, '產生推薦');
       try {
+        AppLogger.info('UpdateService', 'Step 9: Generating recommendations...');
         await _generateRecommendations(scoredStocks, normalizedDate);
         result.recommendationsGenerated = scoredStocks
             .take(RuleParams.dailyTopN)
             .length;
+        AppLogger.info(
+          'UpdateService',
+          'Step 9 complete: ${result.recommendationsGenerated} recommendations',
+        );
       } catch (e) {
+        AppLogger.error('UpdateService', 'Step 9 failed', e);
         result.errors.add('推薦產生失敗: $e');
       }
 
       // Step 10: Mark completion
       onProgress?.call(10, 10, '完成');
+      AppLogger.info(
+        'UpdateService',
+        'Update complete! prices=${result.pricesUpdated}, '
+            'analyzed=${result.stocksAnalyzed}, '
+            'recommendations=${result.recommendationsGenerated}, '
+            'errors=${result.errors.length}',
+      );
       final status = result.errors.isEmpty
           ? UpdateStatus.success.code
           : UpdateStatus.partial.code;
@@ -395,52 +482,6 @@ class UpdateService {
     }
   }
 
-  /// Filter stocks that meet candidate criteria
-  ///
-  /// Checks: watchlist + popular stocks + additional symbols (from market-wide filter)
-  ///
-  /// [additionalSymbols] - Extra symbols from quick market filter to include
-  Future<List<String>> _filterCandidates(
-    DateTime date, {
-    List<String> additionalSymbols = const [],
-  }) async {
-    final candidates = <String>[];
-
-    // Combine all sources: watchlist + popular + market candidates
-    final watchlist = await _db.getWatchlist();
-    final symbolsToCheck = <String>{
-      ...watchlist.map((w) => w.symbol),
-      ..._defaultPopularStocks,
-      ...additionalSymbols, // NEW: Include market-wide quick-filtered candidates
-    }.toList();
-
-    if (symbolsToCheck.isEmpty) return candidates;
-
-    // Calculate date range for price history
-    final startDate = date.subtract(
-      const Duration(days: RuleParams.lookbackPrice + 10),
-    );
-
-    // Batch load prices for stocks we're checking
-    final pricesMap = await _db.getPriceHistoryBatch(
-      symbolsToCheck,
-      startDate: startDate,
-      endDate: date,
-    );
-
-    for (final symbol in symbolsToCheck) {
-      final prices = pricesMap[symbol];
-      if (prices == null || prices.isEmpty) continue;
-
-      // Check if meets candidate criteria
-      if (_analysisService.isCandidate(prices)) {
-        candidates.add(symbol);
-      }
-    }
-
-    return candidates;
-  }
-
   /// Analyze candidates and calculate scores
   ///
   /// Uses batch queries to avoid N+1 problem
@@ -483,14 +524,42 @@ class UpdateService {
         ? results[2] as Map<String, List<DailyInstitutionalEntry>>
         : <String, List<DailyInstitutionalEntry>>{};
 
+    // Log price data statistics
+    var stocksWithData = 0;
+    var stocksWithSufficientData = 0;
+    for (final symbol in candidates) {
+      final prices = pricesMap[symbol];
+      if (prices != null && prices.isNotEmpty) {
+        stocksWithData++;
+        if (prices.length >= RuleParams.swingWindow) {
+          stocksWithSufficientData++;
+        }
+      }
+    }
+    AppLogger.info(
+      'UpdateService',
+      '_analyzeAndScore: ${candidates.length} candidates, '
+          '$stocksWithData with data, $stocksWithSufficientData with sufficient data '
+          '(need >= ${RuleParams.swingWindow} days)',
+    );
+
     // Process each candidate with pre-loaded data
+    var skippedNoData = 0;
+    var skippedInsufficientData = 0;
     for (var i = 0; i < candidates.length; i++) {
       final symbol = candidates[i];
       onProgress?.call(i + 1, candidates.length);
 
       // Get price history from batch-loaded data
       final prices = pricesMap[symbol];
-      if (prices == null || prices.length < RuleParams.swingWindow) continue;
+      if (prices == null || prices.isEmpty) {
+        skippedNoData++;
+        continue;
+      }
+      if (prices.length < RuleParams.swingWindow) {
+        skippedInsufficientData++;
+        continue;
+      }
 
       // Run analysis
       final analysisResult = _analysisService.analyzeStock(prices);
@@ -553,6 +622,13 @@ class UpdateService {
         ScoredStock(symbol: symbol, score: score, reasons: topReasons),
       );
     }
+
+    // Log analysis statistics
+    AppLogger.info(
+      'UpdateService',
+      '_analyzeAndScore complete: ${scoredStocks.length} scored, '
+          'skipped $skippedNoData (no data) + $skippedInsufficientData (insufficient data)',
+    );
 
     // Sort by score descending
     scoredStocks.sort((a, b) => b.score.compareTo(a.score));

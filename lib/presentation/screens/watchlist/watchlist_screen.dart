@@ -225,7 +225,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      '搜尋中',
+                                      'watchlist.searching'.tr(),
                                       style:
                                           theme.textTheme.labelSmall?.copyWith(
                                         color: theme
@@ -242,7 +242,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                             child: state.filteredItems.isEmpty
                                 ? Center(
                                     child: Text(
-                                      '找不到符合的股票',
+                                      'watchlist.noMatching'.tr(),
                                       style:
                                           theme.textTheme.bodyMedium?.copyWith(
                                         color:
@@ -338,7 +338,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               icon: Icons.visibility_outlined,
-              label: '查看',
+              label: 'watchlist.view'.tr(),
               borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(16),
                 bottomRight: Radius.circular(16),
@@ -359,7 +359,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
               icon: Icons.delete_outline,
-              label: '移除',
+              label: 'watchlist.remove'.tr(),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(16),
                 bottomLeft: Radius.circular(16),

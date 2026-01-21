@@ -65,7 +65,11 @@
     "searchHint": "搜尋股票代號或名稱",
     "group": "分組",
     "sort": "排序",
-    "stockCount": "共 {count} 檔"
+    "stockCount": "共 {count} 檔",
+    "searching": "搜尋中",
+    "noMatching": "找不到符合的股票",
+    "view": "查看",
+    "remove": "移除"
   },
   "stock": {
     "detailTitle": "股票詳情",

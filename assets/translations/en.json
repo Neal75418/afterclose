@@ -65,7 +65,11 @@
     "searchHint": "Search by symbol or name",
     "group": "Group",
     "sort": "Sort",
-    "stockCount": "{count} stocks"
+    "stockCount": "{count} stocks",
+    "searching": "Searching",
+    "noMatching": "No matching stocks",
+    "view": "View",
+    "remove": "Remove"
   },
   "stock": {
     "detailTitle": "Stock Details",
