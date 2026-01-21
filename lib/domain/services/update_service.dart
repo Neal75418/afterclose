@@ -33,6 +33,7 @@ class UpdateService {
     InstitutionalRepository? institutionalRepository,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
+    List<String>? popularStocks,
   }) : _db = database,
        _stockRepo = stockRepository,
        _priceRepo = priceRepository,
@@ -40,7 +41,8 @@ class UpdateService {
        _analysisRepo = analysisRepository,
        _institutionalRepo = institutionalRepository,
        _analysisService = analysisService ?? const AnalysisService(),
-       _ruleEngine = ruleEngine ?? const RuleEngine();
+       _ruleEngine = ruleEngine ?? const RuleEngine(),
+       _popularStocks = popularStocks ?? _defaultPopularStocks;
 
   /// Default popular Taiwan stocks for free account fallback
   /// These are high-volume stocks that are commonly tracked
@@ -70,6 +72,7 @@ class UpdateService {
   final InstitutionalRepository? _institutionalRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
+  final List<String> _popularStocks;
 
   /// Run the complete daily update pipeline
   ///
@@ -145,19 +148,19 @@ class UpdateService {
         final watchlist = await _db.getWatchlist();
         final symbolsForHistory = <String>{
           ...watchlist.map((w) => w.symbol),
-          ..._defaultPopularStocks,
+          ..._popularStocks,
           ...marketCandidates, // Quick-filtered candidates from all market!
         }.toList();
         AppLogger.info(
           'UpdateService',
           'symbolsForHistory: ${symbolsForHistory.length} '
-              '(watchlist=${watchlist.length}, popular=${_defaultPopularStocks.length}, '
+              '(watchlist=${watchlist.length}, popular=${_popularStocks.length}, '
               'candidates=${marketCandidates.length})',
         );
 
         // Check which stocks need historical data
         final historyStartDate = normalizedDate.subtract(
-          const Duration(days: RuleParams.lookbackPrice + 30),
+          const Duration(days: RuleParams.historyRequiredDays),
         );
 
         // FIX: Check actual data counts, not just latest date
@@ -264,7 +267,9 @@ class UpdateService {
           for (final item in watchlist) {
             await institutionalRepo.syncInstitutionalData(
               item.symbol,
-              startDate: normalizedDate.subtract(const Duration(days: 5)),
+              startDate: normalizedDate.subtract(
+                const Duration(days: RuleParams.institutionalLookbackDays),
+              ),
               endDate: normalizedDate,
             );
           }
@@ -297,7 +302,7 @@ class UpdateService {
 
         // Query DB for all stocks with sufficient historical data
         final historyStartDate = normalizedDate.subtract(
-          const Duration(days: RuleParams.lookbackPrice + 10),
+          const Duration(days: RuleParams.historyRequiredDays - 20),
         );
         final allAnalyzable = await _db.getSymbolsWithSufficientData(
           minDays: RuleParams.swingWindow,
@@ -314,7 +319,7 @@ class UpdateService {
         // Priority: watchlist first, then popular stocks, then rest of market
         final watchlist = await _db.getWatchlist();
         final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
-        final popularSet = _defaultPopularStocks.toSet();
+        final popularSet = _popularStocks.toSet();
 
         // Build ordered candidate list
         final orderedCandidates = <String>[];
@@ -327,7 +332,7 @@ class UpdateService {
         }
 
         // 2. Popular stocks second
-        for (final symbol in _defaultPopularStocks) {
+        for (final symbol in _popularStocks) {
           if (allAnalyzable.contains(symbol) &&
               !orderedCandidates.contains(symbol)) {
             orderedCandidates.add(symbol);
@@ -501,7 +506,9 @@ class UpdateService {
     final startDate = date.subtract(
       const Duration(days: RuleParams.lookbackPrice + 10),
     );
-    final instStartDate = date.subtract(const Duration(days: 10));
+    final instStartDate = date.subtract(
+      const Duration(days: RuleParams.institutionalLookbackDays),
+    );
 
     // Batch load all required data in parallel for better performance
     final instRepo = _institutionalRepo;

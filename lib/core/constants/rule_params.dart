@@ -4,6 +4,15 @@ abstract final class RuleParams {
   /// Analysis window in days
   static const int lookbackPrice = 120;
 
+  /// Extra buffer days for historical data (ensures enough data for analysis edge cases)
+  static const int historyBufferDays = 30;
+
+  /// Total required historical data days (lookbackPrice + buffer)
+  static const int historyRequiredDays = lookbackPrice + historyBufferDays;
+
+  /// Institutional data lookback days
+  static const int institutionalLookbackDays = 10;
+
   /// Moving average days for volume calculation
   static const int volMa = 20;
 
