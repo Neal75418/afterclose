@@ -3,10 +3,7 @@
 /// Provides normalized dates for database queries and UI display.
 /// All dates are normalized to UTC midnight to ensure consistent comparison.
 class DateContext {
-  DateContext._({
-    required this.today,
-    required this.historyStart,
-  });
+  DateContext._({required this.today, required this.historyStart});
 
   /// Create a DateContext for current date with standard 5-day history lookback.
   factory DateContext.now({int historyDays = 5}) {

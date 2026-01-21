@@ -275,21 +275,29 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     final sorted = List<WatchlistItemData>.from(items);
     switch (state.sort) {
       case WatchlistSort.addedDesc:
-        sorted.sort((a, b) => (b.addedAt ?? DateTime(1970))
-            .compareTo(a.addedAt ?? DateTime(1970)));
+        sorted.sort(
+          (a, b) => (b.addedAt ?? DateTime(1970)).compareTo(
+            a.addedAt ?? DateTime(1970),
+          ),
+        );
       case WatchlistSort.addedAsc:
-        sorted.sort((a, b) => (a.addedAt ?? DateTime(1970))
-            .compareTo(b.addedAt ?? DateTime(1970)));
+        sorted.sort(
+          (a, b) => (a.addedAt ?? DateTime(1970)).compareTo(
+            b.addedAt ?? DateTime(1970),
+          ),
+        );
       case WatchlistSort.scoreDesc:
         sorted.sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
       case WatchlistSort.scoreAsc:
         sorted.sort((a, b) => (a.score ?? 0).compareTo(b.score ?? 0));
       case WatchlistSort.priceChangeDesc:
         sorted.sort(
-            (a, b) => (b.priceChange ?? 0).compareTo(a.priceChange ?? 0));
+          (a, b) => (b.priceChange ?? 0).compareTo(a.priceChange ?? 0),
+        );
       case WatchlistSort.priceChangeAsc:
         sorted.sort(
-            (a, b) => (a.priceChange ?? 0).compareTo(b.priceChange ?? 0));
+          (a, b) => (a.priceChange ?? 0).compareTo(b.priceChange ?? 0),
+        );
       case WatchlistSort.nameAsc:
         sorted.sort((a, b) => a.symbol.compareTo(b.symbol));
     }

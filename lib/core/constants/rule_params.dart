@@ -78,7 +78,7 @@ abstract final class RuleScores {
   static const int reversalS2W = 35;
   static const int techBreakout = 25;
   static const int techBreakdown = 25;
-  static const int volumeSpike = 22;  // Was 18, raised due to stricter criteria
+  static const int volumeSpike = 22; // Was 18, raised due to stricter criteria
   static const int priceSpike = 15;
   static const int institutionalShift = 12;
   static const int newsRelated = 8;

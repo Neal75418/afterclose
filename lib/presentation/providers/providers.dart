@@ -27,10 +27,7 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 /// Batch query cache manager (30-second TTL for update cycle optimization)
 final batchCacheProvider = Provider<BatchQueryCacheManager>((ref) {
-  return BatchQueryCacheManager(
-    maxSize: 50,
-    ttl: const Duration(seconds: 30),
-  );
+  return BatchQueryCacheManager(maxSize: 50, ttl: const Duration(seconds: 30));
 });
 
 /// Cached database accessor for optimized batch queries

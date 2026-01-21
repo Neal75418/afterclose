@@ -188,30 +188,29 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
               child: state.isLoading
                   ? const NewsListShimmer(itemCount: 8)
                   : state.error != null
-                      ? SingleChildScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          child: SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.6,
-                            child: EmptyStates.error(
-                              message: state.error!,
-                              onRetry: _refresh,
-                            ),
-                          ),
-                        )
-                      : state.filteredNews.isEmpty
-                          ? SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: SizedBox(
-                                height:
-                                    MediaQuery.of(context).size.height * 0.6,
-                                child: EmptyStates.noNews(),
-                              ),
-                            )
-                          : _GroupedNewsList(
-                              news: state.filteredNews,
-                              newsStockMap: state.newsStockMap,
-                              onTap: _showNewsPreview,
-                            ),
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: EmptyStates.error(
+                          message: state.error!,
+                          onRetry: _refresh,
+                        ),
+                      ),
+                    )
+                  : state.filteredNews.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.6,
+                        child: EmptyStates.noNews(),
+                      ),
+                    )
+                  : _GroupedNewsList(
+                      news: state.filteredNews,
+                      newsStockMap: state.newsStockMap,
+                      onTap: _showNewsPreview,
+                    ),
             ),
           ),
         ],
@@ -329,27 +328,33 @@ class _GroupedNewsList extends StatelessWidget {
       children: [
         if (todayNews.isNotEmpty) ...[
           _SectionHeader(title: S.newsToday, count: todayNews.length),
-          ...todayNews.map((item) => _NewsListItem(
-                item: item,
-                relatedStocks: newsStockMap[item.id] ?? [],
-                onTap: onTap,
-              )),
+          ...todayNews.map(
+            (item) => _NewsListItem(
+              item: item,
+              relatedStocks: newsStockMap[item.id] ?? [],
+              onTap: onTap,
+            ),
+          ),
         ],
         if (yesterdayNews.isNotEmpty) ...[
           _SectionHeader(title: S.newsYesterday, count: yesterdayNews.length),
-          ...yesterdayNews.map((item) => _NewsListItem(
-                item: item,
-                relatedStocks: newsStockMap[item.id] ?? [],
-                onTap: onTap,
-              )),
+          ...yesterdayNews.map(
+            (item) => _NewsListItem(
+              item: item,
+              relatedStocks: newsStockMap[item.id] ?? [],
+              onTap: onTap,
+            ),
+          ),
         ],
         if (earlierNews.isNotEmpty) ...[
           _SectionHeader(title: S.newsEarlier, count: earlierNews.length),
-          ...earlierNews.map((item) => _NewsListItem(
-                item: item,
-                relatedStocks: newsStockMap[item.id] ?? [],
-                onTap: onTap,
-              )),
+          ...earlierNews.map(
+            (item) => _NewsListItem(
+              item: item,
+              relatedStocks: newsStockMap[item.id] ?? [],
+              onTap: onTap,
+            ),
+          ),
         ],
       ],
     );

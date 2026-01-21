@@ -109,9 +109,7 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
       // Insert at beginning to maintain createdAt DESC order
       final newAlert = await _db.getAlertById(id);
       if (newAlert != null) {
-        state = state.copyWith(
-          alerts: [newAlert, ...state.alerts],
-        );
+        state = state.copyWith(alerts: [newAlert, ...state.alerts]);
       }
       return true;
     } catch (e) {

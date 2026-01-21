@@ -103,11 +103,16 @@ class _ReasonTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: (isCompact ? theme.textTheme.labelSmall : theme.textTheme.labelMedium)
-            ?.copyWith(
-          color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
-          fontWeight: FontWeight.w500,
-        ),
+        style:
+            (isCompact
+                    ? theme.textTheme.labelSmall
+                    : theme.textTheme.labelMedium)
+                ?.copyWith(
+                  color: isDark
+                      ? AppTheme.secondaryColor
+                      : AppTheme.primaryColor,
+                  fontWeight: FontWeight.w500,
+                ),
       ),
     );
   }

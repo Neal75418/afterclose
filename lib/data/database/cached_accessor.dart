@@ -15,8 +15,8 @@ class CachedDatabaseAccessor {
   CachedDatabaseAccessor({
     required AppDatabase db,
     required BatchQueryCacheManager cache,
-  })  : _db = db,
-        _cache = cache;
+  }) : _db = db,
+       _cache = cache;
 
   final AppDatabase _db;
   final BatchQueryCacheManager _cache;
@@ -118,9 +118,7 @@ class CachedDatabaseAccessor {
   }
 
   /// Get stocks batch (not cached - stock data rarely changes).
-  Future<Map<String, StockMasterEntry>> getStocksBatch(
-    List<String> symbols,
-  ) {
+  Future<Map<String, StockMasterEntry>> getStocksBatch(List<String> symbols) {
     return _db.getStocksBatch(symbols);
   }
 

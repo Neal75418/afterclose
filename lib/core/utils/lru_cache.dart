@@ -15,10 +15,7 @@ import 'dart:collection';
 /// final cached = cache.get('2330');
 /// ```
 class LruCache<K, V> {
-  LruCache({
-    this.maxSize = 100,
-    this.ttl = const Duration(seconds: 30),
-  });
+  LruCache({this.maxSize = 100, this.ttl = const Duration(seconds: 30)});
 
   /// Maximum number of entries in the cache
   final int maxSize;
@@ -74,10 +71,7 @@ class LruCache<K, V> {
     }
 
     // Add new entry
-    _cache[key] = _CacheEntry(
-      value: value,
-      expiresAt: DateTime.now().add(ttl),
-    );
+    _cache[key] = _CacheEntry(value: value, expiresAt: DateTime.now().add(ttl));
   }
 
   /// Check if a key exists and is not expired.
@@ -124,20 +118,17 @@ class LruCache<K, V> {
 
   /// Get cache statistics for debugging.
   CacheStats get stats => CacheStats(
-        size: _cache.length,
-        maxSize: maxSize,
-        ttlSeconds: ttl.inSeconds,
-        hits: _hits,
-        misses: _misses,
-      );
+    size: _cache.length,
+    maxSize: maxSize,
+    ttlSeconds: ttl.inSeconds,
+    hits: _hits,
+    misses: _misses,
+  );
 }
 
 /// Internal cache entry with expiration time.
 class _CacheEntry<V> {
-  _CacheEntry({
-    required this.value,
-    required this.expiresAt,
-  });
+  _CacheEntry({required this.value, required this.expiresAt});
 
   final V value;
   final DateTime expiresAt;
@@ -195,10 +186,10 @@ class BatchQueryCacheManager {
   BatchQueryCacheManager({
     int maxSize = 50,
     Duration ttl = const Duration(seconds: 30),
-  })  : _latestPricesCache = LruCache(maxSize: maxSize, ttl: ttl),
-        _priceHistoryCache = LruCache(maxSize: maxSize, ttl: ttl),
-        _analysesCache = LruCache(maxSize: maxSize, ttl: ttl),
-        _reasonsCache = LruCache(maxSize: maxSize, ttl: ttl);
+  }) : _latestPricesCache = LruCache(maxSize: maxSize, ttl: ttl),
+       _priceHistoryCache = LruCache(maxSize: maxSize, ttl: ttl),
+       _analysesCache = LruCache(maxSize: maxSize, ttl: ttl),
+       _reasonsCache = LruCache(maxSize: maxSize, ttl: ttl);
 
   final LruCache<String, Map<String, dynamic>> _latestPricesCache;
   final LruCache<String, Map<String, List<dynamic>>> _priceHistoryCache;
@@ -294,10 +285,7 @@ class BatchQueryCacheManager {
     Map<String, List<T>> data,
   ) {
     final key = _makeDateKey('reasons', symbols, date);
-    _reasonsCache.put(
-      key,
-      data.map((k, v) => MapEntry(k, v.cast<dynamic>())),
-    );
+    _reasonsCache.put(key, data.map((k, v) => MapEntry(k, v.cast<dynamic>())));
   }
 
   // ==================================================

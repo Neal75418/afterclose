@@ -472,10 +472,7 @@ class TwseClient {
     try {
       final response = await _dio.get(
         '/rwd/zh/marginTrading/MI_MARGN',
-        queryParameters: {
-          'response': 'json',
-          'selectType': 'ALL',
-        },
+        queryParameters: {'response': 'json', 'selectType': 'ALL'},
       );
 
       if (response.statusCode == 200) {

@@ -204,8 +204,12 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     const hasDataMismatch = true;
 
     // Build sets of available dates
-    final priceDates = priceHistory.map((p) => DateContext.normalize(p.date)).toSet();
-    final instDates = instHistory.map((i) => DateContext.normalize(i.date)).toSet();
+    final priceDates = priceHistory
+        .map((p) => DateContext.normalize(p.date))
+        .toSet();
+    final instDates = instHistory
+        .map((i) => DateContext.normalize(i.date))
+        .toSet();
 
     // Find common dates
     final commonDates = priceDates.intersection(instDates);
@@ -344,7 +348,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning('StockDetail', 'Failed to fetch institutional data for $_symbol', e);
+      AppLogger.warning(
+        'StockDetail',
+        'Failed to fetch institutional data for $_symbol',
+        e,
+      );
       return [];
     }
   }
@@ -386,7 +394,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
     } catch (e) {
       // Log error for debugging - margin data is optional
-      AppLogger.warning('StockDetail', 'Failed to load margin data for $_symbol', e);
+      AppLogger.warning(
+        'StockDetail',
+        'Failed to load margin data for $_symbol',
+        e,
+      );
       state = state.copyWith(isLoadingMargin: false);
     }
   }
@@ -451,7 +463,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
     } catch (e) {
       // Log error for debugging - fundamentals data is optional
-      AppLogger.warning('StockDetail', 'Failed to load fundamentals for $_symbol', e);
+      AppLogger.warning(
+        'StockDetail',
+        'Failed to load fundamentals for $_symbol',
+        e,
+      );
       state = state.copyWith(isLoadingFundamentals: false);
     }
   }

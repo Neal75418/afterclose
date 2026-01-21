@@ -138,15 +138,17 @@ void main() {
             low = 99.5;
           }
 
-          prices.add(DailyPriceEntry(
-            symbol: 'TEST',
-            date: date,
-            open: close - 0.2,
-            high: high,
-            low: low,
-            close: close,
-            volume: 1000.0,
-          ));
+          prices.add(
+            DailyPriceEntry(
+              symbol: 'TEST',
+              date: date,
+              open: close - 0.2,
+              high: high,
+              low: low,
+              close: close,
+              volume: 1000.0,
+            ),
+          );
         }
 
         final (support, resistance) = analysisService.findSupportResistance(

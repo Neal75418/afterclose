@@ -209,7 +209,7 @@ List<DailyPriceEntry> generatePricesWithVolumeSpike({
     final isToday = i == days - 1;
     // Last day: open at base, close 3% higher to satisfy minPriceChangeForVolume (1.5%)
     final open = isToday ? basePrice : basePrice;
-    final close = isToday ? basePrice * 1.03 : basePrice;  // +3% on spike day
+    final close = isToday ? basePrice * 1.03 : basePrice; // +3% on spike day
     return DailyPriceEntry(
       symbol: symbol,
       date: now.subtract(Duration(days: days - i - 1)),

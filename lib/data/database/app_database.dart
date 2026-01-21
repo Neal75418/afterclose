@@ -779,7 +779,9 @@ class AppDatabase extends _$AppDatabase {
 
   /// Get a single alert by ID
   Future<PriceAlertEntry?> getAlertById(int id) {
-    return (select(priceAlert)..where((t) => t.id.equals(id))).getSingleOrNull();
+    return (select(
+      priceAlert,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Create a new price alert

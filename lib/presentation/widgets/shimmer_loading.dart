@@ -291,21 +291,48 @@ class StockDetailShimmer extends StatelessWidget {
         baseColor: ShimmerColors.baseColor(isDark),
         highlightColor: ShimmerColors.highlightColor(isDark),
         child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header row
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header row
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: ShimmerDimensions.headerTitleWidth,
+                          height: ShimmerDimensions.headerTitleHeight,
+                          decoration: BoxDecoration(
+                            color: skeletonColor,
+                            borderRadius: BorderRadius.circular(
+                              ShimmerDimensions.spacingSm,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: ShimmerDimensions.spacingMd),
+                        Container(
+                          width: ShimmerDimensions.headerSubWidth,
+                          height: ShimmerDimensions.headerSubHeight,
+                          decoration: BoxDecoration(
+                            color: skeletonColor,
+                            borderRadius: BorderRadius.circular(
+                              ShimmerDimensions.spacingXs,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Container(
-                        width: ShimmerDimensions.headerTitleWidth,
-                        height: ShimmerDimensions.headerTitleHeight,
+                        width: ShimmerDimensions.headerPriceWidth,
+                        height: ShimmerDimensions.headerPriceHeight,
                         decoration: BoxDecoration(
                           color: skeletonColor,
                           borderRadius: BorderRadius.circular(
@@ -315,8 +342,8 @@ class StockDetailShimmer extends StatelessWidget {
                       ),
                       const SizedBox(height: ShimmerDimensions.spacingMd),
                       Container(
-                        width: ShimmerDimensions.headerSubWidth,
-                        height: ShimmerDimensions.headerSubHeight,
+                        width: ShimmerDimensions.headerChangeWidth,
+                        height: ShimmerDimensions.headerChangeHeight,
                         decoration: BoxDecoration(
                           color: skeletonColor,
                           borderRadius: BorderRadius.circular(
@@ -326,120 +353,93 @@ class StockDetailShimmer extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: ShimmerDimensions.headerPriceWidth,
-                      height: ShimmerDimensions.headerPriceHeight,
-                      decoration: BoxDecoration(
-                        color: skeletonColor,
-                        borderRadius: BorderRadius.circular(
-                          ShimmerDimensions.spacingSm,
-                        ),
+                ],
+              ),
+              const SizedBox(height: ShimmerDimensions.spacingXxl),
+              // Trend chips
+              Row(
+                children: [
+                  Container(
+                    width: ShimmerDimensions.chipWidth,
+                    height: ShimmerDimensions.chipHeight,
+                    decoration: BoxDecoration(
+                      color: skeletonColor,
+                      borderRadius: BorderRadius.circular(
+                        ShimmerDimensions.spacingMd,
                       ),
                     ),
-                    const SizedBox(height: ShimmerDimensions.spacingMd),
-                    Container(
-                      width: ShimmerDimensions.headerChangeWidth,
-                      height: ShimmerDimensions.headerChangeHeight,
-                      decoration: BoxDecoration(
-                        color: skeletonColor,
-                        borderRadius: BorderRadius.circular(
-                          ShimmerDimensions.spacingXs,
-                        ),
+                  ),
+                  const SizedBox(width: ShimmerDimensions.spacingMd),
+                  Container(
+                    width: ShimmerDimensions.chipWidth,
+                    height: ShimmerDimensions.chipHeight,
+                    decoration: BoxDecoration(
+                      color: skeletonColor,
+                      borderRadius: BorderRadius.circular(
+                        ShimmerDimensions.spacingMd,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: ShimmerDimensions.spacingXxl),
-            // Trend chips
-            Row(
-              children: [
-                Container(
-                  width: ShimmerDimensions.chipWidth,
-                  height: ShimmerDimensions.chipHeight,
-                  decoration: BoxDecoration(
-                    color: skeletonColor,
-                    borderRadius: BorderRadius.circular(
-                      ShimmerDimensions.spacingMd,
-                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: ShimmerDimensions.spacingXxl),
+              // Section title
+              Container(
+                width: ShimmerDimensions.sectionTitleWidth,
+                height: ShimmerDimensions.sectionTitleHeight,
+                decoration: BoxDecoration(
+                  color: skeletonColor,
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.spacingXs,
                   ),
                 ),
-                const SizedBox(width: ShimmerDimensions.spacingMd),
-                Container(
-                  width: ShimmerDimensions.chipWidth,
-                  height: ShimmerDimensions.chipHeight,
-                  decoration: BoxDecoration(
-                    color: skeletonColor,
-                    borderRadius: BorderRadius.circular(
-                      ShimmerDimensions.spacingMd,
-                    ),
+              ),
+              const SizedBox(height: ShimmerDimensions.spacingLg),
+              // Card
+              Container(
+                width: double.infinity,
+                height: ShimmerDimensions.cardHeight,
+                decoration: BoxDecoration(
+                  color: skeletonColor,
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.cardRadius,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: ShimmerDimensions.spacingXxl),
-            // Section title
-            Container(
-              width: ShimmerDimensions.sectionTitleWidth,
-              height: ShimmerDimensions.sectionTitleHeight,
-              decoration: BoxDecoration(
-                color: skeletonColor,
-                borderRadius: BorderRadius.circular(
-                  ShimmerDimensions.spacingXs,
+              ),
+              const SizedBox(height: ShimmerDimensions.spacingXxl),
+              // Section title
+              Container(
+                width: ShimmerDimensions.sectionTitleWidth,
+                height: ShimmerDimensions.sectionTitleHeight,
+                decoration: BoxDecoration(
+                  color: skeletonColor,
+                  borderRadius: BorderRadius.circular(
+                    ShimmerDimensions.spacingXs,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: ShimmerDimensions.spacingLg),
-            // Card
-            Container(
-              width: double.infinity,
-              height: ShimmerDimensions.cardHeight,
-              decoration: BoxDecoration(
-                color: skeletonColor,
-                borderRadius: BorderRadius.circular(
-                  ShimmerDimensions.cardRadius,
-                ),
-              ),
-            ),
-            const SizedBox(height: ShimmerDimensions.spacingXxl),
-            // Section title
-            Container(
-              width: ShimmerDimensions.sectionTitleWidth,
-              height: ShimmerDimensions.sectionTitleHeight,
-              decoration: BoxDecoration(
-                color: skeletonColor,
-                borderRadius: BorderRadius.circular(
-                  ShimmerDimensions.spacingXs,
-                ),
-              ),
-            ),
-            const SizedBox(height: ShimmerDimensions.spacingLg),
-            // Cards
-            ...List.generate(
-              3,
-              (index) => Padding(
-                padding: const EdgeInsets.only(
-                  bottom: ShimmerDimensions.spacingMd,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  height: ShimmerDimensions.listItemHeight,
-                  decoration: BoxDecoration(
-                    color: skeletonColor,
-                    borderRadius: BorderRadius.circular(
-                      ShimmerDimensions.cardRadius,
+              const SizedBox(height: ShimmerDimensions.spacingLg),
+              // Cards
+              ...List.generate(
+                3,
+                (index) => Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: ShimmerDimensions.spacingMd,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    height: ShimmerDimensions.listItemHeight,
+                    decoration: BoxDecoration(
+                      color: skeletonColor,
+                      borderRadius: BorderRadius.circular(
+                        ShimmerDimensions.cardRadius,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
       ),
     );

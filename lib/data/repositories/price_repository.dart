@@ -246,7 +246,10 @@ class PriceRepository {
 
       // Quick filter: find candidates based on today's data only
       final candidates = _quickFilterCandidates(prices);
-      AppLogger.info('PriceRepo', 'Quick filtered ${candidates.length} candidates');
+      AppLogger.info(
+        'PriceRepo',
+        'Quick filtered ${candidates.length} candidates',
+      );
 
       return MarketSyncResult(
         count: priceEntries.length,

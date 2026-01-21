@@ -143,7 +143,10 @@ class UpdateService {
       // OPTIMIZED: Parallel fetching + smart skipping
       onProgress?.call(4, 10, '取得歷史資料');
       try {
-        AppLogger.info('UpdateService', 'Step 3.5: Checking historical data...');
+        AppLogger.info(
+          'UpdateService',
+          'Step 3.5: Checking historical data...',
+        );
         // Combine all sources for historical data
         final watchlist = await _db.getWatchlist();
         final symbolsForHistory = <String>{
@@ -233,7 +236,11 @@ class UpdateService {
                 failedSymbols.add(symbol);
                 // Log error for debugging (first 3 failures only to avoid log spam)
                 if (failedSymbols.length <= 3) {
-                  AppLogger.warning('UpdateService', 'Failed to sync $symbol', error);
+                  AppLogger.warning(
+                    'UpdateService',
+                    'Failed to sync $symbol',
+                    error,
+                  );
                 }
               } else {
                 historySynced += count;
@@ -397,7 +404,10 @@ class UpdateService {
       // Step 9: Generate top 10 recommendations
       onProgress?.call(9, 10, '產生推薦');
       try {
-        AppLogger.info('UpdateService', 'Step 9: Generating recommendations...');
+        AppLogger.info(
+          'UpdateService',
+          'Step 9: Generating recommendations...',
+        );
         await _generateRecommendations(scoredStocks, normalizedDate);
         result.recommendationsGenerated = scoredStocks
             .take(RuleParams.dailyTopN)

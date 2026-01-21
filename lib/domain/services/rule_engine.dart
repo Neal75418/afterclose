@@ -295,7 +295,8 @@ class RuleEngine {
               'today_close': todayClose,
               'drop_percent': dropPercent,
             },
-            template: '強轉弱：大幅跌破昨日低點 ${yesterdayLow.toStringAsFixed(2)}（跌${(dropPercent * 100).toStringAsFixed(1)}%）',
+            template:
+                '強轉弱：大幅跌破昨日低點 ${yesterdayLow.toStringAsFixed(2)}（跌${(dropPercent * 100).toStringAsFixed(1)}%）',
           );
         }
       }
@@ -386,7 +387,8 @@ class RuleEngine {
             'close': todayClose,
             'break_percent': breakPercent,
           },
-          template: '技術跌破：跌破近10日低點 ${swingLow10.toStringAsFixed(2)}（破${(breakPercent * 100).toStringAsFixed(1)}%）',
+          template:
+              '技術跌破：跌破近10日低點 ${swingLow10.toStringAsFixed(2)}（破${(breakPercent * 100).toStringAsFixed(1)}%）',
         );
       }
     }

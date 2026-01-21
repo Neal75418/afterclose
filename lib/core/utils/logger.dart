@@ -1,12 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 /// Log levels for filtering output
-enum LogLevel {
-  debug,
-  info,
-  warning,
-  error,
-}
+enum LogLevel { debug, info, warning, error }
 
 /// Structured logger for consistent logging across the app.
 ///

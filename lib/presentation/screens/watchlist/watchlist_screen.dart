@@ -188,72 +188,66 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         child: state.isLoading
             ? const StockListShimmer(itemCount: 5)
             : state.error != null
-                ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
-                : state.items.isEmpty
-                    ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
-                    : Column(
-                        children: [
-                          // Stock count
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'watchlist.stockCount'.tr(
-                                    namedArgs: {
-                                      'count':
-                                          state.filteredItems.length.toString(),
-                                    },
-                                  ),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                if (state.searchQuery.isNotEmpty) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          theme.colorScheme.secondaryContainer,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      'watchlist.searching'.tr(),
-                                      style:
-                                          theme.textTheme.labelSmall?.copyWith(
-                                        color: theme
-                                            .colorScheme.onSecondaryContainer,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
+            ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
+            : state.items.isEmpty
+            ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
+            : Column(
+                children: [
+                  // Stock count
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      children: [
+                        Text(
+                          'watchlist.stockCount'.tr(
+                            namedArgs: {
+                              'count': state.filteredItems.length.toString(),
+                            },
                           ),
-                          // Stock list
-                          Expanded(
-                            child: state.filteredItems.isEmpty
-                                ? Center(
-                                    child: Text(
-                                      'watchlist.noMatching'.tr(),
-                                      style:
-                                          theme.textTheme.bodyMedium?.copyWith(
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  )
-                                : _buildListContent(state),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (state.searchQuery.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              'watchlist.searching'.tr(),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
                           ),
                         ],
-                      ),
+                      ],
+                    ),
+                  ),
+                  // Stock list
+                  Expanded(
+                    child: state.filteredItems.isEmpty
+                        ? Center(
+                            child: Text(
+                              'watchlist.noMatching'.tr(),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          )
+                        : _buildListContent(state),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -395,11 +389,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             delay: Duration(milliseconds: 50 * index),
             duration: 400.ms,
           )
-          .slideX(
-            begin: 0.05,
-            duration: 400.ms,
-            curve: Curves.easeOutQuart,
-          );
+          .slideX(begin: 0.05, duration: 400.ms, curve: Curves.easeOutQuart);
     }
     return card;
   }
