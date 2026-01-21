@@ -59,11 +59,14 @@ ios/Pods/
 ios/Podfile.lock
 
 # Generated files
-*.g.dart
+# NOTE: Drift database files are tracked because they're critical for CI
+# and build_runner can be flaky in CI environments
 *.freezed.dart
 *.mocks.dart
 lib/generated/
+# Exclude most generated files except database
 lib/**/*.g.dart
+!lib/data/database/app_database.g.dart
 
 # Keystore and signing
 *.jks
