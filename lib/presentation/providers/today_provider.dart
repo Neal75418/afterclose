@@ -158,19 +158,29 @@ class TodayNotifier extends StateNotifier<TodayState> {
       // Use the earlier of the two dates to ensure data consistency
       DateTime? dataDate;
       if (latestPriceDate != null && latestInstDate != null) {
-        final priceDay = DateTime(
+        final priceDay = DateTime.utc(
           latestPriceDate.year,
           latestPriceDate.month,
           latestPriceDate.day,
         );
-        final instDay = DateTime(
+        final instDay = DateTime.utc(
           latestInstDate.year,
           latestInstDate.month,
           latestInstDate.day,
         );
         dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
-      } else {
-        dataDate = latestPriceDate ?? latestInstDate;
+      } else if (latestPriceDate != null) {
+        dataDate = DateTime.utc(
+          latestPriceDate.year,
+          latestPriceDate.month,
+          latestPriceDate.day,
+        );
+      } else if (latestInstDate != null) {
+        dataDate = DateTime.utc(
+          latestInstDate.year,
+          latestInstDate.month,
+          latestInstDate.day,
+        );
       }
 
       // Fallback to today if no data exists
