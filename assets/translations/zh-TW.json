@@ -58,8 +58,14 @@
     "symbolHint": "例如: 2330",
     "removed": "已從自選移除 {symbol}",
     "added": "已加入 {symbol}",
+    "addedToWatchlist": "已加入自選 {symbol}",
+    "addFailed": "加入自選失敗",
     "notFound": "找不到股票 {symbol}",
-    "undo": "復原"
+    "undo": "復原",
+    "searchHint": "搜尋股票代號或名稱",
+    "group": "分組",
+    "sort": "排序",
+    "stockCount": "共 {count} 檔"
   },
   "stock": {
     "detailTitle": "股票詳情",
@@ -199,8 +205,13 @@
     "priceChangeUp": "上漲 {change} 百分比",
     "priceChangeDown": "下跌 {change} 百分比",
     "score": "評分 {score} 分",
+    "signals": "訊號: {signals}",
     "addToWatchlist": "加入自選",
-    "removeFromWatchlist": "從自選移除"
+    "removeFromWatchlist": "從自選移除",
+    "sparklineDefault": "近期價格走勢圖",
+    "sparklineFlat": "近 {days} 日價格持平走勢圖",
+    "sparklineTrendUp": "近 {days} 日價格上漲 {change} 百分比走勢圖",
+    "sparklineTrendDown": "近 {days} 日價格下跌 {change} 百分比走勢圖"
   },
   "status": {
     "hasSignal": "有訊號",

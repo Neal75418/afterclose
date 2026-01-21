@@ -172,11 +172,19 @@ class FinMindClient {
           );
         }
         if (e.response?.statusCode == 429) {
+          // Retry rate limit errors with longer backoff (limited retries)
+          lastError = const RateLimitException();
+          attempt++;
+          if (attempt <= _maxRetries) {
+            await _delay(attempt, isRateLimit: true);
+            continue;
+          }
           throw const RateLimitException();
         }
         throw NetworkException(e.message ?? 'Network error', e);
       } on RateLimitException {
-        rethrow; // Don't retry rate limit errors
+        // Rate limit from nested call - still rethrow after max retries
+        rethrow;
       } on ApiException catch (e) {
         // Don't retry client errors (except rate limit which is handled above)
         if (e.statusCode != null &&
@@ -227,9 +235,15 @@ class FinMindClient {
   }
 
   /// Calculate delay with exponential backoff and jitter
-  Future<void> _delay(int attempt) async {
+  ///
+  /// When [isRateLimit] is true, uses 4x the base delay for longer backoff
+  Future<void> _delay(int attempt, {bool isRateLimit = false}) async {
+    // Use 4x base delay for rate limit errors (gives API more time to reset)
+    final baseMs = isRateLimit
+        ? _baseDelay.inMilliseconds * 4
+        : _baseDelay.inMilliseconds;
     // Exponential backoff: baseDelay * 2^(attempt-1)
-    final exponentialDelay = _baseDelay.inMilliseconds * (1 << (attempt - 1));
+    final exponentialDelay = baseMs * (1 << (attempt - 1));
     // Add jitter: ±25% of the delay
     final jitter = (_random.nextDouble() - 0.5) * 0.5 * exponentialDelay;
     final totalDelay = Duration(

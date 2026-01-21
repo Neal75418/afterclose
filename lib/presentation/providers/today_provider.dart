@@ -1,10 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
@@ -140,6 +142,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
   final Ref _ref;
 
   AppDatabase get _db => _ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
   UpdateService get _updateService => _ref.read(updateServiceProvider);
 
   /// Load today's data
@@ -151,44 +154,17 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final lastRun = await _db.getLatestUpdateRun();
 
       // Use today's date for querying (update_service stores with this date)
-      final today = DateTime.now();
-      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
-      final historyStart = normalizedToday.subtract(const Duration(days: 5));
+      final dateCtx = DateContext.now();
 
       // Get recommendations for today
-      final recommendations = await _db.getRecommendations(normalizedToday);
+      final recommendations = await _db.getRecommendations(dateCtx.today);
 
       // Get actual data dates for display purposes (not for querying)
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
 
       // Calculate dataDate for display - use the earlier of the two dates
-      DateTime? dataDate;
-      if (latestPriceDate != null && latestInstDate != null) {
-        final priceDay = DateTime.utc(
-          latestPriceDate.year,
-          latestPriceDate.month,
-          latestPriceDate.day,
-        );
-        final instDay = DateTime.utc(
-          latestInstDate.year,
-          latestInstDate.month,
-          latestInstDate.day,
-        );
-        dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
-      } else if (latestPriceDate != null) {
-        dataDate = DateTime.utc(
-          latestPriceDate.year,
-          latestPriceDate.month,
-          latestPriceDate.day,
-        );
-      } else if (latestInstDate != null) {
-        dataDate = DateTime.utc(
-          latestInstDate.year,
-          latestInstDate.month,
-          latestInstDate.day,
-        );
-      }
+      final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
 
       // Get watchlist
       final watchlist = await _db.getWatchlist();
@@ -198,25 +174,19 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final watchlistSymbols = watchlist.map((w) => w.symbol).toList();
       final allSymbols = {...recSymbols, ...watchlistSymbols}.toList();
 
-      // Batch load all data in parallel
-      final results = await Future.wait([
-        _db.getStocksBatch(allSymbols),
-        _db.getLatestPricesBatch(allSymbols),
-        _db.getAnalysesBatch(allSymbols, normalizedToday),
-        _db.getReasonsBatch(allSymbols, normalizedToday),
-        _db.getPriceHistoryBatch(
-          allSymbols,
-          startDate: historyStart,
-          endDate: normalizedToday,
-        ),
-      ]);
+      // Type-safe batch load using Dart 3 Records (no manual casting needed)
+      final data = await _cachedDb.loadStockListData(
+        symbols: allSymbols,
+        analysisDate: dateCtx.today,
+        historyStart: dateCtx.historyStart,
+      );
 
-      final stocksMap = results[0] as Map<String, StockMasterEntry>;
-      final latestPricesMap = results[1] as Map<String, DailyPriceEntry>;
-      final analysesMap = results[2] as Map<String, DailyAnalysisEntry>;
-      final reasonsMap = results[3] as Map<String, List<DailyReasonEntry>>;
-      final priceHistoriesMap =
-          results[4] as Map<String, List<DailyPriceEntry>>;
+      // Destructure Record fields - compile-time type safety!
+      final stocksMap = data.stocks;
+      final latestPricesMap = data.latestPrices;
+      final analysesMap = data.analyses;
+      final reasonsMap = data.reasons;
+      final priceHistoriesMap = data.priceHistories;
 
       // Calculate price changes using utility
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(
@@ -307,6 +277,9 @@ class TodayNotifier extends StateNotifier<TodayState> {
 
       state = state.copyWith(isUpdating: false, updateProgress: null);
 
+      // Invalidate cache after update (data has changed)
+      _cachedDb.invalidateCache();
+
       // Check price alerts and trigger notifications
       final alertsTriggered = await _checkPriceAlerts(
         result.currentPrices,
@@ -379,7 +352,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
       return triggered.length;
     } catch (e) {
       // Non-critical: alert check failure shouldn't fail the update
-      debugPrint('[TodayNotifier] Price alert check failed: $e');
+      AppLogger.warning('TodayNotifier', 'Price alert check failed', e);
       return 0;
     }
   }

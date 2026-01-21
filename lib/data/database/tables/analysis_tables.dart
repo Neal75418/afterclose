@@ -67,6 +67,7 @@ class DailyReason extends Table {
 @DataClassName('DailyRecommendationEntry')
 @TableIndex(name: 'idx_daily_recommendation_date', columns: {#date})
 @TableIndex(name: 'idx_daily_recommendation_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_daily_recommendation_date_symbol', columns: {#date, #symbol})
 class DailyRecommendation extends Table {
   /// Recommendation date
   DateTimeColumn get date => dateTime()();

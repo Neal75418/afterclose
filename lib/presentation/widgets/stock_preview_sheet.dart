@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
 
 /// Data class for stock preview
@@ -362,33 +363,7 @@ class StockPreviewSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: data.reasons.map((reason) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppTheme.secondaryColor.withValues(alpha: 0.15)
-                        : AppTheme.primaryColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    reason,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: isDark
-                          ? AppTheme.secondaryColor
-                          : AppTheme.primaryColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
+            ReasonTags(reasons: data.reasons),
           ],
         )
         .animate()

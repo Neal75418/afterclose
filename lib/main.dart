@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/app/router.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 
@@ -45,7 +46,7 @@ Future<void> _initializeFinMindToken(ProviderContainer container) async {
     }
   } catch (e) {
     // Token loading is optional, continue without it
-    debugPrint('Failed to load FinMind token: $e');
+    AppLogger.warning('Main', 'Failed to load FinMind token', e);
   }
 }
 

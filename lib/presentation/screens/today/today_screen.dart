@@ -291,9 +291,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       await notifier.removeStock(symbol);
       if (mounted) {
         _showSnackBar(
-          '已從自選移除 $symbol',
+          S.watchlistRemoved(symbol),
           action: SnackBarAction(
-            label: '復原',
+            label: S.watchlistUndo,
             onPressed: () => notifier.restoreStock(symbol),
           ),
           duration: const Duration(seconds: 3),
@@ -303,7 +303,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       final success = await notifier.addStock(symbol);
       if (mounted) {
         _showSnackBar(
-          success ? '已加入自選 $symbol' : '加入自選失敗',
+          success ? S.watchlistAddedToWatchlist(symbol) : S.watchlistAddFailed,
           duration: const Duration(seconds: 2),
           isError: !success,
         );

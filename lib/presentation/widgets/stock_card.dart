@@ -1,9 +1,11 @@
-import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
 
 /// Modern card widget displaying stock information
@@ -55,30 +57,22 @@ class _StockCardState extends State<StockCard> {
   /// Build semantic label for accessibility
   String _buildSemanticLabel() {
     final parts = <String>[];
-    parts.add('股票 ${widget.symbol}');
+    parts.add(S.accessibilityStock(widget.symbol));
     if (widget.stockName != null) parts.add(widget.stockName!);
     if (widget.latestClose != null) {
-      parts.add('價格 ${widget.latestClose!.toStringAsFixed(2)} 元');
+      parts.add(S.accessibilityPrice(widget.latestClose!));
     }
     if (widget.priceChange != null) {
-      final direction = widget.priceChange! >= 0 ? '上漲' : '下跌';
-      parts.add(
-        '$direction ${widget.priceChange!.abs().toStringAsFixed(2)} 百分比',
-      );
+      parts.add(S.accessibilityPriceChange(widget.priceChange!));
     }
     if (widget.score != null && widget.score! > 0) {
-      parts.add('評分 ${widget.score!.toInt()} 分');
+      parts.add(S.accessibilityScore(widget.score!.toInt()));
     }
     if (widget.trendState != null) {
-      final trend = switch (widget.trendState) {
-        'UP' => '上升趨勢',
-        'DOWN' => '下降趨勢',
-        _ => '盤整',
-      };
-      parts.add(trend);
+      parts.add(S.getTrendLabel(widget.trendState));
     }
     if (widget.reasons.isNotEmpty) {
-      parts.add('訊號: ${widget.reasons.take(2).join(', ')}');
+      parts.add(S.accessibilitySignals(widget.reasons.take(2).join(', ')));
     }
     return parts.join(', ');
   }
@@ -99,8 +93,8 @@ class _StockCardState extends State<StockCard> {
         onTapCancel: () => setState(() => _isPressed = false),
         child: AnimatedScale(
           scale: _isPressed ? 0.98 : 1.0,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
+          duration: AnimDurations.press,
+          curve: AnimCurves.enter,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
@@ -239,44 +233,12 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildReasonTags(ThemeData theme, bool isDark) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      children: widget.reasons.take(2).map((r) {
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppTheme.secondaryColor.withValues(alpha: 0.15)
-                : AppTheme.primaryColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Text(
-            _translateReasonCode(r),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        );
-      }).toList(),
+    return ReasonTags(
+      reasons: widget.reasons,
+      size: ReasonTagSize.compact,
+      maxTags: 2,
+      translateCodes: true,
     );
-  }
-
-  /// Convert database reason code to translated label
-  String _translateReasonCode(String code) {
-    final key = switch (code) {
-      'REVERSAL_W2S' => 'reasons.reversalW2S',
-      'REVERSAL_S2W' => 'reasons.reversalS2W',
-      'TECH_BREAKOUT' => 'reasons.breakout',
-      'TECH_BREAKDOWN' => 'reasons.breakdown',
-      'VOLUME_SPIKE' => 'reasons.volumeSpike',
-      'PRICE_SPIKE' => 'reasons.priceSpike',
-      'INSTITUTIONAL_SHIFT' => 'reasons.institutional',
-      'NEWS_RELATED' => 'reasons.news',
-      _ => code, // fallback to original code if unknown
-    };
-    return key.tr();
   }
 
   Widget _buildSparkline(Color priceColor) {
@@ -400,7 +362,7 @@ class _MiniSparkline extends StatelessWidget {
 
   /// Build semantic label for accessibility
   String _buildSemanticLabel(List<double> sampledPrices) {
-    if (sampledPrices.length < 2) return '近期價格走勢圖';
+    if (sampledPrices.length < 2) return S.sparklineDefault;
 
     final first = sampledPrices.first;
     final last = sampledPrices.last;
@@ -408,10 +370,9 @@ class _MiniSparkline extends StatelessWidget {
     final days = sampledPrices.length;
 
     if (change.abs() < 0.1) {
-      return '近 $days 日價格持平走勢圖';
+      return S.sparklineFlat(days);
     }
-    final direction = change >= 0 ? '上漲' : '下跌';
-    return '近 $days 日價格 $direction ${change.abs().toStringAsFixed(1)} 百分比走勢圖';
+    return S.sparklineTrend(days, change);
   }
 
   @override

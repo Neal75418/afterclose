@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 
 /// Default timeout duration for refresh operations
@@ -81,7 +82,7 @@ class _AnimatedRefreshIndicatorState extends State<AnimatedRefreshIndicator>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: AnimDurations.loading,
       vsync: this,
     );
   }

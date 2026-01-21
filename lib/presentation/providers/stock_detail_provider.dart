@@ -1,8 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -185,21 +186,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
     }
 
-    // Get latest dates from each source
-    final latestPriceDate = priceHistory.last.date;
-    final latestInstDate = instHistory.last.date;
-
-    // Normalize dates for comparison (remove time component)
-    final priceDay = DateTime(
-      latestPriceDate.year,
-      latestPriceDate.month,
-      latestPriceDate.day,
-    );
-    final instDay = DateTime(
-      latestInstDate.year,
-      latestInstDate.month,
-      latestInstDate.day,
-    );
+    // Get latest dates from each source (normalized for comparison)
+    final priceDay = DateContext.normalize(priceHistory.last.date);
+    final instDay = DateContext.normalize(instHistory.last.date);
 
     // If dates match, no synchronization needed
     if (priceDay == instDay) {
@@ -215,12 +204,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     const hasDataMismatch = true;
 
     // Build sets of available dates
-    final priceDates = priceHistory
-        .map((p) => DateTime(p.date.year, p.date.month, p.date.day))
-        .toSet();
-    final instDates = instHistory
-        .map((i) => DateTime(i.date.year, i.date.month, i.date.day))
-        .toSet();
+    final priceDates = priceHistory.map((p) => DateContext.normalize(p.date)).toSet();
+    final instDates = instHistory.map((i) => DateContext.normalize(i.date)).toSet();
 
     // Find common dates
     final commonDates = priceDates.intersection(instDates);
@@ -231,13 +216,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       // Find price for this date
       final matchingPrice = priceHistory.lastWhere(
-        (p) =>
-            DateTime(
-              p.date.year,
-              p.date.month,
-              p.date.day,
-            ).isAtSameMomentAs(dataDate) ||
-            DateTime(p.date.year, p.date.month, p.date.day).isBefore(dataDate),
+        (p) => DateContext.isBeforeOrEqual(p.date, dataDate),
         orElse: () => priceHistory.last,
       );
 
@@ -254,23 +233,13 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
     // Find price entry for this date
     final matchingPrice = priceHistory.lastWhere(
-      (p) =>
-          DateTime(p.date.year, p.date.month, p.date.day) == latestCommonDate,
+      (p) => DateContext.normalize(p.date) == latestCommonDate,
       orElse: () => priceHistory.last,
     );
 
     // Filter institutional history up to this date
     final syncedInstHistory = instHistory
-        .where(
-          (i) =>
-              DateTime(
-                i.date.year,
-                i.date.month,
-                i.date.day,
-              ).isBefore(latestCommonDate) ||
-              DateTime(i.date.year, i.date.month, i.date.day) ==
-                  latestCommonDate,
-        )
+        .where((i) => DateContext.isBeforeOrEqual(i.date, latestCommonDate))
         .toList();
 
     return (
@@ -286,11 +255,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final today = DateTime.now();
-      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
-      final startDate = normalizedToday.subtract(
-        const Duration(days: RuleParams.lookbackPrice),
-      );
+      final dateCtx = DateContext.withLookback(RuleParams.lookbackPrice);
+      final normalizedToday = dateCtx.today;
+      final startDate = dateCtx.historyStart;
 
       // Load all data in parallel
       final stockFuture = _db.getStock(_symbol);
@@ -377,7 +344,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         );
       }).toList();
     } catch (e) {
-      debugPrint('Failed to fetch institutional data from API: $e');
+      AppLogger.warning('StockDetail', 'Failed to fetch institutional data for $_symbol', e);
       return [];
     }
   }
@@ -417,10 +384,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
 
       state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Log error for debugging - margin data is optional
-      debugPrint('Failed to load margin data for $_symbol: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.warning('StockDetail', 'Failed to load margin data for $_symbol', e);
       state = state.copyWith(isLoadingMargin: false);
     }
   }
@@ -483,10 +449,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         latestPER: latestPER,
         isLoadingFundamentals: false,
       );
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Log error for debugging - fundamentals data is optional
-      debugPrint('Failed to load fundamentals for $_symbol: $e');
-      debugPrint(stackTrace.toString());
+      AppLogger.warning('StockDetail', 'Failed to load fundamentals for $_symbol', e);
       state = state.copyWith(isLoadingFundamentals: false);
     }
   }

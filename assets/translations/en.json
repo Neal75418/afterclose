@@ -58,8 +58,14 @@
     "symbolHint": "e.g., 2330",
     "removed": "Removed {symbol} from watchlist",
     "added": "Added {symbol}",
+    "addedToWatchlist": "Added {symbol} to watchlist",
+    "addFailed": "Failed to add to watchlist",
     "notFound": "Stock {symbol} not found",
-    "undo": "Undo"
+    "undo": "Undo",
+    "searchHint": "Search by symbol or name",
+    "group": "Group",
+    "sort": "Sort",
+    "stockCount": "{count} stocks"
   },
   "stock": {
     "detailTitle": "Stock Details",
@@ -199,8 +205,13 @@
     "priceChangeUp": "Up {change} percent",
     "priceChangeDown": "Down {change} percent",
     "score": "Score {score} points",
+    "signals": "Signals: {signals}",
     "addToWatchlist": "Add to watchlist",
-    "removeFromWatchlist": "Remove from watchlist"
+    "removeFromWatchlist": "Remove from watchlist",
+    "sparklineDefault": "Recent price trend chart",
+    "sparklineFlat": "Price unchanged over {days} days chart",
+    "sparklineTrendUp": "Price up {change} percent over {days} days chart",
+    "sparklineTrendDown": "Price down {change} percent over {days} days chart"
   },
   "status": {
     "hasSignal": "Has Signal",

@@ -201,6 +201,7 @@ flowchart TD
 > 全市場 ≠ 全市場都深算
 
 **v1 候選條件（OR）：**
+
 - 當日漲跌幅 ≥ 5%
 - 當日量 ≥ 20 日均量 × 2
 - 接近 60 日高 / 低
@@ -303,11 +304,11 @@ flowchart TB
 
 > MVP Done — 做到這些，就已經是「高品質作品」
 
-- [ ] 能在任一裝置完成一次完整盤後更新
-- [ ] 能產生每日 Top 10 推薦
-- [ ] 每檔推薦都有「可解釋理由」
-- [ ] 使用者可維護自己的自選與策略
-- [ ] 完全本地運算，無需雲端服務
+- [x] 能在任一裝置完成一次完整盤後更新
+- [x] 能產生每日 Top 10 推薦
+- [x] 每檔推薦都有「可解釋理由」
+- [x] 使用者可維護自己的自選與策略
+- [x] 完全本地運算，無需雲端服務
 
 ---
 
@@ -334,6 +335,6 @@ flowchart TB
 
 <div align="center">
 
-**AfterClose** — *See what changed, without noise.*
+**AfterClose** — _See what changed, without noise._
 
 </div>

@@ -6,6 +6,7 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 @DataClassName('DailyPriceEntry')
 @TableIndex(name: 'idx_daily_price_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_daily_price_date', columns: {#date})
+@TableIndex(name: 'idx_daily_price_symbol_date', columns: {#symbol, #date})
 class DailyPrice extends Table {
   /// Stock symbol
   TextColumn get symbol =>

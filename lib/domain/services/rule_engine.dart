@@ -234,9 +234,10 @@ class RuleEngine {
 
     // Check: Breakdown below support
     // Allow when in uptrend OR range (relaxed condition for more signals)
+    // Uses breakdownBuffer (looser than breakoutBuffer) for easier triggering
     if (context.supportLevel != null) {
       final breakdownLevel =
-          context.supportLevel! * (1 - RuleParams.breakoutBuffer);
+          context.supportLevel! * (1 - RuleParams.breakdownBuffer);
       if (todayClose < breakdownLevel &&
           (context.trendState == TrendState.up ||
               context.trendState == TrendState.range)) {
@@ -247,7 +248,7 @@ class RuleEngine {
             'trigger': 'breakdown_support',
             'support': context.supportLevel,
             'close': todayClose,
-            'buffer': RuleParams.breakoutBuffer,
+            'buffer': RuleParams.breakdownBuffer,
             'trend': context.trendState.code,
           },
           template: '強轉弱：跌破關鍵支撐 ${context.supportLevel?.toStringAsFixed(2)}',
@@ -258,7 +259,7 @@ class RuleEngine {
     // Check: Breakdown below range bottom
     if (context.rangeBottom != null) {
       final breakdownLevel =
-          context.rangeBottom! * (1 - RuleParams.breakoutBuffer);
+          context.rangeBottom! * (1 - RuleParams.breakdownBuffer);
       if (todayClose < breakdownLevel &&
           context.trendState != TrendState.down) {
         return TriggeredReason(
@@ -268,10 +269,35 @@ class RuleEngine {
             'trigger': 'breakdown_range_bottom',
             'range_bottom': context.rangeBottom,
             'close': todayClose,
-            'buffer': RuleParams.breakoutBuffer,
+            'buffer': RuleParams.breakdownBuffer,
           },
           template: '強轉弱：跌破盤整區下緣 ${context.rangeBottom?.toStringAsFixed(2)}',
         );
+      }
+    }
+
+    // Check: Significant lower-low pattern
+    // Requires: today's close < yesterday's low by at least 1.5%
+    // This filters out minor fluctuations
+    if (context.trendState != TrendState.down) {
+      final yesterday = prices[prices.length - 2];
+      final yesterdayLow = yesterday.low;
+      if (yesterdayLow != null && todayClose < yesterdayLow) {
+        final dropPercent = (yesterdayLow - todayClose) / yesterdayLow;
+        // Only trigger if drop is significant (>= 1.5%)
+        if (dropPercent >= 0.015) {
+          return TriggeredReason(
+            type: ReasonType.reversalS2W,
+            score: RuleScores.reversalS2W,
+            evidence: {
+              'trigger': 'significant_lower_low',
+              'yesterday_low': yesterdayLow,
+              'today_close': todayClose,
+              'drop_percent': dropPercent,
+            },
+            template: '強轉弱：大幅跌破昨日低點 ${yesterdayLow.toStringAsFixed(2)}（跌${(dropPercent * 100).toStringAsFixed(1)}%）',
+          );
+        }
       }
     }
 
@@ -321,29 +347,65 @@ class RuleEngine {
     List<DailyPriceEntry> prices,
     AnalysisContext context,
   ) {
-    if (context.supportLevel == null) return null;
-
     final today = prices.last;
     final todayClose = today.close;
     if (todayClose == null) return null;
 
-    final breakdownLevel =
-        context.supportLevel! * (1 - RuleParams.breakoutBuffer);
+    // Check: Breakdown below support level
+    if (context.supportLevel != null) {
+      // Uses breakdownBuffer (looser than breakoutBuffer) for easier triggering
+      final breakdownLevel =
+          context.supportLevel! * (1 - RuleParams.breakdownBuffer);
 
-    if (todayClose < breakdownLevel) {
-      return TriggeredReason(
-        type: ReasonType.techBreakdown,
-        score: RuleScores.techBreakdown,
-        evidence: {
-          'support': context.supportLevel,
-          'close': todayClose,
-          'buffer': RuleParams.breakoutBuffer,
-        },
-        template: '技術跌破：收盤跌破支撐 ${context.supportLevel?.toStringAsFixed(2)}',
-      );
+      if (todayClose < breakdownLevel) {
+        return TriggeredReason(
+          type: ReasonType.techBreakdown,
+          score: RuleScores.techBreakdown,
+          evidence: {
+            'support': context.supportLevel,
+            'close': todayClose,
+            'buffer': RuleParams.breakdownBuffer,
+          },
+          template: '技術跌破：收盤跌破支撐 ${context.supportLevel?.toStringAsFixed(2)}',
+        );
+      }
+    }
+
+    // Fallback: Check close significantly below recent 10-day swing low
+    // Use 10 days (longer than S2W's implicit pattern) to avoid overlap
+    // Requires at least 1% below the swing low for significance
+    final swingLow10 = _findSwingLowN(prices, 10);
+    if (swingLow10 != null && todayClose < swingLow10) {
+      final breakPercent = (swingLow10 - todayClose) / swingLow10;
+      if (breakPercent >= 0.01) {
+        return TriggeredReason(
+          type: ReasonType.techBreakdown,
+          score: RuleScores.techBreakdown,
+          evidence: {
+            'swing_low_10d': swingLow10,
+            'close': todayClose,
+            'break_percent': breakPercent,
+          },
+          template: '技術跌破：跌破近10日低點 ${swingLow10.toStringAsFixed(2)}（破${(breakPercent * 100).toStringAsFixed(1)}%）',
+        );
+      }
     }
 
     return null;
+  }
+
+  /// Find swing low over N days (excluding today)
+  double? _findSwingLowN(List<DailyPriceEntry> prices, int days) {
+    if (prices.length < days + 1) return null;
+    final recentPrices = prices.reversed.skip(1).take(days).toList();
+    double? minLow;
+    for (final price in recentPrices) {
+      final low = price.low;
+      if (low != null && (minLow == null || low < minLow)) {
+        minLow = low;
+      }
+    }
+    return minLow;
   }
 
   // ==========================================
@@ -373,17 +435,33 @@ class RuleEngine {
 
     final volumeMult = todayVolume / volMa20;
 
-    if (volumeMult >= RuleParams.volumeSpikeMult) {
-      return TriggeredReason(
-        type: ReasonType.volumeSpike,
-        score: RuleScores.volumeSpike,
-        evidence: {'vol': todayVolume, 'vol_ma20': volMa20, 'mult': volumeMult},
-        template:
-            '放量：成交量 ${_formatVolume(todayVolume)}（約為20日均量的 ${volumeMult.toStringAsFixed(1)}x）',
-      );
-    }
+    // Check volume multiplier threshold
+    if (volumeMult < RuleParams.volumeSpikeMult) return null;
 
-    return null;
+    // Additional filter: require meaningful price movement
+    // Volume spikes without price action are less significant
+    final todayClose = today.close;
+    final todayOpen = today.open;
+    if (todayClose == null || todayOpen == null || todayOpen <= 0) return null;
+
+    final priceChange = (todayClose - todayOpen).abs() / todayOpen;
+    if (priceChange < RuleParams.minPriceChangeForVolume) return null;
+
+    final changeDirection = todayClose >= todayOpen ? '漲' : '跌';
+    final changePercent = (priceChange * 100).toStringAsFixed(1);
+
+    return TriggeredReason(
+      type: ReasonType.volumeSpike,
+      score: RuleScores.volumeSpike,
+      evidence: {
+        'vol': todayVolume,
+        'vol_ma20': volMa20,
+        'mult': volumeMult,
+        'price_change': priceChange,
+      },
+      template:
+          '放量$changeDirection$changePercent%：成交量 ${_formatVolume(todayVolume)}（${volumeMult.toStringAsFixed(1)}x 均量）',
+    );
   }
 
   // ==========================================

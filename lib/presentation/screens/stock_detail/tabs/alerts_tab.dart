@@ -366,6 +366,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               IconButton(
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.of(context).pop(),
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
               ),
             ],
           ),

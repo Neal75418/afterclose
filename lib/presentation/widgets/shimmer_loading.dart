@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
+
 // ==================================================
 // Shimmer Dimension Constants
 // ==================================================
@@ -67,6 +69,10 @@ abstract final class ShimmerColors {
       isDark ? Colors.grey[800]! : Colors.grey[300]!;
   static Color highlightColor(bool isDark) =>
       isDark ? Colors.grey[700]! : Colors.grey[100]!;
+
+  /// Skeleton container fill color - provides good contrast in both modes
+  static Color skeletonColor(bool isDark) =>
+      isDark ? const Color(0xFF3A3A4A) : Colors.white;
 }
 
 // ==================================================
@@ -83,14 +89,18 @@ class StockListShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Shimmer.fromColors(
-      baseColor: ShimmerColors.baseColor(isDark),
-      highlightColor: ShimmerColors.highlightColor(isDark),
-      child: ListView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: itemCount,
-        itemBuilder: (context, index) => const _StockCardSkeleton(),
+    return Semantics(
+      label: S.shimmerLoadingStockList,
+      excludeSemantics: true,
+      child: Shimmer.fromColors(
+        baseColor: ShimmerColors.baseColor(isDark),
+        highlightColor: ShimmerColors.highlightColor(isDark),
+        child: ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: itemCount,
+          itemBuilder: (context, index) => _StockCardSkeleton(isDark: isDark),
+        ),
       ),
     );
   }
@@ -98,10 +108,14 @@ class StockListShimmer extends StatelessWidget {
 
 /// Single stock card skeleton
 class _StockCardSkeleton extends StatelessWidget {
-  const _StockCardSkeleton();
+  const _StockCardSkeleton({required this.isDark});
+
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final skeletonColor = ShimmerColors.skeletonColor(isDark);
+
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: ShimmerDimensions.cardMarginH,
@@ -109,7 +123,7 @@ class _StockCardSkeleton extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: skeletonColor,
         borderRadius: BorderRadius.circular(ShimmerDimensions.cardRadius),
       ),
       child: Row(
@@ -119,7 +133,7 @@ class _StockCardSkeleton extends StatelessWidget {
             width: ShimmerDimensions.iconSize,
             height: ShimmerDimensions.iconSize,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: skeletonColor,
               borderRadius: BorderRadius.circular(ShimmerDimensions.iconRadius),
             ),
           ),
@@ -134,7 +148,7 @@ class _StockCardSkeleton extends StatelessWidget {
                   width: ShimmerDimensions.symbolWidth,
                   height: ShimmerDimensions.symbolHeight,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: skeletonColor,
                     borderRadius: BorderRadius.circular(
                       ShimmerDimensions.spacingXs,
                     ),
@@ -146,7 +160,7 @@ class _StockCardSkeleton extends StatelessWidget {
                   width: ShimmerDimensions.nameWidth,
                   height: ShimmerDimensions.nameHeight,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: skeletonColor,
                     borderRadius: BorderRadius.circular(
                       ShimmerDimensions.spacingXs,
                     ),
@@ -160,7 +174,7 @@ class _StockCardSkeleton extends StatelessWidget {
                       width: ShimmerDimensions.tagWidth1,
                       height: ShimmerDimensions.tagHeight,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: skeletonColor,
                         borderRadius: BorderRadius.circular(
                           ShimmerDimensions.tagRadius,
                         ),
@@ -171,7 +185,7 @@ class _StockCardSkeleton extends StatelessWidget {
                       width: ShimmerDimensions.tagWidth2,
                       height: ShimmerDimensions.tagHeight,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: skeletonColor,
                         borderRadius: BorderRadius.circular(
                           ShimmerDimensions.tagRadius,
                         ),
@@ -190,7 +204,7 @@ class _StockCardSkeleton extends StatelessWidget {
                 width: ShimmerDimensions.priceWidth,
                 height: ShimmerDimensions.priceHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: skeletonColor,
                   borderRadius: BorderRadius.circular(
                     ShimmerDimensions.spacingXs,
                   ),
@@ -201,7 +215,7 @@ class _StockCardSkeleton extends StatelessWidget {
                 width: ShimmerDimensions.changeWidth,
                 height: ShimmerDimensions.changeHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: skeletonColor,
                   borderRadius: BorderRadius.circular(
                     ShimmerDimensions.spacingXs,
                   ),
@@ -222,28 +236,42 @@ class ShimmerContainer extends StatelessWidget {
     required this.width,
     required this.height,
     this.borderRadius = 8,
+    this.semanticLabel,
   });
 
   final double width;
   final double height;
   final double borderRadius;
 
+  /// Optional semantic label for accessibility
+  final String? semanticLabel;
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Shimmer.fromColors(
+    final shimmer = Shimmer.fromColors(
       baseColor: ShimmerColors.baseColor(isDark),
       highlightColor: ShimmerColors.highlightColor(isDark),
       child: Container(
         width: width,
         height: height,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: ShimmerColors.skeletonColor(isDark),
           borderRadius: BorderRadius.circular(borderRadius),
         ),
       ),
     );
+
+    if (semanticLabel != null) {
+      return Semantics(
+        label: semanticLabel,
+        excludeSemantics: true,
+        child: shimmer,
+      );
+    }
+
+    return shimmer;
   }
 }
 
@@ -254,11 +282,15 @@ class StockDetailShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final skeletonColor = ShimmerColors.skeletonColor(isDark);
 
-    return Shimmer.fromColors(
-      baseColor: ShimmerColors.baseColor(isDark),
-      highlightColor: ShimmerColors.highlightColor(isDark),
-      child: SingleChildScrollView(
+    return Semantics(
+      label: S.shimmerLoadingStockDetail,
+      excludeSemantics: true,
+      child: Shimmer.fromColors(
+        baseColor: ShimmerColors.baseColor(isDark),
+        highlightColor: ShimmerColors.highlightColor(isDark),
+        child: SingleChildScrollView(
         physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
         child: Column(
@@ -275,7 +307,7 @@ class StockDetailShimmer extends StatelessWidget {
                         width: ShimmerDimensions.headerTitleWidth,
                         height: ShimmerDimensions.headerTitleHeight,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: skeletonColor,
                           borderRadius: BorderRadius.circular(
                             ShimmerDimensions.spacingSm,
                           ),
@@ -286,7 +318,7 @@ class StockDetailShimmer extends StatelessWidget {
                         width: ShimmerDimensions.headerSubWidth,
                         height: ShimmerDimensions.headerSubHeight,
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: skeletonColor,
                           borderRadius: BorderRadius.circular(
                             ShimmerDimensions.spacingXs,
                           ),
@@ -302,7 +334,7 @@ class StockDetailShimmer extends StatelessWidget {
                       width: ShimmerDimensions.headerPriceWidth,
                       height: ShimmerDimensions.headerPriceHeight,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: skeletonColor,
                         borderRadius: BorderRadius.circular(
                           ShimmerDimensions.spacingSm,
                         ),
@@ -313,7 +345,7 @@ class StockDetailShimmer extends StatelessWidget {
                       width: ShimmerDimensions.headerChangeWidth,
                       height: ShimmerDimensions.headerChangeHeight,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: skeletonColor,
                         borderRadius: BorderRadius.circular(
                           ShimmerDimensions.spacingXs,
                         ),
@@ -331,7 +363,7 @@ class StockDetailShimmer extends StatelessWidget {
                   width: ShimmerDimensions.chipWidth,
                   height: ShimmerDimensions.chipHeight,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: skeletonColor,
                     borderRadius: BorderRadius.circular(
                       ShimmerDimensions.spacingMd,
                     ),
@@ -342,7 +374,7 @@ class StockDetailShimmer extends StatelessWidget {
                   width: ShimmerDimensions.chipWidth,
                   height: ShimmerDimensions.chipHeight,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: skeletonColor,
                     borderRadius: BorderRadius.circular(
                       ShimmerDimensions.spacingMd,
                     ),
@@ -356,7 +388,7 @@ class StockDetailShimmer extends StatelessWidget {
               width: ShimmerDimensions.sectionTitleWidth,
               height: ShimmerDimensions.sectionTitleHeight,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: skeletonColor,
                 borderRadius: BorderRadius.circular(
                   ShimmerDimensions.spacingXs,
                 ),
@@ -368,7 +400,7 @@ class StockDetailShimmer extends StatelessWidget {
               width: double.infinity,
               height: ShimmerDimensions.cardHeight,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: skeletonColor,
                 borderRadius: BorderRadius.circular(
                   ShimmerDimensions.cardRadius,
                 ),
@@ -380,7 +412,7 @@ class StockDetailShimmer extends StatelessWidget {
               width: ShimmerDimensions.sectionTitleWidth,
               height: ShimmerDimensions.sectionTitleHeight,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: skeletonColor,
                 borderRadius: BorderRadius.circular(
                   ShimmerDimensions.spacingXs,
                 ),
@@ -398,7 +430,7 @@ class StockDetailShimmer extends StatelessWidget {
                   width: double.infinity,
                   height: ShimmerDimensions.listItemHeight,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: skeletonColor,
                     borderRadius: BorderRadius.circular(
                       ShimmerDimensions.cardRadius,
                     ),
@@ -407,6 +439,7 @@ class StockDetailShimmer extends StatelessWidget {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -423,14 +456,18 @@ class NewsListShimmer extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Shimmer.fromColors(
-      baseColor: ShimmerColors.baseColor(isDark),
-      highlightColor: ShimmerColors.highlightColor(isDark),
-      child: ListView.builder(
-        physics: const NeverScrollableScrollPhysics(),
-        shrinkWrap: true,
-        itemCount: itemCount,
-        itemBuilder: (context, index) => const _NewsCardSkeleton(),
+    return Semantics(
+      label: S.shimmerLoadingNewsList,
+      excludeSemantics: true,
+      child: Shimmer.fromColors(
+        baseColor: ShimmerColors.baseColor(isDark),
+        highlightColor: ShimmerColors.highlightColor(isDark),
+        child: ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: itemCount,
+          itemBuilder: (context, index) => _NewsCardSkeleton(isDark: isDark),
+        ),
       ),
     );
   }
@@ -438,10 +475,14 @@ class NewsListShimmer extends StatelessWidget {
 
 /// Single news card skeleton
 class _NewsCardSkeleton extends StatelessWidget {
-  const _NewsCardSkeleton();
+  const _NewsCardSkeleton({required this.isDark});
+
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    final skeletonColor = ShimmerColors.skeletonColor(isDark);
+
     return Container(
       margin: const EdgeInsets.symmetric(
         horizontal: ShimmerDimensions.cardMarginH,
@@ -449,7 +490,7 @@ class _NewsCardSkeleton extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: skeletonColor,
         borderRadius: BorderRadius.circular(ShimmerDimensions.cardRadius),
       ),
       child: Column(
@@ -460,7 +501,7 @@ class _NewsCardSkeleton extends StatelessWidget {
             width: double.infinity,
             height: ShimmerDimensions.newsTitleHeight,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: skeletonColor,
               borderRadius: BorderRadius.circular(ShimmerDimensions.spacingXs),
             ),
           ),
@@ -470,7 +511,7 @@ class _NewsCardSkeleton extends StatelessWidget {
             width: ShimmerDimensions.newsTitleWidth2,
             height: ShimmerDimensions.newsTitleHeight,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: skeletonColor,
               borderRadius: BorderRadius.circular(ShimmerDimensions.spacingXs),
             ),
           ),
@@ -482,7 +523,7 @@ class _NewsCardSkeleton extends StatelessWidget {
                 width: ShimmerDimensions.newsMetaWidth1,
                 height: ShimmerDimensions.newsMetaHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: skeletonColor,
                   borderRadius: BorderRadius.circular(
                     ShimmerDimensions.spacingXs,
                   ),
@@ -493,7 +534,7 @@ class _NewsCardSkeleton extends StatelessWidget {
                 width: ShimmerDimensions.newsMetaWidth2,
                 height: ShimmerDimensions.newsMetaHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: skeletonColor,
                   borderRadius: BorderRadius.circular(
                     ShimmerDimensions.spacingXs,
                   ),

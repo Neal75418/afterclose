@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -150,6 +152,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
   final Ref _ref;
 
   AppDatabase get _db => _ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
 
   /// Load scan data
   Future<void> loadData() async {
@@ -157,44 +160,18 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
     try {
       // Use today's date for querying (update_service stores with this date)
-      final today = DateTime.now();
-      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
-      final historyStart = normalizedToday.subtract(const Duration(days: 5));
+      final dateCtx = DateContext.now();
 
       // Get all analyses for today (with score > 0)
-      final analyses = await _db.getAnalysisForDate(normalizedToday);
+      final analyses = await _db.getAnalysisForDate(dateCtx.today);
 
       // Get actual data dates for display purposes (not for querying)
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
 
       // Calculate dataDate for display - use the earlier of the two dates
-      DateTime? dataDate;
-      if (latestPriceDate != null && latestInstDate != null) {
-        final priceDay = DateTime.utc(
-          latestPriceDate.year,
-          latestPriceDate.month,
-          latestPriceDate.day,
-        );
-        final instDay = DateTime.utc(
-          latestInstDate.year,
-          latestInstDate.month,
-          latestInstDate.day,
-        );
-        dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
-      } else if (latestPriceDate != null) {
-        dataDate = DateTime.utc(
-          latestPriceDate.year,
-          latestPriceDate.month,
-          latestPriceDate.day,
-        );
-      } else if (latestInstDate != null) {
-        dataDate = DateTime.utc(
-          latestInstDate.year,
-          latestInstDate.month,
-          latestInstDate.day,
-        );
-      }
+      final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
+
       final validAnalyses = analyses.where((a) => a.score > 0).toList();
 
       if (validAnalyses.isEmpty) {
@@ -214,23 +191,18 @@ class ScanNotifier extends StateNotifier<ScanState> {
       // Collect all symbols
       final symbols = validAnalyses.map((a) => a.symbol).toList();
 
-      // Batch load all data in parallel
-      final results = await Future.wait([
-        _db.getStocksBatch(symbols),
-        _db.getLatestPricesBatch(symbols),
-        _db.getReasonsBatch(symbols, normalizedToday),
-        _db.getPriceHistoryBatch(
-          symbols,
-          startDate: historyStart,
-          endDate: normalizedToday,
-        ),
-      ]);
+      // Type-safe batch load using Dart 3 Records (no manual casting needed)
+      final data = await _cachedDb.loadScanData(
+        symbols: symbols,
+        analysisDate: dateCtx.today,
+        historyStart: dateCtx.historyStart,
+      );
 
-      final stocksMap = results[0] as Map<String, StockMasterEntry>;
-      final latestPricesMap = results[1] as Map<String, DailyPriceEntry>;
-      final reasonsMap = results[2] as Map<String, List<DailyReasonEntry>>;
-      final priceHistoriesMap =
-          results[3] as Map<String, List<DailyPriceEntry>>;
+      // Destructure Record fields - compile-time type safety!
+      final stocksMap = data.stocks;
+      final latestPricesMap = data.latestPrices;
+      final reasonsMap = data.reasons;
+      final priceHistoriesMap = data.priceHistories;
 
       // Calculate price changes using utility
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(

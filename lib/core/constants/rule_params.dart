@@ -13,14 +13,31 @@ abstract final class RuleParams {
   /// Window for Swing High/Low detection
   static const int swingWindow = 20;
 
-  /// Price spike threshold percentage (lowered for more signals)
+  /// Price spike threshold percentage
   static const double priceSpikePercent = 3.0;
 
-  /// Volume spike multiplier (vs 20-day average, lowered for more signals)
-  static const double volumeSpikeMult = 1.5;
+  /// Volume spike multiplier (vs 20-day average)
+  /// 4.0x is highly selective - only exceptional volume anomalies
+  /// Also requires price movement (see minPriceChangeForVolume)
+  static const double volumeSpikeMult = 4.0;
 
-  /// Breakout buffer tolerance (0 ~ 0.3%, lowered for more signals)
-  static const double breakoutBuffer = 0.003;
+  /// Minimum absolute price change required for volume spike signal
+  /// Filters out volume spikes without meaningful price action
+  /// 1.5% ensures the volume came with actual price movement
+  static const double minPriceChangeForVolume = 0.015;
+
+  /// Breakout buffer tolerance (1% for cleaner signals)
+  /// Was 0.3% which triggered too many false positives
+  static const double breakoutBuffer = 0.01;
+
+  /// Breakdown buffer tolerance (0.5% - easier to trigger than breakout)
+  /// Separate from breakout to allow more breakdown/S2W signals
+  static const double breakdownBuffer = 0.005;
+
+  /// Maximum distance for support/resistance to be considered relevant
+  /// Support/resistance beyond this distance from current price is ignored
+  /// 8% allows detecting nearby levels while filtering out irrelevant ones
+  static const double maxSupportResistanceDistance = 0.08;
 
   /// Cooldown days for repeated recommendations
   static const int cooldownDays = 2;
@@ -39,12 +56,20 @@ abstract final class RuleParams {
 }
 
 /// Rule scores for each recommendation type
+///
+/// Score hierarchy reflects signal reliability:
+/// - Reversal signals (35): Highest - trend change is most actionable
+/// - Technical signals (25): Medium - support/resistance breaks
+/// - Volume spike (22): Medium - now requires 4x vol + 1.5% price move
+/// - Price spike (15): Lower - could be noise without volume
+/// - Institutional (12): Supplementary - confirms other signals
+/// - News (8): Supplementary - context only
 abstract final class RuleScores {
   static const int reversalW2S = 35;
   static const int reversalS2W = 35;
   static const int techBreakout = 25;
   static const int techBreakdown = 25;
-  static const int volumeSpike = 18;
+  static const int volumeSpike = 22;  // Was 18, raised due to stricter criteria
   static const int priceSpike = 15;
   static const int institutionalShift = 12;
   static const int newsRelated = 8;

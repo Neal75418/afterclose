@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -21,6 +23,22 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
+});
+
+/// Batch query cache manager (30-second TTL for update cycle optimization)
+final batchCacheProvider = Provider<BatchQueryCacheManager>((ref) {
+  return BatchQueryCacheManager(
+    maxSize: 50,
+    ttl: const Duration(seconds: 30),
+  );
+});
+
+/// Cached database accessor for optimized batch queries
+final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
+  return CachedDatabaseAccessor(
+    db: ref.watch(databaseProvider),
+    cache: ref.watch(batchCacheProvider),
+  );
 });
 
 /// FinMind API client (for historical data)

@@ -2,16 +2,20 @@ import 'package:dio/dio.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
 
-/// TWSE (Taiwan Stock Exchange) Open Data API Client
+/// TWSE (Taiwan Stock Exchange) API Client
 ///
-/// Provides free, unlimited access to Taiwan stock market data.
+/// Provides free access to Taiwan stock market data.
+/// Uses official TWSE website JSON API for faster data updates.
 /// No authentication required.
 ///
-/// API Documentation: https://openapi.twse.com.tw/
+/// API Sources:
+/// - Daily prices: https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY_ALL
+/// - Historical: https://www.twse.com.tw/exchangeReport/STOCK_DAY
 class TwseClient {
   TwseClient({Dio? dio}) : _dio = dio ?? _createDio();
 
-  static const String _baseUrl = 'https://openapi.twse.com.tw/v1';
+  /// Official TWSE website base URL (faster updates than Open Data API)
+  static const String _baseUrl = 'https://www.twse.com.tw';
 
   final Dio _dio;
 
@@ -28,19 +32,33 @@ class TwseClient {
 
   /// Get all stock prices for the latest trading day
   ///
-  /// Returns OHLCV data for all TWSE listed stocks
-  /// Endpoint: /exchangeReport/STOCK_DAY_ALL
+  /// Returns OHLCV data for all TWSE listed stocks.
+  /// Uses official TWSE website API which updates faster than Open Data API.
+  ///
+  /// Endpoint: /rwd/zh/afterTrading/STOCK_DAY_ALL
   Future<List<TwseDailyPrice>> getAllDailyPrices() async {
     try {
-      final response = await _dio.get('/exchangeReport/STOCK_DAY_ALL');
+      final response = await _dio.get(
+        '/rwd/zh/afterTrading/STOCK_DAY_ALL',
+        queryParameters: {'response': 'json'},
+      );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data
-            .map(
-              (json) =>
-                  TwseDailyPrice.tryFromJson(json as Map<String, dynamic>),
-            )
+        final data = response.data;
+
+        // Check response status
+        if (data['stat'] != 'OK' || data['data'] == null) {
+          return [];
+        }
+
+        // Parse date from response (format: YYYYMMDD)
+        final dateStr = data['date']?.toString() ?? '';
+        final date = _parseAdDate(dateStr);
+
+        // Parse data array (each row is a List, not a Map)
+        final List<dynamic> rows = data['data'];
+        return rows
+            .map((row) => _parseDailyPriceRow(row as List<dynamic>, date))
             .whereType<TwseDailyPrice>()
             .toList();
       }
@@ -58,20 +76,72 @@ class TwseClient {
     }
   }
 
+  /// Parse AD date in YYYYMMDD format (e.g., "20260121")
+  DateTime _parseAdDate(String dateStr) {
+    if (dateStr.length != 8) {
+      return DateTime.now();
+    }
+    final year = int.parse(dateStr.substring(0, 4));
+    final month = int.parse(dateStr.substring(4, 6));
+    final day = int.parse(dateStr.substring(6, 8));
+    return DateTime(year, month, day);
+  }
+
+  /// Parse a row from daily price data
+  ///
+  /// Row format: [代號, 名稱, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數]
+  TwseDailyPrice? _parseDailyPriceRow(List<dynamic> row, DateTime date) {
+    try {
+      if (row.length < 10) return null;
+
+      final code = row[0]?.toString() ?? '';
+      if (code.isEmpty) return null;
+
+      return TwseDailyPrice(
+        date: date,
+        code: code,
+        name: row[1]?.toString() ?? '',
+        open: _parseFormattedDouble(row[4]),
+        high: _parseFormattedDouble(row[5]),
+        low: _parseFormattedDouble(row[6]),
+        close: _parseFormattedDouble(row[7]),
+        volume: _parseFormattedDouble(row[2]),
+        change: _parseFormattedDouble(row[8]),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Get institutional investor trading data for all stocks
   ///
-  /// Endpoint: /exchangeReport/TWT38U_ALL (三大法人買賣超日報)
+  /// Endpoint: /rwd/zh/fund/T86 (三大法人買賣超日報)
   Future<List<TwseInstitutional>> getAllInstitutionalData() async {
     try {
-      final response = await _dio.get('/exchangeReport/TWT38U_ALL');
+      final response = await _dio.get(
+        '/rwd/zh/fund/T86',
+        queryParameters: {
+          'response': 'json',
+          'selectType': 'ALLBUT0999', // All stocks except 0999
+        },
+      );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data
-            .map(
-              (json) =>
-                  TwseInstitutional.tryFromJson(json as Map<String, dynamic>),
-            )
+        final data = response.data;
+
+        // Check response status
+        if (data['stat'] != 'OK' || data['data'] == null) {
+          return [];
+        }
+
+        // Parse date from response
+        final dateStr = data['date']?.toString() ?? '';
+        final date = _parseAdDate(dateStr);
+
+        // Parse data array
+        final List<dynamic> rows = data['data'];
+        return rows
+            .map((row) => _parseInstitutionalRow(row as List<dynamic>, date))
             .whereType<TwseInstitutional>()
             .toList();
       }
@@ -82,6 +152,37 @@ class TwseClient {
       );
     } on DioException catch (e) {
       throw NetworkException(e.message ?? 'TWSE network error', e);
+    }
+  }
+
+  /// Parse a row from institutional data
+  ///
+  /// Row format: [代號, 名稱, 外資買, 外資賣, 外資淨買, 外資自營買, 外資自營賣, 外資自營淨買,
+  ///              投信買, 投信賣, 投信淨買, 自營買, 自營賣, 自營淨買, 自營避險買, 自營避險賣, 自營避險淨買, 三大法人淨買]
+  TwseInstitutional? _parseInstitutionalRow(List<dynamic> row, DateTime date) {
+    try {
+      if (row.length < 18) return null;
+
+      final code = row[0]?.toString() ?? '';
+      if (code.isEmpty) return null;
+
+      return TwseInstitutional(
+        date: date,
+        code: code,
+        name: row[1]?.toString() ?? '',
+        foreignBuy: _parseFormattedDouble(row[2]) ?? 0,
+        foreignSell: _parseFormattedDouble(row[3]) ?? 0,
+        foreignNet: _parseFormattedDouble(row[4]) ?? 0,
+        investmentTrustBuy: _parseFormattedDouble(row[8]) ?? 0,
+        investmentTrustSell: _parseFormattedDouble(row[9]) ?? 0,
+        investmentTrustNet: _parseFormattedDouble(row[10]) ?? 0,
+        dealerBuy: _parseFormattedDouble(row[11]) ?? 0,
+        dealerSell: _parseFormattedDouble(row[12]) ?? 0,
+        dealerNet: _parseFormattedDouble(row[13]) ?? 0,
+        totalNet: _parseFormattedDouble(row[17]) ?? 0,
+      );
+    } catch (_) {
+      return null;
     }
   }
 
@@ -287,18 +388,40 @@ class TwseClient {
 
   /// Get margin trading data for all stocks
   ///
-  /// Endpoint: /exchangeReport/TWT93U_ALL (融資融券餘額)
+  /// Endpoint: /rwd/zh/marginTrading/MI_MARGN (融資融券餘額)
   Future<List<TwseMarginTrading>> getAllMarginTradingData() async {
     try {
-      final response = await _dio.get('/exchangeReport/TWT93U_ALL');
+      final response = await _dio.get(
+        '/rwd/zh/marginTrading/MI_MARGN',
+        queryParameters: {
+          'response': 'json',
+          'selectType': 'ALL',
+        },
+      );
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
-        return data
-            .map(
-              (json) =>
-                  TwseMarginTrading.tryFromJson(json as Map<String, dynamic>),
-            )
+        final data = response.data;
+
+        // Check response status
+        if (data['stat'] != 'OK') {
+          return [];
+        }
+
+        // Parse date from response
+        final dateStr = data['date']?.toString() ?? '';
+        final date = _parseAdDate(dateStr);
+
+        // Data is in 'tables' array, second table contains individual stock data
+        final tables = data['tables'] as List<dynamic>?;
+        if (tables == null || tables.length < 2) {
+          return [];
+        }
+
+        final stockTable = tables[1] as Map<String, dynamic>;
+        final List<dynamic> rows = stockTable['data'] ?? [];
+
+        return rows
+            .map((row) => _parseMarginTradingRow(row as List<dynamic>, date))
             .whereType<TwseMarginTrading>()
             .toList();
       }
@@ -309,6 +432,33 @@ class TwseClient {
       );
     } on DioException catch (e) {
       throw NetworkException(e.message ?? 'TWSE network error', e);
+    }
+  }
+
+  /// Parse a row from margin trading data
+  ///
+  /// Row format: [代號, 名稱, 融資買進, 融資賣出, 融資現償, 融資前餘, 融資今餘, 融資限額,
+  ///              融券買進, 融券賣出, 融券現償, 融券前餘, 融券今餘, 融券限額, 資券互抵, 備註]
+  TwseMarginTrading? _parseMarginTradingRow(List<dynamic> row, DateTime date) {
+    try {
+      if (row.length < 14) return null;
+
+      final code = row[0]?.toString() ?? '';
+      if (code.isEmpty) return null;
+
+      return TwseMarginTrading(
+        date: date,
+        code: code,
+        name: row[1]?.toString() ?? '',
+        marginBuy: _parseFormattedDouble(row[2]) ?? 0,
+        marginSell: _parseFormattedDouble(row[3]) ?? 0,
+        marginBalance: _parseFormattedDouble(row[6]) ?? 0,
+        shortBuy: _parseFormattedDouble(row[8]) ?? 0,
+        shortSell: _parseFormattedDouble(row[9]) ?? 0,
+        shortBalance: _parseFormattedDouble(row[12]) ?? 0,
+      );
+    } catch (_) {
+      return null;
     }
   }
 }

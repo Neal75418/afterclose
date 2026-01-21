@@ -1,6 +1,5 @@
-import 'package:flutter/foundation.dart';
-
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
@@ -214,7 +213,7 @@ class UpdateService {
                 failedSymbols.add(symbol);
                 // Log error for debugging (first 3 failures only to avoid log spam)
                 if (failedSymbols.length <= 3) {
-                  debugPrint('[UpdateService] Failed to sync $symbol: $error');
+                  AppLogger.warning('UpdateService', 'Failed to sync $symbol', error);
                 }
               } else {
                 historySynced += count;
@@ -377,7 +376,7 @@ class UpdateService {
         }
       } catch (e) {
         // Non-critical: alert data capture failure shouldn't fail the update
-        debugPrint('[UpdateService] Alert price capture failed: $e');
+        AppLogger.warning('UpdateService', 'Alert price capture failed', e);
       }
 
       return result;

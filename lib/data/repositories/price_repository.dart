@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -106,8 +107,16 @@ class PriceRepository {
             month: month.month,
           );
           allPrices.addAll(monthData);
-        } catch (_) {
-          // Continue with other months if one fails
+        } on RateLimitException {
+          // Rate limit errors should bubble up for proper backoff handling
+          rethrow;
+        } catch (e) {
+          // Log and continue with other months if one fails
+          AppLogger.warning(
+            'PriceRepo',
+            'Failed to fetch $symbol for ${month.year}/${month.month}',
+            e,
+          );
         }
 
         // Rate limiting delay between months (reduced since parallel at stock level)
@@ -383,21 +392,21 @@ class PriceRepository {
 
   /// Get symbols that need price updates for a given date
   ///
-  /// Returns symbols that don't have price data for the target date
+  /// Returns symbols that don't have price data for the target date.
+  /// Uses batch query to avoid N+1 performance issue.
   Future<List<String>> getSymbolsNeedingUpdate(
     List<String> symbols,
     DateTime targetDate,
   ) async {
-    final needsUpdate = <String>[];
+    if (symbols.isEmpty) return [];
 
-    for (final symbol in symbols) {
-      final latestPrice = await _db.getLatestPrice(symbol);
-      if (latestPrice == null || !_isSameDay(latestPrice.date, targetDate)) {
-        needsUpdate.add(symbol);
-      }
-    }
+    // Batch query instead of N+1 individual queries
+    final latestPrices = await _db.getLatestPricesBatch(symbols);
 
-    return needsUpdate;
+    return symbols.where((symbol) {
+      final latestPrice = latestPrices[symbol];
+      return latestPrice == null || !_isSameDay(latestPrice.date, targetDate);
+    }).toList();
   }
 
   /// Get price change percentage

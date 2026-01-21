@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/presentation/widgets/score_ring.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/widgets/stock_card.dart';
+import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
 /// Watchlist screen - shows user's selected stocks
@@ -21,6 +23,9 @@ class WatchlistScreen extends ConsumerStatefulWidget {
 }
 
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
+
   @override
   void initState() {
     super.initState();
@@ -28,8 +33,16 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     Future.microtask(() => ref.read(watchlistProvider.notifier).loadData());
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _onRefresh() async {
     await ref.read(watchlistProvider.notifier).loadData();
+    // Haptic feedback on refresh complete
+    HapticFeedback.mediumImpact();
   }
 
   Future<void> _removeFromWatchlist(String symbol) async {
@@ -55,14 +68,114 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     }
   }
 
+  void _showStockPreview(WatchlistItemData item) {
+    showStockPreviewSheet(
+      context: context,
+      data: StockPreviewData(
+        symbol: item.symbol,
+        stockName: item.stockName,
+        latestClose: item.latestClose,
+        priceChange: item.priceChange,
+        score: item.score,
+        trendState: item.trendState,
+        reasons: item.reasons,
+        isInWatchlist: true,
+      ),
+      onViewDetails: () => context.push('/stock/${item.symbol}'),
+      onToggleWatchlist: () => _removeFromWatchlist(item.symbol),
+    );
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        ref.read(watchlistProvider.notifier).setSearchQuery('');
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(watchlistProvider);
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('watchlist.title'.tr()),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'watchlist.searchHint'.tr(),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  ref.read(watchlistProvider.notifier).setSearchQuery(value);
+                },
+              )
+            : Text('watchlist.title'.tr()),
         actions: [
+          // Search toggle
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: _toggleSearch,
+            tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
+          ),
+          // Group menu
+          PopupMenuButton<WatchlistGroup>(
+            icon: const Icon(Icons.workspaces_outlined),
+            tooltip: 'watchlist.group'.tr(),
+            initialValue: state.group,
+            onSelected: (group) {
+              ref.read(watchlistProvider.notifier).setGroup(group);
+            },
+            itemBuilder: (context) {
+              return WatchlistGroup.values.map((group) {
+                return PopupMenuItem(
+                  value: group,
+                  child: Row(
+                    children: [
+                      if (state.group == group)
+                        const Icon(Icons.check, size: 18)
+                      else
+                        const SizedBox(width: 18),
+                      const SizedBox(width: 8),
+                      Text(group.label),
+                    ],
+                  ),
+                );
+              }).toList();
+            },
+          ),
+          // Sort menu
+          PopupMenuButton<WatchlistSort>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'watchlist.sort'.tr(),
+            initialValue: state.sort,
+            onSelected: (sort) {
+              ref.read(watchlistProvider.notifier).setSort(sort);
+            },
+            itemBuilder: (context) {
+              return WatchlistSort.values.map((sort) {
+                return PopupMenuItem(
+                  value: sort,
+                  child: Row(
+                    children: [
+                      if (state.sort == sort)
+                        const Icon(Icons.check, size: 18)
+                      else
+                        const SizedBox(width: 18),
+                      const SizedBox(width: 8),
+                      Text(sort.label),
+                    ],
+                  ),
+                );
+              }).toList();
+            },
+          ),
+          // Add button
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddDialog,
@@ -75,108 +188,220 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         child: state.isLoading
             ? const StockListShimmer(itemCount: 5)
             : state.error != null
-            ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
-            : state.items.isEmpty
-            ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
-            : ListView.builder(
-                // Performance optimizations
-                cacheExtent: 500,
-                addAutomaticKeepAlives: false,
-                itemCount: state.items.length,
-                itemBuilder: (context, index) {
-                  final item = state.items[index];
-                  final tile = RepaintBoundary(
-                    child: _buildWatchlistTile(item),
-                  );
-
-                  // Staggered entry animation for first 10 items
-                  if (index < 10) {
-                    return tile
-                        .animate()
-                        .fadeIn(
-                          delay: Duration(milliseconds: 50 * index),
-                          duration: 400.ms,
-                        )
-                        .slideX(
-                          begin: 0.05,
-                          duration: 400.ms,
-                          curve: Curves.easeOutQuart,
-                        );
-                  }
-                  return tile;
-                },
-              ),
+                ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
+                : state.items.isEmpty
+                    ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
+                    : Column(
+                        children: [
+                          // Stock count
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'watchlist.stockCount'.tr(
+                                    namedArgs: {
+                                      'count':
+                                          state.filteredItems.length.toString(),
+                                    },
+                                  ),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                if (state.searchQuery.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          theme.colorScheme.secondaryContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      '搜尋中',
+                                      style:
+                                          theme.textTheme.labelSmall?.copyWith(
+                                        color: theme
+                                            .colorScheme.onSecondaryContainer,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          // Stock list
+                          Expanded(
+                            child: state.filteredItems.isEmpty
+                                ? Center(
+                                    child: Text(
+                                      '找不到符合的股票',
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  )
+                                : _buildListContent(state),
+                          ),
+                        ],
+                      ),
       ),
     );
   }
 
-  Widget _buildWatchlistTile(WatchlistItemData item) {
-    final theme = Theme.of(context);
-    final priceColor = AppTheme.getPriceColor(item.priceChange);
-    final isPositive = (item.priceChange ?? 0) >= 0;
+  Widget _buildListContent(WatchlistState state) {
+    switch (state.group) {
+      case WatchlistGroup.none:
+        return _buildFlatList(state.filteredItems);
+      case WatchlistGroup.status:
+        return _buildGroupedByStatusList(state);
+      case WatchlistGroup.trend:
+        return _buildGroupedByTrendList(state);
+    }
+  }
 
-    return Dismissible(
-      key: Key(item.symbol),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
-      ),
-      onDismissed: (_) {
-        HapticFeedback.mediumImpact();
-        _removeFromWatchlist(item.symbol);
+  Widget _buildFlatList(List<WatchlistItemData> items) {
+    return ListView.builder(
+      cacheExtent: 500,
+      addAutomaticKeepAlives: false,
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _buildStockItem(item, index);
       },
-      child: ListTile(
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: item.hasSignal
-                ? Colors.amber.withValues(alpha: 0.2)
-                : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Center(
-            child: Text(item.statusIcon, style: const TextStyle(fontSize: 20)),
-          ),
-        ),
-        title: Row(
-          children: [
-            Text(
-              item.symbol,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildGroupedByStatusList(WatchlistState state) {
+    final grouped = state.groupedByStatus;
+
+    return ListView(
+      children: [
+        for (final status in WatchlistStatus.values)
+          if (grouped[status]!.isNotEmpty) ...[
+            _GroupHeader(
+              icon: status.icon,
+              title: status.label,
+              count: grouped[status]!.length,
             ),
-            if (item.score != null && item.score! > 0) ...[
-              const SizedBox(width: 8),
-              ScoreRing(score: item.score!, size: ScoreRingSize.small),
-            ],
+            ...grouped[status]!.asMap().entries.map((entry) {
+              return _buildStockItem(entry.value, entry.key);
+            }),
           ],
-        ),
-        subtitle: item.stockName != null ? Text(item.stockName!) : null,
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
+      ],
+    );
+  }
+
+  Widget _buildGroupedByTrendList(WatchlistState state) {
+    final grouped = state.groupedByTrend;
+
+    return ListView(
+      children: [
+        for (final trend in WatchlistTrend.values)
+          if (grouped[trend]!.isNotEmpty) ...[
+            _GroupHeader(
+              icon: trend.icon,
+              title: trend.label,
+              count: grouped[trend]!.length,
+            ),
+            ...grouped[trend]!.asMap().entries.map((entry) {
+              return _buildStockItem(entry.value, entry.key);
+            }),
+          ],
+      ],
+    );
+  }
+
+  Widget _buildStockItem(WatchlistItemData item, int index) {
+    final card = RepaintBoundary(
+      child: Slidable(
+        key: ValueKey(item.symbol),
+        // Left swipe → View details
+        startActionPane: ActionPane(
+          motion: const BehindMotion(),
+          extentRatio: 0.25,
           children: [
-            if (item.latestClose != null)
-              Text(
-                item.latestClose!.toStringAsFixed(2),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+            SlidableAction(
+              onPressed: (_) {
+                HapticFeedback.lightImpact();
+                context.push('/stock/${item.symbol}');
+              },
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              icon: Icons.visibility_outlined,
+              label: '查看',
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
               ),
-            if (item.priceChange != null)
-              Text(
-                '${isPositive ? '+' : ''}${item.priceChange!.toStringAsFixed(2)}%',
-                style: TextStyle(color: priceColor, fontSize: 12),
-              ),
+            ),
           ],
         ),
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.push('/stock/${item.symbol}');
-        },
+        // Right swipe → Remove from watchlist
+        endActionPane: ActionPane(
+          motion: const BehindMotion(),
+          extentRatio: 0.25,
+          children: [
+            SlidableAction(
+              onPressed: (_) {
+                HapticFeedback.mediumImpact();
+                _removeFromWatchlist(item.symbol);
+              },
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Colors.white,
+              icon: Icons.delete_outline,
+              label: '移除',
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
+          ],
+        ),
+        child: StockCard(
+          symbol: item.symbol,
+          stockName: item.stockName,
+          latestClose: item.latestClose,
+          priceChange: item.priceChange,
+          score: item.score,
+          reasons: item.reasons,
+          trendState: item.trendState,
+          isInWatchlist: true,
+          recentPrices: item.recentPrices,
+          onTap: () => context.push('/stock/${item.symbol}'),
+          onLongPress: () => _showStockPreview(item),
+          onWatchlistTap: () {
+            HapticFeedback.lightImpact();
+            _removeFromWatchlist(item.symbol);
+          },
+        ),
       ),
     );
+
+    // Staggered entry animation for first 10 items
+    if (index < 10) {
+      return card
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: 50 * index),
+            duration: 400.ms,
+          )
+          .slideX(
+            begin: 0.05,
+            duration: 400.ms,
+            curve: Curves.easeOutQuart,
+          );
+    }
+    return card;
   }
 
   void _showAddDialog() {
@@ -280,5 +505,58 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         // Already disposed, ignore
       }
     });
+  }
+}
+
+// ==================================================
+// Group Header
+// ==================================================
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader({
+    required this.icon,
+    required this.title,
+    required this.count,
+  });
+
+  final String icon;
+  final String title;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: theme.colorScheme.surfaceContainerLow,
+      child: Row(
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

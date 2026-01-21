@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,6 +55,17 @@ class AppDatabase extends _$AppDatabase {
       // v1 -> v2: Add PriceAlert table
       if (from < 2) {
         await m.createTable(priceAlert);
+      }
+      // v2 -> v3: Add composite indexes for query performance
+      if (from < 3) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_daily_price_symbol_date '
+          'ON daily_price(symbol, date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_daily_recommendation_date_symbol '
+          'ON daily_recommendation(date, symbol)',
+        );
       }
     },
   );
@@ -729,6 +740,11 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.isActive.equals(true))
           ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
         .get();
+  }
+
+  /// Get a single alert by ID
+  Future<PriceAlertEntry?> getAlertById(int id) {
+    return (select(priceAlert)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
   /// Create a new price alert

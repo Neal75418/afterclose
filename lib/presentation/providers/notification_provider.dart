@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,6 +37,13 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   NotificationNotifier() : super(const NotificationState());
 
   final _service = NotificationService.instance;
+
+  @override
+  void dispose() {
+    // Fire-and-forget: singleton async dispose completes independently
+    unawaited(_service.dispose());
+    super.dispose();
+  }
 
   /// Initialize notification service
   Future<void> initialize() async {

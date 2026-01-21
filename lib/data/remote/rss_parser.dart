@@ -148,7 +148,9 @@ class RssParser {
 
   String? _getElementText(XmlElement parent, String name) {
     final element = parent.findElements(name).firstOrNull;
-    return element?.innerText.trim();
+    final text = element?.innerText.trim();
+    // Return null for empty strings (e.g., self-closing tags like <guid/>)
+    return (text == null || text.isEmpty) ? null : text;
   }
 
   DateTime? _parseDate(String? dateStr) {
@@ -409,7 +411,7 @@ class RssFeedSource {
 
   /// Predefined Taiwan financial news sources
   static const List<RssFeedSource> defaultSources = [
-    // MoneyDJ
+    // MoneyDJ 理財網
     RssFeedSource(
       name: 'MoneyDJ',
       url:
@@ -422,6 +424,17 @@ class RssFeedSource {
       url: 'https://tw.stock.yahoo.com/rss?category=tw-market',
       category: 'OTHER',
     ),
-    // Add more sources as needed
+    // cnYES 鉅亨網 - 台股新聞
+    RssFeedSource(
+      name: '鉅亨網',
+      url: 'https://news.cnyes.com/rss/v1/news/category/tw_stock',
+      category: 'OTHER',
+    ),
+    // 中央社 CNA - 財經新聞
+    RssFeedSource(
+      name: '中央社',
+      url: 'https://feeds.feedburner.com/rsscna/finance',
+      category: 'OTHER',
+    ),
   ];
 }

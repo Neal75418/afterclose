@@ -229,4 +229,24 @@ class NotificationService {
     // Navigation will be handled by the app's navigation system
     // The payload contains the stock symbol for price alerts
   }
+
+  /// Dispose and cleanup notification resources
+  ///
+  /// Cancels all pending notifications and resets initialization state.
+  /// Should be called when the app is being disposed.
+  Future<void> dispose() async {
+    if (!_isInitialized) return;
+
+    try {
+      await _notifications.cancelAll();
+    } finally {
+      _isInitialized = false;
+      if (kDebugMode) {
+        print('NotificationService disposed');
+      }
+    }
+  }
+
+  /// Check if the service is initialized
+  bool get isInitialized => _isInitialized;
 }

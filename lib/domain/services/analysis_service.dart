@@ -118,11 +118,14 @@ class AnalysisService {
     final resistanceZones = _clusterSwingPoints(swingHighs, prices.length);
     final supportZones = _clusterSwingPoints(swingLows, prices.length);
 
-    // Find the nearest resistance above current price
+    // Find the nearest resistance above current price (within max distance)
     double? resistance;
     var bestResistanceScore = 0.0;
+    final maxResistance =
+        currentClose * (1 + RuleParams.maxSupportResistanceDistance);
     for (final zone in resistanceZones) {
-      if (zone.avgPrice > currentClose) {
+      // Only consider resistance within max distance
+      if (zone.avgPrice > currentClose && zone.avgPrice <= maxResistance) {
         // Score based on touches and recency
         final score = zone.touches * (1 + zone.recencyWeight);
         if (score > bestResistanceScore) {
@@ -132,11 +135,15 @@ class AnalysisService {
       }
     }
 
-    // Find the nearest support below current price
+    // Find the nearest support below current price (within max distance)
+    // This is critical for BREAKDOWN and S2W signals
     double? support;
     var bestSupportScore = 0.0;
+    final minSupport =
+        currentClose * (1 - RuleParams.maxSupportResistanceDistance);
     for (final zone in supportZones) {
-      if (zone.avgPrice < currentClose) {
+      // Only consider support within max distance
+      if (zone.avgPrice < currentClose && zone.avgPrice >= minSupport) {
         // Score based on touches and recency
         final score = zone.touches * (1 + zone.recencyWeight);
         if (score > bestSupportScore) {
@@ -146,9 +153,20 @@ class AnalysisService {
       }
     }
 
-    // Fallback to most recent if no level found relative to current price
-    resistance ??= swingHighs.isNotEmpty ? swingHighs.last.price : null;
-    support ??= swingLows.isNotEmpty ? swingLows.last.price : null;
+    // Fallback to most recent swing point ONLY if within max distance
+    // Don't fall back to distant levels as they're not actionable
+    if (resistance == null && swingHighs.isNotEmpty) {
+      final lastHigh = swingHighs.last.price;
+      if (lastHigh > currentClose && lastHigh <= maxResistance) {
+        resistance = lastHigh;
+      }
+    }
+    if (support == null && swingLows.isNotEmpty) {
+      final lastLow = swingLows.last.price;
+      if (lastLow < currentClose && lastLow >= minSupport) {
+        support = lastLow;
+      }
+    }
 
     return (support, resistance);
   }
@@ -319,10 +337,11 @@ class AnalysisService {
     }
 
     // Check for strong-to-weak (S2W)
+    // Uses breakdownBuffer (looser) for easier triggering
     if (trendState == TrendState.up || trendState == TrendState.range) {
       // Breakdown below support
       if (support != null) {
-        final breakdownLevel = support * (1 - RuleParams.breakoutBuffer);
+        final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
         if (todayClose < breakdownLevel) {
           return ReversalState.strongToWeak;
         }
@@ -330,7 +349,7 @@ class AnalysisService {
 
       // Breakdown below range bottom
       if (rangeBottom != null) {
-        final breakdownLevel = rangeBottom * (1 - RuleParams.breakoutBuffer);
+        final breakdownLevel = rangeBottom * (1 - RuleParams.breakdownBuffer);
         if (todayClose < breakdownLevel) {
           return ReversalState.strongToWeak;
         }

@@ -98,13 +98,21 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
     String? note,
   }) async {
     try {
-      await _db.createPriceAlert(
+      final id = await _db.createPriceAlert(
         symbol: symbol,
         alertType: alertType.value,
         targetValue: targetValue,
         note: note,
       );
-      await loadAlerts();
+
+      // Incremental update: add new alert to state instead of full reload
+      // Insert at beginning to maintain createdAt DESC order
+      final newAlert = await _db.getAlertById(id);
+      if (newAlert != null) {
+        state = state.copyWith(
+          alerts: [newAlert, ...state.alerts],
+        );
+      }
       return true;
     } catch (e) {
       state = state.copyWith(error: e.toString());
@@ -114,24 +122,50 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
 
   /// Delete an alert
   Future<void> deleteAlert(int id) async {
+    // Optimistic update: remove from state immediately
+    final previousAlerts = state.alerts;
+    state = state.copyWith(
+      alerts: state.alerts.where((a) => a.id != id).toList(),
+    );
+
     try {
       await _db.deletePriceAlert(id);
-      await loadAlerts();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Rollback on error
+      state = state.copyWith(alerts: previousAlerts, error: e.toString());
     }
   }
 
   /// Toggle alert active status
   Future<void> toggleAlert(int id, bool isActive) async {
+    // Optimistic update: toggle in state immediately
+    final previousAlerts = state.alerts;
+    state = state.copyWith(
+      alerts: state.alerts.map((a) {
+        if (a.id == id) {
+          return PriceAlertEntry(
+            id: a.id,
+            symbol: a.symbol,
+            alertType: a.alertType,
+            targetValue: a.targetValue,
+            isActive: isActive,
+            triggeredAt: a.triggeredAt,
+            note: a.note,
+            createdAt: a.createdAt,
+          );
+        }
+        return a;
+      }).toList(),
+    );
+
     try {
       await _db.updatePriceAlert(
         id,
         PriceAlertCompanion(isActive: Value(isActive)),
       );
-      await loadAlerts();
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Rollback on error
+      state = state.copyWith(alerts: previousAlerts, error: e.toString());
     }
   }
 
@@ -142,14 +176,35 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
   ) async {
     try {
       final triggered = await _db.checkAlerts(currentPrices, priceChanges);
+      final triggeredIds = <int>{};
+      final now = DateTime.now();
 
-      // Mark triggered alerts
+      // Mark triggered alerts in database
       for (final alert in triggered) {
         await _db.triggerAlert(alert.id);
+        triggeredIds.add(alert.id);
       }
 
-      // Reload alerts
-      await loadAlerts();
+      // Incremental update: update triggered alerts in state
+      if (triggeredIds.isNotEmpty) {
+        state = state.copyWith(
+          alerts: state.alerts.map((a) {
+            if (triggeredIds.contains(a.id)) {
+              return PriceAlertEntry(
+                id: a.id,
+                symbol: a.symbol,
+                alertType: a.alertType,
+                targetValue: a.targetValue,
+                isActive: false,
+                triggeredAt: now,
+                note: a.note,
+                createdAt: a.createdAt,
+              );
+            }
+            return a;
+          }).toList(),
+        );
+      }
 
       return triggered;
     } catch (e) {

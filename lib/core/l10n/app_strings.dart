@@ -52,6 +52,11 @@ class S {
   // News Screen
   // ==================================================
   static const String newsTitle = '市場新聞';
+  static const String newsToday = '今天';
+  static const String newsYesterday = '昨天';
+  static const String newsEarlier = '更早';
+  static const String newsRelatedStocks = '相關股票';
+  static const String newsOpenInBrowser = '開啟原文';
   static String newsMinutesAgo(int minutes) => '$minutes 分鐘前';
   static String newsHoursAgo(int hours) => '$hours 小時前';
   static String newsDaysAgo(int days) => '$days 天前';
@@ -81,6 +86,8 @@ class S {
   static const String watchlistSymbolHint = '例如: 2330';
   static String watchlistRemoved(String symbol) => '已從自選移除 $symbol';
   static String watchlistAdded(String symbol) => '已加入 $symbol';
+  static String watchlistAddedToWatchlist(String symbol) => '已加入自選 $symbol';
+  static const String watchlistAddFailed = '加入自選失敗';
   static String watchlistNotFound(String symbol) => '找不到股票 $symbol';
   static const String watchlistUndo = '復原';
 
@@ -185,9 +192,23 @@ class S {
   }
 
   static String accessibilityScore(int score) => '評分 $score 分';
+  static String accessibilitySignals(String signals) => '訊號: $signals';
   static const String accessibilityAddToWatchlist = '加入自選';
   static const String accessibilityRemoveFromWatchlist = '從自選移除';
   static String accessibilityButtonPress(String label) => '按鈕: $label';
+
+  // Sparkline chart accessibility
+  static const String sparklineDefault = '近期價格走勢圖';
+  static String sparklineFlat(int days) => '近 $days 日價格持平走勢圖';
+  static String sparklineTrend(int days, double change) {
+    final direction = change >= 0 ? '上漲' : '下跌';
+    return '近 $days 日價格 $direction ${change.abs().toStringAsFixed(1)} 百分比走勢圖';
+  }
+
+  // Shimmer loading accessibility
+  static const String shimmerLoadingStockList = '股票列表載入中';
+  static const String shimmerLoadingStockDetail = '股票詳情載入中';
+  static const String shimmerLoadingNewsList = '新聞列表載入中';
 
   // ==================================================
   // Watchlist Status Icons
