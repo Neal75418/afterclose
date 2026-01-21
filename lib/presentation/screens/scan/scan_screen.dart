@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -37,11 +38,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('市場掃描'),
+        title: Text('scan.title'.tr()),
         actions: [
           PopupMenuButton<ScanSort>(
             icon: const Icon(Icons.sort),
-            tooltip: '排序',
+            tooltip: 'scan.sort'.tr(),
             initialValue: state.sort,
             onSelected: (sort) {
               ref.read(scanProvider.notifier).setSort(sort);
@@ -97,7 +98,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               child: Row(
                 children: [
                   Text(
-                    '共 ${state.stocks.length} 檔',
+                    'scan.stockCount'.tr(namedArgs: {'count': state.stocks.length.toString()}),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -148,7 +149,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                   backgroundColor: AppTheme.primaryColor,
                                   foregroundColor: Colors.white,
                                   icon: Icons.visibility_outlined,
-                                  label: '查看',
+                                  label: 'scan.view'.tr(),
                                   borderRadius: const BorderRadius.only(
                                     topRight: Radius.circular(16),
                                     bottomRight: Radius.circular(16),
@@ -175,7 +176,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                   icon: stock.isInWatchlist
                                       ? Icons.star_outline
                                       : Icons.star,
-                                  label: stock.isInWatchlist ? '移除' : '收藏',
+                                  label: stock.isInWatchlist ? 'scan.remove'.tr() : 'scan.favorite'.tr(),
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(16),
                                     bottomLeft: Radius.circular(16),

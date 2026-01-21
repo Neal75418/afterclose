@@ -3,6 +3,7 @@ import 'dart:math' show Random;
 import 'package:dio/dio.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/json_parsers.dart';
 
 /// FinMind API client for Taiwan stock market data
 ///
@@ -305,6 +306,7 @@ class FinMindClient {
   /// Get institutional investor trading data
   ///
   /// Dataset: TaiwanStockInstitutionalInvestorsBuySell
+  /// Note: API returns one row per investor type, this method aggregates by date
   Future<List<FinMindInstitutional>> getInstitutionalData({
     required String stockId,
     required String startDate,
@@ -321,10 +323,134 @@ class FinMindClient {
     }
 
     final data = await _request(params);
+
+    // Parse raw rows
+    final rows = data
+        .map((json) {
+          try {
+            return _FinMindInstitutionalRow.fromJson(json);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<_FinMindInstitutionalRow>()
+        .toList();
+
+    // Group by date and aggregate
+    final Map<String, List<_FinMindInstitutionalRow>> byDate = {};
+    for (final row in rows) {
+      if (row.date.isEmpty) continue;
+      byDate.putIfAbsent(row.date, () => []).add(row);
+    }
+
+    // Convert to aggregated records
+    return byDate.entries
+        .map((entry) {
+          try {
+            return FinMindInstitutional.aggregate(entry.value);
+          } catch (_) {
+            return null;
+          }
+        })
+        .whereType<FinMindInstitutional>()
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  /// Get margin trading data (融資融券)
+  ///
+  /// Dataset: TaiwanStockMarginPurchaseShortSale
+  Future<List<FinMindMarginData>> getMarginData({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockMarginPurchaseShortSale',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
     // Use tryFromJson to skip malformed records
     return data
-        .map((json) => FinMindInstitutional.tryFromJson(json))
-        .whereType<FinMindInstitutional>()
+        .map((json) => FinMindMarginData.tryFromJson(json))
+        .whereType<FinMindMarginData>()
+        .toList();
+  }
+
+  /// Get monthly revenue data (月營收)
+  ///
+  /// Dataset: TaiwanStockMonthRevenue
+  Future<List<FinMindRevenue>> getMonthlyRevenue({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockMonthRevenue',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindRevenue.tryFromJson(json))
+        .whereType<FinMindRevenue>()
+        .toList();
+  }
+
+  /// Get dividend data (股利)
+  ///
+  /// Dataset: TaiwanStockDividend
+  Future<List<FinMindDividend>> getDividends({
+    required String stockId,
+    String? startDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockDividend',
+      'data_id': stockId,
+      // Default to 5 years ago if not specified
+      'start_date': startDate ?? '${DateTime.now().year - 5}-01-01',
+    };
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindDividend.tryFromJson(json))
+        .whereType<FinMindDividend>()
+        .toList();
+  }
+
+  /// Get PER/PBR data (本益比/股價淨值比)
+  ///
+  /// Dataset: TaiwanStockPER
+  Future<List<FinMindPER>> getPERData({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockPER',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindPER.tryFromJson(json))
+        .whereType<FinMindPER>()
         .toList();
   }
 
@@ -410,7 +536,7 @@ class FinMindDailyPrice {
     }
 
     // Parse close price - this is critical for analysis
-    final close = _parseDouble(json['close']);
+    final close = JsonParsers.parseDouble(json['close']);
     if (close == null) {
       throw FormatException('Missing or invalid close price', json);
     }
@@ -418,11 +544,11 @@ class FinMindDailyPrice {
     return FinMindDailyPrice(
       stockId: stockId.toString(),
       date: date.toString(),
-      open: _parseDouble(json['open']),
-      high: _parseDouble(json['max']),
-      low: _parseDouble(json['min']),
+      open: JsonParsers.parseDouble(json['open']),
+      high: JsonParsers.parseDouble(json['max']),
+      low: JsonParsers.parseDouble(json['min']),
       close: close,
-      volume: _parseDouble(json['Trading_Volume']),
+      volume: JsonParsers.parseDouble(json['Trading_Volume']),
     );
   }
 
@@ -442,16 +568,37 @@ class FinMindDailyPrice {
   final double? low;
   final double? close;
   final double? volume;
-
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value);
-    return null;
-  }
 }
 
-/// Institutional investor data from FinMind
+/// Raw institutional investor row from FinMind API
+/// Note: API returns one row per investor type, need to aggregate
+class _FinMindInstitutionalRow {
+  const _FinMindInstitutionalRow({
+    required this.stockId,
+    required this.date,
+    required this.name,
+    required this.buy,
+    required this.sell,
+  });
+
+  factory _FinMindInstitutionalRow.fromJson(Map<String, dynamic> json) {
+    return _FinMindInstitutionalRow(
+      stockId: json['stock_id']?.toString() ?? '',
+      date: json['date']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      buy: JsonParsers.parseDouble(json['buy']) ?? 0,
+      sell: JsonParsers.parseDouble(json['sell']) ?? 0,
+    );
+  }
+
+  final String stockId;
+  final String date;
+  final String name;
+  final double buy;
+  final double sell;
+}
+
+/// Aggregated institutional investor data from FinMind
 class FinMindInstitutional {
   const FinMindInstitutional({
     required this.stockId,
@@ -464,36 +611,53 @@ class FinMindInstitutional {
     required this.dealerSell,
   });
 
-  /// Parse from JSON with validation
-  ///
-  /// Throws [FormatException] if required fields are missing
-  factory FinMindInstitutional.fromJson(Map<String, dynamic> json) {
-    final stockId = json['stock_id'];
-    final date = json['date'];
-
-    if (stockId == null || stockId.toString().isEmpty) {
-      throw FormatException('Missing required field: stock_id', json);
+  /// Aggregate multiple rows (one per investor type) into single record
+  /// The API returns separate rows for each investor type per date
+  // ignore: library_private_types_in_public_api
+  factory FinMindInstitutional.aggregate(List<_FinMindInstitutionalRow> rows) {
+    if (rows.isEmpty) {
+      throw const FormatException('Cannot aggregate empty row list');
     }
-    if (date == null || date.toString().isEmpty) {
-      throw FormatException('Missing required field: date', json);
+
+    double foreignBuy = 0, foreignSell = 0;
+    double trustBuy = 0, trustSell = 0;
+    double dealerBuy = 0, dealerSell = 0;
+
+    for (final row in rows) {
+      switch (row.name) {
+        case 'Foreign_Investor':
+        case 'Foreign_Dealer_Self':
+          foreignBuy += row.buy;
+          foreignSell += row.sell;
+        case 'Investment_Trust':
+          trustBuy += row.buy;
+          trustSell += row.sell;
+        case 'Dealer_self':
+        case 'Dealer_Hedging':
+          dealerBuy += row.buy;
+          dealerSell += row.sell;
+      }
     }
 
     return FinMindInstitutional(
-      stockId: stockId.toString(),
-      date: date.toString(),
-      foreignBuy: _parseDouble(json['Foreign_Investor_buy']) ?? 0,
-      foreignSell: _parseDouble(json['Foreign_Investor_sell']) ?? 0,
-      investmentTrustBuy: _parseDouble(json['Investment_Trust_buy']) ?? 0,
-      investmentTrustSell: _parseDouble(json['Investment_Trust_sell']) ?? 0,
-      dealerBuy: _parseDouble(json['Dealer_self_buy']) ?? 0,
-      dealerSell: _parseDouble(json['Dealer_self_sell']) ?? 0,
+      stockId: rows.first.stockId,
+      date: rows.first.date,
+      foreignBuy: foreignBuy,
+      foreignSell: foreignSell,
+      investmentTrustBuy: trustBuy,
+      investmentTrustSell: trustSell,
+      dealerBuy: dealerBuy,
+      dealerSell: dealerSell,
     );
   }
 
-  /// Try to parse from JSON, returns null on failure
+  /// Try to parse from JSON (for backward compatibility - not recommended)
   static FinMindInstitutional? tryFromJson(Map<String, dynamic> json) {
+    // This is a single row, create a one-item aggregate
     try {
-      return FinMindInstitutional.fromJson(json);
+      final row = _FinMindInstitutionalRow.fromJson(json);
+      if (row.stockId.isEmpty || row.date.isEmpty) return null;
+      return FinMindInstitutional.aggregate([row]);
     } catch (_) {
       return null;
     }
@@ -516,13 +680,297 @@ class FinMindInstitutional {
 
   /// Net dealer trading
   double get dealerNet => dealerBuy - dealerSell;
+}
 
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value);
-    return null;
+/// Margin trading data (融資融券) from FinMind
+class FinMindMarginData {
+  const FinMindMarginData({
+    required this.stockId,
+    required this.date,
+    required this.marginBuy,
+    required this.marginSell,
+    required this.marginCashRepay,
+    required this.marginBalance,
+    required this.marginBalanceChange,
+    required this.marginUseRate,
+    required this.shortBuy,
+    required this.shortSell,
+    required this.shortCashRepay,
+    required this.shortBalance,
+    required this.shortBalanceChange,
+    required this.offsetMarginShort,
+    required this.note,
+  });
+
+  /// Parse from JSON with validation
+  ///
+  /// Throws [FormatException] if required fields are missing
+  factory FinMindMarginData.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    final marginBalance = JsonParsers.parseDouble(json['MarginPurchaseTodayBalance']) ?? 0;
+    final marginLimit = JsonParsers.parseDouble(json['MarginPurchaseLimit']) ?? 0;
+
+    return FinMindMarginData(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      marginBuy: JsonParsers.parseDouble(json['MarginPurchaseBuy']) ?? 0,
+      marginSell: JsonParsers.parseDouble(json['MarginPurchaseSell']) ?? 0,
+      marginCashRepay: JsonParsers.parseDouble(json['MarginPurchaseCashRepayment']) ?? 0,
+      marginBalance: marginBalance,
+      marginBalanceChange: marginLimit,
+      // 融資使用率 = 融資餘額 / 融資限額 * 100
+      marginUseRate: marginLimit > 0 ? (marginBalance / marginLimit) * 100 : 0,
+      shortBuy: JsonParsers.parseDouble(json['ShortSaleBuy']) ?? 0,
+      shortSell: JsonParsers.parseDouble(json['ShortSaleSell']) ?? 0,
+      shortCashRepay: JsonParsers.parseDouble(json['ShortSaleCashRepayment']) ?? 0,
+      shortBalance: JsonParsers.parseDouble(json['ShortSaleTodayBalance']) ?? 0,
+      shortBalanceChange: JsonParsers.parseDouble(json['ShortSaleLimit']) ?? 0,
+      offsetMarginShort: JsonParsers.parseDouble(json['OffsetLoanAndShort']) ?? 0,
+      note: json['Note']?.toString() ?? '',
+    );
   }
+
+  /// Try to parse from JSON, returns null on failure
+  static FinMindMarginData? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindMarginData.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+
+  // 融資 (Margin Purchase)
+  final double marginBuy; // 融資買進
+  final double marginSell; // 融資賣出
+  final double marginCashRepay; // 現金償還
+  final double marginBalance; // 融資餘額
+  final double marginBalanceChange; // 融資限額
+  final double marginUseRate; // 融資使用率
+
+  // 融券 (Short Sale)
+  final double shortBuy; // 融券買進
+  final double shortSell; // 融券賣出
+  final double shortCashRepay; // 現券償還
+  final double shortBalance; // 融券餘額
+  final double shortBalanceChange; // 融券限額
+  final double offsetMarginShort; // 資券互抵
+
+  final String note; // 備註
+
+  /// 融資淨買超
+  double get marginNet => marginBuy - marginSell - marginCashRepay;
+
+  /// 融券淨賣超
+  double get shortNet => shortSell - shortBuy - shortCashRepay;
+
+  /// 券資比 (融券餘額 / 融資餘額 * 100)
+  double get shortMarginRatio =>
+      marginBalance > 0 ? (shortBalance / marginBalance) * 100 : 0;
+}
+
+/// Monthly revenue data (月營收) from FinMind
+class FinMindRevenue {
+  FinMindRevenue({
+    required this.stockId,
+    required this.date,
+    required this.revenue,
+    required this.revenueMonth,
+    required this.revenueYear,
+    this.momGrowth,
+    this.yoyGrowth,
+  });
+
+  factory FinMindRevenue.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindRevenue(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      revenue: JsonParsers.parseDouble(json['revenue']) ?? 0,
+      revenueMonth: JsonParsers.parseInt(json['revenue_month']) ?? 0,
+      revenueYear: JsonParsers.parseInt(json['revenue_year']) ?? 0,
+    );
+  }
+
+  static FinMindRevenue? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindRevenue.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Calculate MoM and YoY growth rates for a list of revenues
+  /// Returns the same list with growth rates populated
+  static List<FinMindRevenue> calculateGrowthRates(List<FinMindRevenue> revenues) {
+    if (revenues.isEmpty) return revenues;
+
+    // Sort by date (year/month)
+    final sorted = List<FinMindRevenue>.from(revenues)
+      ..sort((a, b) {
+        final yearCompare = a.revenueYear.compareTo(b.revenueYear);
+        if (yearCompare != 0) return yearCompare;
+        return a.revenueMonth.compareTo(b.revenueMonth);
+      });
+
+    // Build lookup map for quick access
+    final Map<String, FinMindRevenue> lookup = {};
+    for (final rev in sorted) {
+      lookup['${rev.revenueYear}-${rev.revenueMonth}'] = rev;
+    }
+
+    // Calculate growth rates
+    for (final rev in sorted) {
+      // MoM: Compare to previous month
+      int prevMonth = rev.revenueMonth - 1;
+      int prevYear = rev.revenueYear;
+      if (prevMonth < 1) {
+        prevMonth = 12;
+        prevYear -= 1;
+      }
+      final prevMonthKey = '$prevYear-$prevMonth';
+      final prevMonthRev = lookup[prevMonthKey];
+      if (prevMonthRev != null && prevMonthRev.revenue > 0) {
+        rev.momGrowth = ((rev.revenue - prevMonthRev.revenue) / prevMonthRev.revenue) * 100;
+      }
+
+      // YoY: Compare to same month last year
+      final yoyKey = '${rev.revenueYear - 1}-${rev.revenueMonth}';
+      final yoyRev = lookup[yoyKey];
+      if (yoyRev != null && yoyRev.revenue > 0) {
+        rev.yoyGrowth = ((rev.revenue - yoyRev.revenue) / yoyRev.revenue) * 100;
+      }
+    }
+
+    return sorted;
+  }
+
+  final String stockId;
+  final String date;
+  final double revenue; // 當月營收 (千元)
+  final int revenueMonth; // 營收月份
+  final int revenueYear; // 營收年份
+
+  /// 月增率 (MoM %)
+  double? momGrowth;
+
+  /// 年增率 (YoY %)
+  double? yoyGrowth;
+
+  /// 營收 (億元)
+  double get revenueInBillion => revenue / 100000;
+}
+
+/// Dividend data (股利) from FinMind
+class FinMindDividend {
+  const FinMindDividend({
+    required this.stockId,
+    required this.year,
+    required this.cashDividend,
+    required this.stockDividend,
+    this.exDividendDate,
+    this.exRightsDate,
+  });
+
+  factory FinMindDividend.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+
+    return FinMindDividend(
+      stockId: stockId.toString(),
+      year: JsonParsers.parseInt(json['year']) ?? JsonParsers.parseInt(json['date']?.toString().substring(0, 4)) ?? 0,
+      cashDividend: JsonParsers.parseDouble(json['CashEarningsDistribution']) ?? 0,
+      stockDividend: JsonParsers.parseDouble(json['StockEarningsDistribution']) ?? 0,
+      exDividendDate: json['CashExDividendTradingDate']?.toString(),
+      exRightsDate: json['StockExDividendTradingDate']?.toString(),
+    );
+  }
+
+  static FinMindDividend? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindDividend.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final int year;
+  final double cashDividend; // 現金股利
+  final double stockDividend; // 股票股利
+  final String? exDividendDate; // 除息日
+  final String? exRightsDate; // 除權日
+
+  /// 總股利
+  double get totalDividend => cashDividend + stockDividend;
+}
+
+/// PER/PBR data (本益比/股價淨值比) from FinMind
+class FinMindPER {
+  const FinMindPER({
+    required this.stockId,
+    required this.date,
+    required this.per,
+    required this.pbr,
+    required this.dividendYield,
+  });
+
+  factory FinMindPER.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindPER(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      per: JsonParsers.parseDouble(json['PER']) ?? 0,
+      pbr: JsonParsers.parseDouble(json['PBR']) ?? 0,
+      dividendYield: JsonParsers.parseDouble(json['dividend_yield']) ?? 0,
+    );
+  }
+
+  static FinMindPER? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindPER.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+  final double per; // 本益比
+  final double pbr; // 股價淨值比
+  final double dividendYield; // 殖利率
 }
 
 // ============================================

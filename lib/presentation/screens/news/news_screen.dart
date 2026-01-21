@@ -7,6 +7,7 @@ import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
 /// News screen - shows recent market news
 class NewsScreen extends ConsumerStatefulWidget {
@@ -49,7 +50,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
+      body: ThemedRefreshIndicator(
         onRefresh: () => ref.read(newsProvider.notifier).loadData(),
         child: state.isLoading
             ? const StockListShimmer(itemCount: 8)

@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
@@ -18,9 +21,15 @@ class StockDetailState {
     this.analysis,
     this.reasons = const [],
     this.institutionalHistory = const [],
+    this.marginHistory = const [],
+    this.revenueHistory = const [],
+    this.dividendHistory = const [],
+    this.latestPER,
     this.recentNews = const [],
     this.isInWatchlist = false,
     this.isLoading = false,
+    this.isLoadingMargin = false,
+    this.isLoadingFundamentals = false,
     this.error,
   });
 
@@ -30,9 +39,15 @@ class StockDetailState {
   final DailyAnalysisEntry? analysis;
   final List<DailyReasonEntry> reasons;
   final List<DailyInstitutionalEntry> institutionalHistory;
+  final List<FinMindMarginData> marginHistory;
+  final List<FinMindRevenue> revenueHistory;
+  final List<FinMindDividend> dividendHistory;
+  final FinMindPER? latestPER;
   final List<NewsItemEntry> recentNews;
   final bool isInWatchlist;
   final bool isLoading;
+  final bool isLoadingMargin;
+  final bool isLoadingFundamentals;
   final String? error;
 
   StockDetailState copyWith({
@@ -42,9 +57,15 @@ class StockDetailState {
     DailyAnalysisEntry? analysis,
     List<DailyReasonEntry>? reasons,
     List<DailyInstitutionalEntry>? institutionalHistory,
+    List<FinMindMarginData>? marginHistory,
+    List<FinMindRevenue>? revenueHistory,
+    List<FinMindDividend>? dividendHistory,
+    FinMindPER? latestPER,
     List<NewsItemEntry>? recentNews,
     bool? isInWatchlist,
     bool? isLoading,
+    bool? isLoadingMargin,
+    bool? isLoadingFundamentals,
     String? error,
   }) {
     return StockDetailState(
@@ -54,9 +75,15 @@ class StockDetailState {
       analysis: analysis ?? this.analysis,
       reasons: reasons ?? this.reasons,
       institutionalHistory: institutionalHistory ?? this.institutionalHistory,
+      marginHistory: marginHistory ?? this.marginHistory,
+      revenueHistory: revenueHistory ?? this.revenueHistory,
+      dividendHistory: dividendHistory ?? this.dividendHistory,
+      latestPER: latestPER ?? this.latestPER,
       recentNews: recentNews ?? this.recentNews,
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
+      isLoadingFundamentals: isLoadingFundamentals ?? this.isLoadingFundamentals,
       error: error,
     );
   }
@@ -112,6 +139,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   final String _symbol;
 
   AppDatabase get _db => _ref.read(databaseProvider);
+  FinMindClient get _finMind => _ref.read(finMindClientProvider);
 
   /// Load stock detail data
   Future<void> loadData() async {
@@ -153,11 +181,16 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       final priceHistory = results[1] as List<DailyPriceEntry>;
       final analysis = results[2] as DailyAnalysisEntry?;
       final reasons = results[3] as List<DailyReasonEntry>;
-      final instHistory = results[4] as List<DailyInstitutionalEntry>;
+      var instHistory = results[4] as List<DailyInstitutionalEntry>;
       final isInWatchlist = results[5] as bool;
 
       // Get latest price
       final latestPrice = priceHistory.isNotEmpty ? priceHistory.last : null;
+
+      // If no institutional data in DB, fetch from API
+      if (instHistory.isEmpty) {
+        instHistory = await _fetchInstitutionalFromApi();
+      }
 
       state = state.copyWith(
         stock: stock,
@@ -174,6 +207,35 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }
   }
 
+  /// Fetch institutional data directly from FinMind API
+  Future<List<DailyInstitutionalEntry>> _fetchInstitutionalFromApi() async {
+    try {
+      final today = DateTime.now();
+      final startDate = today.subtract(const Duration(days: 20));
+      final dateFormat = DateFormat('yyyy-MM-dd');
+
+      final data = await _finMind.getInstitutionalData(
+        stockId: _symbol,
+        startDate: dateFormat.format(startDate),
+        endDate: dateFormat.format(today),
+      );
+
+      // Convert to DailyInstitutionalEntry format
+      return data.map((item) {
+        return DailyInstitutionalEntry(
+          symbol: item.stockId,
+          date: DateTime.parse(item.date),
+          foreignNet: item.foreignNet,
+          investmentTrustNet: item.investmentTrustNet,
+          dealerNet: item.dealerNet,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Failed to fetch institutional data from API: $e');
+      return [];
+    }
+  }
+
   /// Toggle watchlist - also syncs with global watchlistProvider
   Future<void> toggleWatchlist() async {
     final watchlistNotifier = _ref.read(watchlistProvider.notifier);
@@ -187,6 +249,103 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
     // Update local state
     state = state.copyWith(isInWatchlist: !state.isInWatchlist);
+  }
+
+  /// Load margin trading data (融資融券) from FinMind API
+  Future<void> loadMarginData() async {
+    // Skip if already loading or already loaded
+    if (state.isLoadingMargin || state.marginHistory.isNotEmpty) return;
+
+    state = state.copyWith(isLoadingMargin: true);
+
+    try {
+      // Load margin data for the past 20 days
+      final today = DateTime.now();
+      final startDate = today.subtract(const Duration(days: 20));
+      final dateFormat = DateFormat('yyyy-MM-dd');
+
+      final marginData = await _finMind.getMarginData(
+        stockId: _symbol,
+        startDate: dateFormat.format(startDate),
+        endDate: dateFormat.format(today),
+      );
+
+      state = state.copyWith(
+        marginHistory: marginData,
+        isLoadingMargin: false,
+      );
+    } catch (e, stackTrace) {
+      // Log error for debugging - margin data is optional
+      debugPrint('Failed to load margin data for $_symbol: $e');
+      debugPrint(stackTrace.toString());
+      state = state.copyWith(isLoadingMargin: false);
+    }
+  }
+
+  /// Load fundamentals data (營收/股利/本益比) from FinMind API
+  Future<void> loadFundamentals() async {
+    // Skip if already loading or already loaded
+    if (state.isLoadingFundamentals ||
+        state.revenueHistory.isNotEmpty ||
+        state.dividendHistory.isNotEmpty) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingFundamentals: true);
+
+    try {
+      final today = DateTime.now();
+      final dateFormat = DateFormat('yyyy-MM-dd');
+
+      // Load revenue for past 24 months (need 2 years for YoY calculation)
+      final revenueStartDate = DateTime(today.year - 2, today.month, 1);
+
+      // Load PER for past 5 days (to get latest)
+      final perStartDate = today.subtract(const Duration(days: 5));
+
+      // Load all data in parallel
+      final results = await Future.wait([
+        _finMind.getMonthlyRevenue(
+          stockId: _symbol,
+          startDate: dateFormat.format(revenueStartDate),
+          endDate: dateFormat.format(today),
+        ),
+        _finMind.getDividends(stockId: _symbol),
+        _finMind.getPERData(
+          stockId: _symbol,
+          startDate: dateFormat.format(perStartDate),
+          endDate: dateFormat.format(today),
+        ),
+      ]);
+
+      var revenueData = results[0] as List<FinMindRevenue>;
+      final dividendData = results[1] as List<FinMindDividend>;
+      final perData = results[2] as List<FinMindPER>;
+
+      // Calculate MoM and YoY growth rates for revenue
+      if (revenueData.isNotEmpty) {
+        revenueData = FinMindRevenue.calculateGrowthRates(revenueData);
+      }
+
+      // Get latest PER
+      FinMindPER? latestPER;
+      if (perData.isNotEmpty) {
+        perData.sort((a, b) => b.date.compareTo(a.date));
+        latestPER = perData.first;
+      }
+
+      state = state.copyWith(
+        revenueHistory: revenueData,
+        dividendHistory: dividendData,
+        latestPER: latestPER,
+        isLoadingFundamentals: false,
+      );
+    } catch (e, stackTrace) {
+      // Log error for debugging - fundamentals data is optional
+      debugPrint('Failed to load fundamentals for $_symbol: $e');
+      debugPrint(stackTrace.toString());
+      state = state.copyWith(isLoadingFundamentals: false);
+    }
   }
 }
 

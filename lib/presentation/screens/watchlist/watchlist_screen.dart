@@ -1,9 +1,11 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
@@ -37,13 +39,13 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('已從自選移除 $symbol'),
+          content: Text('watchlist.removed'.tr(namedArgs: {'symbol': symbol})),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 3),
           showCloseIcon: true,
           dismissDirection: DismissDirection.horizontal,
           action: SnackBarAction(
-            label: '復原',
+            label: 'watchlist.undo'.tr(),
             onPressed: () async {
               await notifier.restoreStock(symbol);
             },
@@ -59,12 +61,12 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('自選股票'),
+        title: Text('watchlist.title'.tr()),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: _showAddDialog,
-            tooltip: '新增股票',
+            tooltip: 'watchlist.add'.tr(),
           ),
         ],
       ),
@@ -110,8 +112,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   Widget _buildWatchlistTile(WatchlistItemData item) {
     final theme = Theme.of(context);
+    final priceColor = AppTheme.getPriceColor(item.priceChange);
     final isPositive = (item.priceChange ?? 0) >= 0;
-    final priceColor = isPositive ? Colors.red.shade700 : Colors.green.shade700;
 
     return Dismissible(
       key: Key(item.symbol),
@@ -191,12 +193,12 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('新增自選'),
+              title: Text('watchlist.addDialog'.tr()),
               content: TextField(
                 controller: controller,
-                decoration: const InputDecoration(
-                  labelText: '股票代號',
-                  hintText: '例如: 2330',
+                decoration: InputDecoration(
+                  labelText: 'watchlist.symbolLabel'.tr(),
+                  hintText: 'watchlist.symbolHint'.tr(),
                 ),
                 autofocus: true,
                 enabled: !isLoading,
@@ -210,7 +212,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                           controller.dispose();
                           Navigator.pop(dialogContext);
                         },
-                  child: const Text('取消'),
+                  child: Text('common.cancel'.tr()),
                 ),
                 FilledButton(
                   onPressed: isLoading
@@ -234,14 +236,14 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                             if (success) {
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text('已加入 $symbol'),
+                                  content: Text('watchlist.added'.tr(namedArgs: {'symbol': symbol})),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
                             } else {
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text('找不到股票 $symbol'),
+                                  content: Text('watchlist.notFound'.tr(namedArgs: {'symbol': symbol})),
                                   behavior: SnackBarBehavior.floating,
                                   backgroundColor: Colors.red,
                                 ),
@@ -255,7 +257,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('新增'),
+                      : Text('common.add'.tr()),
                 ),
               ],
             );

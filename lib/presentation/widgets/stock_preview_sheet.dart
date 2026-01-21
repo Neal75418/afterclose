@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/widgets/score_ring.dart';
 
 /// Data class for stock preview
 class StockPreviewData {
@@ -314,41 +315,13 @@ class StockPreviewSheet extends StatelessWidget {
 
   Widget _buildScoreSection(ThemeData theme) {
     final scoreColor = AppTheme.getScoreColor(data.score!);
-    final progress = (data.score! / 100).clamp(0.0, 1.0);
 
     return Row(
       children: [
-        // Score ring (larger version)
-        SizedBox(
-          width: 48,
-          height: 48,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              CircularProgressIndicator(
-                value: 1.0,
-                strokeWidth: 4,
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  scoreColor.withValues(alpha: 0.2),
-                ),
-              ),
-              CircularProgressIndicator(
-                value: progress,
-                strokeWidth: 4,
-                backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
-                strokeCap: StrokeCap.round,
-              ),
-              Text(
-                '${data.score!.toInt()}',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: scoreColor,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+        // Use shared ScoreRing widget with extraLarge size
+        ScoreRing(
+          score: data.score!,
+          size: ScoreRingSize.extraLarge,
         ).animate().scale(
           begin: const Offset(0.5, 0.5),
           delay: 100.ms,

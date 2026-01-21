@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -256,9 +257,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     ? Text(
                         '${status.priceChange! >= 0 ? '+' : ''}${status.priceChange!.toStringAsFixed(2)}%',
                         style: TextStyle(
-                          color: status.priceChange! >= 0
-                              ? Colors.red.shade700
-                              : Colors.green.shade700,
+                          color: AppTheme.getPriceColor(status.priceChange),
                           fontWeight: FontWeight.bold,
                         ),
                       )

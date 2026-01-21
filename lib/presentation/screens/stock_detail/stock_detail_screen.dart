@@ -4,10 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals_tab.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/technical_tab.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
-/// Stock detail screen - shows comprehensive stock information
+/// Stock detail screen - shows comprehensive stock information with tabs
 class StockDetailScreen extends ConsumerStatefulWidget {
   const StockDetailScreen({super.key, required this.symbol});
 
@@ -17,64 +21,115 @@ class StockDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<StockDetailScreen> createState() => _StockDetailScreenState();
 }
 
-class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
+class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 4, vsync: this);
     Future.microtask(() {
       ref.read(stockDetailProvider(widget.symbol).notifier).loadData();
     });
   }
 
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(stockDetailProvider(widget.symbol));
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.symbol),
-        actions: [
-          IconButton(
-            icon: Icon(
-              state.isInWatchlist ? Icons.star : Icons.star_border,
-              color: state.isInWatchlist ? Colors.amber : null,
-            ),
-            onPressed: () {
-              ref
-                  .read(stockDetailProvider(widget.symbol).notifier)
-                  .toggleWatchlist();
-            },
-            tooltip: state.isInWatchlist ? '從自選移除' : '加入自選',
-          ),
-        ],
-      ),
       body: state.isLoading
-          ? const StockDetailShimmer()
+          ? const SafeArea(child: StockDetailShimmer())
           : state.error != null
-          ? EmptyStates.error(
-              message: state.error!,
-              onRetry: () {
-                ref
-                    .read(stockDetailProvider(widget.symbol).notifier)
-                    .loadData();
-              },
-            )
-          : _buildContent(state),
+              ? SafeArea(
+                  child: EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () {
+                      ref
+                          .read(stockDetailProvider(widget.symbol).notifier)
+                          .loadData();
+                    },
+                  ),
+                )
+              : NestedScrollView(
+                  headerSliverBuilder: (context, innerBoxScrolled) => [
+                    // App bar
+                    SliverAppBar(
+                      pinned: true,
+                      floating: true,
+                      title: Text(widget.symbol),
+                      actions: [
+                        IconButton(
+                          icon: Icon(
+                            state.isInWatchlist ? Icons.star : Icons.star_border,
+                            color: state.isInWatchlist ? Colors.amber : null,
+                          ),
+                          onPressed: () {
+                            ref
+                                .read(stockDetailProvider(widget.symbol).notifier)
+                                .toggleWatchlist();
+                          },
+                          tooltip: state.isInWatchlist
+                              ? 'stock.removeFromWatchlist'.tr()
+                              : 'stock.addToWatchlist'.tr(),
+                        ),
+                      ],
+                    ),
+
+                    // Stock header
+                    SliverToBoxAdapter(
+                      child: _buildHeader(state, theme),
+                    ),
+
+                    // Tab bar (pinned)
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _TabBarDelegate(
+                        tabController: _tabController,
+                        theme: theme,
+                      ),
+                    ),
+                  ],
+                  body: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      TechnicalTab(symbol: widget.symbol),
+                      ChipTab(symbol: widget.symbol),
+                      FundamentalsTab(symbol: widget.symbol),
+                      AlertsTab(symbol: widget.symbol),
+                    ],
+                  ),
+                ),
     );
   }
 
-  Widget _buildContent(StockDetailState state) {
-    final theme = Theme.of(context);
+  Widget _buildHeader(StockDetailState state, ThemeData theme) {
     final priceChange = state.priceChange;
     final isPositive = (priceChange ?? 0) >= 0;
     final priceColor = AppTheme.getPriceColor(priceChange);
 
-    return SingleChildScrollView(
+    return Container(
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Stock header with Hero animations
+          // Stock name and price
           Row(
             children: [
               Expanded(
@@ -87,12 +142,32 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      widget.symbol,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 4),
+                    // Reason tags
+                    if (state.reasons.isNotEmpty)
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: state.reasons.take(3).map((reason) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _translateReasonCode(reason.reasonType),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -108,357 +183,173 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
                   if (priceChange != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
+                        horizontal: 10,
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: priceColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${isPositive ? '+' : ''}${priceChange.toStringAsFixed(2)}%',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: priceColor,
-                          fontWeight: FontWeight.bold,
+                        gradient: LinearGradient(
+                          colors: isPositive
+                              ? [
+                                  AppTheme.upColor.withValues(alpha: 0.2),
+                                  AppTheme.upColor.withValues(alpha: 0.1),
+                                ]
+                              : [
+                                  AppTheme.downColor.withValues(alpha: 0.2),
+                                  AppTheme.downColor.withValues(alpha: 0.1),
+                                ],
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: priceColor.withValues(alpha: 0.3),
                         ),
                       ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          // Trend and reversal
-          Row(
-            children: [
-              _buildInfoChip(
-                label: '趨勢',
-                value: state.trendLabel,
-                icon: _getTrendIcon(state.analysis?.trendState),
-              ),
-              const SizedBox(width: 8),
-              if (state.reversalLabel != null)
-                _buildInfoChip(
-                  label: '轉折',
-                  value: state.reversalLabel!,
-                  icon: '🔄',
-                  color: Colors.orange,
-                ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Key levels
-          if (state.analysis != null) ...[
-            Text(
-              '關鍵價位',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: [
-                    _buildLevelRow(
-                      '壓力',
-                      state.analysis!.resistanceLevel,
-                      Colors.red,
-                      state.latestPrice?.close,
-                    ),
-                    const Divider(),
-                    _buildLevelRow(
-                      '支撐',
-                      state.analysis!.supportLevel,
-                      Colors.green,
-                      state.latestPrice?.close,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 16),
-
-          // Reasons
-          if (state.reasons.isNotEmpty) ...[
-            Text(
-              'reasons.label'.tr(),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...state.reasons.map((reason) {
-              return Card(
-                child: ListTile(
-                  leading: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(
-                        _getReasonIcon(reason.reasonType),
-                        style: const TextStyle(fontSize: 20),
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    _translateReasonCode(reason.reasonType),
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text('+${reason.ruleScore} ${'score.points'.tr()}'),
-                ),
-              );
-            }),
-          ],
-
-          const SizedBox(height: 16),
-
-          // OHLCV info
-          Text(
-            '今日交易',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  _buildDataRow('開盤', state.latestPrice?.open),
-                  _buildDataRow('最高', state.latestPrice?.high),
-                  _buildDataRow('最低', state.latestPrice?.low),
-                  _buildDataRow('收盤', state.latestPrice?.close),
-                  _buildDataRow(
-                    '成交量',
-                    state.latestPrice?.volume,
-                    formatter: _formatVolume,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // Institutional data
-          if (state.institutionalHistory.isNotEmpty) ...[
-            Text(
-              '近期法人',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  children: state.institutionalHistory.reversed.take(5).map((
-                    inst,
-                  ) {
-                    final netTotal =
-                        (inst.foreignNet ?? 0) +
-                        (inst.investmentTrustNet ?? 0) +
-                        (inst.dealerNet ?? 0);
-                    final isPositive = netTotal >= 0;
-
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            '${inst.date.month}/${inst.date.day}',
-                            style: theme.textTheme.bodySmall,
+                          Icon(
+                            isPositive ? Icons.north : Icons.south,
+                            size: 14,
+                            color: priceColor,
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 4),
                           Text(
-                            '外資 ${_formatNet(inst.foreignNet)}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '投信 ${_formatNet(inst.investmentTrustNet)}',
-                            style: theme.textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isPositive
-                                  ? Colors.red.withValues(alpha: 0.1)
-                                  : Colors.green.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _formatNet(netTotal),
-                              style: TextStyle(
-                                color: isPositive
-                                    ? Colors.red.shade700
-                                    : Colors.green.shade700,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            '${isPositive ? '+' : ''}${priceChange.toStringAsFixed(2)}%',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: priceColor,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    );
-                  }).toList(),
-                ),
+                    ),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
 
-          const SizedBox(height: 80),
+          const SizedBox(height: 12),
+
+          // Trend and key levels row
+          Row(
+            children: [
+              _buildInfoChip(
+                theme: theme,
+                label: 'trend.${_getTrendKey(state.analysis?.trendState)}'.tr(),
+                icon: _getTrendIcon(state.analysis?.trendState),
+                color: _getTrendColor(state.analysis?.trendState),
+              ),
+              const SizedBox(width: 8),
+              if (state.analysis?.supportLevel != null)
+                _buildLevelChip(
+                  theme: theme,
+                  label: 'stockDetail.support'.tr(),
+                  value: state.analysis!.supportLevel!,
+                  color: AppTheme.downColor,
+                ),
+              const SizedBox(width: 8),
+              if (state.analysis?.resistanceLevel != null)
+                _buildLevelChip(
+                  theme: theme,
+                  label: 'stockDetail.resistance'.tr(),
+                  value: state.analysis!.resistanceLevel!,
+                  color: AppTheme.upColor,
+                ),
+            ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildInfoChip({
+    required ThemeData theme,
     required String label,
-    required String value,
-    required String icon,
-    Color? color,
+    required IconData icon,
+    required Color color,
   }) {
-    final theme = Theme.of(context);
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: (color ?? theme.colorScheme.primary).withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLevelChip({
+    required ThemeData theme,
+    required String label,
+    required double value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              Text(
-                value,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLevelRow(
-    String label,
-    double? level,
-    Color color,
-    double? currentPrice,
-  ) {
-    final theme = Theme.of(context);
-
-    String distance = '';
-    if (level != null && currentPrice != null && currentPrice > 0) {
-      final pct = ((level - currentPrice) / currentPrice) * 100;
-      distance = '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(1)}%';
-    }
-
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(label),
-        const Spacer(),
-        Text(
-          level?.toStringAsFixed(2) ?? '-',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          distance,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDataRow(
-    String label,
-    double? value, {
-    String Function(double)? formatter,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
+          const SizedBox(width: 6),
           Text(
-            value != null
-                ? (formatter?.call(value) ?? value.toStringAsFixed(2))
-                : '-',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            '$label ${value.toStringAsFixed(1)}',
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _getTrendIcon(String? trend) {
+  String _getTrendKey(String? trend) {
     return switch (trend) {
-      'UP' => '📈',
-      'DOWN' => '📉',
-      _ => '➡️',
+      'UP' => 'up',
+      'DOWN' => 'down',
+      _ => 'sideways',
     };
   }
 
-  String _getReasonIcon(String reasonType) {
-    return switch (reasonType) {
-      'REVERSAL_W2S' => '🔄',
-      'REVERSAL_S2W' => '🔄',
-      'TECH_BREAKOUT' => '🚀',
-      'TECH_BREAKDOWN' => '📉',
-      'VOLUME_SPIKE' => '📊',
-      'PRICE_SPIKE' => '💥',
-      'INSTITUTIONAL_SHIFT' => '🏦',
-      'NEWS_RELATED' => '📰',
-      _ => '⚡',
+  IconData _getTrendIcon(String? trend) {
+    return switch (trend) {
+      'UP' => Icons.trending_up,
+      'DOWN' => Icons.trending_down,
+      _ => Icons.trending_flat,
     };
   }
 
-  /// Convert database reason code to translated label
+  Color _getTrendColor(String? trend) {
+    return switch (trend) {
+      'UP' => AppTheme.upColor,
+      'DOWN' => AppTheme.downColor,
+      _ => Colors.grey,
+    };
+  }
+
   String _translateReasonCode(String code) {
     final key = switch (code) {
       'REVERSAL_W2S' => 'reasons.reversalW2S',
@@ -473,21 +364,59 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
     };
     return key.tr();
   }
+}
 
-  String _formatVolume(double volume) {
-    if (volume >= 100000000) {
-      return '${(volume / 100000000).toStringAsFixed(2)}億';
-    } else if (volume >= 10000) {
-      return '${(volume / 10000).toStringAsFixed(0)}萬';
-    }
-    return volume.toStringAsFixed(0);
+/// Tab bar delegate for pinned header
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  const _TabBarDelegate({
+    required this.tabController,
+    required this.theme,
+  });
+
+  final TabController tabController;
+  final ThemeData theme;
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  double get maxExtent => 48;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: theme.colorScheme.surface,
+      child: TabBar(
+        controller: tabController,
+        labelColor: theme.colorScheme.primary,
+        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+        indicatorColor: theme.colorScheme.primary,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.normal,
+          fontSize: 14,
+        ),
+        tabs: [
+          Tab(text: 'stockDetail.tabTechnical'.tr()),
+          Tab(text: 'stockDetail.tabChip'.tr()),
+          Tab(text: 'stockDetail.tabFundamentals'.tr()),
+          Tab(text: 'stockDetail.tabAlerts'.tr()),
+        ],
+      ),
+    );
   }
 
-  String _formatNet(double? value) {
-    if (value == null) return '-';
-    if (value >= 1000 || value <= -1000) {
-      return '${(value / 1000).toStringAsFixed(0)}K';
-    }
-    return value.toStringAsFixed(0);
+  @override
+  bool shouldRebuild(covariant _TabBarDelegate oldDelegate) {
+    return tabController != oldDelegate.tabController ||
+        theme != oldDelegate.theme;
   }
 }

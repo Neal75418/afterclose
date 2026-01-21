@@ -11,7 +11,10 @@ enum ScoreRingSize {
   medium(32.0, 3.0, 10.0),
 
   /// Large: 40x40, strokeWidth 3.5, fontSize 12
-  large(40.0, 3.5, 12.0);
+  large(40.0, 3.5, 12.0),
+
+  /// Extra Large: 48x48, strokeWidth 4, fontSize 14 (for preview sheets)
+  extraLarge(48.0, 4.0, 14.0);
 
   const ScoreRingSize(this.dimension, this.strokeWidth, this.fontSize);
 
