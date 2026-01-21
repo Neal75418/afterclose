@@ -150,12 +150,19 @@ class TodayNotifier extends StateNotifier<TodayState> {
       // Get last update run
       final lastRun = await _db.getLatestUpdateRun();
 
-      // Get the actual latest data date from the database
-      // instead of using DateTime.now() which may not have data yet
+      // Use today's date for querying (update_service stores with this date)
+      final today = DateTime.now();
+      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
+      final historyStart = normalizedToday.subtract(const Duration(days: 5));
+
+      // Get recommendations for today
+      final recommendations = await _db.getRecommendations(normalizedToday);
+
+      // Get actual data dates for display purposes (not for querying)
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
 
-      // Use the earlier of the two dates to ensure data consistency
+      // Calculate dataDate for display - use the earlier of the two dates
       DateTime? dataDate;
       if (latestPriceDate != null && latestInstDate != null) {
         final priceDay = DateTime.utc(
@@ -182,15 +189,6 @@ class TodayNotifier extends StateNotifier<TodayState> {
           latestInstDate.day,
         );
       }
-
-      // Fallback to today if no data exists
-      final today = DateTime.now();
-      final normalizedToday =
-          dataDate ?? DateTime.utc(today.year, today.month, today.day);
-      final historyStart = normalizedToday.subtract(const Duration(days: 5));
-
-      // Get recommendations for the actual data date
-      final recommendations = await _db.getRecommendations(normalizedToday);
 
       // Get watchlist
       final watchlist = await _db.getWatchlist();

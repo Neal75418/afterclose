@@ -156,12 +156,19 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Get the actual latest data date from the database
-      // instead of using DateTime.now() which may not have data yet
+      // Use today's date for querying (update_service stores with this date)
+      final today = DateTime.now();
+      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
+      final historyStart = normalizedToday.subtract(const Duration(days: 5));
+
+      // Get all analyses for today (with score > 0)
+      final analyses = await _db.getAnalysisForDate(normalizedToday);
+
+      // Get actual data dates for display purposes (not for querying)
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
 
-      // Use the earlier of the two dates to ensure data consistency
+      // Calculate dataDate for display - use the earlier of the two dates
       DateTime? dataDate;
       if (latestPriceDate != null && latestInstDate != null) {
         final priceDay = DateTime.utc(
@@ -188,15 +195,6 @@ class ScanNotifier extends StateNotifier<ScanState> {
           latestInstDate.day,
         );
       }
-
-      // Fallback to today if no data exists
-      final today = DateTime.now();
-      final normalizedToday =
-          dataDate ?? DateTime.utc(today.year, today.month, today.day);
-      final historyStart = normalizedToday.subtract(const Duration(days: 5));
-
-      // Get all analyses for the actual data date (with score > 0)
-      final analyses = await _db.getAnalysisForDate(normalizedToday);
       final validAnalyses = analyses.where((a) => a.score > 0).toList();
 
       if (validAnalyses.isEmpty) {
