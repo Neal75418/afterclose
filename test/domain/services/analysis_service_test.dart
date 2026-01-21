@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 
 import '../../helpers/price_data_generators.dart';
@@ -99,13 +100,61 @@ void main() {
 
     group('findSupportResistance', () {
       test('should find support and resistance levels', () {
-        // Need swingWindow * 2 = 40 days minimum for swing detection
-        final prices = generateSwingPrices(days: 50);
+        // Create data with clear swing high and swing low patterns
+        // Swing window is 20, half window is 10
+        // Need swing points above and below current price, within 8% distance
+        final now = DateTime.now();
+        final prices = <DailyPriceEntry>[];
+
+        // Generate 60 days of price data with clear oscillation
+        // Pattern: base at 100, dip to 95 (swing low), rise to 105 (swing high)
+        for (var i = 0; i < 60; i++) {
+          final date = now.subtract(Duration(days: 60 - i - 1));
+          double close;
+          double high;
+          double low;
+
+          if (i < 20) {
+            // Phase 1: Establish baseline at 100
+            close = 100.0;
+            high = 100.5;
+            low = 99.5;
+          } else if (i < 30) {
+            // Phase 2: Dip to create swing low around day 25 (close = 95)
+            final progress = (i - 20) / 10.0;
+            close = 100.0 - 5.0 * (1 - (progress - 0.5).abs() * 2);
+            high = close + 0.5;
+            low = close - 0.5;
+          } else if (i < 45) {
+            // Phase 3: Rise to create swing high around day 37 (close = 105)
+            final progress = (i - 30) / 15.0;
+            close = 100.0 + 5.0 * (1 - (progress - 0.5).abs() * 2);
+            high = close + 0.5;
+            low = close - 0.5;
+          } else {
+            // Phase 4: Return to baseline at 100 (current price)
+            close = 100.0;
+            high = 100.5;
+            low = 99.5;
+          }
+
+          prices.add(DailyPriceEntry(
+            symbol: 'TEST',
+            date: date,
+            open: close - 0.2,
+            high: high,
+            low: low,
+            close: close,
+            volume: 1000.0,
+          ));
+        }
 
         final (support, resistance) = analysisService.findSupportResistance(
           prices,
         );
 
+        // With current close at 100, support should be around 95, resistance around 105
+        // Both within 8% distance
         expect(support, isNotNull);
         expect(resistance, isNotNull);
         expect(resistance! > support!, isTrue);
