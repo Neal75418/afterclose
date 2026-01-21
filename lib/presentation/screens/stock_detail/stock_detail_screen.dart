@@ -220,6 +220,33 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                         ],
                       ),
                     ),
+                  // Show synchronized data date
+                  if (state.dataDate != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (state.hasDataMismatch)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 4),
+                              child: Icon(
+                                Icons.sync_problem,
+                                size: 12,
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          Text(
+                            _formatDataDate(state.dataDate!),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: state.hasDataMismatch
+                                  ? theme.colorScheme.error
+                                  : theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -361,6 +388,21 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
       _ => code,
     };
     return key.tr();
+  }
+
+  /// Format synchronized data date for display
+  String _formatDataDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dataDay = DateTime(date.year, date.month, date.day);
+
+    if (dataDay == today) {
+      return 'stockDetail.dataToday'.tr();
+    } else if (dataDay == today.subtract(const Duration(days: 1))) {
+      return 'stockDetail.dataYesterday'.tr();
+    } else {
+      return '${date.month}/${date.day} ${'stockDetail.dataLabel'.tr()}';
+    }
   }
 }
 

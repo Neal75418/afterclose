@@ -143,7 +143,10 @@
     "change": "Change",
     "changePercent": "Change %",
     "mainChart": "Main Chart",
-    "subChart": "Sub Chart"
+    "subChart": "Sub Chart",
+    "dataToday": "Today's Data",
+    "dataYesterday": "Yesterday's Data",
+    "dataLabel": "Data"
   },
   "score": {
     "label": "Rating Score",

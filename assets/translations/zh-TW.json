@@ -143,7 +143,10 @@
     "change": "漲跌",
     "changePercent": "漲跌幅",
     "mainChart": "主圖",
-    "subChart": "副圖"
+    "subChart": "副圖",
+    "dataToday": "今日資料",
+    "dataYesterday": "昨日資料",
+    "dataLabel": "資料"
   },
   "score": {
     "label": "推薦評分",

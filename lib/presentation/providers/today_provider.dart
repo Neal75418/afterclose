@@ -23,6 +23,7 @@ class TodayState {
     this.recommendations = const [],
     this.watchlistStatus = const {},
     this.lastUpdate,
+    this.dataDate,
     this.isLoading = false,
     this.isUpdating = false,
     this.updateProgress,
@@ -32,6 +33,9 @@ class TodayState {
   final List<RecommendationWithDetails> recommendations;
   final Map<String, WatchlistStockStatus> watchlistStatus;
   final DateTime? lastUpdate;
+
+  /// The actual date of the data being displayed
+  final DateTime? dataDate;
   final bool isLoading;
   final bool isUpdating;
   final UpdateProgress? updateProgress;
@@ -41,6 +45,7 @@ class TodayState {
     List<RecommendationWithDetails>? recommendations,
     Map<String, WatchlistStockStatus>? watchlistStatus,
     DateTime? lastUpdate,
+    DateTime? dataDate,
     bool? isLoading,
     bool? isUpdating,
     UpdateProgress? updateProgress,
@@ -50,6 +55,7 @@ class TodayState {
       recommendations: recommendations ?? this.recommendations,
       watchlistStatus: watchlistStatus ?? this.watchlistStatus,
       lastUpdate: lastUpdate ?? this.lastUpdate,
+      dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
       isUpdating: isUpdating ?? this.isUpdating,
       updateProgress: updateProgress,
@@ -143,11 +149,37 @@ class TodayNotifier extends StateNotifier<TodayState> {
     try {
       // Get last update run
       final lastRun = await _db.getLatestUpdateRun();
+
+      // Get the actual latest data date from the database
+      // instead of using DateTime.now() which may not have data yet
+      final latestPriceDate = await _db.getLatestDataDate();
+      final latestInstDate = await _db.getLatestInstitutionalDate();
+
+      // Use the earlier of the two dates to ensure data consistency
+      DateTime? dataDate;
+      if (latestPriceDate != null && latestInstDate != null) {
+        final priceDay = DateTime(
+          latestPriceDate.year,
+          latestPriceDate.month,
+          latestPriceDate.day,
+        );
+        final instDay = DateTime(
+          latestInstDate.year,
+          latestInstDate.month,
+          latestInstDate.day,
+        );
+        dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
+      } else {
+        dataDate = latestPriceDate ?? latestInstDate;
+      }
+
+      // Fallback to today if no data exists
       final today = DateTime.now();
-      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
+      final normalizedToday =
+          dataDate ?? DateTime.utc(today.year, today.month, today.day);
       final historyStart = normalizedToday.subtract(const Duration(days: 5));
 
-      // Get today's recommendations
+      // Get recommendations for the actual data date
       final recommendations = await _db.getRecommendations(normalizedToday);
 
       // Get watchlist
@@ -223,6 +255,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
         recommendations: recWithDetails,
         watchlistStatus: watchlistStatus,
         lastUpdate: lastRun?.finishedAt ?? lastRun?.startedAt,
+        dataDate: dataDate,
         isLoading: false,
       );
     } catch (e) {

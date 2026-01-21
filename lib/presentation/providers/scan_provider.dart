@@ -43,6 +43,7 @@ class ScanState {
     this.stocks = const [], // Filtered/sorted view
     this.filter = ScanFilter.all,
     this.sort = ScanSort.scoreDesc,
+    this.dataDate,
     this.isLoading = false,
     this.error,
   });
@@ -51,6 +52,9 @@ class ScanState {
   final List<ScanStockItem> stocks;
   final ScanFilter filter;
   final ScanSort sort;
+
+  /// The actual date of the data being displayed
+  final DateTime? dataDate;
   final bool isLoading;
   final String? error;
 
@@ -59,6 +63,7 @@ class ScanState {
     List<ScanStockItem>? stocks,
     ScanFilter? filter,
     ScanSort? sort,
+    DateTime? dataDate,
     bool? isLoading,
     String? error,
   }) {
@@ -67,6 +72,7 @@ class ScanState {
       stocks: stocks ?? this.stocks,
       filter: filter ?? this.filter,
       sort: sort ?? this.sort,
+      dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -150,16 +156,46 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      // Get the actual latest data date from the database
+      // instead of using DateTime.now() which may not have data yet
+      final latestPriceDate = await _db.getLatestDataDate();
+      final latestInstDate = await _db.getLatestInstitutionalDate();
+
+      // Use the earlier of the two dates to ensure data consistency
+      DateTime? dataDate;
+      if (latestPriceDate != null && latestInstDate != null) {
+        final priceDay = DateTime(
+          latestPriceDate.year,
+          latestPriceDate.month,
+          latestPriceDate.day,
+        );
+        final instDay = DateTime(
+          latestInstDate.year,
+          latestInstDate.month,
+          latestInstDate.day,
+        );
+        dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
+      } else {
+        dataDate = latestPriceDate ?? latestInstDate;
+      }
+
+      // Fallback to today if no data exists
       final today = DateTime.now();
-      final normalizedToday = DateTime.utc(today.year, today.month, today.day);
+      final normalizedToday =
+          dataDate ?? DateTime.utc(today.year, today.month, today.day);
       final historyStart = normalizedToday.subtract(const Duration(days: 5));
 
-      // Get all analyses for today (with score > 0)
+      // Get all analyses for the actual data date (with score > 0)
       final analyses = await _db.getAnalysisForDate(normalizedToday);
       final validAnalyses = analyses.where((a) => a.score > 0).toList();
 
       if (validAnalyses.isEmpty) {
-        state = state.copyWith(allStocks: [], stocks: [], isLoading: false);
+        state = state.copyWith(
+          allStocks: [],
+          stocks: [],
+          dataDate: dataDate,
+          isLoading: false,
+        );
         return;
       }
 
@@ -224,6 +260,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
       state = state.copyWith(
         allStocks: items,
         stocks: sorted,
+        dataDate: dataDate,
         isLoading: false,
       );
     } catch (e) {

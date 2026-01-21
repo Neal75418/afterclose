@@ -157,6 +157,39 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
+  /// Get the latest data date from the database
+  ///
+  /// Returns the maximum date from daily_price table, which represents
+  /// the most recent trading day with data.
+  Future<DateTime?> getLatestDataDate() async {
+    const query = '''
+      SELECT MAX(date) as max_date FROM daily_price
+    ''';
+
+    final result = await customSelect(
+      query,
+      readsFrom: {dailyPrice},
+    ).getSingleOrNull();
+
+    if (result == null) return null;
+    return result.read<DateTime?>('max_date');
+  }
+
+  /// Get the latest institutional data date from the database
+  Future<DateTime?> getLatestInstitutionalDate() async {
+    const query = '''
+      SELECT MAX(date) as max_date FROM daily_institutional
+    ''';
+
+    final result = await customSelect(
+      query,
+      readsFrom: {dailyInstitutional},
+    ).getSingleOrNull();
+
+    if (result == null) return null;
+    return result.read<DateTime?>('max_date');
+  }
+
   /// Get latest prices for multiple symbols (batch query)
   ///
   /// Returns a map of symbol -> latest price entry

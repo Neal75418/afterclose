@@ -31,6 +31,8 @@ class StockDetailState {
     this.isLoadingMargin = false,
     this.isLoadingFundamentals = false,
     this.error,
+    this.dataDate,
+    this.hasDataMismatch = false,
   });
 
   final StockMasterEntry? stock;
@@ -50,6 +52,12 @@ class StockDetailState {
   final bool isLoadingFundamentals;
   final String? error;
 
+  /// The synchronized data date - all displayed data should be from this date
+  final DateTime? dataDate;
+
+  /// True if price and institutional data dates don't match
+  final bool hasDataMismatch;
+
   StockDetailState copyWith({
     StockMasterEntry? stock,
     DailyPriceEntry? latestPrice,
@@ -67,6 +75,8 @@ class StockDetailState {
     bool? isLoadingMargin,
     bool? isLoadingFundamentals,
     String? error,
+    DateTime? dataDate,
+    bool? hasDataMismatch,
   }) {
     return StockDetailState(
       stock: stock ?? this.stock,
@@ -86,6 +96,8 @@ class StockDetailState {
       isLoadingFundamentals:
           isLoadingFundamentals ?? this.isLoadingFundamentals,
       error: error,
+      dataDate: dataDate ?? this.dataDate,
+      hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
     );
   }
 
@@ -142,6 +154,133 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   AppDatabase get _db => _ref.read(databaseProvider);
   FinMindClient get _finMind => _ref.read(finMindClientProvider);
 
+  /// Synchronize price and institutional data to the same date
+  /// Returns the latest price and institutional history that are on the same date
+  ({
+    DailyPriceEntry? latestPrice,
+    List<DailyInstitutionalEntry> institutionalHistory,
+    DateTime? dataDate,
+    bool hasDataMismatch,
+  })
+  _synchronizeDataDates(
+    List<DailyPriceEntry> priceHistory,
+    List<DailyInstitutionalEntry> instHistory,
+  ) {
+    if (priceHistory.isEmpty) {
+      return (
+        latestPrice: null,
+        institutionalHistory: instHistory,
+        dataDate: instHistory.isNotEmpty ? instHistory.last.date : null,
+        hasDataMismatch: false,
+      );
+    }
+
+    if (instHistory.isEmpty) {
+      final latestPrice = priceHistory.last;
+      return (
+        latestPrice: latestPrice,
+        institutionalHistory: instHistory,
+        dataDate: latestPrice.date,
+        hasDataMismatch: false,
+      );
+    }
+
+    // Get latest dates from each source
+    final latestPriceDate = priceHistory.last.date;
+    final latestInstDate = instHistory.last.date;
+
+    // Normalize dates for comparison (remove time component)
+    final priceDay = DateTime(
+      latestPriceDate.year,
+      latestPriceDate.month,
+      latestPriceDate.day,
+    );
+    final instDay = DateTime(
+      latestInstDate.year,
+      latestInstDate.month,
+      latestInstDate.day,
+    );
+
+    // If dates match, no synchronization needed
+    if (priceDay == instDay) {
+      return (
+        latestPrice: priceHistory.last,
+        institutionalHistory: instHistory,
+        dataDate: priceDay,
+        hasDataMismatch: false,
+      );
+    }
+
+    // Dates don't match - find common date
+    const hasDataMismatch = true;
+
+    // Build sets of available dates
+    final priceDates = priceHistory
+        .map((p) => DateTime(p.date.year, p.date.month, p.date.day))
+        .toSet();
+    final instDates = instHistory
+        .map((i) => DateTime(i.date.year, i.date.month, i.date.day))
+        .toSet();
+
+    // Find common dates
+    final commonDates = priceDates.intersection(instDates);
+
+    if (commonDates.isEmpty) {
+      // No common dates - use the earlier of the two latest dates
+      final dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
+
+      // Find price for this date
+      final matchingPrice = priceHistory.lastWhere(
+        (p) =>
+            DateTime(
+              p.date.year,
+              p.date.month,
+              p.date.day,
+            ).isAtSameMomentAs(dataDate) ||
+            DateTime(p.date.year, p.date.month, p.date.day).isBefore(dataDate),
+        orElse: () => priceHistory.last,
+      );
+
+      return (
+        latestPrice: matchingPrice,
+        institutionalHistory: instHistory,
+        dataDate: dataDate,
+        hasDataMismatch: true,
+      );
+    }
+
+    // Use the latest common date
+    final latestCommonDate = commonDates.reduce((a, b) => a.isAfter(b) ? a : b);
+
+    // Find price entry for this date
+    final matchingPrice = priceHistory.lastWhere(
+      (p) =>
+          DateTime(p.date.year, p.date.month, p.date.day) == latestCommonDate,
+      orElse: () => priceHistory.last,
+    );
+
+    // Filter institutional history up to this date
+    final syncedInstHistory = instHistory
+        .where(
+          (i) =>
+              DateTime(
+                i.date.year,
+                i.date.month,
+                i.date.day,
+              ).isBefore(latestCommonDate) ||
+              DateTime(i.date.year, i.date.month, i.date.day) ==
+                  latestCommonDate,
+        )
+        .toList();
+
+    return (
+      latestPrice: matchingPrice,
+      institutionalHistory: syncedInstHistory,
+      dataDate: latestCommonDate,
+      hasDataMismatch: hasDataMismatch,
+    );
+  }
+
   /// Load stock detail data
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -185,13 +324,17 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       var instHistory = results[4] as List<DailyInstitutionalEntry>;
       final isInWatchlist = results[5] as bool;
 
-      // Get latest price
-      final latestPrice = priceHistory.isNotEmpty ? priceHistory.last : null;
-
       // If no institutional data in DB, fetch from API
       if (instHistory.isEmpty) {
         instHistory = await _fetchInstitutionalFromApi();
       }
+
+      // Synchronize data dates - find common latest date
+      final syncResult = _synchronizeDataDates(priceHistory, instHistory);
+      final latestPrice = syncResult.latestPrice;
+      final syncedInstHistory = syncResult.institutionalHistory;
+      final dataDate = syncResult.dataDate;
+      final hasDataMismatch = syncResult.hasDataMismatch;
 
       state = state.copyWith(
         stock: stock,
@@ -199,9 +342,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         priceHistory: priceHistory,
         analysis: analysis,
         reasons: reasons,
-        institutionalHistory: instHistory,
+        institutionalHistory: syncedInstHistory,
         isInWatchlist: isInWatchlist,
         isLoading: false,
+        dataDate: dataDate,
+        hasDataMismatch: hasDataMismatch,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
