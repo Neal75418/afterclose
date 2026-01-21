@@ -15,11 +15,11 @@ void main() {
 
   group('RuleEngine', () {
     group('checkVolumeSpike', () {
-      test('should trigger when volume is 1.5x+ of 20-day average', () {
+      test('should trigger when volume is 4x+ of 20-day average', () {
         final prices = generatePricesWithVolumeSpike(
           days: 25,
           normalVolume: 1000,
-          spikeVolume: 2500, // 2.5x (above 1.5x threshold)
+          spikeVolume: 5000, // 5x (above 4x threshold)
         );
 
         final result = ruleEngine.checkVolumeSpike(prices);
@@ -33,7 +33,7 @@ void main() {
         final prices = generatePricesWithVolumeSpike(
           days: 25,
           normalVolume: 1000,
-          spikeVolume: 1400, // 1.4x (below 1.5x threshold)
+          spikeVolume: 3500, // 3.5x (below 4x threshold)
         );
 
         final result = ruleEngine.checkVolumeSpike(prices);
@@ -93,11 +93,12 @@ void main() {
         );
 
         // Last price breaks out above range top (with buffer)
+        // breakoutBuffer is 1%, so need close > 100.0 * 1.01 = 101.0
         final pricesWithBreakout = [
           ...prices.take(prices.length - 1),
           createTestPrice(
             date: DateTime.now(),
-            close: 101.0, // Above range top + 0.5% buffer
+            close: 102.0, // Above range top + 1% buffer (101.0)
           ),
         ];
 
@@ -252,16 +253,18 @@ void main() {
     group('evaluateStock', () {
       test('should return multiple triggered reasons', () {
         // Need at least swingWindow (20) days
+        // Volume spike requires 4x+ volume AND 1.5%+ price change
         final prices = generatePricesWithVolumeSpike(
           days: 25,
           normalVolume: 1000,
-          spikeVolume: 2500,
+          spikeVolume: 5000, // 5x (above 4x threshold)
         );
-        // Set resistance below current close (100.0) to trigger breakout
-        // breakoutLevel = 95.0 * 1.005 = 95.475, close 100.0 > 95.475
+        // Set resistance below current close (103.0, because spike day has +3% price change)
+        // breakoutBuffer is 1%, so breakoutLevel = 100.0 * 1.01 = 101.0
+        // close 103.0 > 101.0 should trigger breakout
         const context = AnalysisContext(
           trendState: TrendState.range,
-          resistanceLevel: 95.0,
+          resistanceLevel: 100.0,
         );
 
         final reasons = ruleEngine.evaluateStock(
@@ -297,11 +300,12 @@ void main() {
         );
 
         // Last price breaks out
+        // breakoutBuffer is 1%, so need close > 100.0 * 1.01 = 101.0
         final pricesWithBreakout = [
           ...prices.take(prices.length - 1),
           createTestPrice(
             date: DateTime.now(),
-            close: 101.0, // Above resistance + buffer
+            close: 102.0, // Above resistance + 1% buffer (101.0)
           ),
         ];
 
