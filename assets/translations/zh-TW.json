@@ -68,7 +68,8 @@
     "strong": "強烈推薦",
     "watch": "值得關注",
     "normal": "一般",
-    "wait": "觀望"
+    "wait": "觀望",
+    "points": "分"
   },
   "trend": {
     "up": "上升趨勢",

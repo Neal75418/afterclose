@@ -1,7 +1,7 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -189,17 +189,13 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
           // Reasons
           if (state.reasons.isNotEmpty) ...[
             Text(
-              '觸發理由',
+              'reasons.label'.tr(),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 8),
             ...state.reasons.map((reason) {
-              final reasonType = ReasonType.values
-                  .where((r) => r.code == reason.reasonType)
-                  .firstOrNull;
-
               return Card(
                 child: ListTile(
                   leading: Container(
@@ -217,10 +213,10 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
                     ),
                   ),
                   title: Text(
-                    reasonType?.label ?? reason.reasonType,
+                    _translateReasonCode(reason.reasonType),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('+${reason.ruleScore} 分'),
+                  subtitle: Text('+${reason.ruleScore} ${'score.points'.tr()}'),
                 ),
               );
             }),
@@ -460,6 +456,22 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen> {
       'NEWS_RELATED' => '📰',
       _ => '⚡',
     };
+  }
+
+  /// Convert database reason code to translated label
+  String _translateReasonCode(String code) {
+    final key = switch (code) {
+      'REVERSAL_W2S' => 'reasons.reversalW2S',
+      'REVERSAL_S2W' => 'reasons.reversalS2W',
+      'TECH_BREAKOUT' => 'reasons.breakout',
+      'TECH_BREAKDOWN' => 'reasons.breakdown',
+      'VOLUME_SPIKE' => 'reasons.volumeSpike',
+      'PRICE_SPIKE' => 'reasons.priceSpike',
+      'INSTITUTIONAL_SHIFT' => 'reasons.institutional',
+      'NEWS_RELATED' => 'reasons.news',
+      _ => code,
+    };
+    return key.tr();
   }
 
   String _formatVolume(double volume) {

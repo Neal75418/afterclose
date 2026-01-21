@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -251,7 +252,7 @@ class _StockCardState extends State<StockCard> {
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
-            r,
+            _translateReasonCode(r),
             style: theme.textTheme.labelSmall?.copyWith(
               color: isDark ? AppTheme.secondaryColor : AppTheme.primaryColor,
               fontWeight: FontWeight.w500,
@@ -260,6 +261,22 @@ class _StockCardState extends State<StockCard> {
         );
       }).toList(),
     );
+  }
+
+  /// Convert database reason code to translated label
+  String _translateReasonCode(String code) {
+    final key = switch (code) {
+      'REVERSAL_W2S' => 'reasons.reversalW2S',
+      'REVERSAL_S2W' => 'reasons.reversalS2W',
+      'TECH_BREAKOUT' => 'reasons.breakout',
+      'TECH_BREAKDOWN' => 'reasons.breakdown',
+      'VOLUME_SPIKE' => 'reasons.volumeSpike',
+      'PRICE_SPIKE' => 'reasons.priceSpike',
+      'INSTITUTIONAL_SHIFT' => 'reasons.institutional',
+      'NEWS_RELATED' => 'reasons.news',
+      _ => code, // fallback to original code if unknown
+    };
+    return key.tr();
   }
 
   Widget _buildSparkline(Color priceColor) {

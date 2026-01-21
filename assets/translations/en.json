@@ -68,7 +68,8 @@
     "strong": "Highly Recommended",
     "watch": "Worth Watching",
     "normal": "Normal",
-    "wait": "Wait & See"
+    "wait": "Wait & See",
+    "points": "pts"
   },
   "trend": {
     "up": "Uptrend",
