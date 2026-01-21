@@ -169,7 +169,7 @@ class TechnicalIndicatorService {
   /// Calculate MACD (Moving Average Convergence Divergence)
   /// Default periods: fast=12, slow=26, signal=9
   ({List<double?> macd, List<double?> signal, List<double?> histogram})
-      calculateMACD(
+  calculateMACD(
     List<double> prices, {
     int fastPeriod = 12,
     int slowPeriod = 26,
@@ -223,7 +223,7 @@ class TechnicalIndicatorService {
   /// Calculate Bollinger Bands
   /// Default: 20 period SMA with 2 standard deviations
   ({List<double?> upper, List<double?> middle, List<double?> lower})
-      calculateBollingerBands(
+  calculateBollingerBands(
     List<double> prices, {
     int period = 20,
     double stdDevMultiplier = 2.0,

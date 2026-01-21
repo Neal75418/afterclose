@@ -67,14 +67,16 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
           entry.high != null &&
           entry.low != null &&
           entry.close != null) {
-        kLineData.add(KLineEntity.fromCustom(
-          time: entry.date.millisecondsSinceEpoch,
-          open: entry.open!,
-          high: entry.high!,
-          low: entry.low!,
-          close: entry.close!,
-          vol: entry.volume ?? 0,
-        ));
+        kLineData.add(
+          KLineEntity.fromCustom(
+            time: entry.date.millisecondsSinceEpoch,
+            open: entry.open!,
+            high: entry.high!,
+            low: entry.low!,
+            close: entry.close!,
+            vol: entry.volume ?? 0,
+          ),
+        );
       }
     }
 

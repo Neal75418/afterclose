@@ -49,65 +49,63 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
       body: state.isLoading
           ? const SafeArea(child: StockDetailShimmer())
           : state.error != null
-              ? SafeArea(
-                  child: EmptyStates.error(
-                    message: state.error!,
-                    onRetry: () {
-                      ref
-                          .read(stockDetailProvider(widget.symbol).notifier)
-                          .loadData();
-                    },
-                  ),
-                )
-              : NestedScrollView(
-                  headerSliverBuilder: (context, innerBoxScrolled) => [
-                    // App bar
-                    SliverAppBar(
-                      pinned: true,
-                      floating: true,
-                      title: Text(widget.symbol),
-                      actions: [
-                        IconButton(
-                          icon: Icon(
-                            state.isInWatchlist ? Icons.star : Icons.star_border,
-                            color: state.isInWatchlist ? Colors.amber : null,
-                          ),
-                          onPressed: () {
-                            ref
-                                .read(stockDetailProvider(widget.symbol).notifier)
-                                .toggleWatchlist();
-                          },
-                          tooltip: state.isInWatchlist
-                              ? 'stock.removeFromWatchlist'.tr()
-                              : 'stock.addToWatchlist'.tr(),
-                        ),
-                      ],
-                    ),
-
-                    // Stock header
-                    SliverToBoxAdapter(
-                      child: _buildHeader(state, theme),
-                    ),
-
-                    // Tab bar (pinned)
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _TabBarDelegate(
-                        tabController: _tabController,
-                        theme: theme,
+          ? SafeArea(
+              child: EmptyStates.error(
+                message: state.error!,
+                onRetry: () {
+                  ref
+                      .read(stockDetailProvider(widget.symbol).notifier)
+                      .loadData();
+                },
+              ),
+            )
+          : NestedScrollView(
+              headerSliverBuilder: (context, innerBoxScrolled) => [
+                // App bar
+                SliverAppBar(
+                  pinned: true,
+                  floating: true,
+                  title: Text(widget.symbol),
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                        state.isInWatchlist ? Icons.star : Icons.star_border,
+                        color: state.isInWatchlist ? Colors.amber : null,
                       ),
+                      onPressed: () {
+                        ref
+                            .read(stockDetailProvider(widget.symbol).notifier)
+                            .toggleWatchlist();
+                      },
+                      tooltip: state.isInWatchlist
+                          ? 'stock.removeFromWatchlist'.tr()
+                          : 'stock.addToWatchlist'.tr(),
                     ),
                   ],
-                  body: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      TechnicalTab(symbol: widget.symbol),
-                      ChipTab(symbol: widget.symbol),
-                      FundamentalsTab(symbol: widget.symbol),
-                      AlertsTab(symbol: widget.symbol),
-                    ],
+                ),
+
+                // Stock header
+                SliverToBoxAdapter(child: _buildHeader(state, theme)),
+
+                // Tab bar (pinned)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _TabBarDelegate(
+                    tabController: _tabController,
+                    theme: theme,
                   ),
                 ),
+              ],
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  TechnicalTab(symbol: widget.symbol),
+                  ChipTab(symbol: widget.symbol),
+                  FundamentalsTab(symbol: widget.symbol),
+                  AlertsTab(symbol: widget.symbol),
+                ],
+              ),
+            ),
     );
   }
 
@@ -368,10 +366,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
 /// Tab bar delegate for pinned header
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
-  const _TabBarDelegate({
-    required this.tabController,
-    required this.theme,
-  });
+  const _TabBarDelegate({required this.tabController, required this.theme});
 
   final TabController tabController;
   final ThemeData theme;
@@ -396,10 +391,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
         indicatorColor: theme.colorScheme.primary,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-        ),
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.normal,
           fontSize: 14,

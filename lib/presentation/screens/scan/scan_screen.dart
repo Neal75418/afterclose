@@ -98,7 +98,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               child: Row(
                 children: [
                   Text(
-                    'scan.stockCount'.tr(namedArgs: {'count': state.stocks.length.toString()}),
+                    'scan.stockCount'.tr(
+                      namedArgs: {'count': state.stocks.length.toString()},
+                    ),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -176,7 +178,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                   icon: stock.isInWatchlist
                                       ? Icons.star_outline
                                       : Icons.star,
-                                  label: stock.isInWatchlist ? 'scan.remove'.tr() : 'scan.favorite'.tr(),
+                                  label: stock.isInWatchlist
+                                      ? 'scan.remove'.tr()
+                                      : 'scan.favorite'.tr(),
                                   borderRadius: const BorderRadius.only(
                                     topLeft: Radius.circular(16),
                                     bottomLeft: Radius.circular(16),

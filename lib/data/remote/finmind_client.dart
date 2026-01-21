@@ -716,25 +716,30 @@ class FinMindMarginData {
       throw FormatException('Missing required field: date', json);
     }
 
-    final marginBalance = JsonParsers.parseDouble(json['MarginPurchaseTodayBalance']) ?? 0;
-    final marginLimit = JsonParsers.parseDouble(json['MarginPurchaseLimit']) ?? 0;
+    final marginBalance =
+        JsonParsers.parseDouble(json['MarginPurchaseTodayBalance']) ?? 0;
+    final marginLimit =
+        JsonParsers.parseDouble(json['MarginPurchaseLimit']) ?? 0;
 
     return FinMindMarginData(
       stockId: stockId.toString(),
       date: date.toString(),
       marginBuy: JsonParsers.parseDouble(json['MarginPurchaseBuy']) ?? 0,
       marginSell: JsonParsers.parseDouble(json['MarginPurchaseSell']) ?? 0,
-      marginCashRepay: JsonParsers.parseDouble(json['MarginPurchaseCashRepayment']) ?? 0,
+      marginCashRepay:
+          JsonParsers.parseDouble(json['MarginPurchaseCashRepayment']) ?? 0,
       marginBalance: marginBalance,
       marginBalanceChange: marginLimit,
       // 融資使用率 = 融資餘額 / 融資限額 * 100
       marginUseRate: marginLimit > 0 ? (marginBalance / marginLimit) * 100 : 0,
       shortBuy: JsonParsers.parseDouble(json['ShortSaleBuy']) ?? 0,
       shortSell: JsonParsers.parseDouble(json['ShortSaleSell']) ?? 0,
-      shortCashRepay: JsonParsers.parseDouble(json['ShortSaleCashRepayment']) ?? 0,
+      shortCashRepay:
+          JsonParsers.parseDouble(json['ShortSaleCashRepayment']) ?? 0,
       shortBalance: JsonParsers.parseDouble(json['ShortSaleTodayBalance']) ?? 0,
       shortBalanceChange: JsonParsers.parseDouble(json['ShortSaleLimit']) ?? 0,
-      offsetMarginShort: JsonParsers.parseDouble(json['OffsetLoanAndShort']) ?? 0,
+      offsetMarginShort:
+          JsonParsers.parseDouble(json['OffsetLoanAndShort']) ?? 0,
       note: json['Note']?.toString() ?? '',
     );
   }
@@ -822,7 +827,9 @@ class FinMindRevenue {
 
   /// Calculate MoM and YoY growth rates for a list of revenues
   /// Returns the same list with growth rates populated
-  static List<FinMindRevenue> calculateGrowthRates(List<FinMindRevenue> revenues) {
+  static List<FinMindRevenue> calculateGrowthRates(
+    List<FinMindRevenue> revenues,
+  ) {
     if (revenues.isEmpty) return revenues;
 
     // Sort by date (year/month)
@@ -851,7 +858,8 @@ class FinMindRevenue {
       final prevMonthKey = '$prevYear-$prevMonth';
       final prevMonthRev = lookup[prevMonthKey];
       if (prevMonthRev != null && prevMonthRev.revenue > 0) {
-        rev.momGrowth = ((rev.revenue - prevMonthRev.revenue) / prevMonthRev.revenue) * 100;
+        rev.momGrowth =
+            ((rev.revenue - prevMonthRev.revenue) / prevMonthRev.revenue) * 100;
       }
 
       // YoY: Compare to same month last year
@@ -901,9 +909,14 @@ class FinMindDividend {
 
     return FinMindDividend(
       stockId: stockId.toString(),
-      year: JsonParsers.parseInt(json['year']) ?? JsonParsers.parseInt(json['date']?.toString().substring(0, 4)) ?? 0,
-      cashDividend: JsonParsers.parseDouble(json['CashEarningsDistribution']) ?? 0,
-      stockDividend: JsonParsers.parseDouble(json['StockEarningsDistribution']) ?? 0,
+      year:
+          JsonParsers.parseInt(json['year']) ??
+          JsonParsers.parseInt(json['date']?.toString().substring(0, 4)) ??
+          0,
+      cashDividend:
+          JsonParsers.parseDouble(json['CashEarningsDistribution']) ?? 0,
+      stockDividend:
+          JsonParsers.parseDouble(json['StockEarningsDistribution']) ?? 0,
       exDividendDate: json['CashExDividendTradingDate']?.toString(),
       exRightsDate: json['StockExDividendTradingDate']?.toString(),
     );

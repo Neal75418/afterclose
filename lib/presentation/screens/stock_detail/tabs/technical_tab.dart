@@ -25,7 +25,8 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
   // Secondary indicators (sub-charts): MACD, KDJ, RSI, WR, CCI
   final Set<SecondaryState> _secondaryIndicators = {};
 
-  final TechnicalIndicatorService _indicatorService = TechnicalIndicatorService();
+  final TechnicalIndicatorService _indicatorService =
+      TechnicalIndicatorService();
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +57,9 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
     // Calculate chart height based on selected secondary indicators
     const baseHeight = 350.0;
-    final secondaryHeight = _secondaryIndicators.isEmpty ? 0.0 : 120.0 * _secondaryIndicators.length;
+    final secondaryHeight = _secondaryIndicators.isEmpty
+        ? 0.0
+        : 120.0 * _secondaryIndicators.length;
     final totalChartHeight = baseHeight + secondaryHeight;
 
     return SingleChildScrollView(
@@ -124,11 +127,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.show_chart,
-            size: 16,
-            color: theme.colorScheme.primary,
-          ),
+          Icon(Icons.show_chart, size: 16, color: theme.colorScheme.primary),
           const SizedBox(width: 8),
           Text(
             'stockDetail.mainChart'.tr(),
@@ -143,9 +142,21 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildMainIndicatorChip(MainState.MA, 'MA', const Color(0xFF3498DB)),
-                _buildMainIndicatorChip(MainState.BOLL, 'BOLL', const Color(0xFF9B59B6)),
-                _buildMainIndicatorChip(MainState.SAR, 'SAR', const Color(0xFFE67E22)),
+                _buildMainIndicatorChip(
+                  MainState.MA,
+                  'MA',
+                  const Color(0xFF3498DB),
+                ),
+                _buildMainIndicatorChip(
+                  MainState.BOLL,
+                  'BOLL',
+                  const Color(0xFF9B59B6),
+                ),
+                _buildMainIndicatorChip(
+                  MainState.SAR,
+                  'SAR',
+                  const Color(0xFFE67E22),
+                ),
               ],
             ),
           ),
@@ -154,7 +165,11 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     );
   }
 
-  Widget _buildMainIndicatorChip(MainState indicator, String label, Color color) {
+  Widget _buildMainIndicatorChip(
+    MainState indicator,
+    String label,
+    Color color,
+  ) {
     final theme = Theme.of(context);
     final isSelected = _mainIndicators.contains(indicator);
 
@@ -172,10 +187,14 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : theme.colorScheme.outline.withValues(alpha: 0.3),
+            color: isSelected
+                ? color
+                : theme.colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -235,11 +254,31 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildSecondaryIndicatorChip(SecondaryState.MACD, 'MACD', const Color(0xFF3498DB)),
-                _buildSecondaryIndicatorChip(SecondaryState.KDJ, 'KDJ', const Color(0xFFE67E22)),
-                _buildSecondaryIndicatorChip(SecondaryState.RSI, 'RSI', const Color(0xFF9B59B6)),
-                _buildSecondaryIndicatorChip(SecondaryState.WR, 'WR', const Color(0xFF1ABC9C)),
-                _buildSecondaryIndicatorChip(SecondaryState.CCI, 'CCI', const Color(0xFFE74C3C)),
+                _buildSecondaryIndicatorChip(
+                  SecondaryState.MACD,
+                  'MACD',
+                  const Color(0xFF3498DB),
+                ),
+                _buildSecondaryIndicatorChip(
+                  SecondaryState.KDJ,
+                  'KDJ',
+                  const Color(0xFFE67E22),
+                ),
+                _buildSecondaryIndicatorChip(
+                  SecondaryState.RSI,
+                  'RSI',
+                  const Color(0xFF9B59B6),
+                ),
+                _buildSecondaryIndicatorChip(
+                  SecondaryState.WR,
+                  'WR',
+                  const Color(0xFF1ABC9C),
+                ),
+                _buildSecondaryIndicatorChip(
+                  SecondaryState.CCI,
+                  'CCI',
+                  const Color(0xFFE74C3C),
+                ),
               ],
             ),
           ),
@@ -248,7 +287,11 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     );
   }
 
-  Widget _buildSecondaryIndicatorChip(SecondaryState indicator, String label, Color color) {
+  Widget _buildSecondaryIndicatorChip(
+    SecondaryState indicator,
+    String label,
+    Color color,
+  ) {
     final theme = Theme.of(context);
     final isSelected = _secondaryIndicators.contains(indicator);
 
@@ -266,10 +309,14 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected
+              ? color.withValues(alpha: 0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : theme.colorScheme.outline.withValues(alpha: 0.3),
+            color: isSelected
+                ? color
+                : theme.colorScheme.outline.withValues(alpha: 0.3),
             width: isSelected ? 1.5 : 1,
           ),
         ),
@@ -385,9 +432,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                   const SizedBox(height: 4),
                   Text(
                     rsiSignal,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: rsiColor,
-                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(color: rsiColor),
                   ),
                 ],
               ),
@@ -453,9 +498,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                   const SizedBox(height: 4),
                   Text(
                     kdSignal,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: kdColor,
-                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(color: kdColor),
                   ),
                 ],
               ),
@@ -488,9 +531,18 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
   Widget _buildMACDCard(BuildContext context, List<double> prices) {
     final theme = Theme.of(context);
     final macd = _indicatorService.calculateMACD(prices);
-    final latestMACD = macd.macd.lastWhere((v) => v != null, orElse: () => null);
-    final latestSignal = macd.signal.lastWhere((v) => v != null, orElse: () => null);
-    final latestHist = macd.histogram.lastWhere((v) => v != null, orElse: () => null);
+    final latestMACD = macd.macd.lastWhere(
+      (v) => v != null,
+      orElse: () => null,
+    );
+    final latestSignal = macd.signal.lastWhere(
+      (v) => v != null,
+      orElse: () => null,
+    );
+    final latestHist = macd.histogram.lastWhere(
+      (v) => v != null,
+      orElse: () => null,
+    );
 
     String macdSignal = 'stockDetail.macdNeutral'.tr();
     Color macdColor = theme.colorScheme.onSurface;
@@ -536,7 +588,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                 Text(
                   latestHist != null
                       ? (latestHist >= 0 ? '+' : '') +
-                          latestHist.toStringAsFixed(2)
+                            latestHist.toStringAsFixed(2)
                       : '-',
                   style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
@@ -567,7 +619,9 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                   context,
                   'HIST',
                   latestHist,
-                  (latestHist ?? 0) >= 0 ? AppTheme.upColor : AppTheme.downColor,
+                  (latestHist ?? 0) >= 0
+                      ? AppTheme.upColor
+                      : AppTheme.downColor,
                 ),
               ],
             ),
@@ -606,9 +660,18 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
   Widget _buildBollingerCard(BuildContext context, List<double> prices) {
     final theme = Theme.of(context);
     final boll = _indicatorService.calculateBollingerBands(prices);
-    final latestUpper = boll.upper.lastWhere((v) => v != null, orElse: () => null);
-    final latestMiddle = boll.middle.lastWhere((v) => v != null, orElse: () => null);
-    final latestLower = boll.lower.lastWhere((v) => v != null, orElse: () => null);
+    final latestUpper = boll.upper.lastWhere(
+      (v) => v != null,
+      orElse: () => null,
+    );
+    final latestMiddle = boll.middle.lastWhere(
+      (v) => v != null,
+      orElse: () => null,
+    );
+    final latestLower = boll.lower.lastWhere(
+      (v) => v != null,
+      orElse: () => null,
+    );
     final currentPrice = prices.isNotEmpty ? prices.last : null;
 
     String bollSignal = 'stockDetail.bollNeutral'.tr();
@@ -739,7 +802,10 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                 const Spacer(),
                 if (priceChange != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: (isUp ? AppTheme.upColor : AppTheme.downColor)
                           .withValues(alpha: 0.1),

@@ -9,10 +9,7 @@ import 'package:afterclose/data/database/app_database.dart';
 /// Note: This package doesn't support technical indicator overlays.
 /// For indicators, use KLineChartWidget with k_chart_plus instead.
 class CandlestickChartWidget extends StatefulWidget {
-  const CandlestickChartWidget({
-    super.key,
-    required this.priceHistory,
-  });
+  const CandlestickChartWidget({super.key, required this.priceHistory});
 
   final List<DailyPriceEntry> priceHistory;
 
@@ -55,14 +52,16 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
           entry.high != null &&
           entry.low != null &&
           entry.close != null) {
-        candles.add(Candle(
-          date: entry.date,
-          open: entry.open!,
-          high: entry.high!,
-          low: entry.low!,
-          close: entry.close!,
-          volume: entry.volume ?? 0,
-        ));
+        candles.add(
+          Candle(
+            date: entry.date,
+            open: entry.open!,
+            high: entry.high!,
+            low: entry.low!,
+            close: entry.close!,
+            volume: entry.volume ?? 0,
+          ),
+        );
       }
     }
 
@@ -210,17 +209,15 @@ class _VolumePainter extends CustomPainter {
       final x = i * (barWidth + 1);
       final y = size.height - barHeight;
 
-      canvas.drawRect(
-        Rect.fromLTWH(x, y, barWidth, barHeight),
-        paint,
-      );
+      canvas.drawRect(Rect.fromLTWH(x, y, barWidth, barHeight), paint);
     }
   }
 
   @override
   bool shouldRepaint(covariant _VolumePainter oldDelegate) {
     // Compare by reference first (fastest check)
-    if (identical(data, oldDelegate.data) && maxVolume == oldDelegate.maxVolume) {
+    if (identical(data, oldDelegate.data) &&
+        maxVolume == oldDelegate.maxVolume) {
       return false;
     }
     // Compare lengths as secondary check

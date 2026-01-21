@@ -236,14 +236,22 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                             if (success) {
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text('watchlist.added'.tr(namedArgs: {'symbol': symbol})),
+                                  content: Text(
+                                    'watchlist.added'.tr(
+                                      namedArgs: {'symbol': symbol},
+                                    ),
+                                  ),
                                   behavior: SnackBarBehavior.floating,
                                 ),
                               );
                             } else {
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text('watchlist.notFound'.tr(namedArgs: {'symbol': symbol})),
+                                  content: Text(
+                                    'watchlist.notFound'.tr(
+                                      namedArgs: {'symbol': symbol},
+                                    ),
+                                  ),
                                   behavior: SnackBarBehavior.floating,
                                   backgroundColor: Colors.red,
                                 ),

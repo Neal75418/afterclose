@@ -103,7 +103,9 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
                   Text(
                     'stockDetail.currentPrice'.tr(),
                     style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                      color: theme.colorScheme.onPrimaryContainer.withValues(
+                        alpha: 0.7,
+                      ),
                     ),
                   ),
                   Text(
@@ -166,7 +168,8 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     PriceAlertEntry alert,
   ) {
     final theme = Theme.of(context);
-    final alertType = AlertType.tryFromValue(alert.alertType) ?? AlertType.above;
+    final alertType =
+        AlertType.tryFromValue(alert.alertType) ?? AlertType.above;
 
     final description = _getAlertDescription(alert, alertType);
 
@@ -177,10 +180,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
         color: theme.colorScheme.error,
-        child: Icon(
-          Icons.delete,
-          color: theme.colorScheme.onError,
-        ),
+        child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (direction) async {
         return await showDialog<bool>(
@@ -238,15 +238,14 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
             ),
           ),
           subtitle: alert.note?.isNotEmpty == true
-              ? Text(
-                  alert.note!,
-                  style: theme.textTheme.bodySmall,
-                )
+              ? Text(alert.note!, style: theme.textTheme.bodySmall)
               : null,
           trailing: Switch(
             value: alert.isActive,
             onChanged: (value) {
-              ref.read(priceAlertProvider.notifier).toggleAlert(alert.id, value);
+              ref
+                  .read(priceAlertProvider.notifier)
+                  .toggleAlert(alert.id, value);
             },
           ),
         ),
@@ -265,18 +264,22 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
   String _getAlertDescription(PriceAlertEntry alert, AlertType type) {
     return switch (type) {
       AlertType.above => 'alert.priceAbove'.tr(
-          namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
-        ),
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+      ),
       AlertType.below => 'alert.priceBelow'.tr(
-          namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
-        ),
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+      ),
       AlertType.changePct => 'alert.changeAbove'.tr(
-          namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
-        ),
+        namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
+      ),
     };
   }
 
-  void _showAddAlertDialog(BuildContext context, WidgetRef ref, double? currentPrice) {
+  void _showAddAlertDialog(
+    BuildContext context,
+    WidgetRef ref,
+    double? currentPrice,
+  ) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -343,7 +346,9 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -376,7 +381,11 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, size: 16, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.info_outline,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     'stockDetail.currentPrice'.tr(),
@@ -395,10 +404,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
           const SizedBox(height: 16),
 
           // Alert type selector
-          Text(
-            'alert.type'.tr(),
-            style: theme.textTheme.labelLarge,
-          ),
+          Text('alert.type'.tr(), style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
           SegmentedButton<AlertType>(
             segments: [
@@ -445,17 +451,16 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               hintText: _selectedType == AlertType.changePct
                   ? 'alert.percentHint'.tr()
                   : 'alert.priceHint'.tr(),
-              suffixText: _selectedType == AlertType.changePct ? '%' : 'alert.currency'.tr(),
+              suffixText: _selectedType == AlertType.changePct
+                  ? '%'
+                  : 'alert.currency'.tr(),
               border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 16),
 
           // Note input
-          Text(
-            'alert.note'.tr(),
-            style: theme.textTheme.labelLarge,
-          ),
+          Text('alert.note'.tr(), style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
           TextField(
             controller: _noteController,
@@ -511,12 +516,16 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
 
     setState(() => _isCreating = true);
 
-    final success = await ref.read(priceAlertProvider.notifier).createAlert(
-      symbol: widget.symbol,
-      alertType: _selectedType,
-      targetValue: value,
-      note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
-    );
+    final success = await ref
+        .read(priceAlertProvider.notifier)
+        .createAlert(
+          symbol: widget.symbol,
+          alertType: _selectedType,
+          targetValue: value,
+          note: _noteController.text.trim().isEmpty
+              ? null
+              : _noteController.text.trim(),
+        );
 
     setState(() => _isCreating = false);
 

@@ -83,7 +83,8 @@ class StockDetailState {
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
-      isLoadingFundamentals: isLoadingFundamentals ?? this.isLoadingFundamentals,
+      isLoadingFundamentals:
+          isLoadingFundamentals ?? this.isLoadingFundamentals,
       error: error,
     );
   }
@@ -270,10 +271,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         endDate: dateFormat.format(today),
       );
 
-      state = state.copyWith(
-        marginHistory: marginData,
-        isLoadingMargin: false,
-      );
+      state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
     } catch (e, stackTrace) {
       // Log error for debugging - margin data is optional
       debugPrint('Failed to load margin data for $_symbol: $e');

@@ -84,9 +84,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -148,10 +146,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
@@ -183,7 +178,10 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     );
   }
 
-  Widget _buildRevenueTable(BuildContext context, List<FinMindRevenue> revenues) {
+  Widget _buildRevenueTable(
+    BuildContext context,
+    List<FinMindRevenue> revenues,
+  ) {
     final theme = Theme.of(context);
 
     // Sort by date descending and take last 12
@@ -265,8 +263,12 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 decoration: BoxDecoration(
                   color: index == 0
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                      : (index.isEven ? theme.colorScheme.surface : Colors.transparent),
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        )
+                      : (index.isEven
+                            ? theme.colorScheme.surface
+                            : Colors.transparent),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -276,7 +278,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                       child: Text(
                         '${rev.revenueYear}/${rev.revenueMonth.toString().padLeft(2, '0')}',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: index == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -331,7 +335,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
-          color: isSignificant ? color.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSignificant
+              ? color.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
@@ -346,7 +352,10 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     );
   }
 
-  Widget _buildDividendTable(BuildContext context, List<FinMindDividend> dividends) {
+  Widget _buildDividendTable(
+    BuildContext context,
+    List<FinMindDividend> dividends,
+  ) {
     final theme = Theme.of(context);
 
     // Sort by year descending and take last 5
@@ -462,8 +471,12 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 decoration: BoxDecoration(
                   color: index == 0
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                      : (index.isEven ? theme.colorScheme.surface : Colors.transparent),
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        )
+                      : (index.isEven
+                            ? theme.colorScheme.surface
+                            : Colors.transparent),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -473,7 +486,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                       child: Text(
                         div.year.toString(),
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: index == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -486,7 +501,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                         textAlign: TextAlign.end,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.w500,
-                          color: div.cashDividend > 0 ? const Color(0xFF27AE60) : null,
+                          color: div.cashDividend > 0
+                              ? const Color(0xFF27AE60)
+                              : null,
                         ),
                       ),
                     ),

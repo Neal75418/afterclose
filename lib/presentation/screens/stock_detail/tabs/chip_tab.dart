@@ -82,7 +82,10 @@ class _ChipTabState extends ConsumerState<ChipTab> {
   }
 
   /// Build institutional summary cards showing latest day totals
-  Widget _buildInstitutionalSummary(BuildContext context, StockDetailState state) {
+  Widget _buildInstitutionalSummary(
+    BuildContext context,
+    StockDetailState state,
+  ) {
     final latest = state.institutionalHistory.last;
 
     final foreignNet = latest.foreignNet ?? 0;
@@ -140,10 +143,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +177,10 @@ class _ChipTabState extends ConsumerState<ChipTab> {
   }
 
   /// Build margin summary cards
-  Widget _buildMarginSummary(BuildContext context, List<FinMindMarginData> marginHistory) {
+  Widget _buildMarginSummary(
+    BuildContext context,
+    List<FinMindMarginData> marginHistory,
+  ) {
     final theme = Theme.of(context);
 
     // Sort by date and get latest
@@ -203,7 +206,11 @@ class _ChipTabState extends ConsumerState<ChipTab> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.trending_up, size: 14, color: AppTheme.upColor),
+                    const Icon(
+                      Icons.trending_up,
+                      size: 14,
+                      color: AppTheme.upColor,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'stockDetail.marginBalance'.tr(),
@@ -232,10 +239,11 @@ class _ChipTabState extends ConsumerState<ChipTab> {
               color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: (latest.shortMarginRatio > 10
-                        ? AppTheme.downColor
-                        : theme.colorScheme.outline)
-                    .withValues(alpha: 0.3),
+                color:
+                    (latest.shortMarginRatio > 10
+                            ? AppTheme.downColor
+                            : theme.colorScheme.outline)
+                        .withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -287,9 +295,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -313,7 +319,10 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     );
   }
 
-  Widget _buildInstitutionalTable(BuildContext context, StockDetailState state) {
+  Widget _buildInstitutionalTable(
+    BuildContext context,
+    StockDetailState state,
+  ) {
     final theme = Theme.of(context);
 
     return Card(
@@ -417,55 +426,72 @@ class _ChipTabState extends ConsumerState<ChipTab> {
             ),
             const SizedBox(height: 8),
             // Data rows
-            ...state.institutionalHistory.reversed.take(10).toList().asMap().entries.map((entry) {
-              final index = entry.key;
-              final inst = entry.value;
-              final foreignNet = inst.foreignNet ?? 0;
-              final trustNet = inst.investmentTrustNet ?? 0;
-              final dealerNet = inst.dealerNet ?? 0;
+            ...state.institutionalHistory.reversed
+                .take(10)
+                .toList()
+                .asMap()
+                .entries
+                .map((entry) {
+                  final index = entry.key;
+                  final inst = entry.value;
+                  final foreignNet = inst.foreignNet ?? 0;
+                  final trustNet = inst.investmentTrustNet ?? 0;
+                  final dealerNet = inst.dealerNet ?? 0;
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: index == 0
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                      : (index.isEven ? theme.colorScheme.surface : Colors.transparent),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        '${inst.date.month}/${inst.date.day}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
+                  return Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: index == 0
+                          ? theme.colorScheme.primaryContainer.withValues(
+                              alpha: 0.3,
+                            )
+                          : (index.isEven
+                                ? theme.colorScheme.surface
+                                : Colors.transparent),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            '${inst.date.month}/${inst.date.day}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: index == 0
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                          ),
                         ),
-                      ),
+                        Expanded(
+                          flex: 2,
+                          child: _buildNetValue(context, foreignNet),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: _buildNetValue(context, trustNet),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: _buildNetValue(context, dealerNet),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: _buildNetValue(context, foreignNet),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: _buildNetValue(context, trustNet),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: _buildNetValue(context, dealerNet),
-                    ),
-                  ],
-                ),
-              );
-            }),
+                  );
+                }),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildMarginTable(BuildContext context, List<FinMindMarginData> marginHistory) {
+  Widget _buildMarginTable(
+    BuildContext context,
+    List<FinMindMarginData> marginHistory,
+  ) {
     final theme = Theme.of(context);
 
     // Sort by date descending and take last 10
@@ -551,8 +577,12 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 decoration: BoxDecoration(
                   color: index == 0
-                      ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
-                      : (index.isEven ? theme.colorScheme.surface : Colors.transparent),
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        )
+                      : (index.isEven
+                            ? theme.colorScheme.surface
+                            : Colors.transparent),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -562,7 +592,9 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                       child: Text(
                         displayDate,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: index == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -581,7 +613,10 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                     Expanded(
                       flex: 2,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: shortMarginRatio > 10
                               ? AppTheme.downColor.withValues(alpha: 0.1)
@@ -592,7 +627,9 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                           '${shortMarginRatio.toStringAsFixed(1)}%',
                           textAlign: TextAlign.end,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: shortMarginRatio > 10 ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: shortMarginRatio > 10
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                             color: shortMarginRatio > 10
                                 ? AppTheme.downColor
                                 : theme.colorScheme.onSurface,
@@ -617,11 +654,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     return Text(
       _formatNet(value),
       textAlign: TextAlign.end,
-      style: TextStyle(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: color,
-      ),
+      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color),
     );
   }
 
