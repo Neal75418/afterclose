@@ -1188,6 +1188,49 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
+  /// Get latest monthly revenues for multiple symbols (batch query)
+  Future<Map<String, MonthlyRevenueEntry>> getLatestMonthlyRevenuesBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final placeholders = List.filled(symbols.length, '?').join(', ');
+
+    final query =
+        '''
+      SELECT mr.*
+      FROM monthly_revenue mr
+      INNER JOIN (
+        SELECT symbol, MAX(date) as max_date
+        FROM monthly_revenue
+        WHERE symbol IN ($placeholders)
+        GROUP BY symbol
+      ) latest ON mr.symbol = latest.symbol AND mr.date = latest.max_date
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: symbols.map((s) => Variable.withString(s)).toList(),
+      readsFrom: {monthlyRevenue},
+    ).get();
+
+    final result = <String, MonthlyRevenueEntry>{};
+    for (final row in results) {
+      final entry = MonthlyRevenueEntry(
+        symbol: row.read<String>('symbol'),
+        date: row.read<DateTime>('date'),
+        revenueYear: row.read<int>('revenue_year'),
+        revenueMonth: row.read<int>('revenue_month'),
+        revenue: row.read<double>('revenue'),
+        momGrowth: row.readNullable<double>('mom_growth'),
+        yoyGrowth: row.readNullable<double>('yoy_growth'),
+      );
+      result[entry.symbol] = entry;
+    }
+
+    return result;
+  }
+
   /// Get recent N months revenue data for a stock
   Future<List<MonthlyRevenueEntry>> getRecentMonthlyRevenue(
     String symbol, {

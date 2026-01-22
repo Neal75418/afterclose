@@ -581,6 +581,8 @@ class UpdateService {
               startDate: instStartDate,
               endDate: normalizedDate,
             ),
+          _db.getLatestMonthlyRevenuesBatch(candidates),
+          _db.getLatestValuationsBatch(candidates),
         ];
 
         final batchResults = await Future.wait(futures);
@@ -589,6 +591,9 @@ class UpdateService {
         final institutionalMap = instRepo != null
             ? batchResults[2] as Map<String, List<DailyInstitutionalEntry>>
             : <String, List<DailyInstitutionalEntry>>{};
+        final revenueMap = batchResults[3] as Map<String, MonthlyRevenueEntry>;
+        final valuationMap =
+            batchResults[4] as Map<String, StockValuationEntry>;
 
         // Get recently recommended symbols for cooldown
         final recentlyRecommended = await _analysisRepo
@@ -601,6 +606,8 @@ class UpdateService {
           pricesMap: pricesMap,
           newsMap: newsMap,
           institutionalMap: institutionalMap,
+          revenueMap: revenueMap,
+          valuationMap: valuationMap,
           recentlyRecommended: recentlyRecommended,
           marketDataBuilder: _marketDataRepo != null
               ? _buildMarketDataContext

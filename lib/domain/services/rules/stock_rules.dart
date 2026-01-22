@@ -8,12 +8,20 @@ class StockData {
     required this.prices,
     this.institutional,
     this.news,
+    this.latestRevenue,
+    this.latestValuation,
   });
 
   final String symbol;
   final List<DailyPriceEntry> prices;
   final List<DailyInstitutionalEntry>? institutional;
   final List<NewsItemEntry>? news;
+
+  /// Latest monthly revenue data (for Phase 6 fundamental rules)
+  final MonthlyRevenueEntry? latestRevenue;
+
+  /// Latest valuation data (PE, PBR, dividend yield) for Phase 6 rules
+  final StockValuationEntry? latestValuation;
 
   /// Get latest price entry, null if empty
   DailyPriceEntry? get latestPrice => prices.isEmpty ? null : prices.last;

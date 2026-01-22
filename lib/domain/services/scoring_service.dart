@@ -39,6 +39,8 @@ class ScoringService {
     required Map<String, List<DailyPriceEntry>> pricesMap,
     required Map<String, List<NewsItemEntry>> newsMap,
     Map<String, List<DailyInstitutionalEntry>>? institutionalMap,
+    Map<String, MonthlyRevenueEntry>? revenueMap,
+    Map<String, StockValuationEntry>? valuationMap,
     Set<String>? recentlyRecommended,
     Future<MarketDataContext?> Function(String)? marketDataBuilder,
     void Function(int current, int total)? onProgress,
@@ -115,6 +117,9 @@ class ScoringService {
         context: context,
         institutionalHistory: institutionalHistory,
         recentNews: recentNews,
+        symbol: symbol,
+        latestRevenue: revenueMap?[symbol],
+        latestValuation: valuationMap?[symbol],
       );
 
       if (reasons.isEmpty) continue;

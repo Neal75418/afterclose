@@ -3,6 +3,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rules/divergence_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
+import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';
 import 'package:afterclose/domain/services/rules/institutional_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
@@ -25,7 +26,7 @@ class RuleEngine {
     }
   }
 
-  /// Default rule set - Phase 1-5 rules
+  /// Default rule set - Phase 1-6 rules
   static const List<StockRule> _defaultRules = [
     // Phase 1: Basic Rules
     WeakToStrongRule(),
@@ -51,6 +52,13 @@ class RuleEngine {
     PriceVolumeBearishDivergenceRule(),
     HighVolumeBreakoutRule(),
     LowVolumeAccumulationRule(),
+    // Phase 6: Fundamental Analysis Rules
+    RevenueYoYSurgeRule(),
+    RevenueYoYDeclineRule(),
+    HighDividendYieldRule(),
+    PEUndervaluedRule(),
+    PEOvervaluedRule(),
+    PBRUndervaluedRule(),
   ];
 
   final List<StockRule> _rules = [];
@@ -69,6 +77,8 @@ class RuleEngine {
     List<DailyInstitutionalEntry>? institutionalHistory,
     List<NewsItemEntry>? recentNews,
     String? symbol,
+    MonthlyRevenueEntry? latestRevenue,
+    StockValuationEntry? latestValuation,
   }) {
     if (priceHistory.isEmpty) return [];
 
@@ -77,6 +87,8 @@ class RuleEngine {
       prices: priceHistory,
       institutional: institutionalHistory,
       news: recentNews,
+      latestRevenue: latestRevenue,
+      latestValuation: latestValuation,
     );
 
     final triggered = <TriggeredReason>[];
