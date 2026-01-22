@@ -106,6 +106,7 @@ void main() {
 
         const context = AnalysisContext(
           trendState: TrendState.down,
+          reversalState: ReversalState.weakToStrong,
           rangeTop: 100.0,
         );
 
@@ -142,6 +143,7 @@ void main() {
 
         const context = AnalysisContext(
           trendState: TrendState.up,
+          reversalState: ReversalState.strongToWeak,
           supportLevel: 100.0,
         );
 
