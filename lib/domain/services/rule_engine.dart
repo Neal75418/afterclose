@@ -184,13 +184,15 @@ class RuleEngine {
 
     // Bonus: Strong PATTERN + VOLUME_SPIKE
     // Candlestick patterns confirmed by volume are highly significant signals
-    final hasStrongPattern = reasons.any((r) =>
-        r.type == ReasonType.patternBullishEngulfing ||
-        r.type == ReasonType.patternBearishEngulfing ||
-        r.type == ReasonType.patternMorningStar ||
-        r.type == ReasonType.patternEveningStar ||
-        r.type == ReasonType.patternThreeWhiteSoldiers ||
-        r.type == ReasonType.patternThreeBlackCrows);
+    final hasStrongPattern = reasons.any(
+      (r) =>
+          r.type == ReasonType.patternBullishEngulfing ||
+          r.type == ReasonType.patternBearishEngulfing ||
+          r.type == ReasonType.patternMorningStar ||
+          r.type == ReasonType.patternEveningStar ||
+          r.type == ReasonType.patternThreeWhiteSoldiers ||
+          r.type == ReasonType.patternThreeBlackCrows,
+    );
 
     if (hasStrongPattern && hasVolumeSpike) {
       score += RuleScores.patternVolumeBonus;
@@ -294,7 +296,8 @@ class RuleEngine {
     final totalDirectionalScore = bullishScore + bearishScore;
     if (totalDirectionalScore == 0) return 0.0;
 
-    final scoreRatio = (bullishScore - bearishScore).abs() / totalDirectionalScore;
+    final scoreRatio =
+        (bullishScore - bearishScore).abs() / totalDirectionalScore;
     // scoreRatio close to 0 = highly conflicted, close to 1 = one side dominates
 
     // Penalty: 30% when perfectly balanced, 0% when one side dominates
@@ -914,21 +917,17 @@ class RuleEngine {
   _ReasonCategory _getCategory(ReasonType type) {
     return switch (type) {
       ReasonType.reversalW2S ||
-      ReasonType.reversalS2W =>
-        _ReasonCategory.reversal,
+      ReasonType.reversalS2W => _ReasonCategory.reversal,
       ReasonType.techBreakout ||
-      ReasonType.techBreakdown =>
-        _ReasonCategory.technical,
+      ReasonType.techBreakdown => _ReasonCategory.technical,
       ReasonType.volumeSpike => _ReasonCategory.volume,
       ReasonType.priceSpike => _ReasonCategory.price,
       ReasonType.institutionalShift ||
       ReasonType.institutionalBuyStreak ||
-      ReasonType.institutionalSellStreak =>
-        _ReasonCategory.institutional,
+      ReasonType.institutionalSellStreak => _ReasonCategory.institutional,
       ReasonType.newsRelated => _ReasonCategory.news,
       ReasonType.kdGoldenCross ||
-      ReasonType.kdDeathCross =>
-        _ReasonCategory.kdSignal,
+      ReasonType.kdDeathCross => _ReasonCategory.kdSignal,
       // Candlestick patterns
       ReasonType.patternDoji ||
       ReasonType.patternBullishEngulfing ||
@@ -940,42 +939,33 @@ class RuleEngine {
       ReasonType.patternMorningStar ||
       ReasonType.patternEveningStar ||
       ReasonType.patternThreeWhiteSoldiers ||
-      ReasonType.patternThreeBlackCrows =>
-        _ReasonCategory.pattern,
+      ReasonType.patternThreeBlackCrows => _ReasonCategory.pattern,
       // Phase 3 signals
-      ReasonType.week52High ||
-      ReasonType.week52Low =>
-        _ReasonCategory.week52,
+      ReasonType.week52High || ReasonType.week52Low => _ReasonCategory.week52,
       ReasonType.maAlignmentBullish ||
-      ReasonType.maAlignmentBearish =>
-        _ReasonCategory.maAlignment,
+      ReasonType.maAlignmentBearish => _ReasonCategory.maAlignment,
       ReasonType.rsiExtremeOverbought ||
-      ReasonType.rsiExtremeOversold =>
-        _ReasonCategory.rsiExtreme,
+      ReasonType.rsiExtremeOversold => _ReasonCategory.rsiExtreme,
       // Phase 4 signals
       ReasonType.foreignShareholdingIncreasing ||
       ReasonType.foreignShareholdingDecreasing =>
         _ReasonCategory.foreignShareholding,
       ReasonType.dayTradingHigh ||
-      ReasonType.dayTradingExtreme =>
-        _ReasonCategory.dayTrading,
+      ReasonType.dayTradingExtreme => _ReasonCategory.dayTrading,
       ReasonType.concentrationHigh => _ReasonCategory.concentration,
       // Phase 5: Price-volume divergence
       ReasonType.priceVolumeBullishDivergence ||
       ReasonType.priceVolumeBearishDivergence ||
       ReasonType.highVolumeBreakout ||
-      ReasonType.lowVolumeAccumulation =>
-        _ReasonCategory.priceVolumeDivergence,
+      ReasonType.lowVolumeAccumulation => _ReasonCategory.priceVolumeDivergence,
       // Phase 6: Fundamental signals
       ReasonType.revenueYoySurge ||
       ReasonType.revenueYoyDecline ||
-      ReasonType.revenueMomGrowth =>
-        _ReasonCategory.revenue,
+      ReasonType.revenueMomGrowth => _ReasonCategory.revenue,
       ReasonType.highDividendYield ||
       ReasonType.peUndervalued ||
       ReasonType.peOvervalued ||
-      ReasonType.pbrUndervalued =>
-        _ReasonCategory.valuation,
+      ReasonType.pbrUndervalued => _ReasonCategory.valuation,
     };
   }
 
@@ -991,7 +981,8 @@ class RuleEngine {
     if (indicators.isKdGoldenCross) {
       // Check if cross happened FROM oversold zone (using prevKdK, not current)
       // This is more meaningful - cross from low zone is stronger signal
-      final isFromOversoldZone = indicators.prevKdK != null &&
+      final isFromOversoldZone =
+          indicators.prevKdK != null &&
           indicators.prevKdK! < RuleParams.kdOversold;
 
       return TriggeredReason(
@@ -1025,7 +1016,8 @@ class RuleEngine {
     if (indicators.isKdDeathCross) {
       // Check if cross happened FROM overbought zone (using prevKdK, not current)
       // This is more meaningful - cross from high zone is stronger bearish signal
-      final isFromOverboughtZone = indicators.prevKdK != null &&
+      final isFromOverboughtZone =
+          indicators.prevKdK != null &&
           indicators.prevKdK! > RuleParams.kdOverbought;
 
       return TriggeredReason(
@@ -1067,7 +1059,8 @@ class RuleEngine {
 
     // Count consecutive days from most recent
     for (final day in history.reversed) {
-      final net = (day.foreignNet ?? 0) +
+      final net =
+          (day.foreignNet ?? 0) +
           (day.investmentTrustNet ?? 0) +
           (day.dealerNet ?? 0);
 
@@ -1133,7 +1126,9 @@ class RuleEngine {
   ///
   /// Returns the most significant pattern found (highest confidence).
   /// Only returns one pattern to avoid signal overload.
-  List<TriggeredReason> checkCandlePatterns(List<DailyPriceEntry> priceHistory) {
+  List<TriggeredReason> checkCandlePatterns(
+    List<DailyPriceEntry> priceHistory,
+  ) {
     if (priceHistory.length < 3) return [];
 
     final patterns = _patternService.detectPatterns(priceHistory);
@@ -1175,8 +1170,7 @@ class RuleEngine {
       CandlePatternType.hammer ||
       CandlePatternType.gapUp ||
       CandlePatternType.morningStar ||
-      CandlePatternType.threeWhiteSoldiers =>
-        true,
+      CandlePatternType.threeWhiteSoldiers => true,
       _ => false,
     };
   }
@@ -1188,8 +1182,7 @@ class RuleEngine {
       CandlePatternType.hangingMan ||
       CandlePatternType.gapDown ||
       CandlePatternType.eveningStar ||
-      CandlePatternType.threeBlackCrows =>
-        true,
+      CandlePatternType.threeBlackCrows => true,
       _ => false,
     };
   }
@@ -1242,7 +1235,8 @@ class RuleEngine {
           'week52_high': week52High,
           'close': todayClose,
         },
-        template: '創52週新高：今日高點 ${todayHigh.toStringAsFixed(2)} 突破前高 ${week52High.toStringAsFixed(2)}',
+        template:
+            '創52週新高：今日高點 ${todayHigh.toStringAsFixed(2)} 突破前高 ${week52High.toStringAsFixed(2)}',
       );
     }
 
@@ -1257,22 +1251,26 @@ class RuleEngine {
           'week52_low': week52Low,
           'close': todayClose,
         },
-        template: '創52週新低：今日低點 ${todayLow.toStringAsFixed(2)} 跌破前低 ${week52Low.toStringAsFixed(2)}',
+        template:
+            '創52週新低：今日低點 ${todayLow.toStringAsFixed(2)} 跌破前低 ${week52Low.toStringAsFixed(2)}',
       );
     }
 
     // Check if near 52-week high (within threshold)
     final distanceToHigh = (week52High - todayClose) / week52High;
-    if (distanceToHigh <= RuleParams.week52NearThreshold && distanceToHigh > 0) {
+    if (distanceToHigh <= RuleParams.week52NearThreshold &&
+        distanceToHigh > 0) {
       return TriggeredReason(
         type: ReasonType.week52High,
-        score: (RuleScores.week52High * 0.7).round(), // Reduced score for "near"
+        score: (RuleScores.week52High * 0.7)
+            .round(), // Reduced score for "near"
         evidence: {
           'today_close': todayClose,
           'week52_high': week52High,
           'distance_pct': distanceToHigh,
         },
-        template: '接近52週新高：距離 ${(distanceToHigh * 100).toStringAsFixed(1)}%（${week52High.toStringAsFixed(2)}）',
+        template:
+            '接近52週新高：距離 ${(distanceToHigh * 100).toStringAsFixed(1)}%（${week52High.toStringAsFixed(2)}）',
       );
     }
 
@@ -1287,7 +1285,8 @@ class RuleEngine {
           'week52_low': week52Low,
           'distance_pct': distanceToLow,
         },
-        template: '接近52週新低：距離 ${(distanceToLow * 100).toStringAsFixed(1)}%（${week52Low.toStringAsFixed(2)}）',
+        template:
+            '接近52週新低：距離 ${(distanceToLow * 100).toStringAsFixed(1)}%（${week52Low.toStringAsFixed(2)}）',
       );
     }
 
@@ -1304,7 +1303,10 @@ class RuleEngine {
     if (priceHistory.length < 60) return null;
 
     // Calculate MAs
-    final closes = priceHistory.map((p) => p.close).whereType<double>().toList();
+    final closes = priceHistory
+        .map((p) => p.close)
+        .whereType<double>()
+        .toList();
     if (closes.length < 60) return null;
 
     final ma5 = _calculateSma(closes, 5);
@@ -1323,7 +1325,8 @@ class RuleEngine {
 
     // Check for bullish alignment: 5 > 10 > 20 > 60
     // Also require minimum separation between all adjacent MAs
-    final isBullish = ma5 > ma10 &&
+    final isBullish =
+        ma5 > ma10 &&
         ma10 > ma20 &&
         ma20 > ma60 &&
         (ma5 - ma10) / ma10 >= RuleParams.maMinSeparation &&
@@ -1347,7 +1350,8 @@ class RuleEngine {
 
     // Check for bearish alignment: 5 < 10 < 20 < 60
     // Also require minimum separation between all adjacent MAs
-    final isBearish = ma5 < ma10 &&
+    final isBearish =
+        ma5 < ma10 &&
         ma10 < ma20 &&
         ma20 < ma60 &&
         (ma10 - ma5) / ma5 >= RuleParams.maMinSeparation &&
@@ -1395,11 +1399,9 @@ class RuleEngine {
       return TriggeredReason(
         type: ReasonType.rsiExtremeOverbought,
         score: RuleScores.rsiExtremeOverboughtSignal,
-        evidence: {
-          'rsi': rsi,
-          'threshold': RuleParams.rsiExtremeOverbought,
-        },
-        template: 'RSI極度超買：${rsi.toStringAsFixed(1)}（≥${RuleParams.rsiExtremeOverbought.toInt()}警戒）',
+        evidence: {'rsi': rsi, 'threshold': RuleParams.rsiExtremeOverbought},
+        template:
+            'RSI極度超買：${rsi.toStringAsFixed(1)}（≥${RuleParams.rsiExtremeOverbought.toInt()}警戒）',
       );
     }
 
@@ -1408,11 +1410,9 @@ class RuleEngine {
       return TriggeredReason(
         type: ReasonType.rsiExtremeOversold,
         score: RuleScores.rsiExtremeOversoldSignal,
-        evidence: {
-          'rsi': rsi,
-          'threshold': RuleParams.rsiExtremeOversold,
-        },
-        template: 'RSI極度超賣：${rsi.toStringAsFixed(1)}（≤${RuleParams.rsiExtremeOversold.toInt()}反彈機會）',
+        evidence: {'rsi': rsi, 'threshold': RuleParams.rsiExtremeOversold},
+        template:
+            'RSI極度超賣：${rsi.toStringAsFixed(1)}（≤${RuleParams.rsiExtremeOversold.toInt()}反彈機會）',
       );
     }
 
@@ -1444,7 +1444,8 @@ class RuleEngine {
           'threshold': RuleParams.foreignShareholdingIncreaseThreshold,
           'days': RuleParams.foreignShareholdingLookbackDays,
         },
-        template: '外資持股增加：${RuleParams.foreignShareholdingLookbackDays}日增加 ${change.toStringAsFixed(2)}%'
+        template:
+            '外資持股增加：${RuleParams.foreignShareholdingLookbackDays}日增加 ${change.toStringAsFixed(2)}%'
             '${ratio != null ? '（持股 ${ratio.toStringAsFixed(1)}%）' : ''}',
       );
     }
@@ -1460,7 +1461,8 @@ class RuleEngine {
           'threshold': RuleParams.foreignShareholdingIncreaseThreshold,
           'days': RuleParams.foreignShareholdingLookbackDays,
         },
-        template: '外資持股減少：${RuleParams.foreignShareholdingLookbackDays}日減少 ${change.abs().toStringAsFixed(2)}%'
+        template:
+            '外資持股減少：${RuleParams.foreignShareholdingLookbackDays}日減少 ${change.abs().toStringAsFixed(2)}%'
             '${ratio != null ? '（持股 ${ratio.toStringAsFixed(1)}%）' : ''}',
       );
     }
@@ -1490,7 +1492,8 @@ class RuleEngine {
           'ratio': ratio,
           'threshold': RuleParams.dayTradingExtremeThreshold,
         },
-        template: '極高當沖比例：${ratio.toStringAsFixed(1)}%（≥${RuleParams.dayTradingExtremeThreshold.toInt()}%警戒）',
+        template:
+            '極高當沖比例：${ratio.toStringAsFixed(1)}%（≥${RuleParams.dayTradingExtremeThreshold.toInt()}%警戒）',
       );
     }
 
@@ -1553,7 +1556,8 @@ class RuleEngine {
   /// - High volume at high: potential distribution
   /// - Low volume at low: potential accumulation
   TriggeredReason? checkPriceVolumeDivergence(List<DailyPriceEntry> prices) {
-    if (prices.length < RuleParams.priceVolumeLookbackDays + RuleParams.rangeLookback) {
+    if (prices.length <
+        RuleParams.priceVolumeLookbackDays + RuleParams.rangeLookback) {
       return null;
     }
 
@@ -1561,53 +1565,53 @@ class RuleEngine {
 
     return switch (analysis.state) {
       PriceVolumeState.bullishDivergence => TriggeredReason(
-          type: ReasonType.priceVolumeBullishDivergence,
-          score: RuleScores.priceVolumeBullishDivergence,
-          evidence: {
-            'price_change': analysis.priceChangePercent,
-            'volume_change': analysis.volumeChangePercent,
-            'state': 'bullish_divergence',
-          },
-          template:
-              '價漲量縮：價格上漲 ${analysis.priceChangePercent?.toStringAsFixed(1)}%，'
-              '但成交量減少 ${analysis.volumeChangePercent?.abs().toStringAsFixed(0)}%（上漲動能不足）',
-        ),
+        type: ReasonType.priceVolumeBullishDivergence,
+        score: RuleScores.priceVolumeBullishDivergence,
+        evidence: {
+          'price_change': analysis.priceChangePercent,
+          'volume_change': analysis.volumeChangePercent,
+          'state': 'bullish_divergence',
+        },
+        template:
+            '價漲量縮：價格上漲 ${analysis.priceChangePercent?.toStringAsFixed(1)}%，'
+            '但成交量減少 ${analysis.volumeChangePercent?.abs().toStringAsFixed(0)}%（上漲動能不足）',
+      ),
       PriceVolumeState.bearishDivergence => TriggeredReason(
-          type: ReasonType.priceVolumeBearishDivergence,
-          score: RuleScores.priceVolumeBearishDivergence,
-          evidence: {
-            'price_change': analysis.priceChangePercent,
-            'volume_change': analysis.volumeChangePercent,
-            'state': 'bearish_divergence',
-          },
-          template:
-              '價跌量增：價格下跌 ${analysis.priceChangePercent?.abs().toStringAsFixed(1)}%，'
-              '成交量增加 ${analysis.volumeChangePercent?.toStringAsFixed(0)}%（恐慌賣壓）',
-        ),
+        type: ReasonType.priceVolumeBearishDivergence,
+        score: RuleScores.priceVolumeBearishDivergence,
+        evidence: {
+          'price_change': analysis.priceChangePercent,
+          'volume_change': analysis.volumeChangePercent,
+          'state': 'bearish_divergence',
+        },
+        template:
+            '價跌量增：價格下跌 ${analysis.priceChangePercent?.abs().toStringAsFixed(1)}%，'
+            '成交量增加 ${analysis.volumeChangePercent?.toStringAsFixed(0)}%（恐慌賣壓）',
+      ),
       PriceVolumeState.highVolumeAtHigh => TriggeredReason(
-          type: ReasonType.highVolumeBreakout,
-          score: RuleScores.highVolumeBreakout,
-          evidence: {
-            'price_position': analysis.pricePosition,
-            'volume_change': analysis.volumeChangePercent,
-            'state': 'high_volume_at_high',
-          },
-          template:
-              '高檔爆量：股價處於相對高位（${((analysis.pricePosition ?? 0) * 100).toStringAsFixed(0)}%），'
-              '成交量大增 ${analysis.volumeChangePercent?.toStringAsFixed(0)}%（關注出貨風險）',
-        ),
+        type: ReasonType.highVolumeBreakout,
+        score: RuleScores.highVolumeBreakout,
+        evidence: {
+          'price_position': analysis.pricePosition,
+          'volume_change': analysis.volumeChangePercent,
+          'state': 'high_volume_at_high',
+        },
+        template:
+            '高檔爆量：股價處於相對高位（${((analysis.pricePosition ?? 0) * 100).toStringAsFixed(0)}%），'
+            '成交量大增 ${analysis.volumeChangePercent?.toStringAsFixed(0)}%（關注出貨風險）',
+      ),
       PriceVolumeState.lowVolumeAtLow => TriggeredReason(
-          type: ReasonType.lowVolumeAccumulation,
-          score: RuleScores.lowVolumeAccumulation,
-          evidence: {
-            'price_position': analysis.pricePosition,
-            'volume_change': analysis.volumeChangePercent,
-            'state': 'low_volume_at_low',
-          },
-          template:
-              '低檔吸籌：股價處於相對低位（${((analysis.pricePosition ?? 0) * 100).toStringAsFixed(0)}%），'
-              '成交量萎縮 ${analysis.volumeChangePercent?.abs().toStringAsFixed(0)}%（可能有主力吸籌）',
-        ),
+        type: ReasonType.lowVolumeAccumulation,
+        score: RuleScores.lowVolumeAccumulation,
+        evidence: {
+          'price_position': analysis.pricePosition,
+          'volume_change': analysis.volumeChangePercent,
+          'state': 'low_volume_at_low',
+        },
+        template:
+            '低檔吸籌：股價處於相對低位（${((analysis.pricePosition ?? 0) * 100).toStringAsFixed(0)}%），'
+            '成交量萎縮 ${analysis.volumeChangePercent?.abs().toStringAsFixed(0)}%（可能有主力吸籌）',
+      ),
       _ => null, // neutral or healthyUptrend - no signal
     };
   }
@@ -1636,12 +1640,14 @@ class RuleEngine {
           'yoy_growth': yoyGrowth,
           'threshold': RuleParams.revenueYoySurgeThreshold,
         },
-        template: '營收年增暴增：YoY +${yoyGrowth.toStringAsFixed(1)}%（超過${RuleParams.revenueYoySurgeThreshold.toInt()}%）',
+        template:
+            '營收年增暴增：YoY +${yoyGrowth.toStringAsFixed(1)}%（超過${RuleParams.revenueYoySurgeThreshold.toInt()}%）',
       );
     }
 
     // Check YoY decline
-    if (yoyGrowth != null && yoyGrowth <= -RuleParams.revenueYoyDeclineThreshold) {
+    if (yoyGrowth != null &&
+        yoyGrowth <= -RuleParams.revenueYoyDeclineThreshold) {
       return TriggeredReason(
         type: ReasonType.revenueYoyDecline,
         score: RuleScores.revenueYoyDecline,
@@ -1649,7 +1655,8 @@ class RuleEngine {
           'yoy_growth': yoyGrowth,
           'threshold': RuleParams.revenueYoyDeclineThreshold,
         },
-        template: '營收年減衰退：YoY ${yoyGrowth.toStringAsFixed(1)}%（衰退超過${RuleParams.revenueYoyDeclineThreshold.toInt()}%）',
+        template:
+            '營收年減衰退：YoY ${yoyGrowth.toStringAsFixed(1)}%（衰退超過${RuleParams.revenueYoyDeclineThreshold.toInt()}%）',
       );
     }
 
@@ -1667,7 +1674,8 @@ class RuleEngine {
           'mom_growth': momGrowth,
           'consecutive_months': consecutiveMonths,
         },
-        template: '營收月增持續：連續$consecutiveMonths個月成長，本月 +${momGrowth.toStringAsFixed(1)}%',
+        template:
+            '營收月增持續：連續$consecutiveMonths個月成長，本月 +${momGrowth.toStringAsFixed(1)}%',
       );
     }
 
@@ -1697,56 +1705,61 @@ class RuleEngine {
     final dividendYield = fundamentalData.dividendYield;
     if (dividendYield != null &&
         dividendYield >= RuleParams.highDividendYieldThreshold) {
-      results.add(TriggeredReason(
-        type: ReasonType.highDividendYield,
-        score: RuleScores.highDividendYield,
-        evidence: {
-          'dividend_yield': dividendYield,
-          'threshold': RuleParams.highDividendYieldThreshold,
-        },
-        template: '高殖利率：${dividendYield.toStringAsFixed(2)}%（超過${RuleParams.highDividendYieldThreshold.toInt()}%）',
-      ));
+      results.add(
+        TriggeredReason(
+          type: ReasonType.highDividendYield,
+          score: RuleScores.highDividendYield,
+          evidence: {
+            'dividend_yield': dividendYield,
+            'threshold': RuleParams.highDividendYieldThreshold,
+          },
+          template:
+              '高殖利率：${dividendYield.toStringAsFixed(2)}%（超過${RuleParams.highDividendYieldThreshold.toInt()}%）',
+        ),
+      );
     }
 
     // Check PE undervalued
     final per = fundamentalData.per;
     if (per != null && per > 0 && per < RuleParams.peUndervaluedThreshold) {
-      results.add(TriggeredReason(
-        type: ReasonType.peUndervalued,
-        score: RuleScores.peUndervalued,
-        evidence: {
-          'pe': per,
-          'threshold': RuleParams.peUndervaluedThreshold,
-        },
-        template: 'PE低估：本益比 ${per.toStringAsFixed(1)} 倍（低於${RuleParams.peUndervaluedThreshold.toInt()}倍）',
-      ));
+      results.add(
+        TriggeredReason(
+          type: ReasonType.peUndervalued,
+          score: RuleScores.peUndervalued,
+          evidence: {'pe': per, 'threshold': RuleParams.peUndervaluedThreshold},
+          template:
+              'PE低估：本益比 ${per.toStringAsFixed(1)} 倍（低於${RuleParams.peUndervaluedThreshold.toInt()}倍）',
+        ),
+      );
     }
 
     // Check PE overvalued (warning signal)
     if (per != null && per > RuleParams.peOvervaluedThreshold) {
-      results.add(TriggeredReason(
-        type: ReasonType.peOvervalued,
-        score: RuleScores.peOvervalued,
-        evidence: {
-          'pe': per,
-          'threshold': RuleParams.peOvervaluedThreshold,
-        },
-        template: 'PE高估警示：本益比 ${per.toStringAsFixed(1)} 倍（超過${RuleParams.peOvervaluedThreshold.toInt()}倍）',
-      ));
+      results.add(
+        TriggeredReason(
+          type: ReasonType.peOvervalued,
+          score: RuleScores.peOvervalued,
+          evidence: {'pe': per, 'threshold': RuleParams.peOvervaluedThreshold},
+          template:
+              'PE高估警示：本益比 ${per.toStringAsFixed(1)} 倍（超過${RuleParams.peOvervaluedThreshold.toInt()}倍）',
+        ),
+      );
     }
 
     // Check PBR undervalued
     final pbr = fundamentalData.pbr;
     if (pbr != null && pbr > 0 && pbr < RuleParams.pbrUndervaluedThreshold) {
-      results.add(TriggeredReason(
-        type: ReasonType.pbrUndervalued,
-        score: RuleScores.pbrUndervalued,
-        evidence: {
-          'pbr': pbr,
-          'threshold': RuleParams.pbrUndervaluedThreshold,
-        },
-        template: '股價淨值比低：PBR ${pbr.toStringAsFixed(2)} 倍（低於淨值）',
-      ));
+      results.add(
+        TriggeredReason(
+          type: ReasonType.pbrUndervalued,
+          score: RuleScores.pbrUndervalued,
+          evidence: {
+            'pbr': pbr,
+            'threshold': RuleParams.pbrUndervaluedThreshold,
+          },
+          template: '股價淨值比低：PBR ${pbr.toStringAsFixed(2)} 倍（低於淨值）',
+        ),
+      );
     }
 
     return results;
@@ -1756,49 +1769,49 @@ class RuleEngine {
   TriggeredReason? _patternToReason(PatternResult pattern) {
     final (reasonType, score) = switch (pattern.type) {
       CandlePatternType.doji => (
-          ReasonType.patternDoji,
-          RuleScores.patternDoji,
-        ),
+        ReasonType.patternDoji,
+        RuleScores.patternDoji,
+      ),
       CandlePatternType.bullishEngulfing => (
-          ReasonType.patternBullishEngulfing,
-          RuleScores.patternEngulfing,
-        ),
+        ReasonType.patternBullishEngulfing,
+        RuleScores.patternEngulfing,
+      ),
       CandlePatternType.bearishEngulfing => (
-          ReasonType.patternBearishEngulfing,
-          RuleScores.patternEngulfing,
-        ),
+        ReasonType.patternBearishEngulfing,
+        RuleScores.patternEngulfing,
+      ),
       CandlePatternType.hammer => (
-          ReasonType.patternHammer,
-          RuleScores.patternHammer,
-        ),
+        ReasonType.patternHammer,
+        RuleScores.patternHammer,
+      ),
       CandlePatternType.hangingMan => (
-          ReasonType.patternHangingMan,
-          RuleScores.patternHammer,
-        ),
+        ReasonType.patternHangingMan,
+        RuleScores.patternHammer,
+      ),
       CandlePatternType.gapUp => (
-          ReasonType.patternGapUp,
-          RuleScores.patternGap,
-        ),
+        ReasonType.patternGapUp,
+        RuleScores.patternGap,
+      ),
       CandlePatternType.gapDown => (
-          ReasonType.patternGapDown,
-          RuleScores.patternGap,
-        ),
+        ReasonType.patternGapDown,
+        RuleScores.patternGap,
+      ),
       CandlePatternType.morningStar => (
-          ReasonType.patternMorningStar,
-          RuleScores.patternStar,
-        ),
+        ReasonType.patternMorningStar,
+        RuleScores.patternStar,
+      ),
       CandlePatternType.eveningStar => (
-          ReasonType.patternEveningStar,
-          RuleScores.patternStar,
-        ),
+        ReasonType.patternEveningStar,
+        RuleScores.patternStar,
+      ),
       CandlePatternType.threeWhiteSoldiers => (
-          ReasonType.patternThreeWhiteSoldiers,
-          RuleScores.patternThreeSoldiers,
-        ),
+        ReasonType.patternThreeWhiteSoldiers,
+        RuleScores.patternThreeSoldiers,
+      ),
       CandlePatternType.threeBlackCrows => (
-          ReasonType.patternThreeBlackCrows,
-          RuleScores.patternThreeSoldiers,
-        ),
+        ReasonType.patternThreeBlackCrows,
+        RuleScores.patternThreeSoldiers,
+      ),
     };
 
     // Apply confidence multiplier to score

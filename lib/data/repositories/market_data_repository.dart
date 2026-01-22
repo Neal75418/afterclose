@@ -148,7 +148,10 @@ class MarketDataRepository {
   }
 
   /// Get average day trading ratio
-  Future<double?> getAverageDayTradingRatio(String symbol, {int days = 5}) async {
+  Future<double?> getAverageDayTradingRatio(
+    String symbol, {
+    int days = 5,
+  }) async {
     final history = await getDayTradingHistory(symbol, days: days + 5);
     if (history.isEmpty) return null;
 
@@ -276,7 +279,9 @@ class MarketDataRepository {
     required List<String> dataTypes,
     int quarters = 8,
   }) async {
-    final startDate = DateTime.now().subtract(Duration(days: quarters * 90 + 30));
+    final startDate = DateTime.now().subtract(
+      Duration(days: quarters * 90 + 30),
+    );
     return _db.getFinancialMetrics(
       symbol,
       dataTypes: dataTypes,

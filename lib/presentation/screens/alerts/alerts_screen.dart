@@ -201,15 +201,19 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                     color: wasTriggered
                         ? Colors.orange.withValues(alpha: 0.2)
                         : isActive
-                            ? Colors.green.withValues(alpha: 0.2)
-                            : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.15),
+                        ? Colors.green.withValues(alpha: 0.2)
+                        : theme.colorScheme.onSurfaceVariant.withValues(
+                            alpha: 0.15,
+                          ),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
                       color: wasTriggered
                           ? Colors.orange.withValues(alpha: 0.5)
                           : isActive
-                              ? Colors.green.withValues(alpha: 0.5)
-                              : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                          ? Colors.green.withValues(alpha: 0.5)
+                          : theme.colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.3,
+                            ),
                       width: 1,
                     ),
                   ),
@@ -311,20 +315,28 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       AlertType.changePct => 'alert.changeAbove'.tr(
         namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
       ),
-      AlertType.volumeSpike => '成交量爆量（≥${alert.targetValue.toStringAsFixed(0)}倍均量）',
-      AlertType.volumeAbove => '成交量高於 ${alert.targetValue.toStringAsFixed(0)} 張',
-      AlertType.rsiOverbought => 'RSI 超買（≥${alert.targetValue.toStringAsFixed(0)}）',
-      AlertType.rsiOversold => 'RSI 超賣（≤${alert.targetValue.toStringAsFixed(0)}）',
+      AlertType.volumeSpike =>
+        '成交量爆量（≥${alert.targetValue.toStringAsFixed(0)}倍均量）',
+      AlertType.volumeAbove =>
+        '成交量高於 ${alert.targetValue.toStringAsFixed(0)} 張',
+      AlertType.rsiOverbought =>
+        'RSI 超買（≥${alert.targetValue.toStringAsFixed(0)}）',
+      AlertType.rsiOversold =>
+        'RSI 超賣（≤${alert.targetValue.toStringAsFixed(0)}）',
       AlertType.kdGoldenCross => 'KD 黃金交叉',
       AlertType.kdDeathCross => 'KD 死亡交叉',
-      AlertType.breakResistance => '突破壓力 ${alert.targetValue.toStringAsFixed(2)} 元',
-      AlertType.breakSupport => '跌破支撐 ${alert.targetValue.toStringAsFixed(2)} 元',
+      AlertType.breakResistance =>
+        '突破壓力 ${alert.targetValue.toStringAsFixed(2)} 元',
+      AlertType.breakSupport =>
+        '跌破支撐 ${alert.targetValue.toStringAsFixed(2)} 元',
       AlertType.week52High => '創 52 週新高',
       AlertType.week52Low => '創 52 週新低',
       AlertType.crossAboveMa => '站上 ${alert.targetValue.toInt()} 日均線',
       AlertType.crossBelowMa => '跌破 ${alert.targetValue.toInt()} 日均線',
-      AlertType.revenueYoySurge => '營收年增 ≥${alert.targetValue.toStringAsFixed(1)}%',
-      AlertType.highDividendYield => '殖利率 ≥${alert.targetValue.toStringAsFixed(1)}%',
+      AlertType.revenueYoySurge =>
+        '營收年增 ≥${alert.targetValue.toStringAsFixed(1)}%',
+      AlertType.highDividendYield =>
+        '殖利率 ≥${alert.targetValue.toStringAsFixed(1)}%',
       AlertType.peUndervalued => 'PE ≤${alert.targetValue.toStringAsFixed(1)}倍',
     };
   }

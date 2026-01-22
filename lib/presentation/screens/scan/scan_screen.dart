@@ -78,7 +78,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    color: theme.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.4,
+                    ),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -98,40 +100,46 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                     children: ScanFilterGroup.values
                         .where((group) => group != ScanFilterGroup.all)
                         .map((group) {
-                      final filters = group.filters;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Group header
-                          Padding(
-                            padding: const EdgeInsets.only(top: 16, bottom: 8),
-                            child: Text(
-                              group.labelKey.tr(),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold,
+                          final filters = group.filters;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Group header
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: 16,
+                                  bottom: 8,
+                                ),
+                                child: Text(
+                                  group.labelKey.tr(),
+                                  style: theme.textTheme.titleSmall?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          // Filter chips in wrap
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: filters.map((filter) {
-                              final isSelected = currentFilter == filter;
-                              return FilterChip(
-                                label: Text(filter.labelKey.tr()),
-                                selected: isSelected,
-                                onSelected: (_) {
-                                  ref.read(scanProvider.notifier).setFilter(filter);
-                                  Navigator.pop(context);
-                                },
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+                              // Filter chips in wrap
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: filters.map((filter) {
+                                  final isSelected = currentFilter == filter;
+                                  return FilterChip(
+                                    label: Text(filter.labelKey.tr()),
+                                    selected: isSelected,
+                                    onSelected: (_) {
+                                      ref
+                                          .read(scanProvider.notifier)
+                                          .setFilter(filter);
+                                      Navigator.pop(context);
+                                    },
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          );
+                        })
+                        .toList(),
                   ),
                 ),
               ],
@@ -208,11 +216,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       selected: true,
                       onSelected: (_) {
                         // Tapping again clears the filter
-                        ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+                        ref
+                            .read(scanProvider.notifier)
+                            .setFilter(ScanFilter.all);
                       },
                       deleteIcon: const Icon(Icons.close, size: 16),
                       onDeleted: () {
-                        ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+                        ref
+                            .read(scanProvider.notifier)
+                            .setFilter(ScanFilter.all);
                       },
                     ),
                   if (state.filter != ScanFilter.all) const SizedBox(width: 8),
@@ -220,7 +232,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   ActionChip(
                     avatar: const Icon(Icons.filter_list, size: 18),
                     label: Text('scan.moreFilters'.tr()),
-                    onPressed: () => _showFilterBottomSheet(context, ref, state.filter),
+                    onPressed: () =>
+                        _showFilterBottomSheet(context, ref, state.filter),
                   ),
                 ],
               ),
@@ -240,7 +253,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                             },
                           )
                         : 'scan.stockCount'.tr(
-                            namedArgs: {'count': state.stocks.length.toString()},
+                            namedArgs: {
+                              'count': state.stocks.length.toString(),
+                            },
                           ),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,

@@ -78,10 +78,8 @@ enum AlertType {
     AlertType.revenueYoySurge ||
     AlertType.highDividendYield => '%',
     AlertType.volumeAbove => '張',
-    AlertType.rsiOverbought ||
-    AlertType.rsiOversold => '',
-    AlertType.crossAboveMa ||
-    AlertType.crossBelowMa => '日均線',
+    AlertType.rsiOverbought || AlertType.rsiOversold => '',
+    AlertType.crossAboveMa || AlertType.crossBelowMa => '日均線',
     AlertType.peUndervalued => '倍',
     _ => '',
   };
@@ -90,8 +88,7 @@ enum AlertType {
   double? get defaultTargetValue => switch (this) {
     AlertType.rsiOverbought => 70.0,
     AlertType.rsiOversold => 30.0,
-    AlertType.crossAboveMa ||
-    AlertType.crossBelowMa => 20.0, // 20-day MA
+    AlertType.crossAboveMa || AlertType.crossBelowMa => 20.0, // 20-day MA
     AlertType.volumeSpike => 2.0, // 2x average
     AlertType.revenueYoySurge => 30.0, // 30% YoY growth
     AlertType.highDividendYield => 5.0, // 5% yield

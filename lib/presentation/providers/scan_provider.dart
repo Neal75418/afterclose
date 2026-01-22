@@ -17,12 +17,24 @@ enum ScanFilter {
   all('scan.filterAll', null, ScanFilterGroup.all),
 
   // Reversal signals
-  reversalW2S('scan.filterReversalW2S', 'REVERSAL_W2S', ScanFilterGroup.reversal),
-  reversalS2W('scan.filterReversalS2W', 'REVERSAL_S2W', ScanFilterGroup.reversal),
+  reversalW2S(
+    'scan.filterReversalW2S',
+    'REVERSAL_W2S',
+    ScanFilterGroup.reversal,
+  ),
+  reversalS2W(
+    'scan.filterReversalS2W',
+    'REVERSAL_S2W',
+    ScanFilterGroup.reversal,
+  ),
 
   // Technical breakout/breakdown
   breakout('scan.filterBreakout', 'TECH_BREAKOUT', ScanFilterGroup.technical),
-  breakdown('scan.filterBreakdown', 'TECH_BREAKDOWN', ScanFilterGroup.technical),
+  breakdown(
+    'scan.filterBreakdown',
+    'TECH_BREAKDOWN',
+    ScanFilterGroup.technical,
+  ),
 
   // Volume signals
   volumeSpike('scan.filterVolumeSpike', 'VOLUME_SPIKE', ScanFilterGroup.volume),
@@ -31,57 +43,181 @@ enum ScanFilter {
   priceSpike('scan.filterPriceSpike', 'PRICE_SPIKE', ScanFilterGroup.price),
 
   // KD signals
-  kdGoldenCross('scan.filterKdGoldenCross', 'KD_GOLDEN_CROSS', ScanFilterGroup.indicator),
-  kdDeathCross('scan.filterKdDeathCross', 'KD_DEATH_CROSS', ScanFilterGroup.indicator),
+  kdGoldenCross(
+    'scan.filterKdGoldenCross',
+    'KD_GOLDEN_CROSS',
+    ScanFilterGroup.indicator,
+  ),
+  kdDeathCross(
+    'scan.filterKdDeathCross',
+    'KD_DEATH_CROSS',
+    ScanFilterGroup.indicator,
+  ),
 
   // RSI signals
-  rsiOverbought('scan.filterRsiOverbought', 'RSI_EXTREME_OVERBOUGHT', ScanFilterGroup.indicator),
-  rsiOversold('scan.filterRsiOversold', 'RSI_EXTREME_OVERSOLD', ScanFilterGroup.indicator),
+  rsiOverbought(
+    'scan.filterRsiOverbought',
+    'RSI_EXTREME_OVERBOUGHT',
+    ScanFilterGroup.indicator,
+  ),
+  rsiOversold(
+    'scan.filterRsiOversold',
+    'RSI_EXTREME_OVERSOLD',
+    ScanFilterGroup.indicator,
+  ),
 
   // Institutional signals
-  institutionalShift('scan.filterInstitutionalShift', 'INSTITUTIONAL_SHIFT', ScanFilterGroup.institutional),
-  institutionalBuyStreak('scan.filterInstitutionalBuyStreak', 'INSTITUTIONAL_BUY_STREAK', ScanFilterGroup.institutional),
-  institutionalSellStreak('scan.filterInstitutionalSellStreak', 'INSTITUTIONAL_SELL_STREAK', ScanFilterGroup.institutional),
+  institutionalShift(
+    'scan.filterInstitutionalShift',
+    'INSTITUTIONAL_SHIFT',
+    ScanFilterGroup.institutional,
+  ),
+  institutionalBuyStreak(
+    'scan.filterInstitutionalBuyStreak',
+    'INSTITUTIONAL_BUY_STREAK',
+    ScanFilterGroup.institutional,
+  ),
+  institutionalSellStreak(
+    'scan.filterInstitutionalSellStreak',
+    'INSTITUTIONAL_SELL_STREAK',
+    ScanFilterGroup.institutional,
+  ),
 
   // 52-week signals
   week52High('scan.filterWeek52High', 'WEEK_52_HIGH', ScanFilterGroup.week52),
   week52Low('scan.filterWeek52Low', 'WEEK_52_LOW', ScanFilterGroup.week52),
 
   // MA alignment signals
-  maAlignmentBullish('scan.filterMaAlignmentBullish', 'MA_ALIGNMENT_BULLISH', ScanFilterGroup.maAlignment),
-  maAlignmentBearish('scan.filterMaAlignmentBearish', 'MA_ALIGNMENT_BEARISH', ScanFilterGroup.maAlignment),
+  maAlignmentBullish(
+    'scan.filterMaAlignmentBullish',
+    'MA_ALIGNMENT_BULLISH',
+    ScanFilterGroup.maAlignment,
+  ),
+  maAlignmentBearish(
+    'scan.filterMaAlignmentBearish',
+    'MA_ALIGNMENT_BEARISH',
+    ScanFilterGroup.maAlignment,
+  ),
 
   // Candlestick patterns - neutral
-  patternDoji('scan.filterPatternDoji', 'PATTERN_DOJI', ScanFilterGroup.pattern),
+  patternDoji(
+    'scan.filterPatternDoji',
+    'PATTERN_DOJI',
+    ScanFilterGroup.pattern,
+  ),
 
   // Candlestick patterns - bullish
-  patternBullishEngulfing('scan.filterPatternBullishEngulfing', 'PATTERN_BULLISH_ENGULFING', ScanFilterGroup.pattern),
-  patternHammer('scan.filterPatternHammer', 'PATTERN_HAMMER', ScanFilterGroup.pattern),
-  patternMorningStar('scan.filterPatternMorningStar', 'PATTERN_MORNING_STAR', ScanFilterGroup.pattern),
-  patternThreeWhiteSoldiers('scan.filterPatternThreeWhiteSoldiers', 'PATTERN_THREE_WHITE_SOLDIERS', ScanFilterGroup.pattern),
-  patternGapUp('scan.filterPatternGapUp', 'PATTERN_GAP_UP', ScanFilterGroup.pattern),
+  patternBullishEngulfing(
+    'scan.filterPatternBullishEngulfing',
+    'PATTERN_BULLISH_ENGULFING',
+    ScanFilterGroup.pattern,
+  ),
+  patternHammer(
+    'scan.filterPatternHammer',
+    'PATTERN_HAMMER',
+    ScanFilterGroup.pattern,
+  ),
+  patternMorningStar(
+    'scan.filterPatternMorningStar',
+    'PATTERN_MORNING_STAR',
+    ScanFilterGroup.pattern,
+  ),
+  patternThreeWhiteSoldiers(
+    'scan.filterPatternThreeWhiteSoldiers',
+    'PATTERN_THREE_WHITE_SOLDIERS',
+    ScanFilterGroup.pattern,
+  ),
+  patternGapUp(
+    'scan.filterPatternGapUp',
+    'PATTERN_GAP_UP',
+    ScanFilterGroup.pattern,
+  ),
 
   // Candlestick patterns - bearish
-  patternBearishEngulfing('scan.filterPatternBearishEngulfing', 'PATTERN_BEARISH_ENGULFING', ScanFilterGroup.pattern),
-  patternHangingMan('scan.filterPatternHangingMan', 'PATTERN_HANGING_MAN', ScanFilterGroup.pattern),
-  patternEveningStar('scan.filterPatternEveningStar', 'PATTERN_EVENING_STAR', ScanFilterGroup.pattern),
-  patternThreeBlackCrows('scan.filterPatternThreeBlackCrows', 'PATTERN_THREE_BLACK_CROWS', ScanFilterGroup.pattern),
-  patternGapDown('scan.filterPatternGapDown', 'PATTERN_GAP_DOWN', ScanFilterGroup.pattern),
+  patternBearishEngulfing(
+    'scan.filterPatternBearishEngulfing',
+    'PATTERN_BEARISH_ENGULFING',
+    ScanFilterGroup.pattern,
+  ),
+  patternHangingMan(
+    'scan.filterPatternHangingMan',
+    'PATTERN_HANGING_MAN',
+    ScanFilterGroup.pattern,
+  ),
+  patternEveningStar(
+    'scan.filterPatternEveningStar',
+    'PATTERN_EVENING_STAR',
+    ScanFilterGroup.pattern,
+  ),
+  patternThreeBlackCrows(
+    'scan.filterPatternThreeBlackCrows',
+    'PATTERN_THREE_BLACK_CROWS',
+    ScanFilterGroup.pattern,
+  ),
+  patternGapDown(
+    'scan.filterPatternGapDown',
+    'PATTERN_GAP_DOWN',
+    ScanFilterGroup.pattern,
+  ),
 
   // Price-volume divergence signals
-  priceVolumeBullishDivergence('scan.filterPriceVolumeBullishDivergence', 'PRICE_VOLUME_BULLISH_DIVERGENCE', ScanFilterGroup.priceVolume),
-  priceVolumeBearishDivergence('scan.filterPriceVolumeBearishDivergence', 'PRICE_VOLUME_BEARISH_DIVERGENCE', ScanFilterGroup.priceVolume),
-  highVolumeBreakout('scan.filterHighVolumeBreakout', 'HIGH_VOLUME_BREAKOUT', ScanFilterGroup.priceVolume),
-  lowVolumeAccumulation('scan.filterLowVolumeAccumulation', 'LOW_VOLUME_ACCUMULATION', ScanFilterGroup.priceVolume),
+  priceVolumeBullishDivergence(
+    'scan.filterPriceVolumeBullishDivergence',
+    'PRICE_VOLUME_BULLISH_DIVERGENCE',
+    ScanFilterGroup.priceVolume,
+  ),
+  priceVolumeBearishDivergence(
+    'scan.filterPriceVolumeBearishDivergence',
+    'PRICE_VOLUME_BEARISH_DIVERGENCE',
+    ScanFilterGroup.priceVolume,
+  ),
+  highVolumeBreakout(
+    'scan.filterHighVolumeBreakout',
+    'HIGH_VOLUME_BREAKOUT',
+    ScanFilterGroup.priceVolume,
+  ),
+  lowVolumeAccumulation(
+    'scan.filterLowVolumeAccumulation',
+    'LOW_VOLUME_ACCUMULATION',
+    ScanFilterGroup.priceVolume,
+  ),
 
   // Fundamental analysis signals (基本面訊號)
-  revenueYoySurge('scan.filterRevenueYoySurge', 'REVENUE_YOY_SURGE', ScanFilterGroup.fundamental),
-  revenueYoyDecline('scan.filterRevenueYoyDecline', 'REVENUE_YOY_DECLINE', ScanFilterGroup.fundamental),
-  revenueMomGrowth('scan.filterRevenueMomGrowth', 'REVENUE_MOM_GROWTH', ScanFilterGroup.fundamental),
-  highDividendYield('scan.filterHighDividendYield', 'HIGH_DIVIDEND_YIELD', ScanFilterGroup.fundamental),
-  peUndervalued('scan.filterPeUndervalued', 'PE_UNDERVALUED', ScanFilterGroup.fundamental),
-  peOvervalued('scan.filterPeOvervalued', 'PE_OVERVALUED', ScanFilterGroup.fundamental),
-  pbrUndervalued('scan.filterPbrUndervalued', 'PBR_UNDERVALUED', ScanFilterGroup.fundamental);
+  revenueYoySurge(
+    'scan.filterRevenueYoySurge',
+    'REVENUE_YOY_SURGE',
+    ScanFilterGroup.fundamental,
+  ),
+  revenueYoyDecline(
+    'scan.filterRevenueYoyDecline',
+    'REVENUE_YOY_DECLINE',
+    ScanFilterGroup.fundamental,
+  ),
+  revenueMomGrowth(
+    'scan.filterRevenueMomGrowth',
+    'REVENUE_MOM_GROWTH',
+    ScanFilterGroup.fundamental,
+  ),
+  highDividendYield(
+    'scan.filterHighDividendYield',
+    'HIGH_DIVIDEND_YIELD',
+    ScanFilterGroup.fundamental,
+  ),
+  peUndervalued(
+    'scan.filterPeUndervalued',
+    'PE_UNDERVALUED',
+    ScanFilterGroup.fundamental,
+  ),
+  peOvervalued(
+    'scan.filterPeOvervalued',
+    'PE_OVERVALUED',
+    ScanFilterGroup.fundamental,
+  ),
+  pbrUndervalued(
+    'scan.filterPbrUndervalued',
+    'PBR_UNDERVALUED',
+    ScanFilterGroup.fundamental,
+  );
 
   const ScanFilter(this.labelKey, this.reasonCode, this.group);
 
@@ -313,7 +449,10 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
       state = state.copyWith(
         allStocks: firstPageItems,
-        stocks: _applySort(_applyFilter(firstPageItems, state.filter), state.sort),
+        stocks: _applySort(
+          _applyFilter(firstPageItems, state.filter),
+          state.sort,
+        ),
         dataDate: dataDate,
         isLoading: false,
         hasMore: _allAnalyses.length > _kPageSize,
@@ -332,7 +471,10 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
     try {
       final currentCount = state.allStocks.length;
-      final remainingAnalyses = _allAnalyses.skip(currentCount).take(_kPageSize).toList();
+      final remainingAnalyses = _allAnalyses
+          .skip(currentCount)
+          .take(_kPageSize)
+          .toList();
 
       if (remainingAnalyses.isEmpty) {
         state = state.copyWith(isLoadingMore: false, hasMore: false);

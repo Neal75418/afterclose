@@ -95,14 +95,18 @@ class ReasonTags extends StatelessWidget {
       'RSI_EXTREME_OVERBOUGHT' => 'reasons.rsiExtremeOverbought',
       'RSI_EXTREME_OVERSOLD' => 'reasons.rsiExtremeOversold',
       // Phase 4: Extended market data
-      'FOREIGN_SHAREHOLDING_INCREASING' => 'reasons.foreignShareholdingIncreasing',
-      'FOREIGN_SHAREHOLDING_DECREASING' => 'reasons.foreignShareholdingDecreasing',
+      'FOREIGN_SHAREHOLDING_INCREASING' =>
+        'reasons.foreignShareholdingIncreasing',
+      'FOREIGN_SHAREHOLDING_DECREASING' =>
+        'reasons.foreignShareholdingDecreasing',
       'DAY_TRADING_HIGH' => 'reasons.dayTradingHigh',
       'DAY_TRADING_EXTREME' => 'reasons.dayTradingExtreme',
       'CONCENTRATION_HIGH' => 'reasons.concentrationHigh',
       // Phase 5: Price-volume divergence
-      'PRICE_VOLUME_BULLISH_DIVERGENCE' => 'reasons.priceVolumeBullishDivergence',
-      'PRICE_VOLUME_BEARISH_DIVERGENCE' => 'reasons.priceVolumeBearishDivergence',
+      'PRICE_VOLUME_BULLISH_DIVERGENCE' =>
+        'reasons.priceVolumeBullishDivergence',
+      'PRICE_VOLUME_BEARISH_DIVERGENCE' =>
+        'reasons.priceVolumeBearishDivergence',
       'HIGH_VOLUME_BREAKOUT' => 'reasons.highVolumeBreakout',
       'LOW_VOLUME_ACCUMULATION' => 'reasons.lowVolumeAccumulation',
       // Phase 6: Fundamental signals
@@ -141,7 +145,9 @@ class _ReasonTag extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: isDark
-            ? AppTheme.secondaryColor.withValues(alpha: 0.25) // Increased from 0.15 for better visibility
+            ? AppTheme.secondaryColor.withValues(
+                alpha: 0.25,
+              ) // Increased from 0.15 for better visibility
             : AppTheme.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(isCompact ? 6 : 8),
         border: isDark

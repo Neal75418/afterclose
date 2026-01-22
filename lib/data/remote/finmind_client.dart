@@ -1248,13 +1248,16 @@ class FinMindShareholding {
       stockId: stockId.toString(),
       date: date.toString(),
       foreignInvestmentRemainingShares:
-          JsonParsers.parseDouble(json['ForeignInvestmentRemainingShares']) ?? 0,
+          JsonParsers.parseDouble(json['ForeignInvestmentRemainingShares']) ??
+          0,
       foreignInvestmentSharesRatio:
           JsonParsers.parseDouble(json['ForeignInvestmentSharesRatio']) ?? 0,
       foreignInvestmentUpperLimitRatio:
-          JsonParsers.parseDouble(json['ForeignInvestmentUpperLimitRatio']) ?? 0,
+          JsonParsers.parseDouble(json['ForeignInvestmentUpperLimitRatio']) ??
+          0,
       chineseInvestmentUpperLimitRatio:
-          JsonParsers.parseDouble(json['ChineseInvestmentUpperLimitRatio']) ?? 0,
+          JsonParsers.parseDouble(json['ChineseInvestmentUpperLimitRatio']) ??
+          0,
       numberOfSharesIssued:
           JsonParsers.parseDouble(json['NumberOfSharesIssued']) ?? 0,
       recentlyDeclareDate: json['RecentlyDeclareDate']?.toString() ?? '',
@@ -1357,7 +1360,8 @@ class FinMindDayTrading {
     }
 
     final buyVolume = JsonParsers.parseDouble(json['BuyDayTradingVolume']) ?? 0;
-    final sellVolume = JsonParsers.parseDouble(json['SellDayTradingVolume']) ?? 0;
+    final sellVolume =
+        JsonParsers.parseDouble(json['SellDayTradingVolume']) ?? 0;
     final tradeVolume = JsonParsers.parseDouble(json['tradeVolume']) ?? 0;
     final dayTradingVolume = (buyVolume + sellVolume) / 2;
 
@@ -1367,7 +1371,9 @@ class FinMindDayTrading {
       buyDayTradingVolume: buyVolume,
       sellDayTradingVolume: sellVolume,
       dayTradingVolume: dayTradingVolume,
-      dayTradingRatio: tradeVolume > 0 ? (dayTradingVolume / tradeVolume) * 100 : 0,
+      dayTradingRatio: tradeVolume > 0
+          ? (dayTradingVolume / tradeVolume) * 100
+          : 0,
       tradeVolume: tradeVolume,
     );
   }
@@ -1546,9 +1552,12 @@ class FinMindCashFlowStatement {
   final String origin; // 中文項目名稱
 
   /// Common cash flow types
-  static const String typeOperatingCashFlow = 'CashFlowsFromOperatingActivities';
-  static const String typeInvestingCashFlow = 'CashFlowsFromInvestingActivities';
-  static const String typeFinancingCashFlow = 'CashFlowsFromFinancingActivities';
+  static const String typeOperatingCashFlow =
+      'CashFlowsFromOperatingActivities';
+  static const String typeInvestingCashFlow =
+      'CashFlowsFromInvestingActivities';
+  static const String typeFinancingCashFlow =
+      'CashFlowsFromFinancingActivities';
   static const String typeFreeCashFlow = 'FreeCashFlow';
 }
 

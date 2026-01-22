@@ -55,7 +55,8 @@ class AnalysisService {
     TechnicalIndicators? indicators;
 
     // Calculate technical indicators if price history is provided
-    if (priceHistory != null && priceHistory.length >= _minIndicatorDataPoints) {
+    if (priceHistory != null &&
+        priceHistory.length >= _minIndicatorDataPoints) {
       indicators = calculateTechnicalIndicators(priceHistory);
     }
 
@@ -624,7 +625,8 @@ class AnalysisService {
       return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
     }
 
-    final avgPrevVolume = prevPrices.reduce((a, b) => a + b) / prevPrices.length;
+    final avgPrevVolume =
+        prevPrices.reduce((a, b) => a + b) / prevPrices.length;
     if (avgPrevVolume <= 0) {
       return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
     }

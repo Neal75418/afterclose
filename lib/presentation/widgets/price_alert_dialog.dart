@@ -213,7 +213,8 @@ class _CreatePriceAlertDialogState
     return switch (_selectedType) {
       AlertType.above || AlertType.below => 'alert.targetPrice'.tr(),
       AlertType.changePct => 'alert.targetPercent'.tr(),
-      AlertType.breakResistance || AlertType.breakSupport => 'alert.targetPrice'.tr(),
+      AlertType.breakResistance ||
+      AlertType.breakSupport => 'alert.targetPrice'.tr(),
       AlertType.volumeAbove => '目標成交量',
       AlertType.rsiOverbought || AlertType.rsiOversold => 'RSI 閾值',
       AlertType.crossAboveMa || AlertType.crossBelowMa => '均線天數',
@@ -228,7 +229,8 @@ class _CreatePriceAlertDialogState
     return switch (_selectedType) {
       AlertType.above || AlertType.below => 'alert.priceHint'.tr(),
       AlertType.changePct => 'alert.percentHint'.tr(),
-      AlertType.breakResistance || AlertType.breakSupport => 'alert.priceHint'.tr(),
+      AlertType.breakResistance ||
+      AlertType.breakSupport => 'alert.priceHint'.tr(),
       AlertType.volumeAbove => '例如：10000',
       AlertType.rsiOverbought => '預設 70',
       AlertType.rsiOversold => '預設 30',

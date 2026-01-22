@@ -1038,9 +1038,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   /// Batch insert financial data
-  Future<void> insertFinancialData(
-    List<FinancialDataCompanion> entries,
-  ) async {
+  Future<void> insertFinancialData(List<FinancialDataCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
         b.insert(financialData, entry, mode: InsertMode.insertOrReplace);

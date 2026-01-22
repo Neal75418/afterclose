@@ -308,7 +308,9 @@ class UpdateService {
           );
 
           final marketDataStartDate = normalizedDate.subtract(
-            const Duration(days: RuleParams.foreignShareholdingLookbackDays + 5),
+            const Duration(
+              days: RuleParams.foreignShareholdingLookbackDays + 5,
+            ),
           );
 
           // Parallel sync with concurrency limit to avoid overwhelming API
@@ -811,9 +813,13 @@ class UpdateService {
         foreignSharesRatio = latest.foreignSharesRatio;
 
         // Calculate change over lookback period
-        if (shareholdingHistory.length >= RuleParams.foreignShareholdingLookbackDays) {
-          final older = shareholdingHistory[RuleParams.foreignShareholdingLookbackDays - 1];
-          if (latest.foreignSharesRatio != null && older.foreignSharesRatio != null) {
+        if (shareholdingHistory.length >=
+            RuleParams.foreignShareholdingLookbackDays) {
+          final older =
+              shareholdingHistory[RuleParams.foreignShareholdingLookbackDays -
+                  1];
+          if (latest.foreignSharesRatio != null &&
+              older.foreignSharesRatio != null) {
             foreignSharesRatioChange =
                 latest.foreignSharesRatio! - older.foreignSharesRatio!;
           }
