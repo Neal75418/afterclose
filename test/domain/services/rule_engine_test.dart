@@ -24,7 +24,7 @@ void main() {
         normalVolume: 1000,
         spikeVolume: 5000,
       );
-      final context = AnalysisContext(
+      const context = AnalysisContext(
         trendState: TrendState.range,
         resistanceLevel: 100.0,
       );
@@ -47,7 +47,7 @@ void main() {
       final customEngine = RuleEngine(customRules: [const BreakoutRule()]);
 
       final prices = generateUptrendPrices(days: 30);
-      final context = AnalysisContext(
+      const context = AnalysisContext(
         trendState: TrendState.up,
         resistanceLevel: 100.0,
       );
@@ -66,7 +66,7 @@ void main() {
       expect(
         engine.evaluateStock(
           priceHistory: generateUptrendPrices(days: 30),
-          context: AnalysisContext(trendState: TrendState.up),
+          context: const AnalysisContext(trendState: TrendState.up),
         ),
         isEmpty,
       );
@@ -74,7 +74,7 @@ void main() {
       engine.registerRule(const BreakoutRule());
       final reasons = engine.evaluateStock(
         priceHistory: generateUptrendPrices(days: 30),
-        context: AnalysisContext(
+        context: const AnalysisContext(
           trendState: TrendState.up,
           resistanceLevel: 100.0,
         ),
@@ -84,7 +84,7 @@ void main() {
       engine.unregisterRule('tech_breakout');
       final afterUnregister = engine.evaluateStock(
         priceHistory: generateUptrendPrices(days: 30),
-        context: AnalysisContext(
+        context: const AnalysisContext(
           trendState: TrendState.up,
           resistanceLevel: 100.0,
         ),
@@ -104,7 +104,7 @@ void main() {
           createTestPrice(date: DateTime.now(), close: 102.0),
         ];
 
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.down,
           rangeTop: 100.0,
         );
@@ -118,7 +118,7 @@ void main() {
 
       test('should NOT trigger when trend is already up', () {
         final prices = generateUptrendPrices(days: 30);
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.up,
           rangeTop: 100.0,
         );
@@ -140,7 +140,7 @@ void main() {
           createTestPrice(date: DateTime.now(), close: 98.0),
         ];
 
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.up,
           supportLevel: 100.0,
         );
@@ -154,7 +154,7 @@ void main() {
 
       test('should NOT trigger when trend is already down', () {
         final prices = generateDowntrendPrices(days: 30);
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.down,
           supportLevel: 100.0,
         );
@@ -171,7 +171,7 @@ void main() {
 
       test('should trigger when close exceeds resistance', () {
         final prices = [createTestPrice(date: DateTime.now(), close: 105.0)];
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           resistanceLevel: 100.0,
         );
@@ -185,7 +185,7 @@ void main() {
 
       test('should NOT trigger when close is below resistance', () {
         final prices = [createTestPrice(date: DateTime.now(), close: 99.0)];
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           resistanceLevel: 100.0,
         );
@@ -202,7 +202,7 @@ void main() {
 
       test('should trigger when close falls below support', () {
         final prices = [createTestPrice(date: DateTime.now(), close: 98.0)];
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           supportLevel: 100.0,
         );
@@ -216,7 +216,7 @@ void main() {
 
       test('should NOT trigger when close is above support', () {
         final prices = [createTestPrice(date: DateTime.now(), close: 101.0)];
-        final context = AnalysisContext(
+        const context = AnalysisContext(
           trendState: TrendState.range,
           supportLevel: 100.0,
         );
@@ -237,7 +237,7 @@ void main() {
           normalVolume: 1000,
           spikeVolume: 5000,
         );
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -248,7 +248,7 @@ void main() {
 
       test('should NOT trigger with low volume', () {
         final prices = generateUptrendPrices(days: 30);
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -268,7 +268,7 @@ void main() {
           ),
           createTestPrice(date: DateTime.now(), close: 107.0),
         ];
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -285,7 +285,7 @@ void main() {
           ),
           createTestPrice(date: DateTime.now(), close: 101.0),
         ];
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -303,7 +303,7 @@ void main() {
           prevDirection: -1000,
           todayDirection: 1000,
         );
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(
           symbol: 'TEST',
           prices: [],
@@ -322,7 +322,7 @@ void main() {
           prevDirection: -500,
           todayDirection: 500,
         );
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(
           symbol: 'TEST',
           prices: [],
@@ -350,7 +350,7 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: [], news: news);
 
         final result = rule.evaluate(context, data);
@@ -372,7 +372,7 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: [], news: news);
 
         final result = rule.evaluate(context, data);
@@ -394,7 +394,7 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
-        final context = AnalysisContext(trendState: TrendState.range);
+        const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: [], news: news);
 
         final result = rule.evaluate(context, data);
@@ -428,7 +428,7 @@ void main() {
     });
 
     test('returns null when prices are empty', () {
-      final data = StockData(symbol: 'TEST', prices: []);
+      const data = StockData(symbol: 'TEST', prices: []);
 
       expect(data.latestPrice, isNull);
       expect(data.latestClose, isNull);
