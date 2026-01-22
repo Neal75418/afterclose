@@ -328,3 +328,86 @@ class RSIExtremeOversoldRule extends StockRule {
     return 100 - (100 / (1 + rs));
   }
 }
+
+/// Rule: KD Golden Cross
+/// Triggers when K crosses above D (Golden Cross), preferably in oversold zone
+class KDGoldenCrossRule extends StockRule {
+  const KDGoldenCrossRule();
+
+  @override
+  String get id => 'kd_golden_cross';
+
+  @override
+  String get name => 'KD 黃金交叉';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    final ind = context.indicators;
+    if (ind == null ||
+        ind.kdK == null ||
+        ind.kdD == null ||
+        ind.prevKdK == null ||
+        ind.prevKdD == null)
+      return null;
+
+    final k = ind.kdK!;
+    final d = ind.kdD!;
+    final prevK = ind.prevKdK!;
+    final prevD = ind.prevKdD!;
+
+    // Golden Cross: Yesterday K < D, Today K > D
+    if (prevK < prevD && k > d) {
+      // Bonus: Check if in oversold zone (< 20)
+      final isOversold = prevK < RuleParams.kdOversold;
+
+      return TriggeredReason(
+        type: ReasonType.kdGoldenCross,
+        score: RuleScores.kdGoldenCross,
+        description: isOversold ? '低檔 KD 黃金交叉' : 'KD 黃金交叉',
+        evidence: {'k': k, 'd': d, 'prevK': prevK, 'prevD': prevD},
+      );
+    }
+
+    return null;
+  }
+}
+
+/// Rule: KD Death Cross
+class KDDeathCrossRule extends StockRule {
+  const KDDeathCrossRule();
+
+  @override
+  String get id => 'kd_death_cross';
+
+  @override
+  String get name => 'KD 死亡交叉';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    final ind = context.indicators;
+    if (ind == null ||
+        ind.kdK == null ||
+        ind.kdD == null ||
+        ind.prevKdK == null ||
+        ind.prevKdD == null)
+      return null;
+
+    final k = ind.kdK!;
+    final d = ind.kdD!;
+    final prevK = ind.prevKdK!;
+    final prevD = ind.prevKdD!;
+
+    // Death Cross: Yesterday K > D, Today K < D
+    if (prevK > prevD && k < d) {
+      final isOverbought = prevK > RuleParams.kdOverbought;
+
+      return TriggeredReason(
+        type: ReasonType.kdDeathCross,
+        score: RuleScores.kdDeathCross,
+        description: isOverbought ? '高檔 KD 死亡交叉' : 'KD 死亡交叉',
+        evidence: {'k': k, 'd': d, 'prevK': prevK, 'prevD': prevD},
+      );
+    }
+    return null;
+  }
+}

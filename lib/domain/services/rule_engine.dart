@@ -49,6 +49,8 @@ class RuleEngine {
     MAAlignmentBearishRule(),
     RSIExtremeOverboughtRule(),
     RSIExtremeOversoldRule(),
+    KDGoldenCrossRule(),
+    KDDeathCrossRule(),
     // Phase 4: Institutional Streak Rules
     InstitutionalBuyStreakRule(),
     InstitutionalSellStreakRule(),
