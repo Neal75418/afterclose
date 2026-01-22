@@ -83,6 +83,32 @@ enum ScanFilter {
     ScanFilterGroup.institutional,
   ),
 
+  // Extended market data signals (Phase 4)
+  foreignShareholdingIncreasing(
+    'scan.filterForeignShareholdingIncreasing',
+    'FOREIGN_SHAREHOLDING_INCREASING',
+    ScanFilterGroup.extendedMarket,
+  ),
+  foreignShareholdingDecreasing(
+    'scan.filterForeignShareholdingDecreasing',
+    'FOREIGN_SHAREHOLDING_DECREASING',
+    ScanFilterGroup.extendedMarket,
+  ),
+  dayTradingHigh(
+    'scan.filterDayTradingHigh',
+    'DAY_TRADING_HIGH',
+    ScanFilterGroup.extendedMarket,
+  ),
+  dayTradingExtreme(
+    'scan.filterDayTradingExtreme',
+    'DAY_TRADING_EXTREME',
+    ScanFilterGroup.extendedMarket,
+  ),
+  // NOTE: concentrationHigh removed - requires paid API (股權分散表)
+
+  // News signals
+  newsRelated('scan.filterNewsRelated', 'NEWS_RELATED', ScanFilterGroup.news),
+
   // 52-week signals
   week52High('scan.filterWeek52High', 'WEEK_52_HIGH', ScanFilterGroup.week52),
   week52Low('scan.filterWeek52Low', 'WEEK_52_LOW', ScanFilterGroup.week52),
@@ -236,6 +262,8 @@ enum ScanFilterGroup {
   price('scan.groupPrice'),
   indicator('scan.groupIndicator'),
   institutional('scan.groupInstitutional'),
+  extendedMarket('scan.groupExtendedMarket'),
+  news('scan.groupNews'),
   week52('scan.groupWeek52'),
   maAlignment('scan.groupMaAlignment'),
   pattern('scan.groupPattern'),

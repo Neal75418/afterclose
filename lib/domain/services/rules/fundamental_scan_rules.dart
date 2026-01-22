@@ -77,6 +77,65 @@ class RevenueYoYDeclineRule extends StockRule {
   }
 }
 
+/// Rule: Revenue MoM Growth
+/// Triggers when MoM growth is positive for N consecutive months
+class RevenueMomGrowthRule extends StockRule {
+  const RevenueMomGrowthRule();
+
+  @override
+  String get id => 'revenue_mom_growth';
+
+  @override
+  String get name => '營收月增持續';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    final history = data.revenueHistory;
+    if (history == null ||
+        history.length < RuleParams.revenueMomConsecutiveMonths) {
+      return null;
+    }
+
+    // Check for consecutive MoM growth
+    // History should be sorted in descending order (newest first)
+    int consecutiveMonths = 0;
+    final growthRates = <double>[];
+
+    for (
+      int i = 0;
+      i < history.length && i < RuleParams.revenueMomConsecutiveMonths;
+      i++
+    ) {
+      final momGrowth = history[i].momGrowth ?? 0;
+
+      // MoM growth must be positive and above threshold
+      if (momGrowth >= RuleParams.revenueMomGrowthThreshold) {
+        consecutiveMonths++;
+        growthRates.add(momGrowth);
+      } else {
+        break; // Streak broken
+      }
+    }
+
+    if (consecutiveMonths >= RuleParams.revenueMomConsecutiveMonths) {
+      final avgGrowth =
+          growthRates.reduce((a, b) => a + b) / growthRates.length;
+      return TriggeredReason(
+        type: ReasonType.revenueMomGrowth,
+        score: RuleScores.revenueMomGrowth,
+        description: '營收月增連續 $consecutiveMonths 個月正成長',
+        evidence: {
+          'consecutiveMonths': consecutiveMonths,
+          'avgMomGrowth': avgGrowth,
+          'growthRates': growthRates,
+        },
+      );
+    }
+
+    return null;
+  }
+}
+
 /// Rule: High Dividend Yield
 /// Triggers when dividend yield > 5%
 class HighDividendYieldRule extends StockRule {

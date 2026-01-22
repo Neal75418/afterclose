@@ -3,6 +3,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rules/candlestick_rules.dart';
 import 'package:afterclose/domain/services/rules/divergence_rules.dart';
+import 'package:afterclose/domain/services/rules/extended_market_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';
@@ -62,6 +63,12 @@ class RuleEngine {
     // Phase 4: Institutional Streak Rules
     InstitutionalBuyStreakRule(),
     InstitutionalSellStreakRule(),
+    // Phase 4: Extended Market Data Rules
+    ForeignShareholdingIncreasingRule(),
+    ForeignShareholdingDecreasingRule(),
+    DayTradingHighRule(),
+    DayTradingExtremeRule(),
+    // NOTE: ConcentrationHighRule removed - requires paid API (股權分散表)
     // Phase 5: Price-Volume Divergence Rules
     PriceVolumeBullishDivergenceRule(),
     PriceVolumeBearishDivergenceRule(),
@@ -70,6 +77,7 @@ class RuleEngine {
     // Phase 6: Fundamental Analysis Rules
     RevenueYoYSurgeRule(),
     RevenueYoYDeclineRule(),
+    RevenueMomGrowthRule(),
     HighDividendYieldRule(),
     PEUndervaluedRule(),
     PEOvervaluedRule(),

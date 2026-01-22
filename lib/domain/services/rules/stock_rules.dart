@@ -10,6 +10,7 @@ class StockData {
     this.news,
     this.latestRevenue,
     this.latestValuation,
+    this.revenueHistory,
   });
 
   final String symbol;
@@ -22,6 +23,10 @@ class StockData {
 
   /// Latest valuation data (PE, PBR, dividend yield) for Phase 6 rules
   final StockValuationEntry? latestValuation;
+
+  /// Recent monthly revenue history (for MoM growth tracking)
+  /// Should be sorted in descending order (newest first)
+  final List<MonthlyRevenueEntry>? revenueHistory;
 
   /// Get latest price entry, null if empty
   DailyPriceEntry? get latestPrice => prices.isEmpty ? null : prices.last;
