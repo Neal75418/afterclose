@@ -41,7 +41,7 @@ void main() {
       // Mock indicators
       // Yesterday: K < D (e.g. 15 < 18)
       // Today: K > D (e.g. 22 > 20)
-      final indicators = TechnicalIndicators(
+      const indicators = TechnicalIndicators(
         kdK: 22,
         kdD: 20,
         prevKdK: 15,
@@ -49,7 +49,7 @@ void main() {
         rsi: 50,
       );
 
-      final context = AnalysisContext(
+      const context = AnalysisContext(
         trendState: TrendState.range,
         indicators: indicators,
       );
@@ -72,7 +72,7 @@ void main() {
         pbr: 1.2,
       );
 
-      final context = AnalysisContext(trendState: TrendState.range);
+      const context = AnalysisContext(trendState: TrendState.range);
 
       final reasons = ruleEngine.evaluateStock(
         priceHistory: [
