@@ -347,8 +347,9 @@ class KDGoldenCrossRule extends StockRule {
         ind.kdK == null ||
         ind.kdD == null ||
         ind.prevKdK == null ||
-        ind.prevKdD == null)
+        ind.prevKdD == null) {
       return null;
+    }
 
     final k = ind.kdK!;
     final d = ind.kdD!;
@@ -389,8 +390,9 @@ class KDDeathCrossRule extends StockRule {
         ind.kdK == null ||
         ind.kdD == null ||
         ind.prevKdK == null ||
-        ind.prevKdD == null)
+        ind.prevKdD == null) {
       return null;
+    }
 
     final k = ind.kdK!;
     final d = ind.kdD!;
