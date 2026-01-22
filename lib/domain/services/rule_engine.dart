@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
@@ -10,22 +11,37 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 ///
 /// Uses Strategy Pattern to apply a list of [StockRule]s to stock data.
 class RuleEngine {
-  RuleEngine() {
-    // Register default rules
-    // Order matters slightly for debugging, but rules are independent
-    _rules.addAll([
-      const WeakToStrongRule(),
-      const StrongToWeakRule(),
-      const BreakoutRule(),
-      const BreakdownRule(),
-      const VolumeSpikeRule(),
-      const PriceSpikeRule(),
-      const InstitutionalShiftRule(),
-      const NewsRule(),
-    ]);
+  /// Create RuleEngine with optional custom rules.
+  /// If [customRules] is provided, only those rules will be used.
+  /// Otherwise, the default rule set is loaded.
+  RuleEngine({List<StockRule>? customRules}) {
+    if (customRules != null) {
+      _rules.addAll(customRules);
+    } else {
+      _rules.addAll(_defaultRules);
+    }
   }
 
+  /// Default rule set
+  static const List<StockRule> _defaultRules = [
+    WeakToStrongRule(),
+    StrongToWeakRule(),
+    BreakoutRule(),
+    BreakdownRule(),
+    VolumeSpikeRule(),
+    PriceSpikeRule(),
+    InstitutionalShiftRule(),
+    NewsRule(),
+  ];
+
   final List<StockRule> _rules = [];
+
+  /// Dynamically register a new rule
+  void registerRule(StockRule rule) => _rules.add(rule);
+
+  /// Dynamically unregister a rule by ID
+  void unregisterRule(String ruleId) =>
+      _rules.removeWhere((r) => r.id == ruleId);
 
   /// Run all rules on a stock and return triggered reasons
   List<TriggeredReason> evaluateStock({
@@ -52,10 +68,13 @@ class RuleEngine {
         if (reason != null) {
           triggered.add(reason);
         }
-      } catch (e) {
-        // Silently fail individual rules to prevent crash
-        // In real app, might want to log this
-        print('Error evaluating rule ${rule.id}: $e');
+      } catch (e, stackTrace) {
+        // Log rule failure without crashing
+        AppLogger.warning(
+          'RuleEngine',
+          'Rule ${rule.id} evaluation failed: $e',
+          stackTrace,
+        );
       }
     }
 

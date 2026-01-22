@@ -48,6 +48,35 @@ abstract final class RuleParams {
   /// 8% allows detecting nearby levels while filtering out irrelevant ones
   static const double maxSupportResistanceDistance = 0.08;
 
+  // ==========================================
+  // NewsRule Keywords (Configurable)
+  // ==========================================
+
+  /// Positive keywords for news sentiment analysis
+  static const List<String> newsPositiveKeywords = [
+    '營收創新高',
+    '法說會',
+    '利多',
+    '漲停',
+    '大單',
+    '擴產',
+    '調升',
+    '獲利成長',
+    '訂單',
+  ];
+
+  /// Negative keywords for news sentiment analysis
+  static const List<String> newsNegativeKeywords = [
+    '營收衰退',
+    '利空',
+    '跌停',
+    '砍單',
+    '調降',
+    '虧損',
+    '減資',
+    '下修',
+  ];
+
   /// Cooldown days for repeated recommendations
   static const int cooldownDays = 2;
 

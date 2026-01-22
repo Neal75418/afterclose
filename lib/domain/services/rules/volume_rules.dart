@@ -83,8 +83,9 @@ class PriceSpikeRule extends StockRule {
     final todayClose = today.close;
     final yesterdayClose = yesterday.close;
 
-    if (todayClose == null || yesterdayClose == null || yesterdayClose <= 0)
+    if (todayClose == null || yesterdayClose == null || yesterdayClose <= 0) {
       return null;
+    }
 
     final pctChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
 

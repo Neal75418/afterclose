@@ -14,6 +14,19 @@ class StockData {
   final List<DailyPriceEntry> prices;
   final List<DailyInstitutionalEntry>? institutional;
   final List<NewsItemEntry>? news;
+
+  /// Get latest price entry, null if empty
+  DailyPriceEntry? get latestPrice => prices.isEmpty ? null : prices.last;
+
+  /// Get latest close, null if unavailable
+  double? get latestClose => latestPrice?.close;
+
+  /// Get previous price entry, null if less than 2 entries
+  DailyPriceEntry? get previousPrice =>
+      prices.length < 2 ? null : prices[prices.length - 2];
+
+  /// Get previous close, null if unavailable
+  double? get previousClose => previousPrice?.close;
 }
 
 /// Base interface for all stock analysis rules

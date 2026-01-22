@@ -15,8 +15,9 @@ class InstitutionalShiftRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
     if (history == null ||
-        history.length < RuleParams.institutionalLookbackDays + 1)
+        history.length < RuleParams.institutionalLookbackDays + 1) {
       return null;
+    }
 
     final today = history.last;
     // Foreign investors are most influential in TW market
@@ -56,11 +57,6 @@ class InstitutionalShiftRule extends StockRule {
     else if (prevAvg < -100 && todayNet < prevAvg * 3 && todayNet < -1000) {
       triggered = true;
       description = '外資賣超擴大';
-    } else {
-      // Debug print to see why it failed
-      print(
-        'InstitutionalShiftRule DEBUG (Match Fail): prevAvg=$prevAvg, todayNet=$todayNet',
-      );
     }
 
     if (triggered) {
@@ -89,18 +85,6 @@ class NewsRule extends StockRule {
   @override
   String get name => '新聞熱度';
 
-  // These could be moved to RuleParams or configuration
-  static const _positiveKeywords = [
-    '營收創新高',
-    '法說會',
-    '利多',
-    '漲停',
-    '大單',
-    '擴產',
-    '調升',
-  ];
-  static const _negativeKeywords = ['營收衰退', '利空', '跌停', '砍單', '調降', '虧損'];
-
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.news == null || data.news!.isEmpty) return null;
@@ -121,14 +105,14 @@ class NewsRule extends StockRule {
       final title = item.title;
       bool matched = false;
 
-      for (final kw in _positiveKeywords) {
+      for (final kw in RuleParams.newsPositiveKeywords) {
         if (title.contains(kw)) {
           score++;
           matched = true;
         }
       }
 
-      for (final kw in _negativeKeywords) {
+      for (final kw in RuleParams.newsNegativeKeywords) {
         if (title.contains(kw)) {
           score--;
           matched = true;
