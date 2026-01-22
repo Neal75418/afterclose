@@ -9,6 +9,7 @@ import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
+import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';

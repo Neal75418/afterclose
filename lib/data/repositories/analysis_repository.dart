@@ -2,9 +2,10 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/repositories/analysis_repository.dart';
 
-/// Repository for analysis results and recommendations
-class AnalysisRepository {
+/// Repository implementation for analysis results and recommendations
+class AnalysisRepository implements IAnalysisRepository {
   AnalysisRepository({required AppDatabase database}) : _db = database;
 
   final AppDatabase _db;
@@ -218,38 +219,4 @@ class AnalysisRepository {
   DateTime _normalizeDate(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
   }
-}
-
-/// Data class for saving reasons
-class ReasonData {
-  const ReasonData({
-    required this.type,
-    required this.evidenceJson,
-    required this.score,
-  });
-
-  final String type;
-  final String evidenceJson;
-  final int score;
-}
-
-/// Data class for saving recommendations
-class RecommendationData {
-  const RecommendationData({required this.symbol, required this.score});
-
-  final String symbol;
-  final double score;
-}
-
-/// Combined data for UI display
-class RecommendationWithStock {
-  const RecommendationWithStock({
-    required this.recommendation,
-    required this.stock,
-    required this.reasons,
-  });
-
-  final DailyRecommendationEntry recommendation;
-  final StockMasterEntry stock;
-  final List<DailyReasonEntry> reasons;
 }
