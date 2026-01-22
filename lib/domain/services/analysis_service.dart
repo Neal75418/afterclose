@@ -586,7 +586,7 @@ class AnalysisService {
     }
 
     // Get recent prices (excluding today for comparison base)
-    final lookback = RuleParams.priceVolumeLookbackDays;
+    const lookback = RuleParams.priceVolumeLookbackDays;
     final recentPrices = prices.reversed.take(lookback + 1).toList();
 
     // Calculate price change over lookback period
@@ -640,8 +640,8 @@ class AnalysisService {
     }
 
     // Determine divergence state
-    final priceThreshold = RuleParams.priceVolumePriceThreshold;
-    final volumeThreshold = RuleParams.priceVolumeVolumeThreshold;
+    const priceThreshold = RuleParams.priceVolumePriceThreshold;
+    const volumeThreshold = RuleParams.priceVolumeVolumeThreshold;
 
     PriceVolumeState state = PriceVolumeState.neutral;
 

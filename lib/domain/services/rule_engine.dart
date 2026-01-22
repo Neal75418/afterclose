@@ -1543,7 +1543,7 @@ class RuleEngine {
   // ==========================================
 
   /// Analysis service for price-volume calculations
-  static final _analysisService = AnalysisService();
+  static const _analysisService = AnalysisService();
 
   /// Check for price-volume divergence patterns
   ///
