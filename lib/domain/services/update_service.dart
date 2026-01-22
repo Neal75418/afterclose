@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -12,6 +11,7 @@ import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/scoring_service.dart';
 
 /// Service for orchestrating daily market data updates
 ///
@@ -37,6 +37,7 @@ class UpdateService {
     MarketDataRepository? marketDataRepository,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
+    ScoringService? scoringService,
     List<String>? popularStocks,
   }) : _db = database,
        _stockRepo = stockRepository,
@@ -47,6 +48,7 @@ class UpdateService {
        _marketDataRepo = marketDataRepository,
        _analysisService = analysisService ?? const AnalysisService(),
        _ruleEngine = ruleEngine ?? RuleEngine(),
+       _scoringService = scoringService,
        _popularStocks = popularStocks ?? _defaultPopularStocks;
 
   /// Default popular Taiwan stocks for free account fallback
@@ -78,7 +80,17 @@ class UpdateService {
   final MarketDataRepository? _marketDataRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
+  final ScoringService? _scoringService;
   final List<String> _popularStocks;
+
+  /// Get or create ScoringService (lazy initialization)
+  ScoringService get _scoring =>
+      _scoringService ??
+      ScoringService(
+        analysisService: _analysisService,
+        ruleEngine: _ruleEngine,
+        analysisRepository: _analysisRepo,
+      );
 
   /// Run the complete daily update pipeline
   ///
@@ -474,13 +486,58 @@ class UpdateService {
           'UpdateService',
           'Step 7-8: Analyzing ${candidates.length} candidates...',
         );
-        scoredStocks = await _analyzeAndScore(
-          candidates,
-          normalizedDate,
+
+        // Batch load all required data upfront
+        final startDate = normalizedDate.subtract(
+          const Duration(days: RuleParams.lookbackPrice + 10),
+        );
+        final instStartDate = normalizedDate.subtract(
+          const Duration(days: RuleParams.institutionalLookbackDays),
+        );
+
+        final instRepo = _institutionalRepo;
+        final futures = <Future>[
+          _db.getPriceHistoryBatch(
+            candidates,
+            startDate: startDate,
+            endDate: normalizedDate,
+          ),
+          _newsRepo.getNewsForStocksBatch(candidates, days: 2),
+          if (instRepo != null)
+            _db.getInstitutionalHistoryBatch(
+              candidates,
+              startDate: instStartDate,
+              endDate: normalizedDate,
+            ),
+        ];
+
+        final batchResults = await Future.wait(futures);
+        final pricesMap = batchResults[0] as Map<String, List<DailyPriceEntry>>;
+        final newsMap = batchResults[1] as Map<String, List<NewsItemEntry>>;
+        final institutionalMap = instRepo != null
+            ? batchResults[2] as Map<String, List<DailyInstitutionalEntry>>
+            : <String, List<DailyInstitutionalEntry>>{};
+
+        // Get recently recommended symbols for cooldown
+        final recentlyRecommended = await _analysisRepo
+            .getRecentlyRecommendedSymbols();
+
+        // Use ScoringService
+        scoredStocks = await _scoring.scoreStocks(
+          candidates: candidates,
+          date: normalizedDate,
+          pricesMap: pricesMap,
+          newsMap: newsMap,
+          institutionalMap: institutionalMap,
+          recentlyRecommended: recentlyRecommended,
+          marketDataBuilder: _marketDataRepo != null
+              ? _buildMarketDataContext
+              : null,
           onProgress: (current, total) {
             onProgress?.call(7, 10, '分析中 ($current/$total)');
           },
         );
+
         result.stocksAnalyzed = scoredStocks.length;
         AppLogger.info(
           'UpdateService',
@@ -586,174 +643,6 @@ class UpdateService {
 
       return result;
     }
-  }
-
-  /// Analyze candidates and calculate scores
-  ///
-  /// Uses batch queries to avoid N+1 problem
-  Future<List<ScoredStock>> _analyzeAndScore(
-    List<String> candidates,
-    DateTime date, {
-    void Function(int current, int total)? onProgress,
-  }) async {
-    if (candidates.isEmpty) return [];
-
-    final scoredStocks = <ScoredStock>[];
-
-    // Get recently recommended symbols for cooldown check (single query)
-    final recentlyRecommended = await _analysisRepo
-        .getRecentlyRecommendedSymbols();
-
-    final startDate = date.subtract(
-      const Duration(days: RuleParams.lookbackPrice + 10),
-    );
-    final instStartDate = date.subtract(
-      const Duration(days: RuleParams.institutionalLookbackDays),
-    );
-
-    // Batch load all required data in parallel for better performance
-    final instRepo = _institutionalRepo;
-    final futures = <Future>[
-      _db.getPriceHistoryBatch(candidates, startDate: startDate, endDate: date),
-      _newsRepo.getNewsForStocksBatch(candidates, days: 2),
-      if (instRepo != null)
-        _db.getInstitutionalHistoryBatch(
-          candidates,
-          startDate: instStartDate,
-          endDate: date,
-        ),
-    ];
-
-    final results = await Future.wait(futures);
-
-    final pricesMap = results[0] as Map<String, List<DailyPriceEntry>>;
-    final newsMap = results[1] as Map<String, List<NewsItemEntry>>;
-    final institutionalMap = instRepo != null
-        ? results[2] as Map<String, List<DailyInstitutionalEntry>>
-        : <String, List<DailyInstitutionalEntry>>{};
-
-    // Log price data statistics
-    var stocksWithData = 0;
-    var stocksWithSufficientData = 0;
-    for (final symbol in candidates) {
-      final prices = pricesMap[symbol];
-      if (prices != null && prices.isNotEmpty) {
-        stocksWithData++;
-        if (prices.length >= RuleParams.swingWindow) {
-          stocksWithSufficientData++;
-        }
-      }
-    }
-    AppLogger.info(
-      'UpdateService',
-      '_analyzeAndScore: ${candidates.length} candidates, '
-          '$stocksWithData with data, $stocksWithSufficientData with sufficient data '
-          '(need >= ${RuleParams.swingWindow} days)',
-    );
-
-    // Process each candidate with pre-loaded data
-    var skippedNoData = 0;
-    var skippedInsufficientData = 0;
-    for (var i = 0; i < candidates.length; i++) {
-      final symbol = candidates[i];
-      onProgress?.call(i + 1, candidates.length);
-
-      // Get price history from batch-loaded data
-      final prices = pricesMap[symbol];
-      if (prices == null || prices.isEmpty) {
-        skippedNoData++;
-        continue;
-      }
-      if (prices.length < RuleParams.swingWindow) {
-        skippedInsufficientData++;
-        continue;
-      }
-
-      // Run analysis
-      final analysisResult = _analysisService.analyzeStock(prices);
-      if (analysisResult == null) continue;
-
-      // Build market data context for Phase 4 signals (optional)
-      MarketDataContext? marketData;
-      if (_marketDataRepo != null) {
-        marketData = await _buildMarketDataContext(symbol);
-      }
-
-      // Build context for rule engine (includes technical indicators and market data)
-      final context = _analysisService.buildContext(
-        analysisResult,
-        priceHistory: prices,
-        marketData: marketData,
-      );
-
-      // Get optional data from batch-loaded maps
-      final institutionalHistory = institutionalMap[symbol];
-      final recentNews = newsMap[symbol];
-
-      // Run rule engine
-      final reasons = _ruleEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
-        institutionalHistory: institutionalHistory,
-        recentNews: recentNews,
-      );
-
-      if (reasons.isEmpty) continue;
-
-      // Calculate score
-      final wasRecent = recentlyRecommended.contains(symbol);
-      final score = _ruleEngine.calculateScore(
-        reasons,
-        wasRecentlyRecommended: wasRecent,
-      );
-
-      // Get top reasons
-      final topReasons = _ruleEngine.getTopReasons(reasons);
-
-      // Save analysis result
-      await _analysisRepo.saveAnalysis(
-        symbol: symbol,
-        date: date,
-        trendState: analysisResult.trendState.code,
-        reversalState: analysisResult.reversalState.code,
-        supportLevel: analysisResult.supportLevel,
-        resistanceLevel: analysisResult.resistanceLevel,
-        score: score.toDouble(),
-      );
-
-      // Save reasons
-      await _analysisRepo.saveReasons(
-        symbol,
-        date,
-        topReasons
-            .map(
-              (r) => ReasonData(
-                type: r.type.code,
-                evidenceJson: r.evidenceJson != null
-                    ? jsonEncode(r.evidenceJson)
-                    : '{}',
-                score: r.score,
-              ),
-            )
-            .toList(),
-      );
-
-      scoredStocks.add(
-        ScoredStock(symbol: symbol, score: score, reasons: topReasons),
-      );
-    }
-
-    // Log analysis statistics
-    AppLogger.info(
-      'UpdateService',
-      '_analyzeAndScore complete: ${scoredStocks.length} scored, '
-          'skipped $skippedNoData (no data) + $skippedInsufficientData (insufficient data)',
-    );
-
-    // Sort by score descending
-    scoredStocks.sort((a, b) => b.score.compareTo(a.score));
-
-    return scoredStocks;
   }
 
   /// Generate and save daily recommendations
@@ -893,17 +782,4 @@ class UpdateResult {
 
     return '分析 $stocksAnalyzed 檔，產生 $recommendationsGenerated 個推薦';
   }
-}
-
-/// Stock with calculated score
-class ScoredStock {
-  const ScoredStock({
-    required this.symbol,
-    required this.score,
-    required this.reasons,
-  });
-
-  final String symbol;
-  final int score;
-  final List<TriggeredReason> reasons;
 }
