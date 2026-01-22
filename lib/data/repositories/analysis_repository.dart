@@ -15,16 +15,19 @@ class AnalysisRepository implements IAnalysisRepository {
   // ==========================================
 
   /// Get analysis for a specific stock and date
+  @override
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date) {
     return _db.getAnalysis(symbol, _normalizeDate(date));
   }
 
   /// Get all analyses for a date
+  @override
   Future<List<DailyAnalysisEntry>> getAnalysesForDate(DateTime date) {
     return _db.getAnalysisForDate(_normalizeDate(date));
   }
 
   /// Save analysis result
+  @override
   Future<void> saveAnalysis({
     required String symbol,
     required DateTime date,
@@ -52,11 +55,13 @@ class AnalysisRepository implements IAnalysisRepository {
   // ==========================================
 
   /// Get reasons for a stock on a date
+  @override
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date) {
     return _db.getReasons(symbol, _normalizeDate(date));
   }
 
   /// Save reasons for a stock (replaces existing reasons atomically)
+  @override
   Future<void> saveReasons(
     String symbol,
     DateTime date,
@@ -90,16 +95,19 @@ class AnalysisRepository implements IAnalysisRepository {
   // ==========================================
 
   /// Get today's recommendations
+  @override
   Future<List<DailyRecommendationEntry>> getTodayRecommendations() {
     return getRecommendations(DateTime.now());
   }
 
   /// Get recommendations for a date
+  @override
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date) {
     return _db.getRecommendations(_normalizeDate(date));
   }
 
   /// Save daily recommendations (replaces existing recommendations atomically)
+  @override
   Future<void> saveRecommendations(
     DateTime date,
     List<RecommendationData> recommendations,
@@ -126,6 +134,7 @@ class AnalysisRepository implements IAnalysisRepository {
   }
 
   /// Check if recommendations exist for date
+  @override
   Future<bool> hasRecommendations(DateTime date) async {
     final recs = await getRecommendations(date);
     return recs.isNotEmpty;
@@ -136,6 +145,7 @@ class AnalysisRepository implements IAnalysisRepository {
   // ==========================================
 
   /// Check if a stock was recently recommended (single query)
+  @override
   Future<bool> wasRecentlyRecommended(
     String symbol, {
     int days = RuleParams.cooldownDays,
@@ -152,6 +162,7 @@ class AnalysisRepository implements IAnalysisRepository {
   }
 
   /// Get all symbols that were recently recommended (for batch cooldown check)
+  @override
   Future<Set<String>> getRecentlyRecommendedSymbols({
     int days = RuleParams.cooldownDays,
   }) {
@@ -176,6 +187,7 @@ class AnalysisRepository implements IAnalysisRepository {
   /// - 1 query for all stocks (batch)
   /// - 1 query for all reasons (batch)
   /// Total: 3 queries instead of 1 + N*2
+  @override
   Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
     DateTime date,
   ) async {

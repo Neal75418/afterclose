@@ -29,6 +29,7 @@ class PriceRepository implements IPriceRepository {
   /// Get price history for analysis
   ///
   /// Returns at least [RuleParams.lookbackPrice] days if available
+  @override
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
     int? days,
@@ -49,6 +50,7 @@ class PriceRepository implements IPriceRepository {
   }
 
   /// Get latest price for a stock
+  @override
   Future<DailyPriceEntry?> getLatestPrice(String symbol) {
     return _db.getLatestPrice(symbol);
   }
@@ -57,6 +59,7 @@ class PriceRepository implements IPriceRepository {
   ///
   /// Uses TWSE for historical data (free, official source)
   /// OPTIMIZED: Only fetches months that are missing from the database
+  @override
   Future<int> syncStockPrices(
     String symbol, {
     required DateTime startDate,
@@ -179,6 +182,7 @@ class PriceRepository implements IPriceRepository {
   /// Sync today's prices for all stocks (batch mode)
   ///
   /// Alias for [syncAllPricesForDate] with default date
+  @override
   Future<MarketSyncResult> syncTodayPrices({DateTime? date}) {
     return syncAllPricesForDate(date ?? DateTime.now());
   }
@@ -190,6 +194,7 @@ class PriceRepository implements IPriceRepository {
   /// Also updates stock_master with stock names from TWSE data.
   ///
   /// Returns [MarketSyncResult] with count and quick-filter candidates.
+  @override
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
     List<String>? fallbackSymbols,
@@ -420,6 +425,7 @@ class PriceRepository implements IPriceRepository {
   /// Only fetches missing data - skips stocks that are already up to date.
   ///
   /// [onProgress] - callback for progress updates (current, total, symbol)
+  @override
   Future<int> syncPricesForSymbols(
     List<String> symbols, {
     required DateTime targetDate,
@@ -432,6 +438,7 @@ class PriceRepository implements IPriceRepository {
   ///
   /// Returns symbols that don't have price data for the target date.
   /// Uses batch query to avoid N+1 performance issue.
+  @override
   Future<List<String>> getSymbolsNeedingUpdate(
     List<String> symbols,
     DateTime targetDate,
@@ -448,6 +455,7 @@ class PriceRepository implements IPriceRepository {
   }
 
   /// Get price change percentage
+  @override
   Future<double?> getPriceChange(String symbol) async {
     final history = await getPriceHistory(symbol, days: 2);
     if (history.length < 2) return null;
@@ -464,6 +472,7 @@ class PriceRepository implements IPriceRepository {
   }
 
   /// Get 20-day volume moving average
+  @override
   Future<double?> getVolumeMA20(String symbol) async {
     final history = await getPriceHistory(symbol, days: RuleParams.volMa + 5);
     if (history.length < RuleParams.volMa) return null;
@@ -488,6 +497,7 @@ class PriceRepository implements IPriceRepository {
   /// More efficient than calling [getPriceChange] in a loop
   ///
   /// Throws [DatabaseException] if database query fails
+  @override
   Future<Map<String, double?>> getPriceChangesBatch(
     List<String> symbols,
   ) async {
@@ -540,6 +550,7 @@ class PriceRepository implements IPriceRepository {
   /// More efficient than calling [getVolumeMA20] in a loop
   ///
   /// Throws [DatabaseException] if database query fails
+  @override
   Future<Map<String, double?>> getVolumeMA20Batch(List<String> symbols) async {
     if (symbols.isEmpty) return {};
 
