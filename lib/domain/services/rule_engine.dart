@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/services/rules/candlestick_rules.dart';
 import 'package:afterclose/domain/services/rules/divergence_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
@@ -37,6 +38,10 @@ class RuleEngine {
     PriceSpikeRule(),
     InstitutionalShiftRule(),
     NewsRule(),
+    // Phase 2: Candlestick Pattern Rules
+    DojiRule(),
+    BullishEngulfingRule(),
+    BearishEngulfingRule(),
     // Phase 3: Technical Signal Rules
     Week52HighRule(),
     Week52LowRule(),

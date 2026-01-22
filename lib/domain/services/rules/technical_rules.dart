@@ -1,5 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
+
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -18,11 +18,7 @@ class WeakToStrongRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    // Only applies to DOWN or RANGE trends
-    if (context.trendState == TrendState.up) return null;
-
-    final result = _checkWeakToStrong(data.prices, context);
-    if (result) {
+    if (context.reversalState == ReversalState.weakToStrong) {
       return TriggeredReason(
         type: ReasonType.reversalW2S,
         score: RuleScores.reversalW2S,
@@ -31,29 +27,6 @@ class WeakToStrongRule extends StockRule {
       );
     }
     return null;
-  }
-
-  bool _checkWeakToStrong(
-    List<DailyPriceEntry> prices,
-    AnalysisContext context,
-  ) {
-    if (prices.isEmpty) return false;
-    final today = prices.last;
-    final close = today.close;
-    if (close == null) return false;
-
-    // 1. Breakout above range top
-    if (context.rangeTop != null) {
-      final breakoutLevel = context.rangeTop! * (1 + RuleParams.breakoutBuffer);
-      if (close > breakoutLevel) return true;
-    }
-
-    // 2. Higher low formation
-    // Note: Reusing logic from current implementation, ideally this helper moves to a shared utility
-    // For now, implementing simplified version or relying on AnalysisService
-    return false; // Complex logic handled by AnalysisService.detectReversalState usually
-    // TODO: The original code had specific _hasHigherLow logic inside RuleEngine or AnalysisService
-    // We should rely on context.reversalState if possible, or duplicate the logic here if it's rule-specific
   }
 }
 
@@ -68,10 +41,7 @@ class StrongToWeakRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (context.trendState == TrendState.down) return null;
-
-    final result = _checkStrongToWeak(data.prices, context);
-    if (result) {
+    if (context.reversalState == ReversalState.strongToWeak) {
       return TriggeredReason(
         type: ReasonType.reversalS2W,
         score: RuleScores.reversalS2W,
@@ -80,25 +50,6 @@ class StrongToWeakRule extends StockRule {
       );
     }
     return null;
-  }
-
-  bool _checkStrongToWeak(
-    List<DailyPriceEntry> prices,
-    AnalysisContext context,
-  ) {
-    if (prices.isEmpty) return false;
-    final today = prices.last;
-    final close = today.close;
-    if (close == null) return false;
-
-    // 1. Breakdown below support
-    if (context.supportLevel != null) {
-      final breakdownLevel =
-          context.supportLevel! * (1 - RuleParams.breakdownBuffer);
-      if (close < breakdownLevel) return true;
-    }
-
-    return false;
   }
 }
 

@@ -61,6 +61,7 @@ class AnalysisService {
 
     return AnalysisContext(
       trendState: result.trendState,
+      reversalState: result.reversalState,
       supportLevel: result.supportLevel,
       resistanceLevel: result.resistanceLevel,
       rangeTop: result.rangeTop,
@@ -782,6 +783,7 @@ class _PriceZone {
 class AnalysisContext {
   const AnalysisContext({
     required this.trendState,
+    this.reversalState = ReversalState.none,
     this.supportLevel,
     this.resistanceLevel,
     this.rangeTop,
@@ -791,6 +793,7 @@ class AnalysisContext {
   });
 
   final TrendState trendState;
+  final ReversalState reversalState;
   final double? supportLevel;
   final double? resistanceLevel;
   final double? rangeTop;
