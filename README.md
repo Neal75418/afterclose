@@ -6,8 +6,8 @@
 
 **Scan the entire market after close. See what changed — without noise.**
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.38-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart)](https://dart.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.29-02569B?logo=flutter)](https://flutter.dev)
+[![Dart](https://img.shields.io/badge/Dart-3.10.7-0175C2?logo=dart)](https://dart.dev)
 [![License](https://img.shields.io/badge/License-Private-red)]()
 
 </div>
@@ -215,22 +215,23 @@ flowchart TD
 
 | 類別        | 技術                                      |
 |:----------|:----------------------------------------|
-| Framework | Flutter + Dart 3                        |
-| State     | Riverpod                                |
-| Database  | Drift (SQLite)                          |
-| Network   | Dio                                     |
+| Framework | Flutter 3.29 + Dart 3.10                |
+| State     | Riverpod 2.6                            |
+| Database  | Drift 2.27 (SQLite)                     |
+| Network   | Dio 5.8                                 |
 | Model     | freezed + json_serializable             |
-| RSS       | xml                                     |
+| RSS       | xml 6.5                                 |
+| Charts    | fl_chart + k_chart_plus                 |
 | 背景任務      | Android: WorkManager / iOS: best-effort |
 
 ### Architecture
 
-| 層級 | 目錄 | 說明 |
-|:---|:---|:---|
-| **Presentation** | `lib/presentation/` | UI + Riverpod Providers |
-| **Domain** | `lib/domain/` | Services + Repository 介面 |
-| **Data** | `lib/data/` | Repository 實作 + Remote Clients |
-| **Core** | `lib/core/` | 常數 + Utils + Result 類別 |
+| 層級               | 目錄                  | 說明                             |
+|:-----------------|:--------------------|:-------------------------------|
+| **Presentation** | `lib/presentation/` | UI + Riverpod Providers        |
+| **Domain**       | `lib/domain/`       | Services + Repository 介面       |
+| **Data**         | `lib/data/`         | Repository 實作 + Remote Clients |
+| **Core**         | `lib/core/`         | 常數 + Utils + Result 類別         |
 
 **設計亮點：**
 
@@ -240,11 +241,12 @@ flowchart TD
 
 ### 資料來源
 
-| 資料   | 來源                        |
-|:-----|:--------------------------|
-| 台股   | FinMind                   |
-| 美股指數 | Yahoo / Alpha Vantage（可選） |
-| 新聞   | RSS                       |
+| 資料   | 來源                     | 說明         |
+|:-----|:-----------------------|:-----------|
+| 台股日價 | **TWSE Open Data** (主) | 免費、無限制、全市場 |
+| 台股歷史 | FinMind (備)            | 歷史資料補充     |
+| 法人籌碼 | FinMind                | 三大法人買賣超    |
+| 新聞   | RSS                    | 多源 RSS 聲明  |
 
 ---
 
