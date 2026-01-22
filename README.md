@@ -223,6 +223,21 @@ flowchart TD
 | RSS       | xml                                     |
 | 背景任務      | Android: WorkManager / iOS: best-effort |
 
+### Architecture
+
+| 層級 | 目錄 | 說明 |
+|:---|:---|:---|
+| **Presentation** | `lib/presentation/` | UI + Riverpod Providers |
+| **Domain** | `lib/domain/` | Services + Repository 介面 |
+| **Data** | `lib/data/` | Repository 實作 + Remote Clients |
+| **Core** | `lib/core/` | 常數 + Utils + Result 類別 |
+
+**設計亮點：**
+
+- `IAnalysisRepository` / `IPriceRepository` 介面抽象，支援依賴注入與 mock 測試
+- `ScoringService` 獨立評分邏輯，遵循單一職責原則
+- `Result<T>` 統一錯誤處理，支援函數式組合 (`map`, `flatMap`, `fold`)
+
 ### 資料來源
 
 | 資料   | 來源                        |
