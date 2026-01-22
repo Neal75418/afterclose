@@ -76,12 +76,12 @@
 
 ### Phase 2：技術指標（4 條）
 
-| 規則                         |  分數 | 觸發條件                  |
-|:---------------------------|----:|:----------------------|
-| `KD_GOLDEN_CROSS`          | +18 | K 線向上穿越 D 線（低檔區）      |
-| `KD_DEATH_CROSS`           | +18 | K 線向下穿越 D 線（高檔區）      |
-| `INSTITUTIONAL_BUY_STREAK` | +20 | 法人連續買超 3 日以上          |
-| `INSTITUTIONAL_SELL_STREAK`| +20 | 法人連續賣超 3 日以上          |
+| 規則                          |  分數 | 觸發條件             |
+|:----------------------------|----:|:-----------------|
+| `KD_GOLDEN_CROSS`           | +18 | K 線向上穿越 D 線（低檔區） |
+| `KD_DEATH_CROSS`            | +18 | K 線向下穿越 D 線（高檔區） |
+| `INSTITUTIONAL_BUY_STREAK`  | +20 | 法人連續買超 3 日以上     |
+| `INSTITUTIONAL_SELL_STREAK` | +20 | 法人連續賣超 3 日以上     |
 
 ---
 
@@ -89,67 +89,67 @@
 
 #### K線型態
 
-| 規則                           |  分數 | 說明     |
-|:-----------------------------|----:|:-------|
-| `PATTERN_DOJI`               | +10 | 十字線    |
-| `PATTERN_BULLISH_ENGULFING`  | +22 | 多頭吞噬   |
-| `PATTERN_BEARISH_ENGULFING`  | +22 | 空頭吞噬   |
-| `PATTERN_HAMMER`             | +18 | 錘子線    |
-| `PATTERN_HANGING_MAN`        | +18 | 吊人線    |
-| `PATTERN_GAP_UP`             | +20 | 跳空上漲   |
-| `PATTERN_GAP_DOWN`           | +20 | 跳空下跌   |
-| `PATTERN_MORNING_STAR`       | +25 | 晨星（三日反轉）|
-| `PATTERN_EVENING_STAR`       | +25 | 暮星（三日反轉）|
-| `PATTERN_THREE_WHITE_SOLDIERS`| +22 | 三白兵    |
-| `PATTERN_THREE_BLACK_CROWS`  | +22 | 三黑鴉    |
+| 規則                             |  分數 | 說明       |
+|:-------------------------------|----:|:---------|
+| `PATTERN_DOJI`                 | +10 | 十字線      |
+| `PATTERN_BULLISH_ENGULFING`    | +22 | 多頭吞噬     |
+| `PATTERN_BEARISH_ENGULFING`    | +22 | 空頭吞噬     |
+| `PATTERN_HAMMER`               | +18 | 錘子線      |
+| `PATTERN_HANGING_MAN`          | +18 | 吊人線      |
+| `PATTERN_GAP_UP`               | +20 | 跳空上漲     |
+| `PATTERN_GAP_DOWN`             | +20 | 跳空下跌     |
+| `PATTERN_MORNING_STAR`         | +25 | 晨星（三日反轉） |
+| `PATTERN_EVENING_STAR`         | +25 | 暮星（三日反轉） |
+| `PATTERN_THREE_WHITE_SOLDIERS` | +22 | 三白兵      |
+| `PATTERN_THREE_BLACK_CROWS`    | +22 | 三黑鴉      |
 
 #### 技術訊號
 
-| 規則                     |  分數 | 說明            |
-|:-----------------------|----:|:--------------|
-| `WEEK_52_HIGH`         | +28 | 52 週新高        |
-| `WEEK_52_LOW`          | +22 | 52 週新低        |
-| `MA_ALIGNMENT_BULLISH` | +22 | 多頭排列（5>10>20>60）|
-| `MA_ALIGNMENT_BEARISH` | +22 | 空頭排列（5<10<20<60）|
-| `RSI_EXTREME_OVERBOUGHT`| +15 | RSI > 80      |
-| `RSI_EXTREME_OVERSOLD` | +15 | RSI < 20      |
+| 規則                       |  分數 | 說明               |
+|:-------------------------|----:|:-----------------|
+| `WEEK_52_HIGH`           | +28 | 52 週新高           |
+| `WEEK_52_LOW`            | +22 | 52 週新低           |
+| `MA_ALIGNMENT_BULLISH`   | +22 | 多頭排列（5>10>20>60） |
+| `MA_ALIGNMENT_BEARISH`   | +22 | 空頭排列（5<10<20<60） |
+| `RSI_EXTREME_OVERBOUGHT` | +15 | RSI > 80         |
+| `RSI_EXTREME_OVERSOLD`   | +15 | RSI < 20         |
 
 ---
 
 ### Phase 4：擴展市場數據（5 條）
 
-| 規則                              |  分數 | 說明             |
-|:--------------------------------|----:|:---------------|
-| `FOREIGN_SHAREHOLDING_INCREASING`| +18 | 外資持股增加 ≥ 0.5%  |
-| `FOREIGN_SHAREHOLDING_DECREASING`| +18 | 外資持股減少 ≥ 0.5%  |
-| `DAY_TRADING_HIGH`              | +12 | 當沖比例 > 30%     |
-| `DAY_TRADING_EXTREME`           | +15 | 當沖比例 > 40%（警示）|
-| `CONCENTRATION_HIGH`            | +16 | 大戶持股 > 60%     |
+| 規則                                |  分數 | 說明             |
+|:----------------------------------|----:|:---------------|
+| `FOREIGN_SHAREHOLDING_INCREASING` | +18 | 外資持股增加 ≥ 0.5%  |
+| `FOREIGN_SHAREHOLDING_DECREASING` | +18 | 外資持股減少 ≥ 0.5%  |
+| `DAY_TRADING_HIGH`                | +12 | 當沖比例 > 30%     |
+| `DAY_TRADING_EXTREME`             | +15 | 當沖比例 > 40%（警示） |
+| `CONCENTRATION_HIGH`              | +16 | 大戶持股 > 60%     |
 
 ---
 
 ### Phase 5：價量背離（4 條）
 
-| 規則                              |  分數 | 說明              |
-|:--------------------------------|----:|:----------------|
-| `PRICE_VOLUME_BULLISH_DIVERGENCE`| +15 | 價漲量縮（警示訊號）     |
-| `PRICE_VOLUME_BEARISH_DIVERGENCE`| +18 | 價跌量增（恐慌訊號）     |
-| `HIGH_VOLUME_BREAKOUT`          | +22 | 高檔爆量突破         |
-| `LOW_VOLUME_ACCUMULATION`       | +16 | 低檔縮量吸籌         |
+| 規則                                |  分數 | 說明         |
+|:----------------------------------|----:|:-----------|
+| `PRICE_VOLUME_BULLISH_DIVERGENCE` | +15 | 價漲量縮（警示訊號） |
+| `PRICE_VOLUME_BEARISH_DIVERGENCE` | +18 | 價跌量增（恐慌訊號） |
+| `HIGH_VOLUME_BREAKOUT`            | +22 | 高檔爆量突破     |
+| `LOW_VOLUME_ACCUMULATION`         | +16 | 低檔縮量吸籌     |
 
 ---
 
 ### Phase 6：基本面分析（7 條）
 
-| 規則                   |  分數 | 說明                |
-|:---------------------|----:|:------------------|
-| `REVENUE_YOY_SURGE`  | +20 | 營收年增 > 30%       |
-| `REVENUE_YOY_DECLINE`| +15 | 營收年減 > 20%（警示）  |
-| `REVENUE_MOM_GROWTH` | +15 | 營收月增連續 2 個月正成長  |
-| `HIGH_DIVIDEND_YIELD`| +18 | 殖利率 > 5%         |
-| `PE_UNDERVALUED`     | +15 | PE < 10（且 > 0）   |
-| `PE_OVERVALUED`      | +10 | PE > 50（警示）      |
-| `PBR_UNDERVALUED`    | +12 | 股價淨值比 < 1        |
+| 規則                    |  分數 | 說明             |
+|:----------------------|----:|:---------------|
+| `REVENUE_YOY_SURGE`   | +20 | 營收年增 > 30%     |
+| `REVENUE_YOY_DECLINE` | +15 | 營收年減 > 20%（警示） |
+| `REVENUE_MOM_GROWTH`  | +15 | 營收月增連續 2 個月正成長 |
+| `HIGH_DIVIDEND_YIELD` | +18 | 殖利率 > 5%       |
+| `PE_UNDERVALUED`      | +15 | PE < 10（且 > 0） |
+| `PE_OVERVALUED`       | +10 | PE > 50（警示）    |
+| `PBR_UNDERVALUED`     | +12 | 股價淨值比 < 1      |
 
 ---
 

@@ -41,15 +41,15 @@ flutter build ios --release        # iOS (需 macOS)
 
 ### 技術堆疊
 
-| 層級 | 技術 |
-|:---|:---|
-| Framework | Flutter 3.29 + Dart 3.10 |
-| State | Riverpod 2.6 |
-| Database | Drift 2.27 (SQLite) |
-| Network | Dio 5.8 |
-| Models | Freezed + json_serializable |
-| RSS | xml 6.5 |
-| Charts | fl_chart + k_chart_plus |
+| 層級        | 技術                          |
+|:----------|:----------------------------|
+| Framework | Flutter 3.29 + Dart 3.10    |
+| State     | Riverpod 2.6                |
+| Database  | Drift 2.27 (SQLite)         |
+| Network   | Dio 5.8                     |
+| Models    | Freezed + json_serializable |
+| RSS       | xml 6.5                     |
+| Charts    | fl_chart + k_chart_plus     |
 
 ### 目錄結構
 
@@ -81,37 +81,37 @@ API/RSS → Repository → Drift DB → Stream → Riverpod → UI
 
 ## 關鍵文件
 
-| 檔案 | 說明 |
-|:---|:---|
-| [README.md](README.md) | 產品規格、功能、UI 結構 |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 推薦規則 (R1-R8) + SQLite Schema DDL |
-| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式與編碼標準 |
+| 檔案                                                                                                     | 說明                               |
+|:-------------------------------------------------------------------------------------------------------|:---------------------------------|
+| [README.md](README.md)                                                                                 | 產品規格、功能、UI 結構                    |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 推薦規則 (R1-R8) + SQLite Schema DDL |
+| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式與編碼標準                        |
 
 ## 規則引擎摘要
 
 8 條異常偵測規則，各有評分：
 
-| 規則 | 分數 | 觸發條件 |
-|:---|---:|:---|
-| REVERSAL_W2S | +35 | 弱轉強反轉 |
-| REVERSAL_S2W | +35 | 強轉弱反轉 |
-| TECH_BREAKOUT | +25 | 突破壓力位 |
-| TECH_BREAKDOWN | +25 | 跌破支撐位 |
-| VOLUME_SPIKE | +18 | 量 ≥ 20日均量 × 2 |
-| PRICE_SPIKE | +15 | 日漲跌幅 ≥ 5% |
-| INSTITUTIONAL_SHIFT | +12 | 法人方向反轉 |
-| NEWS_RELATED | +8 | 相關新聞偵測 |
+| 規則                  |  分數 | 觸發條件          |
+|:--------------------|----:|:--------------|
+| REVERSAL_W2S        | +35 | 弱轉強反轉         |
+| REVERSAL_S2W        | +35 | 強轉弱反轉         |
+| TECH_BREAKOUT       | +25 | 突破壓力位         |
+| TECH_BREAKDOWN      | +25 | 跌破支撐位         |
+| VOLUME_SPIKE        | +18 | 量 ≥ 20日均量 × 2 |
+| PRICE_SPIKE         | +15 | 日漲跌幅 ≥ 5%     |
+| INSTITUTIONAL_SHIFT | +12 | 法人方向反轉        |
+| NEWS_RELATED        |  +8 | 相關新聞偵測        |
 
 輸出：每日 Top 10，每檔最多 2 條理由。
 
 ## 資料來源
 
-| 資料 | 來源 | 說明 |
-|:---|:---|:---|
+| 資料   | 來源                     | 說明         |
+|:-----|:-----------------------|:-----------|
 | 台股日價 | **TWSE Open Data** (主) | 免費、無限制、全市場 |
-| 台股歷史 | FinMind (備) | 歷史資料補充 |
-| 法人籌碼 | FinMind | 三大法人買賣超 |
-| 新聞 | RSS | 多源 RSS 聲明 |
+| 台股歷史 | FinMind (備)            | 歷史資料補充     |
+| 法人籌碼 | FinMind                | 三大法人買賣超    |
+| 新聞   | RSS                    | 多源 RSS 聲明  |
 
 ## 編碼標準
 
