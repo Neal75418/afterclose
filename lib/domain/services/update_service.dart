@@ -4,6 +4,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
+import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
@@ -36,6 +37,7 @@ class UpdateService {
     required AnalysisRepository analysisRepository,
     InstitutionalRepository? institutionalRepository,
     MarketDataRepository? marketDataRepository,
+    FundamentalRepository? fundamentalRepository,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
     ScoringService? scoringService,
@@ -47,6 +49,7 @@ class UpdateService {
        _analysisRepo = analysisRepository,
        _institutionalRepo = institutionalRepository,
        _marketDataRepo = marketDataRepository,
+       _fundamentalRepo = fundamentalRepository,
        _analysisService = analysisService ?? const AnalysisService(),
        _ruleEngine = ruleEngine ?? RuleEngine(),
        _scoringService = scoringService,
@@ -79,6 +82,7 @@ class UpdateService {
   final AnalysisRepository _analysisRepo;
   final InstitutionalRepository? _institutionalRepo;
   final MarketDataRepository? _marketDataRepo;
+  final FundamentalRepository? _fundamentalRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
   final ScoringService? _scoringService;
@@ -381,6 +385,73 @@ class UpdateService {
           );
         } catch (e) {
           result.errors.add('籌碼資料更新失敗: $e');
+        }
+      }
+
+      // Step 4.6: Fetch fundamental data (revenue, PE, PBR, dividend yield)
+      final fundamentalRepo = _fundamentalRepo;
+      if (fundamentalRepo != null) {
+        onProgress?.call(4, 10, '取得基本面資料');
+        try {
+          final watchlist = await _db.getWatchlist();
+          final symbolsForFundamental = <String>{
+            ...watchlist.map((w) => w.symbol),
+            ..._popularStocks,
+          }.toList();
+
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.6: Syncing fundamental data for ${symbolsForFundamental.length} stocks...',
+          );
+
+          // Sync last 13 months of revenue data (for YoY comparison)
+          final revenueStartDate = DateTime(
+            normalizedDate.year - 1,
+            normalizedDate.month - 1,
+          );
+
+          var syncedCount = 0;
+          var errorCount = 0;
+
+          // Process in chunks for controlled parallelism
+          const chunkSize = 5;
+          for (var i = 0; i < symbolsForFundamental.length; i += chunkSize) {
+            final chunk = symbolsForFundamental
+                .skip(i)
+                .take(chunkSize)
+                .toList();
+
+            final futures = chunk.map((symbol) async {
+              try {
+                await fundamentalRepo.syncAll(
+                  symbol: symbol,
+                  startDate: revenueStartDate,
+                  endDate: normalizedDate,
+                );
+                return true;
+              } catch (e) {
+                if (errorCount < 3) {
+                  AppLogger.warning(
+                    'UpdateService',
+                    'Fundamental sync failed for $symbol',
+                    e,
+                  );
+                }
+                errorCount++;
+                return false;
+              }
+            });
+
+            final results = await Future.wait(futures);
+            syncedCount += results.where((r) => r).length;
+          }
+
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.6 complete: synced $syncedCount/${symbolsForFundamental.length} stocks',
+          );
+        } catch (e) {
+          result.errors.add('基本面資料更新失敗: $e');
         }
       }
 

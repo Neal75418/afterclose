@@ -7,6 +7,7 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
+import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
@@ -112,6 +113,14 @@ final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
   );
 });
 
+/// Fundamental repository provider (Phase 6: revenue, PE, PBR, dividend yield)
+final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
+  return FundamentalRepository(
+    db: ref.watch(databaseProvider),
+    finMind: ref.watch(finMindClientProvider),
+  );
+});
+
 // ==================================================
 // Services
 // ==================================================
@@ -126,5 +135,6 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     analysisRepository: ref.watch(analysisRepositoryProvider),
     institutionalRepository: ref.watch(institutionalRepositoryProvider),
     marketDataRepository: ref.watch(marketDataRepositoryProvider),
+    fundamentalRepository: ref.watch(fundamentalRepositoryProvider),
   );
 });
