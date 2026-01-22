@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/filter_metadata.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -47,6 +48,34 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _scrollController.position.maxScrollExtent - 300) {
       ref.read(scanProvider.notifier).loadMore();
     }
+  }
+
+  /// Build empty state widget with filter metadata
+  Widget _buildEmptyState(ScanFilter filter, WidgetRef ref) {
+    // For "all" filter, use simple empty state
+    if (filter == ScanFilter.all) {
+      return EmptyStates.noFilterResults(
+        onClearFilter: null, // No need to clear when already showing all
+      );
+    }
+
+    // Get filter metadata
+    final metadata = filter.metadata;
+
+    // Translate data requirements
+    final dataReqLabels = metadata.dataRequirements
+        .map((req) => req.labelKey.tr())
+        .toList();
+
+    return EmptyStates.noFilterResultsWithMeta(
+      filterName: filter.labelKey.tr(),
+      conditionDescription: metadata.conditionKey.tr(),
+      dataRequirements: dataReqLabels,
+      thresholdInfo: metadata.thresholdInfo,
+      onClearFilter: () {
+        ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+      },
+    );
   }
 
   /// Show bottom sheet with grouped filters
@@ -275,13 +304,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       onRetry: () => ref.read(scanProvider.notifier).loadData(),
                     )
                   : state.stocks.isEmpty
-                  ? EmptyStates.noFilterResults(
-                      onClearFilter: () {
-                        ref
-                            .read(scanProvider.notifier)
-                            .setFilter(ScanFilter.all);
-                      },
-                    )
+                  ? _buildEmptyState(state.filter, ref)
                   : ListView.builder(
                       controller: _scrollController,
                       // Performance optimizations

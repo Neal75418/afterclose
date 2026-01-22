@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -149,6 +150,23 @@ class EmptyStates {
     );
   }
 
+  /// No stocks match filter - with detailed metadata
+  static Widget noFilterResultsWithMeta({
+    required String filterName,
+    required String conditionDescription,
+    required List<String> dataRequirements,
+    String? thresholdInfo,
+    VoidCallback? onClearFilter,
+  }) {
+    return _EmptyStateWithMeta(
+      filterName: filterName,
+      conditionDescription: conditionDescription,
+      dataRequirements: dataRequirements,
+      thresholdInfo: thresholdInfo,
+      onClearFilter: onClearFilter,
+    );
+  }
+
   /// Empty watchlist
   static Widget emptyWatchlist({VoidCallback? onAdd}) {
     return EmptyState(
@@ -194,6 +212,233 @@ class EmptyStates {
       actionLabel: onRetry != null ? S.retry : null,
       onAction: onRetry,
       iconColor: AppTheme.errorColor,
+    );
+  }
+}
+
+/// Empty state widget with filter metadata information
+class _EmptyStateWithMeta extends StatelessWidget {
+  const _EmptyStateWithMeta({
+    required this.filterName,
+    required this.conditionDescription,
+    required this.dataRequirements,
+    this.thresholdInfo,
+    this.onClearFilter,
+  });
+
+  final String filterName;
+  final String conditionDescription;
+  final List<String> dataRequirements;
+  final String? thresholdInfo;
+  final VoidCallback? onClearFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon
+            Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.neutralColor.withValues(
+                          alpha: isDark ? 0.15 : 0.1,
+                        ),
+                        AppTheme.neutralColor.withValues(
+                          alpha: isDark ? 0.05 : 0.03,
+                        ),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppTheme.neutralColor.withValues(alpha: 0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.filter_alt_off_outlined,
+                    size: 48,
+                    color: AppTheme.neutralColor.withValues(alpha: 0.7),
+                  ),
+                )
+                .animate(
+                  onPlay: (controller) => controller.repeat(reverse: true),
+                )
+                .scale(
+                  begin: const Offset(1, 1),
+                  end: const Offset(1.03, 1.03),
+                  duration: 2.seconds,
+                  curve: Curves.easeInOut,
+                ),
+
+            const SizedBox(height: 20),
+
+            // Title with filter name
+            Text(
+              'filterMeta.titleWithFilter'.tr(
+                namedArgs: {'filter': filterName},
+              ),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
+
+            const SizedBox(height: 16),
+
+            // Condition description card
+            Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Condition section
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.rule_outlined,
+                            size: 18,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'filterMeta.labelCondition'.tr(),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        conditionDescription,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+
+                      // Threshold info (if available)
+                      if (thresholdInfo != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer
+                                .withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            thresholdInfo!,
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ),
+                      ],
+
+                      const Divider(height: 24),
+
+                      // Data requirements section
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.storage_outlined,
+                            size: 18,
+                            color: theme.colorScheme.secondary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'filterMeta.labelData'.tr(),
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: theme.colorScheme.secondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: dataRequirements.map((req) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.secondaryContainer
+                                  .withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              req,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                )
+                .animate()
+                .fadeIn(delay: 200.ms, duration: 300.ms)
+                .slideY(begin: 0.1, duration: 300.ms),
+
+            const SizedBox(height: 16),
+
+            // Hint text
+            Text(
+              'filterMeta.hintEmpty'.tr(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
+
+            // Clear filter button
+            if (onClearFilter != null) ...[
+              const SizedBox(height: 20),
+              FilledButton.tonal(
+                    onPressed: onClearFilter,
+                    child: Text('filterMeta.labelClear'.tr()),
+                  )
+                  .animate()
+                  .fadeIn(delay: 400.ms, duration: 300.ms)
+                  .slideY(begin: 0.1, duration: 300.ms),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
