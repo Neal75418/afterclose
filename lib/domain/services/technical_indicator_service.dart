@@ -88,8 +88,17 @@ class TechnicalIndicatorService {
     avgLoss /= period;
 
     // Calculate first RSI
-    double rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
-    result.add(100 - (100 / (1 + rs)));
+    // Edge case: if both avgGain and avgLoss are 0, RSI should be neutral (50)
+    double rsi;
+    if (avgGain == 0 && avgLoss == 0) {
+      rsi = 50.0; // Neutral - no price movement
+    } else if (avgLoss == 0) {
+      rsi = 100.0; // All gains, no losses
+    } else {
+      final rs = avgGain / avgLoss;
+      rsi = 100 - (100 / (1 + rs));
+    }
+    result.add(rsi);
 
     // Calculate subsequent RSI using smoothed averages
     for (int i = period; i < changes.length; i++) {
@@ -100,8 +109,17 @@ class TechnicalIndicatorService {
       avgGain = (avgGain * (period - 1) + gain) / period;
       avgLoss = (avgLoss * (period - 1) + loss) / period;
 
-      rs = avgLoss == 0 ? 100 : avgGain / avgLoss;
-      result.add(100 - (100 / (1 + rs)));
+      // Same edge case handling as initial RSI
+      double subsequentRsi;
+      if (avgGain == 0 && avgLoss == 0) {
+        subsequentRsi = 50.0; // Neutral
+      } else if (avgLoss == 0) {
+        subsequentRsi = 100.0; // All gains
+      } else {
+        final rs = avgGain / avgLoss;
+        subsequentRsi = 100 - (100 / (1 + rs));
+      }
+      result.add(subsequentRsi);
     }
 
     return result;

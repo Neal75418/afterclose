@@ -203,26 +203,37 @@ class _CreatePriceAlertDialogState
   }
 
   String _getTypeLabel(AlertType type) {
-    return switch (type) {
-      AlertType.above => 'alert.typeAbove'.tr(),
-      AlertType.below => 'alert.typeBelow'.tr(),
-      AlertType.changePct => 'alert.typeChange'.tr(),
-    };
+    return type.label;
   }
 
   String _getValueLabel() {
+    if (!_selectedType.requiresTargetValue) {
+      return ''; // No value needed
+    }
     return switch (_selectedType) {
-      AlertType.above => 'alert.targetPrice'.tr(),
-      AlertType.below => 'alert.targetPrice'.tr(),
+      AlertType.above || AlertType.below => 'alert.targetPrice'.tr(),
       AlertType.changePct => 'alert.targetPercent'.tr(),
+      AlertType.breakResistance || AlertType.breakSupport => 'alert.targetPrice'.tr(),
+      AlertType.volumeAbove => '目標成交量',
+      AlertType.rsiOverbought || AlertType.rsiOversold => 'RSI 閾值',
+      AlertType.crossAboveMa || AlertType.crossBelowMa => '均線天數',
+      _ => '',
     };
   }
 
   String _getValueHint() {
+    if (!_selectedType.requiresTargetValue) {
+      return ''; // No value needed
+    }
     return switch (_selectedType) {
-      AlertType.above => 'alert.priceHint'.tr(),
-      AlertType.below => 'alert.priceHint'.tr(),
+      AlertType.above || AlertType.below => 'alert.priceHint'.tr(),
       AlertType.changePct => 'alert.percentHint'.tr(),
+      AlertType.breakResistance || AlertType.breakSupport => 'alert.priceHint'.tr(),
+      AlertType.volumeAbove => '例如：10000',
+      AlertType.rsiOverbought => '預設 70',
+      AlertType.rsiOversold => '預設 30',
+      AlertType.crossAboveMa || AlertType.crossBelowMa => '例如：5、10、20、60',
+      _ => '',
     };
   }
 

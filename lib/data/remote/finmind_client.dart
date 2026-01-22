@@ -473,6 +473,221 @@ class FinMindClient {
 
   /// Check if token is configured and valid
   bool get hasValidToken => hasToken && isValidTokenFormat(_token);
+
+  // ============================================
+  // Phase 1: New API Methods (8 datasets)
+  // ============================================
+
+  /// Get foreign investor shareholding data (外資持股比例)
+  ///
+  /// Dataset: TaiwanStockShareholding
+  /// Returns: Foreign investor shareholding percentage over time
+  Future<List<FinMindShareholding>> getShareholding({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockShareholding',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindShareholding.tryFromJson(json))
+        .whereType<FinMindShareholding>()
+        .toList();
+  }
+
+  /// Get shareholding distribution data (股權分散表)
+  ///
+  /// Dataset: TaiwanStockHoldingSharesPer
+  /// Returns: Distribution of shareholders by holding percentage
+  ///
+  /// NOTE: This API requires paid membership (backer/sponsor).
+  /// Free users will receive 400 Bad Request error.
+  Future<List<FinMindHoldingSharesPer>> getHoldingSharesPer({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockHoldingSharesPer',
+      'stock_id': stockId, // This API uses stock_id, not data_id
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindHoldingSharesPer.tryFromJson(json))
+        .whereType<FinMindHoldingSharesPer>()
+        .toList();
+  }
+
+  /// Get day trading data (當沖比例)
+  ///
+  /// Dataset: TaiwanStockDayTrading
+  /// Returns: Day trading volume and percentage
+  Future<List<FinMindDayTrading>> getDayTrading({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockDayTrading',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindDayTrading.tryFromJson(json))
+        .whereType<FinMindDayTrading>()
+        .toList();
+  }
+
+  /// Get financial statements data (綜合損益表)
+  ///
+  /// Dataset: TaiwanStockFinancialStatements
+  /// Returns: Income statement data by quarter
+  Future<List<FinMindFinancialStatement>> getFinancialStatements({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockFinancialStatements',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindFinancialStatement.tryFromJson(json))
+        .whereType<FinMindFinancialStatement>()
+        .toList();
+  }
+
+  /// Get balance sheet data (資產負債表)
+  ///
+  /// Dataset: TaiwanStockBalanceSheet
+  /// Returns: Balance sheet data by quarter
+  Future<List<FinMindBalanceSheet>> getBalanceSheet({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockBalanceSheet',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindBalanceSheet.tryFromJson(json))
+        .whereType<FinMindBalanceSheet>()
+        .toList();
+  }
+
+  /// Get cash flow statement data (現金流量表)
+  ///
+  /// Dataset: TaiwanStockCashFlowsStatement
+  /// Returns: Cash flow data by quarter
+  Future<List<FinMindCashFlowStatement>> getCashFlowsStatement({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockCashFlowsStatement',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindCashFlowStatement.tryFromJson(json))
+        .whereType<FinMindCashFlowStatement>()
+        .toList();
+  }
+
+  /// Get adjusted stock prices (還原股價)
+  ///
+  /// Dataset: TaiwanStockPriceAdj
+  /// Returns: Stock prices adjusted for dividends and splits
+  Future<List<FinMindAdjustedPrice>> getAdjustedPrices({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockPriceAdj',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindAdjustedPrice.tryFromJson(json))
+        .whereType<FinMindAdjustedPrice>()
+        .toList();
+  }
+
+  /// Get weekly stock prices (週K線)
+  ///
+  /// Dataset: TaiwanStockWeekPrice
+  /// Returns: Weekly OHLCV data
+  Future<List<FinMindWeeklyPrice>> getWeeklyPrices({
+    required String stockId,
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockWeekPrice',
+      'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindWeeklyPrice.tryFromJson(json))
+        .whereType<FinMindWeeklyPrice>()
+        .toList();
+  }
 }
 
 // ============================================
@@ -998,6 +1213,445 @@ class FinMindPER {
   final double per; // 本益比
   final double pbr; // 股價淨值比
   final double dividendYield; // 殖利率
+}
+
+// ============================================
+// Phase 1: New Data Models (8 datasets)
+// ============================================
+
+/// Foreign investor shareholding data (外資持股比例) from FinMind
+class FinMindShareholding {
+  const FinMindShareholding({
+    required this.stockId,
+    required this.date,
+    required this.foreignInvestmentRemainingShares,
+    required this.foreignInvestmentSharesRatio,
+    required this.foreignInvestmentUpperLimitRatio,
+    required this.chineseInvestmentUpperLimitRatio,
+    required this.numberOfSharesIssued,
+    required this.recentlyDeclareDate,
+    required this.note,
+  });
+
+  factory FinMindShareholding.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindShareholding(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      foreignInvestmentRemainingShares:
+          JsonParsers.parseDouble(json['ForeignInvestmentRemainingShares']) ?? 0,
+      foreignInvestmentSharesRatio:
+          JsonParsers.parseDouble(json['ForeignInvestmentSharesRatio']) ?? 0,
+      foreignInvestmentUpperLimitRatio:
+          JsonParsers.parseDouble(json['ForeignInvestmentUpperLimitRatio']) ?? 0,
+      chineseInvestmentUpperLimitRatio:
+          JsonParsers.parseDouble(json['ChineseInvestmentUpperLimitRatio']) ?? 0,
+      numberOfSharesIssued:
+          JsonParsers.parseDouble(json['NumberOfSharesIssued']) ?? 0,
+      recentlyDeclareDate: json['RecentlyDeclareDate']?.toString() ?? '',
+      note: json['note']?.toString() ?? '',
+    );
+  }
+
+  static FinMindShareholding? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindShareholding.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+  final double foreignInvestmentRemainingShares; // 外資持股餘額(股)
+  final double foreignInvestmentSharesRatio; // 外資持股比例(%)
+  final double foreignInvestmentUpperLimitRatio; // 外資持股上限比例(%)
+  final double chineseInvestmentUpperLimitRatio; // 陸資持股上限比例(%)
+  final double numberOfSharesIssued; // 已發行股數
+  final String recentlyDeclareDate; // 最近申報日
+  final String note; // 備註
+
+  /// 外資可加碼空間 (上限 - 現有持股)
+  double get foreignInvestmentRoom =>
+      foreignInvestmentUpperLimitRatio - foreignInvestmentSharesRatio;
+}
+
+/// Shareholding distribution data (股權分散表) from FinMind
+class FinMindHoldingSharesPer {
+  const FinMindHoldingSharesPer({
+    required this.stockId,
+    required this.date,
+    required this.holdingSharesLevel,
+    required this.people,
+    required this.percent,
+    required this.unit,
+  });
+
+  factory FinMindHoldingSharesPer.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindHoldingSharesPer(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      holdingSharesLevel: json['HoldingSharesLevel']?.toString() ?? '',
+      people: JsonParsers.parseInt(json['people']) ?? 0,
+      percent: JsonParsers.parseDouble(json['percent']) ?? 0,
+      unit: JsonParsers.parseDouble(json['unit']) ?? 0,
+    );
+  }
+
+  static FinMindHoldingSharesPer? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindHoldingSharesPer.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+  final String holdingSharesLevel; // 持股分級 (e.g., "1-999", "1000-5000")
+  final int people; // 股東人數
+  final double percent; // 占集保庫存數比例(%)
+  final double unit; // 股數
+}
+
+/// Day trading data (當沖比例) from FinMind
+class FinMindDayTrading {
+  const FinMindDayTrading({
+    required this.stockId,
+    required this.date,
+    required this.buyDayTradingVolume,
+    required this.sellDayTradingVolume,
+    required this.dayTradingVolume,
+    required this.dayTradingRatio,
+    required this.tradeVolume,
+  });
+
+  factory FinMindDayTrading.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    final buyVolume = JsonParsers.parseDouble(json['BuyDayTradingVolume']) ?? 0;
+    final sellVolume = JsonParsers.parseDouble(json['SellDayTradingVolume']) ?? 0;
+    final tradeVolume = JsonParsers.parseDouble(json['tradeVolume']) ?? 0;
+    final dayTradingVolume = (buyVolume + sellVolume) / 2;
+
+    return FinMindDayTrading(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      buyDayTradingVolume: buyVolume,
+      sellDayTradingVolume: sellVolume,
+      dayTradingVolume: dayTradingVolume,
+      dayTradingRatio: tradeVolume > 0 ? (dayTradingVolume / tradeVolume) * 100 : 0,
+      tradeVolume: tradeVolume,
+    );
+  }
+
+  static FinMindDayTrading? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindDayTrading.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+  final double buyDayTradingVolume; // 當沖買進成交量
+  final double sellDayTradingVolume; // 當沖賣出成交量
+  final double dayTradingVolume; // 當沖量 (平均)
+  final double dayTradingRatio; // 當沖比例(%)
+  final double tradeVolume; // 總成交量
+
+  /// 是否為高當沖比例 (>30%)
+  bool get isHighDayTrading => dayTradingRatio > 30;
+
+  /// 是否為極高當沖比例 (>40%)
+  bool get isExtremelyHighDayTrading => dayTradingRatio > 40;
+}
+
+/// Financial statement data (綜合損益表) from FinMind
+/// Note: Financial statements come with type/value pairs, this is a simplified version
+class FinMindFinancialStatement {
+  const FinMindFinancialStatement({
+    required this.stockId,
+    required this.date,
+    required this.type,
+    required this.value,
+    required this.origin,
+  });
+
+  factory FinMindFinancialStatement.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindFinancialStatement(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      type: json['type']?.toString() ?? '',
+      value: JsonParsers.parseDouble(json['value']) ?? 0,
+      origin: json['origin_name']?.toString() ?? '',
+    );
+  }
+
+  static FinMindFinancialStatement? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindFinancialStatement.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date; // YYYY-QQ format (e.g., "2024-Q1")
+  final String type; // 項目名稱 (e.g., "Revenue", "NetIncome")
+  final double value; // 金額
+  final String origin; // 中文項目名稱
+
+  /// Common financial statement types
+  static const String typeRevenue = 'Revenue';
+  static const String typeGrossProfit = 'GrossProfit';
+  static const String typeOperatingIncome = 'OperatingIncome';
+  static const String typeNetIncome = 'NetIncome';
+  static const String typeEPS = 'EPS';
+}
+
+/// Balance sheet data (資產負債表) from FinMind
+class FinMindBalanceSheet {
+  const FinMindBalanceSheet({
+    required this.stockId,
+    required this.date,
+    required this.type,
+    required this.value,
+    required this.origin,
+  });
+
+  factory FinMindBalanceSheet.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindBalanceSheet(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      type: json['type']?.toString() ?? '',
+      value: JsonParsers.parseDouble(json['value']) ?? 0,
+      origin: json['origin_name']?.toString() ?? '',
+    );
+  }
+
+  static FinMindBalanceSheet? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindBalanceSheet.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+  final String type; // 項目名稱 (e.g., "TotalAssets", "TotalLiabilities")
+  final double value; // 金額
+  final String origin; // 中文項目名稱
+
+  /// Common balance sheet types
+  static const String typeTotalAssets = 'TotalAssets';
+  static const String typeTotalLiabilities = 'TotalLiabilities';
+  static const String typeEquity = 'Equity';
+  static const String typeCurrentAssets = 'CurrentAssets';
+  static const String typeCurrentLiabilities = 'CurrentLiabilities';
+  static const String typeCash = 'CashAndCashEquivalents';
+}
+
+/// Cash flow statement data (現金流量表) from FinMind
+class FinMindCashFlowStatement {
+  const FinMindCashFlowStatement({
+    required this.stockId,
+    required this.date,
+    required this.type,
+    required this.value,
+    required this.origin,
+  });
+
+  factory FinMindCashFlowStatement.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindCashFlowStatement(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      type: json['type']?.toString() ?? '',
+      value: JsonParsers.parseDouble(json['value']) ?? 0,
+      origin: json['origin_name']?.toString() ?? '',
+    );
+  }
+
+  static FinMindCashFlowStatement? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindCashFlowStatement.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date;
+  final String type; // 項目名稱
+  final double value; // 金額
+  final String origin; // 中文項目名稱
+
+  /// Common cash flow types
+  static const String typeOperatingCashFlow = 'CashFlowsFromOperatingActivities';
+  static const String typeInvestingCashFlow = 'CashFlowsFromInvestingActivities';
+  static const String typeFinancingCashFlow = 'CashFlowsFromFinancingActivities';
+  static const String typeFreeCashFlow = 'FreeCashFlow';
+}
+
+/// Adjusted stock price data (還原股價) from FinMind
+class FinMindAdjustedPrice {
+  const FinMindAdjustedPrice({
+    required this.stockId,
+    required this.date,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+
+  factory FinMindAdjustedPrice.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindAdjustedPrice(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      open: JsonParsers.parseDouble(json['open']),
+      high: JsonParsers.parseDouble(json['max']),
+      low: JsonParsers.parseDouble(json['min']),
+      close: JsonParsers.parseDouble(json['close']),
+      volume: JsonParsers.parseDouble(json['Trading_Volume']),
+    );
+  }
+
+  static FinMindAdjustedPrice? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindAdjustedPrice.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date; // YYYY-MM-DD
+  final double? open; // 還原開盤價
+  final double? high; // 還原最高價
+  final double? low; // 還原最低價
+  final double? close; // 還原收盤價
+  final double? volume; // 成交量
+}
+
+/// Weekly stock price data (週K線) from FinMind
+class FinMindWeeklyPrice {
+  const FinMindWeeklyPrice({
+    required this.stockId,
+    required this.date,
+    required this.open,
+    required this.high,
+    required this.low,
+    required this.close,
+    required this.volume,
+  });
+
+  factory FinMindWeeklyPrice.fromJson(Map<String, dynamic> json) {
+    final stockId = json['stock_id'];
+    final date = json['date'];
+
+    if (stockId == null || stockId.toString().isEmpty) {
+      throw FormatException('Missing required field: stock_id', json);
+    }
+    if (date == null || date.toString().isEmpty) {
+      throw FormatException('Missing required field: date', json);
+    }
+
+    return FinMindWeeklyPrice(
+      stockId: stockId.toString(),
+      date: date.toString(),
+      open: JsonParsers.parseDouble(json['open']),
+      high: JsonParsers.parseDouble(json['max']),
+      low: JsonParsers.parseDouble(json['min']),
+      close: JsonParsers.parseDouble(json['close']),
+      volume: JsonParsers.parseDouble(json['Trading_Volume']),
+    );
+  }
+
+  static FinMindWeeklyPrice? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return FinMindWeeklyPrice.fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final String stockId;
+  final String date; // 週結束日 YYYY-MM-DD
+  final double? open; // 週開盤價
+  final double? high; // 週最高價
+  final double? low; // 週最低價
+  final double? close; // 週收盤價
+  final double? volume; // 週成交量
 }
 
 // ============================================

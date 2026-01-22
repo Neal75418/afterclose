@@ -6,13 +6,98 @@ import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Alert type enum
 enum AlertType {
-  above('ABOVE', '價格高於'),
-  below('BELOW', '價格低於'),
-  changePct('CHANGE_PCT', '漲跌幅達');
+  // Price-based alerts
+  above('ABOVE', '價格高於', AlertCategory.price),
+  below('BELOW', '價格低於', AlertCategory.price),
+  changePct('CHANGE_PCT', '漲跌幅達', AlertCategory.price),
 
-  const AlertType(this.value, this.label);
+  // Volume alerts
+  volumeSpike('VOLUME_SPIKE', '成交量爆量', AlertCategory.volume),
+  volumeAbove('VOLUME_ABOVE', '成交量高於', AlertCategory.volume),
+
+  // RSI alerts
+  rsiOverbought('RSI_OVERBOUGHT', 'RSI超買', AlertCategory.indicator),
+  rsiOversold('RSI_OVERSOLD', 'RSI超賣', AlertCategory.indicator),
+
+  // KD alerts
+  kdGoldenCross('KD_GOLDEN_CROSS', 'KD黃金交叉', AlertCategory.indicator),
+  kdDeathCross('KD_DEATH_CROSS', 'KD死亡交叉', AlertCategory.indicator),
+
+  // Support/Resistance alerts
+  breakResistance('BREAK_RESISTANCE', '突破壓力', AlertCategory.level),
+  breakSupport('BREAK_SUPPORT', '跌破支撐', AlertCategory.level),
+
+  // 52-week alerts
+  week52High('WEEK_52_HIGH', '創52週新高', AlertCategory.week52),
+  week52Low('WEEK_52_LOW', '創52週新低', AlertCategory.week52),
+
+  // MA alerts
+  crossAboveMa('CROSS_ABOVE_MA', '站上均線', AlertCategory.ma),
+  crossBelowMa('CROSS_BELOW_MA', '跌破均線', AlertCategory.ma),
+
+  // Fundamental alerts (基本面警報)
+  revenueYoySurge('REVENUE_YOY_SURGE', '營收年增暴增', AlertCategory.fundamental),
+  highDividendYield('HIGH_DIVIDEND_YIELD', '高殖利率', AlertCategory.fundamental),
+  peUndervalued('PE_UNDERVALUED', 'PE低估', AlertCategory.fundamental);
+
+  const AlertType(this.value, this.label, this.category);
   final String value;
   final String label;
+  final AlertCategory category;
+
+  /// Check if this alert type requires a target value
+  bool get requiresTargetValue => switch (this) {
+    AlertType.above ||
+    AlertType.below ||
+    AlertType.changePct ||
+    AlertType.volumeAbove ||
+    AlertType.rsiOverbought ||
+    AlertType.rsiOversold ||
+    AlertType.breakResistance ||
+    AlertType.breakSupport ||
+    AlertType.crossAboveMa ||
+    AlertType.crossBelowMa ||
+    AlertType.revenueYoySurge ||
+    AlertType.highDividendYield ||
+    AlertType.peUndervalued => true,
+    // These don't require explicit target value
+    AlertType.volumeSpike ||
+    AlertType.kdGoldenCross ||
+    AlertType.kdDeathCross ||
+    AlertType.week52High ||
+    AlertType.week52Low => false,
+  };
+
+  /// Get unit label for target value
+  String get targetValueUnit => switch (this) {
+    AlertType.above ||
+    AlertType.below ||
+    AlertType.breakResistance ||
+    AlertType.breakSupport => '元',
+    AlertType.changePct ||
+    AlertType.revenueYoySurge ||
+    AlertType.highDividendYield => '%',
+    AlertType.volumeAbove => '張',
+    AlertType.rsiOverbought ||
+    AlertType.rsiOversold => '',
+    AlertType.crossAboveMa ||
+    AlertType.crossBelowMa => '日均線',
+    AlertType.peUndervalued => '倍',
+    _ => '',
+  };
+
+  /// Get default target value for this alert type
+  double? get defaultTargetValue => switch (this) {
+    AlertType.rsiOverbought => 70.0,
+    AlertType.rsiOversold => 30.0,
+    AlertType.crossAboveMa ||
+    AlertType.crossBelowMa => 20.0, // 20-day MA
+    AlertType.volumeSpike => 2.0, // 2x average
+    AlertType.revenueYoySurge => 30.0, // 30% YoY growth
+    AlertType.highDividendYield => 5.0, // 5% yield
+    AlertType.peUndervalued => 10.0, // PE < 10
+    _ => null,
+  };
 
   /// Parse AlertType from string value.
   ///
@@ -35,6 +120,24 @@ enum AlertType {
     }
     return null;
   }
+}
+
+/// Alert category for grouping in UI
+enum AlertCategory {
+  price('價格'),
+  volume('成交量'),
+  indicator('技術指標'),
+  level('支撐壓力'),
+  week52('新高新低'),
+  ma('均線'),
+  fundamental('基本面');
+
+  const AlertCategory(this.label);
+  final String label;
+
+  /// Get all alert types in this category
+  List<AlertType> get alertTypes =>
+      AlertType.values.where((a) => a.category == this).toList();
 }
 
 /// Price alert state

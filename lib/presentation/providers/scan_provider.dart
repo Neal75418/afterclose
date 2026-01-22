@@ -13,30 +13,124 @@ import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Filter options for scan screen
 enum ScanFilter {
-  all('全部', null),
-  reversalW2S('弱轉強', 'REVERSAL_W2S'),
-  reversalS2W('強轉弱', 'REVERSAL_S2W'),
-  breakout('突破', 'TECH_BREAKOUT'),
-  breakdown('跌破', 'TECH_BREAKDOWN'),
-  volumeSpike('放量', 'VOLUME_SPIKE');
+  // All
+  all('scan.filterAll', null, ScanFilterGroup.all),
 
-  const ScanFilter(this.label, this.reasonCode);
+  // Reversal signals
+  reversalW2S('scan.filterReversalW2S', 'REVERSAL_W2S', ScanFilterGroup.reversal),
+  reversalS2W('scan.filterReversalS2W', 'REVERSAL_S2W', ScanFilterGroup.reversal),
 
-  final String label;
+  // Technical breakout/breakdown
+  breakout('scan.filterBreakout', 'TECH_BREAKOUT', ScanFilterGroup.technical),
+  breakdown('scan.filterBreakdown', 'TECH_BREAKDOWN', ScanFilterGroup.technical),
+
+  // Volume signals
+  volumeSpike('scan.filterVolumeSpike', 'VOLUME_SPIKE', ScanFilterGroup.volume),
+
+  // Price signals
+  priceSpike('scan.filterPriceSpike', 'PRICE_SPIKE', ScanFilterGroup.price),
+
+  // KD signals
+  kdGoldenCross('scan.filterKdGoldenCross', 'KD_GOLDEN_CROSS', ScanFilterGroup.indicator),
+  kdDeathCross('scan.filterKdDeathCross', 'KD_DEATH_CROSS', ScanFilterGroup.indicator),
+
+  // RSI signals
+  rsiOverbought('scan.filterRsiOverbought', 'RSI_EXTREME_OVERBOUGHT', ScanFilterGroup.indicator),
+  rsiOversold('scan.filterRsiOversold', 'RSI_EXTREME_OVERSOLD', ScanFilterGroup.indicator),
+
+  // Institutional signals
+  institutionalShift('scan.filterInstitutionalShift', 'INSTITUTIONAL_SHIFT', ScanFilterGroup.institutional),
+  institutionalBuyStreak('scan.filterInstitutionalBuyStreak', 'INSTITUTIONAL_BUY_STREAK', ScanFilterGroup.institutional),
+  institutionalSellStreak('scan.filterInstitutionalSellStreak', 'INSTITUTIONAL_SELL_STREAK', ScanFilterGroup.institutional),
+
+  // 52-week signals
+  week52High('scan.filterWeek52High', 'WEEK_52_HIGH', ScanFilterGroup.week52),
+  week52Low('scan.filterWeek52Low', 'WEEK_52_LOW', ScanFilterGroup.week52),
+
+  // MA alignment signals
+  maAlignmentBullish('scan.filterMaAlignmentBullish', 'MA_ALIGNMENT_BULLISH', ScanFilterGroup.maAlignment),
+  maAlignmentBearish('scan.filterMaAlignmentBearish', 'MA_ALIGNMENT_BEARISH', ScanFilterGroup.maAlignment),
+
+  // Candlestick patterns - neutral
+  patternDoji('scan.filterPatternDoji', 'PATTERN_DOJI', ScanFilterGroup.pattern),
+
+  // Candlestick patterns - bullish
+  patternBullishEngulfing('scan.filterPatternBullishEngulfing', 'PATTERN_BULLISH_ENGULFING', ScanFilterGroup.pattern),
+  patternHammer('scan.filterPatternHammer', 'PATTERN_HAMMER', ScanFilterGroup.pattern),
+  patternMorningStar('scan.filterPatternMorningStar', 'PATTERN_MORNING_STAR', ScanFilterGroup.pattern),
+  patternThreeWhiteSoldiers('scan.filterPatternThreeWhiteSoldiers', 'PATTERN_THREE_WHITE_SOLDIERS', ScanFilterGroup.pattern),
+  patternGapUp('scan.filterPatternGapUp', 'PATTERN_GAP_UP', ScanFilterGroup.pattern),
+
+  // Candlestick patterns - bearish
+  patternBearishEngulfing('scan.filterPatternBearishEngulfing', 'PATTERN_BEARISH_ENGULFING', ScanFilterGroup.pattern),
+  patternHangingMan('scan.filterPatternHangingMan', 'PATTERN_HANGING_MAN', ScanFilterGroup.pattern),
+  patternEveningStar('scan.filterPatternEveningStar', 'PATTERN_EVENING_STAR', ScanFilterGroup.pattern),
+  patternThreeBlackCrows('scan.filterPatternThreeBlackCrows', 'PATTERN_THREE_BLACK_CROWS', ScanFilterGroup.pattern),
+  patternGapDown('scan.filterPatternGapDown', 'PATTERN_GAP_DOWN', ScanFilterGroup.pattern),
+
+  // Price-volume divergence signals
+  priceVolumeBullishDivergence('scan.filterPriceVolumeBullishDivergence', 'PRICE_VOLUME_BULLISH_DIVERGENCE', ScanFilterGroup.priceVolume),
+  priceVolumeBearishDivergence('scan.filterPriceVolumeBearishDivergence', 'PRICE_VOLUME_BEARISH_DIVERGENCE', ScanFilterGroup.priceVolume),
+  highVolumeBreakout('scan.filterHighVolumeBreakout', 'HIGH_VOLUME_BREAKOUT', ScanFilterGroup.priceVolume),
+  lowVolumeAccumulation('scan.filterLowVolumeAccumulation', 'LOW_VOLUME_ACCUMULATION', ScanFilterGroup.priceVolume),
+
+  // Fundamental analysis signals (基本面訊號)
+  revenueYoySurge('scan.filterRevenueYoySurge', 'REVENUE_YOY_SURGE', ScanFilterGroup.fundamental),
+  revenueYoyDecline('scan.filterRevenueYoyDecline', 'REVENUE_YOY_DECLINE', ScanFilterGroup.fundamental),
+  revenueMomGrowth('scan.filterRevenueMomGrowth', 'REVENUE_MOM_GROWTH', ScanFilterGroup.fundamental),
+  highDividendYield('scan.filterHighDividendYield', 'HIGH_DIVIDEND_YIELD', ScanFilterGroup.fundamental),
+  peUndervalued('scan.filterPeUndervalued', 'PE_UNDERVALUED', ScanFilterGroup.fundamental),
+  peOvervalued('scan.filterPeOvervalued', 'PE_OVERVALUED', ScanFilterGroup.fundamental),
+  pbrUndervalued('scan.filterPbrUndervalued', 'PBR_UNDERVALUED', ScanFilterGroup.fundamental);
+
+  const ScanFilter(this.labelKey, this.reasonCode, this.group);
+
+  /// i18n key for label - use .tr() to get translated string
+  final String labelKey;
   final String? reasonCode;
+  final ScanFilterGroup group;
+}
+
+/// Group for organizing scan filters in UI
+enum ScanFilterGroup {
+  all('scan.groupAll'),
+  reversal('scan.groupReversal'),
+  technical('scan.groupTechnical'),
+  volume('scan.groupVolume'),
+  price('scan.groupPrice'),
+  indicator('scan.groupIndicator'),
+  institutional('scan.groupInstitutional'),
+  week52('scan.groupWeek52'),
+  maAlignment('scan.groupMaAlignment'),
+  pattern('scan.groupPattern'),
+  priceVolume('scan.groupPriceVolume'),
+  fundamental('scan.groupFundamental');
+
+  const ScanFilterGroup(this.labelKey);
+
+  /// i18n key for label - use .tr() to get translated string
+  final String labelKey;
+
+  /// Get all filters in this group
+  List<ScanFilter> get filters =>
+      ScanFilter.values.where((f) => f.group == this).toList();
 }
 
 /// Sort options for scan screen
 enum ScanSort {
-  scoreDesc('分數高→低'),
-  scoreAsc('分數低→高'),
-  priceChangeDesc('漲幅高→低'),
-  priceChangeAsc('漲幅低→高');
+  scoreDesc('scan.sortScoreDesc'),
+  scoreAsc('scan.sortScoreAsc'),
+  priceChangeDesc('scan.sortPriceChangeDesc'),
+  priceChangeAsc('scan.sortPriceChangeAsc');
 
-  const ScanSort(this.label);
+  const ScanSort(this.labelKey);
 
-  final String label;
+  /// i18n key for label - use .tr() to get translated string
+  final String labelKey;
 }
+
+/// Page size for scan screen pagination
+const _kPageSize = 50;
 
 /// State for scan screen
 class ScanState {
@@ -47,6 +141,9 @@ class ScanState {
     this.sort = ScanSort.scoreDesc,
     this.dataDate,
     this.isLoading = false,
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.totalCount = 0,
     this.error,
   });
 
@@ -58,6 +155,15 @@ class ScanState {
   /// The actual date of the data being displayed
   final DateTime? dataDate;
   final bool isLoading;
+
+  /// Whether more items are being loaded (infinite scroll)
+  final bool isLoadingMore;
+
+  /// Whether there are more items to load
+  final bool hasMore;
+
+  /// Total count of items matching current filter
+  final int totalCount;
   final String? error;
 
   ScanState copyWith({
@@ -67,6 +173,9 @@ class ScanState {
     ScanSort? sort,
     DateTime? dataDate,
     bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? totalCount,
     String? error,
   }) {
     return ScanState(
@@ -76,6 +185,9 @@ class ScanState {
       sort: sort ?? this.sort,
       dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      totalCount: totalCount ?? this.totalCount,
       error: error,
     );
   }
@@ -154,16 +266,22 @@ class ScanNotifier extends StateNotifier<ScanState> {
   AppDatabase get _db => _ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
 
-  /// Load scan data
+  // Cached data for pagination
+  List<DailyAnalysisEntry> _allAnalyses = [];
+  Set<String> _watchlistSymbols = {};
+  DateContext? _dateCtx;
+
+  /// Load scan data (first page)
   Future<void> loadData() async {
-    state = state.copyWith(isLoading: true, error: null);
+    state = state.copyWith(isLoading: true, error: null, hasMore: true);
 
     try {
       // Use today's date for querying (update_service stores with this date)
-      final dateCtx = DateContext.now();
+      _dateCtx = DateContext.now();
 
-      // Get all analyses for today (with score > 0)
-      final analyses = await _db.getAnalysisForDate(dateCtx.today);
+      // Get all analyses for today (with score > 0) - lightweight metadata only
+      final analyses = await _db.getAnalysisForDate(_dateCtx!.today);
+      _allAnalyses = analyses.where((a) => a.score > 0).toList();
 
       // Get actual data dates for display purposes (not for querying)
       final latestPriceDate = await _db.getLatestDataDate();
@@ -172,80 +290,123 @@ class ScanNotifier extends StateNotifier<ScanState> {
       // Calculate dataDate for display - use the earlier of the two dates
       final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
 
-      final validAnalyses = analyses.where((a) => a.score > 0).toList();
-
-      if (validAnalyses.isEmpty) {
+      if (_allAnalyses.isEmpty) {
         state = state.copyWith(
           allStocks: [],
           stocks: [],
           dataDate: dataDate,
           isLoading: false,
+          hasMore: false,
+          totalCount: 0,
         );
         return;
       }
 
       // Get watchlist for checking
       final watchlist = await _db.getWatchlist();
-      final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
+      _watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
-      // Collect all symbols
-      final symbols = validAnalyses.map((a) => a.symbol).toList();
-
-      // Type-safe batch load using Dart 3 Records (no manual casting needed)
-      final data = await _cachedDb.loadScanData(
-        symbols: symbols,
-        analysisDate: dateCtx.today,
-        historyStart: dateCtx.historyStart,
+      // Load first page of detailed data
+      final firstPageItems = await _loadItemsForAnalyses(
+        _allAnalyses.take(_kPageSize).toList(),
       );
-
-      // Destructure Record fields - compile-time type safety!
-      final stocksMap = data.stocks;
-      final latestPricesMap = data.latestPrices;
-      final reasonsMap = data.reasons;
-      final priceHistoriesMap = data.priceHistories;
-
-      // Calculate price changes using utility
-      final priceChanges = PriceCalculator.calculatePriceChangesBatch(
-        priceHistoriesMap,
-        latestPricesMap,
-      );
-
-      // Build stock items
-      final items = validAnalyses.map((analysis) {
-        final latestPrice = latestPricesMap[analysis.symbol];
-        final priceHistory = priceHistoriesMap[analysis.symbol];
-        // Extract close prices for sparkline (last 7 days)
-        final recentPrices = priceHistory
-            ?.map((p) => p.close)
-            .whereType<double>()
-            .toList();
-        return ScanStockItem(
-          symbol: analysis.symbol,
-          score: analysis.score,
-          stockName: stocksMap[analysis.symbol]?.name,
-          latestClose: latestPrice?.close,
-          priceChange: priceChanges[analysis.symbol],
-          volume: latestPrice?.volume,
-          trendState: analysis.trendState,
-          reasons: reasonsMap[analysis.symbol] ?? [],
-          isInWatchlist: watchlistSymbols.contains(analysis.symbol),
-          recentPrices: recentPrices,
-        );
-      }).toList();
-
-      // Apply filter and sort
-      final filtered = _applyFilter(items, state.filter);
-      final sorted = _applySort(filtered, state.sort);
 
       state = state.copyWith(
-        allStocks: items,
-        stocks: sorted,
+        allStocks: firstPageItems,
+        stocks: _applySort(_applyFilter(firstPageItems, state.filter), state.sort),
         dataDate: dataDate,
         isLoading: false,
+        hasMore: _allAnalyses.length > _kPageSize,
+        totalCount: _allAnalyses.length,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  /// Load more items (for infinite scroll)
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore || _dateCtx == null) return;
+
+    state = state.copyWith(isLoadingMore: true);
+
+    try {
+      final currentCount = state.allStocks.length;
+      final remainingAnalyses = _allAnalyses.skip(currentCount).take(_kPageSize).toList();
+
+      if (remainingAnalyses.isEmpty) {
+        state = state.copyWith(isLoadingMore: false, hasMore: false);
+        return;
+      }
+
+      final newItems = await _loadItemsForAnalyses(remainingAnalyses);
+      final updatedAll = [...state.allStocks, ...newItems];
+
+      // Reapply filter and sort
+      final filtered = _applyFilter(updatedAll, state.filter);
+      final sorted = _applySort(filtered, state.sort);
+
+      state = state.copyWith(
+        allStocks: updatedAll,
+        stocks: sorted,
+        isLoadingMore: false,
+        hasMore: updatedAll.length < _allAnalyses.length,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
+    }
+  }
+
+  /// Load detailed stock data for a batch of analyses
+  Future<List<ScanStockItem>> _loadItemsForAnalyses(
+    List<DailyAnalysisEntry> analyses,
+  ) async {
+    if (analyses.isEmpty || _dateCtx == null) return [];
+
+    final symbols = analyses.map((a) => a.symbol).toList();
+
+    // Type-safe batch load using Dart 3 Records
+    final data = await _cachedDb.loadScanData(
+      symbols: symbols,
+      analysisDate: _dateCtx!.today,
+      historyStart: _dateCtx!.historyStart,
+    );
+
+    // Destructure Record fields
+    final stocksMap = data.stocks;
+    final latestPricesMap = data.latestPrices;
+    final reasonsMap = data.reasons;
+    final priceHistoriesMap = data.priceHistories;
+
+    // Calculate price changes using utility
+    final priceChanges = PriceCalculator.calculatePriceChangesBatch(
+      priceHistoriesMap,
+      latestPricesMap,
+    );
+
+    // Build stock items
+    return analyses.map((analysis) {
+      final latestPrice = latestPricesMap[analysis.symbol];
+      final priceHistory = priceHistoriesMap[analysis.symbol];
+      // Extract close prices for sparkline (limit to 30 days for performance)
+      final recentPrices = priceHistory
+          ?.take(30)
+          .map((p) => p.close)
+          .whereType<double>()
+          .toList();
+      return ScanStockItem(
+        symbol: analysis.symbol,
+        score: analysis.score,
+        stockName: stocksMap[analysis.symbol]?.name,
+        latestClose: latestPrice?.close,
+        priceChange: priceChanges[analysis.symbol],
+        volume: latestPrice?.volume,
+        trendState: analysis.trendState,
+        reasons: reasonsMap[analysis.symbol] ?? [],
+        isInWatchlist: _watchlistSymbols.contains(analysis.symbol),
+        recentPrices: recentPrices,
+      );
+    }).toList();
   }
 
   /// Set filter - filters from original data, not already-filtered data

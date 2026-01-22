@@ -42,13 +42,13 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             Icon(
               Icons.candlestick_chart_outlined,
               size: 64,
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
               'stockDetail.noTechnicalData'.tr(),
               style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -134,7 +134,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             'stockDetail.mainChart'.tr(),
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 12),
@@ -246,7 +246,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             'stockDetail.subChart'.tr(),
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 12),
@@ -362,7 +362,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             child: Text(
               'stockDetail.insufficientData'.tr(),
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -644,7 +644,8 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.outline,
+            // Use onSurfaceVariant for better visibility in dark mode
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         Text(
@@ -760,7 +761,8 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.outline,
+            // Use onSurfaceVariant for better visibility in dark mode
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         Text(
@@ -895,13 +897,13 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                 Icon(
                   Icons.bar_chart,
                   size: 16,
-                  color: theme.colorScheme.outline,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'stockDetail.volume'.tr(),
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.outline,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const Spacer(),
@@ -935,7 +937,8 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
         Text(
           label,
           style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.outline,
+            // Use onSurfaceVariant for better visibility in dark mode
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 4),

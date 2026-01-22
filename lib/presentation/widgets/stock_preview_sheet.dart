@@ -363,7 +363,7 @@ class StockPreviewSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            ReasonTags(reasons: data.reasons),
+            ReasonTags(reasons: data.reasons, translateCodes: true),
           ],
         )
         .animate()

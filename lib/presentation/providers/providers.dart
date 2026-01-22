@@ -8,6 +8,7 @@ import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
+import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/settings_repository.dart';
@@ -103,6 +104,14 @@ final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository(database: ref.watch(databaseProvider));
 });
 
+/// Market data repository provider (Phase 1: extended market data)
+final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
+  return MarketDataRepository(
+    database: ref.watch(databaseProvider),
+    finMindClient: ref.watch(finMindClientProvider),
+  );
+});
+
 // ==================================================
 // Services
 // ==================================================
@@ -116,5 +125,6 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     newsRepository: ref.watch(newsRepositoryProvider),
     analysisRepository: ref.watch(analysisRepositoryProvider),
     institutionalRepository: ref.watch(institutionalRepositoryProvider),
+    marketDataRepository: ref.watch(marketDataRepositoryProvider),
   );
 });

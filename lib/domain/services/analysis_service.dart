@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// Service for technical analysis of stock price data
 class AnalysisService {
@@ -42,14 +43,105 @@ class AnalysisService {
     );
   }
 
+  /// Technical indicator service for KD, RSI calculations
+  static final _indicatorService = TechnicalIndicatorService();
+
   /// Build analysis context for rule engine
-  AnalysisContext buildContext(AnalysisResult result) {
+  AnalysisContext buildContext(
+    AnalysisResult result, {
+    List<DailyPriceEntry>? priceHistory,
+    MarketDataContext? marketData,
+  }) {
+    TechnicalIndicators? indicators;
+
+    // Calculate technical indicators if price history is provided
+    if (priceHistory != null && priceHistory.length >= _minIndicatorDataPoints) {
+      indicators = calculateTechnicalIndicators(priceHistory);
+    }
+
     return AnalysisContext(
       trendState: result.trendState,
       supportLevel: result.supportLevel,
       resistanceLevel: result.resistanceLevel,
       rangeTop: result.rangeTop,
       rangeBottom: result.rangeBottom,
+      technicalIndicators: indicators,
+      marketData: marketData,
+    );
+  }
+
+  /// Minimum data points required for technical indicators
+  /// RSI needs: rsiPeriod + 1 (14 + 1 = 15)
+  /// KD needs: kdPeriodK + kdPeriodD - 1 + 1 for prev day (9 + 3 - 1 + 1 = 12)
+  /// Use the maximum to ensure both can be calculated
+  static final _minIndicatorDataPoints = [
+    RuleParams.rsiPeriod + 1,
+    RuleParams.kdPeriodK + RuleParams.kdPeriodD,
+  ].reduce((a, b) => a > b ? a : b);
+
+  /// Calculate technical indicators from price history
+  ///
+  /// Returns RSI and KD values for the most recent day,
+  /// plus previous day's KD for cross detection.
+  TechnicalIndicators? calculateTechnicalIndicators(
+    List<DailyPriceEntry> prices,
+  ) {
+    if (prices.length < _minIndicatorDataPoints) {
+      return null;
+    }
+
+    // Extract OHLC data
+    final closes = <double>[];
+    final highs = <double>[];
+    final lows = <double>[];
+
+    for (final price in prices) {
+      if (price.close != null && price.high != null && price.low != null) {
+        closes.add(price.close!);
+        highs.add(price.high!);
+        lows.add(price.low!);
+      }
+    }
+
+    if (closes.length < RuleParams.rsiPeriod + 2) {
+      return null;
+    }
+
+    // Calculate RSI
+    final rsiValues = _indicatorService.calculateRSI(
+      closes,
+      period: RuleParams.rsiPeriod,
+    );
+    final currentRsi = rsiValues.isNotEmpty ? rsiValues.last : null;
+
+    // Calculate KD
+    final kd = _indicatorService.calculateKD(
+      highs,
+      lows,
+      closes,
+      kPeriod: RuleParams.kdPeriodK,
+      dPeriod: RuleParams.kdPeriodD,
+    );
+
+    // Get current and previous day's KD values
+    double? currentK, currentD, prevK, prevD;
+
+    if (kd.k.length >= 2 && kd.d.length >= 2) {
+      currentK = kd.k.last;
+      currentD = kd.d.last;
+      prevK = kd.k[kd.k.length - 2];
+      prevD = kd.d[kd.d.length - 2];
+    } else if (kd.k.isNotEmpty && kd.d.isNotEmpty) {
+      currentK = kd.k.last;
+      currentD = kd.d.last;
+    }
+
+    return TechnicalIndicators(
+      rsi: currentRsi,
+      kdK: currentK,
+      kdD: currentD,
+      prevKdK: prevK,
+      prevKdD: prevD,
     );
   }
 
@@ -484,6 +576,150 @@ class AnalysisService {
     }
     return minLow;
   }
+
+  /// Analyze price-volume relationship for divergence detection
+  ///
+  /// Returns a [PriceVolumeAnalysis] with divergence state and context
+  PriceVolumeAnalysis analyzePriceVolume(List<DailyPriceEntry> prices) {
+    if (prices.length < RuleParams.priceVolumeLookbackDays + 1) {
+      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
+    }
+
+    // Get recent prices (excluding today for comparison base)
+    final lookback = RuleParams.priceVolumeLookbackDays;
+    final recentPrices = prices.reversed.take(lookback + 1).toList();
+
+    // Calculate price change over lookback period
+    final todayClose = recentPrices.first.close;
+    final startClose = recentPrices.last.close;
+    if (todayClose == null || startClose == null || startClose <= 0) {
+      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
+    }
+
+    final priceChangePercent = ((todayClose - startClose) / startClose) * 100;
+
+    // Calculate volume change (average of recent vs previous period)
+    final recentVolumes = recentPrices
+        .take(lookback)
+        .map((p) => p.volume ?? 0.0)
+        .where((v) => v > 0)
+        .toList();
+
+    if (recentVolumes.length < lookback ~/ 2) {
+      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
+    }
+
+    final avgRecentVolume =
+        recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
+
+    // Get previous period volume for comparison
+    final prevPrices = prices.reversed
+        .skip(lookback)
+        .take(lookback)
+        .map((p) => p.volume ?? 0.0)
+        .where((v) => v > 0)
+        .toList();
+
+    if (prevPrices.isEmpty) {
+      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
+    }
+
+    final avgPrevVolume = prevPrices.reduce((a, b) => a + b) / prevPrices.length;
+    if (avgPrevVolume <= 0) {
+      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
+    }
+
+    final volumeChangePercent =
+        ((avgRecentVolume - avgPrevVolume) / avgPrevVolume) * 100;
+
+    // Calculate price position in 60-day range (for high/low detection)
+    final (rangeLow, rangeHigh) = findRange(prices);
+    double? pricePosition;
+    if (rangeLow != null && rangeHigh != null && rangeHigh > rangeLow) {
+      pricePosition = (todayClose - rangeLow) / (rangeHigh - rangeLow);
+    }
+
+    // Determine divergence state
+    final priceThreshold = RuleParams.priceVolumePriceThreshold;
+    final volumeThreshold = RuleParams.priceVolumeVolumeThreshold;
+
+    PriceVolumeState state = PriceVolumeState.neutral;
+
+    // Price up + volume down = Bullish divergence (warning)
+    if (priceChangePercent >= priceThreshold &&
+        volumeChangePercent <= -volumeThreshold) {
+      state = PriceVolumeState.bullishDivergence;
+    }
+    // Price down + volume up = Bearish divergence (panic)
+    else if (priceChangePercent <= -priceThreshold &&
+        volumeChangePercent >= volumeThreshold) {
+      state = PriceVolumeState.bearishDivergence;
+    }
+    // High position + high volume = potential distribution
+    else if (pricePosition != null &&
+        pricePosition >= RuleParams.highPositionThreshold &&
+        volumeChangePercent >= volumeThreshold * 1.5) {
+      state = PriceVolumeState.highVolumeAtHigh;
+    }
+    // Low position + decreasing volume = potential accumulation
+    else if (pricePosition != null &&
+        pricePosition <= RuleParams.lowPositionThreshold &&
+        volumeChangePercent <= -volumeThreshold) {
+      state = PriceVolumeState.lowVolumeAtLow;
+    }
+    // Healthy: price up + volume up
+    else if (priceChangePercent >= priceThreshold &&
+        volumeChangePercent >= volumeThreshold) {
+      state = PriceVolumeState.healthyUptrend;
+    }
+
+    return PriceVolumeAnalysis(
+      state: state,
+      priceChangePercent: priceChangePercent,
+      volumeChangePercent: volumeChangePercent,
+      pricePosition: pricePosition,
+    );
+  }
+}
+
+/// Price-volume relationship states
+enum PriceVolumeState {
+  /// Neutral - no significant divergence
+  neutral,
+
+  /// Price up + volume down - warning signal (上漲無力)
+  bullishDivergence,
+
+  /// Price down + volume up - panic selling (恐慌殺盤)
+  bearishDivergence,
+
+  /// High price position + high volume - potential distribution (高檔出貨)
+  highVolumeAtHigh,
+
+  /// Low price position + low volume - potential accumulation (低檔吸籌)
+  lowVolumeAtLow,
+
+  /// Healthy uptrend - price up + volume up (健康上漲)
+  healthyUptrend,
+}
+
+/// Result of price-volume analysis
+class PriceVolumeAnalysis {
+  const PriceVolumeAnalysis({
+    required this.state,
+    this.priceChangePercent,
+    this.volumeChangePercent,
+    this.pricePosition,
+  });
+
+  final PriceVolumeState state;
+  final double? priceChangePercent;
+  final double? volumeChangePercent;
+  final double? pricePosition;
+
+  bool get hasDivergence =>
+      state == PriceVolumeState.bullishDivergence ||
+      state == PriceVolumeState.bearishDivergence;
 }
 
 /// Result of stock analysis

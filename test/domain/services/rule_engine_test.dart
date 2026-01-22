@@ -489,7 +489,8 @@ void main() {
         final score = ruleEngine.calculateScore(reasons);
 
         // 25 + 35 + 18 = 78, + 6 (breakout bonus) + 6 (reversal bonus) = 90
-        expect(score, 90);
+        // But capped at maxScore = 80
+        expect(score, 80);
       });
     });
 

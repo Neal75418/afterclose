@@ -197,9 +197,10 @@ class TodayNotifier extends StateNotifier<TodayState> {
       // Build recommendation details
       final recWithDetails = recommendations.map((rec) {
         final priceHistory = priceHistoriesMap[rec.symbol];
-        // Extract close prices for sparkline
+        // Extract close prices for sparkline (limit to 30 days for performance)
         final recentPrices = priceHistory
-            ?.map((p) => p.close)
+            ?.take(30)
+            .map((p) => p.close)
             .whereType<double>()
             .toList();
         return RecommendationWithDetails(

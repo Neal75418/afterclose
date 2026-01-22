@@ -258,6 +258,19 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       AlertType.above => Icons.trending_up,
       AlertType.below => Icons.trending_down,
       AlertType.changePct => Icons.percent,
+      AlertType.volumeSpike || AlertType.volumeAbove => Icons.bar_chart,
+      AlertType.rsiOverbought => Icons.arrow_upward,
+      AlertType.rsiOversold => Icons.arrow_downward,
+      AlertType.kdGoldenCross => Icons.add_circle_outline,
+      AlertType.kdDeathCross => Icons.remove_circle_outline,
+      AlertType.breakResistance => Icons.north_east,
+      AlertType.breakSupport => Icons.south_east,
+      AlertType.week52High => Icons.emoji_events,
+      AlertType.week52Low => Icons.trending_down,
+      AlertType.crossAboveMa || AlertType.crossBelowMa => Icons.timeline,
+      AlertType.revenueYoySurge ||
+      AlertType.highDividendYield ||
+      AlertType.peUndervalued => Icons.analytics,
     };
   }
 
@@ -272,6 +285,21 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       AlertType.changePct => 'alert.changeAbove'.tr(
         namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
       ),
+      AlertType.volumeSpike => '成交量爆量（≥${alert.targetValue.toStringAsFixed(0)}倍均量）',
+      AlertType.volumeAbove => '成交量高於 ${alert.targetValue.toStringAsFixed(0)} 張',
+      AlertType.rsiOverbought => 'RSI 超買（≥${alert.targetValue.toStringAsFixed(0)}）',
+      AlertType.rsiOversold => 'RSI 超賣（≤${alert.targetValue.toStringAsFixed(0)}）',
+      AlertType.kdGoldenCross => 'KD 黃金交叉',
+      AlertType.kdDeathCross => 'KD 死亡交叉',
+      AlertType.breakResistance => '突破壓力 ${alert.targetValue.toStringAsFixed(2)} 元',
+      AlertType.breakSupport => '跌破支撐 ${alert.targetValue.toStringAsFixed(2)} 元',
+      AlertType.week52High => '創 52 週新高',
+      AlertType.week52Low => '創 52 週新低',
+      AlertType.crossAboveMa => '站上 ${alert.targetValue.toInt()} 日均線',
+      AlertType.crossBelowMa => '跌破 ${alert.targetValue.toInt()} 日均線',
+      AlertType.revenueYoySurge => '營收年增 ≥${alert.targetValue.toStringAsFixed(1)}%',
+      AlertType.highDividendYield => '殖利率 ≥${alert.targetValue.toStringAsFixed(1)}%',
+      AlertType.peUndervalued => 'PE ≤${alert.targetValue.toStringAsFixed(1)}倍',
     };
   }
 

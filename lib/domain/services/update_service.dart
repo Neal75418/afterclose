@@ -4,6 +4,7 @@ import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
+import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
@@ -31,6 +32,7 @@ class UpdateService {
     required NewsRepository newsRepository,
     required AnalysisRepository analysisRepository,
     InstitutionalRepository? institutionalRepository,
+    MarketDataRepository? marketDataRepository,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
     List<String>? popularStocks,
@@ -40,6 +42,7 @@ class UpdateService {
        _newsRepo = newsRepository,
        _analysisRepo = analysisRepository,
        _institutionalRepo = institutionalRepository,
+       _marketDataRepo = marketDataRepository,
        _analysisService = analysisService ?? const AnalysisService(),
        _ruleEngine = ruleEngine ?? const RuleEngine(),
        _popularStocks = popularStocks ?? _defaultPopularStocks;
@@ -70,6 +73,7 @@ class UpdateService {
   final NewsRepository _newsRepo;
   final AnalysisRepository _analysisRepo;
   final InstitutionalRepository? _institutionalRepo;
+  final MarketDataRepository? _marketDataRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
   final List<String> _popularStocks;
@@ -286,6 +290,83 @@ class UpdateService {
         }
       }
 
+      // Step 4.5: Fetch extended market data (Phase 4: shareholding, day trading, concentration)
+      onProgress?.call(4, 10, '取得籌碼資料');
+      final marketRepo = _marketDataRepo;
+      if (marketRepo != null) {
+        try {
+          // Sync for watchlist + popular stocks to save API calls
+          final watchlist = await _db.getWatchlist();
+          final symbolsForMarketData = <String>{
+            ...watchlist.map((w) => w.symbol),
+            ..._popularStocks,
+          }.toList();
+
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.5: Syncing market data for ${symbolsForMarketData.length} stocks...',
+          );
+
+          final marketDataStartDate = normalizedDate.subtract(
+            const Duration(days: RuleParams.foreignShareholdingLookbackDays + 5),
+          );
+
+          // Parallel sync with concurrency limit to avoid overwhelming API
+          const chunkSize = 5;
+          var syncedCount = 0;
+          var errorCount = 0;
+
+          // Process in chunks for controlled parallelism
+          for (var i = 0; i < symbolsForMarketData.length; i += chunkSize) {
+            final chunk = symbolsForMarketData.skip(i).take(chunkSize).toList();
+
+            // Sync each symbol's data in parallel within the chunk
+            final futures = chunk.map((symbol) async {
+              try {
+                // Run both syncs in parallel for each symbol
+                await Future.wait([
+                  marketRepo.syncShareholding(
+                    symbol,
+                    startDate: marketDataStartDate,
+                    endDate: normalizedDate,
+                  ),
+                  marketRepo.syncDayTrading(
+                    symbol,
+                    startDate: marketDataStartDate,
+                    endDate: normalizedDate,
+                  ),
+                ]);
+                return true;
+              } catch (e) {
+                if (errorCount < 3) {
+                  AppLogger.warning(
+                    'UpdateService',
+                    'Market data sync failed for $symbol',
+                    e,
+                  );
+                }
+                errorCount++;
+                return false;
+              }
+            });
+
+            // Wait for all futures in this chunk
+            final results = await Future.wait(futures);
+            syncedCount += results.where((r) => r).length;
+          }
+
+          // NOTE: syncHoldingDistribution (股權分散表) requires paid membership
+          // and is intentionally not called here
+
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.5 complete: synced $syncedCount/${symbolsForMarketData.length} stocks',
+          );
+        } catch (e) {
+          result.errors.add('籌碼資料更新失敗: $e');
+        }
+      }
+
       // Step 5: Fetch RSS news
       onProgress?.call(5, 10, '取得新聞資料');
       try {
@@ -295,6 +376,12 @@ class UpdateService {
           for (final error in newsResult.errors) {
             result.errors.add('RSS 錯誤: $error');
           }
+        }
+
+        // Cleanup old news (older than 30 days)
+        final deletedNews = await _newsRepo.cleanupOldNews(olderThanDays: 30);
+        if (deletedNews > 0) {
+          AppLogger.info('UpdateService', '已清理 $deletedNews 則過期新聞');
         }
       } catch (e) {
         result.errors.add('新聞更新失敗: $e');
@@ -582,8 +669,18 @@ class UpdateService {
       final analysisResult = _analysisService.analyzeStock(prices);
       if (analysisResult == null) continue;
 
-      // Build context for rule engine
-      final context = _analysisService.buildContext(analysisResult);
+      // Build market data context for Phase 4 signals (optional)
+      MarketDataContext? marketData;
+      if (_marketDataRepo != null) {
+        marketData = await _buildMarketDataContext(symbol);
+      }
+
+      // Build context for rule engine (includes technical indicators and market data)
+      final context = _analysisService.buildContext(
+        analysisResult,
+        priceHistory: prices,
+        marketData: marketData,
+      );
 
       // Get optional data from batch-loaded maps
       final institutionalHistory = institutionalMap[symbol];
@@ -689,6 +786,68 @@ class UpdateService {
   /// Normalize date to start of day in UTC
   DateTime _normalizeDate(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
+  }
+
+  /// Build MarketDataContext for Phase 4 signals
+  ///
+  /// Fetches foreign shareholding, day trading, and concentration data
+  /// Returns null if no market data available
+  Future<MarketDataContext?> _buildMarketDataContext(String symbol) async {
+    final repo = _marketDataRepo;
+    if (repo == null) return null;
+
+    try {
+      // Fetch shareholding data
+      final shareholdingHistory = await repo.getShareholdingHistory(
+        symbol,
+        days: RuleParams.foreignShareholdingLookbackDays + 5,
+      );
+
+      double? foreignSharesRatio;
+      double? foreignSharesRatioChange;
+
+      if (shareholdingHistory.length >= 2) {
+        final latest = shareholdingHistory.first;
+        foreignSharesRatio = latest.foreignSharesRatio;
+
+        // Calculate change over lookback period
+        if (shareholdingHistory.length >= RuleParams.foreignShareholdingLookbackDays) {
+          final older = shareholdingHistory[RuleParams.foreignShareholdingLookbackDays - 1];
+          if (latest.foreignSharesRatio != null && older.foreignSharesRatio != null) {
+            foreignSharesRatioChange =
+                latest.foreignSharesRatio! - older.foreignSharesRatio!;
+          }
+        }
+      }
+
+      // Fetch day trading data
+      final dayTrading = await repo.getLatestDayTrading(symbol);
+      final dayTradingRatio = dayTrading?.dayTradingRatio;
+
+      // Fetch concentration ratio
+      final concentrationRatio = await repo.getConcentrationRatio(symbol);
+
+      // Return null if no meaningful data
+      if (foreignSharesRatio == null &&
+          dayTradingRatio == null &&
+          concentrationRatio == null) {
+        return null;
+      }
+
+      return MarketDataContext(
+        foreignSharesRatio: foreignSharesRatio,
+        foreignSharesRatioChange: foreignSharesRatioChange,
+        dayTradingRatio: dayTradingRatio,
+        concentrationRatio: concentrationRatio,
+      );
+    } catch (e) {
+      // Log error but don't fail the analysis
+      AppLogger.warning(
+        'UpdateService',
+        '_buildMarketDataContext failed for $symbol: $e',
+      );
+      return null;
+    }
   }
 }
 

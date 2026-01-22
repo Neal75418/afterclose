@@ -5709,6 +5709,3606 @@ class PriceAlertCompanion extends UpdateCompanion<PriceAlertEntry> {
   }
 }
 
+class $ShareholdingTable extends Shareholding
+    with TableInfo<$ShareholdingTable, ShareholdingEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ShareholdingTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _foreignRemainingSharesMeta =
+      const VerificationMeta('foreignRemainingShares');
+  @override
+  late final GeneratedColumn<double> foreignRemainingShares =
+      GeneratedColumn<double>(
+        'foreign_remaining_shares',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _foreignSharesRatioMeta =
+      const VerificationMeta('foreignSharesRatio');
+  @override
+  late final GeneratedColumn<double> foreignSharesRatio =
+      GeneratedColumn<double>(
+        'foreign_shares_ratio',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _foreignUpperLimitRatioMeta =
+      const VerificationMeta('foreignUpperLimitRatio');
+  @override
+  late final GeneratedColumn<double> foreignUpperLimitRatio =
+      GeneratedColumn<double>(
+        'foreign_upper_limit_ratio',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _sharesIssuedMeta = const VerificationMeta(
+    'sharesIssued',
+  );
+  @override
+  late final GeneratedColumn<double> sharesIssued = GeneratedColumn<double>(
+    'shares_issued',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    foreignRemainingShares,
+    foreignSharesRatio,
+    foreignUpperLimitRatio,
+    sharesIssued,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'shareholding';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ShareholdingEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('foreign_remaining_shares')) {
+      context.handle(
+        _foreignRemainingSharesMeta,
+        foreignRemainingShares.isAcceptableOrUnknown(
+          data['foreign_remaining_shares']!,
+          _foreignRemainingSharesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('foreign_shares_ratio')) {
+      context.handle(
+        _foreignSharesRatioMeta,
+        foreignSharesRatio.isAcceptableOrUnknown(
+          data['foreign_shares_ratio']!,
+          _foreignSharesRatioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('foreign_upper_limit_ratio')) {
+      context.handle(
+        _foreignUpperLimitRatioMeta,
+        foreignUpperLimitRatio.isAcceptableOrUnknown(
+          data['foreign_upper_limit_ratio']!,
+          _foreignUpperLimitRatioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shares_issued')) {
+      context.handle(
+        _sharesIssuedMeta,
+        sharesIssued.isAcceptableOrUnknown(
+          data['shares_issued']!,
+          _sharesIssuedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  ShareholdingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ShareholdingEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      foreignRemainingShares: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}foreign_remaining_shares'],
+      ),
+      foreignSharesRatio: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}foreign_shares_ratio'],
+      ),
+      foreignUpperLimitRatio: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}foreign_upper_limit_ratio'],
+      ),
+      sharesIssued: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}shares_issued'],
+      ),
+    );
+  }
+
+  @override
+  $ShareholdingTable createAlias(String alias) {
+    return $ShareholdingTable(attachedDatabase, alias);
+  }
+}
+
+class ShareholdingEntry extends DataClass
+    implements Insertable<ShareholdingEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Trading date
+  final DateTime date;
+
+  /// Foreign investment remaining shares (外資持股餘額)
+  final double? foreignRemainingShares;
+
+  /// Foreign investment shares ratio (外資持股比例%)
+  final double? foreignSharesRatio;
+
+  /// Foreign investment upper limit ratio (外資持股上限比例%)
+  final double? foreignUpperLimitRatio;
+
+  /// Number of shares issued (已發行股數)
+  final double? sharesIssued;
+  const ShareholdingEntry({
+    required this.symbol,
+    required this.date,
+    this.foreignRemainingShares,
+    this.foreignSharesRatio,
+    this.foreignUpperLimitRatio,
+    this.sharesIssued,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || foreignRemainingShares != null) {
+      map['foreign_remaining_shares'] = Variable<double>(
+        foreignRemainingShares,
+      );
+    }
+    if (!nullToAbsent || foreignSharesRatio != null) {
+      map['foreign_shares_ratio'] = Variable<double>(foreignSharesRatio);
+    }
+    if (!nullToAbsent || foreignUpperLimitRatio != null) {
+      map['foreign_upper_limit_ratio'] = Variable<double>(
+        foreignUpperLimitRatio,
+      );
+    }
+    if (!nullToAbsent || sharesIssued != null) {
+      map['shares_issued'] = Variable<double>(sharesIssued);
+    }
+    return map;
+  }
+
+  ShareholdingCompanion toCompanion(bool nullToAbsent) {
+    return ShareholdingCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      foreignRemainingShares: foreignRemainingShares == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreignRemainingShares),
+      foreignSharesRatio: foreignSharesRatio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreignSharesRatio),
+      foreignUpperLimitRatio: foreignUpperLimitRatio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(foreignUpperLimitRatio),
+      sharesIssued: sharesIssued == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharesIssued),
+    );
+  }
+
+  factory ShareholdingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ShareholdingEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      foreignRemainingShares: serializer.fromJson<double?>(
+        json['foreignRemainingShares'],
+      ),
+      foreignSharesRatio: serializer.fromJson<double?>(
+        json['foreignSharesRatio'],
+      ),
+      foreignUpperLimitRatio: serializer.fromJson<double?>(
+        json['foreignUpperLimitRatio'],
+      ),
+      sharesIssued: serializer.fromJson<double?>(json['sharesIssued']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'foreignRemainingShares': serializer.toJson<double?>(
+        foreignRemainingShares,
+      ),
+      'foreignSharesRatio': serializer.toJson<double?>(foreignSharesRatio),
+      'foreignUpperLimitRatio': serializer.toJson<double?>(
+        foreignUpperLimitRatio,
+      ),
+      'sharesIssued': serializer.toJson<double?>(sharesIssued),
+    };
+  }
+
+  ShareholdingEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> foreignRemainingShares = const Value.absent(),
+    Value<double?> foreignSharesRatio = const Value.absent(),
+    Value<double?> foreignUpperLimitRatio = const Value.absent(),
+    Value<double?> sharesIssued = const Value.absent(),
+  }) => ShareholdingEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    foreignRemainingShares: foreignRemainingShares.present
+        ? foreignRemainingShares.value
+        : this.foreignRemainingShares,
+    foreignSharesRatio: foreignSharesRatio.present
+        ? foreignSharesRatio.value
+        : this.foreignSharesRatio,
+    foreignUpperLimitRatio: foreignUpperLimitRatio.present
+        ? foreignUpperLimitRatio.value
+        : this.foreignUpperLimitRatio,
+    sharesIssued: sharesIssued.present ? sharesIssued.value : this.sharesIssued,
+  );
+  ShareholdingEntry copyWithCompanion(ShareholdingCompanion data) {
+    return ShareholdingEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      foreignRemainingShares: data.foreignRemainingShares.present
+          ? data.foreignRemainingShares.value
+          : this.foreignRemainingShares,
+      foreignSharesRatio: data.foreignSharesRatio.present
+          ? data.foreignSharesRatio.value
+          : this.foreignSharesRatio,
+      foreignUpperLimitRatio: data.foreignUpperLimitRatio.present
+          ? data.foreignUpperLimitRatio.value
+          : this.foreignUpperLimitRatio,
+      sharesIssued: data.sharesIssued.present
+          ? data.sharesIssued.value
+          : this.sharesIssued,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShareholdingEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('foreignRemainingShares: $foreignRemainingShares, ')
+          ..write('foreignSharesRatio: $foreignSharesRatio, ')
+          ..write('foreignUpperLimitRatio: $foreignUpperLimitRatio, ')
+          ..write('sharesIssued: $sharesIssued')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    foreignRemainingShares,
+    foreignSharesRatio,
+    foreignUpperLimitRatio,
+    sharesIssued,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ShareholdingEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.foreignRemainingShares == this.foreignRemainingShares &&
+          other.foreignSharesRatio == this.foreignSharesRatio &&
+          other.foreignUpperLimitRatio == this.foreignUpperLimitRatio &&
+          other.sharesIssued == this.sharesIssued);
+}
+
+class ShareholdingCompanion extends UpdateCompanion<ShareholdingEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> foreignRemainingShares;
+  final Value<double?> foreignSharesRatio;
+  final Value<double?> foreignUpperLimitRatio;
+  final Value<double?> sharesIssued;
+  final Value<int> rowid;
+  const ShareholdingCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.foreignRemainingShares = const Value.absent(),
+    this.foreignSharesRatio = const Value.absent(),
+    this.foreignUpperLimitRatio = const Value.absent(),
+    this.sharesIssued = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ShareholdingCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.foreignRemainingShares = const Value.absent(),
+    this.foreignSharesRatio = const Value.absent(),
+    this.foreignUpperLimitRatio = const Value.absent(),
+    this.sharesIssued = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<ShareholdingEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? foreignRemainingShares,
+    Expression<double>? foreignSharesRatio,
+    Expression<double>? foreignUpperLimitRatio,
+    Expression<double>? sharesIssued,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (foreignRemainingShares != null)
+        'foreign_remaining_shares': foreignRemainingShares,
+      if (foreignSharesRatio != null)
+        'foreign_shares_ratio': foreignSharesRatio,
+      if (foreignUpperLimitRatio != null)
+        'foreign_upper_limit_ratio': foreignUpperLimitRatio,
+      if (sharesIssued != null) 'shares_issued': sharesIssued,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ShareholdingCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? foreignRemainingShares,
+    Value<double?>? foreignSharesRatio,
+    Value<double?>? foreignUpperLimitRatio,
+    Value<double?>? sharesIssued,
+    Value<int>? rowid,
+  }) {
+    return ShareholdingCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      foreignRemainingShares:
+          foreignRemainingShares ?? this.foreignRemainingShares,
+      foreignSharesRatio: foreignSharesRatio ?? this.foreignSharesRatio,
+      foreignUpperLimitRatio:
+          foreignUpperLimitRatio ?? this.foreignUpperLimitRatio,
+      sharesIssued: sharesIssued ?? this.sharesIssued,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (foreignRemainingShares.present) {
+      map['foreign_remaining_shares'] = Variable<double>(
+        foreignRemainingShares.value,
+      );
+    }
+    if (foreignSharesRatio.present) {
+      map['foreign_shares_ratio'] = Variable<double>(foreignSharesRatio.value);
+    }
+    if (foreignUpperLimitRatio.present) {
+      map['foreign_upper_limit_ratio'] = Variable<double>(
+        foreignUpperLimitRatio.value,
+      );
+    }
+    if (sharesIssued.present) {
+      map['shares_issued'] = Variable<double>(sharesIssued.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ShareholdingCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('foreignRemainingShares: $foreignRemainingShares, ')
+          ..write('foreignSharesRatio: $foreignSharesRatio, ')
+          ..write('foreignUpperLimitRatio: $foreignUpperLimitRatio, ')
+          ..write('sharesIssued: $sharesIssued, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DayTradingTable extends DayTrading
+    with TableInfo<$DayTradingTable, DayTradingEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DayTradingTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _buyVolumeMeta = const VerificationMeta(
+    'buyVolume',
+  );
+  @override
+  late final GeneratedColumn<double> buyVolume = GeneratedColumn<double>(
+    'buy_volume',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sellVolumeMeta = const VerificationMeta(
+    'sellVolume',
+  );
+  @override
+  late final GeneratedColumn<double> sellVolume = GeneratedColumn<double>(
+    'sell_volume',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dayTradingRatioMeta = const VerificationMeta(
+    'dayTradingRatio',
+  );
+  @override
+  late final GeneratedColumn<double> dayTradingRatio = GeneratedColumn<double>(
+    'day_trading_ratio',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tradeVolumeMeta = const VerificationMeta(
+    'tradeVolume',
+  );
+  @override
+  late final GeneratedColumn<double> tradeVolume = GeneratedColumn<double>(
+    'trade_volume',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    buyVolume,
+    sellVolume,
+    dayTradingRatio,
+    tradeVolume,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'day_trading';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DayTradingEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('buy_volume')) {
+      context.handle(
+        _buyVolumeMeta,
+        buyVolume.isAcceptableOrUnknown(data['buy_volume']!, _buyVolumeMeta),
+      );
+    }
+    if (data.containsKey('sell_volume')) {
+      context.handle(
+        _sellVolumeMeta,
+        sellVolume.isAcceptableOrUnknown(data['sell_volume']!, _sellVolumeMeta),
+      );
+    }
+    if (data.containsKey('day_trading_ratio')) {
+      context.handle(
+        _dayTradingRatioMeta,
+        dayTradingRatio.isAcceptableOrUnknown(
+          data['day_trading_ratio']!,
+          _dayTradingRatioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('trade_volume')) {
+      context.handle(
+        _tradeVolumeMeta,
+        tradeVolume.isAcceptableOrUnknown(
+          data['trade_volume']!,
+          _tradeVolumeMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  DayTradingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DayTradingEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      buyVolume: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}buy_volume'],
+      ),
+      sellVolume: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}sell_volume'],
+      ),
+      dayTradingRatio: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}day_trading_ratio'],
+      ),
+      tradeVolume: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}trade_volume'],
+      ),
+    );
+  }
+
+  @override
+  $DayTradingTable createAlias(String alias) {
+    return $DayTradingTable(attachedDatabase, alias);
+  }
+}
+
+class DayTradingEntry extends DataClass implements Insertable<DayTradingEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Trading date
+  final DateTime date;
+
+  /// Day trading buy volume (當沖買進量)
+  final double? buyVolume;
+
+  /// Day trading sell volume (當沖賣出量)
+  final double? sellVolume;
+
+  /// Day trading ratio percentage (當沖比例%)
+  final double? dayTradingRatio;
+
+  /// Total trade volume (總成交量)
+  final double? tradeVolume;
+  const DayTradingEntry({
+    required this.symbol,
+    required this.date,
+    this.buyVolume,
+    this.sellVolume,
+    this.dayTradingRatio,
+    this.tradeVolume,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || buyVolume != null) {
+      map['buy_volume'] = Variable<double>(buyVolume);
+    }
+    if (!nullToAbsent || sellVolume != null) {
+      map['sell_volume'] = Variable<double>(sellVolume);
+    }
+    if (!nullToAbsent || dayTradingRatio != null) {
+      map['day_trading_ratio'] = Variable<double>(dayTradingRatio);
+    }
+    if (!nullToAbsent || tradeVolume != null) {
+      map['trade_volume'] = Variable<double>(tradeVolume);
+    }
+    return map;
+  }
+
+  DayTradingCompanion toCompanion(bool nullToAbsent) {
+    return DayTradingCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      buyVolume: buyVolume == null && nullToAbsent
+          ? const Value.absent()
+          : Value(buyVolume),
+      sellVolume: sellVolume == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sellVolume),
+      dayTradingRatio: dayTradingRatio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dayTradingRatio),
+      tradeVolume: tradeVolume == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tradeVolume),
+    );
+  }
+
+  factory DayTradingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DayTradingEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      buyVolume: serializer.fromJson<double?>(json['buyVolume']),
+      sellVolume: serializer.fromJson<double?>(json['sellVolume']),
+      dayTradingRatio: serializer.fromJson<double?>(json['dayTradingRatio']),
+      tradeVolume: serializer.fromJson<double?>(json['tradeVolume']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'buyVolume': serializer.toJson<double?>(buyVolume),
+      'sellVolume': serializer.toJson<double?>(sellVolume),
+      'dayTradingRatio': serializer.toJson<double?>(dayTradingRatio),
+      'tradeVolume': serializer.toJson<double?>(tradeVolume),
+    };
+  }
+
+  DayTradingEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> buyVolume = const Value.absent(),
+    Value<double?> sellVolume = const Value.absent(),
+    Value<double?> dayTradingRatio = const Value.absent(),
+    Value<double?> tradeVolume = const Value.absent(),
+  }) => DayTradingEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    buyVolume: buyVolume.present ? buyVolume.value : this.buyVolume,
+    sellVolume: sellVolume.present ? sellVolume.value : this.sellVolume,
+    dayTradingRatio: dayTradingRatio.present
+        ? dayTradingRatio.value
+        : this.dayTradingRatio,
+    tradeVolume: tradeVolume.present ? tradeVolume.value : this.tradeVolume,
+  );
+  DayTradingEntry copyWithCompanion(DayTradingCompanion data) {
+    return DayTradingEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      buyVolume: data.buyVolume.present ? data.buyVolume.value : this.buyVolume,
+      sellVolume: data.sellVolume.present
+          ? data.sellVolume.value
+          : this.sellVolume,
+      dayTradingRatio: data.dayTradingRatio.present
+          ? data.dayTradingRatio.value
+          : this.dayTradingRatio,
+      tradeVolume: data.tradeVolume.present
+          ? data.tradeVolume.value
+          : this.tradeVolume,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayTradingEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('buyVolume: $buyVolume, ')
+          ..write('sellVolume: $sellVolume, ')
+          ..write('dayTradingRatio: $dayTradingRatio, ')
+          ..write('tradeVolume: $tradeVolume')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    buyVolume,
+    sellVolume,
+    dayTradingRatio,
+    tradeVolume,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DayTradingEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.buyVolume == this.buyVolume &&
+          other.sellVolume == this.sellVolume &&
+          other.dayTradingRatio == this.dayTradingRatio &&
+          other.tradeVolume == this.tradeVolume);
+}
+
+class DayTradingCompanion extends UpdateCompanion<DayTradingEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> buyVolume;
+  final Value<double?> sellVolume;
+  final Value<double?> dayTradingRatio;
+  final Value<double?> tradeVolume;
+  final Value<int> rowid;
+  const DayTradingCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.buyVolume = const Value.absent(),
+    this.sellVolume = const Value.absent(),
+    this.dayTradingRatio = const Value.absent(),
+    this.tradeVolume = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DayTradingCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.buyVolume = const Value.absent(),
+    this.sellVolume = const Value.absent(),
+    this.dayTradingRatio = const Value.absent(),
+    this.tradeVolume = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<DayTradingEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? buyVolume,
+    Expression<double>? sellVolume,
+    Expression<double>? dayTradingRatio,
+    Expression<double>? tradeVolume,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (buyVolume != null) 'buy_volume': buyVolume,
+      if (sellVolume != null) 'sell_volume': sellVolume,
+      if (dayTradingRatio != null) 'day_trading_ratio': dayTradingRatio,
+      if (tradeVolume != null) 'trade_volume': tradeVolume,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DayTradingCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? buyVolume,
+    Value<double?>? sellVolume,
+    Value<double?>? dayTradingRatio,
+    Value<double?>? tradeVolume,
+    Value<int>? rowid,
+  }) {
+    return DayTradingCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      buyVolume: buyVolume ?? this.buyVolume,
+      sellVolume: sellVolume ?? this.sellVolume,
+      dayTradingRatio: dayTradingRatio ?? this.dayTradingRatio,
+      tradeVolume: tradeVolume ?? this.tradeVolume,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (buyVolume.present) {
+      map['buy_volume'] = Variable<double>(buyVolume.value);
+    }
+    if (sellVolume.present) {
+      map['sell_volume'] = Variable<double>(sellVolume.value);
+    }
+    if (dayTradingRatio.present) {
+      map['day_trading_ratio'] = Variable<double>(dayTradingRatio.value);
+    }
+    if (tradeVolume.present) {
+      map['trade_volume'] = Variable<double>(tradeVolume.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DayTradingCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('buyVolume: $buyVolume, ')
+          ..write('sellVolume: $sellVolume, ')
+          ..write('dayTradingRatio: $dayTradingRatio, ')
+          ..write('tradeVolume: $tradeVolume, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $FinancialDataTable extends FinancialData
+    with TableInfo<$FinancialDataTable, FinancialDataEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $FinancialDataTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statementTypeMeta = const VerificationMeta(
+    'statementType',
+  );
+  @override
+  late final GeneratedColumn<String> statementType = GeneratedColumn<String>(
+    'statement_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataTypeMeta = const VerificationMeta(
+    'dataType',
+  );
+  @override
+  late final GeneratedColumn<String> dataType = GeneratedColumn<String>(
+    'data_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
+  @override
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+    'value',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _originNameMeta = const VerificationMeta(
+    'originName',
+  );
+  @override
+  late final GeneratedColumn<String> originName = GeneratedColumn<String>(
+    'origin_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    statementType,
+    dataType,
+    value,
+    originName,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'financial_data';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<FinancialDataEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('statement_type')) {
+      context.handle(
+        _statementTypeMeta,
+        statementType.isAcceptableOrUnknown(
+          data['statement_type']!,
+          _statementTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_statementTypeMeta);
+    }
+    if (data.containsKey('data_type')) {
+      context.handle(
+        _dataTypeMeta,
+        dataType.isAcceptableOrUnknown(data['data_type']!, _dataTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataTypeMeta);
+    }
+    if (data.containsKey('value')) {
+      context.handle(
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
+      );
+    }
+    if (data.containsKey('origin_name')) {
+      context.handle(
+        _originNameMeta,
+        originName.isAcceptableOrUnknown(data['origin_name']!, _originNameMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {
+    symbol,
+    date,
+    statementType,
+    dataType,
+  };
+  @override
+  FinancialDataEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return FinancialDataEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      statementType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}statement_type'],
+      )!,
+      dataType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data_type'],
+      )!,
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}value'],
+      ),
+      originName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}origin_name'],
+      ),
+    );
+  }
+
+  @override
+  $FinancialDataTable createAlias(String alias) {
+    return $FinancialDataTable(attachedDatabase, alias);
+  }
+}
+
+class FinancialDataEntry extends DataClass
+    implements Insertable<FinancialDataEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Report date (YYYY-QQ format stored as date)
+  final DateTime date;
+
+  /// Statement type: INCOME, BALANCE, CASHFLOW
+  final String statementType;
+
+  /// Data type (e.g., Revenue, NetIncome, TotalAssets)
+  final String dataType;
+
+  /// Value in thousands (千元)
+  final double? value;
+
+  /// Original Chinese name
+  final String? originName;
+  const FinancialDataEntry({
+    required this.symbol,
+    required this.date,
+    required this.statementType,
+    required this.dataType,
+    this.value,
+    this.originName,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    map['statement_type'] = Variable<String>(statementType);
+    map['data_type'] = Variable<String>(dataType);
+    if (!nullToAbsent || value != null) {
+      map['value'] = Variable<double>(value);
+    }
+    if (!nullToAbsent || originName != null) {
+      map['origin_name'] = Variable<String>(originName);
+    }
+    return map;
+  }
+
+  FinancialDataCompanion toCompanion(bool nullToAbsent) {
+    return FinancialDataCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      statementType: Value(statementType),
+      dataType: Value(dataType),
+      value: value == null && nullToAbsent
+          ? const Value.absent()
+          : Value(value),
+      originName: originName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originName),
+    );
+  }
+
+  factory FinancialDataEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return FinancialDataEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      statementType: serializer.fromJson<String>(json['statementType']),
+      dataType: serializer.fromJson<String>(json['dataType']),
+      value: serializer.fromJson<double?>(json['value']),
+      originName: serializer.fromJson<String?>(json['originName']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'statementType': serializer.toJson<String>(statementType),
+      'dataType': serializer.toJson<String>(dataType),
+      'value': serializer.toJson<double?>(value),
+      'originName': serializer.toJson<String?>(originName),
+    };
+  }
+
+  FinancialDataEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    String? statementType,
+    String? dataType,
+    Value<double?> value = const Value.absent(),
+    Value<String?> originName = const Value.absent(),
+  }) => FinancialDataEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    statementType: statementType ?? this.statementType,
+    dataType: dataType ?? this.dataType,
+    value: value.present ? value.value : this.value,
+    originName: originName.present ? originName.value : this.originName,
+  );
+  FinancialDataEntry copyWithCompanion(FinancialDataCompanion data) {
+    return FinancialDataEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      statementType: data.statementType.present
+          ? data.statementType.value
+          : this.statementType,
+      dataType: data.dataType.present ? data.dataType.value : this.dataType,
+      value: data.value.present ? data.value.value : this.value,
+      originName: data.originName.present
+          ? data.originName.value
+          : this.originName,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FinancialDataEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('statementType: $statementType, ')
+          ..write('dataType: $dataType, ')
+          ..write('value: $value, ')
+          ..write('originName: $originName')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(symbol, date, statementType, dataType, value, originName);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is FinancialDataEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.statementType == this.statementType &&
+          other.dataType == this.dataType &&
+          other.value == this.value &&
+          other.originName == this.originName);
+}
+
+class FinancialDataCompanion extends UpdateCompanion<FinancialDataEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<String> statementType;
+  final Value<String> dataType;
+  final Value<double?> value;
+  final Value<String?> originName;
+  final Value<int> rowid;
+  const FinancialDataCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.statementType = const Value.absent(),
+    this.dataType = const Value.absent(),
+    this.value = const Value.absent(),
+    this.originName = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  FinancialDataCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    required String statementType,
+    required String dataType,
+    this.value = const Value.absent(),
+    this.originName = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date),
+       statementType = Value(statementType),
+       dataType = Value(dataType);
+  static Insertable<FinancialDataEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<String>? statementType,
+    Expression<String>? dataType,
+    Expression<double>? value,
+    Expression<String>? originName,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (statementType != null) 'statement_type': statementType,
+      if (dataType != null) 'data_type': dataType,
+      if (value != null) 'value': value,
+      if (originName != null) 'origin_name': originName,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  FinancialDataCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<String>? statementType,
+    Value<String>? dataType,
+    Value<double?>? value,
+    Value<String?>? originName,
+    Value<int>? rowid,
+  }) {
+    return FinancialDataCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      statementType: statementType ?? this.statementType,
+      dataType: dataType ?? this.dataType,
+      value: value ?? this.value,
+      originName: originName ?? this.originName,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (statementType.present) {
+      map['statement_type'] = Variable<String>(statementType.value);
+    }
+    if (dataType.present) {
+      map['data_type'] = Variable<String>(dataType.value);
+    }
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
+    }
+    if (originName.present) {
+      map['origin_name'] = Variable<String>(originName.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('FinancialDataCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('statementType: $statementType, ')
+          ..write('dataType: $dataType, ')
+          ..write('value: $value, ')
+          ..write('originName: $originName, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AdjustedPriceTable extends AdjustedPrice
+    with TableInfo<$AdjustedPriceTable, AdjustedPriceEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AdjustedPriceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _openMeta = const VerificationMeta('open');
+  @override
+  late final GeneratedColumn<double> open = GeneratedColumn<double>(
+    'open',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _highMeta = const VerificationMeta('high');
+  @override
+  late final GeneratedColumn<double> high = GeneratedColumn<double>(
+    'high',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowMeta = const VerificationMeta('low');
+  @override
+  late final GeneratedColumn<double> low = GeneratedColumn<double>(
+    'low',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closeMeta = const VerificationMeta('close');
+  @override
+  late final GeneratedColumn<double> close = GeneratedColumn<double>(
+    'close',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _volumeMeta = const VerificationMeta('volume');
+  @override
+  late final GeneratedColumn<double> volume = GeneratedColumn<double>(
+    'volume',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    open,
+    high,
+    low,
+    close,
+    volume,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'adjusted_price';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AdjustedPriceEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('open')) {
+      context.handle(
+        _openMeta,
+        open.isAcceptableOrUnknown(data['open']!, _openMeta),
+      );
+    }
+    if (data.containsKey('high')) {
+      context.handle(
+        _highMeta,
+        high.isAcceptableOrUnknown(data['high']!, _highMeta),
+      );
+    }
+    if (data.containsKey('low')) {
+      context.handle(
+        _lowMeta,
+        low.isAcceptableOrUnknown(data['low']!, _lowMeta),
+      );
+    }
+    if (data.containsKey('close')) {
+      context.handle(
+        _closeMeta,
+        close.isAcceptableOrUnknown(data['close']!, _closeMeta),
+      );
+    }
+    if (data.containsKey('volume')) {
+      context.handle(
+        _volumeMeta,
+        volume.isAcceptableOrUnknown(data['volume']!, _volumeMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  AdjustedPriceEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AdjustedPriceEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      open: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}open'],
+      ),
+      high: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}high'],
+      ),
+      low: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}low'],
+      ),
+      close: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}close'],
+      ),
+      volume: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}volume'],
+      ),
+    );
+  }
+
+  @override
+  $AdjustedPriceTable createAlias(String alias) {
+    return $AdjustedPriceTable(attachedDatabase, alias);
+  }
+}
+
+class AdjustedPriceEntry extends DataClass
+    implements Insertable<AdjustedPriceEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Trading date
+  final DateTime date;
+
+  /// Adjusted opening price
+  final double? open;
+
+  /// Adjusted highest price
+  final double? high;
+
+  /// Adjusted lowest price
+  final double? low;
+
+  /// Adjusted closing price
+  final double? close;
+
+  /// Trading volume
+  final double? volume;
+  const AdjustedPriceEntry({
+    required this.symbol,
+    required this.date,
+    this.open,
+    this.high,
+    this.low,
+    this.close,
+    this.volume,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || open != null) {
+      map['open'] = Variable<double>(open);
+    }
+    if (!nullToAbsent || high != null) {
+      map['high'] = Variable<double>(high);
+    }
+    if (!nullToAbsent || low != null) {
+      map['low'] = Variable<double>(low);
+    }
+    if (!nullToAbsent || close != null) {
+      map['close'] = Variable<double>(close);
+    }
+    if (!nullToAbsent || volume != null) {
+      map['volume'] = Variable<double>(volume);
+    }
+    return map;
+  }
+
+  AdjustedPriceCompanion toCompanion(bool nullToAbsent) {
+    return AdjustedPriceCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      open: open == null && nullToAbsent ? const Value.absent() : Value(open),
+      high: high == null && nullToAbsent ? const Value.absent() : Value(high),
+      low: low == null && nullToAbsent ? const Value.absent() : Value(low),
+      close: close == null && nullToAbsent
+          ? const Value.absent()
+          : Value(close),
+      volume: volume == null && nullToAbsent
+          ? const Value.absent()
+          : Value(volume),
+    );
+  }
+
+  factory AdjustedPriceEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AdjustedPriceEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      open: serializer.fromJson<double?>(json['open']),
+      high: serializer.fromJson<double?>(json['high']),
+      low: serializer.fromJson<double?>(json['low']),
+      close: serializer.fromJson<double?>(json['close']),
+      volume: serializer.fromJson<double?>(json['volume']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'open': serializer.toJson<double?>(open),
+      'high': serializer.toJson<double?>(high),
+      'low': serializer.toJson<double?>(low),
+      'close': serializer.toJson<double?>(close),
+      'volume': serializer.toJson<double?>(volume),
+    };
+  }
+
+  AdjustedPriceEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> open = const Value.absent(),
+    Value<double?> high = const Value.absent(),
+    Value<double?> low = const Value.absent(),
+    Value<double?> close = const Value.absent(),
+    Value<double?> volume = const Value.absent(),
+  }) => AdjustedPriceEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    open: open.present ? open.value : this.open,
+    high: high.present ? high.value : this.high,
+    low: low.present ? low.value : this.low,
+    close: close.present ? close.value : this.close,
+    volume: volume.present ? volume.value : this.volume,
+  );
+  AdjustedPriceEntry copyWithCompanion(AdjustedPriceCompanion data) {
+    return AdjustedPriceEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      open: data.open.present ? data.open.value : this.open,
+      high: data.high.present ? data.high.value : this.high,
+      low: data.low.present ? data.low.value : this.low,
+      close: data.close.present ? data.close.value : this.close,
+      volume: data.volume.present ? data.volume.value : this.volume,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AdjustedPriceEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('open: $open, ')
+          ..write('high: $high, ')
+          ..write('low: $low, ')
+          ..write('close: $close, ')
+          ..write('volume: $volume')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(symbol, date, open, high, low, close, volume);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AdjustedPriceEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.open == this.open &&
+          other.high == this.high &&
+          other.low == this.low &&
+          other.close == this.close &&
+          other.volume == this.volume);
+}
+
+class AdjustedPriceCompanion extends UpdateCompanion<AdjustedPriceEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> open;
+  final Value<double?> high;
+  final Value<double?> low;
+  final Value<double?> close;
+  final Value<double?> volume;
+  final Value<int> rowid;
+  const AdjustedPriceCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.open = const Value.absent(),
+    this.high = const Value.absent(),
+    this.low = const Value.absent(),
+    this.close = const Value.absent(),
+    this.volume = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AdjustedPriceCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.open = const Value.absent(),
+    this.high = const Value.absent(),
+    this.low = const Value.absent(),
+    this.close = const Value.absent(),
+    this.volume = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<AdjustedPriceEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? open,
+    Expression<double>? high,
+    Expression<double>? low,
+    Expression<double>? close,
+    Expression<double>? volume,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (open != null) 'open': open,
+      if (high != null) 'high': high,
+      if (low != null) 'low': low,
+      if (close != null) 'close': close,
+      if (volume != null) 'volume': volume,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AdjustedPriceCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? open,
+    Value<double?>? high,
+    Value<double?>? low,
+    Value<double?>? close,
+    Value<double?>? volume,
+    Value<int>? rowid,
+  }) {
+    return AdjustedPriceCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      open: open ?? this.open,
+      high: high ?? this.high,
+      low: low ?? this.low,
+      close: close ?? this.close,
+      volume: volume ?? this.volume,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (open.present) {
+      map['open'] = Variable<double>(open.value);
+    }
+    if (high.present) {
+      map['high'] = Variable<double>(high.value);
+    }
+    if (low.present) {
+      map['low'] = Variable<double>(low.value);
+    }
+    if (close.present) {
+      map['close'] = Variable<double>(close.value);
+    }
+    if (volume.present) {
+      map['volume'] = Variable<double>(volume.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AdjustedPriceCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('open: $open, ')
+          ..write('high: $high, ')
+          ..write('low: $low, ')
+          ..write('close: $close, ')
+          ..write('volume: $volume, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $WeeklyPriceTable extends WeeklyPrice
+    with TableInfo<$WeeklyPriceTable, WeeklyPriceEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WeeklyPriceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _openMeta = const VerificationMeta('open');
+  @override
+  late final GeneratedColumn<double> open = GeneratedColumn<double>(
+    'open',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _highMeta = const VerificationMeta('high');
+  @override
+  late final GeneratedColumn<double> high = GeneratedColumn<double>(
+    'high',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lowMeta = const VerificationMeta('low');
+  @override
+  late final GeneratedColumn<double> low = GeneratedColumn<double>(
+    'low',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _closeMeta = const VerificationMeta('close');
+  @override
+  late final GeneratedColumn<double> close = GeneratedColumn<double>(
+    'close',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _volumeMeta = const VerificationMeta('volume');
+  @override
+  late final GeneratedColumn<double> volume = GeneratedColumn<double>(
+    'volume',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    open,
+    high,
+    low,
+    close,
+    volume,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'weekly_price';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<WeeklyPriceEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('open')) {
+      context.handle(
+        _openMeta,
+        open.isAcceptableOrUnknown(data['open']!, _openMeta),
+      );
+    }
+    if (data.containsKey('high')) {
+      context.handle(
+        _highMeta,
+        high.isAcceptableOrUnknown(data['high']!, _highMeta),
+      );
+    }
+    if (data.containsKey('low')) {
+      context.handle(
+        _lowMeta,
+        low.isAcceptableOrUnknown(data['low']!, _lowMeta),
+      );
+    }
+    if (data.containsKey('close')) {
+      context.handle(
+        _closeMeta,
+        close.isAcceptableOrUnknown(data['close']!, _closeMeta),
+      );
+    }
+    if (data.containsKey('volume')) {
+      context.handle(
+        _volumeMeta,
+        volume.isAcceptableOrUnknown(data['volume']!, _volumeMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  WeeklyPriceEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return WeeklyPriceEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      open: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}open'],
+      ),
+      high: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}high'],
+      ),
+      low: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}low'],
+      ),
+      close: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}close'],
+      ),
+      volume: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}volume'],
+      ),
+    );
+  }
+
+  @override
+  $WeeklyPriceTable createAlias(String alias) {
+    return $WeeklyPriceTable(attachedDatabase, alias);
+  }
+}
+
+class WeeklyPriceEntry extends DataClass
+    implements Insertable<WeeklyPriceEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Week ending date
+  final DateTime date;
+
+  /// Weekly opening price
+  final double? open;
+
+  /// Weekly highest price
+  final double? high;
+
+  /// Weekly lowest price
+  final double? low;
+
+  /// Weekly closing price
+  final double? close;
+
+  /// Weekly trading volume
+  final double? volume;
+  const WeeklyPriceEntry({
+    required this.symbol,
+    required this.date,
+    this.open,
+    this.high,
+    this.low,
+    this.close,
+    this.volume,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || open != null) {
+      map['open'] = Variable<double>(open);
+    }
+    if (!nullToAbsent || high != null) {
+      map['high'] = Variable<double>(high);
+    }
+    if (!nullToAbsent || low != null) {
+      map['low'] = Variable<double>(low);
+    }
+    if (!nullToAbsent || close != null) {
+      map['close'] = Variable<double>(close);
+    }
+    if (!nullToAbsent || volume != null) {
+      map['volume'] = Variable<double>(volume);
+    }
+    return map;
+  }
+
+  WeeklyPriceCompanion toCompanion(bool nullToAbsent) {
+    return WeeklyPriceCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      open: open == null && nullToAbsent ? const Value.absent() : Value(open),
+      high: high == null && nullToAbsent ? const Value.absent() : Value(high),
+      low: low == null && nullToAbsent ? const Value.absent() : Value(low),
+      close: close == null && nullToAbsent
+          ? const Value.absent()
+          : Value(close),
+      volume: volume == null && nullToAbsent
+          ? const Value.absent()
+          : Value(volume),
+    );
+  }
+
+  factory WeeklyPriceEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return WeeklyPriceEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      open: serializer.fromJson<double?>(json['open']),
+      high: serializer.fromJson<double?>(json['high']),
+      low: serializer.fromJson<double?>(json['low']),
+      close: serializer.fromJson<double?>(json['close']),
+      volume: serializer.fromJson<double?>(json['volume']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'open': serializer.toJson<double?>(open),
+      'high': serializer.toJson<double?>(high),
+      'low': serializer.toJson<double?>(low),
+      'close': serializer.toJson<double?>(close),
+      'volume': serializer.toJson<double?>(volume),
+    };
+  }
+
+  WeeklyPriceEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> open = const Value.absent(),
+    Value<double?> high = const Value.absent(),
+    Value<double?> low = const Value.absent(),
+    Value<double?> close = const Value.absent(),
+    Value<double?> volume = const Value.absent(),
+  }) => WeeklyPriceEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    open: open.present ? open.value : this.open,
+    high: high.present ? high.value : this.high,
+    low: low.present ? low.value : this.low,
+    close: close.present ? close.value : this.close,
+    volume: volume.present ? volume.value : this.volume,
+  );
+  WeeklyPriceEntry copyWithCompanion(WeeklyPriceCompanion data) {
+    return WeeklyPriceEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      open: data.open.present ? data.open.value : this.open,
+      high: data.high.present ? data.high.value : this.high,
+      low: data.low.present ? data.low.value : this.low,
+      close: data.close.present ? data.close.value : this.close,
+      volume: data.volume.present ? data.volume.value : this.volume,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyPriceEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('open: $open, ')
+          ..write('high: $high, ')
+          ..write('low: $low, ')
+          ..write('close: $close, ')
+          ..write('volume: $volume')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(symbol, date, open, high, low, close, volume);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is WeeklyPriceEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.open == this.open &&
+          other.high == this.high &&
+          other.low == this.low &&
+          other.close == this.close &&
+          other.volume == this.volume);
+}
+
+class WeeklyPriceCompanion extends UpdateCompanion<WeeklyPriceEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> open;
+  final Value<double?> high;
+  final Value<double?> low;
+  final Value<double?> close;
+  final Value<double?> volume;
+  final Value<int> rowid;
+  const WeeklyPriceCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.open = const Value.absent(),
+    this.high = const Value.absent(),
+    this.low = const Value.absent(),
+    this.close = const Value.absent(),
+    this.volume = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  WeeklyPriceCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.open = const Value.absent(),
+    this.high = const Value.absent(),
+    this.low = const Value.absent(),
+    this.close = const Value.absent(),
+    this.volume = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<WeeklyPriceEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? open,
+    Expression<double>? high,
+    Expression<double>? low,
+    Expression<double>? close,
+    Expression<double>? volume,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (open != null) 'open': open,
+      if (high != null) 'high': high,
+      if (low != null) 'low': low,
+      if (close != null) 'close': close,
+      if (volume != null) 'volume': volume,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  WeeklyPriceCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? open,
+    Value<double?>? high,
+    Value<double?>? low,
+    Value<double?>? close,
+    Value<double?>? volume,
+    Value<int>? rowid,
+  }) {
+    return WeeklyPriceCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      open: open ?? this.open,
+      high: high ?? this.high,
+      low: low ?? this.low,
+      close: close ?? this.close,
+      volume: volume ?? this.volume,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (open.present) {
+      map['open'] = Variable<double>(open.value);
+    }
+    if (high.present) {
+      map['high'] = Variable<double>(high.value);
+    }
+    if (low.present) {
+      map['low'] = Variable<double>(low.value);
+    }
+    if (close.present) {
+      map['close'] = Variable<double>(close.value);
+    }
+    if (volume.present) {
+      map['volume'] = Variable<double>(volume.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WeeklyPriceCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('open: $open, ')
+          ..write('high: $high, ')
+          ..write('low: $low, ')
+          ..write('close: $close, ')
+          ..write('volume: $volume, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $HoldingDistributionTable extends HoldingDistribution
+    with TableInfo<$HoldingDistributionTable, HoldingDistributionEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $HoldingDistributionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _levelMeta = const VerificationMeta('level');
+  @override
+  late final GeneratedColumn<String> level = GeneratedColumn<String>(
+    'level',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _shareholdersMeta = const VerificationMeta(
+    'shareholders',
+  );
+  @override
+  late final GeneratedColumn<int> shareholders = GeneratedColumn<int>(
+    'shareholders',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _percentMeta = const VerificationMeta(
+    'percent',
+  );
+  @override
+  late final GeneratedColumn<double> percent = GeneratedColumn<double>(
+    'percent',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharesMeta = const VerificationMeta('shares');
+  @override
+  late final GeneratedColumn<double> shares = GeneratedColumn<double>(
+    'shares',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    level,
+    shareholders,
+    percent,
+    shares,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'holding_distribution';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<HoldingDistributionEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('level')) {
+      context.handle(
+        _levelMeta,
+        level.isAcceptableOrUnknown(data['level']!, _levelMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_levelMeta);
+    }
+    if (data.containsKey('shareholders')) {
+      context.handle(
+        _shareholdersMeta,
+        shareholders.isAcceptableOrUnknown(
+          data['shareholders']!,
+          _shareholdersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('percent')) {
+      context.handle(
+        _percentMeta,
+        percent.isAcceptableOrUnknown(data['percent']!, _percentMeta),
+      );
+    }
+    if (data.containsKey('shares')) {
+      context.handle(
+        _sharesMeta,
+        shares.isAcceptableOrUnknown(data['shares']!, _sharesMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date, level};
+  @override
+  HoldingDistributionEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return HoldingDistributionEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      level: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}level'],
+      )!,
+      shareholders: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}shareholders'],
+      ),
+      percent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}percent'],
+      ),
+      shares: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}shares'],
+      ),
+    );
+  }
+
+  @override
+  $HoldingDistributionTable createAlias(String alias) {
+    return $HoldingDistributionTable(attachedDatabase, alias);
+  }
+}
+
+class HoldingDistributionEntry extends DataClass
+    implements Insertable<HoldingDistributionEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Report date
+  final DateTime date;
+
+  /// Holding level (e.g., "1-999", "1000-5000")
+  final String level;
+
+  /// Number of shareholders at this level
+  final int? shareholders;
+
+  /// Percentage of total shares (%)
+  final double? percent;
+
+  /// Number of shares (unit: 股)
+  final double? shares;
+  const HoldingDistributionEntry({
+    required this.symbol,
+    required this.date,
+    required this.level,
+    this.shareholders,
+    this.percent,
+    this.shares,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    map['level'] = Variable<String>(level);
+    if (!nullToAbsent || shareholders != null) {
+      map['shareholders'] = Variable<int>(shareholders);
+    }
+    if (!nullToAbsent || percent != null) {
+      map['percent'] = Variable<double>(percent);
+    }
+    if (!nullToAbsent || shares != null) {
+      map['shares'] = Variable<double>(shares);
+    }
+    return map;
+  }
+
+  HoldingDistributionCompanion toCompanion(bool nullToAbsent) {
+    return HoldingDistributionCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      level: Value(level),
+      shareholders: shareholders == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shareholders),
+      percent: percent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(percent),
+      shares: shares == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shares),
+    );
+  }
+
+  factory HoldingDistributionEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return HoldingDistributionEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      level: serializer.fromJson<String>(json['level']),
+      shareholders: serializer.fromJson<int?>(json['shareholders']),
+      percent: serializer.fromJson<double?>(json['percent']),
+      shares: serializer.fromJson<double?>(json['shares']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'level': serializer.toJson<String>(level),
+      'shareholders': serializer.toJson<int?>(shareholders),
+      'percent': serializer.toJson<double?>(percent),
+      'shares': serializer.toJson<double?>(shares),
+    };
+  }
+
+  HoldingDistributionEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    String? level,
+    Value<int?> shareholders = const Value.absent(),
+    Value<double?> percent = const Value.absent(),
+    Value<double?> shares = const Value.absent(),
+  }) => HoldingDistributionEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    level: level ?? this.level,
+    shareholders: shareholders.present ? shareholders.value : this.shareholders,
+    percent: percent.present ? percent.value : this.percent,
+    shares: shares.present ? shares.value : this.shares,
+  );
+  HoldingDistributionEntry copyWithCompanion(
+    HoldingDistributionCompanion data,
+  ) {
+    return HoldingDistributionEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      level: data.level.present ? data.level.value : this.level,
+      shareholders: data.shareholders.present
+          ? data.shareholders.value
+          : this.shareholders,
+      percent: data.percent.present ? data.percent.value : this.percent,
+      shares: data.shares.present ? data.shares.value : this.shares,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HoldingDistributionEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('level: $level, ')
+          ..write('shareholders: $shareholders, ')
+          ..write('percent: $percent, ')
+          ..write('shares: $shares')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(symbol, date, level, shareholders, percent, shares);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is HoldingDistributionEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.level == this.level &&
+          other.shareholders == this.shareholders &&
+          other.percent == this.percent &&
+          other.shares == this.shares);
+}
+
+class HoldingDistributionCompanion
+    extends UpdateCompanion<HoldingDistributionEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<String> level;
+  final Value<int?> shareholders;
+  final Value<double?> percent;
+  final Value<double?> shares;
+  final Value<int> rowid;
+  const HoldingDistributionCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.level = const Value.absent(),
+    this.shareholders = const Value.absent(),
+    this.percent = const Value.absent(),
+    this.shares = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  HoldingDistributionCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    required String level,
+    this.shareholders = const Value.absent(),
+    this.percent = const Value.absent(),
+    this.shares = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date),
+       level = Value(level);
+  static Insertable<HoldingDistributionEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<String>? level,
+    Expression<int>? shareholders,
+    Expression<double>? percent,
+    Expression<double>? shares,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (level != null) 'level': level,
+      if (shareholders != null) 'shareholders': shareholders,
+      if (percent != null) 'percent': percent,
+      if (shares != null) 'shares': shares,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  HoldingDistributionCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<String>? level,
+    Value<int?>? shareholders,
+    Value<double?>? percent,
+    Value<double?>? shares,
+    Value<int>? rowid,
+  }) {
+    return HoldingDistributionCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      level: level ?? this.level,
+      shareholders: shareholders ?? this.shareholders,
+      percent: percent ?? this.percent,
+      shares: shares ?? this.shares,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (level.present) {
+      map['level'] = Variable<String>(level.value);
+    }
+    if (shareholders.present) {
+      map['shareholders'] = Variable<int>(shareholders.value);
+    }
+    if (percent.present) {
+      map['percent'] = Variable<double>(percent.value);
+    }
+    if (shares.present) {
+      map['shares'] = Variable<double>(shares.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('HoldingDistributionCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('level: $level, ')
+          ..write('shareholders: $shareholders, ')
+          ..write('percent: $percent, ')
+          ..write('shares: $shares, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MonthlyRevenueTable extends MonthlyRevenue
+    with TableInfo<$MonthlyRevenueTable, MonthlyRevenueEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MonthlyRevenueTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revenueYearMeta = const VerificationMeta(
+    'revenueYear',
+  );
+  @override
+  late final GeneratedColumn<int> revenueYear = GeneratedColumn<int>(
+    'revenue_year',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revenueMonthMeta = const VerificationMeta(
+    'revenueMonth',
+  );
+  @override
+  late final GeneratedColumn<int> revenueMonth = GeneratedColumn<int>(
+    'revenue_month',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _revenueMeta = const VerificationMeta(
+    'revenue',
+  );
+  @override
+  late final GeneratedColumn<double> revenue = GeneratedColumn<double>(
+    'revenue',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _momGrowthMeta = const VerificationMeta(
+    'momGrowth',
+  );
+  @override
+  late final GeneratedColumn<double> momGrowth = GeneratedColumn<double>(
+    'mom_growth',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _yoyGrowthMeta = const VerificationMeta(
+    'yoyGrowth',
+  );
+  @override
+  late final GeneratedColumn<double> yoyGrowth = GeneratedColumn<double>(
+    'yoy_growth',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    revenueYear,
+    revenueMonth,
+    revenue,
+    momGrowth,
+    yoyGrowth,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'monthly_revenue';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MonthlyRevenueEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('revenue_year')) {
+      context.handle(
+        _revenueYearMeta,
+        revenueYear.isAcceptableOrUnknown(
+          data['revenue_year']!,
+          _revenueYearMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_revenueYearMeta);
+    }
+    if (data.containsKey('revenue_month')) {
+      context.handle(
+        _revenueMonthMeta,
+        revenueMonth.isAcceptableOrUnknown(
+          data['revenue_month']!,
+          _revenueMonthMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_revenueMonthMeta);
+    }
+    if (data.containsKey('revenue')) {
+      context.handle(
+        _revenueMeta,
+        revenue.isAcceptableOrUnknown(data['revenue']!, _revenueMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_revenueMeta);
+    }
+    if (data.containsKey('mom_growth')) {
+      context.handle(
+        _momGrowthMeta,
+        momGrowth.isAcceptableOrUnknown(data['mom_growth']!, _momGrowthMeta),
+      );
+    }
+    if (data.containsKey('yoy_growth')) {
+      context.handle(
+        _yoyGrowthMeta,
+        yoyGrowth.isAcceptableOrUnknown(data['yoy_growth']!, _yoyGrowthMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  MonthlyRevenueEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MonthlyRevenueEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      revenueYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revenue_year'],
+      )!,
+      revenueMonth: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}revenue_month'],
+      )!,
+      revenue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}revenue'],
+      )!,
+      momGrowth: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}mom_growth'],
+      ),
+      yoyGrowth: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}yoy_growth'],
+      ),
+    );
+  }
+
+  @override
+  $MonthlyRevenueTable createAlias(String alias) {
+    return $MonthlyRevenueTable(attachedDatabase, alias);
+  }
+}
+
+class MonthlyRevenueEntry extends DataClass
+    implements Insertable<MonthlyRevenueEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Report date (use first day of the month for consistency)
+  final DateTime date;
+
+  /// Revenue year
+  final int revenueYear;
+
+  /// Revenue month
+  final int revenueMonth;
+
+  /// Monthly revenue (千元)
+  final double revenue;
+
+  /// Month-over-month growth rate (%)
+  final double? momGrowth;
+
+  /// Year-over-year growth rate (%)
+  final double? yoyGrowth;
+  const MonthlyRevenueEntry({
+    required this.symbol,
+    required this.date,
+    required this.revenueYear,
+    required this.revenueMonth,
+    required this.revenue,
+    this.momGrowth,
+    this.yoyGrowth,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    map['revenue_year'] = Variable<int>(revenueYear);
+    map['revenue_month'] = Variable<int>(revenueMonth);
+    map['revenue'] = Variable<double>(revenue);
+    if (!nullToAbsent || momGrowth != null) {
+      map['mom_growth'] = Variable<double>(momGrowth);
+    }
+    if (!nullToAbsent || yoyGrowth != null) {
+      map['yoy_growth'] = Variable<double>(yoyGrowth);
+    }
+    return map;
+  }
+
+  MonthlyRevenueCompanion toCompanion(bool nullToAbsent) {
+    return MonthlyRevenueCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      revenueYear: Value(revenueYear),
+      revenueMonth: Value(revenueMonth),
+      revenue: Value(revenue),
+      momGrowth: momGrowth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(momGrowth),
+      yoyGrowth: yoyGrowth == null && nullToAbsent
+          ? const Value.absent()
+          : Value(yoyGrowth),
+    );
+  }
+
+  factory MonthlyRevenueEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MonthlyRevenueEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      revenueYear: serializer.fromJson<int>(json['revenueYear']),
+      revenueMonth: serializer.fromJson<int>(json['revenueMonth']),
+      revenue: serializer.fromJson<double>(json['revenue']),
+      momGrowth: serializer.fromJson<double?>(json['momGrowth']),
+      yoyGrowth: serializer.fromJson<double?>(json['yoyGrowth']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'revenueYear': serializer.toJson<int>(revenueYear),
+      'revenueMonth': serializer.toJson<int>(revenueMonth),
+      'revenue': serializer.toJson<double>(revenue),
+      'momGrowth': serializer.toJson<double?>(momGrowth),
+      'yoyGrowth': serializer.toJson<double?>(yoyGrowth),
+    };
+  }
+
+  MonthlyRevenueEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    int? revenueYear,
+    int? revenueMonth,
+    double? revenue,
+    Value<double?> momGrowth = const Value.absent(),
+    Value<double?> yoyGrowth = const Value.absent(),
+  }) => MonthlyRevenueEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    revenueYear: revenueYear ?? this.revenueYear,
+    revenueMonth: revenueMonth ?? this.revenueMonth,
+    revenue: revenue ?? this.revenue,
+    momGrowth: momGrowth.present ? momGrowth.value : this.momGrowth,
+    yoyGrowth: yoyGrowth.present ? yoyGrowth.value : this.yoyGrowth,
+  );
+  MonthlyRevenueEntry copyWithCompanion(MonthlyRevenueCompanion data) {
+    return MonthlyRevenueEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      revenueYear: data.revenueYear.present
+          ? data.revenueYear.value
+          : this.revenueYear,
+      revenueMonth: data.revenueMonth.present
+          ? data.revenueMonth.value
+          : this.revenueMonth,
+      revenue: data.revenue.present ? data.revenue.value : this.revenue,
+      momGrowth: data.momGrowth.present ? data.momGrowth.value : this.momGrowth,
+      yoyGrowth: data.yoyGrowth.present ? data.yoyGrowth.value : this.yoyGrowth,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthlyRevenueEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('revenueYear: $revenueYear, ')
+          ..write('revenueMonth: $revenueMonth, ')
+          ..write('revenue: $revenue, ')
+          ..write('momGrowth: $momGrowth, ')
+          ..write('yoyGrowth: $yoyGrowth')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    revenueYear,
+    revenueMonth,
+    revenue,
+    momGrowth,
+    yoyGrowth,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MonthlyRevenueEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.revenueYear == this.revenueYear &&
+          other.revenueMonth == this.revenueMonth &&
+          other.revenue == this.revenue &&
+          other.momGrowth == this.momGrowth &&
+          other.yoyGrowth == this.yoyGrowth);
+}
+
+class MonthlyRevenueCompanion extends UpdateCompanion<MonthlyRevenueEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<int> revenueYear;
+  final Value<int> revenueMonth;
+  final Value<double> revenue;
+  final Value<double?> momGrowth;
+  final Value<double?> yoyGrowth;
+  final Value<int> rowid;
+  const MonthlyRevenueCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.revenueYear = const Value.absent(),
+    this.revenueMonth = const Value.absent(),
+    this.revenue = const Value.absent(),
+    this.momGrowth = const Value.absent(),
+    this.yoyGrowth = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MonthlyRevenueCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    required int revenueYear,
+    required int revenueMonth,
+    required double revenue,
+    this.momGrowth = const Value.absent(),
+    this.yoyGrowth = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date),
+       revenueYear = Value(revenueYear),
+       revenueMonth = Value(revenueMonth),
+       revenue = Value(revenue);
+  static Insertable<MonthlyRevenueEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<int>? revenueYear,
+    Expression<int>? revenueMonth,
+    Expression<double>? revenue,
+    Expression<double>? momGrowth,
+    Expression<double>? yoyGrowth,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (revenueYear != null) 'revenue_year': revenueYear,
+      if (revenueMonth != null) 'revenue_month': revenueMonth,
+      if (revenue != null) 'revenue': revenue,
+      if (momGrowth != null) 'mom_growth': momGrowth,
+      if (yoyGrowth != null) 'yoy_growth': yoyGrowth,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MonthlyRevenueCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<int>? revenueYear,
+    Value<int>? revenueMonth,
+    Value<double>? revenue,
+    Value<double?>? momGrowth,
+    Value<double?>? yoyGrowth,
+    Value<int>? rowid,
+  }) {
+    return MonthlyRevenueCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      revenueYear: revenueYear ?? this.revenueYear,
+      revenueMonth: revenueMonth ?? this.revenueMonth,
+      revenue: revenue ?? this.revenue,
+      momGrowth: momGrowth ?? this.momGrowth,
+      yoyGrowth: yoyGrowth ?? this.yoyGrowth,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (revenueYear.present) {
+      map['revenue_year'] = Variable<int>(revenueYear.value);
+    }
+    if (revenueMonth.present) {
+      map['revenue_month'] = Variable<int>(revenueMonth.value);
+    }
+    if (revenue.present) {
+      map['revenue'] = Variable<double>(revenue.value);
+    }
+    if (momGrowth.present) {
+      map['mom_growth'] = Variable<double>(momGrowth.value);
+    }
+    if (yoyGrowth.present) {
+      map['yoy_growth'] = Variable<double>(yoyGrowth.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MonthlyRevenueCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('revenueYear: $revenueYear, ')
+          ..write('revenueMonth: $revenueMonth, ')
+          ..write('revenue: $revenue, ')
+          ..write('momGrowth: $momGrowth, ')
+          ..write('yoyGrowth: $yoyGrowth, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StockValuationTable extends StockValuation
+    with TableInfo<$StockValuationTable, StockValuationEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockValuationTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _perMeta = const VerificationMeta('per');
+  @override
+  late final GeneratedColumn<double> per = GeneratedColumn<double>(
+    'per',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pbrMeta = const VerificationMeta('pbr');
+  @override
+  late final GeneratedColumn<double> pbr = GeneratedColumn<double>(
+    'pbr',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dividendYieldMeta = const VerificationMeta(
+    'dividendYield',
+  );
+  @override
+  late final GeneratedColumn<double> dividendYield = GeneratedColumn<double>(
+    'dividend_yield',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [symbol, date, per, pbr, dividendYield];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_valuation';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockValuationEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('per')) {
+      context.handle(
+        _perMeta,
+        per.isAcceptableOrUnknown(data['per']!, _perMeta),
+      );
+    }
+    if (data.containsKey('pbr')) {
+      context.handle(
+        _pbrMeta,
+        pbr.isAcceptableOrUnknown(data['pbr']!, _pbrMeta),
+      );
+    }
+    if (data.containsKey('dividend_yield')) {
+      context.handle(
+        _dividendYieldMeta,
+        dividendYield.isAcceptableOrUnknown(
+          data['dividend_yield']!,
+          _dividendYieldMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  StockValuationEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockValuationEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      per: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}per'],
+      ),
+      pbr: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}pbr'],
+      ),
+      dividendYield: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}dividend_yield'],
+      ),
+    );
+  }
+
+  @override
+  $StockValuationTable createAlias(String alias) {
+    return $StockValuationTable(attachedDatabase, alias);
+  }
+}
+
+class StockValuationEntry extends DataClass
+    implements Insertable<StockValuationEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Trading date
+  final DateTime date;
+
+  /// Price-to-Earnings ratio (本益比)
+  final double? per;
+
+  /// Price-to-Book ratio (股價淨值比)
+  final double? pbr;
+
+  /// Dividend yield (殖利率 %)
+  final double? dividendYield;
+  const StockValuationEntry({
+    required this.symbol,
+    required this.date,
+    this.per,
+    this.pbr,
+    this.dividendYield,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || per != null) {
+      map['per'] = Variable<double>(per);
+    }
+    if (!nullToAbsent || pbr != null) {
+      map['pbr'] = Variable<double>(pbr);
+    }
+    if (!nullToAbsent || dividendYield != null) {
+      map['dividend_yield'] = Variable<double>(dividendYield);
+    }
+    return map;
+  }
+
+  StockValuationCompanion toCompanion(bool nullToAbsent) {
+    return StockValuationCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      per: per == null && nullToAbsent ? const Value.absent() : Value(per),
+      pbr: pbr == null && nullToAbsent ? const Value.absent() : Value(pbr),
+      dividendYield: dividendYield == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dividendYield),
+    );
+  }
+
+  factory StockValuationEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockValuationEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      per: serializer.fromJson<double?>(json['per']),
+      pbr: serializer.fromJson<double?>(json['pbr']),
+      dividendYield: serializer.fromJson<double?>(json['dividendYield']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'per': serializer.toJson<double?>(per),
+      'pbr': serializer.toJson<double?>(pbr),
+      'dividendYield': serializer.toJson<double?>(dividendYield),
+    };
+  }
+
+  StockValuationEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> per = const Value.absent(),
+    Value<double?> pbr = const Value.absent(),
+    Value<double?> dividendYield = const Value.absent(),
+  }) => StockValuationEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    per: per.present ? per.value : this.per,
+    pbr: pbr.present ? pbr.value : this.pbr,
+    dividendYield: dividendYield.present
+        ? dividendYield.value
+        : this.dividendYield,
+  );
+  StockValuationEntry copyWithCompanion(StockValuationCompanion data) {
+    return StockValuationEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      per: data.per.present ? data.per.value : this.per,
+      pbr: data.pbr.present ? data.pbr.value : this.pbr,
+      dividendYield: data.dividendYield.present
+          ? data.dividendYield.value
+          : this.dividendYield,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockValuationEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('per: $per, ')
+          ..write('pbr: $pbr, ')
+          ..write('dividendYield: $dividendYield')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(symbol, date, per, pbr, dividendYield);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockValuationEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.per == this.per &&
+          other.pbr == this.pbr &&
+          other.dividendYield == this.dividendYield);
+}
+
+class StockValuationCompanion extends UpdateCompanion<StockValuationEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> per;
+  final Value<double?> pbr;
+  final Value<double?> dividendYield;
+  final Value<int> rowid;
+  const StockValuationCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.per = const Value.absent(),
+    this.pbr = const Value.absent(),
+    this.dividendYield = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  StockValuationCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.per = const Value.absent(),
+    this.pbr = const Value.absent(),
+    this.dividendYield = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<StockValuationEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? per,
+    Expression<double>? pbr,
+    Expression<double>? dividendYield,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (per != null) 'per': per,
+      if (pbr != null) 'pbr': pbr,
+      if (dividendYield != null) 'dividend_yield': dividendYield,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  StockValuationCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? per,
+    Value<double?>? pbr,
+    Value<double?>? dividendYield,
+    Value<int>? rowid,
+  }) {
+    return StockValuationCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      per: per ?? this.per,
+      pbr: pbr ?? this.pbr,
+      dividendYield: dividendYield ?? this.dividendYield,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (per.present) {
+      map['per'] = Variable<double>(per.value);
+    }
+    if (pbr.present) {
+      map['pbr'] = Variable<double>(pbr.value);
+    }
+    if (dividendYield.present) {
+      map['dividend_yield'] = Variable<double>(dividendYield.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockValuationCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('per: $per, ')
+          ..write('pbr: $pbr, ')
+          ..write('dividendYield: $dividendYield, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5728,6 +9328,15 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $UpdateRunTable updateRun = $UpdateRunTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $PriceAlertTable priceAlert = $PriceAlertTable(this);
+  late final $ShareholdingTable shareholding = $ShareholdingTable(this);
+  late final $DayTradingTable dayTrading = $DayTradingTable(this);
+  late final $FinancialDataTable financialData = $FinancialDataTable(this);
+  late final $AdjustedPriceTable adjustedPrice = $AdjustedPriceTable(this);
+  late final $WeeklyPriceTable weeklyPrice = $WeeklyPriceTable(this);
+  late final $HoldingDistributionTable holdingDistribution =
+      $HoldingDistributionTable(this);
+  late final $MonthlyRevenueTable monthlyRevenue = $MonthlyRevenueTable(this);
+  late final $StockValuationTable stockValuation = $StockValuationTable(this);
   late final Index idxDailyPriceSymbol = Index(
     'idx_daily_price_symbol',
     'CREATE INDEX idx_daily_price_symbol ON daily_price (symbol)',
@@ -5784,6 +9393,74 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_daily_recommendation_date_symbol',
     'CREATE INDEX idx_daily_recommendation_date_symbol ON daily_recommendation (date, symbol)',
   );
+  late final Index idxShareholdingSymbol = Index(
+    'idx_shareholding_symbol',
+    'CREATE INDEX idx_shareholding_symbol ON shareholding (symbol)',
+  );
+  late final Index idxShareholdingDate = Index(
+    'idx_shareholding_date',
+    'CREATE INDEX idx_shareholding_date ON shareholding (date)',
+  );
+  late final Index idxDayTradingSymbol = Index(
+    'idx_day_trading_symbol',
+    'CREATE INDEX idx_day_trading_symbol ON day_trading (symbol)',
+  );
+  late final Index idxDayTradingDate = Index(
+    'idx_day_trading_date',
+    'CREATE INDEX idx_day_trading_date ON day_trading (date)',
+  );
+  late final Index idxFinancialDataSymbol = Index(
+    'idx_financial_data_symbol',
+    'CREATE INDEX idx_financial_data_symbol ON financial_data (symbol)',
+  );
+  late final Index idxFinancialDataDate = Index(
+    'idx_financial_data_date',
+    'CREATE INDEX idx_financial_data_date ON financial_data (date)',
+  );
+  late final Index idxFinancialDataType = Index(
+    'idx_financial_data_type',
+    'CREATE INDEX idx_financial_data_type ON financial_data (data_type)',
+  );
+  late final Index idxAdjustedPriceSymbol = Index(
+    'idx_adjusted_price_symbol',
+    'CREATE INDEX idx_adjusted_price_symbol ON adjusted_price (symbol)',
+  );
+  late final Index idxAdjustedPriceDate = Index(
+    'idx_adjusted_price_date',
+    'CREATE INDEX idx_adjusted_price_date ON adjusted_price (date)',
+  );
+  late final Index idxWeeklyPriceSymbol = Index(
+    'idx_weekly_price_symbol',
+    'CREATE INDEX idx_weekly_price_symbol ON weekly_price (symbol)',
+  );
+  late final Index idxWeeklyPriceDate = Index(
+    'idx_weekly_price_date',
+    'CREATE INDEX idx_weekly_price_date ON weekly_price (date)',
+  );
+  late final Index idxHoldingDistSymbol = Index(
+    'idx_holding_dist_symbol',
+    'CREATE INDEX idx_holding_dist_symbol ON holding_distribution (symbol)',
+  );
+  late final Index idxHoldingDistDate = Index(
+    'idx_holding_dist_date',
+    'CREATE INDEX idx_holding_dist_date ON holding_distribution (date)',
+  );
+  late final Index idxMonthlyRevenueSymbol = Index(
+    'idx_monthly_revenue_symbol',
+    'CREATE INDEX idx_monthly_revenue_symbol ON monthly_revenue (symbol)',
+  );
+  late final Index idxMonthlyRevenueDate = Index(
+    'idx_monthly_revenue_date',
+    'CREATE INDEX idx_monthly_revenue_date ON monthly_revenue (date)',
+  );
+  late final Index idxStockValuationSymbol = Index(
+    'idx_stock_valuation_symbol',
+    'CREATE INDEX idx_stock_valuation_symbol ON stock_valuation (symbol)',
+  );
+  late final Index idxStockValuationDate = Index(
+    'idx_stock_valuation_date',
+    'CREATE INDEX idx_stock_valuation_date ON stock_valuation (date)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5803,6 +9480,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     updateRun,
     appSettings,
     priceAlert,
+    shareholding,
+    dayTrading,
+    financialData,
+    adjustedPrice,
+    weeklyPrice,
+    holdingDistribution,
+    monthlyRevenue,
+    stockValuation,
     idxDailyPriceSymbol,
     idxDailyPriceDate,
     idxDailyPriceSymbolDate,
@@ -5817,6 +9502,23 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDailyRecommendationDate,
     idxDailyRecommendationSymbol,
     idxDailyRecommendationDateSymbol,
+    idxShareholdingSymbol,
+    idxShareholdingDate,
+    idxDayTradingSymbol,
+    idxDayTradingDate,
+    idxFinancialDataSymbol,
+    idxFinancialDataDate,
+    idxFinancialDataType,
+    idxAdjustedPriceSymbol,
+    idxAdjustedPriceDate,
+    idxWeeklyPriceSymbol,
+    idxWeeklyPriceDate,
+    idxHoldingDistSymbol,
+    idxHoldingDistDate,
+    idxMonthlyRevenueSymbol,
+    idxMonthlyRevenueDate,
+    idxStockValuationSymbol,
+    idxStockValuationDate,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -5896,6 +9598,62 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('price_alert', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('shareholding', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('day_trading', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('financial_data', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('adjusted_price', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('weekly_price', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('holding_distribution', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('monthly_revenue', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('stock_valuation', kind: UpdateKind.delete)],
     ),
   ]);
   @override
@@ -6139,6 +9897,180 @@ final class $$StockMasterTableReferences
     ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
 
     final cache = $_typedResult.readTableOrNull(_priceAlertRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$ShareholdingTable, List<ShareholdingEntry>>
+  _shareholdingRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.shareholding,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.shareholding.symbol,
+    ),
+  );
+
+  $$ShareholdingTableProcessedTableManager get shareholdingRefs {
+    final manager = $$ShareholdingTableTableManager(
+      $_db,
+      $_db.shareholding,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_shareholdingRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$DayTradingTable, List<DayTradingEntry>>
+  _dayTradingRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.dayTrading,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.dayTrading.symbol,
+    ),
+  );
+
+  $$DayTradingTableProcessedTableManager get dayTradingRefs {
+    final manager = $$DayTradingTableTableManager(
+      $_db,
+      $_db.dayTrading,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_dayTradingRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$FinancialDataTable, List<FinancialDataEntry>>
+  _financialDataRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.financialData,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.financialData.symbol,
+    ),
+  );
+
+  $$FinancialDataTableProcessedTableManager get financialDataRefs {
+    final manager = $$FinancialDataTableTableManager(
+      $_db,
+      $_db.financialData,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_financialDataRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AdjustedPriceTable, List<AdjustedPriceEntry>>
+  _adjustedPriceRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.adjustedPrice,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.adjustedPrice.symbol,
+    ),
+  );
+
+  $$AdjustedPriceTableProcessedTableManager get adjustedPriceRefs {
+    final manager = $$AdjustedPriceTableTableManager(
+      $_db,
+      $_db.adjustedPrice,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_adjustedPriceRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$WeeklyPriceTable, List<WeeklyPriceEntry>>
+  _weeklyPriceRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.weeklyPrice,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.weeklyPrice.symbol,
+    ),
+  );
+
+  $$WeeklyPriceTableProcessedTableManager get weeklyPriceRefs {
+    final manager = $$WeeklyPriceTableTableManager(
+      $_db,
+      $_db.weeklyPrice,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_weeklyPriceRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $HoldingDistributionTable,
+    List<HoldingDistributionEntry>
+  >
+  _holdingDistributionRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.holdingDistribution,
+        aliasName: $_aliasNameGenerator(
+          db.stockMaster.symbol,
+          db.holdingDistribution.symbol,
+        ),
+      );
+
+  $$HoldingDistributionTableProcessedTableManager get holdingDistributionRefs {
+    final manager = $$HoldingDistributionTableTableManager(
+      $_db,
+      $_db.holdingDistribution,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _holdingDistributionRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$MonthlyRevenueTable, List<MonthlyRevenueEntry>>
+  _monthlyRevenueRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.monthlyRevenue,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.monthlyRevenue.symbol,
+    ),
+  );
+
+  $$MonthlyRevenueTableProcessedTableManager get monthlyRevenueRefs {
+    final manager = $$MonthlyRevenueTableTableManager(
+      $_db,
+      $_db.monthlyRevenue,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_monthlyRevenueRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$StockValuationTable, List<StockValuationEntry>>
+  _stockValuationRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.stockValuation,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.stockValuation.symbol,
+    ),
+  );
+
+  $$StockValuationTableProcessedTableManager get stockValuationRefs {
+    final manager = $$StockValuationTableTableManager(
+      $_db,
+      $_db.stockValuation,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_stockValuationRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -6425,6 +10357,206 @@ class $$StockMasterTableFilterComposer
           }) => $$PriceAlertTableFilterComposer(
             $db: $db,
             $table: $db.priceAlert,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> shareholdingRefs(
+    Expression<bool> Function($$ShareholdingTableFilterComposer f) f,
+  ) {
+    final $$ShareholdingTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.shareholding,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShareholdingTableFilterComposer(
+            $db: $db,
+            $table: $db.shareholding,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> dayTradingRefs(
+    Expression<bool> Function($$DayTradingTableFilterComposer f) f,
+  ) {
+    final $$DayTradingTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.dayTrading,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DayTradingTableFilterComposer(
+            $db: $db,
+            $table: $db.dayTrading,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> financialDataRefs(
+    Expression<bool> Function($$FinancialDataTableFilterComposer f) f,
+  ) {
+    final $$FinancialDataTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.financialData,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FinancialDataTableFilterComposer(
+            $db: $db,
+            $table: $db.financialData,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> adjustedPriceRefs(
+    Expression<bool> Function($$AdjustedPriceTableFilterComposer f) f,
+  ) {
+    final $$AdjustedPriceTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.adjustedPrice,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AdjustedPriceTableFilterComposer(
+            $db: $db,
+            $table: $db.adjustedPrice,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> weeklyPriceRefs(
+    Expression<bool> Function($$WeeklyPriceTableFilterComposer f) f,
+  ) {
+    final $$WeeklyPriceTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.weeklyPrice,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WeeklyPriceTableFilterComposer(
+            $db: $db,
+            $table: $db.weeklyPrice,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> holdingDistributionRefs(
+    Expression<bool> Function($$HoldingDistributionTableFilterComposer f) f,
+  ) {
+    final $$HoldingDistributionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.holdingDistribution,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HoldingDistributionTableFilterComposer(
+            $db: $db,
+            $table: $db.holdingDistribution,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> monthlyRevenueRefs(
+    Expression<bool> Function($$MonthlyRevenueTableFilterComposer f) f,
+  ) {
+    final $$MonthlyRevenueTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.monthlyRevenue,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MonthlyRevenueTableFilterComposer(
+            $db: $db,
+            $table: $db.monthlyRevenue,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> stockValuationRefs(
+    Expression<bool> Function($$StockValuationTableFilterComposer f) f,
+  ) {
+    final $$StockValuationTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockValuation,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockValuationTableFilterComposer(
+            $db: $db,
+            $table: $db.stockValuation,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6753,6 +10885,207 @@ class $$StockMasterTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> shareholdingRefs<T extends Object>(
+    Expression<T> Function($$ShareholdingTableAnnotationComposer a) f,
+  ) {
+    final $$ShareholdingTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.shareholding,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ShareholdingTableAnnotationComposer(
+            $db: $db,
+            $table: $db.shareholding,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> dayTradingRefs<T extends Object>(
+    Expression<T> Function($$DayTradingTableAnnotationComposer a) f,
+  ) {
+    final $$DayTradingTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.dayTrading,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DayTradingTableAnnotationComposer(
+            $db: $db,
+            $table: $db.dayTrading,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> financialDataRefs<T extends Object>(
+    Expression<T> Function($$FinancialDataTableAnnotationComposer a) f,
+  ) {
+    final $$FinancialDataTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.financialData,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$FinancialDataTableAnnotationComposer(
+            $db: $db,
+            $table: $db.financialData,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> adjustedPriceRefs<T extends Object>(
+    Expression<T> Function($$AdjustedPriceTableAnnotationComposer a) f,
+  ) {
+    final $$AdjustedPriceTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.adjustedPrice,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AdjustedPriceTableAnnotationComposer(
+            $db: $db,
+            $table: $db.adjustedPrice,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> weeklyPriceRefs<T extends Object>(
+    Expression<T> Function($$WeeklyPriceTableAnnotationComposer a) f,
+  ) {
+    final $$WeeklyPriceTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.weeklyPrice,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$WeeklyPriceTableAnnotationComposer(
+            $db: $db,
+            $table: $db.weeklyPrice,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> holdingDistributionRefs<T extends Object>(
+    Expression<T> Function($$HoldingDistributionTableAnnotationComposer a) f,
+  ) {
+    final $$HoldingDistributionTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.symbol,
+          referencedTable: $db.holdingDistribution,
+          getReferencedColumn: (t) => t.symbol,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$HoldingDistributionTableAnnotationComposer(
+                $db: $db,
+                $table: $db.holdingDistribution,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> monthlyRevenueRefs<T extends Object>(
+    Expression<T> Function($$MonthlyRevenueTableAnnotationComposer a) f,
+  ) {
+    final $$MonthlyRevenueTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.monthlyRevenue,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MonthlyRevenueTableAnnotationComposer(
+            $db: $db,
+            $table: $db.monthlyRevenue,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> stockValuationRefs<T extends Object>(
+    Expression<T> Function($$StockValuationTableAnnotationComposer a) f,
+  ) {
+    final $$StockValuationTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockValuation,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockValuationTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockValuation,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$StockMasterTableTableManager
@@ -6779,6 +11112,14 @@ class $$StockMasterTableTableManager
             bool userNoteRefs,
             bool strategyCardRefs,
             bool priceAlertRefs,
+            bool shareholdingRefs,
+            bool dayTradingRefs,
+            bool financialDataRefs,
+            bool adjustedPriceRefs,
+            bool weeklyPriceRefs,
+            bool holdingDistributionRefs,
+            bool monthlyRevenueRefs,
+            bool stockValuationRefs,
           })
         > {
   $$StockMasterTableTableManager(_$AppDatabase db, $StockMasterTable table)
@@ -6848,6 +11189,14 @@ class $$StockMasterTableTableManager
                 userNoteRefs = false,
                 strategyCardRefs = false,
                 priceAlertRefs = false,
+                shareholdingRefs = false,
+                dayTradingRefs = false,
+                financialDataRefs = false,
+                adjustedPriceRefs = false,
+                weeklyPriceRefs = false,
+                holdingDistributionRefs = false,
+                monthlyRevenueRefs = false,
+                stockValuationRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -6862,6 +11211,14 @@ class $$StockMasterTableTableManager
                     if (userNoteRefs) db.userNote,
                     if (strategyCardRefs) db.strategyCard,
                     if (priceAlertRefs) db.priceAlert,
+                    if (shareholdingRefs) db.shareholding,
+                    if (dayTradingRefs) db.dayTrading,
+                    if (financialDataRefs) db.financialData,
+                    if (adjustedPriceRefs) db.adjustedPrice,
+                    if (weeklyPriceRefs) db.weeklyPrice,
+                    if (holdingDistributionRefs) db.holdingDistribution,
+                    if (monthlyRevenueRefs) db.monthlyRevenue,
+                    if (stockValuationRefs) db.stockValuation,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -7076,6 +11433,174 @@ class $$StockMasterTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (shareholdingRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          ShareholdingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._shareholdingRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).shareholdingRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (dayTradingRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          DayTradingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._dayTradingRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).dayTradingRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (financialDataRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          FinancialDataEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._financialDataRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).financialDataRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (adjustedPriceRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          AdjustedPriceEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._adjustedPriceRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).adjustedPriceRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (weeklyPriceRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          WeeklyPriceEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._weeklyPriceRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).weeklyPriceRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (holdingDistributionRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          HoldingDistributionEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._holdingDistributionRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).holdingDistributionRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (monthlyRevenueRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          MonthlyRevenueEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._monthlyRevenueRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).monthlyRevenueRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (stockValuationRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          StockValuationEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._stockValuationRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).stockValuationRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -7107,6 +11632,14 @@ typedef $$StockMasterTableProcessedTableManager =
         bool userNoteRefs,
         bool strategyCardRefs,
         bool priceAlertRefs,
+        bool shareholdingRefs,
+        bool dayTradingRefs,
+        bool financialDataRefs,
+        bool adjustedPriceRefs,
+        bool weeklyPriceRefs,
+        bool holdingDistributionRefs,
+        bool monthlyRevenueRefs,
+        bool stockValuationRefs,
       })
     >;
 typedef $$DailyPriceTableCreateCompanionBuilder =
@@ -11308,6 +15841,2831 @@ typedef $$PriceAlertTableProcessedTableManager =
       PriceAlertEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$ShareholdingTableCreateCompanionBuilder =
+    ShareholdingCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> foreignRemainingShares,
+      Value<double?> foreignSharesRatio,
+      Value<double?> foreignUpperLimitRatio,
+      Value<double?> sharesIssued,
+      Value<int> rowid,
+    });
+typedef $$ShareholdingTableUpdateCompanionBuilder =
+    ShareholdingCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> foreignRemainingShares,
+      Value<double?> foreignSharesRatio,
+      Value<double?> foreignUpperLimitRatio,
+      Value<double?> sharesIssued,
+      Value<int> rowid,
+    });
+
+final class $$ShareholdingTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ShareholdingTable, ShareholdingEntry> {
+  $$ShareholdingTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.shareholding.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ShareholdingTableFilterComposer
+    extends Composer<_$AppDatabase, $ShareholdingTable> {
+  $$ShareholdingTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get foreignRemainingShares => $composableBuilder(
+    column: $table.foreignRemainingShares,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get foreignSharesRatio => $composableBuilder(
+    column: $table.foreignSharesRatio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get foreignUpperLimitRatio => $composableBuilder(
+    column: $table.foreignUpperLimitRatio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sharesIssued => $composableBuilder(
+    column: $table.sharesIssued,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ShareholdingTableOrderingComposer
+    extends Composer<_$AppDatabase, $ShareholdingTable> {
+  $$ShareholdingTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get foreignRemainingShares => $composableBuilder(
+    column: $table.foreignRemainingShares,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get foreignSharesRatio => $composableBuilder(
+    column: $table.foreignSharesRatio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get foreignUpperLimitRatio => $composableBuilder(
+    column: $table.foreignUpperLimitRatio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sharesIssued => $composableBuilder(
+    column: $table.sharesIssued,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ShareholdingTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ShareholdingTable> {
+  $$ShareholdingTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get foreignRemainingShares => $composableBuilder(
+    column: $table.foreignRemainingShares,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get foreignSharesRatio => $composableBuilder(
+    column: $table.foreignSharesRatio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get foreignUpperLimitRatio => $composableBuilder(
+    column: $table.foreignUpperLimitRatio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sharesIssued => $composableBuilder(
+    column: $table.sharesIssued,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ShareholdingTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ShareholdingTable,
+          ShareholdingEntry,
+          $$ShareholdingTableFilterComposer,
+          $$ShareholdingTableOrderingComposer,
+          $$ShareholdingTableAnnotationComposer,
+          $$ShareholdingTableCreateCompanionBuilder,
+          $$ShareholdingTableUpdateCompanionBuilder,
+          (ShareholdingEntry, $$ShareholdingTableReferences),
+          ShareholdingEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$ShareholdingTableTableManager(_$AppDatabase db, $ShareholdingTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ShareholdingTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ShareholdingTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ShareholdingTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> foreignRemainingShares = const Value.absent(),
+                Value<double?> foreignSharesRatio = const Value.absent(),
+                Value<double?> foreignUpperLimitRatio = const Value.absent(),
+                Value<double?> sharesIssued = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShareholdingCompanion(
+                symbol: symbol,
+                date: date,
+                foreignRemainingShares: foreignRemainingShares,
+                foreignSharesRatio: foreignSharesRatio,
+                foreignUpperLimitRatio: foreignUpperLimitRatio,
+                sharesIssued: sharesIssued,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> foreignRemainingShares = const Value.absent(),
+                Value<double?> foreignSharesRatio = const Value.absent(),
+                Value<double?> foreignUpperLimitRatio = const Value.absent(),
+                Value<double?> sharesIssued = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ShareholdingCompanion.insert(
+                symbol: symbol,
+                date: date,
+                foreignRemainingShares: foreignRemainingShares,
+                foreignSharesRatio: foreignSharesRatio,
+                foreignUpperLimitRatio: foreignUpperLimitRatio,
+                sharesIssued: sharesIssued,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ShareholdingTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$ShareholdingTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: $$ShareholdingTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ShareholdingTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ShareholdingTable,
+      ShareholdingEntry,
+      $$ShareholdingTableFilterComposer,
+      $$ShareholdingTableOrderingComposer,
+      $$ShareholdingTableAnnotationComposer,
+      $$ShareholdingTableCreateCompanionBuilder,
+      $$ShareholdingTableUpdateCompanionBuilder,
+      (ShareholdingEntry, $$ShareholdingTableReferences),
+      ShareholdingEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$DayTradingTableCreateCompanionBuilder =
+    DayTradingCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> buyVolume,
+      Value<double?> sellVolume,
+      Value<double?> dayTradingRatio,
+      Value<double?> tradeVolume,
+      Value<int> rowid,
+    });
+typedef $$DayTradingTableUpdateCompanionBuilder =
+    DayTradingCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> buyVolume,
+      Value<double?> sellVolume,
+      Value<double?> dayTradingRatio,
+      Value<double?> tradeVolume,
+      Value<int> rowid,
+    });
+
+final class $$DayTradingTableReferences
+    extends BaseReferences<_$AppDatabase, $DayTradingTable, DayTradingEntry> {
+  $$DayTradingTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.dayTrading.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DayTradingTableFilterComposer
+    extends Composer<_$AppDatabase, $DayTradingTable> {
+  $$DayTradingTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get buyVolume => $composableBuilder(
+    column: $table.buyVolume,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sellVolume => $composableBuilder(
+    column: $table.sellVolume,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get dayTradingRatio => $composableBuilder(
+    column: $table.dayTradingRatio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get tradeVolume => $composableBuilder(
+    column: $table.tradeVolume,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DayTradingTableOrderingComposer
+    extends Composer<_$AppDatabase, $DayTradingTable> {
+  $$DayTradingTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get buyVolume => $composableBuilder(
+    column: $table.buyVolume,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sellVolume => $composableBuilder(
+    column: $table.sellVolume,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get dayTradingRatio => $composableBuilder(
+    column: $table.dayTradingRatio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get tradeVolume => $composableBuilder(
+    column: $table.tradeVolume,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DayTradingTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DayTradingTable> {
+  $$DayTradingTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get buyVolume =>
+      $composableBuilder(column: $table.buyVolume, builder: (column) => column);
+
+  GeneratedColumn<double> get sellVolume => $composableBuilder(
+    column: $table.sellVolume,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get dayTradingRatio => $composableBuilder(
+    column: $table.dayTradingRatio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get tradeVolume => $composableBuilder(
+    column: $table.tradeVolume,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DayTradingTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DayTradingTable,
+          DayTradingEntry,
+          $$DayTradingTableFilterComposer,
+          $$DayTradingTableOrderingComposer,
+          $$DayTradingTableAnnotationComposer,
+          $$DayTradingTableCreateCompanionBuilder,
+          $$DayTradingTableUpdateCompanionBuilder,
+          (DayTradingEntry, $$DayTradingTableReferences),
+          DayTradingEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$DayTradingTableTableManager(_$AppDatabase db, $DayTradingTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DayTradingTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DayTradingTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DayTradingTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> buyVolume = const Value.absent(),
+                Value<double?> sellVolume = const Value.absent(),
+                Value<double?> dayTradingRatio = const Value.absent(),
+                Value<double?> tradeVolume = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayTradingCompanion(
+                symbol: symbol,
+                date: date,
+                buyVolume: buyVolume,
+                sellVolume: sellVolume,
+                dayTradingRatio: dayTradingRatio,
+                tradeVolume: tradeVolume,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> buyVolume = const Value.absent(),
+                Value<double?> sellVolume = const Value.absent(),
+                Value<double?> dayTradingRatio = const Value.absent(),
+                Value<double?> tradeVolume = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DayTradingCompanion.insert(
+                symbol: symbol,
+                date: date,
+                buyVolume: buyVolume,
+                sellVolume: sellVolume,
+                dayTradingRatio: dayTradingRatio,
+                tradeVolume: tradeVolume,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$DayTradingTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$DayTradingTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: $$DayTradingTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DayTradingTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DayTradingTable,
+      DayTradingEntry,
+      $$DayTradingTableFilterComposer,
+      $$DayTradingTableOrderingComposer,
+      $$DayTradingTableAnnotationComposer,
+      $$DayTradingTableCreateCompanionBuilder,
+      $$DayTradingTableUpdateCompanionBuilder,
+      (DayTradingEntry, $$DayTradingTableReferences),
+      DayTradingEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$FinancialDataTableCreateCompanionBuilder =
+    FinancialDataCompanion Function({
+      required String symbol,
+      required DateTime date,
+      required String statementType,
+      required String dataType,
+      Value<double?> value,
+      Value<String?> originName,
+      Value<int> rowid,
+    });
+typedef $$FinancialDataTableUpdateCompanionBuilder =
+    FinancialDataCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<String> statementType,
+      Value<String> dataType,
+      Value<double?> value,
+      Value<String?> originName,
+      Value<int> rowid,
+    });
+
+final class $$FinancialDataTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $FinancialDataTable, FinancialDataEntry> {
+  $$FinancialDataTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.financialData.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$FinancialDataTableFilterComposer
+    extends Composer<_$AppDatabase, $FinancialDataTable> {
+  $$FinancialDataTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get statementType => $composableBuilder(
+    column: $table.statementType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dataType => $composableBuilder(
+    column: $table.dataType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originName => $composableBuilder(
+    column: $table.originName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FinancialDataTableOrderingComposer
+    extends Composer<_$AppDatabase, $FinancialDataTable> {
+  $$FinancialDataTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get statementType => $composableBuilder(
+    column: $table.statementType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dataType => $composableBuilder(
+    column: $table.dataType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get value => $composableBuilder(
+    column: $table.value,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originName => $composableBuilder(
+    column: $table.originName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FinancialDataTableAnnotationComposer
+    extends Composer<_$AppDatabase, $FinancialDataTable> {
+  $$FinancialDataTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get statementType => $composableBuilder(
+    column: $table.statementType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get dataType =>
+      $composableBuilder(column: $table.dataType, builder: (column) => column);
+
+  GeneratedColumn<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
+
+  GeneratedColumn<String> get originName => $composableBuilder(
+    column: $table.originName,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$FinancialDataTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $FinancialDataTable,
+          FinancialDataEntry,
+          $$FinancialDataTableFilterComposer,
+          $$FinancialDataTableOrderingComposer,
+          $$FinancialDataTableAnnotationComposer,
+          $$FinancialDataTableCreateCompanionBuilder,
+          $$FinancialDataTableUpdateCompanionBuilder,
+          (FinancialDataEntry, $$FinancialDataTableReferences),
+          FinancialDataEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$FinancialDataTableTableManager(_$AppDatabase db, $FinancialDataTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$FinancialDataTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$FinancialDataTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$FinancialDataTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<String> statementType = const Value.absent(),
+                Value<String> dataType = const Value.absent(),
+                Value<double?> value = const Value.absent(),
+                Value<String?> originName = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FinancialDataCompanion(
+                symbol: symbol,
+                date: date,
+                statementType: statementType,
+                dataType: dataType,
+                value: value,
+                originName: originName,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                required String statementType,
+                required String dataType,
+                Value<double?> value = const Value.absent(),
+                Value<String?> originName = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => FinancialDataCompanion.insert(
+                symbol: symbol,
+                date: date,
+                statementType: statementType,
+                dataType: dataType,
+                value: value,
+                originName: originName,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$FinancialDataTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$FinancialDataTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: $$FinancialDataTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$FinancialDataTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $FinancialDataTable,
+      FinancialDataEntry,
+      $$FinancialDataTableFilterComposer,
+      $$FinancialDataTableOrderingComposer,
+      $$FinancialDataTableAnnotationComposer,
+      $$FinancialDataTableCreateCompanionBuilder,
+      $$FinancialDataTableUpdateCompanionBuilder,
+      (FinancialDataEntry, $$FinancialDataTableReferences),
+      FinancialDataEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$AdjustedPriceTableCreateCompanionBuilder =
+    AdjustedPriceCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> open,
+      Value<double?> high,
+      Value<double?> low,
+      Value<double?> close,
+      Value<double?> volume,
+      Value<int> rowid,
+    });
+typedef $$AdjustedPriceTableUpdateCompanionBuilder =
+    AdjustedPriceCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> open,
+      Value<double?> high,
+      Value<double?> low,
+      Value<double?> close,
+      Value<double?> volume,
+      Value<int> rowid,
+    });
+
+final class $$AdjustedPriceTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $AdjustedPriceTable, AdjustedPriceEntry> {
+  $$AdjustedPriceTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.adjustedPrice.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$AdjustedPriceTableFilterComposer
+    extends Composer<_$AppDatabase, $AdjustedPriceTable> {
+  $$AdjustedPriceTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get open => $composableBuilder(
+    column: $table.open,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get high => $composableBuilder(
+    column: $table.high,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get low => $composableBuilder(
+    column: $table.low,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get close => $composableBuilder(
+    column: $table.close,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get volume => $composableBuilder(
+    column: $table.volume,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AdjustedPriceTableOrderingComposer
+    extends Composer<_$AppDatabase, $AdjustedPriceTable> {
+  $$AdjustedPriceTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get open => $composableBuilder(
+    column: $table.open,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get high => $composableBuilder(
+    column: $table.high,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get low => $composableBuilder(
+    column: $table.low,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get close => $composableBuilder(
+    column: $table.close,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get volume => $composableBuilder(
+    column: $table.volume,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AdjustedPriceTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AdjustedPriceTable> {
+  $$AdjustedPriceTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get open =>
+      $composableBuilder(column: $table.open, builder: (column) => column);
+
+  GeneratedColumn<double> get high =>
+      $composableBuilder(column: $table.high, builder: (column) => column);
+
+  GeneratedColumn<double> get low =>
+      $composableBuilder(column: $table.low, builder: (column) => column);
+
+  GeneratedColumn<double> get close =>
+      $composableBuilder(column: $table.close, builder: (column) => column);
+
+  GeneratedColumn<double> get volume =>
+      $composableBuilder(column: $table.volume, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AdjustedPriceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AdjustedPriceTable,
+          AdjustedPriceEntry,
+          $$AdjustedPriceTableFilterComposer,
+          $$AdjustedPriceTableOrderingComposer,
+          $$AdjustedPriceTableAnnotationComposer,
+          $$AdjustedPriceTableCreateCompanionBuilder,
+          $$AdjustedPriceTableUpdateCompanionBuilder,
+          (AdjustedPriceEntry, $$AdjustedPriceTableReferences),
+          AdjustedPriceEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$AdjustedPriceTableTableManager(_$AppDatabase db, $AdjustedPriceTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AdjustedPriceTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AdjustedPriceTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AdjustedPriceTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> open = const Value.absent(),
+                Value<double?> high = const Value.absent(),
+                Value<double?> low = const Value.absent(),
+                Value<double?> close = const Value.absent(),
+                Value<double?> volume = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AdjustedPriceCompanion(
+                symbol: symbol,
+                date: date,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: volume,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> open = const Value.absent(),
+                Value<double?> high = const Value.absent(),
+                Value<double?> low = const Value.absent(),
+                Value<double?> close = const Value.absent(),
+                Value<double?> volume = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AdjustedPriceCompanion.insert(
+                symbol: symbol,
+                date: date,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: volume,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AdjustedPriceTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$AdjustedPriceTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: $$AdjustedPriceTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AdjustedPriceTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AdjustedPriceTable,
+      AdjustedPriceEntry,
+      $$AdjustedPriceTableFilterComposer,
+      $$AdjustedPriceTableOrderingComposer,
+      $$AdjustedPriceTableAnnotationComposer,
+      $$AdjustedPriceTableCreateCompanionBuilder,
+      $$AdjustedPriceTableUpdateCompanionBuilder,
+      (AdjustedPriceEntry, $$AdjustedPriceTableReferences),
+      AdjustedPriceEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$WeeklyPriceTableCreateCompanionBuilder =
+    WeeklyPriceCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> open,
+      Value<double?> high,
+      Value<double?> low,
+      Value<double?> close,
+      Value<double?> volume,
+      Value<int> rowid,
+    });
+typedef $$WeeklyPriceTableUpdateCompanionBuilder =
+    WeeklyPriceCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> open,
+      Value<double?> high,
+      Value<double?> low,
+      Value<double?> close,
+      Value<double?> volume,
+      Value<int> rowid,
+    });
+
+final class $$WeeklyPriceTableReferences
+    extends BaseReferences<_$AppDatabase, $WeeklyPriceTable, WeeklyPriceEntry> {
+  $$WeeklyPriceTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.weeklyPrice.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$WeeklyPriceTableFilterComposer
+    extends Composer<_$AppDatabase, $WeeklyPriceTable> {
+  $$WeeklyPriceTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get open => $composableBuilder(
+    column: $table.open,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get high => $composableBuilder(
+    column: $table.high,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get low => $composableBuilder(
+    column: $table.low,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get close => $composableBuilder(
+    column: $table.close,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get volume => $composableBuilder(
+    column: $table.volume,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WeeklyPriceTableOrderingComposer
+    extends Composer<_$AppDatabase, $WeeklyPriceTable> {
+  $$WeeklyPriceTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get open => $composableBuilder(
+    column: $table.open,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get high => $composableBuilder(
+    column: $table.high,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get low => $composableBuilder(
+    column: $table.low,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get close => $composableBuilder(
+    column: $table.close,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get volume => $composableBuilder(
+    column: $table.volume,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WeeklyPriceTableAnnotationComposer
+    extends Composer<_$AppDatabase, $WeeklyPriceTable> {
+  $$WeeklyPriceTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get open =>
+      $composableBuilder(column: $table.open, builder: (column) => column);
+
+  GeneratedColumn<double> get high =>
+      $composableBuilder(column: $table.high, builder: (column) => column);
+
+  GeneratedColumn<double> get low =>
+      $composableBuilder(column: $table.low, builder: (column) => column);
+
+  GeneratedColumn<double> get close =>
+      $composableBuilder(column: $table.close, builder: (column) => column);
+
+  GeneratedColumn<double> get volume =>
+      $composableBuilder(column: $table.volume, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$WeeklyPriceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $WeeklyPriceTable,
+          WeeklyPriceEntry,
+          $$WeeklyPriceTableFilterComposer,
+          $$WeeklyPriceTableOrderingComposer,
+          $$WeeklyPriceTableAnnotationComposer,
+          $$WeeklyPriceTableCreateCompanionBuilder,
+          $$WeeklyPriceTableUpdateCompanionBuilder,
+          (WeeklyPriceEntry, $$WeeklyPriceTableReferences),
+          WeeklyPriceEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$WeeklyPriceTableTableManager(_$AppDatabase db, $WeeklyPriceTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$WeeklyPriceTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$WeeklyPriceTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$WeeklyPriceTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> open = const Value.absent(),
+                Value<double?> high = const Value.absent(),
+                Value<double?> low = const Value.absent(),
+                Value<double?> close = const Value.absent(),
+                Value<double?> volume = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WeeklyPriceCompanion(
+                symbol: symbol,
+                date: date,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: volume,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> open = const Value.absent(),
+                Value<double?> high = const Value.absent(),
+                Value<double?> low = const Value.absent(),
+                Value<double?> close = const Value.absent(),
+                Value<double?> volume = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => WeeklyPriceCompanion.insert(
+                symbol: symbol,
+                date: date,
+                open: open,
+                high: high,
+                low: low,
+                close: close,
+                volume: volume,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$WeeklyPriceTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$WeeklyPriceTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: $$WeeklyPriceTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WeeklyPriceTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $WeeklyPriceTable,
+      WeeklyPriceEntry,
+      $$WeeklyPriceTableFilterComposer,
+      $$WeeklyPriceTableOrderingComposer,
+      $$WeeklyPriceTableAnnotationComposer,
+      $$WeeklyPriceTableCreateCompanionBuilder,
+      $$WeeklyPriceTableUpdateCompanionBuilder,
+      (WeeklyPriceEntry, $$WeeklyPriceTableReferences),
+      WeeklyPriceEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$HoldingDistributionTableCreateCompanionBuilder =
+    HoldingDistributionCompanion Function({
+      required String symbol,
+      required DateTime date,
+      required String level,
+      Value<int?> shareholders,
+      Value<double?> percent,
+      Value<double?> shares,
+      Value<int> rowid,
+    });
+typedef $$HoldingDistributionTableUpdateCompanionBuilder =
+    HoldingDistributionCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<String> level,
+      Value<int?> shareholders,
+      Value<double?> percent,
+      Value<double?> shares,
+      Value<int> rowid,
+    });
+
+final class $$HoldingDistributionTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $HoldingDistributionTable,
+          HoldingDistributionEntry
+        > {
+  $$HoldingDistributionTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(
+          db.holdingDistribution.symbol,
+          db.stockMaster.symbol,
+        ),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$HoldingDistributionTableFilterComposer
+    extends Composer<_$AppDatabase, $HoldingDistributionTable> {
+  $$HoldingDistributionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get shareholders => $composableBuilder(
+    column: $table.shareholders,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get percent => $composableBuilder(
+    column: $table.percent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get shares => $composableBuilder(
+    column: $table.shares,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$HoldingDistributionTableOrderingComposer
+    extends Composer<_$AppDatabase, $HoldingDistributionTable> {
+  $$HoldingDistributionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get level => $composableBuilder(
+    column: $table.level,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get shareholders => $composableBuilder(
+    column: $table.shareholders,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get percent => $composableBuilder(
+    column: $table.percent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get shares => $composableBuilder(
+    column: $table.shares,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$HoldingDistributionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $HoldingDistributionTable> {
+  $$HoldingDistributionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get level =>
+      $composableBuilder(column: $table.level, builder: (column) => column);
+
+  GeneratedColumn<int> get shareholders => $composableBuilder(
+    column: $table.shareholders,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get percent =>
+      $composableBuilder(column: $table.percent, builder: (column) => column);
+
+  GeneratedColumn<double> get shares =>
+      $composableBuilder(column: $table.shares, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$HoldingDistributionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $HoldingDistributionTable,
+          HoldingDistributionEntry,
+          $$HoldingDistributionTableFilterComposer,
+          $$HoldingDistributionTableOrderingComposer,
+          $$HoldingDistributionTableAnnotationComposer,
+          $$HoldingDistributionTableCreateCompanionBuilder,
+          $$HoldingDistributionTableUpdateCompanionBuilder,
+          (HoldingDistributionEntry, $$HoldingDistributionTableReferences),
+          HoldingDistributionEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$HoldingDistributionTableTableManager(
+    _$AppDatabase db,
+    $HoldingDistributionTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$HoldingDistributionTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$HoldingDistributionTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$HoldingDistributionTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<String> level = const Value.absent(),
+                Value<int?> shareholders = const Value.absent(),
+                Value<double?> percent = const Value.absent(),
+                Value<double?> shares = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => HoldingDistributionCompanion(
+                symbol: symbol,
+                date: date,
+                level: level,
+                shareholders: shareholders,
+                percent: percent,
+                shares: shares,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                required String level,
+                Value<int?> shareholders = const Value.absent(),
+                Value<double?> percent = const Value.absent(),
+                Value<double?> shares = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => HoldingDistributionCompanion.insert(
+                symbol: symbol,
+                date: date,
+                level: level,
+                shareholders: shareholders,
+                percent: percent,
+                shares: shares,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$HoldingDistributionTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable:
+                                    $$HoldingDistributionTableReferences
+                                        ._symbolTable(db),
+                                referencedColumn:
+                                    $$HoldingDistributionTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$HoldingDistributionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $HoldingDistributionTable,
+      HoldingDistributionEntry,
+      $$HoldingDistributionTableFilterComposer,
+      $$HoldingDistributionTableOrderingComposer,
+      $$HoldingDistributionTableAnnotationComposer,
+      $$HoldingDistributionTableCreateCompanionBuilder,
+      $$HoldingDistributionTableUpdateCompanionBuilder,
+      (HoldingDistributionEntry, $$HoldingDistributionTableReferences),
+      HoldingDistributionEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$MonthlyRevenueTableCreateCompanionBuilder =
+    MonthlyRevenueCompanion Function({
+      required String symbol,
+      required DateTime date,
+      required int revenueYear,
+      required int revenueMonth,
+      required double revenue,
+      Value<double?> momGrowth,
+      Value<double?> yoyGrowth,
+      Value<int> rowid,
+    });
+typedef $$MonthlyRevenueTableUpdateCompanionBuilder =
+    MonthlyRevenueCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<int> revenueYear,
+      Value<int> revenueMonth,
+      Value<double> revenue,
+      Value<double?> momGrowth,
+      Value<double?> yoyGrowth,
+      Value<int> rowid,
+    });
+
+final class $$MonthlyRevenueTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $MonthlyRevenueTable,
+          MonthlyRevenueEntry
+        > {
+  $$MonthlyRevenueTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.monthlyRevenue.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MonthlyRevenueTableFilterComposer
+    extends Composer<_$AppDatabase, $MonthlyRevenueTable> {
+  $$MonthlyRevenueTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revenueYear => $composableBuilder(
+    column: $table.revenueYear,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get revenueMonth => $composableBuilder(
+    column: $table.revenueMonth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get revenue => $composableBuilder(
+    column: $table.revenue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get momGrowth => $composableBuilder(
+    column: $table.momGrowth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get yoyGrowth => $composableBuilder(
+    column: $table.yoyGrowth,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MonthlyRevenueTableOrderingComposer
+    extends Composer<_$AppDatabase, $MonthlyRevenueTable> {
+  $$MonthlyRevenueTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revenueYear => $composableBuilder(
+    column: $table.revenueYear,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get revenueMonth => $composableBuilder(
+    column: $table.revenueMonth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get revenue => $composableBuilder(
+    column: $table.revenue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get momGrowth => $composableBuilder(
+    column: $table.momGrowth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get yoyGrowth => $composableBuilder(
+    column: $table.yoyGrowth,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MonthlyRevenueTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MonthlyRevenueTable> {
+  $$MonthlyRevenueTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<int> get revenueYear => $composableBuilder(
+    column: $table.revenueYear,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get revenueMonth => $composableBuilder(
+    column: $table.revenueMonth,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get revenue =>
+      $composableBuilder(column: $table.revenue, builder: (column) => column);
+
+  GeneratedColumn<double> get momGrowth =>
+      $composableBuilder(column: $table.momGrowth, builder: (column) => column);
+
+  GeneratedColumn<double> get yoyGrowth =>
+      $composableBuilder(column: $table.yoyGrowth, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MonthlyRevenueTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MonthlyRevenueTable,
+          MonthlyRevenueEntry,
+          $$MonthlyRevenueTableFilterComposer,
+          $$MonthlyRevenueTableOrderingComposer,
+          $$MonthlyRevenueTableAnnotationComposer,
+          $$MonthlyRevenueTableCreateCompanionBuilder,
+          $$MonthlyRevenueTableUpdateCompanionBuilder,
+          (MonthlyRevenueEntry, $$MonthlyRevenueTableReferences),
+          MonthlyRevenueEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$MonthlyRevenueTableTableManager(
+    _$AppDatabase db,
+    $MonthlyRevenueTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MonthlyRevenueTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MonthlyRevenueTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MonthlyRevenueTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<int> revenueYear = const Value.absent(),
+                Value<int> revenueMonth = const Value.absent(),
+                Value<double> revenue = const Value.absent(),
+                Value<double?> momGrowth = const Value.absent(),
+                Value<double?> yoyGrowth = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MonthlyRevenueCompanion(
+                symbol: symbol,
+                date: date,
+                revenueYear: revenueYear,
+                revenueMonth: revenueMonth,
+                revenue: revenue,
+                momGrowth: momGrowth,
+                yoyGrowth: yoyGrowth,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                required int revenueYear,
+                required int revenueMonth,
+                required double revenue,
+                Value<double?> momGrowth = const Value.absent(),
+                Value<double?> yoyGrowth = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MonthlyRevenueCompanion.insert(
+                symbol: symbol,
+                date: date,
+                revenueYear: revenueYear,
+                revenueMonth: revenueMonth,
+                revenue: revenue,
+                momGrowth: momGrowth,
+                yoyGrowth: yoyGrowth,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MonthlyRevenueTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$MonthlyRevenueTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn:
+                                    $$MonthlyRevenueTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MonthlyRevenueTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MonthlyRevenueTable,
+      MonthlyRevenueEntry,
+      $$MonthlyRevenueTableFilterComposer,
+      $$MonthlyRevenueTableOrderingComposer,
+      $$MonthlyRevenueTableAnnotationComposer,
+      $$MonthlyRevenueTableCreateCompanionBuilder,
+      $$MonthlyRevenueTableUpdateCompanionBuilder,
+      (MonthlyRevenueEntry, $$MonthlyRevenueTableReferences),
+      MonthlyRevenueEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$StockValuationTableCreateCompanionBuilder =
+    StockValuationCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> per,
+      Value<double?> pbr,
+      Value<double?> dividendYield,
+      Value<int> rowid,
+    });
+typedef $$StockValuationTableUpdateCompanionBuilder =
+    StockValuationCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> per,
+      Value<double?> pbr,
+      Value<double?> dividendYield,
+      Value<int> rowid,
+    });
+
+final class $$StockValuationTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $StockValuationTable,
+          StockValuationEntry
+        > {
+  $$StockValuationTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.stockValuation.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$StockValuationTableFilterComposer
+    extends Composer<_$AppDatabase, $StockValuationTable> {
+  $$StockValuationTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get per => $composableBuilder(
+    column: $table.per,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get pbr => $composableBuilder(
+    column: $table.pbr,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get dividendYield => $composableBuilder(
+    column: $table.dividendYield,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$StockValuationTableOrderingComposer
+    extends Composer<_$AppDatabase, $StockValuationTable> {
+  $$StockValuationTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get per => $composableBuilder(
+    column: $table.per,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get pbr => $composableBuilder(
+    column: $table.pbr,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get dividendYield => $composableBuilder(
+    column: $table.dividendYield,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$StockValuationTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StockValuationTable> {
+  $$StockValuationTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get per =>
+      $composableBuilder(column: $table.per, builder: (column) => column);
+
+  GeneratedColumn<double> get pbr =>
+      $composableBuilder(column: $table.pbr, builder: (column) => column);
+
+  GeneratedColumn<double> get dividendYield => $composableBuilder(
+    column: $table.dividendYield,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$StockValuationTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StockValuationTable,
+          StockValuationEntry,
+          $$StockValuationTableFilterComposer,
+          $$StockValuationTableOrderingComposer,
+          $$StockValuationTableAnnotationComposer,
+          $$StockValuationTableCreateCompanionBuilder,
+          $$StockValuationTableUpdateCompanionBuilder,
+          (StockValuationEntry, $$StockValuationTableReferences),
+          StockValuationEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$StockValuationTableTableManager(
+    _$AppDatabase db,
+    $StockValuationTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StockValuationTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StockValuationTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StockValuationTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> per = const Value.absent(),
+                Value<double?> pbr = const Value.absent(),
+                Value<double?> dividendYield = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockValuationCompanion(
+                symbol: symbol,
+                date: date,
+                per: per,
+                pbr: pbr,
+                dividendYield: dividendYield,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> per = const Value.absent(),
+                Value<double?> pbr = const Value.absent(),
+                Value<double?> dividendYield = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => StockValuationCompanion.insert(
+                symbol: symbol,
+                date: date,
+                per: per,
+                pbr: pbr,
+                dividendYield: dividendYield,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$StockValuationTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$StockValuationTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn:
+                                    $$StockValuationTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$StockValuationTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StockValuationTable,
+      StockValuationEntry,
+      $$StockValuationTableFilterComposer,
+      $$StockValuationTableOrderingComposer,
+      $$StockValuationTableAnnotationComposer,
+      $$StockValuationTableCreateCompanionBuilder,
+      $$StockValuationTableUpdateCompanionBuilder,
+      (StockValuationEntry, $$StockValuationTableReferences),
+      StockValuationEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -11340,4 +18698,20 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$PriceAlertTableTableManager get priceAlert =>
       $$PriceAlertTableTableManager(_db, _db.priceAlert);
+  $$ShareholdingTableTableManager get shareholding =>
+      $$ShareholdingTableTableManager(_db, _db.shareholding);
+  $$DayTradingTableTableManager get dayTrading =>
+      $$DayTradingTableTableManager(_db, _db.dayTrading);
+  $$FinancialDataTableTableManager get financialData =>
+      $$FinancialDataTableTableManager(_db, _db.financialData);
+  $$AdjustedPriceTableTableManager get adjustedPrice =>
+      $$AdjustedPriceTableTableManager(_db, _db.adjustedPrice);
+  $$WeeklyPriceTableTableManager get weeklyPrice =>
+      $$WeeklyPriceTableTableManager(_db, _db.weeklyPrice);
+  $$HoldingDistributionTableTableManager get holdingDistribution =>
+      $$HoldingDistributionTableTableManager(_db, _db.holdingDistribution);
+  $$MonthlyRevenueTableTableManager get monthlyRevenue =>
+      $$MonthlyRevenueTableTableManager(_db, _db.monthlyRevenue);
+  $$StockValuationTableTableManager get stockValuation =>
+      $$StockValuationTableTableManager(_db, _db.stockValuation);
 }

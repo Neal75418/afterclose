@@ -183,13 +183,20 @@ class _StockCardState extends State<StockCard> {
   Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
     final trendColor = _getTrendColor(widget.trendState);
     final icon = _getTrendIconData(widget.trendState);
+    final isNeutral = widget.trendState == null || widget.trendState == 'SIDEWAYS';
 
     return Container(
       width: 44,
       height: 44,
       decoration: BoxDecoration(
-        color: trendColor.withValues(alpha: isDark ? 0.15 : 0.1),
+        color: trendColor.withValues(alpha: isDark ? 0.2 : 0.1),
         borderRadius: BorderRadius.circular(12),
+        border: isDark && isNeutral
+            ? Border.all(
+                color: trendColor.withValues(alpha: 0.4),
+                width: 1,
+              )
+            : null,
       ),
       child: Center(child: Icon(icon, color: trendColor, size: 24)),
     );

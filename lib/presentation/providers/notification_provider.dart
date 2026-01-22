@@ -127,6 +127,20 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       AlertType.changePct => 'notification.priceChangeTarget'.tr(
         namedArgs: {'symbol': symbol},
       ),
+      AlertType.volumeSpike || AlertType.volumeAbove => '$symbol 成交量警報',
+      AlertType.rsiOverbought => '$symbol RSI 超買',
+      AlertType.rsiOversold => '$symbol RSI 超賣',
+      AlertType.kdGoldenCross => '$symbol KD 黃金交叉',
+      AlertType.kdDeathCross => '$symbol KD 死亡交叉',
+      AlertType.breakResistance => '$symbol 突破壓力',
+      AlertType.breakSupport => '$symbol 跌破支撐',
+      AlertType.week52High => '$symbol 創52週新高',
+      AlertType.week52Low => '$symbol 創52週新低',
+      AlertType.crossAboveMa => '$symbol 站上均線',
+      AlertType.crossBelowMa => '$symbol 跌破均線',
+      AlertType.revenueYoySurge => '$symbol 營收年增暴增',
+      AlertType.highDividendYield => '$symbol 高殖利率達標',
+      AlertType.peUndervalued => '$symbol PE低估達標',
     };
   }
 
@@ -151,6 +165,21 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       AlertType.changePct => 'notification.changeBody'.tr(
         namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
       ),
+      AlertType.volumeSpike => '成交量達到均量的 ${alert.targetValue.toStringAsFixed(0)} 倍',
+      AlertType.volumeAbove => '成交量超過 ${alert.targetValue.toStringAsFixed(0)} 張',
+      AlertType.rsiOverbought => 'RSI 已達超買區域（≥${alert.targetValue.toStringAsFixed(0)}）',
+      AlertType.rsiOversold => 'RSI 已達超賣區域（≤${alert.targetValue.toStringAsFixed(0)}）',
+      AlertType.kdGoldenCross => 'KD 指標出現黃金交叉',
+      AlertType.kdDeathCross => 'KD 指標出現死亡交叉',
+      AlertType.breakResistance => '價格突破壓力位 ${alert.targetValue.toStringAsFixed(2)} 元',
+      AlertType.breakSupport => '價格跌破支撐位 ${alert.targetValue.toStringAsFixed(2)} 元',
+      AlertType.week52High => '價格創下52週新高',
+      AlertType.week52Low => '價格創下52週新低',
+      AlertType.crossAboveMa => '價格站上 ${alert.targetValue.toInt()} 日均線',
+      AlertType.crossBelowMa => '價格跌破 ${alert.targetValue.toInt()} 日均線',
+      AlertType.revenueYoySurge => '營收年增率達 ${alert.targetValue.toStringAsFixed(1)}%',
+      AlertType.highDividendYield => '殖利率達 ${alert.targetValue.toStringAsFixed(1)}%',
+      AlertType.peUndervalued => 'PE 低於 ${alert.targetValue.toStringAsFixed(1)} 倍',
     };
 
     return '$baseBody$priceText';
