@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -44,7 +46,7 @@ class UpdateService {
        _institutionalRepo = institutionalRepository,
        _marketDataRepo = marketDataRepository,
        _analysisService = analysisService ?? const AnalysisService(),
-       _ruleEngine = ruleEngine ?? const RuleEngine(),
+       _ruleEngine = ruleEngine ?? RuleEngine(),
        _popularStocks = popularStocks ?? _defaultPopularStocks;
 
   /// Default popular Taiwan stocks for free account fallback
@@ -727,7 +729,9 @@ class UpdateService {
             .map(
               (r) => ReasonData(
                 type: r.type.code,
-                evidenceJson: r.evidenceJson,
+                evidenceJson: r.evidenceJson != null
+                    ? jsonEncode(r.evidenceJson)
+                    : '{}',
                 score: r.score,
               ),
             )

@@ -1,6 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// Service for technical analysis of stock price data
@@ -66,7 +65,7 @@ class AnalysisService {
       resistanceLevel: result.resistanceLevel,
       rangeTop: result.rangeTop,
       rangeBottom: result.rangeBottom,
-      technicalIndicators: indicators,
+      indicators: indicators,
       marketData: marketData,
     );
   }
@@ -774,4 +773,84 @@ class _PriceZone {
 
   /// Weight based on how recent the touches are (0.0 to 1.0)
   final double recencyWeight;
+}
+// ==========================================
+// Analysis Context & Data Classes
+// ==========================================
+
+/// Context for rule evaluation passed to all rules
+class AnalysisContext {
+  const AnalysisContext({
+    required this.trendState,
+    this.supportLevel,
+    this.resistanceLevel,
+    this.rangeTop,
+    this.rangeBottom,
+    this.marketData,
+    this.indicators,
+  });
+
+  final TrendState trendState;
+  final double? supportLevel;
+  final double? resistanceLevel;
+  final double? rangeTop;
+  final double? rangeBottom;
+  final MarketDataContext? marketData;
+  final TechnicalIndicators? indicators;
+}
+
+/// Additional market data for Phase 4 signals
+class MarketDataContext {
+  const MarketDataContext({
+    this.foreignSharesRatio,
+    this.foreignSharesRatioChange,
+    this.dayTradingRatio,
+    this.concentrationRatio,
+  });
+
+  final double? foreignSharesRatio;
+  final double? foreignSharesRatioChange;
+  final double? dayTradingRatio;
+  final double? concentrationRatio;
+}
+
+/// Reason triggered by a specific rule
+class TriggeredReason {
+  const TriggeredReason({
+    required this.type,
+    required this.score,
+    required this.description,
+    this.evidence,
+  });
+
+  final ReasonType type;
+  final int score;
+  final String description;
+  final Map<String, dynamic>? evidence;
+
+  /// Get evidence as JSON map
+  Map<String, dynamic>? get evidenceJson => evidence;
+}
+
+/// Technical indicators for rule evaluation
+class TechnicalIndicators {
+  const TechnicalIndicators({
+    this.rsi,
+    this.kdK,
+    this.kdD,
+    this.prevKdK,
+    this.prevKdD,
+    this.ma5,
+    this.ma20,
+    this.ma60,
+  });
+
+  final double? rsi;
+  final double? kdK;
+  final double? kdD;
+  final double? prevKdK;
+  final double? prevKdD;
+  final double? ma5;
+  final double? ma20;
+  final double? ma60;
 }
