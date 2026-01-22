@@ -6,12 +6,13 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/domain/repositories/price_repository.dart';
 
 /// Repository for daily price data
 ///
 /// Uses TWSE Open Data as primary source (free, unlimited, all market)
 /// Falls back to FinMind for historical data
-class PriceRepository {
+class PriceRepository implements IPriceRepository {
   PriceRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
@@ -585,17 +586,6 @@ class PriceRepository {
       throw DatabaseException('Failed to fetch volume MA batch', e);
     }
   }
-}
-
-/// Result of syncing all market prices
-class MarketSyncResult {
-  const MarketSyncResult({required this.count, required this.candidates});
-
-  /// Number of prices synced
-  final int count;
-
-  /// Quick-filtered candidate symbols for further analysis
-  final List<String> candidates;
 }
 
 /// Helper class for quick candidate filtering

@@ -29,10 +29,10 @@ abstract class IPriceRepository {
   Future<double?> getVolumeMA20(String symbol);
 
   /// Get price changes for multiple symbols in one query
-  Future<Map<String, double>> getPriceChangesBatch(List<String> symbols);
+  Future<Map<String, double?>> getPriceChangesBatch(List<String> symbols);
 
   /// Get 20-day volume moving averages for multiple symbols in one query
-  Future<Map<String, double>> getVolumeMA20Batch(List<String> symbols);
+  Future<Map<String, double?>> getVolumeMA20Batch(List<String> symbols);
 
   // ==========================================
   // Sync Operations
