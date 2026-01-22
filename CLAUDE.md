@@ -1,118 +1,124 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+本檔案為 Claude Code (claude.ai/code) 提供專案開發指引。
 
-## Project Overview
+## 專案概述
 
-AfterClose is a **Local-First** after-hours Taiwan stock market scanner app. It processes TWSE/TPEx market data entirely on-device, identifying anomalies and generating explainable recommendations without cloud dependencies.
+AfterClose 是一款 **本地優先** 盤後台股市場掃描 App。所有資料處理、分析和推薦都在裝置端完成，無雲端依賴。
 
-**Core Principles:**
-- All data fetching, analysis, and recommendations happen on-device
-- Zero recurring costs (free APIs + RSS + local SQLite)
-- Post-market batch processing only
-- Recommendations are "attention alerts", not investment advice
+**核心原則：**
+- 所有資料抓取、分析、推薦都在**裝置端完成**
+- **零固定成本**（免費 API + RSS + 本地 SQLite）
+- 只處理**盤後批次**資料
+- 推薦 = **異常提示**，不是投資建議
 
-## Common Commands
+## 常用指令
 
 ```bash
-# Development
-flutter pub get                    # Install dependencies
-flutter run                        # Run app (debug mode)
-flutter run --release              # Run app (release mode)
+# 開發
+flutter pub get                    # 安裝依賴
+flutter run                        # 執行 App (debug)
+flutter run --release              # 執行 App (release)
 
-# Code Generation (after adding Drift tables or Freezed models)
+# 程式碼生成 (修改 Drift 表或 Freezed 模型後)
 dart run build_runner build --delete-conflicting-outputs
 
-# Testing
-flutter test                       # Run all tests
-flutter test test/widget_test.dart # Run specific test
+# 測試
+flutter test                       # 執行所有測試
+flutter test test/widget_test.dart # 執行特定測試
 
-# Quality
-flutter analyze                    # Static analysis
-dart format .                      # Format code
-dart format --output=none --set-exit-if-changed .  # Check formatting
+# 品質檢查
+flutter analyze                    # 靜態分析
+dart format .                      # 格式化程式碼
+dart format --output=none --set-exit-if-changed .  # 檢查格式
 
-# Build
+# 建置
 flutter build apk --release        # Android APK
-flutter build ios --release        # iOS (requires macOS)
+flutter build ios --release        # iOS (需 macOS)
 ```
 
-## Architecture
+## 架構
 
-### Tech Stack (Planned)
+### 技術堆疊
 
-| Layer     | Technology                          |
-|:----------|:------------------------------------|
-| Framework | Flutter 3.38 + Dart 3               |
-| State     | Riverpod 2.0 (with code generation) |
-| Database  | Drift (SQLite)                      |
-| Network   | Dio                                 |
-| Models    | Freezed + json_serializable         |
-| RSS       | xml package                         |
+| 層級 | 技術 |
+|:---|:---|
+| Framework | Flutter 3.29 + Dart 3.10 |
+| State | Riverpod 2.6 |
+| Database | Drift 2.27 (SQLite) |
+| Network | Dio 5.8 |
+| Models | Freezed + json_serializable |
+| RSS | xml 6.5 |
+| Charts | fl_chart + k_chart_plus |
 
-### Directory Structure (Target)
+### 目錄結構
 
 ```
 lib/
 ├── main.dart
-├── app/                    # App configuration, routing
-├── core/                   # Shared utilities, constants, exceptions
+├── app/                    # App 配置、路由
+├── core/                   # 工具類、常數、例外、Result<T>
 ├── data/
-│   ├── database/           # Drift tables, DAOs
-│   ├── remote/             # API clients, RSS parsers
-│   └── repositories/       # Coordinate local + remote
+│   ├── database/           # Drift 表、DAO、遷移
+│   ├── remote/             # API 客戶端 (TWSE, FinMind)
+│   └── repositories/       # 協調本地 + 遠端
 ├── domain/
-│   ├── models/             # Freezed domain models
-│   └── services/           # Business logic, Rule Engine
+│   ├── repositories/       # Repository 介面 (IAnalysisRepository, IPriceRepository)
+│   └── services/           # 業務邏輯、Rule Engine、ScoringService
 └── presentation/
-    ├── controllers/        # Riverpod Notifiers
-    ├── screens/            # Full-page widgets
-    └── widgets/            # Reusable components
+    ├── providers/          # Riverpod Notifiers
+    ├── screens/            # 頁面 Widget
+    └── widgets/            # 可重用元件
 ```
 
-### Data Flow
+### 資料流
 
 ```
 API/RSS → Repository → Drift DB → Stream → Riverpod → UI
                 ↑                              ↓
-            (sync only)              (UI reads local only)
+            (同步寫入)                    (UI 只讀本地)
 ```
 
-## Key Documentation
+## 關鍵文件
 
-| File                                                                                                   | Description                                      |
-|:-------------------------------------------------------------------------------------------------------|:-------------------------------------------------|
-| [README.md](README.md)                                                                                 | Product specification, features, UI structure    |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | Recommendation rules (R1-R8) + SQLite schema DDL |
-| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | Architecture patterns and coding standards       |
+| 檔案 | 說明 |
+|:---|:---|
+| [README.md](README.md) | 產品規格、功能、UI 結構 |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 推薦規則 (R1-R8) + SQLite Schema DDL |
+| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式與編碼標準 |
 
-## Rule Engine Summary
+## 規則引擎摘要
 
-8 rules for anomaly detection, each with a score:
+8 條異常偵測規則，各有評分：
 
-| Rule                | Score | Trigger                     |
-|:--------------------|------:|:----------------------------|
-| REVERSAL_W2S        |   +35 | Weak-to-strong reversal     |
-| REVERSAL_S2W        |   +35 | Strong-to-weak reversal     |
-| TECH_BREAKOUT       |   +25 | Price breaks resistance     |
-| TECH_BREAKDOWN      |   +25 | Price breaks support        |
-| VOLUME_SPIKE        |   +18 | Volume ≥ 2x 20-day average  |
-| PRICE_SPIKE         |   +15 | Daily change ≥ 5%           |
-| INSTITUTIONAL_SHIFT |   +12 | Institutional flow reversal |
-| NEWS_RELATED        |    +8 | Related news detected       |
+| 規則 | 分數 | 觸發條件 |
+|:---|---:|:---|
+| REVERSAL_W2S | +35 | 弱轉強反轉 |
+| REVERSAL_S2W | +35 | 強轉弱反轉 |
+| TECH_BREAKOUT | +25 | 突破壓力位 |
+| TECH_BREAKDOWN | +25 | 跌破支撐位 |
+| VOLUME_SPIKE | +18 | 量 ≥ 20日均量 × 2 |
+| PRICE_SPIKE | +15 | 日漲跌幅 ≥ 5% |
+| INSTITUTIONAL_SHIFT | +12 | 法人方向反轉 |
+| NEWS_RELATED | +8 | 相關新聞偵測 |
 
-Output: Top 10 stocks daily, max 2 reasons per stock.
+輸出：每日 Top 10，每檔最多 2 條理由。
 
-## Data Sources
+## 資料來源
 
-- **Taiwan Stocks**: [FinMind API](https://finmind.github.io/) (free tier)
-- **News**: RSS feeds
-- **US Indices**: Yahoo Finance (optional)
+| 資料 | 來源 | 說明 |
+|:---|:---|:---|
+| 台股日價 | **TWSE Open Data** (主) | 免費、無限制、全市場 |
+| 台股歷史 | FinMind (備) | 歷史資料補充 |
+| 法人籌碼 | FinMind | 三大法人買賣超 |
+| 新聞 | RSS | 多源 RSS 聲明 |
 
-## Coding Standards
+## 編碼標準
 
-- Use Riverpod code generation (`@riverpod`) instead of manual providers
-- Use `AsyncNotifier` / `Notifier` instead of `StateProvider`
-- Keep Rule Engine as pure functions (input: data, output: reasons)
-- UI should only read from local database streams, never directly from network
-- Use Dart 3 features: Records, Pattern Matching, sealed classes
+- **Repository 介面**：使用 `IAnalysisRepository` / `IPriceRepository` 抽象，支援 mock 測試
+- **錯誤處理**：使用 `Result<T>` 類別 (`lib/core/utils/result.dart`)，支援 `map`, `flatMap`, `fold`
+- **Service 分離**：`ScoringService` 獨立評分邏輯，遵循單一職責原則
+- **Riverpod**：使用 `AsyncNotifier` / `Notifier`，避免使用 `StateProvider`
+- **Rule Engine**：保持純函數（輸入：資料，輸出：理由）
+- **UI**：只從本地資料庫 Stream 讀取，不直接讀網路
+- **Dart 3 特性**：使用 Records、Pattern Matching、sealed classes
