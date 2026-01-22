@@ -84,25 +84,23 @@ API/RSS → Repository → Drift DB → Stream → Riverpod → UI
 | 檔案                                                                                                     | 說明                               |
 |:-------------------------------------------------------------------------------------------------------|:---------------------------------|
 | [README.md](README.md)                                                                                 | 產品規格、功能、UI 結構                    |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 推薦規則 (R1-R8) + SQLite Schema DDL |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 推薦規則引擎 v2 (45 條規則) + SQLite Schema DDL |
 | [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式與編碼標準                        |
 
 ## 規則引擎摘要
 
-8 條異常偵測規則，各有評分：
+6 個 Phase，共 45 條異常偵測規則：
 
-| 規則                  |  分數 | 觸發條件          |
-|:--------------------|----:|:--------------|
-| REVERSAL_W2S        | +35 | 弱轉強反轉         |
-| REVERSAL_S2W        | +35 | 強轉弱反轉         |
-| TECH_BREAKOUT       | +25 | 突破壓力位         |
-| TECH_BREAKDOWN      | +25 | 跌破支撐位         |
-| VOLUME_SPIKE        | +18 | 量 ≥ 20日均量 × 2 |
-| PRICE_SPIKE         | +15 | 日漲跌幅 ≥ 5%     |
-| INSTITUTIONAL_SHIFT | +12 | 法人方向反轉        |
-| NEWS_RELATED        |  +8 | 相關新聞偵測        |
+| Phase | 規則數 | 包含 |
+|:---|---:|:---|
+| 基礎規則 | 8 | 反轉、突破、放量、價格異常、法人、新聞 |
+| 技術指標 | 4 | KD 交叉、法人連買/賣 |
+| K線型態 | 11 | 十字線、吞噬、錘子、跳空、晨星/暮星、三白兵/黑鴉 |
+| 技術訊號 | 6 | 52週高低、MA 排列、RSI 極端値 |
+| 價量背離 | 4 | 價漲量縮、高檔爆量、低檔吸籌 |
+| 基本面 | 7 | 營收成長、殖利率、PE/PBR 估值 |
 
-輸出：每日 Top 10，每檔最多 2 條理由。
+**分數上限**：80 分 | **輸出**：每日 Top 10，每檔最多 2 條理由
 
 ## 資料來源
 
