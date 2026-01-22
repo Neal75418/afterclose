@@ -1,7 +1,10 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/services/rules/divergence_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
+import 'package:afterclose/domain/services/rules/indicator_rules.dart';
+import 'package:afterclose/domain/services/rules/institutional_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/rules/technical_rules.dart';
 import 'package:afterclose/domain/services/rules/volume_rules.dart';
@@ -22,8 +25,9 @@ class RuleEngine {
     }
   }
 
-  /// Default rule set
+  /// Default rule set - Phase 1-5 rules
   static const List<StockRule> _defaultRules = [
+    // Phase 1: Basic Rules
     WeakToStrongRule(),
     StrongToWeakRule(),
     BreakoutRule(),
@@ -32,6 +36,21 @@ class RuleEngine {
     PriceSpikeRule(),
     InstitutionalShiftRule(),
     NewsRule(),
+    // Phase 3: Technical Signal Rules
+    Week52HighRule(),
+    Week52LowRule(),
+    MAAlignmentBullishRule(),
+    MAAlignmentBearishRule(),
+    RSIExtremeOverboughtRule(),
+    RSIExtremeOversoldRule(),
+    // Phase 4: Institutional Streak Rules
+    InstitutionalBuyStreakRule(),
+    InstitutionalSellStreakRule(),
+    // Phase 5: Price-Volume Divergence Rules
+    PriceVolumeBullishDivergenceRule(),
+    PriceVolumeBearishDivergenceRule(),
+    HighVolumeBreakoutRule(),
+    LowVolumeAccumulationRule(),
   ];
 
   final List<StockRule> _rules = [];
