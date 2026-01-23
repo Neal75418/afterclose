@@ -267,13 +267,16 @@ class UpdateService {
           var completed = 0;
           var historySynced = 0;
 
-          // Process in batches of 3 for gentle parallel execution (Avoid 504 Timeout)
-          const batchSize = 3;
+          // Process in batches of 1 for gentle sequential execution (Prevent 504 Timeout)
+          // Since each stock fetches ~6 months (6 requests), parallelizing even 3 stocks
+          // creates unstable bursts of 18 requests. Sequential is safer for first run.
+          const batchSize = 1;
           final failedSymbols = <String>[];
 
           for (var i = 0; i < total; i += batchSize) {
-            // Throttle: Small delay between batches to respect server limits
-            if (i > 0) await Future.delayed(const Duration(milliseconds: 1000));
+            // Throttle: Delay between stocks to respect server limits
+            // 200ms is enough if batchSize=1 because PriceRepo has internal delays too
+            if (i > 0) await Future.delayed(const Duration(milliseconds: 200));
 
             final batchEnd = (i + batchSize).clamp(0, total);
             final batch = symbolsNeedingData.sublist(i, batchEnd);
