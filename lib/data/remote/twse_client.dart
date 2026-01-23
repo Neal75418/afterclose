@@ -548,6 +548,68 @@ class TwseClient {
       return null;
     }
   }
+
+  /// Get valuation data (PE, PBR, Yield) for all stocks
+  ///
+  /// Endpoint: /rwd/zh/afterTrading/BWIBBU_d
+  Future<List<TwseValuation>> getAllStockValuation({DateTime? date}) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'response': 'json',
+        'selectType': 'ALL',
+      };
+
+      if (date != null) {
+        final dateStr =
+            '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+        queryParams['date'] = dateStr;
+      }
+
+      final response = await _dio.get(
+        '/rwd/zh/afterTrading/BWIBBU_d',
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data['stat'] != 'OK' || data['data'] == null) {
+          return [];
+        }
+
+        final dateStr = data['date']?.toString() ?? '';
+        final resDate = _parseAdDate(dateStr);
+        final List<dynamic> rows = data['data'];
+
+        return rows
+            .map((row) => _parseValuationRow(row as List<dynamic>, resDate))
+            .whereType<TwseValuation>()
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  TwseValuation? _parseValuationRow(List<dynamic> row, DateTime date) {
+    try {
+      // Row: [Code, Name, PE, Div, DivYear, Yield, PBR]
+      if (row.length < 7) return null;
+
+      final code = row[0]?.toString() ?? '';
+      if (code.isEmpty) return null;
+
+      return TwseValuation(
+        date: date,
+        code: code,
+        per: _parseFormattedDouble(row[2]),
+        dividendYield: _parseFormattedDouble(row[5]),
+        pbr: _parseFormattedDouble(row[6]),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 }
 
 // ============================================
@@ -792,4 +854,21 @@ class TwseMarginTrading {
     }
     return null;
   }
+}
+
+/// Valuation data from TWSE (BWIBBU_d)
+class TwseValuation {
+  const TwseValuation({
+    required this.date,
+    required this.code,
+    this.per,
+    this.dividendYield,
+    this.pbr,
+  });
+
+  final DateTime date;
+  final String code;
+  final double? per;
+  final double? dividendYield;
+  final double? pbr;
 }

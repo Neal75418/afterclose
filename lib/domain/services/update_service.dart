@@ -446,49 +446,62 @@ class UpdateService {
       // Step 4.6: Fetch fundamental data (revenue, PE, PBR, dividend yield)
       final fundamentalRepo = _fundamentalRepo;
       if (fundamentalRepo != null) {
-        onProgress?.call(4, 10, '取得基本面資料');
+        onProgress?.call(4, 10, '取得基本面資料 (PE/PBR)');
         try {
+          // 1. Valuation: Full Market (TWSE Free - BWIBBU_d)
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.6: Syncing full market valuation (TWSE)...',
+          );
+          final valCount = await fundamentalRepo.syncAllMarketValuation(
+            normalizedDate,
+          );
+
+          // 2. Revenue: Watchlist Only (FinMind)
+          // Since revenue is monthly, checking for updates is less frequent,
+          // but we sync watchlist to ensure fresh data.
+          onProgress?.call(4, 10, '取得營收資料 (自選股)');
           final watchlist = await _db.getWatchlist();
-          final symbolsForFundamental = <String>{
-            ...watchlist.map((w) => w.symbol),
-            ..._popularStocks,
-          }.toList();
+          final symbolsForRevenue = watchlist.map((w) => w.symbol).toList();
 
           AppLogger.info(
             'UpdateService',
-            'Step 4.6: Syncing fundamental data for ${symbolsForFundamental.length} stocks...',
+            'Step 4.6: Syncing revenue for ${symbolsForRevenue.length} stocks (FinMind)...',
           );
 
           // Sync last 13 months of revenue data (for YoY comparison)
           final revenueStartDate = DateTime(
             normalizedDate.year - 1,
             normalizedDate.month - 1,
+            1, // First day of month
           );
 
-          var syncedCount = 0;
+          var syncedRevenueCount = 0;
           var errorCount = 0;
 
-          // Process in chunks for controlled parallelism
+          // Process revenue in chunks (FinMind Rate Limits apply!)
+          // 5 stocks per batch, throttle 1s between batches
           const chunkSize = 5;
-          for (var i = 0; i < symbolsForFundamental.length; i += chunkSize) {
-            final chunk = symbolsForFundamental
-                .skip(i)
-                .take(chunkSize)
-                .toList();
+          for (var i = 0; i < symbolsForRevenue.length; i += chunkSize) {
+            final chunk = symbolsForRevenue.skip(i).take(chunkSize).toList();
+
+            // Throttle to respect FinMind limits (600/hour ~ 10/min)
+            // We should be careful. 5 calls then wait.
+            if (i > 0) await Future.delayed(const Duration(milliseconds: 1000));
 
             final futures = chunk.map((symbol) async {
               try {
-                await fundamentalRepo.syncAll(
+                final count = await fundamentalRepo.syncMonthlyRevenue(
                   symbol: symbol,
                   startDate: revenueStartDate,
                   endDate: normalizedDate,
                 );
-                return true;
+                return count > 0;
               } catch (e) {
                 if (errorCount < 3) {
                   AppLogger.warning(
                     'UpdateService',
-                    'Fundamental sync failed for $symbol',
+                    'Revenue sync failed for $symbol',
                     e,
                   );
                 }
@@ -498,12 +511,12 @@ class UpdateService {
             });
 
             final results = await Future.wait(futures);
-            syncedCount += results.where((r) => r).length;
+            syncedRevenueCount += results.where((r) => r).length;
           }
 
           AppLogger.info(
             'UpdateService',
-            'Step 4.6 complete: synced $syncedCount/${symbolsForFundamental.length} stocks',
+            'Step 4.6 complete: Valuation=$valCount, Revenue=$syncedRevenueCount stocks',
           );
         } catch (e) {
           result.errors.add('基本面資料更新失敗: $e');

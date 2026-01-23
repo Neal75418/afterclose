@@ -1,6 +1,7 @@
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,11 +11,14 @@ class FundamentalRepository {
   FundamentalRepository({
     required AppDatabase db,
     required FinMindClient finMind,
+    TwseClient? twse,
   }) : _db = db,
-       _finMind = finMind;
+       _finMind = finMind,
+       _twse = twse ?? TwseClient();
 
   final AppDatabase _db;
   final FinMindClient _finMind;
+  final TwseClient _twse;
 
   /// Sync monthly revenue data for a stock
   ///
@@ -105,6 +109,42 @@ class FundamentalRepository {
     }
   }
 
+  /// Sync valuation data for ALL stocks using TWSE BWIBBU_d (Free, Unlimited)
+  ///
+  /// Replaces individual FinMind calls for daily updates.
+  Future<int> syncAllMarketValuation(DateTime date) async {
+    try {
+      final data = await _twse.getAllStockValuation(date: date);
+
+      if (data.isEmpty) return 0;
+
+      // Convert to database entries
+      // Filter out invalid data (PE usually > 0, Yield >= 0)
+      final entries = data.map((r) {
+        return StockValuationCompanion.insert(
+          symbol: r.code,
+          date: r.date,
+          // TWSE PE is often '-' if negative earnings, returned as null by parser
+          // FinMind returns 0 or null?
+          // We store null if not available.
+          per: Value(r.per),
+          pbr: Value(r.pbr),
+          dividendYield: Value(r.dividendYield),
+        );
+      }).toList();
+
+      await _db.insertValuationData(entries);
+      return entries.length;
+    } catch (e) {
+      AppLogger.warning(
+        'FundamentalRepository',
+        'Failed to sync all market valuation for $date',
+        e,
+      );
+      return 0;
+    }
+  }
+
   /// Sync all fundamental data for a stock
   Future<({int revenue, int valuation})> syncAll({
     required String symbol,
@@ -132,5 +172,7 @@ class FundamentalRepository {
 final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final finMind = ref.watch(finMindClientProvider);
+  // TwseClient usually doesn't need provider as it holds no state/auth,
+  // but if we had one we could inject it. For now repo creates it or accepts null.
   return FundamentalRepository(db: db, finMind: finMind);
 });
