@@ -14,16 +14,26 @@ class AnalysisService {
       return null; // Not enough data
     }
 
-    // Calculate support and resistance
-    final (support, resistance) = findSupportResistance(priceHistory);
+    // Split history into "prior" (context) and "current" (action)
+    // to prevent look-ahead bias (current price affecting support/resistance levels)
+    // If we include "today" in finding Range/Resistance, "today" can never break out
+    // because "today" becomes the new High.
+    final priorHistory = priceHistory.length > 1
+        ? priceHistory.sublist(0, priceHistory.length - 1)
+        : priceHistory;
 
-    // Calculate 60-day range
-    final (rangeBottom, rangeTop) = findRange(priceHistory);
+    // Calculate support and resistance using PRIOR history
+    final (support, resistance) = findSupportResistance(priorHistory);
 
-    // Detect trend state
-    final trendState = detectTrendState(priceHistory);
+    // Calculate 60-day range using PRIOR history
+    final (rangeBottom, rangeTop) = findRange(priorHistory);
+
+    // Detect trend state using PRIOR history
+    final trendState = detectTrendState(priorHistory);
 
     // Detect reversal state
+    // Note: We pass full priceHistory here because it needs to see "Today's" price
+    // to compare against the "Prior" levels we just calculated.
     final reversalState = detectReversalState(
       priceHistory,
       trendState: trendState,
