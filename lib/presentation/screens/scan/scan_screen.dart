@@ -72,6 +72,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       conditionDescription: metadata.conditionKey.tr(),
       dataRequirements: dataReqLabels,
       thresholdInfo: metadata.thresholdInfo,
+      totalScanned: ref.watch(scanProvider).totalAnalyzedCount,
+      dataDate: ref.watch(scanProvider).dataDate,
       onClearFilter: () {
         ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
       },

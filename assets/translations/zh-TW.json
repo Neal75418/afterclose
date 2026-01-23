@@ -464,6 +464,8 @@
     "labelData": "需要資料",
     "hintEmpty": "今日無符合條件的股票，或資料尚未同步",
     "titleWithFilter": "「{filter}」無符合條件的股票",
-    "labelClear": "清除篩選"
+    "labelClear": "清除篩選",
+    "labelScanned": "已掃描 {count} 檔",
+    "labelDate": "資料日期 {date}"
   }
 }

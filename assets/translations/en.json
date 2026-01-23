@@ -464,6 +464,8 @@
     "labelData": "Data Required",
     "hintEmpty": "No matching stocks today, or data not synced.",
     "titleWithFilter": "\"{filter}\" No Matching Stocks",
-    "labelClear": "Clear Filter"
+    "labelClear": "Clear Filter",
+    "labelScanned": "Scanned {count}",
+    "labelDate": "Data Date {date}"
   }
 }

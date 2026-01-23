@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
@@ -308,6 +309,7 @@ class ScanState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.totalCount = 0,
+    this.totalAnalyzedCount = 0,
     this.error,
   });
 
@@ -328,6 +330,10 @@ class ScanState {
 
   /// Total count of items matching current filter
   final int totalCount;
+
+  /// Total count of items scanned (analyzed) today
+  final int totalAnalyzedCount;
+
   final String? error;
 
   ScanState copyWith({
@@ -340,6 +346,7 @@ class ScanState {
     bool? isLoadingMore,
     bool? hasMore,
     int? totalCount,
+    int? totalAnalyzedCount,
     String? error,
   }) {
     return ScanState(
@@ -352,6 +359,7 @@ class ScanState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       totalCount: totalCount ?? this.totalCount,
+      totalAnalyzedCount: totalAnalyzedCount ?? this.totalAnalyzedCount,
       error: error,
     );
   }
@@ -431,7 +439,10 @@ class ScanNotifier extends StateNotifier<ScanState> {
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
 
   // Cached data for pagination
+  // Cached data for pagination
   List<DailyAnalysisEntry> _allAnalyses = [];
+  List<DailyAnalysisEntry> _filteredAnalyses = [];
+  Map<String, List<DailyReasonEntry>> _allReasons = {};
   Set<String> _watchlistSymbols = {};
   DateContext? _dateCtx;
 
@@ -443,18 +454,27 @@ class ScanNotifier extends StateNotifier<ScanState> {
       // Use today's date for querying (update_service stores with this date)
       _dateCtx = DateContext.now();
 
-      // Get all analyses for today (with score > 0) - lightweight metadata only
+      // Get all analyses for today (with score > 0)
       final analyses = await _db.getAnalysisForDate(_dateCtx!.today);
       _allAnalyses = analyses.where((a) => a.score > 0).toList();
 
-      // Get actual data dates for display purposes (not for querying)
+      // Pre-fetch all reasons for filtering logic
+      if (_allAnalyses.isNotEmpty) {
+        final allSymbols = _allAnalyses.map((a) => a.symbol).toList();
+        _allReasons = await _db.getReasonsBatch(allSymbols, _dateCtx!.today);
+      } else {
+        _allReasons = {};
+      }
+
+      // Get actual data dates for display purposes
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
-
-      // Calculate dataDate for display - use the earlier of the two dates
       final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
 
-      if (_allAnalyses.isEmpty) {
+      // Apply initial filter (All)
+      _applyGlobalFilter(ScanFilter.all);
+
+      if (_filteredAnalyses.isEmpty) {
         state = state.copyWith(
           allStocks: [],
           stocks: [],
@@ -462,6 +482,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
           isLoading: false,
           hasMore: false,
           totalCount: 0,
+          totalAnalyzedCount: _allAnalyses.length,
         );
         return;
       }
@@ -470,24 +491,23 @@ class ScanNotifier extends StateNotifier<ScanState> {
       final watchlist = await _db.getWatchlist();
       _watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
-      // Load first page of detailed data
+      // Load first page
       final firstPageItems = await _loadItemsForAnalyses(
-        _allAnalyses.take(_kPageSize).toList(),
+        _filteredAnalyses.take(_kPageSize).toList(),
       );
 
       state = state.copyWith(
-        allStocks: firstPageItems,
-        stocks: _applySort(
-          _applyFilter(firstPageItems, state.filter),
-          state.sort,
-        ),
+        allStocks: [], // No longer used for filtering
+        stocks: firstPageItems,
         dataDate: dataDate,
         isLoading: false,
-        hasMore: _allAnalyses.length > _kPageSize,
-        totalCount: _allAnalyses.length,
+        hasMore: _filteredAnalyses.length > _kPageSize,
+        totalCount: _filteredAnalyses.length,
+        totalAnalyzedCount: _allAnalyses.length,
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+      AppLogger.error('ScanProvider', 'Load data failed', e);
     }
   }
 
@@ -498,33 +518,79 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final currentCount = state.allStocks.length;
-      final remainingAnalyses = _allAnalyses
-          .skip(currentCount)
+      final currentLen = state.stocks.length;
+      final nextPageAnalyses = _filteredAnalyses
+          .skip(currentLen)
           .take(_kPageSize)
           .toList();
 
-      if (remainingAnalyses.isEmpty) {
+      if (nextPageAnalyses.isEmpty) {
         state = state.copyWith(isLoadingMore: false, hasMore: false);
         return;
       }
 
-      final newItems = await _loadItemsForAnalyses(remainingAnalyses);
-      final updatedAll = [...state.allStocks, ...newItems];
-
-      // Reapply filter and sort
-      final filtered = _applyFilter(updatedAll, state.filter);
-      final sorted = _applySort(filtered, state.sort);
+      final newItems = await _loadItemsForAnalyses(nextPageAnalyses);
 
       state = state.copyWith(
-        allStocks: updatedAll,
-        stocks: sorted,
+        stocks: [...state.stocks, ...newItems],
         isLoadingMore: false,
-        hasMore: updatedAll.length < _allAnalyses.length,
+        hasMore: (currentLen + newItems.length) < _filteredAnalyses.length,
       );
     } catch (e) {
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
+  }
+
+  /// Set filter
+  void setFilter(ScanFilter filter) {
+    if (filter == state.filter) return;
+
+    // Apply global filter
+    _applyGlobalFilter(filter);
+
+    // Reset pagination and reload first page
+    state = state.copyWith(filter: filter, isLoading: true, stocks: []);
+    _reloadFirstPage();
+  }
+
+  /// Helper to reload first page after filter/sort change
+  Future<void> _reloadFirstPage() async {
+    try {
+      final firstPageItems = await _loadItemsForAnalyses(
+        _filteredAnalyses.take(_kPageSize).toList(),
+      );
+
+      state = state.copyWith(
+        stocks: firstPageItems,
+        isLoading: false,
+        hasMore: _filteredAnalyses.length > _kPageSize,
+        totalCount: _filteredAnalyses.length,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// Apply global filter to _allAnalyses -> _filteredAnalyses
+  void _applyGlobalFilter(ScanFilter filter) {
+    if (filter == ScanFilter.all) {
+      _filteredAnalyses = List.from(_allAnalyses);
+      return;
+    }
+
+    _filteredAnalyses = _allAnalyses.where((analysis) {
+      // Must have detailed reasons loaded
+      final reasons = _allReasons[analysis.symbol];
+      if (reasons == null || reasons.isEmpty) return false;
+
+      // Check if any reason matches filter code
+      // Note: filter.reasonCode is a STRING code from ReasonType.
+      // DailyReasonEntry.reasonType is also a STRING code.
+      // They should match directly.
+      if (filter.reasonCode == null) return true;
+
+      return reasons.any((r) => r.reasonType == filter.reasonCode);
+    }).toList();
   }
 
   /// Load detailed stock data for a batch of analyses
@@ -579,66 +645,29 @@ class ScanNotifier extends StateNotifier<ScanState> {
     }).toList();
   }
 
-  /// Set filter - filters from original data, not already-filtered data
-  void setFilter(ScanFilter filter) {
-    if (filter == state.filter) return;
-
-    // Filter from original unfiltered data
-    final filtered = _applyFilter(state.allStocks, filter);
-    final sorted = _applySort(filtered, state.sort);
-
-    state = state.copyWith(filter: filter, stocks: sorted);
-  }
-
   /// Set sort
   void setSort(ScanSort sort) {
     if (sort == state.sort) return;
 
-    // Re-filter then sort to ensure consistent state
-    final filtered = _applyFilter(state.allStocks, state.filter);
-    final sorted = _applySort(filtered, sort);
+    // Apply global sort
+    _applyGlobalSort(sort);
 
-    state = state.copyWith(sort: sort, stocks: sorted);
+    // Reset pagination and reload first page
+    state = state.copyWith(sort: sort, isLoading: true, stocks: []);
+    _reloadFirstPage();
   }
 
-  /// Apply filter to stocks
-  List<ScanStockItem> _applyFilter(
-    List<ScanStockItem> stocks,
-    ScanFilter filter,
-  ) {
-    if (filter == ScanFilter.all || filter.reasonCode == null) {
-      return List.from(stocks);
+  /// Apply global sort to _filteredAnalyses
+  void _applyGlobalSort(ScanSort sort) {
+    // Note: DailyAnalysisEntry only has score.
+    // Price change sort requires loading detailed data which we don't do globally yet.
+    // For now, we fallback to score sort (or keep current order if price change requested).
+    if (sort == ScanSort.scoreAsc) {
+      _filteredAnalyses.sort((a, b) => a.score.compareTo(b.score));
+    } else {
+      // Default: Score Desc
+      _filteredAnalyses.sort((b, a) => a.score.compareTo(b.score));
     }
-
-    return stocks
-        .where((s) => s.reasons.any((r) => r.reasonType == filter.reasonCode))
-        .toList();
-  }
-
-  /// Apply sort to stocks
-  List<ScanStockItem> _applySort(List<ScanStockItem> stocks, ScanSort sort) {
-    final sorted = List<ScanStockItem>.from(stocks);
-
-    switch (sort) {
-      case ScanSort.scoreDesc:
-        sorted.sort((a, b) => b.score.compareTo(a.score));
-      case ScanSort.scoreAsc:
-        sorted.sort((a, b) => a.score.compareTo(b.score));
-      case ScanSort.priceChangeDesc:
-        sorted.sort((a, b) {
-          final aChange = a.priceChange ?? double.negativeInfinity;
-          final bChange = b.priceChange ?? double.negativeInfinity;
-          return bChange.compareTo(aChange);
-        });
-      case ScanSort.priceChangeAsc:
-        sorted.sort((a, b) {
-          final aChange = a.priceChange ?? double.infinity;
-          final bChange = b.priceChange ?? double.infinity;
-          return aChange.compareTo(bChange);
-        });
-    }
-
-    return sorted;
   }
 
   /// Toggle watchlist for a stock
@@ -651,18 +680,13 @@ class ScanNotifier extends StateNotifier<ScanState> {
       await _db.addToWatchlist(symbol);
     }
 
-    // Update both allStocks and stocks using copyWith
-    final updatedAll = state.allStocks.map((s) {
-      if (s.symbol == symbol) return s.copyWith(isInWatchlist: !isInWatchlist);
-      return s;
-    }).toList();
-
+    // Update stocks using copyWith (allStocks is unused)
     final updatedFiltered = state.stocks.map((s) {
       if (s.symbol == symbol) return s.copyWith(isInWatchlist: !isInWatchlist);
       return s;
     }).toList();
 
-    state = state.copyWith(allStocks: updatedAll, stocks: updatedFiltered);
+    state = state.copyWith(stocks: updatedFiltered);
   }
 }
 

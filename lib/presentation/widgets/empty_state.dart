@@ -156,6 +156,8 @@ class EmptyStates {
     required String conditionDescription,
     required List<String> dataRequirements,
     String? thresholdInfo,
+    int? totalScanned,
+    DateTime? dataDate,
     VoidCallback? onClearFilter,
   }) {
     return _EmptyStateWithMeta(
@@ -163,6 +165,8 @@ class EmptyStates {
       conditionDescription: conditionDescription,
       dataRequirements: dataRequirements,
       thresholdInfo: thresholdInfo,
+      totalScanned: totalScanned,
+      dataDate: dataDate,
       onClearFilter: onClearFilter,
     );
   }
@@ -223,6 +227,8 @@ class _EmptyStateWithMeta extends StatelessWidget {
     required this.conditionDescription,
     required this.dataRequirements,
     this.thresholdInfo,
+    this.totalScanned,
+    this.dataDate,
     this.onClearFilter,
   });
 
@@ -230,6 +236,8 @@ class _EmptyStateWithMeta extends StatelessWidget {
   final String conditionDescription;
   final List<String> dataRequirements;
   final String? thresholdInfo;
+  final int? totalScanned;
+  final DateTime? dataDate;
   final VoidCallback? onClearFilter;
 
   @override
@@ -297,6 +305,78 @@ class _EmptyStateWithMeta extends StatelessWidget {
             ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
 
             const SizedBox(height: 16),
+
+            // Diagnostic Info (Scanned Count & Date)
+            if (totalScanned != null || dataDate != null) ...[
+              Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainer,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (dataDate != null) ...[
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 14,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'filterMeta.labelDate'.tr(
+                          namedArgs: {
+                            'date': DateFormat('MM/dd').format(dataDate!),
+                          },
+                        ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (totalScanned != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 1,
+                          height: 12,
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ],
+                    if (totalScanned != null) ...[
+                      Icon(
+                        Icons.analytics_outlined,
+                        size: 14,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'filterMeta.labelScanned'.tr(
+                          namedArgs: {
+                            'count': NumberFormat.decimalPattern().format(
+                              totalScanned,
+                            ),
+                          },
+                        ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ).animate().fadeIn(delay: 150.ms, duration: 300.ms),
+            ],
 
             // Condition description card
             Container(
