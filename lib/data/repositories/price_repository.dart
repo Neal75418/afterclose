@@ -325,10 +325,10 @@ class PriceRepository implements IPriceRepository {
       }
     }
 
-    // Sort by score (highest first) and take top 100
+    // Sort by score (highest first) and take top 300
     candidates.sort((a, b) => b.score.compareTo(a.score));
 
-    return candidates.take(100).map((c) => c.symbol).toList();
+    return candidates.take(300).map((c) => c.symbol).toList();
   }
 
   /// Sync prices for a list of specific symbols (free account fallback)
