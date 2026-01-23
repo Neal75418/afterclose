@@ -297,50 +297,27 @@ class PriceRepository implements IPriceRepository {
       if (prevClose <= 0) continue;
 
       // Filter: Skip very low volume stocks (< 50 lots = 50,000 shares)
-      // This removes inactive stocks but keeps most analyzable ones
+      // This removes inactive stocks (zombie stocks) to keep analysis meaningful
       if ((price.volume ?? 0) < 50000) continue;
 
+      // FULL MARKET STRATEGY:
+      // Include ALL active stocks regardless of price change.
+      // This allows the Rule Engine to find patterns even in consolidation
+
       final changePercent = (price.change! / prevClose).abs() * 100;
-
-      // Strategy: Capture both volatile stocks AND steadily moving ones
-
-      // 1. High volatility (Change >= 2%) - High priority
-      if (changePercent >= 2.0) {
-        candidates.add(
-          _QuickCandidate(
-            symbol: price.code,
-            score: 50 + changePercent, // Base score 50 + pct
-          ),
-        );
-        continue;
-      }
-
-      // 2. Moderate/Small movement (Change >= 0.5%) - Medium priority
-      // We want to catch stocks that are creeping up/down too
-      if (changePercent >= 0.5) {
-        candidates.add(
-          _QuickCandidate(symbol: price.code, score: 10 + changePercent),
-        );
-        continue;
-      }
-
-      // 3. High Volume but low price change (Consolidation/Accumulation?)
-      // If volume > 1000 lots (1,000,000 shares) even with 0% change
-      if ((price.volume ?? 0) > 1000000) {
-        candidates.add(
-          _QuickCandidate(
-            symbol: price.code,
-            score: 5.0, // Lower priority but included
-          ),
-        );
-      }
+      candidates.add(
+        _QuickCandidate(
+          symbol: price.code,
+          score: changePercent, // Simple score for sorting
+        ),
+      );
     }
 
-    // Sort by score (highest first) and take top 1000
-    // Expanded from 300 to 1000 to cover more market opportunities
+    // Sort by volatility just for display consistency
     candidates.sort((a, b) => b.score.compareTo(a.score));
 
-    return candidates.take(1000).map((c) => c.symbol).toList();
+    // Return ALL eligible candidates (Full Market Scan)
+    return candidates.map((c) => c.symbol).toList();
   }
 
   /// Sync prices for a list of specific symbols (free account fallback)
