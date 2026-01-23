@@ -134,9 +134,9 @@ class PriceRepository implements IPriceRepository {
         }
 
         // Rate limiting delay between months
-        // 200ms: Relaxed pace allows supporting batchSize=3
+        // 250ms: Safe sweet spot for batchSize=2
         if (i < monthsToFetch.length - 1) {
-          await Future.delayed(const Duration(milliseconds: 200));
+          await Future.delayed(const Duration(milliseconds: 250));
         }
       }
 

@@ -267,16 +267,16 @@ class UpdateService {
           var completed = 0;
           var historySynced = 0;
 
-          // Process in batches of 3 for Maximum Throughput (Latency Hiding)
-          // Batch=3, Delay=200ms (inter-month) => ~15 reqs/sec total.
-          // Theoretical speed: 0.5s per stock.
-          const batchSize = 3;
+          // Process in batches of 2 for improved throughput
+          // BatchSize 2 = ~12 requests in parallel bursts.
+          // Combined with 200ms inter-month delay, this aims for ~2s per batch.
+          const batchSize = 2;
           final failedSymbols = <String>[];
 
           for (var i = 0; i < total; i += batchSize) {
-            // Throttle: Moderate delay to drain larger bursts
-            // 300ms is safe for a 3-stock burst
-            if (i > 0) await Future.delayed(const Duration(milliseconds: 300));
+            // Throttle: Short breath between batches
+            // 200ms is minimal to reset connection states
+            if (i > 0) await Future.delayed(const Duration(milliseconds: 200));
 
             final batchEnd = (i + batchSize).clamp(0, total);
             final batch = symbolsNeedingData.sublist(i, batchEnd);
