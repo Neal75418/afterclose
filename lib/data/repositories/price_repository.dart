@@ -260,6 +260,7 @@ class PriceRepository implements IPriceRepository {
       return MarketSyncResult(
         count: priceEntries.length,
         candidates: candidates,
+        dataDate: prices.first.date,
       );
     } on NetworkException {
       rethrow;

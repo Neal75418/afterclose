@@ -70,8 +70,13 @@ abstract class IPriceRepository {
 
 /// Result of syncing all market prices
 class MarketSyncResult {
-  const MarketSyncResult({required this.count, required this.candidates});
+  const MarketSyncResult({
+    required this.count,
+    required this.candidates,
+    this.dataDate,
+  });
 
   final int count;
   final List<String> candidates;
+  final DateTime? dataDate;
 }

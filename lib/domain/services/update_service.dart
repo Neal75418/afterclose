@@ -106,7 +106,7 @@ class UpdateService {
     UpdateProgressCallback? onProgress,
   }) async {
     final targetDate = forDate ?? DateTime.now();
-    final normalizedDate = _normalizeDate(targetDate);
+    var normalizedDate = _normalizeDate(targetDate);
 
     // Create update run record
     final runId = await _db.createUpdateRun(
@@ -149,6 +149,23 @@ class UpdateService {
         final syncResult = await _priceRepo.syncAllPricesForDate(
           normalizedDate,
         );
+
+        // Date Correction: If TWSE returned data for a different date (e.g. yesterday),
+        // use that date for all subsequent data fetches (Institutional, Valuation, etc.)
+        if (syncResult.dataDate != null) {
+          final dataDate = _normalizeDate(syncResult.dataDate!);
+          if (dataDate.year != normalizedDate.year ||
+              dataDate.month != normalizedDate.month ||
+              dataDate.day != normalizedDate.day) {
+            AppLogger.info(
+              'UpdateService',
+              'Date Correction: Requested $normalizedDate, Got data for $dataDate. Adjusting effective date.',
+            );
+            normalizedDate = dataDate;
+            // Note: We don't update the 'runId' record date, keeping it as the "Run Date".
+          }
+        }
+
         result.pricesUpdated = syncResult.count;
         marketCandidates = syncResult.candidates;
         AppLogger.info(
