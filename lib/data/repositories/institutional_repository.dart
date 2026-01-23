@@ -5,17 +5,21 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 
 /// Repository for institutional investor trading data
 class InstitutionalRepository {
   InstitutionalRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
+    TwseClient? twseClient,
   }) : _db = database,
-       _client = finMindClient;
+       _client = finMindClient,
+       _twseClient = twseClient ?? TwseClient();
 
   final AppDatabase _db;
   final FinMindClient _client;
+  final TwseClient _twseClient;
 
   static final _dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -70,6 +74,63 @@ class InstitutionalRepository {
         'Failed to sync institutional data for $symbol',
         e,
       );
+    }
+  }
+
+  /// Sync institutional data for ALL stocks on a specific date
+  ///
+  /// Uses TWSE T86 API (free, full market).
+  /// This allows us to analyze institutional activity for non-watchlist stocks.
+  Future<int> syncAllMarketInstitutional(DateTime date) async {
+    try {
+      // TWSE API (T86) returns data for a specific date
+      // Note: T86 API usually takes date parameter in request,
+      // but TwseClient.getAllInstitutionalData currently hits the endpoint without date param
+      // which defaults to "latest trading day".
+      // TODO: If TwseClient doesn't support date param for T86, we can only sync TODAY.
+      // Let's check logic: TwseClient.getAllInstitutionalData() hardcodes '/rwd/zh/fund/T86'.
+      // Only query param is response=json. It fetches LATEST data.
+
+      // WAIT: We need to support fetching historical T86 if we want to backfill.
+      // TWSE T86 endpoint DOES support 'date' parameter (YYYYMMDD).
+      // I will assume I need to modify TwseClient later to support date,
+      // OR I implement the fetch here if I can't change TwseClient easily (I can).
+
+      // Let's assume for now we only sync LATEST/Target Date.
+      // If the date passed is not "today/latest", we might need to be careful.
+      // But typically we run this for "today's update".
+
+      final data = await _twseClient.getAllInstitutionalData(date: date);
+
+      if (data.isEmpty) return 0;
+
+      // Filter out invalid or zero-volume entries to save DB space
+      final validData = data
+          .where(
+            (item) =>
+                item.totalNet != 0 ||
+                item.foreignNet != 0 ||
+                item.investmentTrustNet != 0,
+          )
+          .toList();
+
+      final entries = validData.map((item) {
+        return DailyInstitutionalCompanion.insert(
+          symbol: item.code,
+          date: item.date,
+          foreignNet: Value(item.foreignNet),
+          investmentTrustNet: Value(item.investmentTrustNet),
+          dealerNet: Value(item.dealerNet),
+        );
+      }).toList();
+
+      await _db.insertInstitutionalData(entries);
+
+      return entries.length;
+    } on NetworkException {
+      rethrow;
+    } catch (e) {
+      throw DatabaseException('Failed to sync all institutional data', e);
     }
   }
 

@@ -178,14 +178,25 @@ class TwseClient {
   /// Get institutional investor trading data for all stocks
   ///
   /// Endpoint: /rwd/zh/fund/T86 (三大法人買賣超日報)
-  Future<List<TwseInstitutional>> getAllInstitutionalData() async {
+  Future<List<TwseInstitutional>> getAllInstitutionalData({
+    DateTime? date,
+  }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'response': 'json',
+        'selectType': 'ALLBUT0999',
+      };
+
+      if (date != null) {
+        // Format: YYYYMMDD
+        final dateStr =
+            '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+        queryParams['date'] = dateStr;
+      }
+
       final response = await _dio.get(
         '/rwd/zh/fund/T86',
-        queryParameters: {
-          'response': 'json',
-          'selectType': 'ALLBUT0999', // All stocks except 0999
-        },
+        queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
