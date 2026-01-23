@@ -296,42 +296,51 @@ class PriceRepository implements IPriceRepository {
       final prevClose = price.close! - price.change!;
       if (prevClose <= 0) continue;
 
+      // Filter: Skip very low volume stocks (< 50 lots = 50,000 shares)
+      // This removes inactive stocks but keeps most analyzable ones
+      if ((price.volume ?? 0) < 50000) continue;
+
       final changePercent = (price.change! / prevClose).abs() * 100;
 
-      // Criteria 1: Significant price movement (>= 2%)
+      // Strategy: Capture both volatile stocks AND steadily moving ones
+
+      // 1. High volatility (Change >= 2%) - High priority
       if (changePercent >= 2.0) {
         candidates.add(
           _QuickCandidate(
             symbol: price.code,
-            score: changePercent * 10, // Higher change = higher priority
+            score: 50 + changePercent, // Base score 50 + pct
           ),
         );
         continue;
       }
 
-      // Criteria 2: Near limit (接近漲跌停, ~9-10%)
-      if (changePercent >= 9.0) {
+      // 2. Moderate/Small movement (Change >= 0.5%) - Medium priority
+      // We want to catch stocks that are creeping up/down too
+      if (changePercent >= 0.5) {
+        candidates.add(
+          _QuickCandidate(symbol: price.code, score: 10 + changePercent),
+        );
+        continue;
+      }
+
+      // 3. High Volume but low price change (Consolidation/Accumulation?)
+      // If volume > 1000 lots (1,000,000 shares) even with 0% change
+      if ((price.volume ?? 0) > 1000000) {
         candidates.add(
           _QuickCandidate(
             symbol: price.code,
-            score: 100.0, // High priority for limit moves
+            score: 5.0, // Lower priority but included
           ),
-        );
-        continue;
-      }
-
-      // Criteria 3: Moderate movement (1.5%+) - lower priority
-      if (changePercent >= 1.5) {
-        candidates.add(
-          _QuickCandidate(symbol: price.code, score: changePercent * 5),
         );
       }
     }
 
-    // Sort by score (highest first) and take top 300
+    // Sort by score (highest first) and take top 1000
+    // Expanded from 300 to 1000 to cover more market opportunities
     candidates.sort((a, b) => b.score.compareTo(a.score));
 
-    return candidates.take(300).map((c) => c.symbol).toList();
+    return candidates.take(1000).map((c) => c.symbol).toList();
   }
 
   /// Sync prices for a list of specific symbols (free account fallback)
