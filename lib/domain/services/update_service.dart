@@ -242,11 +242,14 @@ class UpdateService {
           var completed = 0;
           var historySynced = 0;
 
-          // Process in batches of 5 for parallel execution
-          const batchSize = 5;
+          // Process in batches of 3 for gentle parallel execution (Avoid 504 Timeout)
+          const batchSize = 3;
           final failedSymbols = <String>[];
 
           for (var i = 0; i < total; i += batchSize) {
+            // Throttle: Small delay between batches to respect server limits
+            if (i > 0) await Future.delayed(const Duration(milliseconds: 1000));
+
             final batchEnd = (i + batchSize).clamp(0, total);
             final batch = symbolsNeedingData.sublist(i, batchEnd);
 

@@ -287,7 +287,9 @@ class PriceRepository implements IPriceRepository {
 
       // Skip ETFs, warrants, etc. (symbols not starting with digit or too short)
       if (price.code.length < 4) continue;
-      if (!RegExp(r'^\d').hasMatch(price.code)) continue;
+      // STRICT FILTER: Only allow pure numeric symbols (removes 02001L, 00631L etc.)
+      // This avoids "Invalid argument" errors and focuses analysis on Stocks/ETFs
+      if (!RegExp(r'^\d+$').hasMatch(price.code)) continue;
 
       // Calculate price change percentage
       final prevClose = price.close! - price.change!;
