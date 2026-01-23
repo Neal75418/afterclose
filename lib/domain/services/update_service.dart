@@ -269,14 +269,14 @@ class UpdateService {
 
           // Process in batches of 2 for improved throughput
           // BatchSize 2 = ~12 requests in parallel bursts.
-          // Combined with 200ms inter-month delay, this provides stable high speed.
+          // Combined with 120ms inter-month delay, this aims for ~2s per batch.
           const batchSize = 2;
           final failedSymbols = <String>[];
 
           for (var i = 0; i < total; i += batchSize) {
-            // Throttle: Moderate delay between batches
-            // 500ms allows server to fully drain the burst of requests
-            if (i > 0) await Future.delayed(const Duration(milliseconds: 500));
+            // Throttle: Short breath between batches
+            // 150ms is minimal to reset connection states
+            if (i > 0) await Future.delayed(const Duration(milliseconds: 150));
 
             final batchEnd = (i + batchSize).clamp(0, total);
             final batch = symbolsNeedingData.sublist(i, batchEnd);
