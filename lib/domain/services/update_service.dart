@@ -489,66 +489,23 @@ class UpdateService {
             force: forceFetch,
           );
 
-          // 2. Revenue: Watchlist Only (FinMind)
-          // Since revenue is monthly, checking for updates is less frequent,
-          // but we sync watchlist to ensure fresh data.
-          onProgress?.call(4, 10, '取得營收資料 (自選股)');
-          final watchlist = await _db.getWatchlist();
-          final symbolsForRevenue = watchlist.map((w) => w.symbol).toList();
+          // 2. Revenue: Full Market (TWSE Open Data - Free, Unlimited)
+          // Uses https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+          // This returns the latest available month's revenue for ALL stocks at once!
+          onProgress?.call(4, 10, '取得營收資料 (全市場)');
 
           AppLogger.info(
             'UpdateService',
-            'Step 4.6: Syncing revenue for ${symbolsForRevenue.length} stocks (FinMind)...',
+            'Step 4.6: Syncing full market revenue (TWSE Open Data)...',
           );
 
-          // Sync last 13 months of revenue data (for YoY comparison)
-          final revenueStartDate = DateTime(
-            normalizedDate.year - 1,
-            normalizedDate.month - 1,
-            1, // First day of month
+          final revenueCount = await fundamentalRepo.syncAllMarketRevenue(
+            normalizedDate,
           );
-
-          var syncedRevenueCount = 0;
-          var errorCount = 0;
-
-          // Process revenue in chunks (FinMind Rate Limits apply!)
-          // 5 stocks per batch, throttle 1s between batches
-          const chunkSize = 5;
-          for (var i = 0; i < symbolsForRevenue.length; i += chunkSize) {
-            final chunk = symbolsForRevenue.skip(i).take(chunkSize).toList();
-
-            // Throttle to respect FinMind limits (600/hour ~ 10/min)
-            // We should be careful. 5 calls then wait.
-            if (i > 0) await Future.delayed(const Duration(milliseconds: 1000));
-
-            final futures = chunk.map((symbol) async {
-              try {
-                final count = await fundamentalRepo.syncMonthlyRevenue(
-                  symbol: symbol,
-                  startDate: revenueStartDate,
-                  endDate: normalizedDate,
-                );
-                return count > 0;
-              } catch (e) {
-                if (errorCount < 3) {
-                  AppLogger.warning(
-                    'UpdateService',
-                    'Revenue sync failed for $symbol',
-                    e,
-                  );
-                }
-                errorCount++;
-                return false;
-              }
-            });
-
-            final results = await Future.wait(futures);
-            syncedRevenueCount += results.where((r) => r).length;
-          }
 
           AppLogger.info(
             'UpdateService',
-            'Step 4.6 complete: Valuation=$valCount, Revenue=$syncedRevenueCount stocks',
+            'Step 4.6 complete: Valuation=$valCount, Revenue=$revenueCount stocks',
           );
         } catch (e) {
           result.errors.add('基本面資料更新失敗: $e');
@@ -683,6 +640,8 @@ class UpdateService {
             ),
           _db.getLatestMonthlyRevenuesBatch(candidates),
           _db.getLatestValuationsBatch(candidates),
+          // NEW: Fetch revenue history for MoM growth rule
+          _db.getRecentMonthlyRevenueBatch(candidates, months: 6),
         ];
 
         final batchResults = await Future.wait(futures);
@@ -694,6 +653,8 @@ class UpdateService {
         final revenueMap = batchResults[3] as Map<String, MonthlyRevenueEntry>;
         final valuationMap =
             batchResults[4] as Map<String, StockValuationEntry>;
+        final revenueHistoryMap =
+            batchResults[5] as Map<String, List<MonthlyRevenueEntry>>;
 
         // Get recently recommended symbols for cooldown
         final recentlyRecommended = await _analysisRepo
@@ -708,6 +669,7 @@ class UpdateService {
           institutionalMap: institutionalMap,
           revenueMap: revenueMap,
           valuationMap: valuationMap,
+          revenueHistoryMap: revenueHistoryMap,
           recentlyRecommended: recentlyRecommended,
           marketDataBuilder: _marketDataRepo != null
               ? _buildMarketDataContext

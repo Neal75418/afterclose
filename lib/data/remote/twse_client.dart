@@ -610,11 +610,94 @@ class TwseClient {
       return null;
     }
   }
+
+  /// Get monthly revenue for ALL stocks (latest month)
+  ///
+  /// Source: TWSE Open Data API (t187ap05_L)
+  /// Endpoint: https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+  ///
+  /// This API returns the latest available revenue data for all listed companies.
+  /// It is much faster than fetching individual stocks via FinMind.
+  Future<List<TwseMonthlyRevenue>> getAllMonthlyRevenue() async {
+    try {
+      // Use full URL to override base URL (www.twse.com.tw)
+      final response = await _dio.get(
+        'https://openapi.twse.com.tw/v1/opendata/t187ap05_L',
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = response.data;
+        return data
+            .map(
+              (json) =>
+                  TwseMonthlyRevenue.fromJson(json as Map<String, dynamic>),
+            )
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      AppLogger.warning('TwseClient', 'Failed to fetch Open Data revenue', e);
+      return [];
+    }
+  }
 }
 
 // ============================================
 // Data Models
 // ============================================
+
+/// Monthly revenue data from TWSE Open Data
+class TwseMonthlyRevenue {
+  const TwseMonthlyRevenue({
+    required this.year,
+    required this.month,
+    required this.code,
+    required this.name,
+    required this.revenue,
+    required this.momGrowth,
+    required this.yoyGrowth,
+  });
+
+  factory TwseMonthlyRevenue.fromJson(Map<String, dynamic> json) {
+    // keys: "資料年月"(11201), "公司代號", "公司名稱", "營業收入-當月營收",
+    // "營業收入-上月比較增減(%)", "營業收入-去年同月增減(%)"
+
+    final ym = json['資料年月']?.toString() ?? '';
+    int year = 0;
+    int month = 0;
+    if (ym.length >= 5) {
+      final yStr = ym.substring(0, ym.length - 2);
+      final mStr = ym.substring(ym.length - 2);
+      year = (int.tryParse(yStr) ?? 0) + 1911;
+      month = int.tryParse(mStr) ?? 0;
+    }
+
+    // Helper to parse number string with commas usually NOT present in OpenData but just in case
+    double parseVal(String? key) {
+      if (key == null) return 0.0;
+      final val = json[key]?.toString() ?? '';
+      return double.tryParse(val.replaceAll(',', '')) ?? 0.0;
+    }
+
+    return TwseMonthlyRevenue(
+      year: year,
+      month: month,
+      code: json['公司代號']?.toString() ?? '',
+      name: json['公司名稱']?.toString() ?? '',
+      revenue: parseVal('營業收入-當月營收'),
+      momGrowth: parseVal('營業收入-上月比較增減(%)'),
+      yoyGrowth: parseVal('營業收入-去年同月增減(%)'),
+    );
+  }
+
+  final int year;
+  final int month;
+  final String code;
+  final String name;
+  final double revenue; // in thousands (usually)
+  final double momGrowth; // %
+  final double yoyGrowth; // %
+}
 
 /// Daily price data from TWSE
 class TwseDailyPrice {

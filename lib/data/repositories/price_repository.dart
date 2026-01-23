@@ -204,7 +204,39 @@ class PriceRepository implements IPriceRepository {
     try {
       AppLogger.info('PriceRepo', 'syncAllPricesForDate: date=$date');
 
-      // Use TWSE Open Data - free, unlimited, all market in one call!
+      // Normalize date to midnight local time for consistent DB comparison
+      // This fixes timezone issues where input might be UTC but DB stores local
+      final normalizedDate = DateTime(date.year, date.month, date.day);
+
+      // OPTIMIZATION: Check database FIRST before making API call
+      // This avoids unnecessary network requests when data already exists
+      if (!force) {
+        final existingCount = await _db.getPriceCountForDate(normalizedDate);
+        AppLogger.debug(
+          'PriceRepo',
+          'DB check for $normalizedDate: $existingCount records',
+        );
+        if (existingCount > 1000) {
+          AppLogger.info(
+            'PriceRepo',
+            'Data for $normalizedDate already exists ($existingCount records). Skipping API call.',
+          );
+
+          // We still need candidates for the pipeline, so load them from DB
+          // Get stocks with significant price/volume changes from DB
+          final candidates = await _quickFilterCandidatesFromDb(normalizedDate);
+
+          return MarketSyncResult(
+            count: existingCount,
+            candidates: candidates,
+            dataDate: normalizedDate,
+            skipped: true,
+          );
+        }
+      }
+
+      // Only call API if we don't have data yet
+      AppLogger.info('PriceRepo', 'Fetching prices from TWSE API...');
       final prices = await _twseClient.getAllDailyPrices();
 
       AppLogger.info('PriceRepo', 'Got ${prices.length} prices from TWSE');
@@ -216,30 +248,9 @@ class PriceRepository implements IPriceRepository {
         return const MarketSyncResult(count: 0, candidates: []);
       }
 
-      // Check if we already have data for this date
-      // This prevents "duplicate actions" / wasting time on re-writing valid data
-      // We still return candidates so the pipeline can continue (e.g. analysis)
-      final dataDate = prices.first.date;
-      final existingCount = await _db.getPriceCountForDate(dataDate);
-
-      // If we have substantial data (> 1000 records) and not forcing update
-      // Then we assume we already synced for this date.
-      if (!force && existingCount > 1000) {
-        AppLogger.info(
-          'PriceRepo',
-          'Data for $dataDate already exists ($existingCount records). Skipping DB write.',
-        );
-
-        // Quick filter is still useful for the pipeline
-        final candidates = _quickFilterCandidates(prices);
-
-        return MarketSyncResult(
-          count: existingCount,
-          candidates: candidates,
-          dataDate: dataDate,
-          skipped: true,
-        );
-      }
+      // Check if the returned data date matches what we requested
+      // TWSE might return yesterday's data if called before market close
+      AppLogger.info('PriceRepo', 'API returned data for ${prices.first.date}');
 
       // Build price entries
       final priceEntries = prices.map((price) {
@@ -344,6 +355,44 @@ class PriceRepository implements IPriceRepository {
     candidates.sort((a, b) => b.score.compareTo(a.score));
 
     // Return ALL eligible candidates (Full Market Scan)
+    return candidates.map((c) => c.symbol).toList();
+  }
+
+  /// Quick filter candidates from database (when API is skipped)
+  ///
+  /// Similar to _quickFilterCandidates but reads from the local database
+  /// instead of API response. Used when we already have today's data.
+  Future<List<String>> _quickFilterCandidatesFromDb(DateTime date) async {
+    // Get all prices for the date from DB
+    final prices = await _db.getPricesForDate(date);
+
+    if (prices.isEmpty) return [];
+
+    final candidates = <_QuickCandidate>[];
+
+    for (final price in prices) {
+      // Skip if missing critical data
+      final close = price.close;
+      if (close == null || close <= 0) continue;
+
+      // Skip ETFs, warrants, etc.
+      if (price.symbol.length < 4) continue;
+      if (!RegExp(r'^\d+$').hasMatch(price.symbol)) continue;
+
+      // Skip very low volume stocks
+      if ((price.volume ?? 0) < 50000) continue;
+
+      // We need previous close to calculate change %
+      // For simplicity, just include all active stocks
+      // (The rule engine will do proper analysis anyway)
+      candidates.add(
+        _QuickCandidate(
+          symbol: price.symbol,
+          score: 0, // No ranking needed
+        ),
+      );
+    }
+
     return candidates.map((c) => c.symbol).toList();
   }
 

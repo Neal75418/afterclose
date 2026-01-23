@@ -203,6 +203,13 @@ class AppDatabase extends _$AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
+  /// Get all price entries for a specific date
+  ///
+  /// Used for quick filtering candidates when API call is skipped.
+  Future<List<DailyPriceEntry>> getPricesForDate(DateTime date) {
+    return (select(dailyPrice)..where((t) => t.date.equals(date))).get();
+  }
+
   /// Get the latest data date from the database
   ///
   /// Returns the maximum date from daily_price table, which represents
@@ -1273,6 +1280,60 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
+  /// Get recent N months revenue data for multiple stocks (batch query)
+  ///
+  /// Returns a map of symbol -> list of revenue entries (sorted descending by date)
+  Future<Map<String, List<MonthlyRevenueEntry>>> getRecentMonthlyRevenueBatch(
+    List<String> symbols, {
+    int months = 6, // 6 months for MoM growth tracking
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    // Build placeholders for SQL IN clause
+    final placeholders = List.filled(symbols.length, '?').join(', ');
+
+    // Use ROW_NUMBER to get top N months per symbol
+    // This is more efficient than N separate queries
+    final query =
+        '''
+      SELECT * FROM (
+        SELECT mr.*, 
+               ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) as rn
+        FROM monthly_revenue mr
+        WHERE symbol IN ($placeholders)
+      ) ranked
+      WHERE rn <= ?
+      ORDER BY symbol, date DESC
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        ...symbols.map((s) => Variable.withString(s)),
+        Variable.withInt(months),
+      ],
+      readsFrom: {monthlyRevenue},
+    ).get();
+
+    // Group by symbol
+    final result = <String, List<MonthlyRevenueEntry>>{};
+    for (final row in results) {
+      final symbol = row.read<String>('symbol');
+      final entry = MonthlyRevenueEntry(
+        symbol: symbol,
+        date: row.read<DateTime>('date'),
+        revenueYear: row.read<int>('revenue_year'),
+        revenueMonth: row.read<int>('revenue_month'),
+        revenue: row.read<double>('revenue'),
+        momGrowth: row.readNullable<double>('mom_growth'),
+        yoyGrowth: row.readNullable<double>('yoy_growth'),
+      );
+      result.putIfAbsent(symbol, () => []).add(entry);
+    }
+
+    return result;
+  }
+
   /// Batch insert monthly revenue data
   Future<void> insertMonthlyRevenue(
     List<MonthlyRevenueCompanion> entries,
@@ -1282,6 +1343,20 @@ class AppDatabase extends _$AppDatabase {
         b.insert(monthlyRevenue, entry, mode: InsertMode.insertOrReplace);
       }
     });
+  }
+
+  /// Get count of monthly revenue entries for a specific year/month
+  ///
+  /// Used to check if we already have full market revenue data for a month
+  /// to avoid redundant API calls.
+  Future<int> getRevenueCountForYearMonth(int year, int month) async {
+    final countExpr = monthlyRevenue.symbol.count();
+    final query = selectOnly(monthlyRevenue)
+      ..addColumns([countExpr])
+      ..where(monthlyRevenue.revenueYear.equals(year))
+      ..where(monthlyRevenue.revenueMonth.equals(month));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
   }
 
   // ==========================================

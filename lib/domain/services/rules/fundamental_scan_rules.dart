@@ -120,10 +120,16 @@ class RevenueMomGrowthRule extends StockRule {
     if (consecutiveMonths >= RuleParams.revenueMomConsecutiveMonths) {
       final avgGrowth =
           growthRates.reduce((a, b) => a + b) / growthRates.length;
+
+      // Dynamic description based on whether it's single month or consecutive
+      final description = consecutiveMonths == 1
+          ? '本月營收月增 ${avgGrowth.toStringAsFixed(1)}%'
+          : '營收月增連續 $consecutiveMonths 個月正成長';
+
       return TriggeredReason(
         type: ReasonType.revenueMomGrowth,
         score: RuleScores.revenueMomGrowth,
-        description: '營收月增連續 $consecutiveMonths 個月正成長',
+        description: description,
         evidence: {
           'consecutiveMonths': consecutiveMonths,
           'avgMomGrowth': avgGrowth,

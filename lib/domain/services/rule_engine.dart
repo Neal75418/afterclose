@@ -102,6 +102,7 @@ class RuleEngine {
     String? symbol,
     MonthlyRevenueEntry? latestRevenue,
     StockValuationEntry? latestValuation,
+    List<MonthlyRevenueEntry>? revenueHistory,
   }) {
     if (priceHistory.isEmpty) return [];
 
@@ -112,6 +113,7 @@ class RuleEngine {
       news: recentNews,
       latestRevenue: latestRevenue,
       latestValuation: latestValuation,
+      revenueHistory: revenueHistory,
     );
 
     final triggered = <TriggeredReason>[];

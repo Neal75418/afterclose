@@ -152,6 +152,74 @@ class FundamentalRepository {
     }
   }
 
+  /// Sync monthly revenue for ALL stocks using TWSE Open Data (Free, Unlimited)
+  ///
+  /// Replaces individual FinMind calls for recent monthly updates.
+  /// Hits https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+  ///
+  /// Returns: Number of records synced, or -1 if skipped (already have data)
+  Future<int> syncAllMarketRevenue(DateTime date, {bool force = false}) async {
+    try {
+      // NOTE: OpenData only returns the LATEST month.
+      // We cannot specify a date. We just fetch what's available.
+
+      final data = await _twse.getAllMonthlyRevenue();
+
+      if (data.isEmpty) return 0;
+
+      // VERSION CHECK: Check if we already have data for this month
+      // This avoids redundant API calls and database writes
+      final sample = data.first;
+      final dataYear = sample.year;
+      final dataMonth = sample.month;
+
+      if (!force) {
+        final existingCount = await _db.getRevenueCountForYearMonth(
+          dataYear,
+          dataMonth,
+        );
+        // If we already have >1000 records for this month, skip
+        // (Full market usually has ~1800+ stocks)
+        if (existingCount > 1000) {
+          AppLogger.info(
+            'FundamentalRepository',
+            'Revenue data for $dataYear/$dataMonth already exists '
+                '($existingCount records), skipping sync',
+          );
+          return -1; // Signal: skipped
+        }
+      }
+
+      AppLogger.info(
+        'FundamentalRepository',
+        'Syncing revenue for $dataYear/$dataMonth (${data.length} stocks)',
+      );
+
+      final entries = data.map((r) {
+        final recordDate = DateTime(r.year, r.month);
+        return MonthlyRevenueCompanion.insert(
+          symbol: r.code,
+          date: recordDate,
+          revenueYear: r.year,
+          revenueMonth: r.month,
+          revenue: r.revenue,
+          momGrowth: Value(r.momGrowth),
+          yoyGrowth: Value(r.yoyGrowth),
+        );
+      }).toList();
+
+      await _db.insertMonthlyRevenue(entries);
+      return entries.length;
+    } catch (e) {
+      AppLogger.warning(
+        'FundamentalRepository',
+        'Failed to sync all market revenue',
+        e,
+      );
+      return 0;
+    }
+  }
+
   /// Sync all fundamental data for a stock
   Future<({int revenue, int valuation})> syncAll({
     required String symbol,

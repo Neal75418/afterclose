@@ -14,8 +14,9 @@ class InstitutionalShiftRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
-    if (history == null ||
-        history.length < RuleParams.institutionalLookbackDays + 1) {
+    // Reduced from institutionalLookbackDays+1 (11) to 4 days
+    // to work with the 5-day backfill in UpdateService
+    if (history == null || history.length < 4) {
       return null;
     }
 
@@ -23,7 +24,7 @@ class InstitutionalShiftRule extends StockRule {
     // Foreign investors are most influential in TW market
     final todayNet = today.foreignNet ?? 0.0;
 
-    if (todayNet.abs() < 100) return null; // Ignore small noise (< 100 sheets)
+    if (todayNet.abs() < 50) return null; // Ignore small noise (< 50 sheets)
 
     // Calculate previous average direction
     final prevEntries = history.reversed.skip(1).take(5).toList();
@@ -39,22 +40,26 @@ class InstitutionalShiftRule extends StockRule {
     String description = '';
 
     // Case 1: Reversal (Sell -> Buy)
-    if (prevAvg < -200 && todayNet > 500) {
+    // Lowered thresholds: prevAvg < -50 (was -200), todayNet > 100 (was 500)
+    if (prevAvg < -50 && todayNet > 100) {
       triggered = true;
       description = '外資由賣轉買';
     }
     // Case 2: Reversal (Buy -> Sell)
-    else if (prevAvg > 200 && todayNet < -500) {
+    // Lowered thresholds: prevAvg > 50 (was 200), todayNet < -100 (was -500)
+    else if (prevAvg > 50 && todayNet < -100) {
       triggered = true;
       description = '外資由買轉賣';
     }
     // Case 3: Acceleration (Buy -> Strong Buy)
-    else if (prevAvg > 100 && todayNet > prevAvg * 3 && todayNet > 1000) {
+    // Lowered thresholds: prevAvg > 50 (was 100), todayNet > 300 (was 1000)
+    else if (prevAvg > 50 && todayNet > prevAvg * 3 && todayNet > 300) {
       triggered = true;
       description = '外資買超擴大';
     }
     // Case 4: Acceleration (Sell -> Strong Sell)
-    else if (prevAvg < -100 && todayNet < prevAvg * 3 && todayNet < -1000) {
+    // Lowered thresholds: prevAvg < -50 (was -100), todayNet < -300 (was -1000)
+    else if (prevAvg < -50 && todayNet < prevAvg * 3 && todayNet < -300) {
       triggered = true;
       description = '外資賣超擴大';
     }

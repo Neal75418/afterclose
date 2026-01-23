@@ -54,27 +54,60 @@ abstract final class RuleParams {
 
   /// Positive keywords for news sentiment analysis
   static const List<String> newsPositiveKeywords = [
+    // 營收相關
     '營收創新高',
-    '法說會',
-    '利多',
-    '漲停',
+    '營收成長',
+    '業績亮眼',
+    '獲利創高',
+    '毛利率上升',
+    // 訂單/產能
+    '訂單',
     '大單',
     '擴產',
+    '產能滿載',
+    '拿下',
+    '接獲',
+    // 法人動態
+    '法說會',
+    '外資買超',
+    '投信買超',
+    // 市場動態
+    '利多',
+    '漲停',
     '調升',
-    '獲利成長',
-    '訂單',
+    '目標價',
+    '看好',
+    '突破',
+    // 產業趨勢
+    'AI',
+    '人工智慧',
+    '電動車',
+    '半導體',
   ];
 
   /// Negative keywords for news sentiment analysis
   static const List<String> newsNegativeKeywords = [
+    // 營收相關
     '營收衰退',
+    '營收下滑',
+    '獲利下滑',
+    '虧損',
+    '毛利率下降',
+    // 訂單/產能
+    '砍單',
+    '減產',
+    '庫存',
+    '去化',
+    // 市場動態
     '利空',
     '跌停',
-    '砍單',
     '調降',
-    '虧損',
-    '減資',
     '下修',
+    // 公司治理
+    '減資',
+    '違約',
+    '掏空',
+    '解任',
   ];
 
   /// Cooldown days for repeated recommendations
@@ -207,11 +240,13 @@ abstract final class RuleParams {
 
   /// Revenue MoM consecutive growth months
   /// Triggers when MoM is positive for N consecutive months
-  static const int revenueMomConsecutiveMonths = 2;
+  /// NOTE: Set to 1 because TWSE Open Data only provides latest month
+  static const int revenueMomConsecutiveMonths = 1;
 
   /// Revenue MoM growth threshold (%)
   /// Minimum MoM growth rate to be considered meaningful
-  static const double revenueMomGrowthThreshold = 10.0;
+  /// Lowered from 10% to 5% for broader signal coverage
+  static const double revenueMomGrowthThreshold = 5.0;
 
   /// High dividend yield threshold (%)
   /// Stocks with yield above this are considered high yield
