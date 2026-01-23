@@ -193,6 +193,16 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
+  /// Get count of price entries for a specific date
+  Future<int> getPriceCountForDate(DateTime date) async {
+    final countExpr = dailyPrice.symbol.count();
+    final query = selectOnly(dailyPrice)
+      ..addColumns([countExpr])
+      ..where(dailyPrice.date.equals(date));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
   /// Get the latest data date from the database
   ///
   /// Returns the maximum date from daily_price table, which represents
@@ -500,6 +510,26 @@ class AppDatabase extends _$AppDatabase {
       ..addColumns([countExpr])
       ..where(dailyAnalysis.date.equals(date))
       ..where(dailyAnalysis.score.isBiggerThanValue(0));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
+  /// Get count of institutional entries for a date
+  Future<int> getInstitutionalCountForDate(DateTime date) async {
+    final countExpr = dailyInstitutional.symbol.count();
+    final query = selectOnly(dailyInstitutional)
+      ..addColumns([countExpr])
+      ..where(dailyInstitutional.date.equals(date));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
+  /// Get count of valuation entries for a date
+  Future<int> getValuationCountForDate(DateTime date) async {
+    final countExpr = stockValuation.symbol.count();
+    final query = selectOnly(stockValuation)
+      ..addColumns([countExpr])
+      ..where(stockValuation.date.equals(date));
     final result = await query.getSingle();
     return result.read(countExpr) ?? 0;
   }

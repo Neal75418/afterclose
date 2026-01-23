@@ -198,6 +198,7 @@ class PriceRepository implements IPriceRepository {
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
     List<String>? fallbackSymbols,
+    bool force = false,
   }) async {
     try {
       AppLogger.info('PriceRepo', 'syncAllPricesForDate: date=$date');
@@ -212,6 +213,31 @@ class PriceRepository implements IPriceRepository {
         // Or it's a non-trading day
         AppLogger.warning('PriceRepo', 'TWSE returned empty prices');
         return const MarketSyncResult(count: 0, candidates: []);
+      }
+
+      // Check if we already have data for this date
+      // This prevents "duplicate actions" / wasting time on re-writing valid data
+      // We still return candidates so the pipeline can continue (e.g. analysis)
+      final dataDate = prices.first.date;
+      final existingCount = await _db.getPriceCountForDate(dataDate);
+
+      // If we have substantial data (> 1000 records) and not forcing update
+      // Then we assume we already synced for this date.
+      if (!force && existingCount > 1000) {
+        AppLogger.info(
+          'PriceRepo',
+          'Data for $dataDate already exists ($existingCount records). Skipping DB write.',
+        );
+
+        // Quick filter is still useful for the pipeline
+        final candidates = _quickFilterCandidates(prices);
+
+        return MarketSyncResult(
+          count: existingCount,
+          candidates: candidates,
+          dataDate: dataDate,
+          skipped: true,
+        );
       }
 
       // Build price entries

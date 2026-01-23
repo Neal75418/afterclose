@@ -148,7 +148,15 @@ class UpdateService {
         AppLogger.info('UpdateService', 'Step 3: Fetching daily prices...');
         final syncResult = await _priceRepo.syncAllPricesForDate(
           normalizedDate,
+          force: forceFetch,
         );
+
+        if (syncResult.skipped) {
+          AppLogger.info(
+            'UpdateService',
+            'Price data already exists for ${syncResult.dataDate}. skipped DB write.',
+          );
+        }
 
         // Date Correction: If TWSE returned data for a different date (e.g. yesterday),
         // use that date for all subsequent data fetches (Institutional, Valuation, etc.)
@@ -337,7 +345,10 @@ class UpdateService {
           );
 
           // 1. Sync TODAY (Target Date)
-          await institutionalRepo.syncAllMarketInstitutional(normalizedDate);
+          await institutionalRepo.syncAllMarketInstitutional(
+            normalizedDate,
+            force: forceFetch,
+          );
 
           // 2. Backfill recent days (last 5 trading days)
           // This ensures "3-day Buy Streak" etc. work even for new users/stocks
@@ -472,6 +483,7 @@ class UpdateService {
           );
           final valCount = await fundamentalRepo.syncAllMarketValuation(
             normalizedDate,
+            force: forceFetch,
           );
 
           // 2. Revenue: Watchlist Only (FinMind)

@@ -112,8 +112,15 @@ class FundamentalRepository {
   /// Sync valuation data for ALL stocks using TWSE BWIBBU_d (Free, Unlimited)
   ///
   /// Replaces individual FinMind calls for daily updates.
-  Future<int> syncAllMarketValuation(DateTime date) async {
+  Future<int> syncAllMarketValuation(
+    DateTime date, {
+    bool force = false,
+  }) async {
     try {
+      if (!force) {
+        final existingCount = await _db.getValuationCountForDate(date);
+        if (existingCount > 1000) return existingCount;
+      }
       final data = await _twse.getAllStockValuation(date: date);
 
       if (data.isEmpty) return 0;

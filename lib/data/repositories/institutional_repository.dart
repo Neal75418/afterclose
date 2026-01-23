@@ -81,8 +81,15 @@ class InstitutionalRepository {
   ///
   /// Uses TWSE T86 API (free, full market).
   /// This allows us to analyze institutional activity for non-watchlist stocks.
-  Future<int> syncAllMarketInstitutional(DateTime date) async {
+  Future<int> syncAllMarketInstitutional(
+    DateTime date, {
+    bool force = false,
+  }) async {
     try {
+      if (!force) {
+        final existingCount = await _db.getInstitutionalCountForDate(date);
+        if (existingCount > 1000) return existingCount;
+      }
       // TWSE API (T86) returns data for a specific date
       // Note: T86 API usually takes date parameter in request,
       // but TwseClient.getAllInstitutionalData currently hits the endpoint without date param

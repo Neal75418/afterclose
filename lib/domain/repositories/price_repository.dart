@@ -52,6 +52,7 @@ abstract class IPriceRepository {
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
     List<String>? fallbackSymbols,
+    bool force = false,
   });
 
   /// Sync prices for multiple specific symbols
@@ -74,9 +75,11 @@ class MarketSyncResult {
     required this.count,
     required this.candidates,
     this.dataDate,
+    this.skipped = false,
   });
 
   final int count;
   final List<String> candidates;
   final DateTime? dataDate;
+  final bool skipped;
 }
