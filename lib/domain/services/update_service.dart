@@ -172,16 +172,34 @@ class UpdateService {
         );
         // Combine all sources for historical data
         final watchlist = await _db.getWatchlist();
+
+        // Find stocks that already have sufficient data locally ("Existing Data Strategy")
+        // This ensures stocks we've tracked before keep getting analyzed even if they are low volume today
+        final historyLookbackStart = normalizedDate.subtract(
+          const Duration(days: RuleParams.swingWindow + 20),
+        );
+        final existingDataSymbols = await _db.getSymbolsWithSufficientData(
+          minDays: RuleParams.swingWindow,
+          startDate: historyLookbackStart,
+          endDate: normalizedDate,
+        );
+        AppLogger.info(
+          'UpdateService',
+          'Found ${existingDataSymbols.length} stocks with existing data',
+        );
+
         final symbolsForHistory = <String>{
           ...watchlist.map((w) => w.symbol),
           ..._popularStocks,
           ...marketCandidates, // Quick-filtered candidates from all market!
+          ...existingDataSymbols, // NEW: Include verified local stocks
         }.toList();
+
         AppLogger.info(
           'UpdateService',
           'symbolsForHistory: ${symbolsForHistory.length} '
               '(watchlist=${watchlist.length}, popular=${_popularStocks.length}, '
-              'candidates=${marketCandidates.length})',
+              'candidates=${marketCandidates.length}, existing=${existingDataSymbols.length})',
         );
 
         // Check which stocks need historical data
