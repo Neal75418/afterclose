@@ -25,12 +25,12 @@ flutter test
 
 ## 常見 CI 失敗原因與解決方案
 
-| 失敗類型 | 原因 | 解法 |
-|----------|------|------|
-| `dart format` | 程式碼格式不符 | 執行 `dart format .` |
-| `flutter analyze` | 缺少 const、未使用 import 等 | 根據提示修正，或確認是 info 級別 |
-| `flutter test` | 測試案例失敗 | 檢查測試輸出並修正邏輯 |
-| 建構子參數不匹配 | Model 欄位變更未更新測試 | 檢查 `.g.dart` 中的 Entry 類別定義 |
+| 失敗類型              | 原因                    | 解法                         |
+|-------------------|-----------------------|----------------------------|
+| `dart format`     | 程式碼格式不符               | 執行 `dart format .`         |
+| `flutter analyze` | 缺少 const、未使用 import 等 | 根據提示修正，或確認是 info 級別        |
+| `flutter test`    | 測試案例失敗                | 檢查測試輸出並修正邏輯                |
+| 建構子參數不匹配          | Model 欄位變更未更新測試       | 檢查 `.g.dart` 中的 Entry 類別定義 |
 
 ## 完整 CI 模擬
 
