@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 
-/// Size variants for reason tags
+/// 推薦原因標籤的尺寸變體
 enum ReasonTagSize {
-  /// Compact size for card views (smaller padding, smaller text)
+  /// 精簡尺寸，適用於卡片視圖（較小的間距與文字）
   compact,
 
-  /// Normal size for detail views
+  /// 標準尺寸，適用於詳情視圖
   normal,
 }
 
-/// Reusable widget for displaying reason tags with consistent styling
+/// 可重用的推薦原因標籤 Widget，具有一致的樣式
 class ReasonTags extends StatelessWidget {
   const ReasonTags({
     super.key,
@@ -22,16 +22,16 @@ class ReasonTags extends StatelessWidget {
     this.translateCodes = false,
   });
 
-  /// List of reason labels or codes to display
+  /// 要顯示的原因標籤或代碼列表
   final List<String> reasons;
 
-  /// Size variant for the tags
+  /// 標籤的尺寸變體
   final ReasonTagSize size;
 
-  /// Maximum number of tags to display (null = show all)
+  /// 最多顯示的標籤數量（null = 顯示全部）
   final int? maxTags;
 
-  /// Whether to translate reason codes (for raw database codes)
+  /// 是否翻譯原因代碼（用於原始資料庫代碼）
   final bool translateCodes;
 
   @override
@@ -58,10 +58,10 @@ class ReasonTags extends StatelessWidget {
     );
   }
 
-  /// Convert database reason code to translated label
+  /// 將資料庫原因代碼轉換為翻譯後的標籤
   static String translateReasonCode(String code) {
     final key = switch (code) {
-      // Original signals
+      // 原始訊號
       'REVERSAL_W2S' => 'reasons.reversalW2S',
       'REVERSAL_S2W' => 'reasons.reversalS2W',
       'TECH_BREAKOUT' => 'reasons.breakout',
@@ -70,12 +70,12 @@ class ReasonTags extends StatelessWidget {
       'PRICE_SPIKE' => 'reasons.priceSpike',
       'INSTITUTIONAL_SHIFT' => 'reasons.institutional',
       'NEWS_RELATED' => 'reasons.news',
-      // Phase 2: Technical indicators
+      // 第二階段：技術指標
       'KD_GOLDEN_CROSS' => 'reasons.kdGoldenCross',
       'KD_DEATH_CROSS' => 'reasons.kdDeathCross',
       'INSTITUTIONAL_BUY_STREAK' => 'reasons.institutionalBuyStreak',
       'INSTITUTIONAL_SELL_STREAK' => 'reasons.institutionalSellStreak',
-      // Phase 2: Candlestick patterns
+      // 第二階段：K 線型態
       'PATTERN_DOJI' => 'reasons.patternDoji',
       'PATTERN_BULLISH_ENGULFING' => 'reasons.patternBullishEngulfing',
       'PATTERN_BEARISH_ENGULFING' => 'reasons.patternBearishEngulfing',
@@ -87,14 +87,16 @@ class ReasonTags extends StatelessWidget {
       'PATTERN_THREE_BLACK_CROWS' => 'reasons.patternThreeBlackCrows',
       'PATTERN_GAP_UP' => 'reasons.patternGapUp',
       'PATTERN_GAP_DOWN' => 'reasons.patternGapDown',
-      // Phase 3: 52-week and MA alignment
+      // 第三階段：52 週高低點與均線排列
       'WEEK_52_HIGH' => 'reasons.week52High',
       'WEEK_52_LOW' => 'reasons.week52Low',
       'MA_ALIGNMENT_BULLISH' => 'reasons.maAlignmentBullish',
       'MA_ALIGNMENT_BEARISH' => 'reasons.maAlignmentBearish',
       'RSI_EXTREME_OVERBOUGHT' => 'reasons.rsiExtremeOverbought',
       'RSI_EXTREME_OVERSOLD' => 'reasons.rsiExtremeOversold',
-      // Phase 4: Extended market data
+      // 第四階段：擴展市場資料
+      'INSTITUTIONAL_BUY' => 'reasons.institutionalBuy',
+      'INSTITUTIONAL_SELL' => 'reasons.institutionalSell',
       'FOREIGN_SHAREHOLDING_INCREASING' =>
         'reasons.foreignShareholdingIncreasing',
       'FOREIGN_SHAREHOLDING_DECREASING' =>
@@ -102,14 +104,14 @@ class ReasonTags extends StatelessWidget {
       'DAY_TRADING_HIGH' => 'reasons.dayTradingHigh',
       'DAY_TRADING_EXTREME' => 'reasons.dayTradingExtreme',
       'CONCENTRATION_HIGH' => 'reasons.concentrationHigh',
-      // Phase 5: Price-volume divergence
+      // 第五階段：量價背離
       'PRICE_VOLUME_BULLISH_DIVERGENCE' =>
         'reasons.priceVolumeBullishDivergence',
       'PRICE_VOLUME_BEARISH_DIVERGENCE' =>
         'reasons.priceVolumeBearishDivergence',
       'HIGH_VOLUME_BREAKOUT' => 'reasons.highVolumeBreakout',
       'LOW_VOLUME_ACCUMULATION' => 'reasons.lowVolumeAccumulation',
-      // Phase 6: Fundamental signals
+      // 第六階段：基本面訊號
       'REVENUE_YOY_SURGE' => 'reasons.revenueYoySurge',
       'REVENUE_YOY_DECLINE' => 'reasons.revenueYoyDecline',
       'REVENUE_MOM_GROWTH' => 'reasons.revenueMomGrowth',
@@ -117,7 +119,7 @@ class ReasonTags extends StatelessWidget {
       'PE_UNDERVALUED' => 'reasons.peUndervalued',
       'PE_OVERVALUED' => 'reasons.peOvervalued',
       'PBR_UNDERVALUED' => 'reasons.pbrUndervalued',
-      _ => code, // fallback to original code if unknown
+      _ => code, // 未知代碼則回傳原始代碼
     };
     return key.tr();
   }

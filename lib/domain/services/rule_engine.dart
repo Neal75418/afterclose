@@ -13,13 +13,13 @@ import 'package:afterclose/domain/services/rules/technical_rules.dart';
 import 'package:afterclose/domain/services/rules/volume_rules.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 
-/// Rule Engine for stock analysis
+/// 股票分析規則引擎
 ///
-/// Uses Strategy Pattern to apply a list of [StockRule]s to stock data.
+/// 使用策略模式（Strategy Pattern）對股票資料套用一系列 [StockRule] 規則
 class RuleEngine {
-  /// Create RuleEngine with optional custom rules.
-  /// If [customRules] is provided, only those rules will be used.
-  /// Otherwise, the default rule set is loaded.
+  /// 建立規則引擎，可選擇傳入自訂規則
+  ///
+  /// 若提供 [customRules]，則僅使用該規則集；否則載入預設規則集
   RuleEngine({List<StockRule>? customRules}) {
     if (customRules != null) {
       _rules.addAll(customRules);
@@ -28,9 +28,9 @@ class RuleEngine {
     }
   }
 
-  /// Default rule set - Phase 1-6 rules
+  /// 預設規則集 - 第 1-6 階段規則
   static const List<StockRule> _defaultRules = [
-    // Phase 1: Basic Rules
+    // 第 1 階段：基礎規則
     WeakToStrongRule(),
     StrongToWeakRule(),
     BreakoutRule(),
@@ -39,7 +39,7 @@ class RuleEngine {
     PriceSpikeRule(),
     InstitutionalShiftRule(),
     NewsRule(),
-    // Phase 2: Candlestick Pattern Rules
+    // 第 2 階段：K 線型態規則
     DojiRule(),
     BullishEngulfingRule(),
     BearishEngulfingRule(),
@@ -51,7 +51,7 @@ class RuleEngine {
     EveningStarRule(),
     ThreeWhiteSoldiersRule(),
     ThreeBlackCrowsRule(),
-    // Phase 3: Technical Signal Rules
+    // 第 3 階段：技術訊號規則
     Week52HighRule(),
     Week52LowRule(),
     MAAlignmentBullishRule(),
@@ -60,21 +60,21 @@ class RuleEngine {
     RSIExtremeOversoldRule(),
     KDGoldenCrossRule(),
     KDDeathCrossRule(),
-    // Phase 4: Institutional Streak Rules
+    // 第 4 階段：法人連續買賣規則
     InstitutionalBuyStreakRule(),
     InstitutionalSellStreakRule(),
-    // Phase 4: Extended Market Data Rules
+    // 第 4 階段：擴展市場資料規則
     ForeignShareholdingIncreasingRule(),
     ForeignShareholdingDecreasingRule(),
     DayTradingHighRule(),
     DayTradingExtremeRule(),
-    // NOTE: ConcentrationHighRule removed - requires paid API (股權分散表)
-    // Phase 5: Price-Volume Divergence Rules
+    // 備註：ConcentrationHighRule 已移除 - 需要付費 API（股權分散表）
+    // 第 5 階段：價量背離規則
     PriceVolumeBullishDivergenceRule(),
     PriceVolumeBearishDivergenceRule(),
     HighVolumeBreakoutRule(),
     LowVolumeAccumulationRule(),
-    // Phase 6: Fundamental Analysis Rules
+    // 第 6 階段：基本面分析規則
     RevenueYoYSurgeRule(),
     RevenueYoYDeclineRule(),
     RevenueMomGrowthRule(),
@@ -86,14 +86,14 @@ class RuleEngine {
 
   final List<StockRule> _rules = [];
 
-  /// Dynamically register a new rule
+  /// 動態註冊新規則
   void registerRule(StockRule rule) => _rules.add(rule);
 
-  /// Dynamically unregister a rule by ID
+  /// 根據規則 ID 動態移除規則
   void unregisterRule(String ruleId) =>
       _rules.removeWhere((r) => r.id == ruleId);
 
-  /// Run all rules on a stock and return triggered reasons
+  /// 對股票執行所有規則並回傳觸發的原因
   List<TriggeredReason> evaluateStock({
     required List<DailyPriceEntry> priceHistory,
     required AnalysisContext context,
@@ -125,7 +125,7 @@ class RuleEngine {
           triggered.add(reason);
         }
       } catch (e, stackTrace) {
-        // Log rule failure without crashing
+        // 記錄規則執行失敗，但不中斷程式
         AppLogger.warning(
           'RuleEngine',
           'Rule ${rule.id} evaluation failed: $e',
@@ -134,13 +134,13 @@ class RuleEngine {
       }
     }
 
-    // Sort by score descending
+    // 依分數由高至低排序
     triggered.sort((a, b) => b.score.compareTo(a.score));
 
     return triggered;
   }
 
-  /// Calculate final score with bonuses, penalties, and caps
+  /// 計算最終分數，包含加成、懲罰與上限
   int calculateScore(
     List<TriggeredReason> reasons, {
     bool wasRecentlyRecommended = false,
@@ -149,48 +149,46 @@ class RuleEngine {
 
     double score = 0.0;
 
-    // 1. Base score from reasons
+    // 1. 累計各規則的基礎分數
     for (final reason in reasons) {
       score += reason.score;
     }
 
-    // 2. Bonuses for constructive combinations
-    // Volume + Breakout = Stronger signal
+    // 2. 組合加成
+    // 放量 + 突破 = 更強訊號
     final hasVolume = reasons.any((r) => r.type == ReasonType.volumeSpike);
     final hasBreakout = reasons.any((r) => r.type == ReasonType.techBreakout);
     final hasReversal = reasons.any((r) => r.type == ReasonType.reversalW2S);
     final hasInstitutional = reasons.any(
-      (r) => r.type == ReasonType.institutionalShift,
+      (r) => r.type == ReasonType.institutionalBuy,
     );
 
     if (hasVolume && hasBreakout) score += 10;
     if (hasVolume && hasReversal) score += 10;
     if (hasInstitutional && (hasBreakout || hasReversal)) score += 15;
 
-    // 3. Penalty for conflicting signals
-    // E.g. Breakout (Bull) + Breakdown (Bear)?? Should be impossible but check anyway
-    // Or W2S (Bull) + Institutional Strong Sell (Bear)
-    // Simple conflict check: if mixed positive and negative scores?
-    // For now, most scores are positive (importance).
+    // 3. 衝突訊號懲罰
+    // 例如：突破（多方）+ 跌破（空方）？理論上不可能但仍需檢查
+    // 或：弱轉強（多方）+ 法人大賣（空方）
+    // 目前大多數分數為正值（代表重要性）
 
-    // 4. Cooldown penalty
+    // 4. 冷卻期懲罰
     if (wasRecentlyRecommended) {
-      score *= 0.5; // Reduce score by 50% if recently recommended
+      score *= 0.5; // 近期已推薦則分數減半
     }
 
-    // 5. Cap score (using 100 as previously discussed, though tests expected 80/90,
-    // let's stick to the logic - test might fail and we fix test)
+    // 5. 分數上限（使用 100 作為上限）
     if (score > 100) score = 100;
 
     return score.round();
   }
 
-  /// Get top reasons for display (deduplicated)
+  /// 取得前幾個觸發原因以供顯示（去重複）
   List<TriggeredReason> getTopReasons(List<TriggeredReason> reasons) {
     if (reasons.isEmpty) return [];
 
-    // Deduplicate by category/type priority
-    // For now just take top 3 distinct types
+    // 依類型去重複
+    // 目前取前 3 個不同類型
     final distinct = <ReasonType>{};
     final result = <TriggeredReason>[];
 

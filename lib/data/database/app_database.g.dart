@@ -6381,16 +6381,22 @@ class DayTradingEntry extends DataClass implements Insertable<DayTradingEntry> {
   /// Trading date
   final DateTime date;
 
-  /// Day trading buy volume (當沖買進量)
+  /// Day trading buy volume/amount (當沖買進量/金額)
+  ///
+  /// Note: TWSE API provides amounts (NT$), FinMind provides volumes (shares)
   final double? buyVolume;
 
-  /// Day trading sell volume (當沖賣出量)
+  /// Day trading sell volume/amount (當沖賣出量/金額)
+  ///
+  /// Note: TWSE API provides amounts (NT$), FinMind provides volumes (shares)
   final double? sellVolume;
 
   /// Day trading ratio percentage (當沖比例%)
+  ///
+  /// This is the key metric, calculated from total volume data.
   final double? dayTradingRatio;
 
-  /// Total trade volume (總成交量)
+  /// Total trade volume (當沖成交股數)
   final double? tradeVolume;
   const DayTradingEntry({
     required this.symbol,
@@ -9309,6 +9315,558 @@ class StockValuationCompanion extends UpdateCompanion<StockValuationEntry> {
   }
 }
 
+class $MarginTradingTable extends MarginTrading
+    with TableInfo<$MarginTradingTable, MarginTradingEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MarginTradingTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _marginBuyMeta = const VerificationMeta(
+    'marginBuy',
+  );
+  @override
+  late final GeneratedColumn<double> marginBuy = GeneratedColumn<double>(
+    'margin_buy',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _marginSellMeta = const VerificationMeta(
+    'marginSell',
+  );
+  @override
+  late final GeneratedColumn<double> marginSell = GeneratedColumn<double>(
+    'margin_sell',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _marginBalanceMeta = const VerificationMeta(
+    'marginBalance',
+  );
+  @override
+  late final GeneratedColumn<double> marginBalance = GeneratedColumn<double>(
+    'margin_balance',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _shortBuyMeta = const VerificationMeta(
+    'shortBuy',
+  );
+  @override
+  late final GeneratedColumn<double> shortBuy = GeneratedColumn<double>(
+    'short_buy',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _shortSellMeta = const VerificationMeta(
+    'shortSell',
+  );
+  @override
+  late final GeneratedColumn<double> shortSell = GeneratedColumn<double>(
+    'short_sell',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _shortBalanceMeta = const VerificationMeta(
+    'shortBalance',
+  );
+  @override
+  late final GeneratedColumn<double> shortBalance = GeneratedColumn<double>(
+    'short_balance',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    marginBuy,
+    marginSell,
+    marginBalance,
+    shortBuy,
+    shortSell,
+    shortBalance,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'margin_trading';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MarginTradingEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('margin_buy')) {
+      context.handle(
+        _marginBuyMeta,
+        marginBuy.isAcceptableOrUnknown(data['margin_buy']!, _marginBuyMeta),
+      );
+    }
+    if (data.containsKey('margin_sell')) {
+      context.handle(
+        _marginSellMeta,
+        marginSell.isAcceptableOrUnknown(data['margin_sell']!, _marginSellMeta),
+      );
+    }
+    if (data.containsKey('margin_balance')) {
+      context.handle(
+        _marginBalanceMeta,
+        marginBalance.isAcceptableOrUnknown(
+          data['margin_balance']!,
+          _marginBalanceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('short_buy')) {
+      context.handle(
+        _shortBuyMeta,
+        shortBuy.isAcceptableOrUnknown(data['short_buy']!, _shortBuyMeta),
+      );
+    }
+    if (data.containsKey('short_sell')) {
+      context.handle(
+        _shortSellMeta,
+        shortSell.isAcceptableOrUnknown(data['short_sell']!, _shortSellMeta),
+      );
+    }
+    if (data.containsKey('short_balance')) {
+      context.handle(
+        _shortBalanceMeta,
+        shortBalance.isAcceptableOrUnknown(
+          data['short_balance']!,
+          _shortBalanceMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  MarginTradingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MarginTradingEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      marginBuy: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}margin_buy'],
+      ),
+      marginSell: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}margin_sell'],
+      ),
+      marginBalance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}margin_balance'],
+      ),
+      shortBuy: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}short_buy'],
+      ),
+      shortSell: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}short_sell'],
+      ),
+      shortBalance: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}short_balance'],
+      ),
+    );
+  }
+
+  @override
+  $MarginTradingTable createAlias(String alias) {
+    return $MarginTradingTable(attachedDatabase, alias);
+  }
+}
+
+class MarginTradingEntry extends DataClass
+    implements Insertable<MarginTradingEntry> {
+  /// Stock symbol
+  final String symbol;
+
+  /// Trading date
+  final DateTime date;
+
+  /// 融資買進 (張)
+  final double? marginBuy;
+
+  /// 融資賣出 (張)
+  final double? marginSell;
+
+  /// 融資餘額 (張)
+  final double? marginBalance;
+
+  /// 融券買進/回補 (張)
+  final double? shortBuy;
+
+  /// 融券賣出 (張)
+  final double? shortSell;
+
+  /// 融券餘額 (張)
+  final double? shortBalance;
+  const MarginTradingEntry({
+    required this.symbol,
+    required this.date,
+    this.marginBuy,
+    this.marginSell,
+    this.marginBalance,
+    this.shortBuy,
+    this.shortSell,
+    this.shortBalance,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || marginBuy != null) {
+      map['margin_buy'] = Variable<double>(marginBuy);
+    }
+    if (!nullToAbsent || marginSell != null) {
+      map['margin_sell'] = Variable<double>(marginSell);
+    }
+    if (!nullToAbsent || marginBalance != null) {
+      map['margin_balance'] = Variable<double>(marginBalance);
+    }
+    if (!nullToAbsent || shortBuy != null) {
+      map['short_buy'] = Variable<double>(shortBuy);
+    }
+    if (!nullToAbsent || shortSell != null) {
+      map['short_sell'] = Variable<double>(shortSell);
+    }
+    if (!nullToAbsent || shortBalance != null) {
+      map['short_balance'] = Variable<double>(shortBalance);
+    }
+    return map;
+  }
+
+  MarginTradingCompanion toCompanion(bool nullToAbsent) {
+    return MarginTradingCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      marginBuy: marginBuy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marginBuy),
+      marginSell: marginSell == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marginSell),
+      marginBalance: marginBalance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(marginBalance),
+      shortBuy: shortBuy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shortBuy),
+      shortSell: shortSell == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shortSell),
+      shortBalance: shortBalance == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shortBalance),
+    );
+  }
+
+  factory MarginTradingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MarginTradingEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      marginBuy: serializer.fromJson<double?>(json['marginBuy']),
+      marginSell: serializer.fromJson<double?>(json['marginSell']),
+      marginBalance: serializer.fromJson<double?>(json['marginBalance']),
+      shortBuy: serializer.fromJson<double?>(json['shortBuy']),
+      shortSell: serializer.fromJson<double?>(json['shortSell']),
+      shortBalance: serializer.fromJson<double?>(json['shortBalance']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'marginBuy': serializer.toJson<double?>(marginBuy),
+      'marginSell': serializer.toJson<double?>(marginSell),
+      'marginBalance': serializer.toJson<double?>(marginBalance),
+      'shortBuy': serializer.toJson<double?>(shortBuy),
+      'shortSell': serializer.toJson<double?>(shortSell),
+      'shortBalance': serializer.toJson<double?>(shortBalance),
+    };
+  }
+
+  MarginTradingEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> marginBuy = const Value.absent(),
+    Value<double?> marginSell = const Value.absent(),
+    Value<double?> marginBalance = const Value.absent(),
+    Value<double?> shortBuy = const Value.absent(),
+    Value<double?> shortSell = const Value.absent(),
+    Value<double?> shortBalance = const Value.absent(),
+  }) => MarginTradingEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    marginBuy: marginBuy.present ? marginBuy.value : this.marginBuy,
+    marginSell: marginSell.present ? marginSell.value : this.marginSell,
+    marginBalance: marginBalance.present
+        ? marginBalance.value
+        : this.marginBalance,
+    shortBuy: shortBuy.present ? shortBuy.value : this.shortBuy,
+    shortSell: shortSell.present ? shortSell.value : this.shortSell,
+    shortBalance: shortBalance.present ? shortBalance.value : this.shortBalance,
+  );
+  MarginTradingEntry copyWithCompanion(MarginTradingCompanion data) {
+    return MarginTradingEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      marginBuy: data.marginBuy.present ? data.marginBuy.value : this.marginBuy,
+      marginSell: data.marginSell.present
+          ? data.marginSell.value
+          : this.marginSell,
+      marginBalance: data.marginBalance.present
+          ? data.marginBalance.value
+          : this.marginBalance,
+      shortBuy: data.shortBuy.present ? data.shortBuy.value : this.shortBuy,
+      shortSell: data.shortSell.present ? data.shortSell.value : this.shortSell,
+      shortBalance: data.shortBalance.present
+          ? data.shortBalance.value
+          : this.shortBalance,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MarginTradingEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('marginBuy: $marginBuy, ')
+          ..write('marginSell: $marginSell, ')
+          ..write('marginBalance: $marginBalance, ')
+          ..write('shortBuy: $shortBuy, ')
+          ..write('shortSell: $shortSell, ')
+          ..write('shortBalance: $shortBalance')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    marginBuy,
+    marginSell,
+    marginBalance,
+    shortBuy,
+    shortSell,
+    shortBalance,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MarginTradingEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.marginBuy == this.marginBuy &&
+          other.marginSell == this.marginSell &&
+          other.marginBalance == this.marginBalance &&
+          other.shortBuy == this.shortBuy &&
+          other.shortSell == this.shortSell &&
+          other.shortBalance == this.shortBalance);
+}
+
+class MarginTradingCompanion extends UpdateCompanion<MarginTradingEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> marginBuy;
+  final Value<double?> marginSell;
+  final Value<double?> marginBalance;
+  final Value<double?> shortBuy;
+  final Value<double?> shortSell;
+  final Value<double?> shortBalance;
+  final Value<int> rowid;
+  const MarginTradingCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.marginBuy = const Value.absent(),
+    this.marginSell = const Value.absent(),
+    this.marginBalance = const Value.absent(),
+    this.shortBuy = const Value.absent(),
+    this.shortSell = const Value.absent(),
+    this.shortBalance = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  MarginTradingCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.marginBuy = const Value.absent(),
+    this.marginSell = const Value.absent(),
+    this.marginBalance = const Value.absent(),
+    this.shortBuy = const Value.absent(),
+    this.shortSell = const Value.absent(),
+    this.shortBalance = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<MarginTradingEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? marginBuy,
+    Expression<double>? marginSell,
+    Expression<double>? marginBalance,
+    Expression<double>? shortBuy,
+    Expression<double>? shortSell,
+    Expression<double>? shortBalance,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (marginBuy != null) 'margin_buy': marginBuy,
+      if (marginSell != null) 'margin_sell': marginSell,
+      if (marginBalance != null) 'margin_balance': marginBalance,
+      if (shortBuy != null) 'short_buy': shortBuy,
+      if (shortSell != null) 'short_sell': shortSell,
+      if (shortBalance != null) 'short_balance': shortBalance,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  MarginTradingCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? marginBuy,
+    Value<double?>? marginSell,
+    Value<double?>? marginBalance,
+    Value<double?>? shortBuy,
+    Value<double?>? shortSell,
+    Value<double?>? shortBalance,
+    Value<int>? rowid,
+  }) {
+    return MarginTradingCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      marginBuy: marginBuy ?? this.marginBuy,
+      marginSell: marginSell ?? this.marginSell,
+      marginBalance: marginBalance ?? this.marginBalance,
+      shortBuy: shortBuy ?? this.shortBuy,
+      shortSell: shortSell ?? this.shortSell,
+      shortBalance: shortBalance ?? this.shortBalance,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (marginBuy.present) {
+      map['margin_buy'] = Variable<double>(marginBuy.value);
+    }
+    if (marginSell.present) {
+      map['margin_sell'] = Variable<double>(marginSell.value);
+    }
+    if (marginBalance.present) {
+      map['margin_balance'] = Variable<double>(marginBalance.value);
+    }
+    if (shortBuy.present) {
+      map['short_buy'] = Variable<double>(shortBuy.value);
+    }
+    if (shortSell.present) {
+      map['short_sell'] = Variable<double>(shortSell.value);
+    }
+    if (shortBalance.present) {
+      map['short_balance'] = Variable<double>(shortBalance.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MarginTradingCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('marginBuy: $marginBuy, ')
+          ..write('marginSell: $marginSell, ')
+          ..write('marginBalance: $marginBalance, ')
+          ..write('shortBuy: $shortBuy, ')
+          ..write('shortSell: $shortSell, ')
+          ..write('shortBalance: $shortBalance, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9337,6 +9895,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $HoldingDistributionTable(this);
   late final $MonthlyRevenueTable monthlyRevenue = $MonthlyRevenueTable(this);
   late final $StockValuationTable stockValuation = $StockValuationTable(this);
+  late final $MarginTradingTable marginTrading = $MarginTradingTable(this);
   late final Index idxDailyPriceSymbol = Index(
     'idx_daily_price_symbol',
     'CREATE INDEX idx_daily_price_symbol ON daily_price (symbol)',
@@ -9369,6 +9928,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_news_stock_map_symbol',
     'CREATE INDEX idx_news_stock_map_symbol ON news_stock_map (symbol)',
   );
+  late final Index idxNewsStockMapNewsId = Index(
+    'idx_news_stock_map_news_id',
+    'CREATE INDEX idx_news_stock_map_news_id ON news_stock_map (news_id)',
+  );
   late final Index idxDailyAnalysisDate = Index(
     'idx_daily_analysis_date',
     'CREATE INDEX idx_daily_analysis_date ON daily_analysis (date)',
@@ -9376,6 +9939,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxDailyAnalysisScore = Index(
     'idx_daily_analysis_score',
     'CREATE INDEX idx_daily_analysis_score ON daily_analysis (score)',
+  );
+  late final Index idxDailyAnalysisSymbolDate = Index(
+    'idx_daily_analysis_symbol_date',
+    'CREATE INDEX idx_daily_analysis_symbol_date ON daily_analysis (symbol, date)',
   );
   late final Index idxDailyReasonSymbolDate = Index(
     'idx_daily_reason_symbol_date',
@@ -9461,6 +10028,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_stock_valuation_date',
     'CREATE INDEX idx_stock_valuation_date ON stock_valuation (date)',
   );
+  late final Index idxMarginTradingSymbol = Index(
+    'idx_margin_trading_symbol',
+    'CREATE INDEX idx_margin_trading_symbol ON margin_trading (symbol)',
+  );
+  late final Index idxMarginTradingDate = Index(
+    'idx_margin_trading_date',
+    'CREATE INDEX idx_margin_trading_date ON margin_trading (date)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9488,6 +10063,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     holdingDistribution,
     monthlyRevenue,
     stockValuation,
+    marginTrading,
     idxDailyPriceSymbol,
     idxDailyPriceDate,
     idxDailyPriceSymbolDate,
@@ -9496,8 +10072,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxNewsItemPublishedAt,
     idxNewsItemSource,
     idxNewsStockMapSymbol,
+    idxNewsStockMapNewsId,
     idxDailyAnalysisDate,
     idxDailyAnalysisScore,
+    idxDailyAnalysisSymbolDate,
     idxDailyReasonSymbolDate,
     idxDailyRecommendationDate,
     idxDailyRecommendationSymbol,
@@ -9519,6 +10097,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxMonthlyRevenueDate,
     idxStockValuationSymbol,
     idxStockValuationDate,
+    idxMarginTradingSymbol,
+    idxMarginTradingDate,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -9654,6 +10234,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('stock_valuation', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('margin_trading', kind: UpdateKind.delete)],
     ),
   ]);
   @override
@@ -10071,6 +10658,27 @@ final class $$StockMasterTableReferences
     ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
 
     final cache = $_typedResult.readTableOrNull(_stockValuationRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$MarginTradingTable, List<MarginTradingEntry>>
+  _marginTradingRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.marginTrading,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.marginTrading.symbol,
+    ),
+  );
+
+  $$MarginTradingTableProcessedTableManager get marginTradingRefs {
+    final manager = $$MarginTradingTableTableManager(
+      $_db,
+      $_db.marginTrading,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_marginTradingRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -10557,6 +11165,31 @@ class $$StockMasterTableFilterComposer
           }) => $$StockValuationTableFilterComposer(
             $db: $db,
             $table: $db.stockValuation,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> marginTradingRefs(
+    Expression<bool> Function($$MarginTradingTableFilterComposer f) f,
+  ) {
+    final $$MarginTradingTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.marginTrading,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MarginTradingTableFilterComposer(
+            $db: $db,
+            $table: $db.marginTrading,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -11086,6 +11719,31 @@ class $$StockMasterTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> marginTradingRefs<T extends Object>(
+    Expression<T> Function($$MarginTradingTableAnnotationComposer a) f,
+  ) {
+    final $$MarginTradingTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.marginTrading,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$MarginTradingTableAnnotationComposer(
+            $db: $db,
+            $table: $db.marginTrading,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$StockMasterTableTableManager
@@ -11120,6 +11778,7 @@ class $$StockMasterTableTableManager
             bool holdingDistributionRefs,
             bool monthlyRevenueRefs,
             bool stockValuationRefs,
+            bool marginTradingRefs,
           })
         > {
   $$StockMasterTableTableManager(_$AppDatabase db, $StockMasterTable table)
@@ -11197,6 +11856,7 @@ class $$StockMasterTableTableManager
                 holdingDistributionRefs = false,
                 monthlyRevenueRefs = false,
                 stockValuationRefs = false,
+                marginTradingRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -11219,6 +11879,7 @@ class $$StockMasterTableTableManager
                     if (holdingDistributionRefs) db.holdingDistribution,
                     if (monthlyRevenueRefs) db.monthlyRevenue,
                     if (stockValuationRefs) db.stockValuation,
+                    if (marginTradingRefs) db.marginTrading,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -11601,6 +12262,27 @@ class $$StockMasterTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (marginTradingRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          MarginTradingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._marginTradingRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).marginTradingRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -11640,6 +12322,7 @@ typedef $$StockMasterTableProcessedTableManager =
         bool holdingDistributionRefs,
         bool monthlyRevenueRefs,
         bool stockValuationRefs,
+        bool marginTradingRefs,
       })
     >;
 typedef $$DailyPriceTableCreateCompanionBuilder =
@@ -18666,6 +19349,393 @@ typedef $$StockValuationTableProcessedTableManager =
       StockValuationEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$MarginTradingTableCreateCompanionBuilder =
+    MarginTradingCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> marginBuy,
+      Value<double?> marginSell,
+      Value<double?> marginBalance,
+      Value<double?> shortBuy,
+      Value<double?> shortSell,
+      Value<double?> shortBalance,
+      Value<int> rowid,
+    });
+typedef $$MarginTradingTableUpdateCompanionBuilder =
+    MarginTradingCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> marginBuy,
+      Value<double?> marginSell,
+      Value<double?> marginBalance,
+      Value<double?> shortBuy,
+      Value<double?> shortSell,
+      Value<double?> shortBalance,
+      Value<int> rowid,
+    });
+
+final class $$MarginTradingTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $MarginTradingTable, MarginTradingEntry> {
+  $$MarginTradingTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.marginTrading.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$MarginTradingTableFilterComposer
+    extends Composer<_$AppDatabase, $MarginTradingTable> {
+  $$MarginTradingTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get marginBuy => $composableBuilder(
+    column: $table.marginBuy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get marginSell => $composableBuilder(
+    column: $table.marginSell,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get marginBalance => $composableBuilder(
+    column: $table.marginBalance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get shortBuy => $composableBuilder(
+    column: $table.shortBuy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get shortSell => $composableBuilder(
+    column: $table.shortSell,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get shortBalance => $composableBuilder(
+    column: $table.shortBalance,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MarginTradingTableOrderingComposer
+    extends Composer<_$AppDatabase, $MarginTradingTable> {
+  $$MarginTradingTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get marginBuy => $composableBuilder(
+    column: $table.marginBuy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get marginSell => $composableBuilder(
+    column: $table.marginSell,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get marginBalance => $composableBuilder(
+    column: $table.marginBalance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get shortBuy => $composableBuilder(
+    column: $table.shortBuy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get shortSell => $composableBuilder(
+    column: $table.shortSell,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get shortBalance => $composableBuilder(
+    column: $table.shortBalance,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MarginTradingTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MarginTradingTable> {
+  $$MarginTradingTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get marginBuy =>
+      $composableBuilder(column: $table.marginBuy, builder: (column) => column);
+
+  GeneratedColumn<double> get marginSell => $composableBuilder(
+    column: $table.marginSell,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get marginBalance => $composableBuilder(
+    column: $table.marginBalance,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get shortBuy =>
+      $composableBuilder(column: $table.shortBuy, builder: (column) => column);
+
+  GeneratedColumn<double> get shortSell =>
+      $composableBuilder(column: $table.shortSell, builder: (column) => column);
+
+  GeneratedColumn<double> get shortBalance => $composableBuilder(
+    column: $table.shortBalance,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$MarginTradingTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MarginTradingTable,
+          MarginTradingEntry,
+          $$MarginTradingTableFilterComposer,
+          $$MarginTradingTableOrderingComposer,
+          $$MarginTradingTableAnnotationComposer,
+          $$MarginTradingTableCreateCompanionBuilder,
+          $$MarginTradingTableUpdateCompanionBuilder,
+          (MarginTradingEntry, $$MarginTradingTableReferences),
+          MarginTradingEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$MarginTradingTableTableManager(_$AppDatabase db, $MarginTradingTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MarginTradingTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MarginTradingTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MarginTradingTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> marginBuy = const Value.absent(),
+                Value<double?> marginSell = const Value.absent(),
+                Value<double?> marginBalance = const Value.absent(),
+                Value<double?> shortBuy = const Value.absent(),
+                Value<double?> shortSell = const Value.absent(),
+                Value<double?> shortBalance = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MarginTradingCompanion(
+                symbol: symbol,
+                date: date,
+                marginBuy: marginBuy,
+                marginSell: marginSell,
+                marginBalance: marginBalance,
+                shortBuy: shortBuy,
+                shortSell: shortSell,
+                shortBalance: shortBalance,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> marginBuy = const Value.absent(),
+                Value<double?> marginSell = const Value.absent(),
+                Value<double?> marginBalance = const Value.absent(),
+                Value<double?> shortBuy = const Value.absent(),
+                Value<double?> shortSell = const Value.absent(),
+                Value<double?> shortBalance = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MarginTradingCompanion.insert(
+                symbol: symbol,
+                date: date,
+                marginBuy: marginBuy,
+                marginSell: marginSell,
+                marginBalance: marginBalance,
+                shortBuy: shortBuy,
+                shortSell: shortSell,
+                shortBalance: shortBalance,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$MarginTradingTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$MarginTradingTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn: $$MarginTradingTableReferences
+                                    ._symbolTable(db)
+                                    .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$MarginTradingTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MarginTradingTable,
+      MarginTradingEntry,
+      $$MarginTradingTableFilterComposer,
+      $$MarginTradingTableOrderingComposer,
+      $$MarginTradingTableAnnotationComposer,
+      $$MarginTradingTableCreateCompanionBuilder,
+      $$MarginTradingTableUpdateCompanionBuilder,
+      (MarginTradingEntry, $$MarginTradingTableReferences),
+      MarginTradingEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -18714,4 +19784,6 @@ class $AppDatabaseManager {
       $$MonthlyRevenueTableTableManager(_db, _db.monthlyRevenue);
   $$StockValuationTableTableManager get stockValuation =>
       $$StockValuationTableTableManager(_db, _db.stockValuation);
+  $$MarginTradingTableTableManager get marginTrading =>
+      $$MarginTradingTableTableManager(_db, _db.marginTrading);
 }

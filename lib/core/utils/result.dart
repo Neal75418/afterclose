@@ -1,9 +1,9 @@
-/// A functional result type for unified error handling
+/// 函數式結果型別，用於統一錯誤處理
 ///
-/// Provides a type-safe way to represent success or failure without exceptions.
-/// Inspired by Rust's Result type and functional programming patterns.
+/// 提供型別安全的方式表示成功或失敗，避免使用例外。
+/// 靈感來自 Rust 的 Result 型別與函數式程式設計模式。
 ///
-/// Usage:
+/// 使用範例：
 /// ```dart
 /// Result<User> getUser(int id) {
 ///   try {
@@ -14,7 +14,7 @@
 ///   }
 /// }
 ///
-/// // Using the result
+/// // 使用結果
 /// final result = getUser(1);
 /// if (result.isSuccess) {
 ///   print(result.data);
@@ -22,7 +22,7 @@
 ///   print(result.error);
 /// }
 ///
-/// // Or with fold
+/// // 或使用 fold
 /// result.fold(
 ///   onSuccess: (user) => print(user),
 ///   onFailure: (error) => print(error),
@@ -31,50 +31,50 @@
 sealed class Result<T> {
   const Result._();
 
-  /// Create a success result with data
+  /// 建立成功結果
   const factory Result.success(T data) = Success<T>;
 
-  /// Create a failure result with error message
+  /// 建立失敗結果
   const factory Result.failure(String error, [Object? exception]) = Failure<T>;
 
-  /// Whether this result is a success
+  /// 是否為成功
   bool get isSuccess;
 
-  /// Whether this result is a failure
+  /// 是否為失敗
   bool get isFailure => !isSuccess;
 
-  /// Get the data if success, null otherwise
+  /// 成功時取得資料，否則為 null
   T? get data;
 
-  /// Get the error message if failure, null otherwise
+  /// 失敗時取得錯誤訊息，否則為 null
   String? get error;
 
-  /// Get the exception if failure, null otherwise
+  /// 失敗時取得例外物件，否則為 null
   Object? get exception;
 
-  /// Transform the success value using a function
+  /// 使用函數轉換成功值
   Result<R> map<R>(R Function(T data) transform);
 
-  /// Transform the success value using a function that returns a Result
+  /// 使用回傳 Result 的函數轉換成功值
   Result<R> flatMap<R>(Result<R> Function(T data) transform);
 
-  /// Execute different callbacks based on success or failure
+  /// 根據成功或失敗執行不同回呼
   R fold<R>({
     required R Function(T data) onSuccess,
     required R Function(String error, Object? exception) onFailure,
   });
 
-  /// Get data or throw if failure
+  /// 取得資料，失敗時拋出例外
   T getOrThrow();
 
-  /// Get data or return a default value if failure
+  /// 取得資料，失敗時回傳預設值
   T getOrDefault(T defaultValue);
 
-  /// Get data or compute a default value if failure
+  /// 取得資料，失敗時計算預設值
   T getOrElse(T Function() compute);
 }
 
-/// Success variant of Result
+/// Result 的成功變體
 final class Success<T> extends Result<T> {
   const Success(this._data) : super._();
 
@@ -133,7 +133,7 @@ final class Success<T> extends Result<T> {
   int get hashCode => _data.hashCode;
 }
 
-/// Failure variant of Result
+/// Result 的失敗變體
 final class Failure<T> extends Result<T> {
   const Failure(this._error, [this._exception]) : super._();
 
@@ -196,15 +196,15 @@ final class Failure<T> extends Result<T> {
   int get hashCode => _error.hashCode;
 }
 
-/// Extension for async Result operations
+/// 非同步 Result 操作擴充
 extension ResultFutureExtension<T> on Future<Result<T>> {
-  /// Map the success value asynchronously
+  /// 非同步轉換成功值
   Future<Result<R>> mapAsync<R>(R Function(T data) transform) async {
     final result = await this;
     return result.map(transform);
   }
 
-  /// FlatMap the success value asynchronously
+  /// 非同步 flatMap 成功值
   Future<Result<R>> flatMapAsync<R>(
     Future<Result<R>> Function(T data) transform,
   ) async {
@@ -216,7 +216,7 @@ extension ResultFutureExtension<T> on Future<Result<T>> {
   }
 }
 
-/// Helper to run a function and wrap result
+/// 執行函數並包裝結果的輔助函數
 Result<T> runCatching<T>(T Function() action, {String? errorPrefix}) {
   try {
     return Result.success(action());
@@ -226,7 +226,7 @@ Result<T> runCatching<T>(T Function() action, {String? errorPrefix}) {
   }
 }
 
-/// Helper to run an async function and wrap result
+/// 執行非同步函數並包裝結果的輔助函數
 Future<Result<T>> runCatchingAsync<T>(
   Future<T> Function() action, {
   String? errorPrefix,

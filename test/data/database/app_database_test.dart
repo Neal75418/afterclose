@@ -14,6 +14,15 @@ void main() {
     await db.close();
   });
 
+  /// Helper to insert test stock master entries required by foreign keys
+  Future<void> insertTestStocks() async {
+    await db.upsertStocks([
+      StockMasterCompanion.insert(symbol: '2330', name: '台積電', market: 'TWSE'),
+      StockMasterCompanion.insert(symbol: '2317', name: '鴻海', market: 'TWSE'),
+      StockMasterCompanion.insert(symbol: '2454', name: '聯發科', market: 'TWSE'),
+    ]);
+  }
+
   group('AppDatabase', () {
     group('StockMaster Operations', () {
       test('should upsert and retrieve stock', () async {
@@ -105,6 +114,10 @@ void main() {
     });
 
     group('DailyPrice Operations', () {
+      setUp(() async {
+        await insertTestStocks();
+      });
+
       test('should insert and retrieve price history', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
@@ -251,6 +264,10 @@ void main() {
     });
 
     group('Watchlist Operations', () {
+      setUp(() async {
+        await insertTestStocks();
+      });
+
       test('should add to watchlist', () async {
         await db.addToWatchlist('2330');
 
@@ -287,6 +304,10 @@ void main() {
     });
 
     group('Analysis Operations', () {
+      setUp(() async {
+        await insertTestStocks();
+      });
+
       test('should insert and retrieve analysis', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
@@ -366,6 +387,10 @@ void main() {
     });
 
     group('Reason Operations', () {
+      setUp(() async {
+        await insertTestStocks();
+      });
+
       test('should insert and retrieve reasons', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
@@ -455,6 +480,10 @@ void main() {
     });
 
     group('Recommendation Operations', () {
+      setUp(() async {
+        await insertTestStocks();
+      });
+
       test('should insert and retrieve recommendations', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);

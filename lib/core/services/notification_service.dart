@@ -6,7 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-/// Service for handling local notifications
+/// 本地通知服務
 class NotificationService {
   NotificationService._();
 
@@ -18,26 +18,22 @@ class NotificationService {
 
   bool _isInitialized = false;
 
-  /// Initialize the notification service
+  /// 初始化通知服務
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // Initialize timezone
     tz.initializeTimeZones();
 
-    // Android settings
     const androidSettings = AndroidInitializationSettings(
       '@mipmap/ic_launcher',
     );
 
-    // iOS settings
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
 
-    // macOS settings
     const macOSSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -62,7 +58,7 @@ class NotificationService {
     }
   }
 
-  /// Request notification permissions (iOS/macOS)
+  /// 請求通知權限（iOS/macOS）
   Future<bool> requestPermissions() async {
     if (Platform.isIOS || Platform.isMacOS) {
       final result = await _notifications
@@ -85,7 +81,7 @@ class NotificationService {
     return true;
   }
 
-  /// Show a price alert notification
+  /// 顯示價格提醒通知
   Future<void> showPriceAlert({
     required int id,
     required String symbol,
@@ -127,7 +123,7 @@ class NotificationService {
     );
   }
 
-  /// Show a general notification
+  /// 顯示一般通知
   Future<void> showNotification({
     required int id,
     required String title,
@@ -164,7 +160,7 @@ class NotificationService {
     );
   }
 
-  /// Schedule a notification for a specific time
+  /// 排程指定時間的通知
   Future<void> scheduleNotification({
     required int id,
     required String title,
@@ -206,34 +202,34 @@ class NotificationService {
     );
   }
 
-  /// Cancel a specific notification
+  /// 取消指定通知
   Future<void> cancelNotification(int id) async {
     await _notifications.cancel(id);
   }
 
-  /// Cancel all notifications
+  /// 取消所有通知
   Future<void> cancelAllNotifications() async {
     await _notifications.cancelAll();
   }
 
-  /// Get pending notifications
+  /// 取得待發送的通知列表
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _notifications.pendingNotificationRequests();
   }
 
-  /// Handle notification tap
+  /// 處理通知點擊事件
+  ///
+  /// payload 包含股票代號，導航由應用程式的導航系統處理。
   void _onNotificationTapped(NotificationResponse response) {
     if (kDebugMode) {
       print('Notification tapped: ${response.payload}');
     }
-    // Navigation will be handled by the app's navigation system
-    // The payload contains the stock symbol for price alerts
   }
 
-  /// Dispose and cleanup notification resources
+  /// 釋放通知服務資源
   ///
-  /// Cancels all pending notifications and resets initialization state.
-  /// Should be called when the app is being disposed.
+  /// 取消所有待發送通知並重置初始化狀態。
+  /// 應在應用程式關閉時呼叫。
   Future<void> dispose() async {
     if (!_isInitialized) return;
 
@@ -247,6 +243,6 @@ class NotificationService {
     }
   }
 
-  /// Check if the service is initialized
+  /// 檢查服務是否已初始化
   bool get isInitialized => _isInitialized;
 }

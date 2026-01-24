@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 
-/// Predefined size variants for ScoreRing
+/// ScoreRing 的預設尺寸變體
 enum ScoreRingSize {
-  /// Small: 28x28, strokeWidth 2.5, fontSize 9
+  /// 小型：28x28，線寬 2.5，字型大小 9
   small(28.0, 2.5, 9.0),
 
-  /// Medium: 32x32, strokeWidth 3, fontSize 10
+  /// 中型：32x32，線寬 3，字型大小 10
   medium(32.0, 3.0, 10.0),
 
-  /// Large: 40x40, strokeWidth 3.5, fontSize 12
+  /// 大型：40x40，線寬 3.5，字型大小 12
   large(40.0, 3.5, 12.0),
 
-  /// Extra Large: 48x48, strokeWidth 4, fontSize 14 (for preview sheets)
+  /// 特大型：48x48，線寬 4，字型大小 14（用於預覽面板）
   extraLarge(48.0, 4.0, 14.0);
 
   const ScoreRingSize(this.dimension, this.strokeWidth, this.fontSize);
@@ -23,13 +23,13 @@ enum ScoreRingSize {
   final double fontSize;
 }
 
-/// A circular progress ring showing a score value
+/// 顯示分數值的圓形進度環
 ///
-/// Features:
-/// - Progress ring with color based on score
-/// - Score text displayed in center
-/// - Configurable size variants
-/// - Semantic label for accessibility
+/// 特色：
+/// - 依據分數顯示不同顏色的進度環
+/// - 中央顯示分數文字
+/// - 可設定的尺寸變體
+/// - 無障礙語意標籤
 @immutable
 class ScoreRing extends StatelessWidget {
   const ScoreRing({
@@ -39,13 +39,13 @@ class ScoreRing extends StatelessWidget {
     this.maxScore = 100.0,
   });
 
-  /// The score to display (0-maxScore)
+  /// 要顯示的分數（0-maxScore）
   final double score;
 
-  /// Size variant for the ring
+  /// 圓環的尺寸變體
   final ScoreRingSize size;
 
-  /// Maximum possible score (default: 100)
+  /// 最大可能分數（預設：100）
   final double maxScore;
 
   @override
@@ -63,7 +63,7 @@ class ScoreRing extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // Background ring
+            // 背景圓環
             CircularProgressIndicator(
               value: 1.0,
               strokeWidth: size.strokeWidth,
@@ -72,7 +72,7 @@ class ScoreRing extends StatelessWidget {
                 scoreColor.withValues(alpha: 0.2),
               ),
             ),
-            // Progress ring
+            // 進度圓環
             CircularProgressIndicator(
               value: progress,
               strokeWidth: size.strokeWidth,
@@ -80,7 +80,7 @@ class ScoreRing extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
               strokeCap: StrokeCap.round,
             ),
-            // Score text in center
+            // 中央的分數文字
             Text(
               '$displayScore',
               style: theme.textTheme.labelSmall?.copyWith(

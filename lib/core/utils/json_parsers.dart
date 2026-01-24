@@ -1,8 +1,8 @@
-/// Utility functions for parsing JSON values
+/// JSON 值解析工具函數
 abstract final class JsonParsers {
-  /// Parse a dynamic value to double
+  /// 將動態值解析為 double
   ///
-  /// Handles null, num, and String types
+  /// 支援 null、num、String 型別。
   static double? parseDouble(dynamic value) {
     if (value == null) return null;
     if (value is num) return value.toDouble();
@@ -10,9 +10,9 @@ abstract final class JsonParsers {
     return null;
   }
 
-  /// Parse a dynamic value to int
+  /// 將動態值解析為 int
   ///
-  /// Handles null, int, num, and String types
+  /// 支援 null、int、num、String 型別。
   static int? parseInt(dynamic value) {
     if (value == null) return null;
     if (value is int) return value;

@@ -3,14 +3,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 
-/// Decorative section header with gradient accent bar
+/// 帶有漸層裝飾線的區塊標題
 ///
-/// Features:
-/// - Gradient accent bar on the left
-/// - Icon + title layout
-/// - Optional subtitle
-/// - Optional trailing widget (e.g., action button)
-/// - Subtle entrance animation
+/// 特色：
+/// - 左側漸層裝飾線
+/// - 圖示 + 標題排版
+/// - 可選的副標題
+/// - 可選的尾端 Widget（例如動作按鈕）
+/// - 輕微的進場動畫
 class SectionHeader extends StatelessWidget {
   const SectionHeader({
     super.key,
@@ -36,7 +36,7 @@ class SectionHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
-          // Gradient accent bar
+          // 漸層裝飾線
           Container(
             width: 4,
             height: 20,
@@ -53,13 +53,13 @@ class SectionHeader extends StatelessWidget {
           ),
           const SizedBox(width: 12),
 
-          // Icon (if provided)
+          // 圖示（若有提供）
           if (icon != null) ...[
             Icon(icon, size: 20, color: theme.colorScheme.primary),
             const SizedBox(width: 8),
           ],
 
-          // Title and subtitle
+          // 標題與副標題
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,7 +85,7 @@ class SectionHeader extends StatelessWidget {
             ),
           ),
 
-          // Trailing widget (if provided)
+          // 尾端 Widget（若有提供）
           if (trailing != null) trailing!,
         ],
       ),

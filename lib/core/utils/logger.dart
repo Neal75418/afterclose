@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
 
-/// Log levels for filtering output
+/// 日誌等級，用於過濾輸出
 enum LogLevel { debug, info, warning, error }
 
-/// Structured logger for consistent logging across the app.
+/// 結構化日誌工具，確保應用程式日誌格式一致
 ///
-/// Usage:
+/// 使用範例：
 /// ```dart
 /// AppLogger.debug('PriceRepo', 'Fetching prices for 2330');
 /// AppLogger.info('UpdateService', 'Update completed');
@@ -13,25 +13,25 @@ enum LogLevel { debug, info, warning, error }
 /// AppLogger.error('Network', 'API request failed', e, stackTrace);
 /// ```
 abstract final class AppLogger {
-  /// Minimum log level to output (only affects debug builds)
+  /// 最低輸出等級（僅在 debug 模式生效）
   static LogLevel minLevel = LogLevel.debug;
 
-  /// Log a debug message
+  /// 記錄 debug 訊息
   static void debug(String tag, String message) {
     _log(LogLevel.debug, tag, message);
   }
 
-  /// Log an info message
+  /// 記錄 info 訊息
   static void info(String tag, String message) {
     _log(LogLevel.info, tag, message);
   }
 
-  /// Log a warning message
+  /// 記錄 warning 訊息
   static void warning(String tag, String message, [Object? error]) {
     _log(LogLevel.warning, tag, message, error);
   }
 
-  /// Log an error message with optional exception and stack trace
+  /// 記錄 error 訊息，可附帶例外與堆疊追蹤
   static void error(
     String tag,
     String message, [

@@ -300,22 +300,34 @@ void main() {
       const rule = InstitutionalShiftRule();
 
       test('should trigger when foreign investors switch to buy', () {
+        // Rule Case 5 (Significant Buy) requires:
+        // 1. todayVolume >= 1,000,000 shares (1000 sheets * 1000)
+        // 2. todayNet > 2,500,000 (2500 sheets * 1000)
+        // 3. todayNet.abs() / todayVolume >= 0.25 (25% ratio)
+        //
+        // Using: todayDirection = 3,000,000, volume = 10,000,000
+        // ratio = 3M / 10M = 0.3 > 0.25 ✓
         final history = generateInstitutionalHistory(
           days: 15,
-          prevDirection: -1000,
-          todayDirection: 1000,
+          prevDirection: -100000,
+          todayDirection: 3000000, // 3M net buy (= 3000 sheets)
+        );
+        final prices = generateConstantPrices(
+          days: 15,
+          basePrice: 100.0,
+          volume: 10000000, // 10M shares
         );
         const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(
           symbol: 'TEST',
-          prices: [],
+          prices: prices,
           institutional: history,
         );
 
         final result = rule.evaluate(context, data);
 
         expect(result, isNotNull);
-        expect(result!.type, ReasonType.institutionalShift);
+        expect(result!.type, ReasonType.institutionalBuy);
       });
 
       test('should NOT trigger with insufficient history', () {
@@ -384,15 +396,16 @@ void main() {
         expect(result.description, contains('利空'));
       });
 
-      test('should NOT trigger on old news (>24h)', () {
+      test('should NOT trigger on old news (>120h / 5 days)', () {
+        // Rule filters news older than 120 hours (5 days)
         final news = [
           NewsItemEntry(
             id: 'test-3',
             title: '營收創新高！',
             source: 'MoneyDJ',
             url: 'https://example.com/news/3',
-            publishedAt: DateTime.now().subtract(const Duration(hours: 48)),
-            fetchedAt: DateTime.now().subtract(const Duration(hours: 48)),
+            publishedAt: DateTime.now().subtract(const Duration(hours: 150)),
+            fetchedAt: DateTime.now().subtract(const Duration(hours: 150)),
             category: 'EARNINGS',
           ),
         ];

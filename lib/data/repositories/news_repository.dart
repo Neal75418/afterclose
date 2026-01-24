@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 
-/// Repository for news data
+/// 新聞資料 Repository
 class NewsRepository {
   NewsRepository({required AppDatabase database, required RssParser rssParser})
     : _db = database,
@@ -12,9 +12,9 @@ class NewsRepository {
   final AppDatabase _db;
   final RssParser _rssParser;
 
-  /// Sync news from all RSS feeds
+  /// 從所有 RSS feeds 同步新聞
   ///
-  /// Returns a [NewsSyncResult] containing count of items added and any errors
+  /// 回傳 [NewsSyncResult]，包含新增筆數和錯誤資訊
   Future<NewsSyncResult> syncNews({List<RssFeedSource>? sources}) async {
     final feedSources = sources ?? RssFeedSource.defaultSources;
     final parseResult = await _rssParser.parseAllFeeds(feedSources);
@@ -25,11 +25,11 @@ class NewsRepository {
 
     final newsItems = parseResult.items;
 
-    // Pre-fetch all active stocks for efficient lookup
+    // 預先載入所有上市股票以提升查詢效率
     final activeStocks = await _db.getAllActiveStocks();
     final stockSymbols = activeStocks.map((s) => s.symbol).toSet();
 
-    // Prepare all entries
+    // 準備資料
     final newsCompanions = <NewsItemCompanion>[];
     final mappingCompanions = <NewsStockMapCompanion>[];
 
@@ -45,7 +45,7 @@ class NewsRepository {
         ),
       );
 
-      // Extract and map stock codes from title
+      // 從標題擷取並建立股票關聯
       final stockCodes = item.extractStockCodes();
       for (final code in stockCodes) {
         if (stockSymbols.contains(code)) {
@@ -56,16 +56,16 @@ class NewsRepository {
       }
     }
 
-    // Insert all in a single transaction with batch operations
+    // 在單一 Transaction 中批次寫入
     await _db.transaction(() async {
-      // Batch insert news items
+      // 批次寫入新聞
       await _db.batch((b) {
         for (final companion in newsCompanions) {
           b.insert(_db.newsItem, companion, mode: InsertMode.insertOrIgnore);
         }
       });
 
-      // Batch insert stock mappings
+      // 批次寫入股票關聯
       if (mappingCompanions.isNotEmpty) {
         await _db.batch((b) {
           for (final companion in mappingCompanions) {
@@ -85,11 +85,11 @@ class NewsRepository {
     );
   }
 
-  /// Get recent news (last N days) - uses DB-level filtering
+  /// 取得最近新聞（Database 層級過濾）
   ///
-  /// [days] - Number of days to look back (default: 3)
-  /// [limit] - Maximum number of items to return (default: null = no limit)
-  /// [offset] - Number of items to skip (default: 0, for pagination)
+  /// [days] - 回溯天數（預設 3 天）
+  /// [limit] - 回傳上限（預設無限制）
+  /// [offset] - 略過筆數（分頁用，預設 0）
   Future<List<NewsItemEntry>> getRecentNews({
     int days = 3,
     int? limit,
@@ -100,7 +100,7 @@ class NewsRepository {
       ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
       ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]);
 
-    // Apply pagination if limit is specified
+    // 套用分頁
     if (limit != null) {
       query.limit(limit, offset: offset);
     }
@@ -108,12 +108,12 @@ class NewsRepository {
     return query.get();
   }
 
-  /// Get news for a specific stock - uses DB-level filtering
+  /// 取得特定股票的新聞（Database 層級過濾）
   ///
-  /// [symbol] - Stock symbol
-  /// [days] - Number of days to look back (default: 3)
-  /// [limit] - Maximum number of items to return (default: null = no limit)
-  /// [offset] - Number of items to skip (default: 0, for pagination)
+  /// [symbol] - 股票代碼
+  /// [days] - 回溯天數（預設 3 天）
+  /// [limit] - 回傳上限（預設無限制）
+  /// [offset] - 略過筆數（分頁用，預設 0）
   Future<List<NewsItemEntry>> getNewsForStock(
     String symbol, {
     int days = 3,
@@ -122,7 +122,7 @@ class NewsRepository {
   }) async {
     final cutoff = DateTime.now().subtract(Duration(days: days));
 
-    // Get news IDs mapped to this stock
+    // 取得該股票關聯的新聞 ID
     final mappings = await (_db.select(
       _db.newsStockMap,
     )..where((m) => m.symbol.equals(symbol))).get();
@@ -131,13 +131,13 @@ class NewsRepository {
 
     final newsIds = mappings.map((m) => m.newsId).toList();
 
-    // Get news items with DB-level date filtering
+    // 以 Database 層級過濾日期
     final query = _db.select(_db.newsItem)
       ..where((n) => n.id.isIn(newsIds))
       ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
       ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]);
 
-    // Apply pagination if limit is specified
+    // 套用分頁
     if (limit != null) {
       query.limit(limit, offset: offset);
     }
@@ -145,9 +145,9 @@ class NewsRepository {
     return query.get();
   }
 
-  /// Get news for multiple stocks (batch query to avoid N+1)
+  /// 批次取得多檔股票的新聞（避免 N+1 問題）
   ///
-  /// Returns a map of symbol -> news list
+  /// 回傳 Map：symbol -> 新聞清單
   Future<Map<String, List<NewsItemEntry>>> getNewsForStocksBatch(
     List<String> symbols, {
     int days = 3,
@@ -156,17 +156,17 @@ class NewsRepository {
 
     final cutoff = DateTime.now().subtract(Duration(days: days));
 
-    // Get all mappings for the given symbols
+    // 一次查詢所有關聯
     final mappings = await (_db.select(
       _db.newsStockMap,
     )..where((m) => m.symbol.isIn(symbols))).get();
 
     if (mappings.isEmpty) return {};
 
-    // Get all unique news IDs
+    // 取得所有不重複的新聞 ID
     final newsIds = mappings.map((m) => m.newsId).toSet().toList();
 
-    // Get all news items in one query with date filter
+    // 一次查詢所有新聞並套用日期過濾
     final newsItems =
         await (_db.select(_db.newsItem)
               ..where((n) => n.id.isIn(newsIds))
@@ -174,10 +174,10 @@ class NewsRepository {
               ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]))
             .get();
 
-    // Create a map for quick lookup
+    // 建立快速查詢 Map
     final newsMap = {for (final item in newsItems) item.id: item};
 
-    // Group by symbol
+    // 依股票分組
     final result = <String, List<NewsItemEntry>>{};
     for (final mapping in mappings) {
       final newsItem = newsMap[mapping.newsId];
@@ -189,42 +189,42 @@ class NewsRepository {
     return result;
   }
 
-  /// Check if stock has recent news
+  /// 檢查股票是否有近期新聞
   Future<bool> hasRecentNews(String symbol, {int days = 2}) async {
     final news = await getNewsForStock(symbol, days: days);
     return news.isNotEmpty;
   }
 
-  /// Get news item by ID
+  /// 依 ID 取得新聞
   Future<NewsItemEntry?> getNewsById(String id) async {
     return (_db.select(
       _db.newsItem,
     )..where((n) => n.id.equals(id))).getSingleOrNull();
   }
 
-  /// Clean up old news (older than N days)
+  /// 清理舊新聞（超過 N 天）
   ///
-  /// Uses cascade delete - removing news items automatically removes mappings
+  /// 使用 Cascade Delete 自動刪除關聯資料
   Future<int> cleanupOldNews({int olderThanDays = 30}) async {
     final cutoff = DateTime.now().subtract(Duration(days: olderThanDays));
 
-    // Delete old news items - cascade delete will handle mappings
+    // 刪除舊新聞，Cascade Delete 會處理關聯
     return (_db.delete(
       _db.newsItem,
     )..where((n) => n.publishedAt.isSmallerThanValue(cutoff))).go();
   }
 }
 
-/// Result of news sync operation
+/// 新聞同步結果
 class NewsSyncResult {
   const NewsSyncResult({required this.itemsAdded, required this.errors});
 
   final int itemsAdded;
   final List<RssFeedError> errors;
 
-  /// Whether any feeds failed to parse
+  /// 是否有 Feed 解析失敗
   bool get hasErrors => errors.isNotEmpty;
 
-  /// Whether sync was completely successful (no errors)
+  /// 是否完全成功（無錯誤）
   bool get isFullySuccessful => errors.isEmpty;
 }

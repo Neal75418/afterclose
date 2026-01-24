@@ -1,12 +1,12 @@
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
-/// Cached accessor for batch database queries.
+/// 批次 Database 查詢的快取存取器
 ///
-/// Wraps [AppDatabase] batch methods with 30-second TTL caching
-/// to reduce redundant queries during update cycles.
+/// 為 [AppDatabase] 批次方法包裝 30 秒 TTL 快取，
+/// 以減少更新週期中的重複查詢。
 ///
-/// Usage:
+/// 使用範例:
 /// ```dart
 /// final accessor = CachedDatabaseAccessor(db: _db, cache: _cache);
 /// final prices = await accessor.getLatestPricesBatch(symbols);
@@ -21,28 +21,28 @@ class CachedDatabaseAccessor {
   final AppDatabase _db;
   final BatchQueryCacheManager _cache;
 
-  /// Get latest prices for multiple symbols with caching.
+  /// 批次取得多檔股票的最新價格（含快取）
   Future<Map<String, DailyPriceEntry>> getLatestPricesBatch(
     List<String> symbols,
   ) async {
     if (symbols.isEmpty) return {};
 
-    // Check cache first
+    // 先檢查快取
     final cached = _cache.getLatestPrices<DailyPriceEntry>(symbols);
     if (cached != null) {
       return cached;
     }
 
-    // Fetch from database
+    // 從 Database 擷取
     final result = await _db.getLatestPricesBatch(symbols);
 
-    // Cache the result
+    // 快取結果
     _cache.cacheLatestPrices(symbols, result);
 
     return result;
   }
 
-  /// Get price history for multiple symbols with caching.
+  /// 批次取得多檔股票的價格歷史（含快取）
   Future<Map<String, List<DailyPriceEntry>>> getPriceHistoryBatch(
     List<String> symbols, {
     required DateTime startDate,
@@ -50,7 +50,7 @@ class CachedDatabaseAccessor {
   }) async {
     if (symbols.isEmpty) return {};
 
-    // Check cache first
+    // 先檢查快取
     final cached = _cache.getPriceHistory<DailyPriceEntry>(
       symbols,
       startDate,
@@ -60,92 +60,92 @@ class CachedDatabaseAccessor {
       return cached;
     }
 
-    // Fetch from database
+    // 從 Database 擷取
     final result = await _db.getPriceHistoryBatch(
       symbols,
       startDate: startDate,
       endDate: endDate,
     );
 
-    // Cache the result
+    // 快取結果
     _cache.cachePriceHistory(symbols, startDate, endDate, result);
 
     return result;
   }
 
-  /// Get analyses for multiple symbols with caching.
+  /// 批次取得多檔股票的分析結果（含快取）
   Future<Map<String, DailyAnalysisEntry>> getAnalysesBatch(
     List<String> symbols,
     DateTime date,
   ) async {
     if (symbols.isEmpty) return {};
 
-    // Check cache first
+    // 先檢查快取
     final cached = _cache.getAnalyses<DailyAnalysisEntry>(symbols, date);
     if (cached != null) {
       return cached;
     }
 
-    // Fetch from database
+    // 從 Database 擷取
     final result = await _db.getAnalysesBatch(symbols, date);
 
-    // Cache the result
+    // 快取結果
     _cache.cacheAnalyses(symbols, date, result);
 
     return result;
   }
 
-  /// Get reasons for multiple symbols with caching.
+  /// 批次取得多檔股票的推薦理由（含快取）
   Future<Map<String, List<DailyReasonEntry>>> getReasonsBatch(
     List<String> symbols,
     DateTime date,
   ) async {
     if (symbols.isEmpty) return {};
 
-    // Check cache first
+    // 先檢查快取
     final cached = _cache.getReasons<DailyReasonEntry>(symbols, date);
     if (cached != null) {
       return cached;
     }
 
-    // Fetch from database
+    // 從 Database 擷取
     final result = await _db.getReasonsBatch(symbols, date);
 
-    // Cache the result
+    // 快取結果
     _cache.cacheReasons(symbols, date, result);
 
     return result;
   }
 
-  /// Get stocks batch (not cached - stock data rarely changes).
+  /// 批次取得股票主檔（不快取，因股票資料甚少變動）
   Future<Map<String, StockMasterEntry>> getStocksBatch(List<String> symbols) {
     return _db.getStocksBatch(symbols);
   }
 
-  /// Clear all cached data.
+  /// 清除所有快取資料
   ///
-  /// Call this after data mutations (e.g., after update completes).
+  /// 在資料異動後呼叫（例如更新完成後）
   void invalidateCache() {
     _cache.clearAll();
   }
 
   // ==================================================
-  // Type-Safe Batch Loading (Dart 3 Records)
+  // 型別安全批次載入（Dart 3 Records）
   // ==================================================
 
-  /// Load all data for a stock list screen in a single type-safe call.
+  /// 以單次型別安全呼叫載入股票清單畫面所需的所有資料
   ///
-  /// Returns a Record with named fields for compile-time type safety,
-  /// eliminating the need for manual casting from `results[0] as Map<...>`.
+  /// 回傳具有具名欄位的 Record 以確保編譯期型別安全，
+  /// 無需手動轉型如 `results[0] as Map<...>`。
   ///
-  /// Usage:
+  /// 使用範例:
   /// ```dart
   /// final data = await _cachedDb.loadStockListData(
   ///   symbols: allSymbols,
   ///   analysisDate: dateCtx.today,
   ///   historyStart: dateCtx.historyStart,
   /// );
-  /// // Type-safe access - no casting needed!
+  /// // 型別安全存取，無需轉型！
   /// final stockName = data.stocks[symbol]?.name;
   /// final latestPrice = data.latestPrices[symbol]?.close;
   /// ```
@@ -167,7 +167,7 @@ class CachedDatabaseAccessor {
 
     final effectiveHistoryEnd = historyEnd ?? analysisDate;
 
-    // Parallel fetch all data with caching
+    // 並行擷取所有資料（含快取）
     final results = await Future.wait([
       getStocksBatch(symbols),
       getLatestPricesBatch(symbols),
@@ -180,7 +180,7 @@ class CachedDatabaseAccessor {
       ),
     ]);
 
-    // Return typed Record - no casting needed by caller!
+    // 回傳型別化 Record，呼叫端無需轉型！
     return (
       stocks: results[0] as Map<String, StockMasterEntry>,
       latestPrices: results[1] as Map<String, DailyPriceEntry>,
@@ -190,9 +190,9 @@ class CachedDatabaseAccessor {
     );
   }
 
-  /// Load data for scan screen (no analyses in batch load, fetched separately).
+  /// 載入掃描畫面所需資料（分析結果另行擷取，不含在批次載入中）
   ///
-  /// Scan screen gets analyses from getAnalysisForDate(), so this excludes it.
+  /// 掃描畫面從 getAnalysisForDate() 取得分析結果，故此處排除。
   Future<ScanBatchData> loadScanData({
     required List<String> symbols,
     required DateTime analysisDate,
@@ -230,9 +230,9 @@ class CachedDatabaseAccessor {
   }
 }
 
-/// Type-safe batch data for stock list screens (Today, Watchlist).
+/// 股票清單畫面（今日推薦、自選股）的型別安全批次資料
 ///
-/// Uses Dart 3 Record syntax for compile-time type safety.
+/// 使用 Dart 3 Record 語法確保編譯期型別安全
 typedef StockListBatchData = ({
   Map<String, StockMasterEntry> stocks,
   Map<String, DailyPriceEntry> latestPrices,
@@ -241,7 +241,7 @@ typedef StockListBatchData = ({
   Map<String, List<DailyPriceEntry>> priceHistories,
 });
 
-/// Type-safe batch data for scan screen.
+/// 掃描畫面的型別安全批次資料
 typedef ScanBatchData = ({
   Map<String, StockMasterEntry> stocks,
   Map<String, DailyPriceEntry> latestPrices,

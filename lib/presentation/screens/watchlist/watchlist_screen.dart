@@ -423,10 +423,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                 TextButton(
                   onPressed: isLoading
                       ? null
-                      : () {
-                          controller.dispose();
-                          Navigator.pop(dialogContext);
-                        },
+                      : () => Navigator.pop(dialogContext),
                   child: Text('common.cancel'.tr()),
                 ),
                 FilledButton(
@@ -444,7 +441,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                           // Check if dialog is still mounted
                           if (!dialogContext.mounted) return;
 
-                          controller.dispose();
                           Navigator.pop(dialogContext);
 
                           if (mounted) {
@@ -487,14 +483,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           },
         );
       },
-    ).then((_) {
-      // Fallback disposal if dialog is dismissed by tapping outside
-      try {
-        controller.dispose();
-      } catch (_) {
-        // Already disposed, ignore
-      }
-    });
+    );
+    // Note: controller is a local variable and will be garbage collected
+    // when the dialog is dismissed. No manual dispose needed.
   }
 }
 

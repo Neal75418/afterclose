@@ -25,18 +25,22 @@ void main() {
 
   group('Rule Reproduction Tests', () {
     test('KDGoldenCrossRule triggers on cross', () async {
-      final prices = List.generate(
-        20,
-        (i) => DailyPriceEntry(
+      // Build prices that satisfy:
+      // 1. Today's volume > 5-day MA (last day has spike volume)
+      // 2. Price change >= 1% (last day close > prev close by 2%)
+      final prices = List.generate(20, (i) {
+        final isLastDay = i == 19;
+        const baseClose = 100.0;
+        return DailyPriceEntry(
           symbol: '2330',
           date: DateTime(2024, 1, 1).add(Duration(days: i)),
-          open: 100,
-          close: 100,
-          high: 100,
-          low: 100,
-          volume: 1000,
-        ),
-      ).toList();
+          open: baseClose,
+          close: isLastDay ? 102.0 : baseClose, // 2% rise on last day
+          high: isLastDay ? 103.0 : baseClose + 1,
+          low: baseClose - 1,
+          volume: isLastDay ? 5000 : 1000, // Volume spike on last day
+        );
+      }).toList();
 
       // Mock indicators
       // Yesterday: K < D (e.g. 15 < 18)
@@ -74,18 +78,24 @@ void main() {
 
       const context = AnalysisContext(trendState: TrendState.range);
 
+      // Need at least 20 price entries to calculate MA20
+      // And close must be > ma20 to pass the filter
+      // Base prices at 100, last price at 110 (above MA20)
+      final prices = List.generate(25, (i) {
+        final isRecent = i >= 20; // Last 5 days rise
+        return DailyPriceEntry(
+          symbol: '2330',
+          date: DateTime(2024, 1, 1).add(Duration(days: i)),
+          open: 100.0,
+          close: isRecent ? 110.0 : 100.0, // Last 5 days above MA20
+          high: isRecent ? 112.0 : 102.0,
+          low: 98.0,
+          volume: 1000000,
+        );
+      });
+
       final reasons = ruleEngine.evaluateStock(
-        priceHistory: [
-          DailyPriceEntry(
-            symbol: '2330',
-            date: DateTime.now(),
-            open: 1,
-            close: 1,
-            high: 1,
-            low: 1,
-            volume: 1,
-          ),
-        ], // Dummy
+        priceHistory: prices,
         context: context,
         symbol: '2330',
         latestValuation: valuation,

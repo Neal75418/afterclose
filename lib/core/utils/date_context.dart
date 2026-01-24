@@ -1,11 +1,11 @@
-/// Utility class for consistent date handling across the app.
+/// 日期處理工具類別，確保應用程式中日期處理的一致性
 ///
-/// Provides normalized dates for database queries and UI display.
-/// All dates are normalized to UTC midnight to ensure consistent comparison.
+/// 提供標準化的日期供資料庫查詢與 UI 顯示使用。
+/// 所有日期皆標準化為 UTC 午夜，確保比較時的一致性。
 class DateContext {
   DateContext._({required this.today, required this.historyStart});
 
-  /// Create a DateContext for current date with standard 5-day history lookback.
+  /// 以目前日期建立 DateContext，預設回溯 5 天歷史資料
   factory DateContext.now({int historyDays = 5}) {
     final now = DateTime.now();
     final today = DateTime.utc(now.year, now.month, now.day);
@@ -15,29 +15,39 @@ class DateContext {
     );
   }
 
-  /// Create a DateContext with custom history lookback period.
+  /// 以指定日期建立 DateContext
+  factory DateContext.forDate(DateTime date, {int historyDays = 5}) {
+    final normalized = normalize(date);
+    return DateContext._(
+      today: normalized,
+      historyStart: normalized.subtract(Duration(days: historyDays)),
+    );
+  }
+
+  /// 以自訂回溯天數建立 DateContext
   factory DateContext.withLookback(int days) {
     return DateContext.now(historyDays: days);
   }
 
-  /// Today's date normalized to UTC midnight.
+  /// 今日日期（標準化為 UTC 午夜）
   final DateTime today;
 
-  /// Start date for price history queries.
+  /// 價格歷史查詢的起始日期
   final DateTime historyStart;
 
-  /// Normalize any DateTime to UTC midnight for consistent comparison.
+  /// 將任意 DateTime 標準化為 UTC 午夜，確保比較一致性
   static DateTime normalize(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
   }
 
-  /// Check if two dates are the same day (ignoring time).
+  /// 檢查兩個日期是否為同一天（忽略時間）
   static bool isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  /// Get the earlier of two dates (normalized).
-  /// Returns null if both dates are null.
+  /// 取得兩日期中較早的日期（已標準化）
+  ///
+  /// 若兩者皆為 null 則回傳 null。
   static DateTime? earlierOf(DateTime? a, DateTime? b) {
     if (a == null && b == null) return null;
     if (a == null) return normalize(b!);
@@ -47,7 +57,7 @@ class DateContext {
     return normalA.isBefore(normalB) ? normalA : normalB;
   }
 
-  /// Check if date a is before or same as date b (normalized comparison).
+  /// 檢查日期 a 是否早於或等於日期 b（標準化比較）
   static bool isBeforeOrEqual(DateTime a, DateTime b) {
     final normalA = normalize(a);
     final normalB = normalize(b);

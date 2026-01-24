@@ -1,7 +1,7 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 
-/// Data object containing all necessary market data for rule evaluation
+/// 規則評估所需的市場資料物件
 class StockData {
   const StockData({
     required this.symbol,
@@ -18,42 +18,43 @@ class StockData {
   final List<DailyInstitutionalEntry>? institutional;
   final List<NewsItemEntry>? news;
 
-  /// Latest monthly revenue data (for Phase 6 fundamental rules)
+  /// 最新月營收資料（用於基本面規則）
   final MonthlyRevenueEntry? latestRevenue;
 
-  /// Latest valuation data (PE, PBR, dividend yield) for Phase 6 rules
+  /// 最新估值資料（PE、PBR、殖利率）
   final StockValuationEntry? latestValuation;
 
-  /// Recent monthly revenue history (for MoM growth tracking)
-  /// Should be sorted in descending order (newest first)
+  /// 近期月營收歷史（用於月增率追蹤）
+  ///
+  /// 需依時間降序排列（最新在前）
   final List<MonthlyRevenueEntry>? revenueHistory;
 
-  /// Get latest price entry, null if empty
+  /// 取得最新價格，若無資料則為 null
   DailyPriceEntry? get latestPrice => prices.isEmpty ? null : prices.last;
 
-  /// Get latest close, null if unavailable
+  /// 取得最新收盤價，若無資料則為 null
   double? get latestClose => latestPrice?.close;
 
-  /// Get previous price entry, null if less than 2 entries
+  /// 取得前一日價格，若少於 2 筆則為 null
   DailyPriceEntry? get previousPrice =>
       prices.length < 2 ? null : prices[prices.length - 2];
 
-  /// Get previous close, null if unavailable
+  /// 取得前一日收盤價，若無資料則為 null
   double? get previousClose => previousPrice?.close;
 }
 
-/// Base interface for all stock analysis rules
+/// 股票分析規則的基礎介面
 abstract class StockRule {
   const StockRule();
 
-  /// Unique identifier for the rule
+  /// 規則的唯一識別碼
   String get id;
 
-  /// Human readable name
+  /// 規則名稱
   String get name;
 
-  /// Evaluate the rule against stock data
+  /// 對股票資料評估此規則
   ///
-  /// Returns a [TriggeredReason] if the rule matches, otherwise null.
+  /// 若規則符合則回傳 [TriggeredReason]，否則回傳 null
   TriggeredReason? evaluate(AnalysisContext context, StockData data);
 }

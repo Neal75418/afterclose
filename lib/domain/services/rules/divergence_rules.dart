@@ -3,11 +3,12 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
-// Phase 5: Price-Volume Divergence Rules
+// 第 5 階段：價量背離規則
 // ==========================================
 
-/// Rule: Bullish Divergence (價漲量縮)
-/// Price going up but volume decreasing - warning signal
+/// 規則：價漲量縮
+///
+/// 價格上漲但成交量萎縮 - 警示訊號
 class PriceVolumeBullishDivergenceRule extends StockRule {
   const PriceVolumeBullishDivergenceRule();
 
@@ -36,7 +37,7 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
       return null;
     }
 
-    // Calculate average volume for lookback period
+    // 計算回溯期間的平均成交量
     double volumeSum = 0;
     int volumeCount = 0;
     for (int i = 1; i <= lookback; i++) {
@@ -49,17 +50,20 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     if (volumeCount == 0) return null;
     final avgVolume = volumeSum / volumeCount;
 
-    // Check for divergence
+    // 檢查背離
     final priceChange = (todayClose - pastClose) / pastClose * 100;
     final volumeChange = (todayVolume - avgVolume) / avgVolume * 100;
 
-    // Price up significantly but volume down
-    if (priceChange >= RuleParams.priceVolumePriceThreshold &&
-        volumeChange <= -RuleParams.priceVolumeVolumeThreshold) {
+    // 價格上漲（> 2.0%）但成交量下降（< -20%）
+    // 針對台股放寬門檻，因背離常較早出現
+    // 原先：5% 價格 / -40% 成交量（過於嚴格，觸發率 < 2%）
+    // 目前：2% 價格 / -20% 成交量（更符合台股實際情況）
+    if (priceChange >= 2.0 && volumeChange <= -20.0) {
       return TriggeredReason(
         type: ReasonType.priceVolumeBullishDivergence,
         score: RuleScores.priceVolumeBullishDivergence,
-        description: '價漲量縮：價格上漲${priceChange.toStringAsFixed(1)}%，成交量萎縮',
+        description:
+            '價漲量縮：價格上漲${priceChange.toStringAsFixed(1)}%，成交量萎縮${volumeChange.abs().toStringAsFixed(0)}%',
         evidence: {
           'priceChange': priceChange,
           'volumeChange': volumeChange,
@@ -73,8 +77,9 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
   }
 }
 
-/// Rule: Bearish Divergence (價跌量增)
-/// Price going down with volume increasing - panic signal
+/// 規則：價跌量增
+///
+/// 價格下跌且成交量增加 - 恐慌訊號
 class PriceVolumeBearishDivergenceRule extends StockRule {
   const PriceVolumeBearishDivergenceRule();
 
@@ -118,13 +123,16 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
     final priceChange = (todayClose - pastClose) / pastClose * 100;
     final volumeChange = (todayVolume - avgVolume) / avgVolume * 100;
 
-    // Price down significantly with volume up
-    if (priceChange <= -RuleParams.priceVolumePriceThreshold &&
-        volumeChange >= RuleParams.priceVolumeVolumeThreshold) {
+    // 價格下跌（< -2.0%）且成交量上升（> 20%）
+    // 放寬門檻：台股常在較小跌幅時出現恐慌賣壓
+    // 原先：-3% 價格 / +30% 成交量
+    // 目前：-2% 價格 / +20% 成交量
+    if (priceChange <= -2.0 && volumeChange >= 20.0) {
       return TriggeredReason(
         type: ReasonType.priceVolumeBearishDivergence,
         score: RuleScores.priceVolumeBearishDivergence,
-        description: '價跌量增：價格下跌${priceChange.abs().toStringAsFixed(1)}%，成交量放大',
+        description:
+            '價跌量增：價格下跌${priceChange.abs().toStringAsFixed(1)}%，成交量放大${volumeChange.toStringAsFixed(0)}%',
         evidence: {
           'priceChange': priceChange,
           'volumeChange': volumeChange,
@@ -138,8 +146,9 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
   }
 }
 
-/// Rule: High Volume Breakout
-/// Price at high position with volume spike
+/// 規則：高檔爆量
+///
+/// 價格處於高檔且成交量暴增
 class HighVolumeBreakoutRule extends StockRule {
   const HighVolumeBreakoutRule();
 
@@ -159,7 +168,7 @@ class HighVolumeBreakoutRule extends StockRule {
 
     if (close == null || volume == null) return null;
 
-    // Calculate 60-day range
+    // 計算 60 日區間
     double maxHigh = 0;
     double minLow = double.infinity;
     double volumeSum = 0;
@@ -186,10 +195,10 @@ class HighVolumeBreakoutRule extends StockRule {
     if (maxHigh <= minLow || volumeCount == 0) return null;
 
     final range = maxHigh - minLow;
-    final position = (close - minLow) / range; // 0 = low, 1 = high
+    final position = (close - minLow) / range; // 0 = 低點, 1 = 高點
     final avgVolume = volumeSum / volumeCount;
 
-    // High position (top 15%) with volume spike (4x)
+    // 高檔位置（前 15%）且成交量暴增（4 倍）
     if (position >= RuleParams.highPositionThreshold &&
         volume >= avgVolume * RuleParams.volumeSpikeMult) {
       return TriggeredReason(
@@ -209,8 +218,9 @@ class HighVolumeBreakoutRule extends StockRule {
   }
 }
 
-/// Rule: Low Volume Accumulation
-/// Price at low position with shrinking volume - potential accumulation
+/// 規則：低檔吸籌
+///
+/// 價格處於低檔且成交量萎縮 - 可能正在吸籌
 class LowVolumeAccumulationRule extends StockRule {
   const LowVolumeAccumulationRule();
 
@@ -259,7 +269,7 @@ class LowVolumeAccumulationRule extends StockRule {
     final position = (close - minLow) / range;
     final avgVolume = volumeSum / volumeCount;
 
-    // Low position (bottom 15%) with low volume (below 50% of avg)
+    // 低檔位置（後 15%）且成交量低迷（低於平均的 50%）
     if (position <= RuleParams.lowPositionThreshold &&
         volume < avgVolume * 0.5) {
       return TriggeredReason(

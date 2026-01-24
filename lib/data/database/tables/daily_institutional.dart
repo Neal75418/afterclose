@@ -2,25 +2,25 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/data/database/tables/stock_master.dart';
 
-/// Daily institutional trading data (optional)
+/// 三大法人每日買賣超 Table
 @DataClassName('DailyInstitutionalEntry')
 @TableIndex(name: 'idx_daily_institutional_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_daily_institutional_date', columns: {#date})
 class DailyInstitutional extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Trading date
+  /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// Foreign institutional net buy/sell
+  /// 外資買賣超（張）
   RealColumn get foreignNet => real().nullable()();
 
-  /// Investment trust net buy/sell
+  /// 投信買賣超（張）
   RealColumn get investmentTrustNet => real().nullable()();
 
-  /// Dealer net buy/sell
+  /// 自營商買賣超（張）
   RealColumn get dealerNet => real().nullable()();
 
   @override

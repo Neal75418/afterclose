@@ -8,10 +8,10 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/repositories/price_repository.dart';
 
-/// Repository for daily price data
+/// 每日價格資料 Repository
 ///
-/// Uses TWSE Open Data as primary source (free, unlimited, all market)
-/// Falls back to FinMind for historical data
+/// 主要資料來源：TWSE Open Data（免費、無限制、全市場）
+/// 備援資料來源：FinMind（歷史資料）
 class PriceRepository implements IPriceRepository {
   PriceRepository({
     required AppDatabase database,
@@ -23,12 +23,12 @@ class PriceRepository implements IPriceRepository {
   final AppDatabase _db;
   final TwseClient _twseClient;
 
-  // Note: FinMindClient kept in constructor for backward compatibility
-  // but no longer used - TWSE is now the primary data source
+  // 註：保留 FinMindClient 在建構子以維持向下相容，
+  // 但不再使用，TWSE 為主要資料來源
 
-  /// Get price history for analysis
+  /// 取得價格歷史資料供分析使用
   ///
-  /// Returns at least [RuleParams.lookbackPrice] days if available
+  /// 若可用，至少回傳 [RuleParams.lookbackPrice] 天的資料
   @override
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
@@ -49,16 +49,16 @@ class PriceRepository implements IPriceRepository {
     );
   }
 
-  /// Get latest price for a stock
+  /// 取得股票最新價格
   @override
   Future<DailyPriceEntry?> getLatestPrice(String symbol) {
     return _db.getLatestPrice(symbol);
   }
 
-  /// Sync prices for a single stock using TWSE historical API
+  /// 使用 TWSE 歷史 API 同步單檔股票價格
   ///
-  /// Uses TWSE for historical data (free, official source)
-  /// OPTIMIZED: Only fetches months that are missing from the database
+  /// 使用 TWSE 取得歷史資料（免費、官方來源）
+  /// 最佳化：僅抓取 Database 中缺少的月份
   @override
   Future<int> syncStockPrices(
     String symbol, {
@@ -68,21 +68,20 @@ class PriceRepository implements IPriceRepository {
     try {
       final effectiveEndDate = endDate ?? DateTime.now();
 
-      // OPTIMIZATION: Check what data we already have
+      // 最佳化：檢查既有資料
       final existingHistory = await _db.getPriceHistory(
         symbol,
         startDate: startDate,
         endDate: effectiveEndDate,
       );
 
-      // Calculate which months to fetch (only those with insufficient data)
+      // 計算需要抓取的月份（僅抓取資料不足的月份）
       final monthsToFetch = <DateTime>[];
       var current = DateTime(startDate.year, startDate.month, 1);
       final end = DateTime(effectiveEndDate.year, effectiveEndDate.month, 1);
 
       while (!current.isAfter(end)) {
-        // Only fetch if we don't have data for this month
-        // (or have very little - less than 10 trading days)
+        // 僅當該月資料不足時才抓取（少於 10 個交易日）
         final existingDaysInMonth = existingHistory
             .where(
               (p) =>
@@ -95,7 +94,7 @@ class PriceRepository implements IPriceRepository {
         current = DateTime(current.year, current.month + 1, 1);
       }
 
-      // If no months need fetching, we're done
+      // 若無需抓取，直接回傳
       if (monthsToFetch.isEmpty) {
         AppLogger.debug(
           'PriceRepo',
@@ -110,7 +109,7 @@ class PriceRepository implements IPriceRepository {
             '(existing: ${existingHistory.length} days)',
       );
 
-      // Fetch only missing months
+      // 僅抓取缺少的月份
       final allPrices = <TwseDailyPrice>[];
       for (var i = 0; i < monthsToFetch.length; i++) {
         final month = monthsToFetch[i];
@@ -122,10 +121,10 @@ class PriceRepository implements IPriceRepository {
           );
           allPrices.addAll(monthData);
         } on RateLimitException {
-          // Rate limit errors should bubble up for proper backoff handling
+          // Rate Limit 錯誤應向上拋出以進行適當的 Backoff 處理
           rethrow;
         } catch (e) {
-          // Log and continue with other months if one fails
+          // 記錄錯誤並繼續處理其他月份
           AppLogger.warning(
             'PriceRepo',
             'Failed to fetch $symbol for ${month.year}/${month.month}',
@@ -133,14 +132,13 @@ class PriceRepository implements IPriceRepository {
           );
         }
 
-        // Rate limiting delay between months
-        // 250ms: Safe sweet spot for batchSize=2
+        // API 請求間隔（250ms：batchSize=2 的安全甜蜜點）
         if (i < monthsToFetch.length - 1) {
           await Future.delayed(const Duration(milliseconds: 250));
         }
       }
 
-      // Filter to requested date range
+      // 過濾至請求的日期範圍
       final filteredPrices = allPrices.where(
         (p) => !p.date.isBefore(startDate) && !p.date.isAfter(effectiveEndDate),
       );
@@ -180,21 +178,21 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
-  /// Sync today's prices for all stocks (batch mode)
+  /// 同步今日所有股票價格（批次模式）
   ///
-  /// Alias for [syncAllPricesForDate] with default date
+  /// [syncAllPricesForDate] 的別名，使用預設日期
   @override
   Future<MarketSyncResult> syncTodayPrices({DateTime? date}) {
     return syncAllPricesForDate(date ?? DateTime.now());
   }
 
-  /// Sync all prices for the latest trading day and return quick-filter candidates
+  /// 同步最新交易日的所有價格，並回傳快篩候選股
   ///
-  /// Primary: TWSE Open Data (free, unlimited, all market)
+  /// 主要來源：TWSE Open Data（免費、無限制、全市場）
   ///
-  /// Also updates stock_master with stock names from TWSE data.
+  /// 同時以 TWSE 資料更新 stock_master 中的股票名稱。
   ///
-  /// Returns [MarketSyncResult] with count and quick-filter candidates.
+  /// 回傳 [MarketSyncResult]，包含同步筆數和快篩候選股。
   @override
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
@@ -204,12 +202,11 @@ class PriceRepository implements IPriceRepository {
     try {
       AppLogger.info('PriceRepo', 'syncAllPricesForDate: date=$date');
 
-      // Normalize date to midnight local time for consistent DB comparison
-      // This fixes timezone issues where input might be UTC but DB stores local
+      // 正規化日期至本地午夜時間，確保 Database 比對一致
+      // 修正時區問題（輸入可能是 UTC，但 Database 儲存本地時間）
       final normalizedDate = DateTime(date.year, date.month, date.day);
 
-      // OPTIMIZATION: Check database FIRST before making API call
-      // This avoids unnecessary network requests when data already exists
+      // 最佳化：先檢查 Database，避免不必要的 API 呼叫
       if (!force) {
         final existingCount = await _db.getPriceCountForDate(normalizedDate);
         AppLogger.debug(
@@ -222,8 +219,8 @@ class PriceRepository implements IPriceRepository {
             'Data for $normalizedDate already exists ($existingCount records). Skipping API call.',
           );
 
-          // We still need candidates for the pipeline, so load them from DB
-          // Get stocks with significant price/volume changes from DB
+          // 仍需取得候選股供 Pipeline 使用，從 Database 載入
+          // 取得價量有顯著變化的股票
           final candidates = await _quickFilterCandidatesFromDb(normalizedDate);
 
           return MarketSyncResult(
@@ -235,24 +232,23 @@ class PriceRepository implements IPriceRepository {
         }
       }
 
-      // Only call API if we don't have data yet
+      // 僅在尚無資料時呼叫 API
       AppLogger.info('PriceRepo', 'Fetching prices from TWSE API...');
       final prices = await _twseClient.getAllDailyPrices();
 
       AppLogger.info('PriceRepo', 'Got ${prices.length} prices from TWSE');
 
       if (prices.isEmpty) {
-        // TWSE might not have data yet (before market close)
-        // Or it's a non-trading day
+        // TWSE 可能尚無資料（收盤前），或非交易日
         AppLogger.warning('PriceRepo', 'TWSE returned empty prices');
         return const MarketSyncResult(count: 0, candidates: []);
       }
 
-      // Check if the returned data date matches what we requested
-      // TWSE might return yesterday's data if called before market close
+      // 檢查回傳的資料日期是否符合請求
+      // TWSE 在收盤前可能回傳昨日資料
       AppLogger.info('PriceRepo', 'API returned data for ${prices.first.date}');
 
-      // Build price entries
+      // 建立價格資料
       final priceEntries = prices.map((price) {
         return DailyPriceCompanion.insert(
           symbol: price.code,
@@ -267,28 +263,33 @@ class PriceRepository implements IPriceRepository {
 
       AppLogger.info('PriceRepo', 'Built ${priceEntries.length} price entries');
 
-      // Build stock master entries from TWSE data (includes stock names!)
-      // This ensures stock names are always available even without FinMind API
+      // 從 TWSE 資料建立股票主檔（包含股票名稱！）
+      // 確保即使沒有 FinMind API 也能取得股票名稱
       final stockEntries = prices.where((p) => p.name.isNotEmpty).map((price) {
         return StockMasterCompanion.insert(
           symbol: price.code,
           name: price.name,
-          market: 'TWSE', // TWSE Open Data is for listed stocks
+          market: 'TWSE', // TWSE Open Data 為上市股票
           isActive: const Value(true),
         );
       }).toList();
 
       AppLogger.info('PriceRepo', 'Built ${stockEntries.length} stock entries');
 
-      // Upsert both prices and stock master
+      // 寫入資料庫：必須先寫入股票主檔，再寫入價格
+      // 因為 daily_price 表有外鍵約束，symbol 必須先存在於 stock_master 表中
       AppLogger.info('PriceRepo', 'Inserting to database...');
-      await Future.wait([
-        _db.insertPrices(priceEntries),
-        if (stockEntries.isNotEmpty) _db.upsertStocks(stockEntries),
-      ]);
+      if (stockEntries.isNotEmpty) {
+        await _db.upsertStocks(stockEntries);
+        AppLogger.info(
+          'PriceRepo',
+          'Upserted ${stockEntries.length} stock entries',
+        );
+      }
+      await _db.insertPrices(priceEntries);
       AppLogger.info('PriceRepo', 'Database insert complete');
 
-      // Quick filter: find candidates based on today's data only
+      // 快篩：僅依據今日資料篩選候選股
       final candidates = _quickFilterCandidates(prices);
       AppLogger.info(
         'PriceRepo',
@@ -308,62 +309,62 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
-  /// Quick filter candidates from today's market data
+  /// 從今日市場資料快篩候選股
   ///
-  /// Criteria (any one triggers):
-  /// 1. Price change >= 2% (significant movement)
-  /// 2. Near limit up (漲停) or limit down (跌停)
-  /// 3. Price change >= 1.5% with high volume potential
+  /// 條件（任一觸發）：
+  /// 1. 漲跌幅 >= 2%（顯著波動）
+  /// 2. 接近漲停或跌停
+  /// 3. 漲跌幅 >= 1.5% 且具高成交量潛力
   ///
-  /// Returns up to ~100 symbols for further analysis
+  /// 回傳約 100 檔股票供進一步分析
   List<String> _quickFilterCandidates(List<TwseDailyPrice> prices) {
     final candidates = <_QuickCandidate>[];
 
     for (final price in prices) {
-      // Skip if missing critical data
+      // 跳過缺少關鍵資料的股票
       if (price.close == null || price.close! <= 0) continue;
       if (price.change == null) continue;
 
-      // Skip ETFs, warrants, etc. (symbols not starting with digit or too short)
+      // 跳過 ETF、權證等（代碼非數字開頭或過短）
       if (price.code.length < 4) continue;
-      // STRICT FILTER: Only allow pure numeric symbols (removes 02001L, 00631L etc.)
-      // This avoids "Invalid argument" errors and focuses analysis on Stocks/ETFs
+      // 嚴格過濾：僅允許純數字代碼（排除 02001L、00631L 等）
+      // 避免「Invalid argument」錯誤，專注於股票/ETF 分析
       if (!RegExp(r'^\d+$').hasMatch(price.code)) continue;
 
-      // Calculate price change percentage
+      // 計算漲跌幅
       final prevClose = price.close! - price.change!;
       if (prevClose <= 0) continue;
 
-      // Filter: Skip very low volume stocks (< 50 lots = 50,000 shares)
-      // This removes inactive stocks (zombie stocks) to keep analysis meaningful
+      // 過濾：跳過極低成交量股票（< 50 張）
+      // 移除冷門股以維持分析品質
       if ((price.volume ?? 0) < 50000) continue;
 
-      // FULL MARKET STRATEGY:
-      // Include ALL active stocks regardless of price change.
-      // This allows the Rule Engine to find patterns even in consolidation
+      // 全市場策略：
+      // 納入所有活躍股票，不論漲跌幅。
+      // 讓 Rule Engine 在盤整行情中也能發現型態
 
       final changePercent = (price.change! / prevClose).abs() * 100;
       candidates.add(
         _QuickCandidate(
           symbol: price.code,
-          score: changePercent, // Simple score for sorting
+          score: changePercent, // 簡單分數供排序
         ),
       );
     }
 
-    // Sort by volatility just for display consistency
+    // 依波動度排序（僅供顯示一致性）
     candidates.sort((a, b) => b.score.compareTo(a.score));
 
-    // Return ALL eligible candidates (Full Market Scan)
+    // 回傳所有合格候選股（全市場掃描）
     return candidates.map((c) => c.symbol).toList();
   }
 
-  /// Quick filter candidates from database (when API is skipped)
+  /// 從 Database 快篩候選股（當跳過 API 時使用）
   ///
-  /// Similar to _quickFilterCandidates but reads from the local database
-  /// instead of API response. Used when we already have today's data.
+  /// 類似 _quickFilterCandidates，但從本地 Database 讀取，
+  /// 而非 API 回應。當已有今日資料時使用。
   Future<List<String>> _quickFilterCandidatesFromDb(DateTime date) async {
-    // Get all prices for the date from DB
+    // 從 Database 取得該日期的所有價格
     final prices = await _db.getPricesForDate(date);
 
     if (prices.isEmpty) return [];
@@ -371,24 +372,24 @@ class PriceRepository implements IPriceRepository {
     final candidates = <_QuickCandidate>[];
 
     for (final price in prices) {
-      // Skip if missing critical data
+      // 跳過缺少關鍵資料的股票
       final close = price.close;
       if (close == null || close <= 0) continue;
 
-      // Skip ETFs, warrants, etc.
+      // 跳過 ETF、權證等
       if (price.symbol.length < 4) continue;
       if (!RegExp(r'^\d+$').hasMatch(price.symbol)) continue;
 
-      // Skip very low volume stocks
+      // 跳過極低成交量股票
       if ((price.volume ?? 0) < 50000) continue;
 
-      // We need previous close to calculate change %
-      // For simplicity, just include all active stocks
-      // (The rule engine will do proper analysis anyway)
+      // 需要前一日收盤價計算漲跌幅
+      // 簡化處理：納入所有活躍股票
+      // （Rule Engine 會進行完整分析）
       candidates.add(
         _QuickCandidate(
           symbol: price.symbol,
-          score: 0, // No ranking needed
+          score: 0, // 無需排名
         ),
       );
     }
@@ -396,13 +397,13 @@ class PriceRepository implements IPriceRepository {
     return candidates.map((c) => c.symbol).toList();
   }
 
-  /// Sync prices for a list of specific symbols (free account fallback)
+  /// 同步指定股票清單的價格（免費帳號備援方案）
   ///
-  /// Fetches prices one-by-one with rate limiting awareness.
-  /// Only fetches data that is missing from the database.
+  /// 逐一抓取價格並注意 Rate Limiting。
+  /// 僅抓取 Database 中缺少的資料。
   ///
-  /// [onProgress] - callback for progress updates (current, total, symbol)
-  /// [delayBetweenRequests] - delay between API calls to avoid rate limits
+  /// [onProgress] - 進度回呼（current, total, symbol）
+  /// [delayBetweenRequests] - API 呼叫間隔以避免 Rate Limit
   Future<int> _syncPricesForSymbols(
     List<String> symbols,
     DateTime date, {
@@ -412,7 +413,7 @@ class PriceRepository implements IPriceRepository {
     var totalSynced = 0;
     final errors = <String>[];
 
-    // Historical data range for analysis (lookback + buffer)
+    // 分析用歷史資料範圍（lookback + buffer）
     final historyStartDate = date.subtract(
       const Duration(days: RuleParams.lookbackPrice + 30),
     );
@@ -422,29 +423,29 @@ class PriceRepository implements IPriceRepository {
       onProgress?.call(i + 1, symbols.length, symbol);
 
       try {
-        // Check what data we already have
+        // 檢查既有資料
         final latestPrice = await _db.getLatestPrice(symbol);
         final latestDate = latestPrice?.date;
 
-        // Skip if we already have today's data
+        // 若已有今日資料則跳過
         if (latestDate != null && _isSameDay(latestDate, date)) {
           continue;
         }
 
-        // Determine what range to fetch
+        // 決定抓取範圍
         DateTime fetchStartDate;
         if (latestDate == null) {
-          // No data at all - fetch full history
+          // 完全無資料，抓取完整歷史
           fetchStartDate = historyStartDate;
         } else if (latestDate.isBefore(historyStartDate)) {
-          // Data is too old - fetch full history
+          // 資料過舊，抓取完整歷史
           fetchStartDate = historyStartDate;
         } else {
-          // Have some data - fetch from day after latest
+          // 有部分資料，從最新日期後一天開始
           fetchStartDate = latestDate.add(const Duration(days: 1));
         }
 
-        // Skip if fetch start is after target date
+        // 若抓取起始日超過目標日期則跳過
         if (fetchStartDate.isAfter(date)) {
           continue;
         }
@@ -456,20 +457,20 @@ class PriceRepository implements IPriceRepository {
         );
         totalSynced += count;
 
-        // Rate limiting delay between requests
+        // API 請求間隔
         if (i < symbols.length - 1 && delayBetweenRequests.inMilliseconds > 0) {
           await Future.delayed(delayBetweenRequests);
         }
       } on RateLimitException {
-        // Stop immediately on rate limit
+        // Rate Limit 立即停止
         rethrow;
       } catch (e) {
-        // Log error but continue with other symbols
+        // 記錄錯誤並繼續處理其他股票
         errors.add('$symbol: $e');
       }
     }
 
-    // If all symbols failed, throw an exception
+    // 若所有股票都失敗則拋出例外
     if (totalSynced == 0 && errors.isNotEmpty && symbols.isNotEmpty) {
       throw DatabaseException(
         'Failed to sync any prices. Errors: ${errors.take(3).join("; ")}',
@@ -479,17 +480,17 @@ class PriceRepository implements IPriceRepository {
     return totalSynced;
   }
 
-  /// Check if two dates are the same day
+  /// 檢查兩個日期是否為同一天
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  /// Sync prices for multiple specific symbols (public API for update service)
+  /// 同步多檔指定股票的價格（供 Update Service 使用的公開 API）
   ///
-  /// Use this when you have a specific list of stocks to update.
-  /// Only fetches missing data - skips stocks that are already up to date.
+  /// 當您有特定股票清單需要更新時使用。
+  /// 僅抓取缺少的資料，已最新的股票會跳過。
   ///
-  /// [onProgress] - callback for progress updates (current, total, symbol)
+  /// [onProgress] - 進度回呼（current, total, symbol）
   @override
   Future<int> syncPricesForSymbols(
     List<String> symbols, {
@@ -499,10 +500,10 @@ class PriceRepository implements IPriceRepository {
     return _syncPricesForSymbols(symbols, targetDate, onProgress: onProgress);
   }
 
-  /// Get symbols that need price updates for a given date
+  /// 取得指定日期需要更新價格的股票清單
   ///
-  /// Returns symbols that don't have price data for the target date.
-  /// Uses batch query to avoid N+1 performance issue.
+  /// 回傳該日期尚無價格資料的股票。
+  /// 使用批次查詢避免 N+1 效能問題。
   @override
   Future<List<String>> getSymbolsNeedingUpdate(
     List<String> symbols,
@@ -510,7 +511,7 @@ class PriceRepository implements IPriceRepository {
   ) async {
     if (symbols.isEmpty) return [];
 
-    // Batch query instead of N+1 individual queries
+    // 批次查詢取代 N+1 個別查詢
     final latestPrices = await _db.getLatestPricesBatch(symbols);
 
     return symbols.where((symbol) {
@@ -519,7 +520,7 @@ class PriceRepository implements IPriceRepository {
     }).toList();
   }
 
-  /// Get price change percentage
+  /// 取得股票漲跌幅
   @override
   Future<double?> getPriceChange(String symbol) async {
     final history = await getPriceHistory(symbol, days: 2);
@@ -532,11 +533,11 @@ class PriceRepository implements IPriceRepository {
     if (yesterday.close == 0) return null;
 
     final change = ((today.close! - yesterday.close!) / yesterday.close!) * 100;
-    // Guard against NaN/Infinity from very small denominators
+    // 防護 NaN/Infinity（分母極小時）
     return change.isFinite ? change : null;
   }
 
-  /// Get 20-day volume moving average
+  /// 取得 20 日成交量移動平均
   @override
   Future<double?> getVolumeMA20(String symbol) async {
     final history = await getPriceHistory(symbol, days: RuleParams.volMa + 5);
@@ -553,15 +554,15 @@ class PriceRepository implements IPriceRepository {
   }
 
   // ==================================================
-  // Batch Methods (N+1 optimization)
+  // 批次方法（N+1 最佳化）
   // ==================================================
 
-  /// Get price changes for multiple symbols in one query
+  /// 批次取得多檔股票的漲跌幅
   ///
-  /// Returns a map of symbol -> price change percentage
-  /// More efficient than calling [getPriceChange] in a loop
+  /// 回傳 Map：symbol -> 漲跌幅百分比
+  /// 比迴圈呼叫 [getPriceChange] 更有效率
   ///
-  /// Throws [DatabaseException] if database query fails
+  /// Database 查詢失敗時拋出 [DatabaseException]
   @override
   Future<Map<String, double?>> getPriceChangesBatch(
     List<String> symbols,
@@ -572,7 +573,7 @@ class PriceRepository implements IPriceRepository {
       final today = DateTime.now();
       final startDate = today.subtract(const Duration(days: 5));
 
-      // Single batch query for all symbols (includes latest price)
+      // 單一批次查詢所有股票（包含最新價格）
       final priceHistories = await _db.getPriceHistoryBatch(
         symbols,
         startDate: startDate,
@@ -589,7 +590,7 @@ class PriceRepository implements IPriceRepository {
           continue;
         }
 
-        // Use the last two entries from history directly
+        // 直接使用歷史資料的最後兩筆
         final todayClose = history.last.close;
         final prevClose = history[history.length - 2].close;
 
@@ -599,7 +600,7 @@ class PriceRepository implements IPriceRepository {
         }
 
         final change = ((todayClose - prevClose) / prevClose) * 100;
-        // Guard against NaN/Infinity from very small denominators
+        // 防護 NaN/Infinity（分母極小時）
         result[symbol] = change.isFinite ? change : null;
       }
 
@@ -609,12 +610,12 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
-  /// Get 20-day volume moving averages for multiple symbols in one query
+  /// 批次取得多檔股票的 20 日成交量移動平均
   ///
-  /// Returns a map of symbol -> volume MA
-  /// More efficient than calling [getVolumeMA20] in a loop
+  /// 回傳 Map：symbol -> 成交量 MA
+  /// 比迴圈呼叫 [getVolumeMA20] 更有效率
   ///
-  /// Throws [DatabaseException] if database query fails
+  /// Database 查詢失敗時拋出 [DatabaseException]
   @override
   Future<Map<String, double?>> getVolumeMA20Batch(List<String> symbols) async {
     if (symbols.isEmpty) return {};
@@ -625,7 +626,7 @@ class PriceRepository implements IPriceRepository {
         const Duration(days: RuleParams.volMa + 10),
       );
 
-      // Single batch query for all symbols
+      // 單一批次查詢所有股票
       final priceHistories = await _db.getPriceHistoryBatch(
         symbols,
         startDate: startDate,
@@ -664,7 +665,7 @@ class PriceRepository implements IPriceRepository {
   }
 }
 
-/// Helper class for quick candidate filtering
+/// 快篩候選股輔助類別
 class _QuickCandidate {
   const _QuickCandidate({required this.symbol, required this.score});
 

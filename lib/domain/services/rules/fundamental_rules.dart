@@ -14,59 +14,127 @@ class InstitutionalShiftRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
-    // Reduced from institutionalLookbackDays+1 (11) to 4 days
-    // to work with the 5-day backfill in UpdateService
-    if (history == null || history.length < 4) {
+    if (history == null || history.isEmpty) {
       return null;
     }
 
     final today = history.last;
-    // Foreign investors are most influential in TW market
     final todayNet = today.foreignNet ?? 0.0;
 
-    if (todayNet.abs() < 50) return null; // Ignore small noise (< 50 sheets)
+    if (todayNet.abs() < 50) return null; // 忽略小波動（< 50 張）
 
-    // Calculate previous average direction
-    final prevEntries = history.reversed.skip(1).take(5).toList();
-    if (prevEntries.isEmpty) return null;
+    // 若有足夠資料則計算先前平均方向
+    double prevAvg = 0;
+    final hasHistory = history.length >= 4;
 
-    double prevNetSum = 0;
-    for (var e in prevEntries) {
-      prevNetSum += (e.foreignNet ?? 0.0);
+    if (hasHistory) {
+      final prevEntries = history.reversed.skip(1).take(5).toList();
+      if (prevEntries.isNotEmpty) {
+        double prevNetSum = 0;
+        for (var e in prevEntries) {
+          prevNetSum += (e.foreignNet ?? 0.0);
+        }
+        prevAvg = prevNetSum / prevEntries.length;
+      }
     }
-    final prevAvg = prevNetSum / prevEntries.length;
+
+    // 手動計算價格變動與當前收盤價
+    double priceChange = 0;
+    double todayClose = 0;
+
+    if (data.prices.isNotEmpty) {
+      final todayPrice = data.prices.last;
+      todayClose = todayPrice.close ?? 0;
+
+      if (data.prices.length >= 2) {
+        final prevPrice = data.prices[data.prices.length - 2];
+        if (todayPrice.close != null && prevPrice.close != null) {
+          priceChange = todayPrice.close! - prevPrice.close!;
+        }
+      }
+    }
 
     bool triggered = false;
     String description = '';
 
-    // Case 1: Reversal (Sell -> Buy)
-    // Lowered thresholds: prevAvg < -50 (was -200), todayNet > 100 (was 500)
-    if (prevAvg < -50 && todayNet > 100) {
-      triggered = true;
-      description = '外資由賣轉買';
+    // 取得今日成交量以供比率檢查
+    double todayVolume = 0;
+    if (data.prices.isNotEmpty) {
+      todayVolume = data.prices.last.volume ?? 0;
     }
-    // Case 2: Reversal (Buy -> Sell)
-    // Lowered thresholds: prevAvg > 50 (was 200), todayNet < -100 (was -500)
-    else if (prevAvg > 50 && todayNet < -100) {
-      triggered = true;
-      description = '外資由買轉賣';
+
+    // 單位換算：1 張 = 1000 股
+    const int sheetToShares = 1000;
+
+    // 若收盤價為 0/無效或成交量過低（< 1000 張）則忽略
+    // 從 5000 降低以符合新的流動性要求
+    if (todayClose <= 0 || todayVolume < 1000 * sheetToShares) return null;
+
+    // 使用較低比率判斷顯著性
+    const double significantRatio = 0.25; // 佔總成交量 25%
+    const double explosiveRatio = 0.30; // 佔總成交量 30%
+
+    // 計算比率 - 重要：先將 todayNet 從張轉換為股！
+    // todayNet 單位為張，todayVolume 單位為股
+    // 1 張 = 1000 股
+    final todayNetShares = todayNet.abs() * sheetToShares;
+    final ratio = todayNetShares / todayVolume;
+
+    // 依歷史資料判斷的訊號（反轉 / 加速）
+    if (hasHistory) {
+      // 情境 1：反轉（賣轉買）
+      if (prevAvg < -50 * sheetToShares &&
+          todayNet > 200 * sheetToShares &&
+          priceChange > todayClose * 0.01 &&
+          ratio > significantRatio) {
+        triggered = true;
+        description = '外資由賣轉買 (佈局)';
+      }
+      // 情境 2：反轉（買轉賣）
+      else if (prevAvg > 50 * sheetToShares &&
+          todayNet < -200 * sheetToShares &&
+          priceChange < -todayClose * 0.01 &&
+          ratio > significantRatio) {
+        triggered = true;
+        description = '外資由買轉賣 (獲利)';
+      }
+      // 情境 3：加速（買超擴大）
+      else if (prevAvg > 50 * sheetToShares &&
+          todayNet > prevAvg * 1.5 &&
+          todayNet > 500 * sheetToShares &&
+          ratio > explosiveRatio) {
+        triggered = true;
+        description = '外資買超擴大 (搶進)';
+      }
+      // 情境 4：加速（賣超擴大）
+      else if (prevAvg < -50 * sheetToShares &&
+          todayNet < prevAvg * 1.5 &&
+          todayNet < -500 * sheetToShares &&
+          ratio > explosiveRatio) {
+        triggered = true;
+        description = '外資賣超擴大 (出脫)';
+      }
     }
-    // Case 3: Acceleration (Buy -> Strong Buy)
-    // Lowered thresholds: prevAvg > 50 (was 100), todayNet > 300 (was 1000)
-    else if (prevAvg > 50 && todayNet > prevAvg * 3 && todayNet > 300) {
-      triggered = true;
-      description = '外資買超擴大';
-    }
-    // Case 4: Acceleration (Sell -> Strong Sell)
-    // Lowered thresholds: prevAvg < -50 (was -100), todayNet < -300 (was -1000)
-    else if (prevAvg < -50 && todayNet < prevAvg * 3 && todayNet < -300) {
-      triggered = true;
-      description = '外資賣超擴大';
+
+    // 通用捕捉：顯著單日動作（若未被歷史邏輯觸發）
+    if (!triggered) {
+      // 情境 5：顯著買超（> 2500 張且 > 25%）
+      if (todayNet > 2500 * sheetToShares && ratio > significantRatio) {
+        triggered = true;
+        description = '外資顯著買超 (${(todayNet / sheetToShares).round()}張)';
+      }
+      // 情境 6：顯著賣超（< -2500 張且 > 25%）
+      else if (todayNet < -2500 * sheetToShares && ratio > significantRatio) {
+        triggered = true;
+        description = '外資顯著賣超 (${(todayNet.abs() / sheetToShares).round()}張)';
+      }
     }
 
     if (triggered) {
       return TriggeredReason(
-        type: ReasonType.institutionalShift,
+        type: todayNet > 0
+            ? ReasonType.institutionalBuy
+            : ReasonType.institutionalSell,
         score: RuleScores.institutionalShift,
         description: description,
         evidence: {
@@ -94,11 +162,11 @@ class NewsRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.news == null || data.news!.isEmpty) return null;
 
-    // Analyze today's news (or verify very recent news)
+    // 分析今日新聞（或驗證非常近期的新聞）
     final now = DateTime.now();
     final recentNews = data.news!.where((n) {
       final age = now.difference(n.publishedAt).inHours;
-      return age < 24; // Only news within 24 hours
+      return age < 120; // 5 日內的新聞（120 小時）
     }).toList();
 
     if (recentNews.isEmpty) return null;

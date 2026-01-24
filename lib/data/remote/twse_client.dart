@@ -5,19 +5,19 @@ import 'package:dio/dio.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 
-/// TWSE (Taiwan Stock Exchange) API Client
+/// 台灣證券交易所 (TWSE) API 客戶端
 ///
-/// Provides free access to Taiwan stock market data.
-/// Uses official TWSE website JSON API for faster data updates.
-/// No authentication required.
+/// 提供免費存取台股市場資料。
+/// 使用 TWSE 官方網站 JSON API 以取得更快的資料更新。
+/// 無需認證。
 ///
-/// API Sources:
-/// - Daily prices: https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY_ALL
-/// - Historical: https://www.twse.com.tw/exchangeReport/STOCK_DAY
+/// API 來源:
+/// - 每日股價: https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY_ALL
+/// - 歷史資料: https://www.twse.com.tw/exchangeReport/STOCK_DAY
 class TwseClient {
   TwseClient({Dio? dio}) : _dio = dio ?? _createDio();
 
-  /// Official TWSE website base URL (faster updates than Open Data API)
+  /// TWSE 官方網站基礎 URL（比 Open Data API 更新更快）
   static const String _baseUrl = 'https://www.twse.com.tw';
 
   final Dio _dio;
@@ -30,22 +30,22 @@ class TwseClient {
         receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Accept': 'application/json',
-          // Add User-Agent to mimic browser request
+          // 加入 User-Agent 模擬瀏覽器請求
           'User-Agent':
               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         },
-        // Ensure JSON response is parsed correctly on all platforms
+        // 確保 JSON 回應在所有平台正確解析
         responseType: ResponseType.json,
       ),
     );
   }
 
-  /// Get all stock prices for the latest trading day
+  /// 取得最新交易日所有股票價格
   ///
-  /// Returns OHLCV data for all TWSE listed stocks.
-  /// Uses official TWSE website API which updates faster than Open Data API.
+  /// 回傳所有上市股票的 OHLCV 資料。
+  /// 使用 TWSE 官方網站 API，更新速度比 Open Data API 快。
   ///
-  /// Endpoint: /rwd/zh/afterTrading/STOCK_DAY_ALL
+  /// 端點: /rwd/zh/afterTrading/STOCK_DAY_ALL
   Future<List<TwseDailyPrice>> getAllDailyPrices() async {
     try {
       AppLogger.info('TwseClient', 'Fetching all daily prices from TWSE...');
@@ -62,7 +62,7 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        // Handle both String and Map responses (iOS may return String)
+        // 處理 String 和 Map 兩種回應（iOS 可能回傳 String）
         var data = response.data;
         if (data is String) {
           AppLogger.info('TwseClient', 'Response is String, parsing as JSON');
@@ -82,7 +82,7 @@ class TwseClient {
           return [];
         }
 
-        // Check response status
+        // 檢查回應狀態
         final stat = data['stat'];
         final hasData = data['data'] != null;
         AppLogger.info(
@@ -98,12 +98,12 @@ class TwseClient {
           return [];
         }
 
-        // Parse date from response (format: YYYYMMDD)
+        // 從回應解析日期（格式: YYYYMMDD）
         final dateStr = data['date']?.toString() ?? '';
         final date = _parseAdDate(dateStr);
         AppLogger.info('TwseClient', 'TWSE data date: $dateStr -> $date');
 
-        // Parse data array (each row is a List, not a Map)
+        // 解析資料陣列（每列是 List 而非 Map）
         final List<dynamic> rows = data['data'];
         AppLogger.info('TwseClient', 'TWSE returned ${rows.length} rows');
 
@@ -138,7 +138,7 @@ class TwseClient {
     }
   }
 
-  /// Parse AD date in YYYYMMDD format (e.g., "20260121")
+  /// 解析 YYYYMMDD 格式的西元日期（例如 "20260121"）
   DateTime _parseAdDate(String dateStr) {
     if (dateStr.length != 8) {
       return DateTime.now();
@@ -149,9 +149,9 @@ class TwseClient {
     return DateTime(year, month, day);
   }
 
-  /// Parse a row from daily price data
+  /// 解析每日價格資料列
   ///
-  /// Row format: [代號, 名稱, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數]
+  /// 列格式: [代號, 名稱, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數]
   TwseDailyPrice? _parseDailyPriceRow(List<dynamic> row, DateTime date) {
     try {
       if (row.length < 10) return null;
@@ -175,9 +175,9 @@ class TwseClient {
     }
   }
 
-  /// Get institutional investor trading data for all stocks
+  /// 取得所有股票的法人買賣超資料
   ///
-  /// Endpoint: /rwd/zh/fund/T86 (三大法人買賣超日報)
+  /// 端點: /rwd/zh/fund/T86（三大法人買賣超日報）
   Future<List<TwseInstitutional>> getAllInstitutionalData({
     DateTime? date,
   }) async {
@@ -188,7 +188,7 @@ class TwseClient {
       };
 
       if (date != null) {
-        // Format: YYYYMMDD
+        // 格式: YYYYMMDD
         final dateStr =
             '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
         queryParams['date'] = dateStr;
@@ -202,16 +202,16 @@ class TwseClient {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        // Check response status
+        // 檢查回應狀態
         if (data['stat'] != 'OK' || data['data'] == null) {
           return [];
         }
 
-        // Parse date from response
+        // 從回應解析日期
         final dateStr = data['date']?.toString() ?? '';
         final date = _parseAdDate(dateStr);
 
-        // Parse data array
+        // 解析資料陣列
         final List<dynamic> rows = data['data'];
         return rows
             .map((row) => _parseInstitutionalRow(row as List<dynamic>, date))
@@ -228,10 +228,10 @@ class TwseClient {
     }
   }
 
-  /// Parse a row from institutional data
+  /// 解析法人資料列
   ///
-  /// Row format: [代號, 名稱, 外資買, 外資賣, 外資淨買, 外資自營買, 外資自營賣, 外資自營淨買,
-  ///              投信買, 投信賣, 投信淨買, 自營買, 自營賣, 自營淨買, 自營避險買, 自營避險賣, 自營避險淨買, 三大法人淨買]
+  /// 列格式: [代號, 名稱, 外資買, 外資賣, 外資淨買, 外資自營買, 外資自營賣, 外資自營淨買,
+  ///         投信買, 投信賣, 投信淨買, 自營買, 自營賣, 自營淨買, 自營避險買, 自營避險賣, 自營避險淨買, 三大法人淨買]
   TwseInstitutional? _parseInstitutionalRow(List<dynamic> row, DateTime date) {
     try {
       if (row.length < 18) return null;
@@ -259,21 +259,21 @@ class TwseClient {
     }
   }
 
-  /// Get historical prices for a specific stock (one month at a time)
+  /// 取得特定股票的歷史價格（每次一個月）
   ///
-  /// [code] - Stock code (e.g., "2330")
-  /// [year] - AD year (e.g., 2026)
-  /// [month] - Month (1-12)
+  /// [code] - 股票代碼（例如 "2330"）
+  /// [year] - 西元年（例如 2026）
+  /// [month] - 月份（1-12）
   ///
-  /// Endpoint: /exchangeReport/STOCK_DAY
+  /// 端點: /exchangeReport/STOCK_DAY
   ///
-  /// Throws [ArgumentError] if parameters are invalid
+  /// 參數無效時拋出 [ArgumentError]
   Future<List<TwseDailyPrice>> getStockMonthlyPrices({
     required String code,
     required int year,
     required int month,
   }) async {
-    // Validate stock code (Taiwan stocks are typically 4-6 digits)
+    // 驗證股票代碼（台股通常為 4-6 碼數字）
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'Stock code cannot be empty');
     }
@@ -285,7 +285,7 @@ class TwseClient {
       );
     }
 
-    // Validate year (reasonable range for TWSE historical data)
+    // 驗證年份（TWSE 歷史資料的合理範圍）
     if (year < 1990 || year > 2100) {
       throw ArgumentError.value(
         year,
@@ -294,7 +294,7 @@ class TwseClient {
       );
     }
 
-    // Validate month
+    // 驗證月份
     if (month < 1 || month > 12) {
       throw ArgumentError.value(
         month,
@@ -303,14 +303,14 @@ class TwseClient {
       );
     }
 
-    // Prevent future dates
+    // 防止未來日期
     final now = DateTime.now();
     if (year > now.year || (year == now.year && month > now.month)) {
       throw ArgumentError('Cannot fetch data for future dates: $year/$month');
     }
 
     try {
-      // Format date as YYYYMMDD (first day of month)
+      // 格式化日期為 YYYYMMDD（該月第一天）
       final dateStr = '$year${month.toString().padLeft(2, '0')}01';
 
       final response = await _dio.get(
@@ -319,7 +319,7 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        // Handle iOS Dio returning String instead of Map
+        // 處理 iOS Dio 回傳 String 而非 Map 的情況
         var data = response.data;
         if (data is String) {
           AppLogger.debug(
@@ -357,19 +357,19 @@ class TwseClient {
     }
   }
 
-  /// Parse a row from TWSE historical data
+  /// 解析 TWSE 歷史資料列
   TwseDailyPrice? _parseHistoricalRow(List<dynamic> row, String code) {
     try {
-      // Row format: [日期, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數, ...]
+      // 列格式: [日期, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數, ...]
       if (row.length < 9) return null;
 
-      final dateStr = row[0].toString(); // Format: "115/01/02"
+      final dateStr = row[0].toString(); // 格式: "115/01/02"
       final date = _parseSlashRocDate(dateStr);
 
       return TwseDailyPrice(
         date: date,
         code: code,
-        name: '', // Name not included in historical data
+        name: '', // 歷史資料不含名稱
         open: _parseFormattedDouble(row[3]),
         high: _parseFormattedDouble(row[4]),
         low: _parseFormattedDouble(row[5]),
@@ -382,7 +382,7 @@ class TwseClient {
     }
   }
 
-  /// Parse ROC date with slashes (e.g., "115/01/02")
+  /// 解析含斜線的民國日期（例如 "115/01/02"）
   DateTime _parseSlashRocDate(String dateStr) {
     final parts = dateStr.split('/');
     if (parts.length != 3) {
@@ -396,7 +396,7 @@ class TwseClient {
     return DateTime(rocYear + 1911, month, day);
   }
 
-  /// Parse number with commas (e.g., "1,234,567")
+  /// 解析含逗號的數字（例如 "1,234,567"）
   double? _parseFormattedDouble(dynamic value) {
     if (value == null) return null;
     final str = value.toString().replaceAll(',', '').trim();
@@ -404,21 +404,21 @@ class TwseClient {
     return double.tryParse(str);
   }
 
-  /// Get historical prices for multiple months
+  /// 取得多個月的歷史價格
   ///
-  /// [code] - Stock code (4-6 digits)
-  /// [months] - Number of months to fetch (default: 6, max: 60)
-  /// [delayBetweenRequests] - Delay between API calls (default: 300ms)
+  /// [code] - 股票代碼（4-6 碼數字）
+  /// [months] - 要擷取的月數（預設: 6，最大: 60）
+  /// [delayBetweenRequests] - API 呼叫間的延遲（預設: 300ms）
   ///
-  /// Note: TWSE may rate limit requests, so we add delays between calls.
+  /// 註: TWSE 可能會限制流量，因此在呼叫間加入延遲。
   ///
-  /// Throws [ArgumentError] if parameters are invalid
+  /// 參數無效時拋出 [ArgumentError]
   Future<List<TwseDailyPrice>> getStockHistoricalPrices({
     required String code,
     int months = 6,
     Duration delayBetweenRequests = const Duration(milliseconds: 300),
   }) async {
-    // Validate stock code
+    // 驗證股票代碼
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'Stock code cannot be empty');
     }
@@ -430,7 +430,7 @@ class TwseClient {
       );
     }
 
-    // Validate months (reasonable range to avoid excessive API calls)
+    // 驗證月數（合理範圍以避免過多 API 呼叫）
     if (months < 1 || months > 60) {
       throw ArgumentError.value(
         months,
@@ -439,7 +439,7 @@ class TwseClient {
       );
     }
 
-    // Validate delay (minimum 100ms to avoid rate limiting)
+    // 驗證延遲（最少 100ms 以避免流量限制）
     if (delayBetweenRequests.inMilliseconds < 100) {
       throw ArgumentError.value(
         delayBetweenRequests,
@@ -462,23 +462,23 @@ class TwseClient {
         );
         results.addAll(monthData);
       } catch (_) {
-        // Continue with other months if one fails
+        // 若某月失敗則繼續處理其他月份
       }
 
-      // Rate limiting delay
+      // 流量限制延遲
       if (i < months - 1) {
         await Future.delayed(delayBetweenRequests);
       }
     }
 
-    // Sort by date ascending
+    // 依日期升冪排序
     results.sort((a, b) => a.date.compareTo(b.date));
     return results;
   }
 
-  /// Get margin trading data for all stocks
+  /// 取得所有股票的融資融券資料
   ///
-  /// Endpoint: /rwd/zh/marginTrading/MI_MARGN (融資融券餘額)
+  /// 端點: /rwd/zh/marginTrading/MI_MARGN（融資融券餘額）
   Future<List<TwseMarginTrading>> getAllMarginTradingData() async {
     try {
       final response = await _dio.get(
@@ -489,16 +489,16 @@ class TwseClient {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        // Check response status
+        // 檢查回應狀態
         if (data['stat'] != 'OK') {
           return [];
         }
 
-        // Parse date from response
+        // 從回應解析日期
         final dateStr = data['date']?.toString() ?? '';
         final date = _parseAdDate(dateStr);
 
-        // Data is in 'tables' array, second table contains individual stock data
+        // 資料在 'tables' 陣列中，第二個表格含個股資料
         final tables = data['tables'] as List<dynamic>?;
         if (tables == null || tables.length < 2) {
           return [];
@@ -522,10 +522,10 @@ class TwseClient {
     }
   }
 
-  /// Parse a row from margin trading data
+  /// 解析融資融券資料列
   ///
-  /// Row format: [代號, 名稱, 融資買進, 融資賣出, 融資現償, 融資前餘, 融資今餘, 融資限額,
-  ///              融券買進, 融券賣出, 融券現償, 融券前餘, 融券今餘, 融券限額, 資券互抵, 備註]
+  /// 列格式: [代號, 名稱, 融資買進, 融資賣出, 融資現償, 融資前餘, 融資今餘, 融資限額,
+  ///         融券買進, 融券賣出, 融券現償, 融券前餘, 融券今餘, 融券限額, 資券互抵, 備註]
   TwseMarginTrading? _parseMarginTradingRow(List<dynamic> row, DateTime date) {
     try {
       if (row.length < 14) return null;
@@ -549,78 +549,82 @@ class TwseClient {
     }
   }
 
-  /// Get valuation data (PE, PBR, Yield) for all stocks
+  /// 取得所有股票的估值資料（本益比、股價淨值比、殖利率）
   ///
-  /// Endpoint: /rwd/zh/afterTrading/BWIBBU_d
+  /// 使用 TWSE Open Data API 取得可靠的結構化資料
+  /// 端點: https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL
   Future<List<TwseValuation>> getAllStockValuation({DateTime? date}) async {
     try {
-      final queryParams = <String, dynamic>{
-        'response': 'json',
-        'selectType': 'ALL',
-      };
-
-      if (date != null) {
-        final dateStr =
-            '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-        queryParams['date'] = dateStr;
-      }
-
-      final response = await _dio.get(
-        '/rwd/zh/afterTrading/BWIBBU_d',
-        queryParameters: queryParams,
+      // 建立獨立的 Dio 以避免基礎 URL 衝突
+      // Open Data 欄位: Code, Name, PEratio, DividendYield, PBratio
+      final response = await Dio().get(
+        'https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL',
+        options: Options(responseType: ResponseType.json),
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        if (data['stat'] != 'OK' || data['data'] == null) {
-          return [];
+        final List<dynamic> list = response.data;
+        final resDate = DateTime.now(); // Open Data 總是回傳最新資料
+
+        final results = list.map((item) {
+          final map = item as Map<String, dynamic>;
+
+          final code = map['Code']?.toString() ?? '';
+
+          final peStr = map['PEratio']?.toString().replaceAll(',', '');
+          final yieldStr = map['DividendYield']?.toString().replaceAll(',', '');
+          final pbrStr = map['PBratio']?.toString().replaceAll(',', '');
+
+          final pe = double.tryParse(peStr ?? '') ?? 0.0;
+          final pbr = double.tryParse(pbrStr ?? '') ?? 0.0;
+          final yieldVal = double.tryParse(yieldStr ?? '') ?? 0.0;
+
+          return TwseValuation(
+            code: code,
+            date: resDate,
+            per: pe,
+            pbr: pbr,
+            dividendYield: yieldVal,
+          );
+        }).toList();
+
+        // 除錯日誌以驗證使用者裝置上的 Open Data 內容
+        try {
+          final highYieldCount = results
+              .where((v) => (v.dividendYield ?? 0) >= 7.0)
+              .length;
+          AppLogger.info(
+            'TwseClient',
+            'Open Data Stats: Total=${results.length}, Yield>=7.0=$highYieldCount',
+          );
+        } catch (e) {
+          // 忽略日誌錯誤
         }
 
-        final dateStr = data['date']?.toString() ?? '';
-        final resDate = _parseAdDate(dateStr);
-        final List<dynamic> rows = data['data'];
-
-        return rows
-            .map((row) => _parseValuationRow(row as List<dynamic>, resDate))
-            .whereType<TwseValuation>()
-            .toList();
+        return results;
       }
+
       return [];
     } catch (e) {
+      AppLogger.error(
+        'TwseClient',
+        'Failed to get valuation data (OpenData)',
+        e,
+      );
       return [];
     }
   }
 
-  TwseValuation? _parseValuationRow(List<dynamic> row, DateTime date) {
-    try {
-      // Row: [Code, Name, PE, Div, DivYear, Yield, PBR]
-      if (row.length < 7) return null;
-
-      final code = row[0]?.toString() ?? '';
-      if (code.isEmpty) return null;
-
-      return TwseValuation(
-        date: date,
-        code: code,
-        per: _parseFormattedDouble(row[2]),
-        dividendYield: _parseFormattedDouble(row[5]),
-        pbr: _parseFormattedDouble(row[6]),
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Get monthly revenue for ALL stocks (latest month)
+  /// 取得所有股票的月營收（最新月份）
   ///
-  /// Source: TWSE Open Data API (t187ap05_L)
-  /// Endpoint: https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+  /// 來源: TWSE Open Data API (t187ap05_L)
+  /// 端點: https://openapi.twse.com.tw/v1/opendata/t187ap05_L
   ///
-  /// This API returns the latest available revenue data for all listed companies.
-  /// It is much faster than fetching individual stocks via FinMind.
+  /// 此 API 回傳所有上市公司的最新營收資料。
+  /// 比透過 FinMind 逐檔擷取快得多。
   Future<List<TwseMonthlyRevenue>> getAllMonthlyRevenue() async {
     try {
-      // Use full URL to override base URL (www.twse.com.tw)
+      // 使用完整 URL 以覆蓋基礎 URL (www.twse.com.tw)
       final response = await _dio.get(
         'https://openapi.twse.com.tw/v1/opendata/t187ap05_L',
       );
@@ -640,13 +644,129 @@ class TwseClient {
       return [];
     }
   }
+
+  /// 取得所有股票的當沖資料
+  ///
+  /// 端點: /exchangeReport/TWTB4U（當日沖銷交易標的）
+  /// 免費 API，無需 token。
+  Future<List<TwseDayTrading>> getAllDayTradingData({DateTime? date}) async {
+    try {
+      final targetDate = date ?? DateTime.now();
+      final dateStr =
+          '${targetDate.year}${targetDate.month.toString().padLeft(2, '0')}${targetDate.day.toString().padLeft(2, '0')}';
+
+      final response = await _dio.get(
+        '/exchangeReport/TWTB4U',
+        queryParameters: {'response': 'json', 'date': dateStr},
+        options: Options(responseType: ResponseType.plain),
+      );
+
+      if (response.statusCode == 200) {
+        final dynamic data = jsonDecode(response.data);
+        if (data == null || data['stat'] != 'OK') {
+          AppLogger.debug(
+            'TwseClient',
+            'Day trading data not available for $dateStr',
+          );
+          return [];
+        }
+
+        // TWTB4U 回傳多個表格。我們需要含詳細個股資料的那個。
+        // 通常是第二個表格，但以防萬一用標題來找。
+        List<dynamic> rows = [];
+
+        if (data.containsKey('tables')) {
+          final List<dynamic> tables = data['tables'];
+          for (final table in tables) {
+            final title = table['title']?.toString() ?? '';
+            // 尋找「當日沖銷交易標的」
+            if (title.contains('當日沖銷交易標的')) {
+              rows = table['data'] ?? [];
+              break;
+            }
+          }
+          // 若以標題找不到，則嘗試從第二個表格（索引 1）載入作為備案
+          if (rows.isEmpty && tables.length > 1) {
+            rows = tables[1]['data'] ?? [];
+          }
+        } else {
+          // 以防萬一的舊格式備案
+          rows = data['data'] ?? [];
+        }
+
+        final result = <TwseDayTrading>[];
+
+        for (final row in rows) {
+          if (row is List) {
+            if (row.length >= 6) {
+              final parsed = _parseDayTradingRow(row, targetDate);
+              if (parsed != null) {
+                result.add(parsed);
+              }
+            }
+          }
+        }
+
+        AppLogger.info(
+          'TwseClient',
+          'Fetched ${result.length} day trading records',
+        );
+        return result;
+      }
+      return [];
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw NetworkException('TWSE connection timeout', e);
+      }
+      throw NetworkException(e.message ?? 'TWSE network error', e);
+    } catch (e, stack) {
+      AppLogger.error(
+        'TwseClient',
+        'Failed to fetch day trading data',
+        e,
+        stack,
+      );
+      return [];
+    }
+  }
+
+  /// 解析當沖資料列
+  ///
+  /// 列格式: [代號, 名稱, (空), 當沖成交股數, 當沖買進金額, 當沖賣出金額]
+  /// 註: TWSE TWTB4U API 不提供比例，需另行計算
+  TwseDayTrading? _parseDayTradingRow(List<dynamic> row, DateTime date) {
+    try {
+      final code = row[0]?.toString().trim() ?? '';
+      if (code.isEmpty || code.length < 4) return null;
+
+      final name = row[1]?.toString().trim() ?? '';
+      // 欄位 3 是當沖成交股數
+      final totalVolume = _parseFormattedDouble(row[3]) ?? 0;
+      // 欄位 4 是買進金額，欄位 5 是賣出金額
+      final buyAmount = _parseFormattedDouble(row[4]) ?? 0;
+      final sellAmount = _parseFormattedDouble(row[5]) ?? 0;
+
+      return TwseDayTrading(
+        date: date,
+        code: code,
+        name: name,
+        buyVolume: buyAmount, // 暫時存金額
+        sellVolume: sellAmount,
+        totalVolume: totalVolume,
+        ratio: 0, // 比例需要稍後計算
+      );
+    } catch (e) {
+      return null;
+    }
+  }
 }
 
 // ============================================
-// Data Models
+// 資料模型
 // ============================================
 
-/// Monthly revenue data from TWSE Open Data
+/// TWSE Open Data 月營收資料
 class TwseMonthlyRevenue {
   const TwseMonthlyRevenue({
     required this.year,
@@ -659,7 +779,7 @@ class TwseMonthlyRevenue {
   });
 
   factory TwseMonthlyRevenue.fromJson(Map<String, dynamic> json) {
-    // keys: "資料年月"(11201), "公司代號", "公司名稱", "營業收入-當月營收",
+    // 欄位: "資料年月"(11201), "公司代號", "公司名稱", "營業收入-當月營收",
     // "營業收入-上月比較增減(%)", "營業收入-去年同月增減(%)"
 
     final ym = json['資料年月']?.toString() ?? '';
@@ -672,7 +792,7 @@ class TwseMonthlyRevenue {
       month = int.tryParse(mStr) ?? 0;
     }
 
-    // Helper to parse number string with commas usually NOT present in OpenData but just in case
+    // 解析含逗號的數字字串（OpenData 通常沒有，但以防萬一）
     double parseVal(String? key) {
       if (key == null) return 0.0;
       final val = json[key]?.toString() ?? '';
@@ -694,12 +814,12 @@ class TwseMonthlyRevenue {
   final int month;
   final String code;
   final String name;
-  final double revenue; // in thousands (usually)
-  final double momGrowth; // %
-  final double yoyGrowth; // %
+  final double revenue; // 千元（通常）
+  final double momGrowth; // 月增率 %
+  final double yoyGrowth; // 年增率 %
 }
 
-/// Daily price data from TWSE
+/// TWSE 每日價格資料
 class TwseDailyPrice {
   const TwseDailyPrice({
     required this.date,
@@ -724,7 +844,7 @@ class TwseDailyPrice {
       throw FormatException('Missing Date', json);
     }
 
-    // Parse ROC date (民國) to DateTime
+    // 將民國日期解析為 DateTime
     final date = _parseRocDate(dateStr.toString());
 
     return TwseDailyPrice(
@@ -758,7 +878,7 @@ class TwseDailyPrice {
   final double? volume;
   final double? change;
 
-  /// Convert TWSE ROC date (民國年月日, e.g., "1150119") to DateTime
+  /// 將 TWSE 民國日期（例如 "1150119"）轉換為 DateTime
   static DateTime _parseRocDate(String rocDate) {
     if (rocDate.length != 7) {
       throw FormatException('Invalid ROC date format: $rocDate');
@@ -768,7 +888,7 @@ class TwseDailyPrice {
     final month = int.parse(rocDate.substring(3, 5));
     final day = int.parse(rocDate.substring(5, 7));
 
-    // ROC year + 1911 = AD year
+    // 民國年 + 1911 = 西元年
     final adYear = rocYear + 1911;
 
     return DateTime(adYear, month, day);
@@ -778,7 +898,7 @@ class TwseDailyPrice {
     if (value == null) return null;
     if (value is num) return value.toDouble();
     if (value is String) {
-      // Remove commas from numbers like "1,234,567"
+      // 移除數字中的逗號（例如 "1,234,567"）
       final cleaned = value.replaceAll(',', '').trim();
       if (cleaned.isEmpty || cleaned == '--') return null;
       return double.tryParse(cleaned);
@@ -787,7 +907,7 @@ class TwseDailyPrice {
   }
 }
 
-/// Institutional investor data from TWSE
+/// TWSE 法人買賣超資料
 class TwseInstitutional {
   const TwseInstitutional({
     required this.date,
@@ -866,7 +986,7 @@ class TwseInstitutional {
   }
 }
 
-/// Margin trading data from TWSE
+/// TWSE 融資融券資料
 class TwseMarginTrading {
   const TwseMarginTrading({
     required this.date,
@@ -921,10 +1041,10 @@ class TwseMarginTrading {
   final double shortSell; // 融券賣出
   final double shortBalance; // 融券餘額
 
-  /// Net margin change (融資增減)
+  /// 融資增減
   double get marginNet => marginBuy - marginSell;
 
-  /// Net short change (融券增減)
+  /// 融券增減
   double get shortNet => shortSell - shortBuy;
 
   static double? _parseDouble(dynamic value) {
@@ -939,7 +1059,7 @@ class TwseMarginTrading {
   }
 }
 
-/// Valuation data from TWSE (BWIBBU_d)
+/// TWSE 估值資料（BWIBBU_d）
 class TwseValuation {
   const TwseValuation({
     required this.date,
@@ -954,4 +1074,44 @@ class TwseValuation {
   final double? per;
   final double? dividendYield;
   final double? pbr;
+}
+
+/// TWSE 當沖資料（TWTB4U）
+///
+/// **重要:** TWSE TWTB4U API 提供的是買賣金額（新台幣），
+/// 而非成交量（股數）。欄位名稱維持 "volume" 以相容 FinMind 資料，
+/// 但實際存放的是金額。
+/// [ratio] 需另行從每日價格成交量資料計算。
+class TwseDayTrading {
+  const TwseDayTrading({
+    required this.date,
+    required this.code,
+    required this.name,
+    required this.buyVolume,
+    required this.sellVolume,
+    required this.totalVolume,
+    required this.ratio,
+  });
+
+  final DateTime date;
+  final String code;
+  final String name;
+
+  /// 當沖買進金額 (NT$) - Note: TWSE provides amounts, not volumes
+  final double buyVolume;
+
+  /// 當沖賣出金額 (NT$) - Note: TWSE provides amounts, not volumes
+  final double sellVolume;
+
+  /// 當沖成交股數 (shares)
+  final double totalVolume;
+
+  /// 當沖比例 (%) - calculated from daily price volume
+  final double ratio;
+
+  /// 是否為高當沖比例 (>= 30%)
+  bool get isHighRatio => ratio >= 30.0;
+
+  /// 是否為極高當沖比例 (>= 50%)
+  bool get isExtremeRatio => ratio >= 50.0;
 }

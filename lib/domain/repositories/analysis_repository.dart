@@ -1,21 +1,20 @@
 import 'package:afterclose/data/database/app_database.dart';
 
-/// Interface for analysis results and recommendations repository
+/// 分析結果與推薦的資料儲存庫介面
 ///
-/// Enables mocking in tests and allows for different implementations
-/// (e.g., local database, remote API, in-memory cache).
+/// 支援測試時的 Mock 及不同實作（如本機資料庫、遠端 API、記憶體快取）
 abstract class IAnalysisRepository {
   // ==========================================
-  // Daily Analysis
+  // 每日分析
   // ==========================================
 
-  /// Get analysis for a specific stock and date
+  /// 取得特定股票在指定日期的分析結果
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date);
 
-  /// Get all analyses for a date
+  /// 取得指定日期的所有分析結果
   Future<List<DailyAnalysisEntry>> getAnalysesForDate(DateTime date);
 
-  /// Save analysis result
+  /// 儲存分析結果
   Future<void> saveAnalysis({
     required String symbol,
     required DateTime date,
@@ -27,13 +26,13 @@ abstract class IAnalysisRepository {
   });
 
   // ==========================================
-  // Daily Reasons
+  // 每日原因
   // ==========================================
 
-  /// Get reasons for a stock on a date
+  /// 取得特定股票在指定日期的推薦原因
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date);
 
-  /// Save reasons for a stock (replaces existing reasons atomically)
+  /// 儲存股票的推薦原因（原子性取代現有原因）
   Future<void> saveReasons(
     String symbol,
     DateTime date,
@@ -41,45 +40,45 @@ abstract class IAnalysisRepository {
   );
 
   // ==========================================
-  // Daily Recommendations
+  // 每日推薦
   // ==========================================
 
-  /// Get today's recommendations
+  /// 取得今日推薦清單
   Future<List<DailyRecommendationEntry>> getTodayRecommendations();
 
-  /// Get recommendations for a date
+  /// 取得指定日期的推薦清單
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date);
 
-  /// Save daily recommendations (replaces existing recommendations atomically)
+  /// 儲存每日推薦（原子性取代現有推薦）
   Future<void> saveRecommendations(
     DateTime date,
     List<RecommendationData> recommendations,
   );
 
-  /// Check if recommendations exist for date
+  /// 檢查指定日期是否已有推薦
   Future<bool> hasRecommendations(DateTime date);
 
   // ==========================================
-  // Cooldown Check
+  // 冷卻期檢查
   // ==========================================
 
-  /// Check if a stock was recently recommended (single query)
+  /// 檢查股票是否近期已被推薦（單一查詢）
   Future<bool> wasRecentlyRecommended(String symbol, {int days});
 
-  /// Get all symbols that were recently recommended (for batch cooldown check)
+  /// 取得近期已被推薦的所有股票代碼（用於批次冷卻期檢查）
   Future<Set<String>> getRecentlyRecommendedSymbols({int days});
 
   // ==========================================
-  // Combined Queries for UI
+  // UI 用組合查詢
   // ==========================================
 
-  /// Get recommendation with stock details (optimized with batch queries)
+  /// 取得推薦及股票詳細資訊（已優化為批次查詢）
   Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
     DateTime date,
   );
 }
 
-/// Data class for saving reasons
+/// 儲存推薦原因的資料類別
 class ReasonData {
   const ReasonData({
     required this.type,
@@ -92,7 +91,7 @@ class ReasonData {
   final int score;
 }
 
-/// Data class for saving recommendations
+/// 儲存推薦的資料類別
 class RecommendationData {
   const RecommendationData({required this.symbol, required this.score});
 
@@ -100,7 +99,7 @@ class RecommendationData {
   final double score;
 }
 
-/// Combined data for UI display
+/// UI 顯示用的組合資料
 class RecommendationWithStock {
   const RecommendationWithStock({
     required this.recommendation,

@@ -8,15 +8,15 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
 
-/// Modern card widget displaying stock information
+/// 現代化股票資訊卡片 Widget
 ///
-/// Features:
-/// - Modern visual design with subtle gradients
-/// - Price color based on Taiwan convention (red = up, green = down)
-/// - Score badge with color coding
-/// - Trend indicator with icon
-/// - Micro-interaction: subtle press-to-scale animation
-/// - Optional sparkline chart
+/// 特色：
+/// - 採用微妙漸層的現代視覺設計
+/// - 依照台灣慣例的價格顏色（紅色 = 上漲，綠色 = 下跌）
+/// - 帶有顏色編碼的評分標章
+/// - 趨勢指示器與圖示
+/// - 微互動：輕微的按壓縮放動畫
+/// - 可選的迷你走勢圖
 class StockCard extends StatefulWidget {
   const StockCard({
     super.key,
@@ -54,7 +54,7 @@ class StockCard extends StatefulWidget {
 class _StockCardState extends State<StockCard> {
   bool _isPressed = false;
 
-  /// Build semantic label for accessibility
+  /// 建立無障礙語意標籤
   String _buildSemanticLabel() {
     final parts = <String>[];
     parts.add(S.accessibilityStock(widget.symbol));
@@ -132,11 +132,11 @@ class _StockCardState extends State<StockCard> {
                   padding: const EdgeInsets.all(14),
                   child: Row(
                     children: [
-                      // Trend indicator with modern design
+                      // 趨勢指示器（現代設計）
                       _buildTrendIndicator(theme, isDark),
                       const SizedBox(width: 14),
 
-                      // Stock info section
+                      // 股票資訊區塊
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,17 +156,17 @@ class _StockCardState extends State<StockCard> {
 
                       const SizedBox(width: 12),
 
-                      // Mini sparkline chart (need at least 7 days of data)
+                      // 迷你走勢圖（需至少 7 天資料）
                       if (widget.recentPrices != null &&
                           widget.recentPrices!.length >= 7) ...[
                         _buildSparkline(priceColor),
                         const SizedBox(width: 8),
                       ],
 
-                      // Price section with color coding
+                      // 價格區塊（帶顏色編碼）
                       _buildPriceSection(theme, priceColor),
 
-                      // Watchlist button
+                      // 自選按鈕
                       if (widget.onWatchlistTap != null)
                         _buildWatchlistButton(theme),
                     ],
@@ -183,8 +183,11 @@ class _StockCardState extends State<StockCard> {
   Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
     final trendColor = _getTrendColor(widget.trendState);
     final icon = _getTrendIconData(widget.trendState);
+    // 盤整狀態：null、'RANGE' 或 'SIDEWAYS'（相容舊資料）
     final isNeutral =
-        widget.trendState == null || widget.trendState == 'SIDEWAYS';
+        widget.trendState == null ||
+        widget.trendState == 'RANGE' ||
+        widget.trendState == 'SIDEWAYS';
 
     return Container(
       width: 44,
@@ -277,7 +280,7 @@ class _StockCardState extends State<StockCard> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Decorative icon - text already contains +/- sign
+                // 裝飾圖示 - 文字已包含正負號
                 if (!isNeutral)
                   ExcludeSemantics(
                     child: Icon(
@@ -338,34 +341,34 @@ class _StockCardState extends State<StockCard> {
   }
 }
 
-/// Optimized mini sparkline chart widget
+/// 優化的迷你走勢圖 Widget
 ///
-/// Performance optimizations:
-/// 1. RepaintBoundary isolates repaints from parent
-/// 2. Data normalization done once in build
-/// 3. Minimal LineChartData configuration
+/// 效能優化：
+/// 1. RepaintBoundary 將重繪與父元件隔離
+/// 2. 資料正規化僅在建置時執行一次
+/// 3. 最小化 LineChartData 設定
 class _MiniSparkline extends StatelessWidget {
   const _MiniSparkline({required this.prices, required this.color});
 
   final List<double> prices;
   final Color color;
 
-  /// Maximum data points to display (for clear visualization)
+  /// 顯示的最大資料點數（為清晰呈現）
   static const int _maxDataPoints = 20;
 
-  /// Minimum data points required for meaningful chart
+  /// 有意義圖表所需的最小資料點數
   static const int _minDataPoints = 5;
 
-  /// Vertical padding percentage (10% top and bottom)
+  /// 垂直間距百分比（上下各 10%）
   static const double _verticalPadding = 0.1;
 
-  /// Usable content range after padding (1.0 - 2 * padding)
+  /// 間距後可用的內容範圍（1.0 - 2 * padding）
   static const double _contentRange = 0.8;
 
-  /// Minimum price variation percentage to show chart (0.3%)
+  /// 顯示圖表的最小價格變化百分比（0.3%）
   static const double _minVariationPercent = 0.003;
 
-  /// Build semantic label for accessibility
+  /// 建立無障礙語意標籤
   String _buildSemanticLabel(List<double> sampledPrices) {
     if (sampledPrices.length < 2) return S.sparklineDefault;
 
@@ -382,22 +385,22 @@ class _MiniSparkline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Need at least 5 data points for meaningful visualization
+    // 需至少 5 個資料點才能呈現有意義的視覺化
     if (prices.length < _minDataPoints) {
       return const SizedBox.shrink();
     }
 
-    // Sample to last N trading days for clearer visualization
+    // 取樣最近 N 個交易日以獲得更清晰的呈現
     final sampledPrices = _samplePrices(prices);
 
-    // Check if there's meaningful price variation
+    // 檢查是否有足夠的價格變化
     final result = _normalizeToSpots(sampledPrices);
     if (result == null) {
-      // Not enough variation to show meaningful chart
+      // 變化不足以顯示有意義的圖表
       return const SizedBox.shrink();
     }
 
-    // Use RepaintBoundary to isolate chart repaints
+    // 使用 RepaintBoundary 隔離圖表重繪
     return Semantics(
       label: _buildSemanticLabel(sampledPrices),
       image: true,
@@ -436,27 +439,27 @@ class _MiniSparkline extends StatelessWidget {
               gridData: const FlGridData(show: false),
               lineTouchData: const LineTouchData(enabled: false),
             ),
-            duration: Duration.zero, // Disable animations for performance
+            duration: Duration.zero, // 停用動畫以提升效能
           ),
         ),
       ),
     );
   }
 
-  /// Sample prices to last N data points for clearer visualization
+  /// 取樣價格至最近 N 個資料點以獲得更清晰的呈現
   List<double> _samplePrices(List<double> prices) {
     if (prices.length <= _maxDataPoints) return prices;
-    // Take the last N prices (most recent trading days)
+    // 取最近 N 個價格（最近的交易日）
     return prices.sublist(prices.length - _maxDataPoints);
   }
 
-  /// Normalize prices to 0-1 range for consistent chart height
-  /// Returns null if there's not enough variation to show meaningful chart
+  /// 將價格正規化至 0-1 範圍以獲得一致的圖表高度
+  /// 若變化不足以顯示有意義的圖表則回傳 null
   List<FlSpot>? _normalizeToSpots(List<double> prices) {
     if (prices.isEmpty) return null;
     if (prices.length == 1) return null;
 
-    // Find min and max
+    // 找出最小值和最大值
     var min = prices[0];
     var max = prices[0];
     for (final price in prices) {
@@ -464,17 +467,17 @@ class _MiniSparkline extends StatelessWidget {
       if (price > max) max = price;
     }
 
-    // Check if there's meaningful variation (at least 0.3%)
+    // 檢查是否有足夠的變化（至少 0.3%）
     final range = max - min;
     final avgPrice = (max + min) / 2;
     final variationPercent = avgPrice > 0 ? range / avgPrice : 0;
 
     if (variationPercent < _minVariationPercent) {
-      // Not enough variation, don't show chart
+      // 變化不足，不顯示圖表
       return null;
     }
 
-    // Normalize to 0-1 range with vertical padding
+    // 正規化至 0-1 範圍，並加上垂直間距
     return List.generate(
       prices.length,
       (i) => FlSpot(

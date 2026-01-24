@@ -17,22 +17,22 @@ import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 
 // ==================================================
-// Core Infrastructure
+// 核心基礎設施
 // ==================================================
 
-/// App database singleton
+/// 應用程式資料庫單例
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
   ref.onDispose(() => db.close());
   return db;
 });
 
-/// Batch query cache manager (30-second TTL for update cycle optimization)
+/// 批次查詢快取管理器（30 秒 TTL，優化更新週期）
 final batchCacheProvider = Provider<BatchQueryCacheManager>((ref) {
   return BatchQueryCacheManager(maxSize: 50, ttl: const Duration(seconds: 30));
 });
 
-/// Cached database accessor for optimized batch queries
+/// 快取資料庫存取器，用於優化批次查詢
 final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
   return CachedDatabaseAccessor(
     db: ref.watch(databaseProvider),
@@ -40,26 +40,26 @@ final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
   );
 });
 
-/// FinMind API client (for historical data)
+/// FinMind API 客戶端（用於取得歷史資料）
 final finMindClientProvider = Provider<FinMindClient>((ref) {
   return FinMindClient();
 });
 
-/// TWSE Open Data client (for daily all-market prices)
+/// TWSE 開放資料客戶端（用於取得每日全市場價格）
 final twseClientProvider = Provider<TwseClient>((ref) {
   return TwseClient();
 });
 
-/// RSS parser
+/// RSS 解析器
 final rssParserProvider = Provider<RssParser>((ref) {
   return RssParser();
 });
 
 // ==================================================
-// Repositories
+// 資料儲存庫
 // ==================================================
 
-/// Stock repository provider
+/// 股票資料儲存庫 Provider
 final stockRepositoryProvider = Provider<StockRepository>((ref) {
   return StockRepository(
     database: ref.watch(databaseProvider),
@@ -67,8 +67,8 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
   );
 });
 
-/// Price repository provider
-/// Uses TWSE for daily prices, FinMind for historical data
+/// 價格資料儲存庫 Provider
+/// 使用 TWSE 取得每日價格，使用 FinMind 取得歷史資料
 final priceRepositoryProvider = Provider<PriceRepository>((ref) {
   return PriceRepository(
     database: ref.watch(databaseProvider),
@@ -77,7 +77,7 @@ final priceRepositoryProvider = Provider<PriceRepository>((ref) {
   );
 });
 
-/// News repository provider
+/// 新聞資料儲存庫 Provider
 final newsRepositoryProvider = Provider<NewsRepository>((ref) {
   return NewsRepository(
     database: ref.watch(databaseProvider),
@@ -85,12 +85,12 @@ final newsRepositoryProvider = Provider<NewsRepository>((ref) {
   );
 });
 
-/// Analysis repository provider
+/// 分析資料儲存庫 Provider
 final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
   return AnalysisRepository(database: ref.watch(databaseProvider));
 });
 
-/// Institutional repository provider
+/// 法人資料儲存庫 Provider
 final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
   ref,
 ) {
@@ -100,12 +100,12 @@ final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
   );
 });
 
-/// Settings repository provider (with secure storage for sensitive data)
+/// 設定資料儲存庫 Provider（使用安全儲存空間存放敏感資料）
 final settingsRepositoryProvider = Provider<SettingsRepository>((ref) {
   return SettingsRepository(database: ref.watch(databaseProvider));
 });
 
-/// Market data repository provider (Phase 1: extended market data)
+/// 市場資料儲存庫 Provider（第一階段：擴展市場資料）
 final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
   return MarketDataRepository(
     database: ref.watch(databaseProvider),
@@ -113,7 +113,7 @@ final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
   );
 });
 
-/// Fundamental repository provider (Phase 6: revenue, PE, PBR, dividend yield)
+/// 基本面資料儲存庫 Provider（第六階段：營收、本益比、股價淨值比、殖利率）
 final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
   return FundamentalRepository(
     db: ref.watch(databaseProvider),
@@ -122,10 +122,10 @@ final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
 });
 
 // ==================================================
-// Services
+// 服務
 // ==================================================
 
-/// Update service provider
+/// 更新服務 Provider
 final updateServiceProvider = Provider<UpdateService>((ref) {
   return UpdateService(
     database: ref.watch(databaseProvider),

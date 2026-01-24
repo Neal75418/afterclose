@@ -2,45 +2,46 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/data/database/tables/stock_master.dart';
 
-/// News item from RSS feeds
+/// 新聞資料 Table（來自 RSS feeds）
 @DataClassName('NewsItemEntry')
 @TableIndex(name: 'idx_news_item_published_at', columns: {#publishedAt})
 @TableIndex(name: 'idx_news_item_source', columns: {#source})
 class NewsItem extends Table {
-  /// Unique news ID (hash of url or RSS guid)
+  /// 新聞唯一 ID（URL 或 RSS guid 的 hash）
   TextColumn get id => text()();
 
-  /// News source (e.g., "MoneyDJ", "Yahoo")
+  /// 新聞來源（如 MoneyDJ、Yahoo）
   TextColumn get source => text()();
 
-  /// News title
+  /// 新聞標題
   TextColumn get title => text()();
 
-  /// News URL
+  /// 新聞連結
   TextColumn get url => text()();
 
-  /// Category: EARNINGS, POLICY, INDUSTRY, COMPANY_EVENT, OTHER
+  /// 分類：EARNINGS、POLICY、INDUSTRY、COMPANY_EVENT、OTHER
   TextColumn get category => text()();
 
-  /// Published timestamp
+  /// 發布時間
   DateTimeColumn get publishedAt => dateTime()();
 
-  /// When we fetched this news
+  /// 抓取時間
   DateTimeColumn get fetchedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-/// Mapping between news and related stocks
+/// 新聞與股票關聯 Table
 @DataClassName('NewsStockMapEntry')
 @TableIndex(name: 'idx_news_stock_map_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_news_stock_map_news_id', columns: {#newsId})
 class NewsStockMap extends Table {
-  /// News ID
+  /// 新聞 ID
   TextColumn get newsId =>
       text().references(NewsItem, #id, onDelete: KeyAction.cascade)();
 
-  /// Related stock symbol
+  /// 關聯股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 

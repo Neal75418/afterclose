@@ -4,7 +4,7 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
-// Reversal Rules
+// 反轉規則
 // ==========================================
 
 class WeakToStrongRule extends StockRule {
@@ -42,10 +42,33 @@ class StrongToWeakRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (context.reversalState == ReversalState.strongToWeak) {
+      // 過濾條件：須跌破 MA20 確認趨勢反轉
+      if (data.prices.length >= 20) {
+        double sum = 0;
+        int count = 0;
+        for (
+          int i = data.prices.length - 1;
+          i >= data.prices.length - 20;
+          i--
+        ) {
+          if (data.prices[i].close != null) {
+            sum += data.prices[i].close!;
+            count++;
+          }
+        }
+        if (count == 20) {
+          final ma20 = sum / count;
+          final close = data.prices.last.close;
+          if (close != null && close > ma20) {
+            return null; // 仍在 MA20 之上，視為回檔而非反轉
+          }
+        }
+      }
+
       return TriggeredReason(
         type: ReasonType.reversalS2W,
         score: RuleScores.reversalS2W,
-        description: '頭部型態確立 / 跌破支撐',
+        description: '頭部型態確立 / 跌破支撐 (破月線)',
         evidence: {'trend': context.trendState.toString()},
       );
     }
@@ -54,7 +77,7 @@ class StrongToWeakRule extends StockRule {
 }
 
 // ==========================================
-// Breakout/Breakdown Rules
+// 突破/跌破規則
 // ==========================================
 
 class BreakoutRule extends StockRule {
@@ -74,7 +97,7 @@ class BreakoutRule extends StockRule {
     if (close == null) return null;
 
     if (context.resistanceLevel != null) {
-      // Use breakoutBuffer (1%)
+      // 使用突破緩衝區（1%）
       final breakoutLevel =
           context.resistanceLevel! * (1 + RuleParams.breakoutBuffer);
       if (close > breakoutLevel) {
@@ -111,7 +134,7 @@ class BreakdownRule extends StockRule {
     if (close == null) return null;
 
     if (context.supportLevel != null) {
-      // Use breakdownBuffer (2%)
+      // 使用跌破緩衝區（2%）
       final breakdownLevel =
           context.supportLevel! * (1 - RuleParams.breakdownBuffer);
       if (close < breakdownLevel) {

@@ -4,7 +4,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 
-/// Repository for stock master data
+/// 股票主檔 Repository
 class StockRepository {
   StockRepository({
     required AppDatabase database,
@@ -15,19 +15,19 @@ class StockRepository {
   final AppDatabase _db;
   final FinMindClient _client;
 
-  /// Get all active stocks from local database
+  /// 取得所有上市中的股票
   Future<List<StockMasterEntry>> getAllStocks() {
     return _db.getAllActiveStocks();
   }
 
-  /// Get stock by symbol
+  /// 依代碼取得股票
   Future<StockMasterEntry?> getStock(String symbol) {
     return _db.getStock(symbol);
   }
 
-  /// Sync stock list from FinMind API
+  /// 從 FinMind API 同步股票清單
   ///
-  /// This should be called periodically (e.g., weekly) to update the stock list
+  /// 建議定期執行（如每週一次）以更新股票清單
   Future<int> syncStockList() async {
     try {
       final stocks = await _client.getStockList();
@@ -52,17 +52,17 @@ class StockRepository {
     }
   }
 
-  /// Search stocks by name or symbol (uses DB-level filtering)
+  /// 依名稱或代碼搜尋股票（Database 層級過濾）
   Future<List<StockMasterEntry>> searchStocks(String query) {
     return _db.searchStocks(query);
   }
 
-  /// Get stocks by market (uses DB-level filtering)
+  /// 依市場篩選股票（Database 層級過濾）
   Future<List<StockMasterEntry>> getStocksByMarket(String market) {
     return _db.getStocksByMarket(market);
   }
 
-  /// Check if stock exists
+  /// 檢查股票是否存在
   Future<bool> stockExists(String symbol) async {
     final stock = await getStock(symbol);
     return stock != null;

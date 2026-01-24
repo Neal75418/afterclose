@@ -6,31 +6,74 @@ import 'package:afterclose/data/database/app_database.dart';
 void main() {
   group('PriceCalculator', () {
     group('calculatePriceChange', () {
-      test('should calculate positive price change', () {
-        final history = _generatePriceHistory(
-          days: 5,
-          prices: [100.0, 100.0, 100.0, 100.0, 105.0],
-        );
+      test(
+        'should calculate positive price change when history includes latest date',
+        () {
+          final now = DateTime.now();
+          final history = _generatePriceHistory(
+            days: 5,
+            prices: [100.0, 100.0, 100.0, 100.0, 105.0],
+            startDate: now.subtract(const Duration(days: 4)),
+          );
+          final latestPrice = _createPrice(close: 105.0, date: now);
 
-        final result = PriceCalculator.calculatePriceChange(history, 105.0);
+          final result = PriceCalculator.calculatePriceChange(
+            history,
+            latestPrice,
+          );
 
-        expect(result, isNotNull);
-        expect(result, closeTo(5.0, 0.01)); // 5% increase
-      });
+          expect(result, isNotNull);
+          expect(result, closeTo(5.0, 0.01)); // 5% increase from 100 to 105
+        },
+      );
 
-      test('should calculate negative price change', () {
-        final history = _generatePriceHistory(
-          days: 5,
-          prices: [100.0, 100.0, 100.0, 100.0, 95.0],
-        );
+      test(
+        'should calculate negative price change when history includes latest date',
+        () {
+          final now = DateTime.now();
+          final history = _generatePriceHistory(
+            days: 5,
+            prices: [100.0, 100.0, 100.0, 100.0, 95.0],
+            startDate: now.subtract(const Duration(days: 4)),
+          );
+          final latestPrice = _createPrice(close: 95.0, date: now);
 
-        final result = PriceCalculator.calculatePriceChange(history, 95.0);
+          final result = PriceCalculator.calculatePriceChange(
+            history,
+            latestPrice,
+          );
 
-        expect(result, isNotNull);
-        expect(result, closeTo(-5.0, 0.01)); // 5% decrease
-      });
+          expect(result, isNotNull);
+          expect(result, closeTo(-5.0, 0.01)); // 5% decrease from 100 to 95
+        },
+      );
 
-      test('should return null when latestClose is null', () {
+      test(
+        'should calculate price change when history does NOT include latest date',
+        () {
+          final now = DateTime.now();
+          final yesterday = now.subtract(const Duration(days: 1));
+          // History only goes up to yesterday
+          final history = _generatePriceHistory(
+            days: 4,
+            prices: [100.0, 100.0, 100.0, 100.0],
+            startDate: yesterday.subtract(const Duration(days: 3)),
+          );
+          // Latest price is today
+          final latestPrice = _createPrice(close: 105.0, date: now);
+
+          final result = PriceCalculator.calculatePriceChange(
+            history,
+            latestPrice,
+          );
+
+          expect(result, isNotNull);
+          // Should use history.last (100.0) as previous close, not history[length-2]
+          expect(result, closeTo(5.0, 0.01)); // 5% increase from 100 to 105
+        },
+      );
+
+      test('should return null when latestPrice is null', () {
         final history = _generatePriceHistory(
           days: 5,
           prices: [100.0, 100.0, 100.0, 100.0, 100.0],
@@ -41,21 +84,61 @@ void main() {
         expect(result, isNull);
       });
 
-      test('should return null when history has less than 2 entries', () {
-        final history = _generatePriceHistory(days: 1, prices: [100.0]);
+      test(
+        'should return null when history has less than 2 entries and includes latest',
+        () {
+          final now = DateTime.now();
+          final history = _generatePriceHistory(
+            days: 1,
+            prices: [100.0],
+            startDate: now,
+          );
+          final latestPrice = _createPrice(close: 100.0, date: now);
 
-        final result = PriceCalculator.calculatePriceChange(history, 100.0);
+          final result = PriceCalculator.calculatePriceChange(
+            history,
+            latestPrice,
+          );
 
-        expect(result, isNull);
-      });
+          expect(result, isNull);
+        },
+      );
+
+      test(
+        'should work with single entry history when latest date is different',
+        () {
+          final now = DateTime.now();
+          final yesterday = now.subtract(const Duration(days: 1));
+          final history = _generatePriceHistory(
+            days: 1,
+            prices: [100.0],
+            startDate: yesterday,
+          );
+          final latestPrice = _createPrice(close: 110.0, date: now);
+
+          final result = PriceCalculator.calculatePriceChange(
+            history,
+            latestPrice,
+          );
+
+          expect(result, isNotNull);
+          expect(result, closeTo(10.0, 0.01)); // 10% increase
+        },
+      );
 
       test('should return null when previous close is zero', () {
+        final now = DateTime.now();
         final history = _generatePriceHistory(
           days: 3,
           prices: [100.0, 0.0, 100.0],
+          startDate: now.subtract(const Duration(days: 2)),
         );
+        final latestPrice = _createPrice(close: 100.0, date: now);
 
-        final result = PriceCalculator.calculatePriceChange(history, 100.0);
+        final result = PriceCalculator.calculatePriceChange(
+          history,
+          latestPrice,
+        );
 
         expect(result, isNull);
       });
@@ -194,12 +277,13 @@ List<DailyPriceEntry> _generatePriceHistory({
   required int days,
   required List<double> prices,
   String symbol = 'TEST',
+  DateTime? startDate,
 }) {
-  final now = DateTime.now();
+  final start = startDate ?? DateTime.now().subtract(Duration(days: days - 1));
   return List.generate(days, (i) {
     return _createPrice(
       symbol: symbol,
-      date: now.subtract(Duration(days: days - i - 1)),
+      date: start.add(Duration(days: i)),
       close: prices[i],
     );
   });

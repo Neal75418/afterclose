@@ -4,18 +4,18 @@ import 'package:shimmer/shimmer.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 
 // ==================================================
-// Shimmer Dimension Constants
+// 微光效果尺寸常數
 // ==================================================
 
-/// Common shimmer dimensions for consistent UI
+/// 常用的微光效果尺寸，確保 UI 一致性
 abstract final class ShimmerDimensions {
-  // Card padding and margin
+  // 卡片間距與邊距
   static const cardMarginH = 16.0;
   static const cardMarginV = 8.0;
   static const cardPadding = 16.0;
   static const cardRadius = 16.0;
 
-  // Stock card skeleton
+  // 股票卡片骨架
   static const iconSize = 48.0;
   static const iconRadius = 12.0;
   static const symbolWidth = 80.0;
@@ -31,7 +31,7 @@ abstract final class ShimmerDimensions {
   static const changeWidth = 50.0;
   static const changeHeight = 16.0;
 
-  // Detail page skeleton
+  // 詳情頁骨架
   static const headerTitleWidth = 150.0;
   static const headerTitleHeight = 28.0;
   static const headerSubWidth = 80.0;
@@ -47,14 +47,14 @@ abstract final class ShimmerDimensions {
   static const cardHeight = 100.0;
   static const listItemHeight = 72.0;
 
-  // News card skeleton
+  // 新聞卡片骨架
   static const newsTitleHeight = 18.0;
   static const newsTitleWidth2 = 200.0;
   static const newsMetaWidth1 = 60.0;
   static const newsMetaWidth2 = 80.0;
   static const newsMetaHeight = 14.0;
 
-  // Common spacing
+  // 常用間距
   static const spacingXs = 4.0;
   static const spacingSm = 6.0;
   static const spacingMd = 8.0;
@@ -63,23 +63,23 @@ abstract final class ShimmerDimensions {
   static const spacingXxl = 24.0;
 }
 
-/// Shimmer colors for light and dark themes
+/// 淺色與深色主題的微光效果顏色
 abstract final class ShimmerColors {
   static Color baseColor(bool isDark) =>
       isDark ? Colors.grey[800]! : Colors.grey[300]!;
   static Color highlightColor(bool isDark) =>
       isDark ? Colors.grey[700]! : Colors.grey[100]!;
 
-  /// Skeleton container fill color - provides good contrast in both modes
+  /// 骨架容器填充顏色，在兩種模式下都能提供良好的對比度
   static Color skeletonColor(bool isDark) =>
       isDark ? const Color(0xFF3A3A4A) : Colors.white;
 }
 
 // ==================================================
-// Shimmer Widgets
+// 微光效果 Widget
 // ==================================================
 
-/// Shimmer loading skeleton for stock list
+/// 股票清單的微光載入骨架
 class StockListShimmer extends StatelessWidget {
   const StockListShimmer({super.key, this.itemCount = 5});
 
@@ -106,7 +106,7 @@ class StockListShimmer extends StatelessWidget {
   }
 }
 
-/// Single stock card skeleton
+/// 單一股票卡片骨架
 class _StockCardSkeleton extends StatelessWidget {
   const _StockCardSkeleton({required this.isDark});
 
@@ -128,7 +128,7 @@ class _StockCardSkeleton extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Leading icon placeholder
+          // 前置圖示佔位符
           Container(
             width: ShimmerDimensions.iconSize,
             height: ShimmerDimensions.iconSize,
@@ -138,12 +138,12 @@ class _StockCardSkeleton extends StatelessWidget {
             ),
           ),
           const SizedBox(width: ShimmerDimensions.spacingLg),
-          // Content area
+          // 內容區域
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Symbol
+                // 股票代碼
                 Container(
                   width: ShimmerDimensions.symbolWidth,
                   height: ShimmerDimensions.symbolHeight,
@@ -155,7 +155,7 @@ class _StockCardSkeleton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: ShimmerDimensions.spacingMd),
-                // Name
+                // 股票名稱
                 Container(
                   width: ShimmerDimensions.nameWidth,
                   height: ShimmerDimensions.nameHeight,
@@ -167,7 +167,7 @@ class _StockCardSkeleton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: ShimmerDimensions.spacingMd),
-                // Tags
+                // 標籤
                 Row(
                   children: [
                     Container(
@@ -196,7 +196,7 @@ class _StockCardSkeleton extends StatelessWidget {
               ],
             ),
           ),
-          // Price area
+          // 價格區域
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -229,7 +229,7 @@ class _StockCardSkeleton extends StatelessWidget {
   }
 }
 
-/// Generic shimmer container for custom shapes
+/// 通用微光效果容器，用於自訂形狀
 class ShimmerContainer extends StatelessWidget {
   const ShimmerContainer({
     super.key,
@@ -243,7 +243,7 @@ class ShimmerContainer extends StatelessWidget {
   final double height;
   final double borderRadius;
 
-  /// Optional semantic label for accessibility
+  /// 可選的無障礙語意標籤
   final String? semanticLabel;
 
   @override
@@ -275,7 +275,7 @@ class ShimmerContainer extends StatelessWidget {
   }
 }
 
-/// Shimmer loading skeleton for stock detail page
+/// 股票詳情頁的微光載入骨架
 class StockDetailShimmer extends StatelessWidget {
   const StockDetailShimmer({super.key});
 
@@ -296,7 +296,7 @@ class StockDetailShimmer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row
+              // 標題列
               Row(
                 children: [
                   Expanded(
@@ -356,7 +356,7 @@ class StockDetailShimmer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: ShimmerDimensions.spacingXxl),
-              // Trend chips
+              // 趨勢標籤
               Row(
                 children: [
                   Container(
@@ -383,7 +383,7 @@ class StockDetailShimmer extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: ShimmerDimensions.spacingXxl),
-              // Section title
+              // 區塊標題
               Container(
                 width: ShimmerDimensions.sectionTitleWidth,
                 height: ShimmerDimensions.sectionTitleHeight,
@@ -395,7 +395,7 @@ class StockDetailShimmer extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: ShimmerDimensions.spacingLg),
-              // Card
+              // 卡片
               Container(
                 width: double.infinity,
                 height: ShimmerDimensions.cardHeight,
@@ -407,7 +407,7 @@ class StockDetailShimmer extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: ShimmerDimensions.spacingXxl),
-              // Section title
+              // 區塊標題
               Container(
                 width: ShimmerDimensions.sectionTitleWidth,
                 height: ShimmerDimensions.sectionTitleHeight,
@@ -419,7 +419,7 @@ class StockDetailShimmer extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: ShimmerDimensions.spacingLg),
-              // Cards
+              // 卡片們
               ...List.generate(
                 3,
                 (index) => Padding(
@@ -446,7 +446,7 @@ class StockDetailShimmer extends StatelessWidget {
   }
 }
 
-/// Shimmer loading skeleton for news list
+/// 新聞清單的微光載入骨架
 class NewsListShimmer extends StatelessWidget {
   const NewsListShimmer({super.key, this.itemCount = 5});
 
@@ -473,7 +473,7 @@ class NewsListShimmer extends StatelessWidget {
   }
 }
 
-/// Single news card skeleton
+/// 單一新聞卡片骨架
 class _NewsCardSkeleton extends StatelessWidget {
   const _NewsCardSkeleton({required this.isDark});
 
@@ -496,7 +496,7 @@ class _NewsCardSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title line 1
+          // 標題第 1 行
           Container(
             width: double.infinity,
             height: ShimmerDimensions.newsTitleHeight,
@@ -506,7 +506,7 @@ class _NewsCardSkeleton extends StatelessWidget {
             ),
           ),
           const SizedBox(height: ShimmerDimensions.spacingMd),
-          // Title line 2
+          // 標題第 2 行
           Container(
             width: ShimmerDimensions.newsTitleWidth2,
             height: ShimmerDimensions.newsTitleHeight,
@@ -516,7 +516,7 @@ class _NewsCardSkeleton extends StatelessWidget {
             ),
           ),
           const SizedBox(height: ShimmerDimensions.spacingLg),
-          // Meta info
+          // 元資訊
           Row(
             children: [
               Container(

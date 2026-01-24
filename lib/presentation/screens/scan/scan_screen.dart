@@ -15,7 +15,7 @@ import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
-/// Scan screen - shows all analyzed stocks with filters
+/// 掃描畫面 - 顯示所有已分析股票與篩選功能
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
 
@@ -42,7 +42,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     super.dispose();
   }
 
-  /// Trigger loadMore when user scrolls near the bottom
+  /// 當使用者捲動接近底部時觸發載入更多
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 300) {
@@ -50,19 +50,19 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     }
   }
 
-  /// Build empty state widget with filter metadata
+  /// 建立含有篩選條件元資料的空狀態 Widget
   Widget _buildEmptyState(ScanFilter filter, WidgetRef ref) {
-    // For "all" filter, use simple empty state
+    // 對於「全部」篩選，使用簡單的空狀態
     if (filter == ScanFilter.all) {
       return EmptyStates.noFilterResults(
-        onClearFilter: null, // No need to clear when already showing all
+        onClearFilter: null, // 已顯示全部時無需清除
       );
     }
 
-    // Get filter metadata
+    // 取得篩選條件元資料
     final metadata = filter.metadata;
 
-    // Translate data requirements
+    // 翻譯資料需求標籤
     final dataReqLabels = metadata.dataRequirements
         .map((req) => req.labelKey.tr())
         .toList();
@@ -80,7 +80,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
-  /// Show bottom sheet with grouped filters
+  /// 顯示分組篩選條件的底部選單
   void _showFilterBottomSheet(
     BuildContext context,
     WidgetRef ref,
@@ -103,7 +103,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           builder: (context, scrollController) {
             return Column(
               children: [
-                // Handle bar
+                // 拖曳把手
                 Container(
                   margin: const EdgeInsets.only(top: 12),
                   width: 40,
@@ -115,7 +115,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                // Title
+                // 標題
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
@@ -123,7 +123,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
-                // Filter groups
+                // 篩選群組
                 Expanded(
                   child: ListView(
                     controller: scrollController,
@@ -135,7 +135,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Group header
+                              // 群組標題
                               Padding(
                                 padding: const EdgeInsets.only(
                                   top: 16,
@@ -149,7 +149,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                   ),
                                 ),
                               ),
-                              // Filter chips in wrap
+                              // 篩選標籤
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
@@ -221,12 +221,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         onRefresh: () => ref.read(scanProvider.notifier).loadData(),
         child: Column(
           children: [
-            // Filter chips - show quick filters + "More" button
+            // 篩選標籤 - 顯示快速篩選與「更多」按鈕
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 children: [
-                  // "All" chip
+                  // 「全部」標籤
                   FilterChip(
                     label: Text(ScanFilter.all.labelKey.tr()),
                     labelStyle: TextStyle(
@@ -240,13 +240,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                     },
                   ),
                   const SizedBox(width: 8),
-                  // Current selected filter (if not "All")
+                  // 目前選中的篩選條件（若非「全部」）
                   if (state.filter != ScanFilter.all)
                     FilterChip(
                       label: Text(state.filter.labelKey.tr()),
                       selected: true,
                       onSelected: (_) {
-                        // Tapping again clears the filter
+                        // 再次點擊清除篩選
                         ref
                             .read(scanProvider.notifier)
                             .setFilter(ScanFilter.all);
@@ -259,7 +259,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       },
                     ),
                   if (state.filter != ScanFilter.all) const SizedBox(width: 8),
-                  // "More Filters" button
+                  // 「更多篩選」按鈕
                   ActionChip(
                     avatar: const Icon(Icons.filter_list, size: 18),
                     label: Text('scan.moreFilters'.tr()),
@@ -270,7 +270,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               ),
             ),
 
-            // Stock count (show loaded/total when paginating)
+            // 股票數量（分頁時顯示已載入/總數）
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
@@ -296,7 +296,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               ),
             ),
 
-            // Stock list
+            // 股票清單
             Expanded(
               child: state.isLoading
                   ? const StockListShimmer(itemCount: 8)
@@ -309,14 +309,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   ? _buildEmptyState(state.filter, ref)
                   : ListView.builder(
                       controller: _scrollController,
-                      // Performance optimizations
-                      cacheExtent:
-                          500, // Pre-render more items for smoother scroll
-                      addAutomaticKeepAlives: false, // Reduce memory usage
-                      // +1 for loading indicator when loading more
+                      // 效能優化設定
+                      cacheExtent: 500, // 預渲染更多項目以獲得更流暢的捲動
+                      addAutomaticKeepAlives: false, // 減少記憶體使用
+                      // 載入更多時項目數 +1 用於顯示載入指示器
                       itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
                       itemBuilder: (context, index) {
-                        // Show loading indicator at the bottom
+                        // 在底部顯示載入指示器
                         if (index == state.stocks.length) {
                           return Padding(
                             padding: const EdgeInsets.all(16),
@@ -328,11 +327,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                           );
                         }
                         final stock = state.stocks[index];
-                        // RepaintBoundary isolates each card for better scroll performance
+                        // RepaintBoundary 隔離每張卡片以提升捲動效能
                         final card = RepaintBoundary(
                           child: Slidable(
                             key: ValueKey(stock.symbol),
-                            // Left swipe → View details
+                            // 向左滑動 → 檢視詳情
                             startActionPane: ActionPane(
                               motion: const BehindMotion(),
                               extentRatio: 0.25,
@@ -353,7 +352,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                 ),
                               ],
                             ),
-                            // Right swipe → Toggle watchlist
+                            // 向右滑動 → 切換自選
                             endActionPane: ActionPane(
                               motion: const BehindMotion(),
                               extentRatio: 0.25,
@@ -430,7 +429,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                           ),
                         );
 
-                        // Staggered entry animation for first 10 items
+                        // 前 10 筆項目使用交錯進場動畫
                         if (index < 10) {
                           return card
                               .animate()

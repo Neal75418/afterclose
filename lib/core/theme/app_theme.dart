@@ -1,53 +1,52 @@
 import 'package:flutter/material.dart';
 
-/// Modern theme system for AfterClose app
+/// AfterClose 應用程式主題系統
 ///
-/// Design philosophy:
-/// - Dark mode first with vibrant accents
-/// - Financial data focus with clear visual hierarchy
-/// - Taiwan stock market convention: red for up, green for down
+/// 設計理念：
+/// - 深色模式優先，搭配鮮豔強調色
+/// - 專注於金融數據，清晰的視覺層次
+/// - 台灣股市慣例：紅色代表漲，綠色代表跌
 class AppTheme {
   AppTheme._();
 
   // ==========================================
-  // Color Palette
+  // 色彩調色盤（Material Design 標準）
   // ==========================================
 
-  /// Primary brand color - Modern violet
-  static const primaryColor = Color(0xFF6C63FF);
+  /// 主品牌色 - Material Blue
+  static const primaryColor = Color(0xFF2196F3);
 
-  /// Secondary accent - Cyan for highlights
-  static const secondaryColor = Color(0xFF00D9FF);
+  /// 次要強調色 - Material Teal
+  static const secondaryColor = Color(0xFF03DAC6);
 
-  /// Tertiary accent - Warm coral
-  static const tertiaryColor = Color(0xFFFF6B9D);
+  /// 第三強調色 - Material Deep Orange
+  static const tertiaryColor = Color(0xFFFF5722);
 
-  // Stock price colors (Taiwan convention)
-  /// Up/Gain - Red (漲)
+  // 股價顏色（台灣慣例）
+  /// 上漲 - 紅色
   static const upColor = Color(0xFFFF4757);
 
-  /// Down/Loss - Green (跌)
+  /// 下跌 - 綠色
   static const downColor = Color(0xFF2ED573);
 
-  /// Neutral/Unchanged - Grey (平盤)
+  /// 平盤 - 灰色
   static const neutralColor = Color(0xFF747D8C);
 
-  /// Error color - Distinct from upColor for semantic clarity
-  /// Uses a deeper red-orange to differentiate from stock price increases
+  /// 錯誤色 - 使用較深的紅橘色，與上漲顏色區分
   static const errorColor = Color(0xFFE74C3C);
 
-  // Surface colors for dark theme
-  static const _surfaceDark = Color(0xFF1E1E2E);
-  static const _backgroundDark = Color(0xFF121218);
-  static const _cardDark = Color(0xFF252536);
+  // 深色主題表面顏色
+  static const _surfaceDark = Color(0xFF1E1E1E);
+  static const _backgroundDark = Color(0xFF121212);
+  static const _cardDark = Color(0xFF2D2D2D);
 
-  // Surface colors for light theme
+  // 淺色主題表面顏色
   static const _surfaceLight = Color(0xFFF8F9FA);
   static const _backgroundLight = Color(0xFFFFFFFF);
   static const _cardLight = Color(0xFFFFFFFF);
 
   // ==========================================
-  // Dark Theme
+  // 深色主題
   // ==========================================
 
   static ThemeData get darkTheme {
@@ -60,10 +59,10 @@ class AppTheme {
         secondary: secondaryColor,
         tertiary: tertiaryColor,
         surface: _surfaceDark,
-        onSurface: Colors.white,
-        onSurfaceVariant: const Color(0xFFB0B0C0),
+        onSurface: const Color(0xFFE0E0E0), // High contrast white
+        onSurfaceVariant: const Color(0xFFB0B0B0),
         error: const Color(0xFFFF6B6B),
-        outline: const Color(0xFF3A3A4A),
+        outline: const Color(0xFF424242),
       ),
       scaffoldBackgroundColor: _backgroundDark,
 
@@ -75,7 +74,7 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: Colors.white,
+          color: Color(0xFFE0E0E0),
         ),
       ),
 
@@ -145,14 +144,14 @@ class AppTheme {
       // Chips
       chipTheme: ChipThemeData(
         backgroundColor: _cardDark,
-        labelStyle: const TextStyle(fontSize: 12),
+        labelStyle: const TextStyle(fontSize: 12, color: Color(0xFFE0E0E0)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
 
       // Divider
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF2A2A3A),
+        color: Color(0xFF424242),
         thickness: 1,
         space: 1,
       ),
@@ -160,7 +159,7 @@ class AppTheme {
       // Snackbar
       snackBarTheme: SnackBarThemeData(
         backgroundColor: _cardDark,
-        contentTextStyle: const TextStyle(color: Colors.white),
+        contentTextStyle: const TextStyle(color: Color(0xFFE0E0E0)),
         actionTextColor: secondaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -175,7 +174,7 @@ class AppTheme {
   }
 
   // ==========================================
-  // Light Theme
+  // 淺色主題
   // ==========================================
 
   static ThemeData get lightTheme {
@@ -318,10 +317,10 @@ class AppTheme {
   }
 
   // ==========================================
-  // Helper Methods
+  // 輔助方法
   // ==========================================
 
-  /// Get color for price change
+  /// 根據漲跌幅取得對應顏色
   static Color getPriceColor(double? change) {
     if (change == null) return neutralColor;
     if (change > 0) return upColor;
@@ -329,7 +328,7 @@ class AppTheme {
     return neutralColor;
   }
 
-  /// Get color for score badge
+  /// 根據評分取得對應顏色
   static Color getScoreColor(double score) {
     if (score >= 50) return upColor;
     if (score >= 35) return Colors.orange;
@@ -337,9 +336,9 @@ class AppTheme {
     return neutralColor;
   }
 
-  /// Get gradient for backgrounds
+  /// 取得背景漸層
   static LinearGradient get darkGradient => const LinearGradient(
-    colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+    colors: [Color(0xFF121212), Color(0xFF1E1E1E)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -350,7 +349,7 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
-  /// Card decoration with subtle border
+  /// 卡片裝飾（含細微邊框）
   static BoxDecoration cardDecoration(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return BoxDecoration(
@@ -364,14 +363,14 @@ class AppTheme {
   }
 }
 
-/// Extension for easy access to theme colors
+/// 便捷存取主題顏色的擴充方法
 extension ThemeExtension on BuildContext {
-  /// Get price color based on change percentage
+  /// 根據漲跌幅取得價格顏色
   Color priceColor(double? change) => AppTheme.getPriceColor(change);
 
-  /// Get score badge color
+  /// 取得評分徽章顏色
   Color scoreColor(double score) => AppTheme.getScoreColor(score);
 
-  /// Check if current theme is dark
+  /// 檢查目前是否為深色主題
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 }

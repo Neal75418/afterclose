@@ -1,38 +1,38 @@
 import 'package:afterclose/data/database/app_database.dart';
 
-/// Candlestick pattern types
+/// K 線型態類型
 enum CandlePatternType {
-  /// 十字線 - indecision, potential reversal
+  /// 十字線 - 猶豫不決，可能反轉
   doji('DOJI', '十字線'),
 
-  /// 多頭吞噬 - bullish reversal
+  /// 多頭吞噬 - 看漲反轉訊號
   bullishEngulfing('BULLISH_ENGULFING', '多頭吞噬'),
 
-  /// 空頭吞噬 - bearish reversal
+  /// 空頭吞噬 - 看跌反轉訊號
   bearishEngulfing('BEARISH_ENGULFING', '空頭吞噬'),
 
-  /// 錘子線 - bullish reversal at bottom
+  /// 錘子線 - 底部看漲反轉
   hammer('HAMMER', '錘子線'),
 
-  /// 吊人線 - bearish reversal at top
+  /// 吊人線 - 頭部看跌反轉
   hangingMan('HANGING_MAN', '吊人線'),
 
-  /// 向上跳空缺口 - bullish continuation/breakout
+  /// 向上跳空缺口 - 看漲突破
   gapUp('GAP_UP', '跳空上漲'),
 
-  /// 向下跳空缺口 - bearish continuation/breakdown
+  /// 向下跳空缺口 - 看跌破位
   gapDown('GAP_DOWN', '跳空下跌'),
 
-  /// 三白兵 - strong bullish trend
+  /// 三白兵 - 強勢多頭趨勢
   threeWhiteSoldiers('THREE_WHITE_SOLDIERS', '三白兵'),
 
-  /// 三黑鴉 - strong bearish trend
+  /// 三黑鴉 - 強勢空頭趨勢
   threeBlackCrows('THREE_BLACK_CROWS', '三黑鴉'),
 
-  /// 晨星 - bullish reversal
+  /// 晨星 - 看漲反轉
   morningStar('MORNING_STAR', '晨星'),
 
-  /// 暮星 - bearish reversal
+  /// 暮星 - 看跌反轉
   eveningStar('EVENING_STAR', '暮星');
 
   const CandlePatternType(this.code, this.label);
@@ -41,7 +41,7 @@ enum CandlePatternType {
   final String label;
 }
 
-/// Result of pattern detection
+/// 型態偵測結果
 class PatternResult {
   const PatternResult({
     required this.type,
@@ -51,32 +51,33 @@ class PatternResult {
 
   final CandlePatternType type;
 
-  /// Confidence level 0.0-1.0
+  /// 信心水準 0.0-1.0
   final double confidence;
 
-  /// Optional description with specifics
+  /// 詳細說明
   final String? description;
 }
 
-/// Service for detecting candlestick patterns
+/// K 線型態偵測服務
 class PatternService {
-  /// Minimum body ratio for a "real" candle (not doji)
+  /// 實體 K 棒的最小比例（排除十字線）
   static const double _minBodyRatio = 0.1;
 
-  /// Minimum shadow ratio for hammer/hanging man
+  /// 錘子線/吊人線的最小影線比例
   static const double _minShadowRatio = 2.0;
 
-  /// Minimum gap percentage for gap detection
-  static const double _minGapPercent = 0.01; // 1%
+  /// 跳空缺口的最小百分比（1%）
+  static const double _minGapPercent = 0.01;
 
-  /// Detect all patterns in the most recent candles
-  /// [prices] should be ordered oldest to newest
+  /// 偵測最近 K 棒的所有型態
+  ///
+  /// [prices] 需依時間排序（舊到新）
   List<PatternResult> detectPatterns(List<DailyPriceEntry> prices) {
     if (prices.isEmpty) return [];
 
     final results = <PatternResult>[];
 
-    // Single candle patterns
+    // 單根 K 棒型態
     final today = prices.last;
     final dojiResult = _checkDoji(today);
     if (dojiResult != null) results.add(dojiResult);
@@ -84,7 +85,7 @@ class PatternService {
     final hammerResult = _checkHammerOrHangingMan(today, prices);
     if (hammerResult != null) results.add(hammerResult);
 
-    // Two candle patterns (need at least 2)
+    // 雙根 K 棒型態（需至少 2 根）
     if (prices.length >= 2) {
       final yesterday = prices[prices.length - 2];
 
@@ -95,7 +96,7 @@ class PatternService {
       if (engulfingResult != null) results.add(engulfingResult);
     }
 
-    // Three candle patterns (need at least 3)
+    // 三根 K 棒型態（需至少 3 根）
     if (prices.length >= 3) {
       final day1 = prices[prices.length - 3];
       final day2 = prices[prices.length - 2];
@@ -111,7 +112,7 @@ class PatternService {
     return results;
   }
 
-  /// Check for Doji pattern (small body relative to range)
+  /// 檢查十字線型態（實體相對於振幅很小）
   PatternResult? _checkDoji(DailyPriceEntry candle) {
     final open = candle.open;
     final close = candle.close;
@@ -129,31 +130,31 @@ class PatternService {
     final bodyRatio = body / range;
 
     if (bodyRatio < _minBodyRatio) {
-      // Determine doji type based on shadows
+      // 根據影線判斷十字線類型
       final upperShadow = high - (open > close ? open : close);
       final lowerShadow = (open < close ? open : close) - low;
 
       String description;
       double confidence;
 
-      // Gravestone Doji: long upper shadow, minimal lower shadow (bearish at top)
-      // Lower shadow should be < 20% of upper shadow for true gravestone
+      // 墓碑十字：長上影線、極短下影線（高檔看跌）
+      // 下影線應小於上影線的 20%
       if (upperShadow > range * 0.6 && lowerShadow < upperShadow * 0.2) {
         description = '墓碑十字（高檔警訊）';
         confidence = 0.85;
       }
-      // Dragonfly Doji: long lower shadow, minimal upper shadow (bullish at bottom)
-      // Upper shadow should be < 20% of lower shadow for true dragonfly
+      // 蜻蜓十字：長下影線、極短上影線（低檔看漲）
+      // 上影線應小於下影線的 20%
       else if (lowerShadow > range * 0.6 && upperShadow < lowerShadow * 0.2) {
         description = '蜻蜓十字（低檔訊號）';
         confidence = 0.85;
       }
-      // Long-legged Doji: both shadows are significant
+      // 長腳十字：上下影線都很長
       else if (upperShadow > range * 0.3 && lowerShadow > range * 0.3) {
         description = '長腳十字（多空拉鋸）';
         confidence = 0.75;
       }
-      // Standard Doji
+      // 標準十字
       else {
         description = '標準十字';
         confidence = 0.7;
@@ -169,7 +170,7 @@ class PatternService {
     return null;
   }
 
-  /// Check for Hammer or Hanging Man pattern
+  /// 檢查錘子線或吊人線型態
   PatternResult? _checkHammerOrHangingMan(
     DailyPriceEntry candle,
     List<DailyPriceEntry> history,
@@ -192,12 +193,11 @@ class PatternService {
     final upperShadow = high - realBodyTop;
     final lowerShadow = realBodyBottom - low;
 
-    // Hammer/Hanging Man: small body, long lower shadow, small upper shadow
+    // 錘子線/吊人線：小實體、長下影線、短上影線
     if (body > 0 &&
         lowerShadow >= body * _minShadowRatio &&
         upperShadow < body * 0.5) {
-      // Determine if hammer (at bottom) or hanging man (at top)
-      // by checking recent trend
+      // 根據近期趨勢判斷是錘子線（底部）或吊人線（頭部）
       final isDowntrend = _isRecentDowntrend(history);
       final isUptrend = _isRecentUptrend(history);
 
@@ -219,7 +219,7 @@ class PatternService {
     return null;
   }
 
-  /// Check for Gap (up or down)
+  /// 檢查跳空缺口（上漲或下跌）
   PatternResult? _checkGap(DailyPriceEntry today, DailyPriceEntry yesterday) {
     final todayLow = today.low;
     final todayHigh = today.high;
@@ -235,7 +235,7 @@ class PatternService {
       return null;
     }
 
-    // Gap Up: today's low > yesterday's high
+    // 向上跳空：今日最低價 > 昨日最高價
     if (todayLow > yesterdayHigh) {
       final gapSize = todayLow - yesterdayHigh;
       final gapPercent = gapSize / yesterdayClose;
@@ -249,7 +249,7 @@ class PatternService {
       }
     }
 
-    // Gap Down: today's high < yesterday's low
+    // 向下跳空：今日最高價 < 昨日最低價
     if (todayHigh < yesterdayLow) {
       final gapSize = yesterdayLow - todayHigh;
       final gapPercent = gapSize / yesterdayClose;
@@ -266,8 +266,9 @@ class PatternService {
     return null;
   }
 
-  /// Check for Engulfing pattern
-  /// Now accepts history for trend context
+  /// 檢查吞噬型態
+  ///
+  /// 可傳入歷史資料以判斷趨勢方向
   PatternResult? _checkEngulfing(
     DailyPriceEntry today,
     DailyPriceEntry yesterday, [
@@ -288,10 +289,10 @@ class PatternService {
     final todayBullish = todayClose > todayOpen;
     final yesterdayBullish = yesterdayClose > yesterdayOpen;
 
-    // Bullish Engulfing: yesterday bearish, today bullish, today engulfs yesterday
+    // 多頭吞噬：昨日陰線、今日陽線、今日吞噬昨日
     if (!yesterdayBullish && todayBullish) {
       if (todayOpen <= yesterdayClose && todayClose >= yesterdayOpen) {
-        // Higher confidence if in downtrend (classic reversal setup)
+        // 若處於下跌趨勢中，信心度較高（經典反轉型態）
         final inDowntrend = history != null && _isRecentDowntrend(history);
         return PatternResult(
           type: CandlePatternType.bullishEngulfing,
@@ -301,10 +302,10 @@ class PatternService {
       }
     }
 
-    // Bearish Engulfing: yesterday bullish, today bearish, today engulfs yesterday
+    // 空頭吞噬：昨日陽線、今日陰線、今日吞噬昨日
     if (yesterdayBullish && !todayBullish) {
       if (todayOpen >= yesterdayClose && todayClose <= yesterdayOpen) {
-        // Higher confidence if in uptrend (classic reversal setup)
+        // 若處於上漲趨勢中，信心度較高（經典反轉型態）
         final inUptrend = history != null && _isRecentUptrend(history);
         return PatternResult(
           type: CandlePatternType.bearishEngulfing,
@@ -317,7 +318,7 @@ class PatternService {
     return null;
   }
 
-  /// Check for Morning Star or Evening Star pattern
+  /// 檢查晨星或暮星型態
   PatternResult? _checkStar(
     DailyPriceEntry day1,
     DailyPriceEntry day2,
@@ -346,14 +347,14 @@ class PatternService {
     final day2Body = (day2Close - day2Open).abs();
     final day2Range = day2High - day2Low;
 
-    // Day2 should be a small body (star)
+    // 第二天應為小實體（星）
     final isDay2Star = day2Range > 0 && day2Body / day2Range < 0.3;
     if (!isDay2Star) return null;
 
     final day1Bearish = day1Close < day1Open;
     final day3Bullish = day3Close > day3Open;
 
-    // Morning Star: day1 bearish, day2 star, day3 bullish
+    // 晨星：第一天陰線、第二天星、第三天陽線
     if (day1Bearish && day3Bullish && day3Close > (day1Open + day1Close) / 2) {
       return const PatternResult(
         type: CandlePatternType.morningStar,
@@ -365,7 +366,7 @@ class PatternService {
     final day1Bullish = day1Close > day1Open;
     final day3Bearish = day3Close < day3Open;
 
-    // Evening Star: day1 bullish, day2 star, day3 bearish
+    // 暮星：第一天陽線、第二天星、第三天陰線
     if (day1Bullish && day3Bearish && day3Close < (day1Open + day1Close) / 2) {
       return const PatternResult(
         type: CandlePatternType.eveningStar,
@@ -377,10 +378,10 @@ class PatternService {
     return null;
   }
 
-  /// Minimum body ratio for significant candles in multi-candle patterns
+  /// 多根 K 棒型態中有效實體的最小比例
   static const double _minSignificantBodyRatio = 0.3;
 
-  /// Check for Three White Soldiers or Three Black Crows
+  /// 檢查紅三兵或三黑鴉型態
   PatternResult? _checkThreeSoldiersOrCrows(
     DailyPriceEntry day1,
     DailyPriceEntry day2,
@@ -428,11 +429,11 @@ class PatternService {
     final day2Bullish = day2Close > day2Open;
     final day3Bullish = day3Close > day3Open;
 
-    // Three White Soldiers requirements:
-    // 1. All three candles are bullish
-    // 2. Each closes higher than the previous
-    // 3. Each opens within or near the previous candle's body
-    // 4. Bodies should be significant (not doji-like)
+    // 紅三兵條件：
+    // 1. 三根皆為陽線
+    // 2. 每根收盤價高於前一根
+    // 3. 每根開盤價在前一根實體內或接近
+    // 4. 實體需夠大（非十字線）
     if (day1Bullish &&
         day2Bullish &&
         day3Bullish &&
@@ -441,7 +442,7 @@ class PatternService {
         day1Body / day1Range >= _minSignificantBodyRatio &&
         day2Body / day2Range >= _minSignificantBodyRatio &&
         day3Body / day3Range >= _minSignificantBodyRatio) {
-      // Check opens are within or near previous body (allow some tolerance)
+      // 檢查開盤價是否在前一根實體內（允許些許誤差）
       final day2OpensInDay1Body =
           day2Open >= day1Open && day2Open <= day1Close * 1.01;
       final day3OpensInDay2Body =
@@ -454,7 +455,7 @@ class PatternService {
           description: '三白兵：強勢上漲形態',
         );
       }
-      // Relaxed version: just require progressive closes
+      // 寬鬆版本：只要求連續收高
       return const PatternResult(
         type: CandlePatternType.threeWhiteSoldiers,
         confidence: 0.7,
@@ -466,7 +467,7 @@ class PatternService {
     final day2Bearish = day2Close < day2Open;
     final day3Bearish = day3Close < day3Open;
 
-    // Three Black Crows requirements (mirror of Three White Soldiers)
+    // 三黑鴉條件（紅三兵的相反）
     if (day1Bearish &&
         day2Bearish &&
         day3Bearish &&
@@ -475,7 +476,7 @@ class PatternService {
         day1Body / day1Range >= _minSignificantBodyRatio &&
         day2Body / day2Range >= _minSignificantBodyRatio &&
         day3Body / day3Range >= _minSignificantBodyRatio) {
-      // Check opens are within or near previous body
+      // 檢查開盤價是否在前一根實體內
       final day2OpensInDay1Body =
           day2Open <= day1Open && day2Open >= day1Close * 0.99;
       final day3OpensInDay2Body =
@@ -488,7 +489,7 @@ class PatternService {
           description: '三黑鴉：強勢下跌形態',
         );
       }
-      // Relaxed version
+      // 寬鬆版本
       return const PatternResult(
         type: CandlePatternType.threeBlackCrows,
         confidence: 0.7,
@@ -499,7 +500,7 @@ class PatternService {
     return null;
   }
 
-  /// Helper: Check if recent trend is down (last 5 days)
+  /// 輔助方法：檢查近期是否為下跌趨勢（最近 5 日）
   bool _isRecentDowntrend(List<DailyPriceEntry> history) {
     if (history.length < 5) return false;
 
@@ -507,16 +508,16 @@ class PatternService {
     final firstClose = recent.first.close;
     final lastClose = recent.last.close;
 
-    // Guard against null and division by zero
+    // 防止 null 和除以零
     if (firstClose == null || lastClose == null || firstClose <= 0) {
       return false;
     }
 
-    // Down at least 3%
+    // 至少下跌 3%
     return (firstClose - lastClose) / firstClose >= 0.03;
   }
 
-  /// Helper: Check if recent trend is up (last 5 days)
+  /// 輔助方法：檢查近期是否為上漲趨勢（最近 5 日）
   bool _isRecentUptrend(List<DailyPriceEntry> history) {
     if (history.length < 5) return false;
 
@@ -524,12 +525,12 @@ class PatternService {
     final firstClose = recent.first.close;
     final lastClose = recent.last.close;
 
-    // Guard against null and division by zero
+    // 防止 null 和除以零
     if (firstClose == null || lastClose == null || firstClose <= 0) {
       return false;
     }
 
-    // Up at least 3%
+    // 至少上漲 3%
     return (lastClose - firstClose) / firstClose >= 0.03;
   }
 }

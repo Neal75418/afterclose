@@ -6,7 +6,7 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Repository for fundamental data (營收, PE, PBR, 殖利率)
+/// 基本面資料 Repository（營收、本益比、股價淨值比、殖利率）
 class FundamentalRepository {
   FundamentalRepository({
     required AppDatabase db,
@@ -20,9 +20,9 @@ class FundamentalRepository {
   final FinMindClient _finMind;
   final TwseClient _twse;
 
-  /// Sync monthly revenue data for a stock
+  /// 同步單檔股票的月營收資料
   ///
-  /// Returns the number of records synced
+  /// 回傳同步筆數
   Future<int> syncMonthlyRevenue({
     required String symbol,
     required DateTime startDate,
@@ -37,12 +37,12 @@ class FundamentalRepository {
 
       if (data.isEmpty) return 0;
 
-      // Calculate growth rates
+      // 計算成長率
       final withGrowth = FinMindRevenue.calculateGrowthRates(data);
 
-      // Convert to database entries
+      // 轉換為 Database 資料
       final entries = withGrowth.map((r) {
-        // Use first day of the month as date
+        // 使用當月第一天作為日期
         final date = DateTime(r.revenueYear, r.revenueMonth);
         return MonthlyRevenueCompanion.insert(
           symbol: symbol,
@@ -67,9 +67,9 @@ class FundamentalRepository {
     }
   }
 
-  /// Sync PE/PBR/DividendYield data for a stock
+  /// 同步單檔股票的估值資料（本益比/股價淨值比/殖利率）
   ///
-  /// Returns the number of records synced
+  /// 回傳同步筆數
   Future<int> syncValuationData({
     required String symbol,
     required DateTime startDate,
@@ -84,9 +84,9 @@ class FundamentalRepository {
 
       if (data.isEmpty) return 0;
 
-      // Convert to database entries
+      // 轉換為 Database 資料
       final entries = data.map((r) {
-        // Parse date string to DateTime
+        // 解析日期字串
         final parsedDate = DateTime.tryParse(r.date) ?? DateTime.now();
         return StockValuationCompanion.insert(
           symbol: symbol,
@@ -109,31 +109,32 @@ class FundamentalRepository {
     }
   }
 
-  /// Sync valuation data for ALL stocks using TWSE BWIBBU_d (Free, Unlimited)
+  /// 使用 TWSE BWIBBU_d 同步全市場估值資料（免費、無限制）
   ///
-  /// Replaces individual FinMind calls for daily updates.
+  /// 取代個別 FinMind 呼叫以進行每日更新。
   Future<int> syncAllMarketValuation(
     DateTime date, {
     bool force = false,
   }) async {
     try {
-      if (!force) {
-        final existingCount = await _db.getValuationCountForDate(date);
-        if (existingCount > 1000) return existingCount;
-      }
+      // 強制同步以確保錯誤資料（錯誤的 PE/殖利率解析）被覆蓋
+      // if (!force) {
+      //   final existingCount = await _db.getValuationCountForDate(date);
+      //   if (existingCount > 1000) return existingCount;
+      // }
       final data = await _twse.getAllStockValuation(date: date);
 
       if (data.isEmpty) return 0;
 
-      // Convert to database entries
-      // Filter out invalid data (PE usually > 0, Yield >= 0)
+      // 轉換為 Database 資料
+      // 過濾無效資料（通常 PE > 0，殖利率 >= 0）
       final entries = data.map((r) {
         return StockValuationCompanion.insert(
           symbol: r.code,
           date: r.date,
-          // TWSE PE is often '-' if negative earnings, returned as null by parser
-          // FinMind returns 0 or null?
-          // We store null if not available.
+          // TWSE 本益比若為負盈餘則顯示「-」，解析器回傳 null
+          // FinMind 回傳 0 或 null？
+          // 若無資料則儲存 null
           per: Value(r.per),
           pbr: Value(r.pbr),
           dividendYield: Value(r.dividendYield),
@@ -152,23 +153,23 @@ class FundamentalRepository {
     }
   }
 
-  /// Sync monthly revenue for ALL stocks using TWSE Open Data (Free, Unlimited)
+  /// 使用 TWSE Open Data 同步全市場月營收（免費、無限制）
   ///
-  /// Replaces individual FinMind calls for recent monthly updates.
-  /// Hits https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+  /// 取代個別 FinMind 呼叫以進行最新月份更新。
+  /// API 端點：https://openapi.twse.com.tw/v1/opendata/t187ap05_L
   ///
-  /// Returns: Number of records synced, or -1 if skipped (already have data)
+  /// 回傳：同步筆數，或 -1 表示跳過（已有資料）
   Future<int> syncAllMarketRevenue(DateTime date, {bool force = false}) async {
     try {
-      // NOTE: OpenData only returns the LATEST month.
-      // We cannot specify a date. We just fetch what's available.
+      // 註：OpenData 僅回傳「最新」月份
+      // 無法指定日期。我們只抓取可用的資料
 
       final data = await _twse.getAllMonthlyRevenue();
 
       if (data.isEmpty) return 0;
 
-      // VERSION CHECK: Check if we already have data for this month
-      // This avoids redundant API calls and database writes
+      // 版本檢查：檢查是否已有該月資料
+      // 避免重複 API 呼叫和 Database 寫入
       final sample = data.first;
       final dataYear = sample.year;
       final dataMonth = sample.month;
@@ -178,24 +179,31 @@ class FundamentalRepository {
           dataYear,
           dataMonth,
         );
-        // If we already have >1000 records for this month, skip
-        // (Full market usually has ~1800+ stocks)
+        // 若該月已有 >1000 筆資料則跳過
+        // （全市場通常有 ~1800+ 檔股票）
         if (existingCount > 1000) {
           AppLogger.info(
             'FundamentalRepository',
             'Revenue data for $dataYear/$dataMonth already exists '
                 '($existingCount records), skipping sync',
           );
-          return -1; // Signal: skipped
+          return -1; // 訊號：已跳過
         }
       }
 
+      // 過濾有效資料
+      final stockList = await _db.getAllActiveStocks();
+      final validSymbols = stockList.map((s) => s.symbol).toSet();
+      final validData = data
+          .where((r) => validSymbols.contains(r.code))
+          .toList();
+
       AppLogger.info(
         'FundamentalRepository',
-        'Syncing revenue for $dataYear/$dataMonth (${data.length} stocks)',
+        'Syncing revenue for $dataYear/$dataMonth (${validData.length}/${data.length} stocks)',
       );
 
-      final entries = data.map((r) {
+      final entries = validData.map((r) {
         final recordDate = DateTime(r.year, r.month);
         return MonthlyRevenueCompanion.insert(
           symbol: r.code,
@@ -220,7 +228,7 @@ class FundamentalRepository {
     }
   }
 
-  /// Sync all fundamental data for a stock
+  /// 同步單檔股票的所有基本面資料
   Future<({int revenue, int valuation})> syncAll({
     required String symbol,
     required DateTime startDate,
@@ -243,11 +251,11 @@ class FundamentalRepository {
   }
 }
 
-/// Provider for FundamentalRepository
+/// FundamentalRepository Provider
 final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
   final db = ref.watch(databaseProvider);
   final finMind = ref.watch(finMindClientProvider);
-  // TwseClient usually doesn't need provider as it holds no state/auth,
-  // but if we had one we could inject it. For now repo creates it or accepts null.
+  // TwseClient 通常不需要 Provider，因為它不保存狀態/認證
+  // 但若有的話可以注入。目前 Repository 會自行建立或接受 null
   return FundamentalRepository(db: db, finMind: finMind);
 });

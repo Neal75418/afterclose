@@ -5,7 +5,7 @@ import 'package:xml/xml.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
 
-/// RSS feed parser for Taiwan financial news
+/// 台灣財經新聞 RSS feed 解析器
 class RssParser {
   RssParser({Dio? dio}) : _dio = dio ?? _createDio();
 
@@ -21,7 +21,7 @@ class RssParser {
     );
   }
 
-  /// Parse RSS feed from URL
+  /// 從 URL 解析 RSS feed
   Future<List<RssNewsItem>> parseFeed(RssFeedSource source) async {
     try {
       final response = await _dio.get(source.url);
@@ -42,19 +42,19 @@ class RssParser {
     }
   }
 
-  /// Parse multiple feeds concurrently
+  /// 並行解析多個 feeds
   ///
-  /// Returns a [RssParseResult] containing parsed items and any errors
+  /// 回傳包含解析結果和錯誤的 [RssParseResult]
   Future<RssParseResult> parseAllFeeds(List<RssFeedSource> sources) async {
     final results = <RssNewsItem>[];
     final errors = <RssFeedError>[];
 
-    // Fetch feeds concurrently but don't fail all if one fails
+    // 並行擷取 feeds，單一失敗不影響其他
     final futures = sources.map((source) async {
       try {
         return (items: await parseFeed(source), error: null, source: source);
       } catch (e) {
-        // Capture error details for debugging
+        // 擷取錯誤詳情供除錯用
         return (items: <RssNewsItem>[], error: e.toString(), source: source);
       }
     });
@@ -74,7 +74,7 @@ class RssParser {
       }
     }
 
-    // Sort by published date, newest first
+    // 依發布日期排序，最新的在前
     results.sort((a, b) => b.publishedAt.compareTo(a.publishedAt));
 
     return RssParseResult(items: results, errors: errors);
@@ -84,7 +84,7 @@ class RssParser {
     final document = XmlDocument.parse(xmlString);
     final items = <RssNewsItem>[];
 
-    // Try RSS 2.0 format first
+    // 先嘗試 RSS 2.0 格式
     final rssItems = document.findAllElements('item');
     for (final item in rssItems) {
       final newsItem = _parseRssItem(item, source);
@@ -93,7 +93,7 @@ class RssParser {
       }
     }
 
-    // Try Atom format if no RSS items found
+    // 若無 RSS 項目則嘗試 Atom 格式
     if (items.isEmpty) {
       final atomEntries = document.findAllElements('entry');
       for (final entry in atomEntries) {
@@ -149,19 +149,19 @@ class RssParser {
   String? _getElementText(XmlElement parent, String name) {
     final element = parent.findElements(name).firstOrNull;
     final text = element?.innerText.trim();
-    // Return null for empty strings (e.g., self-closing tags like <guid/>)
+    // 空字串回傳 null（例如自閉合標籤 <guid/>）
     return (text == null || text.isEmpty) ? null : text;
   }
 
   DateTime? _parseDate(String? dateStr) {
     if (dateStr == null) return null;
 
-    // Try RFC 822 format (RSS)
+    // 嘗試 RFC 822 格式（RSS）
     try {
       return _parseRfc822(dateStr);
     } catch (_) {}
 
-    // Try ISO 8601 format (Atom)
+    // 嘗試 ISO 8601 格式（Atom）
     try {
       return DateTime.parse(dateStr);
     } catch (_) {}
@@ -169,7 +169,7 @@ class RssParser {
     return null;
   }
 
-  /// Timezone offsets in hours
+  /// 時區偏移量（小時）
   static const _timezoneOffsets = {
     'GMT': 0,
     'UTC': 0,
@@ -184,7 +184,7 @@ class RssParser {
     'PDT': -7,
   };
 
-  /// Months lookup (case-insensitive)
+  /// 月份對照表（不區分大小寫）
   static const _months = {
     'jan': 1,
     'feb': 2,
@@ -201,11 +201,11 @@ class RssParser {
   };
 
   DateTime _parseRfc822(String dateStr) {
-    // RFC 822 parser with timezone support
-    // Format: "Mon, 01 Jan 2026 12:00:00 +0800" or "Mon, 01 Jan 2026 12:00:00 GMT"
-    // Also handles: "01 Jan 26 12:00:00 +08:00" (2-digit year, colon in tz)
+    // RFC 822 解析器（支援時區）
+    // 格式: "Mon, 01 Jan 2026 12:00:00 +0800" 或 "Mon, 01 Jan 2026 12:00:00 GMT"
+    // 也支援: "01 Jan 26 12:00:00 +08:00"（2 位數年份，時區含冒號）
 
-    // Remove optional day-of-week prefix
+    // 移除選擇性的星期前綴
     var cleanedDate = dateStr.trim();
     if (cleanedDate.contains(',')) {
       cleanedDate = cleanedDate.substring(cleanedDate.indexOf(',') + 1).trim();
@@ -216,13 +216,13 @@ class RssParser {
       throw const FormatException('Invalid RFC 822 date: insufficient parts');
     }
 
-    // Parse day (1-31)
+    // 解析日（1-31）
     final day = int.tryParse(parts[0]);
     if (day == null || day < 1 || day > 31) {
       throw FormatException('Invalid RFC 822 date: invalid day "${parts[0]}"');
     }
 
-    // Parse month (case-insensitive)
+    // 解析月（不區分大小寫）
     final monthStr = parts[1].toLowerCase();
     final month = _months[monthStr];
     if (month == null) {
@@ -231,13 +231,13 @@ class RssParser {
       );
     }
 
-    // Parse year (handle 2-digit and 4-digit)
+    // 解析年（處理 2 位數和 4 位數）
     var year = int.tryParse(parts[2]);
     if (year == null) {
       throw FormatException('Invalid RFC 822 date: invalid year "${parts[2]}"');
     }
-    // Convert 2-digit year to 4-digit (RFC 822 allows 2-digit years)
-    // Years 00-49 → 2000-2049, 50-99 → 1950-1999
+    // 將 2 位數年份轉換為 4 位數（RFC 822 允許 2 位數年份）
+    // 00-49 → 2000-2049，50-99 → 1950-1999
     if (year < 100) {
       year = year < 50 ? 2000 + year : 1900 + year;
     }
@@ -261,30 +261,30 @@ class RssParser {
         59,
       );
 
-      // Parse timezone if present
+      // 解析時區（如有）
       if (parts.length >= 5) {
         tzOffsetMinutes = _parseTimezone(parts[4]);
       }
     }
 
-    // Validate day for the specific month
+    // 驗證特定月份的日期
     final daysInMonth = DateTime(year, month + 1, 0).day;
     final validDay = day <= daysInMonth ? day : daysInMonth;
 
-    // Create UTC datetime and adjust for timezone
+    // 建立 UTC 日期時間並調整時區
     final utc = DateTime.utc(year, month, validDay, hour, minute, second);
     return utc.subtract(Duration(minutes: tzOffsetMinutes));
   }
 
-  /// Parse timezone string to offset in minutes
+  /// 將時區字串解析為分鐘偏移量
   ///
-  /// Handles: +0800, -0500, +08:00, -05:00, GMT, EST, PST, etc.
+  /// 支援: +0800, -0500, +08:00, -05:00, GMT, EST, PST 等
   int _parseTimezone(String tz) {
     if (tz.startsWith('+') || tz.startsWith('-')) {
       final sign = tz.startsWith('+') ? 1 : -1;
       var tzValue = tz.substring(1);
 
-      // Handle colon format (+08:00 → 0800)
+      // 處理含冒號格式（+08:00 → 0800）
       if (tzValue.contains(':')) {
         tzValue = tzValue.replaceAll(':', '');
       }
@@ -294,33 +294,33 @@ class RssParser {
         final tzMins = int.tryParse(tzValue.substring(2, 4)) ?? 0;
         return sign * (tzHours * 60 + tzMins);
       } else if (tzValue.length >= 2) {
-        // Handle short format like +08 (hours only)
+        // 處理短格式如 +08（僅小時）
         final tzHours = int.tryParse(tzValue.substring(0, 2)) ?? 0;
         return sign * tzHours * 60;
       }
     } else if (_timezoneOffsets.containsKey(tz.toUpperCase())) {
-      // Named timezone like GMT, EST, PST
+      // 具名時區如 GMT、EST、PST
       return _timezoneOffsets[tz.toUpperCase()]! * 60;
     }
     return 0;
   }
 
-  /// Clamp value to range
+  /// 將值限制在範圍內
   int _clamp(int value, int min, int max) {
     if (value < min) return min;
     if (value > max) return max;
     return value;
   }
 
-  /// Generate a unique ID using a better hash algorithm
+  /// 使用更好的雜湊演算法產生唯一 ID
   ///
-  /// Uses FNV-1a hash combined with source info to reduce collisions
+  /// 使用 FNV-1a 雜湊搭配來源資訊以減少碰撞
   String _generateId(String input, {String? source}) {
-    // FNV-1a hash parameters
+    // FNV-1a 雜湊參數
     const fnvPrime = 0x01000193;
     const fnvOffset = 0x811c9dc5;
 
-    // Combine source with input for better uniqueness
+    // 結合來源與輸入以提升唯一性
     final combined = source != null ? '$source:$input' : input;
     final bytes = utf8.encode(combined);
 
@@ -330,12 +330,12 @@ class RssParser {
       hash = (hash * fnvPrime) & 0xFFFFFFFF;
     }
 
-    // Return as padded hex string for consistent length
+    // 回傳補零的十六進位字串以維持一致長度
     return hash.toRadixString(16).padLeft(8, '0');
   }
 }
 
-/// RSS news item
+/// RSS 新聞項目
 class RssNewsItem {
   const RssNewsItem({
     required this.id,
@@ -353,8 +353,9 @@ class RssNewsItem {
   final DateTime publishedAt;
   final String category;
 
-  /// Extract potential stock symbols from title
-  /// Returns list of potential 4-digit stock codes
+  /// 從標題擷取可能的股票代碼
+  ///
+  /// 回傳可能的 4 位數股票代碼列表
   List<String> extractStockCodes() {
     final regex = RegExp(r'\b(\d{4})\b');
     final matches = regex.allMatches(title);
@@ -362,24 +363,24 @@ class RssNewsItem {
   }
 }
 
-/// Result of parsing multiple RSS feeds
+/// 多個 RSS feeds 的解析結果
 class RssParseResult {
   const RssParseResult({required this.items, required this.errors});
 
   final List<RssNewsItem> items;
   final List<RssFeedError> errors;
 
-  /// Whether any feeds failed to parse
+  /// 是否有任何 feed 解析失敗
   bool get hasErrors => errors.isNotEmpty;
 
-  /// Number of successfully parsed items
+  /// 成功解析的項目數
   int get successCount => items.length;
 
-  /// Number of failed feeds
+  /// 失敗的 feed 數
   int get errorCount => errors.length;
 }
 
-/// Error details for a failed RSS feed parse
+/// RSS feed 解析失敗的錯誤詳情
 class RssFeedError {
   const RssFeedError({
     required this.sourceName,
@@ -397,7 +398,7 @@ class RssFeedError {
   String toString() => '[$sourceName] $error ($url)';
 }
 
-/// RSS feed source configuration
+/// RSS feed 來源設定
 class RssFeedSource {
   const RssFeedSource({
     required this.name,
@@ -407,9 +408,9 @@ class RssFeedSource {
 
   final String name;
   final String url;
-  final String category; // Maps to NewsCategory
+  final String category; // 對應 NewsCategory
 
-  /// Predefined Taiwan financial news sources
+  /// 預設的台灣財經新聞來源
   static const List<RssFeedSource> defaultSources = [
     // MoneyDJ 理財網
     RssFeedSource(

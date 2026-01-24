@@ -1,58 +1,74 @@
-/// Rule Engine Parameters v1
-/// These are fixed values for v1, will be configurable in v2
+/// 規則引擎參數 v1
+///
+/// 這些是 v1 的固定值，v2 將可設定。
 abstract final class RuleParams {
-  /// Analysis window in days
+  /// 分析回溯天數
   static const int lookbackPrice = 120;
 
-  /// Extra buffer days for historical data (ensures enough data for analysis edge cases)
+  /// 歷史資料緩衝天數（確保分析邊界情況有足夠資料）
   static const int historyBufferDays = 30;
 
-  /// Total required historical data days (lookbackPrice + buffer)
+  /// 所需歷史資料總天數（lookbackPrice + buffer）
   static const int historyRequiredDays = lookbackPrice + historyBufferDays;
 
-  /// Institutional data lookback days
+  /// 法人資料回溯天數
   static const int institutionalLookbackDays = 10;
 
-  /// Moving average days for volume calculation
+  /// 成交量均線天數
   static const int volMa = 20;
 
-  /// Days for range (support/resistance) detection
+  /// 壓力/支撐偵測回溯天數
   static const int rangeLookback = 60;
 
-  /// Window for Swing High/Low detection
+  /// 候選股最低成交額（2000 萬台幣）
+  ///
+  /// 允許中小型股進入候選池，最終 Top 10 會由 topNMinTurnover 再次過濾。
+  static const double minCandidateTurnover = 20000000;
+
+  /// 候選股最低成交量（200 張 = 200,000 股）
+  static const double minCandidateVolumeShares = 200000;
+
+  /// Top N 推薦最低成交額（8000 萬台幣）
+  ///
+  /// 確保推薦的都是主流標的。
+  static const double topNMinTurnover = 80000000;
+
+  /// 當沖規則最低成交量（1500 張 = 1,500,000 股）
+  static const double minDayTradingVolumeShares = 1500000;
+
+  /// 波段高低點偵測視窗
   static const int swingWindow = 20;
 
-  /// Price spike threshold percentage
-  static const double priceSpikePercent = 3.0;
+  /// 價格異動門檻百分比
+  static const double priceSpikePercent = 6.0;
 
-  /// Volume spike multiplier (vs 20-day average)
-  /// 4.0x is highly selective - only exceptional volume anomalies
-  /// Also requires price movement (see minPriceChangeForVolume)
+  /// 成交量異動倍數（相對 20 日均量）
+  ///
+  /// 4.0 倍具高度選擇性，僅捕捉異常成交量。
+  /// 同時需要價格變動（見 minPriceChangeForVolume）。
   static const double volumeSpikeMult = 4.0;
 
-  /// Minimum absolute price change required for volume spike signal
-  /// Filters out volume spikes without meaningful price action
-  /// 1.5% ensures the volume came with actual price movement
+  /// 成交量異動訊號所需最低價格變動
+  ///
+  /// 過濾無實質價格變動的成交量異動，1.5% 確保量價配合。
   static const double minPriceChangeForVolume = 0.015;
 
-  /// Breakout buffer tolerance (1% for cleaner signals)
-  /// Was 0.3% which triggered too many false positives
+  /// 突破緩衝容差（1% 以獲得更乾淨的訊號）
   static const double breakoutBuffer = 0.01;
 
-  /// Breakdown buffer tolerance (0.5% - easier to trigger than breakout)
-  /// Separate from breakout to allow more breakdown/S2W signals
-  static const double breakdownBuffer = 0.005;
+  /// 跌破緩衝容差（1%）
+  static const double breakdownBuffer = 0.01;
 
-  /// Maximum distance for support/resistance to be considered relevant
-  /// Support/resistance beyond this distance from current price is ignored
-  /// 8% allows detecting nearby levels while filtering out irrelevant ones
+  /// 壓力/支撐有效最大距離
+  ///
+  /// 超過此距離的壓力/支撐將被忽略，8% 可偵測近期水位並過濾無關水位。
   static const double maxSupportResistanceDistance = 0.08;
 
   // ==========================================
-  // NewsRule Keywords (Configurable)
+  // 新聞規則關鍵字（可設定）
   // ==========================================
 
-  /// Positive keywords for news sentiment analysis
+  /// 新聞情緒分析正面關鍵字
   static const List<String> newsPositiveKeywords = [
     // 營收相關
     '營收創新高',
@@ -85,7 +101,7 @@ abstract final class RuleParams {
     '半導體',
   ];
 
-  /// Negative keywords for news sentiment analysis
+  /// 新聞情緒分析負面關鍵字
   static const List<String> newsNegativeKeywords = [
     // 營收相關
     '營收衰退',
@@ -110,313 +126,333 @@ abstract final class RuleParams {
     '解任',
   ];
 
-  /// Cooldown days for repeated recommendations
+  /// 重複推薦冷卻天數
   static const int cooldownDays = 2;
 
-  /// Cooldown score multiplier
+  /// 冷卻分數倍數
   static const double cooldownMultiplier = 0.7;
 
-  /// Maximum reasons per stock
+  /// 每檔股票最多理由數
   static const int maxReasonsPerStock = 2;
 
-  /// Daily top N recommendations
+  /// 每日 Top N 推薦數量
   static const int dailyTopN = 10;
 
-  /// Maximum stocks per industry in daily recommendations (v2)
+  /// 最低評分門檻
+  ///
+  /// 過濾僅有弱訊號或單一訊號的股票，20 分代表至少一個強訊號或兩個中等訊號。
+  static const int minScoreThreshold = 20;
+
+  /// 每個產業最多推薦股票數（v2）
   static const int maxPerIndustry = 3;
 
   // ==========================================
-  // Technical Indicator Parameters
+  // 技術指標參數
   // ==========================================
 
-  /// RSI period (default 14)
+  /// RSI 週期（預設 14）
   static const int rsiPeriod = 14;
 
-  /// RSI overbought threshold (avoid buying when RSI > this)
-  static const double rsiOverbought = 70.0;
+  /// RSI 超買門檻（RSI 高於此值避免買入）
+  static const double rsiOverbought = 80.0;
 
-  /// RSI oversold threshold (avoid selling when RSI < this)
-  static const double rsiOversold = 30.0;
+  /// RSI 超賣門檻（RSI 低於此值避免賣出）
+  static const double rsiOversold = 20.0;
 
-  /// RSI extreme overbought (very high risk zone)
-  static const double rsiExtremeOverbought = 80.0;
+  /// RSI 極度超買（高風險區）
+  static const double rsiExtremeOverbought = 85.0;
 
-  /// RSI extreme oversold (potential bounce zone)
-  static const double rsiExtremeOversold = 20.0;
+  /// RSI 極度超賣（潛在反彈區）
+  static const double rsiExtremeOversold = 30.0;
 
-  /// KD period for %K calculation
+  /// KD %K 計算週期
   static const int kdPeriodK = 9;
 
-  /// KD period for %D smoothing
+  /// KD %D 平滑週期
   static const int kdPeriodD = 3;
 
-  /// KD overbought threshold
+  /// KD 超買門檻
   static const double kdOverbought = 80.0;
 
-  /// KD oversold threshold
+  /// KD 超賣門檻
   static const double kdOversold = 20.0;
 
-  /// Institutional consecutive days threshold for streak signal
-  static const int institutionalStreakDays = 3;
+  /// 法人連續買賣天數門檻
+  ///
+  /// 從 3 天提高至 5 天以過濾短期雜訊。
+  static const int institutionalStreakDays = 5;
 
   // ==========================================
-  // 52-Week High/Low Parameters
+  // 52 週高低點參數
   // ==========================================
 
-  /// Trading days in a year (approximately 52 weeks * 5 days)
+  /// 一年交易日數（約 52 週 * 5 天）
   static const int week52Days = 250;
 
-  /// Buffer percentage for near 52-week high/low detection
-  /// Within 2% of 52-week high/low triggers signal
+  /// 接近 52 週高低點緩衝百分比
+  ///
+  /// 在 52 週高低點 2% 範圍內觸發訊號。
   static const double week52NearThreshold = 0.02;
 
   // ==========================================
-  // Moving Average Alignment Parameters
+  // 均線排列參數
   // ==========================================
 
-  /// MA periods for alignment check
+  /// 排列檢查用均線週期
   static const List<int> maAlignmentPeriods = [5, 10, 20, 60];
 
-  /// Minimum separation between MAs for valid alignment (0.5%)
+  /// 有效排列的均線最小間距（0.5%）
   static const double maMinSeparation = 0.005;
 
   // ==========================================
-  // Phase 4: Extended Market Data Parameters
+  // 第四階段：延伸市場資料參數
   // ==========================================
 
-  /// Foreign shareholding increase threshold (%)
-  /// Triggers when foreign ownership increases by this % over N days
+  /// 外資持股增加門檻（%）
+  ///
+  /// N 天內外資持股增加此百分比時觸發。
   static const double foreignShareholdingIncreaseThreshold = 0.5;
 
-  /// Days to look back for foreign shareholding change
+  /// 外資持股變化回溯天數
   static const int foreignShareholdingLookbackDays = 5;
 
-  /// High day trading ratio threshold (%)
-  /// Stocks with day trading ratio above this are considered "hot"
-  static const double dayTradingHighThreshold = 30.0;
+  /// 高當沖比例門檻（%）
+  ///
+  /// 當沖比例高於此值視為「熱門」。
+  static const double dayTradingHighThreshold = 60.0;
 
-  /// Extreme day trading ratio threshold (%)
-  /// Very high day trading - speculative warning
-  static const double dayTradingExtremeThreshold = 40.0;
+  /// 極高當沖比例門檻（%）
+  ///
+  /// 極高當沖屬投機警示。
+  static const double dayTradingExtremeThreshold = 70.0;
 
-  /// Large holder concentration threshold (%)
-  /// Stocks with this % held by large shareholders (400+ lots)
+  /// 大戶持股集中度門檻（%）
+  ///
+  /// 400 張以上大戶持有此比例的股票。
   static const double concentrationHighThreshold = 60.0;
 
   // ==========================================
-  // Phase 5: Price-Volume Divergence Parameters
+  // 第五階段：價量背離參數
   // ==========================================
 
-  /// Days to analyze for price-volume divergence
+  /// 價量背離分析回溯天數
   static const int priceVolumeLookbackDays = 5;
 
-  /// Minimum price change threshold for divergence detection (%)
-  /// Price must have moved at least this much for divergence to be meaningful
-  static const double priceVolumePriceThreshold = 2.0;
+  /// 背離偵測最低價格變動門檻（%）
+  ///
+  /// 價格變動需達此門檻，背離才有意義。
+  static const double priceVolumePriceThreshold = 3.0;
 
-  /// Volume change threshold for divergence detection (%)
-  /// Volume change must be at least this much for divergence
-  static const double priceVolumeVolumeThreshold = 20.0;
+  /// 背離偵測成交量變動門檻（%）
+  static const double priceVolumeVolumeThreshold = 30.0;
 
-  /// High position threshold for "high volume breakout" signal (percentile)
-  /// Price must be in top X% of 60-day range to be considered "high"
+  /// 「高檔爆量」訊號的高位門檻（百分位）
+  ///
+  /// 價格需在 60 日區間前 X% 才視為「高位」。
   static const double highPositionThreshold = 0.85;
 
-  /// Low position threshold for "low volume accumulation" signal (percentile)
-  /// Price must be in bottom X% of 60-day range to be considered "low"
+  /// 「低檔吸籌」訊號的低位門檻（百分位）
+  ///
+  /// 價格需在 60 日區間後 X% 才視為「低位」。
   static const double lowPositionThreshold = 0.15;
 
   // ==========================================
-  // Phase 6: Fundamental Analysis Parameters
+  // 第六階段：基本面分析參數
   // ==========================================
 
-  /// Revenue YoY growth surge threshold (%)
-  /// Triggers when YoY growth exceeds this value
+  /// 營收年增率暴增門檻（%）
+  ///
+  /// 30% 在品質與數量間取得平衡。
   static const double revenueYoySurgeThreshold = 30.0;
 
-  /// Revenue YoY decline threshold (%)
-  /// Triggers warning when YoY decline exceeds this value
+  /// 營收年減率衰退門檻（%）
   static const double revenueYoyDeclineThreshold = 20.0;
 
-  /// Revenue MoM consecutive growth months
-  /// Triggers when MoM is positive for N consecutive months
-  /// NOTE: Set to 1 because TWSE Open Data only provides latest month
+  /// 營收月增連續成長月數
+  ///
+  /// 設為 1 以偵測單月暴增。
   static const int revenueMomConsecutiveMonths = 1;
 
-  /// Revenue MoM growth threshold (%)
-  /// Minimum MoM growth rate to be considered meaningful
-  /// Lowered from 10% to 5% for broader signal coverage
-  static const double revenueMomGrowthThreshold = 5.0;
+  /// 營收月增率門檻（%）
+  ///
+  /// 10% 視為有意義的成長。
+  static const double revenueMomGrowthThreshold = 10.0;
 
-  /// High dividend yield threshold (%)
-  /// Stocks with yield above this are considered high yield
+  /// 高殖利率門檻（%）
+  ///
+  /// 台股平均 4-6%，5% 可捕捉高殖利率股。
   static const double highDividendYieldThreshold = 5.0;
 
-  /// PE undervalued threshold
-  /// PE below this value (and > 0) is considered undervalued
+  /// 本益比低估門檻
+  ///
+  /// 本益比低於此值（且 > 0）視為低估。
   static const double peUndervaluedThreshold = 10.0;
 
-  /// PE overvalued threshold
-  /// PE above this value is considered overvalued
-  static const double peOvervaluedThreshold = 50.0;
+  /// 本益比高估門檻
+  ///
+  /// 提高至 100 以聚焦泡沫區域。
+  static const double peOvervaluedThreshold = 100.0;
 
-  /// PBR undervalued threshold
-  /// PBR below 1.0 means trading below book value
-  static const double pbrUndervaluedThreshold = 1.0;
+  /// 股價淨值比低估門檻
+  ///
+  /// 股價淨值比低於 0.8 代表有意義的折價。
+  static const double pbrUndervaluedThreshold = 0.8;
 }
 
-/// Rule scores for each recommendation type
+/// 各推薦類型的分數
 ///
-/// Score hierarchy reflects signal reliability:
-/// - Reversal signals (35): Highest - trend change is most actionable
-/// - Technical signals (25): Medium - support/resistance breaks
-/// - Volume spike (22): Medium - now requires 4x vol + 1.5% price move
-/// - Price spike (15): Lower - could be noise without volume
-/// - Institutional (18): Important for Taiwan market - institutional flow drives prices
-/// - News (8): Supplementary - context only
+/// 分數層級反映訊號可靠性：
+/// - 反轉訊號 (35)：最高 - 趨勢改變最具操作價值
+/// - 技術訊號 (25)：中等 - 壓力/支撐突破
+/// - 成交量異動 (22)：中等 - 現需 4 倍量 + 1.5% 價格變動
+/// - 價格異動 (15)：較低 - 無量配合可能是雜訊
+/// - 法人動向 (18)：台股重要指標 - 法人資金流向影響股價
+/// - 新聞 (8)：輔助 - 僅提供背景資訊
 ///
-/// Maximum score is capped at 80 to prevent score inflation from multiple signals.
+/// 最高分數限制為 80，避免多訊號造成分數膨脹。
 abstract final class RuleScores {
-  /// Maximum score cap to prevent inflation
+  /// 最高分數上限
   static const int maxScore = 80;
   static const int reversalW2S = 35;
   static const int reversalS2W = 35;
   static const int techBreakout = 25;
   static const int techBreakdown = 25;
-  static const int volumeSpike = 22; // Was 18, raised due to stricter criteria
+  static const int volumeSpike = 22;
   static const int priceSpike = 15;
   static const int institutionalShift = 18;
   static const int newsRelated = 8;
 
-  /// Bonus: BREAKOUT + VOLUME_SPIKE
+  /// 加分：突破 + 成交量異動
   static const int breakoutVolumeBonus = 6;
 
-  /// Bonus: REVERSAL_* + VOLUME_SPIKE
+  /// 加分：反轉 + 成交量異動
   static const int reversalVolumeBonus = 6;
 
-  /// Bonus: PATTERN (engulfing/star/soldiers) + VOLUME_SPIKE
-  /// Strong candlestick patterns confirmed by volume are highly significant
+  /// 加分：K 線型態（吞噬/星線/三兵）+ 成交量異動
+  ///
+  /// 強勢 K 線型態搭配成交量確認具高度意義。
   static const int patternVolumeBonus = 5;
 
-  /// KD Golden Cross score
+  /// KD 黃金交叉分數
   static const int kdGoldenCross = 18;
 
-  /// KD Death Cross score
+  /// KD 死亡交叉分數
   static const int kdDeathCross = 18;
 
-  /// Institutional consecutive buy streak score
+  /// 法人連續買超分數
   static const int institutionalBuyStreak = 20;
 
-  /// Institutional consecutive sell streak score
+  /// 法人連續賣超分數
   static const int institutionalSellStreak = 20;
 
   // ==========================================
-  // Candlestick Pattern Scores
+  // K 線型態分數
   // ==========================================
 
-  /// Doji pattern score (indecision)
+  /// 十字線分數（猶豫）
   static const int patternDoji = 10;
 
-  /// Engulfing pattern score (strong reversal)
+  /// 吞噬型態分數（強反轉）
   static const int patternEngulfing = 22;
 
-  /// Hammer/Hanging Man score
+  /// 錘子/吊人線分數
   static const int patternHammer = 18;
 
-  /// Gap pattern score
+  /// 跳空型態分數
   static const int patternGap = 20;
 
-  /// Morning/Evening Star score (3-candle reversal)
+  /// 晨星/暮星分數（三根 K 線反轉）
   static const int patternStar = 25;
 
-  /// Three Soldiers/Crows score (strong trend)
+  /// 三白兵/三黑鴉分數（強趨勢）
   static const int patternThreeSoldiers = 22;
 
   // ==========================================
-  // New Signal Scores (Phase 3)
+  // 新訊號分數（第三階段）
   // ==========================================
 
-  /// 52-week high score (strong bullish)
+  /// 52 週新高分數（強多頭）
   static const int week52High = 28;
 
-  /// 52-week low score (potential reversal or continuation down)
-  /// Lower than 52-week high because catching falling knives is riskier
+  /// 52 週新低分數（潛在反轉或繼續下跌）
+  ///
+  /// 低於 52 週新高，因接刀風險較高。
   static const int week52Low = 22;
 
-  /// MA bullish alignment score (5>10>20>60)
+  /// 均線多頭排列分數（5>10>20>60）
   static const int maAlignmentBullish = 22;
 
-  /// MA bearish alignment score (5<10<20<60)
+  /// 均線空頭排列分數（5<10<20<60）
   static const int maAlignmentBearish = 22;
 
-  /// RSI extreme overbought score (warning signal)
+  /// RSI 極度超買分數（警示訊號）
   static const int rsiExtremeOverboughtSignal = 15;
 
-  /// RSI extreme oversold score (potential bounce)
+  /// RSI 極度超賣分數（潛在反彈）
   static const int rsiExtremeOversoldSignal = 15;
 
   // ==========================================
-  // Phase 4: Extended Market Data Scores
+  // 第四階段：延伸市場資料分數
   // ==========================================
 
-  /// Foreign shareholding increasing score
+  /// 外資持股增加分數
   static const int foreignShareholdingIncreasing = 18;
 
-  /// Foreign shareholding decreasing score
+  /// 外資持股減少分數
   static const int foreignShareholdingDecreasing = 18;
 
-  /// High day trading ratio score (hot stock)
+  /// 高當沖比例分數（熱門股）
   static const int dayTradingHigh = 12;
 
-  /// Extreme day trading ratio score (speculative)
+  /// 極高當沖比例分數（投機）
   static const int dayTradingExtreme = 15;
 
-  /// High concentration ratio score
+  /// 高籌碼集中度分數
   static const int concentrationHigh = 16;
 
   // ==========================================
-  // Phase 5: Price-Volume Divergence Scores
+  // 第五階段：價量背離分數
   // ==========================================
 
-  /// Price up + volume down divergence (warning signal)
+  /// 價漲量縮背離分數（警示訊號）
   static const int priceVolumeBullishDivergence = 15;
 
-  /// Price down + volume up divergence (panic signal)
+  /// 價跌量增背離分數（恐慌訊號）
   static const int priceVolumeBearishDivergence = 18;
 
-  /// High volume breakout at resistance (strong bullish)
+  /// 高檔爆量突破分數（強多頭）
   static const int highVolumeBreakout = 22;
 
-  /// Low volume accumulation near support (potential reversal)
+  /// 低檔吸籌分數（潛在反轉）
   static const int lowVolumeAccumulation = 16;
 
   // ==========================================
-  // Phase 6: Fundamental Analysis Scores
+  // 第六階段：基本面分析分數
   // ==========================================
 
-  /// Revenue YoY surge score (strong fundamental)
+  /// 營收年增暴增分數（強基本面）
   static const int revenueYoySurge = 20;
 
-  /// Revenue YoY decline score (warning)
+  /// 營收年減衰退分數（警示）
   static const int revenueYoyDecline = 15;
 
-  /// Revenue MoM consecutive growth score
+  /// 營收月增持續成長分數
   static const int revenueMomGrowth = 15;
 
-  /// High dividend yield score
+  /// 高殖利率分數
   static const int highDividendYield = 18;
 
-  /// PE undervalued score
+  /// 本益比低估分數
   static const int peUndervalued = 15;
 
-  /// PE overvalued score (warning)
+  /// 本益比高估分數（警示）
   static const int peOvervalued = 10;
 
-  /// PBR undervalued score
+  /// 股價淨值比低估分數
   static const int pbrUndervalued = 12;
 }
 
-/// Reason types enum
+/// 推薦理由類型
 enum ReasonType {
   reversalW2S('REVERSAL_W2S', '弱轉強'),
   reversalS2W('REVERSAL_S2W', '強轉弱'),
@@ -424,14 +460,15 @@ enum ReasonType {
   techBreakdown('TECH_BREAKDOWN', '技術跌破'),
   volumeSpike('VOLUME_SPIKE', '放量異常'),
   priceSpike('PRICE_SPIKE', '價格異常'),
-  institutionalShift('INSTITUTIONAL_SHIFT', '法人異常'),
+  institutionalBuy('INSTITUTIONAL_BUY', '法人買超'),
+  institutionalSell('INSTITUTIONAL_SELL', '法人賣超'),
   newsRelated('NEWS_RELATED', '新聞關聯'),
-  // New technical indicator signals
+  // 技術指標訊號
   kdGoldenCross('KD_GOLDEN_CROSS', 'KD黃金交叉'),
   kdDeathCross('KD_DEATH_CROSS', 'KD死亡交叉'),
   institutionalBuyStreak('INSTITUTIONAL_BUY_STREAK', '法人連買'),
   institutionalSellStreak('INSTITUTIONAL_SELL_STREAK', '法人連賣'),
-  // Candlestick pattern signals
+  // K 線型態訊號
   patternDoji('PATTERN_DOJI', '十字線'),
   patternBullishEngulfing('PATTERN_BULLISH_ENGULFING', '多頭吞噬'),
   patternBearishEngulfing('PATTERN_BEARISH_ENGULFING', '空頭吞噬'),
@@ -443,25 +480,25 @@ enum ReasonType {
   patternEveningStar('PATTERN_EVENING_STAR', '暮星'),
   patternThreeWhiteSoldiers('PATTERN_THREE_WHITE_SOLDIERS', '三白兵'),
   patternThreeBlackCrows('PATTERN_THREE_BLACK_CROWS', '三黑鴉'),
-  // Phase 3: New scan/alert signals
+  // 第三階段：掃描/提醒訊號
   week52High('WEEK_52_HIGH', '52週新高'),
   week52Low('WEEK_52_LOW', '52週新低'),
   maAlignmentBullish('MA_ALIGNMENT_BULLISH', '多頭排列'),
   maAlignmentBearish('MA_ALIGNMENT_BEARISH', '空頭排列'),
   rsiExtremeOverbought('RSI_EXTREME_OVERBOUGHT', 'RSI極度超買'),
   rsiExtremeOversold('RSI_EXTREME_OVERSOLD', 'RSI極度超賣'),
-  // Phase 4: Extended market data signals
+  // 第四階段：延伸市場資料訊號
   foreignShareholdingIncreasing('FOREIGN_SHAREHOLDING_INCREASING', '外資持股增加'),
   foreignShareholdingDecreasing('FOREIGN_SHAREHOLDING_DECREASING', '外資持股減少'),
   dayTradingHigh('DAY_TRADING_HIGH', '高當沖比例'),
   dayTradingExtreme('DAY_TRADING_EXTREME', '極高當沖比例'),
   concentrationHigh('CONCENTRATION_HIGH', '籌碼集中'),
-  // Phase 5: Price-volume divergence signals
+  // 第五階段：價量背離訊號
   priceVolumeBullishDivergence('PRICE_VOLUME_BULLISH_DIVERGENCE', '價漲量縮'),
   priceVolumeBearishDivergence('PRICE_VOLUME_BEARISH_DIVERGENCE', '價跌量增'),
   highVolumeBreakout('HIGH_VOLUME_BREAKOUT', '高檔爆量'),
   lowVolumeAccumulation('LOW_VOLUME_ACCUMULATION', '低檔吸籌'),
-  // Phase 6: Fundamental analysis signals
+  // 第六階段：基本面分析訊號
   revenueYoySurge('REVENUE_YOY_SURGE', '營收年增暴增'),
   revenueYoyDecline('REVENUE_YOY_DECLINE', '營收年減衰退'),
   revenueMomGrowth('REVENUE_MOM_GROWTH', '營收月增持續'),
@@ -482,13 +519,15 @@ enum ReasonType {
     ReasonType.techBreakdown => RuleScores.techBreakdown,
     ReasonType.volumeSpike => RuleScores.volumeSpike,
     ReasonType.priceSpike => RuleScores.priceSpike,
-    ReasonType.institutionalShift => RuleScores.institutionalShift,
+
+    ReasonType.institutionalBuy => RuleScores.institutionalShift,
+    ReasonType.institutionalSell => RuleScores.institutionalShift,
     ReasonType.newsRelated => RuleScores.newsRelated,
     ReasonType.kdGoldenCross => RuleScores.kdGoldenCross,
     ReasonType.kdDeathCross => RuleScores.kdDeathCross,
     ReasonType.institutionalBuyStreak => RuleScores.institutionalBuyStreak,
     ReasonType.institutionalSellStreak => RuleScores.institutionalSellStreak,
-    // Candlestick patterns
+    // K 線型態
     ReasonType.patternDoji => RuleScores.patternDoji,
     ReasonType.patternBullishEngulfing => RuleScores.patternEngulfing,
     ReasonType.patternBearishEngulfing => RuleScores.patternEngulfing,
@@ -500,14 +539,14 @@ enum ReasonType {
     ReasonType.patternEveningStar => RuleScores.patternStar,
     ReasonType.patternThreeWhiteSoldiers => RuleScores.patternThreeSoldiers,
     ReasonType.patternThreeBlackCrows => RuleScores.patternThreeSoldiers,
-    // Phase 3 signals
+    // 第三階段訊號
     ReasonType.week52High => RuleScores.week52High,
     ReasonType.week52Low => RuleScores.week52Low,
     ReasonType.maAlignmentBullish => RuleScores.maAlignmentBullish,
     ReasonType.maAlignmentBearish => RuleScores.maAlignmentBearish,
     ReasonType.rsiExtremeOverbought => RuleScores.rsiExtremeOverboughtSignal,
     ReasonType.rsiExtremeOversold => RuleScores.rsiExtremeOversoldSignal,
-    // Phase 4 signals
+    // 第四階段訊號
     ReasonType.foreignShareholdingIncreasing =>
       RuleScores.foreignShareholdingIncreasing,
     ReasonType.foreignShareholdingDecreasing =>
@@ -515,14 +554,14 @@ enum ReasonType {
     ReasonType.dayTradingHigh => RuleScores.dayTradingHigh,
     ReasonType.dayTradingExtreme => RuleScores.dayTradingExtreme,
     ReasonType.concentrationHigh => RuleScores.concentrationHigh,
-    // Phase 5 signals
+    // 第五階段訊號
     ReasonType.priceVolumeBullishDivergence =>
       RuleScores.priceVolumeBullishDivergence,
     ReasonType.priceVolumeBearishDivergence =>
       RuleScores.priceVolumeBearishDivergence,
     ReasonType.highVolumeBreakout => RuleScores.highVolumeBreakout,
     ReasonType.lowVolumeAccumulation => RuleScores.lowVolumeAccumulation,
-    // Phase 6 signals
+    // 第六階段訊號
     ReasonType.revenueYoySurge => RuleScores.revenueYoySurge,
     ReasonType.revenueYoyDecline => RuleScores.revenueYoyDecline,
     ReasonType.revenueMomGrowth => RuleScores.revenueMomGrowth,
@@ -533,7 +572,7 @@ enum ReasonType {
   };
 }
 
-/// Trend state for analysis
+/// 趨勢狀態
 enum TrendState {
   up('UP', '上升'),
   down('DOWN', '下跌'),
@@ -545,7 +584,7 @@ enum TrendState {
   final String label;
 }
 
-/// Reversal state for analysis
+/// 反轉狀態
 enum ReversalState {
   none('NONE', '無'),
   weakToStrong('W2S', '弱轉強'),
@@ -557,7 +596,7 @@ enum ReversalState {
   final String label;
 }
 
-/// News category
+/// 新聞分類
 enum NewsCategory {
   earnings('EARNINGS', '財報'),
   policy('POLICY', '政策'),
@@ -571,7 +610,7 @@ enum NewsCategory {
   final String label;
 }
 
-/// Update run status
+/// 更新執行狀態
 enum UpdateStatus {
   success('SUCCESS'),
   failed('FAILED'),
@@ -582,7 +621,7 @@ enum UpdateStatus {
   final String code;
 }
 
-/// Stock market type
+/// 股票市場類型
 enum StockMarket {
   twse('TWSE', '上市'),
   tpex('TPEx', '上櫃');

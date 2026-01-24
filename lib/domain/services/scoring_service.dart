@@ -8,14 +8,14 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
-/// Service for scoring stock candidates
+/// 股票候選評分服務
 ///
-/// Extracted from UpdateService to improve separation of concerns.
-/// Handles:
-/// - Running analysis on candidates
-/// - Applying rule engine
-/// - Calculating scores
-/// - Saving analysis results
+/// 從 UpdateService 抽離以改善關注點分離
+/// 處理：
+/// - 對候選股票執行分析
+/// - 套用規則引擎
+/// - 計算分數
+/// - 儲存分析結果
 class ScoringService {
   const ScoringService({
     required AnalysisService analysisService,
@@ -29,10 +29,10 @@ class ScoringService {
   final RuleEngine _ruleEngine;
   final AnalysisRepository _analysisRepo;
 
-  /// Score a list of stock candidates
+  /// 對股票候選清單評分
   ///
-  /// Takes pre-loaded batch data to avoid N+1 queries.
-  /// Returns list of [ScoredStock] sorted by score descending.
+  /// 使用預先載入的批次資料以避免 N+1 查詢問題
+  /// 回傳依分數由高至低排序的 [ScoredStock] 清單
   Future<List<ScoredStock>> scoreStocks({
     required List<String> candidates,
     required DateTime date,
@@ -53,7 +53,7 @@ class ScoringService {
     final instMap =
         institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
-    // Log price data statistics
+    // 記錄價格資料統計
     var stocksWithData = 0;
     var stocksWithSufficientData = 0;
     for (final symbol in candidates) {
@@ -72,15 +72,17 @@ class ScoringService {
           '(need >= ${RuleParams.swingWindow} days)',
     );
 
-    // Process each candidate with pre-loaded data
+    // 使用預載資料處理每個候選
     var skippedNoData = 0;
     var skippedInsufficientData = 0;
+    var skippedLowLiquidity = 0;
+    var skippedLowScore = 0;
 
     for (var i = 0; i < candidates.length; i++) {
       final symbol = candidates[i];
       onProgress?.call(i + 1, candidates.length);
 
-      // Get price history from batch-loaded data
+      // 從批次載入資料取得價格歷史
       final prices = pricesMap[symbol];
       if (prices == null || prices.isEmpty) {
         skippedNoData++;
@@ -91,28 +93,48 @@ class ScoringService {
         continue;
       }
 
-      // Run analysis
+      // 檢查最小成交金額與成交量（流動性過濾）
+      final latest = prices.last;
+      if (latest.close == null || latest.volume == null) {
+        skippedNoData++;
+        continue;
+      }
+
+      // 檢查成交量（股數）
+      if (latest.volume! < RuleParams.minCandidateVolumeShares) {
+        skippedLowLiquidity++;
+        continue;
+      }
+
+      // 檢查成交金額（價格 * 股數）
+      final turnover = latest.close! * latest.volume!;
+      if (turnover < RuleParams.minCandidateTurnover) {
+        skippedLowLiquidity++;
+        continue;
+      }
+
+      // 執行分析
       final analysisResult = _analysisService.analyzeStock(prices);
       if (analysisResult == null) continue;
 
-      // Build market data context for Phase 4 signals (optional)
+      // 為第 4 階段訊號建立市場資料上下文（可選）
       MarketDataContext? marketData;
       if (marketDataBuilder != null) {
         marketData = await marketDataBuilder(symbol);
       }
 
-      // Build context for rule engine
+      // 為規則引擎建立上下文
       final context = _analysisService.buildContext(
         analysisResult,
         priceHistory: prices,
         marketData: marketData,
       );
 
-      // Get optional data from batch-loaded maps
+      // 從批次載入的 map 取得可選資料
       final institutionalHistory = instMap[symbol];
       final recentNews = newsMap[symbol];
 
-      // Run rule engine
+      // 執行規則引擎
       final reasons = _ruleEngine.evaluateStock(
         priceHistory: prices,
         context: context,
@@ -126,17 +148,23 @@ class ScoringService {
 
       if (reasons.isEmpty) continue;
 
-      // Calculate score
+      // 計算分數
       final wasRecent = recentSet.contains(symbol);
       final score = _ruleEngine.calculateScore(
         reasons,
         wasRecentlyRecommended: wasRecent,
       );
 
-      // Get top reasons
+      // 跳過低分股票（僅有弱訊號）
+      if (score < RuleParams.minScoreThreshold) {
+        skippedLowScore++;
+        continue;
+      }
+
+      // 取得前幾個原因
       final topReasons = _ruleEngine.getTopReasons(reasons);
 
-      // Save analysis result
+      // 儲存分析結果
       await _analysisRepo.saveAnalysis(
         symbol: symbol,
         date: date,
@@ -147,7 +175,7 @@ class ScoringService {
         score: score.toDouble(),
       );
 
-      // Save reasons
+      // 儲存原因
       await _analysisRepo.saveReasons(
         symbol,
         date,
@@ -165,33 +193,74 @@ class ScoringService {
       );
 
       scoredStocks.add(
-        ScoredStock(symbol: symbol, score: score, reasons: topReasons),
+        ScoredStock(
+          symbol: symbol,
+          score: score,
+          turnover: turnover,
+          reasons: topReasons,
+        ),
       );
     }
 
-    // Log analysis statistics
+    // 記錄分析統計
     AppLogger.info(
       'ScoringService',
       'scoreStocks complete: ${scoredStocks.length} scored, '
-          'skipped $skippedNoData (no data) + $skippedInsufficientData (insufficient data)',
+          'skipped $skippedNoData (no data) + $skippedInsufficientData (insufficient data) '
+          '+ $skippedLowLiquidity (low liquidity) + $skippedLowScore (score < ${RuleParams.minScoreThreshold})',
     );
 
-    // Sort by score descending
-    scoredStocks.sort((a, b) => b.score.compareTo(a.score));
+    // 依流動性加權分數排序，具有穩定的平分處理
+    // 策略：基礎分數 + 流動性加成
+    // 流動性加成：每 1 億成交金額 +2 分（上限 20 分）
+    // 這使高成交量股票（10 億成交、60 分）能與低成交量股票（3000 萬成交、80 分）競爭
+    // 10 億成交 -> +20 加成 -> 60+20=80
+    // 3000 萬成交 -> +0.6 加成 -> 80+0.6=80.6
+    //
+    // 重要：分數相同時，以成交金額為次要排序（高者優先），
+    // 再以股票代碼為第三排序以確保結果一致性
+    scoredStocks.sort((a, b) {
+      double scoreA = a.score.toDouble();
+      double scoreB = b.score.toDouble();
+
+      // 計算加成（上限為 10 億 = 20 分）
+      double bonusA = (a.turnover / 100000000) * 2.0;
+      if (bonusA > 20) bonusA = 20;
+
+      double bonusB = (b.turnover / 100000000) * 2.0;
+      if (bonusB > 20) bonusB = 20;
+
+      // 四捨五入至小數點後 2 位以避免浮點數精度問題
+      final totalA = ((scoreA + bonusA) * 100).round() / 100;
+      final totalB = ((scoreB + bonusB) * 100).round() / 100;
+
+      // 主要：總分（由高至低）
+      final scoreCmp = totalB.compareTo(totalA);
+      if (scoreCmp != 0) return scoreCmp;
+
+      // 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
+      final turnoverCmp = b.turnover.compareTo(a.turnover);
+      if (turnoverCmp != 0) return turnoverCmp;
+
+      // 第三：股票代碼（由低至高）- 確保平分處理結果一致
+      return a.symbol.compareTo(b.symbol);
+    });
 
     return scoredStocks;
   }
 }
 
-/// Stock with calculated score
+/// 已計算分數的股票
 class ScoredStock {
   const ScoredStock({
     required this.symbol,
     required this.score,
+    required this.turnover,
     required this.reasons,
   });
 
   final String symbol;
   final int score;
+  final double turnover;
   final List<TriggeredReason> reasons;
 }

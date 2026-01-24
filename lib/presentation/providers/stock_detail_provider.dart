@@ -393,13 +393,19 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
     } catch (e) {
-      // Log error for debugging - margin data is optional
-      AppLogger.warning(
-        'StockDetail',
-        'Failed to load margin data for $_symbol',
-        e,
-      );
-      state = state.copyWith(isLoadingMargin: false);
+      if (e.toString().contains('402')) {
+        AppLogger.info(
+          'StockDetail',
+          'Margin API unavailable (402), skipping.',
+        );
+      } else {
+        AppLogger.warning(
+          'StockDetail',
+          'Failed to load margin data for $_symbol',
+          e,
+        );
+      }
+      state = state.copyWith(isLoadingMargin: false, marginHistory: []);
     }
   }
 
@@ -462,13 +468,81 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         isLoadingFundamentals: false,
       );
     } catch (e) {
-      // Log error for debugging - fundamentals data is optional
-      AppLogger.warning(
-        'StockDetail',
-        'Failed to load fundamentals for $_symbol',
-        e,
-      );
-      state = state.copyWith(isLoadingFundamentals: false);
+      if (e.toString().contains('402')) {
+        AppLogger.info(
+          'StockDetail',
+          'Fundamentals API unavailable (402), attempting DB fallback for $_symbol',
+        );
+      } else {
+        AppLogger.warning(
+          'StockDetail',
+          'Failed to load fundamentals API for $_symbol',
+          e,
+        );
+      }
+
+      // Fallback: Try to load from local DB if API fails
+      try {
+        final revenueStartDate = DateTime.now().subtract(
+          const Duration(days: 730),
+        ); // 2 years
+        final perStartDate = DateTime.now().subtract(
+          const Duration(days: 30),
+        ); // 1 month
+
+        final dbRevenues = await _db.getMonthlyRevenueHistory(
+          _symbol,
+          startDate: revenueStartDate,
+        );
+        final dbValuations = await _db.getValuationHistory(
+          _symbol,
+          startDate: perStartDate,
+        );
+
+        // Convert DB models to FinMind models
+        var revenueData = dbRevenues.map((r) {
+          return FinMindRevenue(
+            stockId: r.symbol,
+            date: DateFormat('yyyy-MM-dd').format(r.date),
+            revenueYear: r.revenueYear,
+            revenueMonth: r.revenueMonth,
+            revenue: r.revenue,
+            momGrowth: r.momGrowth ?? 0,
+            yoyGrowth: r.yoyGrowth ?? 0,
+          );
+        }).toList();
+
+        // FinMindPER requires date field
+        final perData = dbValuations.map((v) {
+          return FinMindPER(
+            stockId: v.symbol,
+            date: DateFormat('yyyy-MM-dd').format(v.date),
+            per: v.per ?? 0,
+            pbr: v.pbr ?? 0,
+            dividendYield: v.dividendYield ?? 0,
+          );
+        }).toList();
+
+        FinMindPER? latestPER;
+        if (perData.isNotEmpty) {
+          latestPER = perData.last;
+        }
+
+        AppLogger.info(
+          'StockDetail',
+          'Successfully loaded fallback data from DB for $_symbol (Rev: ${revenueData.length}, Val: ${perData.length})',
+        );
+
+        state = state.copyWith(
+          revenueHistory: revenueData,
+          // DB doesn't store full dividend history, keep empty or previous
+          latestPER: latestPER,
+          isLoadingFundamentals: false,
+        );
+      } catch (dbError) {
+        AppLogger.error('StockDetail', 'DB Fallback failed', dbError);
+        state = state.copyWith(isLoadingFundamentals: false);
+      }
     }
   }
 }

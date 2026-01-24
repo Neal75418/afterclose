@@ -2,236 +2,289 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/data/database/tables/stock_master.dart';
 
-/// Foreign investor shareholding data (外資持股比例)
+/// 外資持股資料 Table
 @DataClassName('ShareholdingEntry')
 @TableIndex(name: 'idx_shareholding_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_shareholding_date', columns: {#date})
 class Shareholding extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Trading date
+  /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// Foreign investment remaining shares (外資持股餘額)
+  /// 外資持股餘額（股）
   RealColumn get foreignRemainingShares => real().nullable()();
 
-  /// Foreign investment shares ratio (外資持股比例%)
+  /// 外資持股比例（%）
   RealColumn get foreignSharesRatio => real().nullable()();
 
-  /// Foreign investment upper limit ratio (外資持股上限比例%)
+  /// 外資持股上限比例（%）
   RealColumn get foreignUpperLimitRatio => real().nullable()();
 
-  /// Number of shares issued (已發行股數)
+  /// 已發行股數
   RealColumn get sharesIssued => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
 
-/// Day trading data (當沖資料)
+/// 當沖資料 Table
+///
+/// **資料來源說明：**
+/// - FinMind API：提供實際股數
+/// - TWSE TWTB4U API：買賣欄位提供金額（元）
+///
+/// [dayTradingRatio] 為交易訊號使用的主要指標，
+/// 由每日價量資料另行計算。
 @DataClassName('DayTradingEntry')
 @TableIndex(name: 'idx_day_trading_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_day_trading_date', columns: {#date})
 class DayTrading extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Trading date
+  /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// Day trading buy volume (當沖買進量)
+  /// 當沖買進量/金額
+  ///
+  /// 註：TWSE API 提供金額（元），FinMind 提供股數
   RealColumn get buyVolume => real().nullable()();
 
-  /// Day trading sell volume (當沖賣出量)
+  /// 當沖賣出量/金額
+  ///
+  /// 註：TWSE API 提供金額（元），FinMind 提供股數
   RealColumn get sellVolume => real().nullable()();
 
-  /// Day trading ratio percentage (當沖比例%)
+  /// 當沖比例（%）
+  ///
+  /// 此為主要指標，由總成交量計算。
   RealColumn get dayTradingRatio => real().nullable()();
 
-  /// Total trade volume (總成交量)
+  /// 當沖成交股數
   RealColumn get tradeVolume => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
 
-/// Financial statement data (財務報表資料)
-/// Note: Stores key-value pairs from income statement, balance sheet, cash flow
+/// 財務報表資料 Table
+///
+/// 儲存損益表、資產負債表、現金流量表的 Key-Value 資料
 @DataClassName('FinancialDataEntry')
 @TableIndex(name: 'idx_financial_data_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_financial_data_date', columns: {#date})
 @TableIndex(name: 'idx_financial_data_type', columns: {#dataType})
 class FinancialData extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Report date (YYYY-QQ format stored as date)
+  /// 報告日期（季度以日期格式儲存）
   DateTimeColumn get date => dateTime()();
 
-  /// Statement type: INCOME, BALANCE, CASHFLOW
+  /// 報表類型：INCOME、BALANCE、CASHFLOW
   TextColumn get statementType => text()();
 
-  /// Data type (e.g., Revenue, NetIncome, TotalAssets)
+  /// 資料項目（如 Revenue、NetIncome、TotalAssets）
   TextColumn get dataType => text()();
 
-  /// Value in thousands (千元)
+  /// 數值（千元）
   RealColumn get value => real().nullable()();
 
-  /// Original Chinese name
+  /// 原始中文名稱
   TextColumn get originName => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date, statementType, dataType};
 }
 
-/// Adjusted stock price data (還原股價)
+/// 還原股價 Table
 @DataClassName('AdjustedPriceEntry')
 @TableIndex(name: 'idx_adjusted_price_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_adjusted_price_date', columns: {#date})
 class AdjustedPrice extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Trading date
+  /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// Adjusted opening price
+  /// 還原開盤價
   RealColumn get open => real().nullable()();
 
-  /// Adjusted highest price
+  /// 還原最高價
   RealColumn get high => real().nullable()();
 
-  /// Adjusted lowest price
+  /// 還原最低價
   RealColumn get low => real().nullable()();
 
-  /// Adjusted closing price
+  /// 還原收盤價
   RealColumn get close => real().nullable()();
 
-  /// Trading volume
+  /// 成交量
   RealColumn get volume => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
 
-/// Weekly stock price data (週K線)
+/// 週K線 Table
 @DataClassName('WeeklyPriceEntry')
 @TableIndex(name: 'idx_weekly_price_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_weekly_price_date', columns: {#date})
 class WeeklyPrice extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Week ending date
+  /// 週結束日期
   DateTimeColumn get date => dateTime()();
 
-  /// Weekly opening price
+  /// 週開盤價
   RealColumn get open => real().nullable()();
 
-  /// Weekly highest price
+  /// 週最高價
   RealColumn get high => real().nullable()();
 
-  /// Weekly lowest price
+  /// 週最低價
   RealColumn get low => real().nullable()();
 
-  /// Weekly closing price
+  /// 週收盤價
   RealColumn get close => real().nullable()();
 
-  /// Weekly trading volume
+  /// 週成交量
   RealColumn get volume => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
 
-/// Shareholding distribution data (股權分散表)
-/// Note: This is denormalized - one row per level per date
+/// 股權分散表 Table
+///
+/// 每個持股級距一筆資料（非正規化設計）
 @DataClassName('HoldingDistributionEntry')
 @TableIndex(name: 'idx_holding_dist_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_holding_dist_date', columns: {#date})
 class HoldingDistribution extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Report date
+  /// 報告日期
   DateTimeColumn get date => dateTime()();
 
-  /// Holding level (e.g., "1-999", "1000-5000")
+  /// 持股級距（如 "1-999"、"1000-5000"）
   TextColumn get level => text()();
 
-  /// Number of shareholders at this level
+  /// 該級距股東人數
   IntColumn get shareholders => integer().nullable()();
 
-  /// Percentage of total shares (%)
+  /// 佔總股數比例（%）
   RealColumn get percent => real().nullable()();
 
-  /// Number of shares (unit: 股)
+  /// 持股數（股）
   RealColumn get shares => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date, level};
 }
 
-/// Monthly revenue data (月營收)
-/// For fundamental analysis signals
+/// 月營收 Table
+///
+/// 用於基本面分析訊號
 @DataClassName('MonthlyRevenueEntry')
 @TableIndex(name: 'idx_monthly_revenue_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_monthly_revenue_date', columns: {#date})
 class MonthlyRevenue extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Report date (use first day of the month for consistency)
+  /// 報告日期（統一使用當月第一天）
   DateTimeColumn get date => dateTime()();
 
-  /// Revenue year
+  /// 營收年度
   IntColumn get revenueYear => integer()();
 
-  /// Revenue month
+  /// 營收月份
   IntColumn get revenueMonth => integer()();
 
-  /// Monthly revenue (千元)
+  /// 月營收（千元）
   RealColumn get revenue => real()();
 
-  /// Month-over-month growth rate (%)
+  /// 月增率（%）
   RealColumn get momGrowth => real().nullable()();
 
-  /// Year-over-year growth rate (%)
+  /// 年增率（%）
   RealColumn get yoyGrowth => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
 
-/// Stock valuation data (估值資料: PE, PBR, 殖利率)
-/// For fundamental analysis signals
+/// 股票估值資料 Table（本益比、股價淨值比、殖利率）
+///
+/// 用於基本面分析訊號
 @DataClassName('StockValuationEntry')
 @TableIndex(name: 'idx_stock_valuation_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_stock_valuation_date', columns: {#date})
 class StockValuation extends Table {
-  /// Stock symbol
+  /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// Trading date
+  /// 交易日期
   DateTimeColumn get date => dateTime()();
 
-  /// Price-to-Earnings ratio (本益比)
+  /// 本益比（PE ratio）
   RealColumn get per => real().nullable()();
 
-  /// Price-to-Book ratio (股價淨值比)
+  /// 股價淨值比（PB ratio）
   RealColumn get pbr => real().nullable()();
 
-  /// Dividend yield (殖利率 %)
+  /// 殖利率（%）
   RealColumn get dividendYield => real().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {symbol, date};
+}
+
+/// 融資融券 Table
+///
+/// 用於籌碼分析訊號
+@DataClassName('MarginTradingEntry')
+@TableIndex(name: 'idx_margin_trading_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_margin_trading_date', columns: {#date})
+class MarginTrading extends Table {
+  /// 股票代碼
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// 交易日期
+  DateTimeColumn get date => dateTime()();
+
+  /// 融資買進（張）
+  RealColumn get marginBuy => real().nullable()();
+
+  /// 融資賣出（張）
+  RealColumn get marginSell => real().nullable()();
+
+  /// 融資餘額（張）
+  RealColumn get marginBalance => real().nullable()();
+
+  /// 融券買進/回補（張）
+  RealColumn get shortBuy => real().nullable()();
+
+  /// 融券賣出（張）
+  RealColumn get shortSell => real().nullable()();
+
+  /// 融券餘額（張）
+  RealColumn get shortBalance => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};

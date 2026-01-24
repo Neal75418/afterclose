@@ -1,132 +1,128 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Keys for secure storage (sensitive data)
-class SecureStorageKeys {
-  static const finmindToken = 'finmind_token';
+/// SharedPreferences Key 常數
+class _PrefKeys {
+  static const finmindToken = 'finmind_api_token';
 }
 
-/// Repository for app settings (including token management)
+/// 應用程式設定 Repository（包含 Token 管理）
 class SettingsRepository {
-  SettingsRepository({
-    required AppDatabase database,
-    FlutterSecureStorage? secureStorage,
-  }) : _db = database,
-       _secureStorage =
-           secureStorage ??
-           const FlutterSecureStorage(
-             aOptions: AndroidOptions(encryptedSharedPreferences: true),
-             iOptions: IOSOptions(
-               accessibility: KeychainAccessibility.first_unlock,
-             ),
-           );
+  SettingsRepository({required AppDatabase database, SharedPreferences? prefs})
+    : _db = database,
+      _prefs = prefs;
 
   final AppDatabase _db;
-  final FlutterSecureStorage _secureStorage;
+  SharedPreferences? _prefs;
+
+  /// 取得 SharedPreferences 實例（延遲初始化）
+  Future<SharedPreferences> get _sharedPrefs async {
+    return _prefs ??= await SharedPreferences.getInstance();
+  }
 
   // ==========================================
-  // FinMind Token Management (Secure Storage)
+  // FinMind Token 管理
   // ==========================================
 
-  /// Get the stored FinMind token (from secure storage)
-  Future<String?> getFinMindToken() {
-    return _secureStorage.read(key: SecureStorageKeys.finmindToken);
+  /// 取得 FinMind Token
+  Future<String?> getFinMindToken() async {
+    final prefs = await _sharedPrefs;
+    return prefs.getString(_PrefKeys.finmindToken);
   }
 
-  /// Save the FinMind token (to secure storage)
-  Future<void> setFinMindToken(String token) {
-    return _secureStorage.write(
-      key: SecureStorageKeys.finmindToken,
-      value: token,
-    );
+  /// 儲存 FinMind Token
+  Future<void> setFinMindToken(String token) async {
+    final prefs = await _sharedPrefs;
+    await prefs.setString(_PrefKeys.finmindToken, token);
   }
 
-  /// Clear the FinMind token (from secure storage)
-  Future<void> clearFinMindToken() {
-    return _secureStorage.delete(key: SecureStorageKeys.finmindToken);
+  /// 清除 FinMind Token
+  Future<void> clearFinMindToken() async {
+    final prefs = await _sharedPrefs;
+    await prefs.remove(_PrefKeys.finmindToken);
   }
 
-  /// Check if token is configured
+  /// 檢查是否已設定 Token
   Future<bool> hasFinMindToken() async {
     final token = await getFinMindToken();
     return token != null && token.isNotEmpty;
   }
 
-  /// Migrate token from database to secure storage (one-time migration)
+  /// 將 Token 從 Database 遷移到 SharedPreferences（一次性遷移）
   Future<void> migrateTokenToSecureStorage() async {
-    // Check if token exists in old database storage
+    // 檢查 Database 中是否有舊的 Token
     final oldToken = await _db.getSetting(SettingsKeys.finmindToken);
     if (oldToken != null && oldToken.isNotEmpty) {
-      // Check if already migrated
-      final existingSecure = await getFinMindToken();
-      if (existingSecure == null || existingSecure.isEmpty) {
-        // Migrate to secure storage
+      // 檢查是否已遷移
+      final existingToken = await getFinMindToken();
+      if (existingToken == null || existingToken.isEmpty) {
+        // 遷移到 SharedPreferences
         await setFinMindToken(oldToken);
       }
-      // Clear from database (no longer needed)
+      // 從 Database 清除（不再需要）
       await _db.deleteSetting(SettingsKeys.finmindToken);
     }
   }
 
   // ==========================================
-  // Last Update Tracking
+  // 最後更新時間追蹤
   // ==========================================
 
-  /// Get the last successful update date
+  /// 取得最後成功更新的日期
   Future<DateTime?> getLastUpdateDate() async {
     final value = await _db.getSetting(SettingsKeys.lastUpdateDate);
     if (value == null) return null;
     return DateTime.tryParse(value);
   }
 
-  /// Set the last successful update date
+  /// 設定最後成功更新的日期
   Future<void> setLastUpdateDate(DateTime date) {
     return _db.setSetting(SettingsKeys.lastUpdateDate, date.toIso8601String());
   }
 
   // ==========================================
-  // Feature Toggles
+  // 功能開關
   // ==========================================
 
-  /// Get whether to fetch institutional data
+  /// 取得是否同步法人資料
   Future<bool> shouldFetchInstitutional() async {
     final value = await _db.getSetting(SettingsKeys.fetchInstitutional);
     return value == 'true';
   }
 
-  /// Set whether to fetch institutional data
+  /// 設定是否同步法人資料
   Future<void> setFetchInstitutional(bool enabled) {
     return _db.setSetting(SettingsKeys.fetchInstitutional, enabled.toString());
   }
 
-  /// Get whether to fetch news
+  /// 取得是否同步新聞
   Future<bool> shouldFetchNews() async {
     final value = await _db.getSetting(SettingsKeys.fetchNews);
-    // Default to true if not set
+    // 預設為 true
     return value != 'false';
   }
 
-  /// Set whether to fetch news
+  /// 設定是否同步新聞
   Future<void> setFetchNews(bool enabled) {
     return _db.setSetting(SettingsKeys.fetchNews, enabled.toString());
   }
 
   // ==========================================
-  // Generic Settings Access
+  // 通用設定存取
   // ==========================================
 
-  /// Get any setting by key
+  /// 依 Key 取得設定值
   Future<String?> getSetting(String key) {
     return _db.getSetting(key);
   }
 
-  /// Set any setting
+  /// 設定值
   Future<void> setSetting(String key, String value) {
     return _db.setSetting(key, value);
   }
 
-  /// Delete a setting
+  /// 刪除設定
   Future<void> deleteSetting(String key) {
     return _db.deleteSetting(key);
   }

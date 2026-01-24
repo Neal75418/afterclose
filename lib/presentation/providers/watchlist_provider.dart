@@ -210,10 +210,16 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       // Collect all symbols for batch queries
       final symbols = watchlist.map((w) => w.symbol).toList();
 
+      // 取得實際資料日期，確保非交易日也能正確顯示趨勢
+      final latestDataDate = await _db.getLatestDataDate();
+      final analysisDate = latestDataDate != null
+          ? DateContext.normalize(latestDataDate)
+          : dateCtx.today;
+
       // Type-safe batch load using Dart 3 Records (no manual casting needed)
       final data = await _cachedDb.loadStockListData(
         symbols: symbols,
-        analysisDate: dateCtx.today,
+        analysisDate: analysisDate,
         historyStart: dateCtx.historyStart,
       );
 
@@ -389,11 +395,17 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
   ) async {
     final dateCtx = DateContext.now();
 
+    // 取得實際資料日期，確保非交易日也能正確顯示趨勢
+    final latestDataDate = await _db.getLatestDataDate();
+    final analysisDate = latestDataDate != null
+        ? DateContext.normalize(latestDataDate)
+        : dateCtx.today;
+
     // Batch load data for this single stock
     final results = await Future.wait([
       _db.getLatestPrice(symbol),
-      _db.getAnalysis(symbol, dateCtx.today),
-      _db.getReasons(symbol, dateCtx.today),
+      _db.getAnalysis(symbol, analysisDate),
+      _db.getReasons(symbol, analysisDate),
       _db.getPriceHistory(
         symbol,
         startDate: dateCtx.historyStart,

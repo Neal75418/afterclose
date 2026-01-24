@@ -12,14 +12,14 @@ import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-/// Maximum duration for daily update operation
-const _updateTimeout = Duration(minutes: 5);
+/// 每日更新作業的最大執行時間
+const _updateTimeout = Duration(minutes: 60);
 
 // ==================================================
 // Today Screen State
 // ==================================================
 
-/// State for today's recommendations and market overview
+/// 今日推薦與市場總覽的 State
 class TodayState {
   const TodayState({
     this.recommendations = const [],
@@ -36,7 +36,7 @@ class TodayState {
   final Map<String, WatchlistStockStatus> watchlistStatus;
   final DateTime? lastUpdate;
 
-  /// The actual date of the data being displayed
+  /// 目前顯示資料的實際日期
   final DateTime? dataDate;
   final bool isLoading;
   final bool isUpdating;
@@ -66,7 +66,7 @@ class TodayState {
   }
 }
 
-/// Recommendation with stock details and reasons
+/// 包含股票詳情與推薦原因的推薦項目
 class RecommendationWithDetails {
   const RecommendationWithDetails({
     required this.symbol,
@@ -91,7 +91,7 @@ class RecommendationWithDetails {
   final List<double>? recentPrices;
 }
 
-/// Status of a watchlist stock
+/// 自選股票狀態
 class WatchlistStockStatus {
   const WatchlistStockStatus({
     required this.symbol,
@@ -109,7 +109,7 @@ class WatchlistStockStatus {
   final bool hasSignal;
   final String? signalType;
 
-  /// Get status icon
+  /// 取得狀態圖示
   String get statusIcon {
     if (hasSignal) return '🔥';
     if (priceChange != null && priceChange!.abs() >= 3) return '👀';
@@ -117,7 +117,7 @@ class WatchlistStockStatus {
   }
 }
 
-/// Update progress info
+/// 更新進度資訊
 class UpdateProgress {
   const UpdateProgress({
     required this.currentStep,
@@ -145,59 +145,67 @@ class TodayNotifier extends StateNotifier<TodayState> {
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
   UpdateService get _updateService => _ref.read(updateServiceProvider);
 
-  /// Load today's data
+  /// 載入今日資料
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Get last update run
+      // 取得最後更新執行記錄
       final lastRun = await _db.getLatestUpdateRun();
 
-      // Use today's date for querying (update_service stores with this date)
+      // 使用今日日期進行查詢（update_service 使用此日期儲存）
       final dateCtx = DateContext.now();
 
-      // Get recommendations for today
-      final recommendations = await _db.getRecommendations(dateCtx.today);
+      // 取得今日推薦（使用 repo 的智慧回退機制處理週末）
+      final repo = _ref.read(analysisRepositoryProvider);
+      final recommendations = await repo.getTodayRecommendations();
 
-      // Get actual data dates for display purposes (not for querying)
+      // 取得實際資料日期供顯示用（非查詢用途）
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
 
-      // Calculate dataDate for display - use the earlier of the two dates
+      // 計算顯示用的資料日期，取兩者較早者
       final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
 
-      // Get watchlist
+      // 決定用於分析查詢的實際日期
+      // 若有推薦資料，使用該資料的日期；否則使用最新資料日期
+      final analysisDate = recommendations.isNotEmpty
+          ? DateContext.normalize(recommendations.first.date)
+          : (dataDate ?? dateCtx.today);
+
+      // 取得自選清單
       final watchlist = await _db.getWatchlist();
 
-      // Collect all symbols we need to load
+      // 收集所有需要載入的股票代碼
       final recSymbols = recommendations.map((r) => r.symbol).toList();
       final watchlistSymbols = watchlist.map((w) => w.symbol).toList();
       final allSymbols = {...recSymbols, ...watchlistSymbols}.toList();
 
-      // Type-safe batch load using Dart 3 Records (no manual casting needed)
+      // 使用 Dart 3 Records 進行型別安全的批次載入（無需手動轉型）
+      // 使用實際資料日期查詢分析資料，確保非交易日也能正確顯示趨勢
       final data = await _cachedDb.loadStockListData(
         symbols: allSymbols,
-        analysisDate: dateCtx.today,
+        analysisDate: analysisDate,
         historyStart: dateCtx.historyStart,
       );
 
-      // Destructure Record fields - compile-time type safety!
+      // 解構 Record 欄位，享有編譯期型別安全
       final stocksMap = data.stocks;
       final latestPricesMap = data.latestPrices;
       final analysesMap = data.analyses;
       final reasonsMap = data.reasons;
       final priceHistoriesMap = data.priceHistories;
 
-      // Calculate price changes using utility
+      // 使用工具方法計算價格變化
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(
         priceHistoriesMap,
         latestPricesMap,
       );
 
-      // Build recommendation details
+      // 建立推薦詳情
       final recWithDetails = recommendations.map((rec) {
         final priceHistory = priceHistoriesMap[rec.symbol];
-        // Extract close prices for sparkline (limit to 30 days for performance)
+        // 擷取收盤價供迷你走勢圖使用（限制 30 天以提升效能）
         final recentPrices = priceHistory
             ?.take(30)
             .map((p) => p.close)
@@ -216,7 +224,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
         );
       }).toList();
 
-      // Build watchlist status
+      // 建立自選清單狀態
       final watchlistStatus = <String, WatchlistStockStatus>{};
       for (final item in watchlist) {
         final reasons = reasonsMap[item.symbol] ?? [];
@@ -242,9 +250,9 @@ class TodayNotifier extends StateNotifier<TodayState> {
     }
   }
 
-  /// Run daily update with timeout protection
+  /// 執行每日更新，具備逾時保護機制
   ///
-  /// Throws [TimeoutException] if update takes longer than [_updateTimeout].
+  /// 若更新時間超過 [_updateTimeout] 將拋出 [TimeoutException]
   Future<UpdateResult> runUpdate({bool forceFetch = false}) async {
     state = state.copyWith(
       isUpdating: true,
@@ -278,16 +286,16 @@ class TodayNotifier extends StateNotifier<TodayState> {
 
       state = state.copyWith(isUpdating: false, updateProgress: null);
 
-      // Invalidate cache after update (data has changed)
+      // 更新後使快取失效（資料已變更）
       _cachedDb.invalidateCache();
 
-      // Check price alerts and trigger notifications
+      // 檢查價格警示並觸發通知
       final alertsTriggered = await _checkPriceAlerts(
         result.currentPrices,
         result.priceChanges,
       );
 
-      // Show update complete notification if alerts were triggered
+      // 若有警示被觸發，顯示更新完成通知
       if (alertsTriggered > 0) {
         final notificationNotifier = _ref.read(notificationProvider.notifier);
         await notificationNotifier.showUpdateCompleteNotification(
@@ -296,7 +304,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
         );
       }
 
-      // Reload data after update
+      // 更新後重新載入資料
       await loadData();
 
       return result;
@@ -317,9 +325,9 @@ class TodayNotifier extends StateNotifier<TodayState> {
     }
   }
 
-  /// Check price alerts against current prices and trigger notifications
+  /// 檢查目前價格是否觸發價格警示並發送通知
   ///
-  /// Returns the number of alerts triggered.
+  /// 回傳已觸發的警示數量
   Future<int> _checkPriceAlerts(
     Map<String, double> currentPrices,
     Map<String, double> priceChanges,
@@ -327,7 +335,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
     if (currentPrices.isEmpty) return 0;
 
     try {
-      // Ensure notification service is initialized
+      // 確保通知服務已初始化
       final notificationState = _ref.read(notificationProvider);
       if (!notificationState.isInitialized) {
         await _ref.read(notificationProvider.notifier).initialize();
@@ -336,13 +344,13 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final alertNotifier = _ref.read(priceAlertProvider.notifier);
       final notificationNotifier = _ref.read(notificationProvider.notifier);
 
-      // Check and trigger alerts
+      // 檢查並觸發警示
       final triggered = await alertNotifier.checkAndTriggerAlerts(
         currentPrices,
         priceChanges,
       );
 
-      // Send notifications for each triggered alert
+      // 為每個被觸發的警示發送通知
       for (final alert in triggered) {
         await notificationNotifier.showPriceAlertNotification(
           alert,
@@ -352,14 +360,14 @@ class TodayNotifier extends StateNotifier<TodayState> {
 
       return triggered.length;
     } catch (e) {
-      // Non-critical: alert check failure shouldn't fail the update
+      // 非關鍵錯誤：警示檢查失敗不應導致更新失敗
       AppLogger.warning('TodayNotifier', 'Price alert check failed', e);
       return 0;
     }
   }
 }
 
-/// Provider for today screen state
+/// 今日畫面 State 的 Provider
 final todayProvider = StateNotifierProvider<TodayNotifier, TodayState>((ref) {
   return TodayNotifier(ref);
 });

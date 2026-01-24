@@ -7,6 +7,7 @@ import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 
 // ==================================================
 // Scan Screen State
@@ -68,9 +69,14 @@ enum ScanFilter {
   ),
 
   // Institutional signals
-  institutionalShift(
-    'scan.filterInstitutionalShift',
-    'INSTITUTIONAL_SHIFT',
+  institutionalBuy(
+    'scan.filterInstitutionalBuy',
+    'INSTITUTIONAL_BUY',
+    ScanFilterGroup.institutional,
+  ),
+  institutionalSell(
+    'scan.filterInstitutionalSell',
+    'INSTITUTIONAL_SELL',
     ScanFilterGroup.institutional,
   ),
   institutionalBuyStreak(
@@ -85,16 +91,6 @@ enum ScanFilter {
   ),
 
   // Extended market data signals (Phase 4)
-  foreignShareholdingIncreasing(
-    'scan.filterForeignShareholdingIncreasing',
-    'FOREIGN_SHAREHOLDING_INCREASING',
-    ScanFilterGroup.extendedMarket,
-  ),
-  foreignShareholdingDecreasing(
-    'scan.filterForeignShareholdingDecreasing',
-    'FOREIGN_SHAREHOLDING_DECREASING',
-    ScanFilterGroup.extendedMarket,
-  ),
   dayTradingHigh(
     'scan.filterDayTradingHigh',
     'DAY_TRADING_HIGH',
@@ -451,14 +447,30 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(isLoading: true, error: null, hasMore: true);
 
     try {
-      // Use today's date for querying (update_service stores with this date)
-      _dateCtx = DateContext.now();
+      // Use today's date initially
+      var targetDate = DateContext.now().today;
 
-      // Get all analyses for today (with score > 0)
-      final analyses = await _db.getAnalysisForDate(_dateCtx!.today);
-      _allAnalyses = analyses.where((a) => a.score > 0).toList();
+      // Get all analyses for target date (with score > 0)
+      var analyses = await _db.getAnalysisForDate(targetDate);
 
-      // Pre-fetch all reasons for filtering logic
+      // Smart Fallback: If no data found and today is a holiday/weekend
+      if (analyses.isEmpty && !TaiwanCalendar.isTradingDay(targetDate)) {
+        final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(targetDate);
+        AppLogger.info(
+          'ScanProvider',
+          'No data for holiday ($targetDate), fallback to $prevTradingDay',
+        );
+
+        // Update target date and re-fetch
+        targetDate = prevTradingDay;
+        analyses = await _db.getAnalysisForDate(targetDate);
+      }
+
+      // Update DateContext to reflect the actual data date
+      _dateCtx = DateContext.forDate(targetDate);
+      _allAnalyses = analyses
+          .where((a) => a.score > 0)
+          .toList(); // Pre-fetch all reasons for filtering logic
       if (_allAnalyses.isNotEmpty) {
         final allSymbols = _allAnalyses.map((a) => a.symbol).toList();
         _allReasons = await _db.getReasonsBatch(allSymbols, _dateCtx!.today);

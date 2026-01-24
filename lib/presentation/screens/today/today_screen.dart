@@ -14,8 +14,9 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
 
-/// Today screen - shows daily recommendations and watchlist status
+/// 今日畫面 - 顯示每日推薦與自選清單狀態
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
@@ -27,7 +28,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   @override
   void initState() {
     super.initState();
-    // Load data on first build
+    // 首次建置時載入資料
     Future.microtask(() {
       ref.read(todayProvider.notifier).loadData();
       ref.read(watchlistProvider.notifier).loadData();
@@ -37,7 +38,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(todayProvider);
-    // Watch watchlistProvider in build() to ensure dependency is always registered
+    // 在 build() 中監聽 watchlistProvider 以確保依賴關係始終註冊
     final watchlistState = ref.watch(watchlistProvider);
 
     return Scaffold(
@@ -95,30 +96,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     return CustomScrollView(
       slivers: [
-        // Update progress banner
+        // 更新進度橫幅
         if (state.isUpdating && state.updateProgress != null)
           SliverToBoxAdapter(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              color: theme.colorScheme.primaryContainer,
-              child: Column(
-                children: [
-                  Text(
-                    state.updateProgress!.message,
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: state.updateProgress!.progress,
-                  ),
-                ],
-              ),
-            ),
+            child: UpdateProgressBanner(progress: state.updateProgress!),
           ),
 
-        // Last update time
+        // 最後更新時間
         if (state.lastUpdate != null)
           SliverToBoxAdapter(
             child: Padding(
@@ -132,12 +116,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ),
           ),
 
-        // Top 10 section
+        // Top 10 區塊
         const SliverToBoxAdapter(
           child: SectionHeader(title: S.todayTop10, icon: Icons.trending_up),
         ),
 
-        // Recommendations
+        // 推薦清單
         if (state.recommendations.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
@@ -148,10 +132,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             itemCount: state.recommendations.length,
             itemBuilder: (context, index) {
               final rec = state.recommendations[index];
-              // RepaintBoundary for better scroll performance
+              // 使用 RepaintBoundary 提升捲動效能
               final isInWatchlist = watchlistSymbols.contains(rec.symbol);
               final card = RepaintBoundary(
-                // Key includes watchlist status to force rebuild when it changes
+                // Key 包含自選狀態，以便狀態變更時強制重建
                 key: ValueKey('${rec.symbol}_$isInWatchlist'),
                 child: StockCard(
                   symbol: rec.symbol,
@@ -190,7 +174,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ),
               );
 
-              // Staggered entry animation for first 10 items
+              // 前 10 筆項目使用交錯進場動畫
               if (index < 10) {
                 return card
                     .animate()
@@ -208,7 +192,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             },
           ),
 
-        // Watchlist section
+        // 自選清單區塊
         if (state.watchlistStatus.isNotEmpty) ...[
           const SliverToBoxAdapter(
             child: Padding(
@@ -271,7 +255,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
         ],
 
-        // Bottom padding
+        // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
@@ -284,7 +268,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     HapticFeedback.lightImpact();
     final notifier = ref.read(watchlistProvider.notifier);
 
-    // Hide current SnackBar if any (gentler than clearSnackBars)
+    // 隱藏目前的 SnackBar（比 clearSnackBars 更溫和）
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
     if (currentlyInWatchlist) {
@@ -311,14 +295,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
   }
 
-  /// Show SnackBar after frame to avoid lifecycle issues
+  /// 在畫面重繪後顯示 SnackBar，避免生命週期問題
   void _showSnackBar(
     String message, {
     SnackBarAction? action,
     Duration duration = const Duration(seconds: 2),
     bool isError = false,
   }) {
-    // Use post frame callback to ensure SnackBar is shown after rebuild
+    // 使用畫面回呼確保 SnackBar 在重建後顯示
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -328,8 +312,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           duration: duration,
           action: action,
           backgroundColor: isError ? Colors.red : null,
-          showCloseIcon:
-              action != null, // Show close icon for SnackBars with actions
+          showCloseIcon: action != null, // 有動作按鈕時顯示關閉圖示
           dismissDirection: DismissDirection.horizontal,
         ),
       );

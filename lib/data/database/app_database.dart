@@ -17,106 +17,80 @@ part 'app_database.g.dart';
 
 @DriftDatabase(
   tables: [
-    // Master data
+    // 主檔資料
     StockMaster,
-    // Daily market data
+    // 每日市場資料
     DailyPrice,
     DailyInstitutional,
-    // News
+    // 新聞
     NewsItem,
     NewsStockMap,
-    // Analysis results
+    // 分析結果
     DailyAnalysis,
     DailyReason,
     DailyRecommendation,
-    // User data
+    // 使用者資料
     Watchlist,
     UserNote,
     StrategyCard,
     UpdateRun,
     AppSettings,
     PriceAlert,
-    // Extended market data (Phase 1)
+    // 擴充市場資料（Phase 1）
     Shareholding,
     DayTrading,
     FinancialData,
     AdjustedPrice,
     WeeklyPrice,
     HoldingDistribution,
-    // Fundamental data (Phase 3)
+    // 基本面資料（Phase 3）
     MonthlyRevenue,
     StockValuation,
+    // 融資融券資料（Phase 4）
+    MarginTrading,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
-  /// For testing - creates an in-memory database
+  /// 測試用 - 建立記憶體內 Database
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
     },
-    onUpgrade: (m, from, to) async {
-      // v1 -> v2: Add PriceAlert table
-      if (from < 2) {
-        await m.createTable(priceAlert);
-      }
-      // v2 -> v3: Add composite indexes for query performance
-      if (from < 3) {
-        await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_daily_price_symbol_date '
-          'ON daily_price(symbol, date)',
-        );
-        await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_daily_recommendation_date_symbol '
-          'ON daily_recommendation(date, symbol)',
-        );
-      }
-      // v3 -> v4: Add extended market data tables (Phase 1)
-      if (from < 4) {
-        await m.createTable(shareholding);
-        await m.createTable(dayTrading);
-        await m.createTable(financialData);
-        await m.createTable(adjustedPrice);
-        await m.createTable(weeklyPrice);
-        await m.createTable(holdingDistribution);
-      }
-      // v4 -> v5: Add fundamental data tables (Phase 3)
-      if (from < 5) {
-        await m.createTable(monthlyRevenue);
-        await m.createTable(stockValuation);
-      }
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
     },
   );
 
   // ==========================================
-  // Stock Master Operations
+  // 股票主檔操作
   // ==========================================
 
-  /// Get all active stocks
+  /// 取得所有上市中的股票
   Future<List<StockMasterEntry>> getAllActiveStocks() {
     return (select(stockMaster)..where((t) => t.isActive.equals(true))).get();
   }
 
-  /// Get stock by symbol
+  /// 依股票代碼取得股票
   Future<StockMasterEntry?> getStock(String symbol) {
     return (select(
       stockMaster,
     )..where((t) => t.symbol.equals(symbol))).getSingleOrNull();
   }
 
-  /// Upsert stock master data
+  /// 新增或更新股票主檔
   Future<void> upsertStock(StockMasterCompanion entry) {
     return into(stockMaster).insertOnConflictUpdate(entry);
   }
 
-  /// Batch upsert stocks
+  /// 批次新增或更新股票
   Future<void> upsertStocks(List<StockMasterCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
@@ -125,7 +99,7 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Search stocks by symbol or name (DB-level filtering)
+  /// 依代碼或名稱搜尋股票（Database 層級過濾）
   Future<List<StockMasterEntry>> searchStocks(String query) {
     final lowerQuery = '%${query.toLowerCase()}%';
     return (select(stockMaster)
@@ -138,7 +112,7 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get stocks by market (DB-level filtering)
+  /// 依市場取得股票（Database 層級過濾）
   Future<List<StockMasterEntry>> getStocksByMarket(String market) {
     return (select(stockMaster)
           ..where((t) => t.isActive.equals(true))
@@ -146,9 +120,9 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get multiple stocks by symbols (batch query)
+  /// 批次取得多檔股票（批次查詢）
   ///
-  /// Returns a map of symbol -> stock entry
+  /// 回傳 symbol -> 股票資料 的 Map
   Future<Map<String, StockMasterEntry>> getStocksBatch(
     List<String> symbols,
   ) async {
@@ -162,10 +136,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Daily Price Operations
+  // 每日價格操作
   // ==========================================
 
-  /// Get price history for a stock
+  /// 取得股票的價格歷史
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
     required DateTime startDate,
@@ -184,7 +158,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get latest price for a stock
+  /// 取得股票的最新價格
   Future<DailyPriceEntry?> getLatestPrice(String symbol) {
     return (select(dailyPrice)
           ..where((t) => t.symbol.equals(symbol))
@@ -193,7 +167,7 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Get count of price entries for a specific date
+  /// 取得指定日期的價格筆數
   Future<int> getPriceCountForDate(DateTime date) async {
     final countExpr = dailyPrice.symbol.count();
     final query = selectOnly(dailyPrice)
@@ -203,17 +177,16 @@ class AppDatabase extends _$AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
-  /// Get all price entries for a specific date
+  /// 取得指定日期的所有價格資料
   ///
-  /// Used for quick filtering candidates when API call is skipped.
+  /// 用於跳過 API 呼叫時的快篩候選股。
   Future<List<DailyPriceEntry>> getPricesForDate(DateTime date) {
     return (select(dailyPrice)..where((t) => t.date.equals(date))).get();
   }
 
-  /// Get the latest data date from the database
+  /// 取得 Database 中最新的資料日期
   ///
-  /// Returns the maximum date from daily_price table, which represents
-  /// the most recent trading day with data.
+  /// 回傳 daily_price 表中的最大日期，代表最近一個有資料的交易日。
   Future<DateTime?> getLatestDataDate() async {
     const query = '''
       SELECT MAX(date) as max_date FROM daily_price
@@ -228,7 +201,7 @@ class AppDatabase extends _$AppDatabase {
     return result.read<DateTime?>('max_date');
   }
 
-  /// Get the latest institutional data date from the database
+  /// 取得 Database 中最新的法人資料日期
   Future<DateTime?> getLatestInstitutionalDate() async {
     const query = '''
       SELECT MAX(date) as max_date FROM daily_institutional
@@ -243,22 +216,22 @@ class AppDatabase extends _$AppDatabase {
     return result.read<DateTime?>('max_date');
   }
 
-  /// Get latest prices for multiple symbols (batch query)
+  /// 批次取得多檔股票的最新價格（批次查詢）
   ///
-  /// Returns a map of symbol -> latest price entry
+  /// 回傳 symbol -> 最新價格 的 Map
   ///
-  /// Uses optimized SQL with GROUP BY + MAX(date) subquery to avoid
-  /// fetching all historical prices into memory.
+  /// 使用最佳化 SQL 搭配 GROUP BY + MAX(date) 子查詢，
+  /// 避免將所有歷史價格載入記憶體。
   Future<Map<String, DailyPriceEntry>> getLatestPricesBatch(
     List<String> symbols,
   ) async {
     if (symbols.isEmpty) return {};
 
-    // Build placeholders for SQL IN clause
+    // 建立 SQL IN 子句的佔位符
     final placeholders = List.filled(symbols.length, '?').join(', ');
 
-    // Use optimized query with subquery to get only latest price per symbol
-    // This avoids fetching all historical prices (potentially millions of rows)
+    // 使用帶有子查詢的最佳化查詢，只取得每檔股票的最新價格
+    // 避免擷取所有歷史價格（可能有數百萬筆）
     final query =
         '''
       SELECT dp.*
@@ -277,7 +250,7 @@ class AppDatabase extends _$AppDatabase {
       readsFrom: {dailyPrice},
     ).get();
 
-    // Convert query rows to DailyPriceEntry objects
+    // 將查詢列轉換為 DailyPriceEntry 物件
     final result = <String, DailyPriceEntry>{};
     for (final row in results) {
       final entry = DailyPriceEntry(
@@ -295,7 +268,7 @@ class AppDatabase extends _$AppDatabase {
     return result;
   }
 
-  /// Batch insert prices
+  /// 批次新增價格
   Future<void> insertPrices(List<DailyPriceCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
@@ -304,9 +277,9 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Get price history for multiple symbols (batch query to avoid N+1)
+  /// 批次取得多檔股票的價格歷史（批次查詢避免 N+1 問題）
   ///
-  /// Returns a map of symbol -> price list, sorted by date ascending
+  /// 回傳 symbol -> 價格列表 的 Map，依日期升冪排序
   Future<Map<String, List<DailyPriceEntry>>> getPriceHistoryBatch(
     List<String> symbols, {
     required DateTime startDate,
@@ -329,7 +302,7 @@ class AppDatabase extends _$AppDatabase {
 
     final results = await query.get();
 
-    // Group by symbol
+    // 依 symbol 分組
     final grouped = <String, List<DailyPriceEntry>>{};
     for (final entry in results) {
       grouped.putIfAbsent(entry.symbol, () => []).add(entry);
@@ -338,9 +311,9 @@ class AppDatabase extends _$AppDatabase {
     return grouped;
   }
 
-  /// Get all prices within a date range (for market-wide analysis)
+  /// 取得日期範圍內的所有價格（全市場分析用）
   ///
-  /// Returns prices grouped by symbol
+  /// 回傳依 symbol 分組的價格
   Future<Map<String, List<DailyPriceEntry>>> getAllPricesInRange({
     required DateTime startDate,
     DateTime? endDate,
@@ -359,7 +332,7 @@ class AppDatabase extends _$AppDatabase {
 
     final results = await query.get();
 
-    // Group by symbol
+    // 依 symbol 分組
     final grouped = <String, List<DailyPriceEntry>>{};
     for (final entry in results) {
       grouped.putIfAbsent(entry.symbol, () => []).add(entry);
@@ -368,18 +341,17 @@ class AppDatabase extends _$AppDatabase {
     return grouped;
   }
 
-  /// Get all symbols that have at least [minDays] of price data
+  /// 取得至少有 [minDays] 天價格資料的所有股票代碼
   ///
-  /// This is used for full-market analysis to find stocks that can be analyzed
-  /// without needing to fetch additional historical data.
+  /// 用於全市場分析，找出可直接分析而無需額外擷取歷史資料的股票。
   ///
-  /// Returns list of symbols sorted by data count (most data first)
+  /// 回傳依資料筆數排序的股票代碼列表（資料最多者優先）
   Future<List<String>> getSymbolsWithSufficientData({
     required int minDays,
     required DateTime startDate,
     DateTime? endDate,
   }) async {
-    // Use raw SQL for efficient GROUP BY with HAVING clause
+    // 使用原生 SQL 以達成高效的 GROUP BY 搭配 HAVING 子句
     final effectiveEndDate = endDate ?? DateTime.now();
 
     const query = '''
@@ -388,7 +360,7 @@ class AppDatabase extends _$AppDatabase {
       WHERE date >= ? AND date <= ?
       GROUP BY symbol
       HAVING cnt >= ?
-      ORDER BY cnt DESC
+      ORDER BY cnt DESC, symbol ASC
     ''';
 
     final results = await customSelect(
@@ -404,10 +376,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Daily Institutional Operations
+  // 三大法人資料操作
   // ==========================================
 
-  /// Get institutional data history for a stock
+  /// 取得股票的法人資料歷史
   Future<List<DailyInstitutionalEntry>> getInstitutionalHistory(
     String symbol, {
     required DateTime startDate,
@@ -426,7 +398,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get latest institutional data for a stock
+  /// 取得股票的最新法人資料
   Future<DailyInstitutionalEntry?> getLatestInstitutional(String symbol) {
     return (select(dailyInstitutional)
           ..where((t) => t.symbol.equals(symbol))
@@ -435,7 +407,7 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Batch insert institutional data
+  /// 批次新增法人資料
   Future<void> insertInstitutionalData(
     List<DailyInstitutionalCompanion> entries,
   ) async {
@@ -446,9 +418,9 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Get institutional data for multiple symbols (batch query)
+  /// 批次取得多檔股票的法人資料（批次查詢）
   ///
-  /// Returns a map of symbol -> institutional entry list, sorted by date ascending
+  /// 回傳 symbol -> 法人資料列表 的 Map，依日期升冪排序
   Future<Map<String, List<DailyInstitutionalEntry>>>
   getInstitutionalHistoryBatch(
     List<String> symbols, {
@@ -472,7 +444,7 @@ class AppDatabase extends _$AppDatabase {
 
     final results = await query.get();
 
-    // Group by symbol
+    // 依 symbol 分組
     final grouped = <String, List<DailyInstitutionalEntry>>{};
     for (final entry in results) {
       grouped.putIfAbsent(entry.symbol, () => []).add(entry);
@@ -482,10 +454,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Daily Analysis Operations
+  // 每日分析操作
   // ==========================================
 
-  /// Get analysis for date
+  /// 取得指定日期的分析結果
   Future<List<DailyAnalysisEntry>> getAnalysisForDate(DateTime date) {
     return (select(dailyAnalysis)
           ..where((t) => t.date.equals(date))
@@ -493,10 +465,10 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get paginated analysis for date with score > 0
+  /// 取得指定日期分數 > 0 的分頁分析結果
   ///
-  /// Returns [limit] items starting from [offset], ordered by score descending.
-  /// Only returns entries with positive scores (relevant for scan).
+  /// 回傳從 [offset] 開始的 [limit] 筆資料，依分數降冪排序。
+  /// 僅回傳正分數的項目（適用於掃描功能）。
   Future<List<DailyAnalysisEntry>> getAnalysisForDatePaginated(
     DateTime date, {
     required int limit,
@@ -510,7 +482,7 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get total count of analyses with score > 0 for a date
+  /// 取得指定日期分數 > 0 的分析總筆數
   Future<int> getAnalysisCountForDate(DateTime date) async {
     final countExpr = dailyAnalysis.symbol.count();
     final query = selectOnly(dailyAnalysis)
@@ -521,7 +493,7 @@ class AppDatabase extends _$AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
-  /// Get count of institutional entries for a date
+  /// 取得指定日期的法人資料筆數
   Future<int> getInstitutionalCountForDate(DateTime date) async {
     final countExpr = dailyInstitutional.symbol.count();
     final query = selectOnly(dailyInstitutional)
@@ -531,7 +503,7 @@ class AppDatabase extends _$AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
-  /// Get count of valuation entries for a date
+  /// 取得指定日期的估值資料筆數
   Future<int> getValuationCountForDate(DateTime date) async {
     final countExpr = stockValuation.symbol.count();
     final query = selectOnly(stockValuation)
@@ -541,7 +513,7 @@ class AppDatabase extends _$AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
-  /// Get analysis for stock
+  /// 取得股票的分析結果
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date) {
     return (select(dailyAnalysis)
           ..where((t) => t.symbol.equals(symbol))
@@ -549,14 +521,14 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Insert analysis result
+  /// 新增分析結果
   Future<void> insertAnalysis(DailyAnalysisCompanion entry) {
     return into(dailyAnalysis).insertOnConflictUpdate(entry);
   }
 
-  /// Get analyses for multiple symbols on a date (batch query)
+  /// 批次取得多檔股票在指定日期的分析結果（批次查詢）
   ///
-  /// Returns a map of symbol -> analysis entry
+  /// 回傳 symbol -> 分析結果 的 Map
   Future<Map<String, DailyAnalysisEntry>> getAnalysesBatch(
     List<String> symbols,
     DateTime date,
@@ -573,10 +545,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Daily Reason Operations
+  // 每日原因操作
   // ==========================================
 
-  /// Get reasons for stock on date
+  /// 取得股票在指定日期的觸發原因
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date) {
     return (select(dailyReason)
           ..where((t) => t.symbol.equals(symbol))
@@ -585,9 +557,9 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get reasons for multiple symbols on a date (batch query)
+  /// 批次取得多檔股票在指定日期的觸發原因（批次查詢）
   ///
-  /// Returns a map of symbol -> list of reasons, sorted by rank
+  /// 回傳 symbol -> 原因列表 的 Map，依 rank 排序
   Future<Map<String, List<DailyReasonEntry>>> getReasonsBatch(
     List<String> symbols,
     DateTime date,
@@ -604,7 +576,7 @@ class AppDatabase extends _$AppDatabase {
               ]))
             .get();
 
-    // Group by symbol
+    // 依 symbol 分組
     final grouped = <String, List<DailyReasonEntry>>{};
     for (final entry in results) {
       grouped.putIfAbsent(entry.symbol, () => []).add(entry);
@@ -613,7 +585,7 @@ class AppDatabase extends _$AppDatabase {
     return grouped;
   }
 
-  /// Insert reasons
+  /// 新增原因
   Future<void> insertReasons(List<DailyReasonCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
@@ -622,20 +594,20 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Replace reasons for a stock on a date (atomic operation)
+  /// 取代股票在指定日期的原因（原子性操作）
   Future<void> replaceReasons(
     String symbol,
     DateTime date,
     List<DailyReasonCompanion> entries,
   ) {
     return transaction(() async {
-      // Delete existing reasons for this symbol/date
+      // 刪除此 symbol/date 的既有原因
       await (delete(dailyReason)
             ..where((t) => t.symbol.equals(symbol))
             ..where((t) => t.date.equals(date)))
           .go();
 
-      // Insert new reasons
+      // 新增新的原因
       if (entries.isNotEmpty) {
         await batch((b) {
           for (final entry in entries) {
@@ -647,10 +619,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Recommendation Operations
+  // 推薦股操作
   // ==========================================
 
-  /// Get today's recommendations
+  /// 取得指定日期的推薦股
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date) {
     return (select(dailyRecommendation)
           ..where((t) => t.date.equals(date))
@@ -658,7 +630,7 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Insert recommendations
+  /// 新增推薦股
   Future<void> insertRecommendations(
     List<DailyRecommendationCompanion> entries,
   ) async {
@@ -669,18 +641,18 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Replace recommendations for a date (atomic operation)
+  /// 取代指定日期的推薦股（原子性操作）
   Future<void> replaceRecommendations(
     DateTime date,
     List<DailyRecommendationCompanion> entries,
   ) {
     return transaction(() async {
-      // Delete existing recommendations for this date
+      // 刪除此日期的既有推薦股
       await (delete(
         dailyRecommendation,
       )..where((t) => t.date.equals(date))).go();
 
-      // Insert new recommendations
+      // 新增新的推薦股
       if (entries.isNotEmpty) {
         await batch((b) {
           for (final entry in entries) {
@@ -691,7 +663,7 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Check if a symbol was recommended within a date range (single query)
+  /// 檢查股票是否在日期範圍內曾被推薦（單次查詢）
   Future<bool> wasSymbolRecommendedInRange(
     String symbol, {
     required DateTime startDate,
@@ -707,7 +679,7 @@ class AppDatabase extends _$AppDatabase {
     return result != null;
   }
 
-  /// Get all symbols that were recommended within a date range (batch check)
+  /// 取得日期範圍內所有曾被推薦的股票代碼（批次檢查）
   Future<Set<String>> getRecommendedSymbolsInRange({
     required DateTime startDate,
     required DateTime endDate,
@@ -721,12 +693,12 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // News Operations
+  // 新聞操作
   // ==========================================
 
-  /// Get news-to-stock mappings for multiple news IDs (batch query)
+  /// 批次取得多則新聞的股票關聯（批次查詢）
   ///
-  /// Returns a map of newsId -> list of symbols
+  /// 回傳 newsId -> 股票代碼列表 的 Map
   Future<Map<String, List<String>>> getNewsStockMappingsBatch(
     List<String> newsIds,
   ) async {
@@ -736,7 +708,7 @@ class AppDatabase extends _$AppDatabase {
       newsStockMap,
     )..where((t) => t.newsId.isIn(newsIds))).get();
 
-    // Group by newsId
+    // 依 newsId 分組
     final grouped = <String, List<String>>{};
     for (final entry in results) {
       grouped.putIfAbsent(entry.newsId, () => []).add(entry.symbol);
@@ -746,17 +718,17 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Watchlist Operations
+  // 自選股操作
   // ==========================================
 
-  /// Get all watchlist items
+  /// 取得所有自選股
   Future<List<WatchlistEntry>> getWatchlist() {
     return (select(
       watchlist,
     )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
   }
 
-  /// Add to watchlist
+  /// 加入自選股
   Future<void> addToWatchlist(String symbol) {
     return into(watchlist).insert(
       WatchlistCompanion.insert(symbol: symbol),
@@ -764,12 +736,12 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  /// Remove from watchlist
+  /// 從自選股移除
   Future<void> removeFromWatchlist(String symbol) {
     return (delete(watchlist)..where((t) => t.symbol.equals(symbol))).go();
   }
 
-  /// Check if symbol is in watchlist
+  /// 檢查股票是否在自選股中
   Future<bool> isInWatchlist(String symbol) async {
     final result = await (select(
       watchlist,
@@ -778,10 +750,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // App Settings Operations (for token storage)
+  // 應用程式設定操作（Token 儲存用）
   // ==========================================
 
-  /// Get setting value
+  /// 取得設定值
   Future<String?> getSetting(String key) async {
     final result = await (select(
       appSettings,
@@ -789,30 +761,30 @@ class AppDatabase extends _$AppDatabase {
     return result?.value;
   }
 
-  /// Set setting value
+  /// 設定設定值
   Future<void> setSetting(String key, String value) {
     return into(appSettings).insertOnConflictUpdate(
       AppSettingsCompanion.insert(key: key, value: value),
     );
   }
 
-  /// Delete setting
+  /// 刪除設定
   Future<void> deleteSetting(String key) {
     return (delete(appSettings)..where((t) => t.key.equals(key))).go();
   }
 
   // ==========================================
-  // Update Run Operations
+  // 更新執行記錄操作
   // ==========================================
 
-  /// Create new update run
+  /// 建立新的更新執行記錄
   Future<int> createUpdateRun(DateTime runDate, String status) {
     return into(
       updateRun,
     ).insert(UpdateRunCompanion.insert(runDate: runDate, status: status));
   }
 
-  /// Update run status
+  /// 更新執行狀態
   Future<void> finishUpdateRun(int id, String status, {String? message}) {
     return (update(updateRun)..where((t) => t.id.equals(id))).write(
       UpdateRunCompanion(
@@ -823,7 +795,7 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  /// Get latest update run
+  /// 取得最新的更新執行記錄
   Future<UpdateRunEntry?> getLatestUpdateRun() {
     return (select(updateRun)
           ..orderBy([(t) => OrderingTerm.desc(t.id)])
@@ -832,10 +804,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Price Alert Operations
+  // 股價提醒操作
   // ==========================================
 
-  /// Get all active price alerts
+  /// 取得所有啟用中的股價提醒
   Future<List<PriceAlertEntry>> getActiveAlerts() {
     return (select(priceAlert)
           ..where((t) => t.isActive.equals(true))
@@ -843,14 +815,14 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get all price alerts (active and inactive)
+  /// 取得所有股價提醒（包含啟用與停用）
   Future<List<PriceAlertEntry>> getAllAlerts() {
     return (select(
       priceAlert,
     )..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
   }
 
-  /// Get all alerts for a symbol
+  /// 取得股票的所有提醒
   Future<List<PriceAlertEntry>> getAlertsForSymbol(String symbol) {
     return (select(priceAlert)
           ..where((t) => t.symbol.equals(symbol))
@@ -858,7 +830,7 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get active alerts for a symbol
+  /// 取得股票的啟用中提醒
   Future<List<PriceAlertEntry>> getActiveAlertsForSymbol(String symbol) {
     return (select(priceAlert)
           ..where((t) => t.symbol.equals(symbol))
@@ -867,14 +839,14 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get a single alert by ID
+  /// 依 ID 取得單一提醒
   Future<PriceAlertEntry?> getAlertById(int id) {
     return (select(
       priceAlert,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
-  /// Create a new price alert
+  /// 建立新的股價提醒
   Future<int> createPriceAlert({
     required String symbol,
     required String alertType,
@@ -891,12 +863,12 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  /// Update price alert
+  /// 更新股價提醒
   Future<void> updatePriceAlert(int id, PriceAlertCompanion entry) {
     return (update(priceAlert)..where((t) => t.id.equals(id))).write(entry);
   }
 
-  /// Deactivate a price alert (mark as triggered)
+  /// 停用股價提醒（標記為已觸發）
   Future<void> triggerAlert(int id) {
     return (update(priceAlert)..where((t) => t.id.equals(id))).write(
       PriceAlertCompanion(
@@ -906,17 +878,17 @@ class AppDatabase extends _$AppDatabase {
     );
   }
 
-  /// Delete a price alert
+  /// 刪除股價提醒
   Future<void> deletePriceAlert(int id) {
     return (delete(priceAlert)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Delete all alerts for a symbol
+  /// 刪除股票的所有提醒
   Future<void> deleteAlertsForSymbol(String symbol) {
     return (delete(priceAlert)..where((t) => t.symbol.equals(symbol))).go();
   }
 
-  /// Check alerts against current prices and return triggered alerts
+  /// 比對提醒與當前價格，回傳已觸發的提醒
   Future<List<PriceAlertEntry>> checkAlerts(
     Map<String, double> currentPrices,
     Map<String, double> priceChanges,
@@ -955,10 +927,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Shareholding Operations (外資持股)
+  // 外資持股操作
   // ==========================================
 
-  /// Get shareholding history for a stock
+  /// 取得股票的持股歷史
   Future<List<ShareholdingEntry>> getShareholdingHistory(
     String symbol, {
     required DateTime startDate,
@@ -976,7 +948,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get latest shareholding for a stock
+  /// 取得股票的最新持股資料
   Future<ShareholdingEntry?> getLatestShareholding(String symbol) {
     return (select(shareholding)
           ..where((t) => t.symbol.equals(symbol))
@@ -985,7 +957,7 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Batch insert shareholding data
+  /// 批次新增持股資料
   Future<void> insertShareholdingData(
     List<ShareholdingCompanion> entries,
   ) async {
@@ -997,10 +969,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Day Trading Operations (當沖)
+  // 當沖操作
   // ==========================================
 
-  /// Get day trading history for a stock
+  /// 取得股票的當沖歷史
   Future<List<DayTradingEntry>> getDayTradingHistory(
     String symbol, {
     required DateTime startDate,
@@ -1018,7 +990,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get latest day trading data for a stock
+  /// 取得股票的最新當沖資料
   Future<DayTradingEntry?> getLatestDayTrading(String symbol) {
     return (select(dayTrading)
           ..where((t) => t.symbol.equals(symbol))
@@ -1027,7 +999,20 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Batch insert day trading data
+  /// 取得指定日期的當沖資料筆數（新鮮度檢查用）
+  Future<int> getDayTradingCountForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final countExpr = dayTrading.symbol.count();
+    final query = selectOnly(dayTrading)
+      ..addColumns([countExpr])
+      ..where(dayTrading.date.isBiggerOrEqualValue(startOfDay))
+      ..where(dayTrading.date.isSmallerThanValue(endOfDay));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
+  /// 批次新增當沖資料
   Future<void> insertDayTradingData(List<DayTradingCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
@@ -1037,10 +1022,75 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Financial Data Operations (財務報表)
+  // 融資融券操作
   // ==========================================
 
-  /// Get financial data for a stock
+  /// 取得股票的融資融券歷史
+  Future<List<MarginTradingEntry>> getMarginTradingHistory(
+    String symbol, {
+    required DateTime startDate,
+    DateTime? endDate,
+  }) {
+    final query = select(marginTrading)
+      ..where((t) => t.symbol.equals(symbol))
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([(t) => OrderingTerm.asc(t.date)]);
+    return query.get();
+  }
+
+  /// 取得股票的最新融資融券資料
+  Future<MarginTradingEntry?> getLatestMarginTrading(String symbol) {
+    return (select(marginTrading)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// 取得指定日期的所有融資融券資料
+  Future<List<MarginTradingEntry>> getMarginTradingForDate(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    return (select(marginTrading)
+          ..where((t) => t.date.isBiggerOrEqualValue(startOfDay))
+          ..where((t) => t.date.isSmallerThanValue(endOfDay)))
+        .get();
+  }
+
+  /// 取得指定日期的融資融券資料筆數（新鮮度檢查用）
+  Future<int> getMarginTradingCountForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final countExpr = marginTrading.symbol.count();
+    final query = selectOnly(marginTrading)
+      ..addColumns([countExpr])
+      ..where(marginTrading.date.isBiggerOrEqualValue(startOfDay))
+      ..where(marginTrading.date.isSmallerThanValue(endOfDay));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
+  /// 批次新增融資融券資料
+  Future<void> insertMarginTradingData(
+    List<MarginTradingCompanion> entries,
+  ) async {
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(marginTrading, entry, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  // ==========================================
+  // 財務報表操作
+  // ==========================================
+
+  /// 取得股票的財務資料
   Future<List<FinancialDataEntry>> getFinancialData(
     String symbol, {
     required String statementType,
@@ -1060,7 +1110,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get specific financial metrics for a stock
+  /// 取得股票的特定財務指標
   Future<List<FinancialDataEntry>> getFinancialMetrics(
     String symbol, {
     required List<String> dataTypes,
@@ -1074,7 +1124,7 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Batch insert financial data
+  /// 批次新增財務資料
   Future<void> insertFinancialData(List<FinancialDataCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
@@ -1083,11 +1133,26 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// 取得股票與報表類型的最新財務資料日期（新鮮度檢查用）
+  Future<DateTime?> getLatestFinancialDataDate(
+    String symbol,
+    String statementType,
+  ) async {
+    final result =
+        await (select(financialData)
+              ..where((t) => t.symbol.equals(symbol))
+              ..where((t) => t.statementType.equals(statementType))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(1))
+            .getSingleOrNull();
+    return result?.date;
+  }
+
   // ==========================================
-  // Adjusted Price Operations (還原股價)
+  // 還原股價操作
   // ==========================================
 
-  /// Get adjusted price history for a stock
+  /// 取得股票的還原股價歷史
   Future<List<AdjustedPriceEntry>> getAdjustedPriceHistory(
     String symbol, {
     required DateTime startDate,
@@ -1105,7 +1170,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Batch insert adjusted price data
+  /// 批次新增還原股價資料
   Future<void> insertAdjustedPrices(
     List<AdjustedPriceCompanion> entries,
   ) async {
@@ -1116,11 +1181,22 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// 取得股票的最新還原股價日期（新鮮度檢查用）
+  Future<DateTime?> getLatestAdjustedPriceDate(String symbol) async {
+    final result =
+        await (select(adjustedPrice)
+              ..where((t) => t.symbol.equals(symbol))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(1))
+            .getSingleOrNull();
+    return result?.date;
+  }
+
   // ==========================================
-  // Weekly Price Operations (週K線)
+  // 週K線操作
   // ==========================================
 
-  /// Get weekly price history for a stock
+  /// 取得股票的週K線歷史
   Future<List<WeeklyPriceEntry>> getWeeklyPriceHistory(
     String symbol, {
     required DateTime startDate,
@@ -1138,7 +1214,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Batch insert weekly price data
+  /// 批次新增週K線資料
   Future<void> insertWeeklyPrices(List<WeeklyPriceCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
@@ -1147,11 +1223,22 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// 取得股票的最新週K線日期（新鮮度檢查用）
+  Future<DateTime?> getLatestWeeklyPriceDate(String symbol) async {
+    final result =
+        await (select(weeklyPrice)
+              ..where((t) => t.symbol.equals(symbol))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(1))
+            .getSingleOrNull();
+    return result?.date;
+  }
+
   // ==========================================
-  // Holding Distribution Operations (股權分散)
+  // 股權分散操作
   // ==========================================
 
-  /// Get holding distribution for a stock on a date
+  /// 取得股票在指定日期的股權分散資料
   Future<List<HoldingDistributionEntry>> getHoldingDistribution(
     String symbol, {
     required DateTime date,
@@ -1162,11 +1249,11 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get latest holding distribution for a stock
+  /// 取得股票的最新股權分散資料
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(
     String symbol,
   ) async {
-    // First get the latest date
+    // 先取得最新日期
     final latestDate = await customSelect(
       'SELECT MAX(date) as max_date FROM holding_distribution WHERE symbol = ?',
       variables: [Variable.withString(symbol)],
@@ -1183,7 +1270,7 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Batch insert holding distribution data
+  /// 批次新增股權分散資料
   Future<void> insertHoldingDistribution(
     List<HoldingDistributionCompanion> entries,
   ) async {
@@ -1194,11 +1281,21 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// 取得股票的最新股權分散日期（新鮮度檢查用）
+  Future<DateTime?> getLatestHoldingDistributionDate(String symbol) async {
+    final result = await customSelect(
+      'SELECT MAX(date) as max_date FROM holding_distribution WHERE symbol = ?',
+      variables: [Variable.withString(symbol)],
+      readsFrom: {holdingDistribution},
+    ).getSingleOrNull();
+    return result?.read<DateTime?>('max_date');
+  }
+
   // ==========================================
-  // Monthly Revenue Operations (月營收)
+  // 月營收操作
   // ==========================================
 
-  /// Get monthly revenue history for a stock
+  /// 取得股票的月營收歷史
   Future<List<MonthlyRevenueEntry>> getMonthlyRevenueHistory(
     String symbol, {
     required DateTime startDate,
@@ -1216,7 +1313,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get latest monthly revenue for a stock
+  /// 取得股票的最新月營收
   Future<MonthlyRevenueEntry?> getLatestMonthlyRevenue(String symbol) {
     return (select(monthlyRevenue)
           ..where((t) => t.symbol.equals(symbol))
@@ -1225,12 +1322,13 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Get latest monthly revenues for multiple symbols (batch query)
+  /// 批次取得多檔股票的最新月營收（批次查詢）
   Future<Map<String, MonthlyRevenueEntry>> getLatestMonthlyRevenuesBatch(
     List<String> symbols,
   ) async {
     if (symbols.isEmpty) return {};
 
+    // 建立 SQL IN 子句的佔位符
     final placeholders = List.filled(symbols.length, '?').join(', ');
 
     final query =
@@ -1268,10 +1366,10 @@ class AppDatabase extends _$AppDatabase {
     return result;
   }
 
-  /// Get recent N months revenue data for a stock
+  /// 取得股票近 N 個月的營收資料
   Future<List<MonthlyRevenueEntry>> getRecentMonthlyRevenue(
     String symbol, {
-    int months = 13, // 13 months to calculate 12-month YoY
+    int months = 13, // 13 個月以計算 12 個月的年增率
   }) {
     return (select(monthlyRevenue)
           ..where((t) => t.symbol.equals(symbol))
@@ -1280,20 +1378,20 @@ class AppDatabase extends _$AppDatabase {
         .get();
   }
 
-  /// Get recent N months revenue data for multiple stocks (batch query)
+  /// 批次取得多檔股票近 N 個月的營收資料（批次查詢）
   ///
-  /// Returns a map of symbol -> list of revenue entries (sorted descending by date)
+  /// 回傳 symbol -> 營收資料列表 的 Map（依日期降冪排序）
   Future<Map<String, List<MonthlyRevenueEntry>>> getRecentMonthlyRevenueBatch(
     List<String> symbols, {
-    int months = 6, // 6 months for MoM growth tracking
+    int months = 6, // 6 個月用於追蹤月增率
   }) async {
     if (symbols.isEmpty) return {};
 
-    // Build placeholders for SQL IN clause
+    // 建立 SQL IN 子句的佔位符
     final placeholders = List.filled(symbols.length, '?').join(', ');
 
-    // Use ROW_NUMBER to get top N months per symbol
-    // This is more efficient than N separate queries
+    // 使用 ROW_NUMBER 取得每檔股票的前 N 個月
+    // 比執行 N 次個別查詢更有效率
     final query =
         '''
       SELECT * FROM (
@@ -1315,7 +1413,7 @@ class AppDatabase extends _$AppDatabase {
       readsFrom: {monthlyRevenue},
     ).get();
 
-    // Group by symbol
+    // 依 symbol 分組
     final result = <String, List<MonthlyRevenueEntry>>{};
     for (final row in results) {
       final symbol = row.read<String>('symbol');
@@ -1334,7 +1432,7 @@ class AppDatabase extends _$AppDatabase {
     return result;
   }
 
-  /// Batch insert monthly revenue data
+  /// 批次新增月營收資料
   Future<void> insertMonthlyRevenue(
     List<MonthlyRevenueCompanion> entries,
   ) async {
@@ -1345,10 +1443,9 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
-  /// Get count of monthly revenue entries for a specific year/month
+  /// 取得指定年/月的月營收資料筆數
   ///
-  /// Used to check if we already have full market revenue data for a month
-  /// to avoid redundant API calls.
+  /// 用於檢查是否已有該月的全市場營收資料，以避免重複的 API 呼叫。
   Future<int> getRevenueCountForYearMonth(int year, int month) async {
     final countExpr = monthlyRevenue.symbol.count();
     final query = selectOnly(monthlyRevenue)
@@ -1360,10 +1457,10 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
-  // Stock Valuation Operations (估值資料)
+  // 估值資料操作
   // ==========================================
 
-  /// Get valuation history for a stock
+  /// 取得股票的估值歷史
   Future<List<StockValuationEntry>> getValuationHistory(
     String symbol, {
     required DateTime startDate,
@@ -1381,7 +1478,7 @@ class AppDatabase extends _$AppDatabase {
     return query.get();
   }
 
-  /// Get latest valuation for a stock
+  /// 取得股票的最新估值
   Future<StockValuationEntry?> getLatestValuation(String symbol) {
     return (select(stockValuation)
           ..where((t) => t.symbol.equals(symbol))
@@ -1390,13 +1487,13 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
-  /// Get latest valuations for multiple symbols (batch query)
+  /// 批次取得多檔股票的最新估值（批次查詢）
   Future<Map<String, StockValuationEntry>> getLatestValuationsBatch(
     List<String> symbols,
   ) async {
     if (symbols.isEmpty) return {};
 
-    // Build placeholders for SQL IN clause
+    // 建立 SQL IN 子句的佔位符
     final placeholders = List.filled(symbols.length, '?').join(', ');
 
     final query =
@@ -1432,7 +1529,7 @@ class AppDatabase extends _$AppDatabase {
     return result;
   }
 
-  /// Batch insert valuation data
+  /// 批次新增估值資料
   Future<void> insertValuationData(
     List<StockValuationCompanion> entries,
   ) async {

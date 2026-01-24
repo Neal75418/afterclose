@@ -1,9 +1,12 @@
 import 'dart:math';
 
-/// Service for calculating technical indicators
+/// 技術指標計算服務
+///
+/// 提供各種技術分析指標的計算方法，包含 SMA、EMA、RSI、KD、MACD、布林通道等
 class TechnicalIndicatorService {
-  /// Calculate Simple Moving Average (SMA)
-  /// Returns list with same length as input, with null for insufficient data
+  /// 計算簡單移動平均線 (SMA)
+  ///
+  /// 回傳與輸入相同長度的列表，資料不足的位置為 null
   List<double?> calculateSMA(List<double> prices, int period) {
     if (prices.isEmpty || period <= 0) return [];
 
@@ -24,20 +27,20 @@ class TechnicalIndicatorService {
     return result;
   }
 
-  /// Calculate Exponential Moving Average (EMA)
+  /// 計算指數移動平均線 (EMA)
   List<double?> calculateEMA(List<double> prices, int period) {
     if (prices.isEmpty || period <= 0) return [];
 
     final result = <double?>[];
     final multiplier = 2 / (period + 1);
 
-    // First EMA is SMA
+    // 第一個 EMA 使用 SMA 計算
     double? ema;
     for (int i = 0; i < prices.length; i++) {
       if (i < period - 1) {
         result.add(null);
       } else if (i == period - 1) {
-        // Calculate initial SMA
+        // 計算初始 SMA
         double sum = 0;
         for (int j = 0; j < period; j++) {
           sum += prices[j];
@@ -54,8 +57,9 @@ class TechnicalIndicatorService {
     return result;
   }
 
-  /// Calculate Relative Strength Index (RSI)
-  /// Default period is 14
+  /// 計算相對強弱指標 (RSI)
+  ///
+  /// [period] 預設為 14 日
   List<double?> calculateRSI(List<double> prices, {int period = 14}) {
     if (prices.length < period + 1) {
       return List.filled(prices.length, null);
@@ -63,18 +67,18 @@ class TechnicalIndicatorService {
 
     final result = <double?>[];
 
-    // Calculate price changes
+    // 計算價格變動
     final changes = <double>[];
     for (int i = 1; i < prices.length; i++) {
       changes.add(prices[i] - prices[i - 1]);
     }
 
-    // First RSI needs period + 1 data points
+    // 第一個 RSI 需要 period + 1 個資料點
     for (int i = 0; i < period; i++) {
       result.add(null);
     }
 
-    // Calculate initial average gain and loss
+    // 計算初始平均漲跌幅
     double avgGain = 0;
     double avgLoss = 0;
     for (int i = 0; i < period; i++) {
@@ -87,20 +91,20 @@ class TechnicalIndicatorService {
     avgGain /= period;
     avgLoss /= period;
 
-    // Calculate first RSI
-    // Edge case: if both avgGain and avgLoss are 0, RSI should be neutral (50)
+    // 計算第一個 RSI
+    // 邊界情況：若漲跌幅皆為 0，RSI 應為中性值 (50)
     double rsi;
     if (avgGain == 0 && avgLoss == 0) {
-      rsi = 50.0; // Neutral - no price movement
+      rsi = 50.0; // 中性 - 無價格變動
     } else if (avgLoss == 0) {
-      rsi = 100.0; // All gains, no losses
+      rsi = 100.0; // 全部上漲，無下跌
     } else {
       final rs = avgGain / avgLoss;
       rsi = 100 - (100 / (1 + rs));
     }
     result.add(rsi);
 
-    // Calculate subsequent RSI using smoothed averages
+    // 使用平滑平均計算後續 RSI
     for (int i = period; i < changes.length; i++) {
       final change = changes[i];
       final gain = change > 0 ? change : 0.0;
@@ -109,12 +113,12 @@ class TechnicalIndicatorService {
       avgGain = (avgGain * (period - 1) + gain) / period;
       avgLoss = (avgLoss * (period - 1) + loss) / period;
 
-      // Same edge case handling as initial RSI
+      // 與初始 RSI 相同的邊界情況處理
       double subsequentRsi;
       if (avgGain == 0 && avgLoss == 0) {
-        subsequentRsi = 50.0; // Neutral
+        subsequentRsi = 50.0; // 中性
       } else if (avgLoss == 0) {
-        subsequentRsi = 100.0; // All gains
+        subsequentRsi = 100.0; // 全部上漲
       } else {
         final rs = avgGain / avgLoss;
         subsequentRsi = 100 - (100 / (1 + rs));
@@ -125,8 +129,10 @@ class TechnicalIndicatorService {
     return result;
   }
 
-  /// Calculate Stochastic Oscillator (KD)
-  /// Default periods: K=9, D=3
+  /// 計算隨機震盪指標 (KD)
+  ///
+  /// [kPeriod] K 值週期，預設 9 日
+  /// [dPeriod] D 值週期，預設 3 日
   ({List<double?> k, List<double?> d}) calculateKD(
     List<double> highs,
     List<double> lows,
@@ -142,12 +148,12 @@ class TechnicalIndicatorService {
     final kValues = <double?>[];
     final dValues = <double?>[];
 
-    // Calculate %K
+    // 計算 %K
     for (int i = 0; i < length; i++) {
       if (i < kPeriod - 1) {
         kValues.add(null);
       } else {
-        // Find highest high and lowest low in period
+        // 找出週期內最高價與最低價
         double highestHigh = highs[i];
         double lowestLow = lows[i];
         for (int j = i - kPeriod + 1; j <= i; j++) {
@@ -157,14 +163,14 @@ class TechnicalIndicatorService {
 
         final range = highestHigh - lowestLow;
         if (range == 0) {
-          kValues.add(50.0); // Neutral when no range
+          kValues.add(50.0); // 無價格區間時為中性值
         } else {
           kValues.add(((closes[i] - lowestLow) / range) * 100);
         }
       }
     }
 
-    // Calculate %D (SMA of %K)
+    // 計算 %D（%K 的 SMA）
     for (int i = 0; i < length; i++) {
       if (i < kPeriod - 1 + dPeriod - 1 || kValues[i] == null) {
         dValues.add(null);
@@ -184,8 +190,11 @@ class TechnicalIndicatorService {
     return (k: kValues, d: dValues);
   }
 
-  /// Calculate MACD (Moving Average Convergence Divergence)
-  /// Default periods: fast=12, slow=26, signal=9
+  /// 計算 MACD 指標
+  ///
+  /// [fastPeriod] 快線週期，預設 12 日
+  /// [slowPeriod] 慢線週期，預設 26 日
+  /// [signalPeriod] 訊號線週期，預設 9 日
   ({List<double?> macd, List<double?> signal, List<double?> histogram})
   calculateMACD(
     List<double> prices, {
@@ -196,7 +205,7 @@ class TechnicalIndicatorService {
     final fastEMA = calculateEMA(prices, fastPeriod);
     final slowEMA = calculateEMA(prices, slowPeriod);
 
-    // MACD Line = Fast EMA - Slow EMA
+    // MACD 線 = 快線 EMA - 慢線 EMA
     final macdLine = <double?>[];
     for (int i = 0; i < prices.length; i++) {
       if (fastEMA[i] == null || slowEMA[i] == null) {
@@ -206,7 +215,7 @@ class TechnicalIndicatorService {
       }
     }
 
-    // Signal Line = EMA of MACD Line
+    // 訊號線 = MACD 線的 EMA
     final nonNullMacd = macdLine.whereType<double>().toList();
     final signalEMA = calculateEMA(nonNullMacd, signalPeriod);
 
@@ -225,7 +234,7 @@ class TechnicalIndicatorService {
       }
     }
 
-    // Histogram = MACD Line - Signal Line
+    // 柱狀圖 = MACD 線 - 訊號線
     final histogram = <double?>[];
     for (int i = 0; i < prices.length; i++) {
       if (macdLine[i] == null || signalLine[i] == null) {
@@ -238,8 +247,10 @@ class TechnicalIndicatorService {
     return (macd: macdLine, signal: signalLine, histogram: histogram);
   }
 
-  /// Calculate Bollinger Bands
-  /// Default: 20 period SMA with 2 standard deviations
+  /// 計算布林通道
+  ///
+  /// [period] 週期，預設 20 日
+  /// [stdDevMultiplier] 標準差倍數，預設 2 倍
   ({List<double?> upper, List<double?> middle, List<double?> lower})
   calculateBollingerBands(
     List<double> prices, {
@@ -255,7 +266,7 @@ class TechnicalIndicatorService {
         upper.add(null);
         lower.add(null);
       } else {
-        // Calculate standard deviation
+        // 計算標準差
         double sumSquares = 0;
         for (int j = i - period + 1; j <= i; j++) {
           final diff = prices[j] - middle[i]!;
@@ -271,7 +282,7 @@ class TechnicalIndicatorService {
     return (upper: upper, middle: middle, lower: lower);
   }
 
-  /// Calculate Volume Moving Average
+  /// 計算成交量移動平均線
   List<double?> calculateVolumeMA(List<double> volumes, int period) {
     return calculateSMA(volumes, period);
   }

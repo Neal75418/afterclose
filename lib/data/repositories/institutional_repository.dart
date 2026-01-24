@@ -7,7 +7,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 
-/// Repository for institutional investor trading data
+/// 三大法人買賣超資料 Repository
 class InstitutionalRepository {
   InstitutionalRepository({
     required AppDatabase database,
@@ -23,9 +23,9 @@ class InstitutionalRepository {
 
   static final _dateFormat = DateFormat('yyyy-MM-dd');
 
-  /// Get institutional data history for analysis
+  /// 取得法人資料歷史供分析使用
   ///
-  /// Returns data for [RuleParams.lookbackPrice] days if available
+  /// 若可用，回傳 [RuleParams.lookbackPrice] 天的資料
   Future<List<DailyInstitutionalEntry>> getInstitutionalHistory(
     String symbol, {
     int? days,
@@ -36,12 +36,12 @@ class InstitutionalRepository {
     return _db.getInstitutionalHistory(symbol, startDate: startDate);
   }
 
-  /// Get latest institutional data for a stock
+  /// 取得股票最新法人資料
   Future<DailyInstitutionalEntry?> getLatestInstitutional(String symbol) {
     return _db.getLatestInstitutional(symbol);
   }
 
-  /// Sync institutional data for a single stock
+  /// 同步單檔股票的法人資料
   Future<int> syncInstitutionalData(
     String symbol, {
     required DateTime startDate,
@@ -77,10 +77,10 @@ class InstitutionalRepository {
     }
   }
 
-  /// Sync institutional data for ALL stocks on a specific date
+  /// 同步指定日期的全市場法人資料
   ///
-  /// Uses TWSE T86 API (free, full market).
-  /// This allows us to analyze institutional activity for non-watchlist stocks.
+  /// 使用 TWSE T86 API（免費、全市場）。
+  /// 可分析非自選股的法人動向。
   Future<int> syncAllMarketInstitutional(
     DateTime date, {
     bool force = false,
@@ -90,34 +90,31 @@ class InstitutionalRepository {
         final existingCount = await _db.getInstitutionalCountForDate(date);
         if (existingCount > 1000) return existingCount;
       }
-      // TWSE API (T86) returns data for a specific date
-      // Note: T86 API usually takes date parameter in request,
-      // but TwseClient.getAllInstitutionalData currently hits the endpoint without date param
-      // which defaults to "latest trading day".
-      // TODO: If TwseClient doesn't support date param for T86, we can only sync TODAY.
-      // Let's check logic: TwseClient.getAllInstitutionalData() hardcodes '/rwd/zh/fund/T86'.
-      // Only query param is response=json. It fetches LATEST data.
+      // TWSE API（T86）回傳指定日期的資料
+      // 註：T86 API 支援 date 參數（YYYYMMDD）
+      // TwseClient.getAllInstitutionalData() 預設抓取「最新交易日」
+      // 若需抓取歷史資料需修改 TwseClient 支援 date 參數
 
-      // WAIT: We need to support fetching historical T86 if we want to backfill.
-      // TWSE T86 endpoint DOES support 'date' parameter (YYYYMMDD).
-      // I will assume I need to modify TwseClient later to support date,
-      // OR I implement the fetch here if I can't change TwseClient easily (I can).
-
-      // Let's assume for now we only sync LATEST/Target Date.
-      // If the date passed is not "today/latest", we might need to be careful.
-      // But typically we run this for "today's update".
+      // 假設目前僅同步 LATEST/目標日期
+      // 若傳入日期非今日，需注意資料可能不正確
+      // 但通常我們執行的是「今日更新」
 
       final data = await _twseClient.getAllInstitutionalData(date: date);
 
       if (data.isEmpty) return 0;
 
-      // Filter out invalid or zero-volume entries to save DB space
+      // 取得有效股票代碼以避免 Foreign Key 錯誤
+      final stockList = await _db.getAllActiveStocks();
+      final validSymbols = stockList.map((s) => s.symbol).toSet();
+
+      // 過濾無效或零成交量資料以節省 Database 空間
       final validData = data
           .where(
             (item) =>
-                item.totalNet != 0 ||
-                item.foreignNet != 0 ||
-                item.investmentTrustNet != 0,
+                validSymbols.contains(item.code) &&
+                (item.totalNet != 0 ||
+                    item.foreignNet != 0 ||
+                    item.investmentTrustNet != 0),
           )
           .toList();
 
@@ -141,9 +138,9 @@ class InstitutionalRepository {
     }
   }
 
-  /// Check if institutional data shows direction reversal
+  /// 檢查法人買賣方向是否反轉
   ///
-  /// Returns true if the net buying direction has changed in recent days
+  /// 若近期淨買賣方向與前期相反則回傳 true
   Future<bool> hasDirectionReversal(String symbol, {int days = 5}) async {
     final history = await getInstitutionalHistory(symbol, days: days + 5);
     if (history.length < days) return false;
@@ -151,7 +148,7 @@ class InstitutionalRepository {
     final recent = history.reversed.take(days).toList();
     if (recent.length < 2) return false;
 
-    // Calculate total net for recent period
+    // 計算近期淨買賣總額
     double recentNet = 0;
     for (final entry in recent) {
       recentNet +=
@@ -160,7 +157,7 @@ class InstitutionalRepository {
           (entry.dealerNet ?? 0);
     }
 
-    // Get previous period
+    // 取得前期資料
     final previous = history.reversed.skip(days).take(days).toList();
     if (previous.isEmpty) return false;
 
@@ -172,12 +169,12 @@ class InstitutionalRepository {
           (entry.dealerNet ?? 0);
     }
 
-    // Check for direction reversal (sign change)
+    // 檢查方向反轉（正負號改變）
     return (recentNet > 0 && previousNet < 0) ||
         (recentNet < 0 && previousNet > 0);
   }
 
-  /// Get total institutional net buying for recent days
+  /// 取得近期法人淨買賣總額
   Future<double?> getTotalNetBuying(String symbol, {int days = 5}) async {
     final history = await getInstitutionalHistory(symbol, days: days + 5);
     if (history.isEmpty) return null;

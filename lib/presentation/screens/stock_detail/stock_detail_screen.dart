@@ -376,24 +376,38 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
   }
 
   String _translateReasonCode(String code) {
+    // Handle both snake_case (standard) and camelCase (json) formats
     final key = switch (code) {
       // Core signals
       'REVERSAL_W2S' => 'reasons.reversalW2S',
+      'reversalW2S' => 'reasons.reversalW2S',
       'REVERSAL_S2W' => 'reasons.reversalS2W',
+      'reversalS2W' => 'reasons.reversalS2W',
       'TECH_BREAKOUT' => 'reasons.breakout',
+      'techBreakout' => 'reasons.breakout',
       'TECH_BREAKDOWN' => 'reasons.breakdown',
+      'techBreakdown' => 'reasons.breakdown',
       'VOLUME_SPIKE' => 'reasons.volumeSpike',
+      'volumeSpike' => 'reasons.volumeSpike',
       'PRICE_SPIKE' => 'reasons.priceSpike',
+      'priceSpike' => 'reasons.priceSpike',
       'INSTITUTIONAL_SHIFT' => 'reasons.institutional',
+      'institutionalShift' => 'reasons.institutional',
       'NEWS_RELATED' => 'reasons.news',
+      'newsRelated' => 'reasons.news',
       // KD signals
       'KD_GOLDEN_CROSS' => 'reasons.kdGoldenCross',
+      'kdGoldenCross' => 'reasons.kdGoldenCross',
       'KD_DEATH_CROSS' => 'reasons.kdDeathCross',
+      'kdDeathCross' => 'reasons.kdDeathCross',
       // Institutional streaks
       'INSTITUTIONAL_BUY_STREAK' => 'reasons.institutionalBuyStreak',
+      'institutionalBuyStreak' => 'reasons.institutionalBuyStreak',
       'INSTITUTIONAL_SELL_STREAK' => 'reasons.institutionalSellStreak',
+      'institutionalSellStreak' => 'reasons.institutionalSellStreak',
       // Candlestick patterns
       'PATTERN_DOJI' => 'reasons.patternDoji',
+      'patternDoji' => 'reasons.patternDoji',
       'PATTERN_BULLISH_ENGULFING' => 'reasons.patternBullishEngulfing',
       'PATTERN_BEARISH_ENGULFING' => 'reasons.patternBearishEngulfing',
       'PATTERN_HAMMER' => 'reasons.patternHammer',
@@ -406,34 +420,58 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
       'PATTERN_GAP_DOWN' => 'reasons.patternGapDown',
       // Phase 3: 52-week and MA signals
       'WEEK_52_HIGH' => 'reasons.week52High',
+      'week52High' => 'reasons.week52High',
       'WEEK_52_LOW' => 'reasons.week52Low',
+      'week52Low' => 'reasons.week52Low',
       'MA_ALIGNMENT_BULLISH' => 'reasons.maAlignmentBullish',
+      'maAlignmentBullish' => 'reasons.maAlignmentBullish',
       'MA_ALIGNMENT_BEARISH' => 'reasons.maAlignmentBearish',
+      'maAlignmentBearish' => 'reasons.maAlignmentBearish',
       'RSI_EXTREME_OVERBOUGHT' => 'reasons.rsiExtremeOverbought',
+      'rsiExtremeOverbought' => 'reasons.rsiExtremeOverbought',
       'RSI_EXTREME_OVERSOLD' => 'reasons.rsiExtremeOversold',
+      'rsiExtremeOversold' => 'reasons.rsiExtremeOversold',
       // Phase 4: Extended market data signals
       'FOREIGN_SHAREHOLDING_INCREASING' =>
         'reasons.foreignShareholdingIncreasing',
+      'foreignShareholdingIncreasing' =>
+        'reasons.foreignShareholdingIncreasing',
       'FOREIGN_SHAREHOLDING_DECREASING' =>
         'reasons.foreignShareholdingDecreasing',
+      'foreignShareholdingDecreasing' =>
+        'reasons.foreignShareholdingDecreasing',
       'DAY_TRADING_HIGH' => 'reasons.dayTradingHigh',
+      'dayTradingHigh' => 'reasons.dayTradingHigh',
       'DAY_TRADING_EXTREME' => 'reasons.dayTradingExtreme',
+      'dayTradingExtreme' => 'reasons.dayTradingExtreme',
       'CONCENTRATION_HIGH' => 'reasons.concentrationHigh',
+      'concentrationHigh' => 'reasons.concentrationHigh',
       // Phase 5: Price-volume divergence
       'PRICE_VOLUME_BULLISH_DIVERGENCE' =>
         'reasons.priceVolumeBullishDivergence',
+      'priceVolumeBullishDivergence' => 'reasons.priceVolumeBullishDivergence',
       'PRICE_VOLUME_BEARISH_DIVERGENCE' =>
         'reasons.priceVolumeBearishDivergence',
+      'priceVolumeBearishDivergence' => 'reasons.priceVolumeBearishDivergence',
       'HIGH_VOLUME_BREAKOUT' => 'reasons.highVolumeBreakout',
+      'highVolumeBreakout' => 'reasons.highVolumeBreakout',
       'LOW_VOLUME_ACCUMULATION' => 'reasons.lowVolumeAccumulation',
+      'lowVolumeAccumulation' => 'reasons.lowVolumeAccumulation',
       // Phase 6: Fundamental signals
       'REVENUE_YOY_SURGE' => 'reasons.revenueYoySurge',
+      'revenueYoySurge' => 'reasons.revenueYoySurge',
       'REVENUE_YOY_DECLINE' => 'reasons.revenueYoyDecline',
+      'revenueYoyDecline' => 'reasons.revenueYoyDecline',
       'REVENUE_MOM_GROWTH' => 'reasons.revenueMomGrowth',
+      'revenueMomGrowth' => 'reasons.revenueMomGrowth',
       'HIGH_DIVIDEND_YIELD' => 'reasons.highDividendYield',
+      'highDividendYield' => 'reasons.highDividendYield',
       'PE_UNDERVALUED' => 'reasons.peUndervalued',
+      'peUndervalued' => 'reasons.peUndervalued',
       'PE_OVERVALUED' => 'reasons.peOvervalued',
+      'peOvervalued' => 'reasons.peOvervalued',
       'PBR_UNDERVALUED' => 'reasons.pbrUndervalued',
+      'pbrUndervalued' => 'reasons.pbrUndervalued',
       _ => code,
     };
     return key.tr();

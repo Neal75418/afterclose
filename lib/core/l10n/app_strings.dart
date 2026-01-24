@@ -1,9 +1,9 @@
-/// Centralized string constants for the app
+/// 應用程式字串常數集中管理
 ///
-/// This class provides a single source of truth for all UI strings,
-/// making it easy to maintain and convert to full i18n later.
+/// 此類別為所有 UI 字串的單一來源，
+/// 便於維護並未來轉換為完整的國際化。
 ///
-/// Usage:
+/// 使用範例：
 /// ```dart
 /// Text(S.appName)
 /// Text(S.priceUp(2.5))
@@ -12,7 +12,7 @@ class S {
   S._();
 
   // ==================================================
-  // App General
+  // 應用程式通用
   // ==================================================
   static const String appName = 'AfterClose';
   static const String loading = '載入中...';
@@ -30,7 +30,7 @@ class S {
   static const String settings = '設定';
 
   // ==================================================
-  // Navigation
+  // 導航
   // ==================================================
   static const String navToday = '今日';
   static const String navScan = '掃描';
@@ -38,7 +38,7 @@ class S {
   static const String navNews = '新聞';
 
   // ==================================================
-  // Today Screen
+  // 今日頁面
   // ==================================================
   static const String todayTop10 = '今日推薦 Top 10';
   static const String todayWatchlistStatus = '自選狀態';
@@ -49,7 +49,7 @@ class S {
   static String todayUpdateFailed(String error) => '更新失敗: $error';
 
   // ==================================================
-  // News Screen
+  // 新聞頁面
   // ==================================================
   static const String newsTitle = '市場新聞';
   static const String newsToday = '今天';
@@ -62,7 +62,7 @@ class S {
   static String newsDaysAgo(int days) => '$days 天前';
 
   // ==================================================
-  // Scan Screen
+  // 掃描頁面
   // ==================================================
   static const String scanTitle = '市場掃描';
   static const String scanFilterAll = '全部';
@@ -77,7 +77,7 @@ class S {
   static const String scanSortPriceChangeAsc = '漲幅低→高';
 
   // ==================================================
-  // Watchlist Screen
+  // 自選股頁面
   // ==================================================
   static const String watchlistTitle = '自選股票';
   static const String watchlistAdd = '新增股票';
@@ -92,7 +92,7 @@ class S {
   static const String watchlistUndo = '復原';
 
   // ==================================================
-  // Stock Detail
+  // 股票詳情
   // ==================================================
   static const String stockDetailTitle = '股票詳情';
   static const String stockAddToWatchlist = '加入自選';
@@ -101,7 +101,7 @@ class S {
   static const String stockPreview = '股票預覽';
 
   // ==================================================
-  // Score
+  // 評分
   // ==================================================
   static const String scoreLabel = '推薦評分';
   static const String scoreLevelStrong = '強烈推薦';
@@ -117,7 +117,7 @@ class S {
   }
 
   // ==================================================
-  // Trend
+  // 趨勢
   // ==================================================
   static const String trendUp = '上升趨勢';
   static const String trendDown = '下降趨勢';
@@ -132,7 +132,7 @@ class S {
   }
 
   // ==================================================
-  // Price
+  // 價格
   // ==================================================
   static const String priceLabel = '價格';
   static const String priceUp = '上漲';
@@ -151,7 +151,7 @@ class S {
   }
 
   // ==================================================
-  // Reasons (Signal Types)
+  // 推薦理由（訊號類型）
   // ==================================================
   static const String reasonReversalW2S = '弱轉強';
   static const String reasonReversalS2W = '強轉弱';
@@ -164,7 +164,7 @@ class S {
   static const String reasonsLabel = '推薦理由';
 
   // ==================================================
-  // Empty States
+  // 空狀態
   // ==================================================
   static const String emptyNoRecommendations = '尚無今日推薦';
   static const String emptyNoRecommendationsHint = '目前沒有符合條件的股票\n請稍後再試或手動更新';
@@ -181,7 +181,7 @@ class S {
   static const String emptyNetworkErrorHint = '請檢查網路連線後再試';
 
   // ==================================================
-  // Accessibility
+  // 無障礙
   // ==================================================
   static String accessibilityStock(String symbol) => '股票 $symbol';
   static String accessibilityPrice(double price) =>
@@ -197,7 +197,7 @@ class S {
   static const String accessibilityRemoveFromWatchlist = '從自選移除';
   static String accessibilityButtonPress(String label) => '按鈕: $label';
 
-  // Sparkline chart accessibility
+  // 走勢圖無障礙標籤
   static const String sparklineDefault = '近期價格走勢圖';
   static String sparklineFlat(int days) => '近 $days 日價格持平走勢圖';
   static String sparklineTrend(int days, double change) {
@@ -205,13 +205,13 @@ class S {
     return '近 $days 日價格 $direction ${change.abs().toStringAsFixed(1)} 百分比走勢圖';
   }
 
-  // Shimmer loading accessibility
+  // Shimmer 載入無障礙標籤
   static const String shimmerLoadingStockList = '股票列表載入中';
   static const String shimmerLoadingStockDetail = '股票詳情載入中';
   static const String shimmerLoadingNewsList = '新聞列表載入中';
 
   // ==================================================
-  // Watchlist Status Icons
+  // 自選股狀態圖示
   // ==================================================
   static const String statusHasSignal = '有訊號';
   static const String statusVolatile = '波動中';
@@ -219,8 +219,10 @@ class S {
   static String signalType(String? type) => '有訊號: ${type ?? "異常"}';
 
   // ==================================================
-  // Time & Date
+  // 時間與日期
   // ==================================================
-  static String dateFormat(DateTime dt) =>
-      '${dt.month}/${dt.day} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  static String dateFormat(DateTime dt) {
+    final local = dt.toLocal();
+    return '${local.month}/${local.day} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
 }

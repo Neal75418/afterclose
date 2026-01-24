@@ -1,15 +1,14 @@
-/// Taiwan Stock Market Calendar
+/// 台灣股市交易日曆
 ///
-/// Provides trading day verification for Taiwan Stock Exchange (TWSE)
-/// and Taipei Exchange (TPEx).
+/// 提供台灣證券交易所（TWSE）與櫃買中心（TPEx）的交易日驗證。
 ///
-/// Data sources:
-/// - Taiwan Stock Exchange official holiday announcements
+/// 資料來源：
+/// - 台灣證券交易所官方休市公告
 /// - https://www.twse.com.tw/
 class TaiwanCalendar {
   TaiwanCalendar._();
 
-  /// 2024 Taiwan stock market holidays
+  /// 2024 年台股休市日
   static final Set<DateTime> _holidays2024 = {
     // 元旦
     DateTime.utc(2024, 1, 1),
@@ -36,7 +35,7 @@ class TaiwanCalendar {
     DateTime.utc(2024, 10, 10),
   };
 
-  /// 2025 Taiwan stock market holidays
+  /// 2025 年台股休市日
   static final Set<DateTime> _holidays2025 = {
     // 元旦
     DateTime.utc(2025, 1, 1),
@@ -69,7 +68,7 @@ class TaiwanCalendar {
     DateTime.utc(2025, 10, 10),
   };
 
-  /// 2026 Taiwan stock market holidays (estimated)
+  /// 2026 年台股休市日（預估）
   static final Set<DateTime> _holidays2026 = {
     // 元旦
     DateTime.utc(2026, 1, 1),
@@ -98,41 +97,36 @@ class TaiwanCalendar {
     DateTime.utc(2026, 10, 10),
   };
 
-  /// All holidays combined
+  /// 所有休市日彙總
   static final Set<DateTime> _allHolidays = {
     ..._holidays2024,
     ..._holidays2025,
     ..._holidays2026,
   };
 
-  /// Check if a date is a Taiwan stock market trading day
+  /// 檢查日期是否為台股交易日
   ///
-  /// Returns true if:
-  /// - Not a weekend (Saturday/Sunday)
-  /// - Not a national holiday
+  /// 符合以下條件回傳 true：
+  /// - 非週末（週六、週日）
+  /// - 非國定假日
   static bool isTradingDay(DateTime date) {
-    // Check weekend
     if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
       return false;
     }
 
-    // Normalize to UTC for comparison
     final normalized = DateTime.utc(date.year, date.month, date.day);
-
-    // Check holiday
     return !_allHolidays.contains(normalized);
   }
 
-  /// Check if a date is a holiday (not including weekends)
+  /// 檢查日期是否為國定假日（不含週末）
   static bool isHoliday(DateTime date) {
     final normalized = DateTime.utc(date.year, date.month, date.day);
     return _allHolidays.contains(normalized);
   }
 
-  /// Get the next trading day from a given date
+  /// 取得下一個交易日
   ///
-  /// If the given date is a trading day, returns it.
-  /// Otherwise, returns the next trading day.
+  /// 若給定日期為交易日則直接回傳，否則回傳下一個交易日。
   static DateTime getNextTradingDay(DateTime date) {
     var current = date;
     while (!isTradingDay(current)) {
@@ -141,10 +135,9 @@ class TaiwanCalendar {
     return current;
   }
 
-  /// Get the previous trading day from a given date
+  /// 取得前一個交易日
   ///
-  /// If the given date is a trading day, returns it.
-  /// Otherwise, returns the previous trading day.
+  /// 若給定日期為交易日則直接回傳，否則回傳前一個交易日。
   static DateTime getPreviousTradingDay(DateTime date) {
     var current = date;
     while (!isTradingDay(current)) {
@@ -153,7 +146,7 @@ class TaiwanCalendar {
     return current;
   }
 
-  /// Get the number of trading days between two dates (inclusive)
+  /// 計算兩日期間的交易日數量（含頭尾）
   static int getTradingDaysBetween(DateTime start, DateTime end) {
     if (start.isAfter(end)) {
       final temp = start;
@@ -172,7 +165,7 @@ class TaiwanCalendar {
     return count;
   }
 
-  /// Check if calendar data is available for a given year
+  /// 檢查指定年度是否有日曆資料
   static bool hasDataForYear(int year) {
     return year >= 2024 && year <= 2026;
   }

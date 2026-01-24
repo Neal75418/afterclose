@@ -15,19 +15,19 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 
-/// Service for orchestrating daily market data updates
+/// 每日市場資料更新協調服務
 ///
-/// Implements the 10-step daily update pipeline:
-/// 1. Check trading day
-/// 2. Update stock master
-/// 3. Fetch daily prices
-/// 4. Fetch institutional data (optional)
-/// 5. Fetch RSS news
-/// 6. Filter candidates (candidate-first)
-/// 7. Run analysis
-/// 8. Apply rule engine
-/// 9. Generate top 10
-/// 10. Mark completion
+/// 實作 10 步驟每日更新流程：
+/// 1. 檢查交易日
+/// 2. 更新股票清單
+/// 3. 取得每日價格
+/// 4. 取得法人資料（可選）
+/// 5. 取得 RSS 新聞
+/// 6. 篩選候選股票（候選優先策略）
+/// 7. 執行分析
+/// 8. 套用規則引擎
+/// 9. 產生前 10 名
+/// 10. 標記完成
 class UpdateService {
   UpdateService({
     required AppDatabase database,
@@ -55,8 +55,9 @@ class UpdateService {
        _scoringService = scoringService,
        _popularStocks = popularStocks ?? _defaultPopularStocks;
 
-  /// Default popular Taiwan stocks for free account fallback
-  /// These are high-volume stocks that are commonly tracked
+  /// 預設熱門台股（免費帳號備用清單）
+  ///
+  /// 這些是常被追蹤的高成交量股票
   static const _defaultPopularStocks = [
     '2330', // 台積電
     '2317', // 鴻海
@@ -88,7 +89,7 @@ class UpdateService {
   final ScoringService? _scoringService;
   final List<String> _popularStocks;
 
-  /// Get or create ScoringService (lazy initialization)
+  /// 取得或建立 ScoringService（延遲初始化）
   ScoringService get _scoring =>
       _scoringService ??
       ScoringService(
@@ -97,15 +98,27 @@ class UpdateService {
         analysisRepository: _analysisRepo,
       );
 
-  /// Run the complete daily update pipeline
+  /// 執行完整每日更新流程
   ///
-  /// Returns [UpdateResult] with details of what was updated
+  /// 回傳 [UpdateResult] 包含更新詳情
   Future<UpdateResult> runDailyUpdate({
     DateTime? forDate,
     bool forceFetch = false,
     UpdateProgressCallback? onProgress,
   }) async {
-    final targetDate = forDate ?? DateTime.now();
+    var targetDate = forDate ?? DateTime.now();
+
+    // 智慧回溯：若為預設「現在」但非交易日（如週六），
+    // 自動回溯至最近交易日以確保分析最新市場狀態
+    if (forDate == null && !_isTradingDay(targetDate)) {
+      final lastTradingDay = TaiwanCalendar.getPreviousTradingDay(targetDate);
+      AppLogger.info(
+        'UpdateService',
+        'Non-trading day detected ($targetDate). Auto-adjusting to last trading day: $lastTradingDay',
+      );
+      targetDate = lastTradingDay;
+    }
+
     var normalizedDate = _normalizeDate(targetDate);
 
     // Create update run record
@@ -117,7 +130,7 @@ class UpdateService {
     final result = UpdateResult(date: normalizedDate);
 
     try {
-      // Step 1: Check if trading day
+      // 步驟 1：檢查是否為交易日（雙重檢查，雖然回溯應已處理）
       onProgress?.call(1, 10, '檢查交易日');
       if (!forceFetch && !_isTradingDay(targetDate)) {
         result.skipped = true;
@@ -130,9 +143,15 @@ class UpdateService {
         return result;
       }
 
-      // Step 2: Update stock master (weekly is enough)
+      // 步驟 2：更新股票清單（每週更新即可）
       onProgress?.call(2, 10, '更新股票清單');
-      if (forceFetch || _shouldUpdateStockList(targetDate)) {
+
+      // 檢查資料庫是否為空或不完整（首次執行需初始化）
+      final existingStocks = await _stockRepo.getAllStocks();
+      // 台股約有 1000+ 檔股票，若過少則需同步
+      final needsInit = existingStocks.length < 500;
+
+      if (forceFetch || needsInit || _shouldUpdateStockList(targetDate)) {
         try {
           final stockCount = await _stockRepo.syncStockList();
           result.stocksUpdated = stockCount;
@@ -141,7 +160,7 @@ class UpdateService {
         }
       }
 
-      // Step 3: Fetch daily prices (TWSE - all market) and quick-filter candidates
+      // 步驟 3：取得每日價格（TWSE - 全市場）並快速篩選候選股票
       onProgress?.call(3, 10, '取得今日價格');
       var marketCandidates = <String>[];
       try {
@@ -158,8 +177,8 @@ class UpdateService {
           );
         }
 
-        // Date Correction: If TWSE returned data for a different date (e.g. yesterday),
-        // use that date for all subsequent data fetches (Institutional, Valuation, etc.)
+        // 日期校正：若 TWSE 回傳不同日期的資料（如昨日），
+        // 則後續所有資料取得（法人、估值等）都使用該日期
         if (syncResult.dataDate != null) {
           final dataDate = _normalizeDate(syncResult.dataDate!);
           if (dataDate.year != normalizedDate.year ||
@@ -170,7 +189,7 @@ class UpdateService {
               'Date Correction: Requested $normalizedDate, Got data for $dataDate. Adjusting effective date.',
             );
             normalizedDate = dataDate;
-            // Note: We don't update the 'runId' record date, keeping it as the "Run Date".
+            // 備註：我們不更新 'runId' 記錄日期，保留為「執行日期」
           }
         }
 
@@ -186,20 +205,20 @@ class UpdateService {
         result.errors.add('價格資料更新失敗: $e');
       }
 
-      // Step 3.5: Ensure historical data exists for analysis
-      // Now includes: watchlist + popular stocks + market candidates (from quick filter)
-      // OPTIMIZED: Parallel fetching + smart skipping
+      // 步驟 3.5：確保分析所需的歷史資料存在
+      // 現包含：自選清單 + 熱門股 + 市場候選股（來自快速篩選）
+      // 最佳化：平行取得 + 智慧跳過
       onProgress?.call(4, 10, '取得歷史資料');
       try {
         AppLogger.info(
           'UpdateService',
           'Step 3.5: Checking historical data...',
         );
-        // Combine all sources for historical data
+        // 整合所有歷史資料來源
         final watchlist = await _db.getWatchlist();
 
-        // Find stocks that already have sufficient data locally ("Existing Data Strategy")
-        // This ensures stocks we've tracked before keep getting analyzed even if they are low volume today
+        // 找出本地已有足夠資料的股票（「現有資料策略」）
+        // 確保之前追蹤過的股票即使今日成交量低也會繼續被分析
         final historyLookbackStart = normalizedDate.subtract(
           const Duration(days: RuleParams.swingWindow + 20),
         );
@@ -216,8 +235,8 @@ class UpdateService {
         final symbolsForHistory = <String>{
           ...watchlist.map((w) => w.symbol),
           ..._popularStocks,
-          ...marketCandidates, // Quick-filtered candidates from all market!
-          ...existingDataSymbols, // NEW: Include verified local stocks
+          ...marketCandidates, // 來自全市場的快速篩選候選股
+          ...existingDataSymbols, // 新增：包含已驗證的本地股票
         }.toList();
 
         AppLogger.info(
@@ -227,13 +246,13 @@ class UpdateService {
               'candidates=${marketCandidates.length}, existing=${existingDataSymbols.length})',
         );
 
-        // Check which stocks need historical data
+        // 檢查哪些股票需要歷史資料
         final historyStartDate = normalizedDate.subtract(
           const Duration(days: RuleParams.historyRequiredDays),
         );
 
-        // FIX: Check actual data counts, not just latest date
-        // We need at least RuleParams.swingWindow days of data for analysis
+        // 修正：檢查實際資料筆數，而非僅最新日期
+        // 分析至少需要 RuleParams.swingWindow 天的資料
         final priceHistoryBatch = await _db.getPriceHistoryBatch(
           symbolsForHistory,
           startDate: historyStartDate,
@@ -241,12 +260,27 @@ class UpdateService {
         );
 
         final symbolsNeedingData = <String>[];
+        var skippedNewlyListed = 0;
         for (final symbol in symbolsForHistory) {
           final prices = priceHistoryBatch[symbol];
           final priceCount = prices?.length ?? 0;
 
-          // Need at least swingWindow days of data for analysis
+          // 分析至少需要 swingWindow 天的資料
           if (priceCount < RuleParams.swingWindow) {
+            // 最佳化：檢查是否為新上市股票
+            // 若股票首筆交易日距今不足 swingWindow 天，
+            // 代表 API 沒有更多歷史資料可抓，直接跳過
+            if (prices != null && prices.isNotEmpty) {
+              final firstTradeDate = prices.first.date;
+              final daysSinceFirstTrade = normalizedDate
+                  .difference(firstTradeDate)
+                  .inDays;
+              if (daysSinceFirstTrade < RuleParams.swingWindow) {
+                // 新上市股票，無需嘗試抓取更多資料
+                skippedNewlyListed++;
+                continue;
+              }
+            }
             symbolsNeedingData.add(symbol);
           }
         }
@@ -254,28 +288,28 @@ class UpdateService {
         AppLogger.info(
           'UpdateService',
           'symbolsNeedingData: ${symbolsNeedingData.length} out of ${symbolsForHistory.length} '
-              '(need >= ${RuleParams.swingWindow} days)',
+              '(need >= ${RuleParams.swingWindow} days, skipped $skippedNewlyListed newly listed)',
         );
 
-        // Only fetch for stocks that actually need it
+        // 僅對實際需要的股票取得資料
         if (symbolsNeedingData.isEmpty) {
           AppLogger.info('UpdateService', 'Historical data already complete');
           onProgress?.call(4, 10, '歷史資料已完整');
         } else {
-          // OPTIMIZATION: Parallel fetch with controlled concurrency
+          // 最佳化：控制並發的平行取得
           final total = symbolsNeedingData.length;
           var completed = 0;
           var historySynced = 0;
 
-          // Process in batches of 2 for improved throughput
-          // BatchSize 2 = ~12 requests in parallel bursts.
-          // Combined with 200ms inter-month delay, this aims for ~2s per batch.
+          // 以 2 個為一批處理以提升吞吐量
+          // BatchSize 2 = 約 12 個並行請求
+          // 搭配 200ms 批次間隔，目標約 2 秒/批
           const batchSize = 2;
           final failedSymbols = <String>[];
 
           for (var i = 0; i < total; i += batchSize) {
-            // Throttle: Short breath between batches
-            // 200ms is minimal to reset connection states
+            // 節流：批次間短暫休息
+            // 200ms 是重置連線狀態的最小間隔
             if (i > 0) await Future.delayed(const Duration(milliseconds: 200));
 
             final batchEnd = (i + batchSize).clamp(0, total);
@@ -287,7 +321,7 @@ class UpdateService {
               '歷史資料 (${completed + 1}~$batchEnd / $total)',
             );
 
-            // Fetch batch in parallel, tracking failures
+            // 平行取得批次資料，追蹤失敗
             final futures = batch.map((symbol) async {
               try {
                 final count = await _priceRepo.syncStockPrices(
@@ -306,7 +340,7 @@ class UpdateService {
             for (final (symbol, count, error) in results) {
               if (error != null) {
                 failedSymbols.add(symbol);
-                // Log error for debugging (first 3 failures only to avoid log spam)
+                // 記錄錯誤以供除錯（僅前 3 個失敗以避免日誌過多）
                 if (failedSymbols.length <= 3) {
                   AppLogger.warning(
                     'UpdateService',
@@ -321,7 +355,7 @@ class UpdateService {
             completed += batch.length;
           }
 
-          // Report failed symbols if any
+          // 回報失敗的股票（如有）
           if (failedSymbols.isNotEmpty) {
             result.errors.add(
               '歷史資料同步失敗 (${failedSymbols.length} 檔): ${failedSymbols.take(5).join(", ")}${failedSymbols.length > 5 ? "..." : ""}',
@@ -336,8 +370,8 @@ class UpdateService {
         result.errors.add('歷史資料更新失敗: $e');
       }
 
-      // Step 4: Fetch institutional data (TWSE T86 - All Market)
-      // Fetches current day + backfill recent days to ensure streak rules work
+      // 步驟 4：取得法人資料（TWSE T86 - 全市場）
+      // 取得當日 + 回補近期資料以確保連續買賣規則運作
       onProgress?.call(4, 10, '取得法人資料');
       final institutionalRepo = _institutionalRepo;
       if (institutionalRepo != null) {
@@ -347,22 +381,22 @@ class UpdateService {
             'Step 4: Syncing all market institutional data...',
           );
 
-          // 1. Sync TODAY (Target Date)
+          // 1. 同步今日（目標日期）
           await institutionalRepo.syncAllMarketInstitutional(
             normalizedDate,
             force: forceFetch,
           );
 
-          // 2. Backfill recent days (last 5 trading days)
-          // This ensures "3-day Buy Streak" etc. work even for new users/stocks
+          // 2. 回補近期資料（最近 5 個交易日）
+          // 確保「連 3 日買超」等規則對新用戶/股票也能運作
           const backfillDays = 5;
           var syncedDays = 1;
 
           for (var i = 1; i < backfillDays; i++) {
             final backDate = normalizedDate.subtract(Duration(days: i));
-            // Check trading day logic (simple check usually sufficient)
+            // 檢查交易日邏輯（簡單檢查通常足夠）
             if (_isTradingDay(backDate)) {
-              // Throttle to respect server limits
+              // 節流以遵守伺服器限制
               await Future.delayed(const Duration(milliseconds: 1000));
 
               onProgress?.call(
@@ -374,7 +408,7 @@ class UpdateService {
                 await institutionalRepo.syncAllMarketInstitutional(backDate);
                 syncedDays++;
               } catch (e) {
-                // Log but continue (backfill is best-effort)
+                // 記錄但繼續（回補為盡力而為）
                 AppLogger.warning(
                   'UpdateService',
                   'Backfill institutional failed for $backDate',
@@ -388,19 +422,60 @@ class UpdateService {
             'UpdateService',
             'Step 4 complete: Synced $syncedDays days of T86 data',
           );
-          // Using a high number to indicate success since we synced full market
+          // 使用較大數字表示成功（因為同步了全市場）
           result.institutionalUpdated = syncedDays * 1000;
         } catch (e) {
           result.errors.add('法人資料更新失敗: $e');
         }
       }
 
-      // Step 4.5: Fetch extended market data (Phase 4: shareholding, day trading, concentration)
+      // 步驟 4.5：取得擴展市場資料（第 4 階段：持股、當沖、籌碼集中度）
       onProgress?.call(4, 10, '取得籌碼資料');
       final marketRepo = _marketDataRepo;
       if (marketRepo != null) {
         try {
-          // Sync for watchlist + popular stocks to save API calls
+          // 首先：從 TWSE 批次同步當沖資料（免費、快速、全股）
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.5a: Syncing day trading data from TWSE...',
+          );
+          try {
+            final dayTradingCount = await marketRepo.syncAllDayTradingFromTwse(
+              date: normalizedDate,
+            );
+            AppLogger.info(
+              'UpdateService',
+              'Step 4.5a complete: synced $dayTradingCount day trading records',
+            );
+          } catch (e) {
+            AppLogger.warning(
+              'UpdateService',
+              'TWSE day trading sync failed, will try FinMind fallback',
+              e,
+            );
+          }
+
+          // 步驟 4.5b：從 TWSE 批次同步融資融券資料（免費、快速、全股）
+          AppLogger.info(
+            'UpdateService',
+            'Step 4.5b: Syncing margin trading data from TWSE...',
+          );
+          try {
+            final marginTradingCount = await marketRepo
+                .syncAllMarginTradingFromTwse(date: normalizedDate);
+            AppLogger.info(
+              'UpdateService',
+              'Step 4.5b complete: synced $marginTradingCount margin trading records',
+            );
+          } catch (e) {
+            AppLogger.warning(
+              'UpdateService',
+              'TWSE margin trading sync failed',
+              e,
+            );
+          }
+
+          // 接著：為自選清單 + 熱門股同步其他市場資料
           final watchlist = await _db.getWatchlist();
           final symbolsForMarketData = <String>{
             ...watchlist.map((w) => w.symbol),
@@ -409,7 +484,7 @@ class UpdateService {
 
           AppLogger.info(
             'UpdateService',
-            'Step 4.5: Syncing market data for ${symbolsForMarketData.length} stocks...',
+            'Step 4.5c: Syncing shareholding data for ${symbolsForMarketData.length} stocks...',
           );
 
           final marketDataStartDate = normalizedDate.subtract(
@@ -418,19 +493,19 @@ class UpdateService {
             ),
           );
 
-          // Parallel sync with concurrency limit to avoid overwhelming API
+          // 並發限制的平行同步以避免 API 過載
           const chunkSize = 5;
           var syncedCount = 0;
           var errorCount = 0;
 
-          // Process in chunks for controlled parallelism
+          // 分塊處理以控制並發度
           for (var i = 0; i < symbolsForMarketData.length; i += chunkSize) {
             final chunk = symbolsForMarketData.skip(i).take(chunkSize).toList();
 
-            // Sync each symbol's data in parallel within the chunk
+            // 在塊內平行同步每檔股票的資料
             final futures = chunk.map((symbol) async {
               try {
-                // Run both syncs in parallel for each symbol
+                // 對每檔股票平行執行兩個同步
                 await Future.wait([
                   marketRepo.syncShareholding(
                     symbol,
@@ -457,13 +532,13 @@ class UpdateService {
               }
             });
 
-            // Wait for all futures in this chunk
+            // 等待此塊中所有 future 完成
             final results = await Future.wait(futures);
             syncedCount += results.where((r) => r).length;
           }
 
-          // NOTE: syncHoldingDistribution (股權分散表) requires paid membership
-          // and is intentionally not called here
+          // 備註：syncHoldingDistribution（股權分散表）需付費會員
+          // 因此刻意不在此呼叫
 
           AppLogger.info(
             'UpdateService',
@@ -474,12 +549,12 @@ class UpdateService {
         }
       }
 
-      // Step 4.6: Fetch fundamental data (revenue, PE, PBR, dividend yield)
+      // 步驟 4.6：取得基本面資料（營收、PE、PBR、殖利率）
       final fundamentalRepo = _fundamentalRepo;
       if (fundamentalRepo != null) {
         onProgress?.call(4, 10, '取得基本面資料 (PE/PBR)');
         try {
-          // 1. Valuation: Full Market (TWSE Free - BWIBBU_d)
+          // 1. 估值：全市場（TWSE 免費 - BWIBBU_d）
           AppLogger.info(
             'UpdateService',
             'Step 4.6: Syncing full market valuation (TWSE)...',
@@ -489,9 +564,9 @@ class UpdateService {
             force: forceFetch,
           );
 
-          // 2. Revenue: Full Market (TWSE Open Data - Free, Unlimited)
-          // Uses https://openapi.twse.com.tw/v1/opendata/t187ap05_L
-          // This returns the latest available month's revenue for ALL stocks at once!
+          // 2. 營收：全市場（TWSE Open Data - 免費、無限制）
+          // 使用 https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+          // 一次回傳所有股票最新可用月份的營收！
           onProgress?.call(4, 10, '取得營收資料 (全市場)');
 
           AppLogger.info(
@@ -512,7 +587,7 @@ class UpdateService {
         }
       }
 
-      // Step 5: Fetch RSS news
+      // 步驟 5：取得 RSS 新聞
       onProgress?.call(5, 10, '取得新聞資料');
       try {
         final newsResult = await _newsRepo.syncNews();
@@ -523,7 +598,7 @@ class UpdateService {
           }
         }
 
-        // Cleanup old news (older than 30 days)
+        // 清理舊新聞（超過 30 天）
         final deletedNews = await _newsRepo.cleanupOldNews(olderThanDays: 30);
         if (deletedNews > 0) {
           AppLogger.info('UpdateService', '已清理 $deletedNews 則過期新聞');
@@ -532,14 +607,14 @@ class UpdateService {
         result.errors.add('新聞更新失敗: $e');
       }
 
-      // Step 6: Get ALL stocks with sufficient historical data for analysis
-      // This enables full-market analysis without extra API calls
+      // 步驟 6：取得所有有足夠歷史資料可分析的股票
+      // 這使全市場分析無需額外 API 呼叫
       onProgress?.call(6, 10, '篩選候選股票');
       var candidates = <String>[];
       try {
         AppLogger.info('UpdateService', 'Step 6: Finding analyzable stocks...');
 
-        // Query DB for all stocks with sufficient historical data
+        // 查詢資料庫中所有有足夠歷史資料的股票
         final historyStartDate = normalizedDate.subtract(
           const Duration(days: RuleParams.historyRequiredDays - 20),
         );
@@ -554,23 +629,23 @@ class UpdateService {
           'Step 6: Found ${allAnalyzable.length} stocks with sufficient data',
         );
 
-        // Use all analyzable stocks as candidates
-        // Priority: watchlist first, then popular stocks, then rest of market
+        // 使用所有可分析股票作為候選
+        // 優先順序：自選清單優先，接著熱門股，最後是其餘市場
         final watchlist = await _db.getWatchlist();
         final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
         final popularSet = _popularStocks.toSet();
 
-        // Build ordered candidate list
+        // 建立排序後的候選清單
         final orderedCandidates = <String>[];
 
-        // 1. Watchlist stocks first (if they have sufficient data)
+        // 1. 自選清單股票優先（若有足夠資料）
         for (final symbol in watchlistSymbols) {
           if (allAnalyzable.contains(symbol)) {
             orderedCandidates.add(symbol);
           }
         }
 
-        // 2. Popular stocks second
+        // 2. 熱門股第二
         for (final symbol in _popularStocks) {
           if (allAnalyzable.contains(symbol) &&
               !orderedCandidates.contains(symbol)) {
@@ -578,7 +653,7 @@ class UpdateService {
           }
         }
 
-        // 3. Quick-filtered market candidates third
+        // 3. 快速篩選的市場候選股第三
         for (final symbol in marketCandidates) {
           if (allAnalyzable.contains(symbol) &&
               !orderedCandidates.contains(symbol)) {
@@ -586,7 +661,7 @@ class UpdateService {
           }
         }
 
-        // 4. Rest of analyzable stocks
+        // 4. 其餘可分析股票
         for (final symbol in allAnalyzable) {
           if (!orderedCandidates.contains(symbol)) {
             orderedCandidates.add(symbol);
@@ -604,10 +679,10 @@ class UpdateService {
       } catch (e) {
         AppLogger.error('UpdateService', 'Step 6 failed', e);
         result.errors.add('候選股票篩選失敗: $e');
-        // Continue with empty candidates - will result in no recommendations
+        // 以空候選清單繼續 - 將不產生推薦
       }
 
-      // Step 7-8: Run analysis and apply rule engine
+      // 步驟 7-8：執行分析並套用規則引擎
       onProgress?.call(7, 10, '執行分析');
       var scoredStocks = <ScoredStock>[];
       try {
@@ -616,7 +691,7 @@ class UpdateService {
           'Step 7-8: Analyzing ${candidates.length} candidates...',
         );
 
-        // Batch load all required data upfront
+        // 預先批次載入所有必要資料
         final startDate = normalizedDate.subtract(
           const Duration(days: RuleParams.lookbackPrice + 10),
         );
@@ -640,7 +715,7 @@ class UpdateService {
             ),
           _db.getLatestMonthlyRevenuesBatch(candidates),
           _db.getLatestValuationsBatch(candidates),
-          // NEW: Fetch revenue history for MoM growth rule
+          // 新增：取得營收歷史以供月增規則使用
           _db.getRecentMonthlyRevenueBatch(candidates, months: 6),
         ];
 
@@ -650,17 +725,27 @@ class UpdateService {
         final institutionalMap = instRepo != null
             ? batchResults[2] as Map<String, List<DailyInstitutionalEntry>>
             : <String, List<DailyInstitutionalEntry>>{};
+
+        // 除錯：驗證 T86 資料載入
+        int stocksWithInst = 0;
+        institutionalMap.forEach((k, v) {
+          if (v.isNotEmpty) stocksWithInst++;
+        });
+        AppLogger.info(
+          'UpdateService',
+          'DEBUG T86: Loaded institutional data for $stocksWithInst out of ${candidates.length} candidates',
+        );
         final revenueMap = batchResults[3] as Map<String, MonthlyRevenueEntry>;
         final valuationMap =
             batchResults[4] as Map<String, StockValuationEntry>;
         final revenueHistoryMap =
             batchResults[5] as Map<String, List<MonthlyRevenueEntry>>;
 
-        // Get recently recommended symbols for cooldown
+        // 取得近期已推薦的股票代碼以供冷卻期使用
         final recentlyRecommended = await _analysisRepo
             .getRecentlyRecommendedSymbols();
 
-        // Use ScoringService
+        // 使用 ScoringService
         scoredStocks = await _scoring.scoreStocks(
           candidates: candidates,
           date: normalizedDate,
@@ -687,10 +772,10 @@ class UpdateService {
       } catch (e) {
         AppLogger.error('UpdateService', 'Step 7-8 failed', e);
         result.errors.add('股票分析失敗: $e');
-        // Continue with empty scored stocks - will result in no recommendations
+        // 以空評分股票繼續 - 將不產生推薦
       }
 
-      // Step 9: Generate top 10 recommendations
+      // 步驟 9：產生前 10 名推薦
       onProgress?.call(9, 10, '產生推薦');
       try {
         AppLogger.info(
@@ -710,7 +795,7 @@ class UpdateService {
         result.errors.add('推薦產生失敗: $e');
       }
 
-      // Step 10: Mark completion
+      // 步驟 10：標記完成
       onProgress?.call(10, 10, '完成');
       AppLogger.info(
         'UpdateService',
@@ -732,7 +817,7 @@ class UpdateService {
       result.success = true;
       result.message = '更新完成';
 
-      // Capture price data for alert checking
+      // 擷取價格資料以供警示檢查
       try {
         final alertSymbols = (await _db.getActiveAlerts())
             .map((a) => a.symbol)
@@ -766,7 +851,7 @@ class UpdateService {
           }
         }
       } catch (e) {
-        // Non-critical: alert data capture failure shouldn't fail the update
+        // 非關鍵：警示資料擷取失敗不應導致更新失敗
         AppLogger.warning('UpdateService', 'Alert price capture failed', e);
       }
 
@@ -786,15 +871,30 @@ class UpdateService {
     }
   }
 
-  /// Generate and save daily recommendations
+  /// 產生並儲存每日推薦
+  ///
+  /// 依 [RuleParams.topNMinTurnover] 過濾，確保僅流動性高的股票
+  /// 出現在最終推薦中
   Future<void> _generateRecommendations(
     List<ScoredStock> scoredStocks,
     DateTime date,
   ) async {
-    // Take top N
-    final topN = scoredStocks.take(RuleParams.dailyTopN).toList();
+    // 依最小成交金額過濾前 N 名（確保僅高流動性股票）
+    final liquidStocks = scoredStocks
+        .where((s) => s.turnover >= RuleParams.topNMinTurnover)
+        .toList();
 
-    // Save recommendations
+    // 從過濾後清單取前 N 名
+    final topN = liquidStocks.take(RuleParams.dailyTopN).toList();
+
+    AppLogger.info(
+      'UpdateService',
+      'Recommendations: ${scoredStocks.length} scored → '
+          '${liquidStocks.length} liquid (>=${(RuleParams.topNMinTurnover / 1000000).round()}M) → '
+          '${topN.length} top N',
+    );
+
+    // 儲存推薦
     await _analysisRepo.saveRecommendations(
       date,
       topN
@@ -806,34 +906,34 @@ class UpdateService {
     );
   }
 
-  /// Check if date is a trading day (Taiwan market)
+  /// 檢查日期是否為交易日（台股市場）
   ///
-  /// Uses [TaiwanCalendar] to check for weekends and national holidays.
+  /// 使用 [TaiwanCalendar] 檢查週末與國定假日
   bool _isTradingDay(DateTime date) {
     return TaiwanCalendar.isTradingDay(date);
   }
 
-  /// Check if stock list should be updated (weekly)
+  /// 檢查股票清單是否應更新（每週）
   bool _shouldUpdateStockList(DateTime date) {
-    // Update on Mondays or if never updated
+    // 週一或從未更新過時更新
     return date.weekday == DateTime.monday;
   }
 
-  /// Normalize date to start of day in UTC
+  /// 正規化日期為當日開始（UTC）
   DateTime _normalizeDate(DateTime date) {
     return DateTime.utc(date.year, date.month, date.day);
   }
 
-  /// Build MarketDataContext for Phase 4 signals
+  /// 為第 4 階段訊號建立 MarketDataContext
   ///
-  /// Fetches foreign shareholding, day trading, and concentration data
-  /// Returns null if no market data available
+  /// 取得外資持股、當沖、籌碼集中度資料
+  /// 若無市場資料則回傳 null
   Future<MarketDataContext?> _buildMarketDataContext(String symbol) async {
     final repo = _marketDataRepo;
     if (repo == null) return null;
 
     try {
-      // Fetch shareholding data
+      // 取得持股資料
       final shareholdingHistory = await repo.getShareholdingHistory(
         symbol,
         days: RuleParams.foreignShareholdingLookbackDays + 5,
@@ -846,7 +946,7 @@ class UpdateService {
         final latest = shareholdingHistory.first;
         foreignSharesRatio = latest.foreignSharesRatio;
 
-        // Calculate change over lookback period
+        // 計算回溯期間的變化
         if (shareholdingHistory.length >=
             RuleParams.foreignShareholdingLookbackDays) {
           final older =
@@ -860,14 +960,14 @@ class UpdateService {
         }
       }
 
-      // Fetch day trading data
+      // 取得當沖資料
       final dayTrading = await repo.getLatestDayTrading(symbol);
       final dayTradingRatio = dayTrading?.dayTradingRatio;
 
-      // Fetch concentration ratio
+      // 取得籌碼集中度
       final concentrationRatio = await repo.getConcentrationRatio(symbol);
 
-      // Return null if no meaningful data
+      // 若無有意義的資料則回傳 null
       if (foreignSharesRatio == null &&
           dayTradingRatio == null &&
           concentrationRatio == null) {
@@ -881,7 +981,7 @@ class UpdateService {
         concentrationRatio: concentrationRatio,
       );
     } catch (e) {
-      // Log error but don't fail the analysis
+      // 記錄錯誤但不讓分析失敗
       AppLogger.warning(
         'UpdateService',
         '_buildMarketDataContext failed for $symbol: $e',
@@ -891,11 +991,11 @@ class UpdateService {
   }
 }
 
-/// Callback for update progress
+/// 更新進度回呼
 typedef UpdateProgressCallback =
     void Function(int currentStep, int totalSteps, String message);
 
-/// Result of daily update
+/// 每日更新結果
 class UpdateResult {
   UpdateResult({required this.date});
 
@@ -912,11 +1012,11 @@ class UpdateResult {
   int recommendationsGenerated = 0;
   List<String> errors = [];
 
-  /// Price data for alert checking (populated after price sync)
+  /// 警示檢查用價格資料（價格同步後填入）
   Map<String, double> currentPrices = {};
   Map<String, double> priceChanges = {};
 
-  /// Summary message
+  /// 摘要訊息
   String get summary {
     if (skipped) return message ?? '跳過更新';
     if (!success) return '更新失敗: ${errors.join(', ')}';

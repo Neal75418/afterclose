@@ -1,24 +1,24 @@
 import 'package:drift/drift.dart';
 
-/// Stock master table - 股票主檔
+/// 股票主檔 Table
 @DataClassName('StockMasterEntry')
 class StockMaster extends Table {
-  /// Stock symbol (e.g., "2330")
+  /// 股票代碼（如 "2330"）
   TextColumn get symbol => text()();
 
-  /// Stock name (e.g., "台積電")
+  /// 股票名稱（如「台積電」）
   TextColumn get name => text()();
 
-  /// Market: "TWSE" | "TPEx"
+  /// 市場：TWSE（上市）或 TPEx（上櫃）
   TextColumn get market => text()();
 
-  /// Industry category (nullable)
+  /// 產業類別（可為空）
   TextColumn get industry => text().nullable()();
 
-  /// Whether the stock is actively traded
+  /// 是否仍在交易
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
-  /// Last update timestamp
+  /// 最後更新時間
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   @override

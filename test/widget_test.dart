@@ -101,23 +101,35 @@ void main() {
 
     testWidgets('displays reasons as tags', (WidgetTester tester) async {
       await tester.pumpWidget(
-        buildTestApp(const StockCard(symbol: '2330', reasons: ['弱轉強', '放量異常'])),
+        buildTestApp(
+          const StockCard(
+            symbol: '2330',
+            reasons: ['REVERSAL_W2S', 'VOLUME_SPIKE'],
+          ),
+        ),
       );
 
-      expect(find.text('弱轉強'), findsOneWidget);
-      expect(find.text('放量異常'), findsOneWidget);
+      // ReasonTags with translateCodes: true translates codes to i18n keys
+      // Without i18n setup in tests, .tr() returns the key itself
+      expect(find.text('reasons.reversalW2S'), findsOneWidget);
+      expect(find.text('reasons.volumeSpike'), findsOneWidget);
     });
 
     testWidgets('limits displayed reasons to 2', (WidgetTester tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          const StockCard(symbol: '2330', reasons: ['弱轉強', '放量異常', '技術突破']),
+          const StockCard(
+            symbol: '2330',
+            reasons: ['REVERSAL_W2S', 'VOLUME_SPIKE', 'TECH_BREAKOUT'],
+          ),
         ),
       );
 
-      expect(find.text('弱轉強'), findsOneWidget);
-      expect(find.text('放量異常'), findsOneWidget);
-      expect(find.text('技術突破'), findsNothing);
+      // StockCard limits display to 2 reasons via maxTags
+      // Without i18n setup, .tr() returns the key itself
+      expect(find.text('reasons.reversalW2S'), findsOneWidget);
+      expect(find.text('reasons.volumeSpike'), findsOneWidget);
+      expect(find.text('reasons.breakout'), findsNothing);
     });
 
     testWidgets('displays uptrend icon for UP trend state', (

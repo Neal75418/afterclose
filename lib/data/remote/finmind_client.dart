@@ -5,13 +5,13 @@ import 'package:dio/dio.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/json_parsers.dart';
 
-/// FinMind API client for Taiwan stock market data
+/// FinMind API 客戶端（台股市場資料）
 ///
-/// Rate limits:
-/// - Anonymous: 300 requests/hour
-/// - With token: 600 requests/hour
+/// 流量限制:
+/// - 匿名: 300 次/小時
+/// - 有 token: 600 次/小時
 ///
-/// Each user should register and use their own token.
+/// 每位使用者應自行註冊並使用個人 token。
 class FinMindClient {
   FinMindClient({
     Dio? dio,
@@ -25,26 +25,26 @@ class FinMindClient {
 
   static const String baseUrl = 'https://api.finmindtrade.com/api/v4/data';
 
-  /// Minimum valid token length
+  /// Token 最小有效長度
   static const int _minTokenLength = 20;
 
-  /// Token format regex (alphanumeric with possible underscores/dashes)
-  static final RegExp _tokenPattern = RegExp(r'^[a-zA-Z0-9_-]+$');
+  /// Token 格式正規表達式（支援 JWT 格式：英數字、底線、連字號、句點）
+  static final RegExp _tokenPattern = RegExp(r'^[a-zA-Z0-9_.\-]+$');
 
   final Dio _dio;
   final int _maxRetries;
   final Duration _baseDelay;
   final Random _random = Random();
 
-  /// User's FinMind API token (optional but recommended)
+  /// 使用者的 FinMind API token（選用但建議設定）
   String? _token;
 
-  /// Get the current token
+  /// 取得目前的 token
   String? get token => _token;
 
-  /// Set the token with validation
+  /// 設定 token（含驗證）
   ///
-  /// Throws [InvalidTokenException] if token format is invalid
+  /// 若 token 格式無效則拋出 [InvalidTokenException]
   set token(String? value) {
     if (value != null && value.isNotEmpty) {
       _validateToken(value);
@@ -52,12 +52,12 @@ class FinMindClient {
     _token = value;
   }
 
-  /// Validate token format
+  /// 驗證 token 格式
   ///
-  /// Throws [InvalidTokenException] if validation fails
+  /// 驗證失敗時拋出 [InvalidTokenException]
   static void _validateToken(String token) {
     if (token.length < _minTokenLength) {
-      // Use hardcoded value to allow const constructor
+      // 使用硬編碼值以允許 const 建構式
       throw const InvalidTokenException(
         'Token too short (minimum 20 characters)',
       );
@@ -67,9 +67,9 @@ class FinMindClient {
     }
   }
 
-  /// Validate a token without setting it
+  /// 驗證 token 格式但不設定
   ///
-  /// Returns true if valid, false if invalid
+  /// 有效回傳 true，無效回傳 false
   static bool isValidTokenFormat(String? token) {
     if (token == null || token.isEmpty) return false;
     if (token.length < _minTokenLength) return false;
@@ -87,7 +87,7 @@ class FinMindClient {
     );
   }
 
-  /// Build query parameters with optional token
+  /// 建立查詢參數（含選用的 token）
   Map<String, dynamic> _buildParams(Map<String, dynamic> params) {
     final result = Map<String, dynamic>.from(params);
     if (_token != null && _token!.isNotEmpty) {
@@ -96,7 +96,7 @@ class FinMindClient {
     return result;
   }
 
-  /// Generic request handler with error mapping and retry logic
+  /// 通用請求處理器（含錯誤對應和重試邏輯）
   Future<List<Map<String, dynamic>>> _request(
     Map<String, dynamic> params,
   ) async {
@@ -113,11 +113,11 @@ class FinMindClient {
         if (response.statusCode == 200) {
           final data = response.data;
 
-          // Check for API error response
+          // 檢查 API 錯誤回應
           if (data['status'] != null && data['status'] != 200) {
             final msg = data['msg'] ?? 'Unknown API error';
 
-            // Rate limit check
+            // 流量限制檢查
             if (msg.toString().contains('limit') ||
                 msg.toString().contains('quota')) {
               throw const RateLimitException();
@@ -126,7 +126,7 @@ class FinMindClient {
             throw ApiException(msg.toString(), data['status'] as int?);
           }
 
-          // Return data array
+          // 回傳資料陣列
           final dataList = data['data'];
           if (dataList is List) {
             return dataList.cast<Map<String, dynamic>>();
@@ -134,7 +134,7 @@ class FinMindClient {
           return [];
         }
 
-        // Server errors (5xx) are retryable
+        // 伺服器錯誤 (5xx) 可重試
         if (response.statusCode != null && response.statusCode! >= 500) {
           lastError = ApiException(
             'Server error: ${response.statusCode}',
@@ -154,7 +154,7 @@ class FinMindClient {
       } on DioException catch (e) {
         lastError = e;
 
-        // Check if this error is retryable
+        // 檢查此錯誤是否可重試
         if (_isRetryable(e)) {
           attempt++;
           if (attempt <= _maxRetries) {
@@ -163,7 +163,7 @@ class FinMindClient {
           }
         }
 
-        // Convert to appropriate exception
+        // 轉換為適當的例外
         if (e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout) {
           throw NetworkException(
@@ -172,7 +172,7 @@ class FinMindClient {
           );
         }
         if (e.response?.statusCode == 429) {
-          // Retry rate limit errors with longer backoff (limited retries)
+          // 以較長退避時間重試流量限制錯誤（有限次數重試）
           lastError = const RateLimitException();
           attempt++;
           if (attempt <= _maxRetries) {
@@ -183,10 +183,10 @@ class FinMindClient {
         }
         throw NetworkException(e.message ?? 'Network error', e);
       } on RateLimitException {
-        // Rate limit from nested call - still rethrow after max retries
+        // 巢狀呼叫的流量限制 - 達到最大重試次數後仍重新拋出
         rethrow;
       } on ApiException catch (e) {
-        // Don't retry client errors (except rate limit which is handled above)
+        // 不重試客戶端錯誤（流量限制除外，已在上方處理）
         if (e.statusCode != null &&
             e.statusCode! >= 400 &&
             e.statusCode! < 500) {
@@ -202,16 +202,16 @@ class FinMindClient {
       }
     }
 
-    // All retries exhausted
+    // 所有重試次數已用盡
     if (lastError is Exception) {
       throw lastError;
     }
     throw NetworkException('Request failed after $_maxRetries retries');
   }
 
-  /// Check if a DioException is retryable
+  /// 檢查 DioException 是否可重試
   bool _isRetryable(DioException e) {
-    // Network-related errors are retryable
+    // 網路相關錯誤可重試
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -219,12 +219,12 @@ class FinMindClient {
       case DioExceptionType.connectionError:
         return true;
       case DioExceptionType.badResponse:
-        // Retry on server errors (5xx) but not client errors (4xx)
+        // 伺服器錯誤 (5xx) 重試，客戶端錯誤 (4xx) 不重試
         final statusCode = e.response?.statusCode;
         if (statusCode != null && statusCode >= 500) {
           return true;
         }
-        // Retry on 429 (rate limit) with backoff
+        // 429 (流量限制) 以退避方式重試
         if (statusCode == 429) {
           return true;
         }
@@ -234,17 +234,17 @@ class FinMindClient {
     }
   }
 
-  /// Calculate delay with exponential backoff and jitter
+  /// 計算指數退避延遲（含抖動）
   ///
-  /// When [isRateLimit] is true, uses 4x the base delay for longer backoff
+  /// 當 [isRateLimit] 為 true 時，使用 4 倍基礎延遲
   Future<void> _delay(int attempt, {bool isRateLimit = false}) async {
-    // Use 4x base delay for rate limit errors (gives API more time to reset)
+    // 流量限制錯誤使用 4 倍基礎延遲（給 API 更多重置時間）
     final baseMs = isRateLimit
         ? _baseDelay.inMilliseconds * 4
         : _baseDelay.inMilliseconds;
-    // Exponential backoff: baseDelay * 2^(attempt-1)
+    // 指數退避: baseDelay * 2^(attempt-1)
     final exponentialDelay = baseMs * (1 << (attempt - 1));
-    // Add jitter: ±25% of the delay
+    // 加入抖動: ±25% 延遲
     final jitter = (_random.nextDouble() - 0.5) * 0.5 * exponentialDelay;
     final totalDelay = Duration(
       milliseconds: (exponentialDelay + jitter).round(),
@@ -252,26 +252,26 @@ class FinMindClient {
     await Future.delayed(totalDelay);
   }
 
-  /// Get Taiwan stock list
+  /// 取得台股股票清單
   ///
-  /// Dataset: TaiwanStockInfo
-  /// Note: Malformed records are silently skipped
+  /// 資料集: TaiwanStockInfo
+  /// 註: 格式錯誤的記錄會被靜默跳過
   Future<List<FinMindStockInfo>> getStockList() async {
     final data = await _request({'dataset': 'TaiwanStockInfo'});
 
-    // Use tryFromJson to skip malformed records
+    // 使用 tryFromJson 跳過格式錯誤的記錄
     return data
         .map((json) => FinMindStockInfo.tryFromJson(json))
         .whereType<FinMindStockInfo>()
         .toList();
   }
 
-  /// Get daily stock prices
+  /// 取得每日股價
   ///
-  /// Dataset: TaiwanStockPrice
-  /// [stockId]: Stock symbol (e.g., "2330")
-  /// [startDate]: Start date (YYYY-MM-DD)
-  /// [endDate]: End date (optional)
+  /// 資料集: TaiwanStockPrice
+  /// [stockId]: 股票代碼（例如 "2330"）
+  /// [startDate]: 起始日期（YYYY-MM-DD）
+  /// [endDate]: 結束日期（選用）
   Future<List<FinMindDailyPrice>> getDailyPrices({
     required String stockId,
     required String startDate,
@@ -288,17 +288,17 @@ class FinMindClient {
     }
 
     final data = await _request(params);
-    // Use tryFromJson to skip malformed records
+    // 使用 tryFromJson 跳過格式錯誤的記錄
     return data
         .map((json) => FinMindDailyPrice.tryFromJson(json))
         .whereType<FinMindDailyPrice>()
         .toList();
   }
 
-  /// Get all stock prices for a date range (batch)
+  /// 取得日期範圍內所有股票價格（批次）
   ///
-  /// Use this for efficient bulk fetching
-  /// Note: Malformed records are silently skipped
+  /// 用於高效批量擷取
+  /// 註: 格式錯誤的記錄會被靜默跳過
   Future<List<FinMindDailyPrice>> getAllDailyPrices({
     required String startDate,
     String? endDate,
@@ -310,17 +310,17 @@ class FinMindClient {
     }
 
     final data = await _request(params);
-    // Use tryFromJson to skip malformed records
+    // 使用 tryFromJson 跳過格式錯誤的記錄
     return data
         .map((json) => FinMindDailyPrice.tryFromJson(json))
         .whereType<FinMindDailyPrice>()
         .toList();
   }
 
-  /// Get institutional investor trading data
+  /// 取得三大法人買賣超資料
   ///
-  /// Dataset: TaiwanStockInstitutionalInvestorsBuySell
-  /// Note: API returns one row per investor type, this method aggregates by date
+  /// 資料集: TaiwanStockInstitutionalInvestorsBuySell
+  /// 註: API 每種法人類型回傳一列，此方法依日期彙整
   Future<List<FinMindInstitutional>> getInstitutionalData({
     required String stockId,
     required String startDate,
@@ -338,7 +338,7 @@ class FinMindClient {
 
     final data = await _request(params);
 
-    // Parse raw rows
+    // 解析原始資料列
     final rows = data
         .map((json) {
           try {
@@ -350,14 +350,14 @@ class FinMindClient {
         .whereType<_FinMindInstitutionalRow>()
         .toList();
 
-    // Group by date and aggregate
+    // 依日期分組並彙整
     final Map<String, List<_FinMindInstitutionalRow>> byDate = {};
     for (final row in rows) {
       if (row.date.isEmpty) continue;
       byDate.putIfAbsent(row.date, () => []).add(row);
     }
 
-    // Convert to aggregated records
+    // 轉換為彙整記錄
     return byDate.entries
         .map((entry) {
           try {
@@ -371,9 +371,9 @@ class FinMindClient {
       ..sort((a, b) => a.date.compareTo(b.date));
   }
 
-  /// Get margin trading data (融資融券)
+  /// 取得融資融券資料
   ///
-  /// Dataset: TaiwanStockMarginPurchaseShortSale
+  /// 資料集: TaiwanStockMarginPurchaseShortSale
   Future<List<FinMindMarginData>> getMarginData({
     required String stockId,
     required String startDate,
@@ -390,16 +390,16 @@ class FinMindClient {
     }
 
     final data = await _request(params);
-    // Use tryFromJson to skip malformed records
+    // 使用 tryFromJson 跳過格式錯誤的記錄
     return data
         .map((json) => FinMindMarginData.tryFromJson(json))
         .whereType<FinMindMarginData>()
         .toList();
   }
 
-  /// Get monthly revenue data (月營收)
+  /// 取得月營收資料
   ///
-  /// Dataset: TaiwanStockMonthRevenue
+  /// 資料集: TaiwanStockMonthRevenue
   Future<List<FinMindRevenue>> getMonthlyRevenue({
     required String stockId,
     required String startDate,
@@ -422,9 +422,9 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get dividend data (股利)
+  /// 取得股利資料
   ///
-  /// Dataset: TaiwanStockDividend
+  /// 資料集: TaiwanStockDividend
   Future<List<FinMindDividend>> getDividends({
     required String stockId,
     String? startDate,
@@ -432,7 +432,7 @@ class FinMindClient {
     final params = {
       'dataset': 'TaiwanStockDividend',
       'data_id': stockId,
-      // Default to 5 years ago if not specified
+      // 未指定時預設為 5 年前
       'start_date': startDate ?? '${DateTime.now().year - 5}-01-01',
     };
 
@@ -443,9 +443,9 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get PER/PBR data (本益比/股價淨值比)
+  /// 取得本益比/股價淨值比資料
   ///
-  /// Dataset: TaiwanStockPER
+  /// 資料集: TaiwanStockPER
   Future<List<FinMindPER>> getPERData({
     required String stockId,
     required String startDate,
@@ -468,20 +468,20 @@ class FinMindClient {
         .toList();
   }
 
-  /// Check if token is configured
+  /// 檢查是否已設定 token
   bool get hasToken => _token != null && _token!.isNotEmpty;
 
-  /// Check if token is configured and valid
+  /// 檢查 token 是否已設定且有效
   bool get hasValidToken => hasToken && isValidTokenFormat(_token);
 
   // ============================================
-  // Phase 1: New API Methods (8 datasets)
+  // 階段 1: 新增 API 方法（8 個資料集）
   // ============================================
 
-  /// Get foreign investor shareholding data (外資持股比例)
+  /// 取得外資持股比例資料
   ///
-  /// Dataset: TaiwanStockShareholding
-  /// Returns: Foreign investor shareholding percentage over time
+  /// 資料集: TaiwanStockShareholding
+  /// 回傳: 外資持股比例歷史資料
   Future<List<FinMindShareholding>> getShareholding({
     required String stockId,
     required String startDate,
@@ -504,13 +504,13 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get shareholding distribution data (股權分散表)
+  /// 取得股權分散表資料
   ///
-  /// Dataset: TaiwanStockHoldingSharesPer
-  /// Returns: Distribution of shareholders by holding percentage
+  /// 資料集: TaiwanStockHoldingSharesPer
+  /// 回傳: 依持股比例分布的股東資料
   ///
-  /// NOTE: This API requires paid membership (backer/sponsor).
-  /// Free users will receive 400 Bad Request error.
+  /// 注意: 此 API 需要付費會員（贊助者）。
+  /// 免費使用者會收到 400 Bad Request 錯誤。
   Future<List<FinMindHoldingSharesPer>> getHoldingSharesPer({
     required String stockId,
     required String startDate,
@@ -518,7 +518,7 @@ class FinMindClient {
   }) async {
     final params = {
       'dataset': 'TaiwanStockHoldingSharesPer',
-      'stock_id': stockId, // This API uses stock_id, not data_id
+      'stock_id': stockId, // 此 API 使用 stock_id 而非 data_id
       'start_date': startDate,
     };
 
@@ -533,10 +533,10 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get day trading data (當沖比例)
+  /// 取得當沖比例資料
   ///
-  /// Dataset: TaiwanStockDayTrading
-  /// Returns: Day trading volume and percentage
+  /// 資料集: TaiwanStockDayTrading
+  /// 回傳: 當沖量及當沖比例
   Future<List<FinMindDayTrading>> getDayTrading({
     required String stockId,
     required String startDate,
@@ -559,10 +559,10 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get financial statements data (綜合損益表)
+  /// 取得綜合損益表資料
   ///
-  /// Dataset: TaiwanStockFinancialStatements
-  /// Returns: Income statement data by quarter
+  /// 資料集: TaiwanStockFinancialStatements
+  /// 回傳: 按季度的損益表資料
   Future<List<FinMindFinancialStatement>> getFinancialStatements({
     required String stockId,
     required String startDate,
@@ -585,10 +585,10 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get balance sheet data (資產負債表)
+  /// 取得資產負債表資料
   ///
-  /// Dataset: TaiwanStockBalanceSheet
-  /// Returns: Balance sheet data by quarter
+  /// 資料集: TaiwanStockBalanceSheet
+  /// 回傳: 按季度的資產負債表資料
   Future<List<FinMindBalanceSheet>> getBalanceSheet({
     required String stockId,
     required String startDate,
@@ -611,10 +611,10 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get cash flow statement data (現金流量表)
+  /// 取得現金流量表資料
   ///
-  /// Dataset: TaiwanStockCashFlowsStatement
-  /// Returns: Cash flow data by quarter
+  /// 資料集: TaiwanStockCashFlowsStatement
+  /// 回傳: 按季度的現金流量資料
   Future<List<FinMindCashFlowStatement>> getCashFlowsStatement({
     required String stockId,
     required String startDate,
@@ -637,10 +637,10 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get adjusted stock prices (還原股價)
+  /// 取得還原股價資料
   ///
-  /// Dataset: TaiwanStockPriceAdj
-  /// Returns: Stock prices adjusted for dividends and splits
+  /// 資料集: TaiwanStockPriceAdj
+  /// 回傳: 經除權息調整的股價
   Future<List<FinMindAdjustedPrice>> getAdjustedPrices({
     required String stockId,
     required String startDate,
@@ -663,10 +663,10 @@ class FinMindClient {
         .toList();
   }
 
-  /// Get weekly stock prices (週K線)
+  /// 取得週 K 線資料
   ///
-  /// Dataset: TaiwanStockWeekPrice
-  /// Returns: Weekly OHLCV data
+  /// 資料集: TaiwanStockWeekPrice
+  /// 回傳: 週 OHLCV 資料
   Future<List<FinMindWeeklyPrice>> getWeeklyPrices({
     required String stockId,
     required String startDate,
@@ -691,10 +691,10 @@ class FinMindClient {
 }
 
 // ============================================
-// Data Models (simple classes, no code-gen)
+// 資料模型（簡單類別，無程式碼產生）
 // ============================================
 
-/// Stock information from FinMind
+/// FinMind 股票資訊
 class FinMindStockInfo {
   const FinMindStockInfo({
     required this.stockId,
@@ -703,9 +703,9 @@ class FinMindStockInfo {
     required this.type,
   });
 
-  /// Parse from JSON with validation
+  /// 從 JSON 解析（含驗證）
   ///
-  /// Throws [FormatException] if required fields are missing
+  /// 必要欄位缺失時拋出 [FormatException]
   factory FinMindStockInfo.fromJson(Map<String, dynamic> json) {
     final stockId = json['stock_id'];
     if (stockId == null || stockId.toString().isEmpty) {
@@ -720,7 +720,7 @@ class FinMindStockInfo {
     );
   }
 
-  /// Try to parse from JSON, returns null on failure
+  /// 嘗試從 JSON 解析，失敗時回傳 null
   static FinMindStockInfo? tryFromJson(Map<String, dynamic> json) {
     try {
       return FinMindStockInfo.fromJson(json);
@@ -732,13 +732,13 @@ class FinMindStockInfo {
   final String stockId;
   final String stockName;
   final String industryCategory;
-  final String type; // "twse" or "tpex"
+  final String type; // "twse" 或 "tpex"
 
-  /// Convert type to market enum string
+  /// 將 type 轉換為市場列舉字串
   String get market => type.toLowerCase() == 'twse' ? 'TWSE' : 'TPEx';
 }
 
-/// Daily price data from FinMind
+/// FinMind 每日價格資料
 class FinMindDailyPrice {
   const FinMindDailyPrice({
     required this.stockId,
@@ -750,9 +750,9 @@ class FinMindDailyPrice {
     required this.volume,
   });
 
-  /// Parse from JSON with validation
+  /// 從 JSON 解析（含驗證）
   ///
-  /// Throws [FormatException] if required fields are missing
+  /// 必要欄位缺失時拋出 [FormatException]
   factory FinMindDailyPrice.fromJson(Map<String, dynamic> json) {
     final stockId = json['stock_id'];
     final date = json['date'];
@@ -764,7 +764,7 @@ class FinMindDailyPrice {
       throw FormatException('Missing required field: date', json);
     }
 
-    // Parse close price - this is critical for analysis
+    // 解析收盤價 - 分析的關鍵欄位
     final close = JsonParsers.parseDouble(json['close']);
     if (close == null) {
       throw FormatException('Missing or invalid close price', json);
@@ -781,7 +781,7 @@ class FinMindDailyPrice {
     );
   }
 
-  /// Try to parse from JSON, returns null on failure
+  /// 嘗試從 JSON 解析，失敗時回傳 null
   static FinMindDailyPrice? tryFromJson(Map<String, dynamic> json) {
     try {
       return FinMindDailyPrice.fromJson(json);
@@ -799,8 +799,8 @@ class FinMindDailyPrice {
   final double? volume;
 }
 
-/// Raw institutional investor row from FinMind API
-/// Note: API returns one row per investor type, need to aggregate
+/// FinMind API 原始法人資料列
+/// 註: API 每種法人類型回傳一列，需要彙整
 class _FinMindInstitutionalRow {
   const _FinMindInstitutionalRow({
     required this.stockId,
@@ -827,7 +827,7 @@ class _FinMindInstitutionalRow {
   final double sell;
 }
 
-/// Aggregated institutional investor data from FinMind
+/// FinMind 彙整後的法人資料
 class FinMindInstitutional {
   const FinMindInstitutional({
     required this.stockId,
@@ -840,8 +840,8 @@ class FinMindInstitutional {
     required this.dealerSell,
   });
 
-  /// Aggregate multiple rows (one per investor type) into single record
-  /// The API returns separate rows for each investor type per date
+  /// 將多列（每種法人類型一列）彙整為單一記錄
+  /// API 每個日期會為每種法人類型回傳獨立的列
   // ignore: library_private_types_in_public_api
   factory FinMindInstitutional.aggregate(List<_FinMindInstitutionalRow> rows) {
     if (rows.isEmpty) {
@@ -880,9 +880,9 @@ class FinMindInstitutional {
     );
   }
 
-  /// Try to parse from JSON (for backward compatibility - not recommended)
+  /// 嘗試從 JSON 解析（向後相容用，不建議使用）
   static FinMindInstitutional? tryFromJson(Map<String, dynamic> json) {
-    // This is a single row, create a one-item aggregate
+    // 這是單一列，建立只有一筆的彙整
     try {
       final row = _FinMindInstitutionalRow.fromJson(json);
       if (row.stockId.isEmpty || row.date.isEmpty) return null;
@@ -901,17 +901,17 @@ class FinMindInstitutional {
   final double dealerBuy;
   final double dealerSell;
 
-  /// Net foreign institutional trading
+  /// 外資淨買賣
   double get foreignNet => foreignBuy - foreignSell;
 
-  /// Net investment trust trading
+  /// 投信淨買賣
   double get investmentTrustNet => investmentTrustBuy - investmentTrustSell;
 
-  /// Net dealer trading
+  /// 自營商淨買賣
   double get dealerNet => dealerBuy - dealerSell;
 }
 
-/// Margin trading data (融資融券) from FinMind
+/// FinMind 融資融券資料
 class FinMindMarginData {
   const FinMindMarginData({
     required this.stockId,
@@ -931,9 +931,9 @@ class FinMindMarginData {
     required this.note,
   });
 
-  /// Parse from JSON with validation
+  /// 從 JSON 解析（含驗證）
   ///
-  /// Throws [FormatException] if required fields are missing
+  /// 必要欄位缺失時拋出 [FormatException]
   factory FinMindMarginData.fromJson(Map<String, dynamic> json) {
     final stockId = json['stock_id'];
     final date = json['date'];
@@ -973,7 +973,7 @@ class FinMindMarginData {
     );
   }
 
-  /// Try to parse from JSON, returns null on failure
+  /// 嘗試從 JSON 解析，失敗時回傳 null
   static FinMindMarginData? tryFromJson(Map<String, dynamic> json) {
     try {
       return FinMindMarginData.fromJson(json);
@@ -1014,7 +1014,7 @@ class FinMindMarginData {
       marginBalance > 0 ? (shortBalance / marginBalance) * 100 : 0;
 }
 
-/// Monthly revenue data (月營收) from FinMind
+/// FinMind 月營收資料
 class FinMindRevenue {
   FinMindRevenue({
     required this.stockId,
@@ -1054,14 +1054,14 @@ class FinMindRevenue {
     }
   }
 
-  /// Calculate MoM and YoY growth rates for a list of revenues
-  /// Returns the same list with growth rates populated
+  /// 計算營收清單的月增率及年增率
+  /// 回傳已填入成長率的相同清單
   static List<FinMindRevenue> calculateGrowthRates(
     List<FinMindRevenue> revenues,
   ) {
     if (revenues.isEmpty) return revenues;
 
-    // Sort by date (year/month)
+    // 依日期排序（年/月）
     final sorted = List<FinMindRevenue>.from(revenues)
       ..sort((a, b) {
         final yearCompare = a.revenueYear.compareTo(b.revenueYear);
@@ -1069,15 +1069,15 @@ class FinMindRevenue {
         return a.revenueMonth.compareTo(b.revenueMonth);
       });
 
-    // Build lookup map for quick access
+    // 建立查詢 Map 以快速存取
     final Map<String, FinMindRevenue> lookup = {};
     for (final rev in sorted) {
       lookup['${rev.revenueYear}-${rev.revenueMonth}'] = rev;
     }
 
-    // Calculate growth rates
+    // 計算成長率
     for (final rev in sorted) {
-      // MoM: Compare to previous month
+      // 月增率: 與上月比較
       int prevMonth = rev.revenueMonth - 1;
       int prevYear = rev.revenueYear;
       if (prevMonth < 1) {
@@ -1091,7 +1091,7 @@ class FinMindRevenue {
             ((rev.revenue - prevMonthRev.revenue) / prevMonthRev.revenue) * 100;
       }
 
-      // YoY: Compare to same month last year
+      // 年增率: 與去年同月比較
       final yoyKey = '${rev.revenueYear - 1}-${rev.revenueMonth}';
       final yoyRev = lookup[yoyKey];
       if (yoyRev != null && yoyRev.revenue > 0) {
@@ -1118,7 +1118,7 @@ class FinMindRevenue {
   double get revenueInBillion => revenue / 100000;
 }
 
-/// Dividend data (股利) from FinMind
+/// FinMind 股利資料
 class FinMindDividend {
   const FinMindDividend({
     required this.stockId,
@@ -1170,7 +1170,7 @@ class FinMindDividend {
   double get totalDividend => cashDividend + stockDividend;
 }
 
-/// PER/PBR data (本益比/股價淨值比) from FinMind
+/// FinMind 本益比/股價淨值比資料
 class FinMindPER {
   const FinMindPER({
     required this.stockId,
@@ -1216,10 +1216,10 @@ class FinMindPER {
 }
 
 // ============================================
-// Phase 1: New Data Models (8 datasets)
+// 階段 1: 新增資料模型（8 個資料集）
 // ============================================
 
-/// Foreign investor shareholding data (外資持股比例) from FinMind
+/// FinMind 外資持股比例資料
 class FinMindShareholding {
   const FinMindShareholding({
     required this.stockId,
@@ -1288,7 +1288,7 @@ class FinMindShareholding {
       foreignInvestmentUpperLimitRatio - foreignInvestmentSharesRatio;
 }
 
-/// Shareholding distribution data (股權分散表) from FinMind
+/// FinMind 股權分散表資料
 class FinMindHoldingSharesPer {
   const FinMindHoldingSharesPer({
     required this.stockId,
@@ -1336,7 +1336,7 @@ class FinMindHoldingSharesPer {
   final double unit; // 股數
 }
 
-/// Day trading data (當沖比例) from FinMind
+/// FinMind 當沖比例資料
 class FinMindDayTrading {
   const FinMindDayTrading({
     required this.stockId,
@@ -1401,8 +1401,8 @@ class FinMindDayTrading {
   bool get isExtremelyHighDayTrading => dayTradingRatio > 40;
 }
 
-/// Financial statement data (綜合損益表) from FinMind
-/// Note: Financial statements come with type/value pairs, this is a simplified version
+/// FinMind 綜合損益表資料
+/// 註: 財務報表以 type/value 配對呈現，這是簡化版本
 class FinMindFinancialStatement {
   const FinMindFinancialStatement({
     required this.stockId,
@@ -1446,7 +1446,7 @@ class FinMindFinancialStatement {
   final double value; // 金額
   final String origin; // 中文項目名稱
 
-  /// Common financial statement types
+  /// 常用損益表項目類型
   static const String typeRevenue = 'Revenue';
   static const String typeGrossProfit = 'GrossProfit';
   static const String typeOperatingIncome = 'OperatingIncome';
@@ -1454,7 +1454,7 @@ class FinMindFinancialStatement {
   static const String typeEPS = 'EPS';
 }
 
-/// Balance sheet data (資產負債表) from FinMind
+/// FinMind 資產負債表資料
 class FinMindBalanceSheet {
   const FinMindBalanceSheet({
     required this.stockId,
@@ -1498,7 +1498,7 @@ class FinMindBalanceSheet {
   final double value; // 金額
   final String origin; // 中文項目名稱
 
-  /// Common balance sheet types
+  /// 常用資產負債表項目類型
   static const String typeTotalAssets = 'TotalAssets';
   static const String typeTotalLiabilities = 'TotalLiabilities';
   static const String typeEquity = 'Equity';
@@ -1507,7 +1507,7 @@ class FinMindBalanceSheet {
   static const String typeCash = 'CashAndCashEquivalents';
 }
 
-/// Cash flow statement data (現金流量表) from FinMind
+/// FinMind 現金流量表資料
 class FinMindCashFlowStatement {
   const FinMindCashFlowStatement({
     required this.stockId,
@@ -1551,7 +1551,7 @@ class FinMindCashFlowStatement {
   final double value; // 金額
   final String origin; // 中文項目名稱
 
-  /// Common cash flow types
+  /// 常用現金流量項目類型
   static const String typeOperatingCashFlow =
       'CashFlowsFromOperatingActivities';
   static const String typeInvestingCashFlow =
@@ -1561,7 +1561,7 @@ class FinMindCashFlowStatement {
   static const String typeFreeCashFlow = 'FreeCashFlow';
 }
 
-/// Adjusted stock price data (還原股價) from FinMind
+/// FinMind 還原股價資料
 class FinMindAdjustedPrice {
   const FinMindAdjustedPrice({
     required this.stockId,
@@ -1612,7 +1612,7 @@ class FinMindAdjustedPrice {
   final double? volume; // 成交量
 }
 
-/// Weekly stock price data (週K線) from FinMind
+/// FinMind 週 K 線資料
 class FinMindWeeklyPrice {
   const FinMindWeeklyPrice({
     required this.stockId,
@@ -1664,20 +1664,20 @@ class FinMindWeeklyPrice {
 }
 
 // ============================================
-// Settings Keys for Token Storage
+// Token 儲存用的設定鍵
 // ============================================
 
-/// Keys for storing settings in database
+/// Database 設定儲存鍵
 abstract final class SettingsKeys {
   /// FinMind API token
   static const String finmindToken = 'finmind_token';
 
-  /// Last successful update date
+  /// 上次成功更新日期
   static const String lastUpdateDate = 'last_update_date';
 
-  /// Whether to fetch institutional data
+  /// 是否擷取法人資料
   static const String fetchInstitutional = 'fetch_institutional';
 
-  /// Whether to fetch news
+  /// 是否擷取新聞
   static const String fetchNews = 'fetch_news';
 }

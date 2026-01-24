@@ -3,11 +3,12 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
-// Phase 4: Extended Market Data Rules
+// 第 4 階段：擴展市場資料規則
 // ==========================================
 
-/// Rule: Foreign Shareholding Increasing
-/// Triggers when foreign ownership increases by a significant percentage
+/// 規則：外資持股增加
+///
+/// 當外資持股比例顯著增加時觸發
 class ForeignShareholdingIncreasingRule extends StockRule {
   const ForeignShareholdingIncreasingRule();
 
@@ -25,7 +26,7 @@ class ForeignShareholdingIncreasingRule extends StockRule {
     final change = marketData.foreignSharesRatioChange;
     if (change == null) return null;
 
-    // Trigger when foreign shareholding increases by threshold
+    // 當外資持股增加達到門檻時觸發
     if (change >= RuleParams.foreignShareholdingIncreaseThreshold) {
       return TriggeredReason(
         type: ReasonType.foreignShareholdingIncreasing,
@@ -39,8 +40,9 @@ class ForeignShareholdingIncreasingRule extends StockRule {
   }
 }
 
-/// Rule: Foreign Shareholding Decreasing
-/// Triggers when foreign ownership decreases by a significant percentage
+/// 規則：外資持股減少
+///
+/// 當外資持股比例顯著減少時觸發
 class ForeignShareholdingDecreasingRule extends StockRule {
   const ForeignShareholdingDecreasingRule();
 
@@ -58,7 +60,7 @@ class ForeignShareholdingDecreasingRule extends StockRule {
     final change = marketData.foreignSharesRatioChange;
     if (change == null) return null;
 
-    // Trigger when foreign shareholding decreases by threshold
+    // 當外資持股減少達到門檻時觸發
     if (change <= -RuleParams.foreignShareholdingIncreaseThreshold) {
       return TriggeredReason(
         type: ReasonType.foreignShareholdingDecreasing,
@@ -72,8 +74,9 @@ class ForeignShareholdingDecreasingRule extends StockRule {
   }
 }
 
-/// Rule: High Day Trading Ratio
-/// Triggers when day trading ratio exceeds threshold
+/// 規則：高當沖比例
+///
+/// 當當沖比例超過門檻時觸發
 class DayTradingHighRule extends StockRule {
   const DayTradingHighRule();
 
@@ -91,7 +94,19 @@ class DayTradingHighRule extends StockRule {
     final ratio = marketData.dayTradingRatio;
     if (ratio == null) return null;
 
-    // Trigger when day trading ratio exceeds high threshold
+    // 過濾條件：成交量 > 5000 股且價格上漲（收盤 > 開盤或漲幅 > 0）
+    final lastPrice = data.prices.isNotEmpty ? data.prices.last : null;
+    if (lastPrice == null ||
+        lastPrice.volume == null ||
+        lastPrice.volume! < RuleParams.minDayTradingVolumeShares) {
+      return null;
+    }
+
+    // 高當沖比例不嚴格要求多頭價格走勢
+    // 高週轉率在賣壓中也常發生
+    // 我們著重在活動水平（比例與成交量）
+
+    // 當當沖比例超過高門檻時觸發
     if (ratio >= RuleParams.dayTradingHighThreshold &&
         ratio < RuleParams.dayTradingExtremeThreshold) {
       return TriggeredReason(
@@ -106,8 +121,9 @@ class DayTradingHighRule extends StockRule {
   }
 }
 
-/// Rule: Extreme Day Trading Ratio
-/// Triggers when day trading ratio is extremely high (speculative warning)
+/// 規則：極高當沖比例
+///
+/// 當當沖比例極高時觸發（投機警示）
 class DayTradingExtremeRule extends StockRule {
   const DayTradingExtremeRule();
 
@@ -125,7 +141,15 @@ class DayTradingExtremeRule extends StockRule {
     final ratio = marketData.dayTradingRatio;
     if (ratio == null) return null;
 
-    // Trigger when day trading ratio exceeds extreme threshold
+    // 過濾條件：成交量 > 5000 股
+    final lastPrice = data.prices.isNotEmpty ? data.prices.last : null;
+    if (lastPrice == null ||
+        lastPrice.volume == null ||
+        lastPrice.volume! < RuleParams.minDayTradingVolumeShares) {
+      return null;
+    }
+
+    // 當當沖比例超過極端門檻時觸發
     if (ratio >= RuleParams.dayTradingExtremeThreshold) {
       return TriggeredReason(
         type: ReasonType.dayTradingExtreme,
@@ -139,8 +163,9 @@ class DayTradingExtremeRule extends StockRule {
   }
 }
 
-/// Rule: High Concentration Ratio
-/// Triggers when large holder concentration exceeds threshold
+/// 規則：籌碼集中
+///
+/// 當大戶持股集中度超過門檻時觸發
 class ConcentrationHighRule extends StockRule {
   const ConcentrationHighRule();
 
@@ -158,7 +183,7 @@ class ConcentrationHighRule extends StockRule {
     final ratio = marketData.concentrationRatio;
     if (ratio == null) return null;
 
-    // Trigger when concentration ratio exceeds threshold
+    // 當籌碼集中度超過門檻時觸發
     if (ratio >= RuleParams.concentrationHighThreshold) {
       return TriggeredReason(
         type: ReasonType.concentrationHigh,

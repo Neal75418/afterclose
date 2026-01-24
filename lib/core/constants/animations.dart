@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-/// Standardized animation durations for consistent UI transitions.
+/// 標準化動畫時長，確保 UI 轉場一致性
 ///
-/// Usage:
+/// 使用範例：
 /// ```dart
 /// AnimatedContainer(
 ///   duration: AnimDurations.fast,
@@ -11,49 +11,42 @@ import 'package:flutter/widgets.dart';
 /// )
 /// ```
 abstract final class AnimDurations {
-  /// Ultra-fast for micro-interactions (press feedback, ripples)
-  /// 100ms
+  /// 極快速：微互動（按壓回饋、漣漪效果）- 100ms
   static const press = Duration(milliseconds: 100);
 
-  /// Fast for quick state changes (toggles, highlights)
-  /// 150ms
+  /// 快速：快速狀態切換（開關、高亮）- 150ms
   static const fast = Duration(milliseconds: 150);
 
-  /// Standard duration for most animations (fades, slides)
-  /// 200ms
+  /// 標準：大多數動畫（淡入淡出、滑動）- 200ms
   static const standard = Duration(milliseconds: 200);
 
-  /// Medium for more deliberate animations (page transitions)
-  /// 300ms
+  /// 中等：較從容的動畫（頁面轉場）- 300ms
   static const medium = Duration(milliseconds: 300);
 
-  /// Slow for emphasis or complex animations
-  /// 400ms
+  /// 緩慢：強調或複雜動畫 - 400ms
   static const slow = Duration(milliseconds: 400);
 
-  /// Extra slow for loading animations
-  /// 1000ms
+  /// 極慢：載入動畫 - 1000ms
   static const loading = Duration(milliseconds: 1000);
 
-  /// Stagger delay for list item animations
-  /// 50ms
+  /// 列表項目錯開延遲 - 50ms
   static const staggerDelay = Duration(milliseconds: 50);
 }
 
-/// Standard animation curves for consistent motion.
+/// 標準動畫曲線，確保動態效果一致性
 abstract final class AnimCurves {
-  /// Standard easing for most animations
+  /// 標準緩動：適用於大多數動畫
   static const standard = Curves.easeInOut;
 
-  /// For entering elements
+  /// 進入效果：元素進場時使用
   static const enter = Curves.easeOut;
 
-  /// For exiting elements
+  /// 離開效果：元素離場時使用
   static const exit = Curves.easeIn;
 
-  /// For bouncy, playful animations
+  /// 彈跳效果：活潑的動畫
   static const bounce = Curves.elasticOut;
 
-  /// For smooth deceleration
+  /// 平滑減速
   static const decelerate = Curves.decelerate;
 }

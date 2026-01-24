@@ -5,7 +5,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 
-/// Reusable empty state widget with animated illustration
+/// 可重用的空狀態 Widget，附有動畫插圖
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -39,7 +39,7 @@ class EmptyState extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated icon with background
+              // 帶有背景的動畫圖示
               Container(
                     width: 120,
                     height: 120,
@@ -76,7 +76,7 @@ class EmptyState extends StatelessWidget {
                     curve: Curves.easeInOut,
                   ),
               const SizedBox(height: 24),
-              // Title
+              // 標題
               Text(
                     title,
                     style: theme.textTheme.titleLarge?.copyWith(
@@ -119,14 +119,14 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// Pre-configured empty states for common scenarios
+/// 常見情境的預設空狀態
 ///
-/// Uses [S] (AppStrings) for centralized string management,
-/// enabling future i18n support.
+/// 使用 [S] (AppStrings) 進行集中字串管理，
+/// 支援未來的多語系功能
 class EmptyStates {
   EmptyStates._();
 
-  /// No recommendations today
+  /// 今日無推薦
   static Widget noRecommendations({VoidCallback? onRefresh}) {
     return EmptyState(
       icon: Icons.inbox_outlined,
@@ -138,7 +138,7 @@ class EmptyStates {
     );
   }
 
-  /// No stocks match filter
+  /// 無符合篩選條件的股票
   static Widget noFilterResults({VoidCallback? onClearFilter}) {
     return EmptyState(
       icon: Icons.search_off_outlined,
@@ -150,7 +150,7 @@ class EmptyStates {
     );
   }
 
-  /// No stocks match filter - with detailed metadata
+  /// 無符合篩選條件的股票 - 附有詳細元資料
   static Widget noFilterResultsWithMeta({
     required String filterName,
     required String conditionDescription,
@@ -171,7 +171,7 @@ class EmptyStates {
     );
   }
 
-  /// Empty watchlist
+  /// 空的自選清單
   static Widget emptyWatchlist({VoidCallback? onAdd}) {
     return EmptyState(
       icon: Icons.star_outline_rounded,
@@ -183,7 +183,7 @@ class EmptyStates {
     );
   }
 
-  /// No news
+  /// 無新聞
   static Widget noNews({VoidCallback? onRefresh}) {
     return EmptyState(
       icon: Icons.article_outlined,
@@ -195,7 +195,7 @@ class EmptyStates {
     );
   }
 
-  /// Error state
+  /// 錯誤狀態
   static Widget error({required String message, VoidCallback? onRetry}) {
     return EmptyState(
       icon: Icons.error_outline_rounded,
@@ -207,7 +207,7 @@ class EmptyStates {
     );
   }
 
-  /// Network error
+  /// 網路錯誤
   static Widget networkError({VoidCallback? onRetry}) {
     return EmptyState(
       icon: Icons.wifi_off_rounded,
@@ -220,7 +220,7 @@ class EmptyStates {
   }
 }
 
-/// Empty state widget with filter metadata information
+/// 附有篩選條件元資料的空狀態 Widget
 class _EmptyStateWithMeta extends StatelessWidget {
   const _EmptyStateWithMeta({
     required this.filterName,
@@ -251,7 +251,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon
+            // 圖示
             Container(
                   width: 100,
                   height: 100,
@@ -292,7 +292,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Title with filter name
+            // 帶有篩選名稱的標題
             Text(
               'filterMeta.titleWithFilter'.tr(
                 namedArgs: {'filter': filterName},
@@ -306,7 +306,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Diagnostic Info (Scanned Count & Date)
+            // 診斷資訊（掃描數量與日期）
             if (totalScanned != null || dataDate != null) ...[
               Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -378,7 +378,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
               ).animate().fadeIn(delay: 150.ms, duration: 300.ms),
             ],
 
-            // Condition description card
+            // 條件說明卡片
             Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -394,7 +394,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Condition section
+                      // 條件區塊
                       Row(
                         children: [
                           Icon(
@@ -420,7 +420,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
                         ),
                       ),
 
-                      // Threshold info (if available)
+                      // 閾值資訊（若有）
                       if (thresholdInfo != null) ...[
                         const SizedBox(height: 8),
                         Container(
@@ -445,7 +445,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
 
                       const Divider(height: 24),
 
-                      // Data requirements section
+                      // 資料需求區塊
                       Row(
                         children: [
                           Icon(
@@ -496,7 +496,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Hint text
+            // 提示文字
             Text(
               'filterMeta.hintEmpty'.tr(),
               style: theme.textTheme.bodySmall?.copyWith(
@@ -505,7 +505,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
               textAlign: TextAlign.center,
             ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
 
-            // Clear filter button
+            // 清除篩選按鈕
             if (onClearFilter != null) ...[
               const SizedBox(height: 20),
               FilledButton.tonal(

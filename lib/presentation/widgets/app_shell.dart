@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Shell widget with bottom navigation
+/// 帶有底部導覽列的外殼 Widget
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 

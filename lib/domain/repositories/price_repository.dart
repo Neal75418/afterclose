@@ -1,17 +1,16 @@
 import 'package:afterclose/data/database/app_database.dart';
 
-/// Interface for price data repository
+/// 價格資料儲存庫介面
 ///
-/// Enables mocking in tests and allows for different implementations
-/// (e.g., local database, remote API, in-memory cache).
+/// 支援測試時的 Mock 及不同實作（如本機資料庫、遠端 API、記憶體快取）
 abstract class IPriceRepository {
   // ==========================================
-  // Price Data Queries
+  // 價格資料查詢
   // ==========================================
 
-  /// Get price history for analysis
+  /// 取得分析用的價格歷史
   ///
-  /// Returns at least [RuleParams.lookbackPrice] days if available
+  /// 若有足夠資料，至少回傳 [RuleParams.lookbackPrice] 天
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
     int? days,
@@ -19,57 +18,57 @@ abstract class IPriceRepository {
     DateTime? endDate,
   });
 
-  /// Get latest price for a stock
+  /// 取得股票最新價格
   Future<DailyPriceEntry?> getLatestPrice(String symbol);
 
-  /// Get price change percentage
+  /// 取得股價漲跌幅
   Future<double?> getPriceChange(String symbol);
 
-  /// Get 20-day volume moving average
+  /// 取得 20 日成交量移動平均
   Future<double?> getVolumeMA20(String symbol);
 
-  /// Get price changes for multiple symbols in one query
+  /// 批次取得多檔股票的漲跌幅
   Future<Map<String, double?>> getPriceChangesBatch(List<String> symbols);
 
-  /// Get 20-day volume moving averages for multiple symbols in one query
+  /// 批次取得多檔股票的 20 日成交量均量
   Future<Map<String, double?>> getVolumeMA20Batch(List<String> symbols);
 
   // ==========================================
-  // Sync Operations
+  // 同步作業
   // ==========================================
 
-  /// Sync prices for a single stock using TWSE historical API
+  /// 使用 TWSE 歷史 API 同步單一股票價格
   Future<int> syncStockPrices(
     String symbol, {
     required DateTime startDate,
     DateTime? endDate,
   });
 
-  /// Sync today's prices for all stocks (batch mode)
+  /// 批次同步今日所有股票價格
   Future<MarketSyncResult> syncTodayPrices({DateTime? date});
 
-  /// Sync all prices for the latest trading day and return quick-filter candidates
+  /// 同步最新交易日所有價格並回傳快速篩選候選股
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
     List<String>? fallbackSymbols,
     bool force = false,
   });
 
-  /// Sync prices for multiple specific symbols
+  /// 同步多檔特定股票的價格
   Future<int> syncPricesForSymbols(
     List<String> symbols, {
     required DateTime targetDate,
     void Function(int current, int total, String symbol)? onProgress,
   });
 
-  /// Get symbols that need price updates for a given date
+  /// 取得需要更新價格的股票代碼清單
   Future<List<String>> getSymbolsNeedingUpdate(
     List<String> symbols,
     DateTime targetDate,
   );
 }
 
-/// Result of syncing all market prices
+/// 全市場價格同步結果
 class MarketSyncResult {
   const MarketSyncResult({
     required this.count,

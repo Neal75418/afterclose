@@ -3,11 +3,50 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
-// Phase 6: Fundamental Analysis Rules
+// 第 6 階段：基本面分析規則
 // ==========================================
 
-/// Rule: Revenue YoY Surge
-/// Triggers when monthly revenue YoY growth > 30%
+// 輔助函數：計算 MA
+double? _calculateMA(List<dynamic> prices, int period) {
+  if (prices.length < period) return null;
+  double sum = 0;
+  int count = 0;
+  for (int i = prices.length - 1; i >= prices.length - period; i--) {
+    final close = prices[i].close;
+    if (close != null) {
+      sum += close;
+      count++;
+    }
+  }
+  return count == period ? sum / count : null;
+}
+
+// 輔助函數：計算 RSI
+double? _calculateRSI(List<dynamic> prices, int period) {
+  if (prices.length < period + 1) return null;
+  double gains = 0;
+  double losses = 0;
+  for (int i = prices.length - period; i < prices.length; i++) {
+    final current = prices[i].close;
+    final previous = prices[i - 1].close;
+    if (current == null || previous == null) continue;
+    final change = current - previous;
+    if (change > 0) {
+      gains += change;
+    } else {
+      losses += -change;
+    }
+  }
+  final avgGain = gains / period;
+  final avgLoss = losses / period;
+  if (avgLoss == 0) return 100;
+  final rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+/// 規則：營收年增暴增
+///
+/// 當月營收年增率 > 50% 且股價站上 MA60 時觸發
 class RevenueYoYSurgeRule extends StockRule {
   const RevenueYoYSurgeRule();
 
@@ -25,25 +64,43 @@ class RevenueYoYSurgeRule extends StockRule {
     final yoyGrowth = revenue.yoyGrowth ?? 0;
 
     if (yoyGrowth >= RuleParams.revenueYoySurgeThreshold) {
-      return TriggeredReason(
-        type: ReasonType.revenueYoySurge,
-        score: RuleScores.revenueYoySurge,
-        description: '營收年增 ${yoyGrowth.toStringAsFixed(1)}%',
-        evidence: {
-          'yoyGrowth': yoyGrowth,
-          'revenueYear': revenue.revenueYear,
-          'revenueMonth': revenue.revenueMonth,
-          'revenue': revenue.revenue,
-        },
-      );
+      // 技術面過濾：須站上 MA60 且漲幅 > 1.5%
+      final ma60 = _calculateMA(data.prices, 60);
+
+      final today = data.prices.isNotEmpty ? data.prices.last : null;
+      final prev = data.prices.length >= 2
+          ? data.prices[data.prices.length - 2]
+          : null;
+
+      if (ma60 != null && today != null && prev != null && prev.close != null) {
+        final close = today.close ?? 0;
+        final prevClose = prev.close!;
+        final changePct = (close - prevClose) / prevClose;
+
+        // 兩個過濾條件都須通過
+        if (close > ma60 && changePct > 0.015) {
+          return TriggeredReason(
+            type: ReasonType.revenueYoySurge,
+            score: RuleScores.revenueYoySurge,
+            description: '營收年增 ${yoyGrowth.toStringAsFixed(1)}% (站上季線且長紅)',
+            evidence: {
+              'yoyGrowth': yoyGrowth,
+              'revenueMonth': revenue.revenueMonth,
+              'ma60': ma60,
+              'changePct': changePct * 100,
+            },
+          );
+        }
+      }
     }
 
     return null;
   }
 }
 
-/// Rule: Revenue YoY Decline
-/// Triggers when monthly revenue YoY growth < -20% (warning)
+/// 規則：營收年減警示
+///
+/// 當月營收年減率 < -20% 且股價跌破 MA60 時觸發
 class RevenueYoYDeclineRule extends StockRule {
   const RevenueYoYDeclineRule();
 
@@ -61,24 +118,31 @@ class RevenueYoYDeclineRule extends StockRule {
     final yoyGrowth = revenue.yoyGrowth ?? 0;
 
     if (yoyGrowth <= -RuleParams.revenueYoyDeclineThreshold) {
-      return TriggeredReason(
-        type: ReasonType.revenueYoyDecline,
-        score: RuleScores.revenueYoyDecline,
-        description: '營收年減 ${yoyGrowth.abs().toStringAsFixed(1)}%',
-        evidence: {
-          'yoyGrowth': yoyGrowth,
-          'revenueYear': revenue.revenueYear,
-          'revenueMonth': revenue.revenueMonth,
-        },
-      );
+      // 技術面過濾：須跌破 MA60（季線）確認下跌趨勢
+      final ma60 = _calculateMA(data.prices, 60);
+      final close = data.prices.isNotEmpty ? data.prices.last.close : null;
+
+      if (ma60 != null && close != null && close < ma60) {
+        return TriggeredReason(
+          type: ReasonType.revenueYoyDecline,
+          score: RuleScores.revenueYoyDecline,
+          description: '營收年減 ${yoyGrowth.abs().toStringAsFixed(1)}% (股價位於季線下)',
+          evidence: {
+            'yoyGrowth': yoyGrowth,
+            'revenueMonth': revenue.revenueMonth,
+            'ma60': ma60,
+          },
+        );
+      }
     }
 
     return null;
   }
 }
 
-/// Rule: Revenue MoM Growth
-/// Triggers when MoM growth is positive for N consecutive months
+/// 規則：營收月增持續
+///
+/// 當月營收月增為正且股價站上 MA20 時觸發
 class RevenueMomGrowthRule extends StockRule {
   const RevenueMomGrowthRule();
 
@@ -96,8 +160,7 @@ class RevenueMomGrowthRule extends StockRule {
       return null;
     }
 
-    // Check for consecutive MoM growth
-    // History should be sorted in descending order (newest first)
+    // 檢查連續月增長
     int consecutiveMonths = 0;
     final growthRates = <double>[];
 
@@ -107,43 +170,56 @@ class RevenueMomGrowthRule extends StockRule {
       i++
     ) {
       final momGrowth = history[i].momGrowth ?? 0;
-
-      // MoM growth must be positive and above threshold
       if (momGrowth >= RuleParams.revenueMomGrowthThreshold) {
         consecutiveMonths++;
         growthRates.add(momGrowth);
       } else {
-        break; // Streak broken
+        break;
       }
     }
 
     if (consecutiveMonths >= RuleParams.revenueMomConsecutiveMonths) {
-      final avgGrowth =
-          growthRates.reduce((a, b) => a + b) / growthRates.length;
+      // 技術面過濾：須站上 MA20
+      final ma20 = _calculateMA(data.prices, 20);
+      final close = data.prices.isNotEmpty ? data.prices.last.close : null;
 
-      // Dynamic description based on whether it's single month or consecutive
-      final description = consecutiveMonths == 1
-          ? '本月營收月增 ${avgGrowth.toStringAsFixed(1)}%'
-          : '營收月增連續 $consecutiveMonths 個月正成長';
+      // 技術面過濾：站上 MA20 且漲幅 > 1.5%
+      final today = data.prices.isNotEmpty ? data.prices.last : null;
+      final prev = data.prices.length >= 2
+          ? data.prices[data.prices.length - 2]
+          : null;
+      final changePct =
+          (today != null &&
+              prev != null &&
+              prev.close != null &&
+              prev.close! > 0)
+          ? (today.close! - prev.close!) / prev.close!
+          : 0.0;
 
-      return TriggeredReason(
-        type: ReasonType.revenueMomGrowth,
-        score: RuleScores.revenueMomGrowth,
-        description: description,
-        evidence: {
-          'consecutiveMonths': consecutiveMonths,
-          'avgMomGrowth': avgGrowth,
-          'growthRates': growthRates,
-        },
-      );
+      if (ma20 != null && close != null && close > ma20 && changePct > 0.015) {
+        final avgGrowth =
+            growthRates.reduce((a, b) => a + b) / growthRates.length;
+        final description = consecutiveMonths == 1
+            ? '本月營收月增 ${avgGrowth.toStringAsFixed(1)}% (站上月線)'
+            : '營收月增連續 $consecutiveMonths 個月 (站上月線)';
+
+        return TriggeredReason(
+          type: ReasonType.revenueMomGrowth,
+          score: RuleScores.revenueMomGrowth,
+          description: description,
+          evidence: {
+            'consecutiveMonths': consecutiveMonths,
+            'avgMomGrowth': avgGrowth,
+            'ma20': ma20,
+          },
+        );
+      }
     }
-
     return null;
   }
 }
 
-/// Rule: High Dividend Yield
-/// Triggers when dividend yield > 5%
+/// 規則：高殖利率
 class HighDividendYieldRule extends StockRule {
   const HighDividendYieldRule();
 
@@ -158,9 +234,16 @@ class HighDividendYieldRule extends StockRule {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
 
-    final dividendYield = valuation.dividendYield ?? 0;
+    var dividendYield = valuation.dividendYield ?? 0;
+    // 正規化：若殖利率為比例（如 0.05），轉換為百分比（5.0）
+    if (dividendYield > 0 && dividendYield < 1.0) {
+      dividendYield *= 100;
+    }
 
-    if (dividendYield >= RuleParams.highDividendYieldThreshold * 100) {
+    if (dividendYield >= RuleParams.highDividendYieldThreshold) {
+      // 還原至原始基本邏輯：僅以殖利率過濾
+      // 移除複雜過濾條件（PE、PBR、營收、MA20）以符合原始行為
+
       return TriggeredReason(
         type: ReasonType.highDividendYield,
         score: RuleScores.highDividendYield,
@@ -176,8 +259,7 @@ class HighDividendYieldRule extends StockRule {
   }
 }
 
-/// Rule: PE Undervalued
-/// Triggers when PE < 10 (and > 0)
+/// 規則：PE 低估
 class PEUndervaluedRule extends StockRule {
   const PEUndervaluedRule();
 
@@ -191,25 +273,27 @@ class PEUndervaluedRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
-
     final pe = valuation.per ?? 0;
 
-    // PE must be positive and below threshold
     if (pe > 0 && pe <= RuleParams.peUndervaluedThreshold) {
-      return TriggeredReason(
-        type: ReasonType.peUndervalued,
-        score: RuleScores.peUndervalued,
-        description: 'PE 僅 ${pe.toStringAsFixed(2)} 倍',
-        evidence: {'pe': pe, 'date': valuation.date.toIso8601String()},
-      );
-    }
+      // 過濾條件：須顯示強勢跡象（股價 > MA20）
+      final ma20 = _calculateMA(data.prices, 20);
+      final close = data.prices.isNotEmpty ? data.prices.last.close : null;
 
+      if (ma20 != null && close != null && close > ma20) {
+        return TriggeredReason(
+          type: ReasonType.peUndervalued,
+          score: RuleScores.peUndervalued,
+          description: 'PE 僅 ${pe.toStringAsFixed(2)} 倍 (站上月線)',
+          evidence: {'pe': pe, 'ma20': ma20},
+        );
+      }
+    }
     return null;
   }
 }
 
-/// Rule: PE Overvalued
-/// Triggers when PE > 50 (warning)
+/// 規則：PE 偏高
 class PEOvervaluedRule extends StockRule {
   const PEOvervaluedRule();
 
@@ -223,24 +307,25 @@ class PEOvervaluedRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
-
     final pe = valuation.per ?? 0;
 
     if (pe >= RuleParams.peOvervaluedThreshold) {
-      return TriggeredReason(
-        type: ReasonType.peOvervalued,
-        score: RuleScores.peOvervalued,
-        description: 'PE 高達 ${pe.toStringAsFixed(1)} 倍',
-        evidence: {'pe': pe, 'date': valuation.date.toIso8601String()},
-      );
+      // 過濾條件：須處於過熱狀態（RSI > 70）
+      final rsi = _calculateRSI(data.prices, 14);
+      if (rsi != null && rsi > 75) {
+        return TriggeredReason(
+          type: ReasonType.peOvervalued,
+          score: RuleScores.peOvervalued,
+          description: 'PE 高達 ${pe.toStringAsFixed(1)} 倍 (RSI過熱)',
+          evidence: {'pe': pe, 'rsi': rsi},
+        );
+      }
     }
-
     return null;
   }
 }
 
-/// Rule: PBR Undervalued
-/// Triggers when PBR < 1 (stock price below book value)
+/// 規則：PBR 低估
 class PBRUndervaluedRule extends StockRule {
   const PBRUndervaluedRule();
 
@@ -248,13 +333,12 @@ class PBRUndervaluedRule extends StockRule {
   String get id => 'pbr_undervalued';
 
   @override
-  String get name => '股價淨值比低於 1';
+  String get name => '股價淨值比低於 0.8';
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
-
     final pbr = valuation.pbr ?? 0;
 
     if (pbr > 0 && pbr <= RuleParams.pbrUndervaluedThreshold) {
@@ -262,10 +346,9 @@ class PBRUndervaluedRule extends StockRule {
         type: ReasonType.pbrUndervalued,
         score: RuleScores.pbrUndervalued,
         description: 'PBR 僅 ${pbr.toStringAsFixed(2)} 倍',
-        evidence: {'pbr': pbr, 'date': valuation.date.toIso8601String()},
+        evidence: {'pbr': pbr},
       );
     }
-
     return null;
   }
 }

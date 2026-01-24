@@ -6,10 +6,10 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
-// Candlestick Pattern Rules
+// K 線型態規則
 // ==========================================
 
-/// Rule: Doji Pattern (Indecision)
+/// 規則：十字線型態（市場猶豫不決）
 class DojiRule extends StockRule {
   const DojiRule();
 
@@ -25,6 +25,10 @@ class DojiRule extends StockRule {
     final today = data.prices.last;
 
     if (_isDoji(today)) {
+      // 過濾條件：RSI 必須在極端區域（>70 或 <30）
+      final rsi = context.indicators?.rsi;
+      if (rsi != null && rsi > 30 && rsi < 70) return null;
+
       return TriggeredReason(
         type: ReasonType.patternDoji,
         score: RuleScores.patternDoji,
@@ -48,15 +52,15 @@ class DojiRule extends StockRule {
       return false;
     }
     final range = candle.high! - candle.low!;
-    if (range == 0) return true; // Flat line is a doji
+    if (range == 0) return true; // 無波動為十字線
 
     final body = (candle.close! - candle.open!).abs();
-    // Body is less than 10% of total range
+    // 實體小於總振幅的 10%
     return body <= range * 0.1;
   }
 }
 
-/// Rule: Bullish Engulfing
+/// 規則：多頭吞噬型態
 class BullishEngulfingRule extends StockRule {
   const BullishEngulfingRule();
 
@@ -70,7 +74,7 @@ class BullishEngulfingRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 2) return null;
 
-    // Only valid in downtrend or range bottom
+    // 僅在下跌趨勢或區間底部有效
     if (context.trendState == TrendState.up) return null;
 
     final today = data.prices.last;
@@ -100,23 +104,23 @@ class BullishEngulfingRule extends StockRule {
       return false;
     }
 
-    // Previous day: Bearish (Close < Open)
+    // 前一日：空方 K 線（收盤 < 開盤）
     final prevOpen = prev.open!;
     final prevClose = prev.close!;
     if (prevClose >= prevOpen) return false;
 
-    // Today: Bullish (Close > Open)
+    // 今日：多方 K 線（收盤 > 開盤）
     final currOpen = today.open!;
     final currClose = today.close!;
     if (currClose <= currOpen) return false;
 
-    // Engulfing logic:
-    // Today Open <= Previous Close AND Today Close >= Previous Open
+    // 吞噬邏輯：
+    // 今日開盤 <= 前日收盤 且 今日收盤 >= 前日開盤
     return currOpen <= prevClose && currClose >= prevOpen;
   }
 }
 
-/// Rule: Bearish Engulfing
+/// 規則：空頭吞噬型態
 class BearishEngulfingRule extends StockRule {
   const BearishEngulfingRule();
 
@@ -130,13 +134,29 @@ class BearishEngulfingRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 2) return null;
 
-    // Only valid in uptrend or range top
+    // 僅在上漲趨勢或區間頂部有效
     if (context.trendState == TrendState.down) return null;
 
     final today = data.prices.last;
     final yesterday = data.prices[data.prices.length - 2];
 
     if (_isBearishEngulfing(today, yesterday)) {
+      // 過濾條件：成交量須 > 5 日平均量
+      double volSum = 0;
+      int count = 0;
+      for (
+        int i = data.prices.length - 1;
+        i >= max(0, data.prices.length - 6);
+        i--
+      ) {
+        if (data.prices[i].volume != null) {
+          volSum += data.prices[i].volume!;
+          count++;
+        }
+      }
+      final avgVol = count > 0 ? volSum / count : 0;
+      if (today.volume != null && today.volume! <= avgVol) return null;
+
       return TriggeredReason(
         type: ReasonType.patternBearishEngulfing,
         score: RuleScores.patternEngulfing,
@@ -160,19 +180,19 @@ class BearishEngulfingRule extends StockRule {
       return false;
     }
 
-    // Previous day: Bullish
+    // 前一日：多方 K 線
     if (prev.close! <= prev.open!) return false;
 
-    // Today: Bearish
+    // 今日：空方 K 線
     if (today.close! >= today.open!) return false;
 
-    // Engulfing logic:
-    // Today Open >= Previous Close AND Today Close <= Previous Open
+    // 吞噬邏輯：
+    // 今日開盤 >= 前日收盤 且 今日收盤 <= 前日開盤
     return today.open! >= prev.close! && today.close! <= prev.open!;
   }
 }
 
-/// Rule: Hammer (Bullish Reversal)
+/// 規則：錘子線（多方反轉訊號）
 class HammerRule extends StockRule {
   const HammerRule();
 
@@ -185,7 +205,7 @@ class HammerRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return null;
-    // Must be in downtrend
+    // 必須處於下跌趨勢
     if (context.trendState == TrendState.up) return null;
 
     final today = data.prices.last;
@@ -231,7 +251,7 @@ class HammerRule extends StockRule {
   }
 }
 
-/// Rule: Hanging Man (Bearish Reversal)
+/// 規則：吊人線（空方反轉訊號）
 class HangingManRule extends StockRule {
   const HangingManRule();
 
@@ -244,11 +264,11 @@ class HangingManRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return null;
-    // Must be in uptrend
+    // 必須處於上漲趨勢
     if (context.trendState == TrendState.down) return null;
 
     final today = data.prices.last;
-    // Hanging man is same shape as Hammer but at top
+    // 吊人線與錘子線形狀相同，但出現在頂部
     if (_isHammer(today)) {
       return TriggeredReason(
         type: ReasonType.patternHangingMan,
@@ -291,7 +311,7 @@ class HangingManRule extends StockRule {
   }
 }
 
-/// Rule: Gap Up (Bullish)
+/// 規則：向上跳空缺口（多方訊號）
 class GapUpRule extends StockRule {
   const GapUpRule();
 
@@ -329,7 +349,7 @@ class GapUpRule extends StockRule {
   }
 }
 
-/// Rule: Gap Down (Bearish)
+/// 規則：向下跳空缺口（空方訊號）
 class GapDownRule extends StockRule {
   const GapDownRule();
 
@@ -367,7 +387,7 @@ class GapDownRule extends StockRule {
   }
 }
 
-/// Rule: Morning Star (Bullish Reversal)
+/// 規則：晨星型態（多方反轉訊號）
 class MorningStarRule extends StockRule {
   const MorningStarRule();
 
@@ -415,31 +435,31 @@ class MorningStarRule extends StockRule {
       return false;
     }
 
-    // 1. First candle: Long Bearish
+    // 1. 第一根 K 線：長黑 K
     final c1Body = c1.close! - c1.open!;
     if (c1Body >= 0) return false;
 
-    // 2. Second candle: Small body (Star), Gap down ideally
+    // 2. 第二根 K 線：小實體（星線），理想情況向下跳空
     final c2Body = (c2.close! - c2.open!).abs();
 
     if (c2Body > c1Body.abs() * 0.5) return false;
 
-    // Gap down check: c2 body below c1 body
+    // 跳空檢查：第二根實體低於第一根
     if (max(c2.open!, c2.close!) > c1.close!) return false;
 
-    // 3. Third candle: Long Bullish, closes into c1 body
+    // 3. 第三根 K 線：長紅 K，收盤進入第一根實體
     final c3Body = c3.close! - c3.open!;
     if (c3Body <= 0) return false;
 
     final c1Mid = (c1.open! + c1.close!) / 2;
-    // Close above midpoint of first candle
+    // 收盤高於第一根 K 線中點
     if (c3.close! < c1Mid) return false;
 
     return true;
   }
 }
 
-/// Rule: Evening Star (Bearish Reversal)
+/// 規則：暮星型態（空方反轉訊號）
 class EveningStarRule extends StockRule {
   const EveningStarRule();
 
@@ -487,30 +507,30 @@ class EveningStarRule extends StockRule {
       return false;
     }
 
-    // 1. First candle: Long Bullish
+    // 1. 第一根 K 線：長紅 K
     final c1Body = c1.close! - c1.open!;
     if (c1Body <= 0) return false;
 
-    // 2. Second candle: Small body, Gap up ideally
+    // 2. 第二根 K 線：小實體，理想情況向上跳空
     final c2Body = (c2.close! - c2.open!).abs();
     if (c2Body > c1Body * 0.5) return false;
 
-    // Gap up check: c2 body above c1 body
+    // 跳空檢查：第二根實體高於第一根
     if (min(c2.open!, c2.close!) < c1.close!) return false;
 
-    // 3. Third candle: Long Bearish, closes into c1 body
+    // 3. 第三根 K 線：長黑 K，收盤進入第一根實體
     final c3Body = c3.close! - c3.open!;
     if (c3Body >= 0) return false;
 
     final c1Mid = (c1.open! + c1.close!) / 2;
-    // Close below midpoint of first candle
+    // 收盤低於第一根 K 線中點
     if (c3.close! > c1Mid) return false;
 
     return true;
   }
 }
 
-/// Rule: Three White Soldiers (Strong Bullish)
+/// 規則：紅三兵型態（強勢多方訊號）
 class ThreeWhiteSoldiersRule extends StockRule {
   const ThreeWhiteSoldiersRule();
 
@@ -559,12 +579,12 @@ class ThreeWhiteSoldiersRule extends StockRule {
       return false;
     }
 
-    // All 3 candles bullish
+    // 三根 K 線皆為紅 K
     if (c1.close! <= c1.open!) return false;
     if (c2.close! <= c2.open!) return false;
     if (c3.close! <= c3.open!) return false;
 
-    // Consecutive higher closes
+    // 連續創高收盤
     if (c2.close! <= c1.close!) return false;
     if (c3.close! <= c2.close!) return false;
 
@@ -572,7 +592,7 @@ class ThreeWhiteSoldiersRule extends StockRule {
   }
 }
 
-/// Rule: Three Black Crows (Strong Bearish)
+/// 規則：三黑鴉型態（強勢空方訊號）
 class ThreeBlackCrowsRule extends StockRule {
   const ThreeBlackCrowsRule();
 
@@ -592,6 +612,14 @@ class ThreeBlackCrowsRule extends StockRule {
     final c1 = data.prices[data.prices.length - 3];
 
     if (_isThreeBlackCrows(c1, c2, c3)) {
+      // 過濾條件：每根 K 線須為強勢實體（從開盤跌幅 > 1.5%）
+      bool isStrong(DailyPriceEntry p) =>
+          p.open != null &&
+          p.open! > 0 &&
+          ((p.close! - p.open!) / p.open! < -0.015);
+
+      if (!isStrong(c1) || !isStrong(c2) || !isStrong(c3)) return null;
+
       return TriggeredReason(
         type: ReasonType.patternThreeBlackCrows,
         score: RuleScores.patternThreeSoldiers,
@@ -620,12 +648,12 @@ class ThreeBlackCrowsRule extends StockRule {
       return false;
     }
 
-    // All 3 candles bearish
+    // 三根 K 線皆為黑 K
     if (c1.close! >= c1.open!) return false;
     if (c2.close! >= c2.open!) return false;
     if (c3.close! >= c3.open!) return false;
 
-    // Consecutive lower closes
+    // 連續創低收盤
     if (c2.close! >= c1.close!) return false;
     if (c3.close! >= c2.close!) return false;
 
