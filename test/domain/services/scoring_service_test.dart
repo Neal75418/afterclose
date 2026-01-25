@@ -54,6 +54,37 @@ void main() {
       ),
     );
     registerFallbackValue(<TriggeredReason>[]);
+    registerFallbackValue(<DailyPriceEntry>[]);
+    registerFallbackValue(<NewsItemEntry>[]);
+    registerFallbackValue(<DailyInstitutionalEntry>[]);
+    registerFallbackValue(<MonthlyRevenueEntry>[]);
+
+    // Default mocks to prevent Null type errors
+    when(() => mockRuleEngine.getTopReasons(any())).thenAnswer(
+      (invocation) =>
+          invocation.positionalArguments[0] as List<TriggeredReason>,
+    );
+    // Types that might be nullable in arguments but needed for any()
+    registerFallbackValue(
+      MonthlyRevenueEntry(
+        symbol: 'TEST',
+        date: DateTime.now(),
+        revenueYear: 2023,
+        revenueMonth: 1,
+        revenue: 0,
+        momGrowth: 0,
+        yoyGrowth: 0,
+      ),
+    );
+    registerFallbackValue(
+      StockValuationEntry(
+        symbol: 'TEST',
+        date: DateTime.now(),
+        per: 0,
+        pbr: 0,
+        dividendYield: 0,
+      ),
+    );
   });
 
   group('ScoringService Liquidity Filters', () {
@@ -236,5 +267,221 @@ void main() {
       expect(result.first.symbol, 'GOOD');
       expect(result.first.score, 80);
     });
+
+    test('should sort candidates by score descending', () async {
+      // Arrange
+      final pricesMap = {
+        'HIGH_SCORE': [
+          ...generatePricesWithVolumeSpike(
+            days: 30,
+            normalVolume:
+                2000000, // Increase to pass turnover filter (2M * 100 = 200M > 20M)
+            spikeVolume: 5000000,
+          ),
+        ],
+        'LOW_SCORE': [
+          ...generatePricesWithVolumeSpike(
+            days: 30,
+            normalVolume: 2000000,
+            spikeVolume: 5000000,
+          ),
+        ],
+      };
+
+      final highReason = const TriggeredReason(
+        type: ReasonType.volumeSpike,
+        score: 80, // High score reason
+        description: 'High',
+      );
+      final lowReason = const TriggeredReason(
+        type: ReasonType.volumeSpike,
+        score: 40, // Low score reason
+        description: 'Low',
+      );
+
+      // Unified mock for evaluateStock using thenAnswer to handle dispatch
+      when(
+        () => mockRuleEngine.evaluateStock(
+          priceHistory: any(named: 'priceHistory'),
+          context: any(named: 'context'),
+          symbol: any(named: 'symbol'),
+          recentNews: null,
+          institutionalHistory: null,
+          latestRevenue: null,
+          latestValuation: null,
+          revenueHistory: null,
+        ),
+      ).thenAnswer((invocation) {
+        final symbol = invocation.namedArguments[#symbol] as String;
+        if (symbol == 'HIGH_SCORE') return [highReason];
+        if (symbol == 'LOW_SCORE') return [lowReason];
+        return [];
+      });
+
+      // Mock calculateScore to return score based on input reasons
+      when(
+        () => mockRuleEngine.calculateScore(
+          any(),
+          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+        ),
+      ).thenAnswer((invocation) {
+        final reasons =
+            invocation.positionalArguments[0] as List<TriggeredReason>;
+        if (reasons.contains(highReason)) return 80;
+        if (reasons.contains(lowReason)) return 40;
+        return 0;
+      });
+
+      // Mock analysis service dependencies for both
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 100,
+          resistanceLevel: 120,
+        ),
+      );
+      when(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+        ),
+      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+
+      when(
+        () => mockAnalysisRepository.saveAnalysis(
+          symbol: any(named: 'symbol'),
+          date: any(named: 'date'),
+          trendState: any(named: 'trendState'),
+          score: any(named: 'score'),
+          reversalState: any(named: 'reversalState'),
+          supportLevel: any(named: 'supportLevel'),
+          resistanceLevel: any(named: 'resistanceLevel'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+      ).thenAnswer((_) async {});
+
+      // Act
+      // Pass in reverse order to ensure sorting works
+      final result = await scoringService.scoreStocks(
+        candidates: ['LOW_SCORE', 'HIGH_SCORE'],
+        date: DateTime.now(),
+        pricesMap: pricesMap,
+        newsMap: {},
+      );
+
+      // Assert
+      expect(result.length, 2);
+      expect(result.first.symbol, 'HIGH_SCORE');
+      expect(result.last.symbol, 'LOW_SCORE');
+    });
+
+    test(
+      'should apply cooldown penalty for recently recommended stocks',
+      () async {
+        // Arrange
+        final pricesMap = {
+          'COOLDOWN': [
+            ...generatePricesWithVolumeSpike(
+              days: 30,
+              normalVolume: 2000000,
+              spikeVolume: 5000000,
+            ),
+          ],
+        };
+
+        // Mock DB to return true for wasRecommended
+        when(
+          () => mockAnalysisRepository.wasRecentlyRecommended(
+            'COOLDOWN',
+            days: any(
+              named: 'days',
+            ), // Argument is named 'days', not startDate/endDate
+          ),
+        ).thenAnswer((_) async => true);
+
+        // Mock Analysis Service
+        when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+          const AnalysisResult(
+            trendState: TrendState.up,
+            reversalState: ReversalState.none,
+            supportLevel: 100,
+            resistanceLevel: 120,
+          ),
+        );
+        when(
+          () => mockAnalysisService.buildContext(
+            any(),
+            priceHistory: any(named: 'priceHistory'),
+            marketData: any(named: 'marketData'),
+          ),
+        ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+
+        // Mock Rule Engine
+        when(
+          () => mockRuleEngine.evaluateStock(
+            priceHistory: any(named: 'priceHistory'),
+            context: any(named: 'context'),
+            symbol: 'COOLDOWN',
+            recentNews: null,
+            institutionalHistory: null,
+            latestRevenue: null,
+            latestValuation: null,
+            revenueHistory: null,
+          ),
+        ).thenReturn([
+          const TriggeredReason(
+            type: ReasonType.volumeSpike,
+            score: 10,
+            description: 'Dummy',
+          ),
+        ]);
+
+        when(
+          () => mockRuleEngine.calculateScore(
+            any(),
+            wasRecentlyRecommended: true,
+          ),
+        ).thenReturn(80);
+
+        when(
+          () => mockAnalysisRepository.saveAnalysis(
+            symbol: any(named: 'symbol'),
+            date: any(named: 'date'),
+            trendState: any(named: 'trendState'),
+            score: any(named: 'score'),
+            reversalState: any(named: 'reversalState'),
+            supportLevel: any(named: 'supportLevel'),
+            resistanceLevel: any(named: 'resistanceLevel'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(
+          () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+        ).thenAnswer((_) async {});
+
+        // Act
+        await scoringService.scoreStocks(
+          candidates: ['COOLDOWN'],
+          date: DateTime.now(),
+          pricesMap: pricesMap,
+          newsMap: {},
+          recentlyRecommended: {'COOLDOWN'},
+        );
+
+        // Assert
+        // Verify calculateScore was called with wasRecentlyRecommended: true
+        verify(
+          () => mockRuleEngine.calculateScore(
+            any(),
+            wasRecentlyRecommended: true,
+          ),
+        ).called(1);
+      },
+    );
   });
 }

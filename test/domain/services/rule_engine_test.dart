@@ -93,6 +93,79 @@ void main() {
     });
   });
 
+  group('calculateScore', () {
+    test('should apply bonus for Breakout + Volume Spike (+10)', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'Breakout',
+        ),
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 22,
+          description: 'Volume',
+        ),
+      ];
+
+      // Base: 25 + 22 = 47
+      // Bonus: +10 (Breakout + Volume)
+      // Total: 57
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 57);
+    });
+
+    test('should apply bonus for Reversal + Volume Spike (+10)', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'Reversal',
+        ),
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 22,
+          description: 'Volume',
+        ),
+      ];
+
+      // Base: 35 + 22 = 57
+      // Bonus: +10 (Reversal + Volume)
+      // Total: 67
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 67);
+    });
+
+    test('should cap score at 100', () {
+      // Simulate reasons that sum > 100
+      final reasons = List.generate(
+        5,
+        (i) => const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'High Score',
+        ),
+      );
+
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 100);
+    });
+
+    test('should not reduce score below 0', () {
+      // Simulate negative reasons
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.techBreakdown,
+          score: -100,
+          description: 'Bad',
+        ),
+      ];
+
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 0);
+    });
+  });
+
   group('Individual Rules', () {
     group('WeakToStrongRule', () {
       const rule = WeakToStrongRule();
