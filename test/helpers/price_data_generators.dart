@@ -72,6 +72,25 @@ List<DailyPriceEntry> generateConstantPrices({
   });
 }
 
+/// 根據指定價格清單生成價格資料。
+///
+/// 用於需要精確控制每天收盤價的測試案例。
+List<DailyPriceEntry> generatePriceHistoryFromList({
+  required List<double> prices,
+  String symbol = 'TEST',
+  DateTime? startDate,
+}) {
+  final days = prices.length;
+  final start = startDate ?? DateTime.now().subtract(Duration(days: days - 1));
+  return List.generate(days, (i) {
+    return createTestPrice(
+      symbol: symbol,
+      date: start.add(Duration(days: i)),
+      close: prices[i],
+    );
+  });
+}
+
 // ==========================================
 // 趨勢型態生成
 // ==========================================

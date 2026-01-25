@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
+import '../../helpers/price_data_generators.dart';
+
 void main() {
   group('PriceCalculator', () {
     group('calculatePriceChange', () {
@@ -10,12 +12,11 @@ void main() {
         'should calculate positive price change when history includes latest date',
         () {
           final now = DateTime.now();
-          final history = _generatePriceHistory(
-            days: 5,
+          final history = generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0, 105.0],
             startDate: now.subtract(const Duration(days: 4)),
           );
-          final latestPrice = _createPrice(close: 105.0, date: now);
+          final latestPrice = createTestPrice(close: 105.0, date: now);
 
           final result = PriceCalculator.calculatePriceChange(
             history,
@@ -31,12 +32,11 @@ void main() {
         'should calculate negative price change when history includes latest date',
         () {
           final now = DateTime.now();
-          final history = _generatePriceHistory(
-            days: 5,
+          final history = generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0, 95.0],
             startDate: now.subtract(const Duration(days: 4)),
           );
-          final latestPrice = _createPrice(close: 95.0, date: now);
+          final latestPrice = createTestPrice(close: 95.0, date: now);
 
           final result = PriceCalculator.calculatePriceChange(
             history,
@@ -54,13 +54,12 @@ void main() {
           final now = DateTime.now();
           final yesterday = now.subtract(const Duration(days: 1));
           // History only goes up to yesterday
-          final history = _generatePriceHistory(
-            days: 4,
+          final history = generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0],
             startDate: yesterday.subtract(const Duration(days: 3)),
           );
           // Latest price is today
-          final latestPrice = _createPrice(close: 105.0, date: now);
+          final latestPrice = createTestPrice(close: 105.0, date: now);
 
           final result = PriceCalculator.calculatePriceChange(
             history,
@@ -74,8 +73,7 @@ void main() {
       );
 
       test('should return null when latestPrice is null', () {
-        final history = _generatePriceHistory(
-          days: 5,
+        final history = generatePriceHistoryFromList(
           prices: [100.0, 100.0, 100.0, 100.0, 100.0],
         );
 
@@ -88,12 +86,11 @@ void main() {
         'should return null when history has less than 2 entries and includes latest',
         () {
           final now = DateTime.now();
-          final history = _generatePriceHistory(
-            days: 1,
+          final history = generatePriceHistoryFromList(
             prices: [100.0],
             startDate: now,
           );
-          final latestPrice = _createPrice(close: 100.0, date: now);
+          final latestPrice = createTestPrice(close: 100.0, date: now);
 
           final result = PriceCalculator.calculatePriceChange(
             history,
@@ -109,12 +106,11 @@ void main() {
         () {
           final now = DateTime.now();
           final yesterday = now.subtract(const Duration(days: 1));
-          final history = _generatePriceHistory(
-            days: 1,
+          final history = generatePriceHistoryFromList(
             prices: [100.0],
             startDate: yesterday,
           );
-          final latestPrice = _createPrice(close: 110.0, date: now);
+          final latestPrice = createTestPrice(close: 110.0, date: now);
 
           final result = PriceCalculator.calculatePriceChange(
             history,
@@ -128,12 +124,11 @@ void main() {
 
       test('should return null when previous close is zero', () {
         final now = DateTime.now();
-        final history = _generatePriceHistory(
-          days: 3,
+        final history = generatePriceHistoryFromList(
           prices: [100.0, 0.0, 100.0],
           startDate: now.subtract(const Duration(days: 2)),
         );
-        final latestPrice = _createPrice(close: 100.0, date: now);
+        final latestPrice = createTestPrice(close: 100.0, date: now);
 
         final result = PriceCalculator.calculatePriceChange(
           history,
@@ -186,21 +181,27 @@ void main() {
     group('calculatePriceChangesBatch', () {
       test('should calculate price changes for multiple symbols', () {
         final priceHistories = <String, List<DailyPriceEntry>>{
-          'AAAA': _generatePriceHistory(
-            days: 5,
+          'AAAA': generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0, 105.0],
             symbol: 'AAAA',
           ),
-          'BBBB': _generatePriceHistory(
-            days: 5,
+          'BBBB': generatePriceHistoryFromList(
             prices: [200.0, 200.0, 200.0, 200.0, 190.0],
             symbol: 'BBBB',
           ),
         };
 
         final latestPrices = <String, DailyPriceEntry>{
-          'AAAA': _createPrice(symbol: 'AAAA', close: 105.0),
-          'BBBB': _createPrice(symbol: 'BBBB', close: 190.0),
+          'AAAA': createTestPrice(
+            symbol: 'AAAA',
+            close: 105.0,
+            date: DateTime.now(),
+          ),
+          'BBBB': createTestPrice(
+            symbol: 'BBBB',
+            close: 190.0,
+            date: DateTime.now(),
+          ),
         };
 
         final result = PriceCalculator.calculatePriceChangesBatch(
@@ -216,7 +217,11 @@ void main() {
         final priceHistories = <String, List<DailyPriceEntry>>{};
 
         final latestPrices = <String, DailyPriceEntry>{
-          'AAAA': _createPrice(symbol: 'AAAA', close: 105.0),
+          'AAAA': createTestPrice(
+            symbol: 'AAAA',
+            close: 105.0,
+            date: DateTime.now(),
+          ),
         };
 
         final result = PriceCalculator.calculatePriceChangesBatch(
@@ -231,7 +236,11 @@ void main() {
         final priceHistories = <String, List<DailyPriceEntry>>{'AAAA': []};
 
         final latestPrices = <String, DailyPriceEntry>{
-          'AAAA': _createPrice(symbol: 'AAAA', close: 105.0),
+          'AAAA': createTestPrice(
+            symbol: 'AAAA',
+            close: 105.0,
+            date: DateTime.now(),
+          ),
         };
 
         final result = PriceCalculator.calculatePriceChangesBatch(
@@ -244,8 +253,7 @@ void main() {
 
       test('should handle mixed valid and invalid data', () {
         final priceHistories = <String, List<DailyPriceEntry>>{
-          'AAAA': _generatePriceHistory(
-            days: 5,
+          'AAAA': generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0, 110.0],
             symbol: 'AAAA',
           ),
@@ -253,8 +261,16 @@ void main() {
         };
 
         final latestPrices = <String, DailyPriceEntry>{
-          'AAAA': _createPrice(symbol: 'AAAA', close: 110.0),
-          'BBBB': _createPrice(symbol: 'BBBB', close: 100.0),
+          'AAAA': createTestPrice(
+            symbol: 'AAAA',
+            close: 110.0,
+            date: DateTime.now(),
+          ),
+          'BBBB': createTestPrice(
+            symbol: 'BBBB',
+            close: 100.0,
+            date: DateTime.now(),
+          ),
         };
 
         final result = PriceCalculator.calculatePriceChangesBatch(
@@ -267,40 +283,4 @@ void main() {
       });
     });
   });
-}
-
-// ==========================================
-// 測試輔助函數
-// ==========================================
-
-List<DailyPriceEntry> _generatePriceHistory({
-  required int days,
-  required List<double> prices,
-  String symbol = 'TEST',
-  DateTime? startDate,
-}) {
-  final start = startDate ?? DateTime.now().subtract(Duration(days: days - 1));
-  return List.generate(days, (i) {
-    return _createPrice(
-      symbol: symbol,
-      date: start.add(Duration(days: i)),
-      close: prices[i],
-    );
-  });
-}
-
-DailyPriceEntry _createPrice({
-  String symbol = 'TEST',
-  DateTime? date,
-  double? close,
-}) {
-  return DailyPriceEntry(
-    symbol: symbol,
-    date: date ?? DateTime.now(),
-    open: close,
-    high: close != null ? close * 1.01 : null,
-    low: close != null ? close * 0.99 : null,
-    close: close,
-    volume: 1000,
-  );
 }
