@@ -288,12 +288,12 @@ void main() {
         ],
       };
 
-      final highReason = const TriggeredReason(
+      const highReason = TriggeredReason(
         type: ReasonType.volumeSpike,
         score: 80, // High score reason
         description: 'High',
       );
-      final lowReason = const TriggeredReason(
+      const lowReason = TriggeredReason(
         type: ReasonType.volumeSpike,
         score: 40, // Low score reason
         description: 'Low',
