@@ -5,6 +5,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_isolate.dart';
@@ -159,8 +160,20 @@ class ScoringService {
       // 取得前幾個原因
       final topReasons = _ruleEngine.getTopReasons(reasons);
 
-      // 儲存分析結果
-      await _analysisRepo.saveAnalysis(
+      // 轉換為 ReasonData 並儲存
+      final reasonDataList = topReasons
+          .map(
+            (r) => ReasonData(
+              type: r.type.code,
+              evidenceJson: r.evidenceJson != null
+                  ? jsonEncode(r.evidenceJson)
+                  : '{}',
+              score: r.score,
+            ),
+          )
+          .toList();
+
+      await _persistAnalysisResult(
         symbol: symbol,
         date: date,
         trendState: analysisResult.trendState.code,
@@ -168,23 +181,7 @@ class ScoringService {
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
         score: score.toDouble(),
-      );
-
-      // 儲存原因
-      await _analysisRepo.saveReasons(
-        symbol,
-        date,
-        topReasons
-            .map(
-              (r) => ReasonData(
-                type: r.type.code,
-                evidenceJson: r.evidenceJson != null
-                    ? jsonEncode(r.evidenceJson)
-                    : '{}',
-                score: r.score,
-              ),
-            )
-            .toList(),
+        reasons: reasonDataList,
       );
 
       scoredStocks.add(
@@ -211,41 +208,8 @@ class ScoringService {
       '評分完成: ${scoredStocks.length} 檔 (最高 $maxScore 分), 跳過 $skippedTotal 檔',
     );
 
-    // 依流動性加權分數排序，具有穩定的平分處理
-    // 策略：基礎分數 + 流動性加成
-    // 流動性加成：每 1 億成交金額 +2 分（上限 20 分）
-    // 這使高成交量股票（10 億成交、60 分）能與低成交量股票（3000 萬成交、80 分）競爭
-    // 10 億成交 -> +20 加成 -> 60+20=80
-    // 3000 萬成交 -> +0.6 加成 -> 80+0.6=80.6
-    //
-    // 重要：分數相同時，以成交金額為次要排序（高者優先），
-    // 再以股票代碼為第三排序以確保結果一致性
-    scoredStocks.sort((a, b) {
-      final double scoreA = a.score.toDouble();
-      final double scoreB = b.score.toDouble();
-
-      // 計算加成（上限為 10 億 = 20 分）
-      double bonusA = (a.turnover / 100000000) * 2.0;
-      if (bonusA > 20) bonusA = 20;
-
-      double bonusB = (b.turnover / 100000000) * 2.0;
-      if (bonusB > 20) bonusB = 20;
-
-      // 四捨五入至小數點後 2 位以避免浮點數精度問題
-      final totalA = ((scoreA + bonusA) * 100).round() / 100;
-      final totalB = ((scoreB + bonusB) * 100).round() / 100;
-
-      // 主要：總分（由高至低）
-      final scoreCmp = totalB.compareTo(totalA);
-      if (scoreCmp != 0) return scoreCmp;
-
-      // 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
-      final turnoverCmp = b.turnover.compareTo(a.turnover);
-      if (turnoverCmp != 0) return turnoverCmp;
-
-      // 第三：股票代碼（由低至高）- 確保平分處理結果一致
-      return a.symbol.compareTo(b.symbol);
-    });
+    // 依流動性加權分數排序
+    scoredStocks.sort(ScoredStock.compareByWeightedScore);
 
     return scoredStocks;
   }
@@ -298,8 +262,26 @@ class ScoringService {
       recentlyRecommended: recentlyRecommended,
     );
 
-    // 在背景 Isolate 執行運算
-    final result = await evaluateStocksInIsolate(input);
+    // 在背景 Isolate 執行運算（含回退機制）
+    ScoringBatchResult result;
+    try {
+      result = await evaluateStocksInIsolate(input);
+    } catch (e, stackTrace) {
+      AppLogger.warning('ScoringSvc', 'Isolate 執行失敗，回退至主執行緒: $e', stackTrace);
+
+      // 回退：在主執行緒執行評分
+      return await scoreStocks(
+        candidates: candidates,
+        date: date,
+        pricesMap: pricesMap,
+        newsMap: newsMap,
+        institutionalMap: institutionalMap,
+        revenueMap: revenueMap,
+        valuationMap: valuationMap,
+        revenueHistoryMap: revenueHistoryMap,
+        recentlyRecommended: recentlyRecommended,
+      );
+    }
 
     // 記錄分析統計
     final skippedTotal =
@@ -318,7 +300,25 @@ class ScoringService {
 
     // 批次儲存分析結果
     for (final output in result.outputs) {
-      await _analysisRepo.saveAnalysis(
+      // 轉換原因（含型別安全檢查）
+      final reasonDataList = <ReasonData>[];
+      for (final r in output.reasons) {
+        final type = r['type'];
+        final evidenceJson = r['evidenceJson'];
+        final score = r['score'];
+
+        // 跳過格式不正確的資料
+        if (type is! String || evidenceJson is! String || score is! int) {
+          AppLogger.warning('ScoringSvc', '${output.symbol}: 原因資料格式錯誤，跳過');
+          continue;
+        }
+
+        reasonDataList.add(
+          ReasonData(type: type, evidenceJson: evidenceJson, score: score),
+        );
+      }
+
+      await _persistAnalysisResult(
         symbol: output.symbol,
         date: date,
         trendState: output.trendState,
@@ -326,21 +326,7 @@ class ScoringService {
         supportLevel: output.supportLevel,
         resistanceLevel: output.resistanceLevel,
         score: output.score.toDouble(),
-      );
-
-      // 儲存原因
-      await _analysisRepo.saveReasons(
-        output.symbol,
-        date,
-        output.reasons
-            .map(
-              (r) => ReasonData(
-                type: r['type'] as String,
-                evidenceJson: r['evidenceJson'] as String,
-                score: r['score'] as int,
-              ),
-            )
-            .toList(),
+        reasons: reasonDataList,
       );
     }
 
@@ -357,29 +343,38 @@ class ScoringService {
         .toList();
 
     // 依流動性加權分數排序
-    scoredStocks.sort((a, b) {
-      final double scoreA = a.score.toDouble();
-      final double scoreB = b.score.toDouble();
-
-      double bonusA = (a.turnover / 100000000) * 2.0;
-      if (bonusA > 20) bonusA = 20;
-
-      double bonusB = (b.turnover / 100000000) * 2.0;
-      if (bonusB > 20) bonusB = 20;
-
-      final totalA = ((scoreA + bonusA) * 100).round() / 100;
-      final totalB = ((scoreB + bonusB) * 100).round() / 100;
-
-      final scoreCmp = totalB.compareTo(totalA);
-      if (scoreCmp != 0) return scoreCmp;
-
-      final turnoverCmp = b.turnover.compareTo(a.turnover);
-      if (turnoverCmp != 0) return turnoverCmp;
-
-      return a.symbol.compareTo(b.symbol);
-    });
+    scoredStocks.sort(ScoredStock.compareByWeightedScore);
 
     return scoredStocks;
+  }
+
+  // =============================================
+  // 資料儲存輔助方法
+  // =============================================
+
+  /// 儲存股票分析結果與觸發原因
+  ///
+  /// 統一 [scoreStocks] 和 [scoreStocksInIsolate] 的儲存邏輯
+  Future<void> _persistAnalysisResult({
+    required String symbol,
+    required DateTime date,
+    required String trendState,
+    required String reversalState,
+    required double? supportLevel,
+    required double? resistanceLevel,
+    required double score,
+    required List<ReasonData> reasons,
+  }) async {
+    await _analysisRepo.saveAnalysis(
+      symbol: symbol,
+      date: date,
+      trendState: trendState,
+      reversalState: reversalState,
+      supportLevel: supportLevel,
+      resistanceLevel: resistanceLevel,
+      score: score,
+    );
+    await _analysisRepo.saveReasons(symbol, date, reasons);
   }
 
   // =============================================
@@ -450,4 +445,41 @@ class ScoredStock {
   final int score;
   final double turnover;
   final List<TriggeredReason> reasons;
+
+  /// 依流動性加權分數排序的比較函數
+  ///
+  /// 策略：基礎分數 + 流動性加成
+  /// 流動性加成：每 1 億成交金額 +2 分（上限 20 分）
+  /// 這使高成交量股票（10 億成交、60 分）能與低成交量股票（3000 萬成交、80 分）競爭
+  ///
+  /// 排序優先順序：
+  /// 1. 主要：總分（由高至低）
+  /// 2. 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
+  /// 3. 第三：股票代碼（由低至高）- 確保平分處理結果一致
+  static int compareByWeightedScore(ScoredStock a, ScoredStock b) {
+    final double scoreA = a.score.toDouble();
+    final double scoreB = b.score.toDouble();
+
+    // 計算加成（上限為 10 億 = 20 分）
+    double bonusA = (a.turnover / 100000000) * 2.0;
+    if (bonusA > 20) bonusA = 20;
+
+    double bonusB = (b.turnover / 100000000) * 2.0;
+    if (bonusB > 20) bonusB = 20;
+
+    // 四捨五入至小數點後 2 位以避免浮點數精度問題
+    final totalA = ((scoreA + bonusA) * 100).round() / 100;
+    final totalB = ((scoreB + bonusB) * 100).round() / 100;
+
+    // 主要：總分（由高至低）
+    final scoreCmp = totalB.compareTo(totalA);
+    if (scoreCmp != 0) return scoreCmp;
+
+    // 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
+    final turnoverCmp = b.turnover.compareTo(a.turnover);
+    if (turnoverCmp != 0) return turnoverCmp;
+
+    // 第三：股票代碼（由低至高）- 確保平分處理結果一致
+    return a.symbol.compareTo(b.symbol);
+  }
 }

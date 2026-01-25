@@ -147,7 +147,9 @@ abstract final class RuleParams {
   static const int maxReasonsPerStock = 2;
 
   /// 每日 Top N 推薦數量
-  static const int dailyTopN = 10;
+  ///
+  /// 上市+上櫃共約 1,770 檔股票，20 檔可提供足夠多樣性
+  static const int dailyTopN = 20;
 
   /// 最低評分門檻
   ///
@@ -237,6 +239,12 @@ abstract final class RuleParams {
   /// 一年交易日數（約 52 週 * 5 天）
   static const int week52Days = 250;
 
+  /// 歷史資料完成度最低天數
+  ///
+  /// 股票需有此天數以上的價格資料，才視為「歷史資料完整」。
+  /// 200 天約涵蓋 10 個月的交易日，可進行大部分技術分析。
+  static const int historicalDataMinDays = 200;
+
   /// 接近 52 週高低點緩衝百分比
   ///
   /// 在 52 週高低點 1% 範圍內觸發訊號。
@@ -278,6 +286,45 @@ abstract final class RuleParams {
   ///
   /// 黃金交叉需有至少此漲幅才算有效。
   static const double kdCrossPriceChangeThreshold = 0.01;
+
+  // ==========================================
+  // K 線型態參數
+  // ==========================================
+
+  /// 錘子線實體最小比例（5%）
+  ///
+  /// 實體須至少占振幅的 5%，過小視為十字線。
+  static const double hammerBodyMinRatio = 0.05;
+
+  /// 錘子線下影線倍數（2 倍實體）
+  ///
+  /// 下影線須至少為實體的 2 倍。
+  static const double hammerLowerShadowMultiplier = 2.0;
+
+  /// 錘子線上影線最大倍數（0.5 倍實體）
+  ///
+  /// 上影線不可超過實體的 0.5 倍。
+  static const double hammerUpperShadowMaxRatio = 0.5;
+
+  /// 十字線實體最大比例（10%）
+  ///
+  /// 實體小於振幅的 10% 視為十字線。
+  static const double dojiBodyMaxRatio = 0.1;
+
+  /// 跳空缺口最小比例（0.5%）
+  ///
+  /// 缺口須至少為前日收盤的 0.5%。
+  static const double gapMinThreshold = 0.005;
+
+  /// 星線小實體最大比例（0.5 倍第一根）
+  ///
+  /// 第二根 K 線實體不可超過第一根的 0.5 倍。
+  static const double starSmallBodyMaxRatio = 0.5;
+
+  /// 強勢 K 線跌幅門檻（1.5%）
+  ///
+  /// 三黑鴉要求每根 K 線從開盤跌幅超過此值。
+  static const double strongCandleDropThreshold = 0.015;
 
   // ==========================================
   // 第四階段：延伸市場資料參數
@@ -378,6 +425,46 @@ abstract final class RuleParams {
   /// TWSE 並非每日更新所有股票的估值資料，超過此天數的資料視為過時。
   /// 7 天確保資料在合理時效內，避免用舊資料觸發規則。
   static const int valuationMaxStaleDays = 7;
+
+  // ==========================================
+  // 分析服務參數
+  // ==========================================
+
+  /// 波段點聚類閾值（2%）
+  ///
+  /// 將差距在此範圍內的波段點聚類為同一價格區域。
+  static const double clusterThreshold = 0.02;
+
+  /// 趨勢偵測上升閾值（每日 0.08%）
+  ///
+  /// 標準化斜率超過此值視為上升趨勢。
+  /// 每日 0.08% = 20 天約 1.6%
+  static const double trendUpThreshold = 0.08;
+
+  /// 趨勢偵測下降閾值（每日 -0.08%）
+  ///
+  /// 標準化斜率低於此值視為下降趨勢。
+  static const double trendDownThreshold = -0.08;
+
+  /// 接近區間高點緩衝（2%）
+  ///
+  /// 當前價格在區間高點 2% 以內視為「接近高點」。
+  static const double nearRangeHighBuffer = 0.98;
+
+  /// 接近區間低點緩衝（2%）
+  ///
+  /// 當前價格在區間低點 2% 以內視為「接近低點」。
+  static const double nearRangeLowBuffer = 1.02;
+
+  /// 更高低點確認緩衝（3%）
+  ///
+  /// 近期低點需高於前期低點 3% 才確認為「更高低點」。
+  static const double higherLowBuffer = 1.03;
+
+  /// 更低高點確認緩衝（3%）
+  ///
+  /// 近期高點需低於前期高點 3% 才確認為「更低高點」。
+  static const double lowerHighBuffer = 0.97;
 }
 
 /// 各推薦類型的分數
@@ -394,13 +481,27 @@ abstract final class RuleParams {
 abstract final class RuleScores {
   /// 最高分數上限
   static const int maxScore = 80;
+
+  // ==========================================
+  // 多方訊號（正分）
+  // ==========================================
+
+  /// 弱轉強分數（強多頭訊號）
   static const int reversalW2S = 35;
-  static const int reversalS2W = 35;
+
+  /// 向上突破分數
   static const int techBreakout = 25;
-  static const int techBreakdown = 25;
+
+  /// 成交量爆增分數
   static const int volumeSpike = 22;
+
+  /// 價格急漲分數
   static const int priceSpike = 15;
+
+  /// 法人買賣轉向分數
   static const int institutionalShift = 18;
+
+  /// 新聞相關分數
   static const int newsRelated = 8;
 
   /// 加分：突破 + 成交量異動
@@ -410,101 +511,124 @@ abstract final class RuleScores {
   static const int reversalVolumeBonus = 6;
 
   /// 加分：K 線型態（吞噬/星線/三兵）+ 成交量異動
-  ///
-  /// 強勢 K 線型態搭配成交量確認具高度意義。
   static const int patternVolumeBonus = 5;
 
-  /// KD 黃金交叉分數
+  /// KD 黃金交叉分數（多方）
   static const int kdGoldenCross = 18;
 
-  /// KD 死亡交叉分數
-  static const int kdDeathCross = 18;
-
-  /// 法人連續買超分數
+  /// 法人連續買超分數（多方）
   static const int institutionalBuyStreak = 20;
 
-  /// 法人連續賣超分數
-  static const int institutionalSellStreak = 20;
-
   // ==========================================
-  // K 線型態分數
+  // 空方訊號（負分）- 扣分以降低推薦機率
   // ==========================================
 
-  /// 十字線分數（猶豫）
+  /// 強轉弱分數（空方訊號，扣分）
+  static const int reversalS2W = -25;
+
+  /// 向下跌破分數（空方訊號，扣分）
+  static const int techBreakdown = -20;
+
+  /// KD 死亡交叉分數（空方訊號，扣分）
+  static const int kdDeathCross = -12;
+
+  /// 法人連續賣超分數（空方訊號，扣分）
+  static const int institutionalSellStreak = -15;
+
+  // ==========================================
+  // K 線型態分數（多空分離）
+  // ==========================================
+
+  /// 十字線分數（中性，猶豫訊號）
   static const int patternDoji = 10;
 
-  /// 吞噬型態分數（強反轉）
-  static const int patternEngulfing = 22;
+  /// 多頭吞噬分數（多方）
+  static const int patternEngulfingBullish = 22;
 
-  /// 錘子/吊人線分數
-  static const int patternHammer = 18;
+  /// 空頭吞噬分數（空方，扣分）
+  static const int patternEngulfingBearish = -18;
 
-  /// 跳空型態分數
-  static const int patternGap = 20;
+  /// 錘子線分數（多方，底部反轉）
+  static const int patternHammerBullish = 18;
 
-  /// 晨星/暮星分數（三根 K 線反轉）
-  static const int patternStar = 25;
+  /// 吊人線分數（空方，扣分）
+  static const int patternHammerBearish = -12;
 
-  /// 三白兵/三黑鴉分數（強趨勢）
-  static const int patternThreeSoldiers = 22;
+  /// 跳空上漲分數（多方）
+  static const int patternGapUp = 20;
+
+  /// 跳空下跌分數（空方，扣分）
+  static const int patternGapDown = -15;
+
+  /// 晨星分數（多方，底部反轉）
+  static const int patternMorningStar = 25;
+
+  /// 暮星分數（空方，扣分）
+  static const int patternEveningStar = -20;
+
+  /// 三白兵分數（多方）
+  static const int patternThreeWhiteSoldiers = 22;
+
+  /// 三黑鴉分數（空方，扣分）
+  static const int patternThreeBlackCrows = -18;
 
   // ==========================================
-  // 新訊號分數（第三階段）
+  // 技術指標分數（第三階段）
   // ==========================================
 
   /// 52 週新高分數（強多頭）
   static const int week52High = 28;
 
-  /// 52 週新低分數（潛在反轉或繼續下跌）
+  /// 52 週新低分數（逆勢買入機會，小正分）
   ///
-  /// 低於 52 週新高，因接刀風險較高。
-  static const int week52Low = 22;
+  /// 搭配反轉訊號可能是底部，但單獨出現風險高。
+  static const int week52Low = 8;
 
   /// 均線多頭排列分數（5>10>20>60）
   static const int maAlignmentBullish = 22;
 
-  /// 均線空頭排列分數（5<10<20<60）
-  static const int maAlignmentBearish = 22;
+  /// 均線空頭排列分數（空方，扣分）
+  static const int maAlignmentBearish = -15;
 
-  /// RSI 極度超買分數（警示訊號）
-  static const int rsiExtremeOverboughtSignal = 15;
+  /// RSI 極度超買分數（警示訊號，小扣分）
+  static const int rsiExtremeOverboughtSignal = -8;
 
-  /// RSI 極度超賣分數（潛在反彈）
-  static const int rsiExtremeOversoldSignal = 15;
+  /// RSI 極度超賣分數（逆勢反彈機會，小正分）
+  static const int rsiExtremeOversoldSignal = 10;
 
   // ==========================================
   // 第四階段：延伸市場資料分數
   // ==========================================
 
-  /// 外資持股增加分數
+  /// 外資持股增加分數（多方）
   static const int foreignShareholdingIncreasing = 18;
 
-  /// 外資持股減少分數
-  static const int foreignShareholdingDecreasing = 18;
+  /// 外資持股減少分數（空方，扣分）
+  static const int foreignShareholdingDecreasing = -12;
 
-  /// 高當沖比例分數（熱門股）
+  /// 高當沖比例分數（熱門股，中性偏多）
   static const int dayTradingHigh = 12;
 
-  /// 極高當沖比例分數（投機）
-  static const int dayTradingExtreme = 15;
+  /// 極高當沖比例分數（投機警示，小扣分）
+  static const int dayTradingExtreme = -5;
 
-  /// 高籌碼集中度分數
+  /// 高籌碼集中度分數（多方）
   static const int concentrationHigh = 16;
 
   // ==========================================
   // 第五階段：價量背離分數
   // ==========================================
 
-  /// 價漲量縮背離分數（警示訊號）
-  static const int priceVolumeBullishDivergence = 15;
+  /// 價漲量縮背離分數（警示訊號，小扣分）
+  static const int priceVolumeBullishDivergence = -8;
 
-  /// 價跌量增背離分數（恐慌訊號）
-  static const int priceVolumeBearishDivergence = 18;
+  /// 價跌量增背離分數（恐慌訊號，扣分）
+  static const int priceVolumeBearishDivergence = -15;
 
   /// 高檔爆量突破分數（強多頭）
   static const int highVolumeBreakout = 22;
 
-  /// 低檔吸籌分數（潛在反轉）
+  /// 低檔吸籌分數（潛在反轉，多方）
   static const int lowVolumeAccumulation = 16;
 
   // ==========================================
@@ -514,23 +638,42 @@ abstract final class RuleScores {
   /// 營收年增暴增分數（強基本面）
   static const int revenueYoySurge = 20;
 
-  /// 營收年減衰退分數（警示）
-  static const int revenueYoyDecline = 15;
+  /// 營收年減衰退分數（空方，扣分）
+  static const int revenueYoyDecline = -10;
 
-  /// 營收月增持續成長分數
+  /// 營收月增持續成長分數（多方）
   static const int revenueMomGrowth = 15;
 
-  /// 高殖利率分數
+  /// 高殖利率分數（多方）
   static const int highDividendYield = 18;
 
-  /// 本益比低估分數
+  /// 本益比低估分數（多方）
   static const int peUndervalued = 15;
 
-  /// 本益比高估分數（警示）
-  static const int peOvervalued = 10;
+  /// 本益比高估分數（空方，扣分）
+  static const int peOvervalued = -8;
 
-  /// 股價淨值比低估分數
+  /// 股價淨值比低估分數（多方）
   static const int pbrUndervalued = 12;
+
+  // ==========================================
+  // 向後相容（舊欄位名稱，標記為棄用）
+  // ==========================================
+
+  /// @deprecated 使用 patternEngulfingBullish 或 patternEngulfingBearish
+  static const int patternEngulfing = 22;
+
+  /// @deprecated 使用 patternHammerBullish 或 patternHammerBearish
+  static const int patternHammer = 18;
+
+  /// @deprecated 使用 patternGapUp 或 patternGapDown
+  static const int patternGap = 20;
+
+  /// @deprecated 使用 patternMorningStar 或 patternEveningStar
+  static const int patternStar = 25;
+
+  /// @deprecated 使用 patternThreeWhiteSoldiers 或 patternThreeBlackCrows
+  static const int patternThreeSoldiers = 22;
 }
 
 /// 推薦理由類型
@@ -608,18 +751,19 @@ enum ReasonType {
     ReasonType.kdDeathCross => RuleScores.kdDeathCross,
     ReasonType.institutionalBuyStreak => RuleScores.institutionalBuyStreak,
     ReasonType.institutionalSellStreak => RuleScores.institutionalSellStreak,
-    // K 線型態
+    // K 線型態（多空分離）
     ReasonType.patternDoji => RuleScores.patternDoji,
-    ReasonType.patternBullishEngulfing => RuleScores.patternEngulfing,
-    ReasonType.patternBearishEngulfing => RuleScores.patternEngulfing,
-    ReasonType.patternHammer => RuleScores.patternHammer,
-    ReasonType.patternHangingMan => RuleScores.patternHammer,
-    ReasonType.patternGapUp => RuleScores.patternGap,
-    ReasonType.patternGapDown => RuleScores.patternGap,
-    ReasonType.patternMorningStar => RuleScores.patternStar,
-    ReasonType.patternEveningStar => RuleScores.patternStar,
-    ReasonType.patternThreeWhiteSoldiers => RuleScores.patternThreeSoldiers,
-    ReasonType.patternThreeBlackCrows => RuleScores.patternThreeSoldiers,
+    ReasonType.patternBullishEngulfing => RuleScores.patternEngulfingBullish,
+    ReasonType.patternBearishEngulfing => RuleScores.patternEngulfingBearish,
+    ReasonType.patternHammer => RuleScores.patternHammerBullish,
+    ReasonType.patternHangingMan => RuleScores.patternHammerBearish,
+    ReasonType.patternGapUp => RuleScores.patternGapUp,
+    ReasonType.patternGapDown => RuleScores.patternGapDown,
+    ReasonType.patternMorningStar => RuleScores.patternMorningStar,
+    ReasonType.patternEveningStar => RuleScores.patternEveningStar,
+    ReasonType.patternThreeWhiteSoldiers =>
+      RuleScores.patternThreeWhiteSoldiers,
+    ReasonType.patternThreeBlackCrows => RuleScores.patternThreeBlackCrows,
     // 第三階段訊號
     ReasonType.week52High => RuleScores.week52High,
     ReasonType.week52Low => RuleScores.week52Low,

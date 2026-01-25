@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 
 import '../../helpers/price_data_generators.dart';
@@ -10,7 +11,7 @@ void main() {
   late AnalysisService analysisService;
 
   setUp(() {
-    analysisService = const AnalysisService();
+    analysisService = AnalysisService();
   });
 
   group('AnalysisService', () {

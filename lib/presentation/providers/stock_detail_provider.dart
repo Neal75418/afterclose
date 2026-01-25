@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -166,9 +165,6 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   FinMindClient get _finMind => _ref.read(finMindClientProvider);
   DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
 
-  /// 日期格式化器（用於資料轉換）
-  static final _dateFormat = DateFormat('yyyy-MM-dd');
-
   /// 將資料庫營收資料轉換為 FinMindRevenue 格式
   List<FinMindRevenue> _convertDbRevenuesToFinMind(
     List<MonthlyRevenueEntry> dbRevenues,
@@ -176,7 +172,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     return dbRevenues.map((r) {
       return FinMindRevenue(
         stockId: r.symbol,
-        date: _dateFormat.format(r.date),
+        date: DateContext.formatYmd(r.date),
         revenueYear: r.revenueYear,
         revenueMonth: r.revenueMonth,
         revenue: r.revenue,
@@ -289,8 +285,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       final data = await _finMind.getInstitutionalData(
         stockId: _symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: _dateFormat.format(today),
+        startDate: DateContext.formatYmd(startDate),
+        endDate: DateContext.formatYmd(today),
       );
 
       // Convert to DailyInstitutionalEntry format
@@ -337,8 +333,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       final marginData = await _finMind.getMarginData(
         stockId: _symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: _dateFormat.format(today),
+        startDate: DateContext.formatYmd(startDate),
+        endDate: DateContext.formatYmd(today),
       );
 
       state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
@@ -386,7 +382,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         final latest = dbValuations.last;
         latestPER = FinMindPER(
           stockId: latest.symbol,
-          date: _dateFormat.format(latest.date),
+          date: DateContext.formatYmd(latest.date),
           per: latest.per ?? 0,
           pbr: latest.pbr ?? 0,
           dividendYield: latest.dividendYield ?? 0,
@@ -420,8 +416,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         try {
           revenueData = await _finMind.getMonthlyRevenue(
             stockId: _symbol,
-            startDate: _dateFormat.format(revenueStartDate),
-            endDate: _dateFormat.format(today),
+            startDate: DateContext.formatYmd(revenueStartDate),
+            endDate: DateContext.formatYmd(today),
           );
           if (revenueData.isNotEmpty) {
             revenueData = FinMindRevenue.calculateGrowthRates(revenueData);
@@ -458,8 +454,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
           final perApiStart = today.subtract(const Duration(days: 5));
           final perData = await _finMind.getPERData(
             stockId: _symbol,
-            startDate: _dateFormat.format(perApiStart),
-            endDate: _dateFormat.format(today),
+            startDate: DateContext.formatYmd(perApiStart),
+            endDate: DateContext.formatYmd(today),
           );
 
           if (perData.isNotEmpty) {

@@ -1,5 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
@@ -33,7 +33,10 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     final pastClose = recentPrices[lookback].close;
     final todayVolume = recentPrices[0].volume;
 
-    if (todayClose == null || pastClose == null || todayVolume == null) {
+    if (todayClose == null ||
+        pastClose == null ||
+        pastClose == 0 ||
+        todayVolume == null) {
       return null;
     }
 
@@ -104,7 +107,10 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
     final pastClose = recentPrices[lookback].close;
     final todayVolume = recentPrices[0].volume;
 
-    if (todayClose == null || pastClose == null || todayVolume == null) {
+    if (todayClose == null ||
+        pastClose == null ||
+        pastClose == 0 ||
+        todayVolume == null) {
       return null;
     }
 

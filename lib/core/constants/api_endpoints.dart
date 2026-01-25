@@ -36,6 +36,25 @@ abstract final class ApiEndpoints {
       '$twseOpenDataBaseUrl/v1/opendata/t187ap05_L';
 
   // ==========================================
+  // TPEX (台灣櫃檯買賣中心)
+  // ==========================================
+
+  /// TPEX 官方網站基礎 URL
+  static const String tpexBaseUrl = 'https://www.tpex.org.tw';
+
+  /// 每日全市場上櫃股價（回傳 tables[0].data）
+  static const String tpexDailyPricesAll =
+      '/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php';
+
+  /// 三大法人上櫃買賣超（回傳 tables[0].data）
+  static const String tpexInstitutional =
+      '/web/stock/3insti/daily_trade/3itrade_hedge_result.php';
+
+  /// 上櫃融資融券餘額（回傳 tables[0].data）
+  static const String tpexMarginTrading =
+      '/web/stock/margin_trading/margin_sbl/margin_sbl_result.php';
+
+  // ==========================================
   // FinMind
   // ==========================================
 

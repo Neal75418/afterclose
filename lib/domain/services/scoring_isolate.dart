@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
@@ -214,7 +215,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   final input = ScoringIsolateInput.fromMap(inputMap);
 
   // 在 Isolate 中建立服務（它們是無狀態的）
-  const analysisService = AnalysisService();
+  final analysisService = AnalysisService();
   final ruleEngine = RuleEngine();
 
   final outputs = <ScoringIsolateOutput>[];

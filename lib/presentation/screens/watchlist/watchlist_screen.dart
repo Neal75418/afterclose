@@ -364,6 +364,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         child: StockCard(
           symbol: item.symbol,
           stockName: item.stockName,
+          market: item.market,
           latestClose: item.latestClose,
           priceChange: item.priceChange,
           score: item.score,

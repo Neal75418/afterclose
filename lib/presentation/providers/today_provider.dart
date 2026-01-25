@@ -70,6 +70,7 @@ class RecommendationWithDetails {
     required this.score,
     required this.rank,
     this.stockName,
+    this.market,
     this.latestClose,
     this.priceChange,
     this.reasons = const [],
@@ -81,6 +82,9 @@ class RecommendationWithDetails {
   final double score;
   final int rank;
   final String? stockName;
+
+  /// 市場：'TWSE'（上市）或 'TPEx'（上櫃）
+  final String? market;
   final double? latestClose;
   final double? priceChange;
   final List<DailyReasonEntry> reasons;
@@ -198,6 +202,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
           score: rec.score,
           rank: rec.rank,
           stockName: stocksMap[rec.symbol]?.name,
+          market: stocksMap[rec.symbol]?.market,
           latestClose: latestPricesMap[rec.symbol]?.close,
           priceChange: priceChanges[rec.symbol],
           reasons: reasonsMap[rec.symbol] ?? [],

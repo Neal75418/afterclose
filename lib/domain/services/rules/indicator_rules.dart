@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/core/utils/price_calculator.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
@@ -362,30 +363,9 @@ class KDGoldenCrossRule extends StockRule {
       if (prevK >= RuleParams.kdGoldenCrossZone) return null;
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
-      // 過濾掉低量弱反彈
-      if (data.prices.length >= 5) {
-        final todayVol = data.prices.last.volume;
-        if (todayVol != null) {
-          // Calculate 5-day volume MA (including today)
-          double volSum = 0;
-          int count = 0;
-          for (
-            var i = data.prices.length - 1;
-            i >= data.prices.length - 5;
-            i--
-          ) {
-            final v = data.prices[i].volume;
-            if (v != null) {
-              volSum += v;
-              count++;
-            }
-          }
-          if (count > 0) {
-            final volMA5 = volSum / count;
-            // 若今日成交量未超過均值則跳過
-            if (todayVol <= volMA5) return null;
-          }
-        }
+      // 使用 PriceCalculator 統一計算，排除今日以正確比較
+      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+        return null;
       }
 
       // 過濾 3：價格強度
@@ -445,29 +425,9 @@ class KDDeathCrossRule extends StockRule {
       if (prevK <= RuleParams.kdDeathCrossZone) return null;
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
-      // 確認有賣壓（量增下跌）
-      if (data.prices.length >= 5) {
-        final todayVol = data.prices.last.volume;
-        if (todayVol != null) {
-          double volSum = 0;
-          int count = 0;
-          for (
-            var i = data.prices.length - 1;
-            i >= data.prices.length - 5;
-            i--
-          ) {
-            final v = data.prices[i].volume;
-            if (v != null) {
-              volSum += v;
-              count++;
-            }
-          }
-          if (count > 0) {
-            final volMA5 = volSum / count;
-            // 若今日成交量未超過均值則跳過
-            if (todayVol <= volMA5) return null;
-          }
-        }
+      // 使用 PriceCalculator 統一計算，排除今日以正確比較
+      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+        return null;
       }
 
       final isOverbought = prevK > RuleParams.kdOverbought;

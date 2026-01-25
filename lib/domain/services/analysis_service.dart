@@ -1,10 +1,16 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 股票技術分析服務
 class AnalysisService {
-  const AnalysisService();
+  /// 建立分析服務
+  ///
+  /// [indicatorService] 可選的技術指標服務，用於依賴注入（測試用）
+  /// 若未提供則使用預設實例
+  AnalysisService({TechnicalIndicatorService? indicatorService})
+    : _indicatorService = indicatorService ?? TechnicalIndicatorService();
 
   /// 分析單一股票並回傳分析結果
   ///
@@ -52,8 +58,8 @@ class AnalysisService {
     );
   }
 
-  /// KD、RSI 等技術指標計算服務
-  static final _indicatorService = TechnicalIndicatorService();
+  /// KD、RSI 等技術指標計算服務（支援依賴注入）
+  final TechnicalIndicatorService _indicatorService;
 
   /// 建立規則引擎所需的分析上下文
   AnalysisContext buildContext(
@@ -339,8 +345,8 @@ class AnalysisService {
     );
   }
 
-  /// 波段點聚類閾值（2%）
-  static const _clusterThreshold = 0.02;
+  /// 波段點聚類閾值
+  static const _clusterThreshold = RuleParams.clusterThreshold;
 
   /// 找出 60 日價格區間
   ///
@@ -396,13 +402,10 @@ class AnalysisService {
 
     final normalizedSlope = (slope / avgPrice) * 100;
 
-    // 趨勢偵測閾值（已調低以產生更多訊號）
-    const upThreshold = 0.08; // 每日 0.08% = 20 天約 1.6%
-    const downThreshold = -0.08;
-
-    if (normalizedSlope > upThreshold) {
+    // 趨勢偵測閾值
+    if (normalizedSlope > RuleParams.trendUpThreshold) {
       return TrendState.up;
-    } else if (normalizedSlope < downThreshold) {
+    } else if (normalizedSlope < RuleParams.trendDownThreshold) {
       return TrendState.down;
     } else {
       return TrendState.range;
@@ -515,15 +518,15 @@ class AnalysisService {
       final (rangeLow, rangeHigh) = findRange(prices);
 
       if (rangeHigh != null && rangeHigh > 0) {
-        // 在 60 日高點的 2% 以內
-        if (todayClose >= rangeHigh * 0.98) {
+        // 在 60 日高點附近
+        if (todayClose >= rangeHigh * RuleParams.nearRangeHighBuffer) {
           return true;
         }
       }
 
       if (rangeLow != null && rangeLow > 0) {
-        // 在 60 日低點的 2% 以內
-        if (todayClose <= rangeLow * 1.02) {
+        // 在 60 日低點附近
+        if (todayClose <= rangeLow * RuleParams.nearRangeLowBuffer) {
           return true;
         }
       }
@@ -586,9 +589,8 @@ class AnalysisService {
       if (currentClose < ma20) return false;
     }
 
-    // 近期低點應高於前期低點
-    // 緩衝區從 1% 提高至 3% 以過濾弱訊號
-    return recentLow > prevLow * 1.03;
+    // 近期低點應高於前期低點（含緩衝區過濾弱訊號）
+    return recentLow > prevLow * RuleParams.higherLowBuffer;
   }
 
   /// 檢查是否形成更低的高點（趨勢反轉訊號）
@@ -616,9 +618,8 @@ class AnalysisService {
 
     if (recentHigh == null || prevHigh == null) return false;
 
-    // 近期高點應低於前期高點
-    // 緩衝區從 1% 提高至 3% 以過濾弱訊號
-    return recentHigh < prevHigh * 0.97;
+    // 近期高點應低於前期高點（含緩衝區過濾弱訊號）
+    return recentHigh < prevHigh * RuleParams.lowerHighBuffer;
   }
 
   /// 計算簡單移動平均
@@ -771,70 +772,8 @@ class AnalysisService {
   }
 }
 
-/// 價量關係狀態
-enum PriceVolumeState {
-  /// 中性 - 無顯著背離
-  neutral,
-
-  /// 價漲量縮 - 上漲無力警訊
-  bullishDivergence,
-
-  /// 價跌量增 - 恐慌殺盤
-  bearishDivergence,
-
-  /// 高檔爆量 - 可能出貨
-  highVolumeAtHigh,
-
-  /// 低檔縮量 - 可能吸籌
-  lowVolumeAtLow,
-
-  /// 健康上漲 - 價漲量增
-  healthyUptrend,
-}
-
-/// 價量分析結果
-class PriceVolumeAnalysis {
-  const PriceVolumeAnalysis({
-    required this.state,
-    this.priceChangePercent,
-    this.volumeChangePercent,
-    this.pricePosition,
-  });
-
-  final PriceVolumeState state;
-  final double? priceChangePercent;
-  final double? volumeChangePercent;
-  final double? pricePosition;
-
-  bool get hasDivergence =>
-      state == PriceVolumeState.bullishDivergence ||
-      state == PriceVolumeState.bearishDivergence;
-}
-
-/// 股票分析結果
-class AnalysisResult {
-  const AnalysisResult({
-    required this.trendState,
-    required this.reversalState,
-    this.supportLevel,
-    this.resistanceLevel,
-    this.rangeTop,
-    this.rangeBottom,
-  });
-
-  final TrendState trendState;
-  final ReversalState reversalState;
-  final double? supportLevel;
-  final double? resistanceLevel;
-  final double? rangeTop;
-  final double? rangeBottom;
-
-  /// 檢查是否為潛在的反轉候選
-  bool get isReversalCandidate => reversalState != ReversalState.none;
-}
-
 // ==================================================
-// 私有輔助類別
+// 私有輔助類別（僅在此服務內部使用）
 // ==================================================
 
 /// 帶有價格與位置索引的波段點
@@ -861,86 +800,4 @@ class _PriceZone {
 
   /// 依觸及時間的時近性權重（0.0 到 1.0）
   final double recencyWeight;
-}
-// ==========================================
-// 分析上下文與資料類別
-// ==========================================
-
-/// 傳遞給所有規則的評估上下文
-class AnalysisContext {
-  const AnalysisContext({
-    required this.trendState,
-    this.reversalState = ReversalState.none,
-    this.supportLevel,
-    this.resistanceLevel,
-    this.rangeTop,
-    this.rangeBottom,
-    this.marketData,
-    this.indicators,
-  });
-
-  final TrendState trendState;
-  final ReversalState reversalState;
-  final double? supportLevel;
-  final double? resistanceLevel;
-  final double? rangeTop;
-  final double? rangeBottom;
-  final MarketDataContext? marketData;
-  final TechnicalIndicators? indicators;
-}
-
-/// 第四階段訊號所需的額外市場資料
-class MarketDataContext {
-  const MarketDataContext({
-    this.foreignSharesRatio,
-    this.foreignSharesRatioChange,
-    this.dayTradingRatio,
-    this.concentrationRatio,
-  });
-
-  final double? foreignSharesRatio;
-  final double? foreignSharesRatioChange;
-  final double? dayTradingRatio;
-  final double? concentrationRatio;
-}
-
-/// 特定規則觸發的原因
-class TriggeredReason {
-  const TriggeredReason({
-    required this.type,
-    required this.score,
-    required this.description,
-    this.evidence,
-  });
-
-  final ReasonType type;
-  final int score;
-  final String description;
-  final Map<String, dynamic>? evidence;
-
-  /// 取得證據的 JSON map
-  Map<String, dynamic>? get evidenceJson => evidence;
-}
-
-/// 規則評估用的技術指標
-class TechnicalIndicators {
-  const TechnicalIndicators({
-    this.rsi,
-    this.kdK,
-    this.kdD,
-    this.prevKdK,
-    this.prevKdD,
-    this.ma5,
-    this.ma20,
-    this.ma60,
-  });
-
-  final double? rsi;
-  final double? kdK;
-  final double? kdD;
-  final double? prevKdK;
-  final double? prevKdD;
-  final double? ma5;
-  final double? ma20;
-  final double? ma60;
 }

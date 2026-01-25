@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
-import 'package:intl/intl.dart';
 
+import 'package:afterclose/core/constants/stock_patterns.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 
 /// 擴充市場資料 Repository（Phase 1）
@@ -15,15 +17,16 @@ class MarketDataRepository {
     required AppDatabase database,
     required FinMindClient finMindClient,
     TwseClient? twseClient,
+    TpexClient? tpexClient,
   }) : _db = database,
        _client = finMindClient,
-       _twseClient = twseClient ?? TwseClient();
+       _twseClient = twseClient ?? TwseClient(),
+       _tpexClient = tpexClient ?? TpexClient();
 
   final AppDatabase _db;
   final FinMindClient _client;
   final TwseClient _twseClient;
-
-  static final _dateFormat = DateFormat('yyyy-MM-dd');
+  final TpexClient _tpexClient;
 
   /// 判定批次資料為「最新」的最低筆數門檻
   /// 若該日期已有超過此數量的資料，則跳過 API 呼叫
@@ -66,8 +69,8 @@ class MarketDataRepository {
 
       final data = await _client.getShareholding(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -189,8 +192,8 @@ class MarketDataRepository {
 
       final data = await _client.getDayTrading(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -316,6 +319,9 @@ class MarketDataRepository {
       final entries = <DayTradingCompanion>[];
 
       for (final item in data) {
+        // 過濾無效股票代碼（權證、TDR 等）
+        if (!StockPatterns.isValidCode(item.code)) continue;
+
         double ratio = 0;
         final totalVolumeFromPrice = volumeMap[item.code] ?? 0;
 
@@ -368,7 +374,7 @@ class MarketDataRepository {
 
       AppLogger.info(
         'MarketData',
-        '當沖資料寫入 ${entries.length} 筆: '
+        '當沖資料寫入 ${entries.length} 筆 (上市, TWSE): '
             '高比例(>=60%)=${highRatioEntries.length}，極高(>=70%)=$extremeRatioCount，零比例=$zeroRatioCount',
       );
 
@@ -410,8 +416,8 @@ class MarketDataRepository {
 
       final data = await _client.getFinancialStatements(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -456,8 +462,8 @@ class MarketDataRepository {
 
       final data = await _client.getBalanceSheet(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -502,8 +508,8 @@ class MarketDataRepository {
 
       final data = await _client.getCashFlowsStatement(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -587,8 +593,8 @@ class MarketDataRepository {
 
       final data = await _client.getAdjustedPrices(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -643,8 +649,8 @@ class MarketDataRepository {
 
       final data = await _client.getWeeklyPrices(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -723,8 +729,8 @@ class MarketDataRepository {
 
       final data = await _client.getHoldingSharesPer(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -812,10 +818,10 @@ class MarketDataRepository {
     return _db.getLatestMarginTrading(symbol);
   }
 
-  /// 從 TWSE 同步全市場融資融券資料（免費 API）
+  /// 從 TWSE/TPEX 同步全市場融資融券資料（免費 API）
   ///
-  /// 使用 TWSE 官方 API，無需 Token。
-  /// API 端點：/rwd/zh/marginTrading/MI_MARGN
+  /// 使用 TWSE + TPEX 官方 API，無需 Token。
+  /// 並行取得上市與上櫃融資融券資料。
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
@@ -827,39 +833,86 @@ class MarketDataRepository {
       final targetDate = date ?? DateTime.now();
 
       // 新鮮度檢查：若已有目標日期資料則跳過
+      // 提高閾值至 1500 以涵蓋上市+上櫃股票
       if (!forceRefresh) {
         final existingCount = await _db.getMarginTradingCountForDate(
           targetDate,
         );
-        if (existingCount > _batchFreshnessThreshold) {
+        if (existingCount > 1500) {
           return 0;
         }
       }
 
-      final data = await _twseClient.getAllMarginTradingData();
+      // 並行取得上市與上櫃融資融券資料（錯誤隔離，允許部分成功）
+      final twseFuture = _twseClient.getAllMarginTradingData();
+      final tpexFuture = _tpexClient.getAllMarginTradingData(date: targetDate);
 
-      AppLogger.info('MarketData', 'TWSE 融資融券原始筆數: ${data.length}');
+      List<TwseMarginTrading> twseData = [];
+      List<TpexMarginTrading> tpexData = [];
 
-      if (data.isEmpty) return 0;
+      try {
+        twseData = await twseFuture;
+      } catch (e) {
+        AppLogger.warning('MarketData', '上市融資融券取得失敗，繼續處理上櫃: $e');
+      }
 
-      final entries = data.map((item) {
-        return MarginTradingCompanion.insert(
-          symbol: item.code,
-          date: item.date,
-          marginBuy: Value(item.marginBuy),
-          marginSell: Value(item.marginSell),
-          marginBalance: Value(item.marginBalance),
-          shortBuy: Value(item.shortBuy),
-          shortSell: Value(item.shortSell),
-          shortBalance: Value(item.shortBalance),
-        );
-      }).toList();
+      try {
+        tpexData = await tpexFuture;
+      } catch (e) {
+        AppLogger.warning('MarketData', '上櫃融資融券取得失敗，繼續處理上市: $e');
+      }
 
-      await _db.insertMarginTradingData(entries);
-      AppLogger.info('MarketData', 'TWSE 融資融券寫入 ${entries.length} 筆');
-      return entries.length;
+      if (twseData.isEmpty && tpexData.isEmpty) return 0;
+
+      // 建立上市融資融券 entries（過濾無效代碼）
+      final twseEntries = twseData
+          .where((item) => StockPatterns.isValidCode(item.code))
+          .map((item) {
+            return MarginTradingCompanion.insert(
+              symbol: item.code,
+              date: item.date,
+              marginBuy: Value(item.marginBuy),
+              marginSell: Value(item.marginSell),
+              marginBalance: Value(item.marginBalance),
+              shortBuy: Value(item.shortBuy),
+              shortSell: Value(item.shortSell),
+              shortBalance: Value(item.shortBalance),
+            );
+          })
+          .toList();
+
+      // 建立上櫃融資融券 entries（過濾無效代碼）
+      final tpexEntries = tpexData
+          .where((item) => StockPatterns.isValidCode(item.code))
+          .map((item) {
+            return MarginTradingCompanion.insert(
+              symbol: item.code,
+              date: item.date,
+              marginBuy: Value(item.marginBuy),
+              marginSell: Value(item.marginSell),
+              marginBalance: Value(item.marginBalance),
+              shortBuy: Value(item.shortBuy),
+              shortSell: Value(item.shortSell),
+              shortBalance: Value(item.shortBalance),
+            );
+          })
+          .toList();
+
+      // 合併並寫入
+      final allEntries = [...twseEntries, ...tpexEntries];
+      await _db.insertMarginTradingData(allEntries);
+
+      AppLogger.info(
+        'MarketData',
+        '融資融券同步: ${allEntries.length} 筆 (上市 ${twseEntries.length}, 上櫃 ${tpexEntries.length})',
+      );
+
+      return allEntries.length;
     } catch (e) {
-      throw DatabaseException('Failed to sync margin trading from TWSE', e);
+      throw DatabaseException(
+        'Failed to sync margin trading from TWSE/TPEX',
+        e,
+      );
     }
   }
 

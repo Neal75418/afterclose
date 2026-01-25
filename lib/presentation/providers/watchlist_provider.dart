@@ -140,6 +140,7 @@ class WatchlistItemData {
   const WatchlistItemData({
     required this.symbol,
     this.stockName,
+    this.market,
     this.latestClose,
     this.priceChange,
     this.trendState,
@@ -152,6 +153,9 @@ class WatchlistItemData {
 
   final String symbol;
   final String? stockName;
+
+  /// 市場：'TWSE'（上市）或 'TPEx'（上櫃）
+  final String? market;
   final double? latestClose;
   final double? priceChange;
   final String? trendState;
@@ -252,6 +256,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         return WatchlistItemData(
           symbol: item.symbol,
           stockName: stock?.name,
+          market: stock?.market,
           latestClose: latestPrice?.close,
           priceChange: priceChanges[item.symbol],
           trendState: analysis?.trendState,
@@ -342,7 +347,11 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       await _db.addToWatchlist(symbol);
 
       // Incremental update: load data only for this stock
-      final itemData = await _loadSingleStockData(symbol, stock.name);
+      final itemData = await _loadSingleStockData(
+        symbol,
+        stock.name,
+        stock.market,
+      );
       final newItems = [...state.items, itemData];
       state = state.copyWith(items: _sortItems(newItems));
 
@@ -376,7 +385,11 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
 
       // Incremental update: load data only for this stock
       final stock = await _db.getStock(symbol);
-      final itemData = await _loadSingleStockData(symbol, stock?.name);
+      final itemData = await _loadSingleStockData(
+        symbol,
+        stock?.name,
+        stock?.market,
+      );
       final newItems = [...state.items, itemData];
       state = state.copyWith(items: _sortItems(newItems));
     } catch (e) {
@@ -388,6 +401,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
   Future<WatchlistItemData> _loadSingleStockData(
     String symbol,
     String? stockName,
+    String? market,
   ) async {
     final dateCtx = DateContext.now();
 
@@ -435,6 +449,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     return WatchlistItemData(
       symbol: symbol,
       stockName: stockName,
+      market: market,
       latestClose: latestPrice?.close,
       priceChange: priceChange,
       trendState: analysis?.trendState,

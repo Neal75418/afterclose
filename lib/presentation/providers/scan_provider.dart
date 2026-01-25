@@ -368,6 +368,7 @@ class ScanStockItem {
     required this.symbol,
     required this.score,
     this.stockName,
+    this.market,
     this.latestClose,
     this.priceChange,
     this.volume,
@@ -380,6 +381,9 @@ class ScanStockItem {
   final String symbol;
   final double score;
   final String? stockName;
+
+  /// 市場：'TWSE'（上市）或 'TPEx'（上櫃）
+  final String? market;
   final double? latestClose;
   final double? priceChange;
   final double? volume;
@@ -412,6 +416,7 @@ class ScanStockItem {
       symbol: symbol,
       score: score,
       stockName: stockName,
+      market: market,
       latestClose: latestClose,
       priceChange: priceChange,
       volume: volume,
@@ -660,6 +665,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
         symbol: analysis.symbol,
         score: analysis.score,
         stockName: stocksMap[analysis.symbol]?.name,
+        market: stocksMap[analysis.symbol]?.market,
         latestClose: latestPrice?.close,
         priceChange: priceChanges[analysis.symbol],
         volume: latestPrice?.volume,

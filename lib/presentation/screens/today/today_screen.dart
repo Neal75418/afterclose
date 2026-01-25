@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -139,6 +140,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 child: StockCard(
                   symbol: rec.symbol,
                   stockName: rec.stockName,
+                  market: rec.market,
                   latestClose: rec.latestClose,
                   priceChange: rec.priceChange,
                   score: rec.score,
@@ -260,6 +262,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       final result = await ref.read(todayProvider.notifier).runUpdate();
 
       if (mounted) {
+        // Check for rate limit errors
+        final hasRateLimitError = result.errors.any(
+          (e) =>
+              e.contains('流量') ||
+              e.contains('limit') ||
+              e.contains('quota') ||
+              e.contains('429'),
+        );
+
+        if (hasRateLimitError) {
+          _showRateLimitDialog();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.summary),
@@ -269,14 +284,47 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       }
     } catch (e) {
       if (mounted) {
+        // Check if exception is rate limit related
+        final errorStr = e.toString();
+        final isRateLimit =
+            errorStr.contains('流量') ||
+            errorStr.contains('limit') ||
+            errorStr.contains('quota') ||
+            errorStr.contains('429');
+
+        if (isRateLimit) {
+          _showRateLimitDialog();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.todayUpdateFailed(e.toString())),
+            content: Text(S.todayUpdateFailed(errorStr)),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  void _showRateLimitDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(
+          Icons.warning_amber_rounded,
+          color: Colors.orange,
+          size: 48,
+        ),
+        title: Text('settings.rateLimitTitle'.tr()),
+        content: Text('settings.rateLimitMessage'.tr()),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('settings.rateLimitOk'.tr()),
+          ),
+        ],
+      ),
+    );
   }
 }

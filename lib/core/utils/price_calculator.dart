@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 股價相關計算工具
@@ -173,5 +175,76 @@ class PriceCalculator {
     if (avgVolume == null || avgVolume <= 0) return false;
 
     return todayVolume >= avgVolume * multiplier;
+  }
+}
+
+// ==========================================
+// K 線驗證 Extension
+// ==========================================
+
+/// K 線資料驗證擴展
+///
+/// 提供 [DailyPriceEntry] 常用的 null 檢查方法，
+/// 減少 K 線型態規則中的重複驗證邏輯
+extension CandleValidation on DailyPriceEntry {
+  /// 檢查 OHLC 四項價格是否皆有效（非 null）
+  ///
+  /// 用於需要完整 K 線資料的型態判斷（如錘子線、十字線）
+  bool get hasValidOHLC =>
+      open != null && high != null && low != null && close != null;
+
+  /// 檢查開盤價與收盤價是否皆有效（非 null）
+  ///
+  /// 用於僅需判斷 K 線方向的場景（如吞噬型態、連續漲跌）
+  bool get hasValidOpenClose => open != null && close != null;
+
+  /// 取得實體大小（絕對值）
+  ///
+  /// 若開盤或收盤為 null，回傳 0
+  double get bodySize {
+    if (open == null || close == null) return 0;
+    return (close! - open!).abs();
+  }
+
+  /// 判斷是否為紅 K（收盤 > 開盤）
+  ///
+  /// 若資料無效，回傳 false
+  bool get isBullish {
+    if (!hasValidOpenClose) return false;
+    return close! > open!;
+  }
+
+  /// 判斷是否為黑 K（收盤 < 開盤）
+  ///
+  /// 若資料無效，回傳 false
+  bool get isBearish {
+    if (!hasValidOpenClose) return false;
+    return close! < open!;
+  }
+
+  /// 取得振幅（最高價 - 最低價）
+  ///
+  /// 若 high 或 low 為 null，回傳 0
+  double get range {
+    if (high == null || low == null) return 0;
+    return high! - low!;
+  }
+
+  /// 取得上影線長度
+  ///
+  /// 上影線 = 最高價 - max(開盤, 收盤)
+  /// 若 OHLC 資料不完整，回傳 0
+  double get upperShadow {
+    if (!hasValidOHLC) return 0;
+    return high! - max(open!, close!);
+  }
+
+  /// 取得下影線長度
+  ///
+  /// 下影線 = min(開盤, 收盤) - 最低價
+  /// 若 OHLC 資料不完整，回傳 0
+  double get lowerShadow {
+    if (!hasValidOHLC) return 0;
+    return min(open!, close!) - low!;
   }
 }

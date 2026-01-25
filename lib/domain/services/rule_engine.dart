@@ -11,7 +11,7 @@ import 'package:afterclose/domain/services/rules/institutional_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/rules/technical_rules.dart';
 import 'package:afterclose/domain/services/rules/volume_rules.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/models/models.dart';
 
 /// 股票分析規則引擎
 ///
@@ -163,17 +163,21 @@ class RuleEngine {
     if (hasVolume && hasReversal) score += 10;
     if (hasInstitutional && (hasBreakout || hasReversal)) score += 15;
 
-    // 3. 衝突訊號懲罰
-    // 例如：突破（多方）+ 跌破（空方）？理論上不可能但仍需檢查
-    // 或：弱轉強（多方）+ 法人大賣（空方）
-    // 目前大多數分數為正值（代表重要性）
+    // 3. 衝突訊號處理
+    // 多空訊號已透過正負分數自然抵消：
+    // - 多方訊號（突破、反轉、法人買超）為正分
+    // - 空方訊號（跌破、強轉弱、空頭排列）為負分
+    // 當多空訊號並存時，分數會自動降低
 
     // 4. 冷卻期懲罰
     if (wasRecentlyRecommended) {
       score *= 0.5; // 近期已推薦則分數減半
     }
 
-    // 5. 分數上限（使用 100 作為上限）
+    // 5. 分數範圍限制
+    // 下限：0（本系統僅推薦做多，不推薦放空）
+    // 上限：100（避免多訊號造成分數膨脹）
+    if (score < 0) score = 0;
     if (score > 100) score = 100;
 
     return score.round();

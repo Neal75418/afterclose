@@ -1,3 +1,4 @@
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
@@ -31,8 +32,8 @@ class FundamentalRepository {
     try {
       final data = await _finMind.getMonthlyRevenue(
         stockId: symbol,
-        startDate: _formatDate(startDate),
-        endDate: _formatDate(endDate),
+        startDate: DateContext.formatYmd(startDate),
+        endDate: DateContext.formatYmd(endDate),
       );
 
       if (data.isEmpty) return 0;
@@ -74,8 +75,8 @@ class FundamentalRepository {
     try {
       final data = await _finMind.getPERData(
         stockId: symbol,
-        startDate: _formatDate(startDate),
-        endDate: _formatDate(endDate),
+        startDate: DateContext.formatYmd(startDate),
+        endDate: DateContext.formatYmd(endDate),
       );
 
       if (data.isEmpty) return 0;
@@ -104,6 +105,7 @@ class FundamentalRepository {
   /// 使用 TWSE BWIBBU_d 同步全市場估值資料（免費、無限制）
   ///
   /// 取代個別 FinMind 呼叫以進行每日更新。
+  /// 注意：此方法僅同步上市股票，上櫃股票需使用 [syncOtcValuation]。
   Future<int> syncAllMarketValuation(
     DateTime date, {
     bool force = false,
@@ -134,6 +136,9 @@ class FundamentalRepository {
       }).toList();
 
       await _db.insertValuationData(entries);
+
+      AppLogger.info('FundamentalRepo', '估值同步: ${entries.length} 筆 (上市, TWSE)');
+
       return entries.length;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步全市場估值失敗: $date', e);
@@ -141,10 +146,100 @@ class FundamentalRepository {
     }
   }
 
+  /// 補充上櫃股票的估值資料（使用 FinMind 逐檔取得）
+  ///
+  /// [symbols] 為要同步的上櫃股票代碼清單。
+  /// 建議只傳入自選清單或候選清單中的上櫃股票，以節省 API 配額。
+  /// 設定 [force] 為 true 可略過新鮮度檢查。
+  ///
+  /// 回傳成功同步的股票數量。
+  Future<int> syncOtcValuation(
+    List<String> symbols, {
+    DateTime? date,
+    bool force = false,
+  }) async {
+    if (symbols.isEmpty) return 0;
+
+    final targetDate = date ?? DateTime.now();
+    final dateStr = DateContext.formatYmd(targetDate);
+
+    // 新鮮度檢查：過濾掉已有近期估值資料的股票（3 天內視為新鮮）
+    List<String> symbolsToSync = symbols;
+    if (!force) {
+      final freshThreshold = targetDate.subtract(const Duration(days: 3));
+      final needSync = <String>[];
+
+      for (final symbol in symbols) {
+        final latest = await _db.getLatestValuation(symbol);
+        // 若無資料或資料過舊則需要同步
+        if (latest == null || latest.date.isBefore(freshThreshold)) {
+          needSync.add(symbol);
+        }
+      }
+      symbolsToSync = needSync;
+
+      if (symbolsToSync.isEmpty) {
+        AppLogger.info('FundamentalRepo', '上櫃估值: 所有股票已有最新資料，跳過同步');
+        return 0;
+      }
+
+      AppLogger.info(
+        'FundamentalRepo',
+        '上櫃估值新鮮度檢查: ${symbols.length} 檔中 ${symbolsToSync.length} 檔需同步',
+      );
+    }
+
+    var successCount = 0;
+
+    for (final symbol in symbolsToSync) {
+      try {
+        // 使用 FinMind 取得單檔估值資料（取最近 7 天以確保有資料）
+        final startDate = targetDate.subtract(const Duration(days: 7));
+        final data = await _finMind.getPERData(
+          stockId: symbol,
+          startDate: DateContext.formatYmd(startDate),
+          endDate: dateStr,
+        );
+
+        if (data.isEmpty) continue;
+
+        // 取最新一筆
+        final latest = data.last;
+        final parsedDate = DateTime.tryParse(latest.date) ?? targetDate;
+
+        final entry = StockValuationCompanion.insert(
+          symbol: symbol,
+          date: parsedDate,
+          per: Value(latest.per > 0 ? latest.per : null),
+          pbr: Value(latest.pbr > 0 ? latest.pbr : null),
+          dividendYield: Value(
+            latest.dividendYield > 0 ? latest.dividendYield : null,
+          ),
+        );
+
+        await _db.insertValuationData([entry]);
+        successCount++;
+      } catch (e) {
+        AppLogger.debug('FundamentalRepo', '同步上櫃估值失敗: $symbol ($e)');
+        // 繼續處理下一檔，不中斷整個流程
+      }
+    }
+
+    final skippedCount = symbols.length - symbolsToSync.length;
+    AppLogger.info(
+      'FundamentalRepo',
+      '上櫃估值同步完成: $successCount/${symbolsToSync.length} 檔 '
+          '(API calls: ${symbolsToSync.length}, 跳過: $skippedCount)',
+    );
+
+    return successCount;
+  }
+
   /// 使用 TWSE Open Data 同步全市場月營收（免費、無限制）
   ///
   /// 取代個別 FinMind 呼叫以進行最新月份更新。
   /// API 端點：https://openapi.twse.com.tw/v1/opendata/t187ap05_L
+  /// 注意：此方法僅同步上市股票，上櫃股票需使用 [syncOtcRevenue]。
   ///
   /// 回傳：同步筆數，或 -1 表示跳過（已有資料）
   Future<int> syncAllMarketRevenue(DateTime date, {bool force = false}) async {
@@ -187,7 +282,7 @@ class FundamentalRepository {
 
       AppLogger.info(
         'FundamentalRepo',
-        '同步營收 $dataYear/$dataMonth (${validData.length}/${data.length} 檔)',
+        '營收同步 $dataYear/$dataMonth: ${validData.length}/${data.length} 檔 (上市, TWSE)',
       );
 
       final entries = validData.map((r) {
@@ -211,6 +306,103 @@ class FundamentalRepository {
     }
   }
 
+  /// 補充上櫃股票的營收資料（使用 FinMind 逐檔取得）
+  ///
+  /// [symbols] 為要同步的上櫃股票代碼清單。
+  /// 建議只傳入自選清單或候選清單中的上櫃股票，以節省 API 配額。
+  /// 設定 [force] 為 true 可略過新鮮度檢查。
+  ///
+  /// 回傳成功同步的股票數量。
+  Future<int> syncOtcRevenue(
+    List<String> symbols, {
+    DateTime? date,
+    bool force = false,
+  }) async {
+    if (symbols.isEmpty) return 0;
+
+    final targetDate = date ?? DateTime.now();
+    // 營收資料以月為單位，取最近 3 個月以確保有資料
+    final startDate = DateTime(targetDate.year, targetDate.month - 3, 1);
+
+    // 新鮮度檢查：過濾掉已有當月營收資料的股票
+    // 營收以年/月為單位，同月內不需重複同步
+    List<String> symbolsToSync = symbols;
+    if (!force) {
+      final currentYear = targetDate.year;
+      final currentMonth = targetDate.month;
+      final needSync = <String>[];
+
+      for (final symbol in symbols) {
+        final latest = await _db.getLatestMonthlyRevenue(symbol);
+        // 若無資料或資料不是當月則需要同步
+        final isCurrentMonth =
+            latest != null &&
+            latest.revenueYear == currentYear &&
+            latest.revenueMonth == currentMonth;
+        if (!isCurrentMonth) {
+          needSync.add(symbol);
+        }
+      }
+      symbolsToSync = needSync;
+
+      if (symbolsToSync.isEmpty) {
+        AppLogger.info('FundamentalRepo', '上櫃營收: 所有股票已有當月資料，跳過同步');
+        return 0;
+      }
+
+      AppLogger.info(
+        'FundamentalRepo',
+        '上櫃營收新鮮度檢查: ${symbols.length} 檔中 ${symbolsToSync.length} 檔需同步',
+      );
+    }
+
+    var successCount = 0;
+
+    for (final symbol in symbolsToSync) {
+      try {
+        final data = await _finMind.getMonthlyRevenue(
+          stockId: symbol,
+          startDate: DateContext.formatYmd(startDate),
+          endDate: DateContext.formatYmd(targetDate),
+        );
+
+        if (data.isEmpty) continue;
+
+        // 計算成長率
+        final withGrowth = FinMindRevenue.calculateGrowthRates(data);
+
+        // 取最新一筆
+        final latest = withGrowth.last;
+        final recordDate = DateTime(latest.revenueYear, latest.revenueMonth);
+
+        final entry = MonthlyRevenueCompanion.insert(
+          symbol: symbol,
+          date: recordDate,
+          revenueYear: latest.revenueYear,
+          revenueMonth: latest.revenueMonth,
+          revenue: latest.revenue,
+          momGrowth: Value(latest.momGrowth),
+          yoyGrowth: Value(latest.yoyGrowth),
+        );
+
+        await _db.insertMonthlyRevenue([entry]);
+        successCount++;
+      } catch (e) {
+        AppLogger.debug('FundamentalRepo', '同步上櫃營收失敗: $symbol ($e)');
+        // 繼續處理下一檔，不中斷整個流程
+      }
+    }
+
+    final skippedCount = symbols.length - symbolsToSync.length;
+    AppLogger.info(
+      'FundamentalRepo',
+      '上櫃營收同步完成: $successCount/${symbolsToSync.length} 檔 '
+          '(API calls: ${symbolsToSync.length}, 跳過: $skippedCount)',
+    );
+
+    return successCount;
+  }
+
   /// 同步單檔股票的所有基本面資料
   Future<({int revenue, int valuation})> syncAll({
     required String symbol,
@@ -227,10 +419,6 @@ class FundamentalRepository {
     ]);
 
     return (revenue: results[0], valuation: results[1]);
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
 

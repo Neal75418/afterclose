@@ -1,6 +1,6 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/rules/candlestick_rules.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';

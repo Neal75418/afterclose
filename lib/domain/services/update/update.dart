@@ -1,0 +1,11 @@
+/// Update Services barrel export
+///
+/// 統一匯出所有更新服務類別
+library;
+
+export 'fundamental_syncer.dart';
+export 'historical_price_syncer.dart';
+export 'institutional_syncer.dart';
+export 'market_data_updater.dart';
+export 'news_syncer.dart';
+export 'stock_list_syncer.dart';

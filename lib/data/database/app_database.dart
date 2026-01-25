@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/tables/stock_master.dart';
 import 'package:afterclose/data/database/tables/daily_price.dart';
 import 'package:afterclose/data/database/tables/daily_institutional.dart';
@@ -308,6 +309,102 @@ class AppDatabase extends _$AppDatabase {
         b.insert(dailyPrice, entry, mode: InsertMode.insertOrReplace);
       }
     });
+  }
+
+  /// 清理無效股票代碼的資料
+  ///
+  /// 刪除所有不符合有效股票代碼格式的記錄（如權證、ETF 特殊代碼）
+  /// 有效格式：4 位數字（一般股票）或 5-6 位數字開頭為 00（ETF）
+  ///
+  /// 回傳各表刪除的記錄數
+  Future<Map<String, int>> cleanupInvalidStockCodes() async {
+    final results = <String, int>{};
+
+    // 有效股票代碼：
+    // - 4 位數字（一般股票）
+    // - 00 開頭的 ETF (00xxx, 006xxx)
+    // 無效代碼：6 位數字（權證）、含英文字母的特殊代碼等
+    //
+    // 使用 SQLite GLOB 語法：
+    // - [0-9] 匹配單個數字
+    // - * 匹配任意字符
+    //
+    // 策略：刪除長度為 6 且不是 00 開頭的（權證）
+
+    // 清理 daily_price - 刪除 6 位數字權證
+    results['daily_price'] = await customUpdate(
+      'DELETE FROM daily_price WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+      variables: [Variable.withString('00%')],
+      updates: {dailyPrice},
+    );
+
+    // 清理 daily_institutional
+    results['daily_institutional'] = await customUpdate(
+      'DELETE FROM daily_institutional WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+      variables: [Variable.withString('00%')],
+      updates: {dailyInstitutional},
+    );
+
+    // 清理 day_trading
+    results['day_trading'] = await customUpdate(
+      'DELETE FROM day_trading WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+      variables: [Variable.withString('00%')],
+      updates: {dayTrading},
+    );
+
+    // 清理 margin_trading
+    results['margin_trading'] = await customUpdate(
+      'DELETE FROM margin_trading WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+      variables: [Variable.withString('00%')],
+      updates: {marginTrading},
+    );
+
+    // 清理 shareholding
+    results['shareholding'] = await customUpdate(
+      'DELETE FROM shareholding WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+      variables: [Variable.withString('00%')],
+      updates: {shareholding},
+    );
+
+    // 清理 stock_master (主檔)
+    results['stock_master'] = await customUpdate(
+      'DELETE FROM stock_master WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+      variables: [Variable.withString('00%')],
+      updates: {stockMaster},
+    );
+
+    return results;
+  }
+
+  /// 取得歷史資料完成度
+  ///
+  /// 回傳 (已完成檔數, 總檔數)
+  /// 完成定義：該股票有 >= [RuleParams.historicalDataMinDays] 天的價格資料
+  Future<({int completed, int total})> getHistoricalDataProgress() async {
+    // 取得所有有效股票數量
+    final totalResult = await customSelect(
+      'SELECT COUNT(*) as cnt FROM stock_master WHERE is_active = 1',
+    ).getSingle();
+    final total = totalResult.read<int>('cnt');
+
+    if (total == 0) return (completed: 0, total: 0);
+
+    // 計算有足夠歷史資料的股票數量
+    final completedResult = await customSelect(
+      '''
+      SELECT COUNT(*) as cnt FROM (
+        SELECT dp.symbol
+        FROM daily_price dp
+        INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
+        GROUP BY dp.symbol
+        HAVING COUNT(*) >= ?
+      )
+      ''',
+      variables: [Variable.withInt(RuleParams.historicalDataMinDays)],
+    ).getSingle();
+    final completed = completedResult.read<int>('cnt');
+
+    return (completed: completed, total: total);
   }
 
   /// 批次取得多檔股票的價格歷史（批次查詢避免 N+1 問題）

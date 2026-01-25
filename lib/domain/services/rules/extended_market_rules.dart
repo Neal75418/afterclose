@@ -1,6 +1,6 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================

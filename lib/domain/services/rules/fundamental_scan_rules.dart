@@ -1,6 +1,6 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 // ==========================================
@@ -73,7 +73,11 @@ class RevenueYoYSurgeRule extends StockRule {
           ? data.prices[data.prices.length - 2]
           : null;
 
-      if (ma60 != null && today != null && prev != null && prev.close != null) {
+      if (ma60 != null &&
+          today != null &&
+          prev != null &&
+          prev.close != null &&
+          prev.close! > 0) {
         final close = today.close ?? 0;
         final prevClose = prev.close!;
         final changePct = (close - prevClose) / prevClose;
@@ -191,6 +195,7 @@ class RevenueMomGrowthRule extends StockRule {
           : null;
       final changePct =
           (today != null &&
+              today.close != null &&
               prev != null &&
               prev.close != null &&
               prev.close! > 0)

@@ -28,19 +28,27 @@ class StockRepository {
   /// 從 FinMind API 同步股票清單
   ///
   /// 建議定期執行（如每週一次）以更新股票清單
+  /// 僅同步有效股票代碼（4 位數一般股票 + 00 開頭 ETF）
   Future<int> syncStockList() async {
     try {
       final stocks = await _client.getStockList();
 
-      final entries = stocks.map((stock) {
-        return StockMasterCompanion.insert(
-          symbol: stock.stockId,
-          name: stock.stockName,
-          market: stock.market,
-          industry: Value(stock.industryCategory),
-          isActive: const Value(true),
-        );
-      }).toList();
+      // 過濾有效股票代碼：4 位數字（一般股票）或 00 開頭（ETF）
+      // 排除 6 位數權證、TDR 等非股票代碼
+      final validStockPattern = RegExp(r'^(\d{4}|00\d{3,4})$');
+
+      final entries = stocks
+          .where((stock) => validStockPattern.hasMatch(stock.stockId))
+          .map((stock) {
+            return StockMasterCompanion.insert(
+              symbol: stock.stockId,
+              name: stock.stockName,
+              market: stock.market,
+              industry: Value(stock.industryCategory),
+              isActive: const Value(true),
+            );
+          })
+          .toList();
 
       await _db.upsertStocks(entries);
 

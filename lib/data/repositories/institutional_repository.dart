@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
-import 'package:intl/intl.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 
 /// 三大法人買賣超資料 Repository
@@ -13,15 +15,16 @@ class InstitutionalRepository {
     required AppDatabase database,
     required FinMindClient finMindClient,
     TwseClient? twseClient,
+    TpexClient? tpexClient,
   }) : _db = database,
        _client = finMindClient,
-       _twseClient = twseClient ?? TwseClient();
+       _twseClient = twseClient ?? TwseClient(),
+       _tpexClient = tpexClient ?? TpexClient();
 
   final AppDatabase _db;
   final FinMindClient _client;
   final TwseClient _twseClient;
-
-  static final _dateFormat = DateFormat('yyyy-MM-dd');
+  final TpexClient _tpexClient;
 
   /// 取得法人資料歷史供分析使用
   ///
@@ -50,8 +53,8 @@ class InstitutionalRepository {
     try {
       final data = await _client.getInstitutionalData(
         stockId: symbol,
-        startDate: _dateFormat.format(startDate),
-        endDate: endDate != null ? _dateFormat.format(endDate) : null,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
       );
 
       final entries = data.map((item) {
@@ -82,36 +85,46 @@ class InstitutionalRepository {
 
   /// 同步指定日期的全市場法人資料
   ///
-  /// 使用 TWSE T86 API（免費、全市場）。
+  /// 使用 TWSE T86 API + TPEX API（免費、全市場）。
   /// 可分析非自選股的法人動向。
   Future<int> syncAllMarketInstitutional(
     DateTime date, {
     bool force = false,
   }) async {
     try {
+      // 提高閾值至 1500 以涵蓋上市+上櫃股票
       if (!force) {
         final existingCount = await _db.getInstitutionalCountForDate(date);
-        if (existingCount > 1000) return existingCount;
+        if (existingCount > 1500) return existingCount;
       }
-      // TWSE API（T86）回傳指定日期的資料
-      // 註：T86 API 支援 date 參數（YYYYMMDD）
-      // TwseClient.getAllInstitutionalData() 預設抓取「最新交易日」
-      // 若需抓取歷史資料需修改 TwseClient 支援 date 參數
 
-      // 假設目前僅同步 LATEST/目標日期
-      // 若傳入日期非今日，需注意資料可能不正確
-      // 但通常我們執行的是「今日更新」
+      // 並行取得上市與上櫃法人資料（錯誤隔離，允許部分成功）
+      final twseFuture = _twseClient.getAllInstitutionalData(date: date);
+      final tpexFuture = _tpexClient.getAllInstitutionalData(date: date);
 
-      final data = await _twseClient.getAllInstitutionalData(date: date);
+      List<TwseInstitutional> twseData = [];
+      List<TpexInstitutional> tpexData = [];
 
-      if (data.isEmpty) return 0;
+      try {
+        twseData = await twseFuture;
+      } catch (e) {
+        AppLogger.warning('InstRepo', '上市法人資料取得失敗，繼續處理上櫃: $e');
+      }
+
+      try {
+        tpexData = await tpexFuture;
+      } catch (e) {
+        AppLogger.warning('InstRepo', '上櫃法人資料取得失敗，繼續處理上市: $e');
+      }
+
+      if (twseData.isEmpty && tpexData.isEmpty) return 0;
 
       // 取得有效股票代碼以避免 Foreign Key 錯誤
       final stockList = await _db.getAllActiveStocks();
       final validSymbols = stockList.map((s) => s.symbol).toSet();
 
-      // 過濾無效或零成交量資料以節省 Database 空間
-      final validData = data
+      // 過濾上市法人資料
+      final validTwseData = twseData
           .where(
             (item) =>
                 validSymbols.contains(item.code) &&
@@ -121,8 +134,19 @@ class InstitutionalRepository {
           )
           .toList();
 
-      final entries = validData.map((item) {
-        // 正規化日期，確保時間部分為 00:00:00（避免同日重複）
+      // 過濾上櫃法人資料
+      final validTpexData = tpexData
+          .where(
+            (item) =>
+                validSymbols.contains(item.code) &&
+                (item.totalNet != 0 ||
+                    item.foreignNet != 0 ||
+                    item.investmentTrustNet != 0),
+          )
+          .toList();
+
+      // 建立上市法人資料 entries
+      final twseEntries = validTwseData.map((item) {
         final normalizedDate = DateTime(
           item.date.year,
           item.date.month,
@@ -137,9 +161,32 @@ class InstitutionalRepository {
         );
       }).toList();
 
-      await _db.insertInstitutionalData(entries);
+      // 建立上櫃法人資料 entries
+      final tpexEntries = validTpexData.map((item) {
+        final normalizedDate = DateTime(
+          item.date.year,
+          item.date.month,
+          item.date.day,
+        );
+        return DailyInstitutionalCompanion.insert(
+          symbol: item.code,
+          date: normalizedDate,
+          foreignNet: Value(item.foreignNet),
+          investmentTrustNet: Value(item.investmentTrustNet),
+          dealerNet: Value(item.dealerNet),
+        );
+      }).toList();
 
-      return entries.length;
+      // 合併並寫入
+      final allEntries = [...twseEntries, ...tpexEntries];
+      await _db.insertInstitutionalData(allEntries);
+
+      AppLogger.info(
+        'InstRepo',
+        '法人同步: ${allEntries.length} 筆 (上市 ${twseEntries.length}, 上櫃 ${tpexEntries.length})',
+      );
+
+      return allEntries.length;
     } on NetworkException {
       rethrow;
     } catch (e) {

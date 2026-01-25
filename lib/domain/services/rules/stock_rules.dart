@@ -1,5 +1,5 @@
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/models/models.dart';
 
 /// 規則評估所需的市場資料物件
 class StockData {

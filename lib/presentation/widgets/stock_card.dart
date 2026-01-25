@@ -22,6 +22,7 @@ class StockCard extends StatefulWidget {
     super.key,
     required this.symbol,
     this.stockName,
+    this.market,
     this.latestClose,
     this.priceChange,
     this.score,
@@ -36,6 +37,9 @@ class StockCard extends StatefulWidget {
 
   final String symbol;
   final String? stockName;
+
+  /// 市場：'TWSE'（上市）或 'TPEx'（上櫃）
+  final String? market;
   final double? latestClose;
   final double? priceChange;
   final double? score;
@@ -230,13 +234,39 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildStockName(ThemeData theme) {
-    return Text(
-      widget.stockName!,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+    final marketLabel = widget.market == 'TPEx' ? '櫃' : null;
+
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            widget.stockName!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (marketLabel != null) ...[
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.secondaryContainer,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              marketLabel,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSecondaryContainer,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
@@ -47,9 +48,14 @@ final finMindClientProvider = Provider<FinMindClient>((ref) {
   return FinMindClient();
 });
 
-/// TWSE 開放資料客戶端（用於取得每日全市場價格）
+/// TWSE 開放資料客戶端（用於取得每日全市場上市價格）
 final twseClientProvider = Provider<TwseClient>((ref) {
   return TwseClient();
+});
+
+/// TPEX 開放資料客戶端（用於取得每日全市場上櫃價格）
+final tpexClientProvider = Provider<TpexClient>((ref) {
+  return TpexClient();
 });
 
 /// RSS 解析器
@@ -70,12 +76,13 @@ final stockRepositoryProvider = Provider<StockRepository>((ref) {
 });
 
 /// 價格資料儲存庫 Provider
-/// 使用 TWSE 取得每日價格，使用 FinMind 取得歷史資料
+/// 使用 TWSE/TPEX 取得每日價格，使用 FinMind 取得歷史資料
 final priceRepositoryProvider = Provider<PriceRepository>((ref) {
   return PriceRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
     twseClient: ref.watch(twseClientProvider),
+    tpexClient: ref.watch(tpexClientProvider),
   );
 });
 
@@ -99,6 +106,8 @@ final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
   return InstitutionalRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
+    twseClient: ref.watch(twseClientProvider),
+    tpexClient: ref.watch(tpexClientProvider),
   );
 });
 
@@ -112,6 +121,7 @@ final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
   return MarketDataRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
+    tpexClient: ref.watch(tpexClientProvider),
   );
 });
 

@@ -40,7 +40,7 @@ class S {
   // ==================================================
   // 今日頁面
   // ==================================================
-  static const String todayTop10 = '今日推薦 Top 10';
+  static const String todayTop10 = '今日推薦 Top 20';
   static const String todayWatchlistStatus = '自選狀態';
   static const String todayUpdateData = '更新資料';
   static const String todayStartingUpdate = '開始更新...';

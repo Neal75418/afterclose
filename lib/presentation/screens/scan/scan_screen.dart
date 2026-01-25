@@ -384,6 +384,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                             child: StockCard(
                               symbol: stock.symbol,
                               stockName: stock.stockName,
+                              market: stock.market,
                               latestClose: stock.latestClose,
                               priceChange: stock.priceChange,
                               score: stock.score,
