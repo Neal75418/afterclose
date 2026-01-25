@@ -10,47 +10,21 @@
 ## 核心原則
 
 ```mermaid
-graph TD
-    root((AfterClose))
-
-    root --> OD[On-Device]
-    OD --> OD1[資料抓取]
-    OD --> OD2[分析推薦]
-    OD --> OD3[本地運算]
-
-    root --> ZC[零固定成本]
-    ZC --> ZC1[免費 API]
-    ZC --> ZC2[本地 SQLite]
-
-    root --> AB[盤後批次]
-    AB --> AB1[收盤後執行]
-    AB --> AB2[日資料處理]
-
-    root --> AD[異常提示]
-    AD --> AD1[發現變化]
-    AD --> AD2[不給建議]
-
-    %% Styles
-    classDef default stroke:#333,stroke-width:2px;
-    
-    style root fill:#1A237E,color:#fff,stroke:#fff,stroke-width:4px
-    
-    style OD fill:#2E7D32,color:#fff
-    style OD1 fill:#4CAF50,color:#fff
-    style OD2 fill:#4CAF50,color:#fff
-    style OD3 fill:#4CAF50,color:#fff
-    
-    style ZC fill:#E65100,color:#fff
-    style ZC1 fill:#FF9800,color:#fff
-    style ZC2 fill:#FF9800,color:#fff
-    
-    style AB fill:#4A148C,color:#fff
-    style AB1 fill:#9C27B0,color:#fff
-    style AB2 fill:#9C27B0,color:#fff
-    
-    style AD fill:#B71C1C,color:#fff
-    style AD1 fill:#F44336,color:#fff
-    style AD2 fill:#F44336,color:#fff
+mindmap
+  root((AfterClose))
+    On-Device
+      資料抓取
+      分析推薦
+      本地運算
+    零固定成本
+      免費 API
+      本地 SQLite
+    盤後批次
+      收盤後執行
+      日資料處理
+    異常提示
+      發現變化
+      不給建議
 ```
 
 ---
@@ -94,28 +68,28 @@ graph TD
 
 ```mermaid
 flowchart LR
-    subgraph External["外部資料"]
-        TWSE[TWSE API]
-        FM[FinMind API]
-        RSS[RSS 新聞]
+    subgraph External["☁️ 外部資料"]
+        TWSE["TWSE API"]
+        FM["FinMind API"]
+        RSS["RSS 新聞"]
     end
 
-    subgraph Data["Data Layer"]
-        Remote[API Clients]
-        Repo[Repositories]
-        DB[(SQLite)]
+    subgraph Data["💾 Data Layer"]
+        Remote["API Clients"]
+        Repo["Repositories"]
+        DB[("SQLite")]
     end
 
-    subgraph Domain["Domain Layer"]
-        Models[Models]
-        Update[Update Services]
-        Rules[Rule Engine]
-        Scoring[Scoring Service]
+    subgraph Domain["⚙️ Domain Layer"]
+        Models["Models"]
+        Update["Update Services"]
+        Rules["Rule Engine"]
+        Scoring["Scoring Service"]
     end
 
-    subgraph Presentation["Presentation Layer"]
-        Provider[Riverpod]
-        UI[Flutter UI]
+    subgraph Presentation["📱 Presentation"]
+        Provider["Riverpod"]
+        UI["Flutter UI"]
     end
 
     TWSE --> Remote
@@ -136,26 +110,26 @@ flowchart LR
 
 ```mermaid
 graph TD
-    subgraph lib["lib/"]
-        subgraph core["core/"]
+    subgraph lib["📁 lib/"]
+        subgraph core["🔧 core/"]
             constants["constants/<br/>RuleParams, DefaultStocks"]
             utils["utils/<br/>Logger, Result"]
         end
 
-        subgraph data["data/"]
+        subgraph data["💾 data/"]
             database["database/<br/>Drift SQLite"]
             remote["remote/<br/>API Clients"]
             repositories["repositories/"]
         end
 
-        subgraph domain["domain/"]
+        subgraph domain["⚙️ domain/"]
             models["models/<br/>7 個 Domain 物件"]
             services["services/"]
             update["services/update/<br/>6 個專責 Updater"]
-            rules["services/rules/<br/>45 條規則"]
+            rules["services/rules/<br/>44 條規則"]
         end
 
-        subgraph presentation["presentation/"]
+        subgraph presentation["📱 presentation/"]
             providers["providers/<br/>Riverpod Notifiers"]
             screens["screens/<br/>Flutter UI"]
         end
@@ -169,10 +143,10 @@ graph TD
 
 ## 推薦系統
 
-45 條規則引擎，涵蓋技術面、籌碼面、基本面。
+44 條規則引擎，涵蓋技術面、籌碼面、基本面。
 
 ```mermaid
-pie title 規則分布
+pie showData title 📊 規則分布
     "技術指標" : 15
     "K線型態" : 11
     "籌碼面" : 9
@@ -182,7 +156,7 @@ pie title 規則分布
 
 - 每日產出 **Top 20**（上市+上櫃約 1,770 檔）
 - 每檔最多 **2 條理由**
-- 分數上限 **80 分**
+- 分數上限 **100 分**
 
 詳見 [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)
 

@@ -9,33 +9,16 @@
 **AfterClose** - 本地優先盤後台股掃描 App。所有資料處理在裝置端完成，無雲端依賴。
 
 ```mermaid
-graph TD
-    root((AfterClose))
-
-    root --> CP[核心原則]
-    CP --> CP1[零固定成本]
-    CP --> CP2[盤後批次]
-    CP --> CP3[推薦 = 異常提示]
-
-    root --> TF[技術特點]
-    TF --> TF1[本地優先]
-    TF --> TF2[離線可用]
-    TF --> TF3[隱私保護]
-
-    %% Styles
-    classDef default stroke:#333,stroke-width:2px;
-    
-    style root fill:#1A237E,color:#fff,stroke:#fff,stroke-width:4px
-    
-    style CP fill:#B71C1C,color:#fff
-    style CP1 fill:#F44336,color:#fff
-    style CP2 fill:#F44336,color:#fff
-    style CP3 fill:#F44336,color:#fff
-    
-    style TF fill:#006064,color:#fff
-    style TF1 fill:#00ACC1,color:#fff
-    style TF2 fill:#00ACC1,color:#fff
-    style TF3 fill:#00ACC1,color:#fff
+mindmap
+  root((AfterClose))
+    核心原則
+      零固定成本
+      盤後批次
+      推薦 = 異常提示
+    技術特點
+      本地優先
+      離線可用
+      隱私保護
 ```
 
 ---
@@ -57,25 +40,25 @@ dart run build_runner build --delete-conflicting-outputs  # 程式碼生成
 
 ```mermaid
 flowchart TB
-    subgraph Core["core/"]
+    subgraph Core["🔧 core/"]
         Constants["constants/<br/>RuleParams, DefaultStocks"]
         Utils["utils/<br/>Logger, Result, Calendar"]
     end
 
-    subgraph Data["data/"]
+    subgraph Data["💾 data/"]
         Database["database/<br/>Drift SQLite"]
         Remote["remote/<br/>TWSE, FinMind API"]
         Repos["repositories/"]
     end
 
-    subgraph Domain["domain/"]
+    subgraph Domain["⚙️ domain/"]
         Models["models/<br/>7 Domain Objects"]
         Services["services/"]
         Update["services/update/<br/>6 Specialized Syncers"]
-        Rules["services/rules/<br/>45 Rules"]
+        Rules["services/rules/<br/>44 Rules"]
     end
 
-    subgraph Presentation["presentation/"]
+    subgraph Presentation["📱 presentation/"]
         Providers["providers/<br/>Riverpod Notifiers"]
         Screens["screens/<br/>UI"]
     end
@@ -83,29 +66,22 @@ flowchart TB
     Core --> Data
     Data --> Domain
     Domain --> Presentation
-
-    style Core fill:#e1f5fe
-    style Data fill:#fff3e0
-    style Domain fill:#f3e5f5
-    style Presentation fill:#e8f5e9
 ```
 
 ### 資料流
 
 ```mermaid
 flowchart LR
-    API["External APIs<br/>(TWSE, FinMind, RSS)"]
-    Repo["Repository"]
-    DB[(Drift DB)]
-    Provider["Riverpod"]
-    UI["UI"]
+    API["☁️ External APIs<br/>(TWSE, FinMind, RSS)"]
+    Repo["📦 Repository"]
+    DB[("💾 Drift DB")]
+    Provider["🔄 Riverpod"]
+    UI["📱 UI"]
 
     API -->|fetch| Repo
     Repo -->|write| DB
     DB -->|read| Provider
     Provider -->|notify| UI
-
-    style DB fill:#fff3e0
 ```
 
 ---
@@ -172,15 +148,15 @@ classDiagram
 
 ```mermaid
 flowchart TB
-    US["UpdateService<br/>(Coordinator)"]
+    US["🎯 UpdateService<br/>(Coordinator)"]
 
-    subgraph Syncers["Specialized Syncers"]
-        SLS["StockListSyncer"]
-        HPS["HistoricalPriceSyncer"]
-        IS["InstitutionalSyncer"]
-        MDU["MarketDataUpdater"]
-        FS["FundamentalSyncer"]
-        NS["NewsSyncer"]
+    subgraph Syncers["⚙️ Specialized Syncers"]
+        SLS["📋 StockListSyncer"]
+        HPS["📈 HistoricalPriceSyncer"]
+        IS["🏛️ InstitutionalSyncer"]
+        MDU["📊 MarketDataUpdater"]
+        FS["💰 FundamentalSyncer"]
+        NS["📰 NewsSyncer"]
     end
 
     US --> SLS
@@ -189,9 +165,6 @@ flowchart TB
     US --> MDU
     US --> FS
     US --> NS
-
-    style US fill:#e3f2fd
-    style Syncers fill:#fce4ec
 ```
 
 ---
@@ -200,7 +173,7 @@ flowchart TB
 
 | 文件                                                                                                     | 說明              |
 |--------------------------------------------------------------------------------------------------------|-----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (45 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (44 條規則) |
 | [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |
 
 ---
