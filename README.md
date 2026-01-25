@@ -10,21 +10,26 @@
 ## 核心原則
 
 ```mermaid
-mindmap
-  root((AfterClose))
-    On-Device
-      資料抓取
-      分析推薦
-      本地運算
-    零固定成本
-      免費 API
-      本地 SQLite
-    盤後批次
-      收盤後執行
-      日資料處理
-    異常提示
-      發現變化
-      不給建議
+flowchart TB
+    AC((AfterClose))
+
+    AC --> OD["On-Device 📱"]
+    AC --> ZC["零固定成本 💰"]
+    AC --> BP["盤後批次 🕐"]
+    AC --> YC["異常提示 ⚠️"]
+
+    OD --> OD1[資料抓取]
+    OD --> OD2[分析推薦]
+    OD --> OD3[本地運算]
+
+    ZC --> ZC1[免費 API]
+    ZC --> ZC2[本地 SQLite]
+
+    BP --> BP1[收盤後執行]
+    BP --> BP2[日資料處理]
+
+    YC --> YC1[發現變化]
+    YC --> YC2[不給建議]
 ```
 
 ---

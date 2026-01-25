@@ -9,16 +9,19 @@
 **AfterClose** - 本地優先盤後台股掃描 App。所有資料處理在裝置端完成，無雲端依賴。
 
 ```mermaid
-mindmap
-  root((AfterClose))
-    核心原則
-      零固定成本
-      盤後批次
-      推薦 = 異常提示
-    技術特點
-      本地優先
-      離線可用
-      隱私保護
+flowchart TB
+    AC((AfterClose))
+
+    AC --> HX["核心原則 🎯"]
+    AC --> JS["技術特點 ⚙️"]
+
+    HX --> HX1[零固定成本]
+    HX --> HX2[盤後批次]
+    HX --> HX3[推薦 = 異常提示]
+
+    JS --> JS1[本地優先]
+    JS --> JS2[離線可用]
+    JS --> JS3[隱私保護]
 ```
 
 ---
