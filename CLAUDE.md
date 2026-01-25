@@ -95,10 +95,10 @@ flowchart LR
 
 ## 配置管理
 
-| 檔案 | 用途 |
-|------|------|
-| `lib/core/constants/rule_params.dart` | 規則引擎參數（閾值、權重、天數） |
-| `lib/core/constants/default_stocks.dart` | 預設股票清單 |
+| 檔案                                       | 用途               |
+|------------------------------------------|------------------|
+| `lib/core/constants/rule_params.dart`    | 規則引擎參數（閾值、權重、天數） |
+| `lib/core/constants/default_stocks.dart` | 預設股票清單           |
 
 ```mermaid
 classDiagram
@@ -181,20 +181,20 @@ flowchart TB
 
 ## 關鍵文件
 
-| 文件 | 說明 |
-|------|------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎詳解 (45 條規則) |
-| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南 |
+| 文件                                                                                                     | 說明              |
+|--------------------------------------------------------------------------------------------------------|-----------------|
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (45 條規則) |
+| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |
 
 ---
 
 ## 編碼標準
 
-| 原則 | 說明 |
-|------|------|
-| **Repository** | 使用 `IAnalysisRepository` 介面，支援 mock 測試 |
-| **錯誤處理** | `Result<T>` (`lib/core/utils/result.dart`) |
-| **狀態管理** | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider` |
-| **Rule Engine** | 純函數（輸入資料 → 輸出理由） |
-| **配置集中** | 所有參數放 `lib/core/constants/`，禁止魔術數字 |
-| **Dart 3** | Records、Pattern Matching |
+| 原則              | 說明                                                   |
+|-----------------|------------------------------------------------------|
+| **Repository**  | 使用 `IAnalysisRepository` 介面，支援 mock 測試               |
+| **錯誤處理**        | `Result<T>` (`lib/core/utils/result.dart`)           |
+| **狀態管理**        | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider` |
+| **Rule Engine** | 純函數（輸入資料 → 輸出理由）                                     |
+| **配置集中**        | 所有參數放 `lib/core/constants/`，禁止魔術數字                   |
+| **Dart 3**      | Records、Pattern Matching                             |

@@ -25,7 +25,7 @@
     "news": "新聞"
   },
   "today": {
-    "top10": "今日推薦 Top 10",
+    "top10": "今日推薦 Top 20",
     "watchlistStatus": "自選狀態",
     "updateData": "更新資料",
     "startingUpdate": "開始更新...",
@@ -346,7 +346,18 @@
     "about": "關於",
     "aboutApp": "關於 AfterClose",
     "aboutDescription": "台股盤後分析工具",
-    "version": "版本"
+    "version": "版本",
+    "dataManagement": "資料管理",
+    "forceSync": "強制重新同步",
+    "forceSyncDescription": "清除快取並重新下載所有資料",
+    "forceSyncTitle": "強制重新同步",
+    "forceSyncConfirm": "這將重新下載所有市場資料，可能需要較長時間。確定要繼續嗎？",
+    "forceSyncSuccess": "同步完成：價格 {prices} 筆，分析 {analyzed} 檔",
+    "forceSyncFailed": "同步失敗：{error}",
+    "historyProgress": "歷史資料：{completed}/{total} 檔 ({percent}%)",
+    "rateLimitTitle": "API 流量限制",
+    "rateLimitMessage": "FinMind API 已達到每小時使用上限（600 次）。\n\n請等待約 10-15 分鐘後再試，或考慮升級 FinMind 付費方案。",
+    "rateLimitOk": "我知道了"
   },
   "alert": {
     "title": "價格提醒",

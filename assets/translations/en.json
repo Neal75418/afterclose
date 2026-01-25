@@ -25,7 +25,7 @@
     "news": "News"
   },
   "today": {
-    "top10": "Today's Top 10",
+    "top10": "Today's Top 20",
     "watchlistStatus": "Watchlist Status",
     "updateData": "Update Data",
     "startingUpdate": "Starting update...",
@@ -345,7 +345,18 @@
     "about": "About",
     "aboutApp": "About AfterClose",
     "aboutDescription": "Taiwan Stock Post-Market Analysis Tool",
-    "version": "Version"
+    "version": "Version",
+    "dataManagement": "Data Management",
+    "forceSync": "Force Re-sync",
+    "forceSyncDescription": "Clear cache and re-download all data",
+    "forceSyncTitle": "Force Re-sync",
+    "forceSyncConfirm": "This will re-download all market data and may take a while. Continue?",
+    "forceSyncSuccess": "Sync complete: {prices} prices, {analyzed} analyzed",
+    "forceSyncFailed": "Sync failed: {error}",
+    "historyProgress": "Historical data: {completed}/{total} ({percent}%)",
+    "rateLimitTitle": "API Rate Limit",
+    "rateLimitMessage": "FinMind API has reached its hourly limit (600 requests).\n\nPlease wait 10-15 minutes before trying again, or consider upgrading to a paid FinMind plan.",
+    "rateLimitOk": "Got it"
   },
   "alert": {
     "title": "Price Alerts",

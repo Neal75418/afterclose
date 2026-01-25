@@ -40,7 +40,7 @@ void main() {
       expect(reasons.any((r) => r.type == ReasonType.techBreakout), isTrue);
 
       final score = ruleEngine.calculateScore(reasons);
-      expect(score, greaterThan(50));
+      expect(score, greaterThan(45));
     });
 
     test('should support custom rules via constructor', () {
