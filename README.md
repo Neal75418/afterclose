@@ -10,21 +10,47 @@
 ## 核心原則
 
 ```mermaid
-mindmap
-  root((AfterClose))
-    On-Device
-      資料抓取
-      分析推薦
-      本地運算
-    零固定成本
-      免費 API
-      本地 SQLite
-    盤後批次
-      收盤後執行
-      日資料處理
-    異常提示
-      發現變化
-      不給建議
+graph TD
+    root((AfterClose))
+
+    root --> OD[On-Device]
+    OD --> OD1[資料抓取]
+    OD --> OD2[分析推薦]
+    OD --> OD3[本地運算]
+
+    root --> ZC[零固定成本]
+    ZC --> ZC1[免費 API]
+    ZC --> ZC2[本地 SQLite]
+
+    root --> AB[盤後批次]
+    AB --> AB1[收盤後執行]
+    AB --> AB2[日資料處理]
+
+    root --> AD[異常提示]
+    AD --> AD1[發現變化]
+    AD --> AD2[不給建議]
+
+    %% Styles
+    classDef default stroke:#333,stroke-width:2px;
+    
+    style root fill:#1A237E,color:#fff,stroke:#fff,stroke-width:4px
+    
+    style OD fill:#2E7D32,color:#fff
+    style OD1 fill:#4CAF50,color:#fff
+    style OD2 fill:#4CAF50,color:#fff
+    style OD3 fill:#4CAF50,color:#fff
+    
+    style ZC fill:#E65100,color:#fff
+    style ZC1 fill:#FF9800,color:#fff
+    style ZC2 fill:#FF9800,color:#fff
+    
+    style AB fill:#4A148C,color:#fff
+    style AB1 fill:#9C27B0,color:#fff
+    style AB2 fill:#9C27B0,color:#fff
+    
+    style AD fill:#B71C1C,color:#fff
+    style AD1 fill:#F44336,color:#fff
+    style AD2 fill:#F44336,color:#fff
 ```
 
 ---
