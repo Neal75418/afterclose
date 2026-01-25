@@ -2,14 +2,15 @@ import 'dart:math' as math;
 
 import 'package:afterclose/data/database/app_database.dart';
 
-/// Shared test helpers for generating price data across multiple test files.
-/// This reduces code duplication and ensures consistent test data generation.
+/// 測試資料生成工具
+///
+/// 提供共用的價格資料產生器，減少測試程式碼重複，確保測試資料一致性。
 
 // ==========================================
-// Basic Price Generation
+// 基礎價格生成
 // ==========================================
 
-/// Creates a single DailyPriceEntry with defaults for missing fields.
+/// 建立單一 DailyPriceEntry，未指定欄位使用預設值。
 DailyPriceEntry createTestPrice({
   String symbol = 'TEST',
   required DateTime date,
@@ -30,7 +31,7 @@ DailyPriceEntry createTestPrice({
   );
 }
 
-/// Generates flat prices with small variation around basePrice.
+/// 生成基礎價格附近小幅震盪的價格資料。
 List<DailyPriceEntry> generateFlatPrices({
   required int days,
   required double basePrice,
@@ -39,7 +40,7 @@ List<DailyPriceEntry> generateFlatPrices({
 }) {
   final now = DateTime.now();
   return List.generate(days, (i) {
-    // Small random-like variation around base price
+    // 基礎價格附近的小幅變動
     final variation = (i % 3 - 1) * 0.1; // -0.1, 0, or +0.1
     return createTestPrice(
       symbol: symbol,
@@ -50,7 +51,7 @@ List<DailyPriceEntry> generateFlatPrices({
   });
 }
 
-/// Generates prices at a constant level (no variation).
+/// 生成固定價格資料（無波動）。
 List<DailyPriceEntry> generateConstantPrices({
   required int days,
   required double basePrice,
@@ -72,10 +73,10 @@ List<DailyPriceEntry> generateConstantPrices({
 }
 
 // ==========================================
-// Trend Pattern Generation
+// 趨勢型態生成
 // ==========================================
 
-/// Generates prices in an uptrend pattern.
+/// 生成上升趨勢價格資料。
 List<DailyPriceEntry> generateUptrendPrices({
   required int days,
   double startPrice = 100.0,
@@ -93,7 +94,7 @@ List<DailyPriceEntry> generateUptrendPrices({
   });
 }
 
-/// Generates prices in a downtrend pattern.
+/// 生成下降趨勢價格資料。
 List<DailyPriceEntry> generateDowntrendPrices({
   required int days,
   double startPrice = 120.0,
@@ -115,7 +116,7 @@ List<DailyPriceEntry> generateDowntrendPrices({
   });
 }
 
-/// Generates swing prices (sine wave pattern) for support/resistance testing.
+/// 生成波動價格（正弦波型態），用於支撐/壓力測試。
 List<DailyPriceEntry> generateSwingPrices({
   required int days,
   double basePrice = 100.0,
@@ -141,20 +142,20 @@ List<DailyPriceEntry> generateSwingPrices({
 }
 
 // ==========================================
-// Reversal Pattern Generation
+// 反轉型態生成
 // ==========================================
 
-/// Generates a higher low pattern for W2S reversal testing.
+/// 生成更高低點型態，用於弱轉強反轉測試。
 ///
-/// Pattern explanation:
-/// - Days 0-24: Establish downtrend with lows around 80
-/// - Days 25-44: Deeper decline, lows reach 65 (the lowest point)
-/// - Days 45-64: Recovery phase, lows stay around 72 (higher than 65)
+/// 型態說明：
+/// - 第 0-24 天：建立下降趨勢，低點約 80
+/// - 第 25-44 天：更深跌勢，低點達 65（最低點）
+/// - 第 45-64 天：恢復階段，低點維持約 72（高於 65）
 ///
-/// The rule engine compares:
-/// - Recent window (last 20 days): min low from days 45-64 ≈ 72
-/// - Previous window (days 25-44): min low ≈ 65
-/// Result: 72 > 65 → higher low detected
+/// 規則引擎比較：
+/// - 近期窗口（最後 20 天）：第 45-64 天最低點 ≈ 72
+/// - 前期窗口（第 25-44 天）：最低點 ≈ 65
+/// 結果：72 > 65 → 偵測到更高低點
 List<DailyPriceEntry> generateHigherLowPattern({
   required int days,
   String symbol = 'TEST',
@@ -166,15 +167,15 @@ List<DailyPriceEntry> generateHigherLowPattern({
     double low;
 
     if (i < 25) {
-      // Phase 1: Initial downtrend, lows around 80
+      // 階段一：初始下降趨勢，低點約 80
       price = 100.0 - (i * 0.6); // 100 → 85
       low = price - 5.0; // lows: 95 → 80
     } else if (i < 45) {
-      // Phase 2: Deep decline, lows reach 65 (minimum)
+      // 階段二：深跌，低點達 65（最低）
       price = 85.0 - ((i - 25) * 0.5); // 85 → 75
       low = price - 10.0; // lows: 75 → 65
     } else {
-      // Phase 3: Recovery, prices flat but lows are higher
+      // 階段三：恢復期，價格平穩但低點更高
       price = 75.0 - ((i - 45) * 0.1); // 75 → 73
       low = price - 3.0; // lows: 72 → 70 (all higher than 65)
     }
@@ -192,11 +193,11 @@ List<DailyPriceEntry> generateHigherLowPattern({
 }
 
 // ==========================================
-// Spike Pattern Generation
+// 異常型態生成
 // ==========================================
 
-/// Generates prices with a volume spike on the last day.
-/// Last day also has 3% price movement (required by minPriceChangeForVolume).
+/// 生成最後一天成交量爆增的價格資料。
+/// 最後一天同時有 3% 價格變動（滿足 minPriceChangeForVolume 門檻）。
 List<DailyPriceEntry> generatePricesWithVolumeSpike({
   required int days,
   required double normalVolume,
@@ -207,7 +208,7 @@ List<DailyPriceEntry> generatePricesWithVolumeSpike({
   final now = DateTime.now();
   return List.generate(days, (i) {
     final isToday = i == days - 1;
-    // Last day: open at base, close 3% higher to satisfy minPriceChangeForVolume (1.5%)
+    // 最後一天：開盤於基準價，收盤高 3% 以滿足 minPriceChangeForVolume (1.5%)
     final open = isToday ? basePrice : basePrice;
     final close = isToday ? basePrice * 1.03 : basePrice; // +3% on spike day
     return DailyPriceEntry(
@@ -222,7 +223,7 @@ List<DailyPriceEntry> generatePricesWithVolumeSpike({
   });
 }
 
-/// Generates prices with a price spike on the last day.
+/// 生成最後一天價格爆增的資料。
 List<DailyPriceEntry> generatePricesWithPriceSpike({
   required int days,
   required double basePrice,
@@ -245,10 +246,10 @@ List<DailyPriceEntry> generatePricesWithPriceSpike({
 }
 
 // ==========================================
-// Institutional Data Generation
+// 法人資料生成
 // ==========================================
 
-/// Generates institutional data for direction reversal testing.
+/// 生成法人賣買轉向測試用資料。
 List<DailyInstitutionalEntry> generateInstitutionalHistory({
   required int days,
   required double prevDirection,
@@ -269,10 +270,10 @@ List<DailyInstitutionalEntry> generateInstitutionalHistory({
 }
 
 // ==========================================
-// News Data Generation
+// 新聞資料生成
 // ==========================================
 
-/// Creates a news item for testing.
+/// 建立測試用新聞項目。
 NewsItemEntry createTestNewsItem({
   required String id,
   String title = 'Test News',

@@ -11,10 +11,18 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/price_data_generators.dart';
 
+/// ScoringService 單元測試
+///
+/// 測試評分服務的流動性過濾邏輯與評分流程。
+/// 使用 Mocktail 模擬依賴服務。
+
+/// Mock 分析服務
 class MockAnalysisService extends Mock implements AnalysisService {}
 
+/// Mock 規則引擎
 class MockRuleEngine extends Mock implements RuleEngine {}
 
+/// Mock 分析資料庫
 class MockAnalysisRepository extends Mock implements AnalysisRepository {}
 
 void main() {

@@ -95,7 +95,6 @@ void main() {
         buildTestApp(const StockCard(symbol: '2330', score: 45.0)),
       );
 
-      // Score ring displays just the number
       expect(find.text('45'), findsOneWidget);
     });
 
@@ -109,8 +108,7 @@ void main() {
         ),
       );
 
-      // ReasonTags with translateCodes: true translates codes to i18n keys
-      // Without i18n setup in tests, .tr() returns the key itself
+      // 無 i18n 設定時，.tr() 回傳原始 key
       expect(find.text('reasons.reversalW2S'), findsOneWidget);
       expect(find.text('reasons.volumeSpike'), findsOneWidget);
     });
@@ -125,8 +123,7 @@ void main() {
         ),
       );
 
-      // StockCard limits display to 2 reasons via maxTags
-      // Without i18n setup, .tr() returns the key itself
+      // 無 i18n 設定，.tr() 回傳 key
       expect(find.text('reasons.reversalW2S'), findsOneWidget);
       expect(find.text('reasons.volumeSpike'), findsOneWidget);
       expect(find.text('reasons.breakout'), findsNothing);
@@ -139,7 +136,6 @@ void main() {
         buildTestApp(const StockCard(symbol: '2330', trendState: 'UP')),
       );
 
-      // Now uses Material Icons instead of emoji
       expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     });
 
@@ -150,7 +146,6 @@ void main() {
         buildTestApp(const StockCard(symbol: '2330', trendState: 'DOWN')),
       );
 
-      // Now uses Material Icons instead of emoji
       expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
     });
 
@@ -161,7 +156,6 @@ void main() {
         buildTestApp(const StockCard(symbol: '2330', trendState: null)),
       );
 
-      // Now uses Material Icons instead of emoji
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
     });
 
@@ -241,7 +235,6 @@ void main() {
           buildTestApp(const StockCard(symbol: '2330', score: 55.0)),
         );
 
-        // Score ring displays just the number
         expect(find.text('55'), findsOneWidget);
       });
 

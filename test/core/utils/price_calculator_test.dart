@@ -270,7 +270,7 @@ void main() {
 }
 
 // ==========================================
-// Test Helpers
+// 測試輔助函數
 // ==========================================
 
 List<DailyPriceEntry> _generatePriceHistory({

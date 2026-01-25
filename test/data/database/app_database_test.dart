@@ -3,6 +3,11 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 
 import 'package:afterclose/data/database/app_database.dart';
 
+/// AppDatabase 單元測試
+///
+/// 測試 Drift SQLite 資料庫的 CRUD 操作，
+/// 涵蓋 StockMaster、DailyPrice、Watchlist、Analysis、Recommendation 等資料表。
+
 void main() {
   late AppDatabase db;
 
