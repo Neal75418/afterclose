@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,15 +99,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         isLoaded: true,
       );
 
-      if (kDebugMode) {
-        print(
-          'Settings loaded: theme=$themeMode, locale=${locale.displayName}',
-        );
-      }
+      AppLogger.debug(
+        'Settings',
+        '設定已載入: 主題=$themeMode, 語言=${locale.displayName}',
+      );
     } catch (e) {
-      if (kDebugMode) {
-        print('Failed to load settings: $e');
-      }
+      AppLogger.warning('Settings', '載入設定失敗: $e');
       state = state.copyWith(isLoaded: true);
     }
   }
@@ -119,9 +116,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       await prefs.setInt(_keyThemeMode, state.themeMode.index);
       await prefs.setString(_keyLocale, state.locale.name);
     } catch (e) {
-      if (kDebugMode) {
-        print('Failed to save settings: $e');
-      }
+      AppLogger.warning('Settings', '儲存設定失敗: $e');
     }
   }
 
@@ -129,9 +124,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   void setThemeMode(ThemeMode mode) {
     state = state.copyWith(themeMode: mode);
     _saveSettings();
-    if (kDebugMode) {
-      print('Theme mode changed to: $mode');
-    }
+    AppLogger.debug('Settings', '主題已變更: $mode');
   }
 
   /// Toggle between light and dark theme
@@ -148,9 +141,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   void setLocale(AppLocale locale) {
     state = state.copyWith(locale: locale);
     _saveSettings();
-    if (kDebugMode) {
-      print('Locale changed to: ${locale.displayName}');
-    }
+    AppLogger.debug('Settings', '語言已變更: ${locale.displayName}');
   }
 }
 
@@ -198,7 +189,7 @@ class ApiTokenState {
   final int? testResult; // Number of stocks fetched in test
   final String? testError;
 
-  bool get hasToken => token != null && token!.isNotEmpty;
+  bool get hasToken => token?.isNotEmpty ?? false;
 
   ApiTokenState copyWith({
     String? token,

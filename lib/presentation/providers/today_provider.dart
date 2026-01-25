@@ -7,6 +7,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
+import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
@@ -23,7 +24,6 @@ const _updateTimeout = Duration(minutes: 60);
 class TodayState {
   const TodayState({
     this.recommendations = const [],
-    this.watchlistStatus = const {},
     this.lastUpdate,
     this.dataDate,
     this.isLoading = false,
@@ -33,7 +33,6 @@ class TodayState {
   });
 
   final List<RecommendationWithDetails> recommendations;
-  final Map<String, WatchlistStockStatus> watchlistStatus;
   final DateTime? lastUpdate;
 
   /// 目前顯示資料的實際日期
@@ -45,7 +44,6 @@ class TodayState {
 
   TodayState copyWith({
     List<RecommendationWithDetails>? recommendations,
-    Map<String, WatchlistStockStatus>? watchlistStatus,
     DateTime? lastUpdate,
     DateTime? dataDate,
     bool? isLoading,
@@ -55,7 +53,6 @@ class TodayState {
   }) {
     return TodayState(
       recommendations: recommendations ?? this.recommendations,
-      watchlistStatus: watchlistStatus ?? this.watchlistStatus,
       lastUpdate: lastUpdate ?? this.lastUpdate,
       dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
@@ -91,32 +88,6 @@ class RecommendationWithDetails {
   final List<double>? recentPrices;
 }
 
-/// 自選股票狀態
-class WatchlistStockStatus {
-  const WatchlistStockStatus({
-    required this.symbol,
-    this.stockName,
-    this.latestClose,
-    this.priceChange,
-    this.hasSignal = false,
-    this.signalType,
-  });
-
-  final String symbol;
-  final String? stockName;
-  final double? latestClose;
-  final double? priceChange;
-  final bool hasSignal;
-  final String? signalType;
-
-  /// 取得狀態圖示
-  String get statusIcon {
-    if (hasSignal) return '🔥';
-    if (priceChange != null && priceChange!.abs() >= 3) return '👀';
-    return '😴';
-  }
-}
-
 /// 更新進度資訊
 class UpdateProgress {
   const UpdateProgress({
@@ -144,6 +115,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
   AppDatabase get _db => _ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
   UpdateService get _updateService => _ref.read(updateServiceProvider);
+  DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
 
   /// 載入今日資料
   Future<void> loadData() async {
@@ -164,8 +136,11 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
 
-      // 計算顯示用的資料日期，取兩者較早者
-      final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
+      // 計算顯示用的資料日期
+      final dataDate = _dataSyncService.getDisplayDataDate(
+        latestPriceDate,
+        latestInstDate,
+      );
 
       // 決定用於分析查詢的實際日期
       // 若有推薦資料，使用該資料的日期；否則使用最新資料日期
@@ -205,12 +180,19 @@ class TodayNotifier extends StateNotifier<TodayState> {
       // 建立推薦詳情
       final recWithDetails = recommendations.map((rec) {
         final priceHistory = priceHistoriesMap[rec.symbol];
-        // 擷取收盤價供迷你走勢圖使用（限制 30 天以提升效能）
-        final recentPrices = priceHistory
-            ?.take(30)
-            .map((p) => p.close)
-            .whereType<double>()
-            .toList();
+        // 擷取最近 30 天收盤價供迷你走勢圖使用
+        // priceHistory 按日期升序排列，需取最後 30 筆才是最近的資料
+        List<double>? recentPrices;
+        if (priceHistory != null && priceHistory.isNotEmpty) {
+          final startIdx = priceHistory.length > 30
+              ? priceHistory.length - 30
+              : 0;
+          recentPrices = priceHistory
+              .sublist(startIdx)
+              .map((p) => p.close)
+              .whereType<double>()
+              .toList();
+        }
         return RecommendationWithDetails(
           symbol: rec.symbol,
           score: rec.score,
@@ -224,23 +206,8 @@ class TodayNotifier extends StateNotifier<TodayState> {
         );
       }).toList();
 
-      // 建立自選清單狀態
-      final watchlistStatus = <String, WatchlistStockStatus>{};
-      for (final item in watchlist) {
-        final reasons = reasonsMap[item.symbol] ?? [];
-        watchlistStatus[item.symbol] = WatchlistStockStatus(
-          symbol: item.symbol,
-          stockName: stocksMap[item.symbol]?.name,
-          latestClose: latestPricesMap[item.symbol]?.close,
-          priceChange: priceChanges[item.symbol],
-          hasSignal: reasons.isNotEmpty,
-          signalType: analysesMap[item.symbol]?.trendState,
-        );
-      }
-
       state = state.copyWith(
         recommendations: recWithDetails,
-        watchlistStatus: watchlistStatus,
         lastUpdate: lastRun?.finishedAt ?? lastRun?.startedAt,
         dataDate: dataDate,
         isLoading: false,
@@ -361,7 +328,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
       return triggered.length;
     } catch (e) {
       // 非關鍵錯誤：警示檢查失敗不應導致更新失敗
-      AppLogger.warning('TodayNotifier', 'Price alert check failed', e);
+      AppLogger.warning('TodayNotifier', '價格警示檢查失敗', e);
       return 0;
     }
   }

@@ -409,7 +409,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
           const SizedBox(height: 8),
 
           // Current price info
-          if (widget.currentPrice != null)
+          if (widget.currentPrice case final currentPrice?)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -430,7 +430,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
                   ),
                   const Spacer(),
                   Text(
-                    'NT\$${widget.currentPrice!.toStringAsFixed(2)}',
+                    'NT\$${currentPrice.toStringAsFixed(2)}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),

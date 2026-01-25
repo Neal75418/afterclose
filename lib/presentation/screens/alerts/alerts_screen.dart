@@ -181,7 +181,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (alert.note != null && alert.note!.isNotEmpty)
+            if (alert.note?.isNotEmpty ?? false)
               Text(
                 alert.note!,
                 style: theme.textTheme.bodySmall?.copyWith(

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 
@@ -18,7 +20,7 @@ class TwseClient {
   TwseClient({Dio? dio}) : _dio = dio ?? _createDio();
 
   /// TWSE 官方網站基礎 URL（比 Open Data API 更新更快）
-  static const String _baseUrl = 'https://www.twse.com.tw';
+  static const String _baseUrl = ApiEndpoints.twseBaseUrl;
 
   final Dio _dio;
 
@@ -26,8 +28,12 @@ class TwseClient {
     return Dio(
       BaseOptions(
         baseUrl: _baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 60),
+        connectTimeout: const Duration(
+          seconds: ApiConfig.twseConnectTimeoutSec,
+        ),
+        receiveTimeout: const Duration(
+          seconds: ApiConfig.twseReceiveTimeoutSec,
+        ),
         headers: {
           'Accept': 'application/json',
           // 加入 User-Agent 模擬瀏覽器請求
@@ -48,71 +54,64 @@ class TwseClient {
   /// 端點: /rwd/zh/afterTrading/STOCK_DAY_ALL
   Future<List<TwseDailyPrice>> getAllDailyPrices() async {
     try {
-      AppLogger.info('TwseClient', 'Fetching all daily prices from TWSE...');
-
       final response = await _dio.get(
         '/rwd/zh/afterTrading/STOCK_DAY_ALL',
         queryParameters: {'response': 'json'},
-      );
-
-      AppLogger.info(
-        'TwseClient',
-        'TWSE response: statusCode=${response.statusCode}, '
-            'dataType=${response.data?.runtimeType}',
       );
 
       if (response.statusCode == 200) {
         // 處理 String 和 Map 兩種回應（iOS 可能回傳 String）
         var data = response.data;
         if (data is String) {
-          AppLogger.info('TwseClient', 'Response is String, parsing as JSON');
           try {
             data = jsonDecode(data);
           } catch (e) {
-            AppLogger.error('TwseClient', 'Failed to parse JSON response', e);
+            AppLogger.warning('TWSE', '全市場價格: JSON 解析失敗');
             return [];
           }
         }
 
         if (data is! Map<String, dynamic>) {
-          AppLogger.warning(
-            'TwseClient',
-            'Unexpected data type: ${data.runtimeType}',
-          );
+          AppLogger.warning('TWSE', '全市場價格: 非預期資料型別');
           return [];
         }
 
         // 檢查回應狀態
         final stat = data['stat'];
-        final hasData = data['data'] != null;
-        AppLogger.info(
-          'TwseClient',
-          'TWSE response stat="$stat", hasData=$hasData',
-        );
-
-        if (stat != 'OK' || !hasData) {
-          AppLogger.warning(
-            'TwseClient',
-            'TWSE returned no data: stat=$stat, keys=${data.keys.toList()}',
-          );
+        if (stat != 'OK' || data['data'] == null) {
+          AppLogger.warning('TWSE', '全市場價格: 無資料 (stat=$stat)');
           return [];
         }
 
         // 從回應解析日期（格式: YYYYMMDD）
         final dateStr = data['date']?.toString() ?? '';
         final date = _parseAdDate(dateStr);
-        AppLogger.info('TwseClient', 'TWSE data date: $dateStr -> $date');
 
         // 解析資料陣列（每列是 List 而非 Map）
         final List<dynamic> rows = data['data'];
-        AppLogger.info('TwseClient', 'TWSE returned ${rows.length} rows');
+        var failedCount = 0;
+        final prices = <TwseDailyPrice>[];
 
-        final prices = rows
-            .map((row) => _parseDailyPriceRow(row as List<dynamic>, date))
-            .whereType<TwseDailyPrice>()
-            .toList();
+        for (final row in rows) {
+          final parsed = _parseDailyPriceRow(row as List<dynamic>, date);
+          if (parsed != null) {
+            prices.add(parsed);
+          } else {
+            failedCount++;
+          }
+        }
 
-        AppLogger.info('TwseClient', 'Parsed ${prices.length} valid prices');
+        // 統一輸出結果
+        final dateFormatted =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        if (failedCount > 0) {
+          AppLogger.info(
+            'TWSE',
+            '全市場價格: ${prices.length} 筆 ($dateFormatted, 略過 $failedCount 筆)',
+          );
+        } else {
+          AppLogger.info('TWSE', '全市場價格: ${prices.length} 筆 ($dateFormatted)');
+        }
         return prices;
       }
 
@@ -121,27 +120,27 @@ class TwseClient {
         response.statusCode,
       );
     } on DioException catch (e) {
-      AppLogger.error(
-        'TwseClient',
-        'DioException: type=${e.type}, message=${e.message}, '
-            'response=${e.response?.statusCode}',
-        e,
-      );
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
+        AppLogger.warning('TWSE', '全市場價格: 連線逾時');
         throw NetworkException('TWSE connection timeout', e);
       }
+      AppLogger.warning('TWSE', '全市場價格: ${e.message ?? "網路錯誤"}');
       throw NetworkException(e.message ?? 'TWSE network error', e);
     } catch (e, stack) {
-      AppLogger.error('TwseClient', 'Unexpected error', e, stack);
+      AppLogger.error('TWSE', '全市場價格: 非預期錯誤', e, stack);
       rethrow;
     }
   }
 
   /// 解析 YYYYMMDD 格式的西元日期（例如 "20260121"）
+  ///
+  /// 回傳本地時間午夜以匹配資料庫儲存格式
   DateTime _parseAdDate(String dateStr) {
     if (dateStr.length != 8) {
-      return DateTime.now();
+      // 預設為今日本地時間午夜
+      final now = DateTime.now();
+      return DateTime(now.year, now.month, now.day);
     }
     final year = int.parse(dateStr.substring(0, 4));
     final month = int.parse(dateStr.substring(4, 6));
@@ -213,10 +212,15 @@ class TwseClient {
 
         // 解析資料陣列
         final List<dynamic> rows = data['data'];
-        return rows
+        final results = rows
             .map((row) => _parseInstitutionalRow(row as List<dynamic>, date))
             .whereType<TwseInstitutional>()
             .toList();
+
+        final dateFormatted =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        AppLogger.info('TWSE', '法人資料: ${results.length} 筆 ($dateFormatted)');
+        return results;
       }
 
       throw ApiException(
@@ -224,6 +228,7 @@ class TwseClient {
         response.statusCode,
       );
     } on DioException catch (e) {
+      AppLogger.warning('TWSE', '法人資料: ${e.message ?? "網路錯誤"}');
       throw NetworkException(e.message ?? 'TWSE network error', e);
     }
   }
@@ -314,7 +319,7 @@ class TwseClient {
       final dateStr = '$year${month.toString().padLeft(2, '0')}01';
 
       final response = await _dio.get(
-        'https://www.twse.com.tw/exchangeReport/STOCK_DAY',
+        '${ApiEndpoints.twseBaseUrl}${ApiEndpoints.twseStockDay}',
         queryParameters: {'response': 'json', 'date': dateStr, 'stockNo': code},
       );
 
@@ -322,30 +327,23 @@ class TwseClient {
         // 處理 iOS Dio 回傳 String 而非 Map 的情況
         var data = response.data;
         if (data is String) {
-          AppLogger.debug(
-            'TwseClient',
-            'getStockMonthlyPrices: Response is String, parsing as JSON',
-          );
           data = jsonDecode(data);
         }
 
         if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.debug(
-            'TwseClient',
-            'getStockMonthlyPrices: No data for $code ($year/$month), stat=${data['stat']}',
-          );
           return [];
         }
 
         final List<dynamic> rows = data['data'];
-        AppLogger.debug(
-          'TwseClient',
-          'getStockMonthlyPrices: $code ($year/$month) -> ${rows.length} rows',
-        );
-        return rows
+        final results = rows
             .map((row) => _parseHistoricalRow(row as List<dynamic>, code))
             .whereType<TwseDailyPrice>()
             .toList();
+        AppLogger.debug(
+          'TWSE',
+          '月價格($code): $year/$month -> ${results.length} 筆',
+        );
+        return results;
       }
 
       throw ApiException(
@@ -383,6 +381,8 @@ class TwseClient {
   }
 
   /// 解析含斜線的民國日期（例如 "115/01/02"）
+  ///
+  /// 回傳本地時間午夜以匹配資料庫儲存格式
   DateTime _parseSlashRocDate(String dateStr) {
     final parts = dateStr.split('/');
     if (parts.length != 3) {
@@ -393,7 +393,7 @@ class TwseClient {
     final month = int.parse(parts[1]);
     final day = int.parse(parts[2]);
 
-    return DateTime(rocYear + 1911, month, day);
+    return DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
   }
 
   /// 解析含逗號的數字（例如 "1,234,567"）
@@ -507,10 +507,15 @@ class TwseClient {
         final stockTable = tables[1] as Map<String, dynamic>;
         final List<dynamic> rows = stockTable['data'] ?? [];
 
-        return rows
+        final results = rows
             .map((row) => _parseMarginTradingRow(row as List<dynamic>, date))
             .whereType<TwseMarginTrading>()
             .toList();
+
+        final dateFormatted =
+            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        AppLogger.info('TWSE', '融資融券: ${results.length} 筆 ($dateFormatted)');
+        return results;
       }
 
       throw ApiException(
@@ -518,6 +523,7 @@ class TwseClient {
         response.statusCode,
       );
     } on DioException catch (e) {
+      AppLogger.warning('TWSE', '融資融券: ${e.message ?? "網路錯誤"}');
       throw NetworkException(e.message ?? 'TWSE network error', e);
     }
   }
@@ -558,7 +564,7 @@ class TwseClient {
       // 建立獨立的 Dio 以避免基礎 URL 衝突
       // Open Data 欄位: Code, Name, PEratio, DividendYield, PBratio
       final response = await Dio().get(
-        'https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL',
+        ApiEndpoints.twseValuation,
         options: Options(responseType: ResponseType.json),
       );
 
@@ -588,29 +594,13 @@ class TwseClient {
           );
         }).toList();
 
-        // 除錯日誌以驗證使用者裝置上的 Open Data 內容
-        try {
-          final highYieldCount = results
-              .where((v) => (v.dividendYield ?? 0) >= 7.0)
-              .length;
-          AppLogger.info(
-            'TwseClient',
-            'Open Data Stats: Total=${results.length}, Yield>=7.0=$highYieldCount',
-          );
-        } catch (e) {
-          // 忽略日誌錯誤
-        }
-
+        AppLogger.info('TWSE', '估值資料: ${results.length} 筆');
         return results;
       }
 
       return [];
     } catch (e) {
-      AppLogger.error(
-        'TwseClient',
-        'Failed to get valuation data (OpenData)',
-        e,
-      );
+      AppLogger.warning('TWSE', '估值資料: 取得失敗');
       return [];
     }
   }
@@ -625,22 +615,22 @@ class TwseClient {
   Future<List<TwseMonthlyRevenue>> getAllMonthlyRevenue() async {
     try {
       // 使用完整 URL 以覆蓋基礎 URL (www.twse.com.tw)
-      final response = await _dio.get(
-        'https://openapi.twse.com.tw/v1/opendata/t187ap05_L',
-      );
+      final response = await _dio.get(ApiEndpoints.twseMonthlyRevenue);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data
+        final results = data
             .map(
               (json) =>
                   TwseMonthlyRevenue.fromJson(json as Map<String, dynamic>),
             )
             .toList();
+        AppLogger.info('TWSE', '月營收: ${results.length} 筆');
+        return results;
       }
       return [];
     } catch (e) {
-      AppLogger.warning('TwseClient', 'Failed to fetch Open Data revenue', e);
+      AppLogger.warning('TWSE', '月營收: 取得失敗');
       return [];
     }
   }
@@ -664,10 +654,6 @@ class TwseClient {
       if (response.statusCode == 200) {
         final dynamic data = jsonDecode(response.data);
         if (data == null || data['stat'] != 'OK') {
-          AppLogger.debug(
-            'TwseClient',
-            'Day trading data not available for $dateStr',
-          );
           return [];
         }
 
@@ -707,26 +693,20 @@ class TwseClient {
           }
         }
 
-        AppLogger.info(
-          'TwseClient',
-          'Fetched ${result.length} day trading records',
-        );
+        AppLogger.info('TWSE', '當沖資料: ${result.length} 筆');
         return result;
       }
       return [];
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
+        AppLogger.warning('TWSE', '當沖資料: 連線逾時');
         throw NetworkException('TWSE connection timeout', e);
       }
+      AppLogger.warning('TWSE', '當沖資料: ${e.message ?? "網路錯誤"}');
       throw NetworkException(e.message ?? 'TWSE network error', e);
     } catch (e, stack) {
-      AppLogger.error(
-        'TwseClient',
-        'Failed to fetch day trading data',
-        e,
-        stack,
-      );
+      AppLogger.error('TWSE', '當沖資料: 非預期錯誤', e, stack);
       return [];
     }
   }
@@ -756,7 +736,7 @@ class TwseClient {
         totalVolume: totalVolume,
         ratio: 0, // 比例需要稍後計算
       );
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -788,7 +768,7 @@ class TwseMonthlyRevenue {
     if (ym.length >= 5) {
       final yStr = ym.substring(0, ym.length - 2);
       final mStr = ym.substring(ym.length - 2);
-      year = (int.tryParse(yStr) ?? 0) + 1911;
+      year = (int.tryParse(yStr) ?? 0) + ApiConfig.rocYearOffset;
       month = int.tryParse(mStr) ?? 0;
     }
 
@@ -863,7 +843,8 @@ class TwseDailyPrice {
   static TwseDailyPrice? tryFromJson(Map<String, dynamic> json) {
     try {
       return TwseDailyPrice.fromJson(json);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('TWSE', '解析 TwseDailyPrice 失敗: ${json['Code']}');
       return null;
     }
   }
@@ -879,6 +860,8 @@ class TwseDailyPrice {
   final double? change;
 
   /// 將 TWSE 民國日期（例如 "1150119"）轉換為 DateTime
+  ///
+  /// 回傳 UTC 午夜時間以確保跨時區一致性
   static DateTime _parseRocDate(String rocDate) {
     if (rocDate.length != 7) {
       throw FormatException('Invalid ROC date format: $rocDate');
@@ -888,8 +871,8 @@ class TwseDailyPrice {
     final month = int.parse(rocDate.substring(3, 5));
     final day = int.parse(rocDate.substring(5, 7));
 
-    // 民國年 + 1911 = 西元年
-    final adYear = rocYear + 1911;
+    // 民國年 + ApiConfig.rocYearOffset = 西元年
+    final adYear = rocYear + ApiConfig.rocYearOffset;
 
     return DateTime(adYear, month, day);
   }
@@ -955,7 +938,8 @@ class TwseInstitutional {
   static TwseInstitutional? tryFromJson(Map<String, dynamic> json) {
     try {
       return TwseInstitutional.fromJson(json);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('TWSE', '解析 TwseInstitutional 失敗: ${json['Code']}');
       return null;
     }
   }
@@ -1026,7 +1010,8 @@ class TwseMarginTrading {
   static TwseMarginTrading? tryFromJson(Map<String, dynamic> json) {
     try {
       return TwseMarginTrading.fromJson(json);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('TWSE', '解析 TwseMarginTrading 失敗: ${json['Code']}');
       return null;
     }
   }

@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 
 /// 台灣財經新聞 RSS feed 解析器
 class RssParser {
@@ -14,8 +17,8 @@ class RssParser {
   static Dio _createDio() {
     return Dio(
       BaseOptions(
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
+        connectTimeout: const Duration(seconds: ApiConfig.rssConnectTimeoutSec),
+        receiveTimeout: const Duration(seconds: ApiConfig.rssReceiveTimeoutSec),
         headers: {'User-Agent': 'AfterClose/1.0'},
       ),
     );
@@ -166,6 +169,7 @@ class RssParser {
       return DateTime.parse(dateStr);
     } catch (_) {}
 
+    AppLogger.debug('RssParser', '日期解析失敗: $dateStr');
     return null;
   }
 
@@ -415,27 +419,18 @@ class RssFeedSource {
     // MoneyDJ 理財網
     RssFeedSource(
       name: 'MoneyDJ',
-      url:
-          'https://www.moneydj.com/KMDJ/RssCenter.aspx?svc=NR&fno=1&arg=MB010000',
+      url: ApiEndpoints.rssMoneyDj,
       category: 'OTHER',
     ),
     // Yahoo Taiwan Finance
     RssFeedSource(
       name: 'Yahoo財經',
-      url: 'https://tw.stock.yahoo.com/rss?category=tw-market',
+      url: ApiEndpoints.rssYahooFinance,
       category: 'OTHER',
     ),
     // cnYES 鉅亨網 - 台股新聞
-    RssFeedSource(
-      name: '鉅亨網',
-      url: 'https://news.cnyes.com/rss/v1/news/category/tw_stock',
-      category: 'OTHER',
-    ),
+    RssFeedSource(name: '鉅亨網', url: ApiEndpoints.rssCnyes, category: 'OTHER'),
     // 中央社 CNA - 財經新聞
-    RssFeedSource(
-      name: '中央社',
-      url: 'https://feeds.feedburner.com/rsscna/finance',
-      category: 'OTHER',
-    ),
+    RssFeedSource(name: '中央社', url: ApiEndpoints.rssCna, category: 'OTHER'),
   ];
 }

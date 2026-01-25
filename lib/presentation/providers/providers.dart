@@ -14,6 +14,8 @@ import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
+import 'package:afterclose/domain/services/api_connection_service.dart';
+import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 
 // ==================================================
@@ -124,6 +126,16 @@ final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
 // ==================================================
 // 服務
 // ==================================================
+
+/// 資料同步服務 Provider（確保價格與法人資料日期一致）
+final dataSyncServiceProvider = Provider<DataSyncService>((ref) {
+  return const DataSyncService();
+});
+
+/// API 連線測試服務 Provider
+final apiConnectionServiceProvider = Provider<ApiConnectionService>((ref) {
+  return const ApiConnectionService();
+});
 
 /// 更新服務 Provider
 final updateServiceProvider = Provider<UpdateService>((ref) {

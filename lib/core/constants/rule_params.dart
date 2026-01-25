@@ -2,8 +2,12 @@
 ///
 /// 這些是 v1 的固定值，v2 將可設定。
 abstract final class RuleParams {
-  /// 分析回溯天數
-  static const int lookbackPrice = 120;
+  /// 分析回溯天數（日曆日）
+  ///
+  /// 需足夠涵蓋 52 週（約 250 交易日）。
+  /// 250 交易日 ÷ 0.71（扣除週末假日比例）≈ 352 日曆日。
+  /// 使用 370 日曆日確保有足夠緩衝。
+  static const int lookbackPrice = 370;
 
   /// 歷史資料緩衝天數（確保分析邊界情況有足夠資料）
   static const int historyBufferDays = 30;
@@ -20,21 +24,28 @@ abstract final class RuleParams {
   /// 壓力/支撐偵測回溯天數
   static const int rangeLookback = 60;
 
-  /// 候選股最低成交額（2000 萬台幣）
+  /// 候選股最低成交額（3000 萬台幣）
   ///
-  /// 允許中小型股進入候選池，最終 Top 10 會由 topNMinTurnover 再次過濾。
-  static const double minCandidateTurnover = 20000000;
+  /// 過濾低流動性股票，確保候選池品質。
+  static const double minCandidateTurnover = 30000000;
 
-  /// 候選股最低成交量（200 張 = 200,000 股）
-  static const double minCandidateVolumeShares = 200000;
+  /// 候選股最低成交量（1000 張 = 1,000,000 股）
+  static const double minCandidateVolumeShares = 1000000;
 
   /// Top N 推薦最低成交額（8000 萬台幣）
   ///
   /// 確保推薦的都是主流標的。
   static const double topNMinTurnover = 80000000;
 
-  /// 當沖規則最低成交量（1500 張 = 1,500,000 股）
-  static const double minDayTradingVolumeShares = 1500000;
+  /// 當沖規則最低成交量（1000 張 = 1,000,000 股）
+  ///
+  /// 當沖需要有量才有意義，1000 張確保流動性。
+  static const double minDayTradingVolumeShares = 1000000;
+
+  /// 候選股快篩最低成交量（100 張 = 100,000 股）
+  ///
+  /// 過濾極低成交量冷門股，確保分析品質。
+  static const double minQuickFilterVolumeShares = 100000;
 
   /// 波段高低點偵測視窗
   static const int swingWindow = 20;
@@ -140,8 +151,9 @@ abstract final class RuleParams {
 
   /// 最低評分門檻
   ///
-  /// 過濾僅有弱訊號或單一訊號的股票，20 分代表至少一個強訊號或兩個中等訊號。
-  static const int minScoreThreshold = 20;
+  /// 過濾僅有弱訊號或單一訊號的股票。
+  /// 25 分代表至少一個強訊號（如反轉 35 分）或兩個中等訊號（如法人 18 + KD 18）。
+  static const int minScoreThreshold = 25;
 
   /// 每個產業最多推薦股票數（v2）
   static const int maxPerIndustry = 3;
@@ -179,8 +191,44 @@ abstract final class RuleParams {
 
   /// 法人連續買賣天數門檻
   ///
-  /// 從 3 天提高至 5 天以過濾短期雜訊。
-  static const int institutionalStreakDays = 5;
+  /// 6 天連續買賣超代表較明確的法人動向。
+  static const int institutionalStreakDays = 6;
+
+  /// 法人每日最低淨買賣門檻（股）
+  ///
+  /// 每日淨買賣超須達此門檻才算有效交易日。
+  /// 100張 = 100,000股
+  static const int institutionalMinDailyNetShares = 100000;
+
+  /// 法人每日顯著淨買賣門檻（股）
+  ///
+  /// 超過此門檻的交易日視為「顯著」交易日。
+  /// 300張 = 300,000股
+  static const int institutionalSignificantDailyNetShares = 300000;
+
+  /// 法人連買總量門檻（股）
+  ///
+  /// 連續買超期間的總淨買超須達此門檻。
+  /// 5000張 = 5,000,000股
+  static const int institutionalBuyTotalThresholdShares = 5000000;
+
+  /// 法人連買日均門檻（股）
+  ///
+  /// 連續買超期間的日均淨買超須達此門檻。
+  /// 700張 = 700,000股
+  static const int institutionalBuyDailyAvgThresholdShares = 700000;
+
+  /// 法人連賣總量門檻（股）
+  ///
+  /// 連續賣超期間的總淨賣超須達此門檻（負值）。
+  /// -15000張 = -15,000,000股
+  static const int institutionalSellTotalThresholdShares = -15000000;
+
+  /// 法人連賣日均門檻（股）
+  ///
+  /// 連續賣超期間的日均淨賣超須達此門檻（負值）。
+  /// -2000張 = -2,000,000股
+  static const int institutionalSellDailyAvgThresholdShares = -2000000;
 
   // ==========================================
   // 52 週高低點參數
@@ -191,8 +239,9 @@ abstract final class RuleParams {
 
   /// 接近 52 週高低點緩衝百分比
   ///
-  /// 在 52 週高低點 2% 範圍內觸發訊號。
-  static const double week52NearThreshold = 0.02;
+  /// 在 52 週高低點 1% 範圍內觸發訊號。
+  /// 較嚴格的門檻確保只有真正接近新高/新低的股票才會觸發。
+  static const double week52NearThreshold = 0.01;
 
   // ==========================================
   // 均線排列參數
@@ -203,6 +252,32 @@ abstract final class RuleParams {
 
   /// 有效排列的均線最小間距（0.5%）
   static const double maMinSeparation = 0.005;
+
+  /// 均線乖離率過濾門檻（5%）
+  ///
+  /// 收盤價離 MA 超過此距離時過濾，避免追高殺低
+  static const double maDeviationThreshold = 0.05;
+
+  /// 多頭排列成交量倍數門檻
+  ///
+  /// 成交量需達 20 日均量的此倍數。
+  /// 1.3 倍（原設計 2.0 倍）考量台股常有量縮上漲現象。
+  static const double maAlignmentVolumeMultiplier = 1.3;
+
+  /// KD 黃金交叉有效區域（低檔區）
+  ///
+  /// K 值需低於此門檻才視為有效黃金交叉。
+  static const double kdGoldenCrossZone = 30.0;
+
+  /// KD 死亡交叉有效區域（高檔區）
+  ///
+  /// K 值需高於此門檻才視為有效死亡交叉。
+  static const double kdDeathCrossZone = 70.0;
+
+  /// KD 交叉價格動能門檻（1%）
+  ///
+  /// 黃金交叉需有至少此漲幅才算有效。
+  static const double kdCrossPriceChangeThreshold = 0.01;
 
   // ==========================================
   // 第四階段：延伸市場資料參數
@@ -218,13 +293,13 @@ abstract final class RuleParams {
 
   /// 高當沖比例門檻（%）
   ///
-  /// 當沖比例高於此值視為「熱門」。
-  static const double dayTradingHighThreshold = 60.0;
+  /// 當沖比例高於此值視為「熱門」。45% 配合 1000 張成交量門檻。
+  static const double dayTradingHighThreshold = 45.0;
 
   /// 極高當沖比例門檻（%）
   ///
-  /// 極高當沖屬投機警示。
-  static const double dayTradingExtremeThreshold = 70.0;
+  /// 極高當沖屬投機警示。60% 為極端情況。
+  static const double dayTradingExtremeThreshold = 60.0;
 
   /// 大戶持股集中度門檻（%）
   ///
@@ -280,8 +355,8 @@ abstract final class RuleParams {
 
   /// 高殖利率門檻（%）
   ///
-  /// 台股平均 4-6%，5% 可捕捉高殖利率股。
-  static const double highDividendYieldThreshold = 5.0;
+  /// 台股平均 4-6%，5.5% 可篩選出真正高殖利率股。
+  static const double highDividendYieldThreshold = 5.5;
 
   /// 本益比低估門檻
   ///
@@ -297,6 +372,12 @@ abstract final class RuleParams {
   ///
   /// 股價淨值比低於 0.8 代表有意義的折價。
   static const double pbrUndervaluedThreshold = 0.8;
+
+  /// 估值資料最大過期天數
+  ///
+  /// TWSE 並非每日更新所有股票的估值資料，超過此天數的資料視為過時。
+  /// 7 天確保資料在合理時效內，避免用舊資料觸發規則。
+  static const int valuationMaxStaleDays = 7;
 }
 
 /// 各推薦類型的分數

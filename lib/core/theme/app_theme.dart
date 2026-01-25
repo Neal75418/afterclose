@@ -35,6 +35,16 @@ class AppTheme {
   /// 錯誤色 - 使用較深的紅橘色，與上漲顏色區分
   static const errorColor = Color(0xFFE74C3C);
 
+  // 法人類別顏色
+  /// 外資 - 藍色
+  static const foreignColor = Color(0xFF3498DB);
+
+  /// 投信 - 紫色
+  static const investmentTrustColor = Color(0xFF9B59B6);
+
+  /// 自營商 - 橘色
+  static const dealerColor = Color(0xFFE67E22);
+
   // 深色主題表面顏色
   static const _surfaceDark = Color(0xFF1E1E1E);
   static const _backgroundDark = Color(0xFF121212);

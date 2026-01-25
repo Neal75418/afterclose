@@ -61,10 +61,6 @@ class MarketDataRepository {
       final targetDate = endDate ?? DateTime.now();
       final latest = await getLatestShareholding(symbol);
       if (latest != null && _isSameDay(latest.date, targetDate)) {
-        AppLogger.debug(
-          'MarketData',
-          'Shareholding for $symbol already up-to-date, skipping API call',
-        );
         return 0;
       }
 
@@ -188,10 +184,6 @@ class MarketDataRepository {
       final targetDate = endDate ?? DateTime.now();
       final latest = await getLatestDayTrading(symbol);
       if (latest != null && _isSameDay(latest.date, targetDate)) {
-        AppLogger.debug(
-          'MarketData',
-          'Day trading for $symbol already up-to-date, skipping API call',
-        );
         return 0;
       }
 
@@ -263,16 +255,14 @@ class MarketDataRepository {
     bool forceRefresh = false,
   }) async {
     try {
-      final targetDate = date ?? DateTime.now();
+      // 統一使用本地時間午夜，確保與 DateContext.normalize 一致
+      final rawDate = date ?? DateTime.now();
+      final targetDate = DateTime(rawDate.year, rawDate.month, rawDate.day);
 
       // 新鮮度檢查：若已有目標日期資料則跳過
       if (!forceRefresh) {
         final existingCount = await _db.getDayTradingCountForDate(targetDate);
         if (existingCount > _batchFreshnessThreshold) {
-          AppLogger.debug(
-            'MarketData',
-            'Day trading for ${targetDate.toIso8601String().substring(0, 10)} already up-to-date ($existingCount records), skipping TWSE API call',
-          );
           return 0;
         }
       }
@@ -282,7 +272,7 @@ class MarketDataRepository {
 
       AppLogger.info(
         'MarketData',
-        'TWSE Day Trading raw count: ${data.length} for date: $targetDate',
+        'TWSE 當沖原始筆數: ${data.length}，日期: $targetDate',
       );
 
       if (data.isEmpty) return 0;
@@ -315,10 +305,7 @@ class MarketDataRepository {
         prices = result.values.expand((list) => list).toList();
       }
 
-      AppLogger.info(
-        'MarketData',
-        'Price records found for calculation: ${prices.length}',
-      );
+      AppLogger.info('MarketData', '用於計算的價格資料: ${prices.length} 筆');
       final volumeMap = <String, double>{};
       for (final p in prices) {
         if (p.volume != null) {
@@ -348,7 +335,7 @@ class MarketDataRepository {
         entries.add(
           DayTradingCompanion.insert(
             symbol: item.code,
-            date: item.date,
+            date: targetDate, // 使用標準化日期，確保與查詢一致
             buyVolume: Value(item.buyVolume),
             sellVolume: Value(item.sellVolume),
             dayTradingRatio: Value(ratio),
@@ -357,11 +344,43 @@ class MarketDataRepository {
         );
       }
 
+      // 刪除舊記錄（可能存在因 UTC/本地時間不一致導致的重複）
+      // 刪除範圍：目標日期的前後各 12 小時（涵蓋 UTC 偏移）
+      final deleteStart = targetDate.subtract(const Duration(hours: 12));
+      final deleteEnd = targetDate.add(const Duration(hours: 36));
+      await _db.deleteDayTradingForDateRange(deleteStart, deleteEnd);
+
       await _db.insertDayTradingData(entries);
+
+      // 統計當沖比例分佈
+      final highRatioEntries = entries.where((e) {
+        final ratio = e.dayTradingRatio.value;
+        return ratio != null && ratio >= 60;
+      }).toList();
+      final extremeRatioCount = entries.where((e) {
+        final ratio = e.dayTradingRatio.value;
+        return ratio != null && ratio >= 70;
+      }).length;
+      final zeroRatioCount = entries.where((e) {
+        final ratio = e.dayTradingRatio.value;
+        return ratio == null || ratio == 0;
+      }).length;
+
       AppLogger.info(
         'MarketData',
-        'Inserted ${entries.length} day trading records with ratios',
+        '當沖資料寫入 ${entries.length} 筆: '
+            '高比例(>=60%)=${highRatioEntries.length}，極高(>=70%)=$extremeRatioCount，零比例=$zeroRatioCount',
       );
+
+      if (highRatioEntries.isNotEmpty) {
+        final highSymbols = highRatioEntries
+            .map(
+              (e) =>
+                  '${e.symbol.value}(${e.dayTradingRatio.value?.toStringAsFixed(1)}%)',
+            )
+            .join(', ');
+        AppLogger.info('MarketData', '高當沖股票: $highSymbols');
+      }
       return entries.length;
     } catch (e) {
       throw DatabaseException('Failed to sync day trading from TWSE', e);
@@ -386,10 +405,6 @@ class MarketDataRepository {
       final latestDate = await _db.getLatestFinancialDataDate(symbol, 'INCOME');
       final expectedQuarter = _getExpectedLatestQuarter();
       if (latestDate != null && !latestDate.isBefore(expectedQuarter)) {
-        AppLogger.debug(
-          'MarketData',
-          'Income statement for $symbol already up-to-date (latest: ${_dateFormat.format(latestDate)}), skipping API call',
-        );
         return 0;
       }
 
@@ -436,10 +451,6 @@ class MarketDataRepository {
       );
       final expectedQuarter = _getExpectedLatestQuarter();
       if (latestDate != null && !latestDate.isBefore(expectedQuarter)) {
-        AppLogger.debug(
-          'MarketData',
-          'Balance sheet for $symbol already up-to-date (latest: ${_dateFormat.format(latestDate)}), skipping API call',
-        );
         return 0;
       }
 
@@ -486,10 +497,6 @@ class MarketDataRepository {
       );
       final expectedQuarter = _getExpectedLatestQuarter();
       if (latestDate != null && !latestDate.isBefore(expectedQuarter)) {
-        AppLogger.debug(
-          'MarketData',
-          'Cash flow for $symbol already up-to-date (latest: ${_dateFormat.format(latestDate)}), skipping API call',
-        );
         return 0;
       }
 
@@ -575,10 +582,6 @@ class MarketDataRepository {
       final targetDate = endDate ?? DateTime.now();
       final latestDate = await _db.getLatestAdjustedPriceDate(symbol);
       if (latestDate != null && _isSameDay(latestDate, targetDate)) {
-        AppLogger.debug(
-          'MarketData',
-          'Adjusted prices for $symbol already up-to-date, skipping API call',
-        );
         return 0;
       }
 
@@ -635,10 +638,6 @@ class MarketDataRepository {
       // 新鮮度檢查：若已有本週資料則跳過
       final latestDate = await _db.getLatestWeeklyPriceDate(symbol);
       if (latestDate != null && _isSameWeek(latestDate, DateTime.now())) {
-        AppLogger.debug(
-          'MarketData',
-          'Weekly prices for $symbol already up-to-date, skipping API call',
-        );
         return 0;
       }
 
@@ -719,10 +718,6 @@ class MarketDataRepository {
       // 新鮮度檢查：若已有本週資料則跳過
       final latestDate = await _db.getLatestHoldingDistributionDate(symbol);
       if (latestDate != null && _isSameWeek(latestDate, DateTime.now())) {
-        AppLogger.debug(
-          'MarketData',
-          'Holding distribution for $symbol already up-to-date, skipping API call',
-        );
         return 0;
       }
 
@@ -837,20 +832,13 @@ class MarketDataRepository {
           targetDate,
         );
         if (existingCount > _batchFreshnessThreshold) {
-          AppLogger.debug(
-            'MarketData',
-            'Margin trading for ${targetDate.toIso8601String().substring(0, 10)} already up-to-date ($existingCount records), skipping TWSE API call',
-          );
           return 0;
         }
       }
 
       final data = await _twseClient.getAllMarginTradingData();
 
-      AppLogger.info(
-        'MarketData',
-        'TWSE Margin Trading raw count: ${data.length}',
-      );
+      AppLogger.info('MarketData', 'TWSE 融資融券原始筆數: ${data.length}');
 
       if (data.isEmpty) return 0;
 
@@ -868,10 +856,7 @@ class MarketDataRepository {
       }).toList();
 
       await _db.insertMarginTradingData(entries);
-      AppLogger.info(
-        'MarketData',
-        'Inserted ${entries.length} margin trading records from TWSE',
-      );
+      AppLogger.info('MarketData', 'TWSE 融資融券寫入 ${entries.length} 筆');
       return entries.length;
     } catch (e) {
       throw DatabaseException('Failed to sync margin trading from TWSE', e);

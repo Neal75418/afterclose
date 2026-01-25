@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -100,7 +101,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
             'stockDetail.foreign'.tr(),
             foreignNet,
             Icons.language,
-            const Color(0xFF3498DB),
+            AppTheme.foreignColor,
           ),
         ),
         const SizedBox(width: 8),
@@ -110,7 +111,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
             'stockDetail.investment'.tr(),
             trustNet,
             Icons.account_balance,
-            const Color(0xFF9B59B6),
+            AppTheme.investmentTrustColor,
           ),
         ),
         const SizedBox(width: 8),
@@ -120,7 +121,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
             'stockDetail.dealer'.tr(),
             dealerNet,
             Icons.store,
-            const Color(0xFFE67E22),
+            AppTheme.dealerColor,
           ),
         ),
       ],
@@ -425,63 +426,54 @@ class _ChipTabState extends ConsumerState<ChipTab> {
               ),
             ),
             const SizedBox(height: 8),
-            // Data rows
-            ...state.institutionalHistory.reversed
-                .take(10)
-                .toList()
-                .asMap()
-                .entries
-                .map((entry) {
-                  final index = entry.key;
-                  final inst = entry.value;
-                  final foreignNet = inst.foreignNet ?? 0;
-                  final trustNet = inst.investmentTrustNet ?? 0;
-                  final dealerNet = inst.dealerNet ?? 0;
+            // Data rows (依日期排序並去重，避免同一天出現多次)
+            ..._getDeduplicatedInstitutionalData(
+              state.institutionalHistory,
+            ).asMap().entries.map((entry) {
+              final index = entry.key;
+              final inst = entry.value;
+              final foreignNet = inst.foreignNet ?? 0;
+              final trustNet = inst.investmentTrustNet ?? 0;
+              final dealerNet = inst.dealerNet ?? 0;
 
-                  return Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 4,
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: index == 0
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        )
+                      : (index.isEven
+                            ? theme.colorScheme.surface
+                            : Colors.transparent),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        '${inst.date.month}/${inst.date.day}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: index == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: index == 0
-                          ? theme.colorScheme.primaryContainer.withValues(
-                              alpha: 0.3,
-                            )
-                          : (index.isEven
-                                ? theme.colorScheme.surface
-                                : Colors.transparent),
-                      borderRadius: BorderRadius.circular(6),
+                    Expanded(
+                      flex: 2,
+                      child: _buildNetValue(context, foreignNet),
                     ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Text(
-                            '${inst.date.month}/${inst.date.day}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: index == 0
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: _buildNetValue(context, foreignNet),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: _buildNetValue(context, trustNet),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: _buildNetValue(context, dealerNet),
-                        ),
-                      ],
+                    Expanded(flex: 2, child: _buildNetValue(context, trustNet)),
+                    Expanded(
+                      flex: 2,
+                      child: _buildNetValue(context, dealerNet),
                     ),
-                  );
-                }),
+                  ],
+                ),
+              );
+            }),
           ],
         ),
       ),
@@ -645,6 +637,30 @@ class _ChipTabState extends ConsumerState<ChipTab> {
         ),
       ),
     );
+  }
+
+  /// 依日期去重並排序法人資料
+  ///
+  /// 因資料庫可能存在相同日期的重複記錄（DateTime 精度問題），
+  /// 此方法以日期（年月日）為 key 去重，保留最後一筆。
+  List<DailyInstitutionalEntry> _getDeduplicatedInstitutionalData(
+    List<DailyInstitutionalEntry> history,
+  ) {
+    if (history.isEmpty) return [];
+
+    // 使用 Map 以日期字串為 key 去重（同一天只保留一筆）
+    final Map<String, DailyInstitutionalEntry> dedupMap = {};
+    for (final entry in history) {
+      final dateKey =
+          '${entry.date.year}-${entry.date.month}-${entry.date.day}';
+      dedupMap[dateKey] = entry; // 後面的會覆蓋前面的
+    }
+
+    // 轉回 List 並依日期降序排序
+    final dedupList = dedupMap.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    return dedupList.take(10).toList();
   }
 
   Widget _buildNetValue(BuildContext context, double value) {

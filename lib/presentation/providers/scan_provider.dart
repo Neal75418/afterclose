@@ -6,6 +6,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
+import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 
@@ -433,6 +434,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
   AppDatabase get _db => _ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
+  DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
 
   // Cached data for pagination
   // Cached data for pagination
@@ -458,7 +460,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
         final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(targetDate);
         AppLogger.info(
           'ScanProvider',
-          'No data for holiday ($targetDate), fallback to $prevTradingDay',
+          '假日無資料 ($targetDate)，備援至 $prevTradingDay',
         );
 
         // Update target date and re-fetch
@@ -467,13 +469,14 @@ class ScanNotifier extends StateNotifier<ScanState> {
       }
 
       // Update DateContext to reflect the actual data date
-      _dateCtx = DateContext.forDate(targetDate);
+      final dateCtx = DateContext.forDate(targetDate);
+      _dateCtx = dateCtx;
       _allAnalyses = analyses
           .where((a) => a.score > 0)
           .toList(); // Pre-fetch all reasons for filtering logic
       if (_allAnalyses.isNotEmpty) {
         final allSymbols = _allAnalyses.map((a) => a.symbol).toList();
-        _allReasons = await _db.getReasonsBatch(allSymbols, _dateCtx!.today);
+        _allReasons = await _db.getReasonsBatch(allSymbols, dateCtx.today);
       } else {
         _allReasons = {};
       }
@@ -481,7 +484,10 @@ class ScanNotifier extends StateNotifier<ScanState> {
       // Get actual data dates for display purposes
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
-      final dataDate = DateContext.earlierOf(latestPriceDate, latestInstDate);
+      final dataDate = _dataSyncService.getDisplayDataDate(
+        latestPriceDate,
+        latestInstDate,
+      );
 
       // Apply initial filter (All)
       _applyGlobalFilter(ScanFilter.all);
@@ -519,7 +525,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
-      AppLogger.error('ScanProvider', 'Load data failed', e);
+      AppLogger.error('ScanProvider', '載入資料失敗', e);
     }
   }
 
@@ -609,15 +615,16 @@ class ScanNotifier extends StateNotifier<ScanState> {
   Future<List<ScanStockItem>> _loadItemsForAnalyses(
     List<DailyAnalysisEntry> analyses,
   ) async {
-    if (analyses.isEmpty || _dateCtx == null) return [];
+    final dateCtx = _dateCtx;
+    if (analyses.isEmpty || dateCtx == null) return [];
 
     final symbols = analyses.map((a) => a.symbol).toList();
 
     // Type-safe batch load using Dart 3 Records
     final data = await _cachedDb.loadScanData(
       symbols: symbols,
-      analysisDate: _dateCtx!.today,
-      historyStart: _dateCtx!.historyStart,
+      analysisDate: dateCtx.today,
+      historyStart: dateCtx.historyStart,
     );
 
     // Destructure Record fields
@@ -636,12 +643,19 @@ class ScanNotifier extends StateNotifier<ScanState> {
     return analyses.map((analysis) {
       final latestPrice = latestPricesMap[analysis.symbol];
       final priceHistory = priceHistoriesMap[analysis.symbol];
-      // Extract close prices for sparkline (limit to 30 days for performance)
-      final recentPrices = priceHistory
-          ?.take(30)
-          .map((p) => p.close)
-          .whereType<double>()
-          .toList();
+      // 擷取最近 30 天收盤價供迷你走勢圖使用
+      // priceHistory 按日期升序排列，需取最後 30 筆才是最近的資料
+      List<double>? recentPrices;
+      if (priceHistory != null && priceHistory.isNotEmpty) {
+        final startIdx = priceHistory.length > 30
+            ? priceHistory.length - 30
+            : 0;
+        recentPrices = priceHistory
+            .sublist(startIdx)
+            .map((p) => p.close)
+            .whereType<double>()
+            .toList();
+      }
       return ScanStockItem(
         symbol: analysis.symbol,
         score: analysis.score,

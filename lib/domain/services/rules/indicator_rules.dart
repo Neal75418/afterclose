@@ -1,6 +1,8 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 // ==========================================
 // 第 3 階段：技術訊號規則
@@ -20,7 +22,16 @@ class Week52HighRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < RuleParams.week52Days) return null;
+    // 診斷：資料不足時記錄
+    if (data.prices.length < RuleParams.week52Days) {
+      if (data.prices.length >= 200) {
+        AppLogger.debug(
+          'Week52High',
+          '${data.symbol}: 資料不足 (${data.prices.length}/${RuleParams.week52Days})',
+        );
+      }
+      return null;
+    }
 
     final today = data.prices.last;
     final close = today.close;
@@ -41,6 +52,10 @@ class Week52HighRule extends StockRule {
     final threshold = maxHigh * (1 - RuleParams.week52NearThreshold);
     if (close >= threshold) {
       final isNewHigh = close >= maxHigh;
+      AppLogger.debug(
+        'Week52High',
+        '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, 52週高=${maxHigh.toStringAsFixed(2)}, 新高=$isNewHigh',
+      );
       return TriggeredReason(
         type: ReasonType.week52High,
         score: RuleScores.week52High,
@@ -71,7 +86,16 @@ class Week52LowRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < RuleParams.week52Days) return null;
+    // 診斷：資料不足時記錄
+    if (data.prices.length < RuleParams.week52Days) {
+      if (data.prices.length >= 200) {
+        AppLogger.debug(
+          'Week52Low',
+          '${data.symbol}: 資料不足 (${data.prices.length}/${RuleParams.week52Days})',
+        );
+      }
+      return null;
+    }
 
     final today = data.prices.last;
     final close = today.close;
@@ -92,6 +116,10 @@ class Week52LowRule extends StockRule {
     final threshold = minLow * (1 + RuleParams.week52NearThreshold);
     if (close <= threshold) {
       final isNewLow = close <= minLow;
+      AppLogger.debug(
+        'Week52Low',
+        '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, 52週低=${minLow.toStringAsFixed(2)}, 新低=$isNewLow',
+      );
       return TriggeredReason(
         type: ReasonType.week52Low,
         score: RuleScores.week52Low,
@@ -118,13 +146,16 @@ class MAAlignmentBullishRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    // 至少需要 60 天資料
-    if (data.prices.length < 60) return null;
+    // 至少需要最大均線週期的資料
+    final maxPeriod = RuleParams.maAlignmentPeriods.reduce(
+      (a, b) => a > b ? a : b,
+    );
+    if (data.prices.length < maxPeriod) return null;
 
-    final ma5 = _calculateMA(data.prices, 5);
-    final ma10 = _calculateMA(data.prices, 10);
-    final ma20 = _calculateMA(data.prices, 20);
-    final ma60 = _calculateMA(data.prices, 60);
+    final ma5 = TechnicalIndicatorService.latestSMA(data.prices, 5);
+    final ma10 = TechnicalIndicatorService.latestSMA(data.prices, 10);
+    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
+    final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
 
     if (ma5 == null || ma10 == null || ma20 == null || ma60 == null) {
       return null;
@@ -136,32 +167,22 @@ class MAAlignmentBullishRule extends StockRule {
     if (ma5 > ma10 * (1 + minSep) &&
         ma10 > ma20 * (1 + minSep) &&
         ma20 > ma60 * (1 + minSep)) {
-      // 過濾條件：收盤 > MA5 且乖離率 < 5%
+      // 過濾條件：收盤 > MA5 且乖離率不超過門檻
       // 備註：台股常有「量縮上漲」現象
-      // 因此將成交量要求從 2.0 倍放寬至 1.3 倍
       final today = data.prices.last;
       final close = today.close;
       final vol = today.volume;
       if (close == null || vol == null) return null;
 
       if (close <= ma5) return null;
-      if ((close - ma5) / ma5 >= 0.05) return null; // 離 MA5 過遠（從 3% 放寬至 5%）
+      if ((close - ma5) / ma5 >= RuleParams.maDeviationThreshold) return null;
 
-      double volSum = 0;
-      int count = 0;
-      for (
-        int i = data.prices.length - 1;
-        i >= 0 && i >= data.prices.length - 20;
-        i--
-      ) {
-        if (data.prices[i].volume != null) {
-          volSum += data.prices[i].volume!;
-          count++;
-        }
-      }
-      final volMA20 = count > 0 ? volSum / count : 0;
-      // 放寬：1.3 倍成交量（原 2.0 倍）- 台股常有低量反彈
-      if (vol <= volMA20 * 1.3) return null;
+      final volResult = TechnicalIndicatorService.latestVolumeMA(
+        data.prices,
+        20,
+      );
+      final volMA20 = volResult.volumeMA ?? 0;
+      if (vol <= volMA20 * RuleParams.maAlignmentVolumeMultiplier) return null;
 
       return TriggeredReason(
         type: ReasonType.maAlignmentBullish,
@@ -172,20 +193,6 @@ class MAAlignmentBullishRule extends StockRule {
     }
 
     return null;
-  }
-
-  double? _calculateMA(List<dynamic> prices, int period) {
-    if (prices.length < period) return null;
-    double sum = 0;
-    int count = 0;
-    for (int i = prices.length - period; i < prices.length; i++) {
-      final close = prices[i].close;
-      if (close != null) {
-        sum += close;
-        count++;
-      }
-    }
-    return count == period ? sum / count : null;
   }
 }
 
@@ -203,12 +210,16 @@ class MAAlignmentBearishRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < 60) return null;
+    // 至少需要最大均線週期的資料
+    final maxPeriod = RuleParams.maAlignmentPeriods.reduce(
+      (a, b) => a > b ? a : b,
+    );
+    if (data.prices.length < maxPeriod) return null;
 
-    final ma5 = _calculateMA(data.prices, 5);
-    final ma10 = _calculateMA(data.prices, 10);
-    final ma20 = _calculateMA(data.prices, 20);
-    final ma60 = _calculateMA(data.prices, 60);
+    final ma5 = TechnicalIndicatorService.latestSMA(data.prices, 5);
+    final ma10 = TechnicalIndicatorService.latestSMA(data.prices, 10);
+    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
+    final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
 
     if (ma5 == null || ma10 == null || ma20 == null || ma60 == null) {
       return null;
@@ -219,28 +230,20 @@ class MAAlignmentBearishRule extends StockRule {
     if (ma5 < ma10 * (1 - minSep) &&
         ma10 < ma20 * (1 - minSep) &&
         ma20 < ma60 * (1 - minSep)) {
-      // 過濾條件：收盤 < MA5 且乖離率 > -5% 且成交量 > MA20
+      // 過濾條件：收盤 < MA5 且乖離率不超過門檻 且成交量 > MA20
       final today = data.prices.last;
       final close = today.close;
       final vol = today.volume;
       if (close == null || vol == null) return null;
 
       if (close >= ma5) return null;
-      if ((close - ma5) / ma5 <= -0.05) return null; // 離 MA5 過遠（超賣）
+      if ((close - ma5) / ma5 <= -RuleParams.maDeviationThreshold) return null;
 
-      double volSum = 0;
-      int count = 0;
-      for (
-        int i = data.prices.length - 1;
-        i >= 0 && i >= data.prices.length - 20;
-        i--
-      ) {
-        if (data.prices[i].volume != null) {
-          volSum += data.prices[i].volume!;
-          count++;
-        }
-      }
-      final volMA20 = count > 0 ? volSum / count : 0;
+      final volResult = TechnicalIndicatorService.latestVolumeMA(
+        data.prices,
+        20,
+      );
+      final volMA20 = volResult.volumeMA ?? 0;
       if (vol <= volMA20) return null;
 
       return TriggeredReason(
@@ -252,20 +255,6 @@ class MAAlignmentBearishRule extends StockRule {
     }
 
     return null;
-  }
-
-  double? _calculateMA(List<dynamic> prices, int period) {
-    if (prices.length < period) return null;
-    double sum = 0;
-    int count = 0;
-    for (int i = prices.length - period; i < prices.length; i++) {
-      final close = prices[i].close;
-      if (close != null) {
-        sum += close;
-        count++;
-      }
-    }
-    return count == period ? sum / count : null;
   }
 }
 
@@ -285,7 +274,10 @@ class RSIExtremeOverboughtRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < RuleParams.rsiPeriod + 1) return null;
 
-    final rsi = _calculateRSI(data.prices, RuleParams.rsiPeriod);
+    final rsi = TechnicalIndicatorService.latestRSI(
+      data.prices,
+      period: RuleParams.rsiPeriod,
+    );
     if (rsi == null) return null;
 
     if (rsi >= RuleParams.rsiExtremeOverbought) {
@@ -298,60 +290,6 @@ class RSIExtremeOverboughtRule extends StockRule {
     }
 
     return null;
-  }
-
-  /// 使用 Wilder's 平滑法（EMA 方式）計算 RSI
-  ///
-  /// 此方法對台股快速波動提供更靈敏的訊號
-  double? _calculateRSI(List<dynamic> prices, int period) {
-    // 至少需要 period + 1 天資料以進行初始計算與平滑
-    if (prices.length < period + 1) return null;
-
-    // 步驟 1：計算初始平均漲跌幅（前 'period' 個變化）
-    double initialGains = 0;
-    double initialLosses = 0;
-    int validCount = 0;
-
-    final startIdx = prices.length - period - 1;
-    for (int i = startIdx + 1; i <= startIdx + period; i++) {
-      final current = prices[i].close;
-      final previous = prices[i - 1].close;
-      if (current == null || previous == null) continue;
-
-      final change = current - previous;
-      if (change > 0) {
-        initialGains += change;
-      } else {
-        initialLosses += -change;
-      }
-      validCount++;
-    }
-
-    if (validCount < period ~/ 2) return null; // 有效資料不足
-
-    double avgGain = initialGains / period;
-    double avgLoss = initialLosses / period;
-
-    // 步驟 2：對剩餘資料點套用 Wilder's 平滑
-    // 公式：avgGain = (prevAvgGain * (period - 1) + currentGain) / period
-    for (int i = startIdx + period + 1; i < prices.length; i++) {
-      final current = prices[i].close;
-      final previous = prices[i - 1].close;
-      if (current == null || previous == null) continue;
-
-      final change = current - previous;
-      final currentGain = change > 0 ? change : 0.0;
-      final currentLoss = change < 0 ? -change : 0.0;
-
-      // Wilder's 平滑（指數移動平均）
-      avgGain = (avgGain * (period - 1) + currentGain) / period;
-      avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
-    }
-
-    if (avgLoss == 0) return 100; // 全為上漲，無下跌
-
-    final rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
   }
 }
 
@@ -371,7 +309,10 @@ class RSIExtremeOversoldRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < RuleParams.rsiPeriod + 1) return null;
 
-    final rsi = _calculateRSI(data.prices, RuleParams.rsiPeriod);
+    final rsi = TechnicalIndicatorService.latestRSI(
+      data.prices,
+      period: RuleParams.rsiPeriod,
+    );
     if (rsi == null) return null;
 
     if (rsi <= RuleParams.rsiExtremeOversold) {
@@ -384,55 +325,6 @@ class RSIExtremeOversoldRule extends StockRule {
     }
 
     return null;
-  }
-
-  /// 使用 Wilder's 平滑法計算 RSI
-  double? _calculateRSI(List<dynamic> prices, int period) {
-    if (prices.length < period + 1) return null;
-
-    // 步驟 1：計算初始平均漲跌幅
-    double initialGains = 0;
-    double initialLosses = 0;
-    int validCount = 0;
-
-    final startIdx = prices.length - period - 1;
-    for (int i = startIdx + 1; i <= startIdx + period; i++) {
-      final current = prices[i].close;
-      final previous = prices[i - 1].close;
-      if (current == null || previous == null) continue;
-
-      final change = current - previous;
-      if (change > 0) {
-        initialGains += change;
-      } else {
-        initialLosses += -change;
-      }
-      validCount++;
-    }
-
-    if (validCount < period ~/ 2) return null;
-
-    double avgGain = initialGains / period;
-    double avgLoss = initialLosses / period;
-
-    // 步驟 2：對剩餘資料點套用 Wilder's 平滑
-    for (int i = startIdx + period + 1; i < prices.length; i++) {
-      final current = prices[i].close;
-      final previous = prices[i - 1].close;
-      if (current == null || previous == null) continue;
-
-      final change = current - previous;
-      final currentGain = change > 0 ? change : 0.0;
-      final currentLoss = change < 0 ? -change : 0.0;
-
-      avgGain = (avgGain * (period - 1) + currentGain) / period;
-      avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
-    }
-
-    if (avgLoss == 0) return 100;
-
-    final rs = avgGain / avgLoss;
-    return 100 - (100 / (1 + rs));
   }
 }
 
@@ -466,8 +358,8 @@ class KDGoldenCrossRule extends StockRule {
 
     // 黃金交叉：昨日 K < D，今日 K > D
     if (prevK < prevD && k > d) {
-      // 過濾 1：僅在低檔區觸發（K < 30）
-      if (prevK >= 30.0) return null;
+      // 過濾 1：僅在低檔區觸發
+      if (prevK >= RuleParams.kdGoldenCrossZone) return null;
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
       // 過濾掉低量弱反彈
@@ -496,14 +388,14 @@ class KDGoldenCrossRule extends StockRule {
         }
       }
 
-      // 過濾 3：價格強度（漲幅 > 1%）
+      // 過濾 3：價格強度
       // 確認黃金交叉有實際價格動能支撐
       if (data.prices.length >= 2) {
         final today = data.prices.last;
         final prev = data.prices[data.prices.length - 2];
         if (today.close != null && prev.close != null && prev.close! > 0) {
           final changePct = (today.close! - prev.close!) / prev.close!;
-          if (changePct < 0.01) return null; // 漲幅不足 1%
+          if (changePct < RuleParams.kdCrossPriceChangeThreshold) return null;
         }
       }
 
@@ -549,8 +441,8 @@ class KDDeathCrossRule extends StockRule {
 
     // 死亡交叉：昨日 K > D，今日 K < D
     if (prevK > prevD && k < d) {
-      // 過濾 1：僅在高檔區觸發（K > 70）
-      if (prevK <= 70.0) return null;
+      // 過濾 1：僅在高檔區觸發
+      if (prevK <= RuleParams.kdDeathCrossZone) return null;
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
       // 確認有賣壓（量增下跌）

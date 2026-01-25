@@ -908,9 +908,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
                 ),
                 const Spacer(),
                 Text(
-                  latestPrice?.volume != null
-                      ? _formatVolume(latestPrice!.volume!)
-                      : '-',
+                  _formatVolumeOrDash(latestPrice?.volume),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -953,12 +951,31 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     );
   }
 
+  /// 格式化成交量（股 → 張）
+  /// 格式化成交量（處理 null）
+  String _formatVolumeOrDash(double? volume) {
+    if (volume == null) return '-';
+    return _formatVolume(volume);
+  }
+
+  /// 格式化成交量為台灣習慣的「張」單位
+  ///
+  /// API 回傳單位為「股」，台灣股市習慣用「張」（1張 = 1000股）
   String _formatVolume(double volume) {
-    if (volume >= 100000000) {
-      return '${(volume / 100000000).toStringAsFixed(2)}${'stockDetail.unitBillion'.tr()}';
-    } else if (volume >= 10000) {
-      return '${(volume / 10000).toStringAsFixed(0)}${'stockDetail.unitTenThousand'.tr()}';
+    // 先轉為張
+    final lots = volume / 1000;
+
+    if (lots >= 10000) {
+      // 萬張
+      return '${(lots / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
+    } else if (lots >= 1000) {
+      // 千張
+      return '${(lots / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
+    } else if (lots >= 1) {
+      // 張
+      return '${lots.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
     }
+    // 不足 1 張，顯示股數
     return volume.toStringAsFixed(0);
   }
 }

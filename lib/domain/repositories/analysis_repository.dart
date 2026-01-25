@@ -69,6 +69,21 @@ abstract class IAnalysisRepository {
   Future<Set<String>> getRecentlyRecommendedSymbols({int days});
 
   // ==========================================
+  // 資料清理
+  // ==========================================
+
+  /// 清除指定日期的所有原因記錄
+  ///
+  /// 在每日評分前呼叫，確保不會有舊的原因記錄殘留。
+  /// 這解決了當股票不再觸發任何規則時，舊原因仍保留在資料庫的問題。
+  Future<int> clearReasonsForDate(DateTime date);
+
+  /// 清除指定日期的所有分析記錄
+  ///
+  /// 在每日評分前呼叫，確保不會有舊的分析記錄殘留。
+  Future<int> clearAnalysisForDate(DateTime date);
+
+  // ==========================================
   // UI 用組合查詢
   // ==========================================
 

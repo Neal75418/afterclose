@@ -264,19 +264,19 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                 color: _getTrendColor(state.analysis?.trendState),
               ),
               const SizedBox(width: 8),
-              if (state.analysis?.supportLevel != null)
+              if (state.analysis?.supportLevel case final supportLevel?)
                 _buildLevelChip(
                   theme: theme,
                   label: 'stockDetail.support'.tr(),
-                  value: state.analysis!.supportLevel!,
+                  value: supportLevel,
                   color: AppTheme.downColor,
                 ),
               const SizedBox(width: 8),
-              if (state.analysis?.resistanceLevel != null)
+              if (state.analysis?.resistanceLevel case final resistanceLevel?)
                 _buildLevelChip(
                   theme: theme,
                   label: 'stockDetail.resistance'.tr(),
-                  value: state.analysis!.resistanceLevel!,
+                  value: resistanceLevel,
                   color: AppTheme.upColor,
                 ),
             ],
@@ -432,6 +432,10 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
       'RSI_EXTREME_OVERSOLD' => 'reasons.rsiExtremeOversold',
       'rsiExtremeOversold' => 'reasons.rsiExtremeOversold',
       // Phase 4: Extended market data signals
+      'INSTITUTIONAL_BUY' => 'reasons.institutionalBuy',
+      'institutionalBuy' => 'reasons.institutionalBuy',
+      'INSTITUTIONAL_SELL' => 'reasons.institutionalSell',
+      'institutionalSell' => 'reasons.institutionalSell',
       'FOREIGN_SHAREHOLDING_INCREASING' =>
         'reasons.foreignShareholdingIncreasing',
       'foreignShareholdingIncreasing' =>

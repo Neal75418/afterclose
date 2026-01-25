@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
@@ -96,18 +97,8 @@ class PriceRepository implements IPriceRepository {
 
       // 若無需抓取，直接回傳
       if (monthsToFetch.isEmpty) {
-        AppLogger.debug(
-          'PriceRepo',
-          'syncStockPrices: $symbol already has complete data',
-        );
         return 0;
       }
-
-      AppLogger.debug(
-        'PriceRepo',
-        'syncStockPrices: $symbol needs ${monthsToFetch.length} months '
-            '(existing: ${existingHistory.length} days)',
-      );
 
       // 僅抓取缺少的月份
       final allPrices = <TwseDailyPrice>[];
@@ -123,13 +114,8 @@ class PriceRepository implements IPriceRepository {
         } on RateLimitException {
           // Rate Limit 錯誤應向上拋出以進行適當的 Backoff 處理
           rethrow;
-        } catch (e) {
-          // 記錄錯誤並繼續處理其他月份
-          AppLogger.warning(
-            'PriceRepo',
-            'Failed to fetch $symbol for ${month.year}/${month.month}',
-            e,
-          );
+        } catch (_) {
+          // 忽略個別月份失敗，繼續處理其他月份
         }
 
         // API 請求間隔（250ms：batchSize=2 的安全甜蜜點）
@@ -157,17 +143,6 @@ class PriceRepository implements IPriceRepository {
 
       if (entries.isNotEmpty) {
         await _db.insertPrices(entries);
-        AppLogger.debug(
-          'PriceRepo',
-          'syncStockPrices: $symbol inserted ${entries.length} prices '
-              '(fetched ${allPrices.length} from API)',
-        );
-      } else {
-        AppLogger.debug(
-          'PriceRepo',
-          'syncStockPrices: $symbol no prices to insert '
-              '(fetched ${allPrices.length} from API)',
-        );
       }
 
       return entries.length;
@@ -200,28 +175,19 @@ class PriceRepository implements IPriceRepository {
     bool force = false,
   }) async {
     try {
-      AppLogger.info('PriceRepo', 'syncAllPricesForDate: date=$date');
-
-      // 正規化日期至本地午夜時間，確保 Database 比對一致
-      // 修正時區問題（輸入可能是 UTC，但 Database 儲存本地時間）
-      final normalizedDate = DateTime(date.year, date.month, date.day);
+      // 正規化日期至 UTC 午夜時間，確保跨時區一致性
+      final normalizedDate = DateContext.normalize(date);
 
       // 最佳化：先檢查 Database，避免不必要的 API 呼叫
       if (!force) {
         final existingCount = await _db.getPriceCountForDate(normalizedDate);
-        AppLogger.debug(
-          'PriceRepo',
-          'DB check for $normalizedDate: $existingCount records',
-        );
         if (existingCount > 1000) {
-          AppLogger.info(
-            'PriceRepo',
-            'Data for $normalizedDate already exists ($existingCount records). Skipping API call.',
-          );
-
           // 仍需取得候選股供 Pipeline 使用，從 Database 載入
-          // 取得價量有顯著變化的股票
           final candidates = await _quickFilterCandidatesFromDb(normalizedDate);
+
+          final dateStr =
+              '${normalizedDate.year}-${normalizedDate.month.toString().padLeft(2, '0')}-${normalizedDate.day.toString().padLeft(2, '0')}';
+          AppLogger.info('PriceRepo', '價格同步: $existingCount 筆 ($dateStr, 快取)');
 
           return MarketSyncResult(
             count: existingCount,
@@ -233,20 +199,12 @@ class PriceRepository implements IPriceRepository {
       }
 
       // 僅在尚無資料時呼叫 API
-      AppLogger.info('PriceRepo', 'Fetching prices from TWSE API...');
       final prices = await _twseClient.getAllDailyPrices();
 
-      AppLogger.info('PriceRepo', 'Got ${prices.length} prices from TWSE');
-
       if (prices.isEmpty) {
-        // TWSE 可能尚無資料（收盤前），或非交易日
-        AppLogger.warning('PriceRepo', 'TWSE returned empty prices');
+        AppLogger.warning('PriceRepo', '價格同步: 無資料');
         return const MarketSyncResult(count: 0, candidates: []);
       }
-
-      // 檢查回傳的資料日期是否符合請求
-      // TWSE 在收盤前可能回傳昨日資料
-      AppLogger.info('PriceRepo', 'API returned data for ${prices.first.date}');
 
       // 建立價格資料
       final priceEntries = prices.map((price) {
@@ -261,50 +219,42 @@ class PriceRepository implements IPriceRepository {
         );
       }).toList();
 
-      AppLogger.info('PriceRepo', 'Built ${priceEntries.length} price entries');
-
       // 從 TWSE 資料建立股票主檔（包含股票名稱！）
-      // 確保即使沒有 FinMind API 也能取得股票名稱
       final stockEntries = prices.where((p) => p.name.isNotEmpty).map((price) {
         return StockMasterCompanion.insert(
           symbol: price.code,
           name: price.name,
-          market: 'TWSE', // TWSE Open Data 為上市股票
+          market: 'TWSE',
           isActive: const Value(true),
         );
       }).toList();
 
-      AppLogger.info('PriceRepo', 'Built ${stockEntries.length} stock entries');
-
-      // 寫入資料庫：必須先寫入股票主檔，再寫入價格
-      // 因為 daily_price 表有外鍵約束，symbol 必須先存在於 stock_master 表中
-      AppLogger.info('PriceRepo', 'Inserting to database...');
+      // 寫入資料庫
       if (stockEntries.isNotEmpty) {
         await _db.upsertStocks(stockEntries);
-        AppLogger.info(
-          'PriceRepo',
-          'Upserted ${stockEntries.length} stock entries',
-        );
       }
       await _db.insertPrices(priceEntries);
-      AppLogger.info('PriceRepo', 'Database insert complete');
 
-      // 快篩：僅依據今日資料篩選候選股
+      // 快篩候選股
       final candidates = _quickFilterCandidates(prices);
+
+      final dataDate = prices.first.date;
+      final dateStr =
+          '${dataDate.year}-${dataDate.month.toString().padLeft(2, '0')}-${dataDate.day.toString().padLeft(2, '0')}';
       AppLogger.info(
         'PriceRepo',
-        'Quick filtered ${candidates.length} candidates',
+        '價格同步: ${priceEntries.length} 筆 ($dateStr, 候選 ${candidates.length})',
       );
 
       return MarketSyncResult(
         count: priceEntries.length,
         candidates: candidates,
-        dataDate: prices.first.date,
+        dataDate: dataDate,
       );
     } on NetworkException {
       rethrow;
     } catch (e, stack) {
-      AppLogger.error('PriceRepo', 'Failed to sync prices', e, stack);
+      AppLogger.error('PriceRepo', '價格同步失敗', e, stack);
       throw DatabaseException('Failed to sync prices from TWSE', e);
     }
   }
@@ -337,7 +287,7 @@ class PriceRepository implements IPriceRepository {
 
       // 過濾：跳過極低成交量股票（< 50 張）
       // 移除冷門股以維持分析品質
-      if ((price.volume ?? 0) < 50000) continue;
+      if ((price.volume ?? 0) < RuleParams.minQuickFilterVolumeShares) continue;
 
       // 全市場策略：
       // 納入所有活躍股票，不論漲跌幅。
@@ -381,7 +331,7 @@ class PriceRepository implements IPriceRepository {
       if (!RegExp(r'^\d+$').hasMatch(price.symbol)) continue;
 
       // 跳過極低成交量股票
-      if ((price.volume ?? 0) < 50000) continue;
+      if ((price.volume ?? 0) < RuleParams.minQuickFilterVolumeShares) continue;
 
       // 需要前一日收盤價計算漲跌幅
       // 簡化處理：納入所有活躍股票

@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -27,9 +28,11 @@ class InstitutionalBuyStreakRule extends StockRule {
     }
 
     // 檢查連續買超日 - 掃描整個歷史以取得完整連續天數
+    // 注意：資料單位為「股」，1張 = 1000股
     int streakDays = 0;
     double totalForeignNet = 0;
     double totalTrustNet = 0;
+    int significantDays = 0; // 單日淨買超 > 300張（300000股）的天數
 
     // 從最近日期往回檢查直到連續中斷
     for (int i = history.length - 1; i >= 0; i--) {
@@ -39,23 +42,46 @@ class InstitutionalBuyStreakRule extends StockRule {
       final combinedNet = foreignNet + trustNet;
 
       // 考量合併的法人動向（外資 + 投信）
-      if (combinedNet > 0) {
+      // 需要淨買超 > 100張（100,000股）才算有效買超日（過濾微量波動）
+      if (combinedNet > RuleParams.institutionalMinDailyNetShares) {
         streakDays++;
         totalForeignNet += foreignNet;
         totalTrustNet += trustNet;
+        if (combinedNet > RuleParams.institutionalSignificantDailyNetShares) {
+          significantDays++;
+        }
       } else {
         break; // 連續中斷 - 必須是真正連續
       }
     }
 
     if (streakDays >= RuleParams.institutionalStreakDays) {
-      // 過濾條件：總淨買超須 > 3000 張
-      // 備註：foreignNet/trustNet 已以張為單位儲存
       final totalNet = totalForeignNet + totalTrustNet;
-      if (totalNet <= 3000) return null; // 最低 3000 張
+      final dailyAvg = totalNet / streakDays;
 
-      final foreignSheets = totalForeignNet.round();
-      final trustSheets = totalTrustNet.round();
+      // 診斷日誌：記錄達到連續天數門檻的股票
+      AppLogger.debug(
+        'InstBuyRule',
+        '${data.symbol}: 連續 $streakDays 日買超, 總量=${totalNet.round()}股, '
+            '日均=${dailyAvg.round()}股, 顯著天數=$significantDays',
+      );
+
+      // 過濾條件 1：總淨買超須 > 5000張（5,000,000股）
+      if (totalNet <= RuleParams.institutionalBuyTotalThresholdShares) {
+        return null;
+      }
+
+      // 過濾條件 2：日均淨買超須 > 700張（700,000股）
+      if (dailyAvg <= RuleParams.institutionalBuyDailyAvgThresholdShares) {
+        return null;
+      }
+
+      // 過濾條件 3：至少一半的天數有顯著買超（> 300張/日）
+      if (significantDays < streakDays / 2) return null;
+
+      // 轉換為張顯示（1張 = 1000股）
+      final foreignSheets = (totalForeignNet / 1000).round();
+      final trustSheets = (totalTrustNet / 1000).round();
 
       return TriggeredReason(
         type: ReasonType.institutionalBuyStreak,
@@ -67,6 +93,7 @@ class InstitutionalBuyStreakRule extends StockRule {
           'foreignNet': totalForeignNet,
           'trustNet': totalTrustNet,
           'totalNet': totalNet,
+          'dailyAvg': dailyAvg.round(),
         },
       );
     }
@@ -96,9 +123,11 @@ class InstitutionalSellStreakRule extends StockRule {
     }
 
     // 檢查連續賣超日 - 掃描整個歷史以取得完整連續天數
+    // 注意：資料單位為「股」，1張 = 1000股
     int streakDays = 0;
     double totalForeignNet = 0;
     double totalTrustNet = 0;
+    int significantDays = 0; // 單日淨賣超 < -300張（-300000股）的天數
 
     for (int i = history.length - 1; i >= 0; i--) {
       final entry = history[i];
@@ -107,23 +136,54 @@ class InstitutionalSellStreakRule extends StockRule {
       final combinedNet = foreignNet + trustNet;
 
       // 考量合併的法人賣壓
-      if (combinedNet < 0) {
+      // 需要淨賣超 < -100張（-100,000股）才算有效賣超日（過濾微量波動）
+      if (combinedNet < -RuleParams.institutionalMinDailyNetShares) {
         streakDays++;
         totalForeignNet += foreignNet;
         totalTrustNet += trustNet;
+        if (combinedNet < -RuleParams.institutionalSignificantDailyNetShares) {
+          significantDays++;
+        }
       } else {
         break; // 連續中斷
       }
     }
 
     if (streakDays >= RuleParams.institutionalStreakDays) {
-      // 過濾條件：總淨賣超須 < -3000 張
-      // 備註：foreignNet/trustNet 已以張為單位儲存
       final totalNet = totalForeignNet + totalTrustNet;
-      if (totalNet >= -3000) return null; // 最低 -3000 張
+      final dailyAvg = totalNet / streakDays;
 
-      final foreignSheets = totalForeignNet.abs().round();
-      final trustSheets = totalTrustNet.abs().round();
+      // 診斷日誌：記錄達到連續天數門檻的股票
+      AppLogger.debug(
+        'InstSellRule',
+        '${data.symbol}: 連續 $streakDays 日賣超, 總量=${totalNet.round()}股, '
+            '日均=${dailyAvg.round()}股, 顯著天數=$significantDays',
+      );
+
+      // 過濾條件 1：總淨賣超須 < -15000張（-15,000,000股）
+      if (totalNet >= RuleParams.institutionalSellTotalThresholdShares) {
+        AppLogger.debug(
+          'InstSellRule',
+          '${data.symbol}: 未達總量門檻 ${RuleParams.institutionalSellTotalThresholdShares} 股',
+        );
+        return null;
+      }
+
+      // 過濾條件 2：日均淨賣超須 < -2000張（-2,000,000股）
+      if (dailyAvg >= RuleParams.institutionalSellDailyAvgThresholdShares) {
+        AppLogger.debug(
+          'InstSellRule',
+          '${data.symbol}: 未達日均門檻 ${RuleParams.institutionalSellDailyAvgThresholdShares} 股',
+        );
+        return null;
+      }
+
+      // 過濾條件 3：至少一半的天數有顯著賣超（< -300張/日）
+      if (significantDays < streakDays / 2) return null;
+
+      // 轉換為張顯示（1張 = 1000股）
+      final foreignSheets = (totalForeignNet.abs() / 1000).round();
+      final trustSheets = (totalTrustNet.abs() / 1000).round();
 
       return TriggeredReason(
         type: ReasonType.institutionalSellStreak,
@@ -135,6 +195,7 @@ class InstitutionalSellStreakRule extends StockRule {
           'foreignNet': totalForeignNet,
           'trustNet': totalTrustNet,
           'totalNet': totalNet,
+          'dailyAvg': dailyAvg.round(),
         },
       );
     }

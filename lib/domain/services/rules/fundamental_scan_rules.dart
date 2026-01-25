@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -234,28 +235,49 @@ class HighDividendYieldRule extends StockRule {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
 
-    var dividendYield = valuation.dividendYield ?? 0;
-    // 正規化：若殖利率為比例（如 0.05），轉換為百分比（5.0）
-    if (dividendYield > 0 && dividendYield < 1.0) {
-      dividendYield *= 100;
+    // 資料新鮮度檢查：確保估值資料在有效期限內
+    // TWSE 並非每日更新所有股票，過時資料可能導致誤判
+    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    if (dataAge > RuleParams.valuationMaxStaleDays) {
+      AppLogger.debug(
+        'HighYieldRule',
+        '${data.symbol}: 資料過時 ($dataAge 天)，跳過評估',
+      );
+      return null;
     }
 
-    if (dividendYield >= RuleParams.highDividendYieldThreshold) {
-      // 還原至原始基本邏輯：僅以殖利率過濾
-      // 移除複雜過濾條件（PE、PBR、營收、MA20）以符合原始行為
+    // TWSE 和 FinMind 的殖利率已經是百分比格式（5.23 = 5.23%）
+    // 不需要額外正規化
+    final dividendYield = valuation.dividendYield ?? 0;
 
-      return TriggeredReason(
-        type: ReasonType.highDividendYield,
-        score: RuleScores.highDividendYield,
-        description: '殖利率 ${dividendYield.toStringAsFixed(2)}%',
-        evidence: {
-          'dividendYield': dividendYield,
-          'date': valuation.date.toIso8601String(),
-        },
+    // 診斷日誌：記錄所有被評估的殖利率數值（僅記錄 >= 4% 的以減少雜訊）
+    if (dividendYield >= 4.0) {
+      AppLogger.debug(
+        'HighYieldRule',
+        '${data.symbol}: 殖利率=${dividendYield.toStringAsFixed(2)}%, '
+            '日期=${valuation.date.toIso8601String().substring(0, 10)}',
       );
     }
 
-    return null;
+    // 過濾無效或過低殖利率（< 5%）
+    if (dividendYield < RuleParams.highDividendYieldThreshold) {
+      return null;
+    }
+
+    // 過濾異常高殖利率（> 20% 通常為資料錯誤或特殊情況）
+    if (dividendYield > 20) {
+      return null;
+    }
+
+    return TriggeredReason(
+      type: ReasonType.highDividendYield,
+      score: RuleScores.highDividendYield,
+      description: '殖利率 ${dividendYield.toStringAsFixed(2)}%',
+      evidence: {
+        'dividendYield': dividendYield,
+        'date': valuation.date.toIso8601String(),
+      },
+    );
   }
 }
 
@@ -273,6 +295,13 @@ class PEUndervaluedRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
+
+    // 資料新鮮度檢查
+    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    if (dataAge > RuleParams.valuationMaxStaleDays) {
+      return null;
+    }
+
     final pe = valuation.per ?? 0;
 
     if (pe > 0 && pe <= RuleParams.peUndervaluedThreshold) {
@@ -307,6 +336,13 @@ class PEOvervaluedRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
+
+    // 資料新鮮度檢查
+    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    if (dataAge > RuleParams.valuationMaxStaleDays) {
+      return null;
+    }
+
     final pe = valuation.per ?? 0;
 
     if (pe >= RuleParams.peOvervaluedThreshold) {
@@ -339,6 +375,13 @@ class PBRUndervaluedRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
+
+    // 資料新鮮度檢查
+    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    if (dataAge > RuleParams.valuationMaxStaleDays) {
+      return null;
+    }
+
     final pbr = valuation.pbr ?? 0;
 
     if (pbr > 0 && pbr <= RuleParams.pbrUndervaluedThreshold) {

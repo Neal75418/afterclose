@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -16,7 +15,7 @@ import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
 
-/// 今日畫面 - 顯示每日推薦與自選清單狀態
+/// 今日畫面 - 顯示每日推薦
 class TodayScreen extends ConsumerStatefulWidget {
   const TodayScreen({super.key});
 
@@ -191,69 +190,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               return card;
             },
           ),
-
-        // 自選清單區塊
-        if (state.watchlistStatus.isNotEmpty) ...[
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: SectionHeader(
-                title: S.todayWatchlistStatus,
-                icon: Icons.star,
-              ),
-            ),
-          ),
-
-          SliverList.builder(
-            itemCount: state.watchlistStatus.length,
-            itemBuilder: (context, index) {
-              final entry = state.watchlistStatus.entries.elementAt(index);
-              final status = entry.value;
-              return ListTile(
-                leading: Text(
-                  status.statusIcon,
-                  style: const TextStyle(fontSize: 24),
-                ),
-                title: Row(
-                  children: [
-                    Text(
-                      status.symbol,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    if (status.stockName != null)
-                      Expanded(
-                        child: Text(
-                          status.stockName!,
-                          style: theme.textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                ),
-                subtitle: status.hasSignal
-                    ? Text(
-                        S.signalType(status.signalType),
-                        style: TextStyle(color: theme.colorScheme.primary),
-                      )
-                    : null,
-                trailing: status.priceChange != null
-                    ? Text(
-                        '${status.priceChange! >= 0 ? '+' : ''}${status.priceChange!.toStringAsFixed(2)}%',
-                        style: TextStyle(
-                          color: AppTheme.getPriceColor(status.priceChange),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      )
-                    : null,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  context.push('/stock/${status.symbol}');
-                },
-              );
-            },
-          ),
-        ],
 
         // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),

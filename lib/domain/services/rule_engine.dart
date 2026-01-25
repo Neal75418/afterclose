@@ -126,11 +126,7 @@ class RuleEngine {
         }
       } catch (e, stackTrace) {
         // 記錄規則執行失敗，但不中斷程式
-        AppLogger.warning(
-          'RuleEngine',
-          'Rule ${rule.id} evaluation failed: $e',
-          stackTrace,
-        );
+        AppLogger.warning('RuleEngine', '規則 ${rule.id} 評估失敗: $e', stackTrace);
       }
     }
 

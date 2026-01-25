@@ -68,6 +68,9 @@ dependencies:
   # Preferences
   shared_preferences: ^2.3.5
 
+  # Secure Storage (for API tokens)
+  flutter_secure_storage: ^9.2.4
+
   # UI Animations & Effects
   flutter_animate: ^4.5.0
   shimmer: ^3.0.0

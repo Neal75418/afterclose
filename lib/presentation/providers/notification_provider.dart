@@ -46,14 +46,25 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   }
 
   /// Initialize notification service
+  ///
+  /// 注意：不會自動請求權限，權限會在使用者建立提醒時請求
   Future<void> initialize() async {
     try {
       await _service.initialize();
-      final hasPermission = await _service.requestPermissions();
+      // 只檢查權限狀態，不主動請求
+      final hasPermission = await _service.hasPermission();
       state = state.copyWith(isInitialized: true, hasPermission: hasPermission);
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
+  }
+
+  /// Ensure notification permission is granted
+  ///
+  /// 在建立提醒前呼叫，若尚未取得權限會請求使用者授權
+  Future<bool> ensurePermission() async {
+    if (state.hasPermission) return true;
+    return requestPermissions();
   }
 
   /// Request notification permissions

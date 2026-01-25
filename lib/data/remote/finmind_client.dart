@@ -2,8 +2,10 @@ import 'dart:math' show Random;
 
 import 'package:dio/dio.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/json_parsers.dart';
+import 'package:afterclose/core/utils/logger.dart';
 
 /// FinMind API 客戶端（台股市場資料）
 ///
@@ -17,7 +19,9 @@ class FinMindClient {
     Dio? dio,
     String? token,
     int maxRetries = 3,
-    Duration baseDelay = const Duration(milliseconds: 500),
+    Duration baseDelay = const Duration(
+      milliseconds: ApiConfig.finmindBaseDelayMs,
+    ),
   }) : _dio = dio ?? _createDio(),
        _token = token,
        _maxRetries = maxRetries,
@@ -80,8 +84,12 @@ class FinMindClient {
     return Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(
+          seconds: ApiConfig.finmindConnectTimeoutSec,
+        ),
+        receiveTimeout: const Duration(
+          seconds: ApiConfig.finmindReceiveTimeoutSec,
+        ),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -90,7 +98,7 @@ class FinMindClient {
   /// 建立查詢參數（含選用的 token）
   Map<String, dynamic> _buildParams(Map<String, dynamic> params) {
     final result = Map<String, dynamic>.from(params);
-    if (_token != null && _token!.isNotEmpty) {
+    if (_token?.isNotEmpty ?? false) {
       result['token'] = _token;
     }
     return result;
@@ -100,6 +108,12 @@ class FinMindClient {
   Future<List<Map<String, dynamic>>> _request(
     Map<String, dynamic> params,
   ) async {
+    // 建立請求標籤供日誌使用
+    final dataset = params['dataset']?.toString() ?? '';
+    final stockId =
+        params['data_id']?.toString() ?? params['stock_id']?.toString() ?? '';
+    final label = stockId.isNotEmpty ? '$dataset($stockId)' : dataset;
+
     int attempt = 0;
     Object? lastError;
 
@@ -120,17 +134,22 @@ class FinMindClient {
             // 流量限制檢查
             if (msg.toString().contains('limit') ||
                 msg.toString().contains('quota')) {
+              AppLogger.warning('FinMind', '$label: 流量限制');
               throw const RateLimitException();
             }
 
+            AppLogger.warning('FinMind', '$label: ${msg.toString()}');
             throw ApiException(msg.toString(), data['status'] as int?);
           }
 
           // 回傳資料陣列
           final dataList = data['data'];
           if (dataList is List) {
-            return dataList.cast<Map<String, dynamic>>();
+            final result = dataList.cast<Map<String, dynamic>>();
+            AppLogger.debug('FinMind', '$label: ${result.length} 筆');
+            return result;
           }
+          AppLogger.debug('FinMind', '$label: 0 筆');
           return [];
         }
 
@@ -166,6 +185,7 @@ class FinMindClient {
         // 轉換為適當的例外
         if (e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout) {
+          AppLogger.warning('FinMind', '$label: 連線逾時 (重試 $attempt 次)');
           throw NetworkException(
             'Connection timeout after $attempt attempts',
             e,
@@ -173,6 +193,7 @@ class FinMindClient {
         }
         if (e.response?.statusCode == 429) {
           // 以較長退避時間重試流量限制錯誤（有限次數重試）
+          AppLogger.warning('FinMind', '$label: 429 流量限制，等待重試');
           lastError = const RateLimitException();
           attempt++;
           if (attempt <= _maxRetries) {
@@ -181,6 +202,7 @@ class FinMindClient {
           }
           throw const RateLimitException();
         }
+        AppLogger.warning('FinMind', '$label: ${e.message ?? "網路錯誤"}');
         throw NetworkException(e.message ?? 'Network error', e);
       } on RateLimitException {
         // 巢狀呼叫的流量限制 - 達到最大重試次數後仍重新拋出
@@ -343,7 +365,11 @@ class FinMindClient {
         .map((json) {
           try {
             return _FinMindInstitutionalRow.fromJson(json);
-          } catch (_) {
+          } catch (e) {
+            AppLogger.debug(
+              'FinMindClient',
+              '解析法人資料列失敗: ${json['stock_id']} ($e)',
+            );
             return null;
           }
         })
@@ -362,7 +388,8 @@ class FinMindClient {
         .map((entry) {
           try {
             return FinMindInstitutional.aggregate(entry.value);
-          } catch (_) {
+          } catch (e) {
+            AppLogger.debug('FinMindClient', '彙整法人資料失敗: ${entry.key} ($e)');
             return null;
           }
         })
@@ -469,7 +496,7 @@ class FinMindClient {
   }
 
   /// 檢查是否已設定 token
-  bool get hasToken => _token != null && _token!.isNotEmpty;
+  bool get hasToken => _token?.isNotEmpty ?? false;
 
   /// 檢查 token 是否已設定且有效
   bool get hasValidToken => hasToken && isValidTokenFormat(_token);
@@ -720,14 +747,9 @@ class FinMindStockInfo {
     );
   }
 
-  /// 嘗試從 JSON 解析，失敗時回傳 null
-  static FinMindStockInfo? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindStockInfo.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  /// 嘗試從 JSON 解析，失敗時回傳 null 並記錄日誌
+  static FinMindStockInfo? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(json, FinMindStockInfo.fromJson, 'FinMindStockInfo');
 
   final String stockId;
   final String stockName;
@@ -781,14 +803,13 @@ class FinMindDailyPrice {
     );
   }
 
-  /// 嘗試從 JSON 解析，失敗時回傳 null
-  static FinMindDailyPrice? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindDailyPrice.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  /// 嘗試從 JSON 解析，失敗時回傳 null 並記錄日誌
+  static FinMindDailyPrice? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindDailyPrice.fromJson,
+        'FinMindDailyPrice',
+      );
 
   final String stockId;
   final String date; // YYYY-MM-DD
@@ -887,7 +908,8 @@ class FinMindInstitutional {
       final row = _FinMindInstitutionalRow.fromJson(json);
       if (row.stockId.isEmpty || row.date.isEmpty) return null;
       return FinMindInstitutional.aggregate([row]);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('FinMindInstitutional', '解析失敗: ${json['stock_id']} ($e)');
       return null;
     }
   }
@@ -920,13 +942,13 @@ class FinMindMarginData {
     required this.marginSell,
     required this.marginCashRepay,
     required this.marginBalance,
-    required this.marginBalanceChange,
+    required this.marginLimit,
     required this.marginUseRate,
     required this.shortBuy,
     required this.shortSell,
     required this.shortCashRepay,
     required this.shortBalance,
-    required this.shortBalanceChange,
+    required this.shortLimit,
     required this.offsetMarginShort,
     required this.note,
   });
@@ -958,7 +980,7 @@ class FinMindMarginData {
       marginCashRepay:
           JsonParsers.parseDouble(json['MarginPurchaseCashRepayment']) ?? 0,
       marginBalance: marginBalance,
-      marginBalanceChange: marginLimit,
+      marginLimit: marginLimit,
       // 融資使用率 = 融資餘額 / 融資限額 * 100
       marginUseRate: marginLimit > 0 ? (marginBalance / marginLimit) * 100 : 0,
       shortBuy: JsonParsers.parseDouble(json['ShortSaleBuy']) ?? 0,
@@ -966,7 +988,7 @@ class FinMindMarginData {
       shortCashRepay:
           JsonParsers.parseDouble(json['ShortSaleCashRepayment']) ?? 0,
       shortBalance: JsonParsers.parseDouble(json['ShortSaleTodayBalance']) ?? 0,
-      shortBalanceChange: JsonParsers.parseDouble(json['ShortSaleLimit']) ?? 0,
+      shortLimit: JsonParsers.parseDouble(json['ShortSaleLimit']) ?? 0,
       offsetMarginShort:
           JsonParsers.parseDouble(json['OffsetLoanAndShort']) ?? 0,
       note: json['Note']?.toString() ?? '',
@@ -974,13 +996,12 @@ class FinMindMarginData {
   }
 
   /// 嘗試從 JSON 解析，失敗時回傳 null
-  static FinMindMarginData? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindMarginData.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindMarginData? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindMarginData.fromJson,
+        'FinMindMarginData',
+      );
 
   final String stockId;
   final String date;
@@ -990,7 +1011,7 @@ class FinMindMarginData {
   final double marginSell; // 融資賣出
   final double marginCashRepay; // 現金償還
   final double marginBalance; // 融資餘額
-  final double marginBalanceChange; // 融資限額
+  final double marginLimit; // 融資限額
   final double marginUseRate; // 融資使用率
 
   // 融券 (Short Sale)
@@ -998,7 +1019,7 @@ class FinMindMarginData {
   final double shortSell; // 融券賣出
   final double shortCashRepay; // 現券償還
   final double shortBalance; // 融券餘額
-  final double shortBalanceChange; // 融券限額
+  final double shortLimit; // 融券限額
   final double offsetMarginShort; // 資券互抵
 
   final String note; // 備註
@@ -1046,13 +1067,8 @@ class FinMindRevenue {
     );
   }
 
-  static FinMindRevenue? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindRevenue.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindRevenue? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(json, FinMindRevenue.fromJson, 'FinMindRevenue');
 
   /// 計算營收清單的月增率及年增率
   /// 回傳已填入成長率的相同清單
@@ -1151,13 +1167,8 @@ class FinMindDividend {
     );
   }
 
-  static FinMindDividend? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindDividend.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindDividend? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(json, FinMindDividend.fromJson, 'FinMindDividend');
 
   final String stockId;
   final int year;
@@ -1200,13 +1211,8 @@ class FinMindPER {
     );
   }
 
-  static FinMindPER? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindPER.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindPER? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(json, FinMindPER.fromJson, 'FinMindPER');
 
   final String stockId;
   final String date;
@@ -1265,13 +1271,12 @@ class FinMindShareholding {
     );
   }
 
-  static FinMindShareholding? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindShareholding.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindShareholding? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindShareholding.fromJson,
+        'FinMindShareholding',
+      );
 
   final String stockId;
   final String date;
@@ -1320,13 +1325,12 @@ class FinMindHoldingSharesPer {
     );
   }
 
-  static FinMindHoldingSharesPer? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindHoldingSharesPer.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindHoldingSharesPer? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindHoldingSharesPer.fromJson,
+        'FinMindHoldingSharesPer',
+      );
 
   final String stockId;
   final String date;
@@ -1378,13 +1382,12 @@ class FinMindDayTrading {
     );
   }
 
-  static FinMindDayTrading? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindDayTrading.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindDayTrading? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindDayTrading.fromJson,
+        'FinMindDayTrading',
+      );
 
   final String stockId;
   final String date;
@@ -1432,13 +1435,12 @@ class FinMindFinancialStatement {
     );
   }
 
-  static FinMindFinancialStatement? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindFinancialStatement.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindFinancialStatement? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindFinancialStatement.fromJson,
+        'FinMindFinancialStatement',
+      );
 
   final String stockId;
   final String date; // YYYY-QQ format (e.g., "2024-Q1")
@@ -1484,13 +1486,12 @@ class FinMindBalanceSheet {
     );
   }
 
-  static FinMindBalanceSheet? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindBalanceSheet.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindBalanceSheet? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindBalanceSheet.fromJson,
+        'FinMindBalanceSheet',
+      );
 
   final String stockId;
   final String date;
@@ -1537,13 +1538,12 @@ class FinMindCashFlowStatement {
     );
   }
 
-  static FinMindCashFlowStatement? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindCashFlowStatement.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindCashFlowStatement? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindCashFlowStatement.fromJson,
+        'FinMindCashFlowStatement',
+      );
 
   final String stockId;
   final String date;
@@ -1595,13 +1595,12 @@ class FinMindAdjustedPrice {
     );
   }
 
-  static FinMindAdjustedPrice? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindAdjustedPrice.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindAdjustedPrice? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindAdjustedPrice.fromJson,
+        'FinMindAdjustedPrice',
+      );
 
   final String stockId;
   final String date; // YYYY-MM-DD
@@ -1646,13 +1645,12 @@ class FinMindWeeklyPrice {
     );
   }
 
-  static FinMindWeeklyPrice? tryFromJson(Map<String, dynamic> json) {
-    try {
-      return FinMindWeeklyPrice.fromJson(json);
-    } catch (_) {
-      return null;
-    }
-  }
+  static FinMindWeeklyPrice? tryFromJson(Map<String, dynamic> json) =>
+      JsonParsers.tryParse(
+        json,
+        FinMindWeeklyPrice.fromJson,
+        'FinMindWeeklyPrice',
+      );
 
   final String stockId;
   final String date; // 週結束日 YYYY-MM-DD

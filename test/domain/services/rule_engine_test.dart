@@ -309,14 +309,21 @@ void main() {
         // ratio = 3M / 10M = 0.3 > 0.25 ✓
         final history = generateInstitutionalHistory(
           days: 15,
-          prevDirection: -100000,
-          todayDirection: 3000000, // 3M net buy (= 3000 sheets)
+          prevDirection: -600000,
+          todayDirection: 4000000, // 4M net buy (= 4000 sheets, 40% ratio)
         );
-        final prices = generateConstantPrices(
-          days: 15,
-          basePrice: 100.0,
-          volume: 10000000, // 10M shares
-        );
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 10000000,
+          ),
+          createTestPrice(
+            date: DateTime.now(),
+            close: 102.0, // 2% rise > 1.5% threshold
+            volume: 10000000,
+          ),
+        ];
         const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(
           symbol: 'TEST',

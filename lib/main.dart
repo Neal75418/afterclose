@@ -13,9 +13,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
 
-  // Initialize notification service
+  // Initialize notification service (權限請求延遲到使用者啟用通知時)
   await NotificationService.instance.initialize();
-  await NotificationService.instance.requestPermissions();
 
   // Create container to initialize providers before runApp
   final container = ProviderContainer();
@@ -46,7 +45,7 @@ Future<void> _initializeFinMindToken(ProviderContainer container) async {
     }
   } catch (e) {
     // Token loading is optional, continue without it
-    AppLogger.warning('Main', 'Failed to load FinMind token', e);
+    AppLogger.warning('Main', '載入 FinMind Token 失敗', e);
   }
 }
 

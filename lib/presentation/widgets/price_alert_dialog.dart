@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 
 /// Shows a dialog to create a new price alert
@@ -52,8 +53,8 @@ class _CreatePriceAlertDialogState
   void initState() {
     super.initState();
     // Pre-fill with current price if available
-    if (widget.currentPrice != null) {
-      _valueController.text = widget.currentPrice!.toStringAsFixed(2);
+    if (widget.currentPrice case final price?) {
+      _valueController.text = price.toStringAsFixed(2);
     }
   }
 
@@ -169,12 +170,10 @@ class _CreatePriceAlertDialogState
             ),
 
             // Current price hint
-            if (widget.currentPrice != null) ...[
+            if (widget.currentPrice case final price?) ...[
               const SizedBox(height: 12),
               Text(
-                'alert.currentPrice'.tr(
-                  args: [widget.currentPrice!.toStringAsFixed(2)],
-                ),
+                'alert.currentPrice'.tr(args: [price.toStringAsFixed(2)]),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -252,6 +251,22 @@ class _CreatePriceAlertDialogState
     }
 
     setState(() => _isCreating = true);
+
+    // 建立提醒前確保已取得通知權限
+    final hasPermission = await ref
+        .read(notificationProvider.notifier)
+        .ensurePermission();
+
+    if (!hasPermission && mounted) {
+      // 權限被拒絕，顯示提示但仍允許建立提醒（只是不會收到通知）
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('alert.permissionDenied'.tr()),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
 
     final success = await ref
         .read(priceAlertProvider.notifier)

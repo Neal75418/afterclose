@@ -33,7 +33,7 @@ void main() {
         const baseClose = 100.0;
         return DailyPriceEntry(
           symbol: '2330',
-          date: DateTime(2024, 1, 1).add(Duration(days: i)),
+          date: DateTime.now().subtract(Duration(days: 20 - i)),
           open: baseClose,
           close: isLastDay ? 102.0 : baseClose, // 2% rise on last day
           high: isLastDay ? 103.0 : baseClose + 1,
@@ -70,7 +70,7 @@ void main() {
     test('PEUndervaluedRule triggers on low PE', () async {
       final valuation = StockValuationEntry(
         symbol: '2330',
-        date: DateTime(2024, 1, 1),
+        date: DateTime.now(),
         per: 8.5, // Low PE
         dividendYield: 4.0,
         pbr: 1.2,
@@ -85,7 +85,7 @@ void main() {
         final isRecent = i >= 20; // Last 5 days rise
         return DailyPriceEntry(
           symbol: '2330',
-          date: DateTime(2024, 1, 1).add(Duration(days: i)),
+          date: DateTime.now().subtract(Duration(days: 25 - i)),
           open: 100.0,
           close: isRecent ? 110.0 : 100.0, // Last 5 days above MA20
           high: isRecent ? 112.0 : 102.0,

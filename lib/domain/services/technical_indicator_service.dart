@@ -286,4 +286,107 @@ class TechnicalIndicatorService {
   List<double?> calculateVolumeMA(List<double> volumes, int period) {
     return calculateSMA(volumes, period);
   }
+
+  // ==========================================
+  // 靜態方法 - 供規則評估使用
+  // ==========================================
+
+  /// 計算最新的 SMA 值（僅供規則使用）
+  ///
+  /// 從價格物件列表中提取收盤價並計算 SMA
+  /// [prices] 價格物件列表（需有 close 屬性）
+  /// [period] 計算週期
+  static double? latestSMA(List<dynamic> prices, int period) {
+    if (prices.length < period) return null;
+
+    double sum = 0;
+    int count = 0;
+    for (int i = prices.length - period; i < prices.length; i++) {
+      final close = prices[i].close;
+      if (close != null) {
+        sum += close as double;
+        count++;
+      }
+    }
+    return count == period ? sum / count : null;
+  }
+
+  /// 計算最新的 RSI 值（使用 Wilder's 平滑法）
+  ///
+  /// [prices] 價格物件列表（需有 close 屬性）
+  /// [period] 計算週期，預設 14
+  static double? latestRSI(List<dynamic> prices, {int period = 14}) {
+    if (prices.length < period + 1) return null;
+
+    // 步驟 1：計算初始平均漲跌幅
+    double initialGains = 0;
+    double initialLosses = 0;
+    int validCount = 0;
+
+    final startIdx = prices.length - period - 1;
+    for (int i = startIdx + 1; i <= startIdx + period; i++) {
+      final current = prices[i].close;
+      final previous = prices[i - 1].close;
+      if (current == null || previous == null) continue;
+
+      final change = (current as double) - (previous as double);
+      if (change > 0) {
+        initialGains += change;
+      } else {
+        initialLosses += -change;
+      }
+      validCount++;
+    }
+
+    if (validCount < period ~/ 2) return null;
+
+    double avgGain = initialGains / period;
+    double avgLoss = initialLosses / period;
+
+    // 步驟 2：對剩餘資料點套用 Wilder's 平滑
+    for (int i = startIdx + period + 1; i < prices.length; i++) {
+      final current = prices[i].close;
+      final previous = prices[i - 1].close;
+      if (current == null || previous == null) continue;
+
+      final change = (current as double) - (previous as double);
+      final currentGain = change > 0 ? change : 0.0;
+      final currentLoss = change < 0 ? -change : 0.0;
+
+      avgGain = (avgGain * (period - 1) + currentGain) / period;
+      avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
+    }
+
+    if (avgLoss == 0) return 100;
+
+    final rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  /// 計算成交量 MA 並比較今日成交量
+  ///
+  /// [prices] 價格物件列表（需有 volume 屬性）
+  /// [period] 計算週期
+  /// 回傳 (volumeMA, 今日成交量)
+  static ({double? volumeMA, double? todayVolume}) latestVolumeMA(
+    List<dynamic> prices,
+    int period,
+  ) {
+    if (prices.isEmpty) return (volumeMA: null, todayVolume: null);
+
+    final todayVol = prices.last.volume as double?;
+    if (prices.length < period) return (volumeMA: null, todayVolume: todayVol);
+
+    double volSum = 0;
+    int count = 0;
+    for (int i = prices.length - period; i < prices.length; i++) {
+      final vol = prices[i].volume;
+      if (vol != null) {
+        volSum += vol as double;
+        count++;
+      }
+    }
+
+    return (volumeMA: count > 0 ? volSum / count : null, todayVolume: todayVol);
+  }
 }

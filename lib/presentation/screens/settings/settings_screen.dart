@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -299,30 +300,25 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
       _testSuccess = null;
     });
 
-    try {
-      final settingsRepo = ref.read(settingsRepositoryProvider);
-      final token = await settingsRepo.getFinMindToken();
+    // 使用 ApiConnectionService 取代直接建立 FinMindClient
+    final settingsRepo = ref.read(settingsRepositoryProvider);
+    final connectionService = ref.read(apiConnectionServiceProvider);
+    final token = await settingsRepo.getFinMindToken();
 
-      final client = FinMindClient(token: token);
-      final stocks = await client.getStockList();
+    final result = await connectionService.testFinMindConnection(token);
 
-      if (mounted) {
-        setState(() {
-          _isTesting = false;
-          _testSuccess = true;
-          _testResult = 'settings.apiTestSuccess'.tr(
-            args: [stocks.length.toString()],
-          );
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isTesting = false;
-          _testSuccess = false;
-          _testResult = 'settings.apiTestFailed'.tr(args: [e.toString()]);
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _isTesting = false;
+        _testSuccess = result.success;
+        _testResult = result.success
+            ? 'settings.apiTestSuccess'.tr(
+                namedArgs: {'count': result.stockCount.toString()},
+              )
+            : 'settings.apiTestFailed'.tr(
+                namedArgs: {'error': result.errorMessage ?? 'Unknown error'},
+              );
+      });
     }
   }
 
@@ -447,7 +443,7 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
   }
 
   Future<void> _openRegisterUrl() async {
-    final url = Uri.parse('https://finmindtrade.com/');
+    final url = Uri.parse(ApiEndpoints.finmindWebsite);
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }

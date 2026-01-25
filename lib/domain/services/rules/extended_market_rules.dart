@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -94,7 +95,7 @@ class DayTradingHighRule extends StockRule {
     final ratio = marketData.dayTradingRatio;
     if (ratio == null) return null;
 
-    // 過濾條件：成交量 > 5000 股且價格上漲（收盤 > 開盤或漲幅 > 0）
+    // 過濾條件：成交量需達門檻
     final lastPrice = data.prices.isNotEmpty ? data.prices.last : null;
     if (lastPrice == null ||
         lastPrice.volume == null ||
@@ -102,9 +103,13 @@ class DayTradingHighRule extends StockRule {
       return null;
     }
 
-    // 高當沖比例不嚴格要求多頭價格走勢
-    // 高週轉率在賣壓中也常發生
-    // 我們著重在活動水平（比例與成交量）
+    // 診斷日誌：記錄高當沖比例股票
+    if (ratio >= 30) {
+      AppLogger.debug(
+        'DayTradingRule',
+        '${data.symbol}: 當沖比例=${ratio.toStringAsFixed(1)}%',
+      );
+    }
 
     // 當當沖比例超過高門檻時觸發
     if (ratio >= RuleParams.dayTradingHighThreshold &&

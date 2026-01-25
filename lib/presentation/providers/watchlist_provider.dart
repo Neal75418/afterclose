@@ -164,7 +164,7 @@ class WatchlistItemData {
   /// Get status category
   WatchlistStatus get status {
     if (hasSignal) return WatchlistStatus.signal;
-    if (priceChange != null && priceChange!.abs() >= 3) {
+    if ((priceChange?.abs() ?? 0) >= 3) {
       return WatchlistStatus.volatile;
     }
     return WatchlistStatus.quiet;
@@ -245,13 +245,9 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         final priceHistory = priceHistoriesMap[item.symbol] ?? [];
 
         // Extract recent prices for sparkline (last 20 days)
-        final recentPrices = priceHistory
-            .take(20)
-            .map((p) => p.close)
-            .whereType<double>()
-            .toList()
-            .reversed
-            .toList();
+        final recentPrices = PriceCalculator.extractSparklinePrices(
+          priceHistory,
+        );
 
         return WatchlistItemData(
           symbol: item.symbol,
@@ -281,17 +277,9 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     final sorted = List<WatchlistItemData>.from(items);
     switch (state.sort) {
       case WatchlistSort.addedDesc:
-        sorted.sort(
-          (a, b) => (b.addedAt ?? DateTime(1970)).compareTo(
-            a.addedAt ?? DateTime(1970),
-          ),
-        );
+        sorted.sort((a, b) => _compareDatesNullLast(b.addedAt, a.addedAt));
       case WatchlistSort.addedAsc:
-        sorted.sort(
-          (a, b) => (a.addedAt ?? DateTime(1970)).compareTo(
-            b.addedAt ?? DateTime(1970),
-          ),
-        );
+        sorted.sort((a, b) => _compareDatesNullLast(a.addedAt, b.addedAt));
       case WatchlistSort.scoreDesc:
         sorted.sort((a, b) => (b.score ?? 0).compareTo(a.score ?? 0));
       case WatchlistSort.scoreAsc:
@@ -308,6 +296,14 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         sorted.sort((a, b) => a.symbol.compareTo(b.symbol));
     }
     return sorted;
+  }
+
+  /// 比較日期，null 值排在最後
+  int _compareDatesNullLast(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1; // a 是 null，排在後面
+    if (b == null) return -1; // b 是 null，排在後面
+    return a.compareTo(b);
   }
 
   /// Set sort option
@@ -434,13 +430,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     }
 
     // Extract recent prices for sparkline
-    final recentPrices = priceHistory
-        .take(20)
-        .map((p) => p.close)
-        .whereType<double>()
-        .toList()
-        .reversed
-        .toList();
+    final recentPrices = PriceCalculator.extractSparklinePrices(priceHistory);
 
     return WatchlistItemData(
       symbol: symbol,

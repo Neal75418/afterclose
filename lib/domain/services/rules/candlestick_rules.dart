@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
@@ -8,6 +9,36 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 // ==========================================
 // K 線型態規則
 // ==========================================
+
+/// 判斷 K 棒是否為錘子/吊人形態
+///
+/// 錘子線與吊人線形狀相同：
+/// - 下影線 >= 實體 * 2
+/// - 上影線 <= 實體 * 0.5
+/// - 實體 >= 振幅 * 5%
+bool isHammerShape(DailyPriceEntry candle) {
+  if (candle.open == null ||
+      candle.close == null ||
+      candle.high == null ||
+      candle.low == null) {
+    return false;
+  }
+
+  final open = candle.open!;
+  final close = candle.close!;
+  final high = candle.high!;
+  final low = candle.low!;
+
+  final body = (close - open).abs();
+  final lowerShadow = min(open, close) - low;
+  final upperShadow = high - max(open, close);
+
+  final range = high - low;
+  if (range == 0) return false;
+  if (body < range * 0.05) return false;
+
+  return lowerShadow >= body * 2 && upperShadow <= body * 0.5;
+}
 
 /// 規則：十字線型態（市場猶豫不決）
 class DojiRule extends StockRule {
@@ -142,20 +173,9 @@ class BearishEngulfingRule extends StockRule {
 
     if (_isBearishEngulfing(today, yesterday)) {
       // 過濾條件：成交量須 > 5 日平均量
-      double volSum = 0;
-      int count = 0;
-      for (
-        int i = data.prices.length - 1;
-        i >= max(0, data.prices.length - 6);
-        i--
-      ) {
-        if (data.prices[i].volume != null) {
-          volSum += data.prices[i].volume!;
-          count++;
-        }
+      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+        return null;
       }
-      final avgVol = count > 0 ? volSum / count : 0;
-      if (today.volume != null && today.volume! <= avgVol) return null;
 
       return TriggeredReason(
         type: ReasonType.patternBearishEngulfing,
@@ -209,7 +229,7 @@ class HammerRule extends StockRule {
     if (context.trendState == TrendState.up) return null;
 
     final today = data.prices.last;
-    if (_isHammer(today)) {
+    if (isHammerShape(today)) {
       return TriggeredReason(
         type: ReasonType.patternHammer,
         score: RuleScores.patternHammer,
@@ -223,31 +243,6 @@ class HammerRule extends StockRule {
       );
     }
     return null;
-  }
-
-  bool _isHammer(DailyPriceEntry candle) {
-    if (candle.open == null ||
-        candle.close == null ||
-        candle.high == null ||
-        candle.low == null) {
-      return false;
-    }
-
-    final open = candle.open!;
-    final close = candle.close!;
-    final high = candle.high!;
-    final low = candle.low!;
-
-    final body = (close - open).abs();
-    final lowerShadow = min(open, close) - low;
-    final upperShadow = high - max(open, close);
-
-    final range = high - low;
-    if (range == 0) return false;
-
-    if (body < range * 0.05) return false;
-
-    return lowerShadow >= body * 2 && upperShadow <= body * 0.5;
   }
 }
 
@@ -269,7 +264,7 @@ class HangingManRule extends StockRule {
 
     final today = data.prices.last;
     // 吊人線與錘子線形狀相同，但出現在頂部
-    if (_isHammer(today)) {
+    if (isHammerShape(today)) {
       return TriggeredReason(
         type: ReasonType.patternHangingMan,
         score: RuleScores.patternHammer,
@@ -283,31 +278,6 @@ class HangingManRule extends StockRule {
       );
     }
     return null;
-  }
-
-  bool _isHammer(DailyPriceEntry candle) {
-    if (candle.open == null ||
-        candle.close == null ||
-        candle.high == null ||
-        candle.low == null) {
-      return false;
-    }
-
-    final open = candle.open!;
-    final close = candle.close!;
-    final high = candle.high!;
-    final low = candle.low!;
-
-    final body = (close - open).abs();
-    final lowerShadow = min(open, close) - low;
-    final upperShadow = high - max(open, close);
-
-    final range = high - low;
-    if (range == 0) return false;
-
-    if (body < range * 0.05) return false;
-
-    return lowerShadow >= body * 2 && upperShadow <= body * 0.5;
   }
 }
 

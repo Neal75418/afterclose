@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:ui' show Color;
 
-import 'package:flutter/foundation.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -53,12 +53,34 @@ class NotificationService {
 
     _isInitialized = true;
 
-    if (kDebugMode) {
-      print('NotificationService initialized');
-    }
+    AppLogger.debug('Notification', '服務已初始化');
   }
 
-  /// 請求通知權限（iOS/macOS）
+  /// 檢查是否已取得通知權限（不會請求權限）
+  Future<bool> hasPermission() async {
+    if (Platform.isIOS || Platform.isMacOS) {
+      final iosPlugin = _notifications
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
+      // checkPermissions 只檢查不請求
+      final result = await iosPlugin?.checkPermissions();
+      return result?.isEnabled ?? false;
+    }
+
+    if (Platform.isAndroid) {
+      final androidPlugin = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      final result = await androidPlugin?.areNotificationsEnabled();
+      return result ?? false;
+    }
+
+    return true;
+  }
+
+  /// 請求通知權限（iOS/macOS/Android）
   Future<bool> requestPermissions() async {
     if (Platform.isIOS || Platform.isMacOS) {
       final result = await _notifications
@@ -221,9 +243,7 @@ class NotificationService {
   ///
   /// payload 包含股票代號，導航由應用程式的導航系統處理。
   void _onNotificationTapped(NotificationResponse response) {
-    if (kDebugMode) {
-      print('Notification tapped: ${response.payload}');
-    }
+    AppLogger.debug('Notification', '通知被點擊: ${response.payload}');
   }
 
   /// 釋放通知服務資源
@@ -237,9 +257,7 @@ class NotificationService {
       await _notifications.cancelAll();
     } finally {
       _isInitialized = false;
-      if (kDebugMode) {
-        print('NotificationService disposed');
-      }
+      AppLogger.debug('Notification', '服務已釋放');
     }
   }
 

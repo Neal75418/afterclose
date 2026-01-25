@@ -58,11 +58,7 @@ class FundamentalRepository {
       await _db.insertMonthlyRevenue(entries);
       return entries.length;
     } catch (e) {
-      AppLogger.warning(
-        'FundamentalRepository',
-        'Failed to sync monthly revenue for $symbol',
-        e,
-      );
+      AppLogger.warning('FundamentalRepo', '同步月營收失敗: $symbol', e);
       return 0;
     }
   }
@@ -100,11 +96,7 @@ class FundamentalRepository {
       await _db.insertValuationData(entries);
       return entries.length;
     } catch (e) {
-      AppLogger.warning(
-        'FundamentalRepository',
-        'Failed to sync valuation data for $symbol',
-        e,
-      );
+      AppLogger.warning('FundamentalRepo', '同步估值資料失敗: $symbol', e);
       return 0;
     }
   }
@@ -144,11 +136,7 @@ class FundamentalRepository {
       await _db.insertValuationData(entries);
       return entries.length;
     } catch (e) {
-      AppLogger.warning(
-        'FundamentalRepository',
-        'Failed to sync all market valuation for $date',
-        e,
-      );
+      AppLogger.warning('FundamentalRepo', '同步全市場估值失敗: $date', e);
       return 0;
     }
   }
@@ -183,9 +171,8 @@ class FundamentalRepository {
         // （全市場通常有 ~1800+ 檔股票）
         if (existingCount > 1000) {
           AppLogger.info(
-            'FundamentalRepository',
-            'Revenue data for $dataYear/$dataMonth already exists '
-                '($existingCount records), skipping sync',
+            'FundamentalRepo',
+            '$dataYear/$dataMonth 營收資料已存在 ($existingCount 筆)，跳過同步',
           );
           return -1; // 訊號：已跳過
         }
@@ -199,8 +186,8 @@ class FundamentalRepository {
           .toList();
 
       AppLogger.info(
-        'FundamentalRepository',
-        'Syncing revenue for $dataYear/$dataMonth (${validData.length}/${data.length} stocks)',
+        'FundamentalRepo',
+        '同步營收 $dataYear/$dataMonth (${validData.length}/${data.length} 檔)',
       );
 
       final entries = validData.map((r) {
@@ -219,11 +206,7 @@ class FundamentalRepository {
       await _db.insertMonthlyRevenue(entries);
       return entries.length;
     } catch (e) {
-      AppLogger.warning(
-        'FundamentalRepository',
-        'Failed to sync all market revenue',
-        e,
-      );
+      AppLogger.warning('FundamentalRepo', '同步全市場營收失敗', e);
       return 0;
     }
   }

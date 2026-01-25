@@ -167,6 +167,39 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
+  /// 取得股票最近 N 個不同日期的價格（用於計算漲跌幅）
+  ///
+  /// 依日期降序排列，第一筆為最新價格。
+  /// 會過濾掉同一天但不同時區格式的重複資料。
+  Future<List<DailyPriceEntry>> getRecentPrices(
+    String symbol, {
+    int count = 2,
+  }) async {
+    // 多取一些資料以處理可能的重複日期
+    final allRecent =
+        await (select(dailyPrice)
+              ..where((t) => t.symbol.equals(symbol))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(count * 5))
+            .get();
+
+    // 過濾出不同日期的價格（以年月日判斷）
+    final seenDates = <String>{};
+    final distinctPrices = <DailyPriceEntry>[];
+
+    for (final price in allRecent) {
+      final dateKey =
+          '${price.date.year}-${price.date.month}-${price.date.day}';
+      if (!seenDates.contains(dateKey)) {
+        seenDates.add(dateKey);
+        distinctPrices.add(price);
+        if (distinctPrices.length >= count) break;
+      }
+    }
+
+    return distinctPrices;
+  }
+
   /// 取得指定日期的價格筆數
   Future<int> getPriceCountForDate(DateTime date) async {
     final countExpr = dailyPrice.symbol.count();
@@ -618,6 +651,20 @@ class AppDatabase extends _$AppDatabase {
     });
   }
 
+  /// 清除指定日期的所有原因記錄
+  ///
+  /// 在每日更新前呼叫，確保不會有舊的原因記錄殘留
+  Future<int> clearReasonsForDate(DateTime date) {
+    return (delete(dailyReason)..where((t) => t.date.equals(date))).go();
+  }
+
+  /// 清除指定日期的所有分析記錄
+  ///
+  /// 在每日更新前呼叫，確保不會有舊的分析記錄殘留
+  Future<int> clearAnalysisForDate(DateTime date) {
+    return (delete(dailyAnalysis)..where((t) => t.date.equals(date))).go();
+  }
+
   // ==========================================
   // 推薦股操作
   // ==========================================
@@ -1001,6 +1048,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// 取得指定日期的當沖資料筆數（新鮮度檢查用）
   Future<int> getDayTradingCountForDate(DateTime date) async {
+    // 使用本地時間午夜以匹配資料庫儲存格式
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     final countExpr = dayTrading.symbol.count();
@@ -1019,6 +1067,21 @@ class AppDatabase extends _$AppDatabase {
         b.insert(dayTrading, entry, mode: InsertMode.insertOrReplace);
       }
     });
+  }
+
+  /// 刪除指定日期範圍內的當沖資料
+  ///
+  /// 用於清理可能存在的重複記錄（由於 UTC/本地時間不一致）
+  Future<int> deleteDayTradingForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    return (delete(dayTrading)..where(
+          (t) =>
+              t.date.isBiggerOrEqualValue(startDate) &
+              t.date.isSmallerOrEqualValue(endDate),
+        ))
+        .go();
   }
 
   // ==========================================
@@ -1054,6 +1117,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// 取得指定日期的所有融資融券資料
   Future<List<MarginTradingEntry>> getMarginTradingForDate(DateTime date) {
+    // 使用本地時間午夜以匹配資料庫儲存格式
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     return (select(marginTrading)
@@ -1064,6 +1128,7 @@ class AppDatabase extends _$AppDatabase {
 
   /// 取得指定日期的融資融券資料筆數（新鮮度檢查用）
   Future<int> getMarginTradingCountForDate(DateTime date) async {
+    // 使用本地時間午夜以匹配資料庫儲存格式
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     final countExpr = marginTrading.symbol.count();

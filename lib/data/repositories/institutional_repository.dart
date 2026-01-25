@@ -55,9 +55,12 @@ class InstitutionalRepository {
       );
 
       final entries = data.map((item) {
+        // 正規化日期，確保時間部分為 00:00:00（避免同日重複）
+        final parsed = DateTime.parse(item.date);
+        final normalizedDate = DateTime(parsed.year, parsed.month, parsed.day);
         return DailyInstitutionalCompanion.insert(
           symbol: item.stockId,
-          date: DateTime.parse(item.date),
+          date: normalizedDate,
           foreignNet: Value(item.foreignNet),
           investmentTrustNet: Value(item.investmentTrustNet),
           dealerNet: Value(item.dealerNet),
@@ -119,9 +122,15 @@ class InstitutionalRepository {
           .toList();
 
       final entries = validData.map((item) {
+        // 正規化日期，確保時間部分為 00:00:00（避免同日重複）
+        final normalizedDate = DateTime(
+          item.date.year,
+          item.date.month,
+          item.date.day,
+        );
         return DailyInstitutionalCompanion.insert(
           symbol: item.code,
-          date: item.date,
+          date: normalizedDate,
           foreignNet: Value(item.foreignNet),
           investmentTrustNet: Value(item.investmentTrustNet),
           dealerNet: Value(item.dealerNet),

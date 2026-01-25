@@ -198,6 +198,22 @@ class AnalysisRepository implements IAnalysisRepository {
   }
 
   // ==========================================
+  // 資料清理
+  // ==========================================
+
+  /// 清除指定日期的所有原因記錄
+  @override
+  Future<int> clearReasonsForDate(DateTime date) {
+    return _db.clearReasonsForDate(_normalizeDate(date));
+  }
+
+  /// 清除指定日期的所有分析記錄
+  @override
+  Future<int> clearAnalysisForDate(DateTime date) {
+    return _db.clearAnalysisForDate(_normalizeDate(date));
+  }
+
+  // ==========================================
   // UI 用組合查詢
   // ==========================================
 
@@ -246,10 +262,10 @@ class AnalysisRepository implements IAnalysisRepository {
     return output;
   }
 
-  /// 正規化日期至 UTC 當日開始（移除時間部分）
+  /// 正規化日期至本地時間當日開始（移除時間部分）
   ///
-  /// 使用 UTC 確保跨時區行為一致
+  /// 使用本地時間以匹配資料庫儲存格式
   DateTime _normalizeDate(DateTime date) {
-    return DateTime.utc(date.year, date.month, date.day);
+    return DateTime(date.year, date.month, date.day);
   }
 }
