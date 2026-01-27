@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
@@ -136,21 +137,25 @@ class StockPreviewSheet extends StatelessWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              _getTrendColor().withValues(alpha: 0.2),
-                              _getTrendColor().withValues(alpha: 0.05),
+                              data.trendState.trendColor.withValues(alpha: 0.2),
+                              data.trendState.trendColor.withValues(
+                                alpha: 0.05,
+                              ),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: _getTrendColor().withValues(alpha: 0.3),
+                            color: data.trendState.trendColor.withValues(
+                              alpha: 0.3,
+                            ),
                             width: 1.5,
                           ),
                         ),
                         child: Center(
                           child: Text(
-                            _getTrendIcon(),
+                            data.trendState.trendEmoji,
                             style: const TextStyle(fontSize: 28),
                           ),
                         ),
@@ -369,22 +374,6 @@ class StockPreviewSheet extends StatelessWidget {
         .animate()
         .fadeIn(delay: 100.ms, duration: 300.ms)
         .slideY(begin: 0.1, duration: 300.ms);
-  }
-
-  String _getTrendIcon() {
-    return switch (data.trendState) {
-      'UP' => '📈',
-      'DOWN' => '📉',
-      _ => '➡️',
-    };
-  }
-
-  Color _getTrendColor() {
-    return switch (data.trendState) {
-      'UP' => AppTheme.upColor,
-      'DOWN' => AppTheme.downColor,
-      _ => AppTheme.neutralColor,
-    };
   }
 
   String _getScoreLevel(double score) => S.getScoreLevel(score);

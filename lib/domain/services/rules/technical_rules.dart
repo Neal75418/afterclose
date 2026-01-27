@@ -119,17 +119,18 @@ class BreakdownRule extends StockRule {
     final close = today.close;
     if (close == null) return null;
 
-    if (context.supportLevel != null) {
-      // 使用跌破緩衝區（1%）
-      final breakdownLevel =
-          context.supportLevel! * (1 - RuleParams.breakdownBuffer);
-      if (close < breakdownLevel) {
-        // MA20 過濾：需跌破 MA20 才確認有效跌破
-        final ma20 = _calculateMA20(data.prices);
-        if (ma20 != null && close > ma20) return null;
+    // v0.1.2：若無支撐位則使用 20 日低點作為 fallback
+    double? support = context.supportLevel;
+    if (support == null && data.prices.length >= 20) {
+      support = _calculate20DayLow(data.prices);
+    }
 
-        // 成交量確認：需有量能配合
-        if (!_hasBreakoutVolume(data.prices)) return null;
+    if (support != null) {
+      // 使用跌破緩衝區（3%）
+      final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
+      if (close < breakdownLevel) {
+        // v0.1.2：移除 MA20 過濾，簡化邏輯
+        // v0.1.2：移除成交量過濾，跌破可能伴隨恐慌性量縮
 
         return TriggeredReason(
           type: ReasonType.techBreakdown,
@@ -137,7 +138,7 @@ class BreakdownRule extends StockRule {
           description: '跌破關鍵支撐位',
           evidence: {
             'close': close,
-            'support': context.supportLevel,
+            'support': support,
             'breakdownLevel': breakdownLevel,
           },
         );
@@ -145,6 +146,20 @@ class BreakdownRule extends StockRule {
     }
     return null;
   }
+}
+
+/// 計算 20 日低點（排除今日）
+double? _calculate20DayLow(List<DailyPriceEntry> prices) {
+  if (prices.length < 20) return null;
+
+  double minLow = double.infinity;
+  // 取過去 20 天的最低價（排除今日）
+  for (var i = prices.length - 2; i >= prices.length - 21 && i >= 0; i--) {
+    final low = prices[i].low ?? prices[i].close ?? double.infinity;
+    if (low > 0 && low < minLow) minLow = low;
+  }
+
+  return minLow == double.infinity ? null : minLow;
 }
 
 // ==========================================
@@ -170,9 +185,9 @@ double? _calculateMA20(List<DailyPriceEntry> prices) {
   return sum / count;
 }
 
-/// 檢查是否有突破/跌破所需的成交量
+/// 檢查是否有突破所需的成交量（多方）
 ///
-/// 今日成交量需達 20 日均量的 1.2 倍
+/// 今日成交量需達 20 日均量的 1.5 倍
 bool _hasBreakoutVolume(List<DailyPriceEntry> prices) {
   if (prices.length < 21) return true; // 資料不足則放行
 

@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
@@ -325,9 +326,13 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
             children: [
               _buildInfoChip(
                 theme: theme,
-                label: 'trend.${_getTrendKey(state.analysis?.trendState)}'.tr(),
-                icon: _getTrendIcon(state.analysis?.trendState),
-                color: _getTrendColor(state.analysis?.trendState),
+                label: 'trend.${state.analysis?.trendState.trendKey}'.tr(),
+                icon:
+                    state.analysis?.trendState.trendIconData ??
+                    Icons.trending_flat,
+                color:
+                    state.analysis?.trendState.trendColor ??
+                    AppTheme.neutralColor,
               ),
               const SizedBox(width: 8),
               if (state.analysis?.supportLevel case final supportLevel?)
@@ -415,30 +420,6 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
         ],
       ),
     );
-  }
-
-  String _getTrendKey(String? trend) {
-    return switch (trend) {
-      'UP' => 'up',
-      'DOWN' => 'down',
-      _ => 'sideways',
-    };
-  }
-
-  IconData _getTrendIcon(String? trend) {
-    return switch (trend) {
-      'UP' => Icons.trending_up,
-      'DOWN' => Icons.trending_down,
-      _ => Icons.trending_flat,
-    };
-  }
-
-  Color _getTrendColor(String? trend) {
-    return switch (trend) {
-      'UP' => AppTheme.upColor,
-      'DOWN' => AppTheme.downColor,
-      _ => Colors.grey,
-    };
   }
 
   String _translateReasonCode(String code) {

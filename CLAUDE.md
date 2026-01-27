@@ -9,19 +9,27 @@
 **AfterClose** - 本地優先盤後台股掃描 App。所有資料處理在裝置端完成，無雲端依賴。
 
 ```mermaid
-flowchart TB
-    AC((AfterClose))
+flowchart LR
+    subgraph Input["📥 每日輸入"]
+        API["公開 API"]
+        RSS["RSS 新聞"]
+    end
 
-    AC --> HX["核心原則 🎯"]
-    AC --> JS["技術特點 ⚙️"]
+    subgraph Process["⚙️ 本地處理"]
+        Sync["資料同步"]
+        Rules["51 條規則"]
+        Score["評分引擎"]
+    end
 
-    HX --> HX1[零固定成本]
-    HX --> HX2[盤後批次]
-    HX --> HX3[推薦 = 異常提示]
+    subgraph Output["📤 產出"]
+        Top20["Top 20 推薦"]
+        Alert["異常警示"]
+    end
 
-    JS --> JS1[本地優先]
-    JS --> JS2[離線可用]
-    JS --> JS3[隱私保護]
+    API --> Sync
+    RSS --> Sync
+    Sync --> Rules --> Score --> Top20
+    Score --> Alert
 ```
 
 ---
@@ -58,7 +66,7 @@ flowchart TB
         Models["models/<br/>7 Domain Objects"]
         Services["services/"]
         Update["services/update/<br/>6 Specialized Syncers"]
-        Rules["services/rules/<br/>44 Rules"]
+        Rules["services/rules/<br/>51 Rules"]
     end
 
     subgraph Presentation["📱 presentation/"]
@@ -176,7 +184,7 @@ flowchart TB
 
 | 文件                                                                                                     | 說明              |
 |--------------------------------------------------------------------------------------------------------|-----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (44 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (51 條規則) |
 | [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |
 
 ---

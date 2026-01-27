@@ -147,8 +147,10 @@ abstract final class RuleParams {
   /// 冷卻分數倍數
   static const double cooldownMultiplier = 0.7;
 
-  /// 每檔股票最多理由數
-  static const int maxReasonsPerStock = 2;
+  /// 每檔股票最多理由數（資料庫儲存用，供篩選功能使用）
+  /// 設為 50 確保所有規則都能被儲存（目前共 51 條規則）
+  /// UI 顯示時會用 .take(2) 或 .take(3) 限制
+  static const int maxReasonsPerStock = 50;
 
   /// 每日 Top N 推薦數量
   ///
@@ -178,9 +180,15 @@ abstract final class RuleParams {
   static const double rsiOversold = 20.0;
 
   /// RSI 極度超買（高風險區）
-  static const double rsiExtremeOverbought = 85.0;
+  ///
+  /// v0.1.1：從 85 放寬至 80，解決 0 觸發問題。
+  /// 標準超買區為 70，80 以上即為極度超買。
+  static const double rsiExtremeOverbought = 80.0;
 
   /// RSI 極度超賣（潛在反彈區）
+  ///
+  /// v0.1.2：從 25 放寬至 30，解決 0 觸發問題。
+  /// RSI 30 以下即為超賣區，提供更多篩選結果。
   static const double rsiExtremeOversold = 30.0;
 
   /// KD %K 計算週期
@@ -197,44 +205,44 @@ abstract final class RuleParams {
 
   /// 法人連續買賣天數門檻
   ///
-  /// 6 天連續買賣超代表較明確的法人動向。
-  static const int institutionalStreakDays = 6;
+  /// v0.1.2：從 6 天放寬至 4 天，解決 0 觸發問題
+  static const int institutionalStreakDays = 4;
 
   /// 法人每日最低淨買賣門檻（股）
   ///
   /// 每日淨買賣超須達此門檻才算有效交易日。
-  /// 100張 = 100,000股
-  static const int institutionalMinDailyNetShares = 100000;
+  /// v0.1.2：從 100 張放寬至 50 張
+  static const int institutionalMinDailyNetShares = 50000;
 
   /// 法人每日顯著淨買賣門檻（股）
   ///
   /// 超過此門檻的交易日視為「顯著」交易日。
-  /// 300張 = 300,000股
-  static const int institutionalSignificantDailyNetShares = 300000;
+  /// v0.1.2：從 300 張放寬至 150 張
+  static const int institutionalSignificantDailyNetShares = 150000;
 
   /// 法人連買總量門檻（股）
   ///
   /// 連續買超期間的總淨買超須達此門檻。
-  /// 5000張 = 5,000,000股
-  static const int institutionalBuyTotalThresholdShares = 5000000;
+  /// v0.1.2：從 5000 張放寬至 2000 張
+  static const int institutionalBuyTotalThresholdShares = 2000000;
 
   /// 法人連買日均門檻（股）
   ///
   /// 連續買超期間的日均淨買超須達此門檻。
-  /// 700張 = 700,000股
-  static const int institutionalBuyDailyAvgThresholdShares = 700000;
+  /// v0.1.2：從 700 張放寬至 300 張
+  static const int institutionalBuyDailyAvgThresholdShares = 300000;
 
   /// 法人連賣總量門檻（股）
   ///
   /// 連續賣超期間的總淨賣超須達此門檻（負值）。
-  /// -5000張 = -5,000,000股（與買方對稱）
-  static const int institutionalSellTotalThresholdShares = -5000000;
+  /// v0.1.2：從 -5000 張放寬至 -2000 張
+  static const int institutionalSellTotalThresholdShares = -2000000;
 
   /// 法人連賣日均門檻（股）
   ///
   /// 連續賣超期間的日均淨賣超須達此門檻（負值）。
-  /// -700張 = -700,000股（與買方對稱）
-  static const int institutionalSellDailyAvgThresholdShares = -700000;
+  /// v0.1.2：從 -700 張放寬至 -300 張
+  static const int institutionalSellDailyAvgThresholdShares = -300000;
 
   // ==========================================
   // 52 週高低點參數
@@ -249,11 +257,20 @@ abstract final class RuleParams {
   /// 200 天約涵蓋 10 個月的交易日，可進行大部分技術分析。
   static const int historicalDataMinDays = 200;
 
-  /// 接近 52 週高低點緩衝百分比
+  /// 接近 52 週新高緩衝百分比
   ///
-  /// 在 52 週高低點 1% 範圍內觸發訊號。
-  /// 較嚴格的門檻確保只有真正接近新高/新低的股票才會觸發。
-  static const double week52NearThreshold = 0.01;
+  /// 收盤價在 52 週最高價的 1% 範圍內觸發。
+  /// 維持嚴格門檻確保只有真正突破的股票才觸發。
+  static const double week52HighThreshold = 0.01;
+
+  /// 接近 52 週新低緩衝百分比
+  ///
+  /// 收盤價在 52 週最低價的 3% 範圍內觸發。
+  /// 比新高稍寬鬆（3% vs 1%），因為：
+  /// 1. 新低是逆勢操作，需要更多緩衝
+  /// 2. 底部區域通常有支撐震盪
+  /// 3. 避免 0 個新低的極端情況
+  static const double week52LowThreshold = 0.03;
 
   // ==========================================
   // 均線排列參數
@@ -325,10 +342,10 @@ abstract final class RuleParams {
   /// 第二根 K 線實體不可超過第一根的 0.5 倍。
   static const double starSmallBodyMaxRatio = 0.5;
 
-  /// 強勢 K 線跌幅門檻（1.5%）
+  /// 強勢 K 線跌幅門檻（1.0%）
   ///
-  /// 三黑鴉要求每根 K 線從開盤跌幅超過此值。
-  static const double strongCandleDropThreshold = 0.015;
+  /// v0.1.2：從 1.5% 放寬至 1.0%，讓三黑鴉更容易觸發。
+  static const double strongCandleDropThreshold = 0.01;
 
   // ==========================================
   // 第四階段：延伸市場資料參數
@@ -344,13 +361,13 @@ abstract final class RuleParams {
 
   /// 高當沖比例門檻（%）
   ///
-  /// 當沖比例高於此值視為「熱門」。45% 配合 1000 張成交量門檻。
-  static const double dayTradingHighThreshold = 45.0;
+  /// v0.1.2：從 45% 放寬至 35%，提供更多篩選結果。
+  static const double dayTradingHighThreshold = 35.0;
 
   /// 極高當沖比例門檻（%）
   ///
-  /// 極高當沖屬投機警示。60% 為極端情況。
-  static const double dayTradingExtremeThreshold = 60.0;
+  /// v0.1.2：從 60% 放寬至 50%，提供更多篩選結果。
+  static const double dayTradingExtremeThreshold = 50.0;
 
   /// 大戶持股集中度門檻（%）
   ///
@@ -380,7 +397,8 @@ abstract final class RuleParams {
   /// 「低檔吸籌」訊號的低位門檻（百分位）
   ///
   /// 價格需在 60 日區間後 X% 才視為「低位」。
-  static const double lowPositionThreshold = 0.15;
+  /// v0.1.1：從 0.15 放寬至 0.25（底部 25%），解決 0 觸發問題
+  static const double lowPositionThreshold = 0.25;
 
   // ==========================================
   // 第六階段：基本面分析參數
@@ -511,17 +529,27 @@ abstract final class RuleParams {
   /// 收緊門檻以大幅提升精準度，只保留明確反轉訊號。
   static const double higherLowBuffer = 1.07;
 
-  /// 更低高點確認緩衝（7%）
+  /// 更低高點確認緩衝（5%）
   ///
-  /// 近期高點需低於前期高點 7% 才確認為「更低高點」。
-  /// 收緊門檻以大幅提升精準度，只保留明確反轉訊號。
-  static const double lowerHighBuffer = 0.93;
+  /// 近期高點需低於前期高點 5% 才確認為「更低高點」。
+  /// v0.1.1：從 0.93（7%）放寬至 0.95（5%），解決 0 觸發問題。
+  /// 頭部反轉不需要像底部反轉那樣嚴格。
+  static const double lowerHighBuffer = 0.95;
 
-  /// 反轉/突破訊號成交量確認門檻
+  /// 反轉/突破訊號成交量確認門檻（多方）
   ///
-  /// 近期成交量需達前期平均的 2.0 倍以上，
-  /// 確認訊號有量能配合，大幅過濾假訊號。
-  static const double reversalVolumeConfirm = 2.0;
+  /// 近期成交量需達前期平均的此倍數以上。
+  /// 用於弱轉強（底部反轉）訊號確認。
+  /// v0.1.1：從 2.0 放寬至 1.5，但仍保留量能配合要求。
+  static const double reversalVolumeConfirm = 1.5;
+
+  /// 強轉弱成交量確認門檻
+  ///
+  /// 頭部反轉（強轉弱）的成交量要求較寬鬆。
+  /// 頭部形成時往往是「量縮」而非「量增」，
+  /// 因此只需要基本成交量即可。
+  /// v0.1.1：新增獨立參數，解決強轉弱 0 觸發問題。
+  static const double s2wVolumeConfirm = 0.8;
 }
 
 /// 各推薦類型的分數

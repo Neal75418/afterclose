@@ -50,7 +50,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     await notifier.removeStock(symbol);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      final messenger = ScaffoldMessenger.of(context);
+      // 清除現有的 SnackBar，避免堆積卡住 UI
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
         SnackBar(
           content: Text('watchlist.removed'.tr(namedArgs: {'symbol': symbol})),
           behavior: SnackBarBehavior.floating,
@@ -446,6 +449,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                           Navigator.pop(dialogContext);
 
                           if (mounted) {
+                            // 清除現有的 SnackBar，避免堆積
+                            messenger.clearSnackBars();
                             if (success) {
                               messenger.showSnackBar(
                                 SnackBar(

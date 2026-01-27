@@ -461,8 +461,12 @@ class TwseClient {
           month: targetDate.month,
         );
         results.addAll(monthData);
-      } catch (_) {
-        // 若某月失敗則繼續處理其他月份
+      } catch (e) {
+        // 記錄錯誤但繼續處理其他月份
+        AppLogger.debug(
+          'TWSE',
+          '歷史價格($code): ${targetDate.year}/${targetDate.month} 取得失敗: $e',
+        );
       }
 
       // 流量限制延遲

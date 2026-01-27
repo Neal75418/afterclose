@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
@@ -402,13 +403,7 @@ class ScanStockItem {
   }
 
   /// Get trend icon
-  String get trendIcon {
-    return switch (trendState) {
-      'UP' => '📈',
-      'DOWN' => '📉',
-      _ => '➡️',
-    };
-  }
+  String get trendIcon => trendState.trendEmoji;
 
   /// Create a copy with modified fields
   ScanStockItem copyWith({bool? isInWatchlist}) {

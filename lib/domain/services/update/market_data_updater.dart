@@ -70,9 +70,13 @@ class MarketDataUpdater {
     );
   }
 
-  /// 同步特定股票清單的籌碼資料
+  /// 同步特定股票清單的外資持股資料
   ///
-  /// 用於自選清單和熱門股的詳細籌碼追蹤
+  /// 用於自選清單和熱門股的詳細籌碼追蹤。
+  ///
+  /// **v0.1.2:** 移除 syncDayTrading 呼叫。
+  /// 當沖資料已由 syncMarketWideData 透過批次 TWSE/TPEX API 同步，
+  /// 不再需要逐檔呼叫 FinMind，節省 API 配額。
   Future<int> syncSymbolsMarketData({
     required List<String> symbols,
     required DateTime date,
@@ -91,18 +95,12 @@ class MarketDataUpdater {
 
       final futures = chunk.map((symbol) async {
         try {
-          await Future.wait([
-            _marketDataRepo.syncShareholding(
-              symbol,
-              startDate: marketDataStartDate,
-              endDate: date,
-            ),
-            _marketDataRepo.syncDayTrading(
-              symbol,
-              startDate: marketDataStartDate,
-              endDate: date,
-            ),
-          ]);
+          // 只同步外資持股，當沖資料已由批次 API 處理
+          await _marketDataRepo.syncShareholding(
+            symbol,
+            startDate: marketDataStartDate,
+            endDate: date,
+          );
           return true;
         } catch (e) {
           AppLogger.debug('MarketDataUpdater', '$symbol 市場資料同步失敗: $e');
@@ -124,10 +122,14 @@ class MarketDataUpdater {
   /// 不再需要逐檔呼叫 FinMind，大幅減少 API 配額消耗。
   ///
   /// 此方法現在只同步外資持股資料（仍需 FinMind 逐檔呼叫）。
+  ///
+  /// **v0.1.2:** maxSyncCount 從 100 降至 20，避免 API 額度耗盡。
+  /// 外資持股規則（ForeignExodus, ForeignConcentration）為輔助訊號，
+  /// 20 檔足夠涵蓋主要候選股。
   Future<OtcMarketDataResult> syncOtcCandidatesMarketData({
     required List<String> candidates,
     required DateTime date,
-    int maxSyncCount = 100,
+    int maxSyncCount = 20,
   }) async {
     if (candidates.isEmpty) {
       return const OtcMarketDataResult(

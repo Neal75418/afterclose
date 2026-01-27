@@ -50,7 +50,7 @@ class Week52HighRule extends StockRule {
     if (maxHigh <= 0) return null;
 
     // 檢查當前收盤是否處於或接近 52 週高點（在門檻範圍內）
-    final threshold = maxHigh * (1 - RuleParams.week52NearThreshold);
+    final threshold = maxHigh * (1 - RuleParams.week52HighThreshold);
     if (close >= threshold) {
       final isNewHigh = close >= maxHigh;
       AppLogger.debug(
@@ -114,9 +114,28 @@ class Week52LowRule extends StockRule {
     if (minLow == double.infinity || minLow <= 0) return null;
 
     // 檢查當前收盤是否處於或接近 52 週低點（在門檻範圍內）
-    final threshold = minLow * (1 + RuleParams.week52NearThreshold);
+    final threshold = minLow * (1 + RuleParams.week52LowThreshold);
     if (close <= threshold) {
       final isNewLow = close <= minLow;
+
+      // 精準度過濾：確認近期確實處於下跌趨勢
+      // 避免長期盤整在低檔區的股票誤觸發
+      if (data.prices.length >= 20) {
+        final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
+        final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
+
+        // 過濾條件：收盤價 < MA20 且 MA20 < MA60（空頭趨勢確認）
+        if (ma20 != null && ma60 != null) {
+          if (close >= ma20 || ma20 >= ma60) {
+            AppLogger.debug(
+              'Week52Low',
+              '${data.symbol}: 過濾 - 未確認空頭趨勢 (close=$close, MA20=$ma20, MA60=$ma60)',
+            );
+            return null;
+          }
+        }
+      }
+
       AppLogger.debug(
         'Week52Low',
         '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, 52週低=${minLow.toStringAsFixed(2)}, 新低=$isNewLow',
@@ -231,21 +250,14 @@ class MAAlignmentBearishRule extends StockRule {
     if (ma5 < ma10 * (1 - minSep) &&
         ma10 < ma20 * (1 - minSep) &&
         ma20 < ma60 * (1 - minSep)) {
-      // 過濾條件：收盤 < MA5 且乖離率不超過門檻 且成交量 > MA20
+      // v0.1.2：簡化過濾條件，只檢查收盤 < MA5 且乖離率不超過門檻
+      // 移除成交量過濾，讓更多股票能觸發
       final today = data.prices.last;
       final close = today.close;
-      final vol = today.volume;
-      if (close == null || vol == null) return null;
+      if (close == null) return null;
 
       if (close >= ma5) return null;
       if ((close - ma5) / ma5 <= -RuleParams.maDeviationThreshold) return null;
-
-      final volResult = TechnicalIndicatorService.latestVolumeMA(
-        data.prices,
-        20,
-      );
-      final volMA20 = volResult.volumeMA ?? 0;
-      if (vol <= volMA20) return null;
 
       return TriggeredReason(
         type: ReasonType.maAlignmentBearish,
@@ -261,7 +273,8 @@ class MAAlignmentBearishRule extends StockRule {
 
 /// 規則：RSI 極度超買
 ///
-/// 當 RSI > 80 時觸發
+/// 當 RSI >= 80 時觸發（高風險警示）
+/// v0.1.1：從 85 放寬至 80
 class RSIExtremeOverboughtRule extends StockRule {
   const RSIExtremeOverboughtRule();
 
@@ -282,6 +295,10 @@ class RSIExtremeOverboughtRule extends StockRule {
     if (rsi == null) return null;
 
     if (rsi >= RuleParams.rsiExtremeOverbought) {
+      AppLogger.debug(
+        'RSIExtremeOverbought',
+        '${data.symbol}: RSI=${rsi.toStringAsFixed(1)} >= ${RuleParams.rsiExtremeOverbought}',
+      );
       return TriggeredReason(
         type: ReasonType.rsiExtremeOverbought,
         score: RuleScores.rsiExtremeOverboughtSignal,
@@ -296,7 +313,8 @@ class RSIExtremeOverboughtRule extends StockRule {
 
 /// 規則：RSI 極度超賣
 ///
-/// 當 RSI < 20 時觸發
+/// 當 RSI <= 25 時觸發（潛在反彈機會）
+/// v0.1.1：從 30 收緊至 25，提高精準度
 class RSIExtremeOversoldRule extends StockRule {
   const RSIExtremeOversoldRule();
 
@@ -317,6 +335,10 @@ class RSIExtremeOversoldRule extends StockRule {
     if (rsi == null) return null;
 
     if (rsi <= RuleParams.rsiExtremeOversold) {
+      AppLogger.debug(
+        'RSIExtremeOversold',
+        '${data.symbol}: RSI=${rsi.toStringAsFixed(1)} <= ${RuleParams.rsiExtremeOversold}',
+      );
       return TriggeredReason(
         type: ReasonType.rsiExtremeOversold,
         score: RuleScores.rsiExtremeOversoldSignal,

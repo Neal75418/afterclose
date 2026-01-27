@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -57,11 +58,15 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     final priceChange = (todayClose - pastClose) / pastClose * 100;
     final volumeChange = (todayVolume - avgVolume) / avgVolume * 100;
 
-    // 價格上漲（> 2.0%）但成交量下降（< -20%）
-    // 針對台股放寬門檻，因背離常較早出現
-    // 原先：5% 價格 / -40% 成交量（過於嚴格，觸發率 < 2%）
-    // 目前：2% 價格 / -20% 成交量（更符合台股實際情況）
-    if (priceChange >= 2.0 && volumeChange <= -20.0) {
+    // 價格上漲但成交量下降
+    // v0.1.2：大幅放寬門檻，解決 0 觸發問題
+    // 原先：1.5% 價格 / -15% 成交量（仍過於嚴格）
+    // 目前：1.0% 價格 / -10% 成交量
+    if (priceChange >= 1.0 && volumeChange <= -10.0) {
+      AppLogger.debug(
+        'PriceVolumeBullishDivergence',
+        '${data.symbol}: 價漲${priceChange.toStringAsFixed(1)}%, 量縮${volumeChange.toStringAsFixed(1)}%',
+      );
       return TriggeredReason(
         type: ReasonType.priceVolumeBullishDivergence,
         score: RuleScores.priceVolumeBullishDivergence,
@@ -129,11 +134,15 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
     final priceChange = (todayClose - pastClose) / pastClose * 100;
     final volumeChange = (todayVolume - avgVolume) / avgVolume * 100;
 
-    // 價格下跌（< -2.0%）且成交量上升（> 20%）
-    // 放寬門檻：台股常在較小跌幅時出現恐慌賣壓
-    // 原先：-3% 價格 / +30% 成交量
-    // 目前：-2% 價格 / +20% 成交量
-    if (priceChange <= -2.0 && volumeChange >= 20.0) {
+    // 價格下跌且成交量上升
+    // v0.1.2：大幅放寬門檻，解決 0 觸發問題
+    // 原先：-1.5% 價格 / +15% 成交量（仍過於嚴格）
+    // 目前：-1.0% 價格 / +10% 成交量
+    if (priceChange <= -1.0 && volumeChange >= 10.0) {
+      AppLogger.debug(
+        'PriceVolumeBearishDivergence',
+        '${data.symbol}: 價跌${priceChange.toStringAsFixed(1)}%, 量增${volumeChange.toStringAsFixed(1)}%',
+      );
       return TriggeredReason(
         type: ReasonType.priceVolumeBearishDivergence,
         score: RuleScores.priceVolumeBearishDivergence,
@@ -275,9 +284,14 @@ class LowVolumeAccumulationRule extends StockRule {
     final position = (close - minLow) / range;
     final avgVolume = volumeSum / volumeCount;
 
-    // 低檔位置（後 15%）且成交量低迷（低於平均的 50%）
+    // 低檔位置（後 25%）且成交量低迷（低於平均的 60%）
+    // v0.1.1：放寬門檻，解決 0 觸發問題
     if (position <= RuleParams.lowPositionThreshold &&
-        volume < avgVolume * 0.5) {
+        volume < avgVolume * 0.6) {
+      AppLogger.debug(
+        'LowVolumeAccumulation',
+        '${data.symbol}: 位置=${(position * 100).toStringAsFixed(1)}%, 量比=${(volume / avgVolume * 100).toStringAsFixed(0)}%',
+      );
       return TriggeredReason(
         type: ReasonType.lowVolumeAccumulation,
         score: RuleScores.lowVolumeAccumulation,

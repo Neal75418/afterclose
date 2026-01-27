@@ -69,15 +69,33 @@ enum WatchlistTrend {
 // ==================================================
 
 /// State for watchlist screen
+///
+/// 使用快取策略：[filteredItems]、[groupedByStatus]、[groupedByTrend]
+/// 僅在建構時計算一次，避免每次 build 時重複計算。
 class WatchlistState {
-  const WatchlistState({
+  WatchlistState({
     this.items = const [],
     this.isLoading = false,
     this.error,
     this.sort = WatchlistSort.addedDesc,
     this.group = WatchlistGroup.none,
     this.searchQuery = '',
-  });
+  }) : _filteredItems = _computeFilteredItems(items, searchQuery),
+       _groupedByStatus = null,
+       _groupedByTrend = null;
+
+  /// Private constructor for copyWith to preserve cached values when appropriate
+  WatchlistState._internal({
+    required this.items,
+    required this.isLoading,
+    required this.error,
+    required this.sort,
+    required this.group,
+    required this.searchQuery,
+    required List<WatchlistItemData> filteredItems,
+  }) : _filteredItems = filteredItems,
+       _groupedByStatus = null,
+       _groupedByTrend = null;
 
   final List<WatchlistItemData> items;
   final bool isLoading;
@@ -86,8 +104,30 @@ class WatchlistState {
   final WatchlistGroup group;
   final String searchQuery;
 
-  /// Filtered items based on search query
-  List<WatchlistItemData> get filteredItems {
+  // 快取的過濾結果
+  final List<WatchlistItemData> _filteredItems;
+  // 延遲初始化的分組快取
+  Map<WatchlistStatus, List<WatchlistItemData>>? _groupedByStatus;
+  Map<WatchlistTrend, List<WatchlistItemData>>? _groupedByTrend;
+
+  /// Filtered items based on search query (cached)
+  List<WatchlistItemData> get filteredItems => _filteredItems;
+
+  /// Grouped items by status (lazy cached)
+  Map<WatchlistStatus, List<WatchlistItemData>> get groupedByStatus {
+    return _groupedByStatus ??= _computeGroupedByStatus(_filteredItems);
+  }
+
+  /// Grouped items by trend (lazy cached)
+  Map<WatchlistTrend, List<WatchlistItemData>> get groupedByTrend {
+    return _groupedByTrend ??= _computeGroupedByTrend(_filteredItems);
+  }
+
+  /// Compute filtered items based on search query
+  static List<WatchlistItemData> _computeFilteredItems(
+    List<WatchlistItemData> items,
+    String searchQuery,
+  ) {
     if (searchQuery.isEmpty) return items;
     final query = searchQuery.toLowerCase();
     return items.where((item) {
@@ -96,25 +136,29 @@ class WatchlistState {
     }).toList();
   }
 
-  /// Grouped items by status
-  Map<WatchlistStatus, List<WatchlistItemData>> get groupedByStatus {
+  /// Compute grouped by status
+  static Map<WatchlistStatus, List<WatchlistItemData>> _computeGroupedByStatus(
+    List<WatchlistItemData> items,
+  ) {
     final result = <WatchlistStatus, List<WatchlistItemData>>{};
     for (final status in WatchlistStatus.values) {
       result[status] = [];
     }
-    for (final item in filteredItems) {
+    for (final item in items) {
       result[item.status]!.add(item);
     }
     return result;
   }
 
-  /// Grouped items by trend
-  Map<WatchlistTrend, List<WatchlistItemData>> get groupedByTrend {
+  /// Compute grouped by trend
+  static Map<WatchlistTrend, List<WatchlistItemData>> _computeGroupedByTrend(
+    List<WatchlistItemData> items,
+  ) {
     final result = <WatchlistTrend, List<WatchlistItemData>>{};
     for (final trend in WatchlistTrend.values) {
       result[trend] = [];
     }
-    for (final item in filteredItems) {
+    for (final item in items) {
       result[item.trend]!.add(item);
     }
     return result;
@@ -128,13 +172,34 @@ class WatchlistState {
     WatchlistGroup? group,
     String? searchQuery,
   }) {
-    return WatchlistState(
-      items: items ?? this.items,
+    final newItems = items ?? this.items;
+    final newSearchQuery = searchQuery ?? this.searchQuery;
+
+    // 若 items 或 searchQuery 變更，需重新計算 filteredItems
+    final needsRecompute =
+        items != null ||
+        (searchQuery != null && searchQuery != this.searchQuery);
+
+    if (needsRecompute) {
+      return WatchlistState(
+        items: newItems,
+        isLoading: isLoading ?? this.isLoading,
+        error: error,
+        sort: sort ?? this.sort,
+        group: group ?? this.group,
+        searchQuery: newSearchQuery,
+      );
+    }
+
+    // 若只是 isLoading/error/sort/group 變更，保留現有快取
+    return WatchlistState._internal(
+      items: newItems,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       sort: sort ?? this.sort,
       group: group ?? this.group,
-      searchQuery: searchQuery ?? this.searchQuery,
+      searchQuery: newSearchQuery,
+      filteredItems: _filteredItems,
     );
   }
 }
@@ -199,7 +264,7 @@ class WatchlistItemData {
 // ==================================================
 
 class WatchlistNotifier extends StateNotifier<WatchlistState> {
-  WatchlistNotifier(this._ref) : super(const WatchlistState());
+  WatchlistNotifier(this._ref) : super(WatchlistState());
 
   final Ref _ref;
 

@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
@@ -443,25 +444,36 @@ class AnalysisService {
     }
 
     // 檢查強轉弱 (S2W)
-    // 使用 breakdownBuffer（較寬鬆）以便更容易觸發
+    // v0.1.1：移除趨勢狀態檢查，讓更多股票有機會觸發
+    // 原本要求 trendState == up || range，但這過於嚴格
+    // 因為下跌中的股票往往被判定為 down trend，就無法觸發 S2W
+
+    // 跌破支撐
+    if (support != null) {
+      final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
+      if (todayClose < breakdownLevel) {
+        AppLogger.debug(
+          'S2W',
+          '跌破支撐: close=$todayClose < support=$support * 0.97 = $breakdownLevel',
+        );
+        return ReversalState.strongToWeak;
+      }
+    }
+
+    // 跌破區間底部
+    if (rangeBottom != null) {
+      final breakdownLevel = rangeBottom * (1 - RuleParams.breakdownBuffer);
+      if (todayClose < breakdownLevel) {
+        AppLogger.debug(
+          'S2W',
+          '跌破區間底部: close=$todayClose < rangeBottom=$rangeBottom * 0.97 = $breakdownLevel',
+        );
+        return ReversalState.strongToWeak;
+      }
+    }
+
+    // 形成更低的高點（只在上升或盤整趨勢中檢查）
     if (trendState == TrendState.up || trendState == TrendState.range) {
-      // 跌破支撐
-      if (support != null) {
-        final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
-        if (todayClose < breakdownLevel) {
-          return ReversalState.strongToWeak;
-        }
-      }
-
-      // 跌破區間底部
-      if (rangeBottom != null) {
-        final breakdownLevel = rangeBottom * (1 - RuleParams.breakdownBuffer);
-        if (todayClose < breakdownLevel) {
-          return ReversalState.strongToWeak;
-        }
-      }
-
-      // 形成更低的高點
       if (_hasLowerHigh(prices)) {
         return ReversalState.strongToWeak;
       }
@@ -605,21 +617,11 @@ class AnalysisService {
 
   /// 檢查是否形成更低的高點（趨勢反轉訊號）
   ///
-  /// 條件：
-  /// 1. 近期高點低於前期高點 5%
-  /// 2. 收盤跌破 MA20
-  /// 3. 近期成交量高於前期平均（量能確認）
+  /// v0.1.2：簡化強轉弱偵測
+  /// 移除 MA20 和成交量過濾，頭部形成往往是「量縮價跌」
+  /// 只檢查是否形成更低高點即可
   bool _hasLowerHigh(List<DailyPriceEntry> prices) {
     if (prices.length < RuleParams.swingWindow * 2) return false;
-
-    // MA20 過濾：需跌破 MA20 才確認下跌反轉
-    final ma20 = _calculateMA(prices, 20);
-    final currentClose = prices.last.close;
-
-    if (ma20 != null && currentClose != null) {
-      // 需跌破 MA20 以確認弱勢
-      if (currentClose > ma20) return false;
-    }
 
     // 找出近期波段高點
     final recentPrices = prices.reversed.take(RuleParams.swingWindow).toList();
@@ -633,18 +635,24 @@ class AnalysisService {
 
     if (recentHigh == null || prevHigh == null) return false;
 
-    // 成交量確認：近期成交量需高於前期平均
-    if (!_hasVolumeConfirmation(recentPrices, prevPrices)) {
-      return false;
+    // 近期高點應低於前期高點（含緩衝區過濾弱訊號）
+    final isLowerHigh = recentHigh < prevHigh * RuleParams.lowerHighBuffer;
+
+    if (isLowerHigh) {
+      AppLogger.debug(
+        'LowerHigh',
+        '偵測到更低高點: 近期高=${recentHigh.toStringAsFixed(2)}, '
+            '前期高=${prevHigh.toStringAsFixed(2)}, '
+            '比值=${(recentHigh / prevHigh * 100).toStringAsFixed(1)}%',
+      );
     }
 
-    // 近期高點應低於前期高點（含緩衝區過濾弱訊號）
-    return recentHigh < prevHigh * RuleParams.lowerHighBuffer;
+    return isLowerHigh;
   }
 
   /// 檢查成交量確認（反轉訊號需有量能配合）
   ///
-  /// 近期平均成交量需達前期平均的 1.2 倍以上
+  /// 近期平均成交量需達前期平均的 1.5 倍以上（用於弱轉強）
   bool _hasVolumeConfirmation(
     List<DailyPriceEntry> recentPrices,
     List<DailyPriceEntry> prevPrices,
@@ -673,7 +681,7 @@ class AnalysisService {
 
     if (avgPrevVolume <= 0) return true;
 
-    // 近期成交量需達前期的 1.2 倍
+    // 近期成交量需達前期的 1.5 倍（弱轉強需有量能）
     return avgRecentVolume >= avgPrevVolume * RuleParams.reversalVolumeConfirm;
   }
 

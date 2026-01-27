@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
@@ -191,8 +192,8 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
-    final trendColor = _getTrendColor(widget.trendState);
-    final icon = _getTrendIconData(widget.trendState);
+    final trendColor = widget.trendState.trendColor;
+    final icon = widget.trendState.trendIconData;
     // 盤整狀態：null、'RANGE' 或 'SIDEWAYS'（相容舊資料）
     final isNeutral =
         widget.trendState == null ||
@@ -211,14 +212,6 @@ class _StockCardState extends State<StockCard> {
       ),
       child: Center(child: Icon(icon, color: trendColor, size: 24)),
     );
-  }
-
-  IconData _getTrendIconData(String? trend) {
-    return switch (trend) {
-      'UP' => Icons.trending_up_rounded,
-      'DOWN' => Icons.trending_down_rounded,
-      _ => Icons.trending_flat_rounded,
-    };
   }
 
   Widget _buildHeader(ThemeData theme) {
@@ -376,14 +369,6 @@ class _StockCardState extends State<StockCard> {
         ),
       ),
     );
-  }
-
-  Color _getTrendColor(String? trend) {
-    return switch (trend) {
-      'UP' => AppTheme.upColor,
-      'DOWN' => AppTheme.downColor,
-      _ => AppTheme.neutralColor,
-    };
   }
 }
 

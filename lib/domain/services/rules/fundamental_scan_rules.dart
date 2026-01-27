@@ -105,7 +105,7 @@ class RevenueYoYSurgeRule extends StockRule {
 
 /// 規則：營收年減警示
 ///
-/// 當月營收年減率 < -20% 且股價跌破 MA60 時觸發
+/// v0.1.2：移除 MA60 過濾，只看營收年減率 < -20% 即可
 class RevenueYoYDeclineRule extends StockRule {
   const RevenueYoYDeclineRule();
 
@@ -123,22 +123,15 @@ class RevenueYoYDeclineRule extends StockRule {
     final yoyGrowth = revenue.yoyGrowth ?? 0;
 
     if (yoyGrowth <= -RuleParams.revenueYoyDeclineThreshold) {
-      // 技術面過濾：須跌破 MA60（季線）確認下跌趨勢
-      final ma60 = _calculateMA(data.prices, 60);
-      final close = data.prices.isNotEmpty ? data.prices.last.close : null;
-
-      if (ma60 != null && close != null && close < ma60) {
-        return TriggeredReason(
-          type: ReasonType.revenueYoyDecline,
-          score: RuleScores.revenueYoyDecline,
-          description: '營收年減 ${yoyGrowth.abs().toStringAsFixed(1)}% (股價位於季線下)',
-          evidence: {
-            'yoyGrowth': yoyGrowth,
-            'revenueMonth': revenue.revenueMonth,
-            'ma60': ma60,
-          },
-        );
-      }
+      return TriggeredReason(
+        type: ReasonType.revenueYoyDecline,
+        score: RuleScores.revenueYoyDecline,
+        description: '營收年減 ${yoyGrowth.abs().toStringAsFixed(1)}%',
+        evidence: {
+          'yoyGrowth': yoyGrowth,
+          'revenueMonth': revenue.revenueMonth,
+        },
+      );
     }
 
     return null;

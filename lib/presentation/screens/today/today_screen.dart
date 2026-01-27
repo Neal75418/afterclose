@@ -39,8 +39,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(todayProvider);
-    // 在 build() 中監聽 watchlistProvider 以確保依賴關係始終註冊
-    final watchlistState = ref.watch(watchlistProvider);
+    // 使用 selector 只監聽 watchlist 的 symbols，避免不必要的重建
+    final watchlistSymbols = ref.watch(
+      watchlistProvider.select((s) => s.items.map((i) => i.symbol).toSet()),
+    );
 
     return Scaffold(
       body: ThemedRefreshIndicator(
@@ -49,7 +51,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ? const StockListShimmer(itemCount: 5)
             : state.error != null
             ? _buildError(state.error!)
-            : _buildContent(state, watchlistState),
+            : _buildContent(state, watchlistSymbols),
       ),
     );
   }
@@ -61,9 +63,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     );
   }
 
-  Widget _buildContent(TodayState state, WatchlistState watchlistState) {
+  Widget _buildContent(TodayState state, Set<String> watchlistSymbols) {
     final theme = Theme.of(context);
-    final watchlistSymbols = watchlistState.items.map((i) => i.symbol).toSet();
 
     return CustomScrollView(
       slivers: [

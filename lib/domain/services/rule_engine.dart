@@ -196,12 +196,14 @@ class RuleEngine {
     return score.round();
   }
 
-  /// 取得前幾個觸發原因以供顯示（去重複）
+  /// 取得觸發原因（去重複）供資料庫儲存與篩選
+  ///
+  /// 回傳所有不重複類型的原因，確保篩選功能正常。
+  /// UI 層自行使用 .take(2) 或 .take(3) 控制顯示數量。
   List<TriggeredReason> getTopReasons(List<TriggeredReason> reasons) {
     if (reasons.isEmpty) return [];
 
-    // 依類型去重複
-    // 目前取前 3 個不同類型
+    // 依類型去重複，保留所有觸發的規則供篩選使用
     final distinct = <ReasonType>{};
     final result = <TriggeredReason>[];
 
@@ -209,7 +211,6 @@ class RuleEngine {
       if (!distinct.contains(r.type)) {
         distinct.add(r.type);
         result.add(r);
-        if (result.length >= 3) break;
       }
     }
 

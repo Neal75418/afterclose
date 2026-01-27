@@ -201,12 +201,16 @@ class RssParser {
     // 嘗試 RFC 822 格式（RSS）
     try {
       return _parseRfc822(dateStr);
-    } catch (_) {}
+    } on FormatException catch (e) {
+      AppLogger.debug('RssParser', 'RFC 822 解析失敗: ${e.message}');
+    }
 
     // 嘗試 ISO 8601 格式（Atom）
     try {
       return DateTime.parse(dateStr);
-    } catch (_) {}
+    } on FormatException catch (e) {
+      AppLogger.debug('RssParser', 'ISO 8601 解析失敗: ${e.message}');
+    }
 
     AppLogger.debug('RssParser', '日期解析失敗: $dateStr');
     return null;

@@ -1,6 +1,6 @@
 # Rule Engine v2
 
-AfterClose 推薦規則引擎 - 44 條異常偵測規則
+AfterClose 推薦規則引擎 — **51 條異常偵測規則**
 
 ---
 
@@ -8,12 +8,9 @@ AfterClose 推薦規則引擎 - 44 條異常偵測規則
 
 ```mermaid
 flowchart LR
-    Data["📊 市場資料"]
-    Engine["⚙️ Rule Engine<br/>44 Rules"]
-    Score["🧮 分數合成"]
-    Top["🏆 Top 20"]
-
-    Data --> Engine --> Score --> Top
+    Data["📊 市場資料"] --> Engine["⚙️ Rule Engine<br/>51 Rules"]
+    Engine --> Score["🧮 分數合成"]
+    Score --> Top["🏆 Top 20"]
 ```
 
 | 項目 | 說明                     |
@@ -25,58 +22,35 @@ flowchart LR
 
 ---
 
-## 參數
-
-> **來源**: `lib/core/constants/rule_params.dart`
-
-| 參數                      |    值 | 說明                |
-|:------------------------|-----:|:------------------|
-| lookbackPrice           |  370 | 分析視窗（日曆日，涵蓋 52 週） |
-| volMa                   |   20 | 均量計算天數            |
-| swingWindow             |   20 | Swing 偵測視窗        |
-| priceSpikePercent       |   6% | 價格異動門檻            |
-| volumeSpikeMult         |   4x | 放量門檻（均量倍數）        |
-| minPriceChangeForVolume | 1.5% | 放量訊號需配合價格變動       |
-| rsiPeriod               |   14 | RSI 週期            |
-| rsiOverbought           |   80 | RSI 超買            |
-| rsiOversold             |   20 | RSI 超賣            |
-| institutionalStreakDays |    6 | 法人連續買賣天數          |
-| minScoreThreshold       |   25 | 最低評分門檻            |
-
----
-
 ## 規則分佈
 
 ```mermaid
-pie showData title 📊 44 條規則分佈
-    "Phase 1: 基礎規則" : 8
-    "Phase 2: K線型態" : 11
-    "Phase 3: 技術訊號" : 8
-    "Phase 4: 籌碼面" : 6
-    "Phase 5: 價量背離" : 4
-    "Phase 6: 基本面" : 7
+pie showData title 📊 51 條規則分佈
+    "技術型態" : 19
+    "籌碼面" : 6
+    "價量訊號" : 12
+    "基本面" : 7
+    "殺手級功能" : 7
 ```
 
 ---
 
-## 規則清單
+## Phase 1-6: 基礎規則 (44)
 
-> **多空分離**：正分為多方訊號（推薦做多），負分為空方訊號（降低推薦機率）
+### 基礎規則 (8)
 
-### Phase 1: 基礎規則 (8)
+| 規則                  |  分數 | 條件                         |
+|:--------------------|----:|:---------------------------|
+| REVERSAL_W2S        | +35 | 弱轉強：突破區間上緣                 |
+| REVERSAL_S2W        | -25 | 強轉弱：跌破支撐                   |
+| TECH_BREAKOUT       | +25 | 突破壓力位（3% buffer + MA20 確認） |
+| TECH_BREAKDOWN      | -20 | 跌破支撐位（3% buffer + MA20 確認） |
+| VOLUME_SPIKE        | +22 | 量 ≥ 4x 均量且價變 ≥ 1.5%        |
+| PRICE_SPIKE         | +15 | 日漲跌幅 ≥ 6%                  |
+| INSTITUTIONAL_SHIFT | +18 | 法人買賣轉向                     |
+| NEWS_RELATED        |  +8 | 近期相關新聞                     |
 
-| 規則                  |  分數 | 條件                  |
-|:--------------------|----:|:--------------------|
-| REVERSAL_W2S        | +35 | 弱轉強：突破區間上緣          |
-| REVERSAL_S2W        | -25 | 強轉弱：跌破支撐            |
-| TECH_BREAKOUT       | +25 | 突破壓力位（1% buffer）    |
-| TECH_BREAKDOWN      | -20 | 跌破支撐位（1% buffer）    |
-| VOLUME_SPIKE        | +22 | 量 ≥ 4x 均量且價變 ≥ 1.5% |
-| PRICE_SPIKE         | +15 | 日漲跌幅 ≥ 6%           |
-| INSTITUTIONAL_SHIFT | +18 | 法人買賣轉向              |
-| NEWS_RELATED        |  +8 | 近期相關新聞              |
-
-### Phase 2: K線型態 (11)
+### K線型態 (11)
 
 | 規則                           |  分數 | 說明        |
 |:-----------------------------|----:|:----------|
@@ -92,7 +66,7 @@ pie showData title 📊 44 條規則分佈
 | PATTERN_THREE_WHITE_SOLDIERS | +22 | 三白兵       |
 | PATTERN_THREE_BLACK_CROWS    | -18 | 三黑鴉       |
 
-### Phase 3: 技術訊號 (8)
+### 技術訊號 (8)
 
 | 規則                     |  分數 | 條件               |
 |:-----------------------|----:|:-----------------|
@@ -105,7 +79,7 @@ pie showData title 📊 44 條規則分佈
 | KD_GOLDEN_CROSS        | +18 | K 上穿 D（低檔區 < 30） |
 | KD_DEATH_CROSS         | -12 | K 下穿 D（高檔區 > 70） |
 
-### Phase 4: 籌碼面 (6)
+### 籌碼面 (6)
 
 | 規則                              |  分數 | 條件               |
 |:--------------------------------|----:|:-----------------|
@@ -116,9 +90,7 @@ pie showData title 📊 44 條規則分佈
 | DAY_TRADING_HIGH                | +12 | 當沖比例 > 45%       |
 | DAY_TRADING_EXTREME             |  -5 | 當沖比例 > 60%（投機警示） |
 
-> 備註：`CONCENTRATION_HIGH` 已移除（需付費 API）
-
-### Phase 5: 價量背離 (4)
+### 價量背離 (4)
 
 | 規則                              |  分數 | 說明       |
 |:--------------------------------|----:|:---------|
@@ -127,7 +99,7 @@ pie showData title 📊 44 條規則分佈
 | HIGH_VOLUME_BREAKOUT            | +22 | 高檔爆量突破   |
 | LOW_VOLUME_ACCUMULATION         | +16 | 低檔吸籌     |
 
-### Phase 6: 基本面 (7)
+### 基本面 (7)
 
 | 規則                  |  分數 | 條件             |
 |:--------------------|----:|:---------------|
@@ -141,22 +113,50 @@ pie showData title 📊 44 條規則分佈
 
 ---
 
+## Phase 7: 殺手級功能 (7) 🆕
+
+> v0.1.0 新增 — 風險警示與機構動向
+
+### 警示股票規則
+
+| 規則                        |  分數 | 條件      | 來源       |
+|:--------------------------|----:|:--------|:---------|
+| TRADING_WARNING_ATTENTION | -30 | 被列為注意股票 | TPEX API |
+| TRADING_WARNING_DISPOSAL  | -50 | 被列為處置股票 | TPEX API |
+
+### 董監持股規則
+
+| 規則                         |  分數 | 條件            | 說明   |
+|:---------------------------|----:|:--------------|:-----|
+| INSIDER_SELLING_STREAK     | -25 | 董監連續減持 ≥ 3 個月 | 強賣訊號 |
+| INSIDER_SIGNIFICANT_BUYING | +20 | 董監增持 ≥ 5%     | 買進訊號 |
+| HIGH_PLEDGE_RATIO          | -20 | 質押比例 ≥ 50%    | 風險警示 |
+
+### 外資集中度規則
+
+| 規則                            |  分數 | 條件            | 說明    |
+|:------------------------------|----:|:--------------|:------|
+| FOREIGN_CONCENTRATION_WARNING | -15 | 外資持股 ≥ 60%    | 集中度警告 |
+| FOREIGN_EXODUS                | -25 | 10 日外資流出 ≥ 2% | 外資出逃  |
+
+---
+
 ## 分數合成
 
 ```mermaid
 flowchart TB
     subgraph Input["📥 輸入"]
-        Rules["規則分數<br/>Σ(rule_score)"]
+        Rules["規則分數 Σ(rule_score)"]
     end
 
-    subgraph Bonus["✨ 加成判定"]
+    subgraph Bonus["✨ 加成"]
         B1["VOLUME + BREAKOUT → +10"]
         B2["VOLUME + REVERSAL → +10"]
         B3["INSTITUTIONAL + BREAKOUT/REVERSAL → +15"]
     end
 
-    subgraph Penalty["❄️ 冷卻機制"]
-        P1["同股票 2 日內已推薦<br/>score × 0.5"]
+    subgraph Penalty["❄️ 冷卻"]
+        P1["同股票 2 日內已推薦 → ×0.5"]
     end
 
     subgraph Output["📤 輸出"]
@@ -166,29 +166,34 @@ flowchart TB
     Rules --> Bonus --> Penalty --> Cap
 ```
 
-**分數計算邏輯**（`rule_engine.dart:calculateScore`）：
+---
 
-1. **基礎分數**：累計所有觸發規則的分數
-2. **組合加成**：
-   - 放量 + 突破 → +10
-   - 放量 + 反轉 → +10
-   - 法人 + (突破或反轉) → +15
-3. **多空抵消**：正負分數自然相抵
-4. **冷卻懲罰**：近期推薦過 → ×0.5
-5. **範圍限制**：負分歸零，上限 100
+## 參數配置
+
+> 來源: `lib/core/constants/rule_params.dart`
+
+| 參數                          |   值 | 說明        |
+|:----------------------------|----:|:----------|
+| lookbackPrice               | 370 | 分析視窗（日曆日） |
+| volMa                       |  20 | 均量計算天數    |
+| volumeSpikeMult             |  4x | 放量門檻      |
+| breakoutBuffer              |  3% | 突破緩衝區     |
+| institutionalStreakDays     |   6 | 法人連續買賣天數  |
+| insiderSellingStreakMonths  |   3 | 董監連續減持月數  |
+| highPledgeRatioThreshold    | 50% | 高質押門檻     |
+| foreignConcentrationWarning | 60% | 外資集中警告    |
+| minScoreThreshold           |  25 | 最低評分門檻    |
 
 ---
 
 ## 資料表
-
-> 完整 Schema 定義於 `lib/data/database/tables.drift`
 
 | 表                    | 用途       |
 |:---------------------|:---------|
 | stock_master         | 股票主檔     |
 | daily_price          | 日 K 資料   |
 | daily_institutional  | 法人買賣超    |
+| trading_warning      | 注意/處置股票  |
+| insider_holding      | 董監持股     |
 | daily_analysis       | 分析結果     |
-| daily_reason         | 推薦理由     |
 | daily_recommendation | 每日 Top N |
-| watchlist            | 自選清單     |
