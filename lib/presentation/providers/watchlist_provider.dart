@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
+import 'package:afterclose/data/repositories/warning_repository.dart';
+import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/widgets/warning_badge.dart';
 
 // ==================================================
 // Watchlist Sort Options
@@ -149,6 +153,7 @@ class WatchlistItemData {
     this.addedAt,
     this.recentPrices = const [],
     this.reasons = const [],
+    this.warningType,
   });
 
   final String symbol;
@@ -164,6 +169,9 @@ class WatchlistItemData {
   final DateTime? addedAt;
   final List<double> recentPrices;
   final List<String> reasons;
+
+  /// 警示類型（處置 > 注意 > 高質押），用於顯示警示標記
+  final WarningBadgeType? warningType;
 
   /// Get status category
   WatchlistStatus get status {
@@ -197,6 +205,8 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
 
   AppDatabase get _db => _ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
+  WarningRepository get _warningRepo => _ref.read(warningRepositoryProvider);
+  InsiderRepository get _insiderRepo => _ref.read(insiderRepositoryProvider);
 
   /// Load watchlist data
   Future<void> loadData() async {
@@ -240,6 +250,13 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         latestPricesMap,
       );
 
+      // Fetch warning data for watchlist (Killer Features)
+      final warningsMap = await _warningRepo.getWatchlistWarnings(symbols);
+      final highPledgeMap = await _insiderRepo.getWatchlistHighPledgeStocks(
+        symbols,
+        threshold: RuleParams.highPledgeRatioThreshold,
+      );
+
       // Build items from batch results
       final items = watchlist.map((item) {
         final stock = stocksMap[item.symbol];
@@ -251,6 +268,13 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         // Extract recent prices for sparkline (last 20 days)
         final recentPrices = PriceCalculator.extractSparklinePrices(
           priceHistory,
+        );
+
+        // Determine warning type (priority: disposal > attention > highPledge)
+        final warningType = _determineWarningType(
+          symbol: item.symbol,
+          warningsMap: warningsMap,
+          highPledgeMap: highPledgeMap,
         );
 
         return WatchlistItemData(
@@ -265,11 +289,12 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
           addedAt: item.createdAt,
           recentPrices: recentPrices,
           reasons: reasons.map((r) => r.reasonType).toList(),
+          warningType: warningType,
         );
       }).toList();
 
       // Sort items
-      final sortedItems = _sortItems(items);
+      final sortedItems = _sortItems(items, state.sort);
 
       state = state.copyWith(items: sortedItems, isLoading: false);
     } catch (e) {
@@ -277,10 +302,13 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     }
   }
 
-  /// Sort items based on current sort option
-  List<WatchlistItemData> _sortItems(List<WatchlistItemData> items) {
+  /// Sort items based on specified sort option
+  List<WatchlistItemData> _sortItems(
+    List<WatchlistItemData> items,
+    WatchlistSort sort,
+  ) {
     final sorted = List<WatchlistItemData>.from(items);
-    switch (state.sort) {
+    switch (sort) {
       case WatchlistSort.addedDesc:
         sorted.sort((a, b) => _compareDatesNullLast(b.addedAt, a.addedAt));
       case WatchlistSort.addedAsc:
@@ -311,10 +339,29 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     return a.compareTo(b);
   }
 
+  /// 判斷警示類型（優先級：處置 > 注意 > 高質押）
+  WarningBadgeType? _determineWarningType({
+    required String symbol,
+    required Map<String, TradingWarningEntry> warningsMap,
+    required Map<String, InsiderHoldingEntry> highPledgeMap,
+  }) {
+    final warning = warningsMap[symbol];
+    if (warning != null) {
+      if (warning.warningType == 'DISPOSAL') {
+        return WarningBadgeType.disposal;
+      }
+      return WarningBadgeType.attention;
+    }
+    if (highPledgeMap.containsKey(symbol)) {
+      return WarningBadgeType.highPledge;
+    }
+    return null;
+  }
+
   /// Set sort option
   void setSort(WatchlistSort sort) {
     if (state.sort == sort) return;
-    final sortedItems = _sortItems(state.items);
+    final sortedItems = _sortItems(state.items, sort);
     state = state.copyWith(sort: sort, items: sortedItems);
   }
 
@@ -346,14 +393,19 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       // Persist to database
       await _db.addToWatchlist(symbol);
 
+      // 從資料庫讀取實際的 createdAt，確保與 loadData 一致
+      final watchlistEntry = await _db.getWatchlistEntry(symbol);
+      final actualAddedAt = watchlistEntry?.createdAt ?? DateTime.now();
+
       // Incremental update: load data only for this stock
       final itemData = await _loadSingleStockData(
         symbol,
         stock.name,
         stock.market,
+        addedAt: actualAddedAt,
       );
       final newItems = [...state.items, itemData];
-      state = state.copyWith(items: _sortItems(newItems));
+      state = state.copyWith(items: _sortItems(newItems, state.sort));
 
       return true;
     } catch (e) {
@@ -363,9 +415,14 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
   }
 
   /// Remove stock from watchlist
+  ///
+  /// 使用樂觀更新策略：先更新 UI，若資料庫操作失敗則回滾至先前狀態。
+  /// 保存完整的狀態快照以確保回滾時排序與分組設定一致。
   Future<void> removeStock(String symbol) async {
-    // Optimistic update: remove from state immediately
-    final previousItems = state.items;
+    // 保存完整狀態快照以便回滾（包含排序、分組等設定）
+    final previousState = state;
+
+    // 樂觀更新：立即從狀態中移除
     state = state.copyWith(
       items: state.items.where((item) => item.symbol != symbol).toList(),
     );
@@ -373,8 +430,8 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     try {
       await _db.removeFromWatchlist(symbol);
     } catch (e) {
-      // Rollback on error
-      state = state.copyWith(items: previousItems, error: e.toString());
+      // 回滾至完整的先前狀態，確保排序順序一致
+      state = previousState.copyWith(error: e.toString());
     }
   }
 
@@ -383,26 +440,35 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     try {
       await _db.addToWatchlist(symbol);
 
+      // 從資料庫讀取實際的 createdAt，確保與 loadData 一致
+      final watchlistEntry = await _db.getWatchlistEntry(symbol);
+      final actualAddedAt = watchlistEntry?.createdAt ?? DateTime.now();
+
       // Incremental update: load data only for this stock
       final stock = await _db.getStock(symbol);
       final itemData = await _loadSingleStockData(
         symbol,
         stock?.name,
         stock?.market,
+        addedAt: actualAddedAt,
       );
       final newItems = [...state.items, itemData];
-      state = state.copyWith(items: _sortItems(newItems));
+      state = state.copyWith(items: _sortItems(newItems, state.sort));
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }
   }
 
   /// Load data for a single stock (used for incremental updates)
+  ///
+  /// [addedAt] 應從資料庫的 watchlist entry 取得，以確保與 loadData 一致。
+  /// 若未提供則使用當前時間作為 fallback。
   Future<WatchlistItemData> _loadSingleStockData(
     String symbol,
     String? stockName,
-    String? market,
-  ) async {
+    String? market, {
+    DateTime? addedAt,
+  }) async {
     final dateCtx = DateContext.now();
 
     // 取得實際資料日期，確保非交易日也能正確顯示趨勢
@@ -446,6 +512,17 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     // Extract recent prices for sparkline
     final recentPrices = PriceCalculator.extractSparklinePrices(priceHistory);
 
+    // Fetch warning data for this stock (Killer Features)
+    final warningsMap = await _warningRepo.getWatchlistWarnings([symbol]);
+    final highPledgeMap = await _insiderRepo.getWatchlistHighPledgeStocks([
+      symbol,
+    ], threshold: RuleParams.highPledgeRatioThreshold);
+    final warningType = _determineWarningType(
+      symbol: symbol,
+      warningsMap: warningsMap,
+      highPledgeMap: highPledgeMap,
+    );
+
     return WatchlistItemData(
       symbol: symbol,
       stockName: stockName,
@@ -455,9 +532,10 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       trendState: analysis?.trendState,
       score: analysis?.score,
       hasSignal: reasons.isNotEmpty,
-      addedAt: DateTime.now(),
+      addedAt: addedAt ?? DateTime.now(),
       recentPrices: recentPrices,
       reasons: reasons.map((r) => r.reasonType).toList(),
+      warningType: warningType,
     );
   }
 }

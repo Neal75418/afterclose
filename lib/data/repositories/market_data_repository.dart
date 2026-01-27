@@ -393,6 +393,115 @@ class MarketDataRepository {
     }
   }
 
+  /// 從 TPEX 同步全市場上櫃當沖資料（免費 API）
+  ///
+  /// 使用 TPEX 官方 API，無需 Token。
+  /// 比透過 FinMind 逐檔同步快很多，且不消耗 FinMind 配額。
+  ///
+  /// 包含新鮮度檢查以避免不必要的 API 呼叫。
+  /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  Future<int> syncAllDayTradingFromTpex({
+    DateTime? date,
+    bool forceRefresh = false,
+  }) async {
+    try {
+      // 統一使用本地時間午夜，確保與 DateContext.normalize 一致
+      final rawDate = date ?? DateTime.now();
+      final targetDate = DateTime(rawDate.year, rawDate.month, rawDate.day);
+
+      // 新鮮度檢查：若已有目標日期的上櫃當沖資料則跳過
+      // 使用較低閾值（50），因為上櫃股票數量較少
+      if (!forceRefresh) {
+        final existingCount = await _db.getDayTradingCountForDateAndMarket(
+          targetDate,
+          'TPEx',
+        );
+        if (existingCount > 50) {
+          return 0;
+        }
+      }
+
+      // 取得上櫃當沖資料
+      final data = await _tpexClient.getAllDayTradingData(date: targetDate);
+
+      AppLogger.info(
+        'MarketData',
+        'TPEX 當沖原始筆數: ${data.length}，日期: $targetDate',
+      );
+
+      if (data.isEmpty) return 0;
+
+      // 取得同日期的價格資料以計算比例
+      var prices = await _db.getPricesForDate(targetDate);
+
+      // 備援：嘗試範圍查詢
+      if (prices.isEmpty) {
+        final start = targetDate;
+        final end = start
+            .add(const Duration(days: 1))
+            .subtract(const Duration(milliseconds: 1));
+
+        final result = await _db.getAllPricesInRange(
+          startDate: start,
+          endDate: end,
+        );
+        prices = result.values.expand((list) => list).toList();
+      }
+
+      AppLogger.info('MarketData', 'TPEX 用於計算的價格資料: ${prices.length} 筆');
+      final volumeMap = <String, double>{};
+      for (final p in prices) {
+        if (p.volume != null) {
+          volumeMap[p.symbol] = p.volume!.toDouble();
+        }
+      }
+
+      final entries = <DayTradingCompanion>[];
+
+      for (final item in data) {
+        double ratio = 0;
+        final totalVolumeFromPrice = volumeMap[item.code] ?? 0;
+
+        // 計算當沖比例
+        if (totalVolumeFromPrice > 0) {
+          ratio = (item.totalVolume / totalVolumeFromPrice) * 100;
+        }
+
+        // 驗證比例
+        if (ratio > 100) ratio = 100;
+        if (ratio < 0) ratio = 0;
+
+        entries.add(
+          DayTradingCompanion.insert(
+            symbol: item.code,
+            date: targetDate,
+            buyVolume: Value(item.buyVolume),
+            sellVolume: Value(item.sellVolume),
+            dayTradingRatio: Value(ratio),
+            tradeVolume: Value(item.totalVolume),
+          ),
+        );
+      }
+
+      await _db.insertDayTradingData(entries);
+
+      // 統計當沖比例分佈
+      final highRatioCount = entries.where((e) {
+        final ratio = e.dayTradingRatio.value;
+        return ratio != null && ratio >= 60;
+      }).length;
+
+      AppLogger.info(
+        'MarketData',
+        '當沖資料寫入 ${entries.length} 筆 (上櫃, TPEX): 高比例(>=60%)=$highRatioCount',
+      );
+
+      return entries.length;
+    } catch (e) {
+      throw DatabaseException('Failed to sync day trading from TPEX', e);
+    }
+  }
+
   // ============================================
   // 財報資料
   // ============================================

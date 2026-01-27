@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals_tab.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/insider_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical_tab.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -28,7 +30,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     Future.microtask(() {
       ref.read(stockDetailProvider(widget.symbol).notifier).loadData();
     });
@@ -45,67 +47,101 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     final state = ref.watch(stockDetailProvider(widget.symbol));
     final theme = Theme.of(context);
 
+    // Dynamic gradient based on price change
+    final priceChange = state.priceChange ?? 0;
+    final isPositive = priceChange > 0;
+    final isNegative = priceChange < 0;
+
+    final bgGradient = LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        if (isPositive)
+          AppTheme.upColor.withValues(alpha: 0.15)
+        else if (isNegative)
+          AppTheme.downColor.withValues(alpha: 0.15)
+        else
+          theme.colorScheme.surface,
+        theme.colorScheme.surface,
+        theme.colorScheme.surface,
+      ],
+      stops: const [0.0, 0.3, 1.0],
+    );
+
     return Scaffold(
-      body: state.isLoading
-          ? const SafeArea(child: StockDetailShimmer())
-          : state.error != null
-          ? SafeArea(
-              child: EmptyStates.error(
-                message: state.error!,
-                onRetry: () {
-                  ref
-                      .read(stockDetailProvider(widget.symbol).notifier)
-                      .loadData();
-                },
-              ),
-            )
-          : NestedScrollView(
-              headerSliverBuilder: (context, innerBoxScrolled) => [
-                // App bar
-                SliverAppBar(
-                  pinned: true,
-                  floating: true,
-                  title: Text(widget.symbol),
-                  actions: [
-                    IconButton(
-                      icon: Icon(
-                        state.isInWatchlist ? Icons.star : Icons.star_border,
-                        color: state.isInWatchlist ? Colors.amber : null,
-                      ),
-                      onPressed: () {
-                        ref
-                            .read(stockDetailProvider(widget.symbol).notifier)
-                            .toggleWatchlist();
-                      },
-                      tooltip: state.isInWatchlist
-                          ? 'stock.removeFromWatchlist'.tr()
-                          : 'stock.addToWatchlist'.tr(),
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: state.isLoading
+            ? const SafeArea(child: StockDetailShimmer())
+            : state.error != null
+            ? SafeArea(
+                child: EmptyStates.error(
+                  message: state.error!,
+                  onRetry: () {
+                    ref
+                        .read(stockDetailProvider(widget.symbol).notifier)
+                        .loadData();
+                  },
+                ),
+              )
+            : NestedScrollView(
+                headerSliverBuilder: (context, innerBoxScrolled) => [
+                  // App bar (Glassmorphism)
+                  SliverAppBar(
+                    pinned: true,
+                    floating: true,
+                    backgroundColor: theme.colorScheme.surface.withValues(
+                      alpha: 0.7,
                     ),
+                    flexibleSpace: ClipRect(
+                      child: BackdropFilter(
+                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(color: Colors.transparent),
+                      ),
+                    ),
+                    title: Text(widget.symbol),
+                    actions: [
+                      IconButton(
+                        icon: Icon(
+                          state.isInWatchlist ? Icons.star : Icons.star_border,
+                          color: state.isInWatchlist ? Colors.amber : null,
+                        ),
+                        onPressed: () {
+                          ref
+                              .read(stockDetailProvider(widget.symbol).notifier)
+                              .toggleWatchlist();
+                        },
+                        tooltip: state.isInWatchlist
+                            ? 'stock.removeFromWatchlist'.tr()
+                            : 'stock.addToWatchlist'.tr(),
+                      ),
+                    ],
+                  ),
+
+                  // Stock header
+                  SliverToBoxAdapter(child: _buildHeader(state, theme)),
+
+                  // Tab bar (Glassmorphism)
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _TabBarDelegate(
+                      tabController: _tabController,
+                      theme: theme,
+                    ),
+                  ),
+                ],
+                body: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    TechnicalTab(symbol: widget.symbol),
+                    ChipTab(symbol: widget.symbol),
+                    FundamentalsTab(symbol: widget.symbol),
+                    InsiderTab(symbol: widget.symbol),
+                    AlertsTab(symbol: widget.symbol),
                   ],
                 ),
-
-                // Stock header
-                SliverToBoxAdapter(child: _buildHeader(state, theme)),
-
-                // Tab bar (pinned)
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _TabBarDelegate(
-                    tabController: _tabController,
-                    theme: theme,
-                  ),
-                ),
-              ],
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  TechnicalTab(symbol: widget.symbol),
-                  ChipTab(symbol: widget.symbol),
-                  FundamentalsTab(symbol: widget.symbol),
-                  AlertsTab(symbol: widget.symbol),
-                ],
               ),
-            ),
+      ),
     );
   }
 
@@ -116,8 +152,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
     return Container(
       padding: const EdgeInsets.all(16),
+      // No background color to let gradient show through
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
         border: Border(
           bottom: BorderSide(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
@@ -200,8 +236,12 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                 children: [
                   Text(
                     state.latestPrice?.close?.toStringAsFixed(2) ?? '-',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight
+                          .w800, // Matching heavy weight from StockCard
+                      fontFamily: 'RobotoMono',
+                      fontSize: 32,
+                      letterSpacing: -1,
                     ),
                   ),
                   if (priceChange != null)
@@ -542,25 +582,34 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: theme.colorScheme.surface,
-      child: TabBar(
-        controller: tabController,
-        labelColor: theme.colorScheme.primary,
-        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-        indicatorColor: theme.colorScheme.primary,
-        indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.normal,
-          fontSize: 14,
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          color: theme.colorScheme.surface.withValues(alpha: 0.7),
+          child: TabBar(
+            controller: tabController,
+            labelColor: theme.colorScheme.primary,
+            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+            indicatorColor: theme.colorScheme.primary,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
+            ),
+            tabs: [
+              Tab(text: 'stockDetail.tabTechnical'.tr()),
+              Tab(text: 'stockDetail.tabChip'.tr()),
+              Tab(text: 'stockDetail.tabFundamentals'.tr()),
+              Tab(text: 'stockDetail.tabInsider'.tr()),
+              Tab(text: 'stockDetail.tabAlerts'.tr()),
+            ],
+          ),
         ),
-        tabs: [
-          Tab(text: 'stockDetail.tabTechnical'.tr()),
-          Tab(text: 'stockDetail.tabChip'.tr()),
-          Tab(text: 'stockDetail.tabFundamentals'.tr()),
-          Tab(text: 'stockDetail.tabAlerts'.tr()),
-        ],
       ),
     );
   }

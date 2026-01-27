@@ -217,9 +217,9 @@ class ScoringService {
   /// 在背景 Isolate 中對股票候選清單評分
   ///
   /// 此方法將運算移至背景執行緒，避免阻塞 UI。
-  /// 注意：不支援 marketDataBuilder，因為 async 呼叫無法在 Isolate 中執行。
+  /// 使用預先載入的 dayTradingMap 支援當沖相關規則。
   ///
-  /// 適用於：批量掃描、每日更新等不需要即時市場資料的場景
+  /// 適用於：批量掃描、每日更新等場景
   Future<List<ScoredStock>> scoreStocksInIsolate({
     required List<String> candidates,
     required DateTime date,
@@ -230,6 +230,10 @@ class ScoringService {
     Map<String, StockValuationEntry>? valuationMap,
     Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap,
     Set<String>? recentlyRecommended,
+    Map<String, double>? dayTradingMap,
+    Map<String, Map<String, double?>>? shareholdingMap,
+    Map<String, Map<String, dynamic>>? warningMap,
+    Map<String, Map<String, dynamic>>? insiderMap,
   }) async {
     if (candidates.isEmpty) return [];
 
@@ -260,6 +264,10 @@ class ScoringService {
           ? _convertRevenueHistoryMap(revenueHistoryMap)
           : null,
       recentlyRecommended: recentlyRecommended,
+      dayTradingMap: dayTradingMap,
+      shareholdingMap: shareholdingMap,
+      warningMap: warningMap,
+      insiderMap: insiderMap,
     );
 
     // 在背景 Isolate 執行運算（含回退機制）

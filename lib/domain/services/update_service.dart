@@ -378,6 +378,24 @@ class UpdateService {
         ctx.result.errors.add('基本面資料更新失敗: $e');
       }
     }
+
+    // 步驟 4.8：Killer Features 資料（警示、董監持股）
+    if (marketUpdater != null) {
+      ctx.onProgress?.call(4, 10, '取得警示資料');
+      try {
+        final killerResult = await marketUpdater.syncKillerFeaturesData(
+          force: ctx.forceFetch,
+        );
+
+        AppLogger.info(
+          'UpdateSvc',
+          '步驟 4.8: 警示=${killerResult.warningCount}, 董監=${killerResult.insiderCount}',
+        );
+      } catch (e) {
+        // 不加入 errors，因為這是額外功能，不影響主流程
+        AppLogger.warning('UpdateSvc', 'Killer Features 資料更新失敗: $e');
+      }
+    }
   }
 
   Future<void> _syncOtcCandidatesData(
@@ -507,6 +525,16 @@ class UpdateService {
       _db.getLatestMonthlyRevenuesBatch(candidates),
       _db.getLatestValuationsBatch(candidates),
       _db.getRecentMonthlyRevenueBatch(candidates, months: 6),
+      _db.getDayTradingMapForDate(ctx.normalizedDate),
+      _db.getLatestShareholdingsBatch(candidates),
+      _db.getShareholdingsBeforeDateBatch(
+        candidates,
+        beforeDate: ctx.normalizedDate.subtract(
+          const Duration(days: RuleParams.foreignShareholdingLookbackDays),
+        ),
+      ),
+      _db.getActiveWarningsMapBatch(candidates),
+      _db.getLatestInsiderHoldingsBatch(candidates),
     ];
 
     final batchResults = await Future.wait(futures);
@@ -515,10 +543,60 @@ class UpdateService {
     final institutionalMap = instRepo != null
         ? batchResults[2] as Map<String, List<DailyInstitutionalEntry>>
         : <String, List<DailyInstitutionalEntry>>{};
-    final revenueMap = batchResults[3] as Map<String, MonthlyRevenueEntry>;
-    final valuationMap = batchResults[4] as Map<String, StockValuationEntry>;
+    // 根據 instRepo 調整 index
+    final baseIndex = instRepo != null ? 3 : 2;
+    final revenueMap =
+        batchResults[baseIndex] as Map<String, MonthlyRevenueEntry>;
+    final valuationMap =
+        batchResults[baseIndex + 1] as Map<String, StockValuationEntry>;
     final revenueHistoryMap =
-        batchResults[5] as Map<String, List<MonthlyRevenueEntry>>;
+        batchResults[baseIndex + 2] as Map<String, List<MonthlyRevenueEntry>>;
+    final dayTradingMap = batchResults[baseIndex + 3] as Map<String, double>;
+    final shareholdingEntries =
+        batchResults[baseIndex + 4] as Map<String, ShareholdingEntry>;
+    final prevShareholdingEntries =
+        batchResults[baseIndex + 5] as Map<String, ShareholdingEntry>;
+    final warningEntries =
+        batchResults[baseIndex + 6] as Map<String, TradingWarningEntry>;
+    final insiderEntries =
+        batchResults[baseIndex + 7] as Map<String, InsiderHoldingEntry>;
+
+    // 轉換為 Isolate 可用的 Map 格式（含外資持股變化量計算）
+    final shareholdingMap = shareholdingEntries.map((k, v) {
+      final currentRatio = v.foreignSharesRatio;
+      final prevEntry = prevShareholdingEntries[k];
+      final prevRatio = prevEntry?.foreignSharesRatio;
+
+      // 計算變化量：current - previous
+      double? ratioChange;
+      if (currentRatio != null && prevRatio != null) {
+        ratioChange = currentRatio - prevRatio;
+      }
+
+      return MapEntry(k, {
+        'foreignSharesRatio': currentRatio,
+        'foreignSharesRatioChange': ratioChange,
+      });
+    });
+    final warningMap = warningEntries.map(
+      (k, v) => MapEntry(k, {
+        'warningType': v.warningType,
+        'reasonDescription': v.reasonDescription,
+        'disposalMeasures': v.disposalMeasures,
+        'disposalEndDate': v.disposalEndDate?.toIso8601String(),
+      }),
+    );
+    final insiderMap = insiderEntries.map(
+      (k, v) => MapEntry(k, {
+        'insiderRatio': v.insiderRatio,
+        'pledgeRatio': v.pledgeRatio,
+        // 這些欄位需要從 Repository 取得計算結果，目前先設為預設值
+        'hasSellingStreak': false,
+        'sellingStreakMonths': 0,
+        'hasSignificantBuying': false,
+        'buyingChange': v.sharesChange,
+      }),
+    );
 
     final recentlyRecommended = await _analysisRepo
         .getRecentlyRecommendedSymbols();
@@ -537,6 +615,10 @@ class UpdateService {
       valuationMap: valuationMap,
       revenueHistoryMap: revenueHistoryMap,
       recentlyRecommended: recentlyRecommended,
+      dayTradingMap: dayTradingMap,
+      shareholdingMap: shareholdingMap,
+      warningMap: warningMap,
+      insiderMap: insiderMap,
     );
 
     AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');

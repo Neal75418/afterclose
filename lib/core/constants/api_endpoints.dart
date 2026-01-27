@@ -35,6 +35,24 @@ abstract final class ApiEndpoints {
   static const String twseMonthlyRevenue =
       '$twseOpenDataBaseUrl/v1/opendata/t187ap05_L';
 
+  /// 上市注意股票
+  /// 回傳交易量異常、價格異常波動的股票清單
+  static const String twseTradingWarning = '/rwd/zh/announcement/TWTAVU';
+
+  /// 上市處置股票
+  /// 回傳交易受限制的股票清單
+  static const String twseDisposal = '/rwd/zh/announcement/TWTAUU';
+
+  /// 上市董監持股 - Open Data（免費、無限制）
+  /// 回傳董監事持股餘額資料，格式與 TPEX 相同（個別董監記錄）
+  static const String twseInsiderHolding =
+      '$twseOpenDataBaseUrl/v1/opendata/t187ap11_L';
+
+  /// 上市股票基本資料 - Open Data（免費、無限制）
+  /// 回傳上市公司基本資料，包含已發行股數
+  static const String twseStockInfo =
+      '$twseOpenDataBaseUrl/v1/opendata/t187ap03_L';
+
   // ==========================================
   // TPEX (台灣櫃檯買賣中心)
   // ==========================================
@@ -53,6 +71,44 @@ abstract final class ApiEndpoints {
   /// 上櫃融資融券餘額（回傳 tables[0].data）
   static const String tpexMarginTrading =
       '/web/stock/margin_trading/margin_sbl/margin_sbl_result.php';
+
+  /// 上櫃當沖交易統計（回傳 tables[0].data）
+  /// 類似 TWSE 的 TWTB4U，提供全市場上櫃股票當沖資料
+  static const String tpexDayTrading =
+      '/web/stock/aftertrading/daily_trading_info/st43_result.php';
+
+  /// TPEX OpenAPI 基礎 URL（免費、無限制）
+  static const String tpexOpenApiBaseUrl = 'https://www.tpex.org.tw/openapi';
+
+  /// 上櫃估值資料（本益比、股價淨值比、殖利率）- OpenAPI
+  /// 回傳 JSON 陣列，每筆含 SecuritiesCompanyCode, PriceEarningRatio, PriceBookRatio, YieldRatio
+  static const String tpexValuation =
+      '$tpexOpenApiBaseUrl/v1/tpex_mainboard_peratio_analysis';
+
+  /// 上櫃注意股票 - OpenAPI（免費、無限制）
+  /// 回傳交易量異常、價格異常波動的股票清單
+  static const String tpexTradingWarning =
+      '$tpexOpenApiBaseUrl/v1/tpex_trading_warning_information';
+
+  /// 上櫃處置股票 - OpenAPI（免費、無限制）
+  /// 回傳交易受限制的股票清單
+  static const String tpexDisposal =
+      '$tpexOpenApiBaseUrl/v1/tpex_disposal_information';
+
+  /// 上櫃董監持股 - OpenAPI（免費、無限制）
+  /// 回傳董監事持股餘額資料
+  static const String tpexInsiderHolding =
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap11_O';
+
+  /// 上櫃公司每月營業收入彙總表 - OpenAPI（免費、無限制）
+  /// 回傳所有上櫃公司的月營收資料，包含月增率和年增率
+  static const String tpexMonthlyRevenue =
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap05_O';
+
+  /// 上櫃股票基本資料 - OpenAPI（免費、無限制）
+  /// 回傳上櫃公司基本資料，包含已發行股數 (IssueShares)
+  static const String tpexStockInfo =
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap03_O';
 
   // ==========================================
   // FinMind

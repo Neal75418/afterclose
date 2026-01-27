@@ -30,13 +30,16 @@ class StockDetailState {
     this.marginHistory = const [],
     this.revenueHistory = const [],
     this.dividendHistory = const [],
+    this.insiderHistory = const [],
     this.latestPER,
     this.recentNews = const [],
     this.isInWatchlist = false,
     this.isLoading = false,
     this.isLoadingMargin = false,
     this.isLoadingFundamentals = false,
+    this.isLoadingInsider = false,
     this.error,
+    this.hasInstitutionalError = false,
     this.dataDate,
     this.hasDataMismatch = false,
   });
@@ -51,13 +54,18 @@ class StockDetailState {
   final List<FinMindMarginData> marginHistory;
   final List<FinMindRevenue> revenueHistory;
   final List<FinMindDividend> dividendHistory;
+  final List<InsiderHoldingEntry> insiderHistory;
   final FinMindPER? latestPER;
   final List<NewsItemEntry> recentNews;
   final bool isInWatchlist;
   final bool isLoading;
   final bool isLoadingMargin;
   final bool isLoadingFundamentals;
+  final bool isLoadingInsider;
   final String? error;
+
+  /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
+  final bool hasInstitutionalError;
 
   /// The synchronized data date - all displayed data should be from this date
   final DateTime? dataDate;
@@ -76,13 +84,16 @@ class StockDetailState {
     List<FinMindMarginData>? marginHistory,
     List<FinMindRevenue>? revenueHistory,
     List<FinMindDividend>? dividendHistory,
+    List<InsiderHoldingEntry>? insiderHistory,
     FinMindPER? latestPER,
     List<NewsItemEntry>? recentNews,
     bool? isInWatchlist,
     bool? isLoading,
     bool? isLoadingMargin,
     bool? isLoadingFundamentals,
+    bool? isLoadingInsider,
     String? error,
+    bool? hasInstitutionalError,
     DateTime? dataDate,
     bool? hasDataMismatch,
   }) {
@@ -97,6 +108,7 @@ class StockDetailState {
       marginHistory: marginHistory ?? this.marginHistory,
       revenueHistory: revenueHistory ?? this.revenueHistory,
       dividendHistory: dividendHistory ?? this.dividendHistory,
+      insiderHistory: insiderHistory ?? this.insiderHistory,
       latestPER: latestPER ?? this.latestPER,
       recentNews: recentNews ?? this.recentNews,
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
@@ -104,7 +116,10 @@ class StockDetailState {
       isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
       isLoadingFundamentals:
           isLoadingFundamentals ?? this.isLoadingFundamentals,
+      isLoadingInsider: isLoadingInsider ?? this.isLoadingInsider,
       error: error,
+      hasInstitutionalError:
+          hasInstitutionalError ?? this.hasInstitutionalError,
       dataDate: dataDate ?? this.dataDate,
       hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
     );
@@ -225,13 +240,29 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         watchlistFuture,
       ]);
 
-      final stock = results[0] as StockMasterEntry?;
-      final priceHistory = results[1] as List<DailyPriceEntry>;
-      final recentPrices = results[2] as List<DailyPriceEntry>;
-      final analysis = results[3] as DailyAnalysisEntry?;
-      final reasons = results[4] as List<DailyReasonEntry>;
-      var instHistory = results[5] as List<DailyInstitutionalEntry>;
-      final isInWatchlist = results[6] as bool;
+      // 型別轉換
+      // 注意：Dart 泛型在運行時會被擦除，`is List<T>` 實際等同於 `is List`。
+      // 因此使用 try-catch 包裝，確保即使資料庫層返回格式異常也不會崩潰。
+      StockMasterEntry? stock;
+      List<DailyPriceEntry> priceHistory = [];
+      List<DailyPriceEntry> recentPrices = [];
+      DailyAnalysisEntry? analysis;
+      List<DailyReasonEntry> reasons = [];
+      List<DailyInstitutionalEntry> instHistory = [];
+      bool isInWatchlist = false;
+
+      try {
+        stock = results[0] as StockMasterEntry?;
+        priceHistory = results[1] as List<DailyPriceEntry>;
+        recentPrices = results[2] as List<DailyPriceEntry>;
+        analysis = results[3] as DailyAnalysisEntry?;
+        reasons = results[4] as List<DailyReasonEntry>;
+        instHistory = results[5] as List<DailyInstitutionalEntry>;
+        isInWatchlist = results[6] as bool;
+      } catch (e) {
+        // 若型別轉換失敗，記錄錯誤但繼續執行（使用預設空值）
+        AppLogger.warning('StockDetail', '資料型別轉換失敗: $_symbol', e);
+      }
 
       // 從最近價格提取最新與前一日（recentPrices 依日期降序排列）
       final latestPrice = recentPrices.isNotEmpty ? recentPrices.first : null;
@@ -246,8 +277,12 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
 
       // If no institutional data in DB, fetch from API
+      // 追蹤 API 是否失敗，以便 UI 顯示部分錯誤提示
+      var hasInstitutionalError = false;
       if (instHistory.isEmpty) {
-        instHistory = await _fetchInstitutionalFromApi();
+        final apiResult = await _fetchInstitutionalFromApi();
+        instHistory = apiResult.data;
+        hasInstitutionalError = apiResult.hasError;
       }
 
       // Synchronize data dates - find common latest date
@@ -269,6 +304,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         institutionalHistory: syncedInstHistory,
         isInWatchlist: isInWatchlist,
         isLoading: false,
+        hasInstitutionalError: hasInstitutionalError,
         dataDate: dataDate,
         hasDataMismatch: hasDataMismatch,
       );
@@ -278,7 +314,10 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   }
 
   /// Fetch institutional data directly from FinMind API
-  Future<List<DailyInstitutionalEntry>> _fetchInstitutionalFromApi() async {
+  ///
+  /// 返回 record 包含資料與錯誤狀態，讓呼叫端能區分「API 失敗」與「真的沒資料」。
+  Future<({List<DailyInstitutionalEntry> data, bool hasError})>
+  _fetchInstitutionalFromApi() async {
     try {
       final today = DateTime.now();
       final startDate = today.subtract(const Duration(days: 20));
@@ -290,7 +329,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
 
       // Convert to DailyInstitutionalEntry format
-      return data.map((item) {
+      final entries = data.map((item) {
         return DailyInstitutionalEntry(
           symbol: item.stockId,
           date: DateTime.parse(item.date),
@@ -299,9 +338,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
           dealerNet: item.dealerNet,
         );
       }).toList();
+
+      return (data: entries, hasError: false);
     } catch (e) {
       AppLogger.warning('StockDetail', '取得法人資料失敗: $_symbol', e);
-      return [];
+      return (data: <DailyInstitutionalEntry>[], hasError: true);
     }
   }
 
@@ -482,6 +523,37 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       state = state.copyWith(isLoadingFundamentals: false);
     }
   }
+
+  /// Load insider holdings data (董監持股)
+  ///
+  /// 從資料庫取得董監持股歷史資料，用於顯示在股票詳情頁的董監持股頁籤。
+  Future<void> loadInsiderData() async {
+    // Skip if already loading or already loaded
+    if (state.isLoadingInsider || state.insiderHistory.isNotEmpty) return;
+
+    state = state.copyWith(isLoadingInsider: true);
+
+    try {
+      final insiderRepo = _ref.read(insiderRepositoryProvider);
+
+      // Load insider holding history for the past 12 months
+      final insiderHistory = await insiderRepo.getInsiderHoldingHistory(
+        _symbol,
+        months: 12,
+      );
+
+      // Sort by date descending (newest first)
+      insiderHistory.sort((a, b) => b.date.compareTo(a.date));
+
+      state = state.copyWith(
+        insiderHistory: insiderHistory,
+        isLoadingInsider: false,
+      );
+    } catch (e) {
+      AppLogger.warning('StockDetail', '載入董監持股資料失敗: $_symbol', e);
+      state = state.copyWith(isLoadingInsider: false, insiderHistory: []);
+    }
+  }
 }
 
 /// Provider family for stock detail
@@ -493,8 +565,8 @@ final stockDetailProvider = StateNotifierProvider.family
       // 保活機制：5 分鐘內返回同一頁面時使用快取
       final link = ref.keepAlive();
 
-      // 5 分鐘後自動釋放
-      final timer = Timer(const Duration(minutes: 5), () {
+      // 3 分鐘後自動釋放
+      final timer = Timer(const Duration(minutes: 3), () {
         link.close();
       });
 

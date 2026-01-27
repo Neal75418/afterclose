@@ -9,6 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const _keyThemeMode = 'settings_theme_mode';
 const _keyLocale = 'settings_locale';
+const _keyShowWarningBadges = 'settings_show_warning_badges';
+const _keyInsiderNotifications = 'settings_insider_notifications';
+const _keyDisposalUrgentAlerts = 'settings_disposal_urgent_alerts';
 
 // ==================================================
 // Settings State
@@ -49,21 +52,39 @@ class SettingsState {
     this.themeMode = ThemeMode.system,
     this.locale = AppLocale.zhTW,
     this.isLoaded = false,
+    this.showWarningBadges = true,
+    this.insiderNotifications = true,
+    this.disposalUrgentAlerts = true,
   });
 
   final ThemeMode themeMode;
   final AppLocale locale;
   final bool isLoaded;
 
+  /// 在自選股顯示警示標記（注意/處置/高質押）
+  final bool showWarningBadges;
+
+  /// 當自選股董監持股有重大變化時發送通知
+  final bool insiderNotifications;
+
+  /// 當自選股被列入處置股時發送緊急通知
+  final bool disposalUrgentAlerts;
+
   SettingsState copyWith({
     ThemeMode? themeMode,
     AppLocale? locale,
     bool? isLoaded,
+    bool? showWarningBadges,
+    bool? insiderNotifications,
+    bool? disposalUrgentAlerts,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
       locale: locale ?? this.locale,
       isLoaded: isLoaded ?? this.isLoaded,
+      showWarningBadges: showWarningBadges ?? this.showWarningBadges,
+      insiderNotifications: insiderNotifications ?? this.insiderNotifications,
+      disposalUrgentAlerts: disposalUrgentAlerts ?? this.disposalUrgentAlerts,
     );
   }
 }
@@ -77,6 +98,10 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier() : super(const SettingsState()) {
     _loadSettings();
   }
+
+  /// 用於序列化儲存操作的互斥鎖
+  /// 確保多個設定變更不會同時寫入造成競態條件
+  Future<void>? _saveLock;
 
   /// Load settings from SharedPreferences
   Future<void> _loadSettings() async {
@@ -93,10 +118,20 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 
       final locale = AppLocale.fromString(localeString);
 
+      // 進階功能設定（預設開啟）
+      final showWarningBadges = prefs.getBool(_keyShowWarningBadges) ?? true;
+      final insiderNotifications =
+          prefs.getBool(_keyInsiderNotifications) ?? true;
+      final disposalUrgentAlerts =
+          prefs.getBool(_keyDisposalUrgentAlerts) ?? true;
+
       state = SettingsState(
         themeMode: themeMode,
         locale: locale,
         isLoaded: true,
+        showWarningBadges: showWarningBadges,
+        insiderNotifications: insiderNotifications,
+        disposalUrgentAlerts: disposalUrgentAlerts,
       );
 
       AppLogger.debug(
@@ -110,11 +145,49 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   }
 
   /// Save settings to SharedPreferences
+  ///
+  /// 使用互斥鎖確保多個設定變更不會同時寫入。
+  /// 每次儲存都會等待前一次儲存完成後再執行。
   Future<void> _saveSettings() async {
+    // 等待前一次儲存完成
+    final previousSave = _saveLock;
+    if (previousSave != null) {
+      await previousSave;
+    }
+
+    // 捕獲當前狀態快照（避免在 await 期間狀態被修改）
+    final snapshot = state;
+
+    // 建立新的儲存操作並捕獲引用
+    final currentSave = _performSave(snapshot);
+    _saveLock = currentSave;
+
+    try {
+      await currentSave;
+    } finally {
+      // 只有當前鎖仍是我們建立的鎖時才清除
+      // 使用 identical 比較物件參照，避免 _saveLock == _saveLock 永遠為 true 的錯誤
+      if (identical(_saveLock, currentSave)) {
+        _saveLock = null;
+      }
+    }
+  }
+
+  /// 實際執行儲存操作
+  Future<void> _performSave(SettingsState snapshot) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_keyThemeMode, state.themeMode.index);
-      await prefs.setString(_keyLocale, state.locale.name);
+      await prefs.setInt(_keyThemeMode, snapshot.themeMode.index);
+      await prefs.setString(_keyLocale, snapshot.locale.name);
+      await prefs.setBool(_keyShowWarningBadges, snapshot.showWarningBadges);
+      await prefs.setBool(
+        _keyInsiderNotifications,
+        snapshot.insiderNotifications,
+      );
+      await prefs.setBool(
+        _keyDisposalUrgentAlerts,
+        snapshot.disposalUrgentAlerts,
+      );
     } catch (e) {
       AppLogger.warning('Settings', '儲存設定失敗: $e');
     }
@@ -142,6 +215,27 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(locale: locale);
     _saveSettings();
     AppLogger.debug('Settings', '語言已變更: ${locale.displayName}');
+  }
+
+  /// Set show warning badges
+  void setShowWarningBadges(bool value) {
+    state = state.copyWith(showWarningBadges: value);
+    _saveSettings();
+    AppLogger.debug('Settings', '警示標記顯示: $value');
+  }
+
+  /// Set insider notifications
+  void setInsiderNotifications(bool value) {
+    state = state.copyWith(insiderNotifications: value);
+    _saveSettings();
+    AppLogger.debug('Settings', '董監持股通知: $value');
+  }
+
+  /// Set disposal urgent alerts
+  void setDisposalUrgentAlerts(bool value) {
+    state = state.copyWith(disposalUrgentAlerts: value);
+    _saveSettings();
+    AppLogger.debug('Settings', '處置股票緊急警報: $value');
   }
 }
 

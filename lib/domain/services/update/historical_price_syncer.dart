@@ -63,27 +63,57 @@ class HistoricalPriceSyncer {
       final priceCount = prices?.length ?? 0;
 
       if (priceCount < minRequiredDays) {
-        // 資料極少時（< 10 天）一定需要同步
+        // 資料極少時（< 10 天）通常需要同步
+        // 但如果是極新股票（上市不到 2 週），且資料已接近完整，則跳過
         const minDataThreshold = 10;
         if (priceCount < minDataThreshold) {
+          // 檢查是否為極新股票
+          if (prices != null && prices.isNotEmpty && priceCount >= 3) {
+            final firstTradeDate = prices.first.date;
+            final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
+            // 極新股票（上市 < 15 天）：若資料已達 60% 預期則跳過
+            if (daysSinceFirstTrade <= 15) {
+              final expectedDays = (daysSinceFirstTrade * 0.71).round();
+              if (priceCount >= (expectedDays * 0.6).round()) {
+                continue;
+              }
+            }
+          }
           symbolsNeedingData.add(symbol);
           continue;
         }
 
-        // 接近完整資料時（>= 200 天）可以跳過
-        const nearThreshold = 200;
+        // 接近完整資料時（>= 180 天）可以跳過
+        // 降低門檻，因為許多股票歷史資料不完整但已足夠分析
+        const nearThreshold = 180;
         if (priceCount >= nearThreshold) {
           continue;
         }
 
         // 檢查是否為新上市股票（資料天數符合預期）
+        // 若資料已經「夠完整」（相對於首次交易日），則跳過同步
         if (prices != null && prices.isNotEmpty) {
           final firstTradeDate = prices.first.date;
           final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
-          final expectedTradingDays = (daysSinceFirstTrade * 0.71).round();
 
-          if (priceCount >= expectedTradingDays - 30) {
-            continue;
+          // 對於上市不到 365 天的股票，使用更寬鬆的判斷
+          // 避免反覆呼叫 API 試圖取得不存在的歷史資料
+          if (daysSinceFirstTrade < 365) {
+            // 計算預期交易天數（約 71% 的日曆天是交易日）
+            final expectedTradingDays = (daysSinceFirstTrade * 0.71).round();
+
+            // 只要資料達到預期的 60% 就視為足夠
+            // 考慮到 API 可能不完整、假日等因素
+            final minAcceptableDays = (expectedTradingDays * 0.6).round();
+            if (priceCount >= minAcceptableDays && priceCount >= 20) {
+              continue;
+            }
+
+            // 額外檢查：若上市不到 90 天，且有 >= 15 天資料，視為足夠
+            // （極新股票不需要太多歷史資料）
+            if (daysSinceFirstTrade <= 90 && priceCount >= 15) {
+              continue;
+            }
           }
         }
         symbolsNeedingData.add(symbol);
@@ -98,10 +128,25 @@ class HistoricalPriceSyncer {
       );
     }
 
-    AppLogger.info(
-      'HistoricalPriceSyncer',
-      '需要歷史資料的股票: ${symbolsNeedingData.length} 檔',
-    );
+    // 記錄需要同步的股票及其原因（便於診斷）
+    if (symbolsNeedingData.length <= 10) {
+      final details = symbolsNeedingData
+          .map((symbol) {
+            final prices = priceHistoryBatch[symbol];
+            final priceCount = prices?.length ?? 0;
+            final firstDate = prices?.isNotEmpty == true
+                ? '${prices!.first.date.month}/${prices.first.date.day}'
+                : 'N/A';
+            return '$symbol($priceCount 天,起:$firstDate)';
+          })
+          .join(', ');
+      AppLogger.info('HistoricalPriceSyncer', '需要歷史資料: $details');
+    } else {
+      AppLogger.info(
+        'HistoricalPriceSyncer',
+        '需要歷史資料的股票: ${symbolsNeedingData.length} 檔',
+      );
+    }
 
     // 若需要同步的股票過多，限制數量避免 API 超限
     // 優先同步自選清單和熱門股

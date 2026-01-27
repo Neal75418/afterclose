@@ -184,17 +184,20 @@ class NewsRule extends StockRule {
 
     for (final item in recentNews) {
       final title = item.title;
+      // 合併標題和內文進行關鍵字匹配（內文可能為空）
+      final content = item.content ?? '';
+      final text = '$title $content';
       bool matched = false;
 
       for (final kw in RuleParams.newsPositiveKeywords) {
-        if (title.contains(kw)) {
+        if (text.contains(kw)) {
           score++;
           matched = true;
         }
       }
 
       for (final kw in RuleParams.newsNegativeKeywords) {
-        if (title.contains(kw)) {
+        if (text.contains(kw)) {
           score--;
           matched = true;
         }

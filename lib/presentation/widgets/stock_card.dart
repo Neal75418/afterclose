@@ -7,6 +7,7 @@ import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
+import 'package:afterclose/presentation/widgets/warning_badge.dart';
 
 /// 現代化股票資訊卡片 Widget
 ///
@@ -33,6 +34,7 @@ class StockCard extends StatefulWidget {
     this.onLongPress,
     this.onWatchlistTap,
     this.recentPrices,
+    this.warningType,
   });
 
   final String symbol;
@@ -50,6 +52,9 @@ class StockCard extends StatefulWidget {
   final VoidCallback? onLongPress;
   final VoidCallback? onWatchlistTap;
   final List<double>? recentPrices;
+
+  /// 警示類型（注意股票、處置股票、高質押）
+  final WarningBadgeType? warningType;
 
   @override
   State<StockCard> createState() => _StockCardState();
@@ -99,85 +104,86 @@ class _StockCardState extends State<StockCard> {
           scale: _isPressed ? 0.98 : 1.0,
           duration: AnimDurations.press,
           curve: AnimCurves.enter,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF252536) : Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF3A3A4A)
-                    : const Color(0xFFE8E8F0),
-                width: 1,
-              ),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  widget.onTap?.call();
-                },
-                onLongPress: () {
-                  HapticFeedback.mediumImpact();
-                  widget.onLongPress?.call();
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      // 趨勢指示器（現代設計）
-                      _buildTrendIndicator(theme, isDark),
-                      const SizedBox(width: 14),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                decoration: AppTheme.cardDecoration(
+                  context,
+                  isPremium: (widget.score ?? 0) >= 80,
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      widget.onTap?.call();
+                    },
+                    onLongPress: () {
+                      HapticFeedback.mediumImpact();
+                      widget.onLongPress?.call();
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          // 趨勢指示器（現代設計）
+                          _buildTrendIndicator(theme, isDark),
+                          const SizedBox(width: 14),
 
-                      // 股票資訊區塊
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildHeader(theme),
-                            if (widget.stockName != null) ...[
-                              const SizedBox(height: 2),
-                              _buildStockName(theme),
-                            ],
-                            if (widget.reasons.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              _buildReasonTags(theme, isDark),
-                            ],
+                          // 股票資訊區塊
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildHeader(theme),
+                                if (widget.stockName != null) ...[
+                                  const SizedBox(height: 2),
+                                  _buildStockName(theme),
+                                ],
+                                if (widget.reasons.isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  _buildReasonTags(theme, isDark),
+                                ],
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(width: 12),
+
+                          // 迷你走勢圖（需至少 7 天資料）
+                          if (widget.recentPrices != null &&
+                              widget.recentPrices!.length >= 7) ...[
+                            _buildSparkline(priceColor),
+                            const SizedBox(width: 8),
                           ],
-                        ),
+
+                          // 價格區塊（帶顏色編碼）
+                          _buildPriceSection(theme, priceColor),
+
+                          // 自選按鈕
+                          if (widget.onWatchlistTap != null)
+                            _buildWatchlistButton(theme),
+                        ],
                       ),
-
-                      const SizedBox(width: 12),
-
-                      // 迷你走勢圖（需至少 7 天資料）
-                      if (widget.recentPrices != null &&
-                          widget.recentPrices!.length >= 7) ...[
-                        _buildSparkline(priceColor),
-                        const SizedBox(width: 8),
-                      ],
-
-                      // 價格區塊（帶顏色編碼）
-                      _buildPriceSection(theme, priceColor),
-
-                      // 自選按鈕
-                      if (widget.onWatchlistTap != null)
-                        _buildWatchlistButton(theme),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
+              // 警示標記覆蓋層
+              if (widget.warningType != null)
+                Positioned(
+                  top: 0,
+                  right: 12,
+                  child: WarningBadge(
+                    type: widget.warningType!,
+                    compact: true,
+                    showIcon: true,
+                  ),
+                ),
+            ],
           ),
         ),
       ),
@@ -279,8 +285,15 @@ class _StockCardState extends State<StockCard> {
     );
   }
 
+  /// 建立迷你走勢圖
+  ///
+  /// 新增防禦性 null 檢查，避免條件判斷與方法呼叫之間的競態條件
   Widget _buildSparkline(Color priceColor) {
-    return _MiniSparkline(prices: widget.recentPrices!, color: priceColor);
+    final prices = widget.recentPrices;
+    if (prices == null || prices.length < 7) {
+      return const SizedBox.shrink();
+    }
+    return _MiniSparkline(prices: prices, color: priceColor);
   }
 
   Widget _buildPriceSection(ThemeData theme, Color priceColor) {
@@ -294,9 +307,12 @@ class _StockCardState extends State<StockCard> {
         if (widget.latestClose != null)
           Text(
             widget.latestClose!.toStringAsFixed(2),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.3,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              letterSpacing: 0.5,
+              fontFamily:
+                  'RobotoMono', // Monospace for tabular numbers if available
             ),
           ),
         if (widget.priceChange != null) ...[

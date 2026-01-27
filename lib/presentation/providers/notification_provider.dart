@@ -90,13 +90,24 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     final title = _getAlertTitle(alert.symbol, alertType);
     final body = _getAlertBody(alert, alertType, currentPrice);
 
-    await _service.showPriceAlert(
-      id: alert.id,
-      symbol: alert.symbol,
-      title: title,
-      body: body,
-      payload: alert.symbol,
-    );
+    // 處置股票使用緊急通知（Importance.max）
+    if (alertType == AlertType.tradingDisposal) {
+      await _service.showUrgentAlert(
+        id: alert.id,
+        symbol: alert.symbol,
+        title: title,
+        body: body,
+        payload: alert.symbol,
+      );
+    } else {
+      await _service.showPriceAlert(
+        id: alert.id,
+        symbol: alert.symbol,
+        title: title,
+        body: body,
+        payload: alert.symbol,
+      );
+    }
   }
 
   /// Show update complete notification
@@ -152,6 +163,12 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       AlertType.revenueYoySurge => '$symbol 營收年增暴增',
       AlertType.highDividendYield => '$symbol 高殖利率達標',
       AlertType.peUndervalued => '$symbol PE低估達標',
+      // Killer Features：警示通知
+      AlertType.tradingWarning => '⚠️ $symbol 注意股票',
+      AlertType.tradingDisposal => '🚨 $symbol 處置股票',
+      AlertType.insiderSelling => '$symbol 董監減持',
+      AlertType.insiderBuying => '$symbol 董監增持',
+      AlertType.highPledgeRatio => '⚠️ $symbol 高質押警示',
     };
   }
 
@@ -200,6 +217,12 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         '殖利率達 ${alert.targetValue.toStringAsFixed(1)}%',
       AlertType.peUndervalued =>
         'PE 低於 ${alert.targetValue.toStringAsFixed(1)} 倍',
+      // Killer Features：警示通知內容
+      AlertType.tradingWarning => '該股票被列入注意股票，請注意風險',
+      AlertType.tradingDisposal => '該股票被列入處置股票，交易受限，請立即檢視',
+      AlertType.insiderSelling => '董監事持股比例持續下降',
+      AlertType.insiderBuying => '董監事大量增持股票',
+      AlertType.highPledgeRatio => '董監質押比例偏高，請注意風險',
     };
 
     return '$baseBody$priceText';

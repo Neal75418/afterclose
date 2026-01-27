@@ -130,16 +130,23 @@ class FinMindClient {
           // 檢查 API 錯誤回應
           if (data['status'] != null && data['status'] != 200) {
             final msg = data['msg'] ?? 'Unknown API error';
+            final msgStr = msg.toString();
 
             // 流量限制檢查
-            if (msg.toString().contains('limit') ||
-                msg.toString().contains('quota')) {
+            if (msgStr.contains('limit') || msgStr.contains('quota')) {
               AppLogger.warning('FinMind', '$label: 流量限制');
               throw const RateLimitException();
             }
 
-            AppLogger.warning('FinMind', '$label: ${msg.toString()}');
-            throw ApiException(msg.toString(), data['status'] as int?);
+            // 付費功能檢查 (批次 API 需要贊助者)
+            if (msgStr.contains('level is free') ||
+                msgStr.contains('Sponsor')) {
+              AppLogger.debug('FinMind', '$label: 此功能需要付費會員 (贊助者)');
+              throw const ApiException('批次 API 需要付費會員資格', 400);
+            }
+
+            AppLogger.warning('FinMind', '$label: $msgStr');
+            throw ApiException(msgStr, data['status'] as int?);
           }
 
           // 回傳資料陣列
@@ -201,6 +208,11 @@ class FinMindClient {
             continue;
           }
           throw const RateLimitException();
+        }
+        if (e.response?.statusCode == 402) {
+          // 402 Payment Required = API 額度耗盡，不重試直接拋出
+          AppLogger.warning('FinMind', '$label: 402 API 額度耗盡');
+          throw const RateLimitException('API 額度已用完，請稍後再試');
         }
         AppLogger.warning('FinMind', '$label: ${e.message ?? "網路錯誤"}');
         throw NetworkException(e.message ?? 'Network error', e);
@@ -435,6 +447,30 @@ class FinMindClient {
     final params = {
       'dataset': 'TaiwanStockMonthRevenue',
       'data_id': stockId,
+      'start_date': startDate,
+    };
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data
+        .map((json) => FinMindRevenue.tryFromJson(json))
+        .whereType<FinMindRevenue>()
+        .toList();
+  }
+
+  /// 取得日期範圍內所有股票月營收（批次）
+  ///
+  /// 用於高效批量擷取，省略 data_id 取得全市場資料。
+  /// 一次 API 呼叫可取得所有股票的營收資料。
+  Future<List<FinMindRevenue>> getAllMonthlyRevenue({
+    required String startDate,
+    String? endDate,
+  }) async {
+    final params = {
+      'dataset': 'TaiwanStockMonthRevenue',
       'start_date': startDate,
     };
 

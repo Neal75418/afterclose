@@ -454,21 +454,32 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(isLoading: true, error: null, hasMore: true);
 
     try {
-      // Use today's date initially
-      var targetDate = DateContext.now().today;
+      // 智慧回退邏輯：依序嘗試最近 3 天的資料
+      // 這處理以下情況：
+      // - 週末/假日：顯示最近交易日資料
+      // - 盤前：資料可能來自前一日
+      // - API 日期延遲：TWSE/TPEX 資料日期可能落後
+      final now = DateTime.now();
+      var targetDate = DateTime(now.year, now.month, now.day);
+      var analyses = <DailyAnalysisEntry>[];
 
-      // Get all analyses for target date (with score > 0)
-      var analyses = await _db.getAnalysisForDate(targetDate);
+      // 依序嘗試今天、昨天、前天的資料
+      for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
+        final date = now.subtract(Duration(days: daysAgo));
+        final normalizedDate = DateTime(date.year, date.month, date.day);
+        analyses = await _db.getAnalysisForDate(normalizedDate);
+        if (analyses.isNotEmpty) {
+          targetDate = normalizedDate;
+          break;
+        }
+      }
 
-      // Smart Fallback: If no data found and today is a holiday/weekend
-      if (analyses.isEmpty && !TaiwanCalendar.isTradingDay(targetDate)) {
-        final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(targetDate);
-        AppLogger.info(
-          'ScanProvider',
-          '假日無資料 ($targetDate)，備援至 $prevTradingDay',
+      // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
+      if (analyses.isEmpty) {
+        final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
+          now.subtract(const Duration(days: 3)),
         );
-
-        // Update target date and re-fetch
+        AppLogger.info('ScanProvider', '最近 3 天無資料，備援至前一交易日 $prevTradingDay');
         targetDate = prevTradingDay;
         analyses = await _db.getAnalysisForDate(targetDate);
       }

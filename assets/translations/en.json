@@ -213,7 +213,20 @@
     "subChart": "Sub Chart",
     "dataToday": "Today's Data",
     "dataYesterday": "Yesterday's Data",
-    "dataLabel": "Data"
+    "dataLabel": "Data",
+    "tabInsider": "Insider",
+    "insiderHistory": "Holding History",
+    "insiderComingSoon": "No insider holding data",
+    "insiderRatio": "Insider Holding",
+    "insiderRatioLabel": "Insider Holding Ratio",
+    "pledgeRatio": "Pledge Ratio",
+    "pledgeRatioLabel": "Insider Pledge Ratio",
+    "insiderChange": "Holding Change",
+    "insiderChangeLabel": "Monthly Change",
+    "insiderDate": "Month",
+    "insiderRatioShort": "Hold%",
+    "pledgeRatioShort": "Pledge%",
+    "insiderChangeShort": "Change"
   },
   "score": {
     "label": "Rating Score",
@@ -356,7 +369,14 @@
     "historyProgress": "Historical data: {completed}/{total} ({percent}%)",
     "rateLimitTitle": "API Rate Limit",
     "rateLimitMessage": "FinMind API has reached its hourly limit (600 requests).\n\nPlease wait 10-15 minutes before trying again, or consider upgrading to a paid FinMind plan.",
-    "rateLimitOk": "Got it"
+    "rateLimitOk": "Got it",
+    "advancedFeatures": "Advanced Features",
+    "showWarningBadges": "Show Warning Badges",
+    "showWarningBadgesDesc": "Display attention/disposal/high pledge badges on watchlist",
+    "insiderNotifications": "Insider Notifications",
+    "insiderNotificationsDesc": "Notify when insider holdings change significantly",
+    "disposalUrgentAlerts": "Disposal Urgent Alerts",
+    "disposalUrgentAlertsDesc": "Send urgent alerts when stocks are placed under disposal"
   },
   "alert": {
     "title": "Price Alerts",

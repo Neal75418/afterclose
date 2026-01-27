@@ -74,11 +74,21 @@ class MarketSyncResult {
     required this.count,
     required this.candidates,
     this.dataDate,
+    this.tpexDataDate,
     this.skipped = false,
   });
 
   final int count;
   final List<String> candidates;
+
+  /// 主要資料日期（優先 TWSE）
   final DateTime? dataDate;
+
+  /// TPEX（上櫃）資料日期
+  ///
+  /// 用於上櫃股票的新鮮度檢查。
+  /// TPEX 和 TWSE 的資料日期可能不同步。
+  final DateTime? tpexDataDate;
+
   final bool skipped;
 }

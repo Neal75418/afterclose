@@ -271,6 +271,12 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       AlertType.revenueYoySurge ||
       AlertType.highDividendYield ||
       AlertType.peUndervalued => Icons.analytics,
+      // Killer Features：警示圖示
+      AlertType.tradingWarning => Icons.warning_amber,
+      AlertType.tradingDisposal => Icons.gpp_bad,
+      AlertType.insiderSelling => Icons.person_remove,
+      AlertType.insiderBuying => Icons.person_add,
+      AlertType.highPledgeRatio => Icons.lock,
     };
   }
 
@@ -308,6 +314,12 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       AlertType.highDividendYield =>
         '殖利率 ≥${alert.targetValue.toStringAsFixed(1)}%',
       AlertType.peUndervalued => 'PE ≤${alert.targetValue.toStringAsFixed(1)}倍',
+      // Killer Features：警示描述
+      AlertType.tradingWarning => '被列入注意股票',
+      AlertType.tradingDisposal => '被列入處置股票（交易受限）',
+      AlertType.insiderSelling => '董監持股連續減持',
+      AlertType.insiderBuying => '董監大量增持',
+      AlertType.highPledgeRatio => '董監質押比例過高',
     };
   }
 

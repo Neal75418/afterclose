@@ -64,11 +64,15 @@ abstract final class RuleParams {
   /// 過濾無實質價格變動的成交量異動，1.5% 確保量價配合。
   static const double minPriceChangeForVolume = 0.015;
 
-  /// 突破緩衝容差（1% 以獲得更乾淨的訊號）
-  static const double breakoutBuffer = 0.01;
+  /// 突破緩衝容差（3% 以獲得更乾淨的訊號）
+  ///
+  /// 收緊門檻以過濾假突破，需明確突破壓力 3% 以上。
+  static const double breakoutBuffer = 0.03;
 
-  /// 跌破緩衝容差（1%）
-  static const double breakdownBuffer = 0.01;
+  /// 跌破緩衝容差（3%）
+  ///
+  /// 收緊門檻以過濾假跌破，需明確跌破支撐 3% 以上。
+  static const double breakdownBuffer = 0.03;
 
   /// 壓力/支撐有效最大距離
   ///
@@ -223,14 +227,14 @@ abstract final class RuleParams {
   /// 法人連賣總量門檻（股）
   ///
   /// 連續賣超期間的總淨賣超須達此門檻（負值）。
-  /// -15000張 = -15,000,000股
-  static const int institutionalSellTotalThresholdShares = -15000000;
+  /// -5000張 = -5,000,000股（與買方對稱）
+  static const int institutionalSellTotalThresholdShares = -5000000;
 
   /// 法人連賣日均門檻（股）
   ///
   /// 連續賣超期間的日均淨賣超須達此門檻（負值）。
-  /// -2000張 = -2,000,000股
-  static const int institutionalSellDailyAvgThresholdShares = -2000000;
+  /// -700張 = -700,000股（與買方對稱）
+  static const int institutionalSellDailyAvgThresholdShares = -700000;
 
   // ==========================================
   // 52 週高低點參數
@@ -427,6 +431,51 @@ abstract final class RuleParams {
   static const int valuationMaxStaleDays = 7;
 
   // ==========================================
+  // Killer Features 參數（注意/處置股、董監持股）
+  // ==========================================
+
+  /// 董監連續減持月數門檻
+  ///
+  /// 連續 3 個月以上減持視為強賣訊號。
+  static const int insiderSellingStreakMonths = 3;
+
+  /// 董監顯著增持門檻（%）
+  ///
+  /// 單月持股比例增加 5% 以上視為買進訊號。
+  static const double insiderSignificantBuyingThreshold = 5.0;
+
+  /// 高質押比例門檻（%）
+  ///
+  /// 質押比例超過 50% 視為風險警示。
+  static const double highPledgeRatioThreshold = 50.0;
+
+  /// 處置股結束日期寬限天數
+  ///
+  /// 判斷處置股是否仍生效時，在結束日期後加上此天數作為緩衝。
+  /// 1 天確保結束當日仍視為生效狀態。
+  static const int disposalEndDateGraceDays = 1;
+
+  /// 外資持股集中度警示門檻（%）
+  ///
+  /// 外資持股超過 60% 且快速增加時觸發風險警示。
+  static const double foreignConcentrationWarningThreshold = 60.0;
+
+  /// 外資持股集中度危險門檻（%）
+  ///
+  /// 外資持股超過 70% 視為高度集中風險。
+  static const double foreignConcentrationDangerThreshold = 70.0;
+
+  /// 外資流出天數
+  ///
+  /// 追蹤連續 N 天的外資流出趨勢。
+  static const int foreignExodusLookbackDays = 5;
+
+  /// 外資流出門檻（%）
+  ///
+  /// N 天內外資持股減少超過此比例視為流出警示。
+  static const double foreignExodusThreshold = -2.0;
+
+  // ==========================================
   // 分析服務參數
   // ==========================================
 
@@ -456,15 +505,23 @@ abstract final class RuleParams {
   /// 當前價格在區間低點 2% 以內視為「接近低點」。
   static const double nearRangeLowBuffer = 1.02;
 
-  /// 更高低點確認緩衝（3%）
+  /// 更高低點確認緩衝（7%）
   ///
-  /// 近期低點需高於前期低點 3% 才確認為「更高低點」。
-  static const double higherLowBuffer = 1.03;
+  /// 近期低點需高於前期低點 7% 才確認為「更高低點」。
+  /// 收緊門檻以大幅提升精準度，只保留明確反轉訊號。
+  static const double higherLowBuffer = 1.07;
 
-  /// 更低高點確認緩衝（3%）
+  /// 更低高點確認緩衝（7%）
   ///
-  /// 近期高點需低於前期高點 3% 才確認為「更低高點」。
-  static const double lowerHighBuffer = 0.97;
+  /// 近期高點需低於前期高點 7% 才確認為「更低高點」。
+  /// 收緊門檻以大幅提升精準度，只保留明確反轉訊號。
+  static const double lowerHighBuffer = 0.93;
+
+  /// 反轉/突破訊號成交量確認門檻
+  ///
+  /// 近期成交量需達前期平均的 2.0 倍以上，
+  /// 確認訊號有量能配合，大幅過濾假訊號。
+  static const double reversalVolumeConfirm = 2.0;
 }
 
 /// 各推薦類型的分數
@@ -505,10 +562,13 @@ abstract final class RuleScores {
   static const int newsRelated = 8;
 
   /// 加分：突破 + 成交量異動
-  static const int breakoutVolumeBonus = 6;
+  static const int breakoutVolumeBonus = 10;
 
   /// 加分：反轉 + 成交量異動
-  static const int reversalVolumeBonus = 6;
+  static const int reversalVolumeBonus = 10;
+
+  /// 加分：法人 + 突破/反轉組合
+  static const int institutionalComboBonus = 15;
 
   /// 加分：K 線型態（吞噬/星線/三兵）+ 成交量異動
   static const int patternVolumeBonus = 5;
@@ -657,6 +717,31 @@ abstract final class RuleScores {
   static const int pbrUndervalued = 12;
 
   // ==========================================
+  // Killer Features 分數（注意/處置股、董監持股）
+  // ==========================================
+
+  /// 注意股票分數（警示訊號，扣分）
+  static const int tradingWarningAttention = -15;
+
+  /// 處置股票分數（高風險，大幅扣分）
+  static const int tradingWarningDisposal = -50;
+
+  /// 董監連續減持分數（強賣訊號，大幅扣分）
+  static const int insiderSellingStreak = -25;
+
+  /// 董監顯著增持分數（買進訊號）
+  static const int insiderSignificantBuying = 20;
+
+  /// 高質押比例分數（風險警示，扣分）
+  static const int highPledgeRatio = -18;
+
+  /// 外資持股高度集中分數（風險警示，小扣分）
+  static const int foreignConcentrationWarning = -8;
+
+  /// 外資加速流出分數（強賣訊號，扣分）
+  static const int foreignExodus = -20;
+
+  // ==========================================
   // 向後相容（舊欄位名稱，標記為棄用）
   // ==========================================
 
@@ -729,7 +814,15 @@ enum ReasonType {
   highDividendYield('HIGH_DIVIDEND_YIELD', '高殖利率'),
   peUndervalued('PE_UNDERVALUED', 'PE低估'),
   peOvervalued('PE_OVERVALUED', 'PE高估'),
-  pbrUndervalued('PBR_UNDERVALUED', '股價淨值比低');
+  pbrUndervalued('PBR_UNDERVALUED', '股價淨值比低'),
+  // Killer Features 訊號
+  tradingWarningAttention('TRADING_WARNING_ATTENTION', '注意股票'),
+  tradingWarningDisposal('TRADING_WARNING_DISPOSAL', '處置股票'),
+  insiderSellingStreak('INSIDER_SELLING_STREAK', '董監連續減持'),
+  insiderSignificantBuying('INSIDER_SIGNIFICANT_BUYING', '董監大量增持'),
+  highPledgeRatio('HIGH_PLEDGE_RATIO', '高質押比例'),
+  foreignConcentrationWarning('FOREIGN_CONCENTRATION_WARNING', '外資高度集中'),
+  foreignExodus('FOREIGN_EXODUS', '外資加速流出');
 
   const ReasonType(this.code, this.label);
 
@@ -794,6 +887,15 @@ enum ReasonType {
     ReasonType.peUndervalued => RuleScores.peUndervalued,
     ReasonType.peOvervalued => RuleScores.peOvervalued,
     ReasonType.pbrUndervalued => RuleScores.pbrUndervalued,
+    // Killer Features 訊號
+    ReasonType.tradingWarningAttention => RuleScores.tradingWarningAttention,
+    ReasonType.tradingWarningDisposal => RuleScores.tradingWarningDisposal,
+    ReasonType.insiderSellingStreak => RuleScores.insiderSellingStreak,
+    ReasonType.insiderSignificantBuying => RuleScores.insiderSignificantBuying,
+    ReasonType.highPledgeRatio => RuleScores.highPledgeRatio,
+    ReasonType.foreignConcentrationWarning =>
+      RuleScores.foreignConcentrationWarning,
+    ReasonType.foreignExodus => RuleScores.foreignExodus,
   };
 }
 

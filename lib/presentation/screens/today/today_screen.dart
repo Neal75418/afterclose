@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,36 +43,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     final watchlistState = ref.watch(watchlistProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(S.appName),
-        actions: [
-          if (state.isUpdating)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _runUpdate,
-              tooltip: S.todayUpdateData,
-            ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => context.push('/alerts'),
-            tooltip: S.todayPriceAlert,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/settings'),
-            tooltip: S.settings,
-          ),
-        ],
-      ),
       body: ThemedRefreshIndicator(
         onRefresh: () => ref.read(todayProvider.notifier).loadData(),
         child: state.isLoading
@@ -96,6 +67,51 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     return CustomScrollView(
       slivers: [
+        // Glassmorphism App Bar
+        SliverAppBar(
+          pinned: true,
+          floating: true,
+          expandedHeight: 0, // Standard height
+          backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.7),
+          flexibleSpace: ClipRect(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          title: const Text(
+            S.appName,
+            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
+          ),
+          actions: [
+            if (state.isUpdating)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _runUpdate,
+                tooltip: S.todayUpdateData,
+              ),
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () => context.push('/alerts'),
+              tooltip: S.todayPriceAlert,
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => context.push('/settings'),
+              tooltip: S.settings,
+            ),
+          ],
+        ),
+
         // 更新進度橫幅
         if (state.isUpdating && state.updateProgress != null)
           SliverToBoxAdapter(

@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -414,38 +415,56 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       }
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'RSI(14)',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    rsiSignal,
-                    style: theme.textTheme.bodySmall?.copyWith(color: rsiColor),
-                  ),
-                ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
               ),
             ),
-            Text(
-              latestRSI?.toStringAsFixed(1) ?? '-',
-              style: theme.textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: rsiColor,
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'RSI(14)',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        rsiSignal,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: rsiColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  latestRSI?.toStringAsFixed(1) ?? '-',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'RobotoMono',
+                    color: rsiColor,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -480,50 +499,69 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       }
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'KDJ(9,3,3)',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    kdSignal,
-                    style: theme.textTheme.bodySmall?.copyWith(color: kdColor),
-                  ),
-                ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
               ),
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+            child: Row(
               children: [
-                Text(
-                  'K: ${latestK?.toStringAsFixed(1) ?? '-'}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF3498DB),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'KDJ(9,3,3)',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        kdSignal,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: kdColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  'D: ${latestD?.toStringAsFixed(1) ?? '-'}',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFFE67E22),
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'K: ${latestK?.toStringAsFixed(1) ?? '-'}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'RobotoMono',
+                        color: const Color(0xFF60A5FA), // Match chart color
+                      ),
+                    ),
+                    Text(
+                      'D: ${latestD?.toStringAsFixed(1) ?? '-'}',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'RobotoMono',
+                        color: const Color(0xFFFACC15), // Match chart color
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -557,76 +595,92 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       }
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'MACD(12,26,9)',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MACD(12,26,9)',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            macdSignal,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: macdColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        macdSignal,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: macdColor,
-                        ),
+                    ),
+                    Text(
+                      latestHist != null
+                          ? (latestHist >= 0 ? '+' : '') +
+                                latestHist.toStringAsFixed(2)
+                          : '-',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'RobotoMono',
+                        color: (latestHist ?? 0) >= 0
+                            ? AppTheme.upColor
+                            : AppTheme.downColor,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                Text(
-                  latestHist != null
-                      ? (latestHist >= 0 ? '+' : '') +
-                            latestHist.toStringAsFixed(2)
-                      : '-',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: (latestHist ?? 0) >= 0
-                        ? AppTheme.upColor
-                        : AppTheme.downColor,
-                  ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildMACDValue(
+                      context,
+                      'DIF',
+                      latestMACD,
+                      const Color(0xFF60A5FA), // Blue 400
+                    ),
+                    _buildMACDValue(
+                      context,
+                      'DEA',
+                      latestSignal,
+                      const Color(0xFFFACC15), // Yellow 400
+                    ),
+                    _buildMACDValue(
+                      context,
+                      'HIST',
+                      latestHist,
+                      (latestHist ?? 0) >= 0
+                          ? AppTheme.upColor
+                          : AppTheme.downColor,
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildMACDValue(
-                  context,
-                  'DIF',
-                  latestMACD,
-                  const Color(0xFF3498DB),
-                ),
-                _buildMACDValue(
-                  context,
-                  'DEA',
-                  latestSignal,
-                  const Color(0xFFE67E22),
-                ),
-                _buildMACDValue(
-                  context,
-                  'HIST',
-                  latestHist,
-                  (latestHist ?? 0) >= 0
-                      ? AppTheme.upColor
-                      : AppTheme.downColor,
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -688,62 +742,77 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       }
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.4,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'BOLL(20,2)',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'BOLL(20,2)',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            bollSignal,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: bollColor,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        bollSignal,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: bollColor,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildBollValue(
+                      context,
+                      'stockDetail.bollUpper'.tr(),
+                      latestUpper,
+                      AppTheme.downColor,
+                    ),
+                    _buildBollValue(
+                      context,
+                      'stockDetail.bollMiddle'.tr(),
+                      latestMiddle,
+                      theme.colorScheme.onSurface,
+                    ),
+                    _buildBollValue(
+                      context,
+                      'stockDetail.bollLower'.tr(),
+                      latestLower,
+                      AppTheme.upColor,
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildBollValue(
-                  context,
-                  'stockDetail.bollUpper'.tr(),
-                  latestUpper,
-                  AppTheme.downColor,
-                ),
-                _buildBollValue(
-                  context,
-                  'stockDetail.bollMiddle'.tr(),
-                  latestMiddle,
-                  theme.colorScheme.onSurface,
-                ),
-                _buildBollValue(
-                  context,
-                  'stockDetail.bollLower'.tr(),
-                  latestLower,
-                  AppTheme.upColor,
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );

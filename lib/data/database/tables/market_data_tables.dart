@@ -289,3 +289,87 @@ class MarginTrading extends Table {
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
+
+/// 注意股票/處置股票 Table
+///
+/// 用於風險控管：
+/// - 注意股票 (ATTENTION): 交易量異常、價格異常波動
+/// - 處置股票 (DISPOSAL): 嚴重異常，交易受限制
+@DataClassName('TradingWarningEntry')
+@TableIndex(name: 'idx_trading_warning_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_trading_warning_date', columns: {#date})
+@TableIndex(name: 'idx_trading_warning_type', columns: {#warningType})
+class TradingWarning extends Table {
+  /// 股票代碼
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// 公告日期
+  DateTimeColumn get date => dateTime()();
+
+  /// 警示類型：ATTENTION（注意）| DISPOSAL（處置）
+  TextColumn get warningType => text()();
+
+  /// 列入原因代碼
+  TextColumn get reasonCode => text().nullable()();
+
+  /// 原因說明
+  TextColumn get reasonDescription => text().nullable()();
+
+  /// 處置措施（僅處置股）
+  TextColumn get disposalMeasures => text().nullable()();
+
+  /// 處置起始日
+  DateTimeColumn get disposalStartDate => dateTime().nullable()();
+
+  /// 處置結束日
+  DateTimeColumn get disposalEndDate => dateTime().nullable()();
+
+  /// 是否目前生效
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+
+  @override
+  Set<Column> get primaryKey => {symbol, date, warningType};
+}
+
+/// 董監事持股餘額 Table
+///
+/// 用於內部人持股變化追蹤：
+/// - 連續減持為強賣訊號
+/// - 大量增持為買進訊號
+/// - 高質押率為風險警示
+@DataClassName('InsiderHoldingEntry')
+@TableIndex(name: 'idx_insider_holding_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_insider_holding_date', columns: {#date})
+class InsiderHolding extends Table {
+  /// 股票代碼
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// 報告日期（月報）
+  DateTimeColumn get date => dateTime()();
+
+  /// 董事持股總數（股）
+  RealColumn get directorShares => real().nullable()();
+
+  /// 監察人持股總數（股）
+  RealColumn get supervisorShares => real().nullable()();
+
+  /// 經理人持股總數（股）
+  RealColumn get managerShares => real().nullable()();
+
+  /// 董監持股比例（%）
+  RealColumn get insiderRatio => real().nullable()();
+
+  /// 質押比例（%）
+  RealColumn get pledgeRatio => real().nullable()();
+
+  /// 持股變動（股）- 與前期比較
+  RealColumn get sharesChange => real().nullable()();
+
+  /// 已發行股數
+  RealColumn get sharesIssued => real().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {symbol, date};
+}

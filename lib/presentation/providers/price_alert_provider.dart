@@ -38,7 +38,16 @@ enum AlertType {
   // Fundamental alerts (基本面警報)
   revenueYoySurge('REVENUE_YOY_SURGE', '營收年增暴增', AlertCategory.fundamental),
   highDividendYield('HIGH_DIVIDEND_YIELD', '高殖利率', AlertCategory.fundamental),
-  peUndervalued('PE_UNDERVALUED', 'PE低估', AlertCategory.fundamental);
+  peUndervalued('PE_UNDERVALUED', 'PE低估', AlertCategory.fundamental),
+
+  // Trading warning alerts (Killer Features：注意/處置股票警報)
+  tradingWarning('TRADING_WARNING', '注意股票', AlertCategory.warning),
+  tradingDisposal('TRADING_DISPOSAL', '處置股票', AlertCategory.warning),
+
+  // Insider alerts (Killer Features：董監持股警報)
+  insiderSelling('INSIDER_SELLING', '董監減持', AlertCategory.insider),
+  insiderBuying('INSIDER_BUYING', '董監增持', AlertCategory.insider),
+  highPledgeRatio('HIGH_PLEDGE_RATIO', '高質押比例', AlertCategory.insider);
 
   const AlertType(this.value, this.label, this.category);
   final String value;
@@ -60,12 +69,18 @@ enum AlertType {
     AlertType.revenueYoySurge ||
     AlertType.highDividendYield ||
     AlertType.peUndervalued => true,
-    // These don't require explicit target value
+    // These don't require explicit target value (auto-triggered)
     AlertType.volumeSpike ||
     AlertType.kdGoldenCross ||
     AlertType.kdDeathCross ||
     AlertType.week52High ||
-    AlertType.week52Low => false,
+    AlertType.week52Low ||
+    // Killer Features：自動觸發，無需目標值
+    AlertType.tradingWarning ||
+    AlertType.tradingDisposal ||
+    AlertType.insiderSelling ||
+    AlertType.insiderBuying ||
+    AlertType.highPledgeRatio => false,
   };
 
   /// Get unit label for target value
@@ -127,7 +142,9 @@ enum AlertCategory {
   level('支撐壓力'),
   week52('新高新低'),
   ma('均線'),
-  fundamental('基本面');
+  fundamental('基本面'),
+  warning('警示'),
+  insider('董監');
 
   const AlertCategory(this.label);
   final String label;

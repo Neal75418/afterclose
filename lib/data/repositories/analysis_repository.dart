@@ -98,27 +98,30 @@ class AnalysisRepository implements IAnalysisRepository {
 
   /// 取得今日推薦股
   ///
-  /// 智慧回退：若今日為假日/週末且無資料，
-  /// 回傳最近一個交易日的推薦股。
+  /// 智慧回退邏輯：依序嘗試最近 3 天的資料
+  /// 這處理以下情況：
+  /// - 週末/假日：顯示最近交易日資料
+  /// - 盤前：資料可能來自前一日
+  /// - API 日期延遲：TWSE/TPEX 資料日期可能落後
+  /// - 日期不同步：不同 API 返回不同日期
   @override
   Future<List<DailyRecommendationEntry>> getTodayRecommendations() async {
     final now = DateTime.now();
 
-    // 1. 先嘗試取得今日資料
-    final todayRecs = await getRecommendations(now);
-    if (todayRecs.isNotEmpty) {
-      return todayRecs;
+    // 依序嘗試今天、昨天、前天的資料
+    for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
+      final date = now.subtract(Duration(days: daysAgo));
+      final recs = await getRecommendations(date);
+      if (recs.isNotEmpty) {
+        return recs;
+      }
     }
 
-    // 2. 若今日非交易日（週末/假日），嘗試取得前一交易日
-    // 確保使用者能看到最新市場資料（如週六看到週五資料）
-    if (!TaiwanCalendar.isTradingDay(now)) {
-      final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(now);
-      return getRecommendations(prevTradingDay);
-    }
-
-    // 3. 交易日但尚無資料（更新前）-> 回傳空清單
-    return [];
+    // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
+    final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
+      now.subtract(const Duration(days: 3)),
+    );
+    return getRecommendations(prevTradingDay);
   }
 
   /// 取得某日期的推薦股

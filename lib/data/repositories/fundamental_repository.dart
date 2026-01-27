@@ -2,6 +2,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:drift/drift.dart';
@@ -13,13 +14,16 @@ class FundamentalRepository {
     required AppDatabase db,
     required FinMindClient finMind,
     TwseClient? twse,
+    TpexClient? tpex,
   }) : _db = db,
        _finMind = finMind,
-       _twse = twse ?? TwseClient();
+       _twse = twse ?? TwseClient(),
+       _tpex = tpex ?? TpexClient();
 
   final AppDatabase _db;
   final FinMindClient _finMind;
   final TwseClient _twse;
+  final TpexClient _tpex;
 
   /// 同步單檔股票的月營收資料
   ///
@@ -146,10 +150,10 @@ class FundamentalRepository {
     }
   }
 
-  /// 補充上櫃股票的估值資料（使用 FinMind 逐檔取得）
+  /// 補充上櫃股票的估值資料（使用 TPEX OpenAPI 批次取得）
   ///
   /// [symbols] 為要同步的上櫃股票代碼清單。
-  /// 建議只傳入自選清單或候選清單中的上櫃股票，以節省 API 配額。
+  /// 使用 TPEX 免費 OpenAPI 一次取得所有上櫃股票估值資料。
   /// 設定 [force] 為 true 可略過新鮮度檢查。
   ///
   /// 回傳成功同步的股票數量。
@@ -161,7 +165,6 @@ class FundamentalRepository {
     if (symbols.isEmpty) return 0;
 
     final targetDate = date ?? DateTime.now();
-    final dateStr = DateContext.formatYmd(targetDate);
 
     // 新鮮度檢查：過濾掉已有近期估值資料的股票（3 天內視為新鮮）
     List<String> symbolsToSync = symbols;
@@ -189,50 +192,50 @@ class FundamentalRepository {
       );
     }
 
-    var successCount = 0;
+    // 使用 TPEX OpenAPI 批次取得全市場估值（1 次 API 呼叫）
+    final symbolSet = symbolsToSync.toSet();
 
-    for (final symbol in symbolsToSync) {
-      try {
-        // 使用 FinMind 取得單檔估值資料（取最近 7 天以確保有資料）
-        final startDate = targetDate.subtract(const Duration(days: 7));
-        final data = await _finMind.getPERData(
-          stockId: symbol,
-          startDate: DateContext.formatYmd(startDate),
-          endDate: dateStr,
-        );
+    try {
+      final allData = await _tpex.getAllValuation(date: targetDate);
 
-        if (data.isEmpty) continue;
+      if (allData.isEmpty) {
+        AppLogger.warning('FundamentalRepo', 'TPEX 估值 API 回傳空資料');
+        return 0;
+      }
 
-        // 取最新一筆
-        final latest = data.last;
-        final parsedDate = DateTime.tryParse(latest.date) ?? targetDate;
+      // 篩選出需要的股票
+      final entries = <StockValuationCompanion>[];
+      for (final item in allData) {
+        if (!symbolSet.contains(item.code)) continue;
 
-        final entry = StockValuationCompanion.insert(
-          symbol: symbol,
-          date: parsedDate,
-          per: Value(latest.per > 0 ? latest.per : null),
-          pbr: Value(latest.pbr > 0 ? latest.pbr : null),
-          dividendYield: Value(
-            latest.dividendYield > 0 ? latest.dividendYield : null,
+        entries.add(
+          StockValuationCompanion.insert(
+            symbol: item.code,
+            date: item.date,
+            per: Value(item.per),
+            pbr: Value(item.pbr),
+            dividendYield: Value(item.dividendYield),
           ),
         );
-
-        await _db.insertValuationData([entry]);
-        successCount++;
-      } catch (e) {
-        AppLogger.debug('FundamentalRepo', '同步上櫃估值失敗: $symbol ($e)');
-        // 繼續處理下一檔，不中斷整個流程
       }
+
+      // 批次寫入資料庫
+      if (entries.isNotEmpty) {
+        await _db.insertValuationData(entries);
+      }
+
+      final skippedCount = symbols.length - symbolsToSync.length;
+      AppLogger.info(
+        'FundamentalRepo',
+        '上櫃估值同步完成: ${entries.length}/${symbolsToSync.length} 檔 '
+            '(API calls: 1, 跳過: $skippedCount)',
+      );
+
+      return entries.length;
+    } catch (e) {
+      AppLogger.warning('FundamentalRepo', '批次同步上櫃估值失敗', e);
+      return 0;
     }
-
-    final skippedCount = symbols.length - symbolsToSync.length;
-    AppLogger.info(
-      'FundamentalRepo',
-      '上櫃估值同步完成: $successCount/${symbolsToSync.length} 檔 '
-          '(API calls: ${symbolsToSync.length}, 跳過: $skippedCount)',
-    );
-
-    return successCount;
   }
 
   /// 使用 TWSE Open Data 同步全市場月營收（免費、無限制）
@@ -306,10 +309,10 @@ class FundamentalRepository {
     }
   }
 
-  /// 補充上櫃股票的營收資料（使用 FinMind 逐檔取得）
+  /// 補充上櫃股票的營收資料（使用 TPEX OpenAPI）
   ///
   /// [symbols] 為要同步的上櫃股票代碼清單。
-  /// 建議只傳入自選清單或候選清單中的上櫃股票，以節省 API 配額。
+  /// 使用 TPEX OpenAPI 一次取得所有股票營收，免費無限制。
   /// 設定 [force] 為 true 可略過新鮮度檢查。
   ///
   /// 回傳成功同步的股票數量。
@@ -321,8 +324,6 @@ class FundamentalRepository {
     if (symbols.isEmpty) return 0;
 
     final targetDate = date ?? DateTime.now();
-    // 營收資料以月為單位，取最近 3 個月以確保有資料
-    final startDate = DateTime(targetDate.year, targetDate.month - 3, 1);
 
     // 新鮮度檢查：過濾掉已有當月營收資料的股票
     // 營收以年/月為單位，同月內不需重複同步
@@ -356,51 +357,54 @@ class FundamentalRepository {
       );
     }
 
-    var successCount = 0;
+    // 使用 TPEX OpenAPI 一次取得所有股票營收（免費無限制）
+    final symbolSet = symbolsToSync.toSet();
 
-    for (final symbol in symbolsToSync) {
-      try {
-        final data = await _finMind.getMonthlyRevenue(
-          stockId: symbol,
-          startDate: DateContext.formatYmd(startDate),
-          endDate: DateContext.formatYmd(targetDate),
-        );
+    try {
+      final allData = await _tpex.getAllMonthlyRevenue();
 
-        if (data.isEmpty) continue;
-
-        // 計算成長率
-        final withGrowth = FinMindRevenue.calculateGrowthRates(data);
-
-        // 取最新一筆
-        final latest = withGrowth.last;
-        final recordDate = DateTime(latest.revenueYear, latest.revenueMonth);
-
-        final entry = MonthlyRevenueCompanion.insert(
-          symbol: symbol,
-          date: recordDate,
-          revenueYear: latest.revenueYear,
-          revenueMonth: latest.revenueMonth,
-          revenue: latest.revenue,
-          momGrowth: Value(latest.momGrowth),
-          yoyGrowth: Value(latest.yoyGrowth),
-        );
-
-        await _db.insertMonthlyRevenue([entry]);
-        successCount++;
-      } catch (e) {
-        AppLogger.debug('FundamentalRepo', '同步上櫃營收失敗: $symbol ($e)');
-        // 繼續處理下一檔，不中斷整個流程
+      if (allData.isEmpty) {
+        AppLogger.warning('FundamentalRepo', 'TPEX 營收 API 回傳空資料');
+        return 0;
       }
+
+      var successCount = 0;
+      final entries = <MonthlyRevenueCompanion>[];
+
+      for (final item in allData) {
+        if (!symbolSet.contains(item.code)) continue;
+
+        entries.add(
+          MonthlyRevenueCompanion.insert(
+            symbol: item.code,
+            date: item.date,
+            revenueYear: item.revenueYear,
+            revenueMonth: item.revenueMonth,
+            revenue: item.revenue,
+            momGrowth: Value(item.momGrowth),
+            yoyGrowth: Value(item.yoyGrowth),
+          ),
+        );
+        successCount++;
+      }
+
+      // 批次寫入資料庫
+      if (entries.isNotEmpty) {
+        await _db.insertMonthlyRevenue(entries);
+      }
+
+      final skippedCount = symbols.length - symbolsToSync.length;
+      AppLogger.info(
+        'FundamentalRepo',
+        '上櫃營收同步完成: $successCount/${symbolsToSync.length} 檔 '
+            '(TPEX OpenAPI, 跳過: $skippedCount)',
+      );
+
+      return successCount;
+    } catch (e) {
+      AppLogger.warning('FundamentalRepo', '同步上櫃營收失敗', e);
+      return 0;
     }
-
-    final skippedCount = symbols.length - symbolsToSync.length;
-    AppLogger.info(
-      'FundamentalRepo',
-      '上櫃營收同步完成: $successCount/${symbolsToSync.length} 檔 '
-          '(API calls: ${symbolsToSync.length}, 跳過: $skippedCount)',
-    );
-
-    return successCount;
   }
 
   /// 同步單檔股票的所有基本面資料

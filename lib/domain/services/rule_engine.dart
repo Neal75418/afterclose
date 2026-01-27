@@ -7,10 +7,12 @@ import 'package:afterclose/domain/services/rules/extended_market_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';
+import 'package:afterclose/domain/services/rules/insider_rules.dart';
 import 'package:afterclose/domain/services/rules/institutional_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/rules/technical_rules.dart';
 import 'package:afterclose/domain/services/rules/volume_rules.dart';
+import 'package:afterclose/domain/services/rules/warning_rules.dart';
 import 'package:afterclose/domain/models/models.dart';
 
 /// 股票分析規則引擎
@@ -82,6 +84,15 @@ class RuleEngine {
     PEUndervaluedRule(),
     PEOvervaluedRule(),
     PBRUndervaluedRule(),
+    // Killer Features：注意/處置股票規則
+    TradingWarningAttentionRule(),
+    TradingWarningDisposalRule(),
+    // Killer Features：董監持股規則
+    InsiderSellingStreakRule(),
+    InsiderSignificantBuyingRule(),
+    HighPledgeRatioRule(),
+    ForeignConcentrationWarningRule(),
+    ForeignExodusRule(),
   ];
 
   final List<StockRule> _rules = [];
@@ -159,9 +170,11 @@ class RuleEngine {
       (r) => r.type == ReasonType.institutionalBuy,
     );
 
-    if (hasVolume && hasBreakout) score += 10;
-    if (hasVolume && hasReversal) score += 10;
-    if (hasInstitutional && (hasBreakout || hasReversal)) score += 15;
+    if (hasVolume && hasBreakout) score += RuleScores.breakoutVolumeBonus;
+    if (hasVolume && hasReversal) score += RuleScores.reversalVolumeBonus;
+    if (hasInstitutional && (hasBreakout || hasReversal)) {
+      score += RuleScores.institutionalComboBonus;
+    }
 
     // 3. 衝突訊號處理
     // 多空訊號已透過正負分數自然抵消：

@@ -46,17 +46,17 @@ class EmptyState extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          effectiveColor.withValues(alpha: isDark ? 0.15 : 0.1),
-                          effectiveColor.withValues(
-                            alpha: isDark ? 0.05 : 0.03,
-                          ),
+                          effectiveColor.withValues(alpha: isDark ? 0.25 : 0.1),
+                          effectiveColor.withValues(alpha: isDark ? 0.1 : 0.03),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: effectiveColor.withValues(alpha: 0.2),
+                        color: effectiveColor.withValues(
+                          alpha: isDark ? 0.3 : 0.2,
+                        ),
                         width: 2,
                       ),
                     ),

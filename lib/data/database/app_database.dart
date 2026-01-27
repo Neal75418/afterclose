@@ -49,6 +49,9 @@ part 'app_database.g.dart';
     StockValuation,
     // 融資融券資料（Phase 4）
     MarginTrading,
+    // 風險控管資料（Killer Features）
+    TradingWarning,
+    InsiderHolding,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -58,12 +61,68 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      // v1 -> v2: 新增 news_item.content 欄位
+      if (from < 2) {
+        await customStatement('ALTER TABLE news_item ADD COLUMN content TEXT');
+      }
+
+      // v2 -> v3: 新增 Killer Features 表格（注意/處置股、董監持股）
+      if (from < 3) {
+        // 建立 trading_warning 表
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS trading_warning (
+            symbol TEXT NOT NULL REFERENCES stock_master(symbol) ON DELETE CASCADE,
+            date INTEGER NOT NULL,
+            warning_type TEXT NOT NULL,
+            reason_code TEXT,
+            reason_description TEXT,
+            disposal_measures TEXT,
+            disposal_start_date INTEGER,
+            disposal_end_date INTEGER,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            PRIMARY KEY (symbol, date, warning_type)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_trading_warning_symbol ON trading_warning(symbol)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_trading_warning_date ON trading_warning(date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_trading_warning_type ON trading_warning(warning_type)',
+        );
+
+        // 建立 insider_holding 表
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS insider_holding (
+            symbol TEXT NOT NULL REFERENCES stock_master(symbol) ON DELETE CASCADE,
+            date INTEGER NOT NULL,
+            director_shares REAL,
+            supervisor_shares REAL,
+            manager_shares REAL,
+            insider_ratio REAL,
+            pledge_ratio REAL,
+            shares_change REAL,
+            shares_issued REAL,
+            PRIMARY KEY (symbol, date)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_insider_holding_symbol ON insider_holding(symbol)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_insider_holding_date ON insider_holding(date)',
+        );
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
@@ -376,15 +435,18 @@ class AppDatabase extends _$AppDatabase {
     return results;
   }
 
-  /// 取得歷史資料完成度
+  /// 取得候選股票歷史資料完成度
   ///
   /// 回傳 (已完成檔數, 總檔數)
-  /// 完成定義：該股票有 >= [RuleParams.historicalDataMinDays] 天的價格資料
+  /// - total: 有價格資料的股票數量（實際會被分析的候選股票）
+  /// - completed: 有 >= [RuleParams.historicalDataMinDays] 天價格資料的股票數量
   Future<({int completed, int total})> getHistoricalDataProgress() async {
-    // 取得所有有效股票數量
-    final totalResult = await customSelect(
-      'SELECT COUNT(*) as cnt FROM stock_master WHERE is_active = 1',
-    ).getSingle();
+    // 計算有價格資料的股票數量（實際會被分析的候選股票）
+    final totalResult = await customSelect('''
+      SELECT COUNT(DISTINCT dp.symbol) as cnt
+      FROM daily_price dp
+      INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
+      ''').getSingle();
     final total = totalResult.read<int>('cnt');
 
     if (total == 0) return (completed: 0, total: 0);
@@ -893,6 +955,13 @@ class AppDatabase extends _$AppDatabase {
     return result != null;
   }
 
+  /// 取得單一自選股條目（含 createdAt 時間戳）
+  Future<WatchlistEntry?> getWatchlistEntry(String symbol) {
+    return (select(
+      watchlist,
+    )..where((t) => t.symbol.equals(symbol))).getSingleOrNull();
+  }
+
   // ==========================================
   // 應用程式設定操作（Token 儲存用）
   // ==========================================
@@ -1101,6 +1170,87 @@ class AppDatabase extends _$AppDatabase {
         .getSingleOrNull();
   }
 
+  /// 批次取得多檔股票的最新持股資料
+  ///
+  /// 用於 Isolate 評分時傳遞外資持股資料。
+  /// 回傳 symbol -> ShareholdingEntry 的對應表。
+  Future<Map<String, ShareholdingEntry>> getLatestShareholdingsBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final results = await customSelect(
+      '''
+      SELECT s.*
+      FROM shareholding s
+      INNER JOIN (
+        SELECT symbol, MAX(date) as max_date
+        FROM shareholding
+        WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
+        GROUP BY symbol
+      ) latest ON s.symbol = latest.symbol AND s.date = latest.max_date
+      ''',
+      variables: symbols.map((s) => Variable.withString(s)).toList(),
+    ).get();
+
+    final map = <String, ShareholdingEntry>{};
+    for (final row in results) {
+      final symbol = row.read<String>('symbol');
+      map[symbol] = ShareholdingEntry(
+        symbol: symbol,
+        date: DateTime.parse(row.read<String>('date')),
+        foreignRemainingShares: row.read<double?>('foreign_remaining_shares'),
+        foreignSharesRatio: row.read<double?>('foreign_shares_ratio'),
+        foreignUpperLimitRatio: row.read<double?>('foreign_upper_limit_ratio'),
+        sharesIssued: row.read<double?>('shares_issued'),
+      );
+    }
+    return map;
+  }
+
+  /// 批次取得 N 天前的外資持股資料
+  ///
+  /// 用於計算外資持股變化量（foreignSharesRatioChange）。
+  /// 取得每檔股票在指定日期之前最接近的持股資料。
+  Future<Map<String, ShareholdingEntry>> getShareholdingsBeforeDateBatch(
+    List<String> symbols, {
+    required DateTime beforeDate,
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    final results = await customSelect(
+      '''
+      SELECT s.*
+      FROM shareholding s
+      INNER JOIN (
+        SELECT symbol, MAX(date) as max_date
+        FROM shareholding
+        WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
+          AND date < ?
+        GROUP BY symbol
+      ) prev ON s.symbol = prev.symbol AND s.date = prev.max_date
+      ''',
+      variables: [
+        ...symbols.map((s) => Variable.withString(s)),
+        Variable.withDateTime(beforeDate),
+      ],
+    ).get();
+
+    final map = <String, ShareholdingEntry>{};
+    for (final row in results) {
+      final symbol = row.read<String>('symbol');
+      map[symbol] = ShareholdingEntry(
+        symbol: symbol,
+        date: DateTime.parse(row.read<String>('date')),
+        foreignRemainingShares: row.read<double?>('foreign_remaining_shares'),
+        foreignSharesRatio: row.read<double?>('foreign_shares_ratio'),
+        foreignUpperLimitRatio: row.read<double?>('foreign_upper_limit_ratio'),
+        sharesIssued: row.read<double?>('shares_issued'),
+      );
+    }
+    return map;
+  }
+
   /// 批次新增持股資料
   Future<void> insertShareholdingData(
     List<ShareholdingCompanion> entries,
@@ -1157,6 +1307,34 @@ class AppDatabase extends _$AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
+  /// 取得指定日期和市場的當沖資料筆數（新鮮度檢查用）
+  ///
+  /// [market] - 市場類型：'TWSE' 或 'TPEx'
+  Future<int> getDayTradingCountForDateAndMarket(
+    DateTime date,
+    String market,
+  ) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    // 使用 JOIN 查詢統計特定市場的當沖資料筆數
+    final countExpr = dayTrading.symbol.count();
+    final query =
+        selectOnly(dayTrading).join([
+            innerJoin(
+              stockMaster,
+              stockMaster.symbol.equalsExp(dayTrading.symbol),
+            ),
+          ])
+          ..addColumns([countExpr])
+          ..where(dayTrading.date.isBiggerOrEqualValue(startOfDay))
+          ..where(dayTrading.date.isSmallerThanValue(endOfDay))
+          ..where(stockMaster.market.equals(market));
+
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
   /// 批次新增當沖資料
   Future<void> insertDayTradingData(List<DayTradingCompanion> entries) async {
     await batch((b) {
@@ -1179,6 +1357,77 @@ class AppDatabase extends _$AppDatabase {
               t.date.isSmallerOrEqualValue(endDate),
         ))
         .go();
+  }
+
+  /// 取得資料庫中最新的當沖資料日期
+  ///
+  /// 用於上櫃股票的新鮮度檢查基準。
+  /// 回傳 TWSE 批次同步後的實際資料日期。
+  Future<DateTime?> getLatestDayTradingDate() async {
+    final result =
+        await (select(dayTrading)
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(1))
+            .getSingleOrNull();
+    return result?.date;
+  }
+
+  /// 批次取得最新當沖資料 Map
+  ///
+  /// 用於 Isolate 評分時傳遞當沖資料。
+  /// 優先取得指定日期的資料，若無則取得最近 5 天內的最新資料。
+  /// 回傳 symbol -> dayTradingRatio 的對應表。
+  Future<Map<String, double>> getDayTradingMapForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    // 先嘗試取得指定日期的資料
+    var results =
+        await (select(dayTrading)
+              ..where((t) => t.date.isBiggerOrEqualValue(startOfDay))
+              ..where((t) => t.date.isSmallerThanValue(endOfDay)))
+            .get();
+
+    // 若指定日期沒有資料，取得最近 5 天內最新一天的資料
+    if (results.isEmpty) {
+      final lookbackStart = startOfDay.subtract(const Duration(days: 5));
+      final latestDateResult = await customSelect(
+        '''
+        SELECT MAX(date) as latest_date
+        FROM day_trading
+        WHERE date >= ? AND date < ?
+        ''',
+        variables: [
+          Variable.withDateTime(lookbackStart),
+          Variable.withDateTime(endOfDay),
+        ],
+      ).getSingleOrNull();
+
+      final latestDateStr = latestDateResult?.read<String?>('latest_date');
+      if (latestDateStr != null) {
+        final latestDate = DateTime.parse(latestDateStr);
+        final latestStartOfDay = DateTime(
+          latestDate.year,
+          latestDate.month,
+          latestDate.day,
+        );
+        final latestEndOfDay = latestStartOfDay.add(const Duration(days: 1));
+
+        results =
+            await (select(dayTrading)
+                  ..where((t) => t.date.isBiggerOrEqualValue(latestStartOfDay))
+                  ..where((t) => t.date.isSmallerThanValue(latestEndOfDay)))
+                .get();
+      }
+    }
+
+    final map = <String, double>{};
+    for (final entry in results) {
+      if (entry.dayTradingRatio != null) {
+        map[entry.symbol] = entry.dayTradingRatio!;
+      }
+    }
+    return map;
   }
 
   // ==========================================
@@ -1700,6 +1949,315 @@ class AppDatabase extends _$AppDatabase {
         b.insert(stockValuation, entry, mode: InsertMode.insertOrReplace);
       }
     });
+  }
+
+  // ==========================================
+  // 注意股票/處置股票操作
+  // ==========================================
+
+  /// 取得股票的警示歷史
+  Future<List<TradingWarningEntry>> getWarningHistory(
+    String symbol, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final query = select(tradingWarning)..where((t) => t.symbol.equals(symbol));
+
+    if (startDate != null) {
+      query.where((t) => t.date.isBiggerOrEqualValue(startDate));
+    }
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([(t) => OrderingTerm.desc(t.date)]);
+    return query.get();
+  }
+
+  /// 取得股票目前生效的警示
+  Future<List<TradingWarningEntry>> getActiveWarnings(String symbol) {
+    return (select(tradingWarning)
+          ..where((t) => t.symbol.equals(symbol))
+          ..where((t) => t.isActive.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+        .get();
+  }
+
+  /// 取得所有目前生效的警示（全市場）
+  Future<List<TradingWarningEntry>> getAllActiveWarnings() {
+    return (select(tradingWarning)
+          ..where((t) => t.isActive.equals(true))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+        .get();
+  }
+
+  /// 依類型取得所有目前生效的警示
+  Future<List<TradingWarningEntry>> getActiveWarningsByType(String type) {
+    return (select(tradingWarning)
+          ..where((t) => t.isActive.equals(true))
+          ..where((t) => t.warningType.equals(type))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+        .get();
+  }
+
+  /// 檢查股票是否有目前生效的警示
+  Future<bool> hasActiveWarning(String symbol) async {
+    final result =
+        await (select(tradingWarning)
+              ..where((t) => t.symbol.equals(symbol))
+              ..where((t) => t.isActive.equals(true))
+              ..limit(1))
+            .getSingleOrNull();
+    return result != null;
+  }
+
+  /// 檢查股票是否為處置股
+  Future<bool> isDisposalStock(String symbol) async {
+    final result =
+        await (select(tradingWarning)
+              ..where((t) => t.symbol.equals(symbol))
+              ..where((t) => t.isActive.equals(true))
+              ..where((t) => t.warningType.equals('DISPOSAL'))
+              ..limit(1))
+            .getSingleOrNull();
+    return result != null;
+  }
+
+  /// 批次檢查多檔股票是否為處置股（批次查詢）
+  Future<Set<String>> getDisposalStocksBatch(List<String> symbols) async {
+    if (symbols.isEmpty) return {};
+
+    final results =
+        await (select(tradingWarning)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.isActive.equals(true))
+              ..where((t) => t.warningType.equals('DISPOSAL')))
+            .get();
+
+    return results.map((r) => r.symbol).toSet();
+  }
+
+  /// 批次取得多檔股票的警示資料 Map
+  ///
+  /// 用於 Isolate 評分時傳遞警示資料。
+  /// 優先回傳 DISPOSAL（處置股），若無則回傳 ATTENTION（注意股）。
+  Future<Map<String, TradingWarningEntry>> getActiveWarningsMapBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final results =
+        await (select(tradingWarning)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.isActive.equals(true))
+              ..orderBy([
+                // DISPOSAL 優先於 ATTENTION
+                (t) => OrderingTerm.desc(t.warningType),
+              ]))
+            .get();
+
+    final map = <String, TradingWarningEntry>{};
+    for (final entry in results) {
+      // 只保留第一筆（DISPOSAL 優先）
+      if (!map.containsKey(entry.symbol)) {
+        map[entry.symbol] = entry;
+      }
+    }
+    return map;
+  }
+
+  /// 批次新增警示資料
+  Future<void> insertWarningData(List<TradingWarningCompanion> entries) async {
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(tradingWarning, entry, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  /// 更新過期的警示狀態
+  ///
+  /// 將處置結束日已過的警示標記為非生效
+  Future<int> updateExpiredWarnings() async {
+    final now = DateTime.now();
+    return (update(tradingWarning)
+          ..where((t) => t.isActive.equals(true))
+          ..where((t) => t.disposalEndDate.isSmallerThanValue(now)))
+        .write(const TradingWarningCompanion(isActive: Value(false)));
+  }
+
+  /// 取得指定日期的警示資料筆數（新鮮度檢查用）
+  Future<int> getWarningCountForDate(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final countExpr = tradingWarning.symbol.count();
+    final query = selectOnly(tradingWarning)
+      ..addColumns([countExpr])
+      ..where(tradingWarning.date.isBiggerOrEqualValue(startOfDay))
+      ..where(tradingWarning.date.isSmallerThanValue(endOfDay));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
+  }
+
+  /// 取得最新警示資料的同步時間
+  ///
+  /// 用於新鮮度檢查，避免重複同步。
+  Future<DateTime?> getLatestWarningSyncTime() async {
+    final query = select(tradingWarning)
+      ..orderBy([(t) => OrderingTerm.desc(t.date)])
+      ..limit(1);
+    final result = await query.getSingleOrNull();
+    return result?.date;
+  }
+
+  // ==========================================
+  // 董監事持股操作
+  // ==========================================
+
+  /// 取得股票的董監持股歷史
+  Future<List<InsiderHoldingEntry>> getInsiderHoldingHistory(
+    String symbol, {
+    required DateTime startDate,
+    DateTime? endDate,
+  }) {
+    final query = select(insiderHolding)
+      ..where((t) => t.symbol.equals(symbol))
+      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
+
+    if (endDate != null) {
+      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
+    }
+
+    query.orderBy([(t) => OrderingTerm.asc(t.date)]);
+    return query.get();
+  }
+
+  /// 取得股票的最新董監持股資料
+  Future<InsiderHoldingEntry?> getLatestInsiderHolding(String symbol) {
+    return (select(insiderHolding)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// 取得股票近 N 個月的董監持股資料
+  Future<List<InsiderHoldingEntry>> getRecentInsiderHoldings(
+    String symbol, {
+    int months = 6,
+  }) {
+    return (select(insiderHolding)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(months))
+        .get();
+  }
+
+  /// 批次取得多檔股票的最新董監持股（批次查詢）
+  Future<Map<String, InsiderHoldingEntry>> getLatestInsiderHoldingsBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final placeholders = List.filled(symbols.length, '?').join(', ');
+
+    final query =
+        '''
+      SELECT ih.*
+      FROM insider_holding ih
+      INNER JOIN (
+        SELECT symbol, MAX(date) as max_date
+        FROM insider_holding
+        WHERE symbol IN ($placeholders)
+        GROUP BY symbol
+      ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: symbols.map((s) => Variable.withString(s)).toList(),
+      readsFrom: {insiderHolding},
+    ).get();
+
+    final result = <String, InsiderHoldingEntry>{};
+    for (final row in results) {
+      final entry = InsiderHoldingEntry(
+        symbol: row.read<String>('symbol'),
+        date: row.read<DateTime>('date'),
+        directorShares: row.readNullable<double>('director_shares'),
+        supervisorShares: row.readNullable<double>('supervisor_shares'),
+        managerShares: row.readNullable<double>('manager_shares'),
+        insiderRatio: row.readNullable<double>('insider_ratio'),
+        pledgeRatio: row.readNullable<double>('pledge_ratio'),
+        sharesChange: row.readNullable<double>('shares_change'),
+        sharesIssued: row.readNullable<double>('shares_issued'),
+      );
+      result[entry.symbol] = entry;
+    }
+
+    return result;
+  }
+
+  /// 取得高質押比例的股票（風險警示）
+  Future<List<InsiderHoldingEntry>> getHighPledgeRatioStocks({
+    required double threshold,
+  }) async {
+    // 先取得每檔股票的最新資料，再過濾高質押
+    const query = '''
+      SELECT ih.*
+      FROM insider_holding ih
+      INNER JOIN (
+        SELECT symbol, MAX(date) as max_date
+        FROM insider_holding
+        GROUP BY symbol
+      ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
+      WHERE ih.pledge_ratio >= ?
+      ORDER BY ih.pledge_ratio DESC
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: [Variable.withReal(threshold)],
+      readsFrom: {insiderHolding},
+    ).get();
+
+    return results.map((row) {
+      return InsiderHoldingEntry(
+        symbol: row.read<String>('symbol'),
+        date: row.read<DateTime>('date'),
+        directorShares: row.readNullable<double>('director_shares'),
+        supervisorShares: row.readNullable<double>('supervisor_shares'),
+        managerShares: row.readNullable<double>('manager_shares'),
+        insiderRatio: row.readNullable<double>('insider_ratio'),
+        pledgeRatio: row.readNullable<double>('pledge_ratio'),
+        sharesChange: row.readNullable<double>('shares_change'),
+        sharesIssued: row.readNullable<double>('shares_issued'),
+      );
+    }).toList();
+  }
+
+  /// 批次新增董監持股資料
+  Future<void> insertInsiderHoldingData(
+    List<InsiderHoldingCompanion> entries,
+  ) async {
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(insiderHolding, entry, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  /// 取得指定年月的董監持股資料筆數（新鮮度檢查用）
+  Future<int> getInsiderHoldingCountForYearMonth(int year, int month) async {
+    final startOfMonth = DateTime(year, month, 1);
+    final endOfMonth = DateTime(year, month + 1, 1);
+    final countExpr = insiderHolding.symbol.count();
+    final query = selectOnly(insiderHolding)
+      ..addColumns([countExpr])
+      ..where(insiderHolding.date.isBiggerOrEqualValue(startOfMonth))
+      ..where(insiderHolding.date.isSmallerThanValue(endOfMonth));
+    final result = await query.getSingle();
+    return result.read(countExpr) ?? 0;
   }
 }
 

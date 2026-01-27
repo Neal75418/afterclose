@@ -21,6 +21,10 @@ class ScoringIsolateInput {
     this.valuationMap,
     this.revenueHistoryMap,
     this.recentlyRecommended,
+    this.dayTradingMap,
+    this.shareholdingMap,
+    this.warningMap,
+    this.insiderMap,
   });
 
   final List<String> candidates;
@@ -32,6 +36,18 @@ class ScoringIsolateInput {
   final Map<String, List<Map<String, dynamic>>>? revenueHistoryMap;
   final Set<String>? recentlyRecommended;
 
+  /// 當沖資料 Map（symbol -> dayTradingRatio）
+  final Map<String, double>? dayTradingMap;
+
+  /// 外資持股資料 Map（symbol -> {ratio, ratioChange}）
+  final Map<String, Map<String, double?>>? shareholdingMap;
+
+  /// 警示資料 Map（symbol -> {type, isDisposal, isAttention, ...}）
+  final Map<String, Map<String, dynamic>>? warningMap;
+
+  /// 董監持股資料 Map（symbol -> {pledgeRatio, insiderRatio, ...}）
+  final Map<String, Map<String, dynamic>>? insiderMap;
+
   Map<String, dynamic> toMap() => {
     'candidates': candidates,
     'pricesMap': pricesMap,
@@ -41,6 +57,10 @@ class ScoringIsolateInput {
     'valuationMap': valuationMap,
     'revenueHistoryMap': revenueHistoryMap,
     'recentlyRecommended': recentlyRecommended?.toList(),
+    'dayTradingMap': dayTradingMap,
+    'shareholdingMap': shareholdingMap,
+    'warningMap': warningMap,
+    'insiderMap': insiderMap,
   };
 
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
@@ -61,7 +81,39 @@ class ScoringIsolateInput {
       recentlyRecommended: map['recentlyRecommended'] != null
           ? Set<String>.from(map['recentlyRecommended'])
           : null,
+      dayTradingMap: map['dayTradingMap'] != null
+          ? Map<String, double>.from(map['dayTradingMap'])
+          : null,
+      shareholdingMap: map['shareholdingMap'] != null
+          ? _castShareholdingMap(map['shareholdingMap'])
+          : null,
+      warningMap: map['warningMap'] != null
+          ? Map<String, Map<String, dynamic>>.from(
+              (map['warningMap'] as Map).map(
+                (k, v) => MapEntry(k as String, Map<String, dynamic>.from(v)),
+              ),
+            )
+          : null,
+      insiderMap: map['insiderMap'] != null
+          ? Map<String, Map<String, dynamic>>.from(
+              (map['insiderMap'] as Map).map(
+                (k, v) => MapEntry(k as String, Map<String, dynamic>.from(v)),
+              ),
+            )
+          : null,
     );
+  }
+
+  static Map<String, Map<String, double?>> _castShareholdingMap(dynamic map) {
+    final result = <String, Map<String, double?>>{};
+    for (final entry in (map as Map).entries) {
+      final innerMap = <String, double?>{};
+      for (final inner in (entry.value as Map).entries) {
+        innerMap[inner.key as String] = inner.value as double?;
+      }
+      result[entry.key as String] = innerMap;
+    }
+    return result;
   }
 
   static Map<String, List<Map<String, dynamic>>> _castPricesMap(dynamic map) {
@@ -264,10 +316,62 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     final analysisResult = analysisService.analyzeStock(prices);
     if (analysisResult == null) continue;
 
-    // 建立上下文（無 marketData，在 Isolate 中無法取得）
+    // 建立市場資料上下文（使用預先載入的所有市場資料）
+    final dayTradingRatio = input.dayTradingMap?[symbol];
+    final shareholdingData = input.shareholdingMap?[symbol];
+    final warningData = input.warningMap?[symbol];
+    final insiderData = input.insiderMap?[symbol];
+
+    // 建立警示資料上下文
+    WarningDataContext? warningContext;
+    if (warningData != null) {
+      final warningType = warningData['warningType'] as String?;
+      warningContext = WarningDataContext(
+        isAttention: warningType == 'ATTENTION',
+        isDisposal: warningType == 'DISPOSAL',
+        warningType: warningType,
+        reasonDescription: warningData['reasonDescription'] as String?,
+        disposalMeasures: warningData['disposalMeasures'] as String?,
+        disposalEndDate: warningData['disposalEndDate'] != null
+            ? DateTime.tryParse(warningData['disposalEndDate'] as String)
+            : null,
+      );
+    }
+
+    // 建立董監持股資料上下文
+    InsiderDataContext? insiderContext;
+    if (insiderData != null) {
+      insiderContext = InsiderDataContext(
+        insiderRatio: insiderData['insiderRatio'] as double?,
+        pledgeRatio: insiderData['pledgeRatio'] as double?,
+        hasSellingStreak: insiderData['hasSellingStreak'] as bool? ?? false,
+        sellingStreakMonths: insiderData['sellingStreakMonths'] as int? ?? 0,
+        hasSignificantBuying:
+            insiderData['hasSignificantBuying'] as bool? ?? false,
+        buyingChange: insiderData['buyingChange'] as double?,
+      );
+    }
+
+    // 組合完整的市場資料上下文
+    MarketDataContext? marketData;
+    if (dayTradingRatio != null ||
+        shareholdingData != null ||
+        warningContext != null ||
+        insiderContext != null) {
+      marketData = MarketDataContext(
+        dayTradingRatio: dayTradingRatio,
+        foreignSharesRatio: shareholdingData?['foreignSharesRatio'],
+        foreignSharesRatioChange: shareholdingData?['foreignSharesRatioChange'],
+        warningData: warningContext,
+        insiderData: insiderContext,
+      );
+    }
+
+    // 建立上下文
     final context = analysisService.buildContext(
       analysisResult,
       priceHistory: prices,
+      marketData: marketData,
     );
 
     // 轉換法人資料
@@ -422,6 +526,7 @@ NewsItemEntry _mapToNewsItemEntry(Map<String, dynamic> map) {
     category: map['category'] as String,
     publishedAt: DateTime.parse(map['publishedAt'] as String),
     fetchedAt: DateTime.parse(map['fetchedAt'] as String),
+    content: map['content'] as String?,
   );
 }
 
@@ -434,6 +539,7 @@ Map<String, dynamic> newsItemEntryToMap(NewsItemEntry entry) {
     'category': entry.category,
     'publishedAt': entry.publishedAt.toIso8601String(),
     'fetchedAt': entry.fetchedAt.toIso8601String(),
+    'content': entry.content,
   };
 }
 

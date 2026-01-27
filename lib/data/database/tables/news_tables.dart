@@ -16,6 +16,9 @@ class NewsItem extends Table {
   /// 新聞標題
   TextColumn get title => text()();
 
+  /// 新聞內文摘要（從 RSS description 抓取，可能為空）
+  TextColumn get content => text().nullable()();
+
   /// 新聞連結
   TextColumn get url => text()();
 

@@ -65,14 +65,16 @@ abstract final class ShimmerDimensions {
 
 /// 淺色與深色主題的微光效果顏色
 abstract final class ShimmerColors {
+  // Midnight Slate Theme Colors
   static Color baseColor(bool isDark) =>
-      isDark ? Colors.grey[800]! : Colors.grey[300]!;
+      isDark ? const Color(0xFF1E293B) : Colors.grey[300]!; // Slate 800
+
   static Color highlightColor(bool isDark) =>
-      isDark ? Colors.grey[700]! : Colors.grey[100]!;
+      isDark ? const Color(0xFF334155) : Colors.grey[100]!; // Slate 700
 
   /// 骨架容器填充顏色，在兩種模式下都能提供良好的對比度
   static Color skeletonColor(bool isDark) =>
-      isDark ? const Color(0xFF3A3A4A) : Colors.white;
+      isDark ? const Color(0xFF0F172A) : Colors.white; // Slate 900
 }
 
 // ==================================================

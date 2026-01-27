@@ -214,7 +214,20 @@
     "subChart": "副圖",
     "dataToday": "今日資料",
     "dataYesterday": "昨日資料",
-    "dataLabel": "資料"
+    "dataLabel": "資料",
+    "tabInsider": "董監",
+    "insiderHistory": "持股歷史",
+    "insiderComingSoon": "無董監持股資料",
+    "insiderRatio": "董監持股",
+    "insiderRatioLabel": "董監持股比例",
+    "pledgeRatio": "質押比例",
+    "pledgeRatioLabel": "董監質押比例",
+    "insiderChange": "持股變化",
+    "insiderChangeLabel": "本月持股變化",
+    "insiderDate": "月份",
+    "insiderRatioShort": "持股%",
+    "pledgeRatioShort": "質押%",
+    "insiderChangeShort": "變化"
   },
   "score": {
     "label": "推薦評分",
@@ -357,7 +370,14 @@
     "historyProgress": "歷史資料：{completed}/{total} 檔 ({percent}%)",
     "rateLimitTitle": "API 流量限制",
     "rateLimitMessage": "FinMind API 已達到每小時使用上限（600 次）。\n\n請等待約 10-15 分鐘後再試，或考慮升級 FinMind 付費方案。",
-    "rateLimitOk": "我知道了"
+    "rateLimitOk": "我知道了",
+    "advancedFeatures": "進階功能",
+    "showWarningBadges": "顯示警示標記",
+    "showWarningBadgesDesc": "在自選股顯示注意/處置/高質押標記",
+    "insiderNotifications": "董監持股通知",
+    "insiderNotificationsDesc": "當自選股董監持股有重大變化時通知",
+    "disposalUrgentAlerts": "處置股票緊急警報",
+    "disposalUrgentAlertsDesc": "當自選股被列入處置股時發送緊急通知"
   },
   "alert": {
     "title": "價格提醒",

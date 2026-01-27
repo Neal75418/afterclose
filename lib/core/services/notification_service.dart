@@ -182,6 +182,52 @@ class NotificationService {
     );
   }
 
+  /// 顯示緊急警報通知（處置股票專用）
+  ///
+  /// 使用 Importance.max 確保用戶立即注意到。
+  Future<void> showUrgentAlert({
+    required int id,
+    required String symbol,
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    // ignore: prefer_const_constructors - AndroidNotificationDetails is not const
+    final androidDetails = AndroidNotificationDetails(
+      'urgent_alerts',
+      'Urgent Alerts',
+      channelDescription: 'Urgent notifications for disposal stocks',
+      importance: Importance.max,
+      priority: Priority.max,
+      icon: '@mipmap/ic_launcher',
+      color: const Color(0xFFE53935), // 紅色警示
+      enableVibration: true,
+      playSound: true,
+      fullScreenIntent: true, // 全螢幕通知
+    );
+
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.critical, // iOS 緊急通知
+    );
+
+    final notificationDetails = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+      macOS: iosDetails,
+    );
+
+    await _notifications.show(
+      id,
+      title,
+      body,
+      notificationDetails,
+      payload: payload ?? symbol,
+    );
+  }
+
   /// 排程指定時間的通知
   Future<void> scheduleNotification({
     required int id,

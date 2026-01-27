@@ -40,44 +40,128 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         children: [
           // API Section
-          _buildSectionHeader(theme, 'settings.api'.tr()),
-          const _ApiTokenTile(),
-          const Divider(height: 1),
+          _buildSettingsSection(context, 'settings.api'.tr(), [
+            const _ApiTokenTile(),
+          ]),
 
           // Theme Section
-          _buildSectionHeader(theme, 'settings.appearance'.tr()),
-          _buildThemeTile(context, ref, theme, settings),
-          const Divider(height: 1),
+          _buildSettingsSection(context, 'settings.appearance'.tr(), [
+            _buildThemeTile(context, ref, theme, settings),
+          ]),
 
           // Language Section
-          _buildSectionHeader(theme, 'settings.language'.tr()),
-          _buildLanguageTile(context, theme, currentLocale),
-          const Divider(height: 1),
+          _buildSettingsSection(context, 'settings.language'.tr(), [
+            _buildLanguageTile(context, theme, currentLocale),
+          ]),
+
+          // Advanced Features Section
+          _buildSettingsSection(context, 'settings.advancedFeatures'.tr(), [
+            _buildFeatureTile(
+              context,
+              settings.showWarningBadges,
+              Icons.warning_amber_rounded,
+              Colors.orange,
+              'settings.showWarningBadges'.tr(),
+              (v) =>
+                  ref.read(settingsProvider.notifier).setShowWarningBadges(v),
+            ),
+            _buildFeatureTile(
+              context,
+              settings.insiderNotifications,
+              Icons.people_alt_rounded,
+              Colors.blue,
+              'settings.insiderNotifications'.tr(),
+              (v) => ref
+                  .read(settingsProvider.notifier)
+                  .setInsiderNotifications(v),
+            ),
+            _buildFeatureTile(
+              context,
+              settings.disposalUrgentAlerts,
+              Icons.dangerous_rounded,
+              Colors.red,
+              'settings.disposalUrgentAlerts'.tr(),
+              (v) => ref
+                  .read(settingsProvider.notifier)
+                  .setDisposalUrgentAlerts(v),
+            ),
+          ]),
 
           // Data Management Section
-          _buildSectionHeader(theme, 'settings.dataManagement'.tr()),
-          _DataManagementTile(),
-          const Divider(height: 1),
+          _buildSettingsSection(context, 'settings.dataManagement'.tr(), [
+            _DataManagementTile(),
+          ]),
 
           // About Section
-          _buildSectionHeader(theme, 'settings.about'.tr()),
-          _buildAboutTile(context, theme),
-          _buildVersionTile(theme),
+          _buildSettingsSection(context, 'settings.about'.tr(), [
+            _buildAboutTile(context, theme),
+            _buildVersionTile(theme),
+          ]),
+
+          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(ThemeData theme, String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title,
-        style: theme.textTheme.titleSmall?.copyWith(
-          color: AppTheme.primaryColor,
-          fontWeight: FontWeight.bold,
+  Widget _buildSettingsSection(
+    BuildContext context,
+    String title,
+    List<Widget> children,
+  ) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+          child: Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ),
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+            ),
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0)
+                  Divider(
+                    height: 1,
+                    indent: 56,
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.2,
+                    ),
+                  ),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIconContainer(Color color, IconData icon) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
       ),
+      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 
@@ -88,13 +172,28 @@ class SettingsScreen extends ConsumerWidget {
     SettingsState settings,
   ) {
     return ListTile(
-      leading: Icon(
+      leading: _buildIconContainer(
+        Colors.indigo,
         _getThemeIcon(settings.themeMode),
-        color: theme.colorScheme.primary,
       ),
       title: Text('settings.themeMode'.tr()),
-      subtitle: Text(_getThemeModeLabel(settings.themeMode)),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _getThemeModeLabel(settings.themeMode),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
       onTap: () => _showThemeDialog(context, ref, settings.themeMode),
     );
   }
@@ -112,36 +211,74 @@ class SettingsScreen extends ConsumerWidget {
         .name;
 
     return ListTile(
-      leading: Icon(Icons.language_rounded, color: theme.colorScheme.primary),
+      leading: _buildIconContainer(Colors.teal, Icons.language_rounded),
       title: Text('settings.language'.tr()),
-      subtitle: Text(currentName),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            currentName,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
       onTap: () => _showLanguageDialog(context, currentLocale),
     );
   }
 
   Widget _buildAboutTile(BuildContext context, ThemeData theme) {
     return ListTile(
-      leading: Icon(
+      leading: _buildIconContainer(
+        Colors.grey[700]!,
         Icons.info_outline_rounded,
-        color: theme.colorScheme.primary,
       ),
       title: Text('settings.aboutApp'.tr()),
-      subtitle: Text('settings.aboutDescription'.tr()),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: Icon(
+        Icons.chevron_right,
+        size: 20,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
       onTap: () => _showAboutDialog(context),
     );
   }
 
   Widget _buildVersionTile(ThemeData theme) {
     return ListTile(
-      leading: Icon(
-        Icons.verified_rounded,
-        color: theme.colorScheme.onSurfaceVariant,
-      ),
+      leading: _buildIconContainer(Colors.blueGrey, Icons.verified_rounded),
       title: Text('settings.version'.tr()),
-      subtitle: const Text('1.0.0'),
-      enabled: false,
+      trailing: Text(
+        '1.0.0',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureTile(
+    BuildContext context,
+    bool value,
+    IconData icon,
+    Color color,
+    String title,
+    Function(bool) onChanged,
+  ) {
+    return SwitchListTile(
+      secondary: _buildIconContainer(color, icon),
+      title: Text(title),
+      value: value,
+      onChanged: (newValue) {
+        HapticFeedback.selectionClick();
+        onChanged(newValue);
+      },
     );
   }
 
@@ -414,8 +551,9 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
     final settingsRepo = ref.read(settingsRepositoryProvider);
     await settingsRepo.setFinMindToken(token);
 
-    // Update FinMindClient with new token
-    ref.read(finMindClientProvider).token = token;
+    // Invalidate finMindClientProvider 讓所有依賴它的 provider 重新獲取新 token
+    // 這比直接設定 .token 屬性更安全，確保所有相關 provider 使用新配置
+    ref.invalidate(finMindClientProvider);
 
     if (mounted) {
       setState(() {
@@ -433,8 +571,9 @@ class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
     final settingsRepo = ref.read(settingsRepositoryProvider);
     await settingsRepo.clearFinMindToken();
 
-    // Clear token from FinMindClient
-    ref.read(finMindClientProvider).token = null;
+    // Invalidate finMindClientProvider 讓所有依賴它的 provider 重新獲取（無 token）
+    // 這比直接設定 .token = null 更安全，確保所有相關 provider 使用新配置
+    ref.invalidate(finMindClientProvider);
 
     if (mounted) {
       setState(() {

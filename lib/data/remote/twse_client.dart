@@ -740,11 +740,411 @@ class TwseClient {
       return null;
     }
   }
+
+  // ==========================================
+  // Killer Features API (注意/處置股票)
+  // ==========================================
+
+  /// 取得上市注意股票清單
+  ///
+  /// 端點: /rwd/zh/announcement/TWTAVU
+  ///
+  /// 回傳交易量異常、價格異常波動的股票清單。
+  Future<List<TwseTradingWarning>> getTradingWarnings({DateTime? date}) async {
+    try {
+      final targetDate = date ?? DateTime.now();
+      final dateStr =
+          '${targetDate.year}${targetDate.month.toString().padLeft(2, '0')}${targetDate.day.toString().padLeft(2, '0')}';
+
+      final response = await _dio.get(
+        ApiEndpoints.twseTradingWarning,
+        queryParameters: {'response': 'json', 'date': dateStr},
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.warning('TWSE', '注意股票: JSON 解析失敗');
+            return [];
+          }
+        }
+
+        if (data is! Map<String, dynamic>) {
+          AppLogger.warning('TWSE', '注意股票: 非預期資料型別');
+          return [];
+        }
+
+        if (data['stat'] != 'OK' || data['data'] == null) {
+          AppLogger.warning('TWSE', '注意股票: 無資料');
+          return [];
+        }
+
+        final List<dynamic> rows = data['data'];
+        final results = <TwseTradingWarning>[];
+
+        for (final row in rows) {
+          if (row is List && row.length >= 3) {
+            final parsed = _parseTradingWarningRow(row, targetDate);
+            if (parsed != null) {
+              results.add(parsed);
+            }
+          }
+        }
+
+        AppLogger.info('TWSE', '注意股票: ${results.length} 筆');
+        return results;
+      }
+
+      throw ApiException(
+        'TWSE API error: ${response.statusCode}',
+        response.statusCode,
+      );
+    } on DioException catch (e) {
+      AppLogger.warning('TWSE', '注意股票: ${e.message ?? "網路錯誤"}');
+      throw NetworkException(e.message ?? 'TWSE network error', e);
+    }
+  }
+
+  /// 解析注意股票資料列
+  ///
+  /// 列格式: [代號, 名稱, 列入原因說明, ...]
+  TwseTradingWarning? _parseTradingWarningRow(
+    List<dynamic> row,
+    DateTime date,
+  ) {
+    try {
+      final code = row[0]?.toString().trim() ?? '';
+      if (code.isEmpty || code.length < 4) return null;
+
+      return TwseTradingWarning(
+        date: date,
+        code: code,
+        name: row[1]?.toString().trim() ?? '',
+        reasonDescription: row.length > 2 ? row[2]?.toString().trim() : null,
+        warningType: 'ATTENTION',
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 取得上市處置股票清單
+  ///
+  /// 端點: /rwd/zh/announcement/TWTAUU
+  ///
+  /// 回傳交易受限制的股票清單。
+  Future<List<TwseTradingWarning>> getDisposalInfo({DateTime? date}) async {
+    try {
+      final targetDate = date ?? DateTime.now();
+      final dateStr =
+          '${targetDate.year}${targetDate.month.toString().padLeft(2, '0')}${targetDate.day.toString().padLeft(2, '0')}';
+
+      final response = await _dio.get(
+        ApiEndpoints.twseDisposal,
+        queryParameters: {'response': 'json', 'date': dateStr},
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.warning('TWSE', '處置股票: JSON 解析失敗');
+            return [];
+          }
+        }
+
+        if (data is! Map<String, dynamic>) {
+          AppLogger.warning('TWSE', '處置股票: 非預期資料型別');
+          return [];
+        }
+
+        if (data['stat'] != 'OK' || data['data'] == null) {
+          AppLogger.warning('TWSE', '處置股票: 無資料');
+          return [];
+        }
+
+        final List<dynamic> rows = data['data'];
+        final results = <TwseTradingWarning>[];
+
+        for (final row in rows) {
+          if (row is List && row.length >= 3) {
+            final parsed = _parseDisposalRow(row, targetDate);
+            if (parsed != null) {
+              results.add(parsed);
+            }
+          }
+        }
+
+        AppLogger.info('TWSE', '處置股票: ${results.length} 筆');
+        return results;
+      }
+
+      throw ApiException(
+        'TWSE API error: ${response.statusCode}',
+        response.statusCode,
+      );
+    } on DioException catch (e) {
+      AppLogger.warning('TWSE', '處置股票: ${e.message ?? "網路錯誤"}');
+      throw NetworkException(e.message ?? 'TWSE network error', e);
+    }
+  }
+
+  /// 解析處置股票資料列
+  ///
+  /// 列格式: [代號, 名稱, 列入原因, 處置措施, 處置起日, 處置迄日, ...]
+  TwseTradingWarning? _parseDisposalRow(List<dynamic> row, DateTime date) {
+    try {
+      final code = row[0]?.toString().trim() ?? '';
+      if (code.isEmpty || code.length < 4) return null;
+
+      // 解析處置期間日期（格式可能是 "115/01/20" 或 "1150120"）
+      DateTime? parseDate(String? dateStr) {
+        if (dateStr == null || dateStr.isEmpty) return null;
+        // 嘗試解析 "115/01/20" 格式
+        if (dateStr.contains('/')) {
+          return _parseSlashRocDate(dateStr);
+        }
+        // 嘗試解析 "1150120" 格式
+        if (dateStr.length == 7) {
+          final rocYear = int.tryParse(dateStr.substring(0, 3)) ?? 0;
+          final month = int.tryParse(dateStr.substring(3, 5)) ?? 1;
+          final day = int.tryParse(dateStr.substring(5, 7)) ?? 1;
+          if (rocYear > 0) {
+            return DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
+          }
+        }
+        return null;
+      }
+
+      return TwseTradingWarning(
+        date: date,
+        code: code,
+        name: row[1]?.toString().trim() ?? '',
+        reasonDescription: row.length > 2 ? row[2]?.toString().trim() : null,
+        disposalMeasures: row.length > 3 ? row[3]?.toString().trim() : null,
+        disposalStartDate: row.length > 4
+            ? parseDate(row[4]?.toString())
+            : null,
+        disposalEndDate: row.length > 5 ? parseDate(row[5]?.toString()) : null,
+        warningType: 'DISPOSAL',
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 取得上市董監持股資料（彙總版）
+  ///
+  /// 使用 TWSE OpenData，免費無限制。
+  /// 1. 從 t187ap03_L 取得已發行股數
+  /// 2. 從 t187ap11_L 取得個別董監持股記錄
+  /// 3. 彙總計算每家公司的董監持股比例和質押比例
+  ///
+  /// 回傳彙總後的董監事持股資料（每家公司一筆）。
+  Future<List<TwseInsiderHolding>> getInsiderHoldings() async {
+    try {
+      // 1. 取得已發行股數
+      final stockInfoResponse = await _dio.get(
+        ApiEndpoints.twseStockInfo,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      final issuedSharesMap = <String, double>{};
+      if (stockInfoResponse.statusCode == 200) {
+        var stockData = stockInfoResponse.data;
+        if (stockData is String) {
+          stockData = jsonDecode(stockData);
+        }
+        if (stockData is List) {
+          for (final item in stockData) {
+            if (item is! Map<String, dynamic>) continue;
+            final code = item['公司代號']?.toString().trim() ?? '';
+            // TWSE OpenData API 欄位名稱：已發行普通股數或TDR原股發行股數
+            final shares = item['已發行普通股數或TDR原股發行股數']?.toString().replaceAll(
+              ',',
+              '',
+            );
+            if (code.isNotEmpty && shares != null) {
+              final sharesNum = double.tryParse(shares);
+              if (sharesNum != null && sharesNum > 0) {
+                issuedSharesMap[code] = sharesNum;
+              }
+            }
+          }
+        }
+      }
+
+      AppLogger.debug('TWSE', '已發行股數: ${issuedSharesMap.length} 家公司');
+
+      // 2. 取得個別董監持股記錄
+      final response = await _dio.get(
+        ApiEndpoints.twseInsiderHolding,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.warning('TWSE', '董監持股: JSON 解析失敗');
+            return [];
+          }
+        }
+
+        if (data is! List) {
+          AppLogger.warning('TWSE', '董監持股: 非預期資料型別');
+          return [];
+        }
+
+        // 3. 彙總計算每家公司的董監持股
+        final companyData = <String, _TwseInsiderAggregation>{};
+
+        for (final item in data) {
+          if (item is! Map<String, dynamic>) continue;
+
+          final code = item['公司代號']?.toString().trim() ?? '';
+          if (code.isEmpty || code.length < 4) continue;
+
+          final companyName = item['公司名稱']?.toString().trim() ?? '';
+          final position = item['職稱']?.toString() ?? '';
+          final personName = item['姓名']?.toString().trim() ?? '';
+
+          // 只計算董事和監察人的「本人」記錄
+          final isDirectorOrSupervisor =
+              (position.contains('董事') || position.contains('監察人')) &&
+              position.endsWith('本人');
+          if (!isDirectorOrSupervisor) continue;
+
+          // 解析日期
+          final dateStr = item['出表日期']?.toString();
+          final date = _parseCompactRocDate(dateStr);
+          if (date == null) continue;
+
+          // 解析持股和質押數
+          final sharesStr = item['目前持股']?.toString().replaceAll(',', '') ?? '0';
+          final pledgedStr =
+              item['設質股數']?.toString().replaceAll(',', '') ?? '0';
+          final shares = double.tryParse(sharesStr) ?? 0;
+          final pledged = double.tryParse(pledgedStr) ?? 0;
+
+          // 彙總（使用姓名去重）
+          companyData.putIfAbsent(
+            code,
+            () => _TwseInsiderAggregation(
+              code: code,
+              name: companyName,
+              date: date,
+            ),
+          );
+          companyData[code]!.addHoldingIfNew(personName, shares, pledged);
+        }
+
+        // 4. 計算比例並建立結果
+        final results = <TwseInsiderHolding>[];
+        for (final agg in companyData.values) {
+          final issuedShares = issuedSharesMap[agg.code];
+          if (issuedShares == null || issuedShares <= 0) continue;
+
+          final insiderRatio = (agg.totalShares / issuedShares) * 100;
+          final pledgeRatio = agg.totalShares > 0
+              ? (agg.totalPledged / agg.totalShares) * 100
+              : 0.0;
+
+          results.add(
+            TwseInsiderHolding(
+              date: agg.date,
+              code: agg.code,
+              name: agg.name,
+              insiderRatio: insiderRatio,
+              pledgeRatio: pledgeRatio,
+              sharesIssued: issuedShares,
+            ),
+          );
+        }
+
+        AppLogger.info('TWSE', '董監持股彙總: ${results.length} 家公司');
+        return results;
+      }
+
+      throw ApiException(
+        'TWSE OpenData error: ${response.statusCode}',
+        response.statusCode,
+      );
+    } on DioException catch (e) {
+      AppLogger.warning('TWSE', '董監持股: ${e.message ?? "網路錯誤"}');
+      throw NetworkException(e.message ?? 'TWSE network error', e);
+    }
+  }
+
+  /// 解析緊湊型民國日期（格式：1150120）
+  DateTime? _parseCompactRocDate(String? dateStr) {
+    if (dateStr == null || dateStr.length != 7) return null;
+    final rocYear = int.tryParse(dateStr.substring(0, 3));
+    final month = int.tryParse(dateStr.substring(3, 5));
+    final day = int.tryParse(dateStr.substring(5, 7));
+    if (rocYear == null || month == null || day == null) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
+  }
+}
+
+// ============================================
+// Helper Classes
+// ============================================
+
+/// 彙總董監持股用的內部 helper class
+class _TwseInsiderAggregation {
+  _TwseInsiderAggregation({
+    required this.code,
+    required this.name,
+    required this.date,
+  });
+
+  final String code;
+  final String name;
+  final DateTime date;
+  double totalShares = 0;
+  double totalPledged = 0;
+  final _seenHolders = <String>{};
+
+  void addHoldingIfNew(String holderName, double shares, double pledged) {
+    if (holderName.isEmpty) return;
+    if (_seenHolders.contains(holderName)) return;
+    _seenHolders.add(holderName);
+    totalShares += shares;
+    totalPledged += pledged;
+  }
 }
 
 // ============================================
 // 資料模型
 // ============================================
+
+/// TWSE 董監持股資料（彙總後）
+class TwseInsiderHolding {
+  const TwseInsiderHolding({
+    required this.date,
+    required this.code,
+    required this.name,
+    this.insiderRatio,
+    this.pledgeRatio,
+    this.sharesIssued,
+  });
+
+  final DateTime date;
+  final String code;
+  final String name;
+  final double? insiderRatio; // 董監持股比例 (%)
+  final double? pledgeRatio; // 質押比例 (%)
+  final double? sharesIssued; // 已發行股數
+}
 
 /// TWSE Open Data 月營收資料
 class TwseMonthlyRevenue {
@@ -1099,4 +1499,41 @@ class TwseDayTrading {
 
   /// 是否為極高當沖比例 (>= 50%)
   bool get isExtremeRatio => ratio >= 50.0;
+}
+
+/// TWSE 注意/處置股票資料
+class TwseTradingWarning {
+  const TwseTradingWarning({
+    required this.date,
+    required this.code,
+    required this.name,
+    required this.warningType,
+    this.reasonCode,
+    this.reasonDescription,
+    this.disposalMeasures,
+    this.disposalStartDate,
+    this.disposalEndDate,
+  });
+
+  final DateTime date;
+  final String code;
+  final String name;
+  final String warningType; // 'ATTENTION' | 'DISPOSAL'
+  final String? reasonCode; // 列入原因代碼
+  final String? reasonDescription; // 原因說明
+  final String? disposalMeasures; // 處置措施（僅處置股）
+  final DateTime? disposalStartDate; // 處置起始日
+  final DateTime? disposalEndDate; // 處置結束日
+
+  /// 是否為處置股
+  bool get isDisposal => warningType == 'DISPOSAL';
+
+  /// 處置是否目前生效
+  bool get isActive {
+    if (!isDisposal) return true; // 注意股票始終視為生效
+    if (disposalEndDate == null) return true;
+    return DateTime.now().isBefore(
+      disposalEndDate!.add(const Duration(days: 1)),
+    );
+  }
 }

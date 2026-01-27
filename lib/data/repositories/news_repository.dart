@@ -39,6 +39,7 @@ class NewsRepository {
           id: item.id,
           source: item.source,
           title: item.title,
+          content: Value(item.content),
           url: item.url,
           category: item.category,
           publishedAt: item.publishedAt,

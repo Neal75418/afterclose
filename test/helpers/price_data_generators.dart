@@ -264,6 +264,66 @@ List<DailyPriceEntry> generatePricesWithPriceSpike({
   });
 }
 
+/// 生成突破型態價格資料（滿足 MA20 和成交量確認條件）。
+///
+/// 用於測試 BreakoutRule：
+/// - 前 N-1 天在 basePrice 附近盤整（建立 MA20）
+/// - 最後一天突破至 breakoutPrice
+/// - 最後一天成交量為 breakoutVolume（需 >= 2x 均量）
+List<DailyPriceEntry> generatePricesWithBreakout({
+  required int days,
+  required double basePrice,
+  required double breakoutPrice,
+  required double normalVolume,
+  required double breakoutVolume,
+  String symbol = 'TEST',
+}) {
+  final now = DateTime.now();
+  return List.generate(days, (i) {
+    final isToday = i == days - 1;
+    final close = isToday ? breakoutPrice : basePrice;
+    return DailyPriceEntry(
+      symbol: symbol,
+      date: now.subtract(Duration(days: days - i - 1)),
+      open: isToday ? basePrice : basePrice,
+      high: close * 1.01,
+      low: (isToday ? basePrice : close) * 0.99,
+      close: close,
+      volume: isToday ? breakoutVolume : normalVolume,
+    );
+  });
+}
+
+/// 生成跌破型態價格資料（滿足 MA20 和成交量確認條件）。
+///
+/// 用於測試 BreakdownRule：
+/// - 前 N-1 天在 basePrice 附近盤整（建立 MA20）
+/// - 最後一天跌破至 breakdownPrice
+/// - 最後一天成交量為 breakdownVolume（需 >= 2x 均量）
+List<DailyPriceEntry> generatePricesWithBreakdown({
+  required int days,
+  required double basePrice,
+  required double breakdownPrice,
+  required double normalVolume,
+  required double breakdownVolume,
+  String symbol = 'TEST',
+}) {
+  final now = DateTime.now();
+  return List.generate(days, (i) {
+    final isToday = i == days - 1;
+    final close = isToday ? breakdownPrice : basePrice;
+    return DailyPriceEntry(
+      symbol: symbol,
+      date: now.subtract(Duration(days: days - i - 1)),
+      open: isToday ? basePrice : basePrice,
+      high: (isToday ? basePrice : close) * 1.01,
+      low: close * 0.99,
+      close: close,
+      volume: isToday ? breakdownVolume : normalVolume,
+    );
+  });
+}
+
 // ==========================================
 // 法人資料生成
 // ==========================================

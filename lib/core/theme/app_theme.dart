@@ -45,10 +45,11 @@ class AppTheme {
   /// 自營商 - 橘色
   static const dealerColor = Color(0xFFE67E22);
 
-  // 深色主題表面顏色
-  static const _surfaceDark = Color(0xFF1E1E1E);
-  static const _backgroundDark = Color(0xFF121212);
-  static const _cardDark = Color(0xFF2D2D2D);
+  // 深色主題表面顏色 (Midnight Slate)
+  static const _surfaceDark = Color(0xFF1E293B); // Slate 800
+  static const _backgroundDark = Color(0xFF0F172A); // Slate 900
+  static const _cardDark = Color(0xFF1E293B); // Slate 800
+  static const _cardDarkSurface = Color(0xFF334155); // Slate 700
 
   // 淺色主題表面顏色
   static const _surfaceLight = Color(0xFFF8F9FA);
@@ -69,10 +70,10 @@ class AppTheme {
         secondary: secondaryColor,
         tertiary: tertiaryColor,
         surface: _surfaceDark,
-        onSurface: const Color(0xFFE0E0E0), // High contrast white
-        onSurfaceVariant: const Color(0xFFB0B0B0),
+        onSurface: const Color(0xFFF1F5F9), // Slate 100
+        onSurfaceVariant: const Color(0xFF94A3B8), // Slate 400
         error: const Color(0xFFFF6B6B),
-        outline: const Color(0xFF424242),
+        outline: const Color(0xFF475569), // Slate 600
       ),
       scaffoldBackgroundColor: _backgroundDark,
 
@@ -84,7 +85,7 @@ class AppTheme {
         titleTextStyle: TextStyle(
           fontSize: 24,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFE0E0E0),
+          color: Color(0xFFF1F5F9),
         ),
       ),
 
@@ -105,10 +106,16 @@ class AppTheme {
 
       // Bottom Navigation
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: _surfaceDark.withValues(alpha: 0.95),
+        backgroundColor: Colors.transparent, // Handled by AppShell for blur
         indicatorColor: primaryColor.withValues(alpha: 0.2),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         height: 70,
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
+            return const IconThemeData(color: Color(0xFFF1F5F9));
+          }
+          return const IconThemeData(color: Color(0xFF94A3B8));
+        }),
       ),
 
       // Buttons
@@ -125,6 +132,7 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Color(0xFF475569)),
           ),
         ),
       ),
@@ -153,23 +161,26 @@ class AppTheme {
 
       // Chips
       chipTheme: ChipThemeData(
-        backgroundColor: _cardDark,
-        labelStyle: const TextStyle(fontSize: 12, color: Color(0xFFE0E0E0)),
+        backgroundColor: _cardDarkSurface,
+        labelStyle: const TextStyle(fontSize: 12, color: Color(0xFFF1F5F9)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide.none,
+        ),
       ),
 
       // Divider
       dividerTheme: const DividerThemeData(
-        color: Color(0xFF424242),
+        color: Color(0xFF334155),
         thickness: 1,
         space: 1,
       ),
 
       // Snackbar
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: _cardDark,
-        contentTextStyle: const TextStyle(color: Color(0xFFE0E0E0)),
+        backgroundColor: _cardDarkSurface,
+        contentTextStyle: const TextStyle(color: Color(0xFFF1F5F9)),
         actionTextColor: secondaryColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -179,6 +190,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: _surfaceDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 10,
       ),
     );
   }
@@ -348,7 +360,7 @@ class AppTheme {
 
   /// 取得背景漸層
   static LinearGradient get darkGradient => const LinearGradient(
-    colors: [Color(0xFF121212), Color(0xFF1E1E1E)],
+    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -359,14 +371,52 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
 
+  /// 高分股票的頂級金屬漸層
+  static LinearGradient get premiumGradient => LinearGradient(
+    colors: [
+      const Color(0xFF1E293B),
+      const Color(0xFF334155).withValues(alpha: 0.5),
+    ],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   /// 卡片裝飾（含細微邊框）
-  static BoxDecoration cardDecoration(BuildContext context) {
+  static BoxDecoration cardDecoration(
+    BuildContext context, {
+    bool isPremium = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // 如果是高分卡片且在深色模式，使用特殊樣式
+    if (isPremium && isDark) {
+      return BoxDecoration(
+        gradient: premiumGradient,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF475569).withValues(alpha: 0.5),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: primaryColor.withValues(alpha: 0.05),
+            blurRadius: 16,
+            spreadRadius: -4,
+          ),
+        ],
+      );
+    }
+
     return BoxDecoration(
       color: isDark ? _cardDark : _cardLight,
       borderRadius: BorderRadius.circular(16),
       border: Border.all(
-        color: isDark ? const Color(0xFF3A3A4A) : const Color(0xFFE8E8F0),
+        color: isDark ? const Color(0xFF334155) : const Color(0xFFE8E8F0),
         width: 1,
       ),
     );

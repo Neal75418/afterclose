@@ -114,24 +114,27 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     }
 
     // Configure chart colors based on theme
+    // Configure chart colors based on theme
     final chartColors = ChartColors(
-      bgColor: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+      bgColor: isDark
+          ? const Color(0xFF0F172A)
+          : Colors.white, // Match AppTheme.scaffoldBackgroundColor
       kLineColor: theme.colorScheme.primary,
-      gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
-      ma5Color: const Color(0xFF3498DB), // Blue
-      ma10Color: const Color(0xFFE67E22), // Orange
-      ma30Color: const Color(0xFF9B59B6), // Purple (used as MA20 visually)
-      upColor: AppTheme.upColor, // Red for up (Taiwan style)
-      dnColor: AppTheme.downColor, // Green for down (Taiwan style)
+      gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.1),
+      ma5Color: const Color(0xFF60A5FA), // Blue 400
+      ma10Color: const Color(0xFFFACC15), // Yellow 400
+      ma30Color: const Color(0xFFA78BFA), // Purple 400
+      upColor: AppTheme.upColor, // Red
+      dnColor: AppTheme.downColor, // Green
       volColor: theme.colorScheme.primary.withValues(alpha: 0.5),
-      macdColor: const Color(0xFF3498DB),
-      difColor: const Color(0xFF3498DB),
-      deaColor: const Color(0xFFE67E22),
-      kColor: const Color(0xFF3498DB),
-      dColor: const Color(0xFFE67E22),
-      jColor: const Color(0xFF9B59B6),
-      rsiColor: const Color(0xFFE67E22),
-      defaultTextColor: theme.colorScheme.onSurface,
+      macdColor: const Color(0xFF60A5FA), // Blue 400
+      difColor: const Color(0xFF60A5FA),
+      deaColor: const Color(0xFFFACC15), // Yellow 400
+      kColor: const Color(0xFF60A5FA),
+      dColor: const Color(0xFFFACC15),
+      jColor: const Color(0xFFA78BFA),
+      rsiColor: const Color(0xFFFACC15),
+      defaultTextColor: theme.colorScheme.onSurfaceVariant,
       nowPriceUpColor: AppTheme.upColor,
       nowPriceDnColor: AppTheme.downColor,
       nowPriceTextColor: Colors.white,
@@ -160,8 +163,12 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     return Container(
       height: widget.height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        // Subtle border to define the chart area
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+        ),
       ),
       clipBehavior: Clip.antiAlias,
       child: KChartWidget(

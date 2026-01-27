@@ -372,6 +372,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           trendState: item.trendState,
           isInWatchlist: true,
           recentPrices: item.recentPrices,
+          warningType: item.warningType,
           onTap: () => context.push('/stock/${item.symbol}'),
           onLongPress: () => _showStockPreview(item),
           onWatchlistTap: () {

@@ -15,6 +15,8 @@ import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
+import 'package:afterclose/data/repositories/warning_repository.dart';
+import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
@@ -130,6 +132,23 @@ final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
   return FundamentalRepository(
     db: ref.watch(databaseProvider),
     finMind: ref.watch(finMindClientProvider),
+  );
+});
+
+/// 警示資料儲存庫 Provider（Killer Features：注意股票/處置股票）
+/// 注意：TWSE 警示 API 已無法使用，目前僅支援 TPEX 上櫃警示資料
+final warningRepositoryProvider = Provider<WarningRepository>((ref) {
+  return WarningRepository(
+    database: ref.watch(databaseProvider),
+    tpexClient: ref.watch(tpexClientProvider),
+  );
+});
+
+/// 董監持股資料儲存庫 Provider（Killer Features：內部人持股變化）
+final insiderRepositoryProvider = Provider<InsiderRepository>((ref) {
+  return InsiderRepository(
+    database: ref.watch(databaseProvider),
+    tpexClient: ref.watch(tpexClientProvider),
   );
 });
 

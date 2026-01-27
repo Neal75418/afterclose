@@ -181,22 +181,22 @@ class $StockMasterTable extends StockMaster
 
 class StockMasterEntry extends DataClass
     implements Insertable<StockMasterEntry> {
-  /// Stock symbol (e.g., "2330")
+  /// 股票代碼（如 "2330"）
   final String symbol;
 
-  /// Stock name (e.g., "台積電")
+  /// 股票名稱（如「台積電」）
   final String name;
 
-  /// Market: "TWSE" | "TPEx"
+  /// 市場：TWSE（上市）或 TPEx（上櫃）
   final String market;
 
-  /// Industry category (nullable)
+  /// 產業類別（可為空）
   final String? industry;
 
-  /// Whether the stock is actively traded
+  /// 是否仍在交易
   final bool isActive;
 
-  /// Last update timestamp
+  /// 最後更新時間
   final DateTime updatedAt;
   const StockMasterEntry({
     required this.symbol,
@@ -611,25 +611,25 @@ class $DailyPriceTable extends DailyPrice
 }
 
 class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date (YYYY-MM-DD, stored as UTC)
+  /// 交易日期（以 UTC 儲存）
   final DateTime date;
 
-  /// Opening price
+  /// 開盤價
   final double? open;
 
-  /// Highest price
+  /// 最高價
   final double? high;
 
-  /// Lowest price
+  /// 最低價
   final double? low;
 
-  /// Closing price
+  /// 收盤價
   final double? close;
 
-  /// Trading volume
+  /// 成交量（張）
   final double? volume;
   const DailyPriceEntry({
     required this.symbol,
@@ -1046,19 +1046,19 @@ class $DailyInstitutionalTable extends DailyInstitutional
 
 class DailyInstitutionalEntry extends DataClass
     implements Insertable<DailyInstitutionalEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date
+  /// 交易日期
   final DateTime date;
 
-  /// Foreign institutional net buy/sell
+  /// 外資買賣超（張）
   final double? foreignNet;
 
-  /// Investment trust net buy/sell
+  /// 投信買賣超（張）
   final double? investmentTrustNet;
 
-  /// Dealer net buy/sell
+  /// 自營商買賣超（張）
   final double? dealerNet;
   const DailyInstitutionalEntry({
     required this.symbol,
@@ -1315,6 +1315,17 @@ class $NewsItemTable extends NewsItem
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _urlMeta = const VerificationMeta('url');
   @override
   late final GeneratedColumn<String> url = GeneratedColumn<String>(
@@ -1363,6 +1374,7 @@ class $NewsItemTable extends NewsItem
     id,
     source,
     title,
+    content,
     url,
     category,
     publishedAt,
@@ -1400,6 +1412,12 @@ class $NewsItemTable extends NewsItem
       );
     } else if (isInserting) {
       context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
     }
     if (data.containsKey('url')) {
       context.handle(
@@ -1455,6 +1473,10 @@ class $NewsItemTable extends NewsItem
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      ),
       url: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}url'],
@@ -1481,30 +1503,34 @@ class $NewsItemTable extends NewsItem
 }
 
 class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
-  /// Unique news ID (hash of url or RSS guid)
+  /// 新聞唯一 ID（URL 或 RSS guid 的 hash）
   final String id;
 
-  /// News source (e.g., "MoneyDJ", "Yahoo")
+  /// 新聞來源（如 MoneyDJ、Yahoo）
   final String source;
 
-  /// News title
+  /// 新聞標題
   final String title;
 
-  /// News URL
+  /// 新聞內文摘要（從 RSS description 抓取，可能為空）
+  final String? content;
+
+  /// 新聞連結
   final String url;
 
-  /// Category: EARNINGS, POLICY, INDUSTRY, COMPANY_EVENT, OTHER
+  /// 分類：EARNINGS、POLICY、INDUSTRY、COMPANY_EVENT、OTHER
   final String category;
 
-  /// Published timestamp
+  /// 發布時間
   final DateTime publishedAt;
 
-  /// When we fetched this news
+  /// 抓取時間
   final DateTime fetchedAt;
   const NewsItemEntry({
     required this.id,
     required this.source,
     required this.title,
+    this.content,
     required this.url,
     required this.category,
     required this.publishedAt,
@@ -1516,6 +1542,9 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
     map['id'] = Variable<String>(id);
     map['source'] = Variable<String>(source);
     map['title'] = Variable<String>(title);
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
     map['url'] = Variable<String>(url);
     map['category'] = Variable<String>(category);
     map['published_at'] = Variable<DateTime>(publishedAt);
@@ -1528,6 +1557,9 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
       id: Value(id),
       source: Value(source),
       title: Value(title),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
       url: Value(url),
       category: Value(category),
       publishedAt: Value(publishedAt),
@@ -1544,6 +1576,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
       id: serializer.fromJson<String>(json['id']),
       source: serializer.fromJson<String>(json['source']),
       title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String?>(json['content']),
       url: serializer.fromJson<String>(json['url']),
       category: serializer.fromJson<String>(json['category']),
       publishedAt: serializer.fromJson<DateTime>(json['publishedAt']),
@@ -1557,6 +1590,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
       'id': serializer.toJson<String>(id),
       'source': serializer.toJson<String>(source),
       'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String?>(content),
       'url': serializer.toJson<String>(url),
       'category': serializer.toJson<String>(category),
       'publishedAt': serializer.toJson<DateTime>(publishedAt),
@@ -1568,6 +1602,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
     String? id,
     String? source,
     String? title,
+    Value<String?> content = const Value.absent(),
     String? url,
     String? category,
     DateTime? publishedAt,
@@ -1576,6 +1611,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
     id: id ?? this.id,
     source: source ?? this.source,
     title: title ?? this.title,
+    content: content.present ? content.value : this.content,
     url: url ?? this.url,
     category: category ?? this.category,
     publishedAt: publishedAt ?? this.publishedAt,
@@ -1586,6 +1622,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
       id: data.id.present ? data.id.value : this.id,
       source: data.source.present ? data.source.value : this.source,
       title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
       url: data.url.present ? data.url.value : this.url,
       category: data.category.present ? data.category.value : this.category,
       publishedAt: data.publishedAt.present
@@ -1601,6 +1638,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
           ..write('id: $id, ')
           ..write('source: $source, ')
           ..write('title: $title, ')
+          ..write('content: $content, ')
           ..write('url: $url, ')
           ..write('category: $category, ')
           ..write('publishedAt: $publishedAt, ')
@@ -1610,8 +1648,16 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, source, title, url, category, publishedAt, fetchedAt);
+  int get hashCode => Object.hash(
+    id,
+    source,
+    title,
+    content,
+    url,
+    category,
+    publishedAt,
+    fetchedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1619,6 +1665,7 @@ class NewsItemEntry extends DataClass implements Insertable<NewsItemEntry> {
           other.id == this.id &&
           other.source == this.source &&
           other.title == this.title &&
+          other.content == this.content &&
           other.url == this.url &&
           other.category == this.category &&
           other.publishedAt == this.publishedAt &&
@@ -1629,6 +1676,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
   final Value<String> id;
   final Value<String> source;
   final Value<String> title;
+  final Value<String?> content;
   final Value<String> url;
   final Value<String> category;
   final Value<DateTime> publishedAt;
@@ -1638,6 +1686,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
     this.id = const Value.absent(),
     this.source = const Value.absent(),
     this.title = const Value.absent(),
+    this.content = const Value.absent(),
     this.url = const Value.absent(),
     this.category = const Value.absent(),
     this.publishedAt = const Value.absent(),
@@ -1648,6 +1697,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
     required String id,
     required String source,
     required String title,
+    this.content = const Value.absent(),
     required String url,
     required String category,
     required DateTime publishedAt,
@@ -1663,6 +1713,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
     Expression<String>? id,
     Expression<String>? source,
     Expression<String>? title,
+    Expression<String>? content,
     Expression<String>? url,
     Expression<String>? category,
     Expression<DateTime>? publishedAt,
@@ -1673,6 +1724,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
       if (id != null) 'id': id,
       if (source != null) 'source': source,
       if (title != null) 'title': title,
+      if (content != null) 'content': content,
       if (url != null) 'url': url,
       if (category != null) 'category': category,
       if (publishedAt != null) 'published_at': publishedAt,
@@ -1685,6 +1737,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
     Value<String>? id,
     Value<String>? source,
     Value<String>? title,
+    Value<String?>? content,
     Value<String>? url,
     Value<String>? category,
     Value<DateTime>? publishedAt,
@@ -1695,6 +1748,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
       id: id ?? this.id,
       source: source ?? this.source,
       title: title ?? this.title,
+      content: content ?? this.content,
       url: url ?? this.url,
       category: category ?? this.category,
       publishedAt: publishedAt ?? this.publishedAt,
@@ -1714,6 +1768,9 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
     }
     if (url.present) {
       map['url'] = Variable<String>(url.value);
@@ -1739,6 +1796,7 @@ class NewsItemCompanion extends UpdateCompanion<NewsItemEntry> {
           ..write('id: $id, ')
           ..write('source: $source, ')
           ..write('title: $title, ')
+          ..write('content: $content, ')
           ..write('url: $url, ')
           ..write('category: $category, ')
           ..write('publishedAt: $publishedAt, ')
@@ -1837,10 +1895,10 @@ class $NewsStockMapTable extends NewsStockMap
 
 class NewsStockMapEntry extends DataClass
     implements Insertable<NewsStockMapEntry> {
-  /// News ID
+  /// 新聞 ID
   final String newsId;
 
-  /// Related stock symbol
+  /// 關聯股票代碼
   final String symbol;
   const NewsStockMapEntry({required this.newsId, required this.symbol});
   @override
@@ -2202,28 +2260,28 @@ class $DailyAnalysisTable extends DailyAnalysis
 
 class DailyAnalysisEntry extends DataClass
     implements Insertable<DailyAnalysisEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Analysis date
+  /// 分析日期
   final DateTime date;
 
-  /// Trend state: UP, DOWN, RANGE
+  /// 趨勢狀態：UP（上漲）、DOWN（下跌）、RANGE（盤整）
   final String trendState;
 
-  /// Reversal state: NONE, W2S, S2W
+  /// 反轉狀態：NONE（無）、W2S（弱轉強）、S2W（強轉弱）
   final String reversalState;
 
-  /// Support price level
+  /// 支撐價位
   final double? supportLevel;
 
-  /// Resistance price level
+  /// 壓力價位
   final double? resistanceLevel;
 
-  /// Total score from all triggered rules
+  /// 所有觸發規則的總分數
   final double score;
 
-  /// When this analysis was computed
+  /// 分析運算時間
   final DateTime computedAt;
   const DailyAnalysisEntry({
     required this.symbol,
@@ -2701,22 +2759,22 @@ class $DailyReasonTable extends DailyReason
 
 class DailyReasonEntry extends DataClass
     implements Insertable<DailyReasonEntry> {
-  /// Stock symbol (foreign key to StockMaster)
+  /// 股票代碼
   final String symbol;
 
-  /// Analysis date
+  /// 分析日期
   final DateTime date;
 
-  /// Reason rank (1 = primary, 2 = secondary)
+  /// 原因排序（1 = 主要、2 = 次要）
   final int rank;
 
-  /// Reason type code
+  /// 原因類型代碼
   final String reasonType;
 
-  /// Evidence data as JSON
+  /// 證據資料（JSON 格式）
   final String evidenceJson;
 
-  /// Score for this specific rule
+  /// 此規則的分數
   final double ruleScore;
   const DailyReasonEntry({
     required this.symbol,
@@ -3080,16 +3138,16 @@ class $DailyRecommendationTable extends DailyRecommendation
 
 class DailyRecommendationEntry extends DataClass
     implements Insertable<DailyRecommendationEntry> {
-  /// Recommendation date
+  /// 推薦日期
   final DateTime date;
 
-  /// Rank position (1-10)
+  /// 排名（1-10）
   final int rank;
 
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Total score
+  /// 總分數
   final double score;
   const DailyRecommendationEntry({
     required this.date,
@@ -3359,10 +3417,10 @@ class $WatchlistTable extends Watchlist
 }
 
 class WatchlistEntry extends DataClass implements Insertable<WatchlistEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// When added to watchlist
+  /// 加入自選股的時間
   final DateTime createdAt;
   const WatchlistEntry({required this.symbol, required this.createdAt});
   @override
@@ -3670,22 +3728,22 @@ class $UserNoteTable extends UserNote
 }
 
 class UserNoteEntry extends DataClass implements Insertable<UserNoteEntry> {
-  /// Auto-increment ID
+  /// 自動遞增 ID
   final int id;
 
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Optional date context for this note
+  /// 筆記對應的日期（可為空）
   final DateTime? date;
 
-  /// Note content
+  /// 筆記內容
   final String content;
 
-  /// Created timestamp
+  /// 建立時間
   final DateTime createdAt;
 
-  /// Last updated timestamp
+  /// 最後更新時間
   final DateTime updatedAt;
   const UserNoteEntry({
     required this.id,
@@ -4156,34 +4214,34 @@ class $StrategyCardTable extends StrategyCard
 
 class StrategyCardEntry extends DataClass
     implements Insertable<StrategyCardEntry> {
-  /// Auto-increment ID
+  /// 自動遞增 ID
   final int id;
 
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Target date for this strategy
+  /// 策略目標日期
   final DateTime? forDate;
 
-  /// If condition A
+  /// 條件 A
   final String? ifA;
 
-  /// Then action A
+  /// 條件 A 成立時的操作
   final String? thenA;
 
-  /// If condition B
+  /// 條件 B
   final String? ifB;
 
-  /// Then action B
+  /// 條件 B 成立時的操作
   final String? thenB;
 
-  /// Else plan
+  /// 其他情況的操作
   final String? elsePlan;
 
-  /// Created timestamp
+  /// 建立時間
   final DateTime createdAt;
 
-  /// Last updated timestamp
+  /// 最後更新時間
   final DateTime updatedAt;
   const StrategyCardEntry({
     required this.id,
@@ -4682,22 +4740,22 @@ class $UpdateRunTable extends UpdateRun
 }
 
 class UpdateRunEntry extends DataClass implements Insertable<UpdateRunEntry> {
-  /// Auto-increment ID
+  /// 自動遞增 ID
   final int id;
 
-  /// Target date for this update
+  /// 更新的目標日期
   final DateTime runDate;
 
-  /// When the update started
+  /// 開始執行時間
   final DateTime startedAt;
 
-  /// When the update finished (nullable if still running)
+  /// 完成時間（執行中則為空）
   final DateTime? finishedAt;
 
-  /// Status: SUCCESS, FAILED, PARTIAL
+  /// 狀態：SUCCESS、FAILED、PARTIAL
   final String status;
 
-  /// Optional message (error details, etc.)
+  /// 訊息（錯誤詳情等）
   final String? message;
   const UpdateRunEntry({
     required this.id,
@@ -5022,13 +5080,13 @@ class $AppSettingsTable extends AppSettings
 }
 
 class AppSettingEntry extends DataClass implements Insertable<AppSettingEntry> {
-  /// Setting key
+  /// 設定鍵
   final String key;
 
-  /// Setting value
+  /// 設定值
   final String value;
 
-  /// Last updated timestamp
+  /// 最後更新時間
   final DateTime updatedAt;
   const AppSettingEntry({
     required this.key,
@@ -5415,28 +5473,28 @@ class $PriceAlertTable extends PriceAlert
 }
 
 class PriceAlertEntry extends DataClass implements Insertable<PriceAlertEntry> {
-  /// Auto-increment ID
+  /// 自動遞增 ID
   final int id;
 
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Alert type: ABOVE, BELOW, CHANGE_PCT
+  /// 提醒類型：ABOVE、BELOW、CHANGE_PCT
   final String alertType;
 
-  /// Target price (for ABOVE/BELOW) or percent (for CHANGE_PCT)
+  /// 目標值（價格或百分比）
   final double targetValue;
 
-  /// Is this alert currently active
+  /// 是否啟用
   final bool isActive;
 
-  /// When the alert was triggered (null if not yet triggered)
+  /// 觸發時間（尚未觸發則為空）
   final DateTime? triggeredAt;
 
-  /// Note or description for this alert
+  /// 備註說明
   final String? note;
 
-  /// Created timestamp
+  /// 建立時間
   final DateTime createdAt;
   const PriceAlertEntry({
     required this.id,
@@ -5897,22 +5955,22 @@ class $ShareholdingTable extends Shareholding
 
 class ShareholdingEntry extends DataClass
     implements Insertable<ShareholdingEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date
+  /// 交易日期
   final DateTime date;
 
-  /// Foreign investment remaining shares (外資持股餘額)
+  /// 外資持股餘額（股）
   final double? foreignRemainingShares;
 
-  /// Foreign investment shares ratio (外資持股比例%)
+  /// 外資持股比例（%）
   final double? foreignSharesRatio;
 
-  /// Foreign investment upper limit ratio (外資持股上限比例%)
+  /// 外資持股上限比例（%）
   final double? foreignUpperLimitRatio;
 
-  /// Number of shares issued (已發行股數)
+  /// 已發行股數
   final double? sharesIssued;
   const ShareholdingEntry({
     required this.symbol,
@@ -6375,28 +6433,28 @@ class $DayTradingTable extends DayTrading
 }
 
 class DayTradingEntry extends DataClass implements Insertable<DayTradingEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date
+  /// 交易日期
   final DateTime date;
 
-  /// Day trading buy volume/amount (當沖買進量/金額)
+  /// 當沖買進量/金額
   ///
-  /// Note: TWSE API provides amounts (NT$), FinMind provides volumes (shares)
+  /// 註：TWSE API 提供金額（元），FinMind 提供股數
   final double? buyVolume;
 
-  /// Day trading sell volume/amount (當沖賣出量/金額)
+  /// 當沖賣出量/金額
   ///
-  /// Note: TWSE API provides amounts (NT$), FinMind provides volumes (shares)
+  /// 註：TWSE API 提供金額（元），FinMind 提供股數
   final double? sellVolume;
 
-  /// Day trading ratio percentage (當沖比例%)
+  /// 當沖比例（%）
   ///
-  /// This is the key metric, calculated from total volume data.
+  /// 此為主要指標，由總成交量計算。
   final double? dayTradingRatio;
 
-  /// Total trade volume (當沖成交股數)
+  /// 當沖成交股數
   final double? tradeVolume;
   const DayTradingEntry({
     required this.symbol,
@@ -6835,22 +6893,22 @@ class $FinancialDataTable extends FinancialData
 
 class FinancialDataEntry extends DataClass
     implements Insertable<FinancialDataEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Report date (YYYY-QQ format stored as date)
+  /// 報告日期（季度以日期格式儲存）
   final DateTime date;
 
-  /// Statement type: INCOME, BALANCE, CASHFLOW
+  /// 報表類型：INCOME、BALANCE、CASHFLOW
   final String statementType;
 
-  /// Data type (e.g., Revenue, NetIncome, TotalAssets)
+  /// 資料項目（如 Revenue、NetIncome、TotalAssets）
   final String dataType;
 
-  /// Value in thousands (千元)
+  /// 數值（千元）
   final double? value;
 
-  /// Original Chinese name
+  /// 原始中文名稱
   final String? originName;
   const FinancialDataEntry({
     required this.symbol,
@@ -7275,25 +7333,25 @@ class $AdjustedPriceTable extends AdjustedPrice
 
 class AdjustedPriceEntry extends DataClass
     implements Insertable<AdjustedPriceEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date
+  /// 交易日期
   final DateTime date;
 
-  /// Adjusted opening price
+  /// 還原開盤價
   final double? open;
 
-  /// Adjusted highest price
+  /// 還原最高價
   final double? high;
 
-  /// Adjusted lowest price
+  /// 還原最低價
   final double? low;
 
-  /// Adjusted closing price
+  /// 還原收盤價
   final double? close;
 
-  /// Trading volume
+  /// 成交量
   final double? volume;
   const AdjustedPriceEntry({
     required this.symbol,
@@ -7738,25 +7796,25 @@ class $WeeklyPriceTable extends WeeklyPrice
 
 class WeeklyPriceEntry extends DataClass
     implements Insertable<WeeklyPriceEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Week ending date
+  /// 週結束日期
   final DateTime date;
 
-  /// Weekly opening price
+  /// 週開盤價
   final double? open;
 
-  /// Weekly highest price
+  /// 週最高價
   final double? high;
 
-  /// Weekly lowest price
+  /// 週最低價
   final double? low;
 
-  /// Weekly closing price
+  /// 週收盤價
   final double? close;
 
-  /// Weekly trading volume
+  /// 週成交量
   final double? volume;
   const WeeklyPriceEntry({
     required this.symbol,
@@ -8193,22 +8251,22 @@ class $HoldingDistributionTable extends HoldingDistribution
 
 class HoldingDistributionEntry extends DataClass
     implements Insertable<HoldingDistributionEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Report date
+  /// 報告日期
   final DateTime date;
 
-  /// Holding level (e.g., "1-999", "1000-5000")
+  /// 持股級距（如 "1-999"、"1000-5000"）
   final String level;
 
-  /// Number of shareholders at this level
+  /// 該級距股東人數
   final int? shareholders;
 
-  /// Percentage of total shares (%)
+  /// 佔總股數比例（%）
   final double? percent;
 
-  /// Number of shares (unit: 股)
+  /// 持股數（股）
   final double? shares;
   const HoldingDistributionEntry({
     required this.symbol,
@@ -8659,25 +8717,25 @@ class $MonthlyRevenueTable extends MonthlyRevenue
 
 class MonthlyRevenueEntry extends DataClass
     implements Insertable<MonthlyRevenueEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Report date (use first day of the month for consistency)
+  /// 報告日期（統一使用當月第一天）
   final DateTime date;
 
-  /// Revenue year
+  /// 營收年度
   final int revenueYear;
 
-  /// Revenue month
+  /// 營收月份
   final int revenueMonth;
 
-  /// Monthly revenue (千元)
+  /// 月營收（千元）
   final double revenue;
 
-  /// Month-over-month growth rate (%)
+  /// 月增率（%）
   final double? momGrowth;
 
-  /// Year-over-year growth rate (%)
+  /// 年增率（%）
   final double? yoyGrowth;
   const MonthlyRevenueEntry({
     required this.symbol,
@@ -9090,19 +9148,19 @@ class $StockValuationTable extends StockValuation
 
 class StockValuationEntry extends DataClass
     implements Insertable<StockValuationEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date
+  /// 交易日期
   final DateTime date;
 
-  /// Price-to-Earnings ratio (本益比)
+  /// 本益比（PE ratio）
   final double? per;
 
-  /// Price-to-Book ratio (股價淨值比)
+  /// 股價淨值比（PB ratio）
   final double? pbr;
 
-  /// Dividend yield (殖利率 %)
+  /// 殖利率（%）
   final double? dividendYield;
   const StockValuationEntry({
     required this.symbol,
@@ -9541,28 +9599,28 @@ class $MarginTradingTable extends MarginTrading
 
 class MarginTradingEntry extends DataClass
     implements Insertable<MarginTradingEntry> {
-  /// Stock symbol
+  /// 股票代碼
   final String symbol;
 
-  /// Trading date
+  /// 交易日期
   final DateTime date;
 
-  /// 融資買進 (張)
+  /// 融資買進（張）
   final double? marginBuy;
 
-  /// 融資賣出 (張)
+  /// 融資賣出（張）
   final double? marginSell;
 
-  /// 融資餘額 (張)
+  /// 融資餘額（張）
   final double? marginBalance;
 
-  /// 融券買進/回補 (張)
+  /// 融券買進/回補（張）
   final double? shortBuy;
 
-  /// 融券賣出 (張)
+  /// 融券賣出（張）
   final double? shortSell;
 
-  /// 融券餘額 (張)
+  /// 融券餘額（張）
   final double? shortBalance;
   const MarginTradingEntry({
     required this.symbol,
@@ -9867,6 +9925,1266 @@ class MarginTradingCompanion extends UpdateCompanion<MarginTradingEntry> {
   }
 }
 
+class $TradingWarningTable extends TradingWarning
+    with TableInfo<$TradingWarningTable, TradingWarningEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TradingWarningTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _warningTypeMeta = const VerificationMeta(
+    'warningType',
+  );
+  @override
+  late final GeneratedColumn<String> warningType = GeneratedColumn<String>(
+    'warning_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _reasonCodeMeta = const VerificationMeta(
+    'reasonCode',
+  );
+  @override
+  late final GeneratedColumn<String> reasonCode = GeneratedColumn<String>(
+    'reason_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reasonDescriptionMeta = const VerificationMeta(
+    'reasonDescription',
+  );
+  @override
+  late final GeneratedColumn<String> reasonDescription =
+      GeneratedColumn<String>(
+        'reason_description',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _disposalMeasuresMeta = const VerificationMeta(
+    'disposalMeasures',
+  );
+  @override
+  late final GeneratedColumn<String> disposalMeasures = GeneratedColumn<String>(
+    'disposal_measures',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _disposalStartDateMeta = const VerificationMeta(
+    'disposalStartDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> disposalStartDate =
+      GeneratedColumn<DateTime>(
+        'disposal_start_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _disposalEndDateMeta = const VerificationMeta(
+    'disposalEndDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> disposalEndDate =
+      GeneratedColumn<DateTime>(
+        'disposal_end_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    warningType,
+    reasonCode,
+    reasonDescription,
+    disposalMeasures,
+    disposalStartDate,
+    disposalEndDate,
+    isActive,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trading_warning';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TradingWarningEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('warning_type')) {
+      context.handle(
+        _warningTypeMeta,
+        warningType.isAcceptableOrUnknown(
+          data['warning_type']!,
+          _warningTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_warningTypeMeta);
+    }
+    if (data.containsKey('reason_code')) {
+      context.handle(
+        _reasonCodeMeta,
+        reasonCode.isAcceptableOrUnknown(data['reason_code']!, _reasonCodeMeta),
+      );
+    }
+    if (data.containsKey('reason_description')) {
+      context.handle(
+        _reasonDescriptionMeta,
+        reasonDescription.isAcceptableOrUnknown(
+          data['reason_description']!,
+          _reasonDescriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('disposal_measures')) {
+      context.handle(
+        _disposalMeasuresMeta,
+        disposalMeasures.isAcceptableOrUnknown(
+          data['disposal_measures']!,
+          _disposalMeasuresMeta,
+        ),
+      );
+    }
+    if (data.containsKey('disposal_start_date')) {
+      context.handle(
+        _disposalStartDateMeta,
+        disposalStartDate.isAcceptableOrUnknown(
+          data['disposal_start_date']!,
+          _disposalStartDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('disposal_end_date')) {
+      context.handle(
+        _disposalEndDateMeta,
+        disposalEndDate.isAcceptableOrUnknown(
+          data['disposal_end_date']!,
+          _disposalEndDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date, warningType};
+  @override
+  TradingWarningEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TradingWarningEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      warningType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}warning_type'],
+      )!,
+      reasonCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason_code'],
+      ),
+      reasonDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reason_description'],
+      ),
+      disposalMeasures: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}disposal_measures'],
+      ),
+      disposalStartDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}disposal_start_date'],
+      ),
+      disposalEndDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}disposal_end_date'],
+      ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+    );
+  }
+
+  @override
+  $TradingWarningTable createAlias(String alias) {
+    return $TradingWarningTable(attachedDatabase, alias);
+  }
+}
+
+class TradingWarningEntry extends DataClass
+    implements Insertable<TradingWarningEntry> {
+  /// 股票代碼
+  final String symbol;
+
+  /// 公告日期
+  final DateTime date;
+
+  /// 警示類型：ATTENTION（注意）| DISPOSAL（處置）
+  final String warningType;
+
+  /// 列入原因代碼
+  final String? reasonCode;
+
+  /// 原因說明
+  final String? reasonDescription;
+
+  /// 處置措施（僅處置股）
+  final String? disposalMeasures;
+
+  /// 處置起始日
+  final DateTime? disposalStartDate;
+
+  /// 處置結束日
+  final DateTime? disposalEndDate;
+
+  /// 是否目前生效
+  final bool isActive;
+  const TradingWarningEntry({
+    required this.symbol,
+    required this.date,
+    required this.warningType,
+    this.reasonCode,
+    this.reasonDescription,
+    this.disposalMeasures,
+    this.disposalStartDate,
+    this.disposalEndDate,
+    required this.isActive,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    map['warning_type'] = Variable<String>(warningType);
+    if (!nullToAbsent || reasonCode != null) {
+      map['reason_code'] = Variable<String>(reasonCode);
+    }
+    if (!nullToAbsent || reasonDescription != null) {
+      map['reason_description'] = Variable<String>(reasonDescription);
+    }
+    if (!nullToAbsent || disposalMeasures != null) {
+      map['disposal_measures'] = Variable<String>(disposalMeasures);
+    }
+    if (!nullToAbsent || disposalStartDate != null) {
+      map['disposal_start_date'] = Variable<DateTime>(disposalStartDate);
+    }
+    if (!nullToAbsent || disposalEndDate != null) {
+      map['disposal_end_date'] = Variable<DateTime>(disposalEndDate);
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    return map;
+  }
+
+  TradingWarningCompanion toCompanion(bool nullToAbsent) {
+    return TradingWarningCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      warningType: Value(warningType),
+      reasonCode: reasonCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reasonCode),
+      reasonDescription: reasonDescription == null && nullToAbsent
+          ? const Value.absent()
+          : Value(reasonDescription),
+      disposalMeasures: disposalMeasures == null && nullToAbsent
+          ? const Value.absent()
+          : Value(disposalMeasures),
+      disposalStartDate: disposalStartDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(disposalStartDate),
+      disposalEndDate: disposalEndDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(disposalEndDate),
+      isActive: Value(isActive),
+    );
+  }
+
+  factory TradingWarningEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TradingWarningEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      warningType: serializer.fromJson<String>(json['warningType']),
+      reasonCode: serializer.fromJson<String?>(json['reasonCode']),
+      reasonDescription: serializer.fromJson<String?>(
+        json['reasonDescription'],
+      ),
+      disposalMeasures: serializer.fromJson<String?>(json['disposalMeasures']),
+      disposalStartDate: serializer.fromJson<DateTime?>(
+        json['disposalStartDate'],
+      ),
+      disposalEndDate: serializer.fromJson<DateTime?>(json['disposalEndDate']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'warningType': serializer.toJson<String>(warningType),
+      'reasonCode': serializer.toJson<String?>(reasonCode),
+      'reasonDescription': serializer.toJson<String?>(reasonDescription),
+      'disposalMeasures': serializer.toJson<String?>(disposalMeasures),
+      'disposalStartDate': serializer.toJson<DateTime?>(disposalStartDate),
+      'disposalEndDate': serializer.toJson<DateTime?>(disposalEndDate),
+      'isActive': serializer.toJson<bool>(isActive),
+    };
+  }
+
+  TradingWarningEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    String? warningType,
+    Value<String?> reasonCode = const Value.absent(),
+    Value<String?> reasonDescription = const Value.absent(),
+    Value<String?> disposalMeasures = const Value.absent(),
+    Value<DateTime?> disposalStartDate = const Value.absent(),
+    Value<DateTime?> disposalEndDate = const Value.absent(),
+    bool? isActive,
+  }) => TradingWarningEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    warningType: warningType ?? this.warningType,
+    reasonCode: reasonCode.present ? reasonCode.value : this.reasonCode,
+    reasonDescription: reasonDescription.present
+        ? reasonDescription.value
+        : this.reasonDescription,
+    disposalMeasures: disposalMeasures.present
+        ? disposalMeasures.value
+        : this.disposalMeasures,
+    disposalStartDate: disposalStartDate.present
+        ? disposalStartDate.value
+        : this.disposalStartDate,
+    disposalEndDate: disposalEndDate.present
+        ? disposalEndDate.value
+        : this.disposalEndDate,
+    isActive: isActive ?? this.isActive,
+  );
+  TradingWarningEntry copyWithCompanion(TradingWarningCompanion data) {
+    return TradingWarningEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      warningType: data.warningType.present
+          ? data.warningType.value
+          : this.warningType,
+      reasonCode: data.reasonCode.present
+          ? data.reasonCode.value
+          : this.reasonCode,
+      reasonDescription: data.reasonDescription.present
+          ? data.reasonDescription.value
+          : this.reasonDescription,
+      disposalMeasures: data.disposalMeasures.present
+          ? data.disposalMeasures.value
+          : this.disposalMeasures,
+      disposalStartDate: data.disposalStartDate.present
+          ? data.disposalStartDate.value
+          : this.disposalStartDate,
+      disposalEndDate: data.disposalEndDate.present
+          ? data.disposalEndDate.value
+          : this.disposalEndDate,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TradingWarningEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('warningType: $warningType, ')
+          ..write('reasonCode: $reasonCode, ')
+          ..write('reasonDescription: $reasonDescription, ')
+          ..write('disposalMeasures: $disposalMeasures, ')
+          ..write('disposalStartDate: $disposalStartDate, ')
+          ..write('disposalEndDate: $disposalEndDate, ')
+          ..write('isActive: $isActive')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    warningType,
+    reasonCode,
+    reasonDescription,
+    disposalMeasures,
+    disposalStartDate,
+    disposalEndDate,
+    isActive,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TradingWarningEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.warningType == this.warningType &&
+          other.reasonCode == this.reasonCode &&
+          other.reasonDescription == this.reasonDescription &&
+          other.disposalMeasures == this.disposalMeasures &&
+          other.disposalStartDate == this.disposalStartDate &&
+          other.disposalEndDate == this.disposalEndDate &&
+          other.isActive == this.isActive);
+}
+
+class TradingWarningCompanion extends UpdateCompanion<TradingWarningEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<String> warningType;
+  final Value<String?> reasonCode;
+  final Value<String?> reasonDescription;
+  final Value<String?> disposalMeasures;
+  final Value<DateTime?> disposalStartDate;
+  final Value<DateTime?> disposalEndDate;
+  final Value<bool> isActive;
+  final Value<int> rowid;
+  const TradingWarningCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.warningType = const Value.absent(),
+    this.reasonCode = const Value.absent(),
+    this.reasonDescription = const Value.absent(),
+    this.disposalMeasures = const Value.absent(),
+    this.disposalStartDate = const Value.absent(),
+    this.disposalEndDate = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TradingWarningCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    required String warningType,
+    this.reasonCode = const Value.absent(),
+    this.reasonDescription = const Value.absent(),
+    this.disposalMeasures = const Value.absent(),
+    this.disposalStartDate = const Value.absent(),
+    this.disposalEndDate = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date),
+       warningType = Value(warningType);
+  static Insertable<TradingWarningEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<String>? warningType,
+    Expression<String>? reasonCode,
+    Expression<String>? reasonDescription,
+    Expression<String>? disposalMeasures,
+    Expression<DateTime>? disposalStartDate,
+    Expression<DateTime>? disposalEndDate,
+    Expression<bool>? isActive,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (warningType != null) 'warning_type': warningType,
+      if (reasonCode != null) 'reason_code': reasonCode,
+      if (reasonDescription != null) 'reason_description': reasonDescription,
+      if (disposalMeasures != null) 'disposal_measures': disposalMeasures,
+      if (disposalStartDate != null) 'disposal_start_date': disposalStartDate,
+      if (disposalEndDate != null) 'disposal_end_date': disposalEndDate,
+      if (isActive != null) 'is_active': isActive,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TradingWarningCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<String>? warningType,
+    Value<String?>? reasonCode,
+    Value<String?>? reasonDescription,
+    Value<String?>? disposalMeasures,
+    Value<DateTime?>? disposalStartDate,
+    Value<DateTime?>? disposalEndDate,
+    Value<bool>? isActive,
+    Value<int>? rowid,
+  }) {
+    return TradingWarningCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      warningType: warningType ?? this.warningType,
+      reasonCode: reasonCode ?? this.reasonCode,
+      reasonDescription: reasonDescription ?? this.reasonDescription,
+      disposalMeasures: disposalMeasures ?? this.disposalMeasures,
+      disposalStartDate: disposalStartDate ?? this.disposalStartDate,
+      disposalEndDate: disposalEndDate ?? this.disposalEndDate,
+      isActive: isActive ?? this.isActive,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (warningType.present) {
+      map['warning_type'] = Variable<String>(warningType.value);
+    }
+    if (reasonCode.present) {
+      map['reason_code'] = Variable<String>(reasonCode.value);
+    }
+    if (reasonDescription.present) {
+      map['reason_description'] = Variable<String>(reasonDescription.value);
+    }
+    if (disposalMeasures.present) {
+      map['disposal_measures'] = Variable<String>(disposalMeasures.value);
+    }
+    if (disposalStartDate.present) {
+      map['disposal_start_date'] = Variable<DateTime>(disposalStartDate.value);
+    }
+    if (disposalEndDate.present) {
+      map['disposal_end_date'] = Variable<DateTime>(disposalEndDate.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TradingWarningCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('warningType: $warningType, ')
+          ..write('reasonCode: $reasonCode, ')
+          ..write('reasonDescription: $reasonDescription, ')
+          ..write('disposalMeasures: $disposalMeasures, ')
+          ..write('disposalStartDate: $disposalStartDate, ')
+          ..write('disposalEndDate: $disposalEndDate, ')
+          ..write('isActive: $isActive, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $InsiderHoldingTable extends InsiderHolding
+    with TableInfo<$InsiderHoldingTable, InsiderHoldingEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InsiderHoldingTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _directorSharesMeta = const VerificationMeta(
+    'directorShares',
+  );
+  @override
+  late final GeneratedColumn<double> directorShares = GeneratedColumn<double>(
+    'director_shares',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _supervisorSharesMeta = const VerificationMeta(
+    'supervisorShares',
+  );
+  @override
+  late final GeneratedColumn<double> supervisorShares = GeneratedColumn<double>(
+    'supervisor_shares',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _managerSharesMeta = const VerificationMeta(
+    'managerShares',
+  );
+  @override
+  late final GeneratedColumn<double> managerShares = GeneratedColumn<double>(
+    'manager_shares',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _insiderRatioMeta = const VerificationMeta(
+    'insiderRatio',
+  );
+  @override
+  late final GeneratedColumn<double> insiderRatio = GeneratedColumn<double>(
+    'insider_ratio',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pledgeRatioMeta = const VerificationMeta(
+    'pledgeRatio',
+  );
+  @override
+  late final GeneratedColumn<double> pledgeRatio = GeneratedColumn<double>(
+    'pledge_ratio',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharesChangeMeta = const VerificationMeta(
+    'sharesChange',
+  );
+  @override
+  late final GeneratedColumn<double> sharesChange = GeneratedColumn<double>(
+    'shares_change',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sharesIssuedMeta = const VerificationMeta(
+    'sharesIssued',
+  );
+  @override
+  late final GeneratedColumn<double> sharesIssued = GeneratedColumn<double>(
+    'shares_issued',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    date,
+    directorShares,
+    supervisorShares,
+    managerShares,
+    insiderRatio,
+    pledgeRatio,
+    sharesChange,
+    sharesIssued,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'insider_holding';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InsiderHoldingEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('director_shares')) {
+      context.handle(
+        _directorSharesMeta,
+        directorShares.isAcceptableOrUnknown(
+          data['director_shares']!,
+          _directorSharesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('supervisor_shares')) {
+      context.handle(
+        _supervisorSharesMeta,
+        supervisorShares.isAcceptableOrUnknown(
+          data['supervisor_shares']!,
+          _supervisorSharesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('manager_shares')) {
+      context.handle(
+        _managerSharesMeta,
+        managerShares.isAcceptableOrUnknown(
+          data['manager_shares']!,
+          _managerSharesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('insider_ratio')) {
+      context.handle(
+        _insiderRatioMeta,
+        insiderRatio.isAcceptableOrUnknown(
+          data['insider_ratio']!,
+          _insiderRatioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('pledge_ratio')) {
+      context.handle(
+        _pledgeRatioMeta,
+        pledgeRatio.isAcceptableOrUnknown(
+          data['pledge_ratio']!,
+          _pledgeRatioMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shares_change')) {
+      context.handle(
+        _sharesChangeMeta,
+        sharesChange.isAcceptableOrUnknown(
+          data['shares_change']!,
+          _sharesChangeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('shares_issued')) {
+      context.handle(
+        _sharesIssuedMeta,
+        sharesIssued.isAcceptableOrUnknown(
+          data['shares_issued']!,
+          _sharesIssuedMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, date};
+  @override
+  InsiderHoldingEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InsiderHoldingEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      directorShares: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}director_shares'],
+      ),
+      supervisorShares: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}supervisor_shares'],
+      ),
+      managerShares: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}manager_shares'],
+      ),
+      insiderRatio: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}insider_ratio'],
+      ),
+      pledgeRatio: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}pledge_ratio'],
+      ),
+      sharesChange: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}shares_change'],
+      ),
+      sharesIssued: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}shares_issued'],
+      ),
+    );
+  }
+
+  @override
+  $InsiderHoldingTable createAlias(String alias) {
+    return $InsiderHoldingTable(attachedDatabase, alias);
+  }
+}
+
+class InsiderHoldingEntry extends DataClass
+    implements Insertable<InsiderHoldingEntry> {
+  /// 股票代碼
+  final String symbol;
+
+  /// 報告日期（月報）
+  final DateTime date;
+
+  /// 董事持股總數（股）
+  final double? directorShares;
+
+  /// 監察人持股總數（股）
+  final double? supervisorShares;
+
+  /// 經理人持股總數（股）
+  final double? managerShares;
+
+  /// 董監持股比例（%）
+  final double? insiderRatio;
+
+  /// 質押比例（%）
+  final double? pledgeRatio;
+
+  /// 持股變動（股）- 與前期比較
+  final double? sharesChange;
+
+  /// 已發行股數
+  final double? sharesIssued;
+  const InsiderHoldingEntry({
+    required this.symbol,
+    required this.date,
+    this.directorShares,
+    this.supervisorShares,
+    this.managerShares,
+    this.insiderRatio,
+    this.pledgeRatio,
+    this.sharesChange,
+    this.sharesIssued,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['date'] = Variable<DateTime>(date);
+    if (!nullToAbsent || directorShares != null) {
+      map['director_shares'] = Variable<double>(directorShares);
+    }
+    if (!nullToAbsent || supervisorShares != null) {
+      map['supervisor_shares'] = Variable<double>(supervisorShares);
+    }
+    if (!nullToAbsent || managerShares != null) {
+      map['manager_shares'] = Variable<double>(managerShares);
+    }
+    if (!nullToAbsent || insiderRatio != null) {
+      map['insider_ratio'] = Variable<double>(insiderRatio);
+    }
+    if (!nullToAbsent || pledgeRatio != null) {
+      map['pledge_ratio'] = Variable<double>(pledgeRatio);
+    }
+    if (!nullToAbsent || sharesChange != null) {
+      map['shares_change'] = Variable<double>(sharesChange);
+    }
+    if (!nullToAbsent || sharesIssued != null) {
+      map['shares_issued'] = Variable<double>(sharesIssued);
+    }
+    return map;
+  }
+
+  InsiderHoldingCompanion toCompanion(bool nullToAbsent) {
+    return InsiderHoldingCompanion(
+      symbol: Value(symbol),
+      date: Value(date),
+      directorShares: directorShares == null && nullToAbsent
+          ? const Value.absent()
+          : Value(directorShares),
+      supervisorShares: supervisorShares == null && nullToAbsent
+          ? const Value.absent()
+          : Value(supervisorShares),
+      managerShares: managerShares == null && nullToAbsent
+          ? const Value.absent()
+          : Value(managerShares),
+      insiderRatio: insiderRatio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(insiderRatio),
+      pledgeRatio: pledgeRatio == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pledgeRatio),
+      sharesChange: sharesChange == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharesChange),
+      sharesIssued: sharesIssued == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sharesIssued),
+    );
+  }
+
+  factory InsiderHoldingEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InsiderHoldingEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      directorShares: serializer.fromJson<double?>(json['directorShares']),
+      supervisorShares: serializer.fromJson<double?>(json['supervisorShares']),
+      managerShares: serializer.fromJson<double?>(json['managerShares']),
+      insiderRatio: serializer.fromJson<double?>(json['insiderRatio']),
+      pledgeRatio: serializer.fromJson<double?>(json['pledgeRatio']),
+      sharesChange: serializer.fromJson<double?>(json['sharesChange']),
+      sharesIssued: serializer.fromJson<double?>(json['sharesIssued']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'date': serializer.toJson<DateTime>(date),
+      'directorShares': serializer.toJson<double?>(directorShares),
+      'supervisorShares': serializer.toJson<double?>(supervisorShares),
+      'managerShares': serializer.toJson<double?>(managerShares),
+      'insiderRatio': serializer.toJson<double?>(insiderRatio),
+      'pledgeRatio': serializer.toJson<double?>(pledgeRatio),
+      'sharesChange': serializer.toJson<double?>(sharesChange),
+      'sharesIssued': serializer.toJson<double?>(sharesIssued),
+    };
+  }
+
+  InsiderHoldingEntry copyWith({
+    String? symbol,
+    DateTime? date,
+    Value<double?> directorShares = const Value.absent(),
+    Value<double?> supervisorShares = const Value.absent(),
+    Value<double?> managerShares = const Value.absent(),
+    Value<double?> insiderRatio = const Value.absent(),
+    Value<double?> pledgeRatio = const Value.absent(),
+    Value<double?> sharesChange = const Value.absent(),
+    Value<double?> sharesIssued = const Value.absent(),
+  }) => InsiderHoldingEntry(
+    symbol: symbol ?? this.symbol,
+    date: date ?? this.date,
+    directorShares: directorShares.present
+        ? directorShares.value
+        : this.directorShares,
+    supervisorShares: supervisorShares.present
+        ? supervisorShares.value
+        : this.supervisorShares,
+    managerShares: managerShares.present
+        ? managerShares.value
+        : this.managerShares,
+    insiderRatio: insiderRatio.present ? insiderRatio.value : this.insiderRatio,
+    pledgeRatio: pledgeRatio.present ? pledgeRatio.value : this.pledgeRatio,
+    sharesChange: sharesChange.present ? sharesChange.value : this.sharesChange,
+    sharesIssued: sharesIssued.present ? sharesIssued.value : this.sharesIssued,
+  );
+  InsiderHoldingEntry copyWithCompanion(InsiderHoldingCompanion data) {
+    return InsiderHoldingEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      date: data.date.present ? data.date.value : this.date,
+      directorShares: data.directorShares.present
+          ? data.directorShares.value
+          : this.directorShares,
+      supervisorShares: data.supervisorShares.present
+          ? data.supervisorShares.value
+          : this.supervisorShares,
+      managerShares: data.managerShares.present
+          ? data.managerShares.value
+          : this.managerShares,
+      insiderRatio: data.insiderRatio.present
+          ? data.insiderRatio.value
+          : this.insiderRatio,
+      pledgeRatio: data.pledgeRatio.present
+          ? data.pledgeRatio.value
+          : this.pledgeRatio,
+      sharesChange: data.sharesChange.present
+          ? data.sharesChange.value
+          : this.sharesChange,
+      sharesIssued: data.sharesIssued.present
+          ? data.sharesIssued.value
+          : this.sharesIssued,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InsiderHoldingEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('directorShares: $directorShares, ')
+          ..write('supervisorShares: $supervisorShares, ')
+          ..write('managerShares: $managerShares, ')
+          ..write('insiderRatio: $insiderRatio, ')
+          ..write('pledgeRatio: $pledgeRatio, ')
+          ..write('sharesChange: $sharesChange, ')
+          ..write('sharesIssued: $sharesIssued')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    directorShares,
+    supervisorShares,
+    managerShares,
+    insiderRatio,
+    pledgeRatio,
+    sharesChange,
+    sharesIssued,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InsiderHoldingEntry &&
+          other.symbol == this.symbol &&
+          other.date == this.date &&
+          other.directorShares == this.directorShares &&
+          other.supervisorShares == this.supervisorShares &&
+          other.managerShares == this.managerShares &&
+          other.insiderRatio == this.insiderRatio &&
+          other.pledgeRatio == this.pledgeRatio &&
+          other.sharesChange == this.sharesChange &&
+          other.sharesIssued == this.sharesIssued);
+}
+
+class InsiderHoldingCompanion extends UpdateCompanion<InsiderHoldingEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> date;
+  final Value<double?> directorShares;
+  final Value<double?> supervisorShares;
+  final Value<double?> managerShares;
+  final Value<double?> insiderRatio;
+  final Value<double?> pledgeRatio;
+  final Value<double?> sharesChange;
+  final Value<double?> sharesIssued;
+  final Value<int> rowid;
+  const InsiderHoldingCompanion({
+    this.symbol = const Value.absent(),
+    this.date = const Value.absent(),
+    this.directorShares = const Value.absent(),
+    this.supervisorShares = const Value.absent(),
+    this.managerShares = const Value.absent(),
+    this.insiderRatio = const Value.absent(),
+    this.pledgeRatio = const Value.absent(),
+    this.sharesChange = const Value.absent(),
+    this.sharesIssued = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  InsiderHoldingCompanion.insert({
+    required String symbol,
+    required DateTime date,
+    this.directorShares = const Value.absent(),
+    this.supervisorShares = const Value.absent(),
+    this.managerShares = const Value.absent(),
+    this.insiderRatio = const Value.absent(),
+    this.pledgeRatio = const Value.absent(),
+    this.sharesChange = const Value.absent(),
+    this.sharesIssued = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       date = Value(date);
+  static Insertable<InsiderHoldingEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? date,
+    Expression<double>? directorShares,
+    Expression<double>? supervisorShares,
+    Expression<double>? managerShares,
+    Expression<double>? insiderRatio,
+    Expression<double>? pledgeRatio,
+    Expression<double>? sharesChange,
+    Expression<double>? sharesIssued,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (date != null) 'date': date,
+      if (directorShares != null) 'director_shares': directorShares,
+      if (supervisorShares != null) 'supervisor_shares': supervisorShares,
+      if (managerShares != null) 'manager_shares': managerShares,
+      if (insiderRatio != null) 'insider_ratio': insiderRatio,
+      if (pledgeRatio != null) 'pledge_ratio': pledgeRatio,
+      if (sharesChange != null) 'shares_change': sharesChange,
+      if (sharesIssued != null) 'shares_issued': sharesIssued,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  InsiderHoldingCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? date,
+    Value<double?>? directorShares,
+    Value<double?>? supervisorShares,
+    Value<double?>? managerShares,
+    Value<double?>? insiderRatio,
+    Value<double?>? pledgeRatio,
+    Value<double?>? sharesChange,
+    Value<double?>? sharesIssued,
+    Value<int>? rowid,
+  }) {
+    return InsiderHoldingCompanion(
+      symbol: symbol ?? this.symbol,
+      date: date ?? this.date,
+      directorShares: directorShares ?? this.directorShares,
+      supervisorShares: supervisorShares ?? this.supervisorShares,
+      managerShares: managerShares ?? this.managerShares,
+      insiderRatio: insiderRatio ?? this.insiderRatio,
+      pledgeRatio: pledgeRatio ?? this.pledgeRatio,
+      sharesChange: sharesChange ?? this.sharesChange,
+      sharesIssued: sharesIssued ?? this.sharesIssued,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (directorShares.present) {
+      map['director_shares'] = Variable<double>(directorShares.value);
+    }
+    if (supervisorShares.present) {
+      map['supervisor_shares'] = Variable<double>(supervisorShares.value);
+    }
+    if (managerShares.present) {
+      map['manager_shares'] = Variable<double>(managerShares.value);
+    }
+    if (insiderRatio.present) {
+      map['insider_ratio'] = Variable<double>(insiderRatio.value);
+    }
+    if (pledgeRatio.present) {
+      map['pledge_ratio'] = Variable<double>(pledgeRatio.value);
+    }
+    if (sharesChange.present) {
+      map['shares_change'] = Variable<double>(sharesChange.value);
+    }
+    if (sharesIssued.present) {
+      map['shares_issued'] = Variable<double>(sharesIssued.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InsiderHoldingCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('date: $date, ')
+          ..write('directorShares: $directorShares, ')
+          ..write('supervisorShares: $supervisorShares, ')
+          ..write('managerShares: $managerShares, ')
+          ..write('insiderRatio: $insiderRatio, ')
+          ..write('pledgeRatio: $pledgeRatio, ')
+          ..write('sharesChange: $sharesChange, ')
+          ..write('sharesIssued: $sharesIssued, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9896,6 +11214,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MonthlyRevenueTable monthlyRevenue = $MonthlyRevenueTable(this);
   late final $StockValuationTable stockValuation = $StockValuationTable(this);
   late final $MarginTradingTable marginTrading = $MarginTradingTable(this);
+  late final $TradingWarningTable tradingWarning = $TradingWarningTable(this);
+  late final $InsiderHoldingTable insiderHolding = $InsiderHoldingTable(this);
   late final Index idxDailyPriceSymbol = Index(
     'idx_daily_price_symbol',
     'CREATE INDEX idx_daily_price_symbol ON daily_price (symbol)',
@@ -10036,6 +11356,26 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_margin_trading_date',
     'CREATE INDEX idx_margin_trading_date ON margin_trading (date)',
   );
+  late final Index idxTradingWarningSymbol = Index(
+    'idx_trading_warning_symbol',
+    'CREATE INDEX idx_trading_warning_symbol ON trading_warning (symbol)',
+  );
+  late final Index idxTradingWarningDate = Index(
+    'idx_trading_warning_date',
+    'CREATE INDEX idx_trading_warning_date ON trading_warning (date)',
+  );
+  late final Index idxTradingWarningType = Index(
+    'idx_trading_warning_type',
+    'CREATE INDEX idx_trading_warning_type ON trading_warning (warning_type)',
+  );
+  late final Index idxInsiderHoldingSymbol = Index(
+    'idx_insider_holding_symbol',
+    'CREATE INDEX idx_insider_holding_symbol ON insider_holding (symbol)',
+  );
+  late final Index idxInsiderHoldingDate = Index(
+    'idx_insider_holding_date',
+    'CREATE INDEX idx_insider_holding_date ON insider_holding (date)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -10064,6 +11404,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     monthlyRevenue,
     stockValuation,
     marginTrading,
+    tradingWarning,
+    insiderHolding,
     idxDailyPriceSymbol,
     idxDailyPriceDate,
     idxDailyPriceSymbolDate,
@@ -10099,6 +11441,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxStockValuationDate,
     idxMarginTradingSymbol,
     idxMarginTradingDate,
+    idxTradingWarningSymbol,
+    idxTradingWarningDate,
+    idxTradingWarningType,
+    idxInsiderHoldingSymbol,
+    idxInsiderHoldingDate,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -10241,6 +11588,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('margin_trading', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('trading_warning', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('insider_holding', kind: UpdateKind.delete)],
     ),
   ]);
   @override
@@ -10679,6 +12040,48 @@ final class $$StockMasterTableReferences
     ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
 
     final cache = $_typedResult.readTableOrNull(_marginTradingRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TradingWarningTable, List<TradingWarningEntry>>
+  _tradingWarningRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.tradingWarning,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.tradingWarning.symbol,
+    ),
+  );
+
+  $$TradingWarningTableProcessedTableManager get tradingWarningRefs {
+    final manager = $$TradingWarningTableTableManager(
+      $_db,
+      $_db.tradingWarning,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_tradingWarningRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$InsiderHoldingTable, List<InsiderHoldingEntry>>
+  _insiderHoldingRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.insiderHolding,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.insiderHolding.symbol,
+    ),
+  );
+
+  $$InsiderHoldingTableProcessedTableManager get insiderHoldingRefs {
+    final manager = $$InsiderHoldingTableTableManager(
+      $_db,
+      $_db.insiderHolding,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(_insiderHoldingRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -11190,6 +12593,56 @@ class $$StockMasterTableFilterComposer
           }) => $$MarginTradingTableFilterComposer(
             $db: $db,
             $table: $db.marginTrading,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> tradingWarningRefs(
+    Expression<bool> Function($$TradingWarningTableFilterComposer f) f,
+  ) {
+    final $$TradingWarningTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.tradingWarning,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TradingWarningTableFilterComposer(
+            $db: $db,
+            $table: $db.tradingWarning,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> insiderHoldingRefs(
+    Expression<bool> Function($$InsiderHoldingTableFilterComposer f) f,
+  ) {
+    final $$InsiderHoldingTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.insiderHolding,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$InsiderHoldingTableFilterComposer(
+            $db: $db,
+            $table: $db.insiderHolding,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -11744,6 +13197,56 @@ class $$StockMasterTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> tradingWarningRefs<T extends Object>(
+    Expression<T> Function($$TradingWarningTableAnnotationComposer a) f,
+  ) {
+    final $$TradingWarningTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.tradingWarning,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TradingWarningTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tradingWarning,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> insiderHoldingRefs<T extends Object>(
+    Expression<T> Function($$InsiderHoldingTableAnnotationComposer a) f,
+  ) {
+    final $$InsiderHoldingTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.insiderHolding,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$InsiderHoldingTableAnnotationComposer(
+            $db: $db,
+            $table: $db.insiderHolding,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$StockMasterTableTableManager
@@ -11779,6 +13282,8 @@ class $$StockMasterTableTableManager
             bool monthlyRevenueRefs,
             bool stockValuationRefs,
             bool marginTradingRefs,
+            bool tradingWarningRefs,
+            bool insiderHoldingRefs,
           })
         > {
   $$StockMasterTableTableManager(_$AppDatabase db, $StockMasterTable table)
@@ -11857,6 +13362,8 @@ class $$StockMasterTableTableManager
                 monthlyRevenueRefs = false,
                 stockValuationRefs = false,
                 marginTradingRefs = false,
+                tradingWarningRefs = false,
+                insiderHoldingRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -11880,6 +13387,8 @@ class $$StockMasterTableTableManager
                     if (monthlyRevenueRefs) db.monthlyRevenue,
                     if (stockValuationRefs) db.stockValuation,
                     if (marginTradingRefs) db.marginTrading,
+                    if (tradingWarningRefs) db.tradingWarning,
+                    if (insiderHoldingRefs) db.insiderHolding,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -12283,6 +13792,48 @@ class $$StockMasterTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (tradingWarningRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          TradingWarningEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._tradingWarningRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tradingWarningRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (insiderHoldingRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          InsiderHoldingEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._insiderHoldingRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).insiderHoldingRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -12323,6 +13874,8 @@ typedef $$StockMasterTableProcessedTableManager =
         bool monthlyRevenueRefs,
         bool stockValuationRefs,
         bool marginTradingRefs,
+        bool tradingWarningRefs,
+        bool insiderHoldingRefs,
       })
     >;
 typedef $$DailyPriceTableCreateCompanionBuilder =
@@ -13029,6 +14582,7 @@ typedef $$NewsItemTableCreateCompanionBuilder =
       required String id,
       required String source,
       required String title,
+      Value<String?> content,
       required String url,
       required String category,
       required DateTime publishedAt,
@@ -13040,6 +14594,7 @@ typedef $$NewsItemTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> source,
       Value<String> title,
+      Value<String?> content,
       Value<String> url,
       Value<String> category,
       Value<DateTime> publishedAt,
@@ -13091,6 +14646,11 @@ class $$NewsItemTableFilterComposer
 
   ColumnFilters<String> get title => $composableBuilder(
     column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13164,6 +14724,11 @@ class $$NewsItemTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get url => $composableBuilder(
     column: $table.url,
     builder: (column) => ColumnOrderings(column),
@@ -13202,6 +14767,9 @@ class $$NewsItemTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
 
   GeneratedColumn<String> get url =>
       $composableBuilder(column: $table.url, builder: (column) => column);
@@ -13274,6 +14842,7 @@ class $$NewsItemTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> source = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<String?> content = const Value.absent(),
                 Value<String> url = const Value.absent(),
                 Value<String> category = const Value.absent(),
                 Value<DateTime> publishedAt = const Value.absent(),
@@ -13283,6 +14852,7 @@ class $$NewsItemTableTableManager
                 id: id,
                 source: source,
                 title: title,
+                content: content,
                 url: url,
                 category: category,
                 publishedAt: publishedAt,
@@ -13294,6 +14864,7 @@ class $$NewsItemTableTableManager
                 required String id,
                 required String source,
                 required String title,
+                Value<String?> content = const Value.absent(),
                 required String url,
                 required String category,
                 required DateTime publishedAt,
@@ -13303,6 +14874,7 @@ class $$NewsItemTableTableManager
                 id: id,
                 source: source,
                 title: title,
+                content: content,
                 url: url,
                 category: category,
                 publishedAt: publishedAt,
@@ -19736,6 +21308,846 @@ typedef $$MarginTradingTableProcessedTableManager =
       MarginTradingEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$TradingWarningTableCreateCompanionBuilder =
+    TradingWarningCompanion Function({
+      required String symbol,
+      required DateTime date,
+      required String warningType,
+      Value<String?> reasonCode,
+      Value<String?> reasonDescription,
+      Value<String?> disposalMeasures,
+      Value<DateTime?> disposalStartDate,
+      Value<DateTime?> disposalEndDate,
+      Value<bool> isActive,
+      Value<int> rowid,
+    });
+typedef $$TradingWarningTableUpdateCompanionBuilder =
+    TradingWarningCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<String> warningType,
+      Value<String?> reasonCode,
+      Value<String?> reasonDescription,
+      Value<String?> disposalMeasures,
+      Value<DateTime?> disposalStartDate,
+      Value<DateTime?> disposalEndDate,
+      Value<bool> isActive,
+      Value<int> rowid,
+    });
+
+final class $$TradingWarningTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $TradingWarningTable,
+          TradingWarningEntry
+        > {
+  $$TradingWarningTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.tradingWarning.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TradingWarningTableFilterComposer
+    extends Composer<_$AppDatabase, $TradingWarningTable> {
+  $$TradingWarningTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get warningType => $composableBuilder(
+    column: $table.warningType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reasonCode => $composableBuilder(
+    column: $table.reasonCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reasonDescription => $composableBuilder(
+    column: $table.reasonDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get disposalMeasures => $composableBuilder(
+    column: $table.disposalMeasures,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get disposalStartDate => $composableBuilder(
+    column: $table.disposalStartDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get disposalEndDate => $composableBuilder(
+    column: $table.disposalEndDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TradingWarningTableOrderingComposer
+    extends Composer<_$AppDatabase, $TradingWarningTable> {
+  $$TradingWarningTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get warningType => $composableBuilder(
+    column: $table.warningType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reasonCode => $composableBuilder(
+    column: $table.reasonCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get reasonDescription => $composableBuilder(
+    column: $table.reasonDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get disposalMeasures => $composableBuilder(
+    column: $table.disposalMeasures,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get disposalStartDate => $composableBuilder(
+    column: $table.disposalStartDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get disposalEndDate => $composableBuilder(
+    column: $table.disposalEndDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TradingWarningTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TradingWarningTable> {
+  $$TradingWarningTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get warningType => $composableBuilder(
+    column: $table.warningType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reasonCode => $composableBuilder(
+    column: $table.reasonCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get reasonDescription => $composableBuilder(
+    column: $table.reasonDescription,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get disposalMeasures => $composableBuilder(
+    column: $table.disposalMeasures,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get disposalStartDate => $composableBuilder(
+    column: $table.disposalStartDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get disposalEndDate => $composableBuilder(
+    column: $table.disposalEndDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TradingWarningTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TradingWarningTable,
+          TradingWarningEntry,
+          $$TradingWarningTableFilterComposer,
+          $$TradingWarningTableOrderingComposer,
+          $$TradingWarningTableAnnotationComposer,
+          $$TradingWarningTableCreateCompanionBuilder,
+          $$TradingWarningTableUpdateCompanionBuilder,
+          (TradingWarningEntry, $$TradingWarningTableReferences),
+          TradingWarningEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$TradingWarningTableTableManager(
+    _$AppDatabase db,
+    $TradingWarningTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TradingWarningTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TradingWarningTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TradingWarningTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<String> warningType = const Value.absent(),
+                Value<String?> reasonCode = const Value.absent(),
+                Value<String?> reasonDescription = const Value.absent(),
+                Value<String?> disposalMeasures = const Value.absent(),
+                Value<DateTime?> disposalStartDate = const Value.absent(),
+                Value<DateTime?> disposalEndDate = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TradingWarningCompanion(
+                symbol: symbol,
+                date: date,
+                warningType: warningType,
+                reasonCode: reasonCode,
+                reasonDescription: reasonDescription,
+                disposalMeasures: disposalMeasures,
+                disposalStartDate: disposalStartDate,
+                disposalEndDate: disposalEndDate,
+                isActive: isActive,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                required String warningType,
+                Value<String?> reasonCode = const Value.absent(),
+                Value<String?> reasonDescription = const Value.absent(),
+                Value<String?> disposalMeasures = const Value.absent(),
+                Value<DateTime?> disposalStartDate = const Value.absent(),
+                Value<DateTime?> disposalEndDate = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TradingWarningCompanion.insert(
+                symbol: symbol,
+                date: date,
+                warningType: warningType,
+                reasonCode: reasonCode,
+                reasonDescription: reasonDescription,
+                disposalMeasures: disposalMeasures,
+                disposalStartDate: disposalStartDate,
+                disposalEndDate: disposalEndDate,
+                isActive: isActive,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TradingWarningTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$TradingWarningTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn:
+                                    $$TradingWarningTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TradingWarningTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TradingWarningTable,
+      TradingWarningEntry,
+      $$TradingWarningTableFilterComposer,
+      $$TradingWarningTableOrderingComposer,
+      $$TradingWarningTableAnnotationComposer,
+      $$TradingWarningTableCreateCompanionBuilder,
+      $$TradingWarningTableUpdateCompanionBuilder,
+      (TradingWarningEntry, $$TradingWarningTableReferences),
+      TradingWarningEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$InsiderHoldingTableCreateCompanionBuilder =
+    InsiderHoldingCompanion Function({
+      required String symbol,
+      required DateTime date,
+      Value<double?> directorShares,
+      Value<double?> supervisorShares,
+      Value<double?> managerShares,
+      Value<double?> insiderRatio,
+      Value<double?> pledgeRatio,
+      Value<double?> sharesChange,
+      Value<double?> sharesIssued,
+      Value<int> rowid,
+    });
+typedef $$InsiderHoldingTableUpdateCompanionBuilder =
+    InsiderHoldingCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> date,
+      Value<double?> directorShares,
+      Value<double?> supervisorShares,
+      Value<double?> managerShares,
+      Value<double?> insiderRatio,
+      Value<double?> pledgeRatio,
+      Value<double?> sharesChange,
+      Value<double?> sharesIssued,
+      Value<int> rowid,
+    });
+
+final class $$InsiderHoldingTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $InsiderHoldingTable,
+          InsiderHoldingEntry
+        > {
+  $$InsiderHoldingTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.insiderHolding.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$InsiderHoldingTableFilterComposer
+    extends Composer<_$AppDatabase, $InsiderHoldingTable> {
+  $$InsiderHoldingTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get directorShares => $composableBuilder(
+    column: $table.directorShares,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get supervisorShares => $composableBuilder(
+    column: $table.supervisorShares,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get managerShares => $composableBuilder(
+    column: $table.managerShares,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get insiderRatio => $composableBuilder(
+    column: $table.insiderRatio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get pledgeRatio => $composableBuilder(
+    column: $table.pledgeRatio,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sharesChange => $composableBuilder(
+    column: $table.sharesChange,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get sharesIssued => $composableBuilder(
+    column: $table.sharesIssued,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InsiderHoldingTableOrderingComposer
+    extends Composer<_$AppDatabase, $InsiderHoldingTable> {
+  $$InsiderHoldingTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get directorShares => $composableBuilder(
+    column: $table.directorShares,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get supervisorShares => $composableBuilder(
+    column: $table.supervisorShares,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get managerShares => $composableBuilder(
+    column: $table.managerShares,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get insiderRatio => $composableBuilder(
+    column: $table.insiderRatio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get pledgeRatio => $composableBuilder(
+    column: $table.pledgeRatio,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sharesChange => $composableBuilder(
+    column: $table.sharesChange,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get sharesIssued => $composableBuilder(
+    column: $table.sharesIssued,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InsiderHoldingTableAnnotationComposer
+    extends Composer<_$AppDatabase, $InsiderHoldingTable> {
+  $$InsiderHoldingTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get directorShares => $composableBuilder(
+    column: $table.directorShares,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get supervisorShares => $composableBuilder(
+    column: $table.supervisorShares,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get managerShares => $composableBuilder(
+    column: $table.managerShares,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get insiderRatio => $composableBuilder(
+    column: $table.insiderRatio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get pledgeRatio => $composableBuilder(
+    column: $table.pledgeRatio,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sharesChange => $composableBuilder(
+    column: $table.sharesChange,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get sharesIssued => $composableBuilder(
+    column: $table.sharesIssued,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InsiderHoldingTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $InsiderHoldingTable,
+          InsiderHoldingEntry,
+          $$InsiderHoldingTableFilterComposer,
+          $$InsiderHoldingTableOrderingComposer,
+          $$InsiderHoldingTableAnnotationComposer,
+          $$InsiderHoldingTableCreateCompanionBuilder,
+          $$InsiderHoldingTableUpdateCompanionBuilder,
+          (InsiderHoldingEntry, $$InsiderHoldingTableReferences),
+          InsiderHoldingEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$InsiderHoldingTableTableManager(
+    _$AppDatabase db,
+    $InsiderHoldingTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InsiderHoldingTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$InsiderHoldingTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$InsiderHoldingTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double?> directorShares = const Value.absent(),
+                Value<double?> supervisorShares = const Value.absent(),
+                Value<double?> managerShares = const Value.absent(),
+                Value<double?> insiderRatio = const Value.absent(),
+                Value<double?> pledgeRatio = const Value.absent(),
+                Value<double?> sharesChange = const Value.absent(),
+                Value<double?> sharesIssued = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InsiderHoldingCompanion(
+                symbol: symbol,
+                date: date,
+                directorShares: directorShares,
+                supervisorShares: supervisorShares,
+                managerShares: managerShares,
+                insiderRatio: insiderRatio,
+                pledgeRatio: pledgeRatio,
+                sharesChange: sharesChange,
+                sharesIssued: sharesIssued,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime date,
+                Value<double?> directorShares = const Value.absent(),
+                Value<double?> supervisorShares = const Value.absent(),
+                Value<double?> managerShares = const Value.absent(),
+                Value<double?> insiderRatio = const Value.absent(),
+                Value<double?> pledgeRatio = const Value.absent(),
+                Value<double?> sharesChange = const Value.absent(),
+                Value<double?> sharesIssued = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InsiderHoldingCompanion.insert(
+                symbol: symbol,
+                date: date,
+                directorShares: directorShares,
+                supervisorShares: supervisorShares,
+                managerShares: managerShares,
+                insiderRatio: insiderRatio,
+                pledgeRatio: pledgeRatio,
+                sharesChange: sharesChange,
+                sharesIssued: sharesIssued,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$InsiderHoldingTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable: $$InsiderHoldingTableReferences
+                                    ._symbolTable(db),
+                                referencedColumn:
+                                    $$InsiderHoldingTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$InsiderHoldingTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $InsiderHoldingTable,
+      InsiderHoldingEntry,
+      $$InsiderHoldingTableFilterComposer,
+      $$InsiderHoldingTableOrderingComposer,
+      $$InsiderHoldingTableAnnotationComposer,
+      $$InsiderHoldingTableCreateCompanionBuilder,
+      $$InsiderHoldingTableUpdateCompanionBuilder,
+      (InsiderHoldingEntry, $$InsiderHoldingTableReferences),
+      InsiderHoldingEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -19786,4 +22198,8 @@ class $AppDatabaseManager {
       $$StockValuationTableTableManager(_db, _db.stockValuation);
   $$MarginTradingTableTableManager get marginTrading =>
       $$MarginTradingTableTableManager(_db, _db.marginTrading);
+  $$TradingWarningTableTableManager get tradingWarning =>
+      $$TradingWarningTableTableManager(_db, _db.tradingWarning);
+  $$InsiderHoldingTableTableManager get insiderHolding =>
+      $$InsiderHoldingTableTableManager(_db, _db.insiderHolding);
 }

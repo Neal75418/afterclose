@@ -116,12 +116,19 @@ class RssParser {
     final pubDate = _getElementText(item, 'pubDate');
     final guid = _getElementText(item, 'guid') ?? link;
 
+    // 抓取內文：優先 content:encoded，其次 description
+    final contentEncoded = _getElementText(item, 'content:encoded');
+    final description = _getElementText(item, 'description');
+    final rawContent = contentEncoded ?? description;
+    final content = rawContent != null ? _stripHtml(rawContent) : null;
+
     if (title == null || link == null) return null;
 
     return RssNewsItem(
       id: _generateId(guid ?? link, source: source.name),
       source: source.name,
       title: title,
+      content: content,
       url: link,
       publishedAt: _parseDate(pubDate) ?? DateTime.now(),
       category: source.category,
@@ -137,12 +144,19 @@ class RssParser {
         _getElementText(entry, 'updated');
     final id = _getElementText(entry, 'id') ?? link;
 
+    // 抓取內文：優先 content，其次 summary
+    final contentText = _getElementText(entry, 'content');
+    final summary = _getElementText(entry, 'summary');
+    final rawContent = contentText ?? summary;
+    final content = rawContent != null ? _stripHtml(rawContent) : null;
+
     if (title == null || link == null) return null;
 
     return RssNewsItem(
       id: _generateId(id ?? link, source: source.name),
       source: source.name,
       title: title,
+      content: content,
       url: link,
       publishedAt: _parseDate(published) ?? DateTime.now(),
       category: source.category,
@@ -154,6 +168,31 @@ class RssParser {
     final text = element?.innerText.trim();
     // 空字串回傳 null（例如自閉合標籤 <guid/>）
     return (text == null || text.isEmpty) ? null : text;
+  }
+
+  /// 移除 HTML 標籤並清理內文
+  ///
+  /// 處理 RSS 內文中常見的 HTML 和 CDATA 包裝
+  String _stripHtml(String html) {
+    // 移除 CDATA 包裝
+    var text = html.replaceAll(RegExp(r'<!\[CDATA\[|\]\]>'), '');
+    // 移除 HTML 標籤
+    text = text.replaceAll(RegExp(r'<[^>]*>'), '');
+    // 解碼常見 HTML entities
+    text = text
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'");
+    // 移除多餘空白
+    text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    // 限制長度（節省空間）
+    if (text.length > 500) {
+      text = '${text.substring(0, 497)}...';
+    }
+    return text;
   }
 
   DateTime? _parseDate(String? dateStr) {
@@ -345,6 +384,7 @@ class RssNewsItem {
     required this.id,
     required this.source,
     required this.title,
+    this.content,
     required this.url,
     required this.publishedAt,
     required this.category,
@@ -353,6 +393,7 @@ class RssNewsItem {
   final String id;
   final String source;
   final String title;
+  final String? content; // 內文摘要（從 description 抓取，可能為空）
   final String url;
   final DateTime publishedAt;
   final String category;

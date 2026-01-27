@@ -363,12 +363,14 @@ class PriceRepository implements IPriceRepository {
       final tpexCandidates = _quickFilterTpexCandidates(tpexPrices);
       final allCandidates = [...twseCandidates, ...tpexCandidates];
 
-      // 決定資料日期（優先使用 TWSE）
-      final dataDate = twsePrices.isNotEmpty
-          ? twsePrices.first.date
-          : tpexPrices.first.date;
-      final dateStr =
-          '${dataDate.year}-${dataDate.month.toString().padLeft(2, '0')}-${dataDate.day.toString().padLeft(2, '0')}';
+      // 決定資料日期（分別記錄 TWSE 和 TPEX）
+      final twseDataDate = twsePrices.isNotEmpty ? twsePrices.first.date : null;
+      final tpexDataDate = tpexPrices.isNotEmpty ? tpexPrices.first.date : null;
+      final dataDate = twseDataDate ?? tpexDataDate;
+
+      final dateStr = dataDate != null
+          ? '${dataDate.year}-${dataDate.month.toString().padLeft(2, '0')}-${dataDate.day.toString().padLeft(2, '0')}'
+          : 'N/A';
       AppLogger.info(
         'PriceRepo',
         '價格同步: ${allPriceEntries.length} 筆 '
@@ -380,6 +382,7 @@ class PriceRepository implements IPriceRepository {
         count: allPriceEntries.length,
         candidates: allCandidates,
         dataDate: dataDate,
+        tpexDataDate: tpexDataDate,
       );
     } on NetworkException {
       rethrow;

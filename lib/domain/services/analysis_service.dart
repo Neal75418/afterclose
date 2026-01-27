@@ -565,6 +565,11 @@ class AnalysisService {
   }
 
   /// 檢查是否形成更高的低點（反轉訊號）
+  ///
+  /// 條件：
+  /// 1. 近期低點高於前期低點 5%
+  /// 2. 收盤站上 MA20
+  /// 3. 近期成交量高於前期平均（量能確認）
   bool _hasHigherLow(List<DailyPriceEntry> prices) {
     if (prices.length < RuleParams.swingWindow * 2) return false;
 
@@ -589,11 +594,21 @@ class AnalysisService {
       if (currentClose < ma20) return false;
     }
 
+    // 成交量確認：近期成交量需高於前期平均
+    if (!_hasVolumeConfirmation(recentPrices, prevPrices)) {
+      return false;
+    }
+
     // 近期低點應高於前期低點（含緩衝區過濾弱訊號）
     return recentLow > prevLow * RuleParams.higherLowBuffer;
   }
 
   /// 檢查是否形成更低的高點（趨勢反轉訊號）
+  ///
+  /// 條件：
+  /// 1. 近期高點低於前期高點 5%
+  /// 2. 收盤跌破 MA20
+  /// 3. 近期成交量高於前期平均（量能確認）
   bool _hasLowerHigh(List<DailyPriceEntry> prices) {
     if (prices.length < RuleParams.swingWindow * 2) return false;
 
@@ -618,8 +633,48 @@ class AnalysisService {
 
     if (recentHigh == null || prevHigh == null) return false;
 
+    // 成交量確認：近期成交量需高於前期平均
+    if (!_hasVolumeConfirmation(recentPrices, prevPrices)) {
+      return false;
+    }
+
     // 近期高點應低於前期高點（含緩衝區過濾弱訊號）
     return recentHigh < prevHigh * RuleParams.lowerHighBuffer;
+  }
+
+  /// 檢查成交量確認（反轉訊號需有量能配合）
+  ///
+  /// 近期平均成交量需達前期平均的 1.2 倍以上
+  bool _hasVolumeConfirmation(
+    List<DailyPriceEntry> recentPrices,
+    List<DailyPriceEntry> prevPrices,
+  ) {
+    // 計算近期平均成交量
+    final recentVolumes = recentPrices
+        .map((p) => p.volume ?? 0.0)
+        .where((v) => v > 0)
+        .toList();
+
+    if (recentVolumes.isEmpty) return false;
+
+    final avgRecentVolume =
+        recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
+
+    // 計算前期平均成交量
+    final prevVolumes = prevPrices
+        .map((p) => p.volume ?? 0.0)
+        .where((v) => v > 0)
+        .toList();
+
+    if (prevVolumes.isEmpty) return true; // 無前期資料則放行
+
+    final avgPrevVolume =
+        prevVolumes.reduce((a, b) => a + b) / prevVolumes.length;
+
+    if (avgPrevVolume <= 0) return true;
+
+    // 近期成交量需達前期的 1.2 倍
+    return avgRecentVolume >= avgPrevVolume * RuleParams.reversalVolumeConfirm;
   }
 
   /// 計算簡單移動平均
