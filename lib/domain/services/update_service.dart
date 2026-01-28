@@ -6,6 +6,7 @@ import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
+import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
@@ -40,6 +41,7 @@ class UpdateService {
     InstitutionalRepository? institutionalRepository,
     MarketDataRepository? marketDataRepository,
     FundamentalRepository? fundamentalRepository,
+    InsiderRepository? insiderRepository,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
     ScoringService? scoringService,
@@ -49,6 +51,7 @@ class UpdateService {
        _newsRepo = newsRepository,
        _analysisRepo = analysisRepository,
        _institutionalRepo = institutionalRepository,
+       _insiderRepo = insiderRepository,
        _analysisService = analysisService ?? AnalysisService(),
        _ruleEngine = ruleEngine ?? RuleEngine(),
        _scoringService = scoringService,
@@ -83,6 +86,7 @@ class UpdateService {
   final NewsRepository _newsRepo;
   final AnalysisRepository _analysisRepo;
   final InstitutionalRepository? _institutionalRepo;
+  final InsiderRepository? _insiderRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
   final ScoringService? _scoringService;
@@ -170,8 +174,19 @@ class UpdateService {
 
       // 步驟 3：取得每日價格
       onProgress?.call(3, 10, '取得今日價格');
+      final originalDate = normalizedDate;
       normalizedDate = await _syncDailyPrices(ctx, normalizedDate);
       ctx.normalizedDate = normalizedDate;
+
+      // 若日期被校正，更新 UpdateRun 的 runDate
+      if (normalizedDate != originalDate) {
+        await _db.updateRunDate(runId, normalizedDate);
+        result.date = normalizedDate;
+        AppLogger.info(
+          'UpdateSvc',
+          '日期校正: $originalDate -> $normalizedDate，已更新 UpdateRun',
+        );
+      }
 
       // 步驟 3.5：同步歷史價格
       ctx.reportProgress(4, 10, '取得歷史資料');
@@ -586,17 +601,24 @@ class UpdateService {
         'disposalEndDate': v.disposalEndDate?.toIso8601String(),
       }),
     );
-    final insiderMap = insiderEntries.map(
-      (k, v) => MapEntry(k, {
+
+    // 批次計算董監連續減持/增持狀態
+    final insiderRepo = _insiderRepo;
+    final insiderStatusMap = insiderRepo != null
+        ? await insiderRepo.calculateInsiderStatusBatch(candidates)
+        : <String, InsiderStatus>{};
+
+    final insiderMap = insiderEntries.map((k, v) {
+      final status = insiderStatusMap[k];
+      return MapEntry(k, {
         'insiderRatio': v.insiderRatio,
         'pledgeRatio': v.pledgeRatio,
-        // 這些欄位需要從 Repository 取得計算結果，目前先設為預設值
-        'hasSellingStreak': false,
-        'sellingStreakMonths': 0,
-        'hasSignificantBuying': false,
-        'buyingChange': v.sharesChange,
-      }),
-    );
+        'hasSellingStreak': status?.hasSellingStreak ?? false,
+        'sellingStreakMonths': status?.sellingStreakMonths ?? 0,
+        'hasSignificantBuying': status?.hasSignificantBuying ?? false,
+        'buyingChange': status?.buyingChange ?? v.sharesChange,
+      });
+    });
 
     final recentlyRecommended = await _analysisRepo
         .getRecentlyRecommendedSymbols();
@@ -746,7 +768,8 @@ class _UpdateContext {
 class UpdateResult {
   UpdateResult({required this.date});
 
-  final DateTime date;
+  /// 資料實際日期（可能在同步過程中被校正）
+  DateTime date;
   bool success = false;
   bool skipped = false;
   String? message;

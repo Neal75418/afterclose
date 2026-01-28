@@ -188,18 +188,28 @@ class PriceRepository implements IPriceRepository {
 
       if (data.isEmpty) return 0;
 
-      final entries = data.map((price) {
-        final date = DateTime.tryParse(price.date) ?? DateTime.now();
-        return DailyPriceCompanion.insert(
-          symbol: symbol,
-          date: date,
-          open: Value(price.open),
-          high: Value(price.high),
-          low: Value(price.low),
-          close: Value(price.close),
-          volume: Value(price.volume),
+      final entries = <DailyPriceCompanion>[];
+      for (final price in data) {
+        final date = DateTime.tryParse(price.date);
+        if (date == null) {
+          AppLogger.warning(
+            'PriceRepo',
+            '上櫃價格日期解析失敗，跳過: $symbol, date=${price.date}',
+          );
+          continue;
+        }
+        entries.add(
+          DailyPriceCompanion.insert(
+            symbol: symbol,
+            date: date,
+            open: Value(price.open),
+            high: Value(price.high),
+            low: Value(price.low),
+            close: Value(price.close),
+            volume: Value(price.volume),
+          ),
         );
-      }).toList();
+      }
 
       if (entries.isNotEmpty) {
         await _db.insertPrices(entries);

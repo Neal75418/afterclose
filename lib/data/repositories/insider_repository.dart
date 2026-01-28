@@ -265,4 +265,124 @@ class InsiderRepository {
 
     return result;
   }
+
+  /// 批次計算董監連續減持/增持狀態
+  ///
+  /// 回傳 Map: symbol -> InsiderStatus
+  /// 用於 UpdateService 批量分析時避免 N+1 問題
+  Future<Map<String, InsiderStatus>> calculateInsiderStatusBatch(
+    List<String> symbols, {
+    int months = 3,
+    double buyingThreshold = 5.0,
+  }) async {
+    if (symbols.isEmpty) return {};
+
+    // 批次取得所有股票的近期董監持股歷史
+    final historyMap = await _db.getRecentInsiderHoldingsBatch(
+      symbols,
+      months: months + 1,
+    );
+
+    final result = <String, InsiderStatus>{};
+    for (final symbol in symbols) {
+      final history = historyMap[symbol];
+      if (history == null || history.isEmpty) {
+        result[symbol] = const InsiderStatus();
+        continue;
+      }
+
+      // 計算連續減持
+      final (hasStreak, streakMonths) = _calculateSellingStreak(
+        history,
+        requiredMonths: months,
+      );
+
+      // 計算顯著增持
+      final (hasBuying, buyingChange) = _calculateSignificantBuying(
+        history,
+        threshold: buyingThreshold,
+      );
+
+      result[symbol] = InsiderStatus(
+        hasSellingStreak: hasStreak,
+        sellingStreakMonths: streakMonths,
+        hasSignificantBuying: hasBuying,
+        buyingChange: buyingChange,
+      );
+    }
+
+    return result;
+  }
+
+  /// 計算連續減持（內部方法）
+  (bool, int) _calculateSellingStreak(
+    List<InsiderHoldingEntry> history, {
+    required int requiredMonths,
+  }) {
+    if (history.length < requiredMonths) return (false, 0);
+
+    // 依日期升冪排序（最舊在前）
+    final sorted = List<InsiderHoldingEntry>.from(history)
+      ..sort((a, b) => a.date.compareTo(b.date));
+
+    int consecutiveDecreaseCount = 0;
+    double? lastValidRatio;
+
+    for (final entry in sorted) {
+      final currRatio = entry.insiderRatio;
+
+      // 跳過 null 或無效值
+      if (currRatio == null || currRatio <= 0) continue;
+
+      if (lastValidRatio != null) {
+        if (currRatio < lastValidRatio) {
+          consecutiveDecreaseCount++;
+        } else {
+          consecutiveDecreaseCount = 0;
+        }
+      }
+
+      lastValidRatio = currRatio;
+    }
+
+    return (
+      consecutiveDecreaseCount >= requiredMonths,
+      consecutiveDecreaseCount,
+    );
+  }
+
+  /// 計算顯著增持（內部方法）
+  (bool, double?) _calculateSignificantBuying(
+    List<InsiderHoldingEntry> history, {
+    required double threshold,
+  }) {
+    if (history.length < 2) return (false, null);
+
+    // 依日期降冪排序（最新在前）
+    final sorted = List<InsiderHoldingEntry>.from(history)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    final latestRatio = sorted[0].insiderRatio ?? 0;
+    final previousRatio = sorted[1].insiderRatio ?? 0;
+
+    if (previousRatio <= 0) return (false, null);
+
+    final change = latestRatio - previousRatio;
+    return (change >= threshold, change);
+  }
+}
+
+/// 董監狀態資料類別
+class InsiderStatus {
+  const InsiderStatus({
+    this.hasSellingStreak = false,
+    this.sellingStreakMonths = 0,
+    this.hasSignificantBuying = false,
+    this.buyingChange,
+  });
+
+  final bool hasSellingStreak;
+  final int sellingStreakMonths;
+  final bool hasSignificantBuying;
+  final double? buyingChange;
 }

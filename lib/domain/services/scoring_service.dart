@@ -277,7 +277,7 @@ class ScoringService {
     } catch (e, stackTrace) {
       AppLogger.warning('ScoringSvc', 'Isolate 執行失敗，回退至主執行緒: $e', stackTrace);
 
-      // 回退：在主執行緒執行評分
+      // 回退：在主執行緒執行評分，並傳入 marketDataBuilder 以確保市場資料一致性
       return await scoreStocks(
         candidates: candidates,
         date: date,
@@ -288,6 +288,15 @@ class ScoringService {
         valuationMap: valuationMap,
         revenueHistoryMap: revenueHistoryMap,
         recentlyRecommended: recentlyRecommended,
+        marketDataBuilder: (symbol) async {
+          return _buildMarketDataFromMaps(
+            symbol: symbol,
+            dayTradingMap: dayTradingMap,
+            shareholdingMap: shareholdingMap,
+            warningMap: warningMap,
+            insiderMap: insiderMap,
+          );
+        },
       );
     }
 
@@ -383,6 +392,71 @@ class ScoringService {
       score: score,
     );
     await _analysisRepo.saveReasons(symbol, date, reasons);
+  }
+
+  // =============================================
+  // 市場資料建構輔助方法（Isolate 回退時使用）
+  // =============================================
+
+  /// 從 Map 建構 MarketDataContext
+  ///
+  /// 用於 Isolate 回退時，確保市場資料一致性
+  MarketDataContext? _buildMarketDataFromMaps({
+    required String symbol,
+    Map<String, double>? dayTradingMap,
+    Map<String, Map<String, double?>>? shareholdingMap,
+    Map<String, Map<String, dynamic>>? warningMap,
+    Map<String, Map<String, dynamic>>? insiderMap,
+  }) {
+    final dayTradingRatio = dayTradingMap?[symbol];
+    final shareholding = shareholdingMap?[symbol];
+    final warning = warningMap?[symbol];
+    final insider = insiderMap?[symbol];
+
+    // 若全部都沒有資料，回傳 null
+    if (dayTradingRatio == null &&
+        shareholding == null &&
+        warning == null &&
+        insider == null) {
+      return null;
+    }
+
+    // 建構警示資料
+    WarningDataContext? warningData;
+    if (warning != null) {
+      final warningType = warning['warningType'] as String?;
+      warningData = WarningDataContext(
+        isAttention: warningType == 'ATTENTION',
+        isDisposal: warningType == 'DISPOSAL',
+        warningType: warningType,
+        reasonDescription: warning['reasonDescription'] as String?,
+        disposalMeasures: warning['disposalMeasures'] as String?,
+        disposalEndDate: warning['disposalEndDate'] != null
+            ? DateTime.tryParse(warning['disposalEndDate'] as String)
+            : null,
+      );
+    }
+
+    // 建構董監持股資料
+    InsiderDataContext? insiderData;
+    if (insider != null) {
+      insiderData = InsiderDataContext(
+        insiderRatio: insider['insiderRatio'] as double?,
+        pledgeRatio: insider['pledgeRatio'] as double?,
+        hasSellingStreak: insider['hasSellingStreak'] as bool? ?? false,
+        sellingStreakMonths: insider['sellingStreakMonths'] as int? ?? 0,
+        hasSignificantBuying: insider['hasSignificantBuying'] as bool? ?? false,
+        buyingChange: insider['buyingChange'] as double?,
+      );
+    }
+
+    return MarketDataContext(
+      dayTradingRatio: dayTradingRatio,
+      foreignSharesRatio: shareholding?['foreignSharesRatio'],
+      foreignSharesRatioChange: shareholding?['foreignSharesRatioChange'],
+      warningData: warningData,
+      insiderData: insiderData,
+    );
   }
 
   // =============================================
