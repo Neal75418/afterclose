@@ -380,14 +380,27 @@ void main() {
     group('PriceSpikeRule', () {
       const rule = PriceSpikeRule();
 
-      test('should trigger when price moves 6%+', () {
-        final prices = [
-          createTestPrice(
-            date: DateTime.now().subtract(const Duration(days: 1)),
-            close: 100.0,
-          ),
-          createTestPrice(date: DateTime.now(), close: 107.0),
-        ];
+      test('should trigger when price moves 7%+ with volume confirmation', () {
+        // v0.1.3: 需要 21 天資料計算均量，且成交量需達 1.5 倍
+        final now = DateTime.now();
+        final baseVolume = 1000.0;
+        final prices = List.generate(21, (i) {
+          if (i < 20) {
+            // 前 20 天：平穩價格，正常成交量
+            return createTestPrice(
+              date: now.subtract(Duration(days: 20 - i)),
+              close: 100.0,
+              volume: baseVolume,
+            );
+          } else {
+            // 今天：漲 8%，成交量 2 倍（大於 1.5 倍門檻）
+            return createTestPrice(
+              date: now,
+              close: 108.0,
+              volume: baseVolume * 2,
+            );
+          }
+        });
         const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
 
@@ -395,16 +408,53 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.type, ReasonType.priceSpike);
+        expect(result.evidence?['volumeMultiple'], greaterThanOrEqualTo(1.5));
       });
 
       test('should NOT trigger with small price change', () {
-        final prices = [
-          createTestPrice(
-            date: DateTime.now().subtract(const Duration(days: 1)),
-            close: 100.0,
-          ),
-          createTestPrice(date: DateTime.now(), close: 101.0),
-        ];
+        // 5% 漲幅不觸發（門檻 7%）
+        final now = DateTime.now();
+        final prices = List.generate(21, (i) {
+          if (i < 20) {
+            return createTestPrice(
+              date: now.subtract(Duration(days: 20 - i)),
+              close: 100.0,
+              volume: 1000.0,
+            );
+          } else {
+            return createTestPrice(
+              date: now,
+              close: 105.0, // 只漲 5%
+              volume: 2000.0,
+            );
+          }
+        });
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNull);
+      });
+
+      test('should NOT trigger without volume confirmation', () {
+        // 價格漲 8%，但成交量不足 1.5 倍
+        final now = DateTime.now();
+        final prices = List.generate(21, (i) {
+          if (i < 20) {
+            return createTestPrice(
+              date: now.subtract(Duration(days: 20 - i)),
+              close: 100.0,
+              volume: 1000.0,
+            );
+          } else {
+            return createTestPrice(
+              date: now,
+              close: 108.0,
+              volume: 1200.0, // 只有 1.2 倍，低於 1.5 倍門檻
+            );
+          }
+        });
         const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
 
