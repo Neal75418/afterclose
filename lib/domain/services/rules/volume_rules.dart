@@ -73,7 +73,12 @@ class VolumeSpikeRule extends StockRule {
 
 /// 規則：價格異動
 ///
-/// 當單日價格漲跌幅超過門檻時觸發
+/// 當單日價格漲跌幅超過門檻且有成交量配合時觸發。
+///
+/// v0.1.3 改進：
+/// - 門檻從 6% 提高至 7%
+/// - 新增成交量確認（需達均量 1.5 倍）
+/// - 排除低成交額股票
 class PriceSpikeRule extends StockRule {
   const PriceSpikeRule();
 
@@ -85,13 +90,15 @@ class PriceSpikeRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < 2) return null;
+    // 需要足夠歷史資料計算均量
+    if (data.prices.length < RuleParams.volMa + 1) return null;
 
     final today = data.prices.last;
     final yesterday = data.prices[data.prices.length - 2];
 
     final todayClose = today.close;
     final yesterdayClose = yesterday.close;
+    final todayVolume = today.volume;
 
     if (todayClose == null || yesterdayClose == null || yesterdayClose <= 0) {
       return null;
@@ -99,20 +106,50 @@ class PriceSpikeRule extends StockRule {
 
     final pctChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
 
-    // 檢查門檻（6%）
-    if (pctChange.abs() >= RuleParams.priceSpikePercent) {
-      return TriggeredReason(
-        type: ReasonType.priceSpike,
-        score: RuleScores.priceSpike,
-        description: '股價單日漲跌幅超過 ${RuleParams.priceSpikePercent}%',
-        evidence: {
-          'pctChange': pctChange,
-          'close': todayClose,
-          'prevClose': yesterdayClose,
-        },
-      );
+    // 檢查價格門檻（7%）
+    if (pctChange.abs() < RuleParams.priceSpikePercent) {
+      return null;
     }
 
-    return null;
+    // 成交量確認：過濾無量異動
+    if (todayVolume == null || todayVolume <= 0) return null;
+
+    // 計算 MA20 成交量（過濾停牌日）
+    final recentVolumes = data.prices.reversed
+        .skip(1) // 跳過今天
+        .take(RuleParams.volMa)
+        .map((p) => p.volume ?? 0.0)
+        .where((v) => v > 0) // 過濾停牌日
+        .toList();
+
+    // 要求至少 80% 有效交易日
+    final minValidDays = (RuleParams.volMa * 0.8).floor();
+    if (recentVolumes.length < minValidDays) return null;
+
+    final avgVolume =
+        recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
+
+    // 成交量需達均量 1.5 倍以上
+    if (avgVolume <= 0 ||
+        todayVolume < avgVolume * RuleParams.priceSpikeVolumeMult) {
+      return null;
+    }
+
+    final volumeMultiple = todayVolume / avgVolume;
+
+    return TriggeredReason(
+      type: ReasonType.priceSpike,
+      score: RuleScores.priceSpike,
+      description:
+          '股價單日漲跌幅超過 ${RuleParams.priceSpikePercent}%，量增 ${volumeMultiple.toStringAsFixed(1)} 倍',
+      evidence: {
+        'pctChange': pctChange,
+        'close': todayClose,
+        'prevClose': yesterdayClose,
+        'volume': todayVolume,
+        'avgVolume': avgVolume,
+        'volumeMultiple': volumeMultiple,
+      },
+    );
   }
 }

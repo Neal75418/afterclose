@@ -51,7 +51,14 @@ abstract final class RuleParams {
   static const int swingWindow = 20;
 
   /// 價格異動門檻百分比
-  static const double priceSpikePercent = 6.0;
+  ///
+  /// v0.1.3：從 6% 提高至 7%，提升精準度
+  static const double priceSpikePercent = 7.0;
+
+  /// 價格異動成交量確認倍數
+  ///
+  /// 成交量需達 20 日均量的此倍數以上，避免無量異動雜訊。
+  static const double priceSpikeVolumeMult = 1.5;
 
   /// 成交量異動倍數（相對 20 日均量）
   ///

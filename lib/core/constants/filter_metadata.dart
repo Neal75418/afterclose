@@ -118,8 +118,8 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   // === 價格訊號 ===
   ScanFilter.priceSpike: FilterMetadata(
     conditionKey: 'filterMeta.priceSpike',
-    dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '單日漲跌幅 ≥ 3%',
+    dataRequirements: [DataRequirement.priceHistory20],
+    thresholdInfo: '單日漲跌幅 ≥ 7% + 成交量 ≥ 1.5 倍均量',
   ),
 
   // === KD 訊號 ===
