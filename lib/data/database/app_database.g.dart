@@ -9373,6 +9373,458 @@ class StockValuationCompanion extends UpdateCompanion<StockValuationEntry> {
   }
 }
 
+class $DividendHistoryTable extends DividendHistory
+    with TableInfo<$DividendHistoryTable, DividendHistoryEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DividendHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _yearMeta = const VerificationMeta('year');
+  @override
+  late final GeneratedColumn<int> year = GeneratedColumn<int>(
+    'year',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cashDividendMeta = const VerificationMeta(
+    'cashDividend',
+  );
+  @override
+  late final GeneratedColumn<double> cashDividend = GeneratedColumn<double>(
+    'cash_dividend',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _stockDividendMeta = const VerificationMeta(
+    'stockDividend',
+  );
+  @override
+  late final GeneratedColumn<double> stockDividend = GeneratedColumn<double>(
+    'stock_dividend',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _exDividendDateMeta = const VerificationMeta(
+    'exDividendDate',
+  );
+  @override
+  late final GeneratedColumn<String> exDividendDate = GeneratedColumn<String>(
+    'ex_dividend_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _exRightsDateMeta = const VerificationMeta(
+    'exRightsDate',
+  );
+  @override
+  late final GeneratedColumn<String> exRightsDate = GeneratedColumn<String>(
+    'ex_rights_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    year,
+    cashDividend,
+    stockDividend,
+    exDividendDate,
+    exRightsDate,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'dividend_history';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DividendHistoryEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+        _yearMeta,
+        year.isAcceptableOrUnknown(data['year']!, _yearMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_yearMeta);
+    }
+    if (data.containsKey('cash_dividend')) {
+      context.handle(
+        _cashDividendMeta,
+        cashDividend.isAcceptableOrUnknown(
+          data['cash_dividend']!,
+          _cashDividendMeta,
+        ),
+      );
+    }
+    if (data.containsKey('stock_dividend')) {
+      context.handle(
+        _stockDividendMeta,
+        stockDividend.isAcceptableOrUnknown(
+          data['stock_dividend']!,
+          _stockDividendMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ex_dividend_date')) {
+      context.handle(
+        _exDividendDateMeta,
+        exDividendDate.isAcceptableOrUnknown(
+          data['ex_dividend_date']!,
+          _exDividendDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ex_rights_date')) {
+      context.handle(
+        _exRightsDateMeta,
+        exRightsDate.isAcceptableOrUnknown(
+          data['ex_rights_date']!,
+          _exRightsDateMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, year};
+  @override
+  DividendHistoryEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DividendHistoryEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      year: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}year'],
+      )!,
+      cashDividend: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}cash_dividend'],
+      )!,
+      stockDividend: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}stock_dividend'],
+      )!,
+      exDividendDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ex_dividend_date'],
+      ),
+      exRightsDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ex_rights_date'],
+      ),
+    );
+  }
+
+  @override
+  $DividendHistoryTable createAlias(String alias) {
+    return $DividendHistoryTable(attachedDatabase, alias);
+  }
+}
+
+class DividendHistoryEntry extends DataClass
+    implements Insertable<DividendHistoryEntry> {
+  /// 股票代碼
+  final String symbol;
+
+  /// 股利所屬年度
+  final int year;
+
+  /// 現金股利（元）
+  final double cashDividend;
+
+  /// 股票股利（元）
+  final double stockDividend;
+
+  /// 除息日（格式: yyyy-MM-dd）
+  final String? exDividendDate;
+
+  /// 除權日（格式: yyyy-MM-dd）
+  final String? exRightsDate;
+  const DividendHistoryEntry({
+    required this.symbol,
+    required this.year,
+    required this.cashDividend,
+    required this.stockDividend,
+    this.exDividendDate,
+    this.exRightsDate,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['year'] = Variable<int>(year);
+    map['cash_dividend'] = Variable<double>(cashDividend);
+    map['stock_dividend'] = Variable<double>(stockDividend);
+    if (!nullToAbsent || exDividendDate != null) {
+      map['ex_dividend_date'] = Variable<String>(exDividendDate);
+    }
+    if (!nullToAbsent || exRightsDate != null) {
+      map['ex_rights_date'] = Variable<String>(exRightsDate);
+    }
+    return map;
+  }
+
+  DividendHistoryCompanion toCompanion(bool nullToAbsent) {
+    return DividendHistoryCompanion(
+      symbol: Value(symbol),
+      year: Value(year),
+      cashDividend: Value(cashDividend),
+      stockDividend: Value(stockDividend),
+      exDividendDate: exDividendDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exDividendDate),
+      exRightsDate: exRightsDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exRightsDate),
+    );
+  }
+
+  factory DividendHistoryEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DividendHistoryEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      year: serializer.fromJson<int>(json['year']),
+      cashDividend: serializer.fromJson<double>(json['cashDividend']),
+      stockDividend: serializer.fromJson<double>(json['stockDividend']),
+      exDividendDate: serializer.fromJson<String?>(json['exDividendDate']),
+      exRightsDate: serializer.fromJson<String?>(json['exRightsDate']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'year': serializer.toJson<int>(year),
+      'cashDividend': serializer.toJson<double>(cashDividend),
+      'stockDividend': serializer.toJson<double>(stockDividend),
+      'exDividendDate': serializer.toJson<String?>(exDividendDate),
+      'exRightsDate': serializer.toJson<String?>(exRightsDate),
+    };
+  }
+
+  DividendHistoryEntry copyWith({
+    String? symbol,
+    int? year,
+    double? cashDividend,
+    double? stockDividend,
+    Value<String?> exDividendDate = const Value.absent(),
+    Value<String?> exRightsDate = const Value.absent(),
+  }) => DividendHistoryEntry(
+    symbol: symbol ?? this.symbol,
+    year: year ?? this.year,
+    cashDividend: cashDividend ?? this.cashDividend,
+    stockDividend: stockDividend ?? this.stockDividend,
+    exDividendDate: exDividendDate.present
+        ? exDividendDate.value
+        : this.exDividendDate,
+    exRightsDate: exRightsDate.present ? exRightsDate.value : this.exRightsDate,
+  );
+  DividendHistoryEntry copyWithCompanion(DividendHistoryCompanion data) {
+    return DividendHistoryEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      year: data.year.present ? data.year.value : this.year,
+      cashDividend: data.cashDividend.present
+          ? data.cashDividend.value
+          : this.cashDividend,
+      stockDividend: data.stockDividend.present
+          ? data.stockDividend.value
+          : this.stockDividend,
+      exDividendDate: data.exDividendDate.present
+          ? data.exDividendDate.value
+          : this.exDividendDate,
+      exRightsDate: data.exRightsDate.present
+          ? data.exRightsDate.value
+          : this.exRightsDate,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DividendHistoryEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('year: $year, ')
+          ..write('cashDividend: $cashDividend, ')
+          ..write('stockDividend: $stockDividend, ')
+          ..write('exDividendDate: $exDividendDate, ')
+          ..write('exRightsDate: $exRightsDate')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    year,
+    cashDividend,
+    stockDividend,
+    exDividendDate,
+    exRightsDate,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DividendHistoryEntry &&
+          other.symbol == this.symbol &&
+          other.year == this.year &&
+          other.cashDividend == this.cashDividend &&
+          other.stockDividend == this.stockDividend &&
+          other.exDividendDate == this.exDividendDate &&
+          other.exRightsDate == this.exRightsDate);
+}
+
+class DividendHistoryCompanion extends UpdateCompanion<DividendHistoryEntry> {
+  final Value<String> symbol;
+  final Value<int> year;
+  final Value<double> cashDividend;
+  final Value<double> stockDividend;
+  final Value<String?> exDividendDate;
+  final Value<String?> exRightsDate;
+  final Value<int> rowid;
+  const DividendHistoryCompanion({
+    this.symbol = const Value.absent(),
+    this.year = const Value.absent(),
+    this.cashDividend = const Value.absent(),
+    this.stockDividend = const Value.absent(),
+    this.exDividendDate = const Value.absent(),
+    this.exRightsDate = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DividendHistoryCompanion.insert({
+    required String symbol,
+    required int year,
+    this.cashDividend = const Value.absent(),
+    this.stockDividend = const Value.absent(),
+    this.exDividendDate = const Value.absent(),
+    this.exRightsDate = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       year = Value(year);
+  static Insertable<DividendHistoryEntry> custom({
+    Expression<String>? symbol,
+    Expression<int>? year,
+    Expression<double>? cashDividend,
+    Expression<double>? stockDividend,
+    Expression<String>? exDividendDate,
+    Expression<String>? exRightsDate,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (year != null) 'year': year,
+      if (cashDividend != null) 'cash_dividend': cashDividend,
+      if (stockDividend != null) 'stock_dividend': stockDividend,
+      if (exDividendDate != null) 'ex_dividend_date': exDividendDate,
+      if (exRightsDate != null) 'ex_rights_date': exRightsDate,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DividendHistoryCompanion copyWith({
+    Value<String>? symbol,
+    Value<int>? year,
+    Value<double>? cashDividend,
+    Value<double>? stockDividend,
+    Value<String?>? exDividendDate,
+    Value<String?>? exRightsDate,
+    Value<int>? rowid,
+  }) {
+    return DividendHistoryCompanion(
+      symbol: symbol ?? this.symbol,
+      year: year ?? this.year,
+      cashDividend: cashDividend ?? this.cashDividend,
+      stockDividend: stockDividend ?? this.stockDividend,
+      exDividendDate: exDividendDate ?? this.exDividendDate,
+      exRightsDate: exRightsDate ?? this.exRightsDate,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (year.present) {
+      map['year'] = Variable<int>(year.value);
+    }
+    if (cashDividend.present) {
+      map['cash_dividend'] = Variable<double>(cashDividend.value);
+    }
+    if (stockDividend.present) {
+      map['stock_dividend'] = Variable<double>(stockDividend.value);
+    }
+    if (exDividendDate.present) {
+      map['ex_dividend_date'] = Variable<String>(exDividendDate.value);
+    }
+    if (exRightsDate.present) {
+      map['ex_rights_date'] = Variable<String>(exRightsDate.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DividendHistoryCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('year: $year, ')
+          ..write('cashDividend: $cashDividend, ')
+          ..write('stockDividend: $stockDividend, ')
+          ..write('exDividendDate: $exDividendDate, ')
+          ..write('exRightsDate: $exRightsDate, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $MarginTradingTable extends MarginTrading
     with TableInfo<$MarginTradingTable, MarginTradingEntry> {
   @override
@@ -11213,6 +11665,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $HoldingDistributionTable(this);
   late final $MonthlyRevenueTable monthlyRevenue = $MonthlyRevenueTable(this);
   late final $StockValuationTable stockValuation = $StockValuationTable(this);
+  late final $DividendHistoryTable dividendHistory = $DividendHistoryTable(
+    this,
+  );
   late final $MarginTradingTable marginTrading = $MarginTradingTable(this);
   late final $TradingWarningTable tradingWarning = $TradingWarningTable(this);
   late final $InsiderHoldingTable insiderHolding = $InsiderHoldingTable(this);
@@ -11348,6 +11803,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_stock_valuation_date',
     'CREATE INDEX idx_stock_valuation_date ON stock_valuation (date)',
   );
+  late final Index idxDividendHistorySymbol = Index(
+    'idx_dividend_history_symbol',
+    'CREATE INDEX idx_dividend_history_symbol ON dividend_history (symbol)',
+  );
   late final Index idxMarginTradingSymbol = Index(
     'idx_margin_trading_symbol',
     'CREATE INDEX idx_margin_trading_symbol ON margin_trading (symbol)',
@@ -11403,6 +11862,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     holdingDistribution,
     monthlyRevenue,
     stockValuation,
+    dividendHistory,
     marginTrading,
     tradingWarning,
     insiderHolding,
@@ -11439,6 +11899,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxMonthlyRevenueDate,
     idxStockValuationSymbol,
     idxStockValuationDate,
+    idxDividendHistorySymbol,
     idxMarginTradingSymbol,
     idxMarginTradingDate,
     idxTradingWarningSymbol,
@@ -11581,6 +12042,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('stock_valuation', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('dividend_history', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -12019,6 +12487,29 @@ final class $$StockMasterTableReferences
     ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
 
     final cache = $_typedResult.readTableOrNull(_stockValuationRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$DividendHistoryTable, List<DividendHistoryEntry>>
+  _dividendHistoryRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.dividendHistory,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.dividendHistory.symbol,
+    ),
+  );
+
+  $$DividendHistoryTableProcessedTableManager get dividendHistoryRefs {
+    final manager = $$DividendHistoryTableTableManager(
+      $_db,
+      $_db.dividendHistory,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _dividendHistoryRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -12568,6 +13059,31 @@ class $$StockMasterTableFilterComposer
           }) => $$StockValuationTableFilterComposer(
             $db: $db,
             $table: $db.stockValuation,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> dividendHistoryRefs(
+    Expression<bool> Function($$DividendHistoryTableFilterComposer f) f,
+  ) {
+    final $$DividendHistoryTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.dividendHistory,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DividendHistoryTableFilterComposer(
+            $db: $db,
+            $table: $db.dividendHistory,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13173,6 +13689,31 @@ class $$StockMasterTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> dividendHistoryRefs<T extends Object>(
+    Expression<T> Function($$DividendHistoryTableAnnotationComposer a) f,
+  ) {
+    final $$DividendHistoryTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.dividendHistory,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$DividendHistoryTableAnnotationComposer(
+            $db: $db,
+            $table: $db.dividendHistory,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> marginTradingRefs<T extends Object>(
     Expression<T> Function($$MarginTradingTableAnnotationComposer a) f,
   ) {
@@ -13281,6 +13822,7 @@ class $$StockMasterTableTableManager
             bool holdingDistributionRefs,
             bool monthlyRevenueRefs,
             bool stockValuationRefs,
+            bool dividendHistoryRefs,
             bool marginTradingRefs,
             bool tradingWarningRefs,
             bool insiderHoldingRefs,
@@ -13361,6 +13903,7 @@ class $$StockMasterTableTableManager
                 holdingDistributionRefs = false,
                 monthlyRevenueRefs = false,
                 stockValuationRefs = false,
+                dividendHistoryRefs = false,
                 marginTradingRefs = false,
                 tradingWarningRefs = false,
                 insiderHoldingRefs = false,
@@ -13386,6 +13929,7 @@ class $$StockMasterTableTableManager
                     if (holdingDistributionRefs) db.holdingDistribution,
                     if (monthlyRevenueRefs) db.monthlyRevenue,
                     if (stockValuationRefs) db.stockValuation,
+                    if (dividendHistoryRefs) db.dividendHistory,
                     if (marginTradingRefs) db.marginTrading,
                     if (tradingWarningRefs) db.tradingWarning,
                     if (insiderHoldingRefs) db.insiderHolding,
@@ -13771,6 +14315,27 @@ class $$StockMasterTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (dividendHistoryRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          DividendHistoryEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._dividendHistoryRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).dividendHistoryRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
                       if (marginTradingRefs)
                         await $_getPrefetchedData<
                           StockMasterEntry,
@@ -13873,6 +14438,7 @@ typedef $$StockMasterTableProcessedTableManager =
         bool holdingDistributionRefs,
         bool monthlyRevenueRefs,
         bool stockValuationRefs,
+        bool dividendHistoryRefs,
         bool marginTradingRefs,
         bool tradingWarningRefs,
         bool insiderHoldingRefs,
@@ -20921,6 +21487,365 @@ typedef $$StockValuationTableProcessedTableManager =
       StockValuationEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$DividendHistoryTableCreateCompanionBuilder =
+    DividendHistoryCompanion Function({
+      required String symbol,
+      required int year,
+      Value<double> cashDividend,
+      Value<double> stockDividend,
+      Value<String?> exDividendDate,
+      Value<String?> exRightsDate,
+      Value<int> rowid,
+    });
+typedef $$DividendHistoryTableUpdateCompanionBuilder =
+    DividendHistoryCompanion Function({
+      Value<String> symbol,
+      Value<int> year,
+      Value<double> cashDividend,
+      Value<double> stockDividend,
+      Value<String?> exDividendDate,
+      Value<String?> exRightsDate,
+      Value<int> rowid,
+    });
+
+final class $$DividendHistoryTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $DividendHistoryTable,
+          DividendHistoryEntry
+        > {
+  $$DividendHistoryTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.dividendHistory.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$DividendHistoryTableFilterComposer
+    extends Composer<_$AppDatabase, $DividendHistoryTable> {
+  $$DividendHistoryTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get cashDividend => $composableBuilder(
+    column: $table.cashDividend,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get stockDividend => $composableBuilder(
+    column: $table.stockDividend,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get exDividendDate => $composableBuilder(
+    column: $table.exDividendDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get exRightsDate => $composableBuilder(
+    column: $table.exRightsDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DividendHistoryTableOrderingComposer
+    extends Composer<_$AppDatabase, $DividendHistoryTable> {
+  $$DividendHistoryTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get cashDividend => $composableBuilder(
+    column: $table.cashDividend,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get stockDividend => $composableBuilder(
+    column: $table.stockDividend,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get exDividendDate => $composableBuilder(
+    column: $table.exDividendDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get exRightsDate => $composableBuilder(
+    column: $table.exRightsDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DividendHistoryTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DividendHistoryTable> {
+  $$DividendHistoryTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  GeneratedColumn<double> get cashDividend => $composableBuilder(
+    column: $table.cashDividend,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get stockDividend => $composableBuilder(
+    column: $table.stockDividend,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get exDividendDate => $composableBuilder(
+    column: $table.exDividendDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get exRightsDate => $composableBuilder(
+    column: $table.exRightsDate,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$DividendHistoryTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DividendHistoryTable,
+          DividendHistoryEntry,
+          $$DividendHistoryTableFilterComposer,
+          $$DividendHistoryTableOrderingComposer,
+          $$DividendHistoryTableAnnotationComposer,
+          $$DividendHistoryTableCreateCompanionBuilder,
+          $$DividendHistoryTableUpdateCompanionBuilder,
+          (DividendHistoryEntry, $$DividendHistoryTableReferences),
+          DividendHistoryEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$DividendHistoryTableTableManager(
+    _$AppDatabase db,
+    $DividendHistoryTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DividendHistoryTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DividendHistoryTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DividendHistoryTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<int> year = const Value.absent(),
+                Value<double> cashDividend = const Value.absent(),
+                Value<double> stockDividend = const Value.absent(),
+                Value<String?> exDividendDate = const Value.absent(),
+                Value<String?> exRightsDate = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DividendHistoryCompanion(
+                symbol: symbol,
+                year: year,
+                cashDividend: cashDividend,
+                stockDividend: stockDividend,
+                exDividendDate: exDividendDate,
+                exRightsDate: exRightsDate,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required int year,
+                Value<double> cashDividend = const Value.absent(),
+                Value<double> stockDividend = const Value.absent(),
+                Value<String?> exDividendDate = const Value.absent(),
+                Value<String?> exRightsDate = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DividendHistoryCompanion.insert(
+                symbol: symbol,
+                year: year,
+                cashDividend: cashDividend,
+                stockDividend: stockDividend,
+                exDividendDate: exDividendDate,
+                exRightsDate: exRightsDate,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$DividendHistoryTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable:
+                                    $$DividendHistoryTableReferences
+                                        ._symbolTable(db),
+                                referencedColumn:
+                                    $$DividendHistoryTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$DividendHistoryTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DividendHistoryTable,
+      DividendHistoryEntry,
+      $$DividendHistoryTableFilterComposer,
+      $$DividendHistoryTableOrderingComposer,
+      $$DividendHistoryTableAnnotationComposer,
+      $$DividendHistoryTableCreateCompanionBuilder,
+      $$DividendHistoryTableUpdateCompanionBuilder,
+      (DividendHistoryEntry, $$DividendHistoryTableReferences),
+      DividendHistoryEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
 typedef $$MarginTradingTableCreateCompanionBuilder =
     MarginTradingCompanion Function({
       required String symbol,
@@ -22196,6 +23121,8 @@ class $AppDatabaseManager {
       $$MonthlyRevenueTableTableManager(_db, _db.monthlyRevenue);
   $$StockValuationTableTableManager get stockValuation =>
       $$StockValuationTableTableManager(_db, _db.stockValuation);
+  $$DividendHistoryTableTableManager get dividendHistory =>
+      $$DividendHistoryTableTableManager(_db, _db.dividendHistory);
   $$MarginTradingTableTableManager get marginTrading =>
       $$MarginTradingTableTableManager(_db, _db.marginTrading);
   $$TradingWarningTableTableManager get tradingWarning =>

@@ -407,6 +407,112 @@ class FundamentalRepository {
     }
   }
 
+  /// 同步單檔股票的股利歷史
+  ///
+  /// 從 FinMind API 取得近 5 年的股利資料並寫入 DB。
+  /// 回傳同步筆數。
+  Future<int> syncDividends({required String symbol}) async {
+    try {
+      // 新鮮度檢查：股利資料通常在次年公佈（如 2025 年股利在 2026 年公佈）
+      // 使用 currentYear - 2 作為基準，確保能抓到最新公佈的資料
+      final latestYear = await _db.getLatestDividendYear(symbol);
+      final currentYear = DateTime.now().year;
+      if (latestYear != null && latestYear >= currentYear - 2) {
+        return 0; // 已有近期資料
+      }
+
+      final data = await _finMind.getDividends(stockId: symbol);
+
+      if (data.isEmpty) return 0;
+
+      final entries = data.map((d) {
+        return DividendHistoryCompanion.insert(
+          symbol: symbol,
+          year: d.year,
+          cashDividend: Value(d.cashDividend),
+          stockDividend: Value(d.stockDividend),
+          exDividendDate: Value(d.exDividendDate),
+          exRightsDate: Value(d.exRightsDate),
+        );
+      }).toList();
+
+      await _db.insertDividendData(entries);
+      return entries.length;
+    } catch (e) {
+      AppLogger.warning('FundamentalRepo', '同步股利歷史失敗: $symbol', e);
+      return 0;
+    }
+  }
+
+  /// 同步單檔股票的損益表資料（含 EPS、營收、毛利等）
+  ///
+  /// 從 FinMind API 取得近 2 年的季度損益表資料並寫入 DB。
+  /// 含 90 天新鮮度檢查，避免重複同步。
+  Future<int> syncFinancialStatements({
+    required String symbol,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    try {
+      // 新鮮度檢查：若最新資料距今 < 60 天，跳過
+      // 季報每 ~90 天發布，60 天確保不會錯過最新一季
+      final latestDate = await _db.getLatestFinancialDataDate(symbol, 'INCOME');
+      if (latestDate != null &&
+          DateTime.now().difference(latestDate).inDays < 60) {
+        return 0;
+      }
+
+      final data = await _finMind.getFinancialStatements(
+        stockId: symbol,
+        startDate: DateContext.formatYmd(startDate),
+        endDate: DateContext.formatYmd(endDate),
+      );
+      if (data.isEmpty) return 0;
+
+      final entries = <FinancialDataCompanion>[];
+      for (final item in data) {
+        try {
+          entries.add(
+            FinancialDataCompanion.insert(
+              symbol: symbol,
+              date: _parseQuarterDate(item.date),
+              statementType: 'INCOME',
+              dataType: item.type,
+              value: Value(item.value),
+              originName: Value(item.origin),
+            ),
+          );
+        } catch (e) {
+          AppLogger.debug(
+            'FundamentalRepo',
+            '$symbol: 跳過無法解析的財報項目 (date=${item.date})',
+          );
+        }
+      }
+
+      await _db.insertFinancialData(entries);
+      return entries.length;
+    } catch (e) {
+      AppLogger.warning('FundamentalRepo', '同步財報失敗: $symbol', e);
+      return 0;
+    }
+  }
+
+  /// 解析季度日期字串（如 "2024-Q1" 或 "2024-01-01"）
+  ///
+  /// 與 MarketDataRepository._parseQuarterDate 保持一致：
+  /// "2024-Q1" → DateTime(2024, 1, 1)（季度首日）
+  DateTime _parseQuarterDate(String dateStr) {
+    if (dateStr.contains('Q')) {
+      final parts = dateStr.split('-Q');
+      final year = int.parse(parts[0]);
+      final quarter = int.parse(parts[1]);
+      final month = (quarter - 1) * 3 + 1;
+      return DateTime(year, month, 1);
+    }
+    return DateTime.parse(dateStr);
+  }
+
   /// 同步單檔股票的所有基本面資料
   Future<({int revenue, int valuation})> syncAll({
     required String symbol,

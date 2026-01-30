@@ -78,6 +78,7 @@ class UpdateService {
            ? FundamentalSyncer(
                database: database,
                fundamentalRepository: fundamentalRepository,
+               marketDataRepository: marketDataRepository,
              )
            : null;
 
@@ -389,6 +390,31 @@ class UpdateService {
           'UpdateSvc',
           '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=${fundResult.revenueCount}',
         );
+
+        // 步驟 4.7：同步候選+自選股的財報資料（EPS + 資產負債表）
+        try {
+          final watchlist = await _db.getWatchlist();
+          final targetSymbols = {
+            ...watchlist.map((w) => w.symbol),
+            ..._popularStocks,
+          }.toList();
+          if (targetSymbols.isNotEmpty) {
+            final epsCount = await fundamentalSyncer.syncFinancialStatements(
+              symbols: targetSymbols,
+            );
+            final bsCount = await fundamentalSyncer.syncBalanceSheets(
+              symbols: targetSymbols,
+            );
+            if (epsCount > 0 || bsCount > 0) {
+              AppLogger.info(
+                'UpdateSvc',
+                '步驟 4.7: 損益=$epsCount, 資負=$bsCount (${targetSymbols.length} 檔)',
+              );
+            }
+          }
+        } catch (e) {
+          AppLogger.warning('UpdateSvc', '財報資料同步失敗: $e');
+        }
       } catch (e) {
         ctx.result.errors.add('基本面資料更新失敗: $e');
       }
@@ -550,6 +576,8 @@ class UpdateService {
       ),
       _db.getActiveWarningsMapBatch(candidates),
       _db.getLatestInsiderHoldingsBatch(candidates),
+      _db.getEPSHistoryBatch(candidates), // baseIndex + 8
+      _db.getROEHistoryBatch(candidates), // baseIndex + 9
     ];
 
     final batchResults = await Future.wait(futures);
@@ -575,6 +603,10 @@ class UpdateService {
         batchResults[baseIndex + 6] as Map<String, TradingWarningEntry>;
     final insiderEntries =
         batchResults[baseIndex + 7] as Map<String, InsiderHoldingEntry>;
+    final epsHistoryMap =
+        batchResults[baseIndex + 8] as Map<String, List<FinancialDataEntry>>;
+    final roeHistoryMap =
+        batchResults[baseIndex + 9] as Map<String, List<FinancialDataEntry>>;
 
     // 轉換為 Isolate 可用的 Map 格式（含外資持股變化量計算）
     final shareholdingMap = shareholdingEntries.map((k, v) {
@@ -641,6 +673,8 @@ class UpdateService {
       shareholdingMap: shareholdingMap,
       warningMap: warningMap,
       insiderMap: insiderMap,
+      epsHistoryMap: epsHistoryMap,
+      roeHistoryMap: roeHistoryMap,
     );
 
     AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');

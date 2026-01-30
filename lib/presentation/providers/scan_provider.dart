@@ -302,6 +302,8 @@ class ScanState {
     this.stocks = const [], // Filtered/sorted view
     this.filter = ScanFilter.all,
     this.sort = ScanSort.scoreDesc,
+    this.industryFilter,
+    this.industries = const [],
     this.dataDate,
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -315,6 +317,12 @@ class ScanState {
   final List<ScanStockItem> stocks;
   final ScanFilter filter;
   final ScanSort sort;
+
+  /// 目前選擇的產業篩選（null 表示不限產業）
+  final String? industryFilter;
+
+  /// 所有可選產業列表
+  final List<String> industries;
 
   /// The actual date of the data being displayed
   final DateTime? dataDate;
@@ -339,6 +347,9 @@ class ScanState {
     List<ScanStockItem>? stocks,
     ScanFilter? filter,
     ScanSort? sort,
+    String? industryFilter,
+    bool clearIndustryFilter = false,
+    List<String>? industries,
     DateTime? dataDate,
     bool? isLoading,
     bool? isLoadingMore,
@@ -352,6 +363,10 @@ class ScanState {
       stocks: stocks ?? this.stocks,
       filter: filter ?? this.filter,
       sort: sort ?? this.sort,
+      industryFilter: clearIndustryFilter
+          ? null
+          : (industryFilter ?? this.industryFilter),
+      industries: industries ?? this.industries,
       dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
@@ -370,6 +385,7 @@ class ScanStockItem {
     required this.score,
     this.stockName,
     this.market,
+    this.industry,
     this.latestClose,
     this.priceChange,
     this.volume,
@@ -385,6 +401,9 @@ class ScanStockItem {
 
   /// 市場：'TWSE'（上市）或 'TPEx'（上櫃）
   final String? market;
+
+  /// 產業類別
+  final String? industry;
   final double? latestClose;
   final double? priceChange;
   final double? volume;
@@ -412,6 +431,7 @@ class ScanStockItem {
       score: score,
       stockName: stockName,
       market: market,
+      industry: industry,
       latestClose: latestClose,
       priceChange: priceChange,
       volume: volume,
@@ -437,11 +457,12 @@ class ScanNotifier extends StateNotifier<ScanState> {
   DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
 
   // Cached data for pagination
-  // Cached data for pagination
   List<DailyAnalysisEntry> _allAnalyses = [];
   List<DailyAnalysisEntry> _filteredAnalyses = [];
   Map<String, List<DailyReasonEntry>> _allReasons = {};
   Set<String> _watchlistSymbols = {};
+  Set<String>? _industrySymbols; // 產業篩選用
+  List<String>? _cachedIndustries; // 產業列表快取
   DateContext? _dateCtx;
 
   /// Load scan data (first page)
@@ -500,13 +521,27 @@ class ScanNotifier extends StateNotifier<ScanState> {
         latestInstDate,
       );
 
-      // Apply initial filter (All)
-      _applyGlobalFilter(ScanFilter.all);
+      // 載入產業列表（使用快取）
+      final industries = _cachedIndustries ?? await _db.getDistinctIndustries();
+      _cachedIndustries = industries;
+
+      // 保留使用者的產業篩選（pull-to-refresh 不應清除）
+      if (state.industryFilter != null) {
+        _industrySymbols = await _db.getSymbolsByIndustry(
+          state.industryFilter!,
+        );
+      } else {
+        _industrySymbols = null;
+      }
+
+      // 套用現有篩選條件（保留 filter + industry）
+      _applyGlobalFilter(state.filter);
 
       if (_filteredAnalyses.isEmpty) {
         state = state.copyWith(
           allStocks: [],
           stocks: [],
+          industries: industries,
           dataDate: dataDate,
           isLoading: false,
           hasMore: false,
@@ -528,6 +563,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
       state = state.copyWith(
         allStocks: [], // No longer used for filtering
         stocks: firstPageItems,
+        industries: industries,
         dataDate: dataDate,
         isLoading: false,
         hasMore: _filteredAnalyses.length > _kPageSize,
@@ -582,6 +618,32 @@ class ScanNotifier extends StateNotifier<ScanState> {
     _reloadFirstPage();
   }
 
+  /// 設定產業篩選
+  Future<void> setIndustryFilter(String? industry) async {
+    if (industry == state.industryFilter) return;
+
+    // 先更新 UI 狀態，避免連點時重複觸發
+    state = state.copyWith(
+      industryFilter: industry,
+      clearIndustryFilter: industry == null,
+      isLoading: true,
+      stocks: [],
+    );
+
+    if (industry != null) {
+      final symbols = await _db.getSymbolsByIndustry(industry);
+      // 防護 race condition：async 完成後確認意圖未變
+      if (state.industryFilter != industry) return;
+      _industrySymbols = symbols;
+    } else {
+      _industrySymbols = null;
+    }
+
+    // 重新套用目前的 filter（含產業）
+    _applyGlobalFilter(state.filter);
+    _reloadFirstPage();
+  }
+
   /// Helper to reload first page after filter/sort change
   Future<void> _reloadFirstPage() async {
     try {
@@ -602,20 +664,25 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
   /// Apply global filter to _allAnalyses -> _filteredAnalyses
   void _applyGlobalFilter(ScanFilter filter) {
-    if (filter == ScanFilter.all) {
+    if (filter == ScanFilter.all && _industrySymbols == null) {
       _filteredAnalyses = List.from(_allAnalyses);
       return;
     }
 
     _filteredAnalyses = _allAnalyses.where((analysis) {
+      // 產業篩選
+      if (_industrySymbols != null &&
+          !_industrySymbols!.contains(analysis.symbol)) {
+        return false;
+      }
+
+      // 規則篩選
+      if (filter == ScanFilter.all) return true;
+
       // Must have detailed reasons loaded
       final reasons = _allReasons[analysis.symbol];
       if (reasons == null || reasons.isEmpty) return false;
 
-      // Check if any reason matches filter code
-      // Note: filter.reasonCode is a STRING code from ReasonType.
-      // DailyReasonEntry.reasonType is also a STRING code.
-      // They should match directly.
       if (filter.reasonCode == null) return true;
 
       return reasons.any((r) => r.reasonType == filter.reasonCode);
@@ -672,6 +739,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
         score: analysis.score,
         stockName: stocksMap[analysis.symbol]?.name,
         market: stocksMap[analysis.symbol]?.market,
+        industry: stocksMap[analysis.symbol]?.industry,
         latestClose: latestPrice?.close,
         priceChange: priceChanges[analysis.symbol],
         volume: latestPrice?.volume,

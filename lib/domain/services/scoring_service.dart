@@ -44,6 +44,8 @@ class ScoringService {
     Map<String, MonthlyRevenueEntry>? revenueMap,
     Map<String, StockValuationEntry>? valuationMap,
     Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap,
+    Map<String, List<FinancialDataEntry>>? epsHistoryMap,
+    Map<String, List<FinancialDataEntry>>? roeHistoryMap,
     Set<String>? recentlyRecommended,
     Future<MarketDataContext?> Function(String)? marketDataBuilder,
     void Function(int current, int total)? onProgress,
@@ -140,6 +142,8 @@ class ScoringService {
         latestRevenue: revenueMap?[symbol],
         latestValuation: valuationMap?[symbol],
         revenueHistory: revenueHistoryMap?[symbol],
+        epsHistory: epsHistoryMap?[symbol],
+        roeHistory: roeHistoryMap?[symbol],
       );
 
       if (reasons.isEmpty) continue;
@@ -234,6 +238,8 @@ class ScoringService {
     Map<String, Map<String, double?>>? shareholdingMap,
     Map<String, Map<String, dynamic>>? warningMap,
     Map<String, Map<String, dynamic>>? insiderMap,
+    Map<String, List<FinancialDataEntry>>? epsHistoryMap,
+    Map<String, List<FinancialDataEntry>>? roeHistoryMap,
   }) async {
     if (candidates.isEmpty) return [];
 
@@ -268,6 +274,12 @@ class ScoringService {
       shareholdingMap: shareholdingMap,
       warningMap: warningMap,
       insiderMap: insiderMap,
+      epsHistoryMap: epsHistoryMap != null
+          ? _convertEpsHistoryMap(epsHistoryMap)
+          : null,
+      roeHistoryMap: roeHistoryMap != null
+          ? _convertEpsHistoryMap(roeHistoryMap)
+          : null,
     );
 
     // 在背景 Isolate 執行運算（含回退機制）
@@ -287,6 +299,8 @@ class ScoringService {
         revenueMap: revenueMap,
         valuationMap: valuationMap,
         revenueHistoryMap: revenueHistoryMap,
+        epsHistoryMap: epsHistoryMap,
+        roeHistoryMap: roeHistoryMap,
         recentlyRecommended: recentlyRecommended,
         marketDataBuilder: (symbol) async {
           return _buildMarketDataFromMaps(
@@ -510,6 +524,15 @@ class ScoringService {
     return map.map(
       (key, value) =>
           MapEntry(key, value.map(monthlyRevenueEntryToMap).toList()),
+    );
+  }
+
+  Map<String, List<Map<String, dynamic>>> _convertEpsHistoryMap(
+    Map<String, List<FinancialDataEntry>> map,
+  ) {
+    return map.map(
+      (key, value) =>
+          MapEntry(key, value.map(financialDataEntryToMap).toList()),
     );
   }
 }

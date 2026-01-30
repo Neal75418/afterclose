@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -54,6 +55,28 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
             _buildEmptyState(context, 'stockDetail.revenueComingSoon'.tr())
           else
             _buildRevenueTable(context, state.revenueHistory),
+
+          const SizedBox(height: 24),
+
+          // EPS history section
+          SectionHeader(
+            title: 'stockDetail.epsHistory'.tr(),
+            icon: Icons.bar_chart,
+          ),
+          const SizedBox(height: 12),
+
+          if (state.isLoadingFundamentals)
+            _buildLoadingState(context)
+          else if (state.epsHistory.isEmpty)
+            _buildEmptyState(context, 'stockDetail.epsComingSoon'.tr())
+          else
+            _buildEpsTable(context, state.epsHistory),
+
+          // Profitability card
+          if (state.latestQuarterMetrics.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildProfitabilityCard(context, state.latestQuarterMetrics),
+          ],
 
           const SizedBox(height: 24),
 
@@ -540,6 +563,213 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     );
   }
 
+  Widget _buildEpsTable(
+    BuildContext context,
+    List<FinancialDataEntry> epsHistory,
+  ) {
+    final theme = Theme.of(context);
+    final displayData = epsHistory.take(8).toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            // Header row
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Text(
+                      'stockDetail.quarter'.tr(),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'stockDetail.eps'.tr(),
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'stockDetail.qoqGrowth'.tr(),
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Data rows
+            ...displayData.asMap().entries.map((entry) {
+              final index = entry.key;
+              final eps = entry.value;
+              final epsValue = eps.value;
+
+              // Calculate QoQ growth
+              double? qoqGrowth;
+              if (index < displayData.length - 1) {
+                final prevEps = displayData[index + 1].value;
+                if (epsValue != null && prevEps != null && prevEps != 0) {
+                  qoqGrowth = (epsValue - prevEps) / prevEps.abs() * 100;
+                }
+              }
+
+              // Format quarter label from date
+              final quarter = ((eps.date.month - 1) ~/ 3) + 1;
+              final quarterLabel = '${eps.date.year} Q$quarter';
+
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: index == 0
+                      ? theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        )
+                      : (index.isEven
+                            ? theme.colorScheme.surface
+                            : Colors.transparent),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: Text(
+                        quarterLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: index == 0
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        epsValue != null ? epsValue.toStringAsFixed(2) : '-',
+                        textAlign: TextAlign.end,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: epsValue != null && epsValue < 0
+                              ? AppTheme.downColor
+                              : null,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _buildGrowthBadge(context, qoqGrowth),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfitabilityCard(
+    BuildContext context,
+    Map<String, double> metrics,
+  ) {
+    final theme = Theme.of(context);
+
+    final items = <_ProfitMetric>[];
+    if (metrics.containsKey('GrossProfit')) {
+      items.add(
+        _ProfitMetric('stockDetail.grossMargin'.tr(), metrics['GrossProfit']!),
+      );
+    }
+    if (metrics.containsKey('OperatingIncome')) {
+      items.add(
+        _ProfitMetric(
+          'stockDetail.operatingMargin'.tr(),
+          metrics['OperatingIncome']!,
+        ),
+      );
+    }
+    if (metrics.containsKey('NetIncome')) {
+      items.add(
+        _ProfitMetric('stockDetail.netMargin'.tr(), metrics['NetIncome']!),
+      );
+    }
+    if (metrics.containsKey('ROE')) {
+      items.add(_ProfitMetric('stockDetail.roe'.tr(), metrics['ROE']!));
+    }
+
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'stockDetail.profitability'.tr(),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: items
+                  .map(
+                    (m) => Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            m.label,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${m.value.toStringAsFixed(1)}%',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: m.value >= 0
+                                  ? AppTheme.upColor
+                                  : AppTheme.downColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState(BuildContext context, String message) {
     final theme = Theme.of(context);
 
@@ -569,4 +799,10 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     }
     return '${revenue.toStringAsFixed(0)}${'stockDetail.unitThousand'.tr()}';
   }
+}
+
+class _ProfitMetric {
+  const _ProfitMetric(this.label, this.value);
+  final String label;
+  final double value;
 }

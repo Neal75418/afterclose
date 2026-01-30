@@ -15,6 +15,8 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/widgets/market_overview_card.dart';
 import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
 
 /// 今日畫面 - 顯示每日推薦
@@ -33,6 +35,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     Future.microtask(() {
       ref.read(todayProvider.notifier).loadData();
       ref.read(watchlistProvider.notifier).loadData();
+      ref.read(marketOverviewProvider.notifier).loadData();
     });
   }
 
@@ -46,7 +49,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     return Scaffold(
       body: ThemedRefreshIndicator(
-        onRefresh: () => ref.read(todayProvider.notifier).loadData(),
+        onRefresh: () async {
+          await Future.wait([
+            ref.read(todayProvider.notifier).loadData(),
+            ref.read(marketOverviewProvider.notifier).loadData(),
+          ]);
+        },
         child: state.isLoading
             ? const StockListShimmer(itemCount: 5)
             : state.error != null
@@ -65,6 +73,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Widget _buildContent(TodayState state, Set<String> watchlistSymbols) {
     final theme = Theme.of(context);
+    final marketState = ref.watch(marketOverviewProvider);
 
     return CustomScrollView(
       slivers: [
@@ -132,6 +141,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
             ),
           ),
+
+        // 大盤總覽卡片
+        if (marketState.hasData || marketState.isLoading)
+          SliverToBoxAdapter(child: MarketOverviewCard(state: marketState)),
 
         // Top 10 區塊
         const SliverToBoxAdapter(

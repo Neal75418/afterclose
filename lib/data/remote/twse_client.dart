@@ -746,6 +746,118 @@ class TwseClient {
   }
 
   // ==========================================
+  // 大盤指數 API
+  // ==========================================
+
+  /// 取得大盤各類指數收盤行情
+  ///
+  /// 端點: /rwd/zh/afterTrading/MI_INDEX
+  /// 回傳加權指數、電子類指數、金融保險類指數等
+  Future<List<TwseMarketIndex>> getMarketIndices() async {
+    try {
+      final response = await _dio.get(
+        ApiEndpoints.twseMarketIndex,
+        queryParameters: {'response': 'json'},
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.warning('TWSE', '大盤指數: JSON 解析失敗');
+            return [];
+          }
+        }
+
+        if (data is! Map<String, dynamic>) {
+          AppLogger.warning('TWSE', '大盤指數: 非預期資料型別');
+          return [];
+        }
+
+        if (data['stat'] != 'OK') {
+          AppLogger.warning('TWSE', '大盤指數: 無資料 (stat=${data['stat']})');
+          return [];
+        }
+
+        final results = <TwseMarketIndex>[];
+
+        // 解析日期
+        final dateStr = data['date']?.toString() ?? '';
+        final date = _parseAdDate(dateStr);
+
+        // MI_INDEX 回傳多個 tables，每個 table 包含不同類型的指數
+        // 我們關注的重點指數通常在前幾個 tables 中
+        final tables = data['tables'] as List<dynamic>?;
+        if (tables == null || tables.isEmpty) {
+          // 嘗試直接從 data 取得（舊格式）
+          final rows = data['data'] as List<dynamic>?;
+          if (rows != null) {
+            for (final row in rows) {
+              final parsed = _parseMarketIndexRow(row as List<dynamic>, date);
+              if (parsed != null) results.add(parsed);
+            }
+          }
+        } else {
+          // 新格式：遍歷所有 tables
+          for (final table in tables) {
+            final rows =
+                (table as Map<String, dynamic>)['data'] as List<dynamic>?;
+            if (rows == null) continue;
+            for (final row in rows) {
+              final parsed = _parseMarketIndexRow(row as List<dynamic>, date);
+              if (parsed != null) results.add(parsed);
+            }
+          }
+        }
+
+        AppLogger.info('TWSE', '大盤指數: ${results.length} 筆');
+        return results;
+      }
+
+      throw ApiException(
+        'TWSE API error: ${response.statusCode}',
+        response.statusCode,
+      );
+    } on DioException catch (e) {
+      AppLogger.warning('TWSE', '大盤指數: ${e.message ?? "網路錯誤"}');
+      throw NetworkException(e.message ?? 'TWSE network error', e);
+    } catch (e, stack) {
+      AppLogger.error('TWSE', '大盤指數: 非預期錯誤', e, stack);
+      rethrow;
+    }
+  }
+
+  /// 解析大盤指數資料列
+  ///
+  /// 列格式: [指數名稱, 收盤指數, 漲跌(+/-), 漲跌點數, 漲跌百分比(%), 特殊處理欄位]
+  TwseMarketIndex? _parseMarketIndexRow(List<dynamic> row, DateTime date) {
+    try {
+      if (row.length < 5) return null;
+
+      final name = row[0]?.toString().trim() ?? '';
+      if (name.isEmpty) return null;
+
+      final close = _parseFormattedDouble(row[1]);
+      if (close == null) return null; // 沒有收盤值的跳過
+
+      final change = _parseFormattedDouble(row[3]);
+      final changePercent = _parseFormattedDouble(row[4]);
+
+      return TwseMarketIndex(
+        date: date,
+        name: name,
+        close: close,
+        change: change ?? 0,
+        changePercent: changePercent ?? 0,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ==========================================
   // Killer Features API (注意/處置股票)
   // ==========================================
 
@@ -1503,6 +1615,37 @@ class TwseDayTrading {
 
   /// 是否為極高當沖比例 (>= 50%)
   bool get isExtremeRatio => ratio >= 50.0;
+}
+
+/// TWSE 大盤指數資料
+class TwseMarketIndex {
+  const TwseMarketIndex({
+    required this.date,
+    required this.name,
+    required this.close,
+    required this.change,
+    required this.changePercent,
+  });
+
+  final DateTime date;
+
+  /// 指數名稱（如「發行量加權股價指數」、「電子類指數」）
+  final String name;
+
+  /// 收盤指數
+  final double close;
+
+  /// 漲跌點數
+  final double change;
+
+  /// 漲跌百分比（%）
+  final double changePercent;
+
+  /// 是否上漲
+  bool get isUp => change > 0;
+
+  /// 是否下跌
+  bool get isDown => change < 0;
 }
 
 /// TWSE 注意/處置股票資料

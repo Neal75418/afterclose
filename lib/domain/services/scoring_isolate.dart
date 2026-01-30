@@ -25,6 +25,8 @@ class ScoringIsolateInput {
     this.shareholdingMap,
     this.warningMap,
     this.insiderMap,
+    this.epsHistoryMap,
+    this.roeHistoryMap,
   });
 
   final List<String> candidates;
@@ -48,6 +50,12 @@ class ScoringIsolateInput {
   /// 董監持股資料 Map（symbol -> {pledgeRatio, insiderRatio, ...}）
   final Map<String, Map<String, dynamic>>? insiderMap;
 
+  /// EPS 歷史資料 Map（symbol -> 最近 8 季 EPS，降序）
+  final Map<String, List<Map<String, dynamic>>>? epsHistoryMap;
+
+  /// ROE 歷史資料 Map（symbol -> 最近 8 季 ROE，降序）
+  final Map<String, List<Map<String, dynamic>>>? roeHistoryMap;
+
   Map<String, dynamic> toMap() => {
     'candidates': candidates,
     'pricesMap': pricesMap,
@@ -61,6 +69,8 @@ class ScoringIsolateInput {
     'shareholdingMap': shareholdingMap,
     'warningMap': warningMap,
     'insiderMap': insiderMap,
+    'epsHistoryMap': epsHistoryMap,
+    'roeHistoryMap': roeHistoryMap,
   };
 
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
@@ -100,6 +110,12 @@ class ScoringIsolateInput {
                 (k, v) => MapEntry(k as String, Map<String, dynamic>.from(v)),
               ),
             )
+          : null,
+      epsHistoryMap: map['epsHistoryMap'] != null
+          ? _castEpsHistoryMap(map['epsHistoryMap'])
+          : null,
+      roeHistoryMap: map['roeHistoryMap'] != null
+          ? _castEpsHistoryMap(map['roeHistoryMap'])
           : null,
     );
   }
@@ -149,6 +165,18 @@ class ScoringIsolateInput {
   }
 
   static Map<String, List<Map<String, dynamic>>> _castRevenueHistoryMap(
+    dynamic map,
+  ) {
+    final result = <String, List<Map<String, dynamic>>>{};
+    for (final entry in (map as Map).entries) {
+      result[entry.key as String] = List<Map<String, dynamic>>.from(
+        (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
+      );
+    }
+    return result;
+  }
+
+  static Map<String, List<Map<String, dynamic>>> _castEpsHistoryMap(
     dynamic map,
   ) {
     final result = <String, List<Map<String, dynamic>>>{};
@@ -413,6 +441,20 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
           .toList();
     }
 
+    // 轉換 EPS 歷史
+    List<FinancialDataEntry>? epsHistory;
+    final epsHistoryMaps = input.epsHistoryMap?[symbol];
+    if (epsHistoryMaps != null && epsHistoryMaps.isNotEmpty) {
+      epsHistory = epsHistoryMaps.map(_mapToFinancialDataEntry).toList();
+    }
+
+    // 轉換 ROE 歷史
+    List<FinancialDataEntry>? roeHistory;
+    final roeHistoryMaps = input.roeHistoryMap?[symbol];
+    if (roeHistoryMaps != null && roeHistoryMaps.isNotEmpty) {
+      roeHistory = roeHistoryMaps.map(_mapToFinancialDataEntry).toList();
+    }
+
     // 執行規則引擎
     final reasons = ruleEngine.evaluateStock(
       priceHistory: prices,
@@ -423,6 +465,8 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       latestRevenue: latestRevenue,
       latestValuation: latestValuation,
       revenueHistory: revenueHistory,
+      epsHistory: epsHistory,
+      roeHistory: roeHistory,
     );
 
     if (reasons.isEmpty) continue;
@@ -584,6 +628,28 @@ Map<String, dynamic> stockValuationEntryToMap(StockValuationEntry entry) {
     'per': entry.per,
     'pbr': entry.pbr,
     'dividendYield': entry.dividendYield,
+  };
+}
+
+FinancialDataEntry _mapToFinancialDataEntry(Map<String, dynamic> map) {
+  return FinancialDataEntry(
+    symbol: map['symbol'] as String,
+    date: DateTime.parse(map['date'] as String),
+    statementType: map['statementType'] as String,
+    dataType: map['dataType'] as String,
+    value: map['value'] as double?,
+    originName: map['originName'] as String?,
+  );
+}
+
+Map<String, dynamic> financialDataEntryToMap(FinancialDataEntry entry) {
+  return {
+    'symbol': entry.symbol,
+    'date': entry.date.toIso8601String(),
+    'statementType': entry.statementType,
+    'dataType': entry.dataType,
+    'value': entry.value,
+    'originName': entry.originName,
   };
 }
 

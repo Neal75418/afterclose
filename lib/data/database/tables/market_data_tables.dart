@@ -194,6 +194,35 @@ class HoldingDistribution extends Table {
   Set<Column> get primaryKey => {symbol, date, level};
 }
 
+/// 股利歷史 Table
+///
+/// 儲存歷年現金股利、股票股利、除權息日期
+@DataClassName('DividendHistoryEntry')
+@TableIndex(name: 'idx_dividend_history_symbol', columns: {#symbol})
+class DividendHistory extends Table {
+  /// 股票代碼
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// 股利所屬年度
+  IntColumn get year => integer()();
+
+  /// 現金股利（元）
+  RealColumn get cashDividend => real().withDefault(const Constant(0))();
+
+  /// 股票股利（元）
+  RealColumn get stockDividend => real().withDefault(const Constant(0))();
+
+  /// 除息日（格式: yyyy-MM-dd）
+  TextColumn get exDividendDate => text().nullable()();
+
+  /// 除權日（格式: yyyy-MM-dd）
+  TextColumn get exRightsDate => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {symbol, year};
+}
+
 /// 月營收 Table
 ///
 /// 用於基本面分析訊號

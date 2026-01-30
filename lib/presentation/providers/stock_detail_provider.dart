@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -33,6 +34,8 @@ class StockDetailState {
     this.insiderHistory = const [],
     this.latestPER,
     this.recentNews = const [],
+    this.epsHistory = const [],
+    this.latestQuarterMetrics = const {},
     this.isInWatchlist = false,
     this.isLoading = false,
     this.isLoadingMargin = false,
@@ -57,6 +60,8 @@ class StockDetailState {
   final List<InsiderHoldingEntry> insiderHistory;
   final FinMindPER? latestPER;
   final List<NewsItemEntry> recentNews;
+  final List<FinancialDataEntry> epsHistory;
+  final Map<String, double> latestQuarterMetrics;
   final bool isInWatchlist;
   final bool isLoading;
   final bool isLoadingMargin;
@@ -87,6 +92,8 @@ class StockDetailState {
     List<InsiderHoldingEntry>? insiderHistory,
     FinMindPER? latestPER,
     List<NewsItemEntry>? recentNews,
+    List<FinancialDataEntry>? epsHistory,
+    Map<String, double>? latestQuarterMetrics,
     bool? isInWatchlist,
     bool? isLoading,
     bool? isLoadingMargin,
@@ -111,6 +118,8 @@ class StockDetailState {
       insiderHistory: insiderHistory ?? this.insiderHistory,
       latestPER: latestPER ?? this.latestPER,
       recentNews: recentNews ?? this.recentNews,
+      epsHistory: epsHistory ?? this.epsHistory,
+      latestQuarterMetrics: latestQuarterMetrics ?? this.latestQuarterMetrics,
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
@@ -481,15 +490,94 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         }
       }
 
-      // 3. 股利歷史：從 FinMind 取得（DB 未儲存歷史）
+      // 3. 股利歷史：優先從 DB 取得，無資料則從 API 取得並存入 DB
       List<FinMindDividend> dividendData = [];
       try {
-        dividendData = await _finMind.getDividends(stockId: _symbol);
+        final dbDividends = await _db.getDividendHistory(_symbol);
+        if (dbDividends.isNotEmpty) {
+          dividendData = dbDividends
+              .map(
+                (d) => FinMindDividend(
+                  stockId: d.symbol,
+                  year: d.year,
+                  cashDividend: d.cashDividend,
+                  stockDividend: d.stockDividend,
+                  exDividendDate: d.exDividendDate,
+                  exRightsDate: d.exRightsDate,
+                ),
+              )
+              .toList();
+          AppLogger.debug(
+            'StockDetail',
+            '$_symbol: 使用 DB 股利歷史 (${dbDividends.length} 筆)',
+          );
+        } else {
+          // DB 無資料，從 API 取得並存入 DB
+          final apiData = await _finMind.getDividends(stockId: _symbol);
+          if (apiData.isNotEmpty) {
+            dividendData = apiData;
+            // 背景寫入 DB（不阻塞 UI）
+            unawaited(
+              _db
+                  .insertDividendData(
+                    apiData
+                        .map(
+                          (d) => DividendHistoryCompanion.insert(
+                            symbol: _symbol,
+                            year: d.year,
+                            cashDividend: Value(d.cashDividend),
+                            stockDividend: Value(d.stockDividend),
+                            exDividendDate: Value(d.exDividendDate),
+                            exRightsDate: Value(d.exRightsDate),
+                          ),
+                        )
+                        .toList(),
+                  )
+                  .catchError((e) {
+                    AppLogger.warning('StockDetail', '$_symbol: 背景寫入股利失敗', e);
+                  }),
+            );
+            AppLogger.debug(
+              'StockDetail',
+              '$_symbol: 從 API 取得股利歷史 (${apiData.length} 筆) 並存入 DB',
+            );
+          }
+        }
       } catch (dividendError) {
         AppLogger.debug('StockDetail', '$_symbol: 取得股利歷史失敗');
       }
 
-      // 4. 若資料庫無估值資料，才用 FinMind API
+      // 4. EPS 歷史：從 DB 取得
+      List<FinancialDataEntry> epsData = [];
+      Map<String, double> quarterMetrics = {};
+      try {
+        epsData = await _db.getEPSHistory(_symbol);
+        if (epsData.isNotEmpty) {
+          quarterMetrics = await _db.getLatestQuarterMetrics(_symbol);
+        }
+        // 計算 ROE：從 Equity 歷史 join NetIncome（需同季日期對齊）
+        if (quarterMetrics.containsKey('NetIncome') &&
+            !quarterMetrics.containsKey('ROE') &&
+            epsData.isNotEmpty) {
+          final latestIncomeDate = epsData.first.date;
+          final equityEntries = await _db.getEquityHistory(_symbol);
+          // 找到與最新 INCOME 同季的 Equity
+          for (final eq in equityEntries) {
+            if (eq.date == latestIncomeDate &&
+                eq.value != null &&
+                eq.value! > 0) {
+              // 年化 ROE：季度 NetIncome × 4 / Equity × 100
+              quarterMetrics['ROE'] =
+                  quarterMetrics['NetIncome']! * 4 / eq.value! * 100;
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        AppLogger.debug('StockDetail', '$_symbol: 取得 EPS 歷史失敗');
+      }
+
+      // 5. 若資料庫無估值資料，才用 FinMind API
       if (latestPER == null) {
         try {
           final perApiStart = today.subtract(const Duration(days: 5));
@@ -516,6 +604,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         revenueHistory: revenueData,
         dividendHistory: dividendData,
         latestPER: latestPER,
+        epsHistory: epsData,
+        latestQuarterMetrics: quarterMetrics,
         isLoadingFundamentals: false,
       );
     } catch (e) {

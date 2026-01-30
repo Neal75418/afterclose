@@ -501,6 +501,41 @@ abstract final class RuleParams {
   static const double foreignExodusThreshold = -2.0;
 
   // ==========================================
+  // EPS 規則參數
+  // ==========================================
+
+  /// EPS 年增暴增門檻（%）
+  static const double epsYoYSurgeThreshold = 50.0;
+
+  /// EPS 季增成長門檻（%）
+  static const double epsGrowthThreshold = 10.0;
+
+  /// EPS 連續成長最少季數
+  static const int epsConsecutiveQuarters = 2;
+
+  /// EPS 由負轉正最低門檻（元）
+  static const double epsTurnaroundThreshold = 0.3;
+
+  /// EPS 衰退警示門檻（%）
+  static const double epsDeclineThreshold = 20.0;
+
+  // ==========================================
+  // ROE 規則參數
+  // ==========================================
+
+  /// ROE 優異門檻（%）
+  static const double roeExcellentThreshold = 15.0;
+
+  /// ROE 改善門檻（百分點）
+  static const double roeImprovingThreshold = 5.0;
+
+  /// ROE 衰退門檻（百分點）
+  static const double roeDecliningThreshold = 5.0;
+
+  /// ROE 趨勢最少季數
+  static const int roeMinQuarters = 2;
+
+  // ==========================================
   // 分析服務參數
   // ==========================================
 
@@ -777,6 +812,32 @@ abstract final class RuleScores {
   static const int foreignExodus = -20;
 
   // ==========================================
+  // EPS 規則分數
+  // ==========================================
+
+  /// EPS 年增暴增分數（強基本面）
+  static const int epsYoYSurge = 22;
+
+  /// EPS 連續成長分數（持續成長訊號）
+  static const int epsConsecutiveGrowth = 18;
+
+  /// EPS 由負轉正分數（轉機訊號）
+  static const int epsTurnaround = 15;
+
+  /// EPS 衰退警示分數（扣分）
+  static const int epsDeclineWarning = -12;
+
+  // ROE 規則分數
+  /// ROE 優異（多方）
+  static const int roeExcellent = 18;
+
+  /// ROE 持續改善（多方）
+  static const int roeImproving = 15;
+
+  /// ROE 衰退（空方）
+  static const int roeDeclining = -10;
+
+  // ==========================================
   // 向後相容（舊欄位名稱，標記為棄用）
   // ==========================================
 
@@ -857,7 +918,17 @@ enum ReasonType {
   insiderSignificantBuying('INSIDER_SIGNIFICANT_BUYING', '董監大量增持'),
   highPledgeRatio('HIGH_PLEDGE_RATIO', '高質押比例'),
   foreignConcentrationWarning('FOREIGN_CONCENTRATION_WARNING', '外資高度集中'),
-  foreignExodus('FOREIGN_EXODUS', '外資加速流出');
+  foreignExodus('FOREIGN_EXODUS', '外資加速流出'),
+  // EPS 訊號
+  epsYoYSurge('EPS_YOY_SURGE', 'EPS年增暴增'),
+  epsConsecutiveGrowth('EPS_CONSECUTIVE_GROWTH', 'EPS連續成長'),
+  epsTurnaround('EPS_TURNAROUND', 'EPS由負轉正'),
+  epsDeclineWarning('EPS_DECLINE_WARNING', 'EPS衰退警示'),
+
+  // ROE 訊號
+  roeExcellent('ROE_EXCELLENT', 'ROE優異'),
+  roeImproving('ROE_IMPROVING', 'ROE改善'),
+  roeDeclining('ROE_DECLINING', 'ROE衰退');
 
   const ReasonType(this.code, this.label);
 
@@ -931,6 +1002,14 @@ enum ReasonType {
     ReasonType.foreignConcentrationWarning =>
       RuleScores.foreignConcentrationWarning,
     ReasonType.foreignExodus => RuleScores.foreignExodus,
+    // EPS 訊號
+    ReasonType.epsYoYSurge => RuleScores.epsYoYSurge,
+    ReasonType.epsConsecutiveGrowth => RuleScores.epsConsecutiveGrowth,
+    ReasonType.epsTurnaround => RuleScores.epsTurnaround,
+    ReasonType.epsDeclineWarning => RuleScores.epsDeclineWarning,
+    ReasonType.roeExcellent => RuleScores.roeExcellent,
+    ReasonType.roeImproving => RuleScores.roeImproving,
+    ReasonType.roeDeclining => RuleScores.roeDeclining,
   };
 }
 

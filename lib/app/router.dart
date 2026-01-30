@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/presentation/screens/alerts/alerts_screen.dart';
+import 'package:afterclose/presentation/screens/industry/industry_overview_screen.dart';
 import 'package:afterclose/presentation/screens/news/news_screen.dart';
 import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
 import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
@@ -100,6 +101,13 @@ final router = GoRouter(
       path: '/alerts',
       name: 'alerts',
       builder: (context, state) => const AlertsScreen(),
+    ),
+
+    // Industry overview (full screen, outside shell)
+    GoRoute(
+      path: '/industry',
+      name: 'industry',
+      builder: (context, state) => const IndustryOverviewScreen(),
     ),
   ],
 );

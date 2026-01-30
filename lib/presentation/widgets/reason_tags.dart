@@ -119,6 +119,15 @@ class ReasonTags extends StatelessWidget {
       'PE_UNDERVALUED' => 'reasons.peUndervalued',
       'PE_OVERVALUED' => 'reasons.peOvervalued',
       'PBR_UNDERVALUED' => 'reasons.pbrUndervalued',
+      // 第七階段：EPS 分析
+      'EPS_YOY_SURGE' => 'reasons.epsYoYSurge',
+      'EPS_CONSECUTIVE_GROWTH' => 'reasons.epsConsecutiveGrowth',
+      'EPS_TURNAROUND' => 'reasons.epsTurnaround',
+      'EPS_DECLINE_WARNING' => 'reasons.epsDeclineWarning',
+      // ROE 分析
+      'ROE_EXCELLENT' => 'reasons.roeExcellent',
+      'ROE_IMPROVING' => 'reasons.roeImproving',
+      'ROE_DECLINING' => 'reasons.roeDeclining',
       _ => code, // 未知代碼則回傳原始代碼
     };
     return key.tr();

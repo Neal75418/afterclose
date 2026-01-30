@@ -35,6 +35,9 @@ abstract final class ApiEndpoints {
   static const String twseMonthlyRevenue =
       '$twseOpenDataBaseUrl/v1/opendata/t187ap05_L';
 
+  /// 大盤各類指數（每日收盤後更新）
+  static const String twseMarketIndex = '/rwd/zh/afterTrading/MI_INDEX';
+
   /// 上市注意股票
   /// 回傳交易量異常、價格異常波動的股票清單
   static const String twseTradingWarning = '/rwd/zh/announcement/TWTAVU';

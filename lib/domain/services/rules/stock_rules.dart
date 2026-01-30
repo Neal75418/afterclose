@@ -11,6 +11,8 @@ class StockData {
     this.latestRevenue,
     this.latestValuation,
     this.revenueHistory,
+    this.epsHistory,
+    this.roeHistory,
   });
 
   final String symbol;
@@ -28,6 +30,12 @@ class StockData {
   ///
   /// 需依時間降序排列（最新在前）
   final List<MonthlyRevenueEntry>? revenueHistory;
+
+  /// EPS 歷史（最近 8 季，依時間降序）
+  final List<FinancialDataEntry>? epsHistory;
+
+  /// ROE 歷史（最近 8 季，依時間降序，虛擬 FinancialDataEntry）
+  final List<FinancialDataEntry>? roeHistory;
 
   /// 取得最新價格，若無資料則為 null
   DailyPriceEntry? get latestPrice => prices.isEmpty ? null : prices.last;

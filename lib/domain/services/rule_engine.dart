@@ -84,6 +84,15 @@ class RuleEngine {
     PEUndervaluedRule(),
     PEOvervaluedRule(),
     PBRUndervaluedRule(),
+    // 第 7 階段：EPS 分析規則
+    EPSYoYSurgeRule(),
+    EPSConsecutiveGrowthRule(),
+    EPSTurnaroundRule(),
+    EPSDeclineWarningRule(),
+    // 第 8 階段：ROE 分析規則
+    ROEExcellentRule(),
+    ROEImprovingRule(),
+    ROEDecliningRule(),
     // Killer Features：注意/處置股票規則
     TradingWarningAttentionRule(),
     TradingWarningDisposalRule(),
@@ -114,6 +123,8 @@ class RuleEngine {
     MonthlyRevenueEntry? latestRevenue,
     StockValuationEntry? latestValuation,
     List<MonthlyRevenueEntry>? revenueHistory,
+    List<FinancialDataEntry>? epsHistory,
+    List<FinancialDataEntry>? roeHistory,
   }) {
     if (priceHistory.isEmpty) return [];
 
@@ -125,6 +136,8 @@ class RuleEngine {
       latestRevenue: latestRevenue,
       latestValuation: latestValuation,
       revenueHistory: revenueHistory,
+      epsHistory: epsHistory,
+      roeHistory: roeHistory,
     );
 
     final triggered = <TriggeredReason>[];

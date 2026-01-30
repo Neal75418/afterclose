@@ -47,6 +47,8 @@ part 'app_database.g.dart';
     // 基本面資料（Phase 3）
     MonthlyRevenue,
     StockValuation,
+    // 股利歷史
+    DividendHistory,
     // 融資融券資料（Phase 4）
     MarginTrading,
     // 風險控管資料（Killer Features）
@@ -61,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -69,6 +71,9 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
+      // 確保 FK 約束在 migration 時生效
+      await customStatement('PRAGMA foreign_keys = ON');
+
       // v1 -> v2: 新增 news_item.content 欄位
       if (from < 2) {
         await customStatement('ALTER TABLE news_item ADD COLUMN content TEXT');
@@ -122,6 +127,25 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_insider_holding_date ON insider_holding(date)',
         );
+      }
+
+      // v3 -> v4: 新增股利歷史表
+      if (from < 4) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS dividend_history (
+            symbol TEXT NOT NULL REFERENCES stock_master(symbol) ON DELETE CASCADE,
+            year INTEGER NOT NULL,
+            cash_dividend REAL NOT NULL DEFAULT 0,
+            stock_dividend REAL NOT NULL DEFAULT 0,
+            ex_dividend_date TEXT,
+            ex_rights_date TEXT,
+            PRIMARY KEY (symbol, year)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_dividend_history_symbol ON dividend_history(symbol)',
+        );
+        // year index 不需要：PK (symbol, year) 已提供最佳查詢路徑
       }
     },
     beforeOpen: (details) async {
@@ -178,6 +202,51 @@ class AppDatabase extends _$AppDatabase {
           ..where((t) => t.isActive.equals(true))
           ..where((t) => t.market.equals(market)))
         .get();
+  }
+
+  /// 取得所有不重複的產業類別（已排序）
+  Future<List<String>> getDistinctIndustries() async {
+    final query = selectOnly(stockMaster, distinct: true)
+      ..addColumns([stockMaster.industry])
+      ..where(stockMaster.isActive.equals(true))
+      ..where(stockMaster.industry.isNotNull());
+    final rows = await query.get();
+    return rows
+        .map((row) => row.read(stockMaster.industry))
+        .whereType<String>()
+        .where((s) => s.isNotEmpty)
+        .toList()
+      ..sort();
+  }
+
+  /// 取得指定產業的所有股票代碼
+  Future<Set<String>> getSymbolsByIndustry(String industry) async {
+    if (industry.isEmpty) return {};
+    final results =
+        await (select(stockMaster)
+              ..where((t) => t.isActive.equals(true))
+              ..where((t) => t.industry.equals(industry)))
+            .get();
+    return results.map((s) => s.symbol).toSet();
+  }
+
+  /// 取得各產業的股票數量
+  Future<Map<String, int>> getIndustryStockCounts() async {
+    final query = selectOnly(stockMaster)
+      ..addColumns([stockMaster.industry, stockMaster.symbol.count()])
+      ..where(stockMaster.isActive.equals(true))
+      ..where(stockMaster.industry.isNotNull())
+      ..groupBy([stockMaster.industry]);
+    final rows = await query.get();
+    final result = <String, int>{};
+    for (final row in rows) {
+      final industry = row.read(stockMaster.industry);
+      final count = row.read(stockMaster.symbol.count());
+      if (industry != null && industry.isNotEmpty && count != null) {
+        result[industry] = count;
+      }
+    }
+    return result;
   }
 
   /// 批次取得多檔股票（批次查詢）
@@ -1568,6 +1637,143 @@ class AppDatabase extends _$AppDatabase {
     return result?.date;
   }
 
+  /// 取得單檔股票的 EPS 歷史（最近 8 季，降序）
+  Future<List<FinancialDataEntry>> getEPSHistory(String symbol) {
+    return (select(financialData)
+          ..where((t) => t.symbol.equals(symbol))
+          ..where((t) => t.statementType.equals('INCOME'))
+          ..where((t) => t.dataType.equals('EPS'))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(8))
+        .get();
+  }
+
+  /// 批次取得多檔股票的 EPS 歷史（評分管線用）
+  Future<Map<String, List<FinancialDataEntry>>> getEPSHistoryBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    final entries =
+        await (select(financialData)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.statementType.equals('INCOME'))
+              ..where((t) => t.dataType.equals('EPS'))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+            .get();
+
+    final result = <String, List<FinancialDataEntry>>{};
+    for (final e in entries) {
+      result.putIfAbsent(e.symbol, () => []).add(e);
+    }
+    // 每檔只保留最近 8 季
+    for (final key in result.keys) {
+      if (result[key]!.length > 8) {
+        result[key] = result[key]!.sublist(0, 8);
+      }
+    }
+    return result;
+  }
+
+  /// 取得最新一季的完整財務指標（UI 用）
+  Future<Map<String, double>> getLatestQuarterMetrics(String symbol) async {
+    final latest =
+        await (select(financialData)
+              ..where((t) => t.symbol.equals(symbol))
+              ..where((t) => t.statementType.equals('INCOME'))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)])
+              ..limit(1))
+            .getSingleOrNull();
+
+    if (latest == null) return {};
+
+    final entries =
+        await (select(financialData)
+              ..where((t) => t.symbol.equals(symbol))
+              ..where((t) => t.date.equals(latest.date)))
+            .get();
+
+    return {
+      for (final e in entries)
+        if (e.value != null) e.dataType: e.value!,
+    };
+  }
+
+  /// 取得單檔股票的 Equity 歷史（最近 8 季，降序）
+  Future<List<FinancialDataEntry>> getEquityHistory(String symbol) {
+    return (select(financialData)
+          ..where((t) => t.symbol.equals(symbol))
+          ..where((t) => t.statementType.equals('BALANCE'))
+          ..where((t) => t.dataType.equals('Equity'))
+          ..orderBy([(t) => OrderingTerm.desc(t.date)])
+          ..limit(8))
+        .get();
+  }
+
+  /// 批次計算 ROE 歷史（評分管線用）
+  ///
+  /// 從 INCOME.NetIncome + BALANCE.Equity 按 symbol+date join 計算
+  /// ROE = NetIncome / Equity × 100
+  /// 回傳虛擬 FinancialDataEntry (dataType='ROE')
+  Future<Map<String, List<FinancialDataEntry>>> getROEHistoryBatch(
+    List<String> symbols,
+  ) async {
+    if (symbols.isEmpty) return {};
+
+    // 1. 批次查 NetIncome
+    final netIncomeEntries =
+        await (select(financialData)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.statementType.equals('INCOME'))
+              ..where((t) => t.dataType.equals('NetIncome'))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+            .get();
+
+    // 2. 批次查 Equity
+    final equityEntries =
+        await (select(financialData)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.statementType.equals('BALANCE'))
+              ..where((t) => t.dataType.equals('Equity'))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+            .get();
+
+    // 3. 建立 Equity 快速查詢 map: (symbol, date) -> value
+    final equityMap = <(String, DateTime), double>{};
+    for (final e in equityEntries) {
+      if (e.value != null && e.value! > 0) {
+        equityMap[(e.symbol, e.date)] = e.value!;
+      }
+    }
+
+    // 4. Join 計算年化 ROE（季度 NetIncome × 4 / Equity × 100）
+    final result = <String, List<FinancialDataEntry>>{};
+    for (final ni in netIncomeEntries) {
+      if (ni.value == null) continue;
+      final equity = equityMap[(ni.symbol, ni.date)];
+      if (equity == null || equity == 0) continue;
+
+      final roe = ni.value! * 4 / equity * 100;
+      final roeEntry = FinancialDataEntry(
+        symbol: ni.symbol,
+        date: ni.date,
+        statementType: 'ROE',
+        dataType: 'ROE',
+        value: roe,
+        originName: null,
+      );
+      result.putIfAbsent(ni.symbol, () => []).add(roeEntry);
+    }
+
+    // 5. 每檔只保留最近 8 季
+    for (final key in result.keys) {
+      if (result[key]!.length > 8) {
+        result[key] = result[key]!.sublist(0, 8);
+      }
+    }
+    return result;
+  }
+
   // ==========================================
   // 還原股價操作
   // ==========================================
@@ -1961,6 +2167,40 @@ class AppDatabase extends _$AppDatabase {
   }
 
   // ==========================================
+  // 股利歷史操作
+  // ==========================================
+
+  /// 取得股票的股利歷史（依年度降冪排序）
+  Future<List<DividendHistoryEntry>> getDividendHistory(String symbol) {
+    return (select(dividendHistory)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.desc(t.year)]))
+        .get();
+  }
+
+  /// 批次新增股利資料
+  Future<void> insertDividendData(
+    List<DividendHistoryCompanion> entries,
+  ) async {
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(dividendHistory, entry, mode: InsertMode.insertOrReplace);
+      }
+    });
+  }
+
+  /// 取得股票最新的股利年度（新鮮度檢查用）
+  Future<int?> getLatestDividendYear(String symbol) async {
+    final result =
+        await (select(dividendHistory)
+              ..where((t) => t.symbol.equals(symbol))
+              ..orderBy([(t) => OrderingTerm.desc(t.year)])
+              ..limit(1))
+            .getSingleOrNull();
+    return result?.year;
+  }
+
+  // ==========================================
   // 注意股票/處置股票操作
   // ==========================================
 
@@ -2322,6 +2562,131 @@ class AppDatabase extends _$AppDatabase {
       ..where(insiderHolding.date.isSmallerThanValue(endOfMonth));
     final result = await query.getSingle();
     return result.read(countExpr) ?? 0;
+  }
+
+  // ==========================================
+  // 大盤總覽彙總查詢
+  // ==========================================
+
+  /// 取得指定日期的上漲/下跌/平盤家數
+  ///
+  /// 從 DailyPrice 統計當日漲跌家數。
+  /// 回傳 `{advance: int, decline: int, unchanged: int}`
+  Future<Map<String, int>> getAdvanceDeclineCounts(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    // 用子查詢計算每檔漲跌：當日收盤 vs 前一交易日收盤
+    const query = '''
+      WITH today AS (
+        SELECT symbol, close
+        FROM daily_price
+        WHERE date >= ? AND date < ?
+          AND close IS NOT NULL
+      ),
+      prev AS (
+        SELECT dp.symbol, dp.close
+        FROM daily_price dp
+        INNER JOIN (
+          SELECT symbol, MAX(date) as prev_date
+          FROM daily_price
+          WHERE date < ? AND close IS NOT NULL
+          GROUP BY symbol
+        ) latest ON dp.symbol = latest.symbol AND dp.date = latest.prev_date
+      )
+      SELECT
+        SUM(CASE WHEN t.close > p.close THEN 1 ELSE 0 END) as advance,
+        SUM(CASE WHEN t.close < p.close THEN 1 ELSE 0 END) as decline,
+        SUM(CASE WHEN t.close = p.close THEN 1 ELSE 0 END) as unchanged
+      FROM today t
+      INNER JOIN prev p ON t.symbol = p.symbol
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startOfDay),
+        Variable.withDateTime(endOfDay),
+        Variable.withDateTime(startOfDay),
+      ],
+      readsFrom: {dailyPrice},
+    ).getSingle();
+
+    return {
+      'advance': results.readNullable<int>('advance') ?? 0,
+      'decline': results.readNullable<int>('decline') ?? 0,
+      'unchanged': results.readNullable<int>('unchanged') ?? 0,
+    };
+  }
+
+  /// 取得指定日期的三大法人買賣超總額
+  ///
+  /// 從 DailyInstitutional 彙總外資、投信、自營買賣超（元）。
+  /// 回傳 `{foreignNet, trustNet, dealerNet, totalNet}`
+  Future<Map<String, double>> getInstitutionalTotals(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    const query = '''
+      SELECT
+        COALESCE(SUM(foreign_net), 0) as foreign_net,
+        COALESCE(SUM(investment_trust_net), 0) as trust_net,
+        COALESCE(SUM(dealer_net), 0) as dealer_net,
+        COALESCE(SUM(foreign_net), 0) + COALESCE(SUM(investment_trust_net), 0) + COALESCE(SUM(dealer_net), 0) as total_net
+      FROM daily_institutional
+      WHERE date >= ? AND date < ?
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startOfDay),
+        Variable.withDateTime(endOfDay),
+      ],
+      readsFrom: {dailyInstitutional},
+    ).getSingle();
+
+    return {
+      'foreignNet': results.readNullable<double>('foreign_net') ?? 0,
+      'trustNet': results.readNullable<double>('trust_net') ?? 0,
+      'dealerNet': results.readNullable<double>('dealer_net') ?? 0,
+      'totalNet': results.readNullable<double>('total_net') ?? 0,
+    };
+  }
+
+  /// 取得指定日期的融資融券餘額彙總
+  ///
+  /// 從 MarginTrading 彙總融資/融券餘額及變化（張）。
+  /// 回傳 `{marginBalance, marginChange, shortBalance, shortChange}`
+  Future<Map<String, double>> getMarginTradingTotals(DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    const query = '''
+      SELECT
+        COALESCE(SUM(margin_balance), 0) as margin_balance,
+        COALESCE(SUM(margin_buy - margin_sell), 0) as margin_change,
+        COALESCE(SUM(short_balance), 0) as short_balance,
+        COALESCE(SUM(short_sell - short_buy), 0) as short_change
+      FROM margin_trading
+      WHERE date >= ? AND date < ?
+    ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startOfDay),
+        Variable.withDateTime(endOfDay),
+      ],
+      readsFrom: {marginTrading},
+    ).getSingle();
+
+    return {
+      'marginBalance': results.readNullable<double>('margin_balance') ?? 0,
+      'marginChange': results.readNullable<double>('margin_change') ?? 0,
+      'shortBalance': results.readNullable<double>('short_balance') ?? 0,
+      'shortChange': results.readNullable<double>('short_change') ?? 0,
+    };
   }
 }
 

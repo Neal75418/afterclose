@@ -1,6 +1,8 @@
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
+import 'package:afterclose/data/repositories/market_data_repository.dart';
 
 /// 基本面資料同步器
 ///
@@ -9,11 +11,14 @@ class FundamentalSyncer {
   const FundamentalSyncer({
     required AppDatabase database,
     required FundamentalRepository fundamentalRepository,
+    MarketDataRepository? marketDataRepository,
   }) : _db = database,
-       _fundamentalRepo = fundamentalRepository;
+       _fundamentalRepo = fundamentalRepository,
+       _marketDataRepo = marketDataRepository;
 
   final AppDatabase _db;
   final FundamentalRepository _fundamentalRepo;
+  final MarketDataRepository? _marketDataRepo;
 
   /// 同步全市場基本面資料（TWSE 批次 API）
   ///
@@ -160,6 +165,88 @@ class FundamentalSyncer {
       symbolCount: otcCandidates.length,
       syncedCount: limitedOtcCandidates.length,
     );
+  }
+
+  /// 同步指定股票清單的損益表資料（含 EPS）
+  ///
+  /// 每批 10 檔並行，批間延遲 500ms 避免超過 FinMind 配額。
+  /// 每檔股票內部有 90 天新鮮度檢查。
+  Future<int> syncFinancialStatements({required List<String> symbols}) async {
+    if (symbols.isEmpty) return 0;
+
+    final start = DateTime.now().subtract(const Duration(days: 730));
+    final end = DateTime.now();
+    var count = 0;
+
+    const chunkSize = 10;
+    for (var i = 0; i < symbols.length; i += chunkSize) {
+      final chunk = symbols.skip(i).take(chunkSize).toList();
+      final results = await Future.wait(
+        chunk.map(
+          (s) => _fundamentalRepo.syncFinancialStatements(
+            symbol: s,
+            startDate: start,
+            endDate: end,
+          ),
+        ),
+      );
+      count += results.fold(0, (sum, n) => sum + n);
+
+      if (i + chunkSize < symbols.length) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+
+    if (count > 0) {
+      AppLogger.info(
+        'FundamentalSyncer',
+        '財報同步: $count 筆 (${symbols.length} 檔)',
+      );
+    }
+    return count;
+  }
+
+  /// 同步指定股票清單的資產負債表資料
+  ///
+  /// 每批 10 檔並行，批間延遲 500ms 避免超過 FinMind 配額。
+  /// 需要 MarketDataRepository 才能使用。
+  Future<int> syncBalanceSheets({required List<String> symbols}) async {
+    final marketDataRepo = _marketDataRepo;
+    if (marketDataRepo == null || symbols.isEmpty) return 0;
+
+    final start = DateTime.now().subtract(const Duration(days: 730));
+    final end = DateTime.now();
+    var count = 0;
+
+    const chunkSize = 10;
+    for (var i = 0; i < symbols.length; i += chunkSize) {
+      final chunk = symbols.skip(i).take(chunkSize).toList();
+      final results = await Future.wait(
+        chunk.map(
+          (s) => marketDataRepo
+              .syncBalanceSheet(s, startDate: start, endDate: end)
+              .catchError((Object e) {
+                // RateLimitException 需向上傳播以停止批次
+                if (e is RateLimitException) throw e;
+                AppLogger.debug('FundamentalSyncer', '資產負債表同步失敗: $s');
+                return 0;
+              }),
+        ),
+      );
+      count += results.fold(0, (sum, n) => sum + n);
+
+      if (i + chunkSize < symbols.length) {
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+
+    if (count > 0) {
+      AppLogger.info(
+        'FundamentalSyncer',
+        '資產負債表同步: $count 筆 (${symbols.length} 檔)',
+      );
+    }
+    return count;
   }
 }
 
