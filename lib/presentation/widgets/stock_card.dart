@@ -132,7 +132,7 @@ class _StockCardState extends State<StockCard> {
                         children: [
                           // 趨勢指示器（現代設計）
                           _buildTrendIndicator(theme, isDark),
-                          const SizedBox(width: 14),
+                          const SizedBox(width: 12),
 
                           // 股票資訊區塊
                           Expanded(
@@ -194,22 +194,11 @@ class _StockCardState extends State<StockCard> {
   Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
     final trendColor = widget.trendState.trendColor;
     final icon = widget.trendState.trendIconData;
-    // 盤整狀態：null、'RANGE' 或 'SIDEWAYS'（相容舊資料）
-    final isNeutral =
-        widget.trendState == null ||
-        widget.trendState == 'RANGE' ||
-        widget.trendState == 'SIDEWAYS';
 
-    return Container(
-      width: 44,
-      height: 44,
-      decoration: BoxDecoration(
-        color: trendColor.withValues(alpha: isDark ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: isDark && isNeutral
-            ? Border.all(color: trendColor.withValues(alpha: 0.4), width: 1)
-            : null,
-      ),
+    // Simplified design: Icon only, no background container to reduce color noise
+    return SizedBox(
+      width: 24,
+      height: 24,
       child: Center(child: Icon(icon, color: trendColor, size: 24)),
     );
   }

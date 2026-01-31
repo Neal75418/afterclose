@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
@@ -7,52 +8,54 @@ import 'package:afterclose/presentation/providers/providers.dart';
 /// Alert type enum
 enum AlertType {
   // Price-based alerts
-  above('ABOVE', '價格高於', AlertCategory.price),
-  below('BELOW', '價格低於', AlertCategory.price),
-  changePct('CHANGE_PCT', '漲跌幅達', AlertCategory.price),
+  above('ABOVE', AlertCategory.price),
+  below('BELOW', AlertCategory.price),
+  changePct('CHANGE_PCT', AlertCategory.price),
 
   // Volume alerts
-  volumeSpike('VOLUME_SPIKE', '成交量爆量', AlertCategory.volume),
-  volumeAbove('VOLUME_ABOVE', '成交量高於', AlertCategory.volume),
+  volumeSpike('VOLUME_SPIKE', AlertCategory.volume),
+  volumeAbove('VOLUME_ABOVE', AlertCategory.volume),
 
   // RSI alerts
-  rsiOverbought('RSI_OVERBOUGHT', 'RSI超買', AlertCategory.indicator),
-  rsiOversold('RSI_OVERSOLD', 'RSI超賣', AlertCategory.indicator),
+  rsiOverbought('RSI_OVERBOUGHT', AlertCategory.indicator),
+  rsiOversold('RSI_OVERSOLD', AlertCategory.indicator),
 
   // KD alerts
-  kdGoldenCross('KD_GOLDEN_CROSS', 'KD黃金交叉', AlertCategory.indicator),
-  kdDeathCross('KD_DEATH_CROSS', 'KD死亡交叉', AlertCategory.indicator),
+  kdGoldenCross('KD_GOLDEN_CROSS', AlertCategory.indicator),
+  kdDeathCross('KD_DEATH_CROSS', AlertCategory.indicator),
 
   // Support/Resistance alerts
-  breakResistance('BREAK_RESISTANCE', '突破壓力', AlertCategory.level),
-  breakSupport('BREAK_SUPPORT', '跌破支撐', AlertCategory.level),
+  breakResistance('BREAK_RESISTANCE', AlertCategory.level),
+  breakSupport('BREAK_SUPPORT', AlertCategory.level),
 
   // 52-week alerts
-  week52High('WEEK_52_HIGH', '創52週新高', AlertCategory.week52),
-  week52Low('WEEK_52_LOW', '創52週新低', AlertCategory.week52),
+  week52High('WEEK_52_HIGH', AlertCategory.week52),
+  week52Low('WEEK_52_LOW', AlertCategory.week52),
 
   // MA alerts
-  crossAboveMa('CROSS_ABOVE_MA', '站上均線', AlertCategory.ma),
-  crossBelowMa('CROSS_BELOW_MA', '跌破均線', AlertCategory.ma),
+  crossAboveMa('CROSS_ABOVE_MA', AlertCategory.ma),
+  crossBelowMa('CROSS_BELOW_MA', AlertCategory.ma),
 
-  // Fundamental alerts (基本面警報)
-  revenueYoySurge('REVENUE_YOY_SURGE', '營收年增暴增', AlertCategory.fundamental),
-  highDividendYield('HIGH_DIVIDEND_YIELD', '高殖利率', AlertCategory.fundamental),
-  peUndervalued('PE_UNDERVALUED', 'PE低估', AlertCategory.fundamental),
+  // Fundamental alerts
+  revenueYoySurge('REVENUE_YOY_SURGE', AlertCategory.fundamental),
+  highDividendYield('HIGH_DIVIDEND_YIELD', AlertCategory.fundamental),
+  peUndervalued('PE_UNDERVALUED', AlertCategory.fundamental),
 
-  // Trading warning alerts (Killer Features：注意/處置股票警報)
-  tradingWarning('TRADING_WARNING', '注意股票', AlertCategory.warning),
-  tradingDisposal('TRADING_DISPOSAL', '處置股票', AlertCategory.warning),
+  // Trading warning alerts
+  tradingWarning('TRADING_WARNING', AlertCategory.warning),
+  tradingDisposal('TRADING_DISPOSAL', AlertCategory.warning),
 
-  // Insider alerts (Killer Features：董監持股警報)
-  insiderSelling('INSIDER_SELLING', '董監減持', AlertCategory.insider),
-  insiderBuying('INSIDER_BUYING', '董監增持', AlertCategory.insider),
-  highPledgeRatio('HIGH_PLEDGE_RATIO', '高質押比例', AlertCategory.insider);
+  // Insider alerts
+  insiderSelling('INSIDER_SELLING', AlertCategory.insider),
+  insiderBuying('INSIDER_BUYING', AlertCategory.insider),
+  highPledgeRatio('HIGH_PLEDGE_RATIO', AlertCategory.insider);
 
-  const AlertType(this.value, this.label, this.category);
+  const AlertType(this.value, this.category);
   final String value;
-  final String label;
   final AlertCategory category;
+
+  /// 翻譯後的顯示標籤（i18n）
+  String get label => 'alert.alertType.$name'.tr();
 
   /// Check if this alert type requires a target value
   bool get requiresTargetValue => switch (this) {
@@ -83,19 +86,19 @@ enum AlertType {
     AlertType.highPledgeRatio => false,
   };
 
-  /// Get unit label for target value
+  /// Get unit label for target value (i18n)
   String get targetValueUnit => switch (this) {
     AlertType.above ||
     AlertType.below ||
     AlertType.breakResistance ||
-    AlertType.breakSupport => '元',
+    AlertType.breakSupport => 'alert.currency'.tr(),
     AlertType.changePct ||
     AlertType.revenueYoySurge ||
     AlertType.highDividendYield => '%',
-    AlertType.volumeAbove => '張',
+    AlertType.volumeAbove => 'stockDetail.unitShares'.tr(),
     AlertType.rsiOverbought || AlertType.rsiOversold => '',
-    AlertType.crossAboveMa || AlertType.crossBelowMa => '日均線',
-    AlertType.peUndervalued => '倍',
+    AlertType.crossAboveMa || AlertType.crossBelowMa => 'alert.unit.dayMa'.tr(),
+    AlertType.peUndervalued => 'alert.unit.times'.tr(),
     _ => '',
   };
 
@@ -136,22 +139,81 @@ enum AlertType {
 
 /// Alert category for grouping in UI
 enum AlertCategory {
-  price('價格'),
-  volume('成交量'),
-  indicator('技術指標'),
-  level('支撐壓力'),
-  week52('新高新低'),
-  ma('均線'),
-  fundamental('基本面'),
-  warning('警示'),
-  insider('董監');
+  price,
+  volume,
+  indicator,
+  level,
+  week52,
+  ma,
+  fundamental,
+  warning,
+  insider;
 
-  const AlertCategory(this.label);
-  final String label;
+  /// 取得翻譯後的分類名稱
+  String get label => 'alert.category.$name'.tr();
 
   /// Get all alert types in this category
   List<AlertType> get alertTypes =>
       AlertType.values.where((a) => a.category == this).toList();
+}
+
+/// 取得 AlertType 的 i18n 描述（用於 UI 顯示）
+///
+/// 共用函式，避免 alerts_screen.dart 和 alerts_tab.dart 各自重複維護。
+String getAlertDescription(PriceAlertEntry alert, AlertType type) {
+  return switch (type) {
+    AlertType.above => 'alert.priceAbove'.tr(
+      namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+    ),
+    AlertType.below => 'alert.priceBelow'.tr(
+      namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+    ),
+    AlertType.changePct => 'alert.changeAbove'.tr(
+      namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
+    ),
+    AlertType.volumeSpike => 'alert.desc.volumeSpike'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+    ),
+    AlertType.volumeAbove => 'alert.desc.volumeAbove'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+    ),
+    AlertType.rsiOverbought => 'alert.desc.rsiOverbought'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+    ),
+    AlertType.rsiOversold => 'alert.desc.rsiOversold'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+    ),
+    AlertType.kdGoldenCross => 'alert.desc.kdGoldenCross'.tr(),
+    AlertType.kdDeathCross => 'alert.desc.kdDeathCross'.tr(),
+    AlertType.breakResistance => 'alert.desc.breakResistance'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(2)},
+    ),
+    AlertType.breakSupport => 'alert.desc.breakSupport'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(2)},
+    ),
+    AlertType.week52High => 'alert.desc.week52High'.tr(),
+    AlertType.week52Low => 'alert.desc.week52Low'.tr(),
+    AlertType.crossAboveMa => 'alert.desc.crossAboveMa'.tr(
+      namedArgs: {'value': alert.targetValue.toInt().toString()},
+    ),
+    AlertType.crossBelowMa => 'alert.desc.crossBelowMa'.tr(
+      namedArgs: {'value': alert.targetValue.toInt().toString()},
+    ),
+    AlertType.revenueYoySurge => 'alert.desc.revenueYoySurge'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(1)},
+    ),
+    AlertType.highDividendYield => 'alert.desc.highDividendYield'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(1)},
+    ),
+    AlertType.peUndervalued => 'alert.desc.peUndervalued'.tr(
+      namedArgs: {'value': alert.targetValue.toStringAsFixed(1)},
+    ),
+    AlertType.tradingWarning => 'alert.desc.tradingWarning'.tr(),
+    AlertType.tradingDisposal => 'alert.desc.tradingDisposal'.tr(),
+    AlertType.insiderSelling => 'alert.desc.insiderSelling'.tr(),
+    AlertType.insiderBuying => 'alert.desc.insiderBuying'.tr(),
+    AlertType.highPledgeRatio => 'alert.desc.highPledgeRatio'.tr(),
+  };
 }
 
 /// Price alert state

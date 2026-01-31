@@ -45,9 +45,10 @@ class FundamentalSyncer {
       AppLogger.warning('FundamentalSyncer', '營收資料同步失敗: $e');
     }
 
+    final revenueLabel = revenueCount < 0 ? '已快取' : '$revenueCount';
     AppLogger.info(
       'FundamentalSyncer',
-      '全市場基本面: 估值=$valuationCount, 營收=$revenueCount',
+      '全市場基本面: 估值=$valuationCount, 營收=$revenueLabel',
     );
 
     return FundamentalSyncResult(
@@ -245,8 +246,14 @@ class FundamentalSyncer {
         'FundamentalSyncer',
         '資產負債表同步: $count 筆 (${symbols.length} 檔)',
       );
+      return count;
+    } else {
+      AppLogger.debug(
+        'FundamentalSyncer',
+        '資產負債表: ${symbols.length} 檔皆已快取，無需同步',
+      );
+      return -1;
     }
-    return count;
   }
 }
 
@@ -260,9 +267,13 @@ class FundamentalSyncResult {
   });
 
   final int valuationCount;
+
+  /// 營收同步筆數。-1 表示已快取（跳過同步）。
   final int revenueCount;
+
   final int symbolCount;
   final int syncedCount;
 
-  int get total => valuationCount + revenueCount;
+  bool get revenueCached => revenueCount < 0;
+  int get total => valuationCount + (revenueCount < 0 ? 0 : revenueCount);
 }

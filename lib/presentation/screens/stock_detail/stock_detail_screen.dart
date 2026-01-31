@@ -1,7 +1,9 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -11,6 +13,13 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart'
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/insider_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical_tab.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
+import 'package:afterclose/presentation/widgets/reason_tags.dart';
+import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
+import 'package:afterclose/presentation/widgets/shareable/shareable_analysis_card.dart';
+import 'package:afterclose/core/utils/widget_capture.dart';
+import 'package:afterclose/core/services/share_service.dart';
+import 'package:afterclose/domain/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
@@ -33,7 +42,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
     Future.microtask(() {
-      ref.read(stockDetailProvider(widget.symbol).notifier).loadData();
+      final notifier = ref.read(stockDetailProvider(widget.symbol).notifier);
+      notifier.loadData();
+      notifier.loadFundamentals();
     });
   }
 
@@ -103,6 +114,18 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     title: Text(widget.symbol),
                     actions: [
                       IconButton(
+                        icon: const Icon(Icons.share_outlined),
+                        onPressed: () => _showShareOptions(state),
+                        tooltip: 'export.title'.tr(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.compare_arrows),
+                        onPressed: () {
+                          context.push('/compare', extra: [widget.symbol]);
+                        },
+                        tooltip: 'comparison.compare'.tr(),
+                      ),
+                      IconButton(
                         icon: Icon(
                           state.isInWatchlist ? Icons.star : Icons.star_border,
                           color: state.isInWatchlist ? Colors.amber : null,
@@ -121,6 +144,11 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
                   // Stock header
                   SliverToBoxAdapter(child: _buildHeader(state, theme)),
+
+                  // AI 智慧分析摘要
+                  SliverToBoxAdapter(
+                    child: AiSummaryCard(symbol: widget.symbol),
+                  ),
 
                   // Tab bar (Glassmorphism)
                   SliverPersistentHeader(
@@ -144,6 +172,62 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
               ),
       ),
     );
+  }
+
+  Future<void> _showShareOptions(StockDetailState state) async {
+    final format = await ShareOptionsSheet.show(context);
+    if (format == null || !mounted) return;
+
+    const shareService = ShareService();
+    const exportService = ExportService();
+
+    try {
+      if (format == ShareFormat.png) {
+        // 在 Overlay 中渲染分享卡片再截圖
+        final imageBytes = await _captureAnalysisCard(state);
+        if (imageBytes != null) {
+          await shareService.shareImage(
+            imageBytes,
+            '${widget.symbol}_analysis.png',
+          );
+        }
+      } else {
+        final csv = exportService.analysisDataToCsv(widget.symbol, state);
+        await shareService.shareCsv(csv, '${widget.symbol}_analysis.csv');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<Uint8List?> _captureAnalysisCard(StockDetailState state) async {
+    final key = GlobalKey();
+    final overlay = Overlay.of(context);
+    final entry = OverlayEntry(
+      builder: (context) => Positioned(
+        left: -1000,
+        top: -1000,
+        child: RepaintBoundary(
+          key: key,
+          child: Material(child: ShareableAnalysisCard(state: state)),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      return await const WidgetCapture().captureFromKey(key);
+    } finally {
+      entry.remove();
+    }
   }
 
   Widget _buildHeader(StockDetailState state, ThemeData theme) {
@@ -193,7 +277,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              '櫃',
+                              'stockDetail.otcBadge'.tr(),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.onSecondaryContainer,
                                 fontWeight: FontWeight.w500,
@@ -245,7 +329,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              _translateReasonCode(reason.reasonType),
+                              ReasonTags.translateReasonCode(reason.reasonType),
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: theme.colorScheme.onPrimaryContainer,
                                 fontWeight: FontWeight.w500,
@@ -351,7 +435,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
             children: [
               _buildInfoChip(
                 theme: theme,
-                label: 'trend.${state.analysis?.trendState.trendKey}'.tr(),
+                label:
+                    'trend.${state.analysis?.trendState.trendKey ?? 'sideways'}'
+                        .tr(),
                 icon:
                     state.analysis?.trendState.trendIconData ??
                     Icons.trending_flat,
@@ -445,112 +531,6 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
         ],
       ),
     );
-  }
-
-  String _translateReasonCode(String code) {
-    // Handle both snake_case (standard) and camelCase (json) formats
-    final key = switch (code) {
-      // Core signals
-      'REVERSAL_W2S' => 'reasons.reversalW2S',
-      'reversalW2S' => 'reasons.reversalW2S',
-      'REVERSAL_S2W' => 'reasons.reversalS2W',
-      'reversalS2W' => 'reasons.reversalS2W',
-      'TECH_BREAKOUT' => 'reasons.breakout',
-      'techBreakout' => 'reasons.breakout',
-      'TECH_BREAKDOWN' => 'reasons.breakdown',
-      'techBreakdown' => 'reasons.breakdown',
-      'VOLUME_SPIKE' => 'reasons.volumeSpike',
-      'volumeSpike' => 'reasons.volumeSpike',
-      'PRICE_SPIKE' => 'reasons.priceSpike',
-      'priceSpike' => 'reasons.priceSpike',
-      'INSTITUTIONAL_SHIFT' => 'reasons.institutional',
-      'institutionalShift' => 'reasons.institutional',
-      'NEWS_RELATED' => 'reasons.news',
-      'newsRelated' => 'reasons.news',
-      // KD signals
-      'KD_GOLDEN_CROSS' => 'reasons.kdGoldenCross',
-      'kdGoldenCross' => 'reasons.kdGoldenCross',
-      'KD_DEATH_CROSS' => 'reasons.kdDeathCross',
-      'kdDeathCross' => 'reasons.kdDeathCross',
-      // Institutional streaks
-      'INSTITUTIONAL_BUY_STREAK' => 'reasons.institutionalBuyStreak',
-      'institutionalBuyStreak' => 'reasons.institutionalBuyStreak',
-      'INSTITUTIONAL_SELL_STREAK' => 'reasons.institutionalSellStreak',
-      'institutionalSellStreak' => 'reasons.institutionalSellStreak',
-      // Candlestick patterns
-      'PATTERN_DOJI' => 'reasons.patternDoji',
-      'patternDoji' => 'reasons.patternDoji',
-      'PATTERN_BULLISH_ENGULFING' => 'reasons.patternBullishEngulfing',
-      'PATTERN_BEARISH_ENGULFING' => 'reasons.patternBearishEngulfing',
-      'PATTERN_HAMMER' => 'reasons.patternHammer',
-      'PATTERN_HANGING_MAN' => 'reasons.patternHangingMan',
-      'PATTERN_MORNING_STAR' => 'reasons.patternMorningStar',
-      'PATTERN_EVENING_STAR' => 'reasons.patternEveningStar',
-      'PATTERN_THREE_WHITE_SOLDIERS' => 'reasons.patternThreeWhiteSoldiers',
-      'PATTERN_THREE_BLACK_CROWS' => 'reasons.patternThreeBlackCrows',
-      'PATTERN_GAP_UP' => 'reasons.patternGapUp',
-      'PATTERN_GAP_DOWN' => 'reasons.patternGapDown',
-      // Phase 3: 52-week and MA signals
-      'WEEK_52_HIGH' => 'reasons.week52High',
-      'week52High' => 'reasons.week52High',
-      'WEEK_52_LOW' => 'reasons.week52Low',
-      'week52Low' => 'reasons.week52Low',
-      'MA_ALIGNMENT_BULLISH' => 'reasons.maAlignmentBullish',
-      'maAlignmentBullish' => 'reasons.maAlignmentBullish',
-      'MA_ALIGNMENT_BEARISH' => 'reasons.maAlignmentBearish',
-      'maAlignmentBearish' => 'reasons.maAlignmentBearish',
-      'RSI_EXTREME_OVERBOUGHT' => 'reasons.rsiExtremeOverbought',
-      'rsiExtremeOverbought' => 'reasons.rsiExtremeOverbought',
-      'RSI_EXTREME_OVERSOLD' => 'reasons.rsiExtremeOversold',
-      'rsiExtremeOversold' => 'reasons.rsiExtremeOversold',
-      // Phase 4: Extended market data signals
-      'INSTITUTIONAL_BUY' => 'reasons.institutionalBuy',
-      'institutionalBuy' => 'reasons.institutionalBuy',
-      'INSTITUTIONAL_SELL' => 'reasons.institutionalSell',
-      'institutionalSell' => 'reasons.institutionalSell',
-      'FOREIGN_SHAREHOLDING_INCREASING' =>
-        'reasons.foreignShareholdingIncreasing',
-      'foreignShareholdingIncreasing' =>
-        'reasons.foreignShareholdingIncreasing',
-      'FOREIGN_SHAREHOLDING_DECREASING' =>
-        'reasons.foreignShareholdingDecreasing',
-      'foreignShareholdingDecreasing' =>
-        'reasons.foreignShareholdingDecreasing',
-      'DAY_TRADING_HIGH' => 'reasons.dayTradingHigh',
-      'dayTradingHigh' => 'reasons.dayTradingHigh',
-      'DAY_TRADING_EXTREME' => 'reasons.dayTradingExtreme',
-      'dayTradingExtreme' => 'reasons.dayTradingExtreme',
-      'CONCENTRATION_HIGH' => 'reasons.concentrationHigh',
-      'concentrationHigh' => 'reasons.concentrationHigh',
-      // Phase 5: Price-volume divergence
-      'PRICE_VOLUME_BULLISH_DIVERGENCE' =>
-        'reasons.priceVolumeBullishDivergence',
-      'priceVolumeBullishDivergence' => 'reasons.priceVolumeBullishDivergence',
-      'PRICE_VOLUME_BEARISH_DIVERGENCE' =>
-        'reasons.priceVolumeBearishDivergence',
-      'priceVolumeBearishDivergence' => 'reasons.priceVolumeBearishDivergence',
-      'HIGH_VOLUME_BREAKOUT' => 'reasons.highVolumeBreakout',
-      'highVolumeBreakout' => 'reasons.highVolumeBreakout',
-      'LOW_VOLUME_ACCUMULATION' => 'reasons.lowVolumeAccumulation',
-      'lowVolumeAccumulation' => 'reasons.lowVolumeAccumulation',
-      // Phase 6: Fundamental signals
-      'REVENUE_YOY_SURGE' => 'reasons.revenueYoySurge',
-      'revenueYoySurge' => 'reasons.revenueYoySurge',
-      'REVENUE_YOY_DECLINE' => 'reasons.revenueYoyDecline',
-      'revenueYoyDecline' => 'reasons.revenueYoyDecline',
-      'REVENUE_MOM_GROWTH' => 'reasons.revenueMomGrowth',
-      'revenueMomGrowth' => 'reasons.revenueMomGrowth',
-      'HIGH_DIVIDEND_YIELD' => 'reasons.highDividendYield',
-      'highDividendYield' => 'reasons.highDividendYield',
-      'PE_UNDERVALUED' => 'reasons.peUndervalued',
-      'peUndervalued' => 'reasons.peUndervalued',
-      'PE_OVERVALUED' => 'reasons.peOvervalued',
-      'peOvervalued' => 'reasons.peOvervalued',
-      'PBR_UNDERVALUED' => 'reasons.pbrUndervalued',
-      'pbrUndervalued' => 'reasons.pbrUndervalued',
-      _ => code,
-    };
-    return key.tr();
   }
 
   /// Format synchronized data date for display

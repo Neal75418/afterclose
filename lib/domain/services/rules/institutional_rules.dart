@@ -83,9 +83,16 @@ class InstitutionalBuyStreakRule extends StockRule {
       final foreignSheets = (totalForeignNet / 1000).round();
       final trustSheets = (totalTrustNet / 1000).round();
 
+      // 投信主導加分：投信為主動型法人，買超更具意圖性
+      final isTrustDominant =
+          totalTrustNet > 0 && totalTrustNet > totalForeignNet;
+      final score = isTrustDominant
+          ? RuleScores.institutionalBuyStreak + 5
+          : RuleScores.institutionalBuyStreak;
+
       return TriggeredReason(
         type: ReasonType.institutionalBuyStreak,
-        score: RuleScores.institutionalBuyStreak,
+        score: score,
         description:
             '法人連續買超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
         evidence: {
@@ -94,6 +101,7 @@ class InstitutionalBuyStreakRule extends StockRule {
           'trustNet': totalTrustNet,
           'totalNet': totalNet,
           'dailyAvg': dailyAvg.round(),
+          'trustDominant': isTrustDominant,
         },
       );
     }
@@ -185,9 +193,16 @@ class InstitutionalSellStreakRule extends StockRule {
       final foreignSheets = (totalForeignNet.abs() / 1000).round();
       final trustSheets = (totalTrustNet.abs() / 1000).round();
 
+      // 投信主導賣超更負面：投信為主動型法人，賣超更具意圖性
+      final isTrustDominant =
+          totalTrustNet < 0 && totalTrustNet.abs() > totalForeignNet.abs();
+      final score = isTrustDominant
+          ? RuleScores.institutionalSellStreak - 5
+          : RuleScores.institutionalSellStreak;
+
       return TriggeredReason(
         type: ReasonType.institutionalSellStreak,
-        score: RuleScores.institutionalSellStreak,
+        score: score,
         description:
             '法人連續賣超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
         evidence: {
@@ -196,6 +211,7 @@ class InstitutionalSellStreakRule extends StockRule {
           'trustNet': totalTrustNet,
           'totalNet': totalNet,
           'dailyAvg': dailyAvg.round(),
+          'trustDominant': isTrustDominant,
         },
       );
     }

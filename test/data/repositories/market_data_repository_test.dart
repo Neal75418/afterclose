@@ -1033,7 +1033,7 @@ void main() {
 
         final result = await repository.syncAllMarginTradingFromTwse();
 
-        expect(result, equals(0));
+        expect(result, equals(-1));
         verifyNever(() => mockTwseClient.getAllMarginTradingData());
       });
 

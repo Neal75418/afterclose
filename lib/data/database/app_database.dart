@@ -13,6 +13,9 @@ import 'package:afterclose/data/database/tables/news_tables.dart';
 import 'package:afterclose/data/database/tables/analysis_tables.dart';
 import 'package:afterclose/data/database/tables/user_tables.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.dart';
+import 'package:afterclose/data/database/tables/portfolio_tables.dart';
+import 'package:afterclose/data/database/tables/event_tables.dart';
+import 'package:afterclose/data/database/tables/market_index_tables.dart';
 
 part 'app_database.g.dart';
 
@@ -54,6 +57,15 @@ part 'app_database.g.dart';
     // 風險控管資料（Killer Features）
     TradingWarning,
     InsiderHolding,
+    // 自訂選股策略（Phase 2.2）
+    ScreeningStrategyTable,
+    // 投資組合（Phase 4.4）
+    PortfolioPosition,
+    PortfolioTransaction,
+    // 事件行事曆（Phase 4.3）
+    StockEvent,
+    // 大盤指數歷史（Phase 5.2）
+    MarketIndex,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -63,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -146,6 +158,130 @@ class AppDatabase extends _$AppDatabase {
           'CREATE INDEX IF NOT EXISTS idx_dividend_history_symbol ON dividend_history(symbol)',
         );
         // year index 不需要：PK (symbol, year) 已提供最佳查詢路徑
+      }
+
+      // v4 -> v5: 新增自訂選股策略表
+      if (from < 5) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS screening_strategy_table (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            conditions_json TEXT NOT NULL,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+            updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+      }
+
+      // v5 -> v6: 新增投資組合表 + 事件行事曆表
+      if (from < 6) {
+        // portfolio_position
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS portfolio_position (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL REFERENCES stock_master(symbol) ON DELETE CASCADE,
+            quantity REAL NOT NULL DEFAULT 0,
+            avg_cost REAL NOT NULL DEFAULT 0,
+            realized_pnl REAL NOT NULL DEFAULT 0,
+            total_dividend_received REAL NOT NULL DEFAULT 0,
+            note TEXT,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+            updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_portfolio_position_symbol ON portfolio_position(symbol)',
+        );
+
+        // portfolio_transaction
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS portfolio_transaction (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT NOT NULL REFERENCES stock_master(symbol) ON DELETE CASCADE,
+            tx_type TEXT NOT NULL,
+            date INTEGER NOT NULL,
+            quantity REAL NOT NULL,
+            price REAL NOT NULL,
+            fee REAL NOT NULL DEFAULT 0,
+            tax REAL NOT NULL DEFAULT 0,
+            note TEXT,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_portfolio_tx_symbol ON portfolio_transaction(symbol)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_portfolio_tx_date ON portfolio_transaction(date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_portfolio_tx_symbol_date ON portfolio_transaction(symbol, date)',
+        );
+
+        // stock_event
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS stock_event (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT,
+            event_type TEXT NOT NULL,
+            event_date INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT,
+            is_auto_generated INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_stock_event_date ON stock_event(event_date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_stock_event_symbol ON stock_event(symbol)',
+        );
+      }
+
+      // v6 -> v7: 新增大盤指數歷史表（v8 修正欄位型別）
+      if (from < 7) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS market_index (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            name TEXT NOT NULL,
+            close REAL NOT NULL,
+            change REAL NOT NULL,
+            change_percent REAL NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            UNIQUE (date, name)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_market_index_date ON market_index(date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_market_index_name ON market_index(name)',
+        );
+      }
+
+      // v7 -> v8: 修正 market_index 欄位型別（INTEGER→TEXT 以配合 storeDateTimeAsText）
+      if (from >= 7 && from < 8) {
+        await customStatement('DROP TABLE IF EXISTS market_index');
+        await customStatement('''
+          CREATE TABLE market_index (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            name TEXT NOT NULL,
+            close REAL NOT NULL,
+            change REAL NOT NULL,
+            change_percent REAL NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            UNIQUE (date, name)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_market_index_date ON market_index(date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_market_index_name ON market_index(name)',
+        );
       }
     },
     beforeOpen: (details) async {
@@ -1215,6 +1351,37 @@ class AppDatabase extends _$AppDatabase {
     }
 
     return triggered;
+  }
+
+  // ==========================================
+  // 自訂選股策略操作
+  // ==========================================
+
+  /// 取得所有已儲存的選股策略
+  Future<List<ScreeningStrategyEntry>> getAllScreeningStrategies() {
+    return (select(
+      screeningStrategyTable,
+    )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).get();
+  }
+
+  /// 新增選股策略，回傳自動產生的 ID
+  Future<int> insertScreeningStrategy(ScreeningStrategyTableCompanion entry) {
+    return into(screeningStrategyTable).insert(entry);
+  }
+
+  /// 更新選股策略
+  Future<void> updateScreeningStrategy(
+    int id,
+    ScreeningStrategyTableCompanion entry,
+  ) {
+    return (update(
+      screeningStrategyTable,
+    )..where((t) => t.id.equals(id))).write(entry);
+  }
+
+  /// 刪除選股策略
+  Future<void> deleteScreeningStrategy(int id) {
+    return (delete(screeningStrategyTable)..where((t) => t.id.equals(id))).go();
   }
 
   // ==========================================
@@ -2687,6 +2854,211 @@ class AppDatabase extends _$AppDatabase {
       'shortBalance': results.readNullable<double>('short_balance') ?? 0,
       'shortChange': results.readNullable<double>('short_change') ?? 0,
     };
+  }
+
+  // ==========================================
+  // 投資組合操作（Phase 4.4）
+  // ==========================================
+
+  /// 取得所有有持倉的 position
+  Future<List<PortfolioPositionEntry>> getPortfolioPositions() {
+    return (select(portfolioPosition)
+          ..where((t) => t.quantity.isBiggerThanValue(0))
+          ..orderBy([(t) => OrderingTerm.desc(t.updatedAt)]))
+        .get();
+  }
+
+  /// 取得所有 position（含已清倉）
+  Future<List<PortfolioPositionEntry>> getAllPortfolioPositions() {
+    return (select(
+      portfolioPosition,
+    )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).get();
+  }
+
+  /// 取得單一 position by symbol
+  Future<PortfolioPositionEntry?> getPortfolioPosition(String symbol) {
+    return (select(
+      portfolioPosition,
+    )..where((t) => t.symbol.equals(symbol))).getSingleOrNull();
+  }
+
+  /// 新增或更新 position
+  Future<void> upsertPortfolioPosition(PortfolioPositionCompanion entry) {
+    return into(portfolioPosition).insertOnConflictUpdate(entry);
+  }
+
+  /// 更新 position 的聚合欄位
+  Future<void> updatePortfolioPosition({
+    required int id,
+    required double quantity,
+    required double avgCost,
+    required double realizedPnl,
+    required double totalDividendReceived,
+  }) {
+    return (update(portfolioPosition)..where((t) => t.id.equals(id))).write(
+      PortfolioPositionCompanion(
+        quantity: Value(quantity),
+        avgCost: Value(avgCost),
+        realizedPnl: Value(realizedPnl),
+        totalDividendReceived: Value(totalDividendReceived),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  /// 刪除 position
+  Future<void> deletePortfolioPosition(int id) {
+    return (delete(portfolioPosition)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// 新增交易紀錄
+  Future<int> insertTransaction(PortfolioTransactionCompanion entry) {
+    return into(portfolioTransaction).insert(entry);
+  }
+
+  /// 取得某 symbol 的所有交易紀錄（依日期排序）
+  Future<List<PortfolioTransactionEntry>> getTransactionsForSymbol(
+    String symbol,
+  ) {
+    return (select(portfolioTransaction)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([
+            (t) => OrderingTerm.asc(t.date),
+            (t) => OrderingTerm.asc(t.createdAt),
+          ]))
+        .get();
+  }
+
+  /// 刪除交易紀錄
+  Future<void> deleteTransaction(int id) {
+    return (delete(portfolioTransaction)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// 取得某 symbol 的所有 BUY 交易（用於 FIFO 計算）
+  Future<List<PortfolioTransactionEntry>> getBuyTransactions(String symbol) {
+    return (select(portfolioTransaction)
+          ..where((t) => t.symbol.equals(symbol) & t.txType.equals('BUY'))
+          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+        .get();
+  }
+
+  // ==========================================
+  // 事件行事曆操作（Phase 4.3）
+  // ==========================================
+
+  /// 取得日期範圍內的事件
+  Future<List<StockEventEntry>> getEventsInRange(
+    DateTime start,
+    DateTime end, {
+    List<String>? symbols,
+  }) {
+    final query = select(stockEvent)
+      ..where(
+        (t) =>
+            t.eventDate.isBiggerOrEqualValue(start) &
+            t.eventDate.isSmallerOrEqualValue(end),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.eventDate)]);
+
+    if (symbols != null && symbols.isNotEmpty) {
+      query.where((t) => t.symbol.isIn(symbols) | t.symbol.isNull());
+    }
+
+    return query.get();
+  }
+
+  /// 新增事件
+  Future<int> insertStockEvent(StockEventCompanion entry) {
+    return into(stockEvent).insert(entry);
+  }
+
+  /// 刪除事件
+  Future<void> deleteStockEvent(int id) {
+    return (delete(stockEvent)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// 刪除系統自動產生的事件（用於重新同步）
+  Future<void> deleteAutoGeneratedEvents() {
+    return (delete(
+      stockEvent,
+    )..where((t) => t.isAutoGenerated.equals(true))).go();
+  }
+
+  /// 取得指定 symbol 的所有事件
+  Future<List<StockEventEntry>> getEventsForSymbol(String symbol) {
+    return (select(stockEvent)
+          ..where((t) => t.symbol.equals(symbol))
+          ..orderBy([(t) => OrderingTerm.asc(t.eventDate)]))
+        .get();
+  }
+
+  // ==========================================
+  // 大盤指數歷史操作
+  // ==========================================
+
+  /// 批次寫入大盤指數資料（upsert on conflict (date, name)）
+  Future<void> upsertMarketIndices(List<MarketIndexCompanion> entries) async {
+    await batch((b) {
+      for (final entry in entries) {
+        b.insert(
+          marketIndex,
+          entry,
+          onConflict: DoUpdate(
+            (_) => entry,
+            target: [marketIndex.date, marketIndex.name],
+          ),
+        );
+      }
+    });
+  }
+
+  /// 取得指定指數名稱的近 N 日歷史
+  Future<List<MarketIndexEntry>> getIndexHistory(
+    String indexName, {
+    int days = 30,
+  }) {
+    final cutoff = DateTime.now().subtract(Duration(days: days + 10));
+    return (select(marketIndex)
+          ..where(
+            (t) => t.name.equals(indexName) & t.date.isBiggerThanValue(cutoff),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.date)])
+          ..limit(days))
+        .get();
+  }
+
+  /// 取得多個指數的近 N 日歷史（批次）
+  Future<Map<String, List<MarketIndexEntry>>> getIndexHistoryBatch(
+    List<String> indexNames, {
+    int days = 30,
+  }) async {
+    final cutoff = DateTime.now().subtract(Duration(days: days + 10));
+    final rows =
+        await (select(marketIndex)
+              ..where(
+                (t) =>
+                    t.name.isIn(indexNames) & t.date.isBiggerThanValue(cutoff),
+              )
+              ..orderBy([(t) => OrderingTerm.asc(t.date)]))
+            .get();
+
+    final result = <String, List<MarketIndexEntry>>{};
+    for (final row in rows) {
+      result.putIfAbsent(row.name, () => []).add(row);
+    }
+    return result;
+  }
+
+  /// 取得最新的指數日期
+  Future<DateTime?> getLatestMarketIndexDate() async {
+    final result = await customSelect(
+      'SELECT MAX(date) as max_date FROM market_index',
+    ).getSingleOrNull();
+    if (result == null) return null;
+    final val = result.data['max_date'];
+    if (val == null) return null;
+    // storeDateTimeAsText: date 儲存為 ISO 8601 文字
+    return DateTime.tryParse(val.toString());
   }
 }
 

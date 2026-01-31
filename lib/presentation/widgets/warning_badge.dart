@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
@@ -8,18 +9,18 @@ import 'package:afterclose/core/theme/app_theme.dart';
 /// 優先級排序：處置 > 注意 > 高質押
 enum WarningBadgeType {
   /// 處置股票（最高優先級）- 紅色警示
-  disposal('處置', Icons.dangerous_rounded, AppTheme.errorColor),
+  disposal(Icons.dangerous_rounded, AppTheme.errorColor),
 
   /// 注意股票 - 橘色警示
-  attention('注意', Icons.warning_amber_rounded, AppTheme.tertiaryColor),
+  attention(Icons.warning_amber_rounded, AppTheme.tertiaryColor),
 
   /// 高質押比例 - 黃色警示
-  highPledge('質押', Icons.account_balance_rounded, Colors.amber);
+  highPledge(Icons.account_balance_rounded, Colors.amber);
 
-  const WarningBadgeType(this.label, this.icon, this.color);
+  const WarningBadgeType(this.icon, this.color);
 
-  /// 顯示標籤
-  final String label;
+  /// 顯示標籤（i18n）
+  String get label => 'warning.$name'.tr();
 
   /// 圖示
   final IconData icon;
@@ -154,7 +155,7 @@ class _WarningBadgeState extends State<WarningBadge> {
 
     // 無障礙標籤：為螢幕閱讀器提供語意資訊
     return Semantics(
-      label: '${widget.type.label}警示',
+      label: '${widget.type.label}${'warning.alertSuffix'.tr()}',
       hint: _getAccessibilityHint(widget.type),
       child: badge,
     );
@@ -163,9 +164,9 @@ class _WarningBadgeState extends State<WarningBadge> {
   /// 取得無障礙提示文字
   String _getAccessibilityHint(WarningBadgeType type) {
     return switch (type) {
-      WarningBadgeType.disposal => '此股票已被列入處置股票，交易受限',
-      WarningBadgeType.attention => '此股票已被列入注意股票',
-      WarningBadgeType.highPledge => '此股票董監質押比例偏高',
+      WarningBadgeType.disposal => 'warning.hintDisposal'.tr(),
+      WarningBadgeType.attention => 'warning.hintAttention'.tr(),
+      WarningBadgeType.highPledge => 'warning.hintHighPledge'.tr(),
     };
   }
 }

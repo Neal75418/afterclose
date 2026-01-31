@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -16,16 +17,16 @@ import 'package:afterclose/presentation/widgets/warning_badge.dart';
 
 /// Sort options for watchlist
 enum WatchlistSort {
-  addedDesc('加入時間（新→舊）'),
-  addedAsc('加入時間（舊→新）'),
-  scoreDesc('分數（高→低）'),
-  scoreAsc('分數（低→高）'),
-  priceChangeDesc('漲跌幅（高→低）'),
-  priceChangeAsc('漲跌幅（低→高）'),
-  nameAsc('名稱（A→Z）');
+  addedDesc,
+  addedAsc,
+  scoreDesc,
+  scoreAsc,
+  priceChangeDesc,
+  priceChangeAsc,
+  nameAsc;
 
-  const WatchlistSort(this.label);
-  final String label;
+  String get label =>
+      'watchlist.sort${name[0].toUpperCase()}${name.substring(1)}'.tr();
 }
 
 // ==================================================
@@ -34,34 +35,38 @@ enum WatchlistSort {
 
 /// Group options for watchlist
 enum WatchlistGroup {
-  none('不分組'),
-  status('依狀態'),
-  trend('依趨勢');
+  none,
+  status,
+  trend;
 
-  const WatchlistGroup(this.label);
-  final String label;
+  String get label =>
+      'watchlist.group${name[0].toUpperCase()}${name.substring(1)}'.tr();
 }
 
 /// Status category for grouping
 enum WatchlistStatus {
-  signal('🔥', '有訊號'),
-  volatile('👀', '波動中'),
-  quiet('😴', '平靜');
+  signal('🔥'),
+  volatile('👀'),
+  quiet('😴');
 
-  const WatchlistStatus(this.icon, this.label);
+  const WatchlistStatus(this.icon);
   final String icon;
-  final String label;
+
+  String get label =>
+      'watchlist.status${name[0].toUpperCase()}${name.substring(1)}'.tr();
 }
 
 /// Trend category for grouping
 enum WatchlistTrend {
-  up('📈', '上升趨勢'),
-  down('📉', '下降趨勢'),
-  sideways('➡️', '盤整');
+  up('📈'),
+  down('📉'),
+  sideways('➡️');
 
-  const WatchlistTrend(this.icon, this.label);
+  const WatchlistTrend(this.icon);
   final String icon;
-  final String label;
+
+  String get label =>
+      'watchlist.trend${name[0].toUpperCase()}${name.substring(1)}'.tr();
 }
 
 // ==================================================
@@ -73,6 +78,7 @@ enum WatchlistTrend {
 /// 使用快取策略：[filteredItems]、[groupedByStatus]、[groupedByTrend]
 /// 僅在建構時計算一次，避免每次 build 時重複計算。
 class WatchlistState {
+  static const _sentinel = Object();
   WatchlistState({
     this.items = const [],
     this.isLoading = false,
@@ -167,13 +173,14 @@ class WatchlistState {
   WatchlistState copyWith({
     List<WatchlistItemData>? items,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
     WatchlistSort? sort,
     WatchlistGroup? group,
     String? searchQuery,
   }) {
     final newItems = items ?? this.items;
     final newSearchQuery = searchQuery ?? this.searchQuery;
+    final newError = error == _sentinel ? this.error : error as String?;
 
     // 若 items 或 searchQuery 變更，需重新計算 filteredItems
     final needsRecompute =
@@ -184,7 +191,7 @@ class WatchlistState {
       return WatchlistState(
         items: newItems,
         isLoading: isLoading ?? this.isLoading,
-        error: error,
+        error: newError,
         sort: sort ?? this.sort,
         group: group ?? this.group,
         searchQuery: newSearchQuery,
@@ -195,7 +202,7 @@ class WatchlistState {
     return WatchlistState._internal(
       items: newItems,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: newError,
       sort: sort ?? this.sort,
       group: group ?? this.group,
       searchQuery: newSearchQuery,

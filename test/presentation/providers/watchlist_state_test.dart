@@ -239,7 +239,7 @@ void main() {
         );
       });
 
-      test('clears error when not specified and items change', () {
+      test('preserves error when not specified and items change', () {
         final original = WatchlistState(
           items: [createItem(symbol: '2330')],
           error: 'Previous error',
@@ -247,7 +247,7 @@ void main() {
 
         final updated = original.copyWith(items: [createItem(symbol: '2317')]);
 
-        expect(updated.error, isNull);
+        expect(updated.error, equals('Previous error'));
       });
 
       test('sets error when explicitly provided', () {

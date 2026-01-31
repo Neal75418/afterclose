@@ -41,13 +41,17 @@ class Week52HighRule extends StockRule {
     // 從「過去」的價格歷史計算 52 週高點（排除今日）
     // 避免前瞻偏差（每次新高都會觸發）
     double maxHigh = 0;
+    int validCount = 0;
     for (int i = 0; i < data.prices.length - 1; i++) {
       final p = data.prices[i];
-      final high = p.high ?? p.close ?? 0;
+      final high = p.high ?? p.close;
+      if (high == null || high <= 0) continue;
+      validCount++;
       if (high > maxHigh) maxHigh = high;
     }
 
-    if (maxHigh <= 0) return null;
+    // 需要足夠有效資料才有意義
+    if (maxHigh <= 0 || validCount < 20) return null;
 
     // 檢查當前收盤是否處於或接近 52 週高點（在門檻範圍內）
     final threshold = maxHigh * (1 - RuleParams.week52HighThreshold);
@@ -105,13 +109,19 @@ class Week52LowRule extends StockRule {
     // 從「過去」的價格歷史計算 52 週低點（排除今日）
     // 避免前瞻偏差
     double minLow = double.infinity;
+    int validCount = 0;
     for (int i = 0; i < data.prices.length - 1; i++) {
       final p = data.prices[i];
-      final low = p.low ?? p.close ?? double.infinity;
-      if (low > 0 && low < minLow) minLow = low;
+      final low = p.low ?? p.close;
+      if (low == null || low <= 0) continue;
+      validCount++;
+      if (low < minLow) minLow = low;
     }
 
-    if (minLow == double.infinity || minLow <= 0) return null;
+    // 需要足夠有效資料才有意義
+    if (minLow == double.infinity || minLow <= 0 || validCount < 20) {
+      return null;
+    }
 
     // 檢查當前收盤是否處於或接近 52 週低點（在門檻範圍內）
     final threshold = minLow * (1 + RuleParams.week52LowThreshold);

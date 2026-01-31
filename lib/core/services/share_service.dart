@@ -14,7 +14,11 @@ class ShareService {
     final file = File('${tempDir.path}/$filename');
     await file.writeAsString(csvContent);
 
-    await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')]);
+    try {
+      await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')]);
+    } finally {
+      if (file.existsSync()) file.deleteSync();
+    }
   }
 
   /// 分享 PNG 圖片
@@ -23,6 +27,10 @@ class ShareService {
     final file = File('${tempDir.path}/$filename');
     await file.writeAsBytes(imageBytes);
 
-    await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')]);
+    try {
+      await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')]);
+    } finally {
+      if (file.existsSync()) file.deleteSync();
+    }
   }
 }

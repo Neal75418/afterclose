@@ -1,8 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
 /// 單一篩選條件卡片
 class ConditionCard extends StatelessWidget {
@@ -73,10 +73,9 @@ class ConditionCard extends StatelessWidget {
         return '${'customScreening.operator.isFalse'.tr()} $fieldName';
       case ScreeningOperator.equals:
         if (c.field == ScreeningField.hasSignal && c.stringValue != null) {
-          final label = ReasonType.values
-              .where((r) => r.code == c.stringValue)
-              .firstOrNull
-              ?.label;
+          final label = c.stringValue != null
+              ? ReasonTags.translateReasonCode(c.stringValue!)
+              : c.stringValue;
           return '$fieldName = ${label ?? c.stringValue}';
         }
         return '$fieldName = ${_formatNum(c.value)}';

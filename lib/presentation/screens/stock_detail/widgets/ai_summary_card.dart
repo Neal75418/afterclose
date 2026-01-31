@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
@@ -178,8 +179,12 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
             ),
           ],
 
-          // 免責聲明
+          // 快捷操作按鈕
           const SizedBox(height: 12),
+          _buildActionButtons(theme),
+
+          // 免責聲明
+          const SizedBox(height: 8),
           Text(
             'summary.disclaimer'.tr(),
             style: theme.textTheme.labelSmall?.copyWith(
@@ -188,6 +193,25 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButtons(ThemeData theme) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _ActionChip(
+          icon: Icons.notifications_outlined,
+          label: 'summary.actionSetAlert'.tr(),
+          onTap: () => context.push('/alerts'),
+        ),
+        _ActionChip(
+          icon: Icons.compare_arrows,
+          label: 'summary.actionCompare'.tr(),
+          onTap: () => context.push('/compare', extra: [widget.symbol]),
+        ),
+      ],
     );
   }
 
@@ -236,6 +260,30 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ActionChip(
+      avatar: Icon(icon, size: 16),
+      label: Text(label, style: theme.textTheme.labelSmall),
+      onPressed: onTap,
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
     );
   }
 }

@@ -16,7 +16,7 @@ import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/widgets/market_overview_card.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
 import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
 
 /// 今日畫面 - 顯示每日推薦
@@ -128,23 +128,39 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             child: UpdateProgressBanner(progress: state.updateProgress!),
           ),
 
-        // 最後更新時間
-        if (state.lastUpdate != null)
+        // 最後更新時間 + 資料日期
+        if (state.lastUpdate != null || state.dataDate != null)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                S.todayLastUpdate(S.dateFormat(state.lastUpdate!)),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+              child: Text.rich(
+                TextSpan(
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  children: [
+                    if (state.lastUpdate != null)
+                      TextSpan(
+                        text: S.todayLastUpdate(
+                          S.dateFormat(state.lastUpdate!),
+                        ),
+                      ),
+                    if (state.lastUpdate != null && state.dataDate != null)
+                      const TextSpan(text: '  ·  '),
+                    if (state.dataDate != null)
+                      TextSpan(
+                        text: S.todayDataDate(_formatDataDate(state.dataDate!)),
+                      ),
+                  ],
                 ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
 
         // 大盤總覽卡片
         if (marketState.hasData || marketState.isLoading)
-          SliverToBoxAdapter(child: MarketOverviewCard(state: marketState)),
+          SliverToBoxAdapter(child: MarketDashboard(state: marketState)),
 
         // Top 10 區塊
         const SliverToBoxAdapter(
@@ -334,6 +350,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
         );
       }
+    }
+  }
+
+  String _formatDataDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final dataDay = DateTime(date.year, date.month, date.day);
+
+    if (dataDay == today) {
+      return S.todayDataToday;
+    } else if (dataDay == today.subtract(const Duration(days: 1))) {
+      return S.todayDataYesterday;
+    } else {
+      return '${date.month}/${date.day}';
     }
   }
 

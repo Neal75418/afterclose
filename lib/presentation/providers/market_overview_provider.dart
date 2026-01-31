@@ -6,6 +6,28 @@ import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
+// 重點指數常數
+// ==================================================
+
+/// TWSE API 回傳的指數全名（用於 DB 查詢與 UI 過濾）
+class MarketIndexNames {
+  MarketIndexNames._();
+
+  static const taiex = '發行量加權股價指數';
+  static const exFinance = '未含金融電子指數';
+  static const electronics = '電子工業類指數';
+  static const financeInsurance = '金融保險類指數';
+
+  /// Dashboard 顯示的 4 個重點指數
+  static const dashboardIndices = [
+    taiex,
+    exFinance,
+    electronics,
+    financeInsurance,
+  ];
+}
+
+// ==================================================
 // Market Overview State
 // ==================================================
 
@@ -58,6 +80,7 @@ class MarginTradingTotals {
 class MarketOverviewState {
   const MarketOverviewState({
     this.indices = const [],
+    this.indexHistory = const {},
     this.advanceDecline = const AdvanceDecline(),
     this.institutional = const InstitutionalTotals(),
     this.margin = const MarginTradingTotals(),
@@ -66,6 +89,9 @@ class MarketOverviewState {
   });
 
   final List<TwseMarketIndex> indices;
+
+  /// 指數名稱 → 近 30 日收盤值列表（供走勢圖使用）
+  final Map<String, List<double>> indexHistory;
   final AdvanceDecline advanceDecline;
   final InstitutionalTotals institutional;
   final MarginTradingTotals margin;
@@ -77,6 +103,7 @@ class MarketOverviewState {
 
   MarketOverviewState copyWith({
     List<TwseMarketIndex>? indices,
+    Map<String, List<double>>? indexHistory,
     AdvanceDecline? advanceDecline,
     InstitutionalTotals? institutional,
     MarginTradingTotals? margin,
@@ -85,6 +112,7 @@ class MarketOverviewState {
   }) {
     return MarketOverviewState(
       indices: indices ?? this.indices,
+      indexHistory: indexHistory ?? this.indexHistory,
       advanceDecline: advanceDecline ?? this.advanceDecline,
       institutional: institutional ?? this.institutional,
       margin: margin ?? this.margin,
@@ -122,6 +150,7 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
         _loadAdvanceDecline(dataDate), // [1] AdvanceDecline
         _loadInstitutionalTotals(dataDate), // [2] InstitutionalTotals
         _loadMarginTotals(dataDate), // [3] MarginTradingTotals
+        _loadIndexHistory(), // [4] Map<String, List<double>>
       ]);
 
       if (!mounted) return;
@@ -131,6 +160,7 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
         advanceDecline: results[1] as AdvanceDecline,
         institutional: results[2] as InstitutionalTotals,
         margin: results[3] as MarginTradingTotals,
+        indexHistory: results[4] as Map<String, List<double>>,
       );
     } catch (e) {
       // getLatestDataDate() 可能拋出例外
@@ -144,17 +174,32 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
   Future<List<TwseMarketIndex>> _loadIndices() async {
     try {
       final indices = await _twse.getMarketIndices();
-      // 過濾出重點指數
-      return indices.where((idx) {
-        final name = idx.name;
-        return name.contains('發行量加權') ||
-            name.contains('未含金融') ||
-            name.contains('電子類') ||
-            name.contains('金融保險');
-      }).toList();
+      // 精確名稱匹配，僅保留 Dashboard 需要的 4 個重點指數
+      final targetNames = MarketIndexNames.dashboardIndices.toSet();
+      return indices.where((idx) => targetNames.contains(idx.name)).toList();
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入大盤指數失敗: $e');
       return [];
+    }
+  }
+
+  /// 從 DB 載入近 30 日指數歷史（供走勢圖使用）
+  Future<Map<String, List<double>>> _loadIndexHistory() async {
+    try {
+      // 查詢 4 個重點指數的歷史
+      const indexNames = MarketIndexNames.dashboardIndices;
+
+      final historyMap = await _db.getIndexHistoryBatch(indexNames, days: 30);
+
+      // 轉換為 name → close 值列表
+      final result = <String, List<double>>{};
+      for (final entry in historyMap.entries) {
+        result[entry.key] = entry.value.map((e) => e.close).toList();
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入指數歷史失敗: $e');
+      return {};
     }
   }
 

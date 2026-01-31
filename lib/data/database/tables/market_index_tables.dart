@@ -31,6 +31,6 @@ class MarketIndex extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-        {date, name},
-      ];
+    {date, name},
+  ];
 }

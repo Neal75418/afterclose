@@ -8,11 +8,15 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:afterclose/core/services/share_service.dart';
+import 'package:afterclose/domain/services/export_service.dart';
+import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 
 /// Watchlist screen - shows user's selected stocks
 class WatchlistScreen extends ConsumerStatefulWidget {
@@ -22,9 +26,12 @@ class WatchlistScreen extends ConsumerStatefulWidget {
   ConsumerState<WatchlistScreen> createState() => _WatchlistScreenState();
 }
 
+enum _WatchlistTab { watchlist, portfolio }
+
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   final _searchController = TextEditingController();
   bool _isSearching = false;
+  _WatchlistTab _currentTab = _WatchlistTab.watchlist;
 
   @override
   void initState() {
@@ -90,6 +97,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   }
 
   void _toggleSearch() {
+    HapticFeedback.selectionClick();
     setState(() {
       _isSearching = !_isSearching;
       if (!_isSearching) {
@@ -99,10 +107,38 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     });
   }
 
+  Future<void> _exportCsv(bool isWatchlist) async {
+    const exportService = ExportService();
+    const shareService = ShareService();
+
+    try {
+      if (isWatchlist) {
+        final items = ref.read(watchlistProvider).filteredItems;
+        final csv = exportService.watchlistToCsv(items);
+        await shareService.shareCsv(csv, 'watchlist.csv');
+      } else {
+        final positions = ref.read(portfolioProvider).positions;
+        final csv = exportService.portfolioToCsv(positions);
+        await shareService.shareCsv(csv, 'portfolio.csv');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(watchlistProvider);
     final theme = Theme.of(context);
+    final isWatchlistTab = _currentTab == _WatchlistTab.watchlist;
 
     return Scaffold(
       appBar: AppBar(
@@ -120,138 +156,221 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               )
             : Text('watchlist.title'.tr()),
         actions: [
-          // Search toggle
+          // Calendar icon (both tabs)
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
+            icon: const Icon(Icons.calendar_month_outlined),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              context.push('/calendar');
+            },
+            tooltip: 'calendar.title'.tr(),
           ),
-          // Group menu
-          PopupMenuButton<WatchlistGroup>(
-            icon: const Icon(Icons.workspaces_outlined),
-            tooltip: 'watchlist.group'.tr(),
-            initialValue: state.group,
-            onSelected: (group) {
-              ref.read(watchlistProvider.notifier).setGroup(group);
-            },
-            itemBuilder: (context) {
-              return WatchlistGroup.values.map((group) {
-                return PopupMenuItem(
-                  value: group,
-                  child: Row(
-                    children: [
-                      if (state.group == group)
-                        const Icon(Icons.check, size: 18)
-                      else
-                        const SizedBox(width: 18),
-                      const SizedBox(width: 8),
-                      Text(group.label),
-                    ],
-                  ),
-                );
-              }).toList();
-            },
-          ),
-          // Sort menu
-          PopupMenuButton<WatchlistSort>(
-            icon: const Icon(Icons.sort),
-            tooltip: 'watchlist.sort'.tr(),
-            initialValue: state.sort,
-            onSelected: (sort) {
-              ref.read(watchlistProvider.notifier).setSort(sort);
-            },
-            itemBuilder: (context) {
-              return WatchlistSort.values.map((sort) {
-                return PopupMenuItem(
-                  value: sort,
-                  child: Row(
-                    children: [
-                      if (state.sort == sort)
-                        const Icon(Icons.check, size: 18)
-                      else
-                        const SizedBox(width: 18),
-                      const SizedBox(width: 8),
-                      Text(sort.label),
-                    ],
-                  ),
-                );
-              }).toList();
-            },
-          ),
-          // Add button
+          // Export button (both tabs)
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _showAddDialog,
-            tooltip: 'watchlist.add'.tr(),
+            icon: const Icon(Icons.file_download_outlined),
+            onPressed: () => _exportCsv(isWatchlistTab),
+            tooltip: isWatchlistTab
+                ? 'export.exportWatchlist'.tr()
+                : 'export.exportPortfolio'.tr(),
+          ),
+          if (isWatchlistTab) ...[
+            // Search toggle
+            IconButton(
+              icon: Icon(_isSearching ? Icons.close : Icons.search),
+              onPressed: _toggleSearch,
+              tooltip: _isSearching
+                  ? 'common.close'.tr()
+                  : 'common.search'.tr(),
+            ),
+            // Group menu
+            PopupMenuButton<WatchlistGroup>(
+              icon: const Icon(Icons.workspaces_outlined),
+              tooltip: 'watchlist.group'.tr(),
+              initialValue: state.group,
+              onSelected: (group) {
+                ref.read(watchlistProvider.notifier).setGroup(group);
+              },
+              itemBuilder: (context) {
+                return WatchlistGroup.values.map((group) {
+                  return PopupMenuItem(
+                    value: group,
+                    child: Row(
+                      children: [
+                        if (state.group == group)
+                          const Icon(Icons.check, size: 18)
+                        else
+                          const SizedBox(width: 18),
+                        const SizedBox(width: 8),
+                        Text(group.label),
+                      ],
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+            // Sort menu
+            PopupMenuButton<WatchlistSort>(
+              icon: const Icon(Icons.sort),
+              tooltip: 'watchlist.sort'.tr(),
+              initialValue: state.sort,
+              onSelected: (sort) {
+                ref.read(watchlistProvider.notifier).setSort(sort);
+              },
+              itemBuilder: (context) {
+                return WatchlistSort.values.map((sort) {
+                  return PopupMenuItem(
+                    value: sort,
+                    child: Row(
+                      children: [
+                        if (state.sort == sort)
+                          const Icon(Icons.check, size: 18)
+                        else
+                          const SizedBox(width: 18),
+                        const SizedBox(width: 8),
+                        Text(sort.label),
+                      ],
+                    ),
+                  );
+                }).toList();
+              },
+            ),
+            // Compare button
+            if (state.filteredItems.length >= 2)
+              IconButton(
+                icon: const Icon(Icons.compare_arrows),
+                onPressed: () {
+                  final symbols = state.filteredItems
+                      .take(4)
+                      .map((e) => e.symbol)
+                      .toList();
+                  context.push('/compare', extra: symbols);
+                },
+                tooltip: 'comparison.compare'.tr(),
+              ),
+            // Add button
+            IconButton(
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                _showAddDialog();
+              },
+              tooltip: 'watchlist.add'.tr(),
+            ),
+          ],
+        ],
+      ),
+      body: Column(
+        children: [
+          // SegmentedButton for tab switching
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: SegmentedButton<_WatchlistTab>(
+              segments: [
+                ButtonSegment(
+                  value: _WatchlistTab.watchlist,
+                  label: Text('watchlist.title'.tr()),
+                  icon: const Icon(Icons.star_outline, size: 18),
+                ),
+                ButtonSegment(
+                  value: _WatchlistTab.portfolio,
+                  label: Text('portfolio.title'.tr()),
+                  icon: const Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 18,
+                  ),
+                ),
+              ],
+              selected: {_currentTab},
+              onSelectionChanged: (selected) {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _currentTab = selected.first;
+                  if (_isSearching) {
+                    _isSearching = false;
+                    _searchController.clear();
+                    ref.read(watchlistProvider.notifier).setSearchQuery('');
+                  }
+                });
+              },
+            ),
+          ),
+          // Tab content
+          Expanded(
+            child: isWatchlistTab
+                ? _buildWatchlistBody(state, theme)
+                : const PortfolioTab(),
           ),
         ],
       ),
-      body: ThemedRefreshIndicator(
-        onRefresh: _onRefresh,
-        child: state.isLoading
-            ? const StockListShimmer(itemCount: 5)
-            : state.error != null
-            ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
-            : state.items.isEmpty
-            ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
-            : Column(
-                children: [
-                  // Stock count
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: [
-                        Text(
-                          'watchlist.stockCount'.tr(
-                            namedArgs: {
-                              'count': state.filteredItems.length.toString(),
-                            },
+    );
+  }
+
+  Widget _buildWatchlistBody(WatchlistState state, ThemeData theme) {
+    return ThemedRefreshIndicator(
+      onRefresh: _onRefresh,
+      child: state.isLoading
+          ? const StockListShimmer(itemCount: 5)
+          : state.error != null
+          ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
+          : state.items.isEmpty
+          ? EmptyStates.emptyWatchlist(onAdd: _showAddDialog)
+          : Column(
+              children: [
+                // Stock count
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'watchlist.stockCount'.tr(
+                          namedArgs: {
+                            'count': state.filteredItems.length.toString(),
+                          },
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (state.searchQuery.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
                           ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'watchlist.searching'.tr(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
                           ),
                         ),
-                        if (state.searchQuery.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'watchlist.searching'.tr(),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSecondaryContainer,
-                              ),
+                      ],
+                    ],
+                  ),
+                ),
+                // Stock list
+                Expanded(
+                  child: state.filteredItems.isEmpty
+                      ? Center(
+                          child: Text(
+                            'watchlist.noMatching'.tr(),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  // Stock list
-                  Expanded(
-                    child: state.filteredItems.isEmpty
-                        ? Center(
-                            child: Text(
-                              'watchlist.noMatching'.tr(),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          )
-                        : _buildListContent(state),
-                  ),
-                ],
-              ),
-      ),
+                        )
+                      : _buildListContent(state),
+                ),
+              ],
+            ),
     );
   }
 
@@ -490,9 +609,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           },
         );
       },
-    );
-    // Note: controller is a local variable and will be garbage collected
-    // when the dialog is dismissed. No manual dispose needed.
+    ).then((_) => controller.dispose());
   }
 }
 

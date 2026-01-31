@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,11 @@ import 'package:afterclose/presentation/screens/comparison/widgets/comparison_ta
 import 'package:afterclose/presentation/screens/comparison/widgets/price_overlay_chart.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/radar_comparison_chart.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/stock_picker_sheet.dart';
+import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
+import 'package:afterclose/presentation/widgets/shareable/shareable_comparison_card.dart';
+import 'package:afterclose/core/utils/widget_capture.dart';
+import 'package:afterclose/core/services/share_service.dart';
+import 'package:afterclose/domain/services/export_service.dart';
 
 /// Main comparison screen that shows side-by-side stock analysis.
 class ComparisonScreen extends ConsumerStatefulWidget {
@@ -52,6 +59,58 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
     }
   }
 
+  Future<void> _showShareOptions(ComparisonState state) async {
+    final format = await ShareOptionsSheet.show(context);
+    if (format == null || !mounted) return;
+
+    const shareService = ShareService();
+    const exportService = ExportService();
+
+    try {
+      if (format == ShareFormat.png) {
+        final imageBytes = await _captureComparisonCard(state);
+        if (imageBytes != null) {
+          await shareService.shareImage(imageBytes, 'comparison.png');
+        }
+      } else {
+        final csv = exportService.comparisonToCsv(state);
+        await shareService.shareCsv(csv, 'comparison.csv');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<Uint8List?> _captureComparisonCard(ComparisonState state) async {
+    final key = GlobalKey();
+    final overlay = Overlay.of(context);
+    final entry = OverlayEntry(
+      builder: (context) => Positioned(
+        left: -1000,
+        top: -1000,
+        child: RepaintBoundary(
+          key: key,
+          child: Material(child: ShareableComparisonCard(state: state)),
+        ),
+      ),
+    );
+    overlay.insert(entry);
+    try {
+      await WidgetsBinding.instance.endOfFrame;
+      return await const WidgetCapture().captureFromKey(key);
+    } finally {
+      entry.remove();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(comparisonProvider);
@@ -61,6 +120,12 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
       appBar: AppBar(
         title: Text('comparison.title'.tr()),
         actions: [
+          if (state.hasEnoughToCompare)
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              onPressed: () => _showShareOptions(state),
+              tooltip: 'export.title'.tr(),
+            ),
           if (state.canAddMore)
             IconButton(
               icon: const Icon(Icons.add),

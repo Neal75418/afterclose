@@ -22,6 +22,9 @@ void main() async {
   // Load FinMind API token from secure storage
   await _initializeFinMindToken(container);
 
+  // Check if onboarding has been completed
+  await initOnboardingStatus();
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('zh', 'TW'), Locale('en')],

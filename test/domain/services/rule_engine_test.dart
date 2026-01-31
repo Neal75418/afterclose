@@ -383,7 +383,7 @@ void main() {
       test('should trigger when price moves 7%+ with volume confirmation', () {
         // v0.1.3: 需要 21 天資料計算均量，且成交量需達 1.5 倍
         final now = DateTime.now();
-        final baseVolume = 1000.0;
+        const baseVolume = 1000.0;
         final prices = List.generate(21, (i) {
           if (i < 20) {
             // 前 20 天：平穩價格，正常成交量

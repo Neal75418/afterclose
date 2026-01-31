@@ -88,7 +88,9 @@ class PositionDetailScreen extends ConsumerWidget {
             children: [
               _InfoTile(
                 label: 'portfolio.quantity'.tr(),
-                value: '${pos.quantity.toStringAsFixed(0)} 股',
+                value: 'portfolio.sharesDisplay'.tr(
+                  namedArgs: {'count': pos.quantity.toStringAsFixed(0)},
+                ),
                 theme: theme,
               ),
               _InfoTile(

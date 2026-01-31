@@ -195,9 +195,9 @@ class RuleEngine {
     // - 空方訊號（跌破、強轉弱、空頭排列）為負分
     // 當多空訊號並存時，分數會自動降低
 
-    // 4. 冷卻期懲罰
+    // 4. 冷卻期懲罰：固定扣分而非乘數，避免高分股被不公平腰斬
     if (wasRecentlyRecommended) {
-      score *= 0.5; // 近期已推薦則分數減半
+      score -= RuleParams.cooldownPenalty;
     }
 
     // 5. 分數範圍限制

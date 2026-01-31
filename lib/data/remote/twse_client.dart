@@ -757,7 +757,7 @@ class TwseClient {
     try {
       final response = await _dio.get(
         ApiEndpoints.twseMarketIndex,
-        queryParameters: {'response': 'json'},
+        queryParameters: {'response': 'json', 'type': 'IND'},
       );
 
       if (response.statusCode == 200) {
@@ -777,7 +777,7 @@ class TwseClient {
         }
 
         if (data['stat'] != 'OK') {
-          AppLogger.warning('TWSE', '大盤指數: 無資料 (stat=${data['stat']})');
+          AppLogger.warning('TWSE', '大盤指數: stat=${data['stat']}，可能為非交易日或盤中');
           return [];
         }
 
@@ -801,18 +801,39 @@ class TwseClient {
           }
         } else {
           // 新格式：遍歷所有 tables
-          for (final table in tables) {
-            final rows =
-                (table as Map<String, dynamic>)['data'] as List<dynamic>?;
-            if (rows == null) continue;
+          for (var ti = 0; ti < tables.length; ti++) {
+            final table = tables[ti] as Map<String, dynamic>;
+            final title = table['title']?.toString() ?? '';
+            final rows = table['data'] as List<dynamic>?;
+            if (rows == null || rows.isEmpty) continue;
+            var parsedInTable = 0;
             for (final row in rows) {
               final parsed = _parseMarketIndexRow(row as List<dynamic>, date);
-              if (parsed != null) results.add(parsed);
+              if (parsed != null) {
+                results.add(parsed);
+                parsedInTable++;
+              }
+            }
+            if (parsedInTable == 0) {
+              // 記錄第一筆資料以利診斷格式問題
+              final sample = rows.first;
+              AppLogger.debug(
+                'TWSE',
+                '大盤指數 table[$ti] "$title": ${rows.length} 行全部跳過，'
+                    '樣本=${sample is List ? sample.take(3).toList() : sample}',
+              );
             }
           }
         }
 
-        AppLogger.info('TWSE', '大盤指數: ${results.length} 筆');
+        if (results.isEmpty) {
+          AppLogger.warning(
+            'TWSE',
+            '大盤指數: 解析後 0 筆 (tables=${tables?.length ?? 0})',
+          );
+        } else {
+          AppLogger.debug('TWSE', '大盤指數 API 原始: ${results.length} 筆');
+        }
         return results;
       }
 
@@ -832,6 +853,9 @@ class TwseClient {
   /// 解析大盤指數資料列
   ///
   /// 列格式: [指數名稱, 收盤指數, 漲跌(+/-), 漲跌點數, 漲跌百分比(%), 特殊處理欄位]
+  ///
+  /// 注意：TWSE API 的 row[3]（漲跌點數）和 row[4]（漲跌百分比）為絕對值，
+  /// 漲跌方向由 row[2] 的符號（`+` 或 `-`）決定。
   TwseMarketIndex? _parseMarketIndexRow(List<dynamic> row, DateTime date) {
     try {
       if (row.length < 5) return null;
@@ -842,15 +866,29 @@ class TwseClient {
       final close = _parseFormattedDouble(row[1]);
       if (close == null) return null; // 沒有收盤值的跳過
 
-      final change = _parseFormattedDouble(row[3]);
-      final changePercent = _parseFormattedDouble(row[4]);
+      // row[2] 為漲跌方向符號：「+」或「-」或「X」/空值
+      final dirSign = row[2]?.toString().trim() ?? '';
+      final rawChange = _parseFormattedDouble(row[3]) ?? 0;
+      final rawChangePercent = _parseFormattedDouble(row[4]) ?? 0;
+
+      // 根據方向符號套用正負號；無明確符號時保留原值（通常為 0）
+      final change = dirSign.contains('-')
+          ? -rawChange.abs()
+          : dirSign.contains('+')
+          ? rawChange.abs()
+          : rawChange;
+      final changePercent = dirSign.contains('-')
+          ? -rawChangePercent.abs()
+          : dirSign.contains('+')
+          ? rawChangePercent.abs()
+          : rawChangePercent;
 
       return TwseMarketIndex(
         date: date,
         name: name,
         close: close,
-        change: change ?? 0,
-        changePercent: changePercent ?? 0,
+        change: change,
+        changePercent: changePercent,
       );
     } catch (_) {
       return null;

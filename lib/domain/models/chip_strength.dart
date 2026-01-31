@@ -24,12 +24,14 @@ class ChipStrengthResult {
 }
 
 /// Chip strength rating levels.
+///
+/// 基底分為 0，評級邊界配合 0-based 分佈調整。
 enum ChipRating {
-  strong, // 80-100
-  bullish, // 60-79
-  neutral, // 40-59
-  bearish, // 20-39
-  weak; // 0-19
+  strong, // 70-100
+  bullish, // 50-69
+  neutral, // 25-49
+  bearish, // 10-24
+  weak; // 0-9
 
   String get i18nKey => switch (this) {
     ChipRating.strong => 'chip.ratingStrong',
@@ -40,10 +42,10 @@ enum ChipRating {
   };
 
   static ChipRating fromScore(int score) {
-    if (score >= 80) return ChipRating.strong;
-    if (score >= 60) return ChipRating.bullish;
-    if (score >= 40) return ChipRating.neutral;
-    if (score >= 20) return ChipRating.bearish;
+    if (score >= 70) return ChipRating.strong;
+    if (score >= 50) return ChipRating.bullish;
+    if (score >= 25) return ChipRating.neutral;
+    if (score >= 10) return ChipRating.bearish;
     return ChipRating.weak;
   }
 }

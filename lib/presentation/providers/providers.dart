@@ -17,6 +17,8 @@ import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
+import 'package:afterclose/data/repositories/event_repository.dart';
+import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
@@ -136,11 +138,11 @@ final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
 });
 
 /// 警示資料儲存庫 Provider（Killer Features：注意股票/處置股票）
-/// 注意：TWSE 警示 API 已無法使用，目前僅支援 TPEX 上櫃警示資料
 final warningRepositoryProvider = Provider<WarningRepository>((ref) {
   return WarningRepository(
     database: ref.watch(databaseProvider),
     tpexClient: ref.watch(tpexClientProvider),
+    twseClient: ref.watch(twseClientProvider),
   );
 });
 
@@ -150,6 +152,16 @@ final insiderRepositoryProvider = Provider<InsiderRepository>((ref) {
     database: ref.watch(databaseProvider),
     tpexClient: ref.watch(tpexClientProvider),
   );
+});
+
+/// 投資組合儲存庫 Provider（Phase 4.4）
+final portfolioRepositoryProvider = Provider<PortfolioRepository>((ref) {
+  return PortfolioRepository(database: ref.watch(databaseProvider));
+});
+
+/// 事件日曆儲存庫 Provider（Phase 4.3）
+final eventRepositoryProvider = Provider<EventRepository>((ref) {
+  return EventRepository(database: ref.watch(databaseProvider));
 });
 
 // ==================================================
@@ -177,5 +189,6 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     institutionalRepository: ref.watch(institutionalRepositoryProvider),
     marketDataRepository: ref.watch(marketDataRepositoryProvider),
     fundamentalRepository: ref.watch(fundamentalRepositoryProvider),
+    twseClient: ref.watch(twseClientProvider),
   );
 });

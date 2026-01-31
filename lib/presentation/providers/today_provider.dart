@@ -22,6 +22,7 @@ const _updateTimeout = Duration(minutes: 60);
 
 /// 今日推薦與市場總覽的 State
 class TodayState {
+  static const _sentinel = Object();
   const TodayState({
     this.recommendations = const [],
     this.lastUpdate,
@@ -48,8 +49,8 @@ class TodayState {
     DateTime? dataDate,
     bool? isLoading,
     bool? isUpdating,
-    UpdateProgress? updateProgress,
-    String? error,
+    Object? updateProgress = _sentinel,
+    Object? error = _sentinel,
   }) {
     return TodayState(
       recommendations: recommendations ?? this.recommendations,
@@ -57,8 +58,10 @@ class TodayState {
       dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
       isUpdating: isUpdating ?? this.isUpdating,
-      updateProgress: updateProgress,
-      error: error,
+      updateProgress: updateProgress == _sentinel
+          ? this.updateProgress
+          : updateProgress as UpdateProgress?,
+      error: error == _sentinel ? this.error : error as String?,
     );
   }
 }

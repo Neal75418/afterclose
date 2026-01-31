@@ -37,6 +37,7 @@ class MarginCompactRow extends StatelessWidget {
               child: _MarginItem(
                 label: 'marketOverview.marginBalance'.tr(),
                 change: data.marginChange,
+                balance: data.marginBalance,
               ),
             ),
             const SizedBox(width: 12),
@@ -44,6 +45,7 @@ class MarginCompactRow extends StatelessWidget {
               child: _MarginItem(
                 label: 'marketOverview.shortBalance'.tr(),
                 change: data.shortChange,
+                balance: data.shortBalance,
               ),
             ),
           ],
@@ -54,10 +56,15 @@ class MarginCompactRow extends StatelessWidget {
 }
 
 class _MarginItem extends StatelessWidget {
-  const _MarginItem({required this.label, required this.change});
+  const _MarginItem({
+    required this.label,
+    required this.change,
+    required this.balance,
+  });
 
   final String label;
   final double change;
+  final double balance;
 
   @override
   Widget build(BuildContext context) {
@@ -72,8 +79,6 @@ class _MarginItem extends StatelessWidget {
         : change < 0
         ? Icons.arrow_downward_rounded
         : Icons.remove;
-    final sign = change > 0 ? '+' : '';
-    final formatter = NumberFormat('#,##0');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -83,8 +88,16 @@ class _MarginItem extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 14, color: color),
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,18 +110,57 @@ class _MarginItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '$sign${formatter.format(change)} 張',
+                  _formatSheets(change),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w700,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
+                if (balance != 0) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    '${'marketOverview.balance'.tr()} ${_formatBalance(balance)}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
+                      fontSize: 10,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// 格式化增減張數，大數字用「萬張」
+  String _formatSheets(double value) {
+    final absVal = value.abs();
+    final sign = value > 0
+        ? '+'
+        : value < 0
+        ? '-'
+        : '';
+
+    if (absVal >= 10000) {
+      return '$sign${(absVal / 10000).toStringAsFixed(1)} 萬張';
+    }
+    return '$sign${NumberFormat('#,##0').format(absVal)} 張';
+  }
+
+  /// 格式化餘額（萬張/億張）
+  String _formatBalance(double value) {
+    final absVal = value.abs();
+    if (absVal >= 1e8) {
+      return '${(absVal / 1e8).toStringAsFixed(1)} 億張';
+    } else if (absVal >= 10000) {
+      return '${(absVal / 10000).toStringAsFixed(1)} 萬張';
+    }
+    return '${NumberFormat('#,##0').format(absVal)} 張';
   }
 }

@@ -15,6 +15,7 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // ==================================================
 
 class ComparisonState {
+  static const _sentinel = Object();
   const ComparisonState({
     this.symbols = const [],
     this.stocksMap = const {},
@@ -62,7 +63,7 @@ class ComparisonState {
     Map<String, List<MonthlyRevenueEntry>>? revenueMap,
     Map<String, StockSummary>? summariesMap,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return ComparisonState(
       symbols: symbols ?? this.symbols,
@@ -77,7 +78,7 @@ class ComparisonState {
       revenueMap: revenueMap ?? this.revenueMap,
       summariesMap: summariesMap ?? this.summariesMap,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error == _sentinel ? this.error : error as String?,
     );
   }
 }

@@ -268,11 +268,11 @@ class FundamentalRepository {
         // 若該月已有 >1000 筆資料則跳過
         // （全市場通常有 ~1800+ 檔股票）
         if (existingCount > 1000) {
-          AppLogger.info(
+          AppLogger.debug(
             'FundamentalRepo',
-            '$dataYear/$dataMonth 營收資料已存在 ($existingCount 筆)，跳過同步',
+            '$dataYear/$dataMonth 營收資料已快取 ($existingCount 筆)，跳過同步',
           );
-          return -1; // 訊號：已跳過
+          return -1;
         }
       }
 

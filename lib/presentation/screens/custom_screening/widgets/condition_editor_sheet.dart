@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
 /// 新增/編輯篩選條件的 Bottom Sheet
 ///
@@ -299,7 +300,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
           final selected = _selectedSignalCode == reason.code;
           return ListTile(
             dense: true,
-            title: Text(reason.label),
+            title: Text(ReasonTags.translateReasonCode(reason.code)),
             trailing: selected
                 ? Icon(Icons.check, color: theme.colorScheme.primary)
                 : null,

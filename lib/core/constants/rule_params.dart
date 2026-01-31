@@ -151,8 +151,8 @@ abstract final class RuleParams {
   /// 重複推薦冷卻天數
   static const int cooldownDays = 2;
 
-  /// 冷卻分數倍數
-  static const double cooldownMultiplier = 0.7;
+  /// 冷卻期固定扣分（取代乘數，避免高分股被腰斬）
+  static const double cooldownPenalty = 15;
 
   /// 每檔股票最多理由數（資料庫儲存用，供篩選功能使用）
   /// 設為 50 確保所有規則都能被儲存（目前共 51 條規則）
@@ -859,81 +859,80 @@ abstract final class RuleScores {
 
 /// 推薦理由類型
 enum ReasonType {
-  reversalW2S('REVERSAL_W2S', '弱轉強'),
-  reversalS2W('REVERSAL_S2W', '強轉弱'),
-  techBreakout('TECH_BREAKOUT', '技術突破'),
-  techBreakdown('TECH_BREAKDOWN', '技術跌破'),
-  volumeSpike('VOLUME_SPIKE', '放量異常'),
-  priceSpike('PRICE_SPIKE', '價格異常'),
-  institutionalBuy('INSTITUTIONAL_BUY', '法人買超'),
-  institutionalSell('INSTITUTIONAL_SELL', '法人賣超'),
-  newsRelated('NEWS_RELATED', '新聞關聯'),
+  reversalW2S('REVERSAL_W2S'),
+  reversalS2W('REVERSAL_S2W'),
+  techBreakout('TECH_BREAKOUT'),
+  techBreakdown('TECH_BREAKDOWN'),
+  volumeSpike('VOLUME_SPIKE'),
+  priceSpike('PRICE_SPIKE'),
+  institutionalBuy('INSTITUTIONAL_BUY'),
+  institutionalSell('INSTITUTIONAL_SELL'),
+  newsRelated('NEWS_RELATED'),
   // 技術指標訊號
-  kdGoldenCross('KD_GOLDEN_CROSS', 'KD黃金交叉'),
-  kdDeathCross('KD_DEATH_CROSS', 'KD死亡交叉'),
-  institutionalBuyStreak('INSTITUTIONAL_BUY_STREAK', '法人連買'),
-  institutionalSellStreak('INSTITUTIONAL_SELL_STREAK', '法人連賣'),
+  kdGoldenCross('KD_GOLDEN_CROSS'),
+  kdDeathCross('KD_DEATH_CROSS'),
+  institutionalBuyStreak('INSTITUTIONAL_BUY_STREAK'),
+  institutionalSellStreak('INSTITUTIONAL_SELL_STREAK'),
   // K 線型態訊號
-  patternDoji('PATTERN_DOJI', '十字線'),
-  patternBullishEngulfing('PATTERN_BULLISH_ENGULFING', '多頭吞噬'),
-  patternBearishEngulfing('PATTERN_BEARISH_ENGULFING', '空頭吞噬'),
-  patternHammer('PATTERN_HAMMER', '錘子線'),
-  patternHangingMan('PATTERN_HANGING_MAN', '吊人線'),
-  patternGapUp('PATTERN_GAP_UP', '跳空上漲'),
-  patternGapDown('PATTERN_GAP_DOWN', '跳空下跌'),
-  patternMorningStar('PATTERN_MORNING_STAR', '晨星'),
-  patternEveningStar('PATTERN_EVENING_STAR', '暮星'),
-  patternThreeWhiteSoldiers('PATTERN_THREE_WHITE_SOLDIERS', '三白兵'),
-  patternThreeBlackCrows('PATTERN_THREE_BLACK_CROWS', '三黑鴉'),
+  patternDoji('PATTERN_DOJI'),
+  patternBullishEngulfing('PATTERN_BULLISH_ENGULFING'),
+  patternBearishEngulfing('PATTERN_BEARISH_ENGULFING'),
+  patternHammer('PATTERN_HAMMER'),
+  patternHangingMan('PATTERN_HANGING_MAN'),
+  patternGapUp('PATTERN_GAP_UP'),
+  patternGapDown('PATTERN_GAP_DOWN'),
+  patternMorningStar('PATTERN_MORNING_STAR'),
+  patternEveningStar('PATTERN_EVENING_STAR'),
+  patternThreeWhiteSoldiers('PATTERN_THREE_WHITE_SOLDIERS'),
+  patternThreeBlackCrows('PATTERN_THREE_BLACK_CROWS'),
   // 第三階段：掃描/提醒訊號
-  week52High('WEEK_52_HIGH', '52週新高'),
-  week52Low('WEEK_52_LOW', '52週新低'),
-  maAlignmentBullish('MA_ALIGNMENT_BULLISH', '多頭排列'),
-  maAlignmentBearish('MA_ALIGNMENT_BEARISH', '空頭排列'),
-  rsiExtremeOverbought('RSI_EXTREME_OVERBOUGHT', 'RSI極度超買'),
-  rsiExtremeOversold('RSI_EXTREME_OVERSOLD', 'RSI極度超賣'),
+  week52High('WEEK_52_HIGH'),
+  week52Low('WEEK_52_LOW'),
+  maAlignmentBullish('MA_ALIGNMENT_BULLISH'),
+  maAlignmentBearish('MA_ALIGNMENT_BEARISH'),
+  rsiExtremeOverbought('RSI_EXTREME_OVERBOUGHT'),
+  rsiExtremeOversold('RSI_EXTREME_OVERSOLD'),
   // 第四階段：延伸市場資料訊號
-  foreignShareholdingIncreasing('FOREIGN_SHAREHOLDING_INCREASING', '外資持股增加'),
-  foreignShareholdingDecreasing('FOREIGN_SHAREHOLDING_DECREASING', '外資持股減少'),
-  dayTradingHigh('DAY_TRADING_HIGH', '高當沖比例'),
-  dayTradingExtreme('DAY_TRADING_EXTREME', '極高當沖比例'),
-  concentrationHigh('CONCENTRATION_HIGH', '籌碼集中'),
+  foreignShareholdingIncreasing('FOREIGN_SHAREHOLDING_INCREASING'),
+  foreignShareholdingDecreasing('FOREIGN_SHAREHOLDING_DECREASING'),
+  dayTradingHigh('DAY_TRADING_HIGH'),
+  dayTradingExtreme('DAY_TRADING_EXTREME'),
+  concentrationHigh('CONCENTRATION_HIGH'),
   // 第五階段：價量背離訊號
-  priceVolumeBullishDivergence('PRICE_VOLUME_BULLISH_DIVERGENCE', '價漲量縮'),
-  priceVolumeBearishDivergence('PRICE_VOLUME_BEARISH_DIVERGENCE', '價跌量增'),
-  highVolumeBreakout('HIGH_VOLUME_BREAKOUT', '高檔爆量'),
-  lowVolumeAccumulation('LOW_VOLUME_ACCUMULATION', '低檔吸籌'),
+  priceVolumeBullishDivergence('PRICE_VOLUME_BULLISH_DIVERGENCE'),
+  priceVolumeBearishDivergence('PRICE_VOLUME_BEARISH_DIVERGENCE'),
+  highVolumeBreakout('HIGH_VOLUME_BREAKOUT'),
+  lowVolumeAccumulation('LOW_VOLUME_ACCUMULATION'),
   // 第六階段：基本面分析訊號
-  revenueYoySurge('REVENUE_YOY_SURGE', '營收年增暴增'),
-  revenueYoyDecline('REVENUE_YOY_DECLINE', '營收年減衰退'),
-  revenueMomGrowth('REVENUE_MOM_GROWTH', '營收月增持續'),
-  highDividendYield('HIGH_DIVIDEND_YIELD', '高殖利率'),
-  peUndervalued('PE_UNDERVALUED', 'PE低估'),
-  peOvervalued('PE_OVERVALUED', 'PE高估'),
-  pbrUndervalued('PBR_UNDERVALUED', '股價淨值比低'),
+  revenueYoySurge('REVENUE_YOY_SURGE'),
+  revenueYoyDecline('REVENUE_YOY_DECLINE'),
+  revenueMomGrowth('REVENUE_MOM_GROWTH'),
+  highDividendYield('HIGH_DIVIDEND_YIELD'),
+  peUndervalued('PE_UNDERVALUED'),
+  peOvervalued('PE_OVERVALUED'),
+  pbrUndervalued('PBR_UNDERVALUED'),
   // Killer Features 訊號
-  tradingWarningAttention('TRADING_WARNING_ATTENTION', '注意股票'),
-  tradingWarningDisposal('TRADING_WARNING_DISPOSAL', '處置股票'),
-  insiderSellingStreak('INSIDER_SELLING_STREAK', '董監連續減持'),
-  insiderSignificantBuying('INSIDER_SIGNIFICANT_BUYING', '董監大量增持'),
-  highPledgeRatio('HIGH_PLEDGE_RATIO', '高質押比例'),
-  foreignConcentrationWarning('FOREIGN_CONCENTRATION_WARNING', '外資高度集中'),
-  foreignExodus('FOREIGN_EXODUS', '外資加速流出'),
+  tradingWarningAttention('TRADING_WARNING_ATTENTION'),
+  tradingWarningDisposal('TRADING_WARNING_DISPOSAL'),
+  insiderSellingStreak('INSIDER_SELLING_STREAK'),
+  insiderSignificantBuying('INSIDER_SIGNIFICANT_BUYING'),
+  highPledgeRatio('HIGH_PLEDGE_RATIO'),
+  foreignConcentrationWarning('FOREIGN_CONCENTRATION_WARNING'),
+  foreignExodus('FOREIGN_EXODUS'),
   // EPS 訊號
-  epsYoYSurge('EPS_YOY_SURGE', 'EPS年增暴增'),
-  epsConsecutiveGrowth('EPS_CONSECUTIVE_GROWTH', 'EPS連續成長'),
-  epsTurnaround('EPS_TURNAROUND', 'EPS由負轉正'),
-  epsDeclineWarning('EPS_DECLINE_WARNING', 'EPS衰退警示'),
+  epsYoYSurge('EPS_YOY_SURGE'),
+  epsConsecutiveGrowth('EPS_CONSECUTIVE_GROWTH'),
+  epsTurnaround('EPS_TURNAROUND'),
+  epsDeclineWarning('EPS_DECLINE_WARNING'),
 
   // ROE 訊號
-  roeExcellent('ROE_EXCELLENT', 'ROE優異'),
-  roeImproving('ROE_IMPROVING', 'ROE改善'),
-  roeDeclining('ROE_DECLINING', 'ROE衰退');
+  roeExcellent('ROE_EXCELLENT'),
+  roeImproving('ROE_IMPROVING'),
+  roeDeclining('ROE_DECLINING');
 
-  const ReasonType(this.code, this.label);
+  const ReasonType(this.code);
 
   final String code;
-  final String label;
 
   int get score => switch (this) {
     ReasonType.reversalW2S => RuleScores.reversalW2S,
@@ -1015,40 +1014,37 @@ enum ReasonType {
 
 /// 趨勢狀態
 enum TrendState {
-  up('UP', '上升'),
-  down('DOWN', '下跌'),
-  range('RANGE', '盤整');
+  up('UP'),
+  down('DOWN'),
+  range('RANGE');
 
-  const TrendState(this.code, this.label);
+  const TrendState(this.code);
 
   final String code;
-  final String label;
 }
 
 /// 反轉狀態
 enum ReversalState {
-  none('NONE', '無'),
-  weakToStrong('W2S', '弱轉強'),
-  strongToWeak('S2W', '強轉弱');
+  none('NONE'),
+  weakToStrong('W2S'),
+  strongToWeak('S2W');
 
-  const ReversalState(this.code, this.label);
+  const ReversalState(this.code);
 
   final String code;
-  final String label;
 }
 
 /// 新聞分類
 enum NewsCategory {
-  earnings('EARNINGS', '財報'),
-  policy('POLICY', '政策'),
-  industry('INDUSTRY', '產業'),
-  companyEvent('COMPANY_EVENT', '公司事件'),
-  other('OTHER', '其他');
+  earnings('EARNINGS'),
+  policy('POLICY'),
+  industry('INDUSTRY'),
+  companyEvent('COMPANY_EVENT'),
+  other('OTHER');
 
-  const NewsCategory(this.code, this.label);
+  const NewsCategory(this.code);
 
   final String code;
-  final String label;
 }
 
 /// 更新執行狀態
@@ -1064,11 +1060,10 @@ enum UpdateStatus {
 
 /// 股票市場類型
 enum StockMarket {
-  twse('TWSE', '上市'),
-  tpex('TPEx', '上櫃');
+  twse('TWSE'),
+  tpex('TPEx');
 
-  const StockMarket(this.code, this.label);
+  const StockMarket(this.code);
 
   final String code;
-  final String label;
 }

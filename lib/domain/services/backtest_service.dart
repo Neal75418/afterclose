@@ -181,8 +181,11 @@ class BacktestService {
   DateTime _subtractTradingDays(DateTime date, int tradingDays) {
     var current = date;
     var count = 0;
-    while (count < tradingDays) {
+    var iterations = 0;
+    final maxIterations = tradingDays * 5; // 安全上限，防止無限迴圈
+    while (count < tradingDays && iterations < maxIterations) {
       current = current.subtract(const Duration(days: 1));
+      iterations++;
       if (TaiwanCalendar.isTradingDay(current)) {
         count++;
       }
@@ -249,7 +252,10 @@ class BacktestService {
         continue;
       }
 
-      final returnPercent = (exitPrice - entryPrice) / entryPrice * 100;
+      // 扣除台股交易成本：買進手續費 0.1425% + 賣出手續費 0.1425% + 證交稅 0.3%
+      final netEntry = entryPrice * (1 + 0.001425); // 買入含手續費
+      final netExit = exitPrice * (1 - 0.001425 - 0.003); // 賣出扣手續費+稅
+      final returnPercent = (netExit - netEntry) / netEntry * 100;
 
       trades.add(
         BacktestTrade(

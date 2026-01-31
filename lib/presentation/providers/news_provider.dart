@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
@@ -10,14 +11,14 @@ import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Available news sources for filtering
 enum NewsSource {
-  all('全部'),
-  moneyDJ('MoneyDJ'),
-  yahoo('Yahoo財經'),
-  cnyes('鉅亨網'),
-  cna('中央社');
+  all,
+  moneyDJ,
+  yahoo,
+  cnyes,
+  cna;
 
-  const NewsSource(this.label);
-  final String label;
+  String get label =>
+      'empty.source${name[0].toUpperCase()}${name.substring(1)}'.tr();
 
   /// Match source name from RSS feed
   bool matches(String sourceName) {
@@ -33,6 +34,7 @@ enum NewsSource {
 
 /// State for news screen
 class NewsState {
+  static const _sentinel = Object();
   const NewsState({
     this.allNews = const [],
     this.newsStockMap = const {},
@@ -70,14 +72,14 @@ class NewsState {
     List<NewsItemEntry>? allNews,
     Map<String, List<String>>? newsStockMap,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
     NewsSource? selectedSource,
   }) {
     return NewsState(
       allNews: allNews ?? this.allNews,
       newsStockMap: newsStockMap ?? this.newsStockMap,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error == _sentinel ? this.error : error as String?,
       selectedSource: selectedSource ?? this.selectedSource,
     );
   }

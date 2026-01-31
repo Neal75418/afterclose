@@ -34,6 +34,5 @@ class StockEvent extends Table {
       boolean().withDefault(const Constant(false))();
 
   /// 建立時間
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

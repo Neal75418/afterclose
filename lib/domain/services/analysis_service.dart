@@ -228,16 +228,21 @@ class AnalysisService {
     final resistanceZones = _clusterSwingPoints(swingHighs, prices.length);
     final supportZones = _clusterSwingPoints(swingLows, prices.length);
 
+    // ATR-based 動態距離：高波動股用更寬的搜尋半徑
+    final atrDistance = _calculateATRDistance(prices, currentClose);
+    final maxDistance = atrDistance ?? RuleParams.maxSupportResistanceDistance;
+
     // 找出現價上方最近的壓力（在最大距離內）
+    // 加入距離衰減因子：距離現價越近的關卡操作價值越高
     double? resistance;
     var bestResistanceScore = 0.0;
-    final maxResistance =
-        currentClose * (1 + RuleParams.maxSupportResistanceDistance);
+    final maxResistance = currentClose * (1 + maxDistance);
     for (final zone in resistanceZones) {
       // 僅考慮最大距離內的壓力
       if (zone.avgPrice > currentClose && zone.avgPrice <= maxResistance) {
-        // 依觸及次數與時近性評分
-        final score = zone.touches * (1 + zone.recencyWeight);
+        final distance = zone.avgPrice - currentClose;
+        final distanceFactor = 1.0 / (1.0 + (distance / currentClose) * 10);
+        final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
         if (score > bestResistanceScore) {
           bestResistanceScore = score;
           resistance = zone.avgPrice;
@@ -249,13 +254,13 @@ class AnalysisService {
     // 這對 BREAKDOWN 和 S2W 訊號至關重要
     double? support;
     var bestSupportScore = 0.0;
-    final minSupport =
-        currentClose * (1 - RuleParams.maxSupportResistanceDistance);
+    final minSupport = currentClose * (1 - maxDistance);
     for (final zone in supportZones) {
       // 僅考慮最大距離內的支撐
       if (zone.avgPrice < currentClose && zone.avgPrice >= minSupport) {
-        // 依觸及次數與時近性評分
-        final score = zone.touches * (1 + zone.recencyWeight);
+        final distance = currentClose - zone.avgPrice;
+        final distanceFactor = 1.0 / (1.0 + (distance / currentClose) * 10);
+        final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
         if (score > bestSupportScore) {
           bestSupportScore = score;
           support = zone.avgPrice;
@@ -603,11 +608,15 @@ class AnalysisService {
 
     if (ma20 != null && currentClose != null) {
       // 需站上 MA20 以確認強勢
-      if (currentClose < ma20) return false;
+      if (currentClose < ma20) {
+        AppLogger.debug('Analysis', '弱轉強未觸發：股價 $currentClose 低於 MA20 $ma20');
+        return false;
+      }
     }
 
     // 成交量確認：近期成交量需高於前期平均
     if (!_hasVolumeConfirmation(recentPrices, prevPrices)) {
+      AppLogger.debug('Analysis', '弱轉強未觸發：近期成交量低於前期均量');
       return false;
     }
 
@@ -703,6 +712,51 @@ class AnalysisService {
 
     if (count < period) return null; // 有效資料不足
     return sum / count;
+  }
+
+  /// 計算 ATR-based 支撐壓力搜尋距離
+  ///
+  /// ATR（Average True Range）反映股票近期波動程度。
+  /// 使用 ATR×3/currentClose 作為動態距離，
+  /// 但下限為固定 8%（[RuleParams.maxSupportResistanceDistance]）。
+  double? _calculateATRDistance(
+    List<DailyPriceEntry> prices,
+    double currentClose,
+  ) {
+    const period = 14;
+    if (prices.length < period + 1) return null;
+
+    double atrSum = 0;
+    int count = 0;
+
+    for (var i = prices.length - period; i < prices.length; i++) {
+      final high = prices[i].high;
+      final low = prices[i].low;
+      final prevClose = prices[i - 1].close;
+
+      if (high == null || low == null || prevClose == null) continue;
+
+      // True Range = max(H-L, |H-prevC|, |L-prevC|)
+      final hl = high - low;
+      final hpc = (high - prevClose).abs();
+      final lpc = (low - prevClose).abs();
+      final tr = [hl, hpc, lpc].reduce((a, b) => a > b ? a : b);
+
+      atrSum += tr;
+      count++;
+    }
+
+    if (count < period ~/ 2) return null;
+
+    final atr = atrSum / count;
+    final atrDistance = (atr * 3) / currentClose;
+
+    // 下限為固定 8%，確保低波動股仍有合理搜尋範圍
+    if (atrDistance < RuleParams.maxSupportResistanceDistance) {
+      return RuleParams.maxSupportResistanceDistance;
+    }
+    // 上限 20%，避免過度搜尋
+    return atrDistance > 0.20 ? 0.20 : atrDistance;
   }
 
   /// 找出價格列表中的最低價

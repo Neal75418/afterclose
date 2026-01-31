@@ -63,59 +63,36 @@ class HistoricalPriceSyncer {
       final priceCount = prices?.length ?? 0;
 
       if (priceCount < minRequiredDays) {
-        // 資料極少時（< 10 天）通常需要同步
-        // 但如果是極新股票（上市不到 2 週），且資料已接近完整，則跳過
-        const minDataThreshold = 10;
-        if (priceCount < minDataThreshold) {
-          // 檢查是否為極新股票
-          if (prices != null && prices.isNotEmpty && priceCount >= 3) {
-            final firstTradeDate = prices.first.date;
-            final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
-            // 極新股票（上市 < 15 天）：若資料已達 60% 預期則跳過
-            if (daysSinceFirstTrade <= 15) {
-              final expectedDays = (daysSinceFirstTrade * 0.71).round();
-              if (priceCount >= (expectedDays * 0.6).round()) {
-                continue;
-              }
-            }
-          }
-          symbolsNeedingData.add(symbol);
-          continue;
-        }
-
         // 接近完整資料時（>= 180 天）可以跳過
-        // 降低門檻，因為許多股票歷史資料不完整但已足夠分析
         const nearThreshold = 180;
         if (priceCount >= nearThreshold) {
           continue;
         }
 
-        // 檢查是否為新上市股票（資料天數符合預期）
-        // 若資料已經「夠完整」（相對於首次交易日），則跳過同步
+        // 檢查是否為較新的股票（資料天數已符合其上市天數的預期）
+        // 避免反覆呼叫 API 試圖取得不存在的歷史資料
         if (prices != null && prices.isNotEmpty) {
           final firstTradeDate = prices.first.date;
           final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
 
-          // 對於上市不到 365 天的股票，使用更寬鬆的判斷
-          // 避免反覆呼叫 API 試圖取得不存在的歷史資料
           if (daysSinceFirstTrade < 365) {
             // 計算預期交易天數（約 71% 的日曆天是交易日）
-            final expectedTradingDays = (daysSinceFirstTrade * 0.71).round();
+            final expectedTradingDays = (daysSinceFirstTrade * 0.71)
+                .round()
+                .clamp(1, 365);
 
-            // 只要資料達到預期的 60% 就視為足夠
-            // 考慮到 API 可能不完整、假日等因素
-            final minAcceptableDays = (expectedTradingDays * 0.6).round();
-            if (priceCount >= minAcceptableDays && priceCount >= 20) {
-              continue;
-            }
-
-            // 額外檢查：若上市不到 90 天，且有 >= 15 天資料，視為足夠
-            // （極新股票不需要太多歷史資料）
-            if (daysSinceFirstTrade <= 90 && priceCount >= 15) {
+            // 只要資料達到預期的 50% 就視為足夠
+            final minAcceptableDays = (expectedTradingDays * 0.5).round();
+            if (priceCount >= minAcceptableDays) {
               continue;
             }
           }
+        } else if (priceCount == 0) {
+          // 完全無資料，需要同步
+          symbolsNeedingData.add(symbol);
+          continue;
         }
+
         symbolsNeedingData.add(symbol);
       }
     }

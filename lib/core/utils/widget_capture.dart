@@ -23,7 +23,8 @@ class WidgetCapture {
       image.dispose();
 
       return byteData?.buffer.asUint8List();
-    } catch (_) {
+    } catch (e, stack) {
+      debugPrint('WidgetCapture error: $e\n$stack');
       return null;
     }
   }

@@ -21,8 +21,8 @@ class InstitutionalShiftRule extends StockRule {
     final today = history.last;
     final todayNet = today.foreignNet ?? 0.0;
 
-    // 提高門檻以減少雜訊：最低 1000 張
-    if (todayNet.abs() < 1000) return null;
+    // 提高門檻以減少雜訊：最低 1000 張（資料單位為股，1 張 = 1000 股）
+    if (todayNet.abs() < 1000 * 1000) return null;
 
     // 若有足夠資料則計算先前平均方向
     double prevAvg = 0;
@@ -76,11 +76,8 @@ class InstitutionalShiftRule extends StockRule {
     const double significantRatio = 0.35; // 佔總成交量 35%
     const double explosiveRatio = 0.50; // 佔總成交量 50%
 
-    // 計算比率 - 重要：先將 todayNet 從張轉換為股！
-    // todayNet 單位為張，todayVolume 單位為股
-    // 1 張 = 1000 股
-    final todayNetShares = todayNet.abs() * sheetToShares;
-    final ratio = todayNetShares / todayVolume;
+    // 計算比率 - todayNet 與 todayVolume 單位皆為股
+    final ratio = todayNet.abs() / todayVolume;
 
     // 依歷史資料判斷的訊號（反轉 / 加速）
     if (hasHistory) {
@@ -191,7 +188,12 @@ class NewsRule extends StockRule {
 
       for (final kw in RuleParams.newsPositiveKeywords) {
         if (text.contains(kw)) {
-          score++;
+          // 否定詞前綴檢測：若關鍵字前方有否定詞，反轉極性
+          if (_hasNegationPrefix(text, kw)) {
+            score--;
+          } else {
+            score++;
+          }
           matched = true;
         }
       }
@@ -216,5 +218,33 @@ class NewsRule extends StockRule {
     }
 
     return null;
+  }
+
+  /// 否定詞前綴檢測
+  ///
+  /// 檢查 [keyword] 在 [text] 中出現的位置前方 4 個字內是否有否定詞。
+  /// 例：「訂單取消」→ keyword「訂單」前方無否定詞，但「取消訂單」→ 有。
+  static bool _hasNegationPrefix(String text, String keyword) {
+    const negationWords = ['取消', '失去', '下滑', '衰退', '減少', '流失', '不再', '未能'];
+    final index = text.indexOf(keyword);
+    if (index <= 0) return false;
+
+    // 取關鍵字前方最多 4 個字的文本
+    final prefixStart = (index - 4).clamp(0, index);
+    final prefix = text.substring(prefixStart, index);
+
+    for (final neg in negationWords) {
+      if (prefix.contains(neg)) return true;
+    }
+
+    // 也檢查關鍵字後方的否定詞（如「訂單取消」）
+    final suffixEnd = (index + keyword.length + 4).clamp(0, text.length);
+    final suffix = text.substring(index + keyword.length, suffixEnd);
+
+    for (final neg in negationWords) {
+      if (suffix.contains(neg)) return true;
+    }
+
+    return false;
   }
 }

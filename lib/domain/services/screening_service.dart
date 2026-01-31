@@ -134,10 +134,7 @@ class ScreeningService {
           WHERE dp2.date >= ?
         )
       ''';
-      cteVars.addAll([
-        startOfDay.millisecondsSinceEpoch ~/ 1000,
-        prevDateMs,
-      ]);
+      cteVars.addAll([startOfDay.millisecondsSinceEpoch ~/ 1000, prevDateMs]);
 
       joins.write('''
         LEFT JOIN prev_price pp ON pp.symbol = da.symbol
@@ -210,7 +207,8 @@ class ScreeningService {
     final totalScanned = countResult.firstOrNull?.read<int>('cnt') ?? 0;
 
     // 組合完整查詢
-    final query = '''
+    final query =
+        '''
       $ctePrefix
       SELECT DISTINCT da.symbol, da.score
       FROM daily_analysis da

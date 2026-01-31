@@ -115,7 +115,7 @@ class TpexClient {
         }
 
         // 統一輸出結果
-        final dateFormatted = _formatDate(targetDate);
+        final dateFormatted = _formatDate(actualDate);
         if (failedCount > 0) {
           AppLogger.info(
             'TPEX',
@@ -239,7 +239,7 @@ class TpexClient {
             .whereType<TpexInstitutional>()
             .toList();
 
-        final dateFormatted = _formatDate(targetDate);
+        final dateFormatted = _formatDate(actualDate);
         AppLogger.info('TPEX', '法人資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -417,7 +417,11 @@ class TpexClient {
           }
         }
 
-        final dateFormatted = _formatDate(targetDate);
+        // 估值 API 不回傳統一日期欄位，使用第一筆資料的日期或 targetDate
+        final effectiveDate = results.isNotEmpty
+            ? results.first.date
+            : targetDate;
+        final dateFormatted = _formatDate(effectiveDate);
         AppLogger.info('TPEX', '估值資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -570,7 +574,7 @@ class TpexClient {
             .whereType<TpexDayTrading>()
             .toList();
 
-        final dateFormatted = _formatDate(targetDate);
+        final dateFormatted = _formatDate(actualDate);
         AppLogger.info('TPEX', '當沖資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -690,7 +694,7 @@ class TpexClient {
             .whereType<TpexMarginTrading>()
             .toList();
 
-        final dateFormatted = _formatDate(targetDate);
+        final dateFormatted = _formatDate(actualDate);
         AppLogger.info('TPEX', '融資融券: ${results.length} 筆 ($dateFormatted)');
         return results;
       }

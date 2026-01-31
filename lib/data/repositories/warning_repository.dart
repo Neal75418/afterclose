@@ -3,22 +3,27 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
-// TWSE 警示 API 已無法使用 (404)，暫時停用
-// import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 
 /// 注意股票/處置股票資料 Repository
 ///
 /// 提供警示資料的存取與同步功能，用於風險控管。
-/// 注意：目前僅支援上櫃 (TPEX) 警示資料，上市 (TWSE) API 已無法使用。
+/// 支援上市 (TWSE) 和上櫃 (TPEX) 警示資料。
 class WarningRepository {
-  WarningRepository({required AppDatabase database, TpexClient? tpexClient})
-    : _db = database,
-      _tpexClient = tpexClient ?? TpexClient();
+  WarningRepository({
+    required AppDatabase database,
+    TpexClient? tpexClient,
+    TwseClient? twseClient,
+  }) : _db = database,
+       _tpexClient = tpexClient ?? TpexClient(),
+       _twseClient = twseClient ?? TwseClient();
 
   final AppDatabase _db;
   final TpexClient _tpexClient;
+  final TwseClient _twseClient;
 
   /// 取得股票的警示歷史
   Future<List<TradingWarningEntry>> getWarningHistory(
@@ -70,10 +75,8 @@ class WarningRepository {
 
   /// 同步全市場警示資料
   ///
-  /// 從 TPEX 取得最新的上櫃注意股票和處置股票資料。
-  /// 使用免費 OpenAPI，無需 token。
-  ///
-  /// 注意：TWSE 上市警示 API 目前無法使用 (404)，已暫時停用。
+  /// 從 TWSE 和 TPEX 取得最新的注意股票和處置股票資料。
+  /// 各 API 獨立呼叫，部分失敗不影響其他來源。
   ///
   /// [force] - 若為 true，則無視新鮮度檢查強制同步
   Future<int> syncAllMarketWarnings({bool force = false}) async {
@@ -101,26 +104,70 @@ class WarningRepository {
         }
       }
 
-      // 取得上櫃警示資料 (TPEX OpenAPI)
-      // 注意：TWSE 警示 API 已無法使用 (404)，暫時停用
-      // TODO: 待找到可用的 TWSE 警示資料來源後再啟用
+      // TWSE 公告 API 在非交易日整個端點不可用（回傳 404），
+      // 即使傳入上一交易日日期也無效，因此非交易日直接跳過。
+      final isTradingDay = TaiwanCalendar.isTradingDay(today);
+
+      // 並行取得上櫃警示資料（TPEX OpenAPI 不受交易日限制）
       final tpexWarningFuture = _tpexClient.getTradingWarnings();
       final tpexDisposalFuture = _tpexClient.getDisposalInfo();
+      tpexWarningFuture.ignore();
+      tpexDisposalFuture.ignore();
+
+      // 僅在交易日呼叫 TWSE API
+      Future<List<TwseTradingWarning>>? twseWarningFuture;
+      Future<List<TwseTradingWarning>>? twseDisposalFuture;
+      if (isTradingDay) {
+        twseWarningFuture = _twseClient.getTradingWarnings(date: today);
+        twseDisposalFuture = _twseClient.getDisposalInfo(date: today);
+        twseWarningFuture.ignore();
+        twseDisposalFuture.ignore();
+      } else {
+        AppLogger.debug('WarningRepo', '非交易日，跳過 TWSE 注意/處置股票 API');
+      }
 
       List<TpexTradingWarning> tpexWarnings = [];
       List<TpexTradingWarning> tpexDisposals = [];
+      List<TwseTradingWarning> twseWarnings = [];
+      List<TwseTradingWarning> twseDisposals = [];
+      var failCount = 0;
 
-      // 錯誤隔離，允許部分成功
       try {
         tpexWarnings = await tpexWarningFuture;
       } catch (e) {
+        failCount++;
         AppLogger.warning('WarningRepo', '上櫃注意股票取得失敗: $e');
       }
 
       try {
         tpexDisposals = await tpexDisposalFuture;
       } catch (e) {
+        failCount++;
         AppLogger.warning('WarningRepo', '上櫃處置股票取得失敗: $e');
+      }
+
+      if (twseWarningFuture != null) {
+        try {
+          twseWarnings = await twseWarningFuture;
+        } catch (e) {
+          failCount++;
+          AppLogger.warning('WarningRepo', '上市注意股票取得失敗: $e');
+        }
+      }
+
+      if (twseDisposalFuture != null) {
+        try {
+          twseDisposals = await twseDisposalFuture;
+        } catch (e) {
+          failCount++;
+          AppLogger.warning('WarningRepo', '上市處置股票取得失敗: $e');
+        }
+      }
+
+      // 全部可用來源都失敗時拋出例外，讓呼叫端知道非「合法的 0 筆」
+      final totalSources = isTradingDay ? 4 : 2;
+      if (failCount == totalSources) {
+        throw const NetworkException('所有警示資料來源均失敗', null);
       }
 
       // 使用 transaction 確保原子性，避免 FK 驗證與插入之間的 race condition
@@ -130,6 +177,39 @@ class WarningRepository {
         final validSymbols = stockList.map((s) => s.symbol).toSet();
 
         final entries = <TradingWarningCompanion>[];
+
+        // 轉換 TWSE 注意股票 (上市)
+        for (final item in twseWarnings) {
+          if (!validSymbols.contains(item.code)) continue;
+          entries.add(
+            _createWarningEntry(
+              symbol: item.code,
+              date: normalizedDate,
+              referenceNow: today,
+              warningType: 'ATTENTION',
+              reasonCode: item.reasonCode,
+              reasonDescription: item.reasonDescription,
+            ),
+          );
+        }
+
+        // 轉換 TWSE 處置股票
+        for (final item in twseDisposals) {
+          if (!validSymbols.contains(item.code)) continue;
+          entries.add(
+            _createWarningEntry(
+              symbol: item.code,
+              date: normalizedDate,
+              referenceNow: today,
+              warningType: 'DISPOSAL',
+              reasonCode: item.reasonCode,
+              reasonDescription: item.reasonDescription,
+              disposalMeasures: item.disposalMeasures,
+              disposalStartDate: item.disposalStartDate,
+              disposalEndDate: item.disposalEndDate,
+            ),
+          );
+        }
 
         // 轉換 TPEX 注意股票 (上櫃)
         for (final item in tpexWarnings) {
@@ -178,7 +258,8 @@ class WarningRepository {
         AppLogger.info(
           'WarningRepo',
           '警示同步: ${entries.length} 筆 '
-              '(上櫃注意 ${tpexWarnings.length}, 上櫃處置 ${tpexDisposals.length})',
+              '(上市注意 ${twseWarnings.length}, 上市處置 ${twseDisposals.length}, '
+              '上櫃注意 ${tpexWarnings.length}, 上櫃處置 ${tpexDisposals.length})',
         );
 
         return entries.length;

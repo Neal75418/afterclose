@@ -33,12 +33,10 @@ class PortfolioPosition extends Table {
   TextColumn get note => text().nullable()();
 
   /// 建立時間
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   /// 最後更新時間
-  DateTimeColumn get updatedAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 /// 交易紀錄 Table
@@ -78,6 +76,5 @@ class PortfolioTransaction extends Table {
   TextColumn get note => text().nullable()();
 
   /// 建立時間
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

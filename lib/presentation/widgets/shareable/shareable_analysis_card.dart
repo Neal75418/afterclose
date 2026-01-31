@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
 /// 分析分享卡片（用於 PNG 匯出）
 ///
@@ -167,7 +168,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                     .take(5)
                     .map(
                       (r) => _BulletItem(
-                        text: r.reasonType,
+                        text: ReasonTags.translateReasonCode(r.reasonType),
                         color: theme.colorScheme.primary,
                       ),
                     ),

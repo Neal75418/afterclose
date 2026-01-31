@@ -10,7 +10,11 @@ import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/domain/services/chip_analysis_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
+import 'package:afterclose/domain/models/stock_summary.dart';
+import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
@@ -20,6 +24,7 @@ import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 /// State for stock detail screen
 class StockDetailState {
+  static const _sentinel = Object();
   const StockDetailState({
     this.stock,
     this.latestPrice,
@@ -36,11 +41,18 @@ class StockDetailState {
     this.recentNews = const [],
     this.epsHistory = const [],
     this.latestQuarterMetrics = const {},
+    this.aiSummary,
+    this.dayTradingHistory = const [],
+    this.shareholdingHistory = const [],
+    this.holdingDistribution = const [],
+    this.marginTradingHistory = const [],
+    this.chipStrength,
     this.isInWatchlist = false,
     this.isLoading = false,
     this.isLoadingMargin = false,
     this.isLoadingFundamentals = false,
     this.isLoadingInsider = false,
+    this.isLoadingChip = false,
     this.error,
     this.hasInstitutionalError = false,
     this.dataDate,
@@ -62,11 +74,18 @@ class StockDetailState {
   final List<NewsItemEntry> recentNews;
   final List<FinancialDataEntry> epsHistory;
   final Map<String, double> latestQuarterMetrics;
+  final StockSummary? aiSummary;
+  final List<DayTradingEntry> dayTradingHistory;
+  final List<ShareholdingEntry> shareholdingHistory;
+  final List<HoldingDistributionEntry> holdingDistribution;
+  final List<MarginTradingEntry> marginTradingHistory;
+  final ChipStrengthResult? chipStrength;
   final bool isInWatchlist;
   final bool isLoading;
   final bool isLoadingMargin;
   final bool isLoadingFundamentals;
   final bool isLoadingInsider;
+  final bool isLoadingChip;
   final String? error;
 
   /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
@@ -94,12 +113,19 @@ class StockDetailState {
     List<NewsItemEntry>? recentNews,
     List<FinancialDataEntry>? epsHistory,
     Map<String, double>? latestQuarterMetrics,
+    StockSummary? aiSummary,
+    List<DayTradingEntry>? dayTradingHistory,
+    List<ShareholdingEntry>? shareholdingHistory,
+    List<HoldingDistributionEntry>? holdingDistribution,
+    List<MarginTradingEntry>? marginTradingHistory,
+    ChipStrengthResult? chipStrength,
     bool? isInWatchlist,
     bool? isLoading,
     bool? isLoadingMargin,
     bool? isLoadingFundamentals,
     bool? isLoadingInsider,
-    String? error,
+    bool? isLoadingChip,
+    Object? error = _sentinel,
     bool? hasInstitutionalError,
     DateTime? dataDate,
     bool? hasDataMismatch,
@@ -120,13 +146,20 @@ class StockDetailState {
       recentNews: recentNews ?? this.recentNews,
       epsHistory: epsHistory ?? this.epsHistory,
       latestQuarterMetrics: latestQuarterMetrics ?? this.latestQuarterMetrics,
+      aiSummary: aiSummary ?? this.aiSummary,
+      dayTradingHistory: dayTradingHistory ?? this.dayTradingHistory,
+      shareholdingHistory: shareholdingHistory ?? this.shareholdingHistory,
+      holdingDistribution: holdingDistribution ?? this.holdingDistribution,
+      marginTradingHistory: marginTradingHistory ?? this.marginTradingHistory,
+      chipStrength: chipStrength ?? this.chipStrength,
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
       isLoadingFundamentals:
           isLoadingFundamentals ?? this.isLoadingFundamentals,
       isLoadingInsider: isLoadingInsider ?? this.isLoadingInsider,
-      error: error,
+      isLoadingChip: isLoadingChip ?? this.isLoadingChip,
+      error: error == _sentinel ? this.error : error as String?,
       hasInstitutionalError:
           hasInstitutionalError ?? this.hasInstitutionalError,
       dataDate: dataDate ?? this.dataDate,
@@ -160,17 +193,6 @@ class StockDetailState {
       'S2W' => '強轉弱',
       _ => null,
     };
-  }
-
-  /// Get reason labels
-  List<String> get reasonLabels {
-    return reasons.map((r) {
-      return ReasonType.values
-              .where((rt) => rt.code == r.reasonType)
-              .firstOrNull
-              ?.label ??
-          r.reasonType;
-    }).toList();
   }
 }
 
@@ -303,6 +325,20 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       final dataDate = syncResult.dataDate;
       final hasDataMismatch = syncResult.hasDataMismatch;
 
+      // 生成 AI 智慧分析摘要
+      final summary = const AnalysisSummaryService().generate(
+        analysis: analysis,
+        reasons: reasons,
+        latestPrice: latestPrice,
+        priceChange: PriceCalculator.calculatePriceChangeFromPrices(
+          latestPrice?.close,
+          previousPrice?.close,
+        ),
+        institutionalHistory: syncedInstHistory,
+        revenueHistory: state.revenueHistory,
+        latestPER: state.latestPER,
+      );
+
       state = state.copyWith(
         stock: stock,
         latestPrice: latestPrice,
@@ -311,6 +347,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         analysis: analysis,
         reasons: reasons,
         institutionalHistory: syncedInstHistory,
+        aiSummary: summary,
         isInWatchlist: isInWatchlist,
         isLoading: false,
         hasInstitutionalError: hasInstitutionalError,
@@ -608,6 +645,18 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         latestQuarterMetrics: quarterMetrics,
         isLoadingFundamentals: false,
       );
+
+      // 基本面載入後重新生成 AI 摘要（含營收/估值資料）
+      final summary = const AnalysisSummaryService().generate(
+        analysis: state.analysis,
+        reasons: state.reasons,
+        latestPrice: state.latestPrice,
+        priceChange: state.priceChange,
+        institutionalHistory: state.institutionalHistory,
+        revenueHistory: revenueData,
+        latestPER: latestPER,
+      );
+      state = state.copyWith(aiSummary: summary);
     } catch (e) {
       AppLogger.warning('StockDetail', '載入基本面資料失敗: $_symbol', e);
       state = state.copyWith(isLoadingFundamentals: false);
@@ -644,6 +693,72 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       state = state.copyWith(isLoadingInsider: false, insiderHistory: []);
     }
   }
+
+  /// Load comprehensive chip analysis data.
+  ///
+  /// Loads day trading, shareholding, margin trading (from DB),
+  /// holding distribution, and insider data, then computes chip strength.
+  Future<void> loadChipData() async {
+    if (state.isLoadingChip || state.chipStrength != null) return;
+
+    state = state.copyWith(isLoadingChip: true);
+
+    try {
+      final today = DateTime.now();
+      final startDate10d = today.subtract(const Duration(days: 15));
+      final startDate60d = today.subtract(const Duration(days: 90));
+
+      final results = await Future.wait([
+        _db.getDayTradingHistory(_symbol, startDate: startDate10d),
+        _db.getShareholdingHistory(_symbol, startDate: startDate60d),
+        _db.getMarginTradingHistory(_symbol, startDate: startDate10d),
+        _db.getLatestHoldingDistribution(_symbol),
+        state.insiderHistory.isNotEmpty
+            ? Future.value(state.insiderHistory)
+            : _db.getRecentInsiderHoldings(_symbol, months: 6),
+      ]);
+
+      List<DayTradingEntry> dayTrading = [];
+      List<ShareholdingEntry> shareholding = [];
+      List<MarginTradingEntry> marginTrading = [];
+      List<HoldingDistributionEntry> holdingDist = [];
+      List<InsiderHoldingEntry> insider = [];
+
+      try {
+        dayTrading = results[0] as List<DayTradingEntry>;
+        shareholding = results[1] as List<ShareholdingEntry>;
+        marginTrading = results[2] as List<MarginTradingEntry>;
+        holdingDist = results[3] as List<HoldingDistributionEntry>;
+        insider = results[4] as List<InsiderHoldingEntry>;
+      } catch (e) {
+        AppLogger.warning('StockDetail', '籌碼資料型別轉換失敗: $_symbol', e);
+      }
+
+      // Compute chip strength
+      const service = ChipAnalysisService();
+      final strength = service.compute(
+        institutionalHistory: state.institutionalHistory,
+        shareholdingHistory: shareholding,
+        marginHistory: marginTrading,
+        dayTradingHistory: dayTrading,
+        holdingDistribution: holdingDist,
+        insiderHistory: insider,
+      );
+
+      state = state.copyWith(
+        dayTradingHistory: dayTrading,
+        shareholdingHistory: shareholding,
+        marginTradingHistory: marginTrading,
+        holdingDistribution: holdingDist,
+        insiderHistory: insider.isNotEmpty ? insider : null,
+        chipStrength: strength,
+        isLoadingChip: false,
+      );
+    } catch (e) {
+      AppLogger.warning('StockDetail', '載入籌碼分析資料失敗: $_symbol', e);
+      state = state.copyWith(isLoadingChip: false);
+    }
+  }
 }
 
 /// Provider family for stock detail
@@ -657,7 +772,11 @@ final stockDetailProvider = StateNotifierProvider.family
 
       // 3 分鐘後自動釋放
       final timer = Timer(const Duration(minutes: 3), () {
-        link.close();
+        try {
+          link.close();
+        } catch (_) {
+          // Timer 可能在 dispose 邊界觸發，忽略已關閉的 link
+        }
       });
 
       // 清理：當 Provider 真正被釋放時取消 Timer

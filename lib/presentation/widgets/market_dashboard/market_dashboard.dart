@@ -12,7 +12,7 @@ import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row
 /// 大盤總覽 Dashboard
 ///
 /// 組合 5 個子 widget，取代舊的 MarketOverviewCard。
-/// 顯示 Hero 指數、子指數、漲跌家數 Donut、法人動向 Bar、融資融券。
+/// 顯示 Hero 指數、子指數、漲跌家數、法人動向、融資融券。
 class MarketDashboard extends StatelessWidget {
   const MarketDashboard({super.key, required this.state});
 
@@ -38,11 +38,57 @@ class MarketDashboard extends StatelessWidget {
 
     // 分離加權指數 vs 子指數
     final taiex = state.indices.where(
-      (idx) => idx.name.contains(MarketIndexNames.taiexKeyword),
+      (idx) => idx.name == MarketIndexNames.taiex,
     );
-    final subIndices = state.indices
-        .where((idx) => !idx.name.contains(MarketIndexNames.taiexKeyword))
-        .toList();
+    // 依 dashboardIndices 定義順序排列子指數
+    const subOrder = MarketIndexNames.dashboardIndices;
+    final subIndices =
+        state.indices
+            .where((idx) => idx.name != MarketIndexNames.taiex)
+            .toList()
+          ..sort(
+            (a, b) =>
+                subOrder.indexOf(a.name).compareTo(subOrder.indexOf(b.name)),
+          );
+
+    // 收集各 section widget
+    final sections = <Widget>[];
+
+    // Section 1: Hero 加權指數
+    if (taiex.isNotEmpty) {
+      sections.add(
+        HeroIndexSection(
+          taiex: taiex.first,
+          historyData: state.indexHistory[taiex.first.name] ?? [],
+        ),
+      );
+    }
+
+    // Section 2: 子指數列
+    if (subIndices.isNotEmpty) {
+      sections.add(
+        SubIndicesRow(subIndices: subIndices, historyMap: state.indexHistory),
+      );
+    }
+
+    // Section 3: 漲跌家數
+    if (state.advanceDecline.total > 0) {
+      sections.add(AdvanceDeclineGauge(data: state.advanceDecline));
+    }
+
+    // Section 4: 法人動向
+    final inst = state.institutional;
+    if (inst.totalNet != 0 ||
+        inst.foreignNet != 0 ||
+        inst.trustNet != 0 ||
+        inst.dealerNet != 0) {
+      sections.add(InstitutionalFlowChart(data: inst));
+    }
+
+    // Section 5: 融資融券
+    if (state.margin.marginChange != 0 || state.margin.shortChange != 0) {
+      sections.add(MarginCompactRow(data: state.margin));
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -77,41 +123,22 @@ class MarketDashboard extends StatelessWidget {
                 ],
               ),
 
-              // Hero 加權指數
-              if (taiex.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                HeroIndexSection(
-                  taiex: taiex.first,
-                  historyData: state.indexHistory[taiex.first.name] ?? [],
-                ),
-              ],
-
-              // 子指數列
-              if (subIndices.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                SubIndicesRow(
-                  subIndices: subIndices,
-                  historyMap: state.indexHistory,
-                ),
-              ],
-
-              // 漲跌家數 Donut
-              if (state.advanceDecline.total > 0) ...[
-                const SizedBox(height: 16),
-                AdvanceDeclineGauge(data: state.advanceDecline),
-              ],
-
-              // 法人動向
-              if (state.institutional.totalNet != 0) ...[
-                const SizedBox(height: 16),
-                InstitutionalFlowChart(data: state.institutional),
-              ],
-
-              // 融資融券
-              if (state.margin.marginChange != 0 ||
-                  state.margin.shortChange != 0) ...[
-                const SizedBox(height: 16),
-                MarginCompactRow(data: state.margin),
+              // 各 section 之間用分隔線隔開
+              for (int i = 0; i < sections.length; i++) ...[
+                if (i < 2)
+                  // Hero + 子指數之間用較小間距，不加分隔線
+                  const SizedBox(height: 10)
+                else ...[
+                  const SizedBox(height: 14),
+                  Divider(
+                    height: 1,
+                    color: theme.colorScheme.outlineVariant.withValues(
+                      alpha: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                sections[i],
               ],
             ],
           ),

@@ -195,6 +195,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       appBar: AppBar(
         title: Text('scan.title'.tr()),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: 'customScreening.title'.tr(),
+            onPressed: () => context.push('/scan/custom'),
+          ),
           PopupMenuButton<ScanSort>(
             icon: const Icon(Icons.sort),
             tooltip: 'scan.sort'.tr(),

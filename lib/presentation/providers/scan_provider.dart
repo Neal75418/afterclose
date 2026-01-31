@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -412,15 +411,6 @@ class ScanStockItem {
   final bool isInWatchlist;
   final List<double>? recentPrices;
 
-  /// Get main reason label
-  String? get mainReasonLabel {
-    if (reasons.isEmpty) return null;
-    return ReasonType.values
-        .where((r) => r.code == reasons.first.reasonType)
-        .firstOrNull
-        ?.label;
-  }
-
   /// Get trend icon
   String get trendIcon => trendState.trendEmoji;
 
@@ -462,6 +452,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
   Map<String, List<DailyReasonEntry>> _allReasons = {};
   Set<String> _watchlistSymbols = {};
   Set<String>? _industrySymbols; // 產業篩選用
+  int _industryFilterSeq = 0; // 防護 race condition
   List<String>? _cachedIndustries; // 產業列表快取
   DateContext? _dateCtx;
 
@@ -622,6 +613,8 @@ class ScanNotifier extends StateNotifier<ScanState> {
   Future<void> setIndustryFilter(String? industry) async {
     if (industry == state.industryFilter) return;
 
+    final seq = ++_industryFilterSeq;
+
     // 先更新 UI 狀態，避免連點時重複觸發
     state = state.copyWith(
       industryFilter: industry,
@@ -632,8 +625,8 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
     if (industry != null) {
       final symbols = await _db.getSymbolsByIndustry(industry);
-      // 防護 race condition：async 完成後確認意圖未變
-      if (state.industryFilter != industry) return;
+      // 防護 race condition：async 完成後確認序號未變
+      if (seq != _industryFilterSeq) return;
       _industrySymbols = symbols;
     } else {
       _industrySymbols = null;

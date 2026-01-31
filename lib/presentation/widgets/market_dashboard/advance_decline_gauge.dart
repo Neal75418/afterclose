@@ -1,13 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
-/// 漲跌家數 Donut Chart
+/// 漲跌家數水平分段條
 ///
-/// 以 PieChart 呈現上漲/持平/下跌家數比例，右側顯示數字圖例
+/// 以水平 SegmentedBar 呈現上漲/持平/下跌比例，下方顯示數字
 class AdvanceDeclineGauge extends StatelessWidget {
   const AdvanceDeclineGauge({super.key, required this.data});
 
@@ -19,142 +18,150 @@ class AdvanceDeclineGauge extends StatelessWidget {
     final total = data.total;
     if (total == 0) return const SizedBox.shrink();
 
+    final advPct = data.advance / total;
+    final unchPct = data.unchanged / total;
+    final declPct = data.decline / total;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'marketOverview.advanceDecline'.tr(),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+        // 標題行 + 總家數
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'marketOverview.advanceDecline'.tr(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            Text(
+              'marketOverview.totalStocks'.tr(namedArgs: {'count': '$total'}),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.6,
+                ),
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+
+        // 水平分段條
+        ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            height: 12,
+            child: Row(
+              children: [
+                if (advPct > 0)
+                  Flexible(
+                    flex: (advPct * 1000).round(),
+                    child: Container(color: AppTheme.upColor),
+                  ),
+                if (unchPct > 0)
+                  Flexible(
+                    flex: (unchPct * 1000).round(),
+                    child: Container(
+                      color: AppTheme.neutralColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                if (declPct > 0)
+                  Flexible(
+                    flex: (declPct * 1000).round(),
+                    child: Container(color: AppTheme.downColor),
+                  ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 100,
-          child: Row(
-            children: [
-              // Donut Chart
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    PieChart(
-                      PieChartData(
-                        sectionsSpace: 2,
-                        centerSpaceRadius: 30,
-                        sections: [
-                          PieChartSectionData(
-                            value: data.advance.toDouble(),
-                            color: AppTheme.upColor,
-                            radius: 20,
-                            showTitle: false,
-                          ),
-                          PieChartSectionData(
-                            value: data.unchanged.toDouble(),
-                            color: AppTheme.neutralColor.withValues(alpha: 0.4),
-                            radius: 18,
-                            showTitle: false,
-                          ),
-                          PieChartSectionData(
-                            value: data.decline.toDouble(),
-                            color: AppTheme.downColor,
-                            radius: 20,
-                            showTitle: false,
-                          ),
-                        ],
-                      ),
-                    ),
-                    // 中心文字
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '$total',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 20),
-              // 圖例
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _LegendRow(
-                      color: AppTheme.upColor,
-                      label: 'marketOverview.advance'.tr(),
-                      value: data.advance,
-                      percentage: (data.advance / total * 100),
-                    ),
-                    const SizedBox(height: 8),
-                    _LegendRow(
-                      color: AppTheme.neutralColor,
-                      label: 'marketOverview.unchanged'.tr(),
-                      value: data.unchanged,
-                      percentage: (data.unchanged / total * 100),
-                    ),
-                    const SizedBox(height: 8),
-                    _LegendRow(
-                      color: AppTheme.downColor,
-                      label: 'marketOverview.decline'.tr(),
-                      value: data.decline,
-                      percentage: (data.decline / total * 100),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+
+        // 數字行
+        Row(
+          children: [
+            _StatChip(
+              color: AppTheme.upColor,
+              label: 'marketOverview.advance'.tr(),
+              value: data.advance,
+              percentage: advPct * 100,
+            ),
+            const Spacer(),
+            _StatChip(
+              color: AppTheme.neutralColor,
+              label: 'marketOverview.unchanged'.tr(),
+              value: data.unchanged,
+              percentage: unchPct * 100,
+              center: true,
+            ),
+            const Spacer(),
+            _StatChip(
+              color: AppTheme.downColor,
+              label: 'marketOverview.decline'.tr(),
+              value: data.decline,
+              percentage: declPct * 100,
+              alignRight: true,
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-class _LegendRow extends StatelessWidget {
-  const _LegendRow({
+class _StatChip extends StatelessWidget {
+  const _StatChip({
     required this.color,
     required this.label,
     required this.value,
     required this.percentage,
+    this.center = false,
+    this.alignRight = false,
   });
 
   final Color color;
   final String label;
   final int value;
   final double percentage;
+  final bool center;
+  final bool alignRight;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final alignment = alignRight
+        ? CrossAxisAlignment.end
+        : center
+        ? CrossAxisAlignment.center
+        : CrossAxisAlignment.start;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: alignment,
       children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontSize: 10,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const Spacer(),
+        const SizedBox(height: 2),
         Text(
           '$value',
           style: theme.textTheme.bodySmall?.copyWith(
@@ -163,16 +170,12 @@ class _LegendRow extends StatelessWidget {
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
-        const SizedBox(width: 6),
-        SizedBox(
-          width: 40,
-          child: Text(
-            '${percentage.toStringAsFixed(0)}%',
-            textAlign: TextAlign.right,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+        Text(
+          '${percentage.toStringAsFixed(0)}%',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontSize: 10,
+            fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
       ],

@@ -163,11 +163,10 @@ class ExportService {
     _addComparisonRow(rows, 'export.csvChange'.tr(), state.symbols, (s) {
       final price = state.latestPricesMap[s];
       if (price == null) return '';
-      final close = price.close ?? 0;
-      final open = price.open ?? 0;
-      final change = close != 0 && open != 0
-          ? ((close - open) / open * 100)
-          : 0.0;
+      final close = price.close;
+      final open = price.open;
+      if (close == null || open == null || open == 0) return '';
+      final change = (close - open) / open * 100;
       return '${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%';
     });
 

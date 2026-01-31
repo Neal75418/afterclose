@@ -21,20 +21,23 @@ void main() {
         insiderHistory: [],
       );
 
-      // Base score is 50
-      expect(result.score, 50);
-      expect(result.rating, ChipRating.neutral);
+      // Base score is 0 (no signals = no score)
+      expect(result.score, 0);
+      expect(result.rating, ChipRating.weak);
       expect(result.attitude, InstitutionalAttitude.neutral);
     });
 
     test('Institutional buy streak > 4 days adds large bonus', () {
-      final history = List<DailyInstitutionalEntry>.generate(5, (i) => DailyInstitutionalEntry(
-        symbol: '2330', // Dummy symbol
-        date: DateTime(2023, 1, i + 1),
-        foreignNet: 1000,
-        investmentTrustNet: 0,
-        dealerNet: 0,
-      ));
+      final history = List<DailyInstitutionalEntry>.generate(
+        5,
+        (i) => DailyInstitutionalEntry(
+          symbol: '2330', // Dummy symbol
+          date: DateTime(2023, 1, i + 1),
+          foreignNet: 1000,
+          investmentTrustNet: 0,
+          dealerNet: 0,
+        ),
+      );
 
       final result = service.compute(
         institutionalHistory: history,
@@ -45,18 +48,21 @@ void main() {
         insiderHistory: [],
       );
 
-      // Base 50 + 20 (Large Bonus) = 70
-      expect(result.score, 70);
+      // Base 0 + 30 (Large Bonus) = 30
+      expect(result.score, 30);
       expect(result.attitude, InstitutionalAttitude.aggressiveBuy);
     });
 
     test('Margin increasing streak > 4 days penalizes score', () {
-      final history = List<MarginTradingEntry>.generate(5, (i) => MarginTradingEntry(
-        symbol: '2330', // Dummy symbol
-        date: DateTime(2023, 1, i + 1),
-        marginBalance: 1000.0 + (i * 100), // Increasing
-        shortBalance: 0,
-      ));
+      final history = List<MarginTradingEntry>.generate(
+        5,
+        (i) => MarginTradingEntry(
+          symbol: '2330', // Dummy symbol
+          date: DateTime(2023, 1, i + 1),
+          marginBalance: 1000.0 + (i * 100), // Increasing
+          shortBalance: 0,
+        ),
+      );
 
       final result = service.compute(
         institutionalHistory: [],
@@ -67,17 +73,17 @@ void main() {
         insiderHistory: [],
       );
 
-      // Base 50 - 8 (Margin Increase Penalty) = 42
-      expect(result.score, 42);
+      // Base 0 - 12 (Margin Increase Penalty) = 0 (clamped)
+      expect(result.score, 0);
     });
 
-    test('High day trading ratio penalties score', () {
+    test('High day trading ratio penalizes score', () {
       final history = <DayTradingEntry>[
         DayTradingEntry(
           symbol: '2330', // Dummy symbol
           date: DateTime(2023, 1, 1),
           dayTradingRatio: 40.0, // > 35%
-        )
+        ),
       ];
 
       final result = service.compute(
@@ -89,9 +95,34 @@ void main() {
         insiderHistory: [],
       );
 
-      // Base 50 - 5 (Day Trading Penalty) = 45
-      expect(result.score, 45);
+      // Base 0 - 8 (Day Trading Penalty) = 0 (clamped)
+      expect(result.score, 0);
     });
 
+    test('Multiple positive signals produce high score', () {
+      final instHistory = List<DailyInstitutionalEntry>.generate(
+        5,
+        (i) => DailyInstitutionalEntry(
+          symbol: '2330',
+          date: DateTime(2023, 1, i + 1),
+          foreignNet: 1000,
+          investmentTrustNet: 500,
+          dealerNet: 0,
+        ),
+      );
+
+      final result = service.compute(
+        institutionalHistory: instHistory,
+        shareholdingHistory: [],
+        marginHistory: [],
+        dayTradingHistory: [],
+        holdingDistribution: [],
+        insiderHistory: [],
+      );
+
+      // Base 0 + 30 (inst large bonus) = 30
+      expect(result.score, 30);
+      expect(result.rating, ChipRating.neutral);
+    });
   });
 }

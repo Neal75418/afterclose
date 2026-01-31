@@ -46,6 +46,9 @@ class S {
   static const String todayStartingUpdate = '開始更新...';
   static const String todayPriceAlert = '價格提醒';
   static String todayLastUpdate(String time) => '最後更新: $time';
+  static String todayDataDate(String date) => '資料日期: $date 收盤';
+  static const String todayDataToday = '今日';
+  static const String todayDataYesterday = '昨日';
   static String todayUpdateFailed(String error) => '更新失敗: $error';
 
   // ==================================================

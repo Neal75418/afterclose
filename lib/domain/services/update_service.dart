@@ -16,6 +16,7 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/services/update/update.dart';
 
 /// 每日市場資料更新協調服務
@@ -42,6 +43,7 @@ class UpdateService {
     MarketDataRepository? marketDataRepository,
     FundamentalRepository? fundamentalRepository,
     InsiderRepository? insiderRepository,
+    TwseClient? twseClient,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
     ScoringService? scoringService,
@@ -80,6 +82,9 @@ class UpdateService {
                fundamentalRepository: fundamentalRepository,
                marketDataRepository: marketDataRepository,
              )
+           : null,
+       _marketIndexSyncer = twseClient != null
+           ? MarketIndexSyncer(database: database, twseClient: twseClient)
            : null;
 
   final AppDatabase _db;
@@ -100,6 +105,7 @@ class UpdateService {
   final HistoricalPriceSyncer _historicalPriceSyncer;
   final MarketDataUpdater? _marketDataUpdater;
   final FundamentalSyncer? _fundamentalSyncer;
+  final MarketIndexSyncer? _marketIndexSyncer;
 
   /// 取得或建立 ScoringService（延遲初始化）
   ScoringService get _scoring =>
@@ -192,6 +198,11 @@ class UpdateService {
       // 步驟 3.5：同步歷史價格
       ctx.reportProgress(4, 10, '取得歷史資料');
       await _syncHistoricalData(ctx);
+
+      // 步驟 3.8：同步大盤指數歷史（sync() 內部已處理例外）
+      if (_marketIndexSyncer != null) {
+        await _marketIndexSyncer.sync();
+      }
 
       // 步驟 4：同步法人資料
       ctx.reportProgress(4, 10, '取得法人資料');
@@ -357,10 +368,13 @@ class UpdateService {
           date: normalizedDate,
         );
 
+        final marginLabel = marketResult.marginCount < 0
+            ? '已快取'
+            : '${marketResult.marginCount}';
         AppLogger.info(
           'UpdateSvc',
           '步驟 4.5: 當沖=${marketResult.dayTradingCount}, '
-              '融資=${marketResult.marginCount}, 持股=$syncedCount',
+              '融資=$marginLabel, 持股=$syncedCount',
         );
       } catch (e) {
         ctx.result.errors.add('籌碼資料更新失敗: $e');
@@ -386,9 +400,12 @@ class UpdateService {
           AppLogger.warning('UpdateSvc', '上櫃自選基本面補充失敗: $e');
         }
 
+        final revenueLabel = fundResult.revenueCount < 0
+            ? '已快取'
+            : '${fundResult.revenueCount}';
         AppLogger.info(
           'UpdateSvc',
-          '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=${fundResult.revenueCount}',
+          '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=$revenueLabel',
         );
 
         // 步驟 4.7：同步候選+自選股的財報資料（EPS + 資產負債表）
@@ -405,12 +422,11 @@ class UpdateService {
             final bsCount = await fundamentalSyncer.syncBalanceSheets(
               symbols: targetSymbols,
             );
-            if (epsCount > 0 || bsCount > 0) {
-              AppLogger.info(
-                'UpdateSvc',
-                '步驟 4.7: 損益=$epsCount, 資負=$bsCount (${targetSymbols.length} 檔)',
-              );
-            }
+            final bsLabel = bsCount < 0 ? '已快取' : '$bsCount';
+            AppLogger.info(
+              'UpdateSvc',
+              '步驟 4.7: 損益=$epsCount, 資負=$bsLabel (${targetSymbols.length} 檔)',
+            );
           }
         } catch (e) {
           AppLogger.warning('UpdateSvc', '財報資料同步失敗: $e');

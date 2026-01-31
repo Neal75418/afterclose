@@ -171,7 +171,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           ),
         ),
         title: Text(
-          _getAlertDescription(alert, alertType),
+          getAlertDescription(alert, alertType),
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
             decoration: wasTriggered ? TextDecoration.lineThrough : null,
@@ -313,49 +313,6 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       AlertType.tradingDisposal ||
       AlertType.insiderSelling ||
       AlertType.highPledgeRatio => AppTheme.downColor,
-    };
-  }
-
-  String _getAlertDescription(PriceAlertEntry alert, AlertType type) {
-    return switch (type) {
-      AlertType.above => 'alert.priceAbove'.tr(
-        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
-      ),
-      AlertType.below => 'alert.priceBelow'.tr(
-        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
-      ),
-      AlertType.changePct => 'alert.changeAbove'.tr(
-        namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
-      ),
-      AlertType.volumeSpike =>
-        '成交量爆量（≥${alert.targetValue.toStringAsFixed(0)}倍均量）',
-      AlertType.volumeAbove =>
-        '成交量高於 ${alert.targetValue.toStringAsFixed(0)} 張',
-      AlertType.rsiOverbought =>
-        'RSI 超買（≥${alert.targetValue.toStringAsFixed(0)}）',
-      AlertType.rsiOversold =>
-        'RSI 超賣（≤${alert.targetValue.toStringAsFixed(0)}）',
-      AlertType.kdGoldenCross => 'KD 黃金交叉',
-      AlertType.kdDeathCross => 'KD 死亡交叉',
-      AlertType.breakResistance =>
-        '突破壓力 ${alert.targetValue.toStringAsFixed(2)} 元',
-      AlertType.breakSupport =>
-        '跌破支撐 ${alert.targetValue.toStringAsFixed(2)} 元',
-      AlertType.week52High => '創 52 週新高',
-      AlertType.week52Low => '創 52 週新低',
-      AlertType.crossAboveMa => '站上 ${alert.targetValue.toInt()} 日均線',
-      AlertType.crossBelowMa => '跌破 ${alert.targetValue.toInt()} 日均線',
-      AlertType.revenueYoySurge =>
-        '營收年增 ≥${alert.targetValue.toStringAsFixed(1)}%',
-      AlertType.highDividendYield =>
-        '殖利率 ≥${alert.targetValue.toStringAsFixed(1)}%',
-      AlertType.peUndervalued => 'PE ≤${alert.targetValue.toStringAsFixed(1)}倍',
-      // Killer Features：警示描述
-      AlertType.tradingWarning => '被列入注意股票',
-      AlertType.tradingDisposal => '被列入處置股票（交易受限）',
-      AlertType.insiderSelling => '董監持股連續減持',
-      AlertType.insiderBuying => '董監大量增持',
-      AlertType.highPledgeRatio => '董監質押比例過高',
     };
   }
 

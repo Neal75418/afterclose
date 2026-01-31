@@ -21,11 +21,11 @@ enum TransactionType {
       TransactionType.values.firstWhere((e) => e.value == v);
 
   String get i18nKey => switch (this) {
-        TransactionType.buy => 'portfolio.txBuy',
-        TransactionType.sell => 'portfolio.txSell',
-        TransactionType.dividendCash => 'portfolio.txDividendCash',
-        TransactionType.dividendStock => 'portfolio.txDividendStock',
-      };
+    TransactionType.buy => 'portfolio.txBuy',
+    TransactionType.sell => 'portfolio.txSell',
+    TransactionType.dividendCash => 'portfolio.txDividendCash',
+    TransactionType.dividendStock => 'portfolio.txDividendStock',
+  };
 }
 
 // ==================================================
@@ -65,10 +65,9 @@ class PortfolioPositionData {
       currentPrice != null ? (currentPrice! - avgCost) * quantity : 0;
 
   /// 未實現損益百分比
-  double get unrealizedPnlPct =>
-      (avgCost > 0 && currentPrice != null)
-          ? ((currentPrice! - avgCost) / avgCost) * 100
-          : 0;
+  double get unrealizedPnlPct => (avgCost > 0 && currentPrice != null)
+      ? ((currentPrice! - avgCost) / avgCost) * 100
+      : 0;
 
   /// 總損益（已實現 + 未實現 + 股利）
   double get totalPnl => realizedPnl + unrealizedPnl + totalDividendReceived;
@@ -98,8 +97,7 @@ class PortfolioSummary {
   final double totalDividends;
   final int positionCount;
 
-  double get totalPnl =>
-      totalUnrealizedPnl + totalRealizedPnl + totalDividends;
+  double get totalPnl => totalUnrealizedPnl + totalRealizedPnl + totalDividends;
 
   double get totalPnlPct =>
       totalCostBasis > 0 ? (totalPnl / totalCostBasis) * 100 : 0;
@@ -119,6 +117,7 @@ class PortfolioSummary {
 // ==================================================
 
 class PortfolioState {
+  static const _sentinel = Object();
   const PortfolioState({
     this.positions = const [],
     this.isLoading = false,
@@ -132,11 +131,7 @@ class PortfolioState {
   PortfolioSummary get summary {
     if (positions.isEmpty) return PortfolioSummary.empty;
 
-    double totalMV = 0,
-        totalCB = 0,
-        totalUPnl = 0,
-        totalRPnl = 0,
-        totalDiv = 0;
+    double totalMV = 0, totalCB = 0, totalUPnl = 0, totalRPnl = 0, totalDiv = 0;
 
     for (final p in positions) {
       totalMV += p.marketValue;
@@ -169,12 +164,12 @@ class PortfolioState {
   PortfolioState copyWith({
     List<PortfolioPositionData>? positions,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return PortfolioState(
       positions: positions ?? this.positions,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error == _sentinel ? this.error : error as String?,
     );
   }
 }
@@ -204,9 +199,7 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
 
       // 取得股票名稱和最新價格
       final symbols = positions.map((p) => p.symbol).toList();
-      final stocks = await Future.wait(
-        symbols.map((s) => _db.getStock(s)),
-      );
+      final stocks = await Future.wait(symbols.map((s) => _db.getStock(s)));
       final prices = await Future.wait(
         symbols.map((s) => _db.getLatestPrice(s)),
       );
@@ -312,12 +305,15 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
 
 final portfolioProvider =
     StateNotifierProvider<PortfolioNotifier, PortfolioState>((ref) {
-  return PortfolioNotifier(ref);
-});
+      return PortfolioNotifier(ref);
+    });
 
 /// 單一 symbol 的交易紀錄
-final positionTransactionsProvider = FutureProvider.family<
-    List<PortfolioTransactionEntry>, String>((ref, symbol) {
-  final db = ref.watch(databaseProvider);
-  return db.getTransactionsForSymbol(symbol);
-});
+final positionTransactionsProvider =
+    FutureProvider.family<List<PortfolioTransactionEntry>, String>((
+      ref,
+      symbol,
+    ) {
+      final db = ref.watch(databaseProvider);
+      return db.getTransactionsForSymbol(symbol);
+    });

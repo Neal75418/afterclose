@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
 
@@ -15,7 +16,7 @@ class ChipAnalysisService {
     required List<HoldingDistributionEntry> holdingDistribution,
     required List<InsiderHoldingEntry> insiderHistory,
   }) {
-    int score = 50;
+    int score = 0;
 
     // --- 1. Institutional buy/sell streak ---
     final instAdj = _institutionalAdjustment(institutionalHistory);
@@ -76,10 +77,14 @@ class ChipAnalysisService {
       }
     }
 
-    if (consecutiveBuy >= 4) return 20;
-    if (consecutiveBuy >= 2) return 10;
-    if (consecutiveSell >= 4) return -15;
-    if (consecutiveSell >= 2) return -8;
+    if (consecutiveBuy >= 4) return ChipScoringParams.instBuyStreakLargeBonus;
+    if (consecutiveBuy >= 2) return ChipScoringParams.instBuyStreakSmallBonus;
+    if (consecutiveSell >= 4) {
+      return ChipScoringParams.instSellStreakLargePenalty;
+    }
+    if (consecutiveSell >= 2) {
+      return ChipScoringParams.instSellStreakSmallPenalty;
+    }
     return 0;
   }
 
@@ -95,10 +100,10 @@ class ChipAnalysisService {
     final latest = sorted.last.foreignSharesRatio ?? 0;
     final diff = latest - oldest;
 
-    if (diff >= 0.5) return 15;
-    if (diff >= 0.2) return 8;
-    if (diff <= -0.5) return -10;
-    if (diff <= -0.2) return -5;
+    if (diff >= 0.5) return ChipScoringParams.foreignIncreaseLargeBonus;
+    if (diff >= 0.2) return ChipScoringParams.foreignIncreaseSmallBonus;
+    if (diff <= -0.5) return ChipScoringParams.foreignDecreaseLargePenalty;
+    if (diff <= -0.2) return ChipScoringParams.foreignDecreaseSmallPenalty;
     return 0;
   }
 
@@ -114,10 +119,10 @@ class ChipAnalysisService {
     int marginIncreasingDays = 0;
     int shortIncreasingDays = 0;
 
-    for (int i = 1; i < sorted.length && i <= 5; i++) {
-      final idx = sorted.length - 1 - i + 1;
-      final prev = sorted[idx - 1];
-      final curr = sorted[idx];
+    final pairCount = (sorted.length - 1).clamp(0, 5);
+    for (int i = 0; i < pairCount; i++) {
+      final curr = sorted[sorted.length - 1 - i];
+      final prev = sorted[sorted.length - 2 - i];
       if ((curr.marginBalance ?? 0) > (prev.marginBalance ?? 0)) {
         marginIncreasingDays++;
       }
@@ -128,9 +133,28 @@ class ChipAnalysisService {
 
     int adj = 0;
     // Margin balance continuously increasing = retail chasing = bearish signal
-    if (marginIncreasingDays >= 4) adj -= 8;
-    // Short balance continuously increasing = bearish sentiment but potential squeeze
-    if (shortIncreasingDays >= 4) adj += 5;
+    if (marginIncreasingDays >= 4) {
+      adj += ChipScoringParams.marginIncreasePenalty;
+    }
+
+    // Short balance direction: depends on short-to-margin ratio (券資比)
+    if (shortIncreasingDays >= 4) {
+      final latest = sorted.last;
+      final margin = latest.marginBalance ?? 0;
+      final short = latest.shortBalance ?? 0;
+      final shortMarginRatio = margin > 0 ? (short / margin * 100) : 0.0;
+
+      if (shortMarginRatio > 30) {
+        // 券資比 > 30%：融券高且持續增加 → 軋空潛力大
+        adj += ChipScoringParams.shortIncreaseBonus;
+      } else if (shortMarginRatio < 10) {
+        // 券資比 < 10%：新空單建立居多 → 偏空
+        adj -= 3;
+      } else {
+        // 中等券資比：方向不明，維持小幅加分
+        adj += ChipScoringParams.shortIncreaseBonus ~/ 2;
+      }
+    }
 
     return adj;
   }
@@ -146,7 +170,7 @@ class ChipAnalysisService {
     final latestRatio = sorted.last.dayTradingRatio ?? 0;
 
     // High day trading ratio = speculative = negative
-    if (latestRatio >= 35) return -5;
+    if (latestRatio >= 35) return ChipScoringParams.dayTradingHighPenalty;
     return 0;
   }
 
@@ -166,8 +190,12 @@ class ChipAnalysisService {
       }
     }
 
-    if (largeHolderPercent >= 60) return 12;
-    if (largeHolderPercent >= 40) return 5;
+    if (largeHolderPercent >= 60) {
+      return ChipScoringParams.concentrationHighBonus;
+    }
+    if (largeHolderPercent >= 40) {
+      return ChipScoringParams.concentrationMediumBonus;
+    }
     return 0;
   }
 
@@ -197,14 +225,14 @@ class ChipAnalysisService {
 
     // Pledge ratio warning
     final pledge = latest.pledgeRatio ?? 0;
-    if (pledge >= 30) adj -= 10;
+    if (pledge >= 30) adj += ChipScoringParams.insiderPledgePenalty;
 
     // Shares change
     final change = latest.sharesChange ?? 0;
     if (change > 0) {
-      adj += 8; // Insider buying
+      adj += ChipScoringParams.insiderBuyBonus; // Insider buying
     } else if (change < 0) {
-      adj -= 8; // Insider selling
+      adj += ChipScoringParams.insiderSellPenalty; // Insider selling
     }
 
     return adj;

@@ -382,9 +382,12 @@ class MarketDataSyncResult {
   });
 
   final int dayTradingCount;
+
+  /// 融資融券同步筆數。-1 表示已快取（跳過同步）。
   final int marginCount;
 
-  int get total => dayTradingCount + marginCount;
+  bool get marginCached => marginCount < 0;
+  int get total => dayTradingCount + (marginCount < 0 ? 0 : marginCount);
 }
 
 /// 上櫃籌碼同步結果

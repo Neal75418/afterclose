@@ -1,13 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
-/// 法人動向圖表
+/// 法人動向卡片
 ///
-/// 以 3 根垂直 BarChart 呈現外資/投信/自營淨買賣，下方顯示金額
+/// 以三張小卡呈現外資/投信/自營淨買賣，帶彩色左邊框 + 合計行
 class InstitutionalFlowChart extends StatelessWidget {
   const InstitutionalFlowChart({super.key, required this.data});
 
@@ -42,11 +41,10 @@ class InstitutionalFlowChart extends StatelessWidget {
       ),
     ];
 
-    // 計算最大絕對值作為 Y 軸範圍
+    // 找出最大絕對值，用於計算比例條寬度
     final maxAbs = items
         .map((e) => e.value.abs())
         .reduce((a, b) => a > b ? a : b);
-    final yRange = maxAbs * 1.3; // 留 30% 頭部空間
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,123 +58,46 @@ class InstitutionalFlowChart extends StatelessWidget {
         ),
         const SizedBox(height: 10),
 
-        // Bar Chart
-        SizedBox(
-          height: 80,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: yRange,
-              minY: -yRange,
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, _) {
-                      final idx = value.toInt();
-                      if (idx < 0 || idx >= items.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          items[idx].label,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: items[idx].color,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: yRange,
-                getDrawingHorizontalLine: (value) => FlLine(
-                  color: theme.colorScheme.outlineVariant.withValues(
-                    alpha: 0.3,
-                  ),
-                  strokeWidth: 0.5,
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              barGroups: List.generate(items.length, (i) {
-                final item = items[i];
-                final isPositive = item.value >= 0;
-                return BarChartGroupData(
-                  x: i,
-                  barRods: [
-                    BarChartRodData(
-                      toY: item.value,
-                      color: isPositive
-                          ? item.color
-                          : item.color.withValues(alpha: 0.6),
-                      width: 28,
-                      borderRadius: isPositive
-                          ? const BorderRadius.vertical(top: Radius.circular(6))
-                          : const BorderRadius.vertical(
-                              bottom: Radius.circular(6),
-                            ),
-                    ),
-                  ],
-                );
-              }),
-            ),
+        // 三張法人卡片
+        ...items.map(
+          (item) => Padding(
+            padding: EdgeInsets.only(bottom: item != items.last ? 6 : 0),
+            child: _FlowCard(item: item, maxAbs: maxAbs),
           ),
-        ),
-        const SizedBox(height: 8),
-
-        // 金額數字行
-        Row(
-          children: items.map((item) {
-            return Expanded(
-              child: _AmountLabel(
-                label: item.label,
-                value: item.value,
-                color: item.color,
-              ),
-            );
-          }).toList(),
         ),
 
         // 合計
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '${'marketOverview.totalNet'.tr()}: ',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            color: theme.colorScheme.surfaceContainerLowest,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'marketOverview.totalNet'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            Text(
-              _formatAmount(data.totalNet),
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: data.totalNet > 0
-                    ? AppTheme.upColor
-                    : data.totalNet < 0
-                    ? AppTheme.downColor
-                    : AppTheme.neutralColor,
-                fontFeatures: const [FontFeature.tabularFigures()],
+              Text(
+                _formatAmount(data.totalNet),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: data.totalNet > 0
+                      ? AppTheme.upColor
+                      : data.totalNet < 0
+                      ? AppTheme.downColor
+                      : AppTheme.neutralColor,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -190,9 +111,9 @@ class InstitutionalFlowChart extends StatelessWidget {
         ? '-'
         : '';
     if (absVal >= 1e8) {
-      return '$sign${(absVal / 1e8).toStringAsFixed(1)}億';
+      return '$sign${(absVal / 1e8).toStringAsFixed(1)} 億';
     } else if (absVal >= 1e4) {
-      return '$sign${(absVal / 1e4).toStringAsFixed(0)}萬';
+      return '$sign${(absVal / 1e4).toStringAsFixed(0)} 萬';
     }
     return '$sign${absVal.toStringAsFixed(0)}';
   }
@@ -205,37 +126,106 @@ class _FlowItem {
   final Color color;
 }
 
-class _AmountLabel extends StatelessWidget {
-  const _AmountLabel({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+class _FlowCard extends StatelessWidget {
+  const _FlowCard({required this.item, required this.maxAbs});
 
-  final String label;
-  final double value;
-  final Color color;
+  final _FlowItem item;
+  final double maxAbs;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final valueColor = value > 0
+    final isPositive = item.value >= 0;
+    final valueColor = item.value > 0
         ? AppTheme.upColor
-        : value < 0
+        : item.value < 0
         ? AppTheme.downColor
         : AppTheme.neutralColor;
 
-    return Column(
-      children: [
-        Text(
-          _formatAmount(value),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: valueColor,
-            fontWeight: FontWeight.w700,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+    // 比例條寬度（0.0 ~ 1.0）
+    final ratio = maxAbs > 0 ? item.value.abs() / maxAbs : 0.0;
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: theme.colorScheme.surfaceContainerLowest,
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            // 左邊框色條
+            Container(width: 3, color: item.color),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 名稱 + 金額
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          item.label,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: item.color,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          _formatAmount(item.value),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: valueColor,
+                            fontWeight: FontWeight.w700,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // 比例條
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: SizedBox(
+                        height: 4,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final barWidth = constraints.maxWidth * ratio;
+                            return Stack(
+                              children: [
+                                Container(
+                                  color: theme.colorScheme.outlineVariant
+                                      .withValues(alpha: 0.15),
+                                ),
+                                if (barWidth > 0)
+                                  Positioned(
+                                    left: isPositive ? 0 : null,
+                                    right: isPositive ? null : 0,
+                                    child: Container(
+                                      width: barWidth,
+                                      height: 4,
+                                      color: isPositive
+                                          ? item.color
+                                          : item.color.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -247,9 +237,9 @@ class _AmountLabel extends StatelessWidget {
         ? '-'
         : '';
     if (absVal >= 1e8) {
-      return '$sign${(absVal / 1e8).toStringAsFixed(1)}億';
+      return '$sign${(absVal / 1e8).toStringAsFixed(1)} 億';
     } else if (absVal >= 1e4) {
-      return '$sign${(absVal / 1e4).toStringAsFixed(0)}萬';
+      return '$sign${(absVal / 1e4).toStringAsFixed(0)} 萬';
     }
     return '$sign${absVal.toStringAsFixed(0)}';
   }

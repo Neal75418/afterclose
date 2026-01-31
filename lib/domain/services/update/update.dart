@@ -8,4 +8,5 @@ export 'historical_price_syncer.dart';
 export 'institutional_syncer.dart';
 export 'market_data_updater.dart';
 export 'news_syncer.dart';
+export 'market_index_syncer.dart';
 export 'stock_list_syncer.dart';

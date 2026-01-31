@@ -566,7 +566,7 @@ class MarketDataRepository {
       );
       final expectedQuarter = _getExpectedLatestQuarter();
       if (latestDate != null && !latestDate.isBefore(expectedQuarter)) {
-        return 0;
+        return 0; // 已有最新季度資料，跳過
       }
 
       final data = await _client.getBalanceSheet(
@@ -948,7 +948,8 @@ class MarketDataRepository {
           targetDate,
         );
         if (existingCount > 1500) {
-          return 0;
+          AppLogger.debug('MarketData', '融資融券資料已快取 ($existingCount 筆)，跳過同步');
+          return -1;
         }
       }
 

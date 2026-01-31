@@ -4,11 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/chip_strength_indicator.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/day_trading_section.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/shareholding_section.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
-/// Chip analysis tab - Institutional investors + Margin trading
+/// Comprehensive chip (籌碼) analysis tab with 6 sections.
 class ChipTab extends ConsumerStatefulWidget {
   const ChipTab({super.key, required this.symbol});
 
@@ -22,9 +25,8 @@ class _ChipTabState extends ConsumerState<ChipTab> {
   @override
   void initState() {
     super.initState();
-    // Load margin data when tab is initialized
     Future.microtask(() {
-      ref.read(stockDetailProvider(widget.symbol).notifier).loadMarginData();
+      ref.read(stockDetailProvider(widget.symbol).notifier).loadChipData();
     });
   }
 
@@ -32,57 +34,94 @@ class _ChipTabState extends ConsumerState<ChipTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(stockDetailProvider(widget.symbol));
 
+    if (state.isLoadingChip && state.chipStrength == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return SingleChildScrollView(
       primary: false,
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Institutional summary cards
-          if (state.institutionalHistory.isNotEmpty)
-            _buildInstitutionalSummary(context, state),
+          // 1. Chip strength indicator
+          if (state.chipStrength != null)
+            ChipStrengthIndicator(strength: state.chipStrength!),
 
-          const SizedBox(height: 16),
+          if (state.chipStrength != null) const SizedBox(height: 20),
 
-          // Institutional investors section
-          SectionHeader(
-            title: 'stockDetail.institutional'.tr(),
-            icon: Icons.business,
-          ),
-          const SizedBox(height: 12),
-
-          if (state.institutionalHistory.isEmpty)
-            _buildEmptyState(context, 'stockDetail.noInstitutionalData'.tr())
-          else
-            _buildInstitutionalTable(context, state),
+          // 2. Institutional flow section
+          _buildInstitutionalSection(context, state),
 
           const SizedBox(height: 24),
 
-          // Margin summary cards
-          if (state.marginHistory.isNotEmpty)
-            _buildMarginSummary(context, state.marginHistory),
+          // 3. Foreign shareholding section
+          ShareholdingSection(history: state.shareholdingHistory),
 
-          if (state.marginHistory.isNotEmpty) const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
-          // Margin trading section
-          SectionHeader(
-            title: 'stockDetail.marginTrading'.tr(),
-            icon: Icons.swap_horiz,
-          ),
-          const SizedBox(height: 12),
+          // 4. Margin trading section (from DB)
+          _buildMarginSection(context, state),
 
-          if (state.isLoadingMargin)
-            _buildLoadingState(context)
-          else if (state.marginHistory.isEmpty)
-            _buildEmptyState(context, 'stockDetail.marginComingSoon'.tr())
-          else
-            _buildMarginTable(context, state.marginHistory),
+          const SizedBox(height: 24),
+
+          // 5. Day trading section
+          DayTradingSection(history: state.dayTradingHistory),
+
+          const SizedBox(height: 24),
+
+          // 6. Holding distribution section
+          _buildDistributionSection(context, state),
+
+          const SizedBox(height: 24),
+
+          // 7. Insider holding section
+          _buildInsiderSection(context, state),
+
+          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  /// Build institutional summary cards showing latest day totals
+  // ==================================================
+  // Section 1: Institutional flow
+  // ==================================================
+
+  Widget _buildInstitutionalSection(
+    BuildContext context,
+    StockDetailState state,
+  ) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Summary cards
+        if (state.institutionalHistory.isNotEmpty)
+          _buildInstitutionalSummary(context, state),
+
+        if (state.institutionalHistory.isNotEmpty) const SizedBox(height: 12),
+
+        SectionHeader(
+          title: 'chip.sectionInstitutional'.tr(),
+          icon: Icons.business,
+        ),
+        const SizedBox(height: 12),
+
+        if (state.institutionalHistory.isEmpty)
+          _buildEmptyState(theme)
+        else ...[
+          // Trend chart
+          _buildInstitutionalTrendChart(state),
+          const SizedBox(height: 12),
+          // Table
+          _buildInstitutionalTable(context, state),
+        ],
+      ],
+    );
+  }
+
   Widget _buildInstitutionalSummary(
     BuildContext context,
     StockDetailState state,
@@ -125,6 +164,24 @@ class _ChipTabState extends ConsumerState<ChipTab> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildInstitutionalTrendChart(StockDetailState state) {
+    final deduped = _getDeduplicatedInstitutionalData(
+      state.institutionalHistory,
+    );
+    if (deduped.length < 2) return const SizedBox.shrink();
+
+    // Show total net (foreign + trust) trend
+    final sorted = deduped.reversed.toList(); // chronological order
+    final totalNets = sorted
+        .map((e) => (e.foreignNet ?? 0) + (e.investmentTrustNet ?? 0))
+        .toList();
+
+    return MiniTrendChart(
+      dataPoints: totalNets,
+      lineColor: const Color(0xFF3498DB),
     );
   }
 
@@ -177,17 +234,123 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     );
   }
 
-  /// Build margin summary cards
-  Widget _buildMarginSummary(
+  Widget _buildInstitutionalTable(
     BuildContext context,
-    List<FinMindMarginData> marginHistory,
+    StockDetailState state,
   ) {
     final theme = Theme.of(context);
 
-    // Sort by date and get latest
-    final sorted = List<FinMindMarginData>.from(marginHistory)
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            // Header row
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 2,
+                    child: Text(
+                      'stockDetail.date'.tr(),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ),
+                  _buildColoredHeader(
+                    theme,
+                    'stockDetail.foreign'.tr(),
+                    const Color(0xFF3498DB),
+                  ),
+                  _buildColoredHeader(
+                    theme,
+                    'stockDetail.investment'.tr(),
+                    const Color(0xFF9B59B6),
+                  ),
+                  _buildColoredHeader(
+                    theme,
+                    'stockDetail.dealer'.tr(),
+                    const Color(0xFFE67E22),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            ..._getDeduplicatedInstitutionalData(
+              state.institutionalHistory,
+            ).asMap().entries.map((entry) {
+              final index = entry.key;
+              final inst = entry.value;
+              return _buildDataRow(
+                theme,
+                index,
+                '${inst.date.month}/${inst.date.day}',
+                [
+                  inst.foreignNet ?? 0,
+                  inst.investmentTrustNet ?? 0,
+                  inst.dealerNet ?? 0,
+                ],
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================================================
+  // Section 4: Margin trading (DB-backed)
+  // ==================================================
+
+  Widget _buildMarginSection(BuildContext context, StockDetailState state) {
+    final theme = Theme.of(context);
+    final history = state.marginTradingHistory;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Summary cards
+        if (history.isNotEmpty) _buildMarginSummary(context, history),
+
+        if (history.isNotEmpty) const SizedBox(height: 12),
+
+        SectionHeader(title: 'chip.sectionMargin'.tr(), icon: Icons.swap_horiz),
+        const SizedBox(height: 12),
+
+        if (history.isEmpty)
+          _buildEmptyState(theme)
+        else ...[
+          // Trend chart (margin balance)
+          _buildMarginTrendChart(history),
+          const SizedBox(height: 12),
+          _buildMarginTable(context, history),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMarginSummary(
+    BuildContext context,
+    List<MarginTradingEntry> history,
+  ) {
+    final theme = Theme.of(context);
+
+    final sorted = List<MarginTradingEntry>.from(history)
       ..sort((a, b) => b.date.compareTo(a.date));
     final latest = sorted.first;
+    final marginBal = latest.marginBalance ?? 0;
+    final shortBal = latest.shortBalance ?? 0;
+
+    // Compute short/margin ratio
+    final shortMarginRatio = marginBal > 0 ? (shortBal / marginBal * 100) : 0.0;
+    final isHighRatio = shortMarginRatio > 10;
 
     return Row(
       children: [
@@ -214,7 +377,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'stockDetail.marginBalance'.tr(),
+                      'chip.marginBalance'.tr(),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.outline,
                       ),
@@ -223,7 +386,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _formatBalance(latest.marginBalance),
+                  _formatBalance(marginBal),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -241,7 +404,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color:
-                    (latest.shortMarginRatio > 10
+                    (isHighRatio
                             ? AppTheme.downColor
                             : theme.colorScheme.outline)
                         .withValues(alpha: 0.3),
@@ -256,13 +419,13 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                     Icon(
                       Icons.percent,
                       size: 14,
-                      color: latest.shortMarginRatio > 10
+                      color: isHighRatio
                           ? AppTheme.downColor
                           : theme.colorScheme.outline,
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      'stockDetail.shortSellRatio'.tr(),
+                      'chip.shortMarginRatio'.tr(),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.outline,
                       ),
@@ -271,10 +434,10 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${latest.shortMarginRatio.toStringAsFixed(1)}%',
+                  '${shortMarginRatio.toStringAsFixed(1)}%',
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: latest.shortMarginRatio > 10
+                    color: isHighRatio
                         ? AppTheme.downColor
                         : theme.colorScheme.onSurface,
                   ),
@@ -287,216 +450,35 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     );
   }
 
-  Widget _buildLoadingState(BuildContext context) {
-    final theme = Theme.of(context);
+  Widget _buildMarginTrendChart(List<MarginTradingEntry> history) {
+    final sorted = List<MarginTradingEntry>.from(history)
+      ..sort((a, b) => a.date.compareTo(b.date));
+    if (sorted.length < 2) return const SizedBox.shrink();
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context, String message) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Center(
-        child: Text(
-          message,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInstitutionalTable(
-    BuildContext context,
-    StockDetailState state,
-  ) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            // Header row with colored indicators
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.date'.tr(),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF3498DB),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'stockDetail.foreign'.tr(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF9B59B6),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'stockDetail.investment'.tr(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFE67E22),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'stockDetail.dealer'.tr(),
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.outline,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Data rows (依日期排序並去重，避免同一天出現多次)
-            ..._getDeduplicatedInstitutionalData(
-              state.institutionalHistory,
-            ).asMap().entries.map((entry) {
-              final index = entry.key;
-              final inst = entry.value;
-              final foreignNet = inst.foreignNet ?? 0;
-              final trustNet = inst.investmentTrustNet ?? 0;
-              final dealerNet = inst.dealerNet ?? 0;
-
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: index == 0
-                      ? theme.colorScheme.primaryContainer.withValues(
-                          alpha: 0.3,
-                        )
-                      : (index.isEven
-                            ? theme.colorScheme.surface
-                            : Colors.transparent),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        '${inst.date.month}/${inst.date.day}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: _buildNetValue(context, foreignNet),
-                    ),
-                    Expanded(flex: 2, child: _buildNetValue(context, trustNet)),
-                    Expanded(
-                      flex: 2,
-                      child: _buildNetValue(context, dealerNet),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ],
-        ),
-      ),
+    final data = sorted.map((e) => (e.marginBalance ?? 0).toDouble()).toList();
+    return MiniTrendChart(
+      dataPoints: data,
+      lineColor: AppTheme.upColor,
+      minY: 0,
     );
   }
 
   Widget _buildMarginTable(
     BuildContext context,
-    List<FinMindMarginData> marginHistory,
+    List<MarginTradingEntry> history,
   ) {
     final theme = Theme.of(context);
 
-    // Sort by date descending and take last 10
-    final sortedData = List<FinMindMarginData>.from(marginHistory)
+    final sorted = List<MarginTradingEntry>.from(history)
       ..sort((a, b) => b.date.compareTo(a.date));
-    final displayData = sortedData.take(10).toList();
+    final displayData = sorted.take(10).toList();
 
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Header row with styled background
+            // Header
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
@@ -518,7 +500,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'stockDetail.marginBuy'.tr(),
+                      'chip.marginBalance'.tr(),
                       textAlign: TextAlign.end,
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -529,7 +511,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'stockDetail.marginBalance'.tr(),
+                      'chip.shortBalance'.tr(),
                       textAlign: TextAlign.end,
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -540,7 +522,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                   Expanded(
                     flex: 2,
                     child: Text(
-                      'stockDetail.shortSellRatio'.tr(),
+                      'chip.shortMarginRatio'.tr(),
                       textAlign: TextAlign.end,
                       style: theme.textTheme.labelMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -552,18 +534,12 @@ class _ChipTabState extends ConsumerState<ChipTab> {
               ),
             ),
             const SizedBox(height: 8),
-            // Data rows
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final margin = entry.value;
-              final marginNet = margin.marginNet;
-              final shortMarginRatio = margin.shortMarginRatio;
-
-              // Parse date for display
-              final dateParts = margin.date.split('-');
-              final displayDate = dateParts.length >= 3
-                  ? '${int.parse(dateParts[1])}/${int.parse(dateParts[2])}'
-                  : margin.date;
+              final marginBal = margin.marginBalance ?? 0;
+              final shortBal = margin.shortBalance ?? 0;
+              final ratio = marginBal > 0 ? (shortBal / marginBal * 100) : 0.0;
 
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -582,7 +558,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        displayDate,
+                        '${margin.date.month}/${margin.date.day}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: index == 0
                               ? FontWeight.bold
@@ -592,12 +568,16 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                     ),
                     Expanded(
                       flex: 2,
-                      child: _buildNetValue(context, marginNet),
+                      child: Text(
+                        _formatBalance(marginBal),
+                        textAlign: TextAlign.end,
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ),
                     Expanded(
                       flex: 2,
                       child: Text(
-                        _formatBalance(margin.marginBalance),
+                        _formatBalance(shortBal),
                         textAlign: TextAlign.end,
                         style: theme.textTheme.bodySmall,
                       ),
@@ -610,19 +590,19 @@ class _ChipTabState extends ConsumerState<ChipTab> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: shortMarginRatio > 10
+                          color: ratio > 10
                               ? AppTheme.downColor.withValues(alpha: 0.1)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          '${shortMarginRatio.toStringAsFixed(1)}%',
+                          '${ratio.toStringAsFixed(1)}%',
                           textAlign: TextAlign.end,
                           style: theme.textTheme.bodySmall?.copyWith(
-                            fontWeight: shortMarginRatio > 10
+                            fontWeight: ratio > 10
                                 ? FontWeight.bold
                                 : FontWeight.normal,
-                            color: shortMarginRatio > 10
+                            color: ratio > 10
                                 ? AppTheme.downColor
                                 : theme.colorScheme.onSurface,
                           ),
@@ -639,28 +619,325 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     );
   }
 
-  /// 依日期去重並排序法人資料
-  ///
-  /// 因資料庫可能存在相同日期的重複記錄（DateTime 精度問題），
-  /// 此方法以日期（年月日）為 key 去重，保留最後一筆。
-  List<DailyInstitutionalEntry> _getDeduplicatedInstitutionalData(
-    List<DailyInstitutionalEntry> history,
+  // ==================================================
+  // Section 5: Holding distribution
+  // ==================================================
+
+  Widget _buildDistributionSection(
+    BuildContext context,
+    StockDetailState state,
   ) {
-    if (history.isEmpty) return [];
+    final theme = Theme.of(context);
+    final dist = state.holdingDistribution;
 
-    // 使用 Map 以日期字串為 key 去重（同一天只保留一筆）
-    final Map<String, DailyInstitutionalEntry> dedupMap = {};
-    for (final entry in history) {
-      final dateKey =
-          '${entry.date.year}-${entry.date.month}-${entry.date.day}';
-      dedupMap[dateKey] = entry; // 後面的會覆蓋前面的
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'chip.sectionDistribution'.tr(),
+          icon: Icons.pie_chart_outline,
+        ),
+        const SizedBox(height: 12),
+        if (dist.isEmpty)
+          _buildEmptyState(theme)
+        else
+          _buildDistributionBars(context, dist),
+      ],
+    );
+  }
 
-    // 轉回 List 並依日期降序排序
-    final dedupList = dedupMap.values.toList()
+  Widget _buildDistributionBars(
+    BuildContext context,
+    List<HoldingDistributionEntry> entries,
+  ) {
+    final theme = Theme.of(context);
+
+    // Group and display top levels by percent
+    final sorted = List<HoldingDistributionEntry>.from(entries)
+      ..sort((a, b) => (b.percent ?? 0).compareTo(a.percent ?? 0));
+
+    // Take top 8 levels for display
+    final display = sorted.take(8).toList();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: display.map((entry) {
+            final pct = entry.percent ?? 0;
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 80,
+                    child: Text(entry.level, style: theme.textTheme.bodySmall),
+                  ),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: (pct / 100).clamp(0.0, 1.0),
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          pct > 20
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.primary.withValues(
+                                  alpha: 0.6,
+                                ),
+                        ),
+                        minHeight: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '${pct.toStringAsFixed(1)}%',
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  // ==================================================
+  // Section 6: Insider holding
+  // ==================================================
+
+  Widget _buildInsiderSection(BuildContext context, StockDetailState state) {
+    final theme = Theme.of(context);
+    final history = state.insiderHistory;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: 'chip.sectionInsider'.tr(),
+          icon: Icons.shield_outlined,
+        ),
+        const SizedBox(height: 12),
+        if (history.isEmpty)
+          _buildEmptyState(theme)
+        else
+          _buildInsiderCard(context, history),
+      ],
+    );
+  }
+
+  Widget _buildInsiderCard(
+    BuildContext context,
+    List<InsiderHoldingEntry> history,
+  ) {
+    final theme = Theme.of(context);
+    final sorted = List<InsiderHoldingEntry>.from(history)
       ..sort((a, b) => b.date.compareTo(a.date));
+    final latest = sorted.first;
 
-    return dedupList.take(10).toList();
+    final insiderRatio = latest.insiderRatio ?? 0;
+    final pledgeRatio = latest.pledgeRatio ?? 0;
+    final sharesChange = latest.sharesChange ?? 0;
+    final isHighPledge = pledgeRatio >= 30;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Ratio row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'chip.insiderRatio'.tr(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${insiderRatio.toStringAsFixed(2)}%',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'chip.pledgeRatio'.tr(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${pledgeRatio.toStringAsFixed(2)}%',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isHighPledge ? AppTheme.downColor : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Shares change
+            Row(
+              children: [
+                Text(
+                  'chip.sharesChange'.tr(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _formatSharesChange(sharesChange),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: sharesChange > 0
+                        ? AppTheme.upColor
+                        : sharesChange < 0
+                        ? AppTheme.downColor
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+
+            // Pledge warning
+            if (isHighPledge) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.downColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 14,
+                      color: AppTheme.downColor,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'chip.pledgeWarning'.tr(),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppTheme.downColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ==================================================
+  // Shared helpers
+  // ==================================================
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Text(
+          'chip.noData'.tr(),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColoredHeader(ThemeData theme, String label, Color color) {
+    return Expanded(
+      flex: 2,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataRow(
+    ThemeData theme,
+    int index,
+    String dateLabel,
+    List<double> values,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      decoration: BoxDecoration(
+        color: index == 0
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
+            : (index.isEven ? theme.colorScheme.surface : Colors.transparent),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              dateLabel,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+          for (final v in values)
+            Expanded(flex: 2, child: _buildNetValue(context, v)),
+        ],
+      ),
+    );
   }
 
   Widget _buildNetValue(BuildContext context, double value) {
@@ -674,30 +951,42 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     );
   }
 
-  /// Format net value with Chinese units
-  /// API returns values in shares (股), 1張 = 1000股
+  /// 依日期去重並排序法人資料
+  List<DailyInstitutionalEntry> _getDeduplicatedInstitutionalData(
+    List<DailyInstitutionalEntry> history,
+  ) {
+    if (history.isEmpty) return [];
+
+    final Map<String, DailyInstitutionalEntry> dedupMap = {};
+    for (final entry in history) {
+      final dateKey =
+          '${entry.date.year}-${entry.date.month}-${entry.date.day}';
+      dedupMap[dateKey] = entry;
+    }
+
+    final dedupList = dedupMap.values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    return dedupList.take(10).toList();
+  }
+
+  /// Format net value with Chinese units (shares → 張)
   String _formatNet(double value) {
     final prefix = value >= 0 ? '+' : '';
     final absValue = value.abs();
-
-    // Convert to 張 (1張 = 1000股)
     final lots = absValue / 1000;
 
     if (lots >= 10000) {
-      // Show as 萬張
       return '$prefix${(value / 1000 / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
     } else if (lots >= 1000) {
-      // Show as 千張
       return '$prefix${(value / 1000 / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
     } else if (lots >= 1) {
-      // Show as 張
       return '$prefix${(value / 1000).toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
     }
-    // Less than 1 張, show raw value
     return '$prefix${value.toStringAsFixed(0)}';
   }
 
-  /// Format margin balance with Chinese units (already in 張)
+  /// Format balance with Chinese units (already in 張)
   String _formatBalance(double value) {
     if (value >= 10000) {
       return '${(value / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
@@ -705,5 +994,15 @@ class _ChipTabState extends ConsumerState<ChipTab> {
       return '${(value / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
     }
     return '${value.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
+  }
+
+  /// Format shares change (in 千股)
+  String _formatSharesChange(double value) {
+    final prefix = value >= 0 ? '+' : '';
+    final absValue = value.abs();
+    if (absValue >= 1000) {
+      return '$prefix${(value / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
+    }
+    return '$prefix${value.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
   }
 }

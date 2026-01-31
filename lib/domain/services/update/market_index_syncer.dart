@@ -3,24 +3,25 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
 /// 大盤指數歷史同步器
 ///
-/// 從 TWSE MI_INDEX API 取得當日指數資料，寫入 MarketIndex 表。
+/// 從 TWSE MI_INDEX API 取得當日指數資料，篩選 Dashboard 重點指數後寫入 MarketIndex 表。
 /// 供大盤總覽走勢圖使用。
 class MarketIndexSyncer {
   MarketIndexSyncer({
     required AppDatabase database,
     required TwseClient twseClient,
-  })  : _db = database,
-        _twse = twseClient;
+  }) : _db = database,
+       _twse = twseClient;
 
   final AppDatabase _db;
   final TwseClient _twse;
 
   /// 同步當日大盤指數至 DB
   ///
-  /// 回傳寫入筆數。
+  /// 僅同步 Dashboard 需要的 4 個重點指數，回傳寫入筆數。
   Future<int> sync() async {
     try {
       final indices = await _twse.getMarketIndices();
@@ -30,7 +31,18 @@ class MarketIndexSyncer {
         return 0;
       }
 
-      final companions = indices.map((idx) {
+      // 僅保留 Dashboard 需要的 4 個重點指數（精確名稱匹配）
+      final targetNames = MarketIndexNames.dashboardIndices.toSet();
+      final filtered = indices
+          .where((idx) => targetNames.contains(idx.name))
+          .toList();
+
+      if (filtered.isEmpty) {
+        AppLogger.debug('MarketIndexSyncer', '無匹配的重點指數');
+        return 0;
+      }
+
+      final companions = filtered.map((idx) {
         return MarketIndexCompanion(
           date: Value(idx.date),
           name: Value(idx.name),
@@ -44,7 +56,7 @@ class MarketIndexSyncer {
 
       AppLogger.info(
         'MarketIndexSyncer',
-        '指數同步完成: ${companions.length} 筆 (${indices.first.date.toString().substring(0, 10)})',
+        '指數同步完成: ${companions.length} 筆 (${filtered.first.date.toString().substring(0, 10)})',
       );
       return companions.length;
     } catch (e) {

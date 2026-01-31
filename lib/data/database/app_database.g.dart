@@ -11637,6 +11637,2536 @@ class InsiderHoldingCompanion extends UpdateCompanion<InsiderHoldingEntry> {
   }
 }
 
+class $ScreeningStrategyTableTable extends ScreeningStrategyTable
+    with TableInfo<$ScreeningStrategyTableTable, ScreeningStrategyEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ScreeningStrategyTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 100,
+    ),
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conditionsJsonMeta = const VerificationMeta(
+    'conditionsJson',
+  );
+  @override
+  late final GeneratedColumn<String> conditionsJson = GeneratedColumn<String>(
+    'conditions_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    conditionsJson,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'screening_strategy_table';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ScreeningStrategyEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('conditions_json')) {
+      context.handle(
+        _conditionsJsonMeta,
+        conditionsJson.isAcceptableOrUnknown(
+          data['conditions_json']!,
+          _conditionsJsonMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conditionsJsonMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ScreeningStrategyEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ScreeningStrategyEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      conditionsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conditions_json'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ScreeningStrategyTableTable createAlias(String alias) {
+    return $ScreeningStrategyTableTable(attachedDatabase, alias);
+  }
+}
+
+class ScreeningStrategyEntry extends DataClass
+    implements Insertable<ScreeningStrategyEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 策略名稱
+  final String name;
+
+  /// 篩選條件（JSON array）
+  final String conditionsJson;
+
+  /// 建立時間
+  final DateTime createdAt;
+
+  /// 最後更新時間
+  final DateTime updatedAt;
+  const ScreeningStrategyEntry({
+    required this.id,
+    required this.name,
+    required this.conditionsJson,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['conditions_json'] = Variable<String>(conditionsJson);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ScreeningStrategyTableCompanion toCompanion(bool nullToAbsent) {
+    return ScreeningStrategyTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      conditionsJson: Value(conditionsJson),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ScreeningStrategyEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ScreeningStrategyEntry(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      conditionsJson: serializer.fromJson<String>(json['conditionsJson']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'conditionsJson': serializer.toJson<String>(conditionsJson),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ScreeningStrategyEntry copyWith({
+    int? id,
+    String? name,
+    String? conditionsJson,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => ScreeningStrategyEntry(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    conditionsJson: conditionsJson ?? this.conditionsJson,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  ScreeningStrategyEntry copyWithCompanion(
+    ScreeningStrategyTableCompanion data,
+  ) {
+    return ScreeningStrategyEntry(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      conditionsJson: data.conditionsJson.present
+          ? data.conditionsJson.value
+          : this.conditionsJson,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScreeningStrategyEntry(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('conditionsJson: $conditionsJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, name, conditionsJson, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ScreeningStrategyEntry &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.conditionsJson == this.conditionsJson &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ScreeningStrategyTableCompanion
+    extends UpdateCompanion<ScreeningStrategyEntry> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> conditionsJson;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const ScreeningStrategyTableCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.conditionsJson = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  ScreeningStrategyTableCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    required String conditionsJson,
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : name = Value(name),
+       conditionsJson = Value(conditionsJson);
+  static Insertable<ScreeningStrategyEntry> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? conditionsJson,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (conditionsJson != null) 'conditions_json': conditionsJson,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  ScreeningStrategyTableCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<String>? conditionsJson,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return ScreeningStrategyTableCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      conditionsJson: conditionsJson ?? this.conditionsJson,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (conditionsJson.present) {
+      map['conditions_json'] = Variable<String>(conditionsJson.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ScreeningStrategyTableCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('conditionsJson: $conditionsJson, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PortfolioPositionTable extends PortfolioPosition
+    with TableInfo<$PortfolioPositionTable, PortfolioPositionEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PortfolioPositionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _quantityMeta = const VerificationMeta(
+    'quantity',
+  );
+  @override
+  late final GeneratedColumn<double> quantity = GeneratedColumn<double>(
+    'quantity',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _avgCostMeta = const VerificationMeta(
+    'avgCost',
+  );
+  @override
+  late final GeneratedColumn<double> avgCost = GeneratedColumn<double>(
+    'avg_cost',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _realizedPnlMeta = const VerificationMeta(
+    'realizedPnl',
+  );
+  @override
+  late final GeneratedColumn<double> realizedPnl = GeneratedColumn<double>(
+    'realized_pnl',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _totalDividendReceivedMeta =
+      const VerificationMeta('totalDividendReceived');
+  @override
+  late final GeneratedColumn<double> totalDividendReceived =
+      GeneratedColumn<double>(
+        'total_dividend_received',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    symbol,
+    quantity,
+    avgCost,
+    realizedPnl,
+    totalDividendReceived,
+    note,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'portfolio_position';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PortfolioPositionEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(
+        _quantityMeta,
+        quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
+      );
+    }
+    if (data.containsKey('avg_cost')) {
+      context.handle(
+        _avgCostMeta,
+        avgCost.isAcceptableOrUnknown(data['avg_cost']!, _avgCostMeta),
+      );
+    }
+    if (data.containsKey('realized_pnl')) {
+      context.handle(
+        _realizedPnlMeta,
+        realizedPnl.isAcceptableOrUnknown(
+          data['realized_pnl']!,
+          _realizedPnlMeta,
+        ),
+      );
+    }
+    if (data.containsKey('total_dividend_received')) {
+      context.handle(
+        _totalDividendReceivedMeta,
+        totalDividendReceived.isAcceptableOrUnknown(
+          data['total_dividend_received']!,
+          _totalDividendReceivedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PortfolioPositionEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PortfolioPositionEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      quantity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantity'],
+      )!,
+      avgCost: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_cost'],
+      )!,
+      realizedPnl: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}realized_pnl'],
+      )!,
+      totalDividendReceived: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}total_dividend_received'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PortfolioPositionTable createAlias(String alias) {
+    return $PortfolioPositionTable(attachedDatabase, alias);
+  }
+}
+
+class PortfolioPositionEntry extends DataClass
+    implements Insertable<PortfolioPositionEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 股票代碼
+  final String symbol;
+
+  /// 持有股數（可為 0，代表已清倉但保留記錄）
+  final double quantity;
+
+  /// 平均成本（元/股）
+  final double avgCost;
+
+  /// 已實現損益（元）
+  final double realizedPnl;
+
+  /// 累計收到的現金股利（元）
+  final double totalDividendReceived;
+
+  /// 備註
+  final String? note;
+
+  /// 建立時間
+  final DateTime createdAt;
+
+  /// 最後更新時間
+  final DateTime updatedAt;
+  const PortfolioPositionEntry({
+    required this.id,
+    required this.symbol,
+    required this.quantity,
+    required this.avgCost,
+    required this.realizedPnl,
+    required this.totalDividendReceived,
+    this.note,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['symbol'] = Variable<String>(symbol);
+    map['quantity'] = Variable<double>(quantity);
+    map['avg_cost'] = Variable<double>(avgCost);
+    map['realized_pnl'] = Variable<double>(realizedPnl);
+    map['total_dividend_received'] = Variable<double>(totalDividendReceived);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  PortfolioPositionCompanion toCompanion(bool nullToAbsent) {
+    return PortfolioPositionCompanion(
+      id: Value(id),
+      symbol: Value(symbol),
+      quantity: Value(quantity),
+      avgCost: Value(avgCost),
+      realizedPnl: Value(realizedPnl),
+      totalDividendReceived: Value(totalDividendReceived),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory PortfolioPositionEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PortfolioPositionEntry(
+      id: serializer.fromJson<int>(json['id']),
+      symbol: serializer.fromJson<String>(json['symbol']),
+      quantity: serializer.fromJson<double>(json['quantity']),
+      avgCost: serializer.fromJson<double>(json['avgCost']),
+      realizedPnl: serializer.fromJson<double>(json['realizedPnl']),
+      totalDividendReceived: serializer.fromJson<double>(
+        json['totalDividendReceived'],
+      ),
+      note: serializer.fromJson<String?>(json['note']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'symbol': serializer.toJson<String>(symbol),
+      'quantity': serializer.toJson<double>(quantity),
+      'avgCost': serializer.toJson<double>(avgCost),
+      'realizedPnl': serializer.toJson<double>(realizedPnl),
+      'totalDividendReceived': serializer.toJson<double>(totalDividendReceived),
+      'note': serializer.toJson<String?>(note),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  PortfolioPositionEntry copyWith({
+    int? id,
+    String? symbol,
+    double? quantity,
+    double? avgCost,
+    double? realizedPnl,
+    double? totalDividendReceived,
+    Value<String?> note = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => PortfolioPositionEntry(
+    id: id ?? this.id,
+    symbol: symbol ?? this.symbol,
+    quantity: quantity ?? this.quantity,
+    avgCost: avgCost ?? this.avgCost,
+    realizedPnl: realizedPnl ?? this.realizedPnl,
+    totalDividendReceived: totalDividendReceived ?? this.totalDividendReceived,
+    note: note.present ? note.value : this.note,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  PortfolioPositionEntry copyWithCompanion(PortfolioPositionCompanion data) {
+    return PortfolioPositionEntry(
+      id: data.id.present ? data.id.value : this.id,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      avgCost: data.avgCost.present ? data.avgCost.value : this.avgCost,
+      realizedPnl: data.realizedPnl.present
+          ? data.realizedPnl.value
+          : this.realizedPnl,
+      totalDividendReceived: data.totalDividendReceived.present
+          ? data.totalDividendReceived.value
+          : this.totalDividendReceived,
+      note: data.note.present ? data.note.value : this.note,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PortfolioPositionEntry(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('quantity: $quantity, ')
+          ..write('avgCost: $avgCost, ')
+          ..write('realizedPnl: $realizedPnl, ')
+          ..write('totalDividendReceived: $totalDividendReceived, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    symbol,
+    quantity,
+    avgCost,
+    realizedPnl,
+    totalDividendReceived,
+    note,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PortfolioPositionEntry &&
+          other.id == this.id &&
+          other.symbol == this.symbol &&
+          other.quantity == this.quantity &&
+          other.avgCost == this.avgCost &&
+          other.realizedPnl == this.realizedPnl &&
+          other.totalDividendReceived == this.totalDividendReceived &&
+          other.note == this.note &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class PortfolioPositionCompanion
+    extends UpdateCompanion<PortfolioPositionEntry> {
+  final Value<int> id;
+  final Value<String> symbol;
+  final Value<double> quantity;
+  final Value<double> avgCost;
+  final Value<double> realizedPnl;
+  final Value<double> totalDividendReceived;
+  final Value<String?> note;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const PortfolioPositionCompanion({
+    this.id = const Value.absent(),
+    this.symbol = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.avgCost = const Value.absent(),
+    this.realizedPnl = const Value.absent(),
+    this.totalDividendReceived = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  PortfolioPositionCompanion.insert({
+    this.id = const Value.absent(),
+    required String symbol,
+    this.quantity = const Value.absent(),
+    this.avgCost = const Value.absent(),
+    this.realizedPnl = const Value.absent(),
+    this.totalDividendReceived = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : symbol = Value(symbol);
+  static Insertable<PortfolioPositionEntry> custom({
+    Expression<int>? id,
+    Expression<String>? symbol,
+    Expression<double>? quantity,
+    Expression<double>? avgCost,
+    Expression<double>? realizedPnl,
+    Expression<double>? totalDividendReceived,
+    Expression<String>? note,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (symbol != null) 'symbol': symbol,
+      if (quantity != null) 'quantity': quantity,
+      if (avgCost != null) 'avg_cost': avgCost,
+      if (realizedPnl != null) 'realized_pnl': realizedPnl,
+      if (totalDividendReceived != null)
+        'total_dividend_received': totalDividendReceived,
+      if (note != null) 'note': note,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  PortfolioPositionCompanion copyWith({
+    Value<int>? id,
+    Value<String>? symbol,
+    Value<double>? quantity,
+    Value<double>? avgCost,
+    Value<double>? realizedPnl,
+    Value<double>? totalDividendReceived,
+    Value<String?>? note,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return PortfolioPositionCompanion(
+      id: id ?? this.id,
+      symbol: symbol ?? this.symbol,
+      quantity: quantity ?? this.quantity,
+      avgCost: avgCost ?? this.avgCost,
+      realizedPnl: realizedPnl ?? this.realizedPnl,
+      totalDividendReceived:
+          totalDividendReceived ?? this.totalDividendReceived,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<double>(quantity.value);
+    }
+    if (avgCost.present) {
+      map['avg_cost'] = Variable<double>(avgCost.value);
+    }
+    if (realizedPnl.present) {
+      map['realized_pnl'] = Variable<double>(realizedPnl.value);
+    }
+    if (totalDividendReceived.present) {
+      map['total_dividend_received'] = Variable<double>(
+        totalDividendReceived.value,
+      );
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PortfolioPositionCompanion(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('quantity: $quantity, ')
+          ..write('avgCost: $avgCost, ')
+          ..write('realizedPnl: $realizedPnl, ')
+          ..write('totalDividendReceived: $totalDividendReceived, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $PortfolioTransactionTable extends PortfolioTransaction
+    with TableInfo<$PortfolioTransactionTable, PortfolioTransactionEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PortfolioTransactionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _txTypeMeta = const VerificationMeta('txType');
+  @override
+  late final GeneratedColumn<String> txType = GeneratedColumn<String>(
+    'tx_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _quantityMeta = const VerificationMeta(
+    'quantity',
+  );
+  @override
+  late final GeneratedColumn<double> quantity = GeneratedColumn<double>(
+    'quantity',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _priceMeta = const VerificationMeta('price');
+  @override
+  late final GeneratedColumn<double> price = GeneratedColumn<double>(
+    'price',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _feeMeta = const VerificationMeta('fee');
+  @override
+  late final GeneratedColumn<double> fee = GeneratedColumn<double>(
+    'fee',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _taxMeta = const VerificationMeta('tax');
+  @override
+  late final GeneratedColumn<double> tax = GeneratedColumn<double>(
+    'tax',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    symbol,
+    txType,
+    date,
+    quantity,
+    price,
+    fee,
+    tax,
+    note,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'portfolio_transaction';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PortfolioTransactionEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('tx_type')) {
+      context.handle(
+        _txTypeMeta,
+        txType.isAcceptableOrUnknown(data['tx_type']!, _txTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_txTypeMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(
+        _quantityMeta,
+        quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_quantityMeta);
+    }
+    if (data.containsKey('price')) {
+      context.handle(
+        _priceMeta,
+        price.isAcceptableOrUnknown(data['price']!, _priceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_priceMeta);
+    }
+    if (data.containsKey('fee')) {
+      context.handle(
+        _feeMeta,
+        fee.isAcceptableOrUnknown(data['fee']!, _feeMeta),
+      );
+    }
+    if (data.containsKey('tax')) {
+      context.handle(
+        _taxMeta,
+        tax.isAcceptableOrUnknown(data['tax']!, _taxMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PortfolioTransactionEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PortfolioTransactionEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      txType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tx_type'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      quantity: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}quantity'],
+      )!,
+      price: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}price'],
+      )!,
+      fee: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}fee'],
+      )!,
+      tax: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}tax'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PortfolioTransactionTable createAlias(String alias) {
+    return $PortfolioTransactionTable(attachedDatabase, alias);
+  }
+}
+
+class PortfolioTransactionEntry extends DataClass
+    implements Insertable<PortfolioTransactionEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 股票代碼
+  final String symbol;
+
+  /// 交易類型：BUY, SELL, DIVIDEND_CASH, DIVIDEND_STOCK
+  final String txType;
+
+  /// 交易日期
+  final DateTime date;
+
+  /// 數量（股）
+  final double quantity;
+
+  /// 單價（元/股）
+  final double price;
+
+  /// 手續費（元）
+  final double fee;
+
+  /// 交易稅（元）
+  final double tax;
+
+  /// 備註
+  final String? note;
+
+  /// 建立時間
+  final DateTime createdAt;
+  const PortfolioTransactionEntry({
+    required this.id,
+    required this.symbol,
+    required this.txType,
+    required this.date,
+    required this.quantity,
+    required this.price,
+    required this.fee,
+    required this.tax,
+    this.note,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['symbol'] = Variable<String>(symbol);
+    map['tx_type'] = Variable<String>(txType);
+    map['date'] = Variable<DateTime>(date);
+    map['quantity'] = Variable<double>(quantity);
+    map['price'] = Variable<double>(price);
+    map['fee'] = Variable<double>(fee);
+    map['tax'] = Variable<double>(tax);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<String>(note);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  PortfolioTransactionCompanion toCompanion(bool nullToAbsent) {
+    return PortfolioTransactionCompanion(
+      id: Value(id),
+      symbol: Value(symbol),
+      txType: Value(txType),
+      date: Value(date),
+      quantity: Value(quantity),
+      price: Value(price),
+      fee: Value(fee),
+      tax: Value(tax),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PortfolioTransactionEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PortfolioTransactionEntry(
+      id: serializer.fromJson<int>(json['id']),
+      symbol: serializer.fromJson<String>(json['symbol']),
+      txType: serializer.fromJson<String>(json['txType']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      quantity: serializer.fromJson<double>(json['quantity']),
+      price: serializer.fromJson<double>(json['price']),
+      fee: serializer.fromJson<double>(json['fee']),
+      tax: serializer.fromJson<double>(json['tax']),
+      note: serializer.fromJson<String?>(json['note']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'symbol': serializer.toJson<String>(symbol),
+      'txType': serializer.toJson<String>(txType),
+      'date': serializer.toJson<DateTime>(date),
+      'quantity': serializer.toJson<double>(quantity),
+      'price': serializer.toJson<double>(price),
+      'fee': serializer.toJson<double>(fee),
+      'tax': serializer.toJson<double>(tax),
+      'note': serializer.toJson<String?>(note),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  PortfolioTransactionEntry copyWith({
+    int? id,
+    String? symbol,
+    String? txType,
+    DateTime? date,
+    double? quantity,
+    double? price,
+    double? fee,
+    double? tax,
+    Value<String?> note = const Value.absent(),
+    DateTime? createdAt,
+  }) => PortfolioTransactionEntry(
+    id: id ?? this.id,
+    symbol: symbol ?? this.symbol,
+    txType: txType ?? this.txType,
+    date: date ?? this.date,
+    quantity: quantity ?? this.quantity,
+    price: price ?? this.price,
+    fee: fee ?? this.fee,
+    tax: tax ?? this.tax,
+    note: note.present ? note.value : this.note,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PortfolioTransactionEntry copyWithCompanion(
+    PortfolioTransactionCompanion data,
+  ) {
+    return PortfolioTransactionEntry(
+      id: data.id.present ? data.id.value : this.id,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      txType: data.txType.present ? data.txType.value : this.txType,
+      date: data.date.present ? data.date.value : this.date,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      price: data.price.present ? data.price.value : this.price,
+      fee: data.fee.present ? data.fee.value : this.fee,
+      tax: data.tax.present ? data.tax.value : this.tax,
+      note: data.note.present ? data.note.value : this.note,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PortfolioTransactionEntry(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('txType: $txType, ')
+          ..write('date: $date, ')
+          ..write('quantity: $quantity, ')
+          ..write('price: $price, ')
+          ..write('fee: $fee, ')
+          ..write('tax: $tax, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    symbol,
+    txType,
+    date,
+    quantity,
+    price,
+    fee,
+    tax,
+    note,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PortfolioTransactionEntry &&
+          other.id == this.id &&
+          other.symbol == this.symbol &&
+          other.txType == this.txType &&
+          other.date == this.date &&
+          other.quantity == this.quantity &&
+          other.price == this.price &&
+          other.fee == this.fee &&
+          other.tax == this.tax &&
+          other.note == this.note &&
+          other.createdAt == this.createdAt);
+}
+
+class PortfolioTransactionCompanion
+    extends UpdateCompanion<PortfolioTransactionEntry> {
+  final Value<int> id;
+  final Value<String> symbol;
+  final Value<String> txType;
+  final Value<DateTime> date;
+  final Value<double> quantity;
+  final Value<double> price;
+  final Value<double> fee;
+  final Value<double> tax;
+  final Value<String?> note;
+  final Value<DateTime> createdAt;
+  const PortfolioTransactionCompanion({
+    this.id = const Value.absent(),
+    this.symbol = const Value.absent(),
+    this.txType = const Value.absent(),
+    this.date = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.price = const Value.absent(),
+    this.fee = const Value.absent(),
+    this.tax = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  PortfolioTransactionCompanion.insert({
+    this.id = const Value.absent(),
+    required String symbol,
+    required String txType,
+    required DateTime date,
+    required double quantity,
+    required double price,
+    this.fee = const Value.absent(),
+    this.tax = const Value.absent(),
+    this.note = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : symbol = Value(symbol),
+       txType = Value(txType),
+       date = Value(date),
+       quantity = Value(quantity),
+       price = Value(price);
+  static Insertable<PortfolioTransactionEntry> custom({
+    Expression<int>? id,
+    Expression<String>? symbol,
+    Expression<String>? txType,
+    Expression<DateTime>? date,
+    Expression<double>? quantity,
+    Expression<double>? price,
+    Expression<double>? fee,
+    Expression<double>? tax,
+    Expression<String>? note,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (symbol != null) 'symbol': symbol,
+      if (txType != null) 'tx_type': txType,
+      if (date != null) 'date': date,
+      if (quantity != null) 'quantity': quantity,
+      if (price != null) 'price': price,
+      if (fee != null) 'fee': fee,
+      if (tax != null) 'tax': tax,
+      if (note != null) 'note': note,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  PortfolioTransactionCompanion copyWith({
+    Value<int>? id,
+    Value<String>? symbol,
+    Value<String>? txType,
+    Value<DateTime>? date,
+    Value<double>? quantity,
+    Value<double>? price,
+    Value<double>? fee,
+    Value<double>? tax,
+    Value<String?>? note,
+    Value<DateTime>? createdAt,
+  }) {
+    return PortfolioTransactionCompanion(
+      id: id ?? this.id,
+      symbol: symbol ?? this.symbol,
+      txType: txType ?? this.txType,
+      date: date ?? this.date,
+      quantity: quantity ?? this.quantity,
+      price: price ?? this.price,
+      fee: fee ?? this.fee,
+      tax: tax ?? this.tax,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (txType.present) {
+      map['tx_type'] = Variable<String>(txType.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<double>(quantity.value);
+    }
+    if (price.present) {
+      map['price'] = Variable<double>(price.value);
+    }
+    if (fee.present) {
+      map['fee'] = Variable<double>(fee.value);
+    }
+    if (tax.present) {
+      map['tax'] = Variable<double>(tax.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PortfolioTransactionCompanion(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('txType: $txType, ')
+          ..write('date: $date, ')
+          ..write('quantity: $quantity, ')
+          ..write('price: $price, ')
+          ..write('fee: $fee, ')
+          ..write('tax: $tax, ')
+          ..write('note: $note, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StockEventTable extends StockEvent
+    with TableInfo<$StockEventTable, StockEventEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StockEventTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _eventTypeMeta = const VerificationMeta(
+    'eventType',
+  );
+  @override
+  late final GeneratedColumn<String> eventType = GeneratedColumn<String>(
+    'event_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _eventDateMeta = const VerificationMeta(
+    'eventDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> eventDate = GeneratedColumn<DateTime>(
+    'event_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isAutoGeneratedMeta = const VerificationMeta(
+    'isAutoGenerated',
+  );
+  @override
+  late final GeneratedColumn<bool> isAutoGenerated = GeneratedColumn<bool>(
+    'is_auto_generated',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_auto_generated" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    symbol,
+    eventType,
+    eventDate,
+    title,
+    description,
+    isAutoGenerated,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'stock_event';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StockEventEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    }
+    if (data.containsKey('event_type')) {
+      context.handle(
+        _eventTypeMeta,
+        eventType.isAcceptableOrUnknown(data['event_type']!, _eventTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventTypeMeta);
+    }
+    if (data.containsKey('event_date')) {
+      context.handle(
+        _eventDateMeta,
+        eventDate.isAcceptableOrUnknown(data['event_date']!, _eventDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_eventDateMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_auto_generated')) {
+      context.handle(
+        _isAutoGeneratedMeta,
+        isAutoGenerated.isAcceptableOrUnknown(
+          data['is_auto_generated']!,
+          _isAutoGeneratedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  StockEventEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StockEventEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      ),
+      eventType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}event_type'],
+      )!,
+      eventDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}event_date'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      isAutoGenerated: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_auto_generated'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $StockEventTable createAlias(String alias) {
+    return $StockEventTable(attachedDatabase, alias);
+  }
+}
+
+class StockEventEntry extends DataClass implements Insertable<StockEventEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 股票代碼（可為空，允許純個人備忘事件）
+  final String? symbol;
+
+  /// 事件類型：EX_DIVIDEND, EX_RIGHTS, EARNINGS, CUSTOM
+  final String eventType;
+
+  /// 事件日期
+  final DateTime eventDate;
+
+  /// 事件標題
+  final String title;
+
+  /// 事件描述/備註
+  final String? description;
+
+  /// 是否為系統自動產生
+  final bool isAutoGenerated;
+
+  /// 建立時間
+  final DateTime createdAt;
+  const StockEventEntry({
+    required this.id,
+    this.symbol,
+    required this.eventType,
+    required this.eventDate,
+    required this.title,
+    this.description,
+    required this.isAutoGenerated,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || symbol != null) {
+      map['symbol'] = Variable<String>(symbol);
+    }
+    map['event_type'] = Variable<String>(eventType);
+    map['event_date'] = Variable<DateTime>(eventDate);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['is_auto_generated'] = Variable<bool>(isAutoGenerated);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  StockEventCompanion toCompanion(bool nullToAbsent) {
+    return StockEventCompanion(
+      id: Value(id),
+      symbol: symbol == null && nullToAbsent
+          ? const Value.absent()
+          : Value(symbol),
+      eventType: Value(eventType),
+      eventDate: Value(eventDate),
+      title: Value(title),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      isAutoGenerated: Value(isAutoGenerated),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory StockEventEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StockEventEntry(
+      id: serializer.fromJson<int>(json['id']),
+      symbol: serializer.fromJson<String?>(json['symbol']),
+      eventType: serializer.fromJson<String>(json['eventType']),
+      eventDate: serializer.fromJson<DateTime>(json['eventDate']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String?>(json['description']),
+      isAutoGenerated: serializer.fromJson<bool>(json['isAutoGenerated']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'symbol': serializer.toJson<String?>(symbol),
+      'eventType': serializer.toJson<String>(eventType),
+      'eventDate': serializer.toJson<DateTime>(eventDate),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String?>(description),
+      'isAutoGenerated': serializer.toJson<bool>(isAutoGenerated),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  StockEventEntry copyWith({
+    int? id,
+    Value<String?> symbol = const Value.absent(),
+    String? eventType,
+    DateTime? eventDate,
+    String? title,
+    Value<String?> description = const Value.absent(),
+    bool? isAutoGenerated,
+    DateTime? createdAt,
+  }) => StockEventEntry(
+    id: id ?? this.id,
+    symbol: symbol.present ? symbol.value : this.symbol,
+    eventType: eventType ?? this.eventType,
+    eventDate: eventDate ?? this.eventDate,
+    title: title ?? this.title,
+    description: description.present ? description.value : this.description,
+    isAutoGenerated: isAutoGenerated ?? this.isAutoGenerated,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  StockEventEntry copyWithCompanion(StockEventCompanion data) {
+    return StockEventEntry(
+      id: data.id.present ? data.id.value : this.id,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      eventType: data.eventType.present ? data.eventType.value : this.eventType,
+      eventDate: data.eventDate.present ? data.eventDate.value : this.eventDate,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      isAutoGenerated: data.isAutoGenerated.present
+          ? data.isAutoGenerated.value
+          : this.isAutoGenerated,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockEventEntry(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('eventType: $eventType, ')
+          ..write('eventDate: $eventDate, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('isAutoGenerated: $isAutoGenerated, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    symbol,
+    eventType,
+    eventDate,
+    title,
+    description,
+    isAutoGenerated,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StockEventEntry &&
+          other.id == this.id &&
+          other.symbol == this.symbol &&
+          other.eventType == this.eventType &&
+          other.eventDate == this.eventDate &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.isAutoGenerated == this.isAutoGenerated &&
+          other.createdAt == this.createdAt);
+}
+
+class StockEventCompanion extends UpdateCompanion<StockEventEntry> {
+  final Value<int> id;
+  final Value<String?> symbol;
+  final Value<String> eventType;
+  final Value<DateTime> eventDate;
+  final Value<String> title;
+  final Value<String?> description;
+  final Value<bool> isAutoGenerated;
+  final Value<DateTime> createdAt;
+  const StockEventCompanion({
+    this.id = const Value.absent(),
+    this.symbol = const Value.absent(),
+    this.eventType = const Value.absent(),
+    this.eventDate = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.isAutoGenerated = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  StockEventCompanion.insert({
+    this.id = const Value.absent(),
+    this.symbol = const Value.absent(),
+    required String eventType,
+    required DateTime eventDate,
+    required String title,
+    this.description = const Value.absent(),
+    this.isAutoGenerated = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : eventType = Value(eventType),
+       eventDate = Value(eventDate),
+       title = Value(title);
+  static Insertable<StockEventEntry> custom({
+    Expression<int>? id,
+    Expression<String>? symbol,
+    Expression<String>? eventType,
+    Expression<DateTime>? eventDate,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<bool>? isAutoGenerated,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (symbol != null) 'symbol': symbol,
+      if (eventType != null) 'event_type': eventType,
+      if (eventDate != null) 'event_date': eventDate,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (isAutoGenerated != null) 'is_auto_generated': isAutoGenerated,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  StockEventCompanion copyWith({
+    Value<int>? id,
+    Value<String?>? symbol,
+    Value<String>? eventType,
+    Value<DateTime>? eventDate,
+    Value<String>? title,
+    Value<String?>? description,
+    Value<bool>? isAutoGenerated,
+    Value<DateTime>? createdAt,
+  }) {
+    return StockEventCompanion(
+      id: id ?? this.id,
+      symbol: symbol ?? this.symbol,
+      eventType: eventType ?? this.eventType,
+      eventDate: eventDate ?? this.eventDate,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      isAutoGenerated: isAutoGenerated ?? this.isAutoGenerated,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (eventType.present) {
+      map['event_type'] = Variable<String>(eventType.value);
+    }
+    if (eventDate.present) {
+      map['event_date'] = Variable<DateTime>(eventDate.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (isAutoGenerated.present) {
+      map['is_auto_generated'] = Variable<bool>(isAutoGenerated.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StockEventCompanion(')
+          ..write('id: $id, ')
+          ..write('symbol: $symbol, ')
+          ..write('eventType: $eventType, ')
+          ..write('eventDate: $eventDate, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('isAutoGenerated: $isAutoGenerated, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $MarketIndexTable extends MarketIndex
+    with TableInfo<$MarketIndexTable, MarketIndexEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $MarketIndexTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _closeMeta = const VerificationMeta('close');
+  @override
+  late final GeneratedColumn<double> close = GeneratedColumn<double>(
+    'close',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _changeMeta = const VerificationMeta('change');
+  @override
+  late final GeneratedColumn<double> change = GeneratedColumn<double>(
+    'change',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _changePercentMeta = const VerificationMeta(
+    'changePercent',
+  );
+  @override
+  late final GeneratedColumn<double> changePercent = GeneratedColumn<double>(
+    'change_percent',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    date,
+    name,
+    close,
+    change,
+    changePercent,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'market_index';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<MarketIndexEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('close')) {
+      context.handle(
+        _closeMeta,
+        close.isAcceptableOrUnknown(data['close']!, _closeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_closeMeta);
+    }
+    if (data.containsKey('change')) {
+      context.handle(
+        _changeMeta,
+        change.isAcceptableOrUnknown(data['change']!, _changeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_changeMeta);
+    }
+    if (data.containsKey('change_percent')) {
+      context.handle(
+        _changePercentMeta,
+        changePercent.isAcceptableOrUnknown(
+          data['change_percent']!,
+          _changePercentMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_changePercentMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {date, name},
+  ];
+  @override
+  MarketIndexEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return MarketIndexEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      close: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}close'],
+      )!,
+      change: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}change'],
+      )!,
+      changePercent: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}change_percent'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $MarketIndexTable createAlias(String alias) {
+    return $MarketIndexTable(attachedDatabase, alias);
+  }
+}
+
+class MarketIndexEntry extends DataClass
+    implements Insertable<MarketIndexEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 交易日期
+  final DateTime date;
+
+  /// 指數名稱（原始全名，如「發行量加權股價指數」）
+  final String name;
+
+  /// 收盤值
+  final double close;
+
+  /// 漲跌點數
+  final double change;
+
+  /// 漲跌幅 (%)
+  final double changePercent;
+
+  /// 建立時間
+  final DateTime createdAt;
+  const MarketIndexEntry({
+    required this.id,
+    required this.date,
+    required this.name,
+    required this.close,
+    required this.change,
+    required this.changePercent,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['date'] = Variable<DateTime>(date);
+    map['name'] = Variable<String>(name);
+    map['close'] = Variable<double>(close);
+    map['change'] = Variable<double>(change);
+    map['change_percent'] = Variable<double>(changePercent);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  MarketIndexCompanion toCompanion(bool nullToAbsent) {
+    return MarketIndexCompanion(
+      id: Value(id),
+      date: Value(date),
+      name: Value(name),
+      close: Value(close),
+      change: Value(change),
+      changePercent: Value(changePercent),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory MarketIndexEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return MarketIndexEntry(
+      id: serializer.fromJson<int>(json['id']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      name: serializer.fromJson<String>(json['name']),
+      close: serializer.fromJson<double>(json['close']),
+      change: serializer.fromJson<double>(json['change']),
+      changePercent: serializer.fromJson<double>(json['changePercent']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'date': serializer.toJson<DateTime>(date),
+      'name': serializer.toJson<String>(name),
+      'close': serializer.toJson<double>(close),
+      'change': serializer.toJson<double>(change),
+      'changePercent': serializer.toJson<double>(changePercent),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  MarketIndexEntry copyWith({
+    int? id,
+    DateTime? date,
+    String? name,
+    double? close,
+    double? change,
+    double? changePercent,
+    DateTime? createdAt,
+  }) => MarketIndexEntry(
+    id: id ?? this.id,
+    date: date ?? this.date,
+    name: name ?? this.name,
+    close: close ?? this.close,
+    change: change ?? this.change,
+    changePercent: changePercent ?? this.changePercent,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  MarketIndexEntry copyWithCompanion(MarketIndexCompanion data) {
+    return MarketIndexEntry(
+      id: data.id.present ? data.id.value : this.id,
+      date: data.date.present ? data.date.value : this.date,
+      name: data.name.present ? data.name.value : this.name,
+      close: data.close.present ? data.close.value : this.close,
+      change: data.change.present ? data.change.value : this.change,
+      changePercent: data.changePercent.present
+          ? data.changePercent.value
+          : this.changePercent,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MarketIndexEntry(')
+          ..write('id: $id, ')
+          ..write('date: $date, ')
+          ..write('name: $name, ')
+          ..write('close: $close, ')
+          ..write('change: $change, ')
+          ..write('changePercent: $changePercent, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, date, name, close, change, changePercent, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is MarketIndexEntry &&
+          other.id == this.id &&
+          other.date == this.date &&
+          other.name == this.name &&
+          other.close == this.close &&
+          other.change == this.change &&
+          other.changePercent == this.changePercent &&
+          other.createdAt == this.createdAt);
+}
+
+class MarketIndexCompanion extends UpdateCompanion<MarketIndexEntry> {
+  final Value<int> id;
+  final Value<DateTime> date;
+  final Value<String> name;
+  final Value<double> close;
+  final Value<double> change;
+  final Value<double> changePercent;
+  final Value<DateTime> createdAt;
+  const MarketIndexCompanion({
+    this.id = const Value.absent(),
+    this.date = const Value.absent(),
+    this.name = const Value.absent(),
+    this.close = const Value.absent(),
+    this.change = const Value.absent(),
+    this.changePercent = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  MarketIndexCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime date,
+    required String name,
+    required double close,
+    required double change,
+    required double changePercent,
+    this.createdAt = const Value.absent(),
+  }) : date = Value(date),
+       name = Value(name),
+       close = Value(close),
+       change = Value(change),
+       changePercent = Value(changePercent);
+  static Insertable<MarketIndexEntry> custom({
+    Expression<int>? id,
+    Expression<DateTime>? date,
+    Expression<String>? name,
+    Expression<double>? close,
+    Expression<double>? change,
+    Expression<double>? changePercent,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (date != null) 'date': date,
+      if (name != null) 'name': name,
+      if (close != null) 'close': close,
+      if (change != null) 'change': change,
+      if (changePercent != null) 'change_percent': changePercent,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  MarketIndexCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? date,
+    Value<String>? name,
+    Value<double>? close,
+    Value<double>? change,
+    Value<double>? changePercent,
+    Value<DateTime>? createdAt,
+  }) {
+    return MarketIndexCompanion(
+      id: id ?? this.id,
+      date: date ?? this.date,
+      name: name ?? this.name,
+      close: close ?? this.close,
+      change: change ?? this.change,
+      changePercent: changePercent ?? this.changePercent,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (close.present) {
+      map['close'] = Variable<double>(close.value);
+    }
+    if (change.present) {
+      map['change'] = Variable<double>(change.value);
+    }
+    if (changePercent.present) {
+      map['change_percent'] = Variable<double>(changePercent.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('MarketIndexCompanion(')
+          ..write('id: $id, ')
+          ..write('date: $date, ')
+          ..write('name: $name, ')
+          ..write('close: $close, ')
+          ..write('change: $change, ')
+          ..write('changePercent: $changePercent, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -11671,6 +14201,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MarginTradingTable marginTrading = $MarginTradingTable(this);
   late final $TradingWarningTable tradingWarning = $TradingWarningTable(this);
   late final $InsiderHoldingTable insiderHolding = $InsiderHoldingTable(this);
+  late final $ScreeningStrategyTableTable screeningStrategyTable =
+      $ScreeningStrategyTableTable(this);
+  late final $PortfolioPositionTable portfolioPosition =
+      $PortfolioPositionTable(this);
+  late final $PortfolioTransactionTable portfolioTransaction =
+      $PortfolioTransactionTable(this);
+  late final $StockEventTable stockEvent = $StockEventTable(this);
+  late final $MarketIndexTable marketIndex = $MarketIndexTable(this);
   late final Index idxDailyPriceSymbol = Index(
     'idx_daily_price_symbol',
     'CREATE INDEX idx_daily_price_symbol ON daily_price (symbol)',
@@ -11835,6 +14373,34 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_insider_holding_date',
     'CREATE INDEX idx_insider_holding_date ON insider_holding (date)',
   );
+  late final Index idxPortfolioPositionSymbol = Index(
+    'idx_portfolio_position_symbol',
+    'CREATE INDEX idx_portfolio_position_symbol ON portfolio_position (symbol)',
+  );
+  late final Index idxPortfolioTxSymbol = Index(
+    'idx_portfolio_tx_symbol',
+    'CREATE INDEX idx_portfolio_tx_symbol ON portfolio_transaction (symbol)',
+  );
+  late final Index idxPortfolioTxDate = Index(
+    'idx_portfolio_tx_date',
+    'CREATE INDEX idx_portfolio_tx_date ON portfolio_transaction (date)',
+  );
+  late final Index idxStockEventDate = Index(
+    'idx_stock_event_date',
+    'CREATE INDEX idx_stock_event_date ON stock_event (event_date)',
+  );
+  late final Index idxStockEventSymbol = Index(
+    'idx_stock_event_symbol',
+    'CREATE INDEX idx_stock_event_symbol ON stock_event (symbol)',
+  );
+  late final Index idxMarketIndexDate = Index(
+    'idx_market_index_date',
+    'CREATE INDEX idx_market_index_date ON market_index (date)',
+  );
+  late final Index idxMarketIndexName = Index(
+    'idx_market_index_name',
+    'CREATE INDEX idx_market_index_name ON market_index (name)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -11866,6 +14432,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     marginTrading,
     tradingWarning,
     insiderHolding,
+    screeningStrategyTable,
+    portfolioPosition,
+    portfolioTransaction,
+    stockEvent,
+    marketIndex,
     idxDailyPriceSymbol,
     idxDailyPriceDate,
     idxDailyPriceSymbolDate,
@@ -11907,6 +14478,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxTradingWarningType,
     idxInsiderHoldingSymbol,
     idxInsiderHoldingDate,
+    idxPortfolioPositionSymbol,
+    idxPortfolioTxSymbol,
+    idxPortfolioTxDate,
+    idxStockEventDate,
+    idxStockEventSymbol,
+    idxMarketIndexDate,
+    idxMarketIndexName,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -12070,6 +14648,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('insider_holding', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('portfolio_position', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('portfolio_transaction', kind: UpdateKind.delete)],
     ),
   ]);
   @override
@@ -12573,6 +15165,61 @@ final class $$StockMasterTableReferences
     ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
 
     final cache = $_typedResult.readTableOrNull(_insiderHoldingRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PortfolioPositionTable,
+    List<PortfolioPositionEntry>
+  >
+  _portfolioPositionRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.portfolioPosition,
+        aliasName: $_aliasNameGenerator(
+          db.stockMaster.symbol,
+          db.portfolioPosition.symbol,
+        ),
+      );
+
+  $$PortfolioPositionTableProcessedTableManager get portfolioPositionRefs {
+    final manager = $$PortfolioPositionTableTableManager(
+      $_db,
+      $_db.portfolioPosition,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _portfolioPositionRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $PortfolioTransactionTable,
+    List<PortfolioTransactionEntry>
+  >
+  _portfolioTransactionRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.portfolioTransaction,
+        aliasName: $_aliasNameGenerator(
+          db.stockMaster.symbol,
+          db.portfolioTransaction.symbol,
+        ),
+      );
+
+  $$PortfolioTransactionTableProcessedTableManager
+  get portfolioTransactionRefs {
+    final manager = $$PortfolioTransactionTableTableManager(
+      $_db,
+      $_db.portfolioTransaction,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _portfolioTransactionRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -13159,6 +15806,56 @@ class $$StockMasterTableFilterComposer
           }) => $$InsiderHoldingTableFilterComposer(
             $db: $db,
             $table: $db.insiderHolding,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> portfolioPositionRefs(
+    Expression<bool> Function($$PortfolioPositionTableFilterComposer f) f,
+  ) {
+    final $$PortfolioPositionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.portfolioPosition,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PortfolioPositionTableFilterComposer(
+            $db: $db,
+            $table: $db.portfolioPosition,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> portfolioTransactionRefs(
+    Expression<bool> Function($$PortfolioTransactionTableFilterComposer f) f,
+  ) {
+    final $$PortfolioTransactionTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.portfolioTransaction,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PortfolioTransactionTableFilterComposer(
+            $db: $db,
+            $table: $db.portfolioTransaction,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -13788,6 +16485,58 @@ class $$StockMasterTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> portfolioPositionRefs<T extends Object>(
+    Expression<T> Function($$PortfolioPositionTableAnnotationComposer a) f,
+  ) {
+    final $$PortfolioPositionTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.symbol,
+          referencedTable: $db.portfolioPosition,
+          getReferencedColumn: (t) => t.symbol,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PortfolioPositionTableAnnotationComposer(
+                $db: $db,
+                $table: $db.portfolioPosition,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
+
+  Expression<T> portfolioTransactionRefs<T extends Object>(
+    Expression<T> Function($$PortfolioTransactionTableAnnotationComposer a) f,
+  ) {
+    final $$PortfolioTransactionTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.symbol,
+          referencedTable: $db.portfolioTransaction,
+          getReferencedColumn: (t) => t.symbol,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$PortfolioTransactionTableAnnotationComposer(
+                $db: $db,
+                $table: $db.portfolioTransaction,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$StockMasterTableTableManager
@@ -13826,6 +16575,8 @@ class $$StockMasterTableTableManager
             bool marginTradingRefs,
             bool tradingWarningRefs,
             bool insiderHoldingRefs,
+            bool portfolioPositionRefs,
+            bool portfolioTransactionRefs,
           })
         > {
   $$StockMasterTableTableManager(_$AppDatabase db, $StockMasterTable table)
@@ -13907,6 +16658,8 @@ class $$StockMasterTableTableManager
                 marginTradingRefs = false,
                 tradingWarningRefs = false,
                 insiderHoldingRefs = false,
+                portfolioPositionRefs = false,
+                portfolioTransactionRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -13933,6 +16686,8 @@ class $$StockMasterTableTableManager
                     if (marginTradingRefs) db.marginTrading,
                     if (tradingWarningRefs) db.tradingWarning,
                     if (insiderHoldingRefs) db.insiderHolding,
+                    if (portfolioPositionRefs) db.portfolioPosition,
+                    if (portfolioTransactionRefs) db.portfolioTransaction,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -14399,6 +17154,48 @@ class $$StockMasterTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (portfolioPositionRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          PortfolioPositionEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._portfolioPositionRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).portfolioPositionRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (portfolioTransactionRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          PortfolioTransactionEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._portfolioTransactionRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).portfolioTransactionRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -14442,6 +17239,8 @@ typedef $$StockMasterTableProcessedTableManager =
         bool marginTradingRefs,
         bool tradingWarningRefs,
         bool insiderHoldingRefs,
+        bool portfolioPositionRefs,
+        bool portfolioTransactionRefs,
       })
     >;
 typedef $$DailyPriceTableCreateCompanionBuilder =
@@ -23073,6 +25872,1552 @@ typedef $$InsiderHoldingTableProcessedTableManager =
       InsiderHoldingEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$ScreeningStrategyTableTableCreateCompanionBuilder =
+    ScreeningStrategyTableCompanion Function({
+      Value<int> id,
+      required String name,
+      required String conditionsJson,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$ScreeningStrategyTableTableUpdateCompanionBuilder =
+    ScreeningStrategyTableCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<String> conditionsJson,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$ScreeningStrategyTableTableFilterComposer
+    extends Composer<_$AppDatabase, $ScreeningStrategyTableTable> {
+  $$ScreeningStrategyTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conditionsJson => $composableBuilder(
+    column: $table.conditionsJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ScreeningStrategyTableTableOrderingComposer
+    extends Composer<_$AppDatabase, $ScreeningStrategyTableTable> {
+  $$ScreeningStrategyTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conditionsJson => $composableBuilder(
+    column: $table.conditionsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ScreeningStrategyTableTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ScreeningStrategyTableTable> {
+  $$ScreeningStrategyTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get conditionsJson => $composableBuilder(
+    column: $table.conditionsJson,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$ScreeningStrategyTableTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ScreeningStrategyTableTable,
+          ScreeningStrategyEntry,
+          $$ScreeningStrategyTableTableFilterComposer,
+          $$ScreeningStrategyTableTableOrderingComposer,
+          $$ScreeningStrategyTableTableAnnotationComposer,
+          $$ScreeningStrategyTableTableCreateCompanionBuilder,
+          $$ScreeningStrategyTableTableUpdateCompanionBuilder,
+          (
+            ScreeningStrategyEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $ScreeningStrategyTableTable,
+              ScreeningStrategyEntry
+            >,
+          ),
+          ScreeningStrategyEntry,
+          PrefetchHooks Function()
+        > {
+  $$ScreeningStrategyTableTableTableManager(
+    _$AppDatabase db,
+    $ScreeningStrategyTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ScreeningStrategyTableTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$ScreeningStrategyTableTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$ScreeningStrategyTableTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> conditionsJson = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ScreeningStrategyTableCompanion(
+                id: id,
+                name: name,
+                conditionsJson: conditionsJson,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                required String conditionsJson,
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => ScreeningStrategyTableCompanion.insert(
+                id: id,
+                name: name,
+                conditionsJson: conditionsJson,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ScreeningStrategyTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ScreeningStrategyTableTable,
+      ScreeningStrategyEntry,
+      $$ScreeningStrategyTableTableFilterComposer,
+      $$ScreeningStrategyTableTableOrderingComposer,
+      $$ScreeningStrategyTableTableAnnotationComposer,
+      $$ScreeningStrategyTableTableCreateCompanionBuilder,
+      $$ScreeningStrategyTableTableUpdateCompanionBuilder,
+      (
+        ScreeningStrategyEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $ScreeningStrategyTableTable,
+          ScreeningStrategyEntry
+        >,
+      ),
+      ScreeningStrategyEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$PortfolioPositionTableCreateCompanionBuilder =
+    PortfolioPositionCompanion Function({
+      Value<int> id,
+      required String symbol,
+      Value<double> quantity,
+      Value<double> avgCost,
+      Value<double> realizedPnl,
+      Value<double> totalDividendReceived,
+      Value<String?> note,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$PortfolioPositionTableUpdateCompanionBuilder =
+    PortfolioPositionCompanion Function({
+      Value<int> id,
+      Value<String> symbol,
+      Value<double> quantity,
+      Value<double> avgCost,
+      Value<double> realizedPnl,
+      Value<double> totalDividendReceived,
+      Value<String?> note,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+final class $$PortfolioPositionTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PortfolioPositionTable,
+          PortfolioPositionEntry
+        > {
+  $$PortfolioPositionTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(
+          db.portfolioPosition.symbol,
+          db.stockMaster.symbol,
+        ),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PortfolioPositionTableFilterComposer
+    extends Composer<_$AppDatabase, $PortfolioPositionTable> {
+  $$PortfolioPositionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get quantity => $composableBuilder(
+    column: $table.quantity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgCost => $composableBuilder(
+    column: $table.avgCost,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get realizedPnl => $composableBuilder(
+    column: $table.realizedPnl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get totalDividendReceived => $composableBuilder(
+    column: $table.totalDividendReceived,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PortfolioPositionTableOrderingComposer
+    extends Composer<_$AppDatabase, $PortfolioPositionTable> {
+  $$PortfolioPositionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get quantity => $composableBuilder(
+    column: $table.quantity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgCost => $composableBuilder(
+    column: $table.avgCost,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get realizedPnl => $composableBuilder(
+    column: $table.realizedPnl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get totalDividendReceived => $composableBuilder(
+    column: $table.totalDividendReceived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PortfolioPositionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PortfolioPositionTable> {
+  $$PortfolioPositionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<double> get avgCost =>
+      $composableBuilder(column: $table.avgCost, builder: (column) => column);
+
+  GeneratedColumn<double> get realizedPnl => $composableBuilder(
+    column: $table.realizedPnl,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get totalDividendReceived => $composableBuilder(
+    column: $table.totalDividendReceived,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PortfolioPositionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PortfolioPositionTable,
+          PortfolioPositionEntry,
+          $$PortfolioPositionTableFilterComposer,
+          $$PortfolioPositionTableOrderingComposer,
+          $$PortfolioPositionTableAnnotationComposer,
+          $$PortfolioPositionTableCreateCompanionBuilder,
+          $$PortfolioPositionTableUpdateCompanionBuilder,
+          (PortfolioPositionEntry, $$PortfolioPositionTableReferences),
+          PortfolioPositionEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$PortfolioPositionTableTableManager(
+    _$AppDatabase db,
+    $PortfolioPositionTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PortfolioPositionTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PortfolioPositionTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PortfolioPositionTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> symbol = const Value.absent(),
+                Value<double> quantity = const Value.absent(),
+                Value<double> avgCost = const Value.absent(),
+                Value<double> realizedPnl = const Value.absent(),
+                Value<double> totalDividendReceived = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => PortfolioPositionCompanion(
+                id: id,
+                symbol: symbol,
+                quantity: quantity,
+                avgCost: avgCost,
+                realizedPnl: realizedPnl,
+                totalDividendReceived: totalDividendReceived,
+                note: note,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String symbol,
+                Value<double> quantity = const Value.absent(),
+                Value<double> avgCost = const Value.absent(),
+                Value<double> realizedPnl = const Value.absent(),
+                Value<double> totalDividendReceived = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => PortfolioPositionCompanion.insert(
+                id: id,
+                symbol: symbol,
+                quantity: quantity,
+                avgCost: avgCost,
+                realizedPnl: realizedPnl,
+                totalDividendReceived: totalDividendReceived,
+                note: note,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PortfolioPositionTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable:
+                                    $$PortfolioPositionTableReferences
+                                        ._symbolTable(db),
+                                referencedColumn:
+                                    $$PortfolioPositionTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PortfolioPositionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PortfolioPositionTable,
+      PortfolioPositionEntry,
+      $$PortfolioPositionTableFilterComposer,
+      $$PortfolioPositionTableOrderingComposer,
+      $$PortfolioPositionTableAnnotationComposer,
+      $$PortfolioPositionTableCreateCompanionBuilder,
+      $$PortfolioPositionTableUpdateCompanionBuilder,
+      (PortfolioPositionEntry, $$PortfolioPositionTableReferences),
+      PortfolioPositionEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$PortfolioTransactionTableCreateCompanionBuilder =
+    PortfolioTransactionCompanion Function({
+      Value<int> id,
+      required String symbol,
+      required String txType,
+      required DateTime date,
+      required double quantity,
+      required double price,
+      Value<double> fee,
+      Value<double> tax,
+      Value<String?> note,
+      Value<DateTime> createdAt,
+    });
+typedef $$PortfolioTransactionTableUpdateCompanionBuilder =
+    PortfolioTransactionCompanion Function({
+      Value<int> id,
+      Value<String> symbol,
+      Value<String> txType,
+      Value<DateTime> date,
+      Value<double> quantity,
+      Value<double> price,
+      Value<double> fee,
+      Value<double> tax,
+      Value<String?> note,
+      Value<DateTime> createdAt,
+    });
+
+final class $$PortfolioTransactionTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PortfolioTransactionTable,
+          PortfolioTransactionEntry
+        > {
+  $$PortfolioTransactionTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(
+          db.portfolioTransaction.symbol,
+          db.stockMaster.symbol,
+        ),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PortfolioTransactionTableFilterComposer
+    extends Composer<_$AppDatabase, $PortfolioTransactionTable> {
+  $$PortfolioTransactionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get txType => $composableBuilder(
+    column: $table.txType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get quantity => $composableBuilder(
+    column: $table.quantity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fee => $composableBuilder(
+    column: $table.fee,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get tax => $composableBuilder(
+    column: $table.tax,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PortfolioTransactionTableOrderingComposer
+    extends Composer<_$AppDatabase, $PortfolioTransactionTable> {
+  $$PortfolioTransactionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get txType => $composableBuilder(
+    column: $table.txType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get quantity => $composableBuilder(
+    column: $table.quantity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get price => $composableBuilder(
+    column: $table.price,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fee => $composableBuilder(
+    column: $table.fee,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get tax => $composableBuilder(
+    column: $table.tax,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PortfolioTransactionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PortfolioTransactionTable> {
+  $$PortfolioTransactionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get txType =>
+      $composableBuilder(column: $table.txType, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<double> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<double> get price =>
+      $composableBuilder(column: $table.price, builder: (column) => column);
+
+  GeneratedColumn<double> get fee =>
+      $composableBuilder(column: $table.fee, builder: (column) => column);
+
+  GeneratedColumn<double> get tax =>
+      $composableBuilder(column: $table.tax, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PortfolioTransactionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PortfolioTransactionTable,
+          PortfolioTransactionEntry,
+          $$PortfolioTransactionTableFilterComposer,
+          $$PortfolioTransactionTableOrderingComposer,
+          $$PortfolioTransactionTableAnnotationComposer,
+          $$PortfolioTransactionTableCreateCompanionBuilder,
+          $$PortfolioTransactionTableUpdateCompanionBuilder,
+          (PortfolioTransactionEntry, $$PortfolioTransactionTableReferences),
+          PortfolioTransactionEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$PortfolioTransactionTableTableManager(
+    _$AppDatabase db,
+    $PortfolioTransactionTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PortfolioTransactionTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PortfolioTransactionTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$PortfolioTransactionTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> symbol = const Value.absent(),
+                Value<String> txType = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<double> quantity = const Value.absent(),
+                Value<double> price = const Value.absent(),
+                Value<double> fee = const Value.absent(),
+                Value<double> tax = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => PortfolioTransactionCompanion(
+                id: id,
+                symbol: symbol,
+                txType: txType,
+                date: date,
+                quantity: quantity,
+                price: price,
+                fee: fee,
+                tax: tax,
+                note: note,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String symbol,
+                required String txType,
+                required DateTime date,
+                required double quantity,
+                required double price,
+                Value<double> fee = const Value.absent(),
+                Value<double> tax = const Value.absent(),
+                Value<String?> note = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => PortfolioTransactionCompanion.insert(
+                id: id,
+                symbol: symbol,
+                txType: txType,
+                date: date,
+                quantity: quantity,
+                price: price,
+                fee: fee,
+                tax: tax,
+                note: note,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PortfolioTransactionTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable:
+                                    $$PortfolioTransactionTableReferences
+                                        ._symbolTable(db),
+                                referencedColumn:
+                                    $$PortfolioTransactionTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$PortfolioTransactionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PortfolioTransactionTable,
+      PortfolioTransactionEntry,
+      $$PortfolioTransactionTableFilterComposer,
+      $$PortfolioTransactionTableOrderingComposer,
+      $$PortfolioTransactionTableAnnotationComposer,
+      $$PortfolioTransactionTableCreateCompanionBuilder,
+      $$PortfolioTransactionTableUpdateCompanionBuilder,
+      (PortfolioTransactionEntry, $$PortfolioTransactionTableReferences),
+      PortfolioTransactionEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
+typedef $$StockEventTableCreateCompanionBuilder =
+    StockEventCompanion Function({
+      Value<int> id,
+      Value<String?> symbol,
+      required String eventType,
+      required DateTime eventDate,
+      required String title,
+      Value<String?> description,
+      Value<bool> isAutoGenerated,
+      Value<DateTime> createdAt,
+    });
+typedef $$StockEventTableUpdateCompanionBuilder =
+    StockEventCompanion Function({
+      Value<int> id,
+      Value<String?> symbol,
+      Value<String> eventType,
+      Value<DateTime> eventDate,
+      Value<String> title,
+      Value<String?> description,
+      Value<bool> isAutoGenerated,
+      Value<DateTime> createdAt,
+    });
+
+class $$StockEventTableFilterComposer
+    extends Composer<_$AppDatabase, $StockEventTable> {
+  $$StockEventTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get eventDate => $composableBuilder(
+    column: $table.eventDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isAutoGenerated => $composableBuilder(
+    column: $table.isAutoGenerated,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StockEventTableOrderingComposer
+    extends Composer<_$AppDatabase, $StockEventTable> {
+  $$StockEventTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get eventType => $composableBuilder(
+    column: $table.eventType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get eventDate => $composableBuilder(
+    column: $table.eventDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isAutoGenerated => $composableBuilder(
+    column: $table.isAutoGenerated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StockEventTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StockEventTable> {
+  $$StockEventTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get symbol =>
+      $composableBuilder(column: $table.symbol, builder: (column) => column);
+
+  GeneratedColumn<String> get eventType =>
+      $composableBuilder(column: $table.eventType, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get eventDate =>
+      $composableBuilder(column: $table.eventDate, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isAutoGenerated => $composableBuilder(
+    column: $table.isAutoGenerated,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$StockEventTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StockEventTable,
+          StockEventEntry,
+          $$StockEventTableFilterComposer,
+          $$StockEventTableOrderingComposer,
+          $$StockEventTableAnnotationComposer,
+          $$StockEventTableCreateCompanionBuilder,
+          $$StockEventTableUpdateCompanionBuilder,
+          (
+            StockEventEntry,
+            BaseReferences<_$AppDatabase, $StockEventTable, StockEventEntry>,
+          ),
+          StockEventEntry,
+          PrefetchHooks Function()
+        > {
+  $$StockEventTableTableManager(_$AppDatabase db, $StockEventTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StockEventTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StockEventTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$StockEventTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> symbol = const Value.absent(),
+                Value<String> eventType = const Value.absent(),
+                Value<DateTime> eventDate = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<bool> isAutoGenerated = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => StockEventCompanion(
+                id: id,
+                symbol: symbol,
+                eventType: eventType,
+                eventDate: eventDate,
+                title: title,
+                description: description,
+                isAutoGenerated: isAutoGenerated,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> symbol = const Value.absent(),
+                required String eventType,
+                required DateTime eventDate,
+                required String title,
+                Value<String?> description = const Value.absent(),
+                Value<bool> isAutoGenerated = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => StockEventCompanion.insert(
+                id: id,
+                symbol: symbol,
+                eventType: eventType,
+                eventDate: eventDate,
+                title: title,
+                description: description,
+                isAutoGenerated: isAutoGenerated,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StockEventTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StockEventTable,
+      StockEventEntry,
+      $$StockEventTableFilterComposer,
+      $$StockEventTableOrderingComposer,
+      $$StockEventTableAnnotationComposer,
+      $$StockEventTableCreateCompanionBuilder,
+      $$StockEventTableUpdateCompanionBuilder,
+      (
+        StockEventEntry,
+        BaseReferences<_$AppDatabase, $StockEventTable, StockEventEntry>,
+      ),
+      StockEventEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$MarketIndexTableCreateCompanionBuilder =
+    MarketIndexCompanion Function({
+      Value<int> id,
+      required DateTime date,
+      required String name,
+      required double close,
+      required double change,
+      required double changePercent,
+      Value<DateTime> createdAt,
+    });
+typedef $$MarketIndexTableUpdateCompanionBuilder =
+    MarketIndexCompanion Function({
+      Value<int> id,
+      Value<DateTime> date,
+      Value<String> name,
+      Value<double> close,
+      Value<double> change,
+      Value<double> changePercent,
+      Value<DateTime> createdAt,
+    });
+
+class $$MarketIndexTableFilterComposer
+    extends Composer<_$AppDatabase, $MarketIndexTable> {
+  $$MarketIndexTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get close => $composableBuilder(
+    column: $table.close,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get change => $composableBuilder(
+    column: $table.change,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get changePercent => $composableBuilder(
+    column: $table.changePercent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$MarketIndexTableOrderingComposer
+    extends Composer<_$AppDatabase, $MarketIndexTable> {
+  $$MarketIndexTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get close => $composableBuilder(
+    column: $table.close,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get change => $composableBuilder(
+    column: $table.change,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get changePercent => $composableBuilder(
+    column: $table.changePercent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$MarketIndexTableAnnotationComposer
+    extends Composer<_$AppDatabase, $MarketIndexTable> {
+  $$MarketIndexTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<double> get close =>
+      $composableBuilder(column: $table.close, builder: (column) => column);
+
+  GeneratedColumn<double> get change =>
+      $composableBuilder(column: $table.change, builder: (column) => column);
+
+  GeneratedColumn<double> get changePercent => $composableBuilder(
+    column: $table.changePercent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$MarketIndexTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $MarketIndexTable,
+          MarketIndexEntry,
+          $$MarketIndexTableFilterComposer,
+          $$MarketIndexTableOrderingComposer,
+          $$MarketIndexTableAnnotationComposer,
+          $$MarketIndexTableCreateCompanionBuilder,
+          $$MarketIndexTableUpdateCompanionBuilder,
+          (
+            MarketIndexEntry,
+            BaseReferences<_$AppDatabase, $MarketIndexTable, MarketIndexEntry>,
+          ),
+          MarketIndexEntry,
+          PrefetchHooks Function()
+        > {
+  $$MarketIndexTableTableManager(_$AppDatabase db, $MarketIndexTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$MarketIndexTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$MarketIndexTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$MarketIndexTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<double> close = const Value.absent(),
+                Value<double> change = const Value.absent(),
+                Value<double> changePercent = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => MarketIndexCompanion(
+                id: id,
+                date: date,
+                name: name,
+                close: close,
+                change: change,
+                changePercent: changePercent,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime date,
+                required String name,
+                required double close,
+                required double change,
+                required double changePercent,
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => MarketIndexCompanion.insert(
+                id: id,
+                date: date,
+                name: name,
+                close: close,
+                change: change,
+                changePercent: changePercent,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$MarketIndexTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $MarketIndexTable,
+      MarketIndexEntry,
+      $$MarketIndexTableFilterComposer,
+      $$MarketIndexTableOrderingComposer,
+      $$MarketIndexTableAnnotationComposer,
+      $$MarketIndexTableCreateCompanionBuilder,
+      $$MarketIndexTableUpdateCompanionBuilder,
+      (
+        MarketIndexEntry,
+        BaseReferences<_$AppDatabase, $MarketIndexTable, MarketIndexEntry>,
+      ),
+      MarketIndexEntry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -23129,4 +27474,17 @@ class $AppDatabaseManager {
       $$TradingWarningTableTableManager(_db, _db.tradingWarning);
   $$InsiderHoldingTableTableManager get insiderHolding =>
       $$InsiderHoldingTableTableManager(_db, _db.insiderHolding);
+  $$ScreeningStrategyTableTableTableManager get screeningStrategyTable =>
+      $$ScreeningStrategyTableTableTableManager(
+        _db,
+        _db.screeningStrategyTable,
+      );
+  $$PortfolioPositionTableTableManager get portfolioPosition =>
+      $$PortfolioPositionTableTableManager(_db, _db.portfolioPosition);
+  $$PortfolioTransactionTableTableManager get portfolioTransaction =>
+      $$PortfolioTransactionTableTableManager(_db, _db.portfolioTransaction);
+  $$StockEventTableTableManager get stockEvent =>
+      $$StockEventTableTableManager(_db, _db.stockEvent);
+  $$MarketIndexTableTableManager get marketIndex =>
+      $$MarketIndexTableTableManager(_db, _db.marketIndex);
 }

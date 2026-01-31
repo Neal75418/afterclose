@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,26 +25,26 @@ class AppShell extends StatelessWidget {
                 initialLocation: index == navigationShell.currentIndex,
               );
             },
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.today_outlined),
-                selectedIcon: Icon(Icons.today),
-                label: '今日',
+                icon: const Icon(Icons.today_outlined),
+                selectedIcon: const Icon(Icons.today),
+                label: 'nav.today'.tr(),
               ),
               NavigationDestination(
-                icon: Icon(Icons.search_outlined),
-                selectedIcon: Icon(Icons.search),
-                label: '掃描',
+                icon: const Icon(Icons.search_outlined),
+                selectedIcon: const Icon(Icons.search),
+                label: 'nav.scan'.tr(),
               ),
               NavigationDestination(
-                icon: Icon(Icons.star_outline),
-                selectedIcon: Icon(Icons.star),
-                label: '自選',
+                icon: const Icon(Icons.star_outline),
+                selectedIcon: const Icon(Icons.star),
+                label: 'nav.watchlist'.tr(),
               ),
               NavigationDestination(
-                icon: Icon(Icons.newspaper_outlined),
-                selectedIcon: Icon(Icons.newspaper),
-                label: '新聞',
+                icon: const Icon(Icons.newspaper_outlined),
+                selectedIcon: const Icon(Icons.newspaper),
+                label: 'nav.news'.tr(),
               ),
             ],
           ),
