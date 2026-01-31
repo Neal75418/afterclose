@@ -22,12 +22,20 @@
 
 ## 功能總覽
 
-| 頁面               | 功能                  |
-|------------------|---------------------|
-| **Today**        | 市場摘要 + 今日 Top 20 推薦 |
-| **Scan**         | 上市櫃全市場掃描，依評分排序      |
-| **Watchlist**    | 自選清單狀態追蹤            |
-| **Stock Detail** | 趨勢、關鍵價位、推薦理由、新聞     |
+| 頁面                   | 功能                  |
+|----------------------|---------------------|
+| **Today**            | 市場摘要 + 今日 Top 20 推薦 |
+| **Scan**             | 上市櫃全市場掃描，依評分排序      |
+| **Watchlist**        | 自選清單狀態追蹤            |
+| **Stock Detail**     | 趨勢、關鍵價位、推薦理由、新聞     |
+| **News**             | 多源 RSS 新聞彙整         |
+| **Alerts**           | 價格提醒管理              |
+| **Portfolio**        | 持倉追蹤                |
+| **Comparison**       | 多檔股票比較              |
+| **Calendar**         | 事件行事曆               |
+| **Custom Screening** | 自定義篩選策略             |
+| **Industry**         | 產業概覽                |
+| **Settings**         | 偏好設定                |
 
 ---
 
@@ -61,6 +69,7 @@
 flowchart LR
     subgraph External["☁️ 外部資料"]
         TWSE["TWSE API"]
+        TPEX["TPEX API"]
         FM["FinMind API"]
         RSS["RSS 新聞"]
     end
@@ -84,6 +93,7 @@ flowchart LR
     end
 
     TWSE --> Remote
+    TPEX --> Remote
     FM --> Remote
     RSS --> Remote
     Remote --> Repo
@@ -116,13 +126,13 @@ graph TD
         subgraph domain["⚙️ domain/"]
             models["models/<br/>7 個 Domain 物件"]
             services["services/"]
-            update["services/update/<br/>6 個專責 Updater"]
-            rules["services/rules/<br/>51 條規則"]
+            update["services/update/<br/>7 個專責 Syncer"]
+            rules["services/rules/<br/>59 條規則"]
         end
 
         subgraph presentation["📱 presentation/"]
             providers["providers/<br/>Riverpod Notifiers"]
-            screens["screens/<br/>Flutter UI"]
+            screens["screens/<br/>13 個畫面"]
         end
     end
 
@@ -134,15 +144,15 @@ graph TD
 
 ## 推薦系統
 
-51 條規則引擎，涵蓋技術面、籌碼面、基本面、殺手級功能。
+59 條規則引擎，涵蓋技術面、籌碼面、基本面。
 
 ```mermaid
-pie showData title 📊 51 條規則分布
+pie showData title 📊 59 條規則分佈
     "技術型態" : 19
     "價量訊號" : 12
-    "基本面" : 7
+    "基本面" : 14
+    "籌碼面" : 7
     "殺手級功能" : 7
-    "籌碼面" : 6
 ```
 
 - 每日產出 **Top 20**（上市+上櫃約 1,770 檔）
@@ -170,27 +180,6 @@ dart run build_runner build --delete-conflicting-outputs  # 程式碼生成
 | [CLAUDE.md](CLAUDE.md)                     | AI 開發指引 |
 | [RELEASE.md](RELEASE.md)                   | 發布建置指南  |
 | [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎定義  |
-
----
-
-## Roadmap
-
-### v0.1.0 ✅ (2025-01-27)
-
-- 注意/處置股票警示
-- 董監持股追蹤
-- 外資集中度分析
-- Release Workflow
-
-### v0.2.0 🔲 App Store 發布
-
-| 項目                       | 狀態 | 說明          |
-|--------------------------|----|-------------|
-| Google Play Developer 帳號 | 🔲 | $25 一次性     |
-| Android Keystore 簽名      | 🔲 | 產生 keystore |
-| Apple Developer 帳號       | 🔲 | $99/年       |
-| iOS 憑證 & Provisioning    | 🔲 | 需 Mac 產生    |
-| Fastlane 自動發布            | 🔲 | 選配          |
 
 ---
 

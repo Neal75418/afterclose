@@ -17,7 +17,7 @@ flowchart LR
 
     subgraph Process["⚙️ 本地處理"]
         Sync["資料同步"]
-        Rules["51 條規則"]
+        Rules["59 條規則"]
         Score["評分引擎"]
     end
 
@@ -58,20 +58,20 @@ flowchart TB
 
     subgraph Data["💾 data/"]
         Database["database/<br/>Drift SQLite"]
-        Remote["remote/<br/>TWSE, FinMind API"]
+        Remote["remote/<br/>TWSE, TPEX, FinMind API"]
         Repos["repositories/"]
     end
 
     subgraph Domain["⚙️ domain/"]
         Models["models/<br/>7 Domain Objects"]
         Services["services/"]
-        Update["services/update/<br/>6 Specialized Syncers"]
-        Rules["services/rules/<br/>51 Rules"]
+        Update["services/update/<br/>7 Specialized Syncers"]
+        Rules["services/rules/<br/>59 Rules"]
     end
 
     subgraph Presentation["📱 presentation/"]
         Providers["providers/<br/>Riverpod Notifiers"]
-        Screens["screens/<br/>UI"]
+        Screens["screens/<br/>13 Screens"]
     end
 
     Core --> Data
@@ -83,7 +83,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    API["☁️ External APIs<br/>(TWSE, FinMind, RSS)"]
+    API["☁️ External APIs<br/>(TWSE, TPEX, FinMind, RSS)"]
     Repo["📦 Repository"]
     DB[("💾 Drift DB")]
     Provider["🔄 Riverpod"]
@@ -99,10 +99,10 @@ flowchart LR
 
 ## 配置管理
 
-| 檔案                                       | 用途               |
-|------------------------------------------|------------------|
-| `lib/core/constants/rule_params.dart`    | 規則引擎參數（閾值、權重、天數） |
-| `lib/core/constants/default_stocks.dart` | 預設股票清單           |
+| 檔案                                       | 用途                     |
+|------------------------------------------|------------------------|
+| `lib/core/constants/rule_params.dart`    | 規則引擎參數（175+ 個閾值、權重、天數） |
+| `lib/core/constants/default_stocks.dart` | 預設熱門股票清單（15 檔）         |
 
 ```mermaid
 classDiagram
@@ -110,16 +110,14 @@ classDiagram
         <<abstract>>
         +volumeSpikeThreshold: 2.0
         +priceSurgeThreshold: 5.0
-        +marginUsageWarning: 50
-        +foreignBuyStreak: 3
-        ...45+ parameters
+        +epsYoYSurgeThreshold: 50.0
+        +roeExcellentThreshold: 15.0
+        ...175+ parameters
     }
 
     class DefaultStocks {
         <<abstract>>
-        +etf0050: List~String~
-        +etf0056: List~String~
-        +popular: List~String~
+        +popularStocks: List~String~
     }
 ```
 
@@ -168,6 +166,7 @@ flowchart TB
         MDU["📊 MarketDataUpdater"]
         FS["💰 FundamentalSyncer"]
         NS["📰 NewsSyncer"]
+        MIS["📉 MarketIndexSyncer"]
     end
 
     US --> SLS
@@ -176,6 +175,7 @@ flowchart TB
     US --> MDU
     US --> FS
     US --> NS
+    US --> MIS
 ```
 
 ---
@@ -184,7 +184,7 @@ flowchart TB
 
 | 文件                                                                                                     | 說明              |
 |--------------------------------------------------------------------------------------------------------|-----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (51 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (59 條規則) |
 | [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |
 
 ---
