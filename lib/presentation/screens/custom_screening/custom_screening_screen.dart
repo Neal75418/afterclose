@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/presentation/providers/settings_provider.dart';
+
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/screens/custom_screening/widgets/condition_card.dart';
@@ -249,6 +251,7 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
                   trendState: stock.trendState,
                   isInWatchlist: stock.isInWatchlist,
                   recentPrices: stock.recentPrices,
+                  showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
                   onTap: () => context.push('/stock/${stock.symbol}'),
                 );
               },

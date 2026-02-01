@@ -12,6 +12,9 @@ const _keyLocale = 'settings_locale';
 const _keyShowWarningBadges = 'settings_show_warning_badges';
 const _keyInsiderNotifications = 'settings_insider_notifications';
 const _keyDisposalUrgentAlerts = 'settings_disposal_urgent_alerts';
+const _keyLimitAlerts = 'settings_limit_alerts';
+const _keyShowROCYear = 'settings_show_roc_year';
+const _keyCacheDurationMinutes = 'settings_cache_duration_minutes';
 
 // ==================================================
 // Settings State
@@ -55,6 +58,9 @@ class SettingsState {
     this.showWarningBadges = true,
     this.insiderNotifications = true,
     this.disposalUrgentAlerts = true,
+    this.limitAlerts = true,
+    this.showROCYear = true,
+    this.cacheDurationMinutes = 30,
   });
 
   final ThemeMode themeMode;
@@ -70,6 +76,15 @@ class SettingsState {
   /// 當自選股被列入處置股時發送緊急通知
   final bool disposalUrgentAlerts;
 
+  /// 當自選股觸及漲跌停時顯示標記
+  final bool limitAlerts;
+
+  /// 財報頁面使用民國年顯示
+  final bool showROCYear;
+
+  /// API 快取存活時間（分鐘）
+  final int cacheDurationMinutes;
+
   SettingsState copyWith({
     ThemeMode? themeMode,
     AppLocale? locale,
@@ -77,6 +92,9 @@ class SettingsState {
     bool? showWarningBadges,
     bool? insiderNotifications,
     bool? disposalUrgentAlerts,
+    bool? limitAlerts,
+    bool? showROCYear,
+    int? cacheDurationMinutes,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -85,6 +103,9 @@ class SettingsState {
       showWarningBadges: showWarningBadges ?? this.showWarningBadges,
       insiderNotifications: insiderNotifications ?? this.insiderNotifications,
       disposalUrgentAlerts: disposalUrgentAlerts ?? this.disposalUrgentAlerts,
+      limitAlerts: limitAlerts ?? this.limitAlerts,
+      showROCYear: showROCYear ?? this.showROCYear,
+      cacheDurationMinutes: cacheDurationMinutes ?? this.cacheDurationMinutes,
     );
   }
 }
@@ -124,6 +145,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
           prefs.getBool(_keyInsiderNotifications) ?? true;
       final disposalUrgentAlerts =
           prefs.getBool(_keyDisposalUrgentAlerts) ?? true;
+      final limitAlerts = prefs.getBool(_keyLimitAlerts) ?? true;
+      final showROCYear = prefs.getBool(_keyShowROCYear) ?? true;
+      final cacheDurationMinutes = prefs.getInt(_keyCacheDurationMinutes) ?? 30;
 
       state = SettingsState(
         themeMode: themeMode,
@@ -132,6 +156,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         showWarningBadges: showWarningBadges,
         insiderNotifications: insiderNotifications,
         disposalUrgentAlerts: disposalUrgentAlerts,
+        limitAlerts: limitAlerts,
+        showROCYear: showROCYear,
+        cacheDurationMinutes: cacheDurationMinutes,
       );
 
       AppLogger.debug(
@@ -188,6 +215,12 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         _keyDisposalUrgentAlerts,
         snapshot.disposalUrgentAlerts,
       );
+      await prefs.setBool(_keyLimitAlerts, snapshot.limitAlerts);
+      await prefs.setBool(_keyShowROCYear, snapshot.showROCYear);
+      await prefs.setInt(
+        _keyCacheDurationMinutes,
+        snapshot.cacheDurationMinutes,
+      );
     } catch (e) {
       AppLogger.warning('Settings', '儲存設定失敗: $e');
     }
@@ -237,6 +270,27 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     _saveSettings();
     AppLogger.debug('Settings', '處置股票緊急警報: $value');
   }
+
+  /// Set limit up/down alerts
+  void setLimitAlerts(bool value) {
+    state = state.copyWith(limitAlerts: value);
+    _saveSettings();
+    AppLogger.debug('Settings', '漲跌停提示: $value');
+  }
+
+  /// Set ROC year display
+  void setShowROCYear(bool value) {
+    state = state.copyWith(showROCYear: value);
+    _saveSettings();
+    AppLogger.debug('Settings', '民國年顯示: $value');
+  }
+
+  /// Set cache duration in minutes
+  void setCacheDurationMinutes(int minutes) {
+    state = state.copyWith(cacheDurationMinutes: minutes);
+    _saveSettings();
+    AppLogger.debug('Settings', '快取時間: $minutes 分鐘');
+  }
 }
 
 // ==================================================
@@ -263,6 +317,11 @@ final localeProvider = Provider<Locale>((ref) {
 /// Settings loaded provider
 final settingsLoadedProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).isLoaded;
+});
+
+/// Cache duration provider (convenience)
+final cacheDurationProvider = Provider<int>((ref) {
+  return ref.watch(settingsProvider).cacheDurationMinutes;
 });
 
 // ==================================================

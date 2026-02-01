@@ -495,7 +495,17 @@
     "insiderNotifications": "董監持股通知",
     "insiderNotificationsDesc": "當自選股董監持股有重大變化時通知",
     "disposalUrgentAlerts": "處置股票緊急警報",
-    "disposalUrgentAlertsDesc": "當自選股被列入處置股時發送緊急通知"
+    "disposalUrgentAlertsDesc": "當自選股被列入處置股時發送緊急通知",
+    "limitAlerts": "漲跌停提示",
+    "limitAlertsDesc": "自選股觸及漲跌停時顯示標記",
+    "showROCYear": "民國年顯示",
+    "showROCYearDesc": "在財報頁面使用民國年格式",
+    "cacheDuration": "API 快取時間",
+    "cacheDurationDesc": "已查詢的資料會暫存，減少重複呼叫 API",
+    "selectCacheDuration": "選擇快取時間",
+    "cache15min": "15 分鐘",
+    "cache30min": "30 分鐘",
+    "cache60min": "1 小時"
   },
   "alert": {
     "title": "價格提醒",
@@ -873,6 +883,8 @@
     "netNeutral": "持平",
     "netDash": "-",
     "institutionalFlow": "近期法人動向：外資 {foreign}、投信 {trust}。",
+    "limitUp": "今日觸及漲停板（+10%），多頭氣勢極強，追高需留意風險。",
+    "limitDown": "今日觸及跌停板（-10%），空方力道極強，接刀需格外謹慎。",
     "noSignals": "目前無明顯訊號觸發。",
     "disclaimer": "以上為系統依據規則自動生成之分析摘要，僅供參考，不構成投資建議。",
     "actionSetAlert": "設定警示",

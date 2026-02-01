@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -293,28 +295,34 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             ),
 
             // 股票數量（分頁時顯示已載入/總數）
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Row(
-                children: [
-                  Text(
-                    state.hasMore
-                        ? 'scan.stockCountLoaded'.tr(
-                            namedArgs: {
-                              'loaded': state.stocks.length.toString(),
-                              'total': state.totalCount.toString(),
-                            },
-                          )
-                        : 'scan.stockCount'.tr(
-                            namedArgs: {
-                              'count': state.stocks.length.toString(),
-                            },
-                          ),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            Semantics(
+              liveRegion: true,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      state.hasMore
+                          ? 'scan.stockCountLoaded'.tr(
+                              namedArgs: {
+                                'loaded': state.stocks.length.toString(),
+                                'total': state.totalCount.toString(),
+                              },
+                            )
+                          : 'scan.stockCount'.tr(
+                              namedArgs: {
+                                'count': state.stocks.length.toString(),
+                              },
+                            ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
@@ -416,6 +424,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                               trendState: stock.trendState,
                               isInWatchlist: stock.isInWatchlist,
                               recentPrices: stock.recentPrices,
+                              showLimitMarkers: ref
+                                  .watch(settingsProvider)
+                                  .limitAlerts,
                               onTap: () =>
                                   context.push('/stock/${stock.symbol}'),
                               onLongPress: () {

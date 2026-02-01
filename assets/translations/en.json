@@ -494,7 +494,17 @@
     "insiderNotifications": "Insider Notifications",
     "insiderNotificationsDesc": "Notify when insider holdings change significantly",
     "disposalUrgentAlerts": "Disposal Urgent Alerts",
-    "disposalUrgentAlertsDesc": "Send urgent alerts when stocks are placed under disposal"
+    "disposalUrgentAlertsDesc": "Send urgent alerts when stocks are placed under disposal",
+    "limitAlerts": "Limit Up/Down Alerts",
+    "limitAlertsDesc": "Show markers when watchlist stocks hit daily limit",
+    "showROCYear": "ROC Year Display",
+    "showROCYearDesc": "Use ROC calendar year in fundamentals tab",
+    "cacheDuration": "API Cache Duration",
+    "cacheDurationDesc": "Caches fetched data to reduce repeated API calls",
+    "selectCacheDuration": "Select Cache Duration",
+    "cache15min": "15 Minutes",
+    "cache30min": "30 Minutes",
+    "cache60min": "1 Hour"
   },
   "alert": {
     "title": "Price Alerts",
@@ -872,6 +882,8 @@
     "netNeutral": "flat",
     "netDash": "-",
     "institutionalFlow": "Recent fund flows: Foreign {foreign}, Investment Trust {trust}.",
+    "limitUp": "Hit daily limit up (+10%), extremely strong bullish momentum, be cautious chasing highs.",
+    "limitDown": "Hit daily limit down (-10%), extremely strong bearish pressure, exercise extreme caution.",
     "noSignals": "No significant signals triggered.",
     "disclaimer": "Auto-generated analysis summary for reference only, not investment advice.",
     "actionSetAlert": "Set Alert",

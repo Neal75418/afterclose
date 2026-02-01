@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/core/constants/market_index_names.dart';
 
 /// 大盤指數歷史同步器
 ///

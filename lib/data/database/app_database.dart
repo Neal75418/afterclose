@@ -75,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -288,6 +288,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 9) {
         await customStatement(
           'ALTER TABLE daily_price ADD COLUMN price_change REAL',
+        );
+      }
+
+      // v9 -> v10: 新增複合索引加速 WHERE symbol=? AND date=? 查詢
+      if (from < 10) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_trading_warning_symbol_date ON trading_warning(symbol, date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_insider_holding_symbol_date ON insider_holding(symbol, date)',
         );
       }
     },

@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -15,7 +17,7 @@ import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/services/share_service.dart';
-import 'package:afterclose/domain/services/export_service.dart';
+import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 
 /// Watchlist screen - shows user's selected stocks
@@ -495,6 +497,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           isInWatchlist: true,
           recentPrices: item.recentPrices,
           warningType: item.warningType,
+          showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
           onTap: () => context.push('/stock/${item.symbol}'),
           onLongPress: () => _showStockPreview(item),
           onWatchlistTap: () {

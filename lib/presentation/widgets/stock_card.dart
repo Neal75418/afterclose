@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
 import 'package:afterclose/presentation/widgets/warning_badge.dart';
@@ -36,6 +37,7 @@ class StockCard extends StatefulWidget {
     this.onWatchlistTap,
     this.recentPrices,
     this.warningType,
+    this.showLimitMarkers = true,
   });
 
   final String symbol;
@@ -57,6 +59,9 @@ class StockCard extends StatefulWidget {
   /// 警示類型（注意股票、處置股票、高質押）
   final WarningBadgeType? warningType;
 
+  /// 是否顯示漲跌停標記
+  final bool showLimitMarkers;
+
   @override
   State<StockCard> createState() => _StockCardState();
 }
@@ -74,6 +79,13 @@ class _StockCardState extends State<StockCard> {
     }
     if (widget.priceChange != null) {
       parts.add(S.accessibilityPriceChange(widget.priceChange!));
+      if (widget.showLimitMarkers) {
+        if (PriceLimit.isLimitUp(widget.priceChange)) {
+          parts.add('漲停');
+        } else if (PriceLimit.isLimitDown(widget.priceChange)) {
+          parts.add('跌停');
+        }
+      }
     }
     if (widget.score != null && widget.score! > 0) {
       parts.add(S.accessibilityScore(widget.score!.toInt()));
@@ -223,6 +235,10 @@ class _StockCardState extends State<StockCard> {
 
   Widget _buildStockName(ThemeData theme) {
     final marketLabel = widget.market == 'TPEx' ? '櫃' : null;
+    final isLimitUp =
+        widget.showLimitMarkers && PriceLimit.isLimitUp(widget.priceChange);
+    final isLimitDown =
+        widget.showLimitMarkers && PriceLimit.isLimitDown(widget.priceChange);
 
     return Row(
       children: [
@@ -254,6 +270,25 @@ class _StockCardState extends State<StockCard> {
             ),
           ),
         ],
+        // 漲停/跌停醒目標籤
+        if (isLimitUp || isLimitDown) ...[
+          const SizedBox(width: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppTheme.getPriceColor(widget.priceChange),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              isLimitUp ? '漲停' : '跌停',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -281,6 +316,10 @@ class _StockCardState extends State<StockCard> {
   Widget _buildPriceSection(ThemeData theme, Color priceColor) {
     final isPositive = (widget.priceChange ?? 0) >= 0;
     final isNeutral = widget.priceChange == null || widget.priceChange == 0;
+    final isLimitUp =
+        widget.showLimitMarkers && PriceLimit.isLimitUp(widget.priceChange);
+    final isLimitDown =
+        widget.showLimitMarkers && PriceLimit.isLimitDown(widget.priceChange);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -304,12 +343,27 @@ class _StockCardState extends State<StockCard> {
             decoration: BoxDecoration(
               color: priceColor.withValues(alpha: isNeutral ? 0.1 : 0.15),
               borderRadius: BorderRadius.circular(6),
+              border: (isLimitUp || isLimitDown)
+                  ? Border.all(color: priceColor, width: 1.5)
+                  : null,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // 漲跌停標記
+                if (isLimitUp || isLimitDown)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 2),
+                    child: Icon(
+                      isLimitUp
+                          ? Icons.arrow_upward_rounded
+                          : Icons.arrow_downward_rounded,
+                      color: priceColor,
+                      size: 14,
+                    ),
+                  )
                 // 裝飾圖示 - 文字已包含正負號
-                if (!isNeutral)
+                else if (!isNeutral)
                   ExcludeSemantics(
                     child: Icon(
                       isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,

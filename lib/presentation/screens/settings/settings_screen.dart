@@ -85,6 +85,23 @@ class SettingsScreen extends ConsumerWidget {
                   .read(settingsProvider.notifier)
                   .setDisposalUrgentAlerts(v),
             ),
+            _buildFeatureTile(
+              context,
+              settings.limitAlerts,
+              Icons.vertical_align_center_rounded,
+              Colors.deepOrange,
+              'settings.limitAlerts'.tr(),
+              (v) => ref.read(settingsProvider.notifier).setLimitAlerts(v),
+            ),
+            _buildFeatureTile(
+              context,
+              settings.showROCYear,
+              Icons.calendar_month_rounded,
+              Colors.purple,
+              'settings.showROCYear'.tr(),
+              (v) => ref.read(settingsProvider.notifier).setShowROCYear(v),
+            ),
+            _buildCacheDurationTile(context, ref, theme, settings),
           ]),
 
           // Data Management Section
@@ -279,6 +296,97 @@ class SettingsScreen extends ConsumerWidget {
         HapticFeedback.selectionClick();
         onChanged(newValue);
       },
+    );
+  }
+
+  Widget _buildCacheDurationTile(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    SettingsState settings,
+  ) {
+    final label = switch (settings.cacheDurationMinutes) {
+      15 => 'settings.cache15min'.tr(),
+      30 => 'settings.cache30min'.tr(),
+      60 => 'settings.cache60min'.tr(),
+      _ => '${settings.cacheDurationMinutes} min',
+    };
+
+    return ListTile(
+      leading: _buildIconContainer(Colors.cyan, Icons.cached_rounded),
+      title: Text('settings.cacheDuration'.tr()),
+      subtitle: Text(
+        'settings.cacheDurationDesc'.tr(),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.outline,
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
+      onTap: () =>
+          _showCacheDurationDialog(context, ref, settings.cacheDurationMinutes),
+    );
+  }
+
+  void _showCacheDurationDialog(
+    BuildContext context,
+    WidgetRef ref,
+    int currentMinutes,
+  ) {
+    HapticFeedback.lightImpact();
+    final options = [15, 30, 60];
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('settings.selectCacheDuration'.tr()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((minutes) {
+            final isSelected = minutes == currentMinutes;
+            final label = switch (minutes) {
+              15 => 'settings.cache15min'.tr(),
+              30 => 'settings.cache30min'.tr(),
+              60 => 'settings.cache60min'.tr(),
+              _ => '$minutes min',
+            };
+            return ListTile(
+              leading: Icon(
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                color: isSelected
+                    ? Theme.of(dialogContext).colorScheme.primary
+                    : null,
+              ),
+              title: Text(label),
+              onTap: () {
+                HapticFeedback.selectionClick();
+                ref
+                    .read(settingsProvider.notifier)
+                    .setCacheDurationMinutes(minutes);
+                // Invalidate FinMind client to pick up new TTL
+                ref.invalidate(finMindClientProvider);
+                Navigator.pop(dialogContext);
+              },
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 

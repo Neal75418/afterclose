@@ -1,31 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/market_index_names.dart';
+export 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
-
-// ==================================================
-// 重點指數常數
-// ==================================================
-
-/// TWSE API 回傳的指數全名（用於 DB 查詢與 UI 過濾）
-class MarketIndexNames {
-  MarketIndexNames._();
-
-  static const taiex = '發行量加權股價指數';
-  static const exFinance = '未含金融電子指數';
-  static const electronics = '電子工業類指數';
-  static const financeInsurance = '金融保險類指數';
-
-  /// Dashboard 顯示的 4 個重點指數
-  static const dashboardIndices = [
-    taiex,
-    exFinance,
-    electronics,
-    financeInsurance,
-  ];
-}
 
 // ==================================================
 // Market Overview State

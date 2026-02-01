@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 
 /// 投資組合總覽卡片
@@ -99,15 +100,7 @@ class PortfolioSummaryCard extends StatelessWidget {
     );
   }
 
-  String _formatNumber(double value) {
-    if (value.abs() >= 1e8) {
-      return '${(value / 1e8).toStringAsFixed(1)}億';
-    }
-    if (value.abs() >= 1e4) {
-      return '${(value / 1e4).toStringAsFixed(1)}萬';
-    }
-    return value.toStringAsFixed(0);
-  }
+  String _formatNumber(double value) => AppNumberFormat.compact(value);
 }
 
 class _PnlItem extends StatelessWidget {
@@ -139,7 +132,7 @@ class _PnlItem extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          '${isPositive && value != 0 ? "+" : ""}${value.toStringAsFixed(0)}',
+          value == 0 ? '0' : AppNumberFormat.signedInteger(value),
           style: theme.textTheme.bodySmall?.copyWith(
             color: color,
             fontWeight: FontWeight.w600,

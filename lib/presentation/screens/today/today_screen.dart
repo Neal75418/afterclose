@@ -1,6 +1,8 @@
 import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -194,6 +196,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   trendState: rec.trendState,
                   recentPrices: rec.recentPrices,
                   isInWatchlist: isInWatchlist,
+                  showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
                   onTap: () {
                     HapticFeedback.lightImpact();
                     context.push('/stock/${rec.symbol}');

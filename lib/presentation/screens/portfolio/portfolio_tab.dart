@@ -52,7 +52,11 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
 
               // 配置圓餅圖
               if (state.allocationMap.isNotEmpty) ...[
-                AllocationPieChart(allocationMap: state.allocationMap),
+                Semantics(
+                  label: '投資組合配置圓餅圖，共 ${state.allocationMap.length} 檔持股',
+                  image: true,
+                  child: AllocationPieChart(allocationMap: state.allocationMap),
+                ),
                 const SizedBox(height: 20),
               ],
 

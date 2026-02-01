@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
@@ -58,8 +60,16 @@ class AnalysisSummaryService {
     );
 
     // 匯流整合的關鍵訊號 & 風險因子
-    final keySignals = _buildKeySignals(reasons, bullishConfluence);
-    final riskFactors = _buildRiskFactors(reasons, bearishConfluence);
+    final keySignals = _buildKeySignals(
+      reasons,
+      bullishConfluence,
+      priceChange: priceChange,
+    );
+    final riskFactors = _buildRiskFactors(
+      reasons,
+      bearishConfluence,
+      priceChange: priceChange,
+    );
 
     final supporting = _buildSupportingData(
       institutionalHistory,
@@ -197,17 +207,25 @@ class AnalysisSummaryService {
 
   List<LocalizableString> _buildKeySignals(
     List<DailyReasonEntry> reasons,
-    ConfluenceResult confluence,
-  ) {
+    ConfluenceResult confluence, {
+    double? priceChange,
+  }) {
     final positive = reasons.where((r) => r.ruleScore > 0).toList()
       ..sort((a, b) => b.ruleScore.compareTo(a.ruleScore));
 
     const maxItems = 5;
-    final signals = <LocalizableString>[
-      ...confluence.summaryKeys
-          .take(maxItems)
+    final signals = <LocalizableString>[];
+
+    // 漲停板置頂顯示
+    if (PriceLimit.isLimitUp(priceChange)) {
+      signals.add(const LocalizableString('summary.limitUp'));
+    }
+
+    signals.addAll(
+      confluence.summaryKeys
+          .take(maxItems - signals.length)
           .map((key) => LocalizableString(key)),
-    ];
+    );
 
     final remainingSlots = maxItems - signals.length;
     if (remainingSlots > 0) {
@@ -227,17 +245,25 @@ class AnalysisSummaryService {
 
   List<LocalizableString> _buildRiskFactors(
     List<DailyReasonEntry> reasons,
-    ConfluenceResult confluence,
-  ) {
+    ConfluenceResult confluence, {
+    double? priceChange,
+  }) {
     final negative = reasons.where((r) => r.ruleScore < 0).toList()
       ..sort((a, b) => a.ruleScore.compareTo(b.ruleScore));
 
     const maxItems = 5;
-    final risks = <LocalizableString>[
-      ...confluence.summaryKeys
-          .take(maxItems)
+    final risks = <LocalizableString>[];
+
+    // 跌停板置頂顯示
+    if (PriceLimit.isLimitDown(priceChange)) {
+      risks.add(const LocalizableString('summary.limitDown'));
+    }
+
+    risks.addAll(
+      confluence.summaryKeys
+          .take(maxItems - risks.length)
           .map((key) => LocalizableString(key)),
-    ];
+    );
 
     final remainingSlots = maxItems - risks.length;
     if (remainingSlots > 0) {
@@ -432,7 +458,12 @@ class AnalysisSummaryService {
     try {
       final decoded = jsonDecode(json);
       if (decoded is Map<String, dynamic>) return decoded;
-    } catch (_) {}
+    } catch (e) {
+      AppLogger.debug(
+        'SummaryService',
+        'Evidence JSON parse failed: $json ($e)',
+      );
+    }
     return const {};
   }
 

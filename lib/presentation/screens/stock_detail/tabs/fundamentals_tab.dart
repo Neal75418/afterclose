@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -299,7 +301,12 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                     Expanded(
                       flex: 3,
                       child: Text(
-                        '${rev.revenueYear}/${rev.revenueMonth.toString().padLeft(2, '0')}',
+                        ref.watch(settingsProvider).showROCYear
+                            ? TaiwanDateFormatter.formatYearMonth(
+                                rev.revenueYear,
+                                rev.revenueMonth,
+                              )
+                            : '${rev.revenueYear}/${rev.revenueMonth.toString().padLeft(2, '0')}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: index == 0
                               ? FontWeight.bold
@@ -507,7 +514,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        div.year.toString(),
+                        ref.watch(settingsProvider).showROCYear
+                            ? TaiwanDateFormatter.formatDualYear(div.year)
+                            : div.year.toString(),
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: index == 0
                               ? FontWeight.bold
@@ -637,7 +646,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
               // Format quarter label from date
               final quarter = ((eps.date.month - 1) ~/ 3) + 1;
-              final quarterLabel = '${eps.date.year} Q$quarter';
+              final quarterLabel = ref.watch(settingsProvider).showROCYear
+                  ? TaiwanDateFormatter.formatQuarter(eps.date.year, quarter)
+                  : '${eps.date.year} Q$quarter';
 
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),

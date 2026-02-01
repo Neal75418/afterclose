@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/json_parsers.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/lru_cache.dart';
 
 /// FinMind API 客戶端（台股市場資料）
 ///
@@ -22,10 +23,12 @@ class FinMindClient {
     Duration baseDelay = const Duration(
       milliseconds: ApiConfig.finmindBaseDelayMs,
     ),
+    Duration cacheTtl = const Duration(minutes: 30),
   }) : _dio = dio ?? _createDio(),
        _token = token,
        _maxRetries = maxRetries,
-       _baseDelay = baseDelay;
+       _baseDelay = baseDelay,
+       _cacheTtl = cacheTtl;
 
   static const String baseUrl = 'https://api.finmindtrade.com/api/v4/data';
 
@@ -38,7 +41,15 @@ class FinMindClient {
   final Dio _dio;
   final int _maxRetries;
   final Duration _baseDelay;
+  final Duration _cacheTtl;
   final Random _random = Random();
+
+  /// API response 快取
+  ///
+  /// 盤後資料不常變動，快取可大幅減少 API 呼叫次數。
+  /// TTL 由使用者設定決定（預設 30 分鐘）。
+  late final LruCache<String, List<Map<String, dynamic>>> _responseCache =
+      LruCache(maxSize: 200, ttl: _cacheTtl);
 
   /// 使用者的 FinMind API token（選用但建議設定）
   String? _token;
@@ -104,6 +115,13 @@ class FinMindClient {
     return result;
   }
 
+  /// 產生快取鍵（依參數鍵排序以確保一致性）
+  String _cacheKey(Map<String, dynamic> params) {
+    final sorted = params.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    return sorted.map((e) => '${e.key}=${e.value}').join('&');
+  }
+
   /// 通用請求處理器（含錯誤對應和重試邏輯）
   Future<List<Map<String, dynamic>>> _request(
     Map<String, dynamic> params,
@@ -113,6 +131,14 @@ class FinMindClient {
     final stockId =
         params['data_id']?.toString() ?? params['stock_id']?.toString() ?? '';
     final label = stockId.isNotEmpty ? '$dataset($stockId)' : dataset;
+
+    // 快取查詢（回傳複本，避免呼叫端修改快取內容）
+    final cacheKey = _cacheKey(params);
+    final cached = _responseCache.get(cacheKey);
+    if (cached != null) {
+      AppLogger.debug('FinMind', '$label: cache hit (${cached.length} 筆)');
+      return List<Map<String, dynamic>>.from(cached);
+    }
 
     int attempt = 0;
     Object? lastError;
@@ -153,9 +179,12 @@ class FinMindClient {
           final dataList = data['data'];
           if (dataList is List) {
             final result = dataList.cast<Map<String, dynamic>>();
+            _responseCache.put(cacheKey, List.unmodifiable(result));
             AppLogger.debug('FinMind', '$label: ${result.length} 筆');
             return result;
           }
+          // 空結果也快取，避免重複對同一參數請求 API
+          _responseCache.put(cacheKey, const []);
           AppLogger.debug('FinMind', '$label: 0 筆');
           return [];
         }

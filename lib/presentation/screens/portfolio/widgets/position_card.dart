@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 
 /// 單一持倉卡片
@@ -72,14 +73,14 @@ class PositionCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${position.quantity.toStringAsFixed(0)} ${'portfolio.quantity'.tr()}',
+                  '${AppNumberFormat.integer(position.quantity)} ${'portfolio.quantity'.tr()}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.outline,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${isPositive ? "+" : ""}${position.unrealizedPnl.toStringAsFixed(0)}',
+                  AppNumberFormat.signedInteger(position.unrealizedPnl),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: pnlColor,
                     fontWeight: FontWeight.w600,

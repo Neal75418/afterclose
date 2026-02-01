@@ -4,6 +4,7 @@ import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -48,8 +49,11 @@ final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
 });
 
 /// FinMind API 客戶端（用於取得歷史資料）
+///
+/// 當使用者變更快取時間設定時，此 provider 會被 invalidate 並重建。
 final finMindClientProvider = Provider<FinMindClient>((ref) {
-  return FinMindClient();
+  final cacheDuration = ref.watch(cacheDurationProvider);
+  return FinMindClient(cacheTtl: Duration(minutes: cacheDuration));
 });
 
 /// TWSE 開放資料客戶端（用於取得每日全市場上市價格）

@@ -19,7 +19,7 @@ import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
 import 'package:afterclose/presentation/widgets/shareable/shareable_analysis_card.dart';
 import 'package:afterclose/core/utils/widget_capture.dart';
 import 'package:afterclose/core/services/share_service.dart';
-import 'package:afterclose/domain/services/export_service.dart';
+import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
@@ -230,240 +230,263 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     }
   }
 
+  String _buildHeaderSemanticLabel(StockDetailState state) {
+    final parts = <String>[];
+    final name = state.stock?.name;
+    if (name != null) parts.add(name);
+    parts.add(widget.symbol);
+    final close = state.latestPrice?.close;
+    if (close != null) parts.add('收盤價 ${close.toStringAsFixed(2)} 元');
+    final change = state.priceChange;
+    if (change != null) {
+      parts.add('漲跌幅 ${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%');
+    }
+    final trend = state.analysis?.trendState;
+    if (trend != null) parts.add('趨勢 ${trend.trendKey}');
+    return parts.join(', ');
+  }
+
   Widget _buildHeader(StockDetailState state, ThemeData theme) {
     final priceChange = state.priceChange;
     final isPositive = (priceChange ?? 0) >= 0;
     final priceColor = AppTheme.getPriceColor(priceChange);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      // No background color to let gradient show through
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+    return Semantics(
+      label: _buildHeaderSemanticLabel(state),
+      container: true,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        // No background color to let gradient show through
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
           ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Stock name and price
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            state.stock?.name ?? widget.symbol,
-                            style: theme.textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        if (state.stock?.market == 'TPEx') ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Stock name and price
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
                             child: Text(
-                              'stockDetail.otcBadge'.tr(),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSecondaryContainer,
-                                fontWeight: FontWeight.w500,
+                              state.stock?.name ?? widget.symbol,
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                        ],
-                        if (state.stock?.industry != null &&
-                            state.stock!.industry!.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Container(
+                          if (state.stock?.market == 'TPEx') ...[
+                            const SizedBox(width: 8),
+                            Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.tertiaryContainer,
+                                color: theme.colorScheme.secondaryContainer,
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                state.stock!.industry!,
+                                'stockDetail.otcBadge'.tr(),
                                 style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onTertiaryContainer,
+                                  color: theme.colorScheme.onSecondaryContainer,
                                   fontWeight: FontWeight.w500,
                                 ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
                               ),
                             ),
-                          ),
+                          ],
+                          if (state.stock?.industry != null &&
+                              state.stock!.industry!.isNotEmpty) ...[
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.tertiaryContainer,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  state.stock!.industry!,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color:
+                                        theme.colorScheme.onTertiaryContainer,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
+                      const SizedBox(height: 4),
+                      // Reason tags
+                      if (state.reasons.isNotEmpty)
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: state.reasons.take(3).map((reason) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                ReasonTags.translateReasonCode(
+                                  reason.reasonType,
+                                ),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      state.latestPrice?.close?.toStringAsFixed(2) ?? '-',
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontWeight: FontWeight
+                            .w800, // Matching heavy weight from StockCard
+                        fontFamily: 'RobotoMono',
+                        fontSize: 32,
+                        letterSpacing: -1,
+                      ),
                     ),
-                    const SizedBox(height: 4),
-                    // Reason tags
-                    if (state.reasons.isNotEmpty)
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: state.reasons.take(3).map((reason) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
+                    if (priceChange != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isPositive
+                                ? [
+                                    AppTheme.upColor.withValues(alpha: 0.2),
+                                    AppTheme.upColor.withValues(alpha: 0.1),
+                                  ]
+                                : [
+                                    AppTheme.downColor.withValues(alpha: 0.2),
+                                    AppTheme.downColor.withValues(alpha: 0.1),
+                                  ],
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: priceColor.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isPositive ? Icons.north : Icons.south,
+                              size: 14,
+                              color: priceColor,
                             ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              ReasonTags.translateReasonCode(reason.reasonType),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(width: 4),
+                            Text(
+                              '${isPositive ? '+' : ''}${priceChange.toStringAsFixed(2)}%',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: priceColor,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          );
-                        }).toList(),
+                          ],
+                        ),
+                      ),
+                    // Show synchronized data date
+                    if (state.dataDate != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (state.hasDataMismatch)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Icon(
+                                  Icons.sync_problem,
+                                  size: 12,
+                                  color: theme.colorScheme.error,
+                                ),
+                              ),
+                            Text(
+                              _formatDataDate(state.dataDate!),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: state.hasDataMismatch
+                                    ? theme.colorScheme.error
+                                    : theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    state.latestPrice?.close?.toStringAsFixed(2) ?? '-',
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight
-                          .w800, // Matching heavy weight from StockCard
-                      fontFamily: 'RobotoMono',
-                      fontSize: 32,
-                      letterSpacing: -1,
-                    ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
+            // Trend and key levels row
+            Row(
+              children: [
+                _buildInfoChip(
+                  theme: theme,
+                  label:
+                      'trend.${state.analysis?.trendState.trendKey ?? 'sideways'}'
+                          .tr(),
+                  icon:
+                      state.analysis?.trendState.trendIconData ??
+                      Icons.trending_flat,
+                  color:
+                      state.analysis?.trendState.trendColor ??
+                      AppTheme.neutralColor,
+                ),
+                const SizedBox(width: 8),
+                if (state.analysis?.supportLevel case final supportLevel?)
+                  _buildLevelChip(
+                    theme: theme,
+                    label: 'stockDetail.support'.tr(),
+                    value: supportLevel,
+                    color: AppTheme.downColor,
                   ),
-                  if (priceChange != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isPositive
-                              ? [
-                                  AppTheme.upColor.withValues(alpha: 0.2),
-                                  AppTheme.upColor.withValues(alpha: 0.1),
-                                ]
-                              : [
-                                  AppTheme.downColor.withValues(alpha: 0.2),
-                                  AppTheme.downColor.withValues(alpha: 0.1),
-                                ],
-                        ),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: priceColor.withValues(alpha: 0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            isPositive ? Icons.north : Icons.south,
-                            size: 14,
-                            color: priceColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${isPositive ? '+' : ''}${priceChange.toStringAsFixed(2)}%',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: priceColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  // Show synchronized data date
-                  if (state.dataDate != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (state.hasDataMismatch)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 4),
-                              child: Icon(
-                                Icons.sync_problem,
-                                size: 12,
-                                color: theme.colorScheme.error,
-                              ),
-                            ),
-                          Text(
-                            _formatDataDate(state.dataDate!),
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: state.hasDataMismatch
-                                  ? theme.colorScheme.error
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Trend and key levels row
-          Row(
-            children: [
-              _buildInfoChip(
-                theme: theme,
-                label:
-                    'trend.${state.analysis?.trendState.trendKey ?? 'sideways'}'
-                        .tr(),
-                icon:
-                    state.analysis?.trendState.trendIconData ??
-                    Icons.trending_flat,
-                color:
-                    state.analysis?.trendState.trendColor ??
-                    AppTheme.neutralColor,
-              ),
-              const SizedBox(width: 8),
-              if (state.analysis?.supportLevel case final supportLevel?)
-                _buildLevelChip(
-                  theme: theme,
-                  label: 'stockDetail.support'.tr(),
-                  value: supportLevel,
-                  color: AppTheme.downColor,
-                ),
-              const SizedBox(width: 8),
-              if (state.analysis?.resistanceLevel case final resistanceLevel?)
-                _buildLevelChip(
-                  theme: theme,
-                  label: 'stockDetail.resistance'.tr(),
-                  value: resistanceLevel,
-                  color: AppTheme.upColor,
-                ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 8),
+                if (state.analysis?.resistanceLevel case final resistanceLevel?)
+                  _buildLevelChip(
+                    theme: theme,
+                    label: 'stockDetail.resistance'.tr(),
+                    value: resistanceLevel,
+                    color: AppTheme.upColor,
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -14,7 +14,7 @@ import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
 import 'package:afterclose/presentation/widgets/shareable/shareable_comparison_card.dart';
 import 'package:afterclose/core/utils/widget_capture.dart';
 import 'package:afterclose/core/services/share_service.dart';
-import 'package:afterclose/domain/services/export_service.dart';
+import 'package:afterclose/presentation/services/export_service.dart';
 
 /// Main comparison screen that shows side-by-side stock analysis.
 class ComparisonScreen extends ConsumerStatefulWidget {
@@ -211,21 +211,33 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             ),
 
           // Price overlay chart
-          PriceOverlayChart(
-            symbols: state.symbols,
-            priceHistoriesMap: state.priceHistoriesMap,
-            stocksMap: state.stocksMap,
+          Semantics(
+            label: '價格走勢比較圖，比較 ${state.symbols.join("、")} 的歷史價格',
+            image: true,
+            child: PriceOverlayChart(
+              symbols: state.symbols,
+              priceHistoriesMap: state.priceHistoriesMap,
+              stocksMap: state.stocksMap,
+            ),
           ),
 
           const SizedBox(height: 16),
 
           // Radar chart
-          RadarComparisonChart(state: state),
+          Semantics(
+            label: '雷達圖比較 ${state.symbols.join("、")} 的各維度指標',
+            image: true,
+            child: RadarComparisonChart(state: state),
+          ),
 
           const SizedBox(height: 16),
 
           // Comparison table
-          ComparisonTable(state: state),
+          Semantics(
+            label: '${state.symbols.join("、")} 的詳細數據比較表格',
+            container: true,
+            child: ComparisonTable(state: state),
+          ),
 
           const SizedBox(height: 32),
         ],
