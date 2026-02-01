@@ -35,6 +35,16 @@ class AppTheme {
   /// 錯誤色 - 使用較深的紅橘色，與上漲顏色區分
   static const errorColor = Color(0xFFE74C3C);
 
+  // 語意色
+  /// 正面/成功 - 綠色（信心度高等）
+  static const successColor = Color(0xFF4CAF50);
+
+  /// 警示 - 橘色（風險因子、中等分數等）
+  static const warningColor = Color(0xFFFF9800);
+
+  /// 注意 - 琥珀色（觀望等級分數等）
+  static const cautionColor = Color(0xFFFFC107);
+
   // 法人類別顏色
   /// 外資 - 藍色
   static const foreignColor = Color(0xFF3498DB);
@@ -353,8 +363,8 @@ class AppTheme {
   /// 根據評分取得對應顏色
   static Color getScoreColor(double score) {
     if (score >= 50) return upColor;
-    if (score >= 35) return Colors.orange;
-    if (score >= 20) return Colors.amber;
+    if (score >= 35) return warningColor;
+    if (score >= 20) return cautionColor;
     return neutralColor;
   }
 

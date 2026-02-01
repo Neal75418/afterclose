@@ -155,6 +155,7 @@ class PriceRepository implements IPriceRepository {
           low: Value(price.low),
           close: Value(price.close),
           volume: Value(price.volume),
+          priceChange: Value(price.change),
         );
       }).toList();
 
@@ -310,6 +311,7 @@ class PriceRepository implements IPriceRepository {
               low: Value(price.low),
               close: Value(price.close),
               volume: Value(price.volume),
+              priceChange: Value(price.change),
             );
           })
           .toList();
@@ -326,6 +328,7 @@ class PriceRepository implements IPriceRepository {
               low: Value(price.low),
               close: Value(price.close),
               volume: Value(price.volume),
+              priceChange: Value(price.change),
             );
           })
           .toList();
@@ -483,9 +486,6 @@ class PriceRepository implements IPriceRepository {
   ///
   /// 類似 _quickFilterCandidates，但從本地 Database 讀取，
   /// 而非 API 回應。當已有今日資料時使用。
-  ///
-  /// 注意：無法使用 [_quickFilterPrices]，因 [DailyPriceEntry]
-  /// 缺少 change 欄位（需前一日收盤價計算）。
   Future<List<String>> _quickFilterCandidatesFromDb(DateTime date) async {
     final prices = await _db.getPricesForDate(date);
     if (prices.isEmpty) return [];

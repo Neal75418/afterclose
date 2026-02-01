@@ -8,6 +8,7 @@ import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -193,15 +194,13 @@ class ComparisonNotifier extends StateNotifier<ComparisonState> {
 
       // 3. Generate AI summaries per stock
       const summaryService = AnalysisSummaryService();
+      const localizer = SummaryLocalizer();
       final summaries = <String, StockSummary>{};
       for (final symbol in symbols) {
         final analysis = coreData.analyses[symbol];
         final reasons = coreData.reasons[symbol] ?? [];
         final latestPrice = coreData.latestPrices[symbol];
         final priceHistory = coreData.priceHistories[symbol] ?? [];
-        final previousPrice = priceHistory.length > 1
-            ? priceHistory[priceHistory.length - 2]
-            : null;
 
         // Convert DB models to API models for summary service
         final revenueEntries = revenue[symbol] ?? [];
@@ -230,18 +229,19 @@ class ComparisonNotifier extends StateNotifier<ComparisonState> {
               )
             : null;
 
-        summaries[symbol] = summaryService.generate(
+        final summaryData = summaryService.generate(
           analysis: analysis,
           reasons: reasons,
           latestPrice: latestPrice,
-          priceChange: PriceCalculator.calculatePriceChangeFromPrices(
-            latestPrice?.close,
-            previousPrice?.close,
+          priceChange: PriceCalculator.calculatePriceChange(
+            priceHistory,
+            latestPrice,
           ),
           institutionalHistory: institutional[symbol] ?? [],
           revenueHistory: finMindRevenues,
           latestPER: finMindPER,
         );
+        summaries[symbol] = localizer.localize(summaryData);
       }
 
       state = state.copyWith(

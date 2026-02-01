@@ -496,6 +496,17 @@ class $DailyPriceTable extends DailyPrice
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _priceChangeMeta = const VerificationMeta(
+    'priceChange',
+  );
+  @override
+  late final GeneratedColumn<double> priceChange = GeneratedColumn<double>(
+    'price_change',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     symbol,
@@ -505,6 +516,7 @@ class $DailyPriceTable extends DailyPrice
     low,
     close,
     volume,
+    priceChange,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -564,6 +576,15 @@ class $DailyPriceTable extends DailyPrice
         volume.isAcceptableOrUnknown(data['volume']!, _volumeMeta),
       );
     }
+    if (data.containsKey('price_change')) {
+      context.handle(
+        _priceChangeMeta,
+        priceChange.isAcceptableOrUnknown(
+          data['price_change']!,
+          _priceChangeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -601,6 +622,10 @@ class $DailyPriceTable extends DailyPrice
         DriftSqlType.double,
         data['${effectivePrefix}volume'],
       ),
+      priceChange: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}price_change'],
+      ),
     );
   }
 
@@ -631,6 +656,9 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
 
   /// 成交量（張）
   final double? volume;
+
+  /// 漲跌價差（來自 TWSE/TPEX API，用於計算漲跌幅）
+  final double? priceChange;
   const DailyPriceEntry({
     required this.symbol,
     required this.date,
@@ -639,6 +667,7 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
     this.low,
     this.close,
     this.volume,
+    this.priceChange,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -660,6 +689,9 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
     if (!nullToAbsent || volume != null) {
       map['volume'] = Variable<double>(volume);
     }
+    if (!nullToAbsent || priceChange != null) {
+      map['price_change'] = Variable<double>(priceChange);
+    }
     return map;
   }
 
@@ -676,6 +708,9 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
       volume: volume == null && nullToAbsent
           ? const Value.absent()
           : Value(volume),
+      priceChange: priceChange == null && nullToAbsent
+          ? const Value.absent()
+          : Value(priceChange),
     );
   }
 
@@ -692,6 +727,7 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
       low: serializer.fromJson<double?>(json['low']),
       close: serializer.fromJson<double?>(json['close']),
       volume: serializer.fromJson<double?>(json['volume']),
+      priceChange: serializer.fromJson<double?>(json['priceChange']),
     );
   }
   @override
@@ -705,6 +741,7 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
       'low': serializer.toJson<double?>(low),
       'close': serializer.toJson<double?>(close),
       'volume': serializer.toJson<double?>(volume),
+      'priceChange': serializer.toJson<double?>(priceChange),
     };
   }
 
@@ -716,6 +753,7 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
     Value<double?> low = const Value.absent(),
     Value<double?> close = const Value.absent(),
     Value<double?> volume = const Value.absent(),
+    Value<double?> priceChange = const Value.absent(),
   }) => DailyPriceEntry(
     symbol: symbol ?? this.symbol,
     date: date ?? this.date,
@@ -724,6 +762,7 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
     low: low.present ? low.value : this.low,
     close: close.present ? close.value : this.close,
     volume: volume.present ? volume.value : this.volume,
+    priceChange: priceChange.present ? priceChange.value : this.priceChange,
   );
   DailyPriceEntry copyWithCompanion(DailyPriceCompanion data) {
     return DailyPriceEntry(
@@ -734,6 +773,9 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
       low: data.low.present ? data.low.value : this.low,
       close: data.close.present ? data.close.value : this.close,
       volume: data.volume.present ? data.volume.value : this.volume,
+      priceChange: data.priceChange.present
+          ? data.priceChange.value
+          : this.priceChange,
     );
   }
 
@@ -746,13 +788,15 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
           ..write('high: $high, ')
           ..write('low: $low, ')
           ..write('close: $close, ')
-          ..write('volume: $volume')
+          ..write('volume: $volume, ')
+          ..write('priceChange: $priceChange')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(symbol, date, open, high, low, close, volume);
+  int get hashCode =>
+      Object.hash(symbol, date, open, high, low, close, volume, priceChange);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -763,7 +807,8 @@ class DailyPriceEntry extends DataClass implements Insertable<DailyPriceEntry> {
           other.high == this.high &&
           other.low == this.low &&
           other.close == this.close &&
-          other.volume == this.volume);
+          other.volume == this.volume &&
+          other.priceChange == this.priceChange);
 }
 
 class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
@@ -774,6 +819,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
   final Value<double?> low;
   final Value<double?> close;
   final Value<double?> volume;
+  final Value<double?> priceChange;
   final Value<int> rowid;
   const DailyPriceCompanion({
     this.symbol = const Value.absent(),
@@ -783,6 +829,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
     this.low = const Value.absent(),
     this.close = const Value.absent(),
     this.volume = const Value.absent(),
+    this.priceChange = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DailyPriceCompanion.insert({
@@ -793,6 +840,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
     this.low = const Value.absent(),
     this.close = const Value.absent(),
     this.volume = const Value.absent(),
+    this.priceChange = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : symbol = Value(symbol),
        date = Value(date);
@@ -804,6 +852,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
     Expression<double>? low,
     Expression<double>? close,
     Expression<double>? volume,
+    Expression<double>? priceChange,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -814,6 +863,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
       if (low != null) 'low': low,
       if (close != null) 'close': close,
       if (volume != null) 'volume': volume,
+      if (priceChange != null) 'price_change': priceChange,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -826,6 +876,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
     Value<double?>? low,
     Value<double?>? close,
     Value<double?>? volume,
+    Value<double?>? priceChange,
     Value<int>? rowid,
   }) {
     return DailyPriceCompanion(
@@ -836,6 +887,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
       low: low ?? this.low,
       close: close ?? this.close,
       volume: volume ?? this.volume,
+      priceChange: priceChange ?? this.priceChange,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -864,6 +916,9 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
     if (volume.present) {
       map['volume'] = Variable<double>(volume.value);
     }
+    if (priceChange.present) {
+      map['price_change'] = Variable<double>(priceChange.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -880,6 +935,7 @@ class DailyPriceCompanion extends UpdateCompanion<DailyPriceEntry> {
           ..write('low: $low, ')
           ..write('close: $close, ')
           ..write('volume: $volume, ')
+          ..write('priceChange: $priceChange, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -17252,6 +17308,7 @@ typedef $$DailyPriceTableCreateCompanionBuilder =
       Value<double?> low,
       Value<double?> close,
       Value<double?> volume,
+      Value<double?> priceChange,
       Value<int> rowid,
     });
 typedef $$DailyPriceTableUpdateCompanionBuilder =
@@ -17263,6 +17320,7 @@ typedef $$DailyPriceTableUpdateCompanionBuilder =
       Value<double?> low,
       Value<double?> close,
       Value<double?> volume,
+      Value<double?> priceChange,
       Value<int> rowid,
     });
 
@@ -17329,6 +17387,11 @@ class $$DailyPriceTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get priceChange => $composableBuilder(
+    column: $table.priceChange,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$StockMasterTableFilterComposer get symbol {
     final $$StockMasterTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -17392,6 +17455,11 @@ class $$DailyPriceTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get priceChange => $composableBuilder(
+    column: $table.priceChange,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$StockMasterTableOrderingComposer get symbol {
     final $$StockMasterTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -17442,6 +17510,11 @@ class $$DailyPriceTableAnnotationComposer
 
   GeneratedColumn<double> get volume =>
       $composableBuilder(column: $table.volume, builder: (column) => column);
+
+  GeneratedColumn<double> get priceChange => $composableBuilder(
+    column: $table.priceChange,
+    builder: (column) => column,
+  );
 
   $$StockMasterTableAnnotationComposer get symbol {
     final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
@@ -17502,6 +17575,7 @@ class $$DailyPriceTableTableManager
                 Value<double?> low = const Value.absent(),
                 Value<double?> close = const Value.absent(),
                 Value<double?> volume = const Value.absent(),
+                Value<double?> priceChange = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyPriceCompanion(
                 symbol: symbol,
@@ -17511,6 +17585,7 @@ class $$DailyPriceTableTableManager
                 low: low,
                 close: close,
                 volume: volume,
+                priceChange: priceChange,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -17522,6 +17597,7 @@ class $$DailyPriceTableTableManager
                 Value<double?> low = const Value.absent(),
                 Value<double?> close = const Value.absent(),
                 Value<double?> volume = const Value.absent(),
+                Value<double?> priceChange = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DailyPriceCompanion.insert(
                 symbol: symbol,
@@ -17531,6 +17607,7 @@ class $$DailyPriceTableTableManager
                 low: low,
                 close: close,
                 volume: volume,
+                priceChange: priceChange,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -522,6 +522,7 @@ DailyPriceEntry _mapToDailyPriceEntry(Map<String, dynamic> map) {
     low: map['low'] as double?,
     close: map['close'] as double?,
     volume: map['volume'] as double?,
+    priceChange: map['priceChange'] as double?,
   );
 }
 
@@ -534,6 +535,7 @@ Map<String, dynamic> dailyPriceEntryToMap(DailyPriceEntry entry) {
     'low': entry.low,
     'close': entry.close,
     'volume': entry.volume,
+    'priceChange': entry.priceChange,
   };
 }
 

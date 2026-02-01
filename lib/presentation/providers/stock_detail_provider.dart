@@ -15,6 +15,7 @@ import 'package:afterclose/domain/services/chip_analysis_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
@@ -169,12 +170,9 @@ class StockDetailState {
 
   /// Price change percentage
   ///
-  /// 使用 PriceCalculator 直接由最新與前一日價格計算
+  /// 委託給 PriceCalculator，優先使用 API 漲跌價差，回退到歷史收盤價
   double? get priceChange {
-    return PriceCalculator.calculatePriceChangeFromPrices(
-      latestPrice?.close,
-      previousPrice?.close,
-    );
+    return PriceCalculator.calculatePriceChange(priceHistory, latestPrice);
   }
 
   /// Trend state label
@@ -326,18 +324,19 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       final hasDataMismatch = syncResult.hasDataMismatch;
 
       // 生成 AI 智慧分析摘要
-      final summary = const AnalysisSummaryService().generate(
+      final summaryData = const AnalysisSummaryService().generate(
         analysis: analysis,
         reasons: reasons,
         latestPrice: latestPrice,
-        priceChange: PriceCalculator.calculatePriceChangeFromPrices(
-          latestPrice?.close,
-          previousPrice?.close,
+        priceChange: PriceCalculator.calculatePriceChange(
+          priceHistory,
+          latestPrice,
         ),
         institutionalHistory: syncedInstHistory,
         revenueHistory: state.revenueHistory,
         latestPER: state.latestPER,
       );
+      final summary = const SummaryLocalizer().localize(summaryData);
 
       state = state.copyWith(
         stock: stock,
@@ -647,7 +646,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
 
       // 基本面載入後重新生成 AI 摘要（含營收/估值資料）
-      final summary = const AnalysisSummaryService().generate(
+      final summaryData = const AnalysisSummaryService().generate(
         analysis: state.analysis,
         reasons: state.reasons,
         latestPrice: state.latestPrice,
@@ -656,7 +655,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         revenueHistory: revenueData,
         latestPER: latestPER,
       );
-      state = state.copyWith(aiSummary: summary);
+      state = state.copyWith(
+        aiSummary: const SummaryLocalizer().localize(summaryData),
+      );
     } catch (e) {
       AppLogger.warning('StockDetail', '載入基本面資料失敗: $_symbol', e);
       state = state.copyWith(isLoadingFundamentals: false);

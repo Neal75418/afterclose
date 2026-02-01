@@ -566,20 +566,11 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     final reasons = results[2] as List<DailyReasonEntry>;
     final priceHistory = results[3] as List<DailyPriceEntry>;
 
-    // Calculate price change
-    double? priceChange;
-    final latestClose = latestPrice?.close;
-    if (latestClose != null && priceHistory.length >= 2) {
-      final previousPrice = priceHistory
-          .where((p) => p.date.isBefore(latestPrice!.date))
-          .toList();
-      if (previousPrice.isNotEmpty) {
-        final prevClose = previousPrice.first.close;
-        if (prevClose != null && prevClose > 0) {
-          priceChange = ((latestClose - prevClose) / prevClose) * 100;
-        }
-      }
-    }
+    // Calculate price change（統一使用 PriceCalculator，優先取 API 漲跌價差）
+    final priceChange = PriceCalculator.calculatePriceChange(
+      priceHistory,
+      latestPrice,
+    );
 
     // Extract recent prices for sparkline
     final recentPrices = PriceCalculator.extractSparklinePrices(priceHistory);

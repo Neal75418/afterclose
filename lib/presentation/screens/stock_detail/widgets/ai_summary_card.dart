@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
 /// AI 智慧分析摘要卡片
 ///
@@ -28,8 +29,65 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
     final summary = state.aiSummary;
     final theme = Theme.of(context);
 
-    if (summary == null) return const SizedBox.shrink();
+    if (summary == null) return _buildLoadingSkeleton(theme);
 
+    return Semantics(
+      label: _buildSemanticLabel(summary),
+      container: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 標題列
+              _buildHeader(summary, theme),
+
+              // 內容（可收合）
+              AnimatedSize(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                child: _isExpanded
+                    ? _buildContent(summary, theme)
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _buildSemanticLabel(StockSummary summary) {
+    final parts = <String>['summary.title'.tr()];
+
+    final sentimentLabel = switch (summary.sentiment) {
+      SummarySentiment.bullish => 'summary.sentimentBullish'.tr(),
+      SummarySentiment.bearish => 'summary.sentimentBearish'.tr(),
+      SummarySentiment.neutral => 'summary.sentimentNeutral'.tr(),
+    };
+    parts.add(sentimentLabel);
+
+    parts.add(summary.overallAssessment);
+
+    if (summary.hasSignals) {
+      parts.add('${summary.keySignals.length} ${'summary.keySignals'.tr()}');
+    }
+    if (summary.hasRisks) {
+      parts.add('${summary.riskFactors.length} ${'summary.riskFactors'.tr()}');
+    }
+
+    return parts.join(', ');
+  }
+
+  Widget _buildLoadingSkeleton(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Card(
@@ -40,21 +98,47 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 標題列
-            _buildHeader(summary, theme),
-
-            // 內容（可收合）
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              child: _isExpanded
-                  ? _buildContent(summary, theme)
-                  : const SizedBox.shrink(),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const ShimmerContainer(
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
+                  ),
+                  const SizedBox(width: 8),
+                  const ShimmerContainer(
+                    width: 80,
+                    height: 16,
+                    borderRadius: 4,
+                  ),
+                  const SizedBox(width: 8),
+                  ShimmerContainer(
+                    width: 40,
+                    height: 20,
+                    borderRadius: 4,
+                    semanticLabel: 'summary.title'.tr(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const ShimmerContainer(
+                width: double.infinity,
+                height: 14,
+                borderRadius: 4,
+              ),
+              const SizedBox(height: 6),
+              const ShimmerContainer(width: 240, height: 14, borderRadius: 4),
+              const SizedBox(height: 12),
+              const ShimmerContainer(width: 200, height: 12, borderRadius: 4),
+              const SizedBox(height: 4),
+              const ShimmerContainer(width: 180, height: 12, borderRadius: 4),
+            ],
+          ),
         ),
       ),
     );
@@ -92,25 +176,21 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: sentimentColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                sentimentLabel,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: sentimentColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+            _Badge(label: sentimentLabel, color: sentimentColor),
+            const SizedBox(width: 6),
+            _Badge(
+              label: _confidenceLabel(summary.confidence),
+              color: _confidenceColor(summary.confidence, theme),
             ),
             const Spacer(),
-            Icon(
-              _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-              size: 20,
-              color: theme.colorScheme.onSurfaceVariant,
+            ExcludeSemantics(
+              child: Icon(
+                _isExpanded
+                    ? Icons.keyboard_arrow_up
+                    : Icons.keyboard_arrow_down,
+                size: 20,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -152,11 +232,11 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
               theme,
               Icons.warning_amber_rounded,
               'summary.riskFactors'.tr(),
-              Colors.orange,
+              AppTheme.warningColor,
             ),
             const SizedBox(height: 4),
             ...summary.riskFactors.map(
-              (s) => _buildBulletItem(theme, s, Colors.orange),
+              (s) => _buildBulletItem(theme, s, AppTheme.warningColor),
             ),
           ],
 
@@ -242,13 +322,15 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            margin: const EdgeInsets.only(top: 6),
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: dotColor.withValues(alpha: 0.7),
-              shape: BoxShape.circle,
+          ExcludeSemantics(
+            child: Container(
+              margin: const EdgeInsets.only(top: 6),
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: dotColor.withValues(alpha: 0.7),
+                shape: BoxShape.circle,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -259,6 +341,49 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _confidenceLabel(AnalysisConfidence confidence) {
+    return switch (confidence) {
+      AnalysisConfidence.high => 'summary.confidenceHigh'.tr(),
+      AnalysisConfidence.medium => 'summary.confidenceMedium'.tr(),
+      AnalysisConfidence.low => 'summary.confidenceLow'.tr(),
+    };
+  }
+
+  Color _confidenceColor(AnalysisConfidence confidence, ThemeData theme) {
+    return switch (confidence) {
+      AnalysisConfidence.high => AppTheme.successColor,
+      AnalysisConfidence.medium => AppTheme.warningColor,
+      AnalysisConfidence.low => theme.colorScheme.onSurfaceVariant,
+    };
+  }
+}
+
+/// 統一的 badge 樣式（填滿背景）
+class _Badge extends StatelessWidget {
+  const _Badge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

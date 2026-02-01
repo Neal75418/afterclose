@@ -75,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -281,6 +281,13 @@ class AppDatabase extends _$AppDatabase {
         );
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_market_index_name ON market_index(name)',
+        );
+      }
+
+      // v8 -> v9: 新增 daily_price.price_change 欄位（漲跌價差）
+      if (from < 9) {
+        await customStatement(
+          'ALTER TABLE daily_price ADD COLUMN price_change REAL',
         );
       }
     },
@@ -559,6 +566,7 @@ class AppDatabase extends _$AppDatabase {
         low: row.readNullable<double>('low'),
         close: row.readNullable<double>('close'),
         volume: row.readNullable<double>('volume'),
+        priceChange: row.readNullable<double>('price_change'),
       );
       result[entry.symbol] = entry;
     }

@@ -137,6 +137,80 @@ void main() {
 
         expect(result, isNull);
       });
+
+      test('should use priceChange field when available', () {
+        final now = DateTime.now();
+        // priceChange = 5.0 表示漲 5 元，前一日收盤 = 105 - 5 = 100
+        final latestPrice = createTestPrice(
+          close: 105.0,
+          date: now,
+          priceChange: 5.0,
+        );
+
+        final result = PriceCalculator.calculatePriceChange([], latestPrice);
+
+        expect(result, isNotNull);
+        expect(result, closeTo(5.0, 0.01)); // (5 / 100) * 100 = 5%
+      });
+
+      test('should use priceChange even when history has gaps', () {
+        final now = DateTime.now();
+        // 歷史資料有缺口：只有 3 天前和今天，缺少昨天
+        final history = [
+          createTestPrice(
+            close: 98.0,
+            date: now.subtract(const Duration(days: 3)),
+          ),
+          createTestPrice(
+            close: 105.0,
+            date: now,
+            priceChange: 5.0, // API 告訴我們漲 5 元（相對昨天的 100）
+          ),
+        ];
+
+        final latestPrice = history.last;
+
+        final result = PriceCalculator.calculatePriceChange(
+          history,
+          latestPrice,
+        );
+
+        // 應使用 priceChange 計算：(5 / 100) * 100 = 5%
+        // 而非使用錯誤的歷史比較：(105 - 98) / 98 * 100 = 7.14%
+        expect(result, closeTo(5.0, 0.01));
+      });
+
+      test('should fall back to history when priceChange is null', () {
+        final now = DateTime.now();
+        final history = generatePriceHistoryFromList(
+          prices: [100.0, 100.0, 100.0, 100.0, 105.0],
+          startDate: now.subtract(const Duration(days: 4)),
+        );
+        // 無 priceChange（如 FinMind 歷史資料）
+        final latestPrice = createTestPrice(close: 105.0, date: now);
+
+        final result = PriceCalculator.calculatePriceChange(
+          history,
+          latestPrice,
+        );
+
+        expect(result, isNotNull);
+        expect(result, closeTo(5.0, 0.01));
+      });
+
+      test('should return null when priceChange causes negative prevClose', () {
+        final now = DateTime.now();
+        // close = 5, priceChange = 10 → prevClose = 5 - 10 = -5（不合理）
+        final latestPrice = createTestPrice(
+          close: 5.0,
+          date: now,
+          priceChange: 10.0,
+        );
+
+        final result = PriceCalculator.calculatePriceChange([], latestPrice);
+
+        expect(result, isNull);
+      });
     });
 
     group('calculatePriceChangeFromPrices', () {

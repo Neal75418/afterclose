@@ -8,24 +8,35 @@ class PriceCalculator {
 
   /// 根據價格歷史計算漲跌幅百分比
   ///
-  /// 以下情況回傳 null：
-  /// - latestPrice 為 null
-  /// - history 資料少於 2 筆（若 history 包含 latestPrice 日期）
-  /// - history 資料為空（若 history 不包含 latestPrice 日期）
-  /// - 前一日收盤價為 null 或零
+  /// 優先使用 API 提供的漲跌價差（[DailyPriceEntry.priceChange]），
+  /// 確保即使歷史資料有缺口（例如跳過某日更新），漲跌幅仍正確。
   ///
-  /// 注意：此函數會根據 history 是否包含 latestPrice 的日期來決定
-  /// 使用哪一筆資料作為前一日價格：
-  /// - 若 history.last 與 latestPrice 同日，使用 history[length-2]
-  /// - 若 history.last 早於 latestPrice，使用 history.last
+  /// 回退邏輯：若 priceChange 為 null（如 FinMind 歷史資料），
+  /// 則根據 history 中的前一日收盤價計算。
+  ///
+  /// 以下情況回傳 null：
+  /// - latestPrice 為 null 或收盤價為 null
+  /// - 無法計算前一日收盤價（歷史資料不足且無 priceChange）
+  /// - 前一日收盤價為零或負數
   static double? calculatePriceChange(
     List<DailyPriceEntry> history,
     DailyPriceEntry? latestPrice,
   ) {
     if (latestPrice == null || latestPrice.close == null) return null;
-    if (history.isEmpty) return null;
 
     final latestClose = latestPrice.close!;
+
+    // 優先使用 API 提供的漲跌價差（最可靠，不依賴歷史資料完整性）
+    if (latestPrice.priceChange != null) {
+      final change = latestPrice.priceChange!;
+      final prevClose = latestClose - change;
+      if (prevClose <= 0) return null;
+      return (change / prevClose) * 100;
+    }
+
+    // 回退：使用歷史收盤價計算
+    if (history.isEmpty) return null;
+
     final latestDate = _normalizeDate(latestPrice.date);
     final historyLastDate = _normalizeDate(history.last.date);
 

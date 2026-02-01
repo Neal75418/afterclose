@@ -19,6 +19,7 @@ DailyPriceEntry createTestPrice({
   double? low,
   double? close,
   double? volume,
+  double? priceChange,
 }) {
   return DailyPriceEntry(
     symbol: symbol,
@@ -28,6 +29,7 @@ DailyPriceEntry createTestPrice({
     low: low ?? (close != null ? close * 0.98 : null),
     close: close,
     volume: volume,
+    priceChange: priceChange,
   );
 }
 

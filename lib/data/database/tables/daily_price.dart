@@ -30,6 +30,9 @@ class DailyPrice extends Table {
   /// 成交量（張）
   RealColumn get volume => real().nullable()();
 
+  /// 漲跌價差（來自 TWSE/TPEX API，用於計算漲跌幅）
+  RealColumn get priceChange => real().named('price_change').nullable()();
+
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
