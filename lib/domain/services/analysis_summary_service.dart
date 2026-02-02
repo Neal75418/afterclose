@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -186,9 +187,9 @@ class AnalysisSummaryService {
     // 分數評語
     final score = analysis?.score.toInt() ?? 0;
     final scoreKey = switch (score) {
-      >= 60 => 'summary.scoreStrong',
-      >= 35 => 'summary.scoreWatch',
-      >= 15 => 'summary.scoreNeutral',
+      >= AnalysisParams.scoreStrongThreshold => 'summary.scoreStrong',
+      >= AnalysisParams.scoreWatchThreshold => 'summary.scoreWatch',
+      >= AnalysisParams.scoreNeutralThreshold => 'summary.scoreNeutral',
       _ => 'summary.scoreCaution',
     };
     parts.add(LocalizableString(scoreKey, {'score': score.toString()}));
@@ -302,12 +303,14 @@ class AnalysisSummaryService {
 
     final pe = latestPER?.per;
     if (pe != null && pe > 0) {
-      final key = pe <= 15.0 ? 'summary.peUndervalued' : 'summary.peOvervalued';
+      final key = pe <= AnalysisParams.peUndervaluedThreshold
+          ? 'summary.peUndervalued'
+          : 'summary.peOvervalued';
       data.add(LocalizableString(key, {'pe': pe.toStringAsFixed(1)}));
     }
 
     final yield_ = latestPER?.dividendYield;
-    if (yield_ != null && yield_ >= 4.0) {
+    if (yield_ != null && yield_ >= AnalysisParams.highDividendYieldThreshold) {
       data.add(
         LocalizableString('summary.highDividendYield', {
           'yield': yield_.toStringAsFixed(1),
@@ -318,7 +321,8 @@ class AnalysisSummaryService {
     if (revenueHistory.isNotEmpty) {
       final latest = revenueHistory.first;
       final yoy = latest.yoyGrowth;
-      if (yoy != null && yoy.abs() >= 20) {
+      if (yoy != null &&
+          yoy.abs() >= AnalysisParams.revenueYoySignificantThreshold) {
         final key = yoy > 0
             ? 'summary.revenueYoySurge'
             : 'summary.revenueYoyDecline';
@@ -353,13 +357,22 @@ class AnalysisSummaryService {
     // 基本面修正
     var fundamentalBias = 0.0;
     final pe = latestPER?.per;
-    if (pe != null && pe > 0 && pe <= 10) fundamentalBias += 5;
+    if (pe != null && pe > 0 && pe <= AnalysisParams.peDeepValueThreshold) {
+      fundamentalBias += AnalysisParams.fundamentalBiasPoints;
+    }
     final yield_ = latestPER?.dividendYield;
-    if (yield_ != null && yield_ >= 5.5) fundamentalBias += 5;
+    if (yield_ != null && yield_ >= AnalysisParams.highYieldBiasThreshold) {
+      fundamentalBias += AnalysisParams.fundamentalBiasPoints;
+    }
     if (revenueHistory.isNotEmpty) {
       final yoy = revenueHistory.first.yoyGrowth;
-      if (yoy != null && yoy > 30) fundamentalBias += 5;
-      if (yoy != null && yoy < -20) fundamentalBias -= 5;
+      if (yoy != null && yoy > AnalysisParams.revenueStrongGrowthThreshold) {
+        fundamentalBias += AnalysisParams.fundamentalBiasPoints;
+      }
+      if (yoy != null &&
+          yoy < AnalysisParams.revenueSignificantDeclineThreshold) {
+        fundamentalBias -= AnalysisParams.fundamentalBiasPoints;
+      }
     }
 
     final adjustedPositive =
@@ -374,13 +387,25 @@ class AnalysisSummaryService {
 
     // 衝突時提高判斷門檻
     if (hasConflict) {
-      if (bullRatio > 0.65 && score >= 35) return SummarySentiment.bullish;
-      if (bullRatio < 0.35 && score < 15) return SummarySentiment.bearish;
+      if (bullRatio > AnalysisParams.conflictBullRatioThreshold &&
+          score >= AnalysisParams.conflictBullScoreThreshold) {
+        return SummarySentiment.bullish;
+      }
+      if (bullRatio < AnalysisParams.conflictBearRatioThreshold &&
+          score < AnalysisParams.conflictBearScoreThreshold) {
+        return SummarySentiment.bearish;
+      }
       return SummarySentiment.neutral;
     }
 
-    if (bullRatio >= 0.6 && score >= 30) return SummarySentiment.bullish;
-    if (bullRatio <= 0.4 && score < 20) return SummarySentiment.bearish;
+    if (bullRatio >= AnalysisParams.bullRatioThreshold &&
+        score >= AnalysisParams.bullScoreThreshold) {
+      return SummarySentiment.bullish;
+    }
+    if (bullRatio <= AnalysisParams.bearRatioThreshold &&
+        score < AnalysisParams.bearScoreThreshold) {
+      return SummarySentiment.bearish;
+    }
     return SummarySentiment.neutral;
   }
 
@@ -423,9 +448,9 @@ class AnalysisSummaryService {
     var points = 0;
 
     final totalSignals = reasons.length;
-    if (totalSignals >= 5) {
+    if (totalSignals >= AnalysisParams.manySignalsThreshold) {
       points += 2;
-    } else if (totalSignals >= 3) {
+    } else if (totalSignals >= AnalysisParams.someSignalsThreshold) {
       points += 1;
     }
 
@@ -437,8 +462,12 @@ class AnalysisSummaryService {
     if (revenueHistory.isNotEmpty) points += 1;
     if (latestPER != null) points += 1;
 
-    if (points >= 5) return AnalysisConfidence.high;
-    if (points >= 3) return AnalysisConfidence.medium;
+    if (points >= AnalysisParams.confidenceHighThreshold) {
+      return AnalysisConfidence.high;
+    }
+    if (points >= AnalysisParams.confidenceMediumThreshold) {
+      return AnalysisConfidence.medium;
+    }
     return AnalysisConfidence.low;
   }
 
