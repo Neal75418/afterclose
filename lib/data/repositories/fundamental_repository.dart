@@ -5,6 +5,7 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:drift/drift.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 
 /// 基本面資料 Repository（營收、本益比、股價淨值比、殖利率）
 class FundamentalRepository {
@@ -116,7 +117,7 @@ class FundamentalRepository {
       // 強制同步以確保錯誤資料（錯誤的 PE/殖利率解析）被覆蓋
       // if (!force) {
       //   final existingCount = await _db.getValuationCountForDate(date);
-      //   if (existingCount > 1000) return existingCount;
+      //   if (existingCount > DataFreshness.revenueRecordThreshold) return existingCount;
       // }
       final data = await _twse.getAllStockValuation(date: date);
 
@@ -167,7 +168,9 @@ class FundamentalRepository {
     // 新鮮度檢查：過濾掉已有近期估值資料的股票（3 天內視為新鮮）
     List<String> symbolsToSync = symbols;
     if (!force) {
-      final freshThreshold = targetDate.subtract(const Duration(days: 3));
+      final freshThreshold = targetDate.subtract(
+        const Duration(days: DataFreshness.otcValuationFreshDays),
+      );
       final needSync = <String>[];
 
       for (final symbol in symbols) {
@@ -265,7 +268,7 @@ class FundamentalRepository {
         );
         // 若該月已有 >1000 筆資料則跳過
         // （全市場通常有 ~1800+ 檔股票）
-        if (existingCount > 1000) {
+        if (existingCount > DataFreshness.revenueRecordThreshold) {
           AppLogger.debug(
             'FundamentalRepo',
             '$dataYear/$dataMonth 營收資料已快取 ($existingCount 筆)，跳過同步',
@@ -456,7 +459,8 @@ class FundamentalRepository {
       // 季報每 ~90 天發布，60 天確保不會錯過最新一季
       final latestDate = await _db.getLatestFinancialDataDate(symbol, 'INCOME');
       if (latestDate != null &&
-          DateTime.now().difference(latestDate).inDays < 60) {
+          DateTime.now().difference(latestDate).inDays <
+              DataFreshness.financialStatementStaleDays) {
         return 0;
       }
 

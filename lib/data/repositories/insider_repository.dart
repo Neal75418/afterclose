@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -28,7 +29,7 @@ class InsiderRepository {
     String symbol, {
     int? months,
   }) async {
-    final lookback = months ?? 12;
+    final lookback = months ?? DataFreshness.insiderDefaultMonths;
     final now = DateTime.now();
     // 使用 DateTime 自動處理跨年和月份溢位
     // 例如: 2026-01 往前 3 個月 = 2025-10
@@ -44,7 +45,7 @@ class InsiderRepository {
   /// 取得股票近 N 個月的董監持股資料
   Future<List<InsiderHoldingEntry>> getRecentInsiderHoldings(
     String symbol, {
-    int months = 6,
+    int months = DataFreshness.insiderRecentMonths,
   }) {
     return _db.getRecentInsiderHoldings(symbol, months: months);
   }
@@ -83,7 +84,7 @@ class InsiderRepository {
           now.month,
         );
         // 上市 + 上櫃約 1800+ 家，用 1500 作為門檻
-        if (existingCount > 1500) {
+        if (existingCount > DataFreshness.fullMarketThreshold) {
           AppLogger.info('InsiderRepo', '董監持股資料已是最新 ($existingCount 筆)');
           return existingCount;
         }

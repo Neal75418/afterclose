@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -44,7 +45,11 @@ class PriceRepository implements IPriceRepository {
     final effectiveStartDate =
         startDate ??
         DateTime.now().subtract(
-          Duration(days: (days ?? RuleParams.lookbackPrice) + 30),
+          Duration(
+            days:
+                (days ?? RuleParams.lookbackPrice) +
+                RuleParams.historyBufferDays,
+          ),
         );
 
     return _db.getPriceHistory(
@@ -93,7 +98,7 @@ class PriceRepository implements IPriceRepository {
                   p.date.year == current.year && p.date.month == current.month,
             )
             .length;
-        if (existingDaysInMonth < 10) {
+        if (existingDaysInMonth < DataFreshness.minTradingDaysPerMonth) {
           monthsToFetch.add(current);
         }
         current = DateTime(current.year, current.month + 1, 1);
@@ -258,7 +263,7 @@ class PriceRepository implements IPriceRepository {
       // 提高閾值至 1500 以涵蓋上市+上櫃股票
       if (!force) {
         final existingCount = await _db.getPriceCountForDate(normalizedDate);
-        if (existingCount > 1500) {
+        if (existingCount > DataFreshness.fullMarketThreshold) {
           // 仍需取得候選股供 Pipeline 使用，從 Database 載入
           final candidates = await _quickFilterCandidatesFromDb(normalizedDate);
 
@@ -527,7 +532,7 @@ class PriceRepository implements IPriceRepository {
 
     // 分析用歷史資料範圍（lookback + buffer）
     final historyStartDate = date.subtract(
-      const Duration(days: RuleParams.lookbackPrice + 30),
+      const Duration(days: RuleParams.historyRequiredDays),
     );
 
     for (var i = 0; i < symbols.length; i++) {

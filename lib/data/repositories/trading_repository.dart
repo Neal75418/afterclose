@@ -8,6 +8,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 
 /// 交易資料 Repository
 ///
@@ -30,7 +31,7 @@ class TradingRepository {
 
   /// 判定批次資料為「最新」的最低筆數門檻
   /// 若該日期已有超過此數量的資料，則跳過 API 呼叫
-  static const _batchFreshnessThreshold = 100;
+  static const _batchFreshnessThreshold = DataFreshness.twseBatchThreshold;
 
   // ============================================
   // 當沖
@@ -41,7 +42,9 @@ class TradingRepository {
     String symbol, {
     int days = 30,
   }) async {
-    final startDate = DateTime.now().subtract(Duration(days: days + 10));
+    final startDate = DateTime.now().subtract(
+      Duration(days: days + DataFreshness.dayTradingBufferDays),
+    );
     return _db.getDayTradingHistory(symbol, startDate: startDate);
   }
 
@@ -100,7 +103,7 @@ class TradingRepository {
   Future<bool> isHighDayTradingStock(String symbol) async {
     final latest = await getLatestDayTrading(symbol);
     if (latest == null) return false;
-    return (latest.dayTradingRatio ?? 0) > 30;
+    return (latest.dayTradingRatio ?? 0) > DataFreshness.dayTradingHighRatio;
   }
 
   /// 取得平均當沖比例
@@ -215,7 +218,9 @@ class TradingRepository {
         }
 
         // 驗證比例
-        if (ratio > 100) ratio = 100;
+        if (ratio > DataFreshness.dayTradingMaxValidRatio) {
+          ratio = DataFreshness.dayTradingMaxValidRatio;
+        }
         if (ratio < 0) ratio = 0;
 
         entries.add(
@@ -241,11 +246,13 @@ class TradingRepository {
       // 統計當沖比例分佈
       final highRatioEntries = entries.where((e) {
         final ratio = e.dayTradingRatio.value;
-        return ratio != null && ratio >= 60;
+        return ratio != null &&
+            ratio >= DataFreshness.dayTradingHighDisplayRatio;
       }).toList();
       final extremeRatioCount = entries.where((e) {
         final ratio = e.dayTradingRatio.value;
-        return ratio != null && ratio >= 70;
+        return ratio != null &&
+            ratio >= DataFreshness.dayTradingExtremeDisplayRatio;
       }).length;
       final zeroRatioCount = entries.where((e) {
         final ratio = e.dayTradingRatio.value;
@@ -296,7 +303,7 @@ class TradingRepository {
           targetDate,
           'TPEx',
         );
-        if (existingCount > 50) {
+        if (existingCount > DataFreshness.tpexBatchThreshold) {
           return 0;
         }
       }
@@ -348,7 +355,9 @@ class TradingRepository {
         }
 
         // 驗證比例
-        if (ratio > 100) ratio = 100;
+        if (ratio > DataFreshness.dayTradingMaxValidRatio) {
+          ratio = DataFreshness.dayTradingMaxValidRatio;
+        }
         if (ratio < 0) ratio = 0;
 
         entries.add(
@@ -368,7 +377,8 @@ class TradingRepository {
       // 統計當沖比例分佈
       final highRatioCount = entries.where((e) {
         final ratio = e.dayTradingRatio.value;
-        return ratio != null && ratio >= 60;
+        return ratio != null &&
+            ratio >= DataFreshness.dayTradingHighDisplayRatio;
       }).length;
 
       AppLogger.info(
@@ -391,7 +401,9 @@ class TradingRepository {
     String symbol, {
     int days = 30,
   }) async {
-    final startDate = DateTime.now().subtract(Duration(days: days + 10));
+    final startDate = DateTime.now().subtract(
+      Duration(days: days + DataFreshness.marginTradingBufferDays),
+    );
     return _db.getMarginTradingHistory(symbol, startDate: startDate);
   }
 
@@ -420,7 +432,7 @@ class TradingRepository {
         final existingCount = await _db.getMarginTradingCountForDate(
           targetDate,
         );
-        if (existingCount > 1500) {
+        if (existingCount > DataFreshness.fullMarketThreshold) {
           AppLogger.debug('MarketData', '融資融券資料已快取 ($existingCount 筆)，跳過同步');
           return -1;
         }
