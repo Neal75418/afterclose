@@ -241,7 +241,9 @@ class AnalysisService {
       // 僅考慮最大距離內的壓力
       if (zone.avgPrice > currentClose && zone.avgPrice <= maxResistance) {
         final distance = zone.avgPrice - currentClose;
-        final distanceFactor = 1.0 / (1.0 + (distance / currentClose) * 10);
+        final distanceFactor =
+            1.0 /
+            (1.0 + (distance / currentClose) * RuleParams.distanceDecayFactor);
         final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
         if (score > bestResistanceScore) {
           bestResistanceScore = score;
@@ -259,7 +261,9 @@ class AnalysisService {
       // 僅考慮最大距離內的支撐
       if (zone.avgPrice < currentClose && zone.avgPrice >= minSupport) {
         final distance = currentClose - zone.avgPrice;
-        final distanceFactor = 1.0 / (1.0 + (distance / currentClose) * 10);
+        final distanceFactor =
+            1.0 /
+            (1.0 + (distance / currentClose) * RuleParams.distanceDecayFactor);
         final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
         if (score > bestSupportScore) {
           bestSupportScore = score;
@@ -395,7 +399,7 @@ class AnalysisService {
         .whereType<double>()
         .toList();
 
-    if (closes.length < 5) return TrendState.range;
+    if (closes.length < RuleParams.minTrendDataPoints) return TrendState.range;
 
     // 線性迴歸斜率
     // 注意：closes 是由 reversed.take() 得來，順序為新到舊，
@@ -723,7 +727,7 @@ class AnalysisService {
     List<DailyPriceEntry> prices,
     double currentClose,
   ) {
-    const period = 14;
+    const period = RuleParams.atrPeriod;
     if (prices.length < period + 1) return null;
 
     double atrSum = 0;
@@ -749,14 +753,16 @@ class AnalysisService {
     if (count < period ~/ 2) return null;
 
     final atr = atrSum / count;
-    final atrDistance = (atr * 3) / currentClose;
+    final atrDistance = (atr * RuleParams.atrDistanceMultiplier) / currentClose;
 
     // 下限為固定 8%，確保低波動股仍有合理搜尋範圍
     if (atrDistance < RuleParams.maxSupportResistanceDistance) {
       return RuleParams.maxSupportResistanceDistance;
     }
     // 上限 20%，避免過度搜尋
-    return atrDistance > 0.20 ? 0.20 : atrDistance;
+    return atrDistance > RuleParams.maxAtrDistance
+        ? RuleParams.maxAtrDistance
+        : atrDistance;
   }
 
   /// 找出價格列表中的最低價
@@ -865,7 +871,8 @@ class AnalysisService {
     // 高檔爆量 = 可能出貨
     else if (pricePosition != null &&
         pricePosition >= RuleParams.highPositionThreshold &&
-        volumeChangePercent >= volumeThreshold * 1.5) {
+        volumeChangePercent >=
+            volumeThreshold * RuleParams.highVolumeMultiplier) {
       state = PriceVolumeState.highVolumeAtHigh;
     }
     // 低檔縮量 = 可能吸籌

@@ -58,17 +58,7 @@ class ScoringService {
         institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
     // 記錄價格資料統計
-    var stocksWithSufficientData = 0;
-    for (final symbol in candidates) {
-      final prices = pricesMap[symbol];
-      if (prices != null && prices.length >= RuleParams.swingWindow) {
-        stocksWithSufficientData++;
-      }
-    }
-    AppLogger.debug(
-      'ScoringSvc',
-      '候選 ${candidates.length} 檔，資料充足 $stocksWithSufficientData 檔',
-    );
+    _logCandidateStats(candidates, pricesMap);
 
     // 使用預載資料處理每個候選
     var skippedNoData = 0;
@@ -199,17 +189,12 @@ class ScoringService {
     }
 
     // 記錄分析統計
-    final maxScore = scoredStocks.isEmpty
-        ? 0
-        : scoredStocks.map((s) => s.score).reduce((a, b) => a > b ? a : b);
-    final skippedTotal =
-        skippedNoData +
-        skippedInsufficientData +
-        skippedLowLiquidity +
-        skippedLowScore;
-    AppLogger.info(
-      'ScoringSvc',
-      '評分完成: ${scoredStocks.length} 檔 (最高 $maxScore 分), 跳過 $skippedTotal 檔',
+    _logScoringResults(
+      scoredStocks,
+      skippedNoData,
+      skippedInsufficientData,
+      skippedLowLiquidity,
+      skippedLowScore,
     );
 
     // 依流動性加權分數排序
@@ -244,17 +229,7 @@ class ScoringService {
     if (candidates.isEmpty) return [];
 
     // 記錄價格資料統計
-    var stocksWithSufficientData = 0;
-    for (final symbol in candidates) {
-      final prices = pricesMap[symbol];
-      if (prices != null && prices.length >= RuleParams.swingWindow) {
-        stocksWithSufficientData++;
-      }
-    }
-    AppLogger.debug(
-      'ScoringSvc',
-      '候選 ${candidates.length} 檔，資料充足 $stocksWithSufficientData 檔 (Isolate)',
-    );
+    _logCandidateStats(candidates, pricesMap, suffix: ' (Isolate)');
 
     // 將資料轉換為可跨 Isolate 傳遞的格式
     final input = ScoringIsolateInput(
@@ -315,19 +290,7 @@ class ScoringService {
     }
 
     // 記錄分析統計
-    final skippedTotal =
-        result.skippedNoData +
-        result.skippedInsufficientData +
-        result.skippedLowLiquidity +
-        result.skippedLowScore;
-    final maxScore = result.outputs.isEmpty
-        ? 0
-        : result.outputs.map((o) => o.score).reduce((a, b) => a > b ? a : b);
-    AppLogger.info(
-      'ScoringSvc',
-      '評分完成: ${result.outputs.length} 檔 (最高 $maxScore 分), '
-          '跳過 $skippedTotal 檔 (Isolate)',
-    );
+    _logScoringResultsFromIsolate(result);
 
     // 批次儲存分析結果
     for (final output in result.outputs) {
@@ -377,6 +340,70 @@ class ScoringService {
     scoredStocks.sort(ScoredStock.compareByWeightedScore);
 
     return scoredStocks;
+  }
+
+  // =============================================
+  // 日誌輔助方法
+  // =============================================
+
+  /// 記錄候選股票的價格資料統計
+  void _logCandidateStats(
+    List<String> candidates,
+    Map<String, List<DailyPriceEntry>> pricesMap, {
+    String suffix = '',
+  }) {
+    var stocksWithSufficientData = 0;
+    for (final symbol in candidates) {
+      final prices = pricesMap[symbol];
+      if (prices != null && prices.length >= RuleParams.swingWindow) {
+        stocksWithSufficientData++;
+      }
+    }
+    AppLogger.debug(
+      'ScoringSvc',
+      '候選 ${candidates.length} 檔，資料充足 $stocksWithSufficientData 檔$suffix',
+    );
+  }
+
+  /// 記錄主執行緒評分結果統計
+  void _logScoringResults(
+    List<ScoredStock> scored,
+    int skippedNoData,
+    int skippedInsufficient,
+    int skippedLiquidity,
+    int skippedLowScore, {
+    String suffix = '',
+  }) {
+    final maxScore = scored.isEmpty
+        ? 0
+        : scored.map((s) => s.score).reduce((a, b) => a > b ? a : b);
+    final skippedTotal =
+        skippedNoData +
+        skippedInsufficient +
+        skippedLiquidity +
+        skippedLowScore;
+    AppLogger.info(
+      'ScoringSvc',
+      '評分完成: ${scored.length} 檔 (最高 $maxScore 分), '
+          '跳過 $skippedTotal 檔$suffix',
+    );
+  }
+
+  /// 記錄 Isolate 評分結果統計
+  void _logScoringResultsFromIsolate(ScoringBatchResult result) {
+    final skippedTotal =
+        result.skippedNoData +
+        result.skippedInsufficientData +
+        result.skippedLowLiquidity +
+        result.skippedLowScore;
+    final maxScore = result.outputs.isEmpty
+        ? 0
+        : result.outputs.map((o) => o.score).reduce((a, b) => a > b ? a : b);
+    AppLogger.info(
+      'ScoringSvc',
+      '評分完成: ${result.outputs.length} 檔 (最高 $maxScore 分), '
+          '跳過 $skippedTotal 檔 (Isolate)',
+    );
   }
 
   // =============================================
@@ -566,11 +593,17 @@ class ScoredStock {
     final double scoreB = b.score.toDouble();
 
     // 計算加成（上限為 10 億 = 20 分）
-    double bonusA = (a.turnover / 100000000) * 2.0;
-    if (bonusA > 20) bonusA = 20;
+    double bonusA =
+        (a.turnover / RuleParams.liquidityTurnoverUnit) *
+        RuleParams.liquidityBonusPerUnit;
+    if (bonusA > RuleParams.liquidityBonusMax)
+      bonusA = RuleParams.liquidityBonusMax;
 
-    double bonusB = (b.turnover / 100000000) * 2.0;
-    if (bonusB > 20) bonusB = 20;
+    double bonusB =
+        (b.turnover / RuleParams.liquidityTurnoverUnit) *
+        RuleParams.liquidityBonusPerUnit;
+    if (bonusB > RuleParams.liquidityBonusMax)
+      bonusB = RuleParams.liquidityBonusMax;
 
     // 四捨五入至小數點後 2 位以避免浮點數精度問題
     final totalA = ((scoreA + bonusA) * 100).round() / 100;

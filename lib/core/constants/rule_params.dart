@@ -592,6 +592,60 @@ abstract final class RuleParams {
   /// 因此只需要基本成交量即可。
   /// v0.1.1：新增獨立參數，解決強轉弱 0 觸發問題。
   static const double s2wVolumeConfirm = 0.8;
+
+  // ==========================================
+  // 流動性加權排序參數
+  // ==========================================
+
+  /// 成交金額單位（1 億台幣）
+  ///
+  /// 用於計算流動性加成時的基準單位。
+  static const double liquidityTurnoverUnit = 100000000;
+
+  /// 每單位成交金額的加成分數
+  ///
+  /// 每 1 億成交金額加 2 分。
+  static const double liquidityBonusPerUnit = 2.0;
+
+  /// 流動性加成上限
+  ///
+  /// 最多 20 分（即 10 億成交金額達上限）。
+  static const double liquidityBonusMax = 20;
+
+  // ==========================================
+  // ATR 與支撐壓力搜尋參數
+  // ==========================================
+
+  /// ATR 計算週期
+  ///
+  /// 14 日為業界標準 ATR 週期。
+  static const int atrPeriod = 14;
+
+  /// ATR 距離乘數（支撐/壓力搜尋半徑）
+  ///
+  /// 使用 ATR × 此乘數 / 現價 作為動態搜尋距離。
+  static const double atrDistanceMultiplier = 3.0;
+
+  /// 支撐壓力距離衰減因子
+  ///
+  /// 用於計算 distanceFactor = 1 / (1 + (distance/price) * factor)。
+  /// 數值越大，距離衰減越快（越近的關卡分數越高）。
+  static const double distanceDecayFactor = 10.0;
+
+  /// ATR 動態距離上限（比例）
+  ///
+  /// 限制 ATR-based 搜尋距離的最大值，避免高波動股過度搜尋。
+  static const double maxAtrDistance = 0.20;
+
+  /// 趨勢偵測最少資料點數
+  ///
+  /// 收盤價序列需達此數量才進行趨勢判斷。
+  static const int minTrendDataPoints = 5;
+
+  /// 高檔爆量成交量倍數
+  ///
+  /// 高檔爆量需達成交量變化門檻的此倍數。
+  static const double highVolumeMultiplier = 1.5;
 }
 
 /// 各推薦類型的分數
