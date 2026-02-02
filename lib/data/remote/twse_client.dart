@@ -756,11 +756,19 @@ class TwseClient {
   ///
   /// 端點: /rwd/zh/afterTrading/MI_INDEX
   /// 回傳加權指數、電子類指數、金融保險類指數等
-  Future<List<TwseMarketIndex>> getMarketIndices() async {
+  ///
+  /// [date] 可選，指定日期取歷史指數（格式 YYYYMMDD）。省略則取最新。
+  Future<List<TwseMarketIndex>> getMarketIndices({DateTime? date}) async {
     try {
+      final queryParams = <String, dynamic>{'response': 'json', 'type': 'IND'};
+      if (date != null) {
+        queryParams['date'] =
+            '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+      }
+
       final response = await _dio.get(
         ApiEndpoints.twseMarketIndex,
-        queryParameters: {'response': 'json', 'type': 'IND'},
+        queryParameters: queryParams,
       );
 
       if (response.statusCode == 200) {
