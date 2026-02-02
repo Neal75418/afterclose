@@ -646,6 +646,88 @@ abstract final class RuleParams {
   ///
   /// 高檔爆量需達成交量變化門檻的此倍數。
   static const double highVolumeMultiplier = 1.5;
+
+  // ==========================================
+  // 法人動向規則參數
+  // ==========================================
+
+  /// 1 張 = 1000 股
+  static const int sheetToShares = 1000;
+
+  /// 法人分析最低成交量（1000 張 = 1,000,000 股）
+  static const double institutionalMinVolume = 1000000;
+
+  /// 法人數據有效最低成交量（2000 張 = 2,000,000 股）
+  static const double institutionalValidVolume = 2000000;
+
+  /// 法人佔總成交量顯著比例門檻
+  static const double institutionalSignificantRatio = 0.35;
+
+  /// 法人佔總成交量爆量比例門檻
+  static const double institutionalExplosiveRatio = 0.50;
+
+  /// 法人反轉訊號最低量（500 張 = 500,000 股）
+  static const double institutionalReversalSheets = 500000;
+
+  /// 法人小量方向判斷門檻（100 張 = 100,000 股）
+  static const double institutionalSmallSheets = 100000;
+
+  /// 法人大量訊號門檻（5000 張 = 5,000,000 股）
+  static const double institutionalLargeSignalSheets = 5000000;
+
+  /// 法人加速買賣倍數門檻
+  static const double institutionalAccelerationMult = 2.0;
+
+  /// 法人加速買賣最低量（1000 張 = 1,000,000 股）
+  static const double institutionalAccelerationMinSheets = 1000000;
+
+  /// 法人大量訊號價格變動確認門檻（1%）
+  static const double institutionalSignificantPriceChange = 0.01;
+
+  /// 法人方向計算取樣數
+  static const int institutionalDirectionSampleSize = 5;
+
+  /// 新聞回溯時間（小時）
+  static const int newsLookbackHours = 120;
+
+  // ==========================================
+  // 掃描規則專用參數
+  // ==========================================
+
+  /// 掃描用殖利率最低門檻（%）
+  ///
+  /// 低於此值不觸發殖利率相關診斷日誌。
+  static const double scanDividendYieldMin = 4.0;
+
+  /// 異常殖利率過濾上限（%）
+  ///
+  /// 超過此值通常為資料錯誤或特殊情況。
+  static const double scanDividendYieldMax = 20.0;
+
+  /// PE 高估確認 RSI 門檻
+  static const double scanRsiOverboughtThreshold = 75.0;
+
+  /// 動能確認 RSI 門檻（EPS 轉機搭配 RSI 正向確認）
+  static const double scanRsiMomentumThreshold = 50.0;
+
+  /// EPS 年度回溯筆數（找去年同季需要的最少歷史資料）
+  static const int epsYearLookback = 5;
+
+  /// EPS 同期季度偏移（降序排列下去年同季的起始 index）
+  static const int epsQuarterOffset = 4;
+
+  // ==========================================
+  // 價量背離規則參數
+  // ==========================================
+
+  /// 背離價格變動門檻（%）
+  static const double divergencePriceThreshold = 1.0;
+
+  /// 背離成交量變動門檻（%）
+  static const double divergenceVolumeThreshold = 10.0;
+
+  /// 低檔吸籌成交量比率門檻
+  static const double lowAccumulationVolumeRatio = 0.6;
 }
 
 /// 各推薦類型的分數

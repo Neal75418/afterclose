@@ -62,7 +62,8 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     // v0.1.2：大幅放寬門檻，解決 0 觸發問題
     // 原先：1.5% 價格 / -15% 成交量（仍過於嚴格）
     // 目前：1.0% 價格 / -10% 成交量
-    if (priceChange >= 1.0 && volumeChange <= -10.0) {
+    if (priceChange >= RuleParams.divergencePriceThreshold &&
+        volumeChange <= -RuleParams.divergenceVolumeThreshold) {
       AppLogger.debug(
         'PriceVolumeBullishDivergence',
         '${data.symbol}: 價漲${priceChange.toStringAsFixed(1)}%, 量縮${volumeChange.toStringAsFixed(1)}%',
@@ -138,7 +139,8 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
     // v0.1.2：大幅放寬門檻，解決 0 觸發問題
     // 原先：-1.5% 價格 / +15% 成交量（仍過於嚴格）
     // 目前：-1.0% 價格 / +10% 成交量
-    if (priceChange <= -1.0 && volumeChange >= 10.0) {
+    if (priceChange <= -RuleParams.divergencePriceThreshold &&
+        volumeChange >= RuleParams.divergenceVolumeThreshold) {
       AppLogger.debug(
         'PriceVolumeBearishDivergence',
         '${data.symbol}: 價跌${priceChange.toStringAsFixed(1)}%, 量增${volumeChange.toStringAsFixed(1)}%',
@@ -287,7 +289,7 @@ class LowVolumeAccumulationRule extends StockRule {
     // 低檔位置（後 25%）且成交量低迷（低於平均的 60%）
     // v0.1.1：放寬門檻，解決 0 觸發問題
     if (position <= RuleParams.lowPositionThreshold &&
-        volume < avgVolume * 0.6) {
+        volume < avgVolume * RuleParams.lowAccumulationVolumeRatio) {
       AppLogger.debug(
         'LowVolumeAccumulation',
         '${data.symbol}: 位置=${(position * 100).toStringAsFixed(1)}%, 量比=${(volume / avgVolume * 100).toStringAsFixed(0)}%',

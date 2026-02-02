@@ -22,14 +22,17 @@ class InstitutionalShiftRule extends StockRule {
     final todayNet = today.foreignNet ?? 0.0;
 
     // 提高門檻以減少雜訊：最低 1000 張（資料單位為股，1 張 = 1000 股）
-    if (todayNet.abs() < 1000 * 1000) return null;
+    if (todayNet.abs() < RuleParams.institutionalMinVolume) return null;
 
     // 若有足夠資料則計算先前平均方向
     double prevAvg = 0;
     final hasHistory = history.length >= 4;
 
     if (hasHistory) {
-      final prevEntries = history.reversed.skip(1).take(5).toList();
+      final prevEntries = history.reversed
+          .skip(1)
+          .take(RuleParams.institutionalDirectionSampleSize)
+          .toList();
       if (prevEntries.isNotEmpty) {
         double prevNetSum = 0;
         for (var e in prevEntries) {
@@ -66,15 +69,10 @@ class InstitutionalShiftRule extends StockRule {
       todayVolume = data.prices.last.volume ?? 0;
     }
 
-    // 單位換算：1 張 = 1000 股
-    const int sheetToShares = 1000;
-
     // 若收盤價為 0/無效或成交量過低（< 2000 張）則忽略
-    if (todayClose <= 0 || todayVolume < 2000 * sheetToShares) return null;
-
-    // 提高比率門檻以提升精準度
-    const double significantRatio = 0.35; // 佔總成交量 35%
-    const double explosiveRatio = 0.50; // 佔總成交量 50%
+    if (todayClose <= 0 || todayVolume < RuleParams.institutionalValidVolume) {
+      return null;
+    }
 
     // 計算比率 - todayNet 與 todayVolume 單位皆為股
     final ratio = todayNet.abs() / todayVolume;
@@ -82,34 +80,34 @@ class InstitutionalShiftRule extends StockRule {
     // 依歷史資料判斷的訊號（反轉 / 加速）
     if (hasHistory) {
       // 情境 1：反轉（賣轉買）- 提高門檻
-      if (prevAvg < -100 * sheetToShares &&
-          todayNet > 500 * sheetToShares &&
-          priceChange > todayClose * 0.015 &&
-          ratio > significantRatio) {
+      if (prevAvg < -RuleParams.institutionalSmallSheets &&
+          todayNet > RuleParams.institutionalReversalSheets &&
+          priceChange > todayClose * RuleParams.minPriceChangeForVolume &&
+          ratio > RuleParams.institutionalSignificantRatio) {
         triggered = true;
         description = '外資由賣轉買 (佈局)';
       }
       // 情境 2：反轉（買轉賣）- 提高門檻
-      else if (prevAvg > 100 * sheetToShares &&
-          todayNet < -500 * sheetToShares &&
-          priceChange < -todayClose * 0.015 &&
-          ratio > significantRatio) {
+      else if (prevAvg > RuleParams.institutionalSmallSheets &&
+          todayNet < -RuleParams.institutionalReversalSheets &&
+          priceChange < -todayClose * RuleParams.minPriceChangeForVolume &&
+          ratio > RuleParams.institutionalSignificantRatio) {
         triggered = true;
         description = '外資由買轉賣 (獲利)';
       }
       // 情境 3：加速（買超擴大）- 提高門檻
-      else if (prevAvg > 100 * sheetToShares &&
-          todayNet > prevAvg * 2.0 &&
-          todayNet > 1000 * sheetToShares &&
-          ratio > explosiveRatio) {
+      else if (prevAvg > RuleParams.institutionalSmallSheets &&
+          todayNet > prevAvg * RuleParams.institutionalAccelerationMult &&
+          todayNet > RuleParams.institutionalAccelerationMinSheets &&
+          ratio > RuleParams.institutionalExplosiveRatio) {
         triggered = true;
         description = '外資買超擴大 (搶進)';
       }
       // 情境 4：加速（賣超擴大）- 提高門檻
-      else if (prevAvg < -100 * sheetToShares &&
-          todayNet < prevAvg * 2.0 &&
-          todayNet < -1000 * sheetToShares &&
-          ratio > explosiveRatio) {
+      else if (prevAvg < -RuleParams.institutionalSmallSheets &&
+          todayNet < prevAvg * RuleParams.institutionalAccelerationMult &&
+          todayNet < -RuleParams.institutionalAccelerationMinSheets &&
+          ratio > RuleParams.institutionalExplosiveRatio) {
         triggered = true;
         description = '外資賣超擴大 (出脫)';
       }
@@ -119,18 +117,21 @@ class InstitutionalShiftRule extends StockRule {
     // 提高門檻並要求價格配合
     if (!triggered) {
       // 情境 5：顯著買超（> 5000 張且 > 35% 且價格上漲 > 1%）
-      if (todayNet > 5000 * sheetToShares &&
-          ratio > significantRatio &&
-          priceChangePercent > 0.01) {
+      if (todayNet > RuleParams.institutionalLargeSignalSheets &&
+          ratio > RuleParams.institutionalSignificantRatio &&
+          priceChangePercent > RuleParams.institutionalSignificantPriceChange) {
         triggered = true;
-        description = '外資顯著買超 (${(todayNet / sheetToShares).round()}張)';
+        description =
+            '外資顯著買超 (${(todayNet / RuleParams.sheetToShares).round()}張)';
       }
       // 情境 6：顯著賣超（< -5000 張且 > 35% 且價格下跌 > 1%）
-      else if (todayNet < -5000 * sheetToShares &&
-          ratio > significantRatio &&
-          priceChangePercent < -0.01) {
+      else if (todayNet < -RuleParams.institutionalLargeSignalSheets &&
+          ratio > RuleParams.institutionalSignificantRatio &&
+          priceChangePercent <
+              -RuleParams.institutionalSignificantPriceChange) {
         triggered = true;
-        description = '外資顯著賣超 (${(todayNet.abs() / sheetToShares).round()}張)';
+        description =
+            '外資顯著賣超 (${(todayNet.abs() / RuleParams.sheetToShares).round()}張)';
       }
     }
 
@@ -171,7 +172,7 @@ class NewsRule extends StockRule {
     final now = DateTime.now();
     final recentNews = news.where((n) {
       final age = now.difference(n.publishedAt).inHours;
-      return age < 120; // 5 日內的新聞（120 小時）
+      return age < RuleParams.newsLookbackHours;
     }).toList();
 
     if (recentNews.isEmpty) return null;

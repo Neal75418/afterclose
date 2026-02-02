@@ -83,7 +83,7 @@ class RevenueYoYSurgeRule extends StockRule {
         final changePct = (close - prevClose) / prevClose;
 
         // 兩個過濾條件都須通過
-        if (close > ma60 && changePct > 0.015) {
+        if (close > ma60 && changePct > RuleParams.minPriceChangeForVolume) {
           return TriggeredReason(
             type: ReasonType.revenueYoySurge,
             score: RuleScores.revenueYoySurge,
@@ -195,7 +195,10 @@ class RevenueMomGrowthRule extends StockRule {
           ? (today.close! - prev.close!) / prev.close!
           : 0.0;
 
-      if (ma20 != null && close != null && close > ma20 && changePct > 0.015) {
+      if (ma20 != null &&
+          close != null &&
+          close > ma20 &&
+          changePct > RuleParams.minPriceChangeForVolume) {
         final avgGrowth =
             growthRates.reduce((a, b) => a + b) / growthRates.length;
         final description = consecutiveMonths == 1
@@ -249,7 +252,7 @@ class HighDividendYieldRule extends StockRule {
     final dividendYield = valuation.dividendYield ?? 0;
 
     // 診斷日誌：記錄所有被評估的殖利率數值（僅記錄 >= 4% 的以減少雜訊）
-    if (dividendYield >= 4.0) {
+    if (dividendYield >= RuleParams.scanDividendYieldMin) {
       AppLogger.debug(
         'HighYieldRule',
         '${data.symbol}: 殖利率=${dividendYield.toStringAsFixed(2)}%, '
@@ -263,7 +266,7 @@ class HighDividendYieldRule extends StockRule {
     }
 
     // 過濾異常高殖利率（> 20% 通常為資料錯誤或特殊情況）
-    if (dividendYield > 20) {
+    if (dividendYield > RuleParams.scanDividendYieldMax) {
       return null;
     }
 
@@ -346,7 +349,7 @@ class PEOvervaluedRule extends StockRule {
     if (pe >= RuleParams.peOvervaluedThreshold) {
       // 過濾條件：須處於過熱狀態（RSI > 70）
       final rsi = _calculateRSI(data.prices, 14);
-      if (rsi != null && rsi > 75) {
+      if (rsi != null && rsi > RuleParams.scanRsiOverboughtThreshold) {
         return TriggeredReason(
           type: ReasonType.peOvervalued,
           score: RuleScores.peOvervalued,
@@ -413,7 +416,7 @@ class EPSYoYSurgeRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final eps = data.epsHistory;
-    if (eps == null || eps.length < 5) return null;
+    if (eps == null || eps.length < RuleParams.epsYearLookback) return null;
 
     // 最新一季 & 去年同季（降序排列，index 0 = 最新）
     final latest = eps[0];
@@ -422,7 +425,7 @@ class EPSYoYSurgeRule extends StockRule {
 
     // 找去年同季（同季 = 同月份）
     double? lastYearEps;
-    for (int i = 4; i < eps.length; i++) {
+    for (int i = RuleParams.epsQuarterOffset; i < eps.length; i++) {
       if (eps[i].date.month == latest.date.month) {
         lastYearEps = eps[i].value;
         break;
@@ -452,7 +455,7 @@ class EPSYoYSurgeRule extends StockRule {
     final close = today.close!;
     final changePct = (close - prev.close!) / prev.close!;
 
-    if (close > ma60 && changePct > 0.015) {
+    if (close > ma60 && changePct > RuleParams.minPriceChangeForVolume) {
       return TriggeredReason(
         type: ReasonType.epsYoYSurge,
         score: RuleScores.epsYoYSurge,
@@ -568,7 +571,8 @@ class EPSTurnaroundRule extends StockRule {
     final rsi = _calculateRSI(data.prices, 14);
 
     final aboveMA20 = ma20 != null && close != null && close > ma20;
-    final rsiPositive = rsi != null && rsi > 50;
+    final rsiPositive =
+        rsi != null && rsi > RuleParams.scanRsiMomentumThreshold;
 
     if (aboveMA20 || rsiPositive) {
       return TriggeredReason(
