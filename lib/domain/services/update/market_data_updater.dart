@@ -3,7 +3,8 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/market_data_repository.dart';
+import 'package:afterclose/data/repositories/shareholding_repository.dart';
+import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 
 /// 市場籌碼資料更新器
@@ -12,18 +13,21 @@ import 'package:afterclose/data/repositories/warning_repository.dart';
 class MarketDataUpdater {
   MarketDataUpdater({
     required AppDatabase database,
-    required MarketDataRepository marketDataRepository,
+    required TradingRepository tradingRepository,
+    required ShareholdingRepository shareholdingRepository,
     WarningRepository? warningRepository,
     InsiderRepository? insiderRepository,
   }) : _db = database,
-       _marketDataRepo = marketDataRepository,
+       _tradingRepo = tradingRepository,
+       _shareholdingRepo = shareholdingRepository,
        _warningRepo =
            warningRepository ?? WarningRepository(database: database),
        _insiderRepo =
            insiderRepository ?? InsiderRepository(database: database);
 
   final AppDatabase _db;
-  final MarketDataRepository _marketDataRepo;
+  final TradingRepository _tradingRepo;
+  final ShareholdingRepository _shareholdingRepo;
   final WarningRepository _warningRepo;
   final InsiderRepository _insiderRepo;
 
@@ -41,7 +45,7 @@ class MarketDataUpdater {
 
     // 從 TWSE 批次同步上市當沖資料
     try {
-      twseDayTradingCount = await _marketDataRepo.syncAllDayTradingFromTwse(
+      twseDayTradingCount = await _tradingRepo.syncAllDayTradingFromTwse(
         date: date,
         forceRefresh: forceRefresh,
       );
@@ -57,9 +61,7 @@ class MarketDataUpdater {
 
     // 從 TWSE/TPEX 批次同步融資融券資料
     try {
-      marginCount = await _marketDataRepo.syncAllMarginTradingFromTwse(
-        date: date,
-      );
+      marginCount = await _tradingRepo.syncAllMarginTradingFromTwse(date: date);
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '融資融券資料同步失敗: $e');
     }
@@ -96,7 +98,7 @@ class MarketDataUpdater {
       final futures = chunk.map((symbol) async {
         try {
           // 只同步外資持股，當沖資料已由批次 API 處理
-          await _marketDataRepo.syncShareholding(
+          await _shareholdingRepo.syncShareholding(
             symbol,
             startDate: marketDataStartDate,
             endDate: date,
@@ -194,7 +196,7 @@ class MarketDataUpdater {
       final futures = chunk.map((symbol) async {
         try {
           // 新鮮度檢查：若已有參考日期的外資持股資料，跳過
-          final latestShareholding = await _marketDataRepo
+          final latestShareholding = await _shareholdingRepo
               .getLatestShareholding(symbol);
           final hasFreshShareholding =
               latestShareholding != null &&
@@ -206,7 +208,7 @@ class MarketDataUpdater {
 
           // 同步外資持股資料
           try {
-            final shResult = await _marketDataRepo.syncShareholding(
+            final shResult = await _shareholdingRepo.syncShareholding(
               symbol,
               startDate: marketDataStartDate,
               endDate: date,

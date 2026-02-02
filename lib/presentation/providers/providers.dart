@@ -16,6 +16,8 @@ import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
+import 'package:afterclose/data/repositories/shareholding_repository.dart';
+import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
@@ -129,7 +131,24 @@ final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
   return MarketDataRepository(
     database: ref.watch(databaseProvider),
     finMindClient: ref.watch(finMindClientProvider),
+  );
+});
+
+/// 交易資料儲存庫 Provider（當沖 + 融資融券）
+final tradingRepositoryProvider = Provider<TradingRepository>((ref) {
+  return TradingRepository(
+    database: ref.watch(databaseProvider),
+    finMindClient: ref.watch(finMindClientProvider),
+    twseClient: ref.watch(twseClientProvider),
     tpexClient: ref.watch(tpexClientProvider),
+  );
+});
+
+/// 持股資料儲存庫 Provider（外資持股 + 股權分散表）
+final shareholdingRepositoryProvider = Provider<ShareholdingRepository>((ref) {
+  return ShareholdingRepository(
+    database: ref.watch(databaseProvider),
+    finMindClient: ref.watch(finMindClientProvider),
   );
 });
 
@@ -192,6 +211,8 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     analysisRepository: ref.watch(analysisRepositoryProvider),
     institutionalRepository: ref.watch(institutionalRepositoryProvider),
     marketDataRepository: ref.watch(marketDataRepositoryProvider),
+    tradingRepository: ref.watch(tradingRepositoryProvider),
+    shareholdingRepository: ref.watch(shareholdingRepositoryProvider),
     fundamentalRepository: ref.watch(fundamentalRepositoryProvider),
     twseClient: ref.watch(twseClientProvider),
   );

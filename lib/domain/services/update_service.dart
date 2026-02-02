@@ -9,6 +9,8 @@ import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
+import 'package:afterclose/data/repositories/shareholding_repository.dart';
+import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
@@ -41,6 +43,8 @@ class UpdateService {
     required AnalysisRepository analysisRepository,
     InstitutionalRepository? institutionalRepository,
     MarketDataRepository? marketDataRepository,
+    TradingRepository? tradingRepository,
+    ShareholdingRepository? shareholdingRepository,
     FundamentalRepository? fundamentalRepository,
     InsiderRepository? insiderRepository,
     TwseClient? twseClient,
@@ -70,10 +74,12 @@ class UpdateService {
          database: database,
          priceRepository: priceRepository,
        ),
-       _marketDataUpdater = marketDataRepository != null
+       _marketDataUpdater =
+           (tradingRepository != null && shareholdingRepository != null)
            ? MarketDataUpdater(
                database: database,
-               marketDataRepository: marketDataRepository,
+               tradingRepository: tradingRepository,
+               shareholdingRepository: shareholdingRepository,
              )
            : null,
        _fundamentalSyncer = fundamentalRepository != null
