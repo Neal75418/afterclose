@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Daily institutional (三大法人) data operations.
-extension InstitutionalDao on AppDatabase {
+mixin _InstitutionalDaoMixin on _$AppDatabase {
   /// 取得股票的法人資料歷史
   Future<List<DailyInstitutionalEntry>> getInstitutionalHistory(
     String symbol, {

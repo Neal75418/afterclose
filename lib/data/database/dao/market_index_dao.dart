@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// 大盤指數歷史資料存取
-extension MarketIndexDao on AppDatabase {
+mixin _MarketIndexDaoMixin on _$AppDatabase {
   // ==========================================
   // 大盤指數歷史操作
   // ==========================================

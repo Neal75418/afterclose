@@ -1,9 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Daily price, adjusted price, and weekly price operations.
-extension PriceDao on AppDatabase {
+mixin _PriceDaoMixin on _$AppDatabase {
   /// 取得股票的價格歷史
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
@@ -87,8 +85,8 @@ extension PriceDao on AppDatabase {
   /// 回傳 daily_price 表中的最大日期，代表最近一個有資料的交易日。
   Future<DateTime?> getLatestDataDate() async {
     const query = '''
-      SELECT MAX(date) as max_date FROM daily_price
-    ''';
+    SELECT MAX(date) as max_date FROM daily_price
+  ''';
 
     final result = await customSelect(
       query,
@@ -102,8 +100,8 @@ extension PriceDao on AppDatabase {
   /// 取得 Database 中最新的法人資料日期
   Future<DateTime?> getLatestInstitutionalDate() async {
     const query = '''
-      SELECT MAX(date) as max_date FROM daily_institutional
-    ''';
+    SELECT MAX(date) as max_date FROM daily_institutional
+  ''';
 
     final result = await customSelect(
       query,
@@ -132,15 +130,15 @@ extension PriceDao on AppDatabase {
     // 避免擷取所有歷史價格（可能有數百萬筆）
     final query =
         '''
-      SELECT dp.*
-      FROM daily_price dp
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM daily_price
-        WHERE symbol IN ($placeholders)
-        GROUP BY symbol
-      ) latest ON dp.symbol = latest.symbol AND dp.date = latest.max_date
-    ''';
+    SELECT dp.*
+    FROM daily_price dp
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM daily_price
+      WHERE symbol IN ($placeholders)
+      GROUP BY symbol
+    ) latest ON dp.symbol = latest.symbol AND dp.date = latest.max_date
+  ''';
 
     final results = await customSelect(
       query,
@@ -249,10 +247,10 @@ extension PriceDao on AppDatabase {
   Future<({int completed, int total})> getHistoricalDataProgress() async {
     // 計算有價格資料的股票數量（實際會被分析的候選股票）
     final totalResult = await customSelect('''
-      SELECT COUNT(DISTINCT dp.symbol) as cnt
-      FROM daily_price dp
-      INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
-      ''').getSingle();
+    SELECT COUNT(DISTINCT dp.symbol) as cnt
+    FROM daily_price dp
+    INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
+    ''').getSingle();
     final total = totalResult.read<int>('cnt');
 
     if (total == 0) return (completed: 0, total: 0);
@@ -260,14 +258,14 @@ extension PriceDao on AppDatabase {
     // 計算有足夠歷史資料的股票數量
     final completedResult = await customSelect(
       '''
-      SELECT COUNT(*) as cnt FROM (
-        SELECT dp.symbol
-        FROM daily_price dp
-        INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
-        GROUP BY dp.symbol
-        HAVING COUNT(*) >= ?
-      )
-      ''',
+    SELECT COUNT(*) as cnt FROM (
+      SELECT dp.symbol
+      FROM daily_price dp
+      INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
+      GROUP BY dp.symbol
+      HAVING COUNT(*) >= ?
+    )
+    ''',
       variables: [Variable.withInt(RuleParams.historicalDataMinDays)],
     ).getSingle();
     final completed = completedResult.read<int>('cnt');
@@ -353,13 +351,13 @@ extension PriceDao on AppDatabase {
     final effectiveEndDate = endDate ?? DateTime.now();
 
     const query = '''
-      SELECT symbol, COUNT(*) as cnt
-      FROM daily_price
-      WHERE date >= ? AND date <= ?
-      GROUP BY symbol
-      HAVING cnt >= ?
-      ORDER BY cnt DESC, symbol ASC
-    ''';
+    SELECT symbol, COUNT(*) as cnt
+    FROM daily_price
+    WHERE date >= ? AND date <= ?
+    GROUP BY symbol
+    HAVING cnt >= ?
+    ORDER BY cnt DESC, symbol ASC
+  ''';
 
     final results = await customSelect(
       query,

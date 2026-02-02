@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// 事件行事曆相關資料存取
-extension EventDao on AppDatabase {
+mixin _EventDaoMixin on _$AppDatabase {
   // ==========================================
   // 事件行事曆操作（Phase 4.3）
   // ==========================================

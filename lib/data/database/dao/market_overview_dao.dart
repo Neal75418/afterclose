@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Market overview aggregate query (大盤總覽彙總查詢) operations.
-extension MarketOverviewDao on AppDatabase {
+mixin _MarketOverviewDaoMixin on _$AppDatabase {
   /// 取得指定日期的上漲/下跌/平盤家數
   ///
   /// 從 DailyPrice 統計當日漲跌家數。
@@ -13,29 +12,29 @@ extension MarketOverviewDao on AppDatabase {
 
     // 用子查詢計算每檔漲跌：當日收盤 vs 前一交易日收盤
     const query = '''
-      WITH today AS (
-        SELECT symbol, close
+    WITH today AS (
+      SELECT symbol, close
+      FROM daily_price
+      WHERE date >= ? AND date < ?
+        AND close IS NOT NULL
+    ),
+    prev AS (
+      SELECT dp.symbol, dp.close
+      FROM daily_price dp
+      INNER JOIN (
+        SELECT symbol, MAX(date) as prev_date
         FROM daily_price
-        WHERE date >= ? AND date < ?
-          AND close IS NOT NULL
-      ),
-      prev AS (
-        SELECT dp.symbol, dp.close
-        FROM daily_price dp
-        INNER JOIN (
-          SELECT symbol, MAX(date) as prev_date
-          FROM daily_price
-          WHERE date < ? AND close IS NOT NULL
-          GROUP BY symbol
-        ) latest ON dp.symbol = latest.symbol AND dp.date = latest.prev_date
-      )
-      SELECT
-        SUM(CASE WHEN t.close > p.close THEN 1 ELSE 0 END) as advance,
-        SUM(CASE WHEN t.close < p.close THEN 1 ELSE 0 END) as decline,
-        SUM(CASE WHEN t.close = p.close THEN 1 ELSE 0 END) as unchanged
-      FROM today t
-      INNER JOIN prev p ON t.symbol = p.symbol
-    ''';
+        WHERE date < ? AND close IS NOT NULL
+        GROUP BY symbol
+      ) latest ON dp.symbol = latest.symbol AND dp.date = latest.prev_date
+    )
+    SELECT
+      SUM(CASE WHEN t.close > p.close THEN 1 ELSE 0 END) as advance,
+      SUM(CASE WHEN t.close < p.close THEN 1 ELSE 0 END) as decline,
+      SUM(CASE WHEN t.close = p.close THEN 1 ELSE 0 END) as unchanged
+    FROM today t
+    INNER JOIN prev p ON t.symbol = p.symbol
+  ''';
 
     final results = await customSelect(
       query,
@@ -63,14 +62,14 @@ extension MarketOverviewDao on AppDatabase {
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     const query = '''
-      SELECT
-        COALESCE(SUM(foreign_net), 0) as foreign_net,
-        COALESCE(SUM(investment_trust_net), 0) as trust_net,
-        COALESCE(SUM(dealer_net), 0) as dealer_net,
-        COALESCE(SUM(foreign_net), 0) + COALESCE(SUM(investment_trust_net), 0) + COALESCE(SUM(dealer_net), 0) as total_net
-      FROM daily_institutional
-      WHERE date >= ? AND date < ?
-    ''';
+    SELECT
+      COALESCE(SUM(foreign_net), 0) as foreign_net,
+      COALESCE(SUM(investment_trust_net), 0) as trust_net,
+      COALESCE(SUM(dealer_net), 0) as dealer_net,
+      COALESCE(SUM(foreign_net), 0) + COALESCE(SUM(investment_trust_net), 0) + COALESCE(SUM(dealer_net), 0) as total_net
+    FROM daily_institutional
+    WHERE date >= ? AND date < ?
+  ''';
 
     final results = await customSelect(
       query,
@@ -98,14 +97,14 @@ extension MarketOverviewDao on AppDatabase {
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     const query = '''
-      SELECT
-        COALESCE(SUM(margin_balance), 0) as margin_balance,
-        COALESCE(SUM(margin_buy - margin_sell), 0) as margin_change,
-        COALESCE(SUM(short_balance), 0) as short_balance,
-        COALESCE(SUM(short_sell - short_buy), 0) as short_change
-      FROM margin_trading
-      WHERE date >= ? AND date < ?
-    ''';
+    SELECT
+      COALESCE(SUM(margin_balance), 0) as margin_balance,
+      COALESCE(SUM(margin_buy - margin_sell), 0) as margin_change,
+      COALESCE(SUM(short_balance), 0) as short_balance,
+      COALESCE(SUM(short_sell - short_buy), 0) as short_change
+    FROM margin_trading
+    WHERE date >= ? AND date < ?
+  ''';
 
     final results = await customSelect(
       query,

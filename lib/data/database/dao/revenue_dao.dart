@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Monthly revenue (月營收) operations.
-extension RevenueDao on AppDatabase {
+mixin _RevenueDaoMixin on _$AppDatabase {
   /// 取得股票的月營收歷史
   Future<List<MonthlyRevenueEntry>> getMonthlyRevenueHistory(
     String symbol, {
@@ -41,15 +40,15 @@ extension RevenueDao on AppDatabase {
 
     final query =
         '''
-      SELECT mr.*
-      FROM monthly_revenue mr
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM monthly_revenue
-        WHERE symbol IN ($placeholders)
-        GROUP BY symbol
-      ) latest ON mr.symbol = latest.symbol AND mr.date = latest.max_date
-    ''';
+    SELECT mr.*
+    FROM monthly_revenue mr
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM monthly_revenue
+      WHERE symbol IN ($placeholders)
+      GROUP BY symbol
+    ) latest ON mr.symbol = latest.symbol AND mr.date = latest.max_date
+  ''';
 
     final results = await customSelect(
       query,
@@ -102,15 +101,15 @@ extension RevenueDao on AppDatabase {
     // 比執行 N 次個別查詢更有效率
     final query =
         '''
-      SELECT * FROM (
-        SELECT mr.*, 
-               ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) as rn
-        FROM monthly_revenue mr
-        WHERE symbol IN ($placeholders)
-      ) ranked
-      WHERE rn <= ?
-      ORDER BY symbol, date DESC
-    ''';
+    SELECT * FROM (
+      SELECT mr.*,
+             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) as rn
+      FROM monthly_revenue mr
+      WHERE symbol IN ($placeholders)
+    ) ranked
+    WHERE rn <= ?
+    ORDER BY symbol, date DESC
+  ''';
 
     final results = await customSelect(
       query,

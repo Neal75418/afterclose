@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Stock valuation (估值) operations.
-extension ValuationDao on AppDatabase {
+mixin _ValuationDaoMixin on _$AppDatabase {
   /// 取得股票的估值歷史
   Future<List<StockValuationEntry>> getValuationHistory(
     String symbol, {
@@ -41,15 +40,15 @@ extension ValuationDao on AppDatabase {
 
     final query =
         '''
-      SELECT sv.*
-      FROM stock_valuation sv
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM stock_valuation
-        WHERE symbol IN ($placeholders)
-        GROUP BY symbol
-      ) latest ON sv.symbol = latest.symbol AND sv.date = latest.max_date
-    ''';
+    SELECT sv.*
+    FROM stock_valuation sv
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM stock_valuation
+      WHERE symbol IN ($placeholders)
+      GROUP BY symbol
+    ) latest ON sv.symbol = latest.symbol AND sv.date = latest.max_date
+  ''';
 
     final results = await customSelect(
       query,

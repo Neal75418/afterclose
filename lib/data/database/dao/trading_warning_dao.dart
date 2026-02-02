@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Trading warning (注意股票/處置股票) operations.
-extension TradingWarningDao on AppDatabase {
+mixin _TradingWarningDaoMixin on _$AppDatabase {
   /// 取得股票的警示歷史
   Future<List<TradingWarningEntry>> getWarningHistory(
     String symbol, {

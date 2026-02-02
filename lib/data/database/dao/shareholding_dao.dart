@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Shareholding (外資持股) operations.
-extension ShareholdingDao on AppDatabase {
+mixin _ShareholdingDaoMixin on _$AppDatabase {
   /// 取得股票的持股歷史
   Future<List<ShareholdingEntry>> getShareholdingHistory(
     String symbol, {
@@ -39,19 +38,16 @@ extension ShareholdingDao on AppDatabase {
   ) async {
     if (symbols.isEmpty) return {};
 
-    final results = await customSelect(
-      '''
-      SELECT s.*
-      FROM shareholding s
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM shareholding
-        WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
-        GROUP BY symbol
-      ) latest ON s.symbol = latest.symbol AND s.date = latest.max_date
-      ''',
-      variables: symbols.map((s) => Variable.withString(s)).toList(),
-    ).get();
+    final results = await customSelect('''
+    SELECT s.*
+    FROM shareholding s
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM shareholding
+      WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
+      GROUP BY symbol
+    ) latest ON s.symbol = latest.symbol AND s.date = latest.max_date
+    ''', variables: symbols.map((s) => Variable.withString(s)).toList()).get();
 
     final map = <String, ShareholdingEntry>{};
     for (final row in results) {
@@ -80,16 +76,16 @@ extension ShareholdingDao on AppDatabase {
 
     final results = await customSelect(
       '''
-      SELECT s.*
-      FROM shareholding s
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM shareholding
-        WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
-          AND date < ?
-        GROUP BY symbol
-      ) prev ON s.symbol = prev.symbol AND s.date = prev.max_date
-      ''',
+    SELECT s.*
+    FROM shareholding s
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM shareholding
+      WHERE symbol IN (${symbols.map((_) => '?').join(', ')})
+        AND date < ?
+      GROUP BY symbol
+    ) prev ON s.symbol = prev.symbol AND s.date = prev.max_date
+    ''',
       variables: [
         ...symbols.map((s) => Variable.withString(s)),
         Variable.withDateTime(beforeDate),

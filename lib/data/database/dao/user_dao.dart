@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// 使用者相關資料存取：自選股、設定、更新紀錄、股價提醒、選股策略
-extension UserDao on AppDatabase {
+mixin _UserDaoMixin on _$AppDatabase {
   // ==========================================
   // 自選股操作
   // ==========================================

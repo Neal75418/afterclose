@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Financial data (財務報表) operations.
-extension FinancialDataDao on AppDatabase {
+mixin _FinancialDataDaoMixin on _$AppDatabase {
   /// 取得股票的財務資料
   Future<List<FinancialDataEntry>> getFinancialData(
     String symbol, {

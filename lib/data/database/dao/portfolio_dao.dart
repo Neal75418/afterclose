@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// 投資組合相關資料存取：持倉與交易紀錄
-extension PortfolioDao on AppDatabase {
+mixin _PortfolioDaoMixin on _$AppDatabase {
   // ==========================================
   // 投資組合操作（Phase 4.4）
   // ==========================================

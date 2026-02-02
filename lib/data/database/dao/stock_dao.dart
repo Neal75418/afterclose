@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Stock master table operations.
-extension StockDao on AppDatabase {
+mixin _StockDaoMixin on _$AppDatabase {
   /// 取得所有上市中的股票
   Future<List<StockMasterEntry>> getAllActiveStocks() {
     return (select(stockMaster)..where((t) => t.isActive.equals(true))).get();

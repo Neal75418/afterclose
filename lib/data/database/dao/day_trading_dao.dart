@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Day trading (當沖) operations.
-extension DayTradingDao on AppDatabase {
+mixin _DayTradingDaoMixin on _$AppDatabase {
   /// 取得股票的當沖歷史
   Future<List<DayTradingEntry>> getDayTradingHistory(
     String symbol, {
@@ -130,10 +129,10 @@ extension DayTradingDao on AppDatabase {
       final lookbackStart = startOfDay.subtract(const Duration(days: 5));
       final latestDateResult = await customSelect(
         '''
-        SELECT MAX(date) as latest_date
-        FROM day_trading
-        WHERE date >= ? AND date < ?
-        ''',
+      SELECT MAX(date) as latest_date
+      FROM day_trading
+      WHERE date >= ? AND date < ?
+      ''',
         variables: [
           Variable.withDateTime(lookbackStart),
           Variable.withDateTime(endOfDay),

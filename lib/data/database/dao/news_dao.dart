@@ -1,7 +1,7 @@
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// 新聞相關資料存取
-extension NewsDao on AppDatabase {
+mixin _NewsDaoMixin on _$AppDatabase {
   // ==========================================
   // 新聞操作
   // ==========================================

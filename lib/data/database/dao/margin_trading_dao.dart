@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Margin trading (融資融券) operations.
-extension MarginTradingDao on AppDatabase {
+mixin _MarginTradingDaoMixin on _$AppDatabase {
   /// 取得股票的融資融券歷史
   Future<List<MarginTradingEntry>> getMarginTradingHistory(
     String symbol, {

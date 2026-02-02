@@ -1,8 +1,7 @@
-import 'package:drift/drift.dart';
-import 'package:afterclose/data/database/app_database.dart';
+part of 'package:afterclose/data/database/app_database.dart';
 
 /// Insider holding (董監事持股) operations.
-extension InsiderHoldingDao on AppDatabase {
+mixin _InsiderHoldingDaoMixin on _$AppDatabase {
   /// 取得股票的董監持股歷史
   Future<List<InsiderHoldingEntry>> getInsiderHoldingHistory(
     String symbol, {
@@ -52,15 +51,15 @@ extension InsiderHoldingDao on AppDatabase {
 
     final query =
         '''
-      SELECT ih.*
-      FROM insider_holding ih
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM insider_holding
-        WHERE symbol IN ($placeholders)
-        GROUP BY symbol
-      ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
-    ''';
+    SELECT ih.*
+    FROM insider_holding ih
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM insider_holding
+      WHERE symbol IN ($placeholders)
+      GROUP BY symbol
+    ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
+  ''';
 
     final results = await customSelect(
       query,
@@ -107,12 +106,12 @@ extension InsiderHoldingDao on AppDatabase {
     // 取得每個 symbol 最近 N 筆資料（按日期降序）
     final query =
         '''
-      SELECT ih.*
-      FROM insider_holding ih
-      WHERE ih.symbol IN ($placeholders)
-        AND ih.date >= ?
-      ORDER BY ih.symbol, ih.date DESC
-    ''';
+    SELECT ih.*
+    FROM insider_holding ih
+    WHERE ih.symbol IN ($placeholders)
+      AND ih.date >= ?
+    ORDER BY ih.symbol, ih.date DESC
+  ''';
 
     final results = await customSelect(
       query,
@@ -148,16 +147,16 @@ extension InsiderHoldingDao on AppDatabase {
   }) async {
     // 先取得每檔股票的最新資料，再過濾高質押
     const query = '''
-      SELECT ih.*
-      FROM insider_holding ih
-      INNER JOIN (
-        SELECT symbol, MAX(date) as max_date
-        FROM insider_holding
-        GROUP BY symbol
-      ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
-      WHERE ih.pledge_ratio >= ?
-      ORDER BY ih.pledge_ratio DESC
-    ''';
+    SELECT ih.*
+    FROM insider_holding ih
+    INNER JOIN (
+      SELECT symbol, MAX(date) as max_date
+      FROM insider_holding
+      GROUP BY symbol
+    ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
+    WHERE ih.pledge_ratio >= ?
+    ORDER BY ih.pledge_ratio DESC
+  ''';
 
     final results = await customSelect(
       query,
