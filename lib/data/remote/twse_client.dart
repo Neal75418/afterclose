@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/twse/models.dart';
 
 export 'package:afterclose/data/models/twse/models.dart';
@@ -88,7 +89,7 @@ class TwseClient {
 
         // 從回應解析日期（格式: YYYYMMDD）
         final dateStr = data['date']?.toString() ?? '';
-        final date = _parseAdDate(dateStr);
+        final date = TwParseUtils.parseAdDate(dateStr);
 
         // 解析資料陣列（每列是 List 而非 Map）
         final List<dynamic> rows = data['data'];
@@ -105,8 +106,7 @@ class TwseClient {
         }
 
         // 統一輸出結果
-        final dateFormatted =
-            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        final dateFormatted = TwParseUtils.formatDateYmd(date);
         if (failedCount > 0) {
           AppLogger.info(
             'TWSE',
@@ -136,21 +136,6 @@ class TwseClient {
     }
   }
 
-  /// 解析 YYYYMMDD 格式的西元日期（例如 "20260121"）
-  ///
-  /// 回傳本地時間午夜以匹配資料庫儲存格式
-  DateTime _parseAdDate(String dateStr) {
-    if (dateStr.length != 8) {
-      // 預設為今日本地時間午夜
-      final now = DateTime.now();
-      return DateTime(now.year, now.month, now.day);
-    }
-    final year = int.parse(dateStr.substring(0, 4));
-    final month = int.parse(dateStr.substring(4, 6));
-    final day = int.parse(dateStr.substring(6, 8));
-    return DateTime(year, month, day);
-  }
-
   /// 解析每日價格資料列
   ///
   /// 列格式: [代號, 名稱, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數]
@@ -165,12 +150,12 @@ class TwseClient {
         date: date,
         code: code,
         name: row[1]?.toString() ?? '',
-        open: _parseFormattedDouble(row[4]),
-        high: _parseFormattedDouble(row[5]),
-        low: _parseFormattedDouble(row[6]),
-        close: _parseFormattedDouble(row[7]),
-        volume: _parseFormattedDouble(row[2]),
-        change: _parseFormattedDouble(row[8]),
+        open: TwParseUtils.parseFormattedDouble(row[4]),
+        high: TwParseUtils.parseFormattedDouble(row[5]),
+        low: TwParseUtils.parseFormattedDouble(row[6]),
+        close: TwParseUtils.parseFormattedDouble(row[7]),
+        volume: TwParseUtils.parseFormattedDouble(row[2]),
+        change: TwParseUtils.parseFormattedDouble(row[8]),
       );
     } catch (_) {
       return null;
@@ -211,7 +196,7 @@ class TwseClient {
 
         // 從回應解析日期
         final dateStr = data['date']?.toString() ?? '';
-        final date = _parseAdDate(dateStr);
+        final date = TwParseUtils.parseAdDate(dateStr);
 
         // 解析資料陣列
         final List<dynamic> rows = data['data'];
@@ -220,8 +205,7 @@ class TwseClient {
             .whereType<TwseInstitutional>()
             .toList();
 
-        final dateFormatted =
-            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        final dateFormatted = TwParseUtils.formatDateYmd(date);
         AppLogger.info('TWSE', '法人資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -251,16 +235,16 @@ class TwseClient {
         date: date,
         code: code,
         name: row[1]?.toString() ?? '',
-        foreignBuy: _parseFormattedDouble(row[2]) ?? 0,
-        foreignSell: _parseFormattedDouble(row[3]) ?? 0,
-        foreignNet: _parseFormattedDouble(row[4]) ?? 0,
-        investmentTrustBuy: _parseFormattedDouble(row[8]) ?? 0,
-        investmentTrustSell: _parseFormattedDouble(row[9]) ?? 0,
-        investmentTrustNet: _parseFormattedDouble(row[10]) ?? 0,
-        dealerBuy: _parseFormattedDouble(row[11]) ?? 0,
-        dealerSell: _parseFormattedDouble(row[12]) ?? 0,
-        dealerNet: _parseFormattedDouble(row[13]) ?? 0,
-        totalNet: _parseFormattedDouble(row[17]) ?? 0,
+        foreignBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
+        foreignSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+        foreignNet: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
+        investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+        investmentTrustSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+        investmentTrustNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
+        dealerBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
+        dealerSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+        dealerNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
+        totalNet: TwParseUtils.parseFormattedDouble(row[17]) ?? 0,
       );
     } catch (_) {
       return null;
@@ -365,46 +349,23 @@ class TwseClient {
       if (row.length < 9) return null;
 
       final dateStr = row[0].toString(); // 格式: "115/01/02"
-      final date = _parseSlashRocDate(dateStr);
+      final date = TwParseUtils.parseSlashRocDate(dateStr);
+      if (date == null) return null;
 
       return TwseDailyPrice(
         date: date,
         code: code,
         name: '', // 歷史資料不含名稱
-        open: _parseFormattedDouble(row[3]),
-        high: _parseFormattedDouble(row[4]),
-        low: _parseFormattedDouble(row[5]),
-        close: _parseFormattedDouble(row[6]),
-        volume: _parseFormattedDouble(row[1]),
-        change: _parseFormattedDouble(row[7]),
+        open: TwParseUtils.parseFormattedDouble(row[3]),
+        high: TwParseUtils.parseFormattedDouble(row[4]),
+        low: TwParseUtils.parseFormattedDouble(row[5]),
+        close: TwParseUtils.parseFormattedDouble(row[6]),
+        volume: TwParseUtils.parseFormattedDouble(row[1]),
+        change: TwParseUtils.parseFormattedDouble(row[7]),
       );
     } catch (_) {
       return null;
     }
-  }
-
-  /// 解析含斜線的民國日期（例如 "115/01/02"）
-  ///
-  /// 回傳本地時間午夜以匹配資料庫儲存格式
-  DateTime _parseSlashRocDate(String dateStr) {
-    final parts = dateStr.split('/');
-    if (parts.length != 3) {
-      throw FormatException('Invalid ROC date: $dateStr');
-    }
-
-    final rocYear = int.parse(parts[0]);
-    final month = int.parse(parts[1]);
-    final day = int.parse(parts[2]);
-
-    return DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
-  }
-
-  /// 解析含逗號的數字（例如 "1,234,567"）
-  double? _parseFormattedDouble(dynamic value) {
-    if (value == null) return null;
-    final str = value.toString().replaceAll(',', '').trim();
-    if (str.isEmpty || str == '--' || str == 'X') return null;
-    return double.tryParse(str);
   }
 
   /// 取得多個月的歷史價格
@@ -503,7 +464,7 @@ class TwseClient {
 
         // 從回應解析日期
         final dateStr = data['date']?.toString() ?? '';
-        final date = _parseAdDate(dateStr);
+        final date = TwParseUtils.parseAdDate(dateStr);
 
         // 資料在 'tables' 陣列中，第二個表格含個股資料
         final tables = data['tables'] as List<dynamic>?;
@@ -519,8 +480,7 @@ class TwseClient {
             .whereType<TwseMarginTrading>()
             .toList();
 
-        final dateFormatted =
-            '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+        final dateFormatted = TwParseUtils.formatDateYmd(date);
         AppLogger.info('TWSE', '融資融券: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -550,12 +510,12 @@ class TwseClient {
         date: date,
         code: code,
         name: row[1]?.toString() ?? '',
-        marginBuy: _parseFormattedDouble(row[2]) ?? 0,
-        marginSell: _parseFormattedDouble(row[3]) ?? 0,
-        marginBalance: _parseFormattedDouble(row[6]) ?? 0,
-        shortBuy: _parseFormattedDouble(row[8]) ?? 0,
-        shortSell: _parseFormattedDouble(row[9]) ?? 0,
-        shortBalance: _parseFormattedDouble(row[12]) ?? 0,
+        marginBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
+        marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+        marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
+        shortBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+        shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+        shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
       );
     } catch (_) {
       return null;
@@ -729,10 +689,10 @@ class TwseClient {
 
       final name = row[1]?.toString().trim() ?? '';
       // 欄位 3 是當沖成交股數
-      final totalVolume = _parseFormattedDouble(row[3]) ?? 0;
+      final totalVolume = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
       // 欄位 4 是買進金額，欄位 5 是賣出金額
-      final buyAmount = _parseFormattedDouble(row[4]) ?? 0;
-      final sellAmount = _parseFormattedDouble(row[5]) ?? 0;
+      final buyAmount = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
+      final sellAmount = TwParseUtils.parseFormattedDouble(row[5]) ?? 0;
 
       return TwseDayTrading(
         date: date,
@@ -796,7 +756,7 @@ class TwseClient {
 
         // 解析日期
         final dateStr = data['date']?.toString() ?? '';
-        final date = _parseAdDate(dateStr);
+        final date = TwParseUtils.parseAdDate(dateStr);
 
         // MI_INDEX 回傳多個 tables，每個 table 包含不同類型的指數
         // 我們關注的重點指數通常在前幾個 tables 中
@@ -874,13 +834,13 @@ class TwseClient {
       final name = row[0]?.toString().trim() ?? '';
       if (name.isEmpty) return null;
 
-      final close = _parseFormattedDouble(row[1]);
+      final close = TwParseUtils.parseFormattedDouble(row[1]);
       if (close == null) return null; // 沒有收盤值的跳過
 
       // row[2] 為漲跌方向符號：「+」或「-」或「X」/空值
       final dirSign = row[2]?.toString().trim() ?? '';
-      final rawChange = _parseFormattedDouble(row[3]) ?? 0;
-      final rawChangePercent = _parseFormattedDouble(row[4]) ?? 0;
+      final rawChange = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
+      final rawChangePercent = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
 
       // 根據方向符號套用正負號；無明確符號時保留原值（通常為 0）
       final change = dirSign.contains('-')
@@ -1072,7 +1032,7 @@ class TwseClient {
         if (dateStr == null || dateStr.isEmpty) return null;
         // 嘗試解析 "115/01/20" 格式
         if (dateStr.contains('/')) {
-          return _parseSlashRocDate(dateStr);
+          return TwParseUtils.parseSlashRocDate(dateStr);
         }
         // 嘗試解析 "1150120" 格式
         if (dateStr.length == 7) {
@@ -1189,7 +1149,7 @@ class TwseClient {
 
           // 解析日期
           final dateStr = item['出表日期']?.toString();
-          final date = _parseCompactRocDate(dateStr);
+          final date = TwParseUtils.parseCompactRocDate(dateStr);
           if (date == null) continue;
 
           // 解析持股和質押數
@@ -1246,16 +1206,5 @@ class TwseClient {
       AppLogger.warning('TWSE', '董監持股: ${e.message ?? "網路錯誤"}');
       throw NetworkException(e.message ?? 'TWSE network error', e);
     }
-  }
-
-  /// 解析緊湊型民國日期（格式：1150120）
-  DateTime? _parseCompactRocDate(String? dateStr) {
-    if (dateStr == null || dateStr.length != 7) return null;
-    final rocYear = int.tryParse(dateStr.substring(0, 3));
-    final month = int.tryParse(dateStr.substring(3, 5));
-    final day = int.tryParse(dateStr.substring(5, 7));
-    if (rocYear == null || month == null || day == null) return null;
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    return DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
   }
 }

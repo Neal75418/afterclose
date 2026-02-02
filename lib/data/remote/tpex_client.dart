@@ -8,6 +8,7 @@ import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/models/tpex/models.dart';
+import 'package:afterclose/core/utils/tw_parse_utils.dart';
 export 'package:afterclose/data/models/tpex/models.dart';
 
 /// 台灣證券櫃檯買賣中心 (TPEX/OTC) API 客戶端
@@ -55,7 +56,7 @@ class TpexClient {
   Future<List<TpexDailyPrice>> getAllDailyPrices({DateTime? date}) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final rocDateStr = _toRocDateString(targetDate);
+      final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
       final response = await _dio.get(
         ApiEndpoints.tpexDailyPricesAll,
@@ -94,7 +95,9 @@ class TpexClient {
         // 從回傳資料取得實際日期（格式: "115/01/23"）
         final dateStr = firstTable['date'] as String?;
         final actualDate =
-            (dateStr != null ? _parseRocDateString(dateStr) : null) ??
+            (dateStr != null
+                ? TwParseUtils.parseSlashRocDate(dateStr)
+                : null) ??
             targetDate;
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
@@ -117,7 +120,7 @@ class TpexClient {
         }
 
         // 統一輸出結果
-        final dateFormatted = _formatDate(actualDate);
+        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
         if (failedCount > 0) {
           AppLogger.info(
             'TPEX',
@@ -164,13 +167,13 @@ class TpexClient {
         date: date,
         code: code,
         name: row[1]?.toString().trim() ?? '',
-        close: _parseFormattedDouble(row[2]),
-        change: _parseFormattedDouble(row[3]),
-        open: _parseFormattedDouble(row[4]),
-        high: _parseFormattedDouble(row[5]),
-        low: _parseFormattedDouble(row[6]),
-        volume: _parseFormattedDouble(row[8]),
-        turnover: _parseFormattedDouble(row[9]),
+        close: TwParseUtils.parseFormattedDouble(row[2]),
+        change: TwParseUtils.parseFormattedDouble(row[3]),
+        open: TwParseUtils.parseFormattedDouble(row[4]),
+        high: TwParseUtils.parseFormattedDouble(row[5]),
+        low: TwParseUtils.parseFormattedDouble(row[6]),
+        volume: TwParseUtils.parseFormattedDouble(row[8]),
+        turnover: TwParseUtils.parseFormattedDouble(row[9]),
       );
     } catch (_) {
       return null;
@@ -185,7 +188,7 @@ class TpexClient {
   }) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final rocDateStr = _toRocDateString(targetDate);
+      final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
       final response = await _dio.get(
         ApiEndpoints.tpexInstitutional,
@@ -224,7 +227,9 @@ class TpexClient {
         // 從回傳資料取得實際日期
         final dateStr = firstTable['date'] as String?;
         final actualDate =
-            (dateStr != null ? _parseRocDateString(dateStr) : null) ??
+            (dateStr != null
+                ? TwParseUtils.parseSlashRocDate(dateStr)
+                : null) ??
             targetDate;
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
@@ -241,7 +246,7 @@ class TpexClient {
             .whereType<TpexInstitutional>()
             .toList();
 
-        final dateFormatted = _formatDate(actualDate);
+        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
         AppLogger.info('TPEX', '法人資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -283,97 +288,23 @@ class TpexClient {
         code: code,
         name: row[1]?.toString().trim() ?? '',
         // 外資及陸資(合計) - indices 8-10
-        foreignBuy: _parseFormattedDouble(row[8]) ?? 0,
-        foreignSell: _parseFormattedDouble(row[9]) ?? 0,
-        foreignNet: _parseFormattedDouble(row[10]) ?? 0,
+        foreignBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+        foreignSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+        foreignNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
         // 投信 - indices 11-13
-        investmentTrustBuy: _parseFormattedDouble(row[11]) ?? 0,
-        investmentTrustSell: _parseFormattedDouble(row[12]) ?? 0,
-        investmentTrustNet: _parseFormattedDouble(row[13]) ?? 0,
+        investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
+        investmentTrustSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+        investmentTrustNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
         // 自營商(合計) - indices 20-22
-        dealerBuy: _parseFormattedDouble(row[20]) ?? 0,
-        dealerSell: _parseFormattedDouble(row[21]) ?? 0,
-        dealerNet: _parseFormattedDouble(row[22]) ?? 0,
+        dealerBuy: TwParseUtils.parseFormattedDouble(row[20]) ?? 0,
+        dealerSell: TwParseUtils.parseFormattedDouble(row[21]) ?? 0,
+        dealerNet: TwParseUtils.parseFormattedDouble(row[22]) ?? 0,
         // 三大法人合計 - index 23
-        totalNet: _parseFormattedDouble(row[23]) ?? 0,
+        totalNet: TwParseUtils.parseFormattedDouble(row[23]) ?? 0,
       );
     } catch (_) {
       return null;
     }
-  }
-
-  /// 將 DateTime 轉為民國日期字串（格式: 114/01/24）
-  String _toRocDateString(DateTime date) {
-    final rocYear = date.year - ApiConfig.rocYearOffset;
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
-    return '$rocYear/$month/$day';
-  }
-
-  /// 將民國日期字串轉為 DateTime（格式: 114/01/24 或 115/01/23）
-  ///
-  /// 無效日期時回傳 null，由呼叫端決定如何處理。
-  DateTime? _parseRocDateString(String rocDateStr) {
-    try {
-      final parts = rocDateStr.split('/');
-      if (parts.length != 3) return null;
-
-      final rocYear = int.tryParse(parts[0]);
-      final month = int.tryParse(parts[1]);
-      final day = int.tryParse(parts[2]);
-
-      if (rocYear == null || month == null || day == null) return null;
-      if (rocYear <= 0 || month < 1 || month > 12 || day < 1 || day > 31) {
-        return null;
-      }
-
-      // 使用 DateTime 建構並驗證日期有效性（例如 2/30 會被正規化為 3/2）
-      final date = DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
-      // 驗證日期未被正規化（表示原始日期無效）
-      if (date.month != month || date.day != day) {
-        return null;
-      }
-      return date;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// 解析緊湊格式民國日期（格式: "1150126" -> 民國 115 年 01 月 26 日）
-  ///
-  /// 無效日期時回傳 null。包含完整日期驗證。
-  DateTime? _parseCompactRocDate(String? dateStr) {
-    if (dateStr == null || dateStr.length < 7) return null;
-
-    final rocYear = int.tryParse(dateStr.substring(0, 3));
-    final month = int.tryParse(dateStr.substring(3, 5));
-    final day = int.tryParse(dateStr.substring(5, 7));
-
-    if (rocYear == null || month == null || day == null) return null;
-    if (rocYear <= 0 || month < 1 || month > 12 || day < 1 || day > 31) {
-      return null;
-    }
-
-    // 使用 DateTime 建構並驗證日期有效性
-    final date = DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
-    // 驗證日期未被正規化（例如 2/30 會變成 3/2，表示原始日期無效）
-    if (date.month != month || date.day != day) {
-      return null;
-    }
-    return date;
-  }
-
-  /// 格式化日期為顯示用字串
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  /// 解析含逗號的數字（例如 "1,234,567"）
-  double? _parseFormattedDouble(dynamic value) {
-    if (value == null) return null;
-    final str = value.toString().replaceAll(',', '').trim();
-    if (str.isEmpty || str == '--' || str == 'X' || str == '---') return null;
-    return double.tryParse(str);
   }
 
   /// 取得所有上櫃股票的估值資料（本益比、股價淨值比、殖利率）
@@ -423,7 +354,7 @@ class TpexClient {
         final effectiveDate = results.isNotEmpty
             ? results.first.date
             : targetDate;
-        final dateFormatted = _formatDate(effectiveDate);
+        final dateFormatted = TwParseUtils.formatDateYmd(effectiveDate);
         AppLogger.info('TPEX', '估值資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -463,7 +394,8 @@ class TpexClient {
 
       // 解析日期（使用共用驗證方法，無效時使用 fallback）
       final actualDate =
-          _parseCompactRocDate(json['Date']?.toString()) ?? fallbackDate;
+          TwParseUtils.parseCompactRocDate(json['Date']?.toString()) ??
+          fallbackDate;
 
       // 解析數值（"N/A" 視為 null）
       double? parsePer(dynamic value) {
@@ -498,7 +430,7 @@ class TpexClient {
   Future<List<TpexDayTrading>> getAllDayTradingData({DateTime? date}) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final rocDateStr = _toRocDateString(targetDate);
+      final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
       final response = await _dio.get(
         ApiEndpoints.tpexDayTrading,
@@ -561,7 +493,9 @@ class TpexClient {
         // 從回傳資料取得實際日期
         final dateStr = firstTable['date'] as String?;
         final actualDate =
-            (dateStr != null ? _parseRocDateString(dateStr) : null) ??
+            (dateStr != null
+                ? TwParseUtils.parseSlashRocDate(dateStr)
+                : null) ??
             targetDate;
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
@@ -576,7 +510,7 @@ class TpexClient {
             .whereType<TpexDayTrading>()
             .toList();
 
-        final dateFormatted = _formatDate(actualDate);
+        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
         AppLogger.info('TPEX', '當沖資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -615,9 +549,9 @@ class TpexClient {
       // 過濾非股票代碼（上櫃股票為 4 碼數字）
       if (!StockPatterns.isTpexCode(code)) return null;
 
-      final buyVolume = _parseFormattedDouble(row[2]) ?? 0;
-      final sellVolume = _parseFormattedDouble(row[4]) ?? 0;
-      final totalVolume = _parseFormattedDouble(row[8]) ?? 0;
+      final buyVolume = TwParseUtils.parseFormattedDouble(row[2]) ?? 0;
+      final sellVolume = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
+      final totalVolume = TwParseUtils.parseFormattedDouble(row[8]) ?? 0;
 
       return TpexDayTrading(
         date: date,
@@ -640,7 +574,7 @@ class TpexClient {
   }) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final rocDateStr = _toRocDateString(targetDate);
+      final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
       final response = await _dio.get(
         ApiEndpoints.tpexMarginTrading,
@@ -679,7 +613,9 @@ class TpexClient {
         // 從回傳資料取得實際日期
         final dateStr = firstTable['date'] as String?;
         final actualDate =
-            (dateStr != null ? _parseRocDateString(dateStr) : null) ??
+            (dateStr != null
+                ? TwParseUtils.parseSlashRocDate(dateStr)
+                : null) ??
             targetDate;
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
@@ -696,7 +632,7 @@ class TpexClient {
             .whereType<TpexMarginTrading>()
             .toList();
 
-        final dateFormatted = _formatDate(actualDate);
+        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
         AppLogger.info('TPEX', '融資融券: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
@@ -733,13 +669,13 @@ class TpexClient {
         code: code,
         name: row[1]?.toString().trim() ?? '',
         // 融資
-        marginBuy: _parseFormattedDouble(row[4]) ?? 0,
-        marginSell: _parseFormattedDouble(row[3]) ?? 0,
-        marginBalance: _parseFormattedDouble(row[6]) ?? 0,
+        marginBuy: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
+        marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+        marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
         // 融券
-        shortBuy: _parseFormattedDouble(row[10]) ?? 0, // 還券
-        shortSell: _parseFormattedDouble(row[9]) ?? 0, // 賣出
-        shortBalance: _parseFormattedDouble(row[12]) ?? 0,
+        shortBuy: TwParseUtils.parseFormattedDouble(row[10]) ?? 0, // 還券
+        shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0, // 賣出
+        shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
       );
     } catch (_) {
       return null;
@@ -813,7 +749,7 @@ class TpexClient {
       // 解析公告日期（格式: "1150126" -> 民國 115 年 01 月 26 日）
       // TPEX OpenAPI 使用 "Date" 欄位
       final dateStr = json['Date']?.toString();
-      final date = _parseCompactRocDate(dateStr);
+      final date = TwParseUtils.parseCompactRocDate(dateStr);
       if (date == null) {
         AppLogger.debug('TPEX', '注意股票日期解析失敗: code=$code, date=$dateStr');
         return null;
@@ -896,7 +832,7 @@ class TpexClient {
       // 解析公告日期（必要欄位）
       // TPEX OpenAPI 使用 "Date" 欄位
       final dateStr = json['Date']?.toString();
-      final date = _parseCompactRocDate(dateStr);
+      final date = TwParseUtils.parseCompactRocDate(dateStr);
       if (date == null) {
         AppLogger.debug('TPEX', '處置股票日期解析失敗: code=$code, date=$dateStr');
         return null;
@@ -909,8 +845,8 @@ class TpexClient {
       if (periodStr != null && periodStr.contains('~')) {
         final parts = periodStr.split('~');
         if (parts.length == 2) {
-          startDate = _parseCompactRocDate(parts[0].trim());
-          endDate = _parseCompactRocDate(parts[1].trim());
+          startDate = TwParseUtils.parseCompactRocDate(parts[0].trim());
+          endDate = TwParseUtils.parseCompactRocDate(parts[1].trim());
         }
       }
 
@@ -1018,7 +954,7 @@ class TpexClient {
 
           // 解析日期
           final dateStr = item['出表日期']?.toString();
-          final date = _parseCompactRocDate(dateStr);
+          final date = TwParseUtils.parseCompactRocDate(dateStr);
           if (date == null) continue;
 
           // 解析持股和質押數
