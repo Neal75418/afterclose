@@ -170,10 +170,16 @@ class ComparisonNotifier extends StateNotifier<ComparisonState> {
     try {
       final dateCtx = DateContext.now(historyDays: 90);
 
+      // 使用資料庫最新價格日期，確保盤前/非交易日也能顯示上次分析結果
+      final latestDataDate = await _db.getLatestDataDate();
+      final analysisDate = latestDataDate != null
+          ? DateContext.normalize(latestDataDate)
+          : dateCtx.today;
+
       // 1. Core data via cached batch query
       final coreData = await _cachedDb.loadStockListData(
         symbols: symbols,
-        analysisDate: dateCtx.today,
+        analysisDate: analysisDate,
         historyStart: dateCtx.historyStart,
       );
 

@@ -7,7 +7,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
+
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
@@ -408,10 +408,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       final startDate = dateCtx.historyStart;
 
       // 決定分析資料的查詢日期
-      // 若今日非交易日（週末/假日），使用前一個交易日
-      final analysisDate = TaiwanCalendar.isTradingDay(normalizedToday)
-          ? normalizedToday
-          : TaiwanCalendar.getPreviousTradingDay(normalizedToday);
+      // 使用資料庫最新價格日期，確保盤前/非交易日也能顯示上次分析結果
+      final latestDataDate = await _db.getLatestDataDate();
+      final analysisDate = latestDataDate != null
+          ? DateContext.normalize(latestDataDate)
+          : normalizedToday;
 
       // Load all data in parallel
       final stockFuture = _db.getStock(_symbol);
