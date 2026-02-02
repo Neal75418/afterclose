@@ -7,6 +7,8 @@ import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/data/models/tpex/models.dart';
+export 'package:afterclose/data/models/tpex/models.dart';
 
 /// 台灣證券櫃檯買賣中心 (TPEX/OTC) API 客戶端
 ///
@@ -993,7 +995,7 @@ class TpexClient {
 
         // 3. 彙總計算每家公司的董監持股
         // 使用 Map<公司代碼, Map<持股人姓名, 持股資料>> 來去重
-        final companyData = <String, _InsiderAggregation>{};
+        final companyData = <String, InsiderAggregation>{};
 
         for (final item in data) {
           if (item is! Map<String, dynamic>) continue;
@@ -1029,8 +1031,7 @@ class TpexClient {
           // 彙總（使用姓名去重，同一人可能有多個職稱但持股相同）
           companyData.putIfAbsent(
             code,
-            () =>
-                _InsiderAggregation(code: code, name: companyName, date: date),
+            () => InsiderAggregation(code: code, name: companyName, date: date),
           );
           // 只有新的持股人才加入統計
           companyData[code]!.addHoldingIfNew(personName, shares, pledged);
@@ -1182,253 +1183,4 @@ class TpexClient {
       return null;
     }
   }
-}
-
-// ============================================
-// Helper Classes
-// ============================================
-
-/// 彙總董監持股用的內部 helper class
-class _InsiderAggregation {
-  _InsiderAggregation({
-    required this.code,
-    required this.name,
-    required this.date,
-  });
-
-  final String code;
-  final String name;
-  final DateTime date;
-  double totalShares = 0;
-  double totalPledged = 0;
-
-  // 追蹤已計入的持股人（避免同一人重複計算）
-  final _seenHolders = <String>{};
-
-  /// 只有新的持股人才加入統計（去重）
-  void addHoldingIfNew(String holderName, double shares, double pledged) {
-    if (holderName.isEmpty) return;
-    if (_seenHolders.contains(holderName)) return;
-
-    _seenHolders.add(holderName);
-    totalShares += shares;
-    totalPledged += pledged;
-  }
-}
-
-// ============================================
-// 資料模型
-// ============================================
-
-/// TPEX 每日價格資料
-class TpexDailyPrice {
-  const TpexDailyPrice({
-    required this.date,
-    required this.code,
-    required this.name,
-    required this.open,
-    required this.high,
-    required this.low,
-    required this.close,
-    required this.volume,
-    required this.change,
-    this.turnover,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double? open;
-  final double? high;
-  final double? low;
-  final double? close;
-  final double? volume;
-  final double? change;
-  final double? turnover;
-}
-
-/// TPEX 法人買賣超資料
-class TpexInstitutional {
-  const TpexInstitutional({
-    required this.date,
-    required this.code,
-    required this.name,
-    required this.foreignBuy,
-    required this.foreignSell,
-    required this.foreignNet,
-    required this.investmentTrustBuy,
-    required this.investmentTrustSell,
-    required this.investmentTrustNet,
-    required this.dealerBuy,
-    required this.dealerSell,
-    required this.dealerNet,
-    required this.totalNet,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double foreignBuy;
-  final double foreignSell;
-  final double foreignNet;
-  final double investmentTrustBuy;
-  final double investmentTrustSell;
-  final double investmentTrustNet;
-  final double dealerBuy;
-  final double dealerSell;
-  final double dealerNet;
-  final double totalNet;
-}
-
-/// TPEX 當沖交易資料
-class TpexDayTrading {
-  const TpexDayTrading({
-    required this.date,
-    required this.code,
-    required this.name,
-    required this.buyVolume,
-    required this.sellVolume,
-    required this.totalVolume,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double buyVolume; // 當沖買進成交股數
-  final double sellVolume; // 當沖賣出成交股數
-  final double totalVolume; // 當沖成交股數
-}
-
-/// TPEX 融資融券資料
-class TpexMarginTrading {
-  const TpexMarginTrading({
-    required this.date,
-    required this.code,
-    required this.name,
-    required this.marginBuy,
-    required this.marginSell,
-    required this.marginBalance,
-    required this.shortBuy,
-    required this.shortSell,
-    required this.shortBalance,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double marginBuy; // 融資買進
-  final double marginSell; // 融資賣出
-  final double marginBalance; // 融資餘額
-  final double shortBuy; // 融券買進 (回補)
-  final double shortSell; // 融券賣出
-  final double shortBalance; // 融券餘額
-
-  /// 融資增減
-  double get marginNet => marginBuy - marginSell;
-
-  /// 融券增減
-  double get shortNet => shortSell - shortBuy;
-}
-
-/// TPEX 估值資料（本益比、股價淨值比、殖利率）
-class TpexValuation {
-  const TpexValuation({
-    required this.date,
-    required this.code,
-    required this.name,
-    this.per,
-    this.pbr,
-    this.dividendYield,
-    this.dividendPerShare,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double? per; // 本益比
-  final double? pbr; // 股價淨值比
-  final double? dividendYield; // 殖利率 (%)
-  final double? dividendPerShare; // 每股配息
-}
-
-/// TPEX 注意/處置股票資料
-class TpexTradingWarning {
-  const TpexTradingWarning({
-    required this.date,
-    required this.code,
-    required this.name,
-    required this.warningType,
-    this.reasonCode,
-    this.reasonDescription,
-    this.disposalMeasures,
-    this.disposalStartDate,
-    this.disposalEndDate,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final String warningType; // 'ATTENTION' | 'DISPOSAL'
-  final String? reasonCode; // 列入原因代碼
-  final String? reasonDescription; // 原因說明
-  final String? disposalMeasures; // 處置措施（僅處置股）
-  final DateTime? disposalStartDate; // 處置起始日
-  final DateTime? disposalEndDate; // 處置結束日
-
-  /// 是否為處置股
-  bool get isDisposal => warningType == 'DISPOSAL';
-
-  /// 處置是否目前生效
-  bool get isActive {
-    if (!isDisposal) return true; // 注意股票始終視為生效
-    if (disposalEndDate == null) return true;
-    return DateTime.now().isBefore(
-      disposalEndDate!.add(const Duration(days: 1)),
-    );
-  }
-}
-
-/// TPEX 董監持股資料
-class TpexInsiderHolding {
-  const TpexInsiderHolding({
-    required this.date,
-    required this.code,
-    required this.name,
-    this.insiderRatio,
-    this.pledgeRatio,
-    this.sharesIssued,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double? insiderRatio; // 董監持股比例 (%)
-  final double? pledgeRatio; // 質押比例 (%)
-  final double? sharesIssued; // 已發行股數
-}
-
-/// TPEX 月營收資料
-class TpexMonthlyRevenue {
-  const TpexMonthlyRevenue({
-    required this.date,
-    required this.code,
-    required this.name,
-    required this.revenue,
-    required this.revenueYear,
-    required this.revenueMonth,
-    this.momGrowth,
-    this.yoyGrowth,
-  });
-
-  final DateTime date;
-  final String code;
-  final String name;
-  final double revenue; // 當月營收（千元）
-  final int revenueYear; // 營收年份（西元）
-  final int revenueMonth; // 營收月份
-  final double? momGrowth; // 月增率 (%)
-  final double? yoyGrowth; // 年增率 (%)
-
-  /// 營收（億元）
-  double get revenueInBillion => revenue / 100000;
 }
