@@ -83,7 +83,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
-        child: state.isLoading
+        child: state.loading.isLoading
             ? const SafeArea(child: StockDetailShimmer())
             : state.error != null
             ? SafeArea(
@@ -232,16 +232,16 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
   String _buildHeaderSemanticLabel(StockDetailState state) {
     final parts = <String>[];
-    final name = state.stock?.name;
+    final name = state.price.stock?.name;
     if (name != null) parts.add(name);
     parts.add(widget.symbol);
-    final close = state.latestPrice?.close;
+    final close = state.price.latestPrice?.close;
     if (close != null) parts.add('收盤價 ${close.toStringAsFixed(2)} 元');
     final change = state.priceChange;
     if (change != null) {
       parts.add('漲跌幅 ${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%');
     }
-    final trend = state.analysis?.trendState;
+    final trend = state.price.analysis?.trendState;
     if (trend != null) parts.add('趨勢 ${trend.trendKey}');
     return parts.join(', ');
   }
@@ -278,13 +278,13 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                         children: [
                           Flexible(
                             child: Text(
-                              state.stock?.name ?? widget.symbol,
+                              state.price.stock?.name ?? widget.symbol,
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
-                          if (state.stock?.market == 'TPEx') ...[
+                          if (state.price.stock?.market == 'TPEx') ...[
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -304,8 +304,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                               ),
                             ),
                           ],
-                          if (state.stock?.industry != null &&
-                              state.stock!.industry!.isNotEmpty) ...[
+                          if (state.price.stock?.industry != null &&
+                              state.price.stock!.industry!.isNotEmpty) ...[
                             const SizedBox(width: 8),
                             Flexible(
                               child: Container(
@@ -318,7 +318,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  state.stock!.industry!,
+                                  state.price.stock!.industry!,
                                   style: theme.textTheme.labelSmall?.copyWith(
                                     color:
                                         theme.colorScheme.onTertiaryContainer,
@@ -367,7 +367,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      state.latestPrice?.close?.toStringAsFixed(2) ?? '-',
+                      state.price.latestPrice?.close?.toStringAsFixed(2) ?? '-',
                       style: theme.textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight
                             .w800, // Matching heavy weight from StockCard
@@ -458,17 +458,17 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                 _buildInfoChip(
                   theme: theme,
                   label:
-                      'trend.${state.analysis?.trendState.trendKey ?? 'sideways'}'
+                      'trend.${state.price.analysis?.trendState.trendKey ?? 'sideways'}'
                           .tr(),
                   icon:
-                      state.analysis?.trendState.trendIconData ??
+                      state.price.analysis?.trendState.trendIconData ??
                       Icons.trending_flat,
                   color:
-                      state.analysis?.trendState.trendColor ??
+                      state.price.analysis?.trendState.trendColor ??
                       AppTheme.neutralColor,
                 ),
                 const SizedBox(width: 8),
-                if (state.analysis?.supportLevel case final supportLevel?)
+                if (state.price.analysis?.supportLevel case final supportLevel?)
                   _buildLevelChip(
                     theme: theme,
                     label: 'stockDetail.support'.tr(),
@@ -476,7 +476,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     color: AppTheme.downColor,
                   ),
                 const SizedBox(width: 8),
-                if (state.analysis?.resistanceLevel case final resistanceLevel?)
+                if (state.price.analysis?.resistanceLevel
+                    case final resistanceLevel?)
                   _buildLevelChip(
                     theme: theme,
                     label: 'stockDetail.resistance'.tr(),

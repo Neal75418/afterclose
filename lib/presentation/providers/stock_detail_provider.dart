@@ -20,44 +20,17 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // ==================================================
-// Stock Detail State
+// Sub-State Classes
 // ==================================================
 
-/// State for stock detail screen
-class StockDetailState {
-  static const _sentinel = Object();
-  const StockDetailState({
+/// Price-related state: stock info, prices, history, analysis
+class StockPriceState {
+  const StockPriceState({
     this.stock,
     this.latestPrice,
     this.previousPrice,
     this.priceHistory = const [],
     this.analysis,
-    this.reasons = const [],
-    this.institutionalHistory = const [],
-    this.marginHistory = const [],
-    this.revenueHistory = const [],
-    this.dividendHistory = const [],
-    this.insiderHistory = const [],
-    this.latestPER,
-    this.recentNews = const [],
-    this.epsHistory = const [],
-    this.latestQuarterMetrics = const {},
-    this.aiSummary,
-    this.dayTradingHistory = const [],
-    this.shareholdingHistory = const [],
-    this.holdingDistribution = const [],
-    this.marginTradingHistory = const [],
-    this.chipStrength,
-    this.isInWatchlist = false,
-    this.isLoading = false,
-    this.isLoadingMargin = false,
-    this.isLoadingFundamentals = false,
-    this.isLoadingInsider = false,
-    this.isLoadingChip = false,
-    this.error,
-    this.hasInstitutionalError = false,
-    this.dataDate,
-    this.hasDataMismatch = false,
   });
 
   final StockMasterEntry? stock;
@@ -65,108 +38,6 @@ class StockDetailState {
   final DailyPriceEntry? previousPrice;
   final List<DailyPriceEntry> priceHistory;
   final DailyAnalysisEntry? analysis;
-  final List<DailyReasonEntry> reasons;
-  final List<DailyInstitutionalEntry> institutionalHistory;
-  final List<FinMindMarginData> marginHistory;
-  final List<FinMindRevenue> revenueHistory;
-  final List<FinMindDividend> dividendHistory;
-  final List<InsiderHoldingEntry> insiderHistory;
-  final FinMindPER? latestPER;
-  final List<NewsItemEntry> recentNews;
-  final List<FinancialDataEntry> epsHistory;
-  final Map<String, double> latestQuarterMetrics;
-  final StockSummary? aiSummary;
-  final List<DayTradingEntry> dayTradingHistory;
-  final List<ShareholdingEntry> shareholdingHistory;
-  final List<HoldingDistributionEntry> holdingDistribution;
-  final List<MarginTradingEntry> marginTradingHistory;
-  final ChipStrengthResult? chipStrength;
-  final bool isInWatchlist;
-  final bool isLoading;
-  final bool isLoadingMargin;
-  final bool isLoadingFundamentals;
-  final bool isLoadingInsider;
-  final bool isLoadingChip;
-  final String? error;
-
-  /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
-  final bool hasInstitutionalError;
-
-  /// The synchronized data date - all displayed data should be from this date
-  final DateTime? dataDate;
-
-  /// True if price and institutional data dates don't match
-  final bool hasDataMismatch;
-
-  StockDetailState copyWith({
-    StockMasterEntry? stock,
-    DailyPriceEntry? latestPrice,
-    DailyPriceEntry? previousPrice,
-    List<DailyPriceEntry>? priceHistory,
-    DailyAnalysisEntry? analysis,
-    List<DailyReasonEntry>? reasons,
-    List<DailyInstitutionalEntry>? institutionalHistory,
-    List<FinMindMarginData>? marginHistory,
-    List<FinMindRevenue>? revenueHistory,
-    List<FinMindDividend>? dividendHistory,
-    List<InsiderHoldingEntry>? insiderHistory,
-    FinMindPER? latestPER,
-    List<NewsItemEntry>? recentNews,
-    List<FinancialDataEntry>? epsHistory,
-    Map<String, double>? latestQuarterMetrics,
-    StockSummary? aiSummary,
-    List<DayTradingEntry>? dayTradingHistory,
-    List<ShareholdingEntry>? shareholdingHistory,
-    List<HoldingDistributionEntry>? holdingDistribution,
-    List<MarginTradingEntry>? marginTradingHistory,
-    ChipStrengthResult? chipStrength,
-    bool? isInWatchlist,
-    bool? isLoading,
-    bool? isLoadingMargin,
-    bool? isLoadingFundamentals,
-    bool? isLoadingInsider,
-    bool? isLoadingChip,
-    Object? error = _sentinel,
-    bool? hasInstitutionalError,
-    DateTime? dataDate,
-    bool? hasDataMismatch,
-  }) {
-    return StockDetailState(
-      stock: stock ?? this.stock,
-      latestPrice: latestPrice ?? this.latestPrice,
-      previousPrice: previousPrice ?? this.previousPrice,
-      priceHistory: priceHistory ?? this.priceHistory,
-      analysis: analysis ?? this.analysis,
-      reasons: reasons ?? this.reasons,
-      institutionalHistory: institutionalHistory ?? this.institutionalHistory,
-      marginHistory: marginHistory ?? this.marginHistory,
-      revenueHistory: revenueHistory ?? this.revenueHistory,
-      dividendHistory: dividendHistory ?? this.dividendHistory,
-      insiderHistory: insiderHistory ?? this.insiderHistory,
-      latestPER: latestPER ?? this.latestPER,
-      recentNews: recentNews ?? this.recentNews,
-      epsHistory: epsHistory ?? this.epsHistory,
-      latestQuarterMetrics: latestQuarterMetrics ?? this.latestQuarterMetrics,
-      aiSummary: aiSummary ?? this.aiSummary,
-      dayTradingHistory: dayTradingHistory ?? this.dayTradingHistory,
-      shareholdingHistory: shareholdingHistory ?? this.shareholdingHistory,
-      holdingDistribution: holdingDistribution ?? this.holdingDistribution,
-      marginTradingHistory: marginTradingHistory ?? this.marginTradingHistory,
-      chipStrength: chipStrength ?? this.chipStrength,
-      isInWatchlist: isInWatchlist ?? this.isInWatchlist,
-      isLoading: isLoading ?? this.isLoading,
-      isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
-      isLoadingFundamentals:
-          isLoadingFundamentals ?? this.isLoadingFundamentals,
-      isLoadingInsider: isLoadingInsider ?? this.isLoadingInsider,
-      isLoadingChip: isLoadingChip ?? this.isLoadingChip,
-      error: error == _sentinel ? this.error : error as String?,
-      hasInstitutionalError:
-          hasInstitutionalError ?? this.hasInstitutionalError,
-      dataDate: dataDate ?? this.dataDate,
-      hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
-    );
-  }
 
   /// Price change percentage
   ///
@@ -175,9 +46,188 @@ class StockDetailState {
     return PriceCalculator.calculatePriceChange(priceHistory, latestPrice);
   }
 
+  StockPriceState copyWith({
+    StockMasterEntry? stock,
+    DailyPriceEntry? latestPrice,
+    DailyPriceEntry? previousPrice,
+    List<DailyPriceEntry>? priceHistory,
+    DailyAnalysisEntry? analysis,
+  }) {
+    return StockPriceState(
+      stock: stock ?? this.stock,
+      latestPrice: latestPrice ?? this.latestPrice,
+      previousPrice: previousPrice ?? this.previousPrice,
+      priceHistory: priceHistory ?? this.priceHistory,
+      analysis: analysis ?? this.analysis,
+    );
+  }
+}
+
+/// Fundamentals state: revenue, dividends, PER, EPS, quarter metrics
+class FundamentalsState {
+  const FundamentalsState({
+    this.revenueHistory = const [],
+    this.dividendHistory = const [],
+    this.latestPER,
+    this.latestQuarterMetrics = const {},
+    this.epsHistory = const [],
+  });
+
+  final List<FinMindRevenue> revenueHistory;
+  final List<FinMindDividend> dividendHistory;
+  final FinMindPER? latestPER;
+  final Map<String, double> latestQuarterMetrics;
+  final List<FinancialDataEntry> epsHistory;
+
+  FundamentalsState copyWith({
+    List<FinMindRevenue>? revenueHistory,
+    List<FinMindDividend>? dividendHistory,
+    FinMindPER? latestPER,
+    Map<String, double>? latestQuarterMetrics,
+    List<FinancialDataEntry>? epsHistory,
+  }) {
+    return FundamentalsState(
+      revenueHistory: revenueHistory ?? this.revenueHistory,
+      dividendHistory: dividendHistory ?? this.dividendHistory,
+      latestPER: latestPER ?? this.latestPER,
+      latestQuarterMetrics: latestQuarterMetrics ?? this.latestQuarterMetrics,
+      epsHistory: epsHistory ?? this.epsHistory,
+    );
+  }
+}
+
+/// Chip analysis state: institutional, margin, day trading, shareholding, etc.
+class ChipAnalysisState {
+  const ChipAnalysisState({
+    this.institutionalHistory = const [],
+    this.marginHistory = const [],
+    this.marginTradingHistory = const [],
+    this.dayTradingHistory = const [],
+    this.shareholdingHistory = const [],
+    this.holdingDistribution = const [],
+    this.insiderHistory = const [],
+    this.chipStrength,
+    this.hasInstitutionalError = false,
+  });
+
+  final List<DailyInstitutionalEntry> institutionalHistory;
+  final List<FinMindMarginData> marginHistory;
+  final List<MarginTradingEntry> marginTradingHistory;
+  final List<DayTradingEntry> dayTradingHistory;
+  final List<ShareholdingEntry> shareholdingHistory;
+  final List<HoldingDistributionEntry> holdingDistribution;
+  final List<InsiderHoldingEntry> insiderHistory;
+  final ChipStrengthResult? chipStrength;
+
+  /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
+  final bool hasInstitutionalError;
+
+  ChipAnalysisState copyWith({
+    List<DailyInstitutionalEntry>? institutionalHistory,
+    List<FinMindMarginData>? marginHistory,
+    List<MarginTradingEntry>? marginTradingHistory,
+    List<DayTradingEntry>? dayTradingHistory,
+    List<ShareholdingEntry>? shareholdingHistory,
+    List<HoldingDistributionEntry>? holdingDistribution,
+    List<InsiderHoldingEntry>? insiderHistory,
+    ChipStrengthResult? chipStrength,
+    bool? hasInstitutionalError,
+  }) {
+    return ChipAnalysisState(
+      institutionalHistory: institutionalHistory ?? this.institutionalHistory,
+      marginHistory: marginHistory ?? this.marginHistory,
+      marginTradingHistory: marginTradingHistory ?? this.marginTradingHistory,
+      dayTradingHistory: dayTradingHistory ?? this.dayTradingHistory,
+      shareholdingHistory: shareholdingHistory ?? this.shareholdingHistory,
+      holdingDistribution: holdingDistribution ?? this.holdingDistribution,
+      insiderHistory: insiderHistory ?? this.insiderHistory,
+      chipStrength: chipStrength ?? this.chipStrength,
+      hasInstitutionalError:
+          hasInstitutionalError ?? this.hasInstitutionalError,
+    );
+  }
+}
+
+/// Loading state flags for different data sections
+class LoadingState {
+  const LoadingState({
+    this.isLoading = false,
+    this.isLoadingMargin = false,
+    this.isLoadingFundamentals = false,
+    this.isLoadingInsider = false,
+    this.isLoadingChip = false,
+  });
+
+  final bool isLoading;
+  final bool isLoadingMargin;
+  final bool isLoadingFundamentals;
+  final bool isLoadingInsider;
+  final bool isLoadingChip;
+
+  LoadingState copyWith({
+    bool? isLoading,
+    bool? isLoadingMargin,
+    bool? isLoadingFundamentals,
+    bool? isLoadingInsider,
+    bool? isLoadingChip,
+  }) {
+    return LoadingState(
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
+      isLoadingFundamentals:
+          isLoadingFundamentals ?? this.isLoadingFundamentals,
+      isLoadingInsider: isLoadingInsider ?? this.isLoadingInsider,
+      isLoadingChip: isLoadingChip ?? this.isLoadingChip,
+    );
+  }
+}
+
+// ==================================================
+// Stock Detail State
+// ==================================================
+
+/// State for stock detail screen
+class StockDetailState {
+  static const _sentinel = Object();
+  const StockDetailState({
+    this.price = const StockPriceState(),
+    this.fundamentals = const FundamentalsState(),
+    this.chip = const ChipAnalysisState(),
+    this.loading = const LoadingState(),
+    this.isInWatchlist = false,
+    this.error,
+    this.dataDate,
+    this.hasDataMismatch = false,
+    this.reasons = const [],
+    this.aiSummary,
+    this.recentNews = const [],
+  });
+
+  final StockPriceState price;
+  final FundamentalsState fundamentals;
+  final ChipAnalysisState chip;
+  final LoadingState loading;
+
+  // Remaining direct fields
+  final bool isInWatchlist;
+  final String? error;
+
+  /// The synchronized data date - all displayed data should be from this date
+  final DateTime? dataDate;
+
+  /// True if price and institutional data dates don't match
+  final bool hasDataMismatch;
+
+  final List<DailyReasonEntry> reasons;
+  final StockSummary? aiSummary;
+  final List<NewsItemEntry> recentNews;
+
+  /// Convenience: Price change percentage (delegates to price sub-state)
+  double? get priceChange => price.priceChange;
+
   /// Trend state label
   String get trendLabel {
-    return switch (analysis?.trendState) {
+    return switch (price.analysis?.trendState) {
       'UP' => '上升趨勢',
       'DOWN' => '下跌趨勢',
       _ => '盤整區間',
@@ -186,11 +236,133 @@ class StockDetailState {
 
   /// Reversal state label
   String? get reversalLabel {
-    return switch (analysis?.reversalState) {
+    return switch (price.analysis?.reversalState) {
       'W2S' => '弱轉強',
       'S2W' => '強轉弱',
       _ => null,
     };
+  }
+
+  StockDetailState copyWith({
+    // Price fields
+    StockMasterEntry? stock,
+    DailyPriceEntry? latestPrice,
+    DailyPriceEntry? previousPrice,
+    List<DailyPriceEntry>? priceHistory,
+    DailyAnalysisEntry? analysis,
+    // Fundamentals fields
+    List<FinMindRevenue>? revenueHistory,
+    List<FinMindDividend>? dividendHistory,
+    FinMindPER? latestPER,
+    Map<String, double>? latestQuarterMetrics,
+    List<FinancialDataEntry>? epsHistory,
+    // Chip fields
+    List<DailyInstitutionalEntry>? institutionalHistory,
+    List<FinMindMarginData>? marginHistory,
+    List<MarginTradingEntry>? marginTradingHistory,
+    List<DayTradingEntry>? dayTradingHistory,
+    List<ShareholdingEntry>? shareholdingHistory,
+    List<HoldingDistributionEntry>? holdingDistribution,
+    List<InsiderHoldingEntry>? insiderHistory,
+    ChipStrengthResult? chipStrength,
+    bool? hasInstitutionalError,
+    // Loading fields
+    bool? isLoading,
+    bool? isLoadingMargin,
+    bool? isLoadingFundamentals,
+    bool? isLoadingInsider,
+    bool? isLoadingChip,
+    // Direct fields
+    bool? isInWatchlist,
+    Object? error = _sentinel,
+    DateTime? dataDate,
+    bool? hasDataMismatch,
+    List<DailyReasonEntry>? reasons,
+    StockSummary? aiSummary,
+    List<NewsItemEntry>? recentNews,
+  }) {
+    // Only create new sub-state objects when their fields are being updated
+    final needsPriceUpdate =
+        stock != null ||
+        latestPrice != null ||
+        previousPrice != null ||
+        priceHistory != null ||
+        analysis != null;
+
+    final needsFundamentalsUpdate =
+        revenueHistory != null ||
+        dividendHistory != null ||
+        latestPER != null ||
+        latestQuarterMetrics != null ||
+        epsHistory != null;
+
+    final needsChipUpdate =
+        institutionalHistory != null ||
+        marginHistory != null ||
+        marginTradingHistory != null ||
+        dayTradingHistory != null ||
+        shareholdingHistory != null ||
+        holdingDistribution != null ||
+        insiderHistory != null ||
+        chipStrength != null ||
+        hasInstitutionalError != null;
+
+    final needsLoadingUpdate =
+        isLoading != null ||
+        isLoadingMargin != null ||
+        isLoadingFundamentals != null ||
+        isLoadingInsider != null ||
+        isLoadingChip != null;
+
+    return StockDetailState(
+      price: needsPriceUpdate
+          ? price.copyWith(
+              stock: stock,
+              latestPrice: latestPrice,
+              previousPrice: previousPrice,
+              priceHistory: priceHistory,
+              analysis: analysis,
+            )
+          : price,
+      fundamentals: needsFundamentalsUpdate
+          ? fundamentals.copyWith(
+              revenueHistory: revenueHistory,
+              dividendHistory: dividendHistory,
+              latestPER: latestPER,
+              latestQuarterMetrics: latestQuarterMetrics,
+              epsHistory: epsHistory,
+            )
+          : fundamentals,
+      chip: needsChipUpdate
+          ? chip.copyWith(
+              institutionalHistory: institutionalHistory,
+              marginHistory: marginHistory,
+              marginTradingHistory: marginTradingHistory,
+              dayTradingHistory: dayTradingHistory,
+              shareholdingHistory: shareholdingHistory,
+              holdingDistribution: holdingDistribution,
+              insiderHistory: insiderHistory,
+              chipStrength: chipStrength,
+              hasInstitutionalError: hasInstitutionalError,
+            )
+          : chip,
+      loading: needsLoadingUpdate
+          ? loading.copyWith(
+              isLoading: isLoading,
+              isLoadingMargin: isLoadingMargin,
+              isLoadingFundamentals: isLoadingFundamentals,
+              isLoadingInsider: isLoadingInsider,
+              isLoadingChip: isLoadingChip,
+            )
+          : loading,
+      isInWatchlist: isInWatchlist ?? this.isInWatchlist,
+      error: error == _sentinel ? this.error : error as String?,
+      dataDate: dataDate ?? this.dataDate,
+      hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
+      reasons: reasons ?? this.reasons,
+      aiSummary: aiSummary ?? this.aiSummary,
+      recentNews: recentNews ?? this.recentNews,
+    );
   }
 }
 
@@ -333,8 +505,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
           latestPrice,
         ),
         institutionalHistory: syncedInstHistory,
-        revenueHistory: state.revenueHistory,
-        latestPER: state.latestPER,
+        revenueHistory: state.fundamentals.revenueHistory,
+        latestPER: state.fundamentals.latestPER,
       );
       final summary = const SummaryLocalizer().localize(summaryData);
 
@@ -408,7 +580,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   /// Load margin trading data (融資融券) from FinMind API
   Future<void> loadMarginData() async {
     // Skip if already loading or already loaded
-    if (state.isLoadingMargin || state.marginHistory.isNotEmpty) return;
+    if (state.loading.isLoadingMargin || state.chip.marginHistory.isNotEmpty) {
+      return;
+    }
 
     state = state.copyWith(isLoadingMargin: true);
 
@@ -441,9 +615,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   /// 營收和股利歷史從 FinMind API 取得。
   Future<void> loadFundamentals() async {
     // Skip if already loading or already loaded
-    if (state.isLoadingFundamentals ||
-        state.revenueHistory.isNotEmpty ||
-        state.dividendHistory.isNotEmpty) {
+    if (state.loading.isLoadingFundamentals ||
+        state.fundamentals.revenueHistory.isNotEmpty ||
+        state.fundamentals.dividendHistory.isNotEmpty) {
       return;
     }
 
@@ -647,11 +821,11 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       // 基本面載入後重新生成 AI 摘要（含營收/估值資料）
       final summaryData = const AnalysisSummaryService().generate(
-        analysis: state.analysis,
+        analysis: state.price.analysis,
         reasons: state.reasons,
-        latestPrice: state.latestPrice,
+        latestPrice: state.price.latestPrice,
         priceChange: state.priceChange,
-        institutionalHistory: state.institutionalHistory,
+        institutionalHistory: state.chip.institutionalHistory,
         revenueHistory: revenueData,
         latestPER: latestPER,
       );
@@ -669,7 +843,10 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   /// 從資料庫取得董監持股歷史資料，用於顯示在股票詳情頁的董監持股頁籤。
   Future<void> loadInsiderData() async {
     // Skip if already loading or already loaded
-    if (state.isLoadingInsider || state.insiderHistory.isNotEmpty) return;
+    if (state.loading.isLoadingInsider ||
+        state.chip.insiderHistory.isNotEmpty) {
+      return;
+    }
 
     state = state.copyWith(isLoadingInsider: true);
 
@@ -700,7 +877,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   /// Loads day trading, shareholding, margin trading (from DB),
   /// holding distribution, and insider data, then computes chip strength.
   Future<void> loadChipData() async {
-    if (state.isLoadingChip || state.chipStrength != null) return;
+    if (state.loading.isLoadingChip || state.chip.chipStrength != null) return;
 
     state = state.copyWith(isLoadingChip: true);
 
@@ -714,8 +891,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         _db.getShareholdingHistory(_symbol, startDate: startDate60d),
         _db.getMarginTradingHistory(_symbol, startDate: startDate10d),
         _db.getLatestHoldingDistribution(_symbol),
-        state.insiderHistory.isNotEmpty
-            ? Future.value(state.insiderHistory)
+        state.chip.insiderHistory.isNotEmpty
+            ? Future.value(state.chip.insiderHistory)
             : _db.getRecentInsiderHoldings(_symbol, months: 6),
       ]);
 
@@ -738,7 +915,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       // Compute chip strength
       const service = ChipAnalysisService();
       final strength = service.compute(
-        institutionalHistory: state.institutionalHistory,
+        institutionalHistory: state.chip.institutionalHistory,
         shareholdingHistory: shareholding,
         marginHistory: marginTrading,
         dayTradingHistory: dayTrading,

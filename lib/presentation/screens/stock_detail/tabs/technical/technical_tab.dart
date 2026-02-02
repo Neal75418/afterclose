@@ -55,7 +55,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     final state = ref.watch(stockDetailProvider(widget.symbol));
     final theme = Theme.of(context);
 
-    if (state.priceHistory.isEmpty) {
+    if (state.price.priceHistory.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -106,7 +106,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
           // K-line chart with indicators
           KLineChartWidget(
-            priceHistory: state.priceHistory,
+            priceHistory: state.price.priceHistory,
             mainIndicators: _mainIndicators,
             secondaryIndicators: _secondaryIndicators,
             height: totalChartHeight,
@@ -128,7 +128,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
           // OHLCV data card
           OhlcvCard(
-            latestPrice: state.latestPrice,
+            latestPrice: state.price.latestPrice,
             priceChange: state.priceChange,
           ),
 
@@ -141,7 +141,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             ),
             const SizedBox(height: 12),
             IndicatorCardsSection(
-              priceHistory: state.priceHistory,
+              priceHistory: state.price.priceHistory,
               secondaryIndicators: _secondaryIndicators,
               mainIndicators: _mainIndicators,
               indicatorService: _indicatorService,

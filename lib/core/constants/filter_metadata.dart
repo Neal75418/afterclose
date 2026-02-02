@@ -4,7 +4,7 @@
 /// 協助使用者了解篩選器可能回傳空結果的原因。
 library;
 
-import 'package:afterclose/presentation/providers/scan_provider.dart';
+import 'package:afterclose/domain/models/scan_models.dart';
 
 /// 篩選器所需資料類型
 enum DataRequirement {

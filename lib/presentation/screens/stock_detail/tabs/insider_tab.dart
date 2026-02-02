@@ -63,12 +63,12 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.isLoadingInsider)
+          if (state.loading.isLoadingInsider)
             _buildLoadingState(context)
-          else if (state.insiderHistory.isEmpty)
+          else if (state.chip.insiderHistory.isEmpty)
             _buildEmptyState(context, 'stockDetail.insiderComingSoon'.tr())
           else
-            _buildInsiderTable(context, state.insiderHistory),
+            _buildInsiderTable(context, state.chip.insiderHistory),
         ],
       ),
     );
@@ -88,11 +88,11 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
   }
 
   Widget _buildMetricsRow(BuildContext context, StockDetailState state) {
-    final latest = state.insiderHistory.isNotEmpty
-        ? state.insiderHistory.first
+    final latest = state.chip.insiderHistory.isNotEmpty
+        ? state.chip.insiderHistory.first
         : null;
-    final previous = state.insiderHistory.length >= 2
-        ? state.insiderHistory[1]
+    final previous = state.chip.insiderHistory.length >= 2
+        ? state.chip.insiderHistory[1]
         : null;
 
     // Calculate change

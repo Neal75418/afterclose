@@ -83,9 +83,9 @@ class ExportService {
       'export.csvValue'.tr(),
     ]);
 
-    final stock = state.stock;
-    final price = state.latestPrice;
-    final analysis = state.analysis;
+    final stock = state.price.stock;
+    final price = state.price.latestPrice;
+    final analysis = state.price.analysis;
 
     rows.add(['export.csvBasicInfo'.tr(), 'export.csvSymbol'.tr(), symbol]);
     if (stock != null) {

@@ -16,9 +16,9 @@ class ShareableAnalysisCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final stock = state.stock;
-    final price = state.latestPrice;
-    final analysis = state.analysis;
+    final stock = state.price.stock;
+    final price = state.price.latestPrice;
+    final analysis = state.price.analysis;
     final summary = state.aiSummary;
 
     final priceChange = state.priceChange;

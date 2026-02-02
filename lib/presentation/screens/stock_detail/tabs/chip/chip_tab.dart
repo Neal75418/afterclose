@@ -34,7 +34,7 @@ class _ChipTabState extends ConsumerState<ChipTab> {
   Widget build(BuildContext context) {
     final state = ref.watch(stockDetailProvider(widget.symbol));
 
-    if (state.isLoadingChip && state.chipStrength == null) {
+    if (state.loading.isLoadingChip && state.chip.chipStrength == null) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -45,38 +45,38 @@ class _ChipTabState extends ConsumerState<ChipTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Chip strength indicator
-          if (state.chipStrength != null)
-            ChipStrengthIndicator(strength: state.chipStrength!),
+          if (state.chip.chipStrength != null)
+            ChipStrengthIndicator(strength: state.chip.chipStrength!),
 
-          if (state.chipStrength != null) const SizedBox(height: 20),
+          if (state.chip.chipStrength != null) const SizedBox(height: 20),
 
           // 2. Institutional flow section
-          InstitutionalSection(history: state.institutionalHistory),
+          InstitutionalSection(history: state.chip.institutionalHistory),
 
           const SizedBox(height: 24),
 
           // 3. Foreign shareholding section
-          ShareholdingSection(history: state.shareholdingHistory),
+          ShareholdingSection(history: state.chip.shareholdingHistory),
 
           const SizedBox(height: 24),
 
           // 4. Margin trading section
-          MarginTradingSection(history: state.marginTradingHistory),
+          MarginTradingSection(history: state.chip.marginTradingHistory),
 
           const SizedBox(height: 24),
 
           // 5. Day trading section
-          DayTradingSection(history: state.dayTradingHistory),
+          DayTradingSection(history: state.chip.dayTradingHistory),
 
           const SizedBox(height: 24),
 
           // 6. Holding distribution section
-          DistributionSection(distribution: state.holdingDistribution),
+          DistributionSection(distribution: state.chip.holdingDistribution),
 
           const SizedBox(height: 24),
 
           // 7. Insider holding section
-          InsiderSection(history: state.insiderHistory),
+          InsiderSection(history: state.chip.insiderHistory),
 
           const SizedBox(height: 16),
         ],

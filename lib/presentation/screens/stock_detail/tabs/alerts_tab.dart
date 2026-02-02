@@ -38,7 +38,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         .where((alert) => alert.symbol == widget.symbol)
         .toList();
 
-    final currentPrice = stockState.latestPrice?.close;
+    final currentPrice = stockState.price.latestPrice?.close;
 
     return SingleChildScrollView(
       primary: false,

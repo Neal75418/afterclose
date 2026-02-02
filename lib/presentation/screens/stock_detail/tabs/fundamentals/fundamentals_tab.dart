@@ -54,13 +54,13 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.isLoadingFundamentals)
+          if (state.loading.isLoadingFundamentals)
             buildLoadingState(context)
-          else if (state.revenueHistory.isEmpty)
+          else if (state.fundamentals.revenueHistory.isEmpty)
             buildEmptyState(context, 'stockDetail.revenueComingSoon'.tr())
           else
             RevenueTable(
-              revenues: state.revenueHistory,
+              revenues: state.fundamentals.revenueHistory,
               showROCYear: showROCYear,
             ),
 
@@ -73,17 +73,20 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.isLoadingFundamentals)
+          if (state.loading.isLoadingFundamentals)
             buildLoadingState(context)
-          else if (state.epsHistory.isEmpty)
+          else if (state.fundamentals.epsHistory.isEmpty)
             buildEmptyState(context, 'stockDetail.epsComingSoon'.tr())
           else
-            EpsTable(epsHistory: state.epsHistory, showROCYear: showROCYear),
+            EpsTable(
+              epsHistory: state.fundamentals.epsHistory,
+              showROCYear: showROCYear,
+            ),
 
           // Profitability card
-          if (state.latestQuarterMetrics.isNotEmpty) ...[
+          if (state.fundamentals.latestQuarterMetrics.isNotEmpty) ...[
             const SizedBox(height: 16),
-            ProfitabilityCard(metrics: state.latestQuarterMetrics),
+            ProfitabilityCard(metrics: state.fundamentals.latestQuarterMetrics),
           ],
 
           const SizedBox(height: 24),
@@ -95,13 +98,13 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.isLoadingFundamentals)
+          if (state.loading.isLoadingFundamentals)
             buildLoadingState(context)
-          else if (state.dividendHistory.isEmpty)
+          else if (state.fundamentals.dividendHistory.isEmpty)
             buildEmptyState(context, 'stockDetail.dividendComingSoon'.tr())
           else
             DividendTable(
-              dividends: state.dividendHistory,
+              dividends: state.fundamentals.dividendHistory,
               showROCYear: showROCYear,
             ),
         ],
@@ -110,7 +113,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
   }
 
   Widget _buildMetricsRow(BuildContext context, StockDetailState state) {
-    final per = state.latestPER;
+    final per = state.fundamentals.latestPER;
 
     return Row(
       children: [

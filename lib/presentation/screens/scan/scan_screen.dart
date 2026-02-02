@@ -191,300 +191,292 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(scanProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('scan.title'.tr()),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'customScreening.title'.tr(),
-            onPressed: () => context.push('/scan/custom'),
-          ),
-          PopupMenuButton<ScanSort>(
-            icon: const Icon(Icons.sort),
-            tooltip: 'scan.sort'.tr(),
-            initialValue: state.sort,
-            onSelected: (sort) {
-              ref.read(scanProvider.notifier).setSort(sort);
-            },
-            itemBuilder: (context) {
-              return ScanSort.values.map((sort) {
-                return PopupMenuItem(
-                  value: sort,
-                  child: Row(
-                    children: [
-                      if (state.sort == sort)
-                        const Icon(Icons.check, size: 18)
-                      else
-                        const SizedBox(width: 18),
-                      const SizedBox(width: 8),
-                      Text(sort.labelKey.tr()),
-                    ],
-                  ),
-                );
-              }).toList();
-            },
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(context, state),
       body: ThemedRefreshIndicator(
         onRefresh: () => ref.read(scanProvider.notifier).loadData(),
         child: Column(
           children: [
-            // 篩選標籤 - 顯示快速篩選與「更多」按鈕
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  // 「全部」標籤
-                  FilterChip(
-                    label: Text(ScanFilter.all.labelKey.tr()),
-                    labelStyle: TextStyle(
-                      color: state.filter == ScanFilter.all
-                          ? theme.colorScheme.onSecondaryContainer
-                          : theme.colorScheme.onSurface,
-                    ),
-                    selected: state.filter == ScanFilter.all,
-                    onSelected: (_) {
-                      ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  // 目前選中的篩選條件（若非「全部」）
-                  if (state.filter != ScanFilter.all)
-                    FilterChip(
-                      label: Text(state.filter.labelKey.tr()),
-                      selected: true,
-                      onSelected: (_) {
-                        // 再次點擊清除篩選
-                        ref
-                            .read(scanProvider.notifier)
-                            .setFilter(ScanFilter.all);
-                      },
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                      onDeleted: () {
-                        ref
-                            .read(scanProvider.notifier)
-                            .setFilter(ScanFilter.all);
-                      },
-                    ),
-                  if (state.filter != ScanFilter.all) const SizedBox(width: 8),
-                  // 產業篩選
-                  if (state.industries.isNotEmpty)
-                    _IndustryFilterChip(
-                      industries: state.industries,
-                      selected: state.industryFilter,
-                      onSelected: (industry) {
-                        ref
-                            .read(scanProvider.notifier)
-                            .setIndustryFilter(industry);
-                      },
-                    ),
-                  if (state.industries.isNotEmpty) const SizedBox(width: 8),
-                  // 「更多篩選」按鈕
-                  ActionChip(
-                    avatar: const Icon(Icons.filter_list, size: 18),
-                    label: Text('scan.moreFilters'.tr()),
-                    onPressed: () =>
-                        _showFilterBottomSheet(context, ref, state.filter),
-                  ),
-                ],
-              ),
-            ),
+            _buildFilterChips(context, state),
+            _buildStockCount(context, state),
+            _buildStockList(context, state),
+          ],
+        ),
+      ),
+    );
+  }
 
-            // 股票數量（分頁時顯示已載入/總數）
-            Semantics(
-              liveRegion: true,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
+  /// AppBar：標題 + 自訂篩選 + 排序選單
+  PreferredSizeWidget _buildAppBar(BuildContext context, ScanState state) {
+    return AppBar(
+      title: Text('scan.title'.tr()),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.tune),
+          tooltip: 'customScreening.title'.tr(),
+          onPressed: () => context.push('/scan/custom'),
+        ),
+        PopupMenuButton<ScanSort>(
+          icon: const Icon(Icons.sort),
+          tooltip: 'scan.sort'.tr(),
+          initialValue: state.sort,
+          onSelected: (sort) {
+            ref.read(scanProvider.notifier).setSort(sort);
+          },
+          itemBuilder: (context) {
+            return ScanSort.values.map((sort) {
+              return PopupMenuItem(
+                value: sort,
                 child: Row(
                   children: [
-                    Text(
-                      state.hasMore
-                          ? 'scan.stockCountLoaded'.tr(
-                              namedArgs: {
-                                'loaded': state.stocks.length.toString(),
-                                'total': state.totalCount.toString(),
-                              },
-                            )
-                          : 'scan.stockCount'.tr(
-                              namedArgs: {
-                                'count': state.stocks.length.toString(),
-                              },
-                            ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    if (state.sort == sort)
+                      const Icon(Icons.check, size: 18)
+                    else
+                      const SizedBox(width: 18),
+                    const SizedBox(width: 8),
+                    Text(sort.labelKey.tr()),
                   ],
                 ),
-              ),
+              );
+            }).toList();
+          },
+        ),
+      ],
+    );
+  }
+
+  /// 篩選標籤列：全部 / 目前篩選 / 產業 / 更多篩選
+  Widget _buildFilterChips(BuildContext context, ScanState state) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          // 「全部」標籤
+          FilterChip(
+            label: Text(ScanFilter.all.labelKey.tr()),
+            labelStyle: TextStyle(
+              color: state.filter == ScanFilter.all
+                  ? theme.colorScheme.onSecondaryContainer
+                  : theme.colorScheme.onSurface,
             ),
+            selected: state.filter == ScanFilter.all,
+            onSelected: (_) {
+              ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+            },
+          ),
+          const SizedBox(width: 8),
+          // 目前選中的篩選條件（若非「全部」）
+          if (state.filter != ScanFilter.all)
+            FilterChip(
+              label: Text(state.filter.labelKey.tr()),
+              selected: true,
+              onSelected: (_) {
+                ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+              },
+              deleteIcon: const Icon(Icons.close, size: 16),
+              onDeleted: () {
+                ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+              },
+            ),
+          if (state.filter != ScanFilter.all) const SizedBox(width: 8),
+          // 產業篩選
+          if (state.industries.isNotEmpty)
+            _IndustryFilterChip(
+              industries: state.industries,
+              selected: state.industryFilter,
+              onSelected: (industry) {
+                ref.read(scanProvider.notifier).setIndustryFilter(industry);
+              },
+            ),
+          if (state.industries.isNotEmpty) const SizedBox(width: 8),
+          // 「更多篩選」按鈕
+          ActionChip(
+            avatar: const Icon(Icons.filter_list, size: 18),
+            label: Text('scan.moreFilters'.tr()),
+            onPressed: () => _showFilterBottomSheet(context, ref, state.filter),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // 股票清單
-            Expanded(
-              child: state.isLoading
-                  ? const StockListShimmer(itemCount: 8)
-                  : state.error != null
-                  ? EmptyStates.error(
-                      message: state.error!,
-                      onRetry: () => ref.read(scanProvider.notifier).loadData(),
-                    )
-                  : state.stocks.isEmpty
-                  ? _buildEmptyState(state.filter, ref)
-                  : ListView.builder(
-                      controller: _scrollController,
-                      // 效能優化設定
-                      cacheExtent: 500, // 預渲染更多項目以獲得更流暢的捲動
-                      addAutomaticKeepAlives: false, // 減少記憶體使用
-                      // 載入更多時項目數 +1 用於顯示載入指示器
-                      itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        // 在底部顯示載入指示器
-                        if (index == state.stocks.length) {
-                          return Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Center(
-                              child: state.isLoadingMore
-                                  ? const CircularProgressIndicator()
-                                  : const SizedBox.shrink(),
-                            ),
-                          );
-                        }
-                        final stock = state.stocks[index];
-                        // RepaintBoundary 隔離每張卡片以提升捲動效能
-                        final card = RepaintBoundary(
-                          child: Slidable(
-                            key: ValueKey(stock.symbol),
-                            // 向左滑動 → 檢視詳情
-                            startActionPane: ActionPane(
-                              motion: const BehindMotion(),
-                              extentRatio: 0.25,
-                              children: [
-                                SlidableAction(
-                                  onPressed: (_) {
-                                    HapticFeedback.lightImpact();
-                                    context.push('/stock/${stock.symbol}');
-                                  },
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
-                                  icon: Icons.visibility_outlined,
-                                  label: 'scan.view'.tr(),
-                                  borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(16),
-                                    bottomRight: Radius.circular(16),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // 向右滑動 → 切換自選
-                            endActionPane: ActionPane(
-                              motion: const BehindMotion(),
-                              extentRatio: 0.25,
-                              children: [
-                                SlidableAction(
-                                  onPressed: (_) {
-                                    HapticFeedback.lightImpact();
-                                    ref
-                                        .read(scanProvider.notifier)
-                                        .toggleWatchlist(stock.symbol);
-                                  },
-                                  backgroundColor: stock.isInWatchlist
-                                      ? Colors.red.shade400
-                                      : Colors.amber,
-                                  foregroundColor: Colors.white,
-                                  icon: stock.isInWatchlist
-                                      ? Icons.star_outline
-                                      : Icons.star,
-                                  label: stock.isInWatchlist
-                                      ? 'scan.remove'.tr()
-                                      : 'scan.favorite'.tr(),
-                                  borderRadius: const BorderRadius.only(
-                                    topLeft: Radius.circular(16),
-                                    bottomLeft: Radius.circular(16),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            child: StockCard(
-                              symbol: stock.symbol,
-                              stockName: stock.stockName,
-                              market: stock.market,
-                              latestClose: stock.latestClose,
-                              priceChange: stock.priceChange,
-                              score: stock.score,
-                              reasons: stock.reasons
-                                  .map((r) => r.reasonType)
-                                  .toList(),
-                              trendState: stock.trendState,
-                              isInWatchlist: stock.isInWatchlist,
-                              recentPrices: stock.recentPrices,
-                              showLimitMarkers: ref
-                                  .watch(settingsProvider)
-                                  .limitAlerts,
-                              onTap: () =>
-                                  context.push('/stock/${stock.symbol}'),
-                              onLongPress: () {
-                                showStockPreviewSheet(
-                                  context: context,
-                                  data: StockPreviewData(
-                                    symbol: stock.symbol,
-                                    stockName: stock.stockName,
-                                    latestClose: stock.latestClose,
-                                    priceChange: stock.priceChange,
-                                    score: stock.score,
-                                    trendState: stock.trendState,
-                                    reasons: stock.reasons
-                                        .map((r) => r.reasonType)
-                                        .toList(),
-                                    isInWatchlist: stock.isInWatchlist,
-                                  ),
-                                  onViewDetails: () =>
-                                      context.push('/stock/${stock.symbol}'),
-                                  onToggleWatchlist: () {
-                                    ref
-                                        .read(scanProvider.notifier)
-                                        .toggleWatchlist(stock.symbol);
-                                  },
-                                );
-                              },
-                              onWatchlistTap: () {
-                                HapticFeedback.lightImpact();
-                                ref
-                                    .read(scanProvider.notifier)
-                                    .toggleWatchlist(stock.symbol);
-                              },
-                            ),
-                          ),
-                        );
+  /// 股票數量列（分頁時顯示已載入/總數）
+  Widget _buildStockCount(BuildContext context, ScanState state) {
+    final theme = Theme.of(context);
 
-                        // 前 10 筆項目使用交錯進場動畫
-                        if (index < 10) {
-                          return card
-                              .animate()
-                              .fadeIn(
-                                delay: Duration(milliseconds: 50 * index),
-                                duration: 400.ms,
-                              )
-                              .slideX(
-                                begin: 0.05,
-                                duration: 400.ms,
-                                curve: Curves.easeOutQuart,
-                              );
-                        }
-                        return card;
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            Text(
+              state.hasMore
+                  ? 'scan.stockCountLoaded'.tr(
+                      namedArgs: {
+                        'loaded': state.stocks.length.toString(),
+                        'total': state.totalCount.toString(),
                       },
+                    )
+                  : 'scan.stockCount'.tr(
+                      namedArgs: {'count': state.stocks.length.toString()},
                     ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  /// 股票清單：載入中 / 錯誤 / 空狀態 / 列表
+  Widget _buildStockList(BuildContext context, ScanState state) {
+    if (state.isLoading) {
+      return const Expanded(child: StockListShimmer(itemCount: 8));
+    }
+    if (state.error != null) {
+      return Expanded(
+        child: EmptyStates.error(
+          message: state.error!,
+          onRetry: () => ref.read(scanProvider.notifier).loadData(),
+        ),
+      );
+    }
+    if (state.stocks.isEmpty) {
+      return Expanded(child: _buildEmptyState(state.filter, ref));
+    }
+
+    return Expanded(
+      child: ListView.builder(
+        controller: _scrollController,
+        cacheExtent: 500,
+        addAutomaticKeepAlives: false,
+        itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          // 在底部顯示載入指示器
+          if (index == state.stocks.length) {
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: state.isLoadingMore
+                    ? const CircularProgressIndicator()
+                    : const SizedBox.shrink(),
+              ),
+            );
+          }
+          return _buildStockCard(context, state.stocks[index], index);
+        },
+      ),
+    );
+  }
+
+  /// 單張股票卡片：Slidable 手勢 + 動畫
+  Widget _buildStockCard(BuildContext context, ScanStockItem stock, int index) {
+    final card = RepaintBoundary(
+      child: Slidable(
+        key: ValueKey(stock.symbol),
+        // 向左滑動 → 檢視詳情
+        startActionPane: ActionPane(
+          motion: const BehindMotion(),
+          extentRatio: 0.25,
+          children: [
+            SlidableAction(
+              onPressed: (_) {
+                HapticFeedback.lightImpact();
+                context.push('/stock/${stock.symbol}');
+              },
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              icon: Icons.visibility_outlined,
+              label: 'scan.view'.tr(),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(16),
+                bottomRight: Radius.circular(16),
+              ),
+            ),
+          ],
+        ),
+        // 向右滑動 → 切換自選
+        endActionPane: ActionPane(
+          motion: const BehindMotion(),
+          extentRatio: 0.25,
+          children: [
+            SlidableAction(
+              onPressed: (_) {
+                HapticFeedback.lightImpact();
+                ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+              },
+              backgroundColor: stock.isInWatchlist
+                  ? Colors.red.shade400
+                  : Colors.amber,
+              foregroundColor: Colors.white,
+              icon: stock.isInWatchlist ? Icons.star_outline : Icons.star,
+              label: stock.isInWatchlist
+                  ? 'scan.remove'.tr()
+                  : 'scan.favorite'.tr(),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                bottomLeft: Radius.circular(16),
+              ),
+            ),
+          ],
+        ),
+        child: StockCard(
+          symbol: stock.symbol,
+          stockName: stock.stockName,
+          market: stock.market,
+          latestClose: stock.latestClose,
+          priceChange: stock.priceChange,
+          score: stock.score,
+          reasons: stock.reasons.map((r) => r.reasonType).toList(),
+          trendState: stock.trendState,
+          isInWatchlist: stock.isInWatchlist,
+          recentPrices: stock.recentPrices,
+          showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+          onTap: () => context.push('/stock/${stock.symbol}'),
+          onLongPress: () {
+            showStockPreviewSheet(
+              context: context,
+              data: StockPreviewData(
+                symbol: stock.symbol,
+                stockName: stock.stockName,
+                latestClose: stock.latestClose,
+                priceChange: stock.priceChange,
+                score: stock.score,
+                trendState: stock.trendState,
+                reasons: stock.reasons.map((r) => r.reasonType).toList(),
+                isInWatchlist: stock.isInWatchlist,
+              ),
+              onViewDetails: () => context.push('/stock/${stock.symbol}'),
+              onToggleWatchlist: () {
+                ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+              },
+            );
+          },
+          onWatchlistTap: () {
+            HapticFeedback.lightImpact();
+            ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+          },
+        ),
+      ),
+    );
+
+    // 前 10 筆項目使用交錯進場動畫
+    if (index < 10) {
+      return card
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: 50 * index),
+            duration: 400.ms,
+          )
+          .slideX(begin: 0.05, duration: 400.ms, curve: Curves.easeOutQuart);
+    }
+    return card;
   }
 }
 
