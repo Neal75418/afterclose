@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -284,20 +285,18 @@ class PriceRepository implements IPriceRepository {
       final twseFuture = _twseClient.getAllDailyPrices();
       final tpexFuture = _tpexClient.getAllDailyPrices();
 
-      List<TwseDailyPrice> twsePrices = [];
-      List<TpexDailyPrice> tpexPrices = [];
-
-      try {
-        twsePrices = await twseFuture;
-      } catch (e) {
-        AppLogger.warning('PriceRepo', '上市價格取得失敗，繼續處理上櫃: $e');
-      }
-
-      try {
-        tpexPrices = await tpexFuture;
-      } catch (e) {
-        AppLogger.warning('PriceRepo', '上櫃價格取得失敗，繼續處理上市: $e');
-      }
+      final twsePrices = await safeAwait(
+        twseFuture,
+        <TwseDailyPrice>[],
+        tag: 'PriceRepo',
+        description: '上市價格取得失敗，繼續處理上櫃',
+      );
+      final tpexPrices = await safeAwait(
+        tpexFuture,
+        <TpexDailyPrice>[],
+        tag: 'PriceRepo',
+        description: '上櫃價格取得失敗，繼續處理上市',
+      );
 
       if (twsePrices.isEmpty && tpexPrices.isEmpty) {
         AppLogger.warning('PriceRepo', '價格同步: 無資料');

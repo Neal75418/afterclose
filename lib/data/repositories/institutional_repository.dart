@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -102,20 +103,18 @@ class InstitutionalRepository {
       final twseFuture = _twseClient.getAllInstitutionalData(date: date);
       final tpexFuture = _tpexClient.getAllInstitutionalData(date: date);
 
-      List<TwseInstitutional> twseData = [];
-      List<TpexInstitutional> tpexData = [];
-
-      try {
-        twseData = await twseFuture;
-      } catch (e) {
-        AppLogger.warning('InstRepo', '上市法人資料取得失敗，繼續處理上櫃: $e');
-      }
-
-      try {
-        tpexData = await tpexFuture;
-      } catch (e) {
-        AppLogger.warning('InstRepo', '上櫃法人資料取得失敗，繼續處理上市: $e');
-      }
+      final twseData = await safeAwait(
+        twseFuture,
+        <TwseInstitutional>[],
+        tag: 'InstRepo',
+        description: '上市法人資料取得失敗，繼續處理上櫃',
+      );
+      final tpexData = await safeAwait(
+        tpexFuture,
+        <TpexInstitutional>[],
+        tag: 'InstRepo',
+        description: '上櫃法人資料取得失敗，繼續處理上市',
+      );
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 

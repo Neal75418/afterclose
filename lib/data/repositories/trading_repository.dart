@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -442,20 +443,18 @@ class TradingRepository {
       final twseFuture = _twseClient.getAllMarginTradingData();
       final tpexFuture = _tpexClient.getAllMarginTradingData(date: targetDate);
 
-      List<TwseMarginTrading> twseData = [];
-      List<TpexMarginTrading> tpexData = [];
-
-      try {
-        twseData = await twseFuture;
-      } catch (e) {
-        AppLogger.warning('MarketData', '上市融資融券取得失敗，繼續處理上櫃: $e');
-      }
-
-      try {
-        tpexData = await tpexFuture;
-      } catch (e) {
-        AppLogger.warning('MarketData', '上櫃融資融券取得失敗，繼續處理上市: $e');
-      }
+      final twseData = await safeAwait(
+        twseFuture,
+        <TwseMarginTrading>[],
+        tag: 'MarketData',
+        description: '上市融資融券取得失敗，繼續處理上櫃',
+      );
+      final tpexData = await safeAwait(
+        tpexFuture,
+        <TpexMarginTrading>[],
+        tag: 'MarketData',
+        description: '上櫃融資融券取得失敗，繼續處理上市',
+      );
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 
