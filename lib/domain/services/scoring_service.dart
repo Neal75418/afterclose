@@ -596,14 +596,16 @@ class ScoredStock {
     double bonusA =
         (a.turnover / RuleParams.liquidityTurnoverUnit) *
         RuleParams.liquidityBonusPerUnit;
-    if (bonusA > RuleParams.liquidityBonusMax)
+    if (bonusA > RuleParams.liquidityBonusMax) {
       bonusA = RuleParams.liquidityBonusMax;
+    }
 
     double bonusB =
         (b.turnover / RuleParams.liquidityTurnoverUnit) *
         RuleParams.liquidityBonusPerUnit;
-    if (bonusB > RuleParams.liquidityBonusMax)
+    if (bonusB > RuleParams.liquidityBonusMax) {
       bonusB = RuleParams.liquidityBonusMax;
+    }
 
     // 四捨五入至小數點後 2 位以避免浮點數精度問題
     final totalA = ((scoreA + bonusA) * 100).round() / 100;
