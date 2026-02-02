@@ -4,9 +4,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:drift/drift.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 基本面資料 Repository（營收、本益比、股價淨值比、殖利率）
 class FundamentalRepository {
@@ -531,12 +529,3 @@ class FundamentalRepository {
     return (revenue: results[0], valuation: results[1]);
   }
 }
-
-/// FundamentalRepository Provider
-final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
-  final db = ref.watch(databaseProvider);
-  final finMind = ref.watch(finMindClientProvider);
-  // TwseClient 通常不需要 Provider，因為它不保存狀態/認證
-  // 但若有的話可以注入。目前 Repository 會自行建立或接受 null
-  return FundamentalRepository(db: db, finMind: finMind);
-});
