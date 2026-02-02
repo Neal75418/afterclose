@@ -3,14 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/presentation/screens/settings/widgets/api_token_tile.dart';
+import 'package:afterclose/presentation/screens/settings/widgets/data_management_tile.dart';
+import 'package:afterclose/presentation/widgets/common/radio_selection_dialog.dart';
 
 /// Supported locales with display names
 const _supportedLocales = [
@@ -41,7 +40,7 @@ class SettingsScreen extends ConsumerWidget {
         children: [
           // API Section
           _buildSettingsSection(context, 'settings.api'.tr(), [
-            const _ApiTokenTile(),
+            const ApiTokenTile(),
           ]),
 
           // Theme Section
@@ -106,7 +105,7 @@ class SettingsScreen extends ConsumerWidget {
 
           // Data Management Section
           _buildSettingsSection(context, 'settings.dataManagement'.tr(), [
-            _DataManagementTile(),
+            const DataManagementTile(),
           ]),
 
           // About Section
@@ -211,7 +210,16 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      onTap: () => _showThemeDialog(context, ref, settings.themeMode),
+      onTap: () => RadioSelectionDialog.show<ThemeMode>(
+        context: context,
+        title: 'settings.selectTheme'.tr(),
+        options: ThemeMode.values,
+        currentValue: settings.themeMode,
+        labelBuilder: _getThemeModeLabel,
+        trailingBuilder: (mode) => Icon(_getThemeIcon(mode)),
+        onSelected: (mode) =>
+            ref.read(settingsProvider.notifier).setThemeMode(mode),
+      ),
     );
   }
 
@@ -247,7 +255,20 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      onTap: () => _showLanguageDialog(context, currentLocale),
+      onTap: () => RadioSelectionDialog.show(
+        context: context,
+        title: 'settings.selectLanguage'.tr(),
+        options: _supportedLocales.map((l) => l.locale).toList(),
+        currentValue: _supportedLocales
+            .firstWhere(
+              (l) => l.locale.languageCode == currentLocale.languageCode,
+              orElse: () => _supportedLocales.first,
+            )
+            .locale,
+        labelBuilder: (locale) =>
+            _supportedLocales.firstWhere((l) => l.locale == locale).name,
+        onSelected: (locale) => context.setLocale(locale),
+      ),
     );
   }
 
@@ -338,54 +359,21 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      onTap: () =>
-          _showCacheDurationDialog(context, ref, settings.cacheDurationMinutes),
-    );
-  }
-
-  void _showCacheDurationDialog(
-    BuildContext context,
-    WidgetRef ref,
-    int currentMinutes,
-  ) {
-    HapticFeedback.lightImpact();
-    final options = [15, 30, 60];
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('settings.selectCacheDuration'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: options.map((minutes) {
-            final isSelected = minutes == currentMinutes;
-            final label = switch (minutes) {
-              15 => 'settings.cache15min'.tr(),
-              30 => 'settings.cache30min'.tr(),
-              60 => 'settings.cache60min'.tr(),
-              _ => '$minutes min',
-            };
-            return ListTile(
-              leading: Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: isSelected
-                    ? Theme.of(dialogContext).colorScheme.primary
-                    : null,
-              ),
-              title: Text(label),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ref
-                    .read(settingsProvider.notifier)
-                    .setCacheDurationMinutes(minutes);
-                // Invalidate FinMind client to pick up new TTL
-                ref.invalidate(finMindClientProvider);
-                Navigator.pop(dialogContext);
-              },
-            );
-          }).toList(),
-        ),
+      onTap: () => RadioSelectionDialog.show<int>(
+        context: context,
+        title: 'settings.selectCacheDuration'.tr(),
+        options: const [15, 30, 60],
+        currentValue: settings.cacheDurationMinutes,
+        labelBuilder: (minutes) => switch (minutes) {
+          15 => 'settings.cache15min'.tr(),
+          30 => 'settings.cache30min'.tr(),
+          60 => 'settings.cache60min'.tr(),
+          _ => '$minutes min',
+        },
+        onSelected: (minutes) {
+          ref.read(settingsProvider.notifier).setCacheDurationMinutes(minutes);
+          ref.invalidate(finMindClientProvider);
+        },
       ),
     );
   }
@@ -404,76 +392,6 @@ class SettingsScreen extends ConsumerWidget {
       ThemeMode.dark => 'settings.themeDark'.tr(),
       ThemeMode.system => 'settings.themeSystem'.tr(),
     };
-  }
-
-  void _showThemeDialog(
-    BuildContext context,
-    WidgetRef ref,
-    ThemeMode currentMode,
-  ) {
-    HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('settings.selectTheme'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: ThemeMode.values.map((mode) {
-            final isSelected = mode == currentMode;
-            return ListTile(
-              leading: Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: isSelected
-                    ? Theme.of(dialogContext).colorScheme.primary
-                    : null,
-              ),
-              title: Text(_getThemeModeLabel(mode)),
-              trailing: Icon(_getThemeIcon(mode)),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                ref.read(settingsProvider.notifier).setThemeMode(mode);
-                Navigator.pop(dialogContext);
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context, Locale currentLocale) {
-    HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('settings.selectLanguage'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: _supportedLocales.map((item) {
-            final isSelected =
-                item.locale.languageCode == currentLocale.languageCode;
-            return ListTile(
-              leading: Icon(
-                isSelected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
-                color: isSelected
-                    ? Theme.of(dialogContext).colorScheme.primary
-                    : null,
-              ),
-              title: Text(item.name),
-              onTap: () {
-                HapticFeedback.selectionClick();
-                context.setLocale(item.locale);
-                Navigator.pop(dialogContext);
-              },
-            );
-          }).toList(),
-        ),
-      ),
-    );
   }
 
   void _showAboutDialog(BuildContext context) {
@@ -508,529 +426,6 @@ class SettingsScreen extends ConsumerWidget {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
-    );
-  }
-}
-
-/// API Token configuration tile
-class _ApiTokenTile extends ConsumerStatefulWidget {
-  const _ApiTokenTile();
-
-  @override
-  ConsumerState<_ApiTokenTile> createState() => _ApiTokenTileState();
-}
-
-class _ApiTokenTileState extends ConsumerState<_ApiTokenTile> {
-  bool _hasToken = false;
-  bool _isLoading = true;
-  bool _isTesting = false;
-  String? _testResult;
-  bool? _testSuccess;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTokenStatus();
-  }
-
-  Future<void> _loadTokenStatus() async {
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    final hasToken = await settingsRepo.hasFinMindToken();
-    if (mounted) {
-      setState(() {
-        _hasToken = hasToken;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _testConnection() async {
-    setState(() {
-      _isTesting = true;
-      _testResult = null;
-      _testSuccess = null;
-    });
-
-    // 使用 ApiConnectionService 取代直接建立 FinMindClient
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    final connectionService = ref.read(apiConnectionServiceProvider);
-    final token = await settingsRepo.getFinMindToken();
-
-    final result = await connectionService.testFinMindConnection(token);
-
-    if (mounted) {
-      setState(() {
-        _isTesting = false;
-        _testSuccess = result.success;
-        _testResult = result.success
-            ? 'settings.apiTestSuccess'.tr(
-                namedArgs: {'count': result.stockCount.toString()},
-              )
-            : 'settings.apiTestFailed'.tr(
-                namedArgs: {'error': result.errorMessage ?? 'Unknown error'},
-              );
-      });
-    }
-  }
-
-  void _showTokenDialog() {
-    final controller = TextEditingController();
-    final theme = Theme.of(context);
-
-    HapticFeedback.lightImpact();
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('settings.apiToken'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'settings.apiTokenHint'.tr(),
-                border: const OutlineInputBorder(),
-              ),
-              obscureText: true,
-              autocorrect: false,
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () => _openRegisterUrl(),
-              child: Text(
-                'settings.apiRegister'.tr(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.primaryColor,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (_hasToken)
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-                await _clearToken();
-              },
-              child: Text(
-                'common.delete'.tr(),
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('common.cancel'.tr()),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final token = controller.text.trim();
-              if (token.isNotEmpty) {
-                Navigator.pop(dialogContext);
-                await _saveToken(token);
-              }
-            },
-            child: Text('common.save'.tr()),
-          ),
-        ],
-      ),
-    ).then((_) {
-      // Dispose controller when dialog is closed to prevent memory leak
-      controller.dispose();
-    });
-  }
-
-  Future<void> _saveToken(String token) async {
-    // Validate token format
-    if (!FinMindClient.isValidTokenFormat(token)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('settings.apiTokenInvalid'.tr()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    await settingsRepo.setFinMindToken(token);
-
-    // Invalidate finMindClientProvider 讓所有依賴它的 provider 重新獲取新 token
-    // 這比直接設定 .token 屬性更安全，確保所有相關 provider 使用新配置
-    ref.invalidate(finMindClientProvider);
-
-    if (mounted) {
-      setState(() {
-        _hasToken = true;
-        _testResult = null;
-        _testSuccess = null;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('settings.apiTokenSaved'.tr())));
-    }
-  }
-
-  Future<void> _clearToken() async {
-    final settingsRepo = ref.read(settingsRepositoryProvider);
-    await settingsRepo.clearFinMindToken();
-
-    // Invalidate finMindClientProvider 讓所有依賴它的 provider 重新獲取（無 token）
-    // 這比直接設定 .token = null 更安全，確保所有相關 provider 使用新配置
-    ref.invalidate(finMindClientProvider);
-
-    if (mounted) {
-      setState(() {
-        _hasToken = false;
-        _testResult = null;
-        _testSuccess = null;
-      });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('settings.apiTokenCleared'.tr())));
-    }
-  }
-
-  Future<void> _openRegisterUrl() async {
-    final url = Uri.parse(ApiEndpoints.finmindWebsite);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    if (_isLoading) {
-      return const ListTile(
-        leading: SizedBox(
-          width: 24,
-          height: 24,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
-        title: Text('Loading...'),
-      );
-    }
-
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(
-            _hasToken ? Icons.key_rounded : Icons.key_off_rounded,
-            color: _hasToken
-                ? Colors.green
-                : theme.colorScheme.onSurfaceVariant,
-          ),
-          title: Text('settings.apiToken'.tr()),
-          subtitle: Text(
-            _hasToken
-                ? 'settings.apiTokenSet'.tr()
-                : 'settings.apiTokenNotSet'.tr(),
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: _showTokenDialog,
-        ),
-        // Test connection button
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _isTesting ? null : _testConnection,
-                  icon: _isTesting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.wifi_tethering),
-                  label: Text(
-                    _isTesting
-                        ? 'settings.apiTesting'.tr()
-                        : 'settings.apiTestConnection'.tr(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Test result
-        if (_testResult != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Icon(
-                  _testSuccess == true ? Icons.check_circle : Icons.error,
-                  size: 16,
-                  color: _testSuccess == true ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _testResult!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _testSuccess == true ? Colors.green : Colors.red,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-}
-
-/// Data management tile for force sync and historical data progress
-class _DataManagementTile extends ConsumerStatefulWidget {
-  @override
-  ConsumerState<_DataManagementTile> createState() =>
-      _DataManagementTileState();
-}
-
-class _DataManagementTileState extends ConsumerState<_DataManagementTile> {
-  bool _isSyncing = false;
-  String? _syncResult;
-  bool? _syncSuccess;
-  ({int completed, int total})? _historyProgress;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHistoryProgress();
-  }
-
-  Future<void> _loadHistoryProgress() async {
-    final db = ref.read(databaseProvider);
-    final progress = await db.getHistoricalDataProgress();
-    if (mounted) {
-      setState(() => _historyProgress = progress);
-    }
-  }
-
-  Future<void> _forceSync() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('settings.forceSyncTitle'.tr()),
-        content: Text('settings.forceSyncConfirm'.tr()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('common.cancel'.tr()),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('settings.forceSync'.tr()),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isSyncing = true;
-      _syncResult = null;
-      _syncSuccess = null;
-    });
-
-    try {
-      final result = await ref
-          .read(todayProvider.notifier)
-          .runUpdate(forceFetch: true);
-
-      if (mounted) {
-        // Check for rate limit errors
-        final hasRateLimitError = result.errors.any(
-          (e) =>
-              e.contains('流量') ||
-              e.contains('limit') ||
-              e.contains('quota') ||
-              e.contains('429'),
-        );
-
-        if (hasRateLimitError) {
-          _showRateLimitDialog();
-        }
-
-        setState(() {
-          _isSyncing = false;
-          _syncSuccess = result.success;
-          _syncResult = result.success
-              ? 'settings.forceSyncSuccess'.tr(
-                  namedArgs: {
-                    'prices': result.pricesUpdated.toString(),
-                    'analyzed': result.stocksAnalyzed.toString(),
-                  },
-                )
-              : 'settings.forceSyncFailed'.tr(
-                  namedArgs: {
-                    'error': result.errors.isNotEmpty
-                        ? result.errors.first
-                        : 'Unknown error',
-                  },
-                );
-        });
-        // Refresh historical data progress
-        _loadHistoryProgress();
-      }
-    } catch (e) {
-      if (mounted) {
-        // Check if exception is rate limit related
-        final errorStr = e.toString();
-        final isRateLimit =
-            errorStr.contains('流量') ||
-            errorStr.contains('limit') ||
-            errorStr.contains('quota') ||
-            errorStr.contains('429');
-
-        if (isRateLimit) {
-          _showRateLimitDialog();
-        }
-
-        setState(() {
-          _isSyncing = false;
-          _syncSuccess = false;
-          _syncResult = 'settings.forceSyncFailed'.tr(
-            namedArgs: {'error': errorStr},
-          );
-        });
-      }
-    }
-  }
-
-  void _showRateLimitDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
-          Icons.warning_amber_rounded,
-          color: Colors.orange,
-          size: 48,
-        ),
-        title: Text('settings.rateLimitTitle'.tr()),
-        content: Text('settings.rateLimitMessage'.tr()),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('settings.rateLimitOk'.tr()),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(Icons.sync_rounded, color: theme.colorScheme.primary),
-          title: Text('settings.forceSync'.tr()),
-          subtitle: Text('settings.forceSyncDescription'.tr()),
-          trailing: _isSyncing
-              ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.chevron_right),
-          onTap: _isSyncing ? null : _forceSync,
-        ),
-        // Sync result
-        if (_syncResult != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Icon(
-                  _syncSuccess == true ? Icons.check_circle : Icons.error,
-                  size: 16,
-                  color: _syncSuccess == true ? Colors.green : Colors.red,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _syncResult!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: _syncSuccess == true ? Colors.green : Colors.red,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        // Historical data progress
-        if (_historyProgress != null) _buildHistoryProgress(theme),
-      ],
-    );
-  }
-
-  Widget _buildHistoryProgress(ThemeData theme) {
-    final progress = _historyProgress!;
-    final percent = progress.total > 0
-        ? (progress.completed / progress.total * 100).round()
-        : 0;
-    final isComplete = percent >= 100;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isComplete ? Icons.check_circle : Icons.history,
-                size: 16,
-                color: isComplete
-                    ? Colors.green
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'settings.historyProgress'.tr(
-                    namedArgs: {
-                      'completed': progress.completed.toString(),
-                      'total': progress.total.toString(),
-                      'percent': percent.toString(),
-                    },
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: progress.total > 0
-                  ? progress.completed / progress.total
-                  : 0,
-              minHeight: 6,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isComplete ? Colors.green : theme.colorScheme.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
