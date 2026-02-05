@@ -3388,6 +3388,1097 @@ class DailyRecommendationCompanion
   }
 }
 
+class $RuleAccuracyTable extends RuleAccuracy
+    with TableInfo<$RuleAccuracyTable, RuleAccuracyEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RuleAccuracyTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ruleIdMeta = const VerificationMeta('ruleId');
+  @override
+  late final GeneratedColumn<String> ruleId = GeneratedColumn<String>(
+    'rule_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _periodMeta = const VerificationMeta('period');
+  @override
+  late final GeneratedColumn<String> period = GeneratedColumn<String>(
+    'period',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _triggerCountMeta = const VerificationMeta(
+    'triggerCount',
+  );
+  @override
+  late final GeneratedColumn<int> triggerCount = GeneratedColumn<int>(
+    'trigger_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _successCountMeta = const VerificationMeta(
+    'successCount',
+  );
+  @override
+  late final GeneratedColumn<int> successCount = GeneratedColumn<int>(
+    'success_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _avgReturnMeta = const VerificationMeta(
+    'avgReturn',
+  );
+  @override
+  late final GeneratedColumn<double> avgReturn = GeneratedColumn<double>(
+    'avg_return',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ruleId,
+    period,
+    triggerCount,
+    successCount,
+    avgReturn,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'rule_accuracy';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RuleAccuracyEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('rule_id')) {
+      context.handle(
+        _ruleIdMeta,
+        ruleId.isAcceptableOrUnknown(data['rule_id']!, _ruleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ruleIdMeta);
+    }
+    if (data.containsKey('period')) {
+      context.handle(
+        _periodMeta,
+        period.isAcceptableOrUnknown(data['period']!, _periodMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_periodMeta);
+    }
+    if (data.containsKey('trigger_count')) {
+      context.handle(
+        _triggerCountMeta,
+        triggerCount.isAcceptableOrUnknown(
+          data['trigger_count']!,
+          _triggerCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('success_count')) {
+      context.handle(
+        _successCountMeta,
+        successCount.isAcceptableOrUnknown(
+          data['success_count']!,
+          _successCountMeta,
+        ),
+      );
+    }
+    if (data.containsKey('avg_return')) {
+      context.handle(
+        _avgReturnMeta,
+        avgReturn.isAcceptableOrUnknown(data['avg_return']!, _avgReturnMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ruleId, period};
+  @override
+  RuleAccuracyEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RuleAccuracyEntry(
+      ruleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rule_id'],
+      )!,
+      period: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}period'],
+      )!,
+      triggerCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trigger_count'],
+      )!,
+      successCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}success_count'],
+      )!,
+      avgReturn: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}avg_return'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RuleAccuracyTable createAlias(String alias) {
+    return $RuleAccuracyTable(attachedDatabase, alias);
+  }
+}
+
+class RuleAccuracyEntry extends DataClass
+    implements Insertable<RuleAccuracyEntry> {
+  /// 規則 ID（如 reversal_w2s）
+  final String ruleId;
+
+  /// 統計週期：DAILY、WEEKLY、MONTHLY
+  final String period;
+
+  /// 觸發次數
+  final int triggerCount;
+
+  /// 成功次數（N 日後上漲）
+  final int successCount;
+
+  /// 平均報酬率（%）
+  final double avgReturn;
+
+  /// 最後更新時間
+  final DateTime updatedAt;
+  const RuleAccuracyEntry({
+    required this.ruleId,
+    required this.period,
+    required this.triggerCount,
+    required this.successCount,
+    required this.avgReturn,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['rule_id'] = Variable<String>(ruleId);
+    map['period'] = Variable<String>(period);
+    map['trigger_count'] = Variable<int>(triggerCount);
+    map['success_count'] = Variable<int>(successCount);
+    map['avg_return'] = Variable<double>(avgReturn);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  RuleAccuracyCompanion toCompanion(bool nullToAbsent) {
+    return RuleAccuracyCompanion(
+      ruleId: Value(ruleId),
+      period: Value(period),
+      triggerCount: Value(triggerCount),
+      successCount: Value(successCount),
+      avgReturn: Value(avgReturn),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory RuleAccuracyEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RuleAccuracyEntry(
+      ruleId: serializer.fromJson<String>(json['ruleId']),
+      period: serializer.fromJson<String>(json['period']),
+      triggerCount: serializer.fromJson<int>(json['triggerCount']),
+      successCount: serializer.fromJson<int>(json['successCount']),
+      avgReturn: serializer.fromJson<double>(json['avgReturn']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ruleId': serializer.toJson<String>(ruleId),
+      'period': serializer.toJson<String>(period),
+      'triggerCount': serializer.toJson<int>(triggerCount),
+      'successCount': serializer.toJson<int>(successCount),
+      'avgReturn': serializer.toJson<double>(avgReturn),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  RuleAccuracyEntry copyWith({
+    String? ruleId,
+    String? period,
+    int? triggerCount,
+    int? successCount,
+    double? avgReturn,
+    DateTime? updatedAt,
+  }) => RuleAccuracyEntry(
+    ruleId: ruleId ?? this.ruleId,
+    period: period ?? this.period,
+    triggerCount: triggerCount ?? this.triggerCount,
+    successCount: successCount ?? this.successCount,
+    avgReturn: avgReturn ?? this.avgReturn,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  RuleAccuracyEntry copyWithCompanion(RuleAccuracyCompanion data) {
+    return RuleAccuracyEntry(
+      ruleId: data.ruleId.present ? data.ruleId.value : this.ruleId,
+      period: data.period.present ? data.period.value : this.period,
+      triggerCount: data.triggerCount.present
+          ? data.triggerCount.value
+          : this.triggerCount,
+      successCount: data.successCount.present
+          ? data.successCount.value
+          : this.successCount,
+      avgReturn: data.avgReturn.present ? data.avgReturn.value : this.avgReturn,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RuleAccuracyEntry(')
+          ..write('ruleId: $ruleId, ')
+          ..write('period: $period, ')
+          ..write('triggerCount: $triggerCount, ')
+          ..write('successCount: $successCount, ')
+          ..write('avgReturn: $avgReturn, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    ruleId,
+    period,
+    triggerCount,
+    successCount,
+    avgReturn,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RuleAccuracyEntry &&
+          other.ruleId == this.ruleId &&
+          other.period == this.period &&
+          other.triggerCount == this.triggerCount &&
+          other.successCount == this.successCount &&
+          other.avgReturn == this.avgReturn &&
+          other.updatedAt == this.updatedAt);
+}
+
+class RuleAccuracyCompanion extends UpdateCompanion<RuleAccuracyEntry> {
+  final Value<String> ruleId;
+  final Value<String> period;
+  final Value<int> triggerCount;
+  final Value<int> successCount;
+  final Value<double> avgReturn;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const RuleAccuracyCompanion({
+    this.ruleId = const Value.absent(),
+    this.period = const Value.absent(),
+    this.triggerCount = const Value.absent(),
+    this.successCount = const Value.absent(),
+    this.avgReturn = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  RuleAccuracyCompanion.insert({
+    required String ruleId,
+    required String period,
+    this.triggerCount = const Value.absent(),
+    this.successCount = const Value.absent(),
+    this.avgReturn = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : ruleId = Value(ruleId),
+       period = Value(period);
+  static Insertable<RuleAccuracyEntry> custom({
+    Expression<String>? ruleId,
+    Expression<String>? period,
+    Expression<int>? triggerCount,
+    Expression<int>? successCount,
+    Expression<double>? avgReturn,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ruleId != null) 'rule_id': ruleId,
+      if (period != null) 'period': period,
+      if (triggerCount != null) 'trigger_count': triggerCount,
+      if (successCount != null) 'success_count': successCount,
+      if (avgReturn != null) 'avg_return': avgReturn,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  RuleAccuracyCompanion copyWith({
+    Value<String>? ruleId,
+    Value<String>? period,
+    Value<int>? triggerCount,
+    Value<int>? successCount,
+    Value<double>? avgReturn,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return RuleAccuracyCompanion(
+      ruleId: ruleId ?? this.ruleId,
+      period: period ?? this.period,
+      triggerCount: triggerCount ?? this.triggerCount,
+      successCount: successCount ?? this.successCount,
+      avgReturn: avgReturn ?? this.avgReturn,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ruleId.present) {
+      map['rule_id'] = Variable<String>(ruleId.value);
+    }
+    if (period.present) {
+      map['period'] = Variable<String>(period.value);
+    }
+    if (triggerCount.present) {
+      map['trigger_count'] = Variable<int>(triggerCount.value);
+    }
+    if (successCount.present) {
+      map['success_count'] = Variable<int>(successCount.value);
+    }
+    if (avgReturn.present) {
+      map['avg_return'] = Variable<double>(avgReturn.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RuleAccuracyCompanion(')
+          ..write('ruleId: $ruleId, ')
+          ..write('period: $period, ')
+          ..write('triggerCount: $triggerCount, ')
+          ..write('successCount: $successCount, ')
+          ..write('avgReturn: $avgReturn, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecommendationValidationTable extends RecommendationValidation
+    with
+        TableInfo<
+          $RecommendationValidationTable,
+          RecommendationValidationEntry
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecommendationValidationTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _recommendationDateMeta =
+      const VerificationMeta('recommendationDate');
+  @override
+  late final GeneratedColumn<DateTime> recommendationDate =
+      GeneratedColumn<DateTime>(
+        'recommendation_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _primaryRuleIdMeta = const VerificationMeta(
+    'primaryRuleId',
+  );
+  @override
+  late final GeneratedColumn<String> primaryRuleId = GeneratedColumn<String>(
+    'primary_rule_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entryPriceMeta = const VerificationMeta(
+    'entryPrice',
+  );
+  @override
+  late final GeneratedColumn<double> entryPrice = GeneratedColumn<double>(
+    'entry_price',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _exitPriceMeta = const VerificationMeta(
+    'exitPrice',
+  );
+  @override
+  late final GeneratedColumn<double> exitPrice = GeneratedColumn<double>(
+    'exit_price',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _returnRateMeta = const VerificationMeta(
+    'returnRate',
+  );
+  @override
+  late final GeneratedColumn<double> returnRate = GeneratedColumn<double>(
+    'return_rate',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isSuccessMeta = const VerificationMeta(
+    'isSuccess',
+  );
+  @override
+  late final GeneratedColumn<bool> isSuccess = GeneratedColumn<bool>(
+    'is_success',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_success" IN (0, 1))',
+    ),
+  );
+  static const VerificationMeta _validationDateMeta = const VerificationMeta(
+    'validationDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> validationDate =
+      GeneratedColumn<DateTime>(
+        'validation_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _holdingDaysMeta = const VerificationMeta(
+    'holdingDays',
+  );
+  @override
+  late final GeneratedColumn<int> holdingDays = GeneratedColumn<int>(
+    'holding_days',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(5),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recommendationDate,
+    symbol,
+    primaryRuleId,
+    entryPrice,
+    exitPrice,
+    returnRate,
+    isSuccess,
+    validationDate,
+    holdingDays,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recommendation_validation';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecommendationValidationEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('recommendation_date')) {
+      context.handle(
+        _recommendationDateMeta,
+        recommendationDate.isAcceptableOrUnknown(
+          data['recommendation_date']!,
+          _recommendationDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recommendationDateMeta);
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('primary_rule_id')) {
+      context.handle(
+        _primaryRuleIdMeta,
+        primaryRuleId.isAcceptableOrUnknown(
+          data['primary_rule_id']!,
+          _primaryRuleIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_primaryRuleIdMeta);
+    }
+    if (data.containsKey('entry_price')) {
+      context.handle(
+        _entryPriceMeta,
+        entryPrice.isAcceptableOrUnknown(data['entry_price']!, _entryPriceMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryPriceMeta);
+    }
+    if (data.containsKey('exit_price')) {
+      context.handle(
+        _exitPriceMeta,
+        exitPrice.isAcceptableOrUnknown(data['exit_price']!, _exitPriceMeta),
+      );
+    }
+    if (data.containsKey('return_rate')) {
+      context.handle(
+        _returnRateMeta,
+        returnRate.isAcceptableOrUnknown(data['return_rate']!, _returnRateMeta),
+      );
+    }
+    if (data.containsKey('is_success')) {
+      context.handle(
+        _isSuccessMeta,
+        isSuccess.isAcceptableOrUnknown(data['is_success']!, _isSuccessMeta),
+      );
+    }
+    if (data.containsKey('validation_date')) {
+      context.handle(
+        _validationDateMeta,
+        validationDate.isAcceptableOrUnknown(
+          data['validation_date']!,
+          _validationDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('holding_days')) {
+      context.handle(
+        _holdingDaysMeta,
+        holdingDays.isAcceptableOrUnknown(
+          data['holding_days']!,
+          _holdingDaysMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RecommendationValidationEntry map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecommendationValidationEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      recommendationDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recommendation_date'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      primaryRuleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}primary_rule_id'],
+      )!,
+      entryPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}entry_price'],
+      )!,
+      exitPrice: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}exit_price'],
+      ),
+      returnRate: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}return_rate'],
+      ),
+      isSuccess: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_success'],
+      ),
+      validationDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}validation_date'],
+      ),
+      holdingDays: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}holding_days'],
+      )!,
+    );
+  }
+
+  @override
+  $RecommendationValidationTable createAlias(String alias) {
+    return $RecommendationValidationTable(attachedDatabase, alias);
+  }
+}
+
+class RecommendationValidationEntry extends DataClass
+    implements Insertable<RecommendationValidationEntry> {
+  /// 自增 ID
+  final int id;
+
+  /// 推薦日期
+  final DateTime recommendationDate;
+
+  /// 股票代碼
+  final String symbol;
+
+  /// 主要觸發規則
+  final String primaryRuleId;
+
+  /// 推薦當日收盤價
+  final double entryPrice;
+
+  /// N 日後收盤價
+  final double? exitPrice;
+
+  /// N 日後報酬率（%）
+  final double? returnRate;
+
+  /// 是否成功（報酬 > 0）
+  final bool? isSuccess;
+
+  /// 驗證日期（N 日後的日期）
+  final DateTime? validationDate;
+
+  /// 驗證天數（預設 5 日）
+  final int holdingDays;
+  const RecommendationValidationEntry({
+    required this.id,
+    required this.recommendationDate,
+    required this.symbol,
+    required this.primaryRuleId,
+    required this.entryPrice,
+    this.exitPrice,
+    this.returnRate,
+    this.isSuccess,
+    this.validationDate,
+    required this.holdingDays,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['recommendation_date'] = Variable<DateTime>(recommendationDate);
+    map['symbol'] = Variable<String>(symbol);
+    map['primary_rule_id'] = Variable<String>(primaryRuleId);
+    map['entry_price'] = Variable<double>(entryPrice);
+    if (!nullToAbsent || exitPrice != null) {
+      map['exit_price'] = Variable<double>(exitPrice);
+    }
+    if (!nullToAbsent || returnRate != null) {
+      map['return_rate'] = Variable<double>(returnRate);
+    }
+    if (!nullToAbsent || isSuccess != null) {
+      map['is_success'] = Variable<bool>(isSuccess);
+    }
+    if (!nullToAbsent || validationDate != null) {
+      map['validation_date'] = Variable<DateTime>(validationDate);
+    }
+    map['holding_days'] = Variable<int>(holdingDays);
+    return map;
+  }
+
+  RecommendationValidationCompanion toCompanion(bool nullToAbsent) {
+    return RecommendationValidationCompanion(
+      id: Value(id),
+      recommendationDate: Value(recommendationDate),
+      symbol: Value(symbol),
+      primaryRuleId: Value(primaryRuleId),
+      entryPrice: Value(entryPrice),
+      exitPrice: exitPrice == null && nullToAbsent
+          ? const Value.absent()
+          : Value(exitPrice),
+      returnRate: returnRate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(returnRate),
+      isSuccess: isSuccess == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isSuccess),
+      validationDate: validationDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validationDate),
+      holdingDays: Value(holdingDays),
+    );
+  }
+
+  factory RecommendationValidationEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecommendationValidationEntry(
+      id: serializer.fromJson<int>(json['id']),
+      recommendationDate: serializer.fromJson<DateTime>(
+        json['recommendationDate'],
+      ),
+      symbol: serializer.fromJson<String>(json['symbol']),
+      primaryRuleId: serializer.fromJson<String>(json['primaryRuleId']),
+      entryPrice: serializer.fromJson<double>(json['entryPrice']),
+      exitPrice: serializer.fromJson<double?>(json['exitPrice']),
+      returnRate: serializer.fromJson<double?>(json['returnRate']),
+      isSuccess: serializer.fromJson<bool?>(json['isSuccess']),
+      validationDate: serializer.fromJson<DateTime?>(json['validationDate']),
+      holdingDays: serializer.fromJson<int>(json['holdingDays']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'recommendationDate': serializer.toJson<DateTime>(recommendationDate),
+      'symbol': serializer.toJson<String>(symbol),
+      'primaryRuleId': serializer.toJson<String>(primaryRuleId),
+      'entryPrice': serializer.toJson<double>(entryPrice),
+      'exitPrice': serializer.toJson<double?>(exitPrice),
+      'returnRate': serializer.toJson<double?>(returnRate),
+      'isSuccess': serializer.toJson<bool?>(isSuccess),
+      'validationDate': serializer.toJson<DateTime?>(validationDate),
+      'holdingDays': serializer.toJson<int>(holdingDays),
+    };
+  }
+
+  RecommendationValidationEntry copyWith({
+    int? id,
+    DateTime? recommendationDate,
+    String? symbol,
+    String? primaryRuleId,
+    double? entryPrice,
+    Value<double?> exitPrice = const Value.absent(),
+    Value<double?> returnRate = const Value.absent(),
+    Value<bool?> isSuccess = const Value.absent(),
+    Value<DateTime?> validationDate = const Value.absent(),
+    int? holdingDays,
+  }) => RecommendationValidationEntry(
+    id: id ?? this.id,
+    recommendationDate: recommendationDate ?? this.recommendationDate,
+    symbol: symbol ?? this.symbol,
+    primaryRuleId: primaryRuleId ?? this.primaryRuleId,
+    entryPrice: entryPrice ?? this.entryPrice,
+    exitPrice: exitPrice.present ? exitPrice.value : this.exitPrice,
+    returnRate: returnRate.present ? returnRate.value : this.returnRate,
+    isSuccess: isSuccess.present ? isSuccess.value : this.isSuccess,
+    validationDate: validationDate.present
+        ? validationDate.value
+        : this.validationDate,
+    holdingDays: holdingDays ?? this.holdingDays,
+  );
+  RecommendationValidationEntry copyWithCompanion(
+    RecommendationValidationCompanion data,
+  ) {
+    return RecommendationValidationEntry(
+      id: data.id.present ? data.id.value : this.id,
+      recommendationDate: data.recommendationDate.present
+          ? data.recommendationDate.value
+          : this.recommendationDate,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      primaryRuleId: data.primaryRuleId.present
+          ? data.primaryRuleId.value
+          : this.primaryRuleId,
+      entryPrice: data.entryPrice.present
+          ? data.entryPrice.value
+          : this.entryPrice,
+      exitPrice: data.exitPrice.present ? data.exitPrice.value : this.exitPrice,
+      returnRate: data.returnRate.present
+          ? data.returnRate.value
+          : this.returnRate,
+      isSuccess: data.isSuccess.present ? data.isSuccess.value : this.isSuccess,
+      validationDate: data.validationDate.present
+          ? data.validationDate.value
+          : this.validationDate,
+      holdingDays: data.holdingDays.present
+          ? data.holdingDays.value
+          : this.holdingDays,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationValidationEntry(')
+          ..write('id: $id, ')
+          ..write('recommendationDate: $recommendationDate, ')
+          ..write('symbol: $symbol, ')
+          ..write('primaryRuleId: $primaryRuleId, ')
+          ..write('entryPrice: $entryPrice, ')
+          ..write('exitPrice: $exitPrice, ')
+          ..write('returnRate: $returnRate, ')
+          ..write('isSuccess: $isSuccess, ')
+          ..write('validationDate: $validationDate, ')
+          ..write('holdingDays: $holdingDays')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    recommendationDate,
+    symbol,
+    primaryRuleId,
+    entryPrice,
+    exitPrice,
+    returnRate,
+    isSuccess,
+    validationDate,
+    holdingDays,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecommendationValidationEntry &&
+          other.id == this.id &&
+          other.recommendationDate == this.recommendationDate &&
+          other.symbol == this.symbol &&
+          other.primaryRuleId == this.primaryRuleId &&
+          other.entryPrice == this.entryPrice &&
+          other.exitPrice == this.exitPrice &&
+          other.returnRate == this.returnRate &&
+          other.isSuccess == this.isSuccess &&
+          other.validationDate == this.validationDate &&
+          other.holdingDays == this.holdingDays);
+}
+
+class RecommendationValidationCompanion
+    extends UpdateCompanion<RecommendationValidationEntry> {
+  final Value<int> id;
+  final Value<DateTime> recommendationDate;
+  final Value<String> symbol;
+  final Value<String> primaryRuleId;
+  final Value<double> entryPrice;
+  final Value<double?> exitPrice;
+  final Value<double?> returnRate;
+  final Value<bool?> isSuccess;
+  final Value<DateTime?> validationDate;
+  final Value<int> holdingDays;
+  const RecommendationValidationCompanion({
+    this.id = const Value.absent(),
+    this.recommendationDate = const Value.absent(),
+    this.symbol = const Value.absent(),
+    this.primaryRuleId = const Value.absent(),
+    this.entryPrice = const Value.absent(),
+    this.exitPrice = const Value.absent(),
+    this.returnRate = const Value.absent(),
+    this.isSuccess = const Value.absent(),
+    this.validationDate = const Value.absent(),
+    this.holdingDays = const Value.absent(),
+  });
+  RecommendationValidationCompanion.insert({
+    this.id = const Value.absent(),
+    required DateTime recommendationDate,
+    required String symbol,
+    required String primaryRuleId,
+    required double entryPrice,
+    this.exitPrice = const Value.absent(),
+    this.returnRate = const Value.absent(),
+    this.isSuccess = const Value.absent(),
+    this.validationDate = const Value.absent(),
+    this.holdingDays = const Value.absent(),
+  }) : recommendationDate = Value(recommendationDate),
+       symbol = Value(symbol),
+       primaryRuleId = Value(primaryRuleId),
+       entryPrice = Value(entryPrice);
+  static Insertable<RecommendationValidationEntry> custom({
+    Expression<int>? id,
+    Expression<DateTime>? recommendationDate,
+    Expression<String>? symbol,
+    Expression<String>? primaryRuleId,
+    Expression<double>? entryPrice,
+    Expression<double>? exitPrice,
+    Expression<double>? returnRate,
+    Expression<bool>? isSuccess,
+    Expression<DateTime>? validationDate,
+    Expression<int>? holdingDays,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recommendationDate != null) 'recommendation_date': recommendationDate,
+      if (symbol != null) 'symbol': symbol,
+      if (primaryRuleId != null) 'primary_rule_id': primaryRuleId,
+      if (entryPrice != null) 'entry_price': entryPrice,
+      if (exitPrice != null) 'exit_price': exitPrice,
+      if (returnRate != null) 'return_rate': returnRate,
+      if (isSuccess != null) 'is_success': isSuccess,
+      if (validationDate != null) 'validation_date': validationDate,
+      if (holdingDays != null) 'holding_days': holdingDays,
+    });
+  }
+
+  RecommendationValidationCompanion copyWith({
+    Value<int>? id,
+    Value<DateTime>? recommendationDate,
+    Value<String>? symbol,
+    Value<String>? primaryRuleId,
+    Value<double>? entryPrice,
+    Value<double?>? exitPrice,
+    Value<double?>? returnRate,
+    Value<bool?>? isSuccess,
+    Value<DateTime?>? validationDate,
+    Value<int>? holdingDays,
+  }) {
+    return RecommendationValidationCompanion(
+      id: id ?? this.id,
+      recommendationDate: recommendationDate ?? this.recommendationDate,
+      symbol: symbol ?? this.symbol,
+      primaryRuleId: primaryRuleId ?? this.primaryRuleId,
+      entryPrice: entryPrice ?? this.entryPrice,
+      exitPrice: exitPrice ?? this.exitPrice,
+      returnRate: returnRate ?? this.returnRate,
+      isSuccess: isSuccess ?? this.isSuccess,
+      validationDate: validationDate ?? this.validationDate,
+      holdingDays: holdingDays ?? this.holdingDays,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (recommendationDate.present) {
+      map['recommendation_date'] = Variable<DateTime>(recommendationDate.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (primaryRuleId.present) {
+      map['primary_rule_id'] = Variable<String>(primaryRuleId.value);
+    }
+    if (entryPrice.present) {
+      map['entry_price'] = Variable<double>(entryPrice.value);
+    }
+    if (exitPrice.present) {
+      map['exit_price'] = Variable<double>(exitPrice.value);
+    }
+    if (returnRate.present) {
+      map['return_rate'] = Variable<double>(returnRate.value);
+    }
+    if (isSuccess.present) {
+      map['is_success'] = Variable<bool>(isSuccess.value);
+    }
+    if (validationDate.present) {
+      map['validation_date'] = Variable<DateTime>(validationDate.value);
+    }
+    if (holdingDays.present) {
+      map['holding_days'] = Variable<int>(holdingDays.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecommendationValidationCompanion(')
+          ..write('id: $id, ')
+          ..write('recommendationDate: $recommendationDate, ')
+          ..write('symbol: $symbol, ')
+          ..write('primaryRuleId: $primaryRuleId, ')
+          ..write('entryPrice: $entryPrice, ')
+          ..write('exitPrice: $exitPrice, ')
+          ..write('returnRate: $returnRate, ')
+          ..write('isSuccess: $isSuccess, ')
+          ..write('validationDate: $validationDate, ')
+          ..write('holdingDays: $holdingDays')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $WatchlistTable extends Watchlist
     with TableInfo<$WatchlistTable, WatchlistEntry> {
   @override
@@ -5818,6 +6909,770 @@ class PriceAlertCompanion extends UpdateCompanion<PriceAlertEntry> {
           ..write('triggeredAt: $triggeredAt, ')
           ..write('note: $note, ')
           ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UserInteractionTable extends UserInteraction
+    with TableInfo<$UserInteractionTable, UserInteractionEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserInteractionTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _interactionTypeMeta = const VerificationMeta(
+    'interactionType',
+  );
+  @override
+  late final GeneratedColumn<String> interactionType = GeneratedColumn<String>(
+    'interaction_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _timestampMeta = const VerificationMeta(
+    'timestamp',
+  );
+  @override
+  late final GeneratedColumn<DateTime> timestamp = GeneratedColumn<DateTime>(
+    'timestamp',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _durationSecondsMeta = const VerificationMeta(
+    'durationSeconds',
+  );
+  @override
+  late final GeneratedColumn<int> durationSeconds = GeneratedColumn<int>(
+    'duration_seconds',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourcePageMeta = const VerificationMeta(
+    'sourcePage',
+  );
+  @override
+  late final GeneratedColumn<String> sourcePage = GeneratedColumn<String>(
+    'source_page',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    interactionType,
+    symbol,
+    timestamp,
+    durationSeconds,
+    sourcePage,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_interaction';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserInteractionEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('interaction_type')) {
+      context.handle(
+        _interactionTypeMeta,
+        interactionType.isAcceptableOrUnknown(
+          data['interaction_type']!,
+          _interactionTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_interactionTypeMeta);
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('timestamp')) {
+      context.handle(
+        _timestampMeta,
+        timestamp.isAcceptableOrUnknown(data['timestamp']!, _timestampMeta),
+      );
+    }
+    if (data.containsKey('duration_seconds')) {
+      context.handle(
+        _durationSecondsMeta,
+        durationSeconds.isAcceptableOrUnknown(
+          data['duration_seconds']!,
+          _durationSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('source_page')) {
+      context.handle(
+        _sourcePageMeta,
+        sourcePage.isAcceptableOrUnknown(data['source_page']!, _sourcePageMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  UserInteractionEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserInteractionEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      interactionType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}interaction_type'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      timestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}timestamp'],
+      )!,
+      durationSeconds: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_seconds'],
+      ),
+      sourcePage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_page'],
+      ),
+    );
+  }
+
+  @override
+  $UserInteractionTable createAlias(String alias) {
+    return $UserInteractionTable(attachedDatabase, alias);
+  }
+}
+
+class UserInteractionEntry extends DataClass
+    implements Insertable<UserInteractionEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 互動類型：VIEW（查看）、ADD_WATCHLIST（加入自選）、
+  /// REMOVE_WATCHLIST（移除自選）、ADD_POSITION（加入持倉）
+  final String interactionType;
+
+  /// 股票代碼
+  final String symbol;
+
+  /// 互動時間
+  final DateTime timestamp;
+
+  /// 停留時間（秒），僅 VIEW 類型使用
+  final int? durationSeconds;
+
+  /// 來源頁面（如 today、scan、watchlist）
+  final String? sourcePage;
+  const UserInteractionEntry({
+    required this.id,
+    required this.interactionType,
+    required this.symbol,
+    required this.timestamp,
+    this.durationSeconds,
+    this.sourcePage,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['interaction_type'] = Variable<String>(interactionType);
+    map['symbol'] = Variable<String>(symbol);
+    map['timestamp'] = Variable<DateTime>(timestamp);
+    if (!nullToAbsent || durationSeconds != null) {
+      map['duration_seconds'] = Variable<int>(durationSeconds);
+    }
+    if (!nullToAbsent || sourcePage != null) {
+      map['source_page'] = Variable<String>(sourcePage);
+    }
+    return map;
+  }
+
+  UserInteractionCompanion toCompanion(bool nullToAbsent) {
+    return UserInteractionCompanion(
+      id: Value(id),
+      interactionType: Value(interactionType),
+      symbol: Value(symbol),
+      timestamp: Value(timestamp),
+      durationSeconds: durationSeconds == null && nullToAbsent
+          ? const Value.absent()
+          : Value(durationSeconds),
+      sourcePage: sourcePage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourcePage),
+    );
+  }
+
+  factory UserInteractionEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserInteractionEntry(
+      id: serializer.fromJson<int>(json['id']),
+      interactionType: serializer.fromJson<String>(json['interactionType']),
+      symbol: serializer.fromJson<String>(json['symbol']),
+      timestamp: serializer.fromJson<DateTime>(json['timestamp']),
+      durationSeconds: serializer.fromJson<int?>(json['durationSeconds']),
+      sourcePage: serializer.fromJson<String?>(json['sourcePage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'interactionType': serializer.toJson<String>(interactionType),
+      'symbol': serializer.toJson<String>(symbol),
+      'timestamp': serializer.toJson<DateTime>(timestamp),
+      'durationSeconds': serializer.toJson<int?>(durationSeconds),
+      'sourcePage': serializer.toJson<String?>(sourcePage),
+    };
+  }
+
+  UserInteractionEntry copyWith({
+    int? id,
+    String? interactionType,
+    String? symbol,
+    DateTime? timestamp,
+    Value<int?> durationSeconds = const Value.absent(),
+    Value<String?> sourcePage = const Value.absent(),
+  }) => UserInteractionEntry(
+    id: id ?? this.id,
+    interactionType: interactionType ?? this.interactionType,
+    symbol: symbol ?? this.symbol,
+    timestamp: timestamp ?? this.timestamp,
+    durationSeconds: durationSeconds.present
+        ? durationSeconds.value
+        : this.durationSeconds,
+    sourcePage: sourcePage.present ? sourcePage.value : this.sourcePage,
+  );
+  UserInteractionEntry copyWithCompanion(UserInteractionCompanion data) {
+    return UserInteractionEntry(
+      id: data.id.present ? data.id.value : this.id,
+      interactionType: data.interactionType.present
+          ? data.interactionType.value
+          : this.interactionType,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      timestamp: data.timestamp.present ? data.timestamp.value : this.timestamp,
+      durationSeconds: data.durationSeconds.present
+          ? data.durationSeconds.value
+          : this.durationSeconds,
+      sourcePage: data.sourcePage.present
+          ? data.sourcePage.value
+          : this.sourcePage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserInteractionEntry(')
+          ..write('id: $id, ')
+          ..write('interactionType: $interactionType, ')
+          ..write('symbol: $symbol, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('sourcePage: $sourcePage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    interactionType,
+    symbol,
+    timestamp,
+    durationSeconds,
+    sourcePage,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserInteractionEntry &&
+          other.id == this.id &&
+          other.interactionType == this.interactionType &&
+          other.symbol == this.symbol &&
+          other.timestamp == this.timestamp &&
+          other.durationSeconds == this.durationSeconds &&
+          other.sourcePage == this.sourcePage);
+}
+
+class UserInteractionCompanion extends UpdateCompanion<UserInteractionEntry> {
+  final Value<int> id;
+  final Value<String> interactionType;
+  final Value<String> symbol;
+  final Value<DateTime> timestamp;
+  final Value<int?> durationSeconds;
+  final Value<String?> sourcePage;
+  const UserInteractionCompanion({
+    this.id = const Value.absent(),
+    this.interactionType = const Value.absent(),
+    this.symbol = const Value.absent(),
+    this.timestamp = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.sourcePage = const Value.absent(),
+  });
+  UserInteractionCompanion.insert({
+    this.id = const Value.absent(),
+    required String interactionType,
+    required String symbol,
+    this.timestamp = const Value.absent(),
+    this.durationSeconds = const Value.absent(),
+    this.sourcePage = const Value.absent(),
+  }) : interactionType = Value(interactionType),
+       symbol = Value(symbol);
+  static Insertable<UserInteractionEntry> custom({
+    Expression<int>? id,
+    Expression<String>? interactionType,
+    Expression<String>? symbol,
+    Expression<DateTime>? timestamp,
+    Expression<int>? durationSeconds,
+    Expression<String>? sourcePage,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (interactionType != null) 'interaction_type': interactionType,
+      if (symbol != null) 'symbol': symbol,
+      if (timestamp != null) 'timestamp': timestamp,
+      if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      if (sourcePage != null) 'source_page': sourcePage,
+    });
+  }
+
+  UserInteractionCompanion copyWith({
+    Value<int>? id,
+    Value<String>? interactionType,
+    Value<String>? symbol,
+    Value<DateTime>? timestamp,
+    Value<int?>? durationSeconds,
+    Value<String?>? sourcePage,
+  }) {
+    return UserInteractionCompanion(
+      id: id ?? this.id,
+      interactionType: interactionType ?? this.interactionType,
+      symbol: symbol ?? this.symbol,
+      timestamp: timestamp ?? this.timestamp,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      sourcePage: sourcePage ?? this.sourcePage,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (interactionType.present) {
+      map['interaction_type'] = Variable<String>(interactionType.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (timestamp.present) {
+      map['timestamp'] = Variable<DateTime>(timestamp.value);
+    }
+    if (durationSeconds.present) {
+      map['duration_seconds'] = Variable<int>(durationSeconds.value);
+    }
+    if (sourcePage.present) {
+      map['source_page'] = Variable<String>(sourcePage.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserInteractionCompanion(')
+          ..write('id: $id, ')
+          ..write('interactionType: $interactionType, ')
+          ..write('symbol: $symbol, ')
+          ..write('timestamp: $timestamp, ')
+          ..write('durationSeconds: $durationSeconds, ')
+          ..write('sourcePage: $sourcePage')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $UserPreferenceTable extends UserPreference
+    with TableInfo<$UserPreferenceTable, UserPreferenceEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserPreferenceTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _preferenceTypeMeta = const VerificationMeta(
+    'preferenceType',
+  );
+  @override
+  late final GeneratedColumn<String> preferenceType = GeneratedColumn<String>(
+    'preference_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _preferenceValueMeta = const VerificationMeta(
+    'preferenceValue',
+  );
+  @override
+  late final GeneratedColumn<String> preferenceValue = GeneratedColumn<String>(
+    'preference_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _weightMeta = const VerificationMeta('weight');
+  @override
+  late final GeneratedColumn<double> weight = GeneratedColumn<double>(
+    'weight',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    preferenceType,
+    preferenceValue,
+    weight,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_preference';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserPreferenceEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('preference_type')) {
+      context.handle(
+        _preferenceTypeMeta,
+        preferenceType.isAcceptableOrUnknown(
+          data['preference_type']!,
+          _preferenceTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_preferenceTypeMeta);
+    }
+    if (data.containsKey('preference_value')) {
+      context.handle(
+        _preferenceValueMeta,
+        preferenceValue.isAcceptableOrUnknown(
+          data['preference_value']!,
+          _preferenceValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_preferenceValueMeta);
+    }
+    if (data.containsKey('weight')) {
+      context.handle(
+        _weightMeta,
+        weight.isAcceptableOrUnknown(data['weight']!, _weightMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {preferenceType, preferenceValue};
+  @override
+  UserPreferenceEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserPreferenceEntry(
+      preferenceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preference_type'],
+      )!,
+      preferenceValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preference_value'],
+      )!,
+      weight: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}weight'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $UserPreferenceTable createAlias(String alias) {
+    return $UserPreferenceTable(attachedDatabase, alias);
+  }
+}
+
+class UserPreferenceEntry extends DataClass
+    implements Insertable<UserPreferenceEntry> {
+  /// 偏好類型：INDUSTRY（產業）、MARKET_CAP（市值）、STYLE（風格）
+  final String preferenceType;
+
+  /// 偏好值（如 '半導體'、'large_cap'、'growth'）
+  final String preferenceValue;
+
+  /// 權重（0.0 ~ 1.0），基於互動頻率計算
+  final double weight;
+
+  /// 最後更新時間
+  final DateTime updatedAt;
+  const UserPreferenceEntry({
+    required this.preferenceType,
+    required this.preferenceValue,
+    required this.weight,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['preference_type'] = Variable<String>(preferenceType);
+    map['preference_value'] = Variable<String>(preferenceValue);
+    map['weight'] = Variable<double>(weight);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  UserPreferenceCompanion toCompanion(bool nullToAbsent) {
+    return UserPreferenceCompanion(
+      preferenceType: Value(preferenceType),
+      preferenceValue: Value(preferenceValue),
+      weight: Value(weight),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory UserPreferenceEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserPreferenceEntry(
+      preferenceType: serializer.fromJson<String>(json['preferenceType']),
+      preferenceValue: serializer.fromJson<String>(json['preferenceValue']),
+      weight: serializer.fromJson<double>(json['weight']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'preferenceType': serializer.toJson<String>(preferenceType),
+      'preferenceValue': serializer.toJson<String>(preferenceValue),
+      'weight': serializer.toJson<double>(weight),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  UserPreferenceEntry copyWith({
+    String? preferenceType,
+    String? preferenceValue,
+    double? weight,
+    DateTime? updatedAt,
+  }) => UserPreferenceEntry(
+    preferenceType: preferenceType ?? this.preferenceType,
+    preferenceValue: preferenceValue ?? this.preferenceValue,
+    weight: weight ?? this.weight,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  UserPreferenceEntry copyWithCompanion(UserPreferenceCompanion data) {
+    return UserPreferenceEntry(
+      preferenceType: data.preferenceType.present
+          ? data.preferenceType.value
+          : this.preferenceType,
+      preferenceValue: data.preferenceValue.present
+          ? data.preferenceValue.value
+          : this.preferenceValue,
+      weight: data.weight.present ? data.weight.value : this.weight,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserPreferenceEntry(')
+          ..write('preferenceType: $preferenceType, ')
+          ..write('preferenceValue: $preferenceValue, ')
+          ..write('weight: $weight, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(preferenceType, preferenceValue, weight, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserPreferenceEntry &&
+          other.preferenceType == this.preferenceType &&
+          other.preferenceValue == this.preferenceValue &&
+          other.weight == this.weight &&
+          other.updatedAt == this.updatedAt);
+}
+
+class UserPreferenceCompanion extends UpdateCompanion<UserPreferenceEntry> {
+  final Value<String> preferenceType;
+  final Value<String> preferenceValue;
+  final Value<double> weight;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const UserPreferenceCompanion({
+    this.preferenceType = const Value.absent(),
+    this.preferenceValue = const Value.absent(),
+    this.weight = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserPreferenceCompanion.insert({
+    required String preferenceType,
+    required String preferenceValue,
+    this.weight = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : preferenceType = Value(preferenceType),
+       preferenceValue = Value(preferenceValue);
+  static Insertable<UserPreferenceEntry> custom({
+    Expression<String>? preferenceType,
+    Expression<String>? preferenceValue,
+    Expression<double>? weight,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (preferenceType != null) 'preference_type': preferenceType,
+      if (preferenceValue != null) 'preference_value': preferenceValue,
+      if (weight != null) 'weight': weight,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserPreferenceCompanion copyWith({
+    Value<String>? preferenceType,
+    Value<String>? preferenceValue,
+    Value<double>? weight,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return UserPreferenceCompanion(
+      preferenceType: preferenceType ?? this.preferenceType,
+      preferenceValue: preferenceValue ?? this.preferenceValue,
+      weight: weight ?? this.weight,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (preferenceType.present) {
+      map['preference_type'] = Variable<String>(preferenceType.value);
+    }
+    if (preferenceValue.present) {
+      map['preference_value'] = Variable<String>(preferenceValue.value);
+    }
+    if (weight.present) {
+      map['weight'] = Variable<double>(weight.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserPreferenceCompanion(')
+          ..write('preferenceType: $preferenceType, ')
+          ..write('preferenceValue: $preferenceValue, ')
+          ..write('weight: $weight, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -14236,12 +16091,19 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $DailyReasonTable dailyReason = $DailyReasonTable(this);
   late final $DailyRecommendationTable dailyRecommendation =
       $DailyRecommendationTable(this);
+  late final $RuleAccuracyTable ruleAccuracy = $RuleAccuracyTable(this);
+  late final $RecommendationValidationTable recommendationValidation =
+      $RecommendationValidationTable(this);
   late final $WatchlistTable watchlist = $WatchlistTable(this);
   late final $UserNoteTable userNote = $UserNoteTable(this);
   late final $StrategyCardTable strategyCard = $StrategyCardTable(this);
   late final $UpdateRunTable updateRun = $UpdateRunTable(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $PriceAlertTable priceAlert = $PriceAlertTable(this);
+  late final $UserInteractionTable userInteraction = $UserInteractionTable(
+    this,
+  );
+  late final $UserPreferenceTable userPreference = $UserPreferenceTable(this);
   late final $ShareholdingTable shareholding = $ShareholdingTable(this);
   late final $DayTradingTable dayTrading = $DayTradingTable(this);
   late final $FinancialDataTable financialData = $FinancialDataTable(this);
@@ -14328,6 +16190,30 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxDailyRecommendationDateSymbol = Index(
     'idx_daily_recommendation_date_symbol',
     'CREATE INDEX idx_daily_recommendation_date_symbol ON daily_recommendation (date, symbol)',
+  );
+  late final Index idxRuleAccuracyRule = Index(
+    'idx_rule_accuracy_rule',
+    'CREATE INDEX idx_rule_accuracy_rule ON rule_accuracy (rule_id)',
+  );
+  late final Index idxRecValidationDate = Index(
+    'idx_rec_validation_date',
+    'CREATE INDEX idx_rec_validation_date ON recommendation_validation (recommendation_date)',
+  );
+  late final Index idxRecValidationSymbol = Index(
+    'idx_rec_validation_symbol',
+    'CREATE INDEX idx_rec_validation_symbol ON recommendation_validation (symbol)',
+  );
+  late final Index idxUserInteractionSymbol = Index(
+    'idx_user_interaction_symbol',
+    'CREATE INDEX idx_user_interaction_symbol ON user_interaction (symbol)',
+  );
+  late final Index idxUserInteractionType = Index(
+    'idx_user_interaction_type',
+    'CREATE INDEX idx_user_interaction_type ON user_interaction (interaction_type)',
+  );
+  late final Index idxUserInteractionTime = Index(
+    'idx_user_interaction_time',
+    'CREATE INDEX idx_user_interaction_time ON user_interaction (timestamp)',
   );
   late final Index idxShareholdingSymbol = Index(
     'idx_shareholding_symbol',
@@ -14470,12 +16356,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     dailyAnalysis,
     dailyReason,
     dailyRecommendation,
+    ruleAccuracy,
+    recommendationValidation,
     watchlist,
     userNote,
     strategyCard,
     updateRun,
     appSettings,
     priceAlert,
+    userInteraction,
+    userPreference,
     shareholding,
     dayTrading,
     financialData,
@@ -14509,6 +16399,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDailyRecommendationDate,
     idxDailyRecommendationSymbol,
     idxDailyRecommendationDateSymbol,
+    idxRuleAccuracyRule,
+    idxRecValidationDate,
+    idxRecValidationSymbol,
+    idxUserInteractionSymbol,
+    idxUserInteractionType,
+    idxUserInteractionTime,
     idxShareholdingSymbol,
     idxShareholdingDate,
     idxDayTradingSymbol,
@@ -19784,6 +21680,553 @@ typedef $$DailyRecommendationTableProcessedTableManager =
       DailyRecommendationEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$RuleAccuracyTableCreateCompanionBuilder =
+    RuleAccuracyCompanion Function({
+      required String ruleId,
+      required String period,
+      Value<int> triggerCount,
+      Value<int> successCount,
+      Value<double> avgReturn,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$RuleAccuracyTableUpdateCompanionBuilder =
+    RuleAccuracyCompanion Function({
+      Value<String> ruleId,
+      Value<String> period,
+      Value<int> triggerCount,
+      Value<int> successCount,
+      Value<double> avgReturn,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$RuleAccuracyTableFilterComposer
+    extends Composer<_$AppDatabase, $RuleAccuracyTable> {
+  $$RuleAccuracyTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get period => $composableBuilder(
+    column: $table.period,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get triggerCount => $composableBuilder(
+    column: $table.triggerCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get successCount => $composableBuilder(
+    column: $table.successCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get avgReturn => $composableBuilder(
+    column: $table.avgReturn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RuleAccuracyTableOrderingComposer
+    extends Composer<_$AppDatabase, $RuleAccuracyTable> {
+  $$RuleAccuracyTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ruleId => $composableBuilder(
+    column: $table.ruleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get period => $composableBuilder(
+    column: $table.period,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get triggerCount => $composableBuilder(
+    column: $table.triggerCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get successCount => $composableBuilder(
+    column: $table.successCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get avgReturn => $composableBuilder(
+    column: $table.avgReturn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RuleAccuracyTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RuleAccuracyTable> {
+  $$RuleAccuracyTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ruleId =>
+      $composableBuilder(column: $table.ruleId, builder: (column) => column);
+
+  GeneratedColumn<String> get period =>
+      $composableBuilder(column: $table.period, builder: (column) => column);
+
+  GeneratedColumn<int> get triggerCount => $composableBuilder(
+    column: $table.triggerCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get successCount => $composableBuilder(
+    column: $table.successCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get avgReturn =>
+      $composableBuilder(column: $table.avgReturn, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$RuleAccuracyTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RuleAccuracyTable,
+          RuleAccuracyEntry,
+          $$RuleAccuracyTableFilterComposer,
+          $$RuleAccuracyTableOrderingComposer,
+          $$RuleAccuracyTableAnnotationComposer,
+          $$RuleAccuracyTableCreateCompanionBuilder,
+          $$RuleAccuracyTableUpdateCompanionBuilder,
+          (
+            RuleAccuracyEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $RuleAccuracyTable,
+              RuleAccuracyEntry
+            >,
+          ),
+          RuleAccuracyEntry,
+          PrefetchHooks Function()
+        > {
+  $$RuleAccuracyTableTableManager(_$AppDatabase db, $RuleAccuracyTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RuleAccuracyTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RuleAccuracyTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RuleAccuracyTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> ruleId = const Value.absent(),
+                Value<String> period = const Value.absent(),
+                Value<int> triggerCount = const Value.absent(),
+                Value<int> successCount = const Value.absent(),
+                Value<double> avgReturn = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RuleAccuracyCompanion(
+                ruleId: ruleId,
+                period: period,
+                triggerCount: triggerCount,
+                successCount: successCount,
+                avgReturn: avgReturn,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ruleId,
+                required String period,
+                Value<int> triggerCount = const Value.absent(),
+                Value<int> successCount = const Value.absent(),
+                Value<double> avgReturn = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => RuleAccuracyCompanion.insert(
+                ruleId: ruleId,
+                period: period,
+                triggerCount: triggerCount,
+                successCount: successCount,
+                avgReturn: avgReturn,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RuleAccuracyTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RuleAccuracyTable,
+      RuleAccuracyEntry,
+      $$RuleAccuracyTableFilterComposer,
+      $$RuleAccuracyTableOrderingComposer,
+      $$RuleAccuracyTableAnnotationComposer,
+      $$RuleAccuracyTableCreateCompanionBuilder,
+      $$RuleAccuracyTableUpdateCompanionBuilder,
+      (
+        RuleAccuracyEntry,
+        BaseReferences<_$AppDatabase, $RuleAccuracyTable, RuleAccuracyEntry>,
+      ),
+      RuleAccuracyEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$RecommendationValidationTableCreateCompanionBuilder =
+    RecommendationValidationCompanion Function({
+      Value<int> id,
+      required DateTime recommendationDate,
+      required String symbol,
+      required String primaryRuleId,
+      required double entryPrice,
+      Value<double?> exitPrice,
+      Value<double?> returnRate,
+      Value<bool?> isSuccess,
+      Value<DateTime?> validationDate,
+      Value<int> holdingDays,
+    });
+typedef $$RecommendationValidationTableUpdateCompanionBuilder =
+    RecommendationValidationCompanion Function({
+      Value<int> id,
+      Value<DateTime> recommendationDate,
+      Value<String> symbol,
+      Value<String> primaryRuleId,
+      Value<double> entryPrice,
+      Value<double?> exitPrice,
+      Value<double?> returnRate,
+      Value<bool?> isSuccess,
+      Value<DateTime?> validationDate,
+      Value<int> holdingDays,
+    });
+
+class $$RecommendationValidationTableFilterComposer
+    extends Composer<_$AppDatabase, $RecommendationValidationTable> {
+  $$RecommendationValidationTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recommendationDate => $composableBuilder(
+    column: $table.recommendationDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get primaryRuleId => $composableBuilder(
+    column: $table.primaryRuleId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get entryPrice => $composableBuilder(
+    column: $table.entryPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get exitPrice => $composableBuilder(
+    column: $table.exitPrice,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get returnRate => $composableBuilder(
+    column: $table.returnRate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSuccess => $composableBuilder(
+    column: $table.isSuccess,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get validationDate => $composableBuilder(
+    column: $table.validationDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get holdingDays => $composableBuilder(
+    column: $table.holdingDays,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$RecommendationValidationTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecommendationValidationTable> {
+  $$RecommendationValidationTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recommendationDate => $composableBuilder(
+    column: $table.recommendationDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get primaryRuleId => $composableBuilder(
+    column: $table.primaryRuleId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get entryPrice => $composableBuilder(
+    column: $table.entryPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get exitPrice => $composableBuilder(
+    column: $table.exitPrice,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get returnRate => $composableBuilder(
+    column: $table.returnRate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSuccess => $composableBuilder(
+    column: $table.isSuccess,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get validationDate => $composableBuilder(
+    column: $table.validationDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get holdingDays => $composableBuilder(
+    column: $table.holdingDays,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$RecommendationValidationTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecommendationValidationTable> {
+  $$RecommendationValidationTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get recommendationDate => $composableBuilder(
+    column: $table.recommendationDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get symbol =>
+      $composableBuilder(column: $table.symbol, builder: (column) => column);
+
+  GeneratedColumn<String> get primaryRuleId => $composableBuilder(
+    column: $table.primaryRuleId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get entryPrice => $composableBuilder(
+    column: $table.entryPrice,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get exitPrice =>
+      $composableBuilder(column: $table.exitPrice, builder: (column) => column);
+
+  GeneratedColumn<double> get returnRate => $composableBuilder(
+    column: $table.returnRate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isSuccess =>
+      $composableBuilder(column: $table.isSuccess, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get validationDate => $composableBuilder(
+    column: $table.validationDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get holdingDays => $composableBuilder(
+    column: $table.holdingDays,
+    builder: (column) => column,
+  );
+}
+
+class $$RecommendationValidationTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecommendationValidationTable,
+          RecommendationValidationEntry,
+          $$RecommendationValidationTableFilterComposer,
+          $$RecommendationValidationTableOrderingComposer,
+          $$RecommendationValidationTableAnnotationComposer,
+          $$RecommendationValidationTableCreateCompanionBuilder,
+          $$RecommendationValidationTableUpdateCompanionBuilder,
+          (
+            RecommendationValidationEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $RecommendationValidationTable,
+              RecommendationValidationEntry
+            >,
+          ),
+          RecommendationValidationEntry,
+          PrefetchHooks Function()
+        > {
+  $$RecommendationValidationTableTableManager(
+    _$AppDatabase db,
+    $RecommendationValidationTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecommendationValidationTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$RecommendationValidationTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$RecommendationValidationTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<DateTime> recommendationDate = const Value.absent(),
+                Value<String> symbol = const Value.absent(),
+                Value<String> primaryRuleId = const Value.absent(),
+                Value<double> entryPrice = const Value.absent(),
+                Value<double?> exitPrice = const Value.absent(),
+                Value<double?> returnRate = const Value.absent(),
+                Value<bool?> isSuccess = const Value.absent(),
+                Value<DateTime?> validationDate = const Value.absent(),
+                Value<int> holdingDays = const Value.absent(),
+              }) => RecommendationValidationCompanion(
+                id: id,
+                recommendationDate: recommendationDate,
+                symbol: symbol,
+                primaryRuleId: primaryRuleId,
+                entryPrice: entryPrice,
+                exitPrice: exitPrice,
+                returnRate: returnRate,
+                isSuccess: isSuccess,
+                validationDate: validationDate,
+                holdingDays: holdingDays,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required DateTime recommendationDate,
+                required String symbol,
+                required String primaryRuleId,
+                required double entryPrice,
+                Value<double?> exitPrice = const Value.absent(),
+                Value<double?> returnRate = const Value.absent(),
+                Value<bool?> isSuccess = const Value.absent(),
+                Value<DateTime?> validationDate = const Value.absent(),
+                Value<int> holdingDays = const Value.absent(),
+              }) => RecommendationValidationCompanion.insert(
+                id: id,
+                recommendationDate: recommendationDate,
+                symbol: symbol,
+                primaryRuleId: primaryRuleId,
+                entryPrice: entryPrice,
+                exitPrice: exitPrice,
+                returnRate: returnRate,
+                isSuccess: isSuccess,
+                validationDate: validationDate,
+                holdingDays: holdingDays,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$RecommendationValidationTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RecommendationValidationTable,
+      RecommendationValidationEntry,
+      $$RecommendationValidationTableFilterComposer,
+      $$RecommendationValidationTableOrderingComposer,
+      $$RecommendationValidationTableAnnotationComposer,
+      $$RecommendationValidationTableCreateCompanionBuilder,
+      $$RecommendationValidationTableUpdateCompanionBuilder,
+      (
+        RecommendationValidationEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $RecommendationValidationTable,
+          RecommendationValidationEntry
+        >,
+      ),
+      RecommendationValidationEntry,
+      PrefetchHooks Function()
+    >;
 typedef $$WatchlistTableCreateCompanionBuilder =
     WatchlistCompanion Function({
       required String symbol,
@@ -21537,6 +23980,430 @@ typedef $$PriceAlertTableProcessedTableManager =
       (PriceAlertEntry, $$PriceAlertTableReferences),
       PriceAlertEntry,
       PrefetchHooks Function({bool symbol})
+    >;
+typedef $$UserInteractionTableCreateCompanionBuilder =
+    UserInteractionCompanion Function({
+      Value<int> id,
+      required String interactionType,
+      required String symbol,
+      Value<DateTime> timestamp,
+      Value<int?> durationSeconds,
+      Value<String?> sourcePage,
+    });
+typedef $$UserInteractionTableUpdateCompanionBuilder =
+    UserInteractionCompanion Function({
+      Value<int> id,
+      Value<String> interactionType,
+      Value<String> symbol,
+      Value<DateTime> timestamp,
+      Value<int?> durationSeconds,
+      Value<String?> sourcePage,
+    });
+
+class $$UserInteractionTableFilterComposer
+    extends Composer<_$AppDatabase, $UserInteractionTable> {
+  $$UserInteractionTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get interactionType => $composableBuilder(
+    column: $table.interactionType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourcePage => $composableBuilder(
+    column: $table.sourcePage,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UserInteractionTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserInteractionTable> {
+  $$UserInteractionTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get interactionType => $composableBuilder(
+    column: $table.interactionType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get timestamp => $composableBuilder(
+    column: $table.timestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourcePage => $composableBuilder(
+    column: $table.sourcePage,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UserInteractionTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserInteractionTable> {
+  $$UserInteractionTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get interactionType => $composableBuilder(
+    column: $table.interactionType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get symbol =>
+      $composableBuilder(column: $table.symbol, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get timestamp =>
+      $composableBuilder(column: $table.timestamp, builder: (column) => column);
+
+  GeneratedColumn<int> get durationSeconds => $composableBuilder(
+    column: $table.durationSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sourcePage => $composableBuilder(
+    column: $table.sourcePage,
+    builder: (column) => column,
+  );
+}
+
+class $$UserInteractionTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserInteractionTable,
+          UserInteractionEntry,
+          $$UserInteractionTableFilterComposer,
+          $$UserInteractionTableOrderingComposer,
+          $$UserInteractionTableAnnotationComposer,
+          $$UserInteractionTableCreateCompanionBuilder,
+          $$UserInteractionTableUpdateCompanionBuilder,
+          (
+            UserInteractionEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $UserInteractionTable,
+              UserInteractionEntry
+            >,
+          ),
+          UserInteractionEntry,
+          PrefetchHooks Function()
+        > {
+  $$UserInteractionTableTableManager(
+    _$AppDatabase db,
+    $UserInteractionTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserInteractionTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserInteractionTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserInteractionTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> interactionType = const Value.absent(),
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> timestamp = const Value.absent(),
+                Value<int?> durationSeconds = const Value.absent(),
+                Value<String?> sourcePage = const Value.absent(),
+              }) => UserInteractionCompanion(
+                id: id,
+                interactionType: interactionType,
+                symbol: symbol,
+                timestamp: timestamp,
+                durationSeconds: durationSeconds,
+                sourcePage: sourcePage,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String interactionType,
+                required String symbol,
+                Value<DateTime> timestamp = const Value.absent(),
+                Value<int?> durationSeconds = const Value.absent(),
+                Value<String?> sourcePage = const Value.absent(),
+              }) => UserInteractionCompanion.insert(
+                id: id,
+                interactionType: interactionType,
+                symbol: symbol,
+                timestamp: timestamp,
+                durationSeconds: durationSeconds,
+                sourcePage: sourcePage,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserInteractionTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserInteractionTable,
+      UserInteractionEntry,
+      $$UserInteractionTableFilterComposer,
+      $$UserInteractionTableOrderingComposer,
+      $$UserInteractionTableAnnotationComposer,
+      $$UserInteractionTableCreateCompanionBuilder,
+      $$UserInteractionTableUpdateCompanionBuilder,
+      (
+        UserInteractionEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $UserInteractionTable,
+          UserInteractionEntry
+        >,
+      ),
+      UserInteractionEntry,
+      PrefetchHooks Function()
+    >;
+typedef $$UserPreferenceTableCreateCompanionBuilder =
+    UserPreferenceCompanion Function({
+      required String preferenceType,
+      required String preferenceValue,
+      Value<double> weight,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+typedef $$UserPreferenceTableUpdateCompanionBuilder =
+    UserPreferenceCompanion Function({
+      Value<String> preferenceType,
+      Value<String> preferenceValue,
+      Value<double> weight,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$UserPreferenceTableFilterComposer
+    extends Composer<_$AppDatabase, $UserPreferenceTable> {
+  $$UserPreferenceTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get preferenceType => $composableBuilder(
+    column: $table.preferenceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get preferenceValue => $composableBuilder(
+    column: $table.preferenceValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get weight => $composableBuilder(
+    column: $table.weight,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$UserPreferenceTableOrderingComposer
+    extends Composer<_$AppDatabase, $UserPreferenceTable> {
+  $$UserPreferenceTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get preferenceType => $composableBuilder(
+    column: $table.preferenceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get preferenceValue => $composableBuilder(
+    column: $table.preferenceValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get weight => $composableBuilder(
+    column: $table.weight,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$UserPreferenceTableAnnotationComposer
+    extends Composer<_$AppDatabase, $UserPreferenceTable> {
+  $$UserPreferenceTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get preferenceType => $composableBuilder(
+    column: $table.preferenceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get preferenceValue => $composableBuilder(
+    column: $table.preferenceValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get weight =>
+      $composableBuilder(column: $table.weight, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$UserPreferenceTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $UserPreferenceTable,
+          UserPreferenceEntry,
+          $$UserPreferenceTableFilterComposer,
+          $$UserPreferenceTableOrderingComposer,
+          $$UserPreferenceTableAnnotationComposer,
+          $$UserPreferenceTableCreateCompanionBuilder,
+          $$UserPreferenceTableUpdateCompanionBuilder,
+          (
+            UserPreferenceEntry,
+            BaseReferences<
+              _$AppDatabase,
+              $UserPreferenceTable,
+              UserPreferenceEntry
+            >,
+          ),
+          UserPreferenceEntry,
+          PrefetchHooks Function()
+        > {
+  $$UserPreferenceTableTableManager(
+    _$AppDatabase db,
+    $UserPreferenceTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$UserPreferenceTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$UserPreferenceTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$UserPreferenceTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> preferenceType = const Value.absent(),
+                Value<String> preferenceValue = const Value.absent(),
+                Value<double> weight = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UserPreferenceCompanion(
+                preferenceType: preferenceType,
+                preferenceValue: preferenceValue,
+                weight: weight,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String preferenceType,
+                required String preferenceValue,
+                Value<double> weight = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => UserPreferenceCompanion.insert(
+                preferenceType: preferenceType,
+                preferenceValue: preferenceValue,
+                weight: weight,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$UserPreferenceTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $UserPreferenceTable,
+      UserPreferenceEntry,
+      $$UserPreferenceTableFilterComposer,
+      $$UserPreferenceTableOrderingComposer,
+      $$UserPreferenceTableAnnotationComposer,
+      $$UserPreferenceTableCreateCompanionBuilder,
+      $$UserPreferenceTableUpdateCompanionBuilder,
+      (
+        UserPreferenceEntry,
+        BaseReferences<
+          _$AppDatabase,
+          $UserPreferenceTable,
+          UserPreferenceEntry
+        >,
+      ),
+      UserPreferenceEntry,
+      PrefetchHooks Function()
     >;
 typedef $$ShareholdingTableCreateCompanionBuilder =
     ShareholdingCompanion Function({
@@ -27515,6 +30382,13 @@ class $AppDatabaseManager {
       $$DailyReasonTableTableManager(_db, _db.dailyReason);
   $$DailyRecommendationTableTableManager get dailyRecommendation =>
       $$DailyRecommendationTableTableManager(_db, _db.dailyRecommendation);
+  $$RuleAccuracyTableTableManager get ruleAccuracy =>
+      $$RuleAccuracyTableTableManager(_db, _db.ruleAccuracy);
+  $$RecommendationValidationTableTableManager get recommendationValidation =>
+      $$RecommendationValidationTableTableManager(
+        _db,
+        _db.recommendationValidation,
+      );
   $$WatchlistTableTableManager get watchlist =>
       $$WatchlistTableTableManager(_db, _db.watchlist);
   $$UserNoteTableTableManager get userNote =>
@@ -27527,6 +30401,10 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$PriceAlertTableTableManager get priceAlert =>
       $$PriceAlertTableTableManager(_db, _db.priceAlert);
+  $$UserInteractionTableTableManager get userInteraction =>
+      $$UserInteractionTableTableManager(_db, _db.userInteraction);
+  $$UserPreferenceTableTableManager get userPreference =>
+      $$UserPreferenceTableTableManager(_db, _db.userPreference);
   $$ShareholdingTableTableManager get shareholding =>
       $$ShareholdingTableTableManager(_db, _db.shareholding);
   $$DayTradingTableTableManager get dayTrading =>

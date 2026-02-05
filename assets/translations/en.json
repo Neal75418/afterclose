@@ -236,6 +236,10 @@
     "yield": "Yield",
     "yieldLabel": "Dividend Yield",
     "noKlineData": "No K-line data",
+    "up": "up",
+    "down": "down",
+    "chartSummary": "{days}-day K-line chart, high {high}, low {low}, close {close}, {trend} {change}%",
+    "chartHint": "Pinch to zoom and adjust time range",
     "noVolumeData": "No volume data",
     "unitBillion": "B",
     "unitTenThousand": "0K",
@@ -913,7 +917,8 @@
     "confidenceHigh": "High",
     "confidenceMedium": "Medium",
     "confidenceLow": "Low",
-    "signalStrength": "Signal Strength"
+    "signalStrength": "Signal Strength",
+    "ruleAccuracy": "Rule Accuracy"
   },
   "comparison": {
     "title": "Stock Comparison",

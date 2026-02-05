@@ -9,6 +9,8 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -388,6 +390,13 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   }
 
   Widget _buildFlatList(List<WatchlistItemData> items) {
+    final columns = context.responsiveGridColumns;
+    final useGrid = columns > 1;
+
+    if (useGrid) {
+      return _buildFlatGrid(items, columns);
+    }
+
     return ListView.builder(
       cacheExtent: 500,
       addAutomaticKeepAlives: false,
@@ -395,6 +404,27 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       itemBuilder: (context, index) {
         final item = items[index];
         return _buildStockItem(item, index);
+      },
+    );
+  }
+
+  Widget _buildFlatGrid(List<WatchlistItemData> items, int columns) {
+    final padding = context.responsiveHorizontalPadding;
+    final spacing = context.responsiveCardSpacing;
+
+    return GridView.builder(
+      cacheExtent: 500,
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
+        mainAxisExtent: DesignTokens.stockCardHeight,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _buildStockItemForGrid(item, index);
       },
     );
   }
@@ -517,6 +547,48 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             duration: 400.ms,
           )
           .slideX(begin: 0.05, duration: 400.ms, curve: Curves.easeOutQuart);
+    }
+    return card;
+  }
+
+  /// Grid 佈局用的股票卡片（無 Slidable，改用長按選單）
+  Widget _buildStockItemForGrid(WatchlistItemData item, int index) {
+    final card = RepaintBoundary(
+      child: StockCard(
+        symbol: item.symbol,
+        stockName: item.stockName,
+        market: item.market,
+        latestClose: item.latestClose,
+        priceChange: item.priceChange,
+        score: item.score,
+        reasons: item.reasons,
+        trendState: item.trendState,
+        isInWatchlist: true,
+        recentPrices: item.recentPrices,
+        warningType: item.warningType,
+        showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+        onTap: () => context.push('/stock/${item.symbol}'),
+        onLongPress: () => _showStockPreview(item),
+        onWatchlistTap: () {
+          HapticFeedback.lightImpact();
+          _removeFromWatchlist(item.symbol);
+        },
+      ),
+    );
+
+    // Grid 動畫：前 20 筆項目使用交錯進場
+    if (index < 20) {
+      return card
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: 30 * index),
+            duration: 300.ms,
+          )
+          .scale(
+            begin: const Offset(0.95, 0.95),
+            duration: 300.ms,
+            curve: Curves.easeOutQuart,
+          );
     }
     return card;
   }

@@ -53,6 +53,9 @@ part 'dao/valuation_dao.dart';
     DailyAnalysis,
     DailyReason,
     DailyRecommendation,
+    // 規則準確度追蹤
+    RuleAccuracy,
+    RecommendationValidation,
     // 使用者資料
     Watchlist,
     UserNote,
@@ -60,6 +63,9 @@ part 'dao/valuation_dao.dart';
     UpdateRun,
     AppSettings,
     PriceAlert,
+    // 用戶行為追蹤（Sprint 11 - 個人化推薦）
+    UserInteraction,
+    UserPreference,
     // 擴充市場資料（Phase 1）
     Shareholding,
     DayTrading,
@@ -116,7 +122,7 @@ class AppDatabase extends _$AppDatabase
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -340,6 +346,82 @@ class AppDatabase extends _$AppDatabase
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_insider_holding_symbol_date ON insider_holding(symbol, date)',
         );
+      }
+
+      // v10 -> v11: 新增規則準確度表（Sprint 10）+ 用戶行為追蹤表（Sprint 11）
+      if (from < 11) {
+        // Sprint 10: 建立 rule_accuracy 表
+        // 注意：updated_at 使用 TEXT 格式 (ISO8601) 以匹配 Drift 的 dateTime() 預設行為
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS rule_accuracy (
+            rule_id TEXT NOT NULL,
+            period TEXT NOT NULL,
+            trigger_count INTEGER NOT NULL DEFAULT 0,
+            success_count INTEGER NOT NULL DEFAULT 0,
+            avg_return REAL NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            PRIMARY KEY (rule_id, period)
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_rule_accuracy_rule ON rule_accuracy(rule_id)',
+        );
+
+        // Sprint 10: 建立 recommendation_validation 表
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS recommendation_validation (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            recommendation_date INTEGER NOT NULL,
+            symbol TEXT NOT NULL,
+            primary_rule_id TEXT NOT NULL,
+            entry_price REAL NOT NULL,
+            exit_price REAL,
+            return_rate REAL,
+            is_success INTEGER,
+            validation_date INTEGER,
+            holding_days INTEGER NOT NULL DEFAULT 5
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_rec_validation_date ON recommendation_validation(recommendation_date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_rec_validation_symbol ON recommendation_validation(symbol)',
+        );
+
+        // Sprint 11: 建立 user_interaction 表
+        // 注意：timestamp 使用 TEXT 格式 (ISO8601) 以匹配 Drift 的 dateTime() 預設行為
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS user_interaction (
+            id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            interaction_type TEXT NOT NULL,
+            symbol TEXT NOT NULL,
+            timestamp TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            duration_seconds INTEGER,
+            source_page TEXT
+          )
+        ''');
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_user_interaction_symbol ON user_interaction(symbol)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_user_interaction_type ON user_interaction(interaction_type)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_user_interaction_time ON user_interaction(timestamp)',
+        );
+
+        // Sprint 11: 建立 user_preference 表
+        // 注意：updated_at 使用 TEXT 格式 (ISO8601) 以匹配 Drift 的 dateTime() 預設行為
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS user_preference (
+            preference_type TEXT NOT NULL,
+            preference_value TEXT NOT NULL,
+            weight REAL NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+            PRIMARY KEY (preference_type, preference_value)
+          )
+        ''');
       }
     },
     beforeOpen: (details) async {

@@ -160,46 +160,87 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       ..gridRows = 4
       ..gridColumns = 4;
 
-    return Container(
-      height: widget.height,
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        // Subtle border to define the chart area
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+    // 計算圖表摘要資訊供無障礙使用
+    final summary = _buildChartSummary();
+
+    return Semantics(
+      label: summary,
+      hint: 'stockDetail.chartHint'.tr(),
+      child: Container(
+        height: widget.height,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF0F172A) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          // Subtle border to define the chart area
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: KChartWidget(
+          _kLineData,
+          chartStyle,
+          chartColors,
+          isTrendLine: false,
+          mainStateLi: widget.mainIndicators,
+          secondaryStateLi: widget.secondaryIndicators,
+          volHidden: false,
+          isLine: false,
+          isTapShowInfoDialog: true,
+          hideGrid: false,
+          showNowPrice: true,
+          showInfoDialog: true,
+          materialInfoDialog: true,
+          maDayList: widget.maDayList,
+          timeFormat: TimeFormat.YEAR_MONTH_DAY,
+          mBaseHeight: widget.height - 50,
+          fixedLength: 2,
+          chartTranslations: ChartTranslations(
+            date: 'stockDetail.date'.tr(),
+            open: 'stockDetail.open'.tr(),
+            high: 'stockDetail.high'.tr(),
+            low: 'stockDetail.low'.tr(),
+            close: 'stockDetail.close'.tr(),
+            changeAmount: 'stockDetail.change'.tr(),
+            change: 'stockDetail.changePercent'.tr(),
+            vol: 'stockDetail.volume'.tr(),
+          ),
         ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: KChartWidget(
-        _kLineData,
-        chartStyle,
-        chartColors,
-        isTrendLine: false,
-        mainStateLi: widget.mainIndicators,
-        secondaryStateLi: widget.secondaryIndicators,
-        volHidden: false,
-        isLine: false,
-        isTapShowInfoDialog: true,
-        hideGrid: false,
-        showNowPrice: true,
-        showInfoDialog: true,
-        materialInfoDialog: true,
-        maDayList: widget.maDayList,
-        timeFormat: TimeFormat.YEAR_MONTH_DAY,
-        mBaseHeight: widget.height - 50,
-        fixedLength: 2,
-        chartTranslations: ChartTranslations(
-          date: 'stockDetail.date'.tr(),
-          open: 'stockDetail.open'.tr(),
-          high: 'stockDetail.high'.tr(),
-          low: 'stockDetail.low'.tr(),
-          close: 'stockDetail.close'.tr(),
-          changeAmount: 'stockDetail.change'.tr(),
-          change: 'stockDetail.changePercent'.tr(),
-          vol: 'stockDetail.volume'.tr(),
-        ),
-      ),
+    );
+  }
+
+  /// 建立圖表摘要供無障礙使用
+  String _buildChartSummary() {
+    if (_kLineData.isEmpty) {
+      return 'stockDetail.noKlineData'.tr();
+    }
+
+    final first = _kLineData.first;
+    final last = _kLineData.last;
+
+    // 計算期間內的最高和最低價
+    double high = last.high;
+    double low = last.low;
+    for (final entity in _kLineData) {
+      if (entity.high > high) high = entity.high;
+      if (entity.low < low) low = entity.low;
+    }
+
+    // 計算漲跌幅
+    final change = last.close - first.close;
+    final changePercent = first.close > 0 ? (change / first.close * 100) : 0.0;
+    final trend = change >= 0 ? 'stockDetail.up'.tr() : 'stockDetail.down'.tr();
+
+    return 'stockDetail.chartSummary'.tr(
+      namedArgs: {
+        'days': _kLineData.length.toString(),
+        'high': high.toStringAsFixed(2),
+        'low': low.toStringAsFixed(2),
+        'close': last.close.toStringAsFixed(2),
+        'trend': trend,
+        'change': changePercent.abs().toStringAsFixed(2),
+      },
     );
   }
 }

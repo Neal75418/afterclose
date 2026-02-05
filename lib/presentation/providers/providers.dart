@@ -24,6 +24,8 @@ import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
+import 'package:afterclose/domain/services/personalization_service.dart';
+import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 
 // ==================================================
@@ -216,4 +218,14 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     fundamentalRepository: ref.watch(fundamentalRepositoryProvider),
     twseClient: ref.watch(twseClientProvider),
   );
+});
+
+/// 規則準確度追蹤服務 Provider（Sprint 10）
+final ruleAccuracyServiceProvider = Provider<RuleAccuracyService>((ref) {
+  return RuleAccuracyService(database: ref.watch(databaseProvider));
+});
+
+/// 個人化推薦服務 Provider（Sprint 11）
+final personalizationServiceProvider = Provider<PersonalizationService>((ref) {
+  return PersonalizationService(database: ref.watch(databaseProvider));
 });

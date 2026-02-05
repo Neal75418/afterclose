@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -121,7 +122,10 @@ class _StockCardState extends State<StockCard> {
             clipBehavior: Clip.none,
             children: [
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.stockCardMarginH,
+                  vertical: DesignTokens.stockCardMarginV,
+                ),
                 decoration: AppTheme.cardDecoration(
                   context,
                   isPremium: (widget.score ?? 0) >= 80,
@@ -139,7 +143,9 @@ class _StockCardState extends State<StockCard> {
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Padding(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(
+                        DesignTokens.stockCardPadding,
+                      ),
                       child: Row(
                         children: [
                           // 趨勢指示器（現代設計）
@@ -149,6 +155,7 @@ class _StockCardState extends State<StockCard> {
                           // 股票資訊區塊
                           Expanded(
                             child: Column(
+                              mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _buildHeader(theme),
@@ -157,7 +164,7 @@ class _StockCardState extends State<StockCard> {
                                   _buildStockName(theme),
                                 ],
                                 if (widget.reasons.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
+                                  const SizedBox(height: 6),
                                   _buildReasonTags(theme, isDark),
                                 ],
                               ],
@@ -218,11 +225,14 @@ class _StockCardState extends State<StockCard> {
   Widget _buildHeader(ThemeData theme) {
     return Row(
       children: [
-        Text(
-          widget.symbol,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
+        Flexible(
+          child: Text(
+            widget.symbol,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         if (widget.score != null && widget.score! > 0) ...[
@@ -294,11 +304,17 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildReasonTags(ThemeData theme, bool isDark) {
-    return ReasonTags(
-      reasons: widget.reasons,
-      size: ReasonTagSize.compact,
-      maxTags: 2,
-      translateCodes: true,
+    // 使用 ConstrainedBox 限制高度為單行，防止標籤換行導致溢出
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 28),
+      child: ClipRect(
+        child: ReasonTags(
+          reasons: widget.reasons,
+          size: ReasonTagSize.compact,
+          maxTags: 2,
+          translateCodes: true,
+        ),
+      ),
     );
   }
 
@@ -330,10 +346,9 @@ class _StockCardState extends State<StockCard> {
             widget.latestClose!.toStringAsFixed(2),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              fontSize: 18,
+              fontSize: DesignTokens.fontSizeXl,
               letterSpacing: 0.5,
-              fontFamily:
-                  'RobotoMono', // Monospace for tabular numbers if available
+              fontFamily: 'RobotoMono',
             ),
           ),
         if (widget.priceChange != null) ...[

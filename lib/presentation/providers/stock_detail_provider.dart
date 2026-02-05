@@ -16,6 +16,8 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
+import 'package:afterclose/domain/services/personalization_service.dart';
+import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
@@ -526,6 +528,17 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         dataDate: dataDate,
         hasDataMismatch: hasDataMismatch,
       );
+
+      // 記錄瀏覽行為（Sprint 11 - 個人化推薦）
+      unawaited(
+        _ref
+            .read(personalizationServiceProvider)
+            .trackInteraction(
+              type: InteractionType.view,
+              symbol: _symbol,
+              sourcePage: 'stock_detail',
+            ),
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -567,15 +580,29 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   /// Toggle watchlist - also syncs with global watchlistProvider
   Future<void> toggleWatchlist() async {
     final watchlistNotifier = _ref.read(watchlistProvider.notifier);
+    final wasInWatchlist = state.isInWatchlist;
 
-    if (state.isInWatchlist) {
+    if (wasInWatchlist) {
       await watchlistNotifier.removeStock(_symbol);
     } else {
       await watchlistNotifier.addStock(_symbol);
     }
 
     // Update local state
-    state = state.copyWith(isInWatchlist: !state.isInWatchlist);
+    state = state.copyWith(isInWatchlist: !wasInWatchlist);
+
+    // 記錄自選股變更行為（Sprint 11 - 個人化推薦）
+    unawaited(
+      _ref
+          .read(personalizationServiceProvider)
+          .trackInteraction(
+            type: wasInWatchlist
+                ? InteractionType.removeWatchlist
+                : InteractionType.addWatchlist,
+            symbol: _symbol,
+            sourcePage: 'stock_detail',
+          ),
+    );
   }
 
   /// Load margin trading data (融資融券) from FinMind API
@@ -1024,4 +1051,33 @@ final stockDetailProvider = StateNotifierProvider.family
       });
 
       return StockDetailNotifier(ref, symbol);
+    });
+
+/// 規則準確度 Provider（Sprint 10）
+///
+/// 透過 ruleId 查詢該規則的歷史命中率和平均報酬率。
+/// 若該規則觸發次數少於 5 次，返回 null（資料不足）。
+final ruleAccuracyProvider = FutureProvider.family
+    .autoDispose<RuleStats?, String>((ref, ruleId) async {
+      final service = ref.watch(ruleAccuracyServiceProvider);
+      return service.getRuleStats(ruleId);
+    });
+
+/// 主要規則準確度摘要文字 Provider
+///
+/// 取得股票的主要觸發規則，並返回其準確度摘要文字。
+/// 例如：「命中率 65%，平均 5 日報酬 +2.3%」
+final primaryRuleAccuracySummaryProvider = FutureProvider.family
+    .autoDispose<String?, String>((ref, symbol) async {
+      final state = ref.watch(stockDetailProvider(symbol));
+      if (state.reasons.isEmpty) return null;
+
+      // 取得主要規則（rank = 1）
+      final primaryReason = state.reasons.firstWhere(
+        (r) => r.rank == 1,
+        orElse: () => state.reasons.first,
+      );
+
+      final service = ref.watch(ruleAccuracyServiceProvider);
+      return service.getRuleSummaryText(primaryReason.reasonType);
     });

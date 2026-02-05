@@ -267,6 +267,9 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
             ),
           ],
 
+          // 規則準確度（Sprint 10）
+          _RuleAccuracySection(symbol: widget.symbol),
+
           // 快捷操作按鈕
           const SizedBox(height: 12),
           _buildActionButtons(theme),
@@ -517,5 +520,62 @@ class _SignalStrengthBar extends StatelessWidget {
     if (strength >= 0.7) return AppTheme.upColor;
     if (strength >= 0.4) return AppTheme.warningColor;
     return AppTheme.neutralColor;
+  }
+}
+
+/// 規則準確度區塊（Sprint 10）
+///
+/// 顯示主要觸發規則的歷史命中率和平均報酬率。
+class _RuleAccuracySection extends ConsumerWidget {
+  const _RuleAccuracySection({required this.symbol});
+
+  final String symbol;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final accuracyAsync = ref.watch(primaryRuleAccuracySummaryProvider(symbol));
+    final theme = Theme.of(context);
+
+    return accuracyAsync.when(
+      data: (summaryText) {
+        if (summaryText == null) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Row(
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant.withValues(
+                  alpha: 0.7,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'summary.ruleAccuracy'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.7,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  summaryText,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (e, s) => const SizedBox.shrink(),
+    );
   }
 }

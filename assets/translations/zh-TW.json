@@ -237,6 +237,10 @@
     "yield": "殖利率",
     "yieldLabel": "現金殖利率",
     "noKlineData": "暫無K線資料",
+    "up": "上漲",
+    "down": "下跌",
+    "chartSummary": "近{days}日K線圖，最高{high}元，最低{low}元，收盤{close}元，{trend}{change}%",
+    "chartHint": "雙指縮放可調整時間範圍",
     "noVolumeData": "暫無成交量資料",
     "unitBillion": "億",
     "unitTenThousand": "萬",
@@ -914,7 +918,8 @@
     "confidenceHigh": "高信心",
     "confidenceMedium": "中信心",
     "confidenceLow": "低信心",
-    "signalStrength": "訊號強度"
+    "signalStrength": "訊號強度",
+    "ruleAccuracy": "規則準確度"
   },
   "comparison": {
     "title": "個股比較",

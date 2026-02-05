@@ -9,6 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -71,6 +73,126 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       message: error,
       onRetry: () => ref.read(todayProvider.notifier).loadData(),
     );
+  }
+
+  /// 響應式推薦清單：手機使用 SliverList，平板/桌面使用 SliverGrid
+  Widget _buildRecommendationsList(
+    BuildContext context,
+    TodayState state,
+    Set<String> watchlistSymbols,
+  ) {
+    final columns = context.responsiveGridColumns;
+    final useGrid = columns > 1;
+    final padding = context.responsiveHorizontalPadding;
+    final spacing = context.responsiveCardSpacing;
+
+    if (useGrid) {
+      return SliverPadding(
+        padding: EdgeInsets.symmetric(horizontal: padding),
+        sliver: SliverGrid.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            mainAxisExtent: DesignTokens.stockCardHeight,
+          ),
+          itemCount: state.recommendations.length,
+          itemBuilder: (context, index) =>
+              _buildRecommendationCard(context, state, watchlistSymbols, index),
+        ),
+      );
+    }
+
+    return SliverList.builder(
+      itemCount: state.recommendations.length,
+      itemBuilder: (context, index) =>
+          _buildRecommendationCard(context, state, watchlistSymbols, index),
+    );
+  }
+
+  /// 建立推薦卡片
+  Widget _buildRecommendationCard(
+    BuildContext context,
+    TodayState state,
+    Set<String> watchlistSymbols,
+    int index,
+  ) {
+    final rec = state.recommendations[index];
+    final isInWatchlist = watchlistSymbols.contains(rec.symbol);
+    final columns = context.responsiveGridColumns;
+
+    final card = RepaintBoundary(
+      key: ValueKey('${rec.symbol}_$isInWatchlist'),
+      child: StockCard(
+        symbol: rec.symbol,
+        stockName: rec.stockName,
+        market: rec.market,
+        latestClose: rec.latestClose,
+        priceChange: rec.priceChange,
+        score: rec.score,
+        reasons: rec.reasons.map((r) => r.reasonType).toList(),
+        trendState: rec.trendState,
+        recentPrices: rec.recentPrices,
+        isInWatchlist: isInWatchlist,
+        showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push('/stock/${rec.symbol}');
+        },
+        onLongPress: () {
+          showStockPreviewSheet(
+            context: context,
+            data: StockPreviewData(
+              symbol: rec.symbol,
+              stockName: rec.stockName,
+              latestClose: rec.latestClose,
+              priceChange: rec.priceChange,
+              score: rec.score,
+              trendState: rec.trendState,
+              reasons: rec.reasons.map((r) => r.reasonType).toList(),
+              isInWatchlist: isInWatchlist,
+            ),
+            onViewDetails: () => context.push('/stock/${rec.symbol}'),
+            onToggleWatchlist: () =>
+                _toggleWatchlist(rec.symbol, isInWatchlist),
+          );
+        },
+        onWatchlistTap: () => _toggleWatchlist(rec.symbol, isInWatchlist),
+      ),
+    );
+
+    // 前 10/20 筆項目使用交錯進場動畫（Grid 顯示更多）
+    final animateCount = columns > 1 ? 20 : 10;
+    final animateDelay = columns > 1 ? 30 : 50;
+
+    if (index < animateCount) {
+      return card
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: animateDelay * index),
+            duration: columns > 1 ? 300.ms : 400.ms,
+          )
+          .then()
+          .custom(
+            builder: (context, value, child) {
+              if (columns > 1) {
+                // Grid：縮放動畫
+                return Transform.scale(
+                  scale: 0.95 + 0.05 * value,
+                  child: child,
+                );
+              }
+              // List：水平滑入
+              return Transform.translate(
+                offset: Offset(20 * (1 - value), 0),
+                child: child,
+              );
+            },
+            duration: columns > 1 ? 300.ms : 400.ms,
+            curve: Curves.easeOutQuart,
+          );
+    }
+    return card;
   }
 
   Widget _buildContent(TodayState state, Set<String> watchlistSymbols) {
@@ -169,78 +291,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           child: SectionHeader(title: S.todayTop10, icon: Icons.trending_up),
         ),
 
-        // 推薦清單
+        // 推薦清單（響應式：手機 List，平板/桌面 Grid）
         if (state.recommendations.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
             child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
           )
         else
-          SliverList.builder(
-            itemCount: state.recommendations.length,
-            itemBuilder: (context, index) {
-              final rec = state.recommendations[index];
-              // 使用 RepaintBoundary 提升捲動效能
-              final isInWatchlist = watchlistSymbols.contains(rec.symbol);
-              final card = RepaintBoundary(
-                // Key 包含自選狀態，以便狀態變更時強制重建
-                key: ValueKey('${rec.symbol}_$isInWatchlist'),
-                child: StockCard(
-                  symbol: rec.symbol,
-                  stockName: rec.stockName,
-                  market: rec.market,
-                  latestClose: rec.latestClose,
-                  priceChange: rec.priceChange,
-                  score: rec.score,
-                  reasons: rec.reasons.map((r) => r.reasonType).toList(),
-                  trendState: rec.trendState,
-                  recentPrices: rec.recentPrices,
-                  isInWatchlist: isInWatchlist,
-                  showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push('/stock/${rec.symbol}');
-                  },
-                  onLongPress: () {
-                    showStockPreviewSheet(
-                      context: context,
-                      data: StockPreviewData(
-                        symbol: rec.symbol,
-                        stockName: rec.stockName,
-                        latestClose: rec.latestClose,
-                        priceChange: rec.priceChange,
-                        score: rec.score,
-                        trendState: rec.trendState,
-                        reasons: rec.reasons.map((r) => r.reasonType).toList(),
-                        isInWatchlist: isInWatchlist,
-                      ),
-                      onViewDetails: () => context.push('/stock/${rec.symbol}'),
-                      onToggleWatchlist: () =>
-                          _toggleWatchlist(rec.symbol, isInWatchlist),
-                    );
-                  },
-                  onWatchlistTap: () =>
-                      _toggleWatchlist(rec.symbol, isInWatchlist),
-                ),
-              );
-
-              // 前 10 筆項目使用交錯進場動畫
-              if (index < 10) {
-                return card
-                    .animate()
-                    .fadeIn(
-                      delay: Duration(milliseconds: 50 * index),
-                      duration: 400.ms,
-                    )
-                    .slideX(
-                      begin: 0.05,
-                      duration: 400.ms,
-                      curve: Curves.easeOutQuart,
-                    );
-              }
-              return card;
-            },
-          ),
+          _buildRecommendationsList(context, state, watchlistSymbols),
 
         // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),

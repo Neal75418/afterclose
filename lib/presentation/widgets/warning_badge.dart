@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 警示標記類型
 ///
@@ -92,12 +93,16 @@ class _WarningBadgeState extends State<WarningBadge> {
 
     Widget badge = Container(
       padding: EdgeInsets.symmetric(
-        horizontal: widget.compact ? 6 : 10,
+        horizontal: widget.compact ? DesignTokens.spacing6 : 10,
         vertical: widget.compact ? 3 : 5,
       ),
       decoration: BoxDecoration(
-        color: widget.type.color.withValues(alpha: isDark ? 0.25 : 0.15),
-        borderRadius: BorderRadius.circular(widget.compact ? 6 : 8),
+        color: widget.type.color.withValues(
+          alpha: isDark ? DesignTokens.opacity25 : DesignTokens.opacity15,
+        ),
+        borderRadius: BorderRadius.circular(
+          widget.compact ? DesignTokens.radiusSm : DesignTokens.radiusMd,
+        ),
         border: Border.all(
           color: widget.type.color.withValues(alpha: isDark ? 0.6 : 0.4),
           width: 1,

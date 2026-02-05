@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/filter_metadata.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -334,7 +336,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
-  /// 股票清單：載入中 / 錯誤 / 空狀態 / 列表
+  /// 股票清單：載入中 / 錯誤 / 空狀態 / 列表或網格
   Widget _buildStockList(BuildContext context, ScanState state) {
     if (state.isLoading) {
       return const Expanded(child: StockListShimmer(itemCount: 8));
@@ -351,26 +353,68 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       return Expanded(child: _buildEmptyState(state.filter, ref));
     }
 
-    return Expanded(
-      child: ListView.builder(
-        controller: _scrollController,
-        cacheExtent: 500,
-        addAutomaticKeepAlives: false,
-        itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          // 在底部顯示載入指示器
-          if (index == state.stocks.length) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: state.isLoadingMore
-                    ? const CircularProgressIndicator()
-                    : const SizedBox.shrink(),
-              ),
-            );
-          }
-          return _buildStockCard(context, state.stocks[index], index);
-        },
+    // 響應式佈局：平板/桌面使用 GridView
+    final columns = context.responsiveGridColumns;
+    final useGrid = columns > 1;
+
+    if (useGrid) {
+      return Expanded(child: _buildStockGrid(context, state, columns));
+    }
+
+    return Expanded(child: _buildStockListView(context, state));
+  }
+
+  /// 手機佈局：ListView
+  Widget _buildStockListView(BuildContext context, ScanState state) {
+    return ListView.builder(
+      controller: _scrollController,
+      cacheExtent: 500,
+      addAutomaticKeepAlives: false,
+      itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        // 在底部顯示載入指示器
+        if (index == state.stocks.length) {
+          return _buildLoadingIndicator(state);
+        }
+        return _buildStockCard(context, state.stocks[index], index);
+      },
+    );
+  }
+
+  /// 平板/桌面佈局：GridView
+  Widget _buildStockGrid(BuildContext context, ScanState state, int columns) {
+    final padding = context.responsiveHorizontalPadding;
+    final spacing = context.responsiveCardSpacing;
+
+    return GridView.builder(
+      controller: _scrollController,
+      cacheExtent: 500,
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: columns,
+        crossAxisSpacing: spacing,
+        mainAxisSpacing: spacing,
+        mainAxisExtent: DesignTokens.stockCardHeight,
+      ),
+      itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
+      itemBuilder: (context, index) {
+        // 在底部顯示載入指示器
+        if (index == state.stocks.length) {
+          return _buildLoadingIndicator(state);
+        }
+        return _buildStockCardForGrid(context, state.stocks[index], index);
+      },
+    );
+  }
+
+  /// 載入指示器
+  Widget _buildLoadingIndicator(ScanState state) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: state.isLoadingMore
+            ? const CircularProgressIndicator()
+            : const SizedBox.shrink(),
       ),
     );
   }
@@ -477,6 +521,72 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           .slideX(begin: 0.05, duration: 400.ms, curve: Curves.easeOutQuart);
     }
     return card;
+  }
+
+  /// Grid 佈局用的股票卡片（無 Slidable，改用 PopupMenu）
+  Widget _buildStockCardForGrid(
+    BuildContext context,
+    ScanStockItem stock,
+    int index,
+  ) {
+    final card = RepaintBoundary(
+      child: StockCard(
+        symbol: stock.symbol,
+        stockName: stock.stockName,
+        market: stock.market,
+        latestClose: stock.latestClose,
+        priceChange: stock.priceChange,
+        score: stock.score,
+        reasons: stock.reasons.map((r) => r.reasonType).toList(),
+        trendState: stock.trendState,
+        isInWatchlist: stock.isInWatchlist,
+        recentPrices: stock.recentPrices,
+        showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+        onTap: () => context.push('/stock/${stock.symbol}'),
+        onLongPress: () => _showStockContextMenu(context, stock),
+        onWatchlistTap: () {
+          HapticFeedback.lightImpact();
+          ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+        },
+      ),
+    );
+
+    // 前 20 筆項目使用交錯進場動畫（Grid 顯示更多）
+    if (index < 20) {
+      return card
+          .animate()
+          .fadeIn(
+            delay: Duration(milliseconds: 30 * index),
+            duration: 300.ms,
+          )
+          .scale(
+            begin: const Offset(0.95, 0.95),
+            duration: 300.ms,
+            curve: Curves.easeOutQuart,
+          );
+    }
+    return card;
+  }
+
+  /// 顯示股票操作選單（用於 Grid 佈局）
+  void _showStockContextMenu(BuildContext context, ScanStockItem stock) {
+    showStockPreviewSheet(
+      context: context,
+      data: StockPreviewData(
+        symbol: stock.symbol,
+        stockName: stock.stockName,
+        latestClose: stock.latestClose,
+        priceChange: stock.priceChange,
+        score: stock.score,
+        trendState: stock.trendState,
+        reasons: stock.reasons.map((r) => r.reasonType).toList(),
+        isInWatchlist: stock.isInWatchlist,
+      ),
+      onViewDetails: () => context.push('/stock/${stock.symbol}'),
+      onToggleWatchlist: () {
+        ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+      },
+    );
   }
 }
 

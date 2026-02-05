@@ -164,3 +164,53 @@ class ScreeningStrategyTable extends Table {
   /// 最後更新時間
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
+
+/// 用戶互動記錄 Table（Sprint 11 - 個人化推薦）
+///
+/// 記錄使用者的瀏覽行為，用於分析偏好並調整推薦排序。
+@DataClassName('UserInteractionEntry')
+@TableIndex(name: 'idx_user_interaction_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_user_interaction_type', columns: {#interactionType})
+@TableIndex(name: 'idx_user_interaction_time', columns: {#timestamp})
+class UserInteraction extends Table {
+  /// 自動遞增 ID
+  IntColumn get id => integer().autoIncrement()();
+
+  /// 互動類型：VIEW（查看）、ADD_WATCHLIST（加入自選）、
+  /// REMOVE_WATCHLIST（移除自選）、ADD_POSITION（加入持倉）
+  TextColumn get interactionType => text()();
+
+  /// 股票代碼
+  TextColumn get symbol => text()();
+
+  /// 互動時間
+  DateTimeColumn get timestamp => dateTime().withDefault(currentDateAndTime)();
+
+  /// 停留時間（秒），僅 VIEW 類型使用
+  IntColumn get durationSeconds => integer().nullable()();
+
+  /// 來源頁面（如 today、scan、watchlist）
+  TextColumn get sourcePage => text().nullable()();
+}
+
+/// 用戶偏好摘要 Table（Sprint 11 - 個人化推薦）
+///
+/// 彙整使用者的偏好，用於調整推薦權重。
+/// 定期由 PersonalizationService 更新。
+@DataClassName('UserPreferenceEntry')
+class UserPreference extends Table {
+  /// 偏好類型：INDUSTRY（產業）、MARKET_CAP（市值）、STYLE（風格）
+  TextColumn get preferenceType => text()();
+
+  /// 偏好值（如 '半導體'、'large_cap'、'growth'）
+  TextColumn get preferenceValue => text()();
+
+  /// 權重（0.0 ~ 1.0），基於互動頻率計算
+  RealColumn get weight => real().withDefault(const Constant(0))();
+
+  /// 最後更新時間
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {preferenceType, preferenceValue};
+}

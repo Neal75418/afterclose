@@ -94,3 +94,69 @@ class DailyRecommendation extends Table {
     {date, symbol},
   ];
 }
+
+/// 規則準確度追蹤表
+///
+/// 記錄每條規則的歷史表現，用於計算命中率和平均報酬率。
+@DataClassName('RuleAccuracyEntry')
+@TableIndex(name: 'idx_rule_accuracy_rule', columns: {#ruleId})
+class RuleAccuracy extends Table {
+  /// 規則 ID（如 reversal_w2s）
+  TextColumn get ruleId => text()();
+
+  /// 統計週期：DAILY、WEEKLY、MONTHLY
+  TextColumn get period => text()();
+
+  /// 觸發次數
+  IntColumn get triggerCount => integer().withDefault(const Constant(0))();
+
+  /// 成功次數（N 日後上漲）
+  IntColumn get successCount => integer().withDefault(const Constant(0))();
+
+  /// 平均報酬率（%）
+  RealColumn get avgReturn => real().withDefault(const Constant(0))();
+
+  /// 最後更新時間
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {ruleId, period};
+}
+
+/// 推薦驗證記錄表
+///
+/// 記錄每次推薦的後續表現，用於回溯驗證。
+@DataClassName('RecommendationValidationEntry')
+@TableIndex(name: 'idx_rec_validation_date', columns: {#recommendationDate})
+@TableIndex(name: 'idx_rec_validation_symbol', columns: {#symbol})
+class RecommendationValidation extends Table {
+  /// 自增 ID
+  IntColumn get id => integer().autoIncrement()();
+
+  /// 推薦日期
+  DateTimeColumn get recommendationDate => dateTime()();
+
+  /// 股票代碼
+  TextColumn get symbol => text()();
+
+  /// 主要觸發規則
+  TextColumn get primaryRuleId => text()();
+
+  /// 推薦當日收盤價
+  RealColumn get entryPrice => real()();
+
+  /// N 日後收盤價
+  RealColumn get exitPrice => real().nullable()();
+
+  /// N 日後報酬率（%）
+  RealColumn get returnRate => real().nullable()();
+
+  /// 是否成功（報酬 > 0）
+  BoolColumn get isSuccess => boolean().nullable()();
+
+  /// 驗證日期（N 日後的日期）
+  DateTimeColumn get validationDate => dateTime().nullable()();
+
+  /// 驗證天數（預設 5 日）
+  IntColumn get holdingDays => integer().withDefault(const Constant(5))();
+}
