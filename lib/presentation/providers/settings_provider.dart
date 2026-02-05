@@ -15,6 +15,7 @@ const _keyDisposalUrgentAlerts = 'settings_disposal_urgent_alerts';
 const _keyLimitAlerts = 'settings_limit_alerts';
 const _keyShowROCYear = 'settings_show_roc_year';
 const _keyCacheDurationMinutes = 'settings_cache_duration_minutes';
+const _keyAutoUpdateEnabled = 'settings_auto_update_enabled';
 
 // ==================================================
 // Settings State
@@ -61,6 +62,7 @@ class SettingsState {
     this.limitAlerts = true,
     this.showROCYear = true,
     this.cacheDurationMinutes = 30,
+    this.autoUpdateEnabled = false,
   });
 
   final ThemeMode themeMode;
@@ -85,6 +87,9 @@ class SettingsState {
   /// API 快取存活時間（分鐘）
   final int cacheDurationMinutes;
 
+  /// 是否啟用每日自動背景更新
+  final bool autoUpdateEnabled;
+
   SettingsState copyWith({
     ThemeMode? themeMode,
     AppLocale? locale,
@@ -95,6 +100,7 @@ class SettingsState {
     bool? limitAlerts,
     bool? showROCYear,
     int? cacheDurationMinutes,
+    bool? autoUpdateEnabled,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -106,6 +112,7 @@ class SettingsState {
       limitAlerts: limitAlerts ?? this.limitAlerts,
       showROCYear: showROCYear ?? this.showROCYear,
       cacheDurationMinutes: cacheDurationMinutes ?? this.cacheDurationMinutes,
+      autoUpdateEnabled: autoUpdateEnabled ?? this.autoUpdateEnabled,
     );
   }
 }
@@ -148,6 +155,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       final limitAlerts = prefs.getBool(_keyLimitAlerts) ?? true;
       final showROCYear = prefs.getBool(_keyShowROCYear) ?? true;
       final cacheDurationMinutes = prefs.getInt(_keyCacheDurationMinutes) ?? 30;
+      final autoUpdateEnabled = prefs.getBool(_keyAutoUpdateEnabled) ?? false;
 
       state = SettingsState(
         themeMode: themeMode,
@@ -159,6 +167,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         limitAlerts: limitAlerts,
         showROCYear: showROCYear,
         cacheDurationMinutes: cacheDurationMinutes,
+        autoUpdateEnabled: autoUpdateEnabled,
       );
 
       AppLogger.debug(
@@ -221,6 +230,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
         _keyCacheDurationMinutes,
         snapshot.cacheDurationMinutes,
       );
+      await prefs.setBool(_keyAutoUpdateEnabled, snapshot.autoUpdateEnabled);
     } catch (e) {
       AppLogger.warning('Settings', '儲存設定失敗: $e');
     }
@@ -290,6 +300,13 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     state = state.copyWith(cacheDurationMinutes: minutes);
     _saveSettings();
     AppLogger.debug('Settings', '快取時間: $minutes 分鐘');
+  }
+
+  /// Set auto update enabled
+  void setAutoUpdateEnabled(bool value) {
+    state = state.copyWith(autoUpdateEnabled: value);
+    _saveSettings();
+    AppLogger.debug('Settings', '自動更新: $value');
   }
 }
 

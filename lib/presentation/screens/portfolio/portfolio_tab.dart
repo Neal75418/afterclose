@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/allocation_pie_chart.dart';
+import 'package:afterclose/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
+import 'package:afterclose/presentation/screens/portfolio/widgets/industry_allocation_card.dart';
+import 'package:afterclose/presentation/screens/portfolio/widgets/performance_card.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/portfolio_summary_card.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/position_card.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/add_transaction_sheet.dart';
@@ -50,6 +53,12 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
               PortfolioSummaryCard(summary: state.summary),
               const SizedBox(height: 16),
 
+              // 績效指標卡片
+              if (state.performance != null) ...[
+                PerformanceCard(performance: state.performance!),
+                const SizedBox(height: 16),
+              ],
+
               // 配置圓餅圖
               if (state.allocationMap.isNotEmpty) ...[
                 Semantics(
@@ -57,6 +66,22 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
                   image: true,
                   child: AllocationPieChart(allocationMap: state.allocationMap),
                 ),
+                const SizedBox(height: 16),
+              ],
+
+              // 產業配置
+              if (state.performance != null &&
+                  state.performance!.industryAllocation.isNotEmpty) ...[
+                IndustryAllocationCard(
+                  allocation: state.performance!.industryAllocation,
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // 股利分析
+              if (state.dividendAnalysis != null &&
+                  state.dividendAnalysis!.stockDividends.isNotEmpty) ...[
+                DividendAnalysisCard(analysis: state.dividendAnalysis!),
                 const SizedBox(height: 20),
               ],
 

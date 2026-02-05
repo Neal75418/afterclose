@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
+import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
+import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -120,11 +122,15 @@ class PortfolioState {
   static const _sentinel = Object();
   const PortfolioState({
     this.positions = const [],
+    this.performance,
+    this.dividendAnalysis,
     this.isLoading = false,
     this.error,
   });
 
   final List<PortfolioPositionData> positions;
+  final PortfolioPerformance? performance;
+  final DividendAnalysis? dividendAnalysis;
   final bool isLoading;
   final String? error;
 
@@ -163,11 +169,15 @@ class PortfolioState {
 
   PortfolioState copyWith({
     List<PortfolioPositionData>? positions,
+    PortfolioPerformance? performance,
+    DividendAnalysis? dividendAnalysis,
     bool? isLoading,
     Object? error = _sentinel,
   }) {
     return PortfolioState(
       positions: positions ?? this.positions,
+      performance: performance ?? this.performance,
+      dividendAnalysis: dividendAnalysis ?? this.dividendAnalysis,
       isLoading: isLoading ?? this.isLoading,
       error: error == _sentinel ? this.error : error as String?,
     );
@@ -185,6 +195,9 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
   AppDatabase get _db => _ref.read(databaseProvider);
   PortfolioRepository get _repo => _ref.read(portfolioRepositoryProvider);
 
+  static const _analyticsService = PortfolioAnalyticsService();
+  static const _dividendService = DividendIntelligenceService();
+
   /// 載入所有持倉
   Future<void> loadPositions() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -193,7 +206,12 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
       final positions = await _db.getPortfolioPositions();
 
       if (positions.isEmpty) {
-        state = state.copyWith(positions: [], isLoading: false);
+        state = state.copyWith(
+          positions: [],
+          performance: PortfolioPerformance.empty,
+          dividendAnalysis: DividendAnalysis.empty,
+          isLoading: false,
+        );
         return;
       }
 
@@ -204,11 +222,22 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
         symbols.map((s) => _db.getLatestPrice(s)),
       );
 
+      // 建立 maps 供績效計算
+      final stocksMap = <String, StockMasterEntry>{};
+      final currentPrices = <String, double>{};
+
       final List<PortfolioPositionData> positionData = [];
       for (int i = 0; i < positions.length; i++) {
         final pos = positions[i];
         final stock = stocks[i];
         final price = prices[i];
+
+        if (stock != null) {
+          stocksMap[pos.symbol] = stock;
+        }
+        if (price?.close != null) {
+          currentPrices[pos.symbol] = price!.close!;
+        }
 
         positionData.add(
           PortfolioPositionData(
@@ -226,7 +255,31 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
         );
       }
 
-      state = state.copyWith(positions: positionData, isLoading: false);
+      // 取得所有交易紀錄以計算績效
+      final transactions = await _db.getAllPortfolioTransactions();
+
+      // 計算績效
+      final performance = _analyticsService.calculatePerformance(
+        transactions: transactions,
+        positions: positions,
+        currentPrices: currentPrices,
+        stocksMap: stocksMap,
+      );
+
+      // 取得股利歷史並計算股利分析
+      final dividendHistories = await _db.getDividendHistoryBatch(symbols);
+      final dividendAnalysis = _dividendService.analyzeDividends(
+        positions: positions,
+        dividendHistories: dividendHistories,
+        currentPrices: currentPrices,
+      );
+
+      state = state.copyWith(
+        positions: positionData,
+        performance: performance,
+        dividendAnalysis: dividendAnalysis,
+        isLoading: false,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }

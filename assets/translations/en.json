@@ -260,6 +260,15 @@
     "bollUpper": "Upper",
     "bollMiddle": "Middle",
     "bollLower": "Lower",
+    "obvLabel": "On Balance Volume",
+    "obvRising": "Volume Rising",
+    "obvFalling": "Volume Falling",
+    "obvNeutral": "Volume Neutral",
+    "atrLabel": "Volatility",
+    "atrLow": "Low",
+    "atrMedium": "Medium",
+    "atrHigh": "High",
+    "volatility": "Volatility",
     "secondaryIndicators": "Sub-Chart Indicators",
     "indicatorValues": "Indicator Values",
     "change": "Change",
@@ -504,7 +513,10 @@
     "selectCacheDuration": "Select Cache Duration",
     "cache15min": "15 Minutes",
     "cache30min": "30 Minutes",
-    "cache60min": "1 Hour"
+    "cache60min": "1 Hour",
+    "backgroundUpdate": "Background Update",
+    "autoUpdate": "Daily Auto Update",
+    "autoUpdateDesc": "Automatically update data after market close (15:00) and send notification"
   },
   "alert": {
     "title": "Price Alerts",
@@ -900,7 +912,8 @@
     "mixedSignals": "Mixed bull/bear signals present, consider waiting for directional confirmation.",
     "confidenceHigh": "High",
     "confidenceMedium": "Medium",
-    "confidenceLow": "Low"
+    "confidenceLow": "Low",
+    "signalStrength": "Signal Strength"
   },
   "comparison": {
     "title": "Stock Comparison",
@@ -1028,7 +1041,24 @@
     "feeAutoCalc": "Auto (0.1425%)",
     "taxAutoCalc": "Auto (0.3%)",
     "txType": "Type",
-    "selectStock": "Select Stock"
+    "selectStock": "Select Stock",
+    "performance": "Performance",
+    "periodReturns": "Period Returns",
+    "daily": "Day",
+    "weekly": "Week",
+    "monthly": "Month",
+    "yearly": "YTD",
+    "totalReturn": "Total Return",
+    "maxDrawdown": "Max Drawdown",
+    "industryAllocation": "Industry Allocation",
+    "dividendAnalysis": "Dividend Analysis",
+    "expectedDividend": "Expected Dividend",
+    "yieldOnCost": "Yield on Cost",
+    "yieldOnMarket": "Market Yield",
+    "stockDividends": "Stock Dividends",
+    "perShare": "per share",
+    "expected": "expected",
+    "yield": "yield"
   },
   "calendar": {
     "title": "Event Calendar",

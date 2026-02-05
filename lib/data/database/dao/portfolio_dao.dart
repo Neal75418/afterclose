@@ -87,4 +87,11 @@ mixin _PortfolioDaoMixin on _$AppDatabase {
           ..orderBy([(t) => OrderingTerm.asc(t.date)]))
         .get();
   }
+
+  /// 取得所有交易紀錄（供績效計算）
+  Future<List<PortfolioTransactionEntry>> getAllPortfolioTransactions() {
+    return (select(
+      portfolioTransaction,
+    )..orderBy([(t) => OrderingTerm.asc(t.date)])).get();
+  }
 }

@@ -57,6 +57,11 @@ class IndicatorCardsSection extends StatelessWidget {
         .map((p) => p.low!)
         .toList();
 
+    final volumes = priceHistory
+        .where((p) => p.volume != null)
+        .map((p) => p.volume!)
+        .toList();
+
     return Column(
       children: [
         if (secondaryIndicators.contains(SecondaryState.RSI))
@@ -72,6 +77,21 @@ class IndicatorCardsSection extends StatelessWidget {
           _MACDCard(prices: prices, indicatorService: indicatorService),
         if (mainIndicators.contains(MainState.BOLL))
           _BollingerCard(prices: prices, indicatorService: indicatorService),
+
+        // 進階指標：OBV 與 ATR（總是顯示）
+        if (volumes.length >= 2)
+          _OBVCard(
+            closes: prices,
+            volumes: volumes,
+            indicatorService: indicatorService,
+          ),
+        if (highs.length >= 14 && lows.length >= 14 && prices.length >= 14)
+          _ATRCard(
+            highs: highs,
+            lows: lows,
+            closes: prices,
+            indicatorService: indicatorService,
+          ),
       ],
     );
   }
@@ -413,6 +433,252 @@ class _BollingerCard extends StatelessWidget {
                 label: 'stockDetail.bollLower'.tr(),
                 value: latestLower,
                 color: AppTheme.upColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OBVCard extends StatelessWidget {
+  const _OBVCard({
+    required this.closes,
+    required this.volumes,
+    required this.indicatorService,
+  });
+
+  final List<double> closes;
+  final List<double> volumes;
+  final TechnicalIndicatorService indicatorService;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final obv = indicatorService.calculateOBV(closes, volumes);
+
+    if (obv.length < 5) {
+      return const SizedBox.shrink();
+    }
+
+    final latestOBV = obv.last;
+    final previousOBV = obv.length >= 5 ? obv[obv.length - 5] : obv.first;
+    final obvChange = latestOBV - previousOBV;
+    final obvTrend = obvChange > 0
+        ? 'stockDetail.obvRising'.tr()
+        : obvChange < 0
+        ? 'stockDetail.obvFalling'.tr()
+        : 'stockDetail.obvNeutral'.tr();
+
+    Color obvColor = theme.colorScheme.onSurface;
+    if (obvChange > 0) {
+      obvColor = AppTheme.upColor;
+    } else if (obvChange < 0) {
+      obvColor = AppTheme.downColor;
+    }
+
+    // 格式化 OBV 值（可能很大）
+    String formatOBV(double value) {
+      final absValue = value.abs();
+      if (absValue >= 1e9) {
+        return '${(value / 1e9).toStringAsFixed(1)}B';
+      } else if (absValue >= 1e6) {
+        return '${(value / 1e6).toStringAsFixed(1)}M';
+      } else if (absValue >= 1e3) {
+        return '${(value / 1e3).toStringAsFixed(1)}K';
+      }
+      return value.toStringAsFixed(0);
+    }
+
+    return _IndicatorCardContainer(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'OBV',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'stockDetail.obvLabel'.tr(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF10B981),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  obvTrend,
+                  style: theme.textTheme.bodySmall?.copyWith(color: obvColor),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                formatOBV(latestOBV),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'RobotoMono',
+                  color: obvColor,
+                ),
+              ),
+              Text(
+                '${obvChange >= 0 ? "+" : ""}${formatOBV(obvChange)} (5d)',
+                style: theme.textTheme.labelSmall?.copyWith(color: obvColor),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ATRCard extends StatelessWidget {
+  const _ATRCard({
+    required this.highs,
+    required this.lows,
+    required this.closes,
+    required this.indicatorService,
+  });
+
+  final List<double> highs;
+  final List<double> lows;
+  final List<double> closes;
+  final TechnicalIndicatorService indicatorService;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final atr = indicatorService.calculateATR(highs, lows, closes);
+    final latestATR = atr.lastWhere((v) => v != null, orElse: () => null);
+    final currentPrice = closes.isNotEmpty ? closes.last : null;
+
+    if (latestATR == null || currentPrice == null || currentPrice == 0) {
+      return const SizedBox.shrink();
+    }
+
+    // 計算 ATR 佔股價的百分比（波動性指標）
+    final atrPercent = (latestATR / currentPrice) * 100;
+
+    String volatilityLevel;
+    Color volatilityColor;
+    if (atrPercent < 2) {
+      volatilityLevel = 'stockDetail.atrLow'.tr();
+      volatilityColor = const Color(0xFF10B981); // Green
+    } else if (atrPercent < 4) {
+      volatilityLevel = 'stockDetail.atrMedium'.tr();
+      volatilityColor = const Color(0xFFF59E0B); // Yellow
+    } else {
+      volatilityLevel = 'stockDetail.atrHigh'.tr();
+      volatilityColor = const Color(0xFFEF4444); // Red
+    }
+
+    return _IndicatorCardContainer(
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'ATR(14)',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'stockDetail.atrLabel'.tr(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: const Color(0xFF8B5CF6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      'stockDetail.volatility'.tr(),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: volatilityColor.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        volatilityLevel,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: volatilityColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                latestATR.toStringAsFixed(2),
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'RobotoMono',
+                ),
+              ),
+              Text(
+                '${atrPercent.toStringAsFixed(2)}%',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: volatilityColor,
+                ),
               ),
             ],
           ),

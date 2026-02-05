@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/services/background_update_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
@@ -102,6 +103,12 @@ class SettingsScreen extends ConsumerWidget {
             ),
             _buildCacheDurationTile(context, ref, theme, settings),
           ]),
+
+          // Background Update Section (only on supported platforms)
+          if (BackgroundUpdateService.isSupported)
+            _buildSettingsSection(context, 'settings.backgroundUpdate'.tr(), [
+              _buildAutoUpdateTile(context, ref, theme, settings),
+            ]),
 
           // Data Management Section
           _buildSettingsSection(context, 'settings.dataManagement'.tr(), [
@@ -375,6 +382,36 @@ class SettingsScreen extends ConsumerWidget {
           ref.invalidate(finMindClientProvider);
         },
       ),
+    );
+  }
+
+  Widget _buildAutoUpdateTile(
+    BuildContext context,
+    WidgetRef ref,
+    ThemeData theme,
+    SettingsState settings,
+  ) {
+    return SwitchListTile(
+      secondary: _buildIconContainer(Colors.green, Icons.sync_rounded),
+      title: Text('settings.autoUpdate'.tr()),
+      subtitle: Text(
+        'settings.autoUpdateDesc'.tr(),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.outline,
+        ),
+      ),
+      value: settings.autoUpdateEnabled,
+      onChanged: (newValue) async {
+        HapticFeedback.selectionClick();
+        ref.read(settingsProvider.notifier).setAutoUpdateEnabled(newValue);
+
+        // 啟用或停用背景更新服務
+        if (newValue) {
+          await BackgroundUpdateService.instance.enableAutoUpdate();
+        } else {
+          await BackgroundUpdateService.instance.disableAutoUpdate();
+        }
+      },
     );
   }
 

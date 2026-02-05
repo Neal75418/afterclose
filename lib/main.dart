@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/app/router.dart';
+import 'package:afterclose/core/services/background_update_service.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -15,6 +16,9 @@ void main() async {
 
   // Initialize notification service (權限請求延遲到使用者啟用通知時)
   await NotificationService.instance.initialize();
+
+  // Initialize background update service
+  await BackgroundUpdateService.instance.initialize();
 
   // Create container to initialize providers before runApp
   final container = ProviderContainer();

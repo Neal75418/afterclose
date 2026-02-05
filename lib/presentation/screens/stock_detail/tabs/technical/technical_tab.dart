@@ -9,7 +9,21 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indi
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indicator_selectors.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/ohlcv_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/k_line_chart_widget.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
+
+/// 圖表時間範圍選項
+enum ChartTimeRange {
+  oneMonth(30, '1M'),
+  threeMonths(90, '3M'),
+  sixMonths(180, '6M'),
+  oneYear(365, '1Y'),
+  all(0, 'ALL'); // 0 表示全部資料
+
+  const ChartTimeRange(this.days, this.label);
+  final int days;
+  final String label;
+}
 
 /// Technical analysis tab - K-line chart + indicators + volume
 class TechnicalTab extends ConsumerStatefulWidget {
@@ -26,6 +40,8 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
   final Set<MainState> _mainIndicators = {MainState.MA};
   // Secondary indicators (sub-charts): MACD, KDJ, RSI, WR, CCI
   final Set<SecondaryState> _secondaryIndicators = {};
+  // 時間範圍（預設 3 個月）
+  ChartTimeRange _timeRange = ChartTimeRange.threeMonths;
 
   final TechnicalIndicatorService _indicatorService =
       TechnicalIndicatorService();
@@ -48,6 +64,45 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
         _secondaryIndicators.add(indicator);
       }
     });
+  }
+
+  void _setTimeRange(ChartTimeRange range) {
+    setState(() {
+      _timeRange = range;
+    });
+  }
+
+  /// 根據選擇的時間範圍過濾價格歷史資料
+  List<DailyPriceEntry> _filterPriceHistory(List<DailyPriceEntry> history) {
+    if (_timeRange == ChartTimeRange.all || history.isEmpty) {
+      return history;
+    }
+
+    final cutoffDate = DateTime.now().subtract(Duration(days: _timeRange.days));
+    return history.where((entry) => entry.date.isAfter(cutoffDate)).toList();
+  }
+
+  /// 建立時間範圍選擇器
+  Widget _buildTimeRangeSelector(ThemeData theme) {
+    return SegmentedButton<ChartTimeRange>(
+      segments: ChartTimeRange.values
+          .map(
+            (range) => ButtonSegment<ChartTimeRange>(
+              value: range,
+              label: Text(range.label),
+            ),
+          )
+          .toList(),
+      selected: {_timeRange},
+      onSelectionChanged: (Set<ChartTimeRange> selection) {
+        _setTimeRange(selection.first);
+      },
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: WidgetStatePropertyAll(theme.textTheme.labelMedium),
+      ),
+    );
   }
 
   @override
@@ -104,9 +159,13 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
           ),
           const SizedBox(height: 8),
 
+          // Time range selector
+          _buildTimeRangeSelector(theme),
+          const SizedBox(height: 12),
+
           // K-line chart with indicators
           KLineChartWidget(
-            priceHistory: state.price.priceHistory,
+            priceHistory: _filterPriceHistory(state.price.priceHistory),
             mainIndicators: _mainIndicators,
             secondaryIndicators: _secondaryIndicators,
             height: totalChartHeight,

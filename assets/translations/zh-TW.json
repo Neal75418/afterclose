@@ -261,6 +261,15 @@
     "bollUpper": "上軌",
     "bollMiddle": "中軌",
     "bollLower": "下軌",
+    "obvLabel": "能量潮",
+    "obvRising": "量能上升",
+    "obvFalling": "量能下降",
+    "obvNeutral": "量能持平",
+    "atrLabel": "波動率",
+    "atrLow": "低波動",
+    "atrMedium": "中波動",
+    "atrHigh": "高波動",
+    "volatility": "波動性",
     "secondaryIndicators": "副圖指標",
     "indicatorValues": "指標數值",
     "change": "漲跌",
@@ -505,7 +514,10 @@
     "selectCacheDuration": "選擇快取時間",
     "cache15min": "15 分鐘",
     "cache30min": "30 分鐘",
-    "cache60min": "1 小時"
+    "cache60min": "1 小時",
+    "backgroundUpdate": "背景更新",
+    "autoUpdate": "每日自動更新",
+    "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知"
   },
   "alert": {
     "title": "價格提醒",
@@ -901,7 +913,8 @@
     "mixedSignals": "多空訊號並存，建議等待方向確認。",
     "confidenceHigh": "高信心",
     "confidenceMedium": "中信心",
-    "confidenceLow": "低信心"
+    "confidenceLow": "低信心",
+    "signalStrength": "訊號強度"
   },
   "comparison": {
     "title": "個股比較",
@@ -1029,7 +1042,24 @@
     "feeAutoCalc": "自動計算（0.1425%）",
     "taxAutoCalc": "自動計算（0.3%）",
     "txType": "交易類型",
-    "selectStock": "選擇股票"
+    "selectStock": "選擇股票",
+    "performance": "績效分析",
+    "periodReturns": "期間報酬",
+    "daily": "日",
+    "weekly": "週",
+    "monthly": "月",
+    "yearly": "年化",
+    "totalReturn": "總報酬率",
+    "maxDrawdown": "最大回撤",
+    "industryAllocation": "產業配置",
+    "dividendAnalysis": "股利分析",
+    "expectedDividend": "預期股利",
+    "yieldOnCost": "成本殖利率",
+    "yieldOnMarket": "市價殖利率",
+    "stockDividends": "持股股利",
+    "perShare": "每股",
+    "expected": "預期",
+    "yield": "殖利率"
   },
   "calendar": {
     "title": "事件行事曆",

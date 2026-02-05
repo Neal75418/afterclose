@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:afterclose/data/database/app_database.dart';
+
 /// 技術指標計算服務
 ///
 /// 提供各種技術分析指標的計算方法，包含 SMA、EMA、RSI、KD、MACD、布林通道等
@@ -285,6 +287,164 @@ class TechnicalIndicatorService {
   /// 計算成交量移動平均線
   List<double?> calculateVolumeMA(List<double> volumes, int period) {
     return calculateSMA(volumes, period);
+  }
+
+  /// 計算能量潮指標 (OBV - On Balance Volume)
+  ///
+  /// OBV 是累積成交量指標，用於衡量買賣壓力
+  /// - 價格上漲時累加當日成交量
+  /// - 價格下跌時累減當日成交量
+  /// - 價格持平時成交量不計入
+  List<double> calculateOBV(List<double> closes, List<double> volumes) {
+    if (closes.isEmpty || volumes.isEmpty) return [];
+    if (closes.length != volumes.length) return [];
+
+    final result = <double>[];
+    double obv = 0;
+
+    // 第一天 OBV 設為 0
+    result.add(obv);
+
+    for (int i = 1; i < closes.length; i++) {
+      if (closes[i] > closes[i - 1]) {
+        // 價格上漲：累加成交量
+        obv += volumes[i];
+      } else if (closes[i] < closes[i - 1]) {
+        // 價格下跌：累減成交量
+        obv -= volumes[i];
+      }
+      // 價格持平：OBV 不變
+      result.add(obv);
+    }
+
+    return result;
+  }
+
+  /// 計算平均真實波幅 (ATR - Average True Range)
+  ///
+  /// ATR 是衡量價格波動性的指標，計算方式：
+  /// True Range = max(高-低, |高-前收|, |低-前收|)
+  /// ATR = True Range 的移動平均
+  ///
+  /// [period] 週期，預設 14 日
+  List<double?> calculateATR(
+    List<double> highs,
+    List<double> lows,
+    List<double> closes, {
+    int period = 14,
+  }) {
+    if (highs.length != lows.length || lows.length != closes.length) {
+      return [];
+    }
+    if (closes.length < 2) return List.filled(closes.length, null);
+
+    final trueRanges = <double>[];
+    final result = <double?>[];
+
+    // 計算 True Range
+    for (int i = 0; i < closes.length; i++) {
+      if (i == 0) {
+        // 第一天的 TR 就是高低價差
+        trueRanges.add(highs[i] - lows[i]);
+      } else {
+        final prevClose = closes[i - 1];
+        final tr1 = highs[i] - lows[i]; // 當日高低差
+        final tr2 = (highs[i] - prevClose).abs(); // 當日高與前收差
+        final tr3 = (lows[i] - prevClose).abs(); // 當日低與前收差
+        trueRanges.add([tr1, tr2, tr3].reduce(max));
+      }
+    }
+
+    // 計算 ATR（使用 Wilder's 平滑方法）
+    for (int i = 0; i < closes.length; i++) {
+      if (i < period - 1) {
+        result.add(null);
+      } else if (i == period - 1) {
+        // 第一個 ATR 使用簡單平均
+        double sum = 0;
+        for (int j = 0; j < period; j++) {
+          sum += trueRanges[j];
+        }
+        result.add(sum / period);
+      } else {
+        // 後續使用 Wilder's 平滑
+        // ATR = ((前ATR * (period-1)) + 當日TR) / period
+        final prevATR = result[i - 1]!;
+        final currentATR = (prevATR * (period - 1) + trueRanges[i]) / period;
+        result.add(currentATR);
+      }
+    }
+
+    return result;
+  }
+
+  /// 計算最新的 OBV 值（供規則使用）
+  ///
+  /// [prices] DailyPriceEntry 列表，需依日期升序排列
+  static double? latestOBV(List<DailyPriceEntry> prices) {
+    if (prices.length < 2) return null;
+
+    double obv = 0;
+    for (int i = 1; i < prices.length; i++) {
+      final current = prices[i].close;
+      final previous = prices[i - 1].close;
+      final volume = prices[i].volume;
+      if (current == null || previous == null || volume == null) continue;
+
+      if (current > previous) {
+        obv += volume;
+      } else if (current < previous) {
+        obv -= volume;
+      }
+    }
+
+    return obv;
+  }
+
+  /// 計算最新的 ATR 值（供規則使用）
+  ///
+  /// [prices] DailyPriceEntry 列表，需依日期升序排列
+  /// [period] 計算週期，預設 14
+  static double? latestATR(List<DailyPriceEntry> prices, {int period = 14}) {
+    if (prices.length < period) return null;
+
+    // 計算 True Range
+    final trueRanges = <double>[];
+    for (int i = 0; i < prices.length; i++) {
+      final high = prices[i].high;
+      final low = prices[i].low;
+      final close = prices[i].close;
+      if (high == null || low == null || close == null) continue;
+
+      if (i == 0) {
+        trueRanges.add(high - low);
+      } else {
+        final prevClose = prices[i - 1].close;
+        if (prevClose == null) continue;
+
+        final tr1 = high - low;
+        final tr2 = (high - prevClose).abs();
+        final tr3 = (low - prevClose).abs();
+        trueRanges.add([tr1, tr2, tr3].reduce(max));
+      }
+    }
+
+    if (trueRanges.length < period) return null;
+
+    // 計算 ATR（Wilder's 平滑）
+    // 先計算初始 SMA
+    double atr = 0;
+    for (int i = 0; i < period; i++) {
+      atr += trueRanges[i];
+    }
+    atr /= period;
+
+    // 再套用 Wilder's smoothing
+    for (int i = period; i < trueRanges.length; i++) {
+      atr = (atr * (period - 1) + trueRanges[i]) / period;
+    }
+
+    return atr;
   }
 
   // ==========================================
