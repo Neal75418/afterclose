@@ -38,12 +38,12 @@ mixin _PriceDaoMixin on _$AppDatabase {
     String symbol, {
     int count = 2,
   }) async {
-    // 多取一些資料以處理可能的重複日期
+    // 多取一些以處理同一天不同時區格式的重複資料（通常每日 1-2 筆重複，保守取 3 倍）
     final allRecent =
         await (select(dailyPrice)
               ..where((t) => t.symbol.equals(symbol))
               ..orderBy([(t) => OrderingTerm.desc(t.date)])
-              ..limit(count * 5))
+              ..limit(count * 3))
             .get();
 
     // 過濾出不同日期的價格（以年月日判斷）

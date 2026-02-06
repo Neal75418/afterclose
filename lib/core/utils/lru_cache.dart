@@ -5,7 +5,7 @@ import 'dart:collection';
 /// 功能特點：
 /// - 泛型鍵值儲存
 /// - 可設定最大容量
-/// - 可設定 TTL（預設 30 秒）
+/// - 可設定 TTL（預設 5 分鐘）
 /// - 自動清除過期及最久未使用的項目
 ///
 /// 使用範例：
@@ -15,7 +15,7 @@ import 'dart:collection';
 /// final cached = cache.get('2330');
 /// ```
 class LruCache<K, V> {
-  LruCache({this.maxSize = 100, this.ttl = const Duration(seconds: 30)});
+  LruCache({this.maxSize = 100, this.ttl = const Duration(minutes: 5)});
 
   /// 快取最大項目數
   final int maxSize;
@@ -185,7 +185,7 @@ class CacheStats {
 class BatchQueryCacheManager {
   BatchQueryCacheManager({
     int maxSize = 50,
-    Duration ttl = const Duration(seconds: 30),
+    Duration ttl = const Duration(minutes: 5),
   }) : _latestPricesCache = LruCache(maxSize: maxSize, ttl: ttl),
        _priceHistoryCache = LruCache(maxSize: maxSize, ttl: ttl),
        _analysesCache = LruCache(maxSize: maxSize, ttl: ttl),
@@ -297,6 +297,22 @@ class BatchQueryCacheManager {
     _latestPricesCache.clear();
     _priceHistoryCache.clear();
     _analysesCache.clear();
+    _reasonsCache.clear();
+  }
+
+  /// 僅清除價格相關快取（最新價格 + 價格歷史）
+  void clearPrices() {
+    _latestPricesCache.clear();
+    _priceHistoryCache.clear();
+  }
+
+  /// 僅清除分析結果快取
+  void clearAnalyses() {
+    _analysesCache.clear();
+  }
+
+  /// 僅清除推薦理由快取
+  void clearReasons() {
     _reasonsCache.clear();
   }
 

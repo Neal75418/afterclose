@@ -362,7 +362,7 @@ class AnalysisService {
   ///
   /// 回傳 (區間底部, 區間頂部) 元組
   (double?, double?) findRange(List<DailyPriceEntry> prices) {
-    final rangePrices = prices.reversed.take(RuleParams.rangeLookback).toList();
+    final rangePrices = _lastN(prices, RuleParams.rangeLookback);
 
     if (rangePrices.isEmpty) return (null, null);
 
@@ -391,7 +391,7 @@ class AnalysisService {
     }
 
     // 取得近期價格進行趨勢分析
-    final recentPrices = prices.reversed.take(RuleParams.swingWindow).toList();
+    final recentPrices = _lastN(prices, RuleParams.swingWindow);
 
     // 使用收盤價計算簡易趨勢
     final closes = recentPrices
@@ -518,11 +518,11 @@ class AnalysisService {
     // 檢查成交量爆量
     final todayVolume = today.volume;
     if (todayVolume != null && todayVolume > 0) {
-      final volumeHistory = prices.reversed
-          .skip(1)
-          .take(RuleParams.volMa)
-          .map((p) => p.volume ?? 0)
-          .toList();
+      final volumeHistory = _lastN(
+        prices,
+        RuleParams.volMa,
+        skip: 1,
+      ).map((p) => p.volume ?? 0).toList();
 
       if (volumeHistory.isNotEmpty) {
         final volMa20 =
@@ -560,6 +560,16 @@ class AnalysisService {
   // 私有輔助方法
   // ==========================================
 
+  /// 從列表尾端取得 [count] 個元素（反序：最新在前），
+  /// 可選跳過尾端 [skip] 個元素。
+  /// 比 `list.reversed.skip(s).take(n).toList()` 高效，
+  /// 避免對整個列表建立惰性迭代器。
+  static List<T> _lastN<T>(List<T> list, int count, {int skip = 0}) {
+    final end = (list.length - skip).clamp(0, list.length);
+    final start = (end - count).clamp(0, end);
+    return list.sublist(start, end).reversed.toList();
+  }
+
   /// 計算線性迴歸斜率
   double _calculateSlope(List<double> values) {
     final n = values.length;
@@ -595,11 +605,12 @@ class AnalysisService {
     if (prices.length < RuleParams.swingWindow * 2) return false;
 
     // 找出近期波段低點
-    final recentPrices = prices.reversed.take(RuleParams.swingWindow).toList();
-    final prevPrices = prices.reversed
-        .skip(RuleParams.swingWindow)
-        .take(RuleParams.swingWindow)
-        .toList();
+    final recentPrices = _lastN(prices, RuleParams.swingWindow);
+    final prevPrices = _lastN(
+      prices,
+      RuleParams.swingWindow,
+      skip: RuleParams.swingWindow,
+    );
 
     final recentLow = _findMinLow(recentPrices);
     final prevLow = _findMinLow(prevPrices);
@@ -637,11 +648,12 @@ class AnalysisService {
     if (prices.length < RuleParams.swingWindow * 2) return false;
 
     // 找出近期波段高點
-    final recentPrices = prices.reversed.take(RuleParams.swingWindow).toList();
-    final prevPrices = prices.reversed
-        .skip(RuleParams.swingWindow)
-        .take(RuleParams.swingWindow)
-        .toList();
+    final recentPrices = _lastN(prices, RuleParams.swingWindow);
+    final prevPrices = _lastN(
+      prices,
+      RuleParams.swingWindow,
+      skip: RuleParams.swingWindow,
+    );
 
     final recentHigh = _findMaxHigh(recentPrices);
     final prevHigh = _findMaxHigh(prevPrices);
@@ -799,7 +811,7 @@ class AnalysisService {
 
     // 取得近期價格（排除今日作為比較基準）
     const lookback = RuleParams.priceVolumeLookbackDays;
-    final recentPrices = prices.reversed.take(lookback + 1).toList();
+    final recentPrices = _lastN(prices, lookback + 1);
 
     // 計算回看期間的價格變化
     final todayClose = recentPrices.first.close;
@@ -825,12 +837,11 @@ class AnalysisService {
         recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
 
     // 取得前期成交量作為比較
-    final prevPrices = prices.reversed
-        .skip(lookback)
-        .take(lookback)
-        .map((p) => p.volume ?? 0.0)
-        .where((v) => v > 0)
-        .toList();
+    final prevPrices = _lastN(
+      prices,
+      lookback,
+      skip: lookback,
+    ).map((p) => p.volume ?? 0.0).where((v) => v > 0).toList();
 
     if (prevPrices.isEmpty) {
       return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);

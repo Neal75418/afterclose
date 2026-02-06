@@ -1,6 +1,6 @@
 part of 'package:afterclose/data/database/app_database.dart';
 
-/// Stock valuation (估值) operations.
+/// 股票估值（PER / PBR / 殖利率）資料操作
 mixin _ValuationDaoMixin on _$AppDatabase {
   /// 取得股票的估值歷史
   Future<List<StockValuationEntry>> getValuationHistory(

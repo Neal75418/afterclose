@@ -3,7 +3,7 @@ import 'package:afterclose/data/database/app_database.dart';
 
 /// 批次 Database 查詢的快取存取器
 ///
-/// 為 [AppDatabase] 批次方法包裝 30 秒 TTL 快取，
+/// 為 [AppDatabase] 批次方法包裝 5 分鐘 TTL 快取，
 /// 以減少更新週期中的重複查詢。
 ///
 /// 使用範例:
@@ -127,6 +127,21 @@ class CachedDatabaseAccessor {
   /// 在資料異動後呼叫（例如更新完成後）
   void invalidateCache() {
     _cache.clearAll();
+  }
+
+  /// 僅清除價格相關快取
+  void invalidatePrices() {
+    _cache.clearPrices();
+  }
+
+  /// 僅清除分析結果快取
+  void invalidateAnalyses() {
+    _cache.clearAnalyses();
+  }
+
+  /// 僅清除推薦理由快取
+  void invalidateReasons() {
+    _cache.clearReasons();
   }
 
   // ==================================================

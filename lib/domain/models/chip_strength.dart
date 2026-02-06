@@ -1,7 +1,7 @@
-/// Chip (籌碼) strength analysis result.
+/// 籌碼強度分析結果
 ///
-/// Computed from institutional flow, foreign shareholding,
-/// margin trading, day trading, holding distribution, and insider data.
+/// 綜合法人進出、外資持股比例、融資融券、當沖比例、
+/// 持股集中度、內部人持股等面向計算。
 class ChipStrengthResult {
   const ChipStrengthResult({
     required this.score,
@@ -10,20 +10,20 @@ class ChipStrengthResult {
     this.details = const [],
   });
 
-  /// Overall chip strength score (0-100).
+  /// 籌碼強度總分（0-100）
   final int score;
 
-  /// Rating category derived from score.
+  /// 依分數判定的評級
   final ChipRating rating;
 
-  /// Institutional attitude summary.
+  /// 法人態度摘要
   final InstitutionalAttitude attitude;
 
-  /// Human-readable breakdown of score components.
+  /// 各評分項目的文字說明
   final List<String> details;
 }
 
-/// Chip strength rating levels.
+/// 籌碼強度評級
 ///
 /// 基底分為 0，評級邊界配合 0-based 分佈調整。
 enum ChipRating {
@@ -50,7 +50,7 @@ enum ChipRating {
   }
 }
 
-/// Institutional attitude derived from recent buy/sell patterns.
+/// 法人態度：根據近期買賣超模式判定
 enum InstitutionalAttitude {
   aggressiveBuy,
   moderateBuy,
