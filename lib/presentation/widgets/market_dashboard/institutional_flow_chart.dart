@@ -3,6 +3,31 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
+
+/// 格式化金額（元 → 億/千萬/百萬）
+String _formatAmount(double value) {
+  final absVal = value.abs();
+  final sign = value > 0
+      ? '+'
+      : value < 0
+      ? '-'
+      : '';
+  final inBillion = absVal / 100000000;
+  if (inBillion >= 100) {
+    return '$sign${inBillion.toStringAsFixed(0)} ${'unit.billion'.tr()}';
+  } else if (inBillion >= 10) {
+    return '$sign${inBillion.toStringAsFixed(1)} ${'unit.billion'.tr()}';
+  } else if (inBillion >= 1) {
+    return '$sign${inBillion.toStringAsFixed(2)} ${'unit.billion'.tr()}';
+  }
+  final inTenMillion = absVal / 10000000;
+  if (inTenMillion >= 1) {
+    return '$sign${inTenMillion.toStringAsFixed(1)} ${'unit.tenMillion'.tr()}';
+  }
+  final inMillion = absVal / 1000000;
+  return '$sign${inMillion.toStringAsFixed(0)} ${'unit.million'.tr()}';
+}
 
 /// 法人動向卡片
 ///
@@ -71,7 +96,7 @@ class InstitutionalFlowChart extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
             color: theme.colorScheme.surfaceContainerLowest,
           ),
           child: Row(
@@ -101,21 +126,6 @@ class InstitutionalFlowChart extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _formatAmount(double value) {
-    final absVal = value.abs();
-    final sign = value > 0
-        ? '+'
-        : value < 0
-        ? '-'
-        : '';
-    if (absVal >= 1e8) {
-      return '$sign${(absVal / 1e8).toStringAsFixed(1)} 億';
-    } else if (absVal >= 1e4) {
-      return '$sign${(absVal / 1e4).toStringAsFixed(0)} 萬';
-    }
-    return '$sign${absVal.toStringAsFixed(0)}';
   }
 }
 
@@ -148,7 +158,7 @@ class _FlowCard extends StatelessWidget {
     return Container(
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         color: theme.colorScheme.surfaceContainerLowest,
       ),
       child: IntrinsicHeight(
@@ -227,20 +237,5 @@ class _FlowCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatAmount(double value) {
-    final absVal = value.abs();
-    final sign = value > 0
-        ? '+'
-        : value < 0
-        ? '-'
-        : '';
-    if (absVal >= 1e8) {
-      return '$sign${(absVal / 1e8).toStringAsFixed(1)} 億';
-    } else if (absVal >= 1e4) {
-      return '$sign${(absVal / 1e4).toStringAsFixed(0)} 萬';
-    }
-    return '$sign${absVal.toStringAsFixed(0)}';
   }
 }

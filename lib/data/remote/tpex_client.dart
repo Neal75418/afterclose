@@ -273,6 +273,8 @@ class TpexClient {
   /// [17-19] 自營商(避險) 買/賣/淨
   /// [20-22] 自營商(合計) 買/賣/淨
   /// [23] 三大法人買賣超股數合計
+  ///
+  /// 注意：TPEX API 回傳的是「股數」，存入資料庫時需除以 1000 轉換為「張」
   TpexInstitutional? _parseInstitutionalRow(List<dynamic> row, DateTime date) {
     try {
       if (row.length < 24) return null;
@@ -305,6 +307,104 @@ class TpexClient {
     } catch (_) {
       return null;
     }
+  }
+
+  /// 取得三大法人買賣金額統計（市場總計）
+  ///
+  /// 端點: /web/stock/3insti/3insti_summary/3itrdsum_result.php
+  /// 回傳外資、投信、自營商的買賣金額（元），可用於大盤總覽顯示
+  ///
+  /// [date] 可選，指定日期。省略則取最新。
+  Future<TpexInstitutionalAmounts?> getInstitutionalAmounts({
+    DateTime? date,
+  }) async {
+    try {
+      final targetDate = date ?? DateTime.now();
+      final rocDateStr = TwParseUtils.toRocDateString(targetDate);
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexInstitutionalAmounts,
+        queryParameters: {'l': 'zh-tw', 'd': rocDateStr, 't': 'D', 'o': 'json'},
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.warning('TPEX', '法人金額統計: JSON 解析失敗');
+            return null;
+          }
+        }
+
+        if (data is! Map<String, dynamic>) {
+          AppLogger.warning('TPEX', '法人金額統計: 非預期資料型別');
+          return null;
+        }
+
+        final tables = data['tables'] as List<dynamic>?;
+        if (tables == null || tables.isEmpty) {
+          AppLogger.warning('TPEX', '法人金額統計: 無 tables');
+          return null;
+        }
+
+        final firstTable = tables[0] as Map<String, dynamic>?;
+        if (firstTable == null) {
+          AppLogger.warning('TPEX', '法人金額統計: 無資料表');
+          return null;
+        }
+
+        // 從回傳資料取得實際日期
+        final dateStr = firstTable['date'] as String?;
+        final actualDate =
+            (dateStr != null
+                ? TwParseUtils.parseSlashRocDate(dateStr)
+                : null) ??
+            targetDate;
+
+        final rows = firstTable['data'] as List<dynamic>?;
+        if (rows == null || rows.isEmpty) {
+          AppLogger.warning('TPEX', '法人金額統計: 無資料');
+          return null;
+        }
+
+        // data 結構:
+        // [["外資及陸資合計", "買進金額", "賣出金額", "買賣超"],
+        //  ["　外資及陸資(不含自營商)", ...],
+        //  ["　外資自營商", ...],
+        //  ["投信", ...],
+        //  ["自營商合計", ...], ...]
+        double foreignNet = 0;
+        double trustNet = 0;
+        double dealerNet = 0;
+
+        for (final row in rows) {
+          if (row is! List || row.length < 4) continue;
+          final name = row[0]?.toString().trim() ?? '';
+          final netAmount = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
+
+          // 使用「外資及陸資(不含自營商)」而非合計，與 TWSE 一致
+          if (name.contains('外資及陸資') && name.contains('不含')) {
+            foreignNet = netAmount;
+          } else if (name == '投信') {
+            trustNet = netAmount;
+          } else if (name == '自營商合計') {
+            dealerNet = netAmount;
+          }
+        }
+
+        return TpexInstitutionalAmounts(
+          date: actualDate,
+          foreignNet: foreignNet,
+          trustNet: trustNet,
+          dealerNet: dealerNet,
+        );
+      }
+    } catch (e) {
+      AppLogger.warning('TPEX', '法人金額統計: $e');
+    }
+    return null;
   }
 
   /// 取得所有上櫃股票的估值資料（本益比、股價淨值比、殖利率）

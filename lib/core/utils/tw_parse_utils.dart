@@ -88,4 +88,9 @@ abstract final class TwParseUtils {
   static String formatDateYmd(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
+
+  /// 格式化日期為緊湊西元格式（"20240124"），供 TWSE API 查詢用
+  static String formatDateCompact(DateTime date) {
+    return '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+  }
 }

@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 
@@ -110,6 +111,7 @@ class MarketDataRepository {
       await _db.insertFinancialData(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('MarketDataRepo', '$symbol: 損益表同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync income statement for $symbol', e);
@@ -155,6 +157,7 @@ class MarketDataRepository {
       await _db.insertFinancialData(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('MarketDataRepo', '$symbol: 資產負債表同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync balance sheet for $symbol', e);
@@ -200,6 +203,7 @@ class MarketDataRepository {
       await _db.insertFinancialData(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('MarketDataRepo', '$symbol: 現金流量表同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync cash flow for $symbol', e);
@@ -272,6 +276,7 @@ class MarketDataRepository {
       await _db.insertAdjustedPrices(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('MarketDataRepo', '$symbol: 還原股價同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync adjusted prices for $symbol', e);
@@ -327,6 +332,7 @@ class MarketDataRepository {
       await _db.insertWeeklyPrices(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('MarketDataRepo', '$symbol: 週K線同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync weekly prices for $symbol', e);

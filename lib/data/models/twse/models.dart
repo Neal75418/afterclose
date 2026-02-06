@@ -3,6 +3,7 @@ export 'twse_day_trading.dart';
 export 'twse_insider_aggregation.dart';
 export 'twse_insider_holding.dart';
 export 'twse_institutional.dart';
+export 'twse_institutional_amounts.dart';
 export 'twse_margin_trading.dart';
 export 'twse_market_index.dart';
 export 'twse_monthly_revenue.dart';

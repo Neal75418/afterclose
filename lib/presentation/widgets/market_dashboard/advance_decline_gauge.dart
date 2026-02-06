@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
 /// 漲跌家數水平分段條
@@ -51,9 +52,9 @@ class AdvanceDeclineGauge extends StatelessWidget {
 
         // 水平分段條
         ClipRRect(
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
           child: SizedBox(
-            height: 12,
+            height: DesignTokens.barHeight,
             child: Row(
               children: [
                 if (advPct > 0)

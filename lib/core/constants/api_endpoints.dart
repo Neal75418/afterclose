@@ -18,8 +18,11 @@ abstract final class ApiEndpoints {
   /// 個股歷史價格
   static const String twseStockDay = '/exchangeReport/STOCK_DAY';
 
-  /// 三大法人買賣超
+  /// 三大法人買賣超（個股）
   static const String twseInstitutional = '/rwd/zh/fund/T86';
+
+  /// 三大法人買賣金額統計表（市場總計，單位：元）
+  static const String twseInstitutionalAmounts = '/rwd/zh/fund/BFI82U';
 
   /// 融資融券餘額
   static const String twseMarginTrading = '/rwd/zh/marginTrading/MI_MARGN';
@@ -40,11 +43,13 @@ abstract final class ApiEndpoints {
 
   /// 上市注意股票
   /// 回傳交易量異常、價格異常波動的股票清單
-  static const String twseTradingWarning = '/rwd/zh/announcement/TWTAVU';
+  /// 2025 年後端點變更：TWTAVU → notice
+  static const String twseTradingWarning = '/rwd/zh/announcement/notice';
 
   /// 上市處置股票
   /// 回傳交易受限制的股票清單
-  static const String twseDisposal = '/rwd/zh/announcement/TWTAUU';
+  /// 2025 年後端點變更：TWTAUU → punish
+  static const String twseDisposal = '/rwd/zh/announcement/punish';
 
   /// 上市董監持股 - Open Data（免費、無限制）
   /// 回傳董監事持股餘額資料，格式與 TPEX 相同（個別董監記錄）
@@ -70,6 +75,10 @@ abstract final class ApiEndpoints {
   /// 三大法人上櫃買賣超（回傳 tables[0].data）
   static const String tpexInstitutional =
       '/web/stock/3insti/daily_trade/3itrade_hedge_result.php';
+
+  /// 三大法人買賣金額彙總表（市場總計，單位：元）
+  static const String tpexInstitutionalAmounts =
+      '/web/stock/3insti/3insti_summary/3itrdsum_result.php';
 
   /// 上櫃融資融券餘額（回傳 tables[0].data）
   static const String tpexMarginTrading =

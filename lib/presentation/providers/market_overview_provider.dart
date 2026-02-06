@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -56,6 +57,13 @@ class MarginTradingTotals {
   final double shortChange;
 }
 
+/// 成交額統計（元）
+class TradingTurnover {
+  const TradingTurnover({this.totalTurnover = 0});
+
+  final double totalTurnover; // 單位：元
+}
+
 /// 大盤總覽狀態
 class MarketOverviewState {
   const MarketOverviewState({
@@ -68,8 +76,10 @@ class MarketOverviewState {
     this.advanceDeclineByMarket = const {},
     this.institutionalByMarket = const {},
     this.marginByMarket = const {},
+    this.turnoverByMarket = const {},
     this.isLoading = false,
     this.error,
+    this.dataDate,
   });
 
   final List<TwseMarketIndex> indices;
@@ -92,8 +102,15 @@ class MarketOverviewState {
   /// Key: 'TWSE' / 'TPEx'
   final Map<String, MarginTradingTotals> marginByMarket;
 
+  /// 成交額統計（依市場分組）
+  /// Key: 'TWSE' / 'TPEx'
+  final Map<String, TradingTurnover> turnoverByMarket;
+
   final bool isLoading;
   final String? error;
+
+  /// 資料日期（用於 UI 顯示「資料更新日期」）
+  final DateTime? dataDate;
 
   /// 是否有任何有效資料
   bool get hasData => indices.isNotEmpty || advanceDecline.total > 0;
@@ -107,8 +124,10 @@ class MarketOverviewState {
     Map<String, AdvanceDecline>? advanceDeclineByMarket,
     Map<String, InstitutionalTotals>? institutionalByMarket,
     Map<String, MarginTradingTotals>? marginByMarket,
+    Map<String, TradingTurnover>? turnoverByMarket,
     bool? isLoading,
     String? error,
+    DateTime? dataDate,
   }) {
     return MarketOverviewState(
       indices: indices ?? this.indices,
@@ -121,8 +140,10 @@ class MarketOverviewState {
       institutionalByMarket:
           institutionalByMarket ?? this.institutionalByMarket,
       marginByMarket: marginByMarket ?? this.marginByMarket,
+      turnoverByMarket: turnoverByMarket ?? this.turnoverByMarket,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      dataDate: dataDate ?? this.dataDate,
     );
   }
 }
@@ -138,6 +159,7 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
 
   AppDatabase get _db => _ref.read(databaseProvider);
   TwseClient get _twse => _ref.read(twseClientProvider);
+  TpexClient get _tpex => _ref.read(tpexClientProvider);
 
   /// 載入大盤總覽資料
   ///
@@ -163,6 +185,7 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
           dataDate,
         ), // [6] Map<String, InstitutionalTotals>
         _loadMarginByMarket(dataDate), // [7] Map<String, MarginTradingTotals>
+        _loadTurnoverByMarket(dataDate), // [8] Map<String, TradingTurnover>
       ]);
 
       if (!mounted) return;
@@ -176,6 +199,8 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
         advanceDeclineByMarket: results[5] as Map<String, AdvanceDecline>,
         institutionalByMarket: results[6] as Map<String, InstitutionalTotals>,
         marginByMarket: results[7] as Map<String, MarginTradingTotals>,
+        turnoverByMarket: results[8] as Map<String, TradingTurnover>,
+        dataDate: dataDate,
       );
     } catch (e) {
       // getLatestDataDate() 可能拋出例外
@@ -232,14 +257,30 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
     }
   }
 
+  /// 載入法人買賣超金額總額（上市+上櫃合計）
+  ///
+  /// 使用 TWSE/TPEX 的法人買賣金額統計 API
   Future<InstitutionalTotals> _loadInstitutionalTotals(DateTime date) async {
     try {
-      final totals = await _db.getInstitutionalTotals(date);
+      // 平行呼叫 TWSE 和 TPEX API
+      final futures = await Future.wait([
+        _twse.getInstitutionalAmounts(date: date),
+        _tpex.getInstitutionalAmounts(date: date),
+      ]);
+
+      final twseData = futures[0] as TwseInstitutionalAmounts?;
+      final tpexData = futures[1] as TpexInstitutionalAmounts?;
+
+      final foreignNet =
+          (twseData?.foreignNet ?? 0) + (tpexData?.foreignNet ?? 0);
+      final trustNet = (twseData?.trustNet ?? 0) + (tpexData?.trustNet ?? 0);
+      final dealerNet = (twseData?.dealerNet ?? 0) + (tpexData?.dealerNet ?? 0);
+
       return InstitutionalTotals(
-        foreignNet: totals['foreignNet'] ?? 0,
-        trustNet: totals['trustNet'] ?? 0,
-        dealerNet: totals['dealerNet'] ?? 0,
-        totalNet: totals['totalNet'] ?? 0,
+        foreignNet: foreignNet,
+        trustNet: trustNet,
+        dealerNet: dealerNet,
+        totalNet: foreignNet + trustNet + dealerNet,
       );
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入法人總額失敗: $e');
@@ -282,21 +323,43 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
     }
   }
 
-  /// 載入法人買賣超（依市場分組）
+  /// 載入法人買賣超金額（依市場分組）
+  ///
+  /// 使用 TWSE/TPEX 的法人買賣金額統計 API，直接取得市場總計金額（元）
   Future<Map<String, InstitutionalTotals>> _loadInstitutionalByMarket(
     DateTime date,
   ) async {
     try {
-      final data = await _db.getInstitutionalTotalsByMarket(date);
-      return {
-        for (final entry in data.entries)
-          entry.key: InstitutionalTotals(
-            foreignNet: entry.value['foreignNet'] ?? 0,
-            trustNet: entry.value['trustNet'] ?? 0,
-            dealerNet: entry.value['dealerNet'] ?? 0,
-            totalNet: entry.value['totalNet'] ?? 0,
-          ),
-      };
+      final results = <String, InstitutionalTotals>{};
+
+      // 平行呼叫 TWSE 和 TPEX API
+      final futures = await Future.wait([
+        _twse.getInstitutionalAmounts(date: date),
+        _tpex.getInstitutionalAmounts(date: date),
+      ]);
+
+      final twseData = futures[0] as TwseInstitutionalAmounts?;
+      final tpexData = futures[1] as TpexInstitutionalAmounts?;
+
+      if (twseData != null) {
+        results['TWSE'] = InstitutionalTotals(
+          foreignNet: twseData.foreignNet,
+          trustNet: twseData.trustNet,
+          dealerNet: twseData.dealerNet,
+          totalNet: twseData.totalNet,
+        );
+      }
+
+      if (tpexData != null) {
+        results['TPEx'] = InstitutionalTotals(
+          foreignNet: tpexData.foreignNet,
+          trustNet: tpexData.trustNet,
+          dealerNet: tpexData.dealerNet,
+          totalNet: tpexData.totalNet,
+        );
+      }
+
+      return results;
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入分市場法人總額失敗: $e');
       return {};
@@ -320,6 +383,24 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
       };
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入分市場融資融券總額失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入成交額統計（依市場分組）
+  Future<Map<String, TradingTurnover>> _loadTurnoverByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final data = await _db.getTurnoverSummaryByMarket(date);
+      return {
+        for (final entry in data.entries)
+          entry.key: TradingTurnover(
+            totalTurnover: entry.value['totalTurnover'] ?? 0.0,
+          ),
+      };
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入分市場成交額失敗: $e');
       return {};
     }
   }

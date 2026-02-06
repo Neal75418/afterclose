@@ -2,12 +2,15 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 大盤總覽 Dashboard
 ///
@@ -44,14 +47,14 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
     final theme = Theme.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
+    final isMobile = screenWidth < Breakpoints.mobile;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
           side: BorderSide(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
@@ -80,15 +83,38 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
   /// 建構標題列
   Widget _buildHeader(ThemeData theme, bool isMobile) {
+    final dataDate = widget.state.dataDate;
+    final isToday =
+        dataDate != null &&
+        dataDate.year == DateTime.now().year &&
+        dataDate.month == DateTime.now().month &&
+        dataDate.day == DateTime.now().day;
+
     return Row(
       children: [
         Icon(Icons.show_chart, size: 18, color: theme.colorScheme.primary),
         const SizedBox(width: 8),
-        Text(
-          'marketOverview.title'.tr(),
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'marketOverview.title'.tr(),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            // 顯示資料日期，非今日時以警示色標示
+            if (dataDate != null)
+              Text(
+                DateFormat('MM/dd').format(dataDate) +
+                    (isToday ? '' : ' ${'marketOverview.notToday'.tr()}'),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: isToday
+                      ? theme.colorScheme.onSurfaceVariant
+                      : theme.colorScheme.error,
+                ),
+              ),
+          ],
         ),
         const Spacer(),
         // 市場選擇器（手機顯示）
@@ -185,13 +211,19 @@ class _MarketDashboardState extends State<MarketDashboard> {
       );
     }
 
-    // Section 3-5: 統計數據（依選擇的市場顯示）
+    // Section 3-6: 統計數據（依選擇的市場顯示）
     final adData = widget.state.advanceDeclineByMarket[_selectedMarket];
     final instData = widget.state.institutionalByMarket[_selectedMarket];
     final marginData = widget.state.marginByMarket[_selectedMarket];
+    final turnoverData = widget.state.turnoverByMarket[_selectedMarket];
 
     if (adData != null && adData.total > 0) {
       sections.add(AdvanceDeclineGauge(data: adData));
+    }
+
+    // 成交量統計
+    if (turnoverData != null && turnoverData.totalTurnover > 0) {
+      sections.add(TradingTurnoverRow(data: turnoverData));
     }
 
     if (instData != null &&
@@ -307,6 +339,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final adData = widget.state.advanceDeclineByMarket[market];
     final instData = widget.state.institutionalByMarket[market];
     final marginData = widget.state.marginByMarket[market];
+    final turnoverData = widget.state.turnoverByMarket[market];
 
     final children = <Widget>[
       // 標題
@@ -341,6 +374,19 @@ class _MarketDashboardState extends State<MarketDashboard> {
       // 漲跌家數
       if (adData.total > 0) {
         children.add(AdvanceDeclineGauge(data: adData));
+        children.add(const SizedBox(height: 12));
+        children.add(
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+        );
+        children.add(const SizedBox(height: 12));
+      }
+
+      // 成交量統計
+      if (turnoverData != null && turnoverData.totalTurnover > 0) {
+        children.add(TradingTurnoverRow(data: turnoverData));
         children.add(const SizedBox(height: 12));
         children.add(
           Divider(

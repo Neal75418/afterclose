@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// 子指數列表
+/// 子指數列表（水平滾動）
 ///
-/// 垂直排列未含金融、電子類、金融保險三個子指數，
-/// 每行左側名稱+數字，右側走勢圖。
+/// 顯示產業指數的水平卡片列表，支援滾動查看更多指數
 class SubIndicesRow extends StatelessWidget {
   const SubIndicesRow({
     super.key,
@@ -27,124 +26,161 @@ class SubIndicesRow extends StatelessWidget {
     if (subIndices.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 600;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: theme.colorScheme.surfaceContainerLowest,
-      ),
-      child: Column(
-        children: [
-          for (int i = 0; i < subIndices.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 16,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.15),
-              ),
-            _SubIndexRow(
-              index: subIndices[i],
-              historyData: historyMap[subIndices[i].name] ?? [],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SubIndexRow extends StatelessWidget {
-  const _SubIndexRow({required this.index, required this.historyData});
-
-  final TwseMarketIndex index;
-  final List<double> historyData;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = index.isUp
-        ? AppTheme.upColor
-        : index.change < 0
-        ? AppTheme.downColor
-        : AppTheme.neutralColor;
-    final sign = index.change > 0 ? '+' : '';
-    final formatter = NumberFormat('#,##0.00');
-
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 左側色點
-        Container(
-          width: 4,
-          height: 32,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            'marketOverview.industryIndices'.tr(),
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-        const SizedBox(width: 10),
-
-        // 中間：名稱 + 數字
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _shortenName(index.name),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Text(
-                    formatter.format(index.close),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$sign${index.changePercent.toStringAsFixed(2)}%',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // 右側走勢圖
-        if (historyData.length >= 2)
+        // 桌面版：使用 Wrap 排列；手機版：水平滾動
+        if (isDesktop)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: subIndices.map((idx) {
+                final history = historyMap[idx.name] ?? [];
+                return SizedBox(
+                  width: 140,
+                  child: _SubIndexCard(index: idx, history: history),
+                );
+              }).toList(),
+            ),
+          )
+        else
           SizedBox(
-            width: 80,
-            height: 28,
-            child: MiniTrendChart(
-              dataPoints: historyData,
-              height: 28,
-              lineColor: color,
-              fillColor: color.withValues(alpha: 0.08),
+            height: 96, // 固定高度
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: subIndices.length,
+              itemBuilder: (context, index) {
+                final idx = subIndices[index];
+                final history = historyMap[idx.name] ?? [];
+
+                return Container(
+                  width: 140, // 固定寬度
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  child: _SubIndexCard(index: idx, history: history),
+                );
+              },
             ),
           ),
       ],
     );
   }
+}
 
-  String _shortenName(String name) {
-    if (name.contains('未含金融')) return 'marketOverview.exFinance'.tr();
-    if (name.contains('電子工業') || name.contains('電子類')) {
+class _SubIndexCard extends StatelessWidget {
+  const _SubIndexCard({required this.index, required this.history});
+
+  final TwseMarketIndex index;
+  final List<double> history;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPositive = index.change >= 0;
+    final color = index.isUp
+        ? AppTheme.upColor
+        : index.change < 0
+        ? AppTheme.downColor
+        : AppTheme.neutralColor;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 指數名稱（簡化顯示）
+            Text(
+              _simplifyIndexName(index.name),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+
+            // 指數值
+            Text(
+              index.close.toStringAsFixed(2),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 4),
+
+            // 漲跌幅
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                  size: 12,
+                  color: color,
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  '${isPositive ? '+' : ''}${index.changePercent.toStringAsFixed(2)}%',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 簡化指數名稱顯示
+  String _simplifyIndexName(String fullName) {
+    // 優先使用翻譯鍵
+    if (fullName.contains('未含金融')) return 'marketOverview.exFinance'.tr();
+    if (fullName.contains('電子工業') || fullName.contains('電子類')) {
       return 'marketOverview.electronics'.tr();
     }
-    if (name.contains('金融保險')) return 'marketOverview.finance'.tr();
-    return name;
+    if (fullName.contains('金融保險')) return 'marketOverview.finance'.tr();
+    if (fullName.contains('半導體')) return 'marketOverview.semiconductor'.tr();
+    if (fullName.contains('航運')) return 'marketOverview.shipping'.tr();
+    if (fullName.contains('生技')) return 'marketOverview.biotech'.tr();
+    if (fullName.contains('鋼鐵')) return 'marketOverview.steel'.tr();
+    if (fullName.contains('綠能') || fullName.contains('環保')) {
+      return 'marketOverview.greenEnergy'.tr();
+    }
+    if (fullName.contains('高股息')) return 'marketOverview.highDividend'.tr();
+
+    // 如果沒有匹配到翻譯，嘗試簡化原名稱
+    return fullName
+        .replaceAll('類指數', '')
+        .replaceAll('工業', '')
+        .replaceAll('保險', '');
   }
 }

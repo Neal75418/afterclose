@@ -165,6 +165,7 @@ class TwseClient {
   /// 取得所有股票的法人買賣超資料
   ///
   /// 端點: /rwd/zh/fund/T86（三大法人買賣超日報）
+  /// 注意：TWSE API 回傳的是「股數」，存入資料庫時需除以 1000 轉換為「張」
   Future<List<TwseInstitutional>> getAllInstitutionalData({
     DateTime? date,
   }) async {
@@ -175,10 +176,7 @@ class TwseClient {
       };
 
       if (date != null) {
-        // 格式: YYYYMMDD
-        final dateStr =
-            '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-        queryParams['date'] = dateStr;
+        queryParams['date'] = TwParseUtils.formatDateCompact(date);
       }
 
       final response = await _dio.get(
@@ -609,12 +607,13 @@ class TwseClient {
   Future<List<TwseDayTrading>> getAllDayTradingData({DateTime? date}) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final dateStr =
-          '${targetDate.year}${targetDate.month.toString().padLeft(2, '0')}${targetDate.day.toString().padLeft(2, '0')}';
 
       final response = await _dio.get(
         '/exchangeReport/TWTB4U',
-        queryParameters: {'response': 'json', 'date': dateStr},
+        queryParameters: {
+          'response': 'json',
+          'date': TwParseUtils.formatDateCompact(targetDate),
+        },
         options: Options(responseType: ResponseType.plain),
       );
 
@@ -722,8 +721,7 @@ class TwseClient {
     try {
       final queryParams = <String, dynamic>{'response': 'json', 'type': 'IND'};
       if (date != null) {
-        queryParams['date'] =
-            '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+        queryParams['date'] = TwParseUtils.formatDateCompact(date);
       }
 
       final response = await _dio.get(
@@ -867,23 +865,120 @@ class TwseClient {
   }
 
   // ==========================================
+  // 三大法人買賣金額統計 API
+  // ==========================================
+
+  /// 取得三大法人買賣金額統計（市場總計）
+  ///
+  /// 端點: /rwd/zh/fund/BFI82U
+  /// 回傳外資、投信、自營商的買賣金額（元），可用於大盤總覽顯示
+  ///
+  /// [date] 可選，指定日期。省略則取最新。
+  Future<TwseInstitutionalAmounts?> getInstitutionalAmounts({
+    DateTime? date,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{'response': 'json'};
+      if (date != null) {
+        queryParams['dayDate'] = TwParseUtils.formatDateCompact(date);
+      }
+
+      final response = await _dio.get(
+        ApiEndpoints.twseInstitutionalAmounts,
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        var data = response.data;
+        if (data is String) {
+          try {
+            data = jsonDecode(data);
+          } catch (e) {
+            AppLogger.warning('TWSE', '法人金額統計: JSON 解析失敗');
+            return null;
+          }
+        }
+
+        if (data is! Map<String, dynamic>) {
+          AppLogger.warning('TWSE', '法人金額統計: 非預期資料型別');
+          return null;
+        }
+
+        if (data['stat'] != 'OK' || data['data'] == null) {
+          AppLogger.warning('TWSE', '法人金額統計: 無資料');
+          return null;
+        }
+
+        // 解析日期
+        final dateStr = data['date']?.toString() ?? '';
+        final parsedDate = TwParseUtils.parseAdDate(dateStr);
+
+        // data 結構:
+        // [["自營商(自行買賣)", "買進", "賣出", "買賣差額"],
+        //  ["自營商(避險)", ...],
+        //  ["投信", ...],
+        //  ["外資及陸資(不含外資自營商)", ...],
+        //  ["外資自營商", ...],
+        //  ["合計", ...]]
+        final rows = data['data'] as List<dynamic>;
+
+        double foreignNet = 0;
+        double trustNet = 0;
+        double dealerNet = 0;
+        double dealerHedgeNet = 0;
+
+        for (final row in rows) {
+          if (row is! List || row.length < 4) continue;
+          final name = row[0]?.toString() ?? '';
+          final netAmount = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
+
+          if (name.contains('外資及陸資') && name.contains('不含')) {
+            // 匹配「外資及陸資(不含外資自營商)」
+            foreignNet = netAmount;
+          } else if (name == '投信') {
+            trustNet = netAmount;
+          } else if (name == '自營商(自行買賣)') {
+            dealerNet = netAmount;
+          } else if (name == '自營商(避險)') {
+            dealerHedgeNet = netAmount;
+          }
+        }
+
+        return TwseInstitutionalAmounts(
+          date: parsedDate,
+          foreignNet: foreignNet,
+          trustNet: trustNet,
+          dealerNet: dealerNet + dealerHedgeNet, // 合併自營商
+        );
+      }
+    } catch (e) {
+      AppLogger.warning('TWSE', '法人金額統計: $e');
+    }
+    return null;
+  }
+
+  // ==========================================
   // Killer Features API (注意/處置股票)
   // ==========================================
 
   /// 取得上市注意股票清單
   ///
-  /// 端點: /rwd/zh/announcement/TWTAVU
+  /// 端點: /rwd/zh/announcement/notice
   ///
   /// 回傳交易量異常、價格異常波動的股票清單。
+  /// 2025 年後端點變更，查詢參數改為 startDate/endDate。
   Future<List<TwseTradingWarning>> getTradingWarnings({DateTime? date}) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final dateStr =
-          '${targetDate.year}${targetDate.month.toString().padLeft(2, '0')}${targetDate.day.toString().padLeft(2, '0')}';
+      final dateStr = TwParseUtils.formatDateCompact(targetDate);
 
       final response = await _dio.get(
         ApiEndpoints.twseTradingWarning,
-        queryParameters: {'response': 'json', 'date': dateStr},
+        queryParameters: {
+          'response': 'json',
+          'startDate': dateStr,
+          'endDate': dateStr,
+        },
       );
 
       if (response.statusCode == 200) {
@@ -911,7 +1006,8 @@ class TwseClient {
         final results = <TwseTradingWarning>[];
 
         for (final row in rows) {
-          if (row is List && row.length >= 3) {
+          // 新格式有 8 欄
+          if (row is List && row.length >= 5) {
             final parsed = _parseTradingWarningRow(row, targetDate);
             if (parsed != null) {
               results.add(parsed);
@@ -935,20 +1031,22 @@ class TwseClient {
 
   /// 解析注意股票資料列
   ///
-  /// 列格式: [代號, 名稱, 列入原因說明, ...]
+  /// 2025 年後新格式:
+  /// [編號, 證券代號, 證券名稱, 累計次數, 注意交易資訊, 日期, 收盤價, 本益比]
   TwseTradingWarning? _parseTradingWarningRow(
     List<dynamic> row,
     DateTime date,
   ) {
     try {
-      final code = row[0]?.toString().trim() ?? '';
+      // 新格式: index 1 是證券代號
+      final code = row[1]?.toString().trim() ?? '';
       if (code.isEmpty || code.length < 4) return null;
 
       return TwseTradingWarning(
         date: date,
         code: code,
-        name: row[1]?.toString().trim() ?? '',
-        reasonDescription: row.length > 2 ? row[2]?.toString().trim() : null,
+        name: row[2]?.toString().trim() ?? '',
+        reasonDescription: row.length > 4 ? row[4]?.toString().trim() : null,
         warningType: 'ATTENTION',
       );
     } catch (_) {
@@ -958,18 +1056,17 @@ class TwseClient {
 
   /// 取得上市處置股票清單
   ///
-  /// 端點: /rwd/zh/announcement/TWTAUU
+  /// 端點: /rwd/zh/announcement/punish
   ///
   /// 回傳交易受限制的股票清單。
+  /// 2025 年後端點變更，回傳現行有效的處置股票清單（無需日期參數）。
   Future<List<TwseTradingWarning>> getDisposalInfo({DateTime? date}) async {
     try {
       final targetDate = date ?? DateTime.now();
-      final dateStr =
-          '${targetDate.year}${targetDate.month.toString().padLeft(2, '0')}${targetDate.day.toString().padLeft(2, '0')}';
 
       final response = await _dio.get(
         ApiEndpoints.twseDisposal,
-        queryParameters: {'response': 'json', 'date': dateStr},
+        queryParameters: {'response': 'json'},
       );
 
       if (response.statusCode == 200) {
@@ -997,7 +1094,8 @@ class TwseClient {
         final results = <TwseTradingWarning>[];
 
         for (final row in rows) {
-          if (row is List && row.length >= 3) {
+          // 新格式有 10 欄
+          if (row is List && row.length >= 7) {
             final parsed = _parseDisposalRow(row, targetDate);
             if (parsed != null) {
               results.add(parsed);
@@ -1021,41 +1119,34 @@ class TwseClient {
 
   /// 解析處置股票資料列
   ///
-  /// 列格式: [代號, 名稱, 列入原因, 處置措施, 處置起日, 處置迄日, ...]
+  /// 2025 年後新格式:
+  /// [編號, 公布日期, 證券代號, 證券名稱, 累計, 處置條件, 處置起迄時間, 處置措施, 處置內容, 備註]
   TwseTradingWarning? _parseDisposalRow(List<dynamic> row, DateTime date) {
     try {
-      final code = row[0]?.toString().trim() ?? '';
+      // 新格式: index 2 是證券代號
+      final code = row[2]?.toString().trim() ?? '';
       if (code.isEmpty || code.length < 4) return null;
 
-      // 解析處置期間日期（格式可能是 "115/01/20" 或 "1150120"）
-      DateTime? parseDate(String? dateStr) {
-        if (dateStr == null || dateStr.isEmpty) return null;
-        // 嘗試解析 "115/01/20" 格式
-        if (dateStr.contains('/')) {
-          return TwParseUtils.parseSlashRocDate(dateStr);
+      // 解析處置期間（格式: "115/01/29～115/02/11"）
+      DateTime? startDate;
+      DateTime? endDate;
+      final dateRange = row.length > 6 ? row[6]?.toString().trim() : null;
+      if (dateRange != null && dateRange.contains('～')) {
+        final parts = dateRange.split('～');
+        if (parts.length == 2) {
+          startDate = TwParseUtils.parseSlashRocDate(parts[0].trim());
+          endDate = TwParseUtils.parseSlashRocDate(parts[1].trim());
         }
-        // 嘗試解析 "1150120" 格式
-        if (dateStr.length == 7) {
-          final rocYear = int.tryParse(dateStr.substring(0, 3)) ?? 0;
-          final month = int.tryParse(dateStr.substring(3, 5)) ?? 1;
-          final day = int.tryParse(dateStr.substring(5, 7)) ?? 1;
-          if (rocYear > 0) {
-            return DateTime(rocYear + ApiConfig.rocYearOffset, month, day);
-          }
-        }
-        return null;
       }
 
       return TwseTradingWarning(
         date: date,
         code: code,
-        name: row[1]?.toString().trim() ?? '',
-        reasonDescription: row.length > 2 ? row[2]?.toString().trim() : null,
-        disposalMeasures: row.length > 3 ? row[3]?.toString().trim() : null,
-        disposalStartDate: row.length > 4
-            ? parseDate(row[4]?.toString())
-            : null,
-        disposalEndDate: row.length > 5 ? parseDate(row[5]?.toString()) : null,
+        name: row[3]?.toString().trim() ?? '',
+        reasonDescription: row.length > 8 ? row[8]?.toString().trim() : null,
+        disposalMeasures: row.length > 7 ? row[7]?.toString().trim() : null,
+        disposalStartDate: startDate,
+        disposalEndDate: endDate,
         warningType: 'DISPOSAL',
       );
     } catch (_) {

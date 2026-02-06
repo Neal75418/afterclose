@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 融資融券精簡顯示
 ///
@@ -93,7 +94,7 @@ class _MarginItem extends StatelessWidget {
             height: 28,
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
             ),
             child: Icon(icon, size: 14, color: color),
           ),

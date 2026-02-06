@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Hero 加權指數區域
 ///
@@ -32,7 +33,7 @@ class HeroIndexSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
         color: theme.colorScheme.surfaceContainerLowest,
       ),
       child: Column(
@@ -54,7 +55,7 @@ class HeroIndexSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Text(
                   '$sign${taiex.changePercent.toStringAsFixed(2)}%',

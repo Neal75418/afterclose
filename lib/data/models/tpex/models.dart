@@ -8,6 +8,7 @@ export 'tpex_daily_price.dart';
 export 'tpex_day_trading.dart';
 export 'tpex_insider_holding.dart';
 export 'tpex_institutional.dart';
+export 'tpex_institutional_amounts.dart';
 export 'tpex_margin_trading.dart';
 export 'tpex_monthly_revenue.dart';
 export 'tpex_trading_warning.dart';
