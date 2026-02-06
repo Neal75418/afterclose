@@ -618,7 +618,7 @@ class AnalysisService {
     if (recentLow == null || prevLow == null) return false;
 
     // MA20 過濾：需站上 MA20 才確認上漲反轉
-    final ma20 = _calculateMA(prices, 20);
+    final ma20 = TechnicalIndicatorService.latestSMA(prices, 20);
     final currentClose = prices.last.close;
 
     if (ma20 != null && currentClose != null) {
@@ -708,26 +708,6 @@ class AnalysisService {
 
     // 近期成交量需達前期的 1.5 倍（弱轉強需有量能）
     return avgRecentVolume >= avgPrevVolume * RuleParams.reversalVolumeConfirm;
-  }
-
-  /// 計算簡單移動平均
-  double? _calculateMA(List<DailyPriceEntry> prices, int period) {
-    if (prices.length < period) return null;
-
-    double sum = 0;
-    int count = 0;
-
-    // 取最後 N 筆價格
-    for (var i = prices.length - 1; i >= prices.length - period; i--) {
-      final close = prices[i].close;
-      if (close != null) {
-        sum += close;
-        count++;
-      }
-    }
-
-    if (count < period) return null; // 有效資料不足
-    return sum / count;
   }
 
   /// 計算 ATR-based 支撐壓力搜尋距離

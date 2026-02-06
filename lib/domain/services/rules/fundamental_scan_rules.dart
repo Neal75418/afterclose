@@ -2,48 +2,11 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 // ==========================================
 // 第 6 階段：基本面分析規則
 // ==========================================
-
-// 輔助函數：計算 MA
-double? _calculateMA(List<dynamic> prices, int period) {
-  if (prices.length < period) return null;
-  double sum = 0;
-  int count = 0;
-  for (int i = prices.length - 1; i >= prices.length - period; i--) {
-    final close = prices[i].close;
-    if (close != null) {
-      sum += close;
-      count++;
-    }
-  }
-  return count == period ? sum / count : null;
-}
-
-// 輔助函數：計算 RSI
-double? _calculateRSI(List<dynamic> prices, int period) {
-  if (prices.length < period + 1) return null;
-  double gains = 0;
-  double losses = 0;
-  for (int i = prices.length - period; i < prices.length; i++) {
-    final current = prices[i].close;
-    final previous = prices[i - 1].close;
-    if (current == null || previous == null) continue;
-    final change = current - previous;
-    if (change > 0) {
-      gains += change;
-    } else {
-      losses += -change;
-    }
-  }
-  final avgGain = gains / period;
-  final avgLoss = losses / period;
-  if (avgLoss == 0) return 100;
-  final rs = avgGain / avgLoss;
-  return 100 - (100 / (1 + rs));
-}
 
 /// 規則：營收年增暴增
 ///
@@ -66,7 +29,7 @@ class RevenueYoYSurgeRule extends StockRule {
 
     if (yoyGrowth >= RuleParams.revenueYoySurgeThreshold) {
       // 技術面過濾：須站上 MA60 且漲幅 > 1.5%
-      final ma60 = _calculateMA(data.prices, 60);
+      final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
 
       final today = data.prices.isNotEmpty ? data.prices.last : null;
       final prev = data.prices.length >= 2
@@ -178,7 +141,7 @@ class RevenueMomGrowthRule extends StockRule {
 
     if (consecutiveMonths >= RuleParams.revenueMomConsecutiveMonths) {
       // 技術面過濾：須站上 MA20
-      final ma20 = _calculateMA(data.prices, 20);
+      final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
       final close = data.prices.isNotEmpty ? data.prices.last.close : null;
 
       // 技術面過濾：站上 MA20 且漲幅 > 1.5%
@@ -307,7 +270,7 @@ class PEUndervaluedRule extends StockRule {
 
     if (pe > 0 && pe <= RuleParams.peUndervaluedThreshold) {
       // 過濾條件：須顯示強勢跡象（股價 > MA20）
-      final ma20 = _calculateMA(data.prices, 20);
+      final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
       final close = data.prices.isNotEmpty ? data.prices.last.close : null;
 
       if (ma20 != null && close != null && close > ma20) {
@@ -348,7 +311,7 @@ class PEOvervaluedRule extends StockRule {
 
     if (pe >= RuleParams.peOvervaluedThreshold) {
       // 過濾條件：須處於過熱狀態（RSI > 70）
-      final rsi = _calculateRSI(data.prices, 14);
+      final rsi = TechnicalIndicatorService.latestRSI(data.prices);
       if (rsi != null && rsi > RuleParams.scanRsiOverboughtThreshold) {
         return TriggeredReason(
           type: ReasonType.peOvervalued,
@@ -437,7 +400,7 @@ class EPSYoYSurgeRule extends StockRule {
     if (yoyGrowth < RuleParams.epsYoYSurgeThreshold) return null;
 
     // 技術面過濾：站上 MA60 + 長紅
-    final ma60 = _calculateMA(data.prices, 60);
+    final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
     final today = data.prices.isNotEmpty ? data.prices.last : null;
     final prev = data.prices.length >= 2
         ? data.prices[data.prices.length - 2]
@@ -515,7 +478,7 @@ class EPSConsecutiveGrowthRule extends StockRule {
     if (consecutive < RuleParams.epsConsecutiveQuarters) return null;
 
     // 技術面過濾：站上 MA20
-    final ma20 = _calculateMA(data.prices, 20);
+    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
     final close = data.prices.isNotEmpty ? data.prices.last.close : null;
 
     if (ma20 != null && close != null && close > ma20) {
@@ -566,9 +529,9 @@ class EPSTurnaroundRule extends StockRule {
     }
 
     // 技術面過濾：站上 MA20 或 RSI > 50
-    final ma20 = _calculateMA(data.prices, 20);
+    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
     final close = data.prices.isNotEmpty ? data.prices.last.close : null;
-    final rsi = _calculateRSI(data.prices, 14);
+    final rsi = TechnicalIndicatorService.latestRSI(data.prices);
 
     final aboveMA20 = ma20 != null && close != null && close > ma20;
     final rsiPositive =
@@ -675,7 +638,7 @@ class ROEExcellentRule extends StockRule {
     }
 
     // 技術面過濾：站上 MA20
-    final ma20 = _calculateMA(data.prices, 20);
+    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
     final close = data.latestClose;
     if (ma20 == null || close == null || close <= ma20) return null;
 
@@ -730,7 +693,7 @@ class ROEImprovingRule extends StockRule {
     if (improvingCount < RuleParams.roeMinQuarters) return null;
 
     // 技術面過濾：站上 MA20
-    final ma20 = _calculateMA(data.prices, 20);
+    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
     final close = data.latestClose;
     if (ma20 == null || close == null || close <= ma20) return null;
 
