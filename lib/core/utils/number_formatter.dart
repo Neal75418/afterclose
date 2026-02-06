@@ -37,4 +37,20 @@ class AppNumberFormat {
     final prefix = value > 0 ? '+' : '';
     return '$prefix${_intFormat.format(value)}';
   }
+
+  /// NT$ 貨幣格式（如 NT$1,234 / NT$123.45）
+  static String currency(double value, {int decimals = 0}) {
+    final formatted = switch (decimals) {
+      0 => _intFormat.format(value),
+      1 => _decFormat.format(value),
+      _ => _dec2Format.format(value),
+    };
+    return 'NT\$$formatted';
+  }
+
+  /// 帶正負號的 NT$ 貨幣格式（如 +NT$1,234 / -NT$567）
+  static String signedCurrency(double value, {int decimals = 0}) {
+    final prefix = value > 0 ? '+' : '';
+    return '$prefix${currency(value, decimals: decimals)}';
+  }
 }

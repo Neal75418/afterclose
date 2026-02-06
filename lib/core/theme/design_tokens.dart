@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 /// 設計系統核心常數
 ///
 /// 統一管理應用程式中的間距、圓角、透明度等設計參數，
@@ -6,6 +8,9 @@ abstract final class DesignTokens {
   // ============================================================
   // 間距系統 (8dp Grid)
   // ============================================================
+
+  /// 2dp - 微間距（行內元素間距）
+  static const double spacing2 = 2.0;
 
   /// 4dp - 極小間距（標籤內文字間距）
   static const double spacing4 = 4.0;
@@ -126,4 +131,58 @@ abstract final class DesignTokens {
 
   /// 26dp - 大圖示（自選按鈕）
   static const double iconSizeXl = 26.0;
+
+  // ============================================================
+  // 進度條/視覺化元素
+  // ============================================================
+
+  /// 12dp - 進度條/量表高度
+  static const double barHeight = 12.0;
+
+  // ============================================================
+  // Bottom Sheet 尺寸
+  // ============================================================
+
+  /// Bottom Sheet 初始高度比例
+  static const double sheetInitialSize = 0.5;
+
+  /// Bottom Sheet 最小高度比例
+  static const double sheetMinSize = 0.3;
+
+  /// Bottom Sheet 最大高度比例
+  static const double sheetMaxSize = 0.9;
+
+  // ============================================================
+  // 動畫時長
+  // ============================================================
+
+  /// 快速動畫 (200ms)
+  static const Duration animDurationFast = Duration(milliseconds: 200);
+
+  /// 標準動畫 (300ms)
+  static const Duration animDurationNormal = Duration(milliseconds: 300);
+
+  /// 動畫交錯延遲 (30ms/item)
+  static const int animStaggerDelayMs = 30;
+
+  /// 列表動畫最大項目數
+  static const int maxAnimatedItems = 10;
+
+  // ============================================================
+  // 圖表色盤
+  // ============================================================
+
+  /// 通用圖表色盤（8 色循環使用）
+  ///
+  /// 用於比較圖表、配置圓餅圖等需要多色區分的場景。
+  static const chartPalette = [
+    Color(0xFF2196F3), // Blue
+    Color(0xFFFF9800), // Orange
+    Color(0xFF9C27B0), // Purple
+    Color(0xFF4CAF50), // Green
+    Color(0xFFF44336), // Red
+    Color(0xFF00BCD4), // Cyan
+    Color(0xFFFFEB3B), // Yellow
+    Color(0xFF795548), // Brown
+  ];
 }

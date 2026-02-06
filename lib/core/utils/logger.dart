@@ -26,9 +26,14 @@ abstract final class AppLogger {
     _log(LogLevel.info, tag, message);
   }
 
-  /// 記錄 warning 訊息
-  static void warning(String tag, String message, [Object? error]) {
-    _log(LogLevel.warning, tag, message, error);
+  /// 記錄 warning 訊息，可附帶例外與堆疊追蹤
+  static void warning(
+    String tag,
+    String message, [
+    Object? error,
+    StackTrace? stackTrace,
+  ]) {
+    _log(LogLevel.warning, tag, message, error, stackTrace);
   }
 
   /// 記錄 error 訊息，可附帶例外與堆疊追蹤

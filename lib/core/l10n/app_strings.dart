@@ -123,14 +123,22 @@ class S {
   // 趨勢
   // ==================================================
   static const String trendUp = '上升趨勢';
-  static const String trendDown = '下降趨勢';
-  static const String trendSideways = '盤整';
+  static const String trendDown = '下跌趨勢';
+  static const String trendSideways = '盤整區間';
 
   static String getTrendLabel(String? trendState) {
     return switch (trendState) {
       'UP' => trendUp,
       'DOWN' => trendDown,
       _ => trendSideways,
+    };
+  }
+
+  static String? getReversalLabel(String? reversalState) {
+    return switch (reversalState) {
+      'W2S' => reasonReversalW2S,
+      'S2W' => reasonReversalS2W,
+      _ => null,
     };
   }
 
