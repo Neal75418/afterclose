@@ -18,6 +18,11 @@
     "settings": "Settings",
     "next": "Next"
   },
+  "unit": {
+    "billion": "B",
+    "tenMillion": "10M",
+    "million": "M"
+  },
   "nav": {
     "today": "Today",
     "scan": "Scan",
@@ -38,11 +43,21 @@
     "tpex": "TPEx",
     "tpexNoIndex": "No index data for OTC market",
     "noData": "No data",
+    "notToday": "(Not today)",
     "loadError": "Failed to load market data",
     "taiex": "TAIEX",
     "exFinance": "Ex-Finance",
     "electronics": "Electronics",
     "finance": "Finance",
+    "industryIndices": "Industry Indices",
+    "semiconductor": "Semiconductor",
+    "shipping": "Shipping",
+    "biotech": "Biotech",
+    "steel": "Steel",
+    "greenEnergy": "Green Energy",
+    "highDividend": "High Dividend",
+    "tradingTurnover": "Turnover",
+    "unitBillion": "B TWD",
     "advanceDecline": "Advance / Decline",
     "advance": "Up",
     "decline": "Down",
@@ -57,8 +72,7 @@
     "marginBalance": "Margin Chg",
     "shortBalance": "Short Chg",
     "balance": "Bal.",
-    "day30Trend": "30-Day Trend",
-    "noData": "No market data"
+    "day30Trend": "30-Day Trend"
   },
   "scan": {
     "title": "Market Scan",
@@ -545,6 +559,16 @@
     "created": "Alert created successfully",
     "createFailed": "Failed to create alert",
     "invalidValue": "Please enter a valid value",
+    "emptyValue": "Please enter a value",
+    "notANumber": "Please enter a valid number",
+    "mustBePositive": "Value must be greater than zero",
+    "targetVolume": "Target Volume",
+    "rsiThreshold": "RSI Threshold",
+    "maDays": "MA Days",
+    "volumeHint": "e.g., 10000",
+    "rsiOverboughtHint": "Default 70",
+    "rsiOversoldHint": "Default 30",
+    "maHint": "e.g., 5, 10, 20, 60",
     "deleted": "Alert deleted",
     "triggered": "Alert triggered",
     "noAlerts": "No Price Alerts",
@@ -1099,7 +1123,8 @@
     "syncDividendEvents": "Sync Dividend Dates",
     "syncComplete": "Synced {count} events",
     "tradingDay": "Trading Day",
-    "holiday": "Holiday"
+    "holiday": "Holiday",
+    "titleRequired": "Please enter an event title"
   },
 
   "warning": {
