@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 
@@ -73,6 +74,7 @@ class ShareholdingRepository {
       await _db.insertShareholdingData(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('ShareholdingRepo', '$symbol: 外資持股同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync shareholding for $symbol', e);
@@ -145,6 +147,7 @@ class ShareholdingRepository {
       await _db.insertHoldingDistribution(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('ShareholdingRepo', '$symbol: 股權分散表同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException(

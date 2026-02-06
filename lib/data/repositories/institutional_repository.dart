@@ -75,6 +75,7 @@ class InstitutionalRepository {
 
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('InstitutionalRepo', '$symbol: 法人資料同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException(
@@ -145,6 +146,7 @@ class InstitutionalRepository {
           .toList();
 
       // 建立上市法人資料 entries
+      // 注意：TWSE API 回傳的是股數，直接儲存股數以符合規則參數單位
       final twseEntries = validTwseData.map((item) {
         final normalizedDate = DateTime(
           item.date.year,
@@ -154,13 +156,15 @@ class InstitutionalRepository {
         return DailyInstitutionalCompanion.insert(
           symbol: item.code,
           date: normalizedDate,
-          foreignNet: Value(item.foreignNet),
-          investmentTrustNet: Value(item.investmentTrustNet),
-          dealerNet: Value(item.dealerNet),
+          // TWSE API 回傳股數，直接儲存（規則參數單位為股）
+          foreignNet: Value(item.foreignNet.toDouble()),
+          investmentTrustNet: Value(item.investmentTrustNet.toDouble()),
+          dealerNet: Value(item.dealerNet.toDouble()),
         );
       }).toList();
 
       // 建立上櫃法人資料 entries
+      // 注意：TPEX API 回傳的是股數，直接儲存股數以符合規則參數單位
       final tpexEntries = validTpexData.map((item) {
         final normalizedDate = DateTime(
           item.date.year,
@@ -170,9 +174,10 @@ class InstitutionalRepository {
         return DailyInstitutionalCompanion.insert(
           symbol: item.code,
           date: normalizedDate,
-          foreignNet: Value(item.foreignNet),
-          investmentTrustNet: Value(item.investmentTrustNet),
-          dealerNet: Value(item.dealerNet),
+          // TPEX API 回傳股數，直接儲存（規則參數單位為股）
+          foreignNet: Value(item.foreignNet.toDouble()),
+          investmentTrustNet: Value(item.investmentTrustNet.toDouble()),
+          dealerNet: Value(item.dealerNet.toDouble()),
         );
       }).toList();
 
@@ -247,4 +252,9 @@ class InstitutionalRepository {
 
     return totalNet;
   }
+
+  /// 清除所有法人資料
+  ///
+  /// 用於單位修正後強制重新同步，避免新舊資料單位混用
+  Future<int> clearAllData() => _db.clearAllInstitutionalData();
 }

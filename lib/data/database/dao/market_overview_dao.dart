@@ -88,7 +88,7 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
 
   /// 取得指定日期的三大法人買賣超總額（依市場分組）
   ///
-  /// 從 DailyInstitutional 彙總外資、投信、自營買賣超（元），依 market 分組。
+  /// 從 DailyInstitutional 彙總外資、投信、自營買賣超（張），依 market 分組。
   /// 回傳 `Map<String, Map<String, double>>`
   /// 範例: `{'TWSE': {'foreignNet': 12345, ...}, 'TPEx': {...}}`
   Future<Map<String, Map<String, double>>> getInstitutionalTotalsByMarket(
@@ -223,4 +223,71 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
       'shortChange': sumKey('shortChange'),
     };
   }
+
+  /// 取得指定日期的成交額統計（依市場分組）
+  ///
+  /// 從 DailyPrice 彙總當日成交額（元），依 market 分組。
+  /// 計算方式：SUM(close × volume)
+  /// 回傳 `Map<String, Map<String, double>>`
+  /// 範例: `{'TWSE': {'totalTurnover': 642195569620.0}, 'TPEx': {...}}`
+  Future<Map<String, Map<String, double>>> getTurnoverSummaryByMarket(
+    DateTime date,
+  ) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    const query = '''
+    SELECT
+      sm.market,
+      COALESCE(SUM(dp.close * dp.volume), 0) as total_turnover
+    FROM daily_price dp
+    INNER JOIN stock_master sm ON dp.symbol = sm.symbol
+    WHERE dp.date >= ? AND dp.date < ?
+      AND dp.volume IS NOT NULL
+      AND dp.close IS NOT NULL
+    GROUP BY sm.market
+  ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startOfDay),
+        Variable.withDateTime(endOfDay),
+      ],
+      readsFrom: {dailyPrice, stockMaster},
+    ).get();
+
+    // 轉換為 Map<String, Map<String, double>>
+    final byMarket = <String, Map<String, double>>{};
+    for (final row in results) {
+      final market = row.readNullable<String>('market');
+      if (market == null) continue;
+
+      byMarket[market] = {
+        'totalTurnover': row.readNullable<double>('total_turnover') ?? 0.0,
+      };
+    }
+
+    return byMarket;
+  }
+
+  /// 取得指定日期的成交額統計（全市場合併）
+  ///
+  /// 向後相容方法，內部呼叫 [getTurnoverSummaryByMarket] 並合併結果。
+  /// 回傳 `{totalTurnover: double}`（單位：元）
+  Future<Map<String, double>> getTurnoverSummary(DateTime date) async {
+    final byMarket = await getTurnoverSummaryByMarket(date);
+
+    // 合併 TWSE + TPEx
+    double sumKey(String key) =>
+        (byMarket['TWSE']?[key] ?? 0) + (byMarket['TPEx']?[key] ?? 0);
+
+    return {'totalTurnover': sumKey('totalTurnover')};
+  }
+
+  /// 取得指定日期的成交量統計（依市場分組）- 向後相容
+  @Deprecated('Use getTurnoverSummaryByMarket instead')
+  Future<Map<String, Map<String, double>>> getVolumeSummaryByMarket(
+    DateTime date,
+  ) => getTurnoverSummaryByMarket(date);
 }

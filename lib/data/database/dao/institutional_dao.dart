@@ -1,6 +1,6 @@
 part of 'package:afterclose/data/database/app_database.dart';
 
-/// Daily institutional (三大法人) data operations.
+/// 每日三大法人進出資料操作
 mixin _InstitutionalDaoMixin on _$AppDatabase {
   /// 取得股票的法人資料歷史
   Future<List<DailyInstitutionalEntry>> getInstitutionalHistory(
@@ -84,5 +84,23 @@ mixin _InstitutionalDaoMixin on _$AppDatabase {
       ..where(dailyInstitutional.date.equals(date));
     final result = await query.getSingle();
     return result.read(countExpr) ?? 0;
+  }
+
+  /// 清除所有法人資料
+  ///
+  /// 用於修正單位錯誤後重新同步資料
+  Future<int> clearAllInstitutionalData() async {
+    return await (delete(dailyInstitutional)).go();
+  }
+
+  /// 清除指定市場的法人資料
+  ///
+  /// [market] - 'TWSE' 或 'TPEx'
+  Future<int> clearInstitutionalDataByMarket(String market) async {
+    return await customUpdate(
+      'DELETE FROM daily_institutional WHERE symbol IN (SELECT symbol FROM stock_master WHERE market = ?)',
+      variables: [Variable.withString(market)],
+      updates: {dailyInstitutional, stockMaster},
+    );
   }
 }

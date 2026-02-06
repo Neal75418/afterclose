@@ -19,7 +19,7 @@ import 'package:afterclose/presentation/screens/today/today_screen.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_screen.dart';
 import 'package:afterclose/presentation/widgets/app_shell.dart';
 
-/// Navigation branch keys
+/// 導航分支 key
 final _todayNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'today');
 final _scanNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'scan');
 final _watchlistNavigatorKey = GlobalKey<NavigatorState>(
@@ -27,23 +27,23 @@ final _watchlistNavigatorKey = GlobalKey<NavigatorState>(
 );
 final _newsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'news');
 
-/// Cached onboarding completion status to avoid repeated async reads
+/// 快取 onboarding 完成狀態，避免重複 async 讀取
 bool _onboardingComplete = false;
 
-/// Pre-load onboarding status (call before router is used)
+/// 預載 onboarding 狀態（須在 router 使用前呼叫）
 Future<void> initOnboardingStatus() async {
   final prefs = await SharedPreferences.getInstance();
   _onboardingComplete = prefs.getBool(OnboardingScreen.completedKey) ?? false;
 }
 
-/// Mark onboarding as completed (updates cached state + persistence)
+/// 標記 onboarding 已完成（更新快取 + 持久化）
 Future<void> completeOnboarding() async {
   final prefs = await SharedPreferences.getInstance();
   await prefs.setBool(OnboardingScreen.completedKey, true);
   _onboardingComplete = true;
 }
 
-/// App routes configuration
+/// App 路由設定
 final router = GoRouter(
   initialLocation: '/',
   redirect: (context, state) {
@@ -56,7 +56,7 @@ final router = GoRouter(
     return null;
   },
   routes: [
-    // Onboarding (full screen, no bottom nav)
+    // Onboarding（全螢幕，無底部導航）
     GoRoute(
       path: '/onboarding',
       name: 'onboarding',

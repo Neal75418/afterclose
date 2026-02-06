@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 事件日曆 Repository
@@ -140,7 +141,8 @@ class EventRepository {
   DateTime? _tryParseDate(String dateStr) {
     try {
       return _dateFormat.parse(dateStr);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('EventRepository', '日期解析失敗: "$dateStr"');
       return null;
     }
   }

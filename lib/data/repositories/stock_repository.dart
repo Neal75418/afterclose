@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 
@@ -54,6 +55,7 @@ class StockRepository {
 
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('StockRepo', '股票清單同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync stock list', e);

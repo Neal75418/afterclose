@@ -135,10 +135,15 @@ class PriceRepository implements IPriceRepository {
           );
           allPrices.addAll(monthData);
         } on RateLimitException {
-          // Rate Limit 錯誤應向上拋出以進行適當的 Backoff 處理
+          AppLogger.warning('PriceRepo', '$symbol: 上市價格同步觸發 API 速率限制');
           rethrow;
-        } catch (_) {
-          // 忽略個別月份失敗，繼續處理其他月份
+        } catch (e) {
+          // 記錄個別月份失敗，繼續處理其他月份
+          AppLogger.warning(
+            'PriceRepo',
+            '$symbol: ${month.year}-${month.month} 月份價格取得失敗',
+            e,
+          );
         }
 
         // API 請求間隔（250ms：batchSize=2 的安全甜蜜點）
@@ -224,6 +229,7 @@ class PriceRepository implements IPriceRepository {
 
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('PriceRepo', '$symbol: 上櫃價格同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync OTC prices for $symbol', e);
@@ -578,7 +584,7 @@ class PriceRepository implements IPriceRepository {
           await Future.delayed(delayBetweenRequests);
         }
       } on RateLimitException {
-        // Rate Limit 立即停止
+        AppLogger.warning('PriceRepo', '$symbol: 批次價格同步觸發 API 速率限制');
         rethrow;
       } catch (e) {
         // 記錄錯誤並繼續處理其他股票

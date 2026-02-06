@@ -94,6 +94,7 @@ class TradingRepository {
       await _db.insertDayTradingData(entries);
       return entries.length;
     } on RateLimitException {
+      AppLogger.warning('TradingRepo', '$symbol: 當沖資料同步觸發 API 速率限制');
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync day trading for $symbol', e);
