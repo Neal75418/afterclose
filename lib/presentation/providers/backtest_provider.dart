@@ -5,6 +5,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/backtest_models.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/domain/services/backtest_service.dart';
+import 'package:afterclose/data/repositories/screening_repository.dart';
 import 'package:afterclose/domain/services/screening_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -125,7 +126,9 @@ class BacktestNotifier extends StateNotifier<BacktestState> {
     try {
       final service = BacktestService(
         database: _db,
-        screeningService: ScreeningService(database: _db),
+        screeningService: ScreeningService(
+          repository: ScreeningRepository(database: _db),
+        ),
       );
 
       final result = await service.execute(

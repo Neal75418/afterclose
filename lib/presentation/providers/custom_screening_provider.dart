@@ -7,6 +7,7 @@ import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/data/repositories/screening_repository.dart';
 import 'package:afterclose/domain/services/screening_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/core/constants/pagination.dart';
@@ -207,7 +208,9 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
 
       _dateCtx = DateContext.forDate(targetDate);
 
-      final service = ScreeningService(database: _db);
+      final service = ScreeningService(
+        repository: ScreeningRepository(database: _db),
+      );
       final result = await service.execute(
         conditions: state.conditions,
         targetDate: targetDate,
