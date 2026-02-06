@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -122,7 +123,10 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       IconButton(
                         icon: const Icon(Icons.compare_arrows),
                         onPressed: () {
-                          context.push('/compare', extra: [widget.symbol]);
+                          context.push(
+                            AppRoutes.compare,
+                            extra: [widget.symbol],
+                          );
                         },
                         tooltip: 'comparison.compare'.tr(),
                       ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/app/router.dart' show completeOnboarding;
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 首次使用引導頁面
@@ -33,7 +34,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeOnboarding() async {
     await completeOnboarding();
     if (mounted) {
-      context.go('/');
+      context.go(AppRoutes.home);
     }
   }
 

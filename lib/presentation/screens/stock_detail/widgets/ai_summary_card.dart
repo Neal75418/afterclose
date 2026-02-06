@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -296,12 +297,12 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
         _ActionChip(
           icon: Icons.notifications_outlined,
           label: 'summary.actionSetAlert'.tr(),
-          onTap: () => context.push('/alerts'),
+          onTap: () => context.push(AppRoutes.alerts),
         ),
         _ActionChip(
           icon: Icons.compare_arrows,
           label: 'summary.actionCompare'.tr(),
-          onTap: () => context.push('/compare', extra: [widget.symbol]),
+          onTap: () => context.push(AppRoutes.compare, extra: [widget.symbol]),
         ),
       ],
     );

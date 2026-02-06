@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/filter_metadata.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -209,7 +210,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         IconButton(
           icon: const Icon(Icons.tune),
           tooltip: 'customScreening.title'.tr(),
-          onPressed: () => context.push('/scan/custom'),
+          onPressed: () => context.push(AppRoutes.customScreening),
         ),
         PopupMenuButton<ScanSort>(
           icon: const Icon(Icons.sort),
@@ -449,7 +450,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             SlidableAction(
               onPressed: (_) {
                 HapticFeedback.lightImpact();
-                context.push('/stock/${stock.symbol}');
+                context.push(AppRoutes.stockDetail(stock.symbol));
               },
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
@@ -499,7 +500,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           isInWatchlist: stock.isInWatchlist,
           recentPrices: stock.recentPrices,
           showLimitMarkers: showLimitMarkers,
-          onTap: () => context.push('/stock/${stock.symbol}'),
+          onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
           onLongPress: () {
             showStockPreviewSheet(
               context: context,
@@ -513,7 +514,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 reasons: stock.reasonTypes,
                 isInWatchlist: stock.isInWatchlist,
               ),
-              onViewDetails: () => context.push('/stock/${stock.symbol}'),
+              onViewDetails: () =>
+                  context.push(AppRoutes.stockDetail(stock.symbol)),
               onToggleWatchlist: () {
                 ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
               },
@@ -560,7 +562,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         isInWatchlist: stock.isInWatchlist,
         recentPrices: stock.recentPrices,
         showLimitMarkers: showLimitMarkers,
-        onTap: () => context.push('/stock/${stock.symbol}'),
+        onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
         onLongPress: () => _showStockContextMenu(context, stock),
         onWatchlistTap: () {
           HapticFeedback.lightImpact();
@@ -600,7 +602,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         reasons: stock.reasonTypes,
         isInWatchlist: stock.isInWatchlist,
       ),
-      onViewDetails: () => context.push('/stock/${stock.symbol}'),
+      onViewDetails: () => context.push(AppRoutes.stockDetail(stock.symbol)),
       onToggleWatchlist: () {
         ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
       },

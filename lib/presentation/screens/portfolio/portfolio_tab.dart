@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/allocation_pie_chart.dart';
@@ -123,7 +124,7 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
                   position: position,
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    context.push('/portfolio/${position.symbol}');
+                    context.push(AppRoutes.positionDetail(position.symbol));
                   },
                 ),
                 const SizedBox(height: 8),

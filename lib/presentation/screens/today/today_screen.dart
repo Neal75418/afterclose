@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -149,7 +150,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         showLimitMarkers: showLimitMarkers,
         onTap: () {
           HapticFeedback.lightImpact();
-          context.push('/stock/${rec.symbol}');
+          context.push(AppRoutes.stockDetail(rec.symbol));
         },
         onLongPress: () {
           showStockPreviewSheet(
@@ -164,7 +165,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               reasons: rec.reasonTypes,
               isInWatchlist: isInWatchlist,
             ),
-            onViewDetails: () => context.push('/stock/${rec.symbol}'),
+            onViewDetails: () =>
+                context.push(AppRoutes.stockDetail(rec.symbol)),
             onToggleWatchlist: () =>
                 _toggleWatchlist(rec.symbol, isInWatchlist),
           );
@@ -250,12 +252,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               ),
             IconButton(
               icon: const Icon(Icons.notifications_outlined),
-              onPressed: () => context.push('/alerts'),
+              onPressed: () => context.push(AppRoutes.alerts),
               tooltip: S.todayPriceAlert,
             ),
             IconButton(
               icon: const Icon(Icons.settings_outlined),
-              onPressed: () => context.push('/settings'),
+              onPressed: () => context.push(AppRoutes.settings),
               tooltip: S.settings,
             ),
           ],

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
+
 import 'package:afterclose/presentation/screens/alerts/alerts_screen.dart';
 import 'package:afterclose/presentation/screens/onboarding/onboarding_screen.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
@@ -45,20 +47,20 @@ Future<void> completeOnboarding() async {
 
 /// App 路由設定
 final router = GoRouter(
-  initialLocation: '/',
+  initialLocation: AppRoutes.home,
   redirect: (context, state) {
-    if (!_onboardingComplete && state.matchedLocation != '/onboarding') {
-      return '/onboarding';
+    if (!_onboardingComplete && state.matchedLocation != AppRoutes.onboarding) {
+      return AppRoutes.onboarding;
     }
-    if (_onboardingComplete && state.matchedLocation == '/onboarding') {
-      return '/';
+    if (_onboardingComplete && state.matchedLocation == AppRoutes.onboarding) {
+      return AppRoutes.home;
     }
     return null;
   },
   routes: [
     // Onboarding（全螢幕，無底部導航）
     GoRoute(
-      path: '/onboarding',
+      path: AppRoutes.onboarding,
       name: 'onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
@@ -73,7 +75,7 @@ final router = GoRouter(
           navigatorKey: _todayNavigatorKey,
           routes: [
             GoRoute(
-              path: '/',
+              path: AppRoutes.home,
               name: 'today',
               builder: (context, state) => const TodayScreen(),
             ),
@@ -85,7 +87,7 @@ final router = GoRouter(
           navigatorKey: _scanNavigatorKey,
           routes: [
             GoRoute(
-              path: '/scan',
+              path: AppRoutes.scan,
               name: 'scan',
               builder: (context, state) => const ScanScreen(),
             ),
@@ -97,7 +99,7 @@ final router = GoRouter(
           navigatorKey: _watchlistNavigatorKey,
           routes: [
             GoRoute(
-              path: '/watchlist',
+              path: AppRoutes.watchlist,
               name: 'watchlist',
               builder: (context, state) => const WatchlistScreen(),
             ),
@@ -109,7 +111,7 @@ final router = GoRouter(
           navigatorKey: _newsNavigatorKey,
           routes: [
             GoRoute(
-              path: '/news',
+              path: AppRoutes.news,
               name: 'news',
               builder: (context, state) => const NewsScreen(),
             ),
@@ -120,7 +122,7 @@ final router = GoRouter(
 
     // Stock detail (full screen, outside shell)
     GoRoute(
-      path: '/stock/:symbol',
+      path: AppRoutes.stockDetailTemplate,
       name: 'stockDetail',
       builder: (context, state) {
         final symbol = state.pathParameters['symbol']!;
@@ -130,35 +132,35 @@ final router = GoRouter(
 
     // Settings (full screen, outside shell)
     GoRoute(
-      path: '/settings',
+      path: AppRoutes.settings,
       name: 'settings',
       builder: (context, state) => const SettingsScreen(),
     ),
 
     // Alerts (full screen, outside shell)
     GoRoute(
-      path: '/alerts',
+      path: AppRoutes.alerts,
       name: 'alerts',
       builder: (context, state) => const AlertsScreen(),
     ),
 
     // Industry overview (full screen, outside shell)
     GoRoute(
-      path: '/industry',
+      path: AppRoutes.industry,
       name: 'industry',
       builder: (context, state) => const IndustryOverviewScreen(),
     ),
 
     // Custom screening (full screen, outside shell)
     GoRoute(
-      path: '/scan/custom',
+      path: AppRoutes.customScreening,
       name: 'customScreening',
       builder: (context, state) => const CustomScreeningScreen(),
     ),
 
     // Stock comparison (full screen, outside shell)
     GoRoute(
-      path: '/compare',
+      path: AppRoutes.compare,
       name: 'comparison',
       builder: (context, state) {
         final symbols = state.extra as List<String>? ?? const [];
@@ -168,7 +170,7 @@ final router = GoRouter(
 
     // Backtest (full screen, outside shell)
     GoRoute(
-      path: '/scan/custom/backtest',
+      path: AppRoutes.backtest,
       name: 'backtest',
       builder: (context, state) {
         final conditions = state.extra as List<ScreeningCondition>? ?? const [];
@@ -178,7 +180,7 @@ final router = GoRouter(
 
     // Portfolio position detail (full screen, outside shell)
     GoRoute(
-      path: '/portfolio/:symbol',
+      path: AppRoutes.positionDetailTemplate,
       name: 'positionDetail',
       builder: (context, state) {
         final symbol = state.pathParameters['symbol']!;
@@ -188,7 +190,7 @@ final router = GoRouter(
 
     // Event calendar (full screen, outside shell)
     GoRoute(
-      path: '/calendar',
+      path: AppRoutes.calendar,
       name: 'eventCalendar',
       builder: (context, state) => const EventCalendarScreen(),
     ),

@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -99,7 +100,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         reasons: item.reasons,
         isInWatchlist: true,
       ),
-      onViewDetails: () => context.push('/stock/${item.symbol}'),
+      onViewDetails: () => context.push(AppRoutes.stockDetail(item.symbol)),
       onToggleWatchlist: () => _removeFromWatchlist(item.symbol),
     );
   }
@@ -179,7 +180,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             icon: const Icon(Icons.calendar_month_outlined),
             onPressed: () {
               HapticFeedback.selectionClick();
-              context.push('/calendar');
+              context.push(AppRoutes.calendar);
             },
             tooltip: 'calendar.title'.tr(),
           ),
@@ -261,7 +262,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                       .take(4)
                       .map((e) => e.symbol)
                       .toList();
-                  context.push('/compare', extra: symbols);
+                  context.push(AppRoutes.compare, extra: symbols);
                 },
                 tooltip: 'comparison.compare'.tr(),
               ),
@@ -511,7 +512,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             SlidableAction(
               onPressed: (_) {
                 HapticFeedback.lightImpact();
-                context.push('/stock/${item.symbol}');
+                context.push(AppRoutes.stockDetail(item.symbol));
               },
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
@@ -558,7 +559,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           recentPrices: item.recentPrices,
           warningType: item.warningType,
           showLimitMarkers: showLimitMarkers,
-          onTap: () => context.push('/stock/${item.symbol}'),
+          onTap: () => context.push(AppRoutes.stockDetail(item.symbol)),
           onLongPress: () => _showStockPreview(item),
           onWatchlistTap: () {
             HapticFeedback.lightImpact();
@@ -601,7 +602,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         recentPrices: item.recentPrices,
         warningType: item.warningType,
         showLimitMarkers: showLimitMarkers,
-        onTap: () => context.push('/stock/${item.symbol}'),
+        onTap: () => context.push(AppRoutes.stockDetail(item.symbol)),
         onLongPress: () => _showStockPreview(item),
         onWatchlistTap: () {
           HapticFeedback.lightImpact();

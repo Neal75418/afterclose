@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
@@ -123,7 +124,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                             onPressed: () {
                               HapticFeedback.lightImpact();
                               Navigator.pop(context);
-                              context.push('/stock/$symbol');
+                              context.push(AppRoutes.stockDetail(symbol));
                             },
                           );
                         }).toList(),
@@ -492,7 +493,7 @@ class _NewsListItem extends StatelessWidget {
                   ...relatedStocks.take(maxVisibleStocks).map((symbol) {
                     return _StockChip(
                       symbol: symbol,
-                      onTap: () => context.push('/stock/$symbol'),
+                      onTap: () => context.push(AppRoutes.stockDetail(symbol)),
                     );
                   }),
                   if (hasMoreStocks)

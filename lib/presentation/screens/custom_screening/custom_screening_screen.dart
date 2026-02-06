@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
@@ -56,10 +57,8 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
             tooltip: 'backtest.title'.tr(),
             onPressed: state.conditions.isEmpty
                 ? null
-                : () => context.push(
-                    '/scan/custom/backtest',
-                    extra: state.conditions,
-                  ),
+                : () =>
+                      context.push(AppRoutes.backtest, extra: state.conditions),
           ),
           // 儲存/載入策略
           IconButton(
@@ -274,7 +273,8 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
                   isInWatchlist: stock.isInWatchlist,
                   recentPrices: stock.recentPrices,
                   showLimitMarkers: showLimitMarkers,
-                  onTap: () => context.push('/stock/${stock.symbol}'),
+                  onTap: () =>
+                      context.push(AppRoutes.stockDetail(stock.symbol)),
                 );
               },
             ),
