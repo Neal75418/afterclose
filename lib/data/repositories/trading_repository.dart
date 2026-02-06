@@ -277,6 +277,8 @@ class TradingRepository {
         AppLogger.info('MarketData', '高當沖股票: $highSymbols');
       }
       return entries.length;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync day trading from TWSE', e);
     }
@@ -389,6 +391,8 @@ class TradingRepository {
       );
 
       return entries.length;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync day trading from TPEX', e);
     }
@@ -503,6 +507,8 @@ class TradingRepository {
       );
 
       return allEntries.length;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException(
         'Failed to sync margin trading from TWSE/TPEX',

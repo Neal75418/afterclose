@@ -1,3 +1,4 @@
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -61,6 +62,8 @@ class FundamentalRepository {
 
       await _db.insertMonthlyRevenue(entries);
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步月營收失敗: $symbol', e);
       return 0;
@@ -99,6 +102,8 @@ class FundamentalRepository {
 
       await _db.insertValuationData(entries);
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步估值資料失敗: $symbol', e);
       return 0;
@@ -143,6 +148,8 @@ class FundamentalRepository {
       AppLogger.info('FundamentalRepo', '估值同步: ${entries.length} 筆 (上市, TWSE)');
 
       return entries.length;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步全市場估值失敗: $date', e);
       return 0;
@@ -233,6 +240,8 @@ class FundamentalRepository {
       );
 
       return entries.length;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '批次同步上櫃估值失敗', e);
       return 0;
@@ -304,6 +313,8 @@ class FundamentalRepository {
 
       await _db.insertMonthlyRevenue(entries);
       return entries.length;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步全市場營收失敗', e);
       return 0;
@@ -402,6 +413,8 @@ class FundamentalRepository {
       );
 
       return successCount;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步上櫃營收失敗', e);
       return 0;
@@ -439,6 +452,8 @@ class FundamentalRepository {
 
       await _db.insertDividendData(entries);
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步股利歷史失敗: $symbol', e);
       return 0;
@@ -494,6 +509,8 @@ class FundamentalRepository {
 
       await _db.insertFinancialData(entries);
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步財報失敗: $symbol', e);
       return 0;
