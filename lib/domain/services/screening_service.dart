@@ -2,6 +2,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/domain/repositories/screening_repository.dart';
+import 'package:afterclose/domain/services/ohlcv_data.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 自訂選股篩選引擎
@@ -168,19 +169,7 @@ class ScreeningService {
   ) {
     if (prices.length < 20) return false;
 
-    final closes = <double>[];
-    final highs = <double>[];
-    final lows = <double>[];
-    final volumes = <double>[];
-
-    for (final p in prices) {
-      if (p.close != null && p.high != null && p.low != null) {
-        closes.add(p.close!);
-        highs.add(p.high!);
-        lows.add(p.low!);
-        volumes.add(p.volume ?? 0);
-      }
-    }
+    final (:closes, :highs, :lows, :volumes) = prices.extractOhlcv();
 
     if (closes.length < 20) return false;
 

@@ -2,6 +2,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/services/ohlcv_data.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 股票技術分析服務
@@ -109,17 +110,7 @@ class AnalysisService {
     }
 
     // 擷取 OHLC 資料
-    final closes = <double>[];
-    final highs = <double>[];
-    final lows = <double>[];
-
-    for (final price in prices) {
-      if (price.close != null && price.high != null && price.low != null) {
-        closes.add(price.close!);
-        highs.add(price.high!);
-        lows.add(price.low!);
-      }
-    }
+    final (:closes, :highs, :lows, volumes: _) = prices.extractOhlcv();
 
     if (closes.length < RuleParams.rsiPeriod + 2) {
       return null;
