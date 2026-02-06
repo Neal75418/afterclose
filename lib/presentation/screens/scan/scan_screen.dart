@@ -9,6 +9,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/filter_metadata.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -108,17 +109,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             return Column(
               children: [
                 // 拖曳把手
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                const DragHandle(),
                 // 標題
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -168,6 +159,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                                     label: Text(filter.labelKey.tr()),
                                     selected: isSelected,
                                     onSelected: (_) {
+                                      HapticFeedback.selectionClick();
                                       ref
                                           .read(scanProvider.notifier)
                                           .setFilter(filter);
@@ -224,6 +216,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           tooltip: 'scan.sort'.tr(),
           initialValue: state.sort,
           onSelected: (sort) {
+            HapticFeedback.selectionClick();
             ref.read(scanProvider.notifier).setSort(sort);
           },
           itemBuilder: (context) {
@@ -266,6 +259,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             ),
             selected: state.filter == ScanFilter.all,
             onSelected: (_) {
+              HapticFeedback.selectionClick();
               ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
             },
           ),
@@ -276,10 +270,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               label: Text(state.filter.labelKey.tr()),
               selected: true,
               onSelected: (_) {
+                HapticFeedback.selectionClick();
                 ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
               },
               deleteIcon: const Icon(Icons.close, size: 16),
               onDeleted: () {
+                HapticFeedback.selectionClick();
                 ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
               },
             ),
@@ -366,6 +362,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   /// 手機佈局：ListView
   Widget _buildStockListView(BuildContext context, ScanState state) {
+    final showLimitMarkers = ref.watch(
+      settingsProvider.select((s) => s.limitAlerts),
+    );
     return ListView.builder(
       controller: _scrollController,
       cacheExtent: 500,
@@ -376,13 +375,21 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         if (index == state.stocks.length) {
           return _buildLoadingIndicator(state);
         }
-        return _buildStockCard(context, state.stocks[index], index);
+        return _buildStockCard(
+          context,
+          state.stocks[index],
+          index,
+          showLimitMarkers,
+        );
       },
     );
   }
 
   /// 平板/桌面佈局：GridView
   Widget _buildStockGrid(BuildContext context, ScanState state, int columns) {
+    final showLimitMarkers = ref.watch(
+      settingsProvider.select((s) => s.limitAlerts),
+    );
     final padding = context.responsiveHorizontalPadding;
     final spacing = context.responsiveCardSpacing;
 
@@ -402,7 +409,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         if (index == state.stocks.length) {
           return _buildLoadingIndicator(state);
         }
-        return _buildStockCardForGrid(context, state.stocks[index], index);
+        return _buildStockCardForGrid(
+          context,
+          state.stocks[index],
+          index,
+          showLimitMarkers,
+        );
       },
     );
   }
@@ -420,7 +432,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   }
 
   /// 單張股票卡片：Slidable 手勢 + 動畫
-  Widget _buildStockCard(BuildContext context, ScanStockItem stock, int index) {
+  Widget _buildStockCard(
+    BuildContext context,
+    ScanStockItem stock,
+    int index,
+    bool showLimitMarkers,
+  ) {
     final card = RepaintBoundary(
       child: Slidable(
         key: ValueKey(stock.symbol),
@@ -477,11 +494,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           latestClose: stock.latestClose,
           priceChange: stock.priceChange,
           score: stock.score,
-          reasons: stock.reasons.map((r) => r.reasonType).toList(),
+          reasons: stock.reasonTypes,
           trendState: stock.trendState,
           isInWatchlist: stock.isInWatchlist,
           recentPrices: stock.recentPrices,
-          showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+          showLimitMarkers: showLimitMarkers,
           onTap: () => context.push('/stock/${stock.symbol}'),
           onLongPress: () {
             showStockPreviewSheet(
@@ -493,7 +510,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 priceChange: stock.priceChange,
                 score: stock.score,
                 trendState: stock.trendState,
-                reasons: stock.reasons.map((r) => r.reasonType).toList(),
+                reasons: stock.reasonTypes,
                 isInWatchlist: stock.isInWatchlist,
               ),
               onViewDetails: () => context.push('/stock/${stock.symbol}'),
@@ -528,6 +545,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     BuildContext context,
     ScanStockItem stock,
     int index,
+    bool showLimitMarkers,
   ) {
     final card = RepaintBoundary(
       child: StockCard(
@@ -537,11 +555,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         latestClose: stock.latestClose,
         priceChange: stock.priceChange,
         score: stock.score,
-        reasons: stock.reasons.map((r) => r.reasonType).toList(),
+        reasons: stock.reasonTypes,
         trendState: stock.trendState,
         isInWatchlist: stock.isInWatchlist,
         recentPrices: stock.recentPrices,
-        showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+        showLimitMarkers: showLimitMarkers,
         onTap: () => context.push('/stock/${stock.symbol}'),
         onLongPress: () => _showStockContextMenu(context, stock),
         onWatchlistTap: () {
@@ -579,7 +597,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         priceChange: stock.priceChange,
         score: stock.score,
         trendState: stock.trendState,
-        reasons: stock.reasons.map((r) => r.reasonType).toList(),
+        reasons: stock.reasonTypes,
         isInWatchlist: stock.isInWatchlist,
       ),
       onViewDetails: () => context.push('/stock/${stock.symbol}'),
@@ -637,17 +655,7 @@ class _IndustryFilterChip extends StatelessWidget {
             return Column(
               children: [
                 // 拖曳把手
-                Container(
-                  margin: const EdgeInsets.only(top: 12),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+                const DragHandle(),
                 // 標題
                 Padding(
                   padding: const EdgeInsets.all(16),
@@ -687,6 +695,7 @@ class _IndustryFilterChip extends StatelessWidget {
                             : null,
                         selected: isSelected,
                         onTap: () {
+                          HapticFeedback.selectionClick();
                           onSelected(isSelected ? null : industry);
                           Navigator.pop(context);
                         },

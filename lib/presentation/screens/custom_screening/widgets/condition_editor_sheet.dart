@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
 /// 新增/編輯篩選條件的 Bottom Sheet
@@ -82,18 +83,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 拖動指示條
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+              const DragHandle(margin: EdgeInsets.zero),
               const SizedBox(height: 16),
 
               // 標題

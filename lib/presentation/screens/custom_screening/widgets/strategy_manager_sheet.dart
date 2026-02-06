@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 
 /// 策略儲存/載入 Bottom Sheet
 class StrategyManagerSheet extends ConsumerStatefulWidget {
@@ -62,18 +63,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 拖動指示條
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.4,
-                    ),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
+              const DragHandle(margin: EdgeInsets.zero),
               const SizedBox(height: 16),
 
               Text(
@@ -180,7 +170,11 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
       Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('customScreening.saveFailed'.tr())),
+        SnackBar(
+          content: Text('customScreening.saveFailed'.tr()),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }
@@ -203,6 +197,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
           FilledButton(
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
+              final errorColor = Theme.of(context).colorScheme.error;
               Navigator.of(ctx).pop();
               if (strategy.id != null) {
                 final success = await ref
@@ -212,6 +207,8 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text('customScreening.deleteFailed'.tr()),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: errorColor,
                     ),
                   );
                 }

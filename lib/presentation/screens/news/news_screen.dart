@@ -9,7 +9,9 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// News screen - shows recent market news with filtering and grouping
 class NewsScreen extends ConsumerStatefulWidget {
@@ -56,15 +58,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
         builder: (context, scrollController) => Column(
           children: [
             // Drag handle
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const DragHandle(margin: EdgeInsets.symmetric(vertical: 8)),
             Expanded(
               child: SingleChildScrollView(
                 controller: scrollController,
@@ -82,7 +76,9 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.radiusXs,
+                            ),
                           ),
                           child: Text(
                             item.source,
@@ -125,6 +121,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                           return ActionChip(
                             label: Text(symbol),
                             onPressed: () {
+                              HapticFeedback.lightImpact();
                               Navigator.pop(context);
                               context.push('/stock/$symbol');
                             },
@@ -274,7 +271,10 @@ class _SourceFilterChips extends StatelessWidget {
                   ? theme.colorScheme.onSecondaryContainer
                   : theme.colorScheme.onSurface,
             ),
-            onSelected: (_) => onSelected(source),
+            onSelected: (_) {
+              HapticFeedback.selectionClick();
+              onSelected(source);
+            },
           );
         },
       ),
@@ -429,7 +429,10 @@ class _NewsListItem extends StatelessWidget {
     final hasMoreStocks = relatedStocks.length > maxVisibleStocks;
 
     return InkWell(
-      onTap: () => onTap(item, relatedStocks),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap(item, relatedStocks);
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -455,7 +458,7 @@ class _NewsListItem extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                   ),
                   child: Text(
                     item.source,
@@ -543,14 +546,17 @@ class _StockChip extends StatelessWidget {
     final theme = Theme.of(context);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: isOverflow
               ? theme.colorScheme.tertiaryContainer
               : theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         ),
         child: Text(
           symbol,

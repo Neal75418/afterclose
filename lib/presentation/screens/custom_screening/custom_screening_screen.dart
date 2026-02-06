@@ -159,17 +159,38 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
 
     final result = state.result;
     if (result == null) return const SizedBox.shrink();
+    final showLimitMarkers = ref.watch(
+      settingsProvider.select((s) => s.limitAlerts),
+    );
 
     if (state.error != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Text(
-            state.error!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-            textAlign: TextAlign.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 48,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                state.error!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton.tonal(
+                onPressed: () => ref
+                    .read(customScreeningProvider.notifier)
+                    .executeScreening(),
+                child: Text('common.retry'.tr()),
+              ),
+            ],
           ),
         ),
       );
@@ -226,6 +247,7 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
+              cacheExtent: 500,
               itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == state.stocks.length) {
@@ -247,11 +269,11 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
                   latestClose: stock.latestClose,
                   priceChange: stock.priceChange,
                   score: stock.score,
-                  reasons: stock.reasons.map((r) => r.reasonType).toList(),
+                  reasons: stock.reasonTypes,
                   trendState: stock.trendState,
                   isInWatchlist: stock.isInWatchlist,
                   recentPrices: stock.recentPrices,
-                  showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+                  showLimitMarkers: showLimitMarkers,
                   onTap: () => context.push('/stock/${stock.symbol}'),
                 );
               },

@@ -80,6 +80,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     BuildContext context,
     TodayState state,
     Set<String> watchlistSymbols,
+    bool showLimitMarkers,
   ) {
     final columns = context.responsiveGridColumns;
     final useGrid = columns > 1;
@@ -97,16 +98,26 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             mainAxisExtent: DesignTokens.stockCardHeight,
           ),
           itemCount: state.recommendations.length,
-          itemBuilder: (context, index) =>
-              _buildRecommendationCard(context, state, watchlistSymbols, index),
+          itemBuilder: (context, index) => _buildRecommendationCard(
+            context,
+            state,
+            watchlistSymbols,
+            index,
+            showLimitMarkers,
+          ),
         ),
       );
     }
 
     return SliverList.builder(
       itemCount: state.recommendations.length,
-      itemBuilder: (context, index) =>
-          _buildRecommendationCard(context, state, watchlistSymbols, index),
+      itemBuilder: (context, index) => _buildRecommendationCard(
+        context,
+        state,
+        watchlistSymbols,
+        index,
+        showLimitMarkers,
+      ),
     );
   }
 
@@ -116,6 +127,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     TodayState state,
     Set<String> watchlistSymbols,
     int index,
+    bool showLimitMarkers,
   ) {
     final rec = state.recommendations[index];
     final isInWatchlist = watchlistSymbols.contains(rec.symbol);
@@ -130,11 +142,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         latestClose: rec.latestClose,
         priceChange: rec.priceChange,
         score: rec.score,
-        reasons: rec.reasons.map((r) => r.reasonType).toList(),
+        reasons: rec.reasonTypes,
         trendState: rec.trendState,
         recentPrices: rec.recentPrices,
         isInWatchlist: isInWatchlist,
-        showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+        showLimitMarkers: showLimitMarkers,
         onTap: () {
           HapticFeedback.lightImpact();
           context.push('/stock/${rec.symbol}');
@@ -149,7 +161,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               priceChange: rec.priceChange,
               score: rec.score,
               trendState: rec.trendState,
-              reasons: rec.reasons.map((r) => r.reasonType).toList(),
+              reasons: rec.reasonTypes,
               isInWatchlist: isInWatchlist,
             ),
             onViewDetails: () => context.push('/stock/${rec.symbol}'),
@@ -198,6 +210,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   Widget _buildContent(TodayState state, Set<String> watchlistSymbols) {
     final theme = Theme.of(context);
     final marketState = ref.watch(marketOverviewProvider);
+    final showLimitMarkers = ref.watch(
+      settingsProvider.select((s) => s.limitAlerts),
+    );
 
     return CustomScrollView(
       slivers: [
@@ -298,7 +313,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
           )
         else
-          _buildRecommendationsList(context, state, watchlistSymbols),
+          _buildRecommendationsList(
+            context,
+            state,
+            watchlistSymbols,
+            showLimitMarkers,
+          ),
 
         // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
@@ -319,6 +339,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     if (currentlyInWatchlist) {
       await notifier.removeStock(symbol);
       if (mounted) {
+        HapticFeedback.mediumImpact();
         _showSnackBar(
           S.watchlistRemoved(symbol),
           action: SnackBarAction(
@@ -331,6 +352,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     } else {
       final success = await notifier.addStock(symbol);
       if (mounted) {
+        if (success) HapticFeedback.mediumImpact();
         _showSnackBar(
           success ? S.watchlistAddedToWatchlist(symbol) : S.watchlistAddFailed,
           duration: const Duration(seconds: 2),
@@ -356,7 +378,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           behavior: SnackBarBehavior.floating,
           duration: duration,
           action: action,
-          backgroundColor: isError ? Colors.red : null,
+          backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
           showCloseIcon: action != null, // 有動作按鈕時顯示關閉圖示
           dismissDirection: DismissDirection.horizontal,
         ),
@@ -407,7 +429,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           SnackBar(
             content: Text(S.todayUpdateFailed(errorStr)),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }

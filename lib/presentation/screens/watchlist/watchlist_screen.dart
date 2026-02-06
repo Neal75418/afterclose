@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,6 +36,7 @@ enum _WatchlistTab { watchlist, portfolio }
 
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   final _searchController = TextEditingController();
+  Timer? _searchDebounce;
   bool _isSearching = false;
   _WatchlistTab _currentTab = _WatchlistTab.watchlist;
 
@@ -46,6 +49,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -132,6 +136,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             content: Text(
               'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
             ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -155,7 +161,15 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                   border: InputBorder.none,
                 ),
                 onChanged: (value) {
-                  ref.read(watchlistProvider.notifier).setSearchQuery(value);
+                  _searchDebounce?.cancel();
+                  _searchDebounce = Timer(
+                    const Duration(milliseconds: 300),
+                    () {
+                      ref
+                          .read(watchlistProvider.notifier)
+                          .setSearchQuery(value);
+                    },
+                  );
                 },
               )
             : Text('watchlist.title'.tr()),
@@ -347,7 +361,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.radiusLg,
+                            ),
                           ),
                           child: Text(
                             'watchlist.searching'.tr(),
@@ -379,22 +395,25 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   }
 
   Widget _buildListContent(WatchlistState state) {
+    final showLimitMarkers = ref.watch(
+      settingsProvider.select((s) => s.limitAlerts),
+    );
     switch (state.group) {
       case WatchlistGroup.none:
-        return _buildFlatList(state.filteredItems);
+        return _buildFlatList(state.filteredItems, showLimitMarkers);
       case WatchlistGroup.status:
-        return _buildGroupedByStatusList(state);
+        return _buildGroupedByStatusList(state, showLimitMarkers);
       case WatchlistGroup.trend:
-        return _buildGroupedByTrendList(state);
+        return _buildGroupedByTrendList(state, showLimitMarkers);
     }
   }
 
-  Widget _buildFlatList(List<WatchlistItemData> items) {
+  Widget _buildFlatList(List<WatchlistItemData> items, bool showLimitMarkers) {
     final columns = context.responsiveGridColumns;
     final useGrid = columns > 1;
 
     if (useGrid) {
-      return _buildFlatGrid(items, columns);
+      return _buildFlatGrid(items, columns, showLimitMarkers);
     }
 
     return ListView.builder(
@@ -403,12 +422,16 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return _buildStockItem(item, index);
+        return _buildStockItem(item, index, showLimitMarkers);
       },
     );
   }
 
-  Widget _buildFlatGrid(List<WatchlistItemData> items, int columns) {
+  Widget _buildFlatGrid(
+    List<WatchlistItemData> items,
+    int columns,
+    bool showLimitMarkers,
+  ) {
     final padding = context.responsiveHorizontalPadding;
     final spacing = context.responsiveCardSpacing;
 
@@ -424,12 +447,15 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return _buildStockItemForGrid(item, index);
+        return _buildStockItemForGrid(item, index, showLimitMarkers);
       },
     );
   }
 
-  Widget _buildGroupedByStatusList(WatchlistState state) {
+  Widget _buildGroupedByStatusList(
+    WatchlistState state,
+    bool showLimitMarkers,
+  ) {
     final grouped = state.groupedByStatus;
 
     return ListView(
@@ -442,14 +468,14 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               count: grouped[status]!.length,
             ),
             ...grouped[status]!.asMap().entries.map((entry) {
-              return _buildStockItem(entry.value, entry.key);
+              return _buildStockItem(entry.value, entry.key, showLimitMarkers);
             }),
           ],
       ],
     );
   }
 
-  Widget _buildGroupedByTrendList(WatchlistState state) {
+  Widget _buildGroupedByTrendList(WatchlistState state, bool showLimitMarkers) {
     final grouped = state.groupedByTrend;
 
     return ListView(
@@ -462,14 +488,18 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               count: grouped[trend]!.length,
             ),
             ...grouped[trend]!.asMap().entries.map((entry) {
-              return _buildStockItem(entry.value, entry.key);
+              return _buildStockItem(entry.value, entry.key, showLimitMarkers);
             }),
           ],
       ],
     );
   }
 
-  Widget _buildStockItem(WatchlistItemData item, int index) {
+  Widget _buildStockItem(
+    WatchlistItemData item,
+    int index,
+    bool showLimitMarkers,
+  ) {
     final card = RepaintBoundary(
       child: Slidable(
         key: ValueKey(item.symbol),
@@ -527,7 +557,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           isInWatchlist: true,
           recentPrices: item.recentPrices,
           warningType: item.warningType,
-          showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+          showLimitMarkers: showLimitMarkers,
           onTap: () => context.push('/stock/${item.symbol}'),
           onLongPress: () => _showStockPreview(item),
           onWatchlistTap: () {
@@ -552,7 +582,11 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   }
 
   /// Grid 佈局用的股票卡片（無 Slidable，改用長按選單）
-  Widget _buildStockItemForGrid(WatchlistItemData item, int index) {
+  Widget _buildStockItemForGrid(
+    WatchlistItemData item,
+    int index,
+    bool showLimitMarkers,
+  ) {
     final card = RepaintBoundary(
       child: StockCard(
         symbol: item.symbol,
@@ -566,7 +600,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         isInWatchlist: true,
         recentPrices: item.recentPrices,
         warningType: item.warningType,
-        showLimitMarkers: ref.watch(settingsProvider).limitAlerts,
+        showLimitMarkers: showLimitMarkers,
         onTap: () => context.push('/stock/${item.symbol}'),
         onLongPress: () => _showStockPreview(item),
         onWatchlistTap: () {
@@ -665,7 +699,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                                     ),
                                   ),
                                   behavior: SnackBarBehavior.floating,
-                                  backgroundColor: Colors.red,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.error,
                                 ),
                               );
                             }
