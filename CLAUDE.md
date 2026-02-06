@@ -6,7 +6,7 @@
 
 ## 專案概述
 
-**AfterClose** - 本地優先盤後台股掃描 App。所有資料處理在裝置端完成，無雲端依賴。
+**AfterClose** — 本地優先盤後台股掃描 App。所有運算在裝置端完成，無雲端依賴。
 
 ```mermaid
 flowchart LR
@@ -39,33 +39,35 @@ flowchart LR
 ```bash
 flutter pub get                    # 安裝依賴
 flutter test                       # 執行測試
-flutter analyze lib/               # 靜態分析
-dart run build_runner build --delete-conflicting-outputs  # 程式碼生成
+flutter analyze                    # 靜態分析
+dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生成
 ```
 
 ---
 
 ## 架構
 
-### 目錄結構
+### 分層結構
 
 ```mermaid
 flowchart TB
     subgraph Core["🔧 core/"]
-        Constants["constants/<br/>RuleParams, DefaultStocks"]
+        Constants["constants/ (13 files)<br/>RuleParams, AppRoutes, DefaultStocks"]
+        Exceptions["exceptions/<br/>AppException hierarchy"]
         Utils["utils/<br/>Logger, Result, Calendar"]
     end
 
     subgraph Data["💾 data/"]
-        Database["database/<br/>Drift SQLite"]
-        Remote["remote/<br/>TWSE, TPEX, FinMind API"]
-        Repos["repositories/"]
+        Database["database/<br/>Drift SQLite (35 tables)"]
+        Remote["remote/<br/>TWSE, TPEX, FinMind, RSS"]
+        Repos["repositories/<br/>10 concrete repos"]
     end
 
     subgraph Domain["⚙️ domain/"]
-        Models["models/<br/>7 Domain Objects"]
-        Services["services/"]
-        Update["services/update/<br/>7 Specialized Syncers"]
+        Models["models/ (14 files)"]
+        RepoIF["repositories/<br/>3 interfaces"]
+        Services["services/<br/>Analysis, Scoring, Screening"]
+        Update["services/update/<br/>7 Syncers"]
         Rules["services/rules/<br/>59 Rules"]
     end
 
@@ -75,6 +77,7 @@ flowchart TB
     end
 
     Core --> Data
+    Core --> Domain
     Data --> Domain
     Domain --> Presentation
 ```
@@ -97,59 +100,28 @@ flowchart LR
 
 ---
 
-## 配置管理
+## 關鍵路徑
 
-| 檔案                                       | 用途                     |
-|------------------------------------------|------------------------|
-| `lib/core/constants/rule_params.dart`    | 規則引擎參數（175+ 個閾值、權重、天數） |
-| `lib/core/constants/default_stocks.dart` | 預設熱門股票清單（15 檔）         |
-
-```mermaid
-classDiagram
-    class RuleParams {
-        <<abstract>>
-        +volumeSpikeThreshold: 2.0
-        +priceSurgeThreshold: 5.0
-        +epsYoYSurgeThreshold: 50.0
-        +roeExcellentThreshold: 15.0
-        ...175+ parameters
-    }
-
-    class DefaultStocks {
-        <<abstract>>
-        +popularStocks: List~String~
-    }
-```
+| 路徑 | 說明 |
+|------|------|
+| `lib/core/constants/rule_params.dart` | 規則引擎參數（175+ 閾值） |
+| `lib/core/constants/app_routes.dart` | 路由常數（集中管理） |
+| `lib/core/exceptions/app_exception.dart` | 例外階層（sealed class） |
+| `lib/domain/repositories/` | 3 個抽象介面 |
+| `lib/domain/services/rules/` | 59 條規則（12 檔案） |
+| `lib/domain/services/scoring_isolate.dart` | Isolate 評分（型別安全） |
+| `lib/domain/services/ohlcv_data.dart` | OHLCV 提取 extension |
+| `lib/data/database/tables/` | 35 張資料表（10 檔案） |
 
 ---
 
-## Domain Models
+## Repository 介面
 
-```mermaid
-classDiagram
-    class AnalysisContext {
-        +symbol: String
-        +date: DateTime
-        +prices: List
-        +institutional: List
-    }
-
-    class ScoringResult {
-        +symbol: String
-        +score: int
-        +reasons: List~Reason~
-    }
-
-    class Reason {
-        +category: Category
-        +ruleId: String
-        +weight: int
-        +description: String
-    }
-
-    AnalysisContext --> ScoringResult : produces
-    ScoringResult --> Reason : contains
-```
+| 介面 | 位置 | 職責 |
+|------|------|------|
+| `IAnalysisRepository` | `domain/repositories/` | 分析結果存取、推薦紀錄 |
+| `IPriceRepository` | `domain/repositories/` | 價格資料、漲跌幅批次查詢 |
+| `IScreeningRepository` | `domain/repositories/` | 自訂篩選 SQL 執行、批次載入 |
 
 ---
 
@@ -159,7 +131,7 @@ classDiagram
 flowchart TB
     US["🎯 UpdateService<br/>(Coordinator)"]
 
-    subgraph Syncers["⚙️ Specialized Syncers"]
+    subgraph Syncers["⚙️ 7 Specialized Syncers"]
         SLS["📋 StockListSyncer"]
         HPS["📈 HistoricalPriceSyncer"]
         IS["🏛️ InstitutionalSyncer"]
@@ -180,22 +152,26 @@ flowchart TB
 
 ---
 
-## 關鍵文件
+## 編碼標準
 
-| 文件                                                                                                     | 說明              |
-|--------------------------------------------------------------------------------------------------------|-----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (59 條規則) |
-| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |
+| 原則 | 說明 |
+|------|------|
+| **Repository Pattern** | Domain 透過介面存取資料，Data 層提供實作 |
+| **錯誤處理** | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException` |
+| **狀態管理** | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider` |
+| **Rule Engine** | 純函數：輸入 `AnalysisContext` → 輸出 `TriggeredReason` |
+| **配置集中** | 所有閾值放 `lib/core/constants/`，禁止魔術數字 |
+| **路由** | 使用 `AppRoutes` 常數，禁止硬編碼路由字串 |
+| **Isolate 通訊** | 使用 typed class（`IsolateReasonOutput`），避免 `Map<String, dynamic>` |
+| **OHLCV 提取** | 使用 `prices.extractOhlcv()` extension，避免重複迴圈 |
+| **Dart 3** | Records, Pattern Matching, Sealed Classes |
 
 ---
 
-## 編碼標準
+## 關鍵文件
 
-| 原則              | 說明                                                   |
-|-----------------|------------------------------------------------------|
-| **Repository**  | 使用 `IAnalysisRepository` 介面，支援 mock 測試               |
-| **錯誤處理**        | `Result<T>` (`lib/core/utils/result.dart`)           |
-| **狀態管理**        | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider` |
-| **Rule Engine** | 純函數（輸入資料 → 輸出理由）                                     |
-| **配置集中**        | 所有參數放 `lib/core/constants/`，禁止魔術數字                   |
-| **Dart 3**      | Records、Pattern Matching                             |
+| 文件 | 說明 |
+|------|------|
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎詳解（59 條規則） |
+| [RELEASE.md](RELEASE.md) | 發布建置指南 |
+| [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南 |
