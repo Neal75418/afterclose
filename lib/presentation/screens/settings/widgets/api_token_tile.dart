@@ -143,7 +143,8 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('settings.apiTokenInvalid'.tr()),
-            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -161,9 +162,12 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
         _testResult = null;
         _testSuccess = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('settings.apiTokenSaved'.tr())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('settings.apiTokenSaved'.tr()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -179,9 +183,12 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
         _testResult = null;
         _testSuccess = null;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('settings.apiTokenCleared'.tr())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('settings.apiTokenCleared'.tr()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 

@@ -4,6 +4,8 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
@@ -22,10 +24,10 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // ==================================================
-// Sub-State Classes
+// 子狀態類別
 // ==================================================
 
-/// Price-related state: stock info, prices, history, analysis
+/// 價格相關狀態：股票資訊、價格、歷史、分析
 class StockPriceState {
   const StockPriceState({
     this.stock,
@@ -41,7 +43,7 @@ class StockPriceState {
   final List<DailyPriceEntry> priceHistory;
   final DailyAnalysisEntry? analysis;
 
-  /// Price change percentage
+  /// 漲跌幅百分比
   ///
   /// 委託給 PriceCalculator，優先使用 API 漲跌價差，回退到歷史收盤價
   double? get priceChange {
@@ -65,7 +67,7 @@ class StockPriceState {
   }
 }
 
-/// Fundamentals state: revenue, dividends, PER, EPS, quarter metrics
+/// 基本面狀態：營收、股利、本益比、EPS、季度指標
 class FundamentalsState {
   const FundamentalsState({
     this.revenueHistory = const [],
@@ -98,7 +100,7 @@ class FundamentalsState {
   }
 }
 
-/// Chip analysis state: institutional, margin, day trading, shareholding, etc.
+/// 籌碼分析狀態：法人進出、融資融券、當沖、持股比例等
 class ChipAnalysisState {
   const ChipAnalysisState({
     this.institutionalHistory = const [],
@@ -150,7 +152,7 @@ class ChipAnalysisState {
   }
 }
 
-/// Loading state flags for different data sections
+/// 各區塊載入狀態旗標
 class LoadingState {
   const LoadingState({
     this.isLoading = false,
@@ -185,12 +187,11 @@ class LoadingState {
 }
 
 // ==================================================
-// Stock Detail State
+// 股票詳情狀態
 // ==================================================
 
-/// State for stock detail screen
+/// 股票詳情頁面狀態
 class StockDetailState {
-  static const _sentinel = Object();
   const StockDetailState({
     this.price = const StockPriceState(),
     this.fundamentals = const FundamentalsState(),
@@ -210,40 +211,29 @@ class StockDetailState {
   final ChipAnalysisState chip;
   final LoadingState loading;
 
-  // Remaining direct fields
+  // 其他直接欄位
   final bool isInWatchlist;
   final String? error;
 
-  /// The synchronized data date - all displayed data should be from this date
+  /// 同步後的資料日期 — 所有顯示資料應來自此日期
   final DateTime? dataDate;
 
-  /// True if price and institutional data dates don't match
+  /// 價格與法人資料日期不一致時為 true
   final bool hasDataMismatch;
 
   final List<DailyReasonEntry> reasons;
   final StockSummary? aiSummary;
   final List<NewsItemEntry> recentNews;
 
-  /// Convenience: Price change percentage (delegates to price sub-state)
+  /// 便捷存取：漲跌幅（委託給 price 子狀態）
   double? get priceChange => price.priceChange;
 
-  /// Trend state label
-  String get trendLabel {
-    return switch (price.analysis?.trendState) {
-      'UP' => '上升趨勢',
-      'DOWN' => '下跌趨勢',
-      _ => '盤整區間',
-    };
-  }
+  /// 趨勢狀態標籤
+  String get trendLabel => S.getTrendLabel(price.analysis?.trendState);
 
-  /// Reversal state label
-  String? get reversalLabel {
-    return switch (price.analysis?.reversalState) {
-      'W2S' => '弱轉強',
-      'S2W' => '強轉弱',
-      _ => null,
-    };
-  }
+  /// 反轉狀態標籤
+  String? get reversalLabel =>
+      S.getReversalLabel(price.analysis?.reversalState);
 
   StockDetailState copyWith({
     // Price fields
@@ -276,7 +266,7 @@ class StockDetailState {
     bool? isLoadingChip,
     // Direct fields
     bool? isInWatchlist,
-    Object? error = _sentinel,
+    Object? error = sentinel,
     DateTime? dataDate,
     bool? hasDataMismatch,
     List<DailyReasonEntry>? reasons,
@@ -358,7 +348,7 @@ class StockDetailState {
             )
           : loading,
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
       dataDate: dataDate ?? this.dataDate,
       hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
       reasons: reasons ?? this.reasons,
@@ -369,7 +359,7 @@ class StockDetailState {
 }
 
 // ==================================================
-// Stock Detail Notifier
+// 股票詳情 Notifier
 // ==================================================
 
 class StockDetailNotifier extends StateNotifier<StockDetailState> {
@@ -400,7 +390,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }).toList();
   }
 
-  /// Load stock detail data
+  /// 載入股票詳情資料
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -416,7 +406,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
           ? DateContext.normalize(latestDataDate)
           : normalizedToday;
 
-      // Load all data in parallel
+      // 平行載入所有資料
       final stockFuture = _db.getStock(_symbol);
       final priceFuture = _db.getPriceHistory(
         _symbol,
@@ -434,7 +424,16 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
       final watchlistFuture = _db.isInWatchlist(_symbol);
 
-      final results = await Future.wait([
+      // 使用 Dart 3 Records 進行型別安全的平行載入（無需手動 index casting）
+      final (
+        stock,
+        priceHistory,
+        recentPrices,
+        analysis,
+        reasons,
+        dbInstHistory,
+        isInWatchlist,
+      ) = await (
         stockFuture,
         priceFuture,
         recentPricesFuture,
@@ -442,31 +441,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         reasonsFuture,
         instFuture,
         watchlistFuture,
-      ]);
-
-      // 型別轉換
-      // 注意：Dart 泛型在運行時會被擦除，`is List<T>` 實際等同於 `is List`。
-      // 因此使用 try-catch 包裝，確保即使資料庫層返回格式異常也不會崩潰。
-      StockMasterEntry? stock;
-      List<DailyPriceEntry> priceHistory = [];
-      List<DailyPriceEntry> recentPrices = [];
-      DailyAnalysisEntry? analysis;
-      List<DailyReasonEntry> reasons = [];
-      List<DailyInstitutionalEntry> instHistory = [];
-      bool isInWatchlist = false;
-
-      try {
-        stock = results[0] as StockMasterEntry?;
-        priceHistory = results[1] as List<DailyPriceEntry>;
-        recentPrices = results[2] as List<DailyPriceEntry>;
-        analysis = results[3] as DailyAnalysisEntry?;
-        reasons = results[4] as List<DailyReasonEntry>;
-        instHistory = results[5] as List<DailyInstitutionalEntry>;
-        isInWatchlist = results[6] as bool;
-      } catch (e) {
-        // 若型別轉換失敗，記錄錯誤但繼續執行（使用預設空值）
-        AppLogger.warning('StockDetail', '資料型別轉換失敗: $_symbol', e);
-      }
+      ).wait;
+      var instHistory = dbInstHistory;
 
       // 從最近價格提取最新與前一日（recentPrices 依日期降序排列）
       final latestPrice = recentPrices.isNotEmpty ? recentPrices.first : null;
@@ -480,7 +456,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
             'prev=${previousPrice?.close} (${previousPrice?.date})',
       );
 
-      // If no institutional data in DB, fetch from API
+      // DB 無法人資料時從 API 取得
       // 追蹤 API 是否失敗，以便 UI 顯示部分錯誤提示
       var hasInstitutionalError = false;
       if (instHistory.isEmpty) {
@@ -489,7 +465,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         hasInstitutionalError = apiResult.hasError;
       }
 
-      // Synchronize data dates - find common latest date
+      // 同步資料日期 — 找到共同最新日期
       final syncResult = _dataSyncService.synchronizeDataDates(
         priceHistory,
         instHistory,
@@ -544,7 +520,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }
   }
 
-  /// Fetch institutional data directly from FinMind API
+  /// 直接從 FinMind API 取得法人資料
   ///
   /// 返回 record 包含資料與錯誤狀態，讓呼叫端能區分「API 失敗」與「真的沒資料」。
   Future<({List<DailyInstitutionalEntry> data, bool hasError})>
@@ -559,7 +535,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         endDate: DateContext.formatYmd(today),
       );
 
-      // Convert to DailyInstitutionalEntry format
+      // 轉換為 DailyInstitutionalEntry 格式
       final entries = data.map((item) {
         return DailyInstitutionalEntry(
           symbol: item.stockId,
@@ -577,7 +553,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }
   }
 
-  /// Toggle watchlist - also syncs with global watchlistProvider
+  /// 切換自選股 — 同步更新全域 watchlistProvider
   Future<void> toggleWatchlist() async {
     final watchlistNotifier = _ref.read(watchlistProvider.notifier);
     final wasInWatchlist = state.isInWatchlist;
@@ -588,7 +564,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       await watchlistNotifier.addStock(_symbol);
     }
 
-    // Update local state
+    // 更新本地狀態
     state = state.copyWith(isInWatchlist: !wasInWatchlist);
 
     // 記錄自選股變更行為（Sprint 11 - 個人化推薦）
@@ -926,7 +902,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     );
   }
 
-  /// Load insider holdings data (董監持股)
+  /// 載入董監持股資料
   ///
   /// 從資料庫取得董監持股歷史資料，用於顯示在股票詳情頁的董監持股頁籤。
   Future<void> loadInsiderData() async {
@@ -941,13 +917,13 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     try {
       final insiderRepo = _ref.read(insiderRepositoryProvider);
 
-      // Load insider holding history for the past 12 months
+      // 取得近 12 個月的董監持股歷史
       final insiderHistory = await insiderRepo.getInsiderHoldingHistory(
         _symbol,
         months: 12,
       );
 
-      // Sort by date descending (newest first)
+      // 依日期降序排列（最新在前）
       insiderHistory.sort((a, b) => b.date.compareTo(a.date));
 
       state = state.copyWith(
@@ -960,10 +936,10 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }
   }
 
-  /// Load comprehensive chip analysis data.
+  /// 載入完整籌碼分析資料
   ///
-  /// Loads day trading, shareholding, margin trading (from DB),
-  /// holding distribution, and insider data, then computes chip strength.
+  /// 包含當沖、持股比例、融資融券（DB）、持股集中度、
+  /// 內部人持股，並計算籌碼強度。
   Future<void> loadChipData() async {
     if (state.loading.isLoadingChip || state.chip.chipStrength != null) return;
 
@@ -1000,7 +976,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         AppLogger.warning('StockDetail', '籌碼資料型別轉換失敗: $_symbol', e);
       }
 
-      // Compute chip strength
+      // 計算籌碼強度
       const service = ChipAnalysisService();
       final strength = service.compute(
         institutionalHistory: state.chip.institutionalHistory,
@@ -1027,7 +1003,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   }
 }
 
-/// Provider family for stock detail
+/// 股票詳情 Provider family
 /// 使用 autoDispose + keepAlive 組合：
 /// - autoDispose: 無訂閱者時觸發清理
 /// - keepAlive: 保留 5 分鐘快取，改善列表↔詳情切換體驗

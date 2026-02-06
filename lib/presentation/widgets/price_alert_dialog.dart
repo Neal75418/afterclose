@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Shows a dialog to create a new price alert
 Future<bool?> showCreatePriceAlertDialog({
@@ -81,7 +81,7 @@ class _CreatePriceAlertDialogState
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [
@@ -152,7 +152,7 @@ class _CreatePriceAlertDialogState
                 decimal: true,
               ),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
               ],
             ),
 
@@ -214,9 +214,10 @@ class _CreatePriceAlertDialogState
       AlertType.changePct => 'alert.targetPercent'.tr(),
       AlertType.breakResistance ||
       AlertType.breakSupport => 'alert.targetPrice'.tr(),
-      AlertType.volumeAbove => '目標成交量',
-      AlertType.rsiOverbought || AlertType.rsiOversold => 'RSI 閾值',
-      AlertType.crossAboveMa || AlertType.crossBelowMa => '均線天數',
+      AlertType.volumeAbove => 'alert.targetVolume'.tr(),
+      AlertType.rsiOverbought ||
+      AlertType.rsiOversold => 'alert.rsiThreshold'.tr(),
+      AlertType.crossAboveMa || AlertType.crossBelowMa => 'alert.maDays'.tr(),
       _ => '',
     };
   }
@@ -230,20 +231,31 @@ class _CreatePriceAlertDialogState
       AlertType.changePct => 'alert.percentHint'.tr(),
       AlertType.breakResistance ||
       AlertType.breakSupport => 'alert.priceHint'.tr(),
-      AlertType.volumeAbove => '例如：10000',
-      AlertType.rsiOverbought => '預設 70',
-      AlertType.rsiOversold => '預設 30',
-      AlertType.crossAboveMa || AlertType.crossBelowMa => '例如：5、10、20、60',
+      AlertType.volumeAbove => 'alert.volumeHint'.tr(),
+      AlertType.rsiOverbought => 'alert.rsiOverboughtHint'.tr(),
+      AlertType.rsiOversold => 'alert.rsiOversoldHint'.tr(),
+      AlertType.crossAboveMa || AlertType.crossBelowMa => 'alert.maHint'.tr(),
       _ => '',
     };
   }
 
   Future<void> _createAlert() async {
-    final value = double.tryParse(_valueController.text);
-    if (value == null || value <= 0) {
+    final valueText = _valueController.text.trim();
+    if (_selectedType.requiresTargetValue && valueText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('alert.invalidValue'.tr()),
+          content: Text('alert.emptyValue'.tr()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    final value = double.tryParse(valueText);
+    if (_selectedType.requiresTargetValue && (value == null || value <= 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('alert.mustBePositive'.tr()),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -273,7 +285,7 @@ class _CreatePriceAlertDialogState
         .createAlert(
           symbol: widget.symbol,
           alertType: _selectedType,
-          targetValue: value,
+          targetValue: value ?? 0,
           note: _noteController.text.isEmpty ? null : _noteController.text,
         );
 
@@ -287,7 +299,6 @@ class _CreatePriceAlertDialogState
           SnackBar(
             content: Text('alert.created'.tr()),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: AppTheme.upColor,
           ),
         );
       } else {
@@ -295,7 +306,7 @@ class _CreatePriceAlertDialogState
           SnackBar(
             content: Text('alert.createFailed'.tr()),
             behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }

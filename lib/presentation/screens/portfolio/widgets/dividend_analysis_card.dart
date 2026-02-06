@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 根據殖利率取得對應顏色
 ///
@@ -39,7 +40,7 @@ class DividendAnalysisCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -215,7 +216,10 @@ class _StockDividendRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '\$${info.estimatedDividendPerShare.toStringAsFixed(2)}',
+                  AppNumberFormat.currency(
+                    info.estimatedDividendPerShare,
+                    decimals: 2,
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
@@ -238,7 +242,7 @@ class _StockDividendRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '\$${AppNumberFormat.compact(info.expectedYearlyAmount)}',
+                  'NT\$${AppNumberFormat.compact(info.expectedYearlyAmount)}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.upColor,

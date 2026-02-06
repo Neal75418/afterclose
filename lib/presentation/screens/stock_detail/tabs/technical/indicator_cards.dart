@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays detailed indicator value cards (RSI, KDJ, MACD, Bollinger)
 /// based on the selected secondary and main indicators.
@@ -227,7 +229,7 @@ class _KDCard extends StatelessWidget {
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontFamily: 'RobotoMono',
-                  color: const Color(0xFF60A5FA),
+                  color: IndicatorColors.chartPrimary,
                 ),
               ),
               Text(
@@ -235,7 +237,7 @@ class _KDCard extends StatelessWidget {
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                   fontFamily: 'RobotoMono',
-                  color: const Color(0xFFFACC15),
+                  color: IndicatorColors.chartSecondary,
                 ),
               ),
             ],
@@ -329,12 +331,12 @@ class _MACDCard extends StatelessWidget {
               _LabeledValue(
                 label: 'DIF',
                 value: latestMACD,
-                color: const Color(0xFF60A5FA),
+                color: IndicatorColors.chartPrimary,
               ),
               _LabeledValue(
                 label: 'DEA',
                 value: latestSignal,
-                color: const Color(0xFFFACC15),
+                color: IndicatorColors.chartSecondary,
               ),
               _LabeledValue(
                 label: 'HIST',
@@ -513,13 +515,15 @@ class _OBVCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
+                        color: IndicatorColors.obvLabel.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusXs,
+                        ),
                       ),
                       child: Text(
                         'stockDetail.obvLabel'.tr(),
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFF10B981),
+                          color: IndicatorColors.obvLabel,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -588,13 +592,13 @@ class _ATRCard extends StatelessWidget {
     Color volatilityColor;
     if (atrPercent < 2) {
       volatilityLevel = 'stockDetail.atrLow'.tr();
-      volatilityColor = const Color(0xFF10B981); // Green
+      volatilityColor = IndicatorColors.volatilityLow;
     } else if (atrPercent < 4) {
       volatilityLevel = 'stockDetail.atrMedium'.tr();
-      volatilityColor = const Color(0xFFF59E0B); // Yellow
+      volatilityColor = IndicatorColors.volatilityMedium;
     } else {
       volatilityLevel = 'stockDetail.atrHigh'.tr();
-      volatilityColor = const Color(0xFFEF4444); // Red
+      volatilityColor = IndicatorColors.volatilityHigh;
     }
 
     return _IndicatorCardContainer(
@@ -619,13 +623,15 @@ class _ATRCard extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(4),
+                        color: IndicatorColors.atrLabel.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusXs,
+                        ),
                       ),
                       child: Text(
                         'stockDetail.atrLabel'.tr(),
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFF8B5CF6),
+                          color: IndicatorColors.atrLabel,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -649,7 +655,9 @@ class _ATRCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: volatilityColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusXs,
+                        ),
                       ),
                       child: Text(
                         volatilityLevel,
@@ -705,7 +713,7 @@ class _IndicatorCardContainer extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
         child: BackdropFilter(
           filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
@@ -714,7 +722,7 @@ class _IndicatorCardContainer extends StatelessWidget {
               color: theme.colorScheme.surfaceContainerHighest.withValues(
                 alpha: 0.4,
               ),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
               border: Border.all(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
               ),

@@ -5,7 +5,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/comparison_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Overlay price chart that normalizes all stocks to % change from day-0.
 class PriceOverlayChart extends StatelessWidget {
@@ -32,7 +32,7 @@ class PriceOverlayChart extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         side: BorderSide(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
@@ -151,7 +151,8 @@ class PriceOverlayChart extends StatelessWidget {
       lines.add(
         LineChartBarData(
           spots: spots,
-          color: comparisonColors[i % comparisonColors.length],
+          color:
+              DesignTokens.chartPalette[i % DesignTokens.chartPalette.length],
           barWidth: 2,
           isStrokeCapRound: true,
           dotData: const FlDotData(show: false),
@@ -189,7 +190,8 @@ class PriceOverlayChart extends StatelessWidget {
                 width: 12,
                 height: 3,
                 decoration: BoxDecoration(
-                  color: comparisonColors[i % comparisonColors.length],
+                  color: DesignTokens
+                      .chartPalette[i % DesignTokens.chartPalette.length],
                   borderRadius: BorderRadius.circular(1.5),
                 ),
               ),

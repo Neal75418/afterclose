@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/domain/services/portfolio_analytics_service.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 產業配置卡片
 ///
@@ -66,7 +67,7 @@ class IndustryAllocationCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,7 +154,7 @@ class _IndustryBar extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                 child: LinearProgressIndicator(
                   value: percentage / 100,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,

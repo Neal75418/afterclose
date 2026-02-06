@@ -5,10 +5,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Data class for stock preview
+/// 股票預覽資料
 class StockPreviewData {
   const StockPreviewData({
     required this.symbol,
@@ -31,7 +33,7 @@ class StockPreviewData {
   final bool isInWatchlist;
 }
 
-/// Shows a bottom sheet preview for a stock
+/// 顯示股票預覽 bottom sheet
 Future<void> showStockPreviewSheet({
   required BuildContext context,
   required StockPreviewData data,
@@ -52,7 +54,7 @@ Future<void> showStockPreviewSheet({
   );
 }
 
-/// Bottom sheet widget for stock preview
+/// 股票預覽 bottom sheet 元件
 class StockPreviewSheet extends StatelessWidget {
   const StockPreviewSheet({
     super.key,
@@ -65,7 +67,7 @@ class StockPreviewSheet extends StatelessWidget {
   final VoidCallback? onViewDetails;
   final VoidCallback? onToggleWatchlist;
 
-  /// Build semantic label for the sheet
+  /// 建構無障礙語義標籤
   String _buildSemanticLabel() {
     final parts = <String>['股票預覽', data.symbol];
     if (data.stockName != null) parts.add(data.stockName!);
@@ -95,7 +97,7 @@ class StockPreviewSheet extends StatelessWidget {
       container: true,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
@@ -108,29 +110,19 @@ class StockPreviewSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.3,
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            // 拖曳把手
+            const DragHandle(),
 
-            // Content
+            // 內容區
             Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header row
+                  // 標題列
                   Row(
                     children: [
-                      // Trend indicator
+                      // 趨勢指示器
                       Container(
                         width: 56,
                         height: 56,
@@ -145,7 +137,9 @@ class StockPreviewSheet extends StatelessWidget {
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.radiusXl,
+                          ),
                           border: Border.all(
                             color: data.trendState.trendColor.withValues(
                               alpha: 0.3,
@@ -166,7 +160,7 @@ class StockPreviewSheet extends StatelessWidget {
                       ),
                       const SizedBox(width: 16),
 
-                      // Symbol and name
+                      // 代號與名稱
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,7 +182,7 @@ class StockPreviewSheet extends StatelessWidget {
                         ),
                       ),
 
-                      // Price section
+                      // 價格區
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -208,12 +202,14 @@ class StockPreviewSheet extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: priceColor.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.radiusMd,
+                                ),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  // Decorative icon - text already contains +/- sign
+                                  // 裝飾圖示 — 文字已包含正負號
                                   ExcludeSemantics(
                                     child: Icon(
                                       isPositive
@@ -238,19 +234,19 @@ class StockPreviewSheet extends StatelessWidget {
                     ],
                   ),
 
-                  // Score section
+                  // 評分區
                   if (data.score != null && data.score! > 0) ...[
                     const SizedBox(height: 20),
                     _buildScoreSection(theme),
                   ],
 
-                  // Reasons section
+                  // 訊號理由區
                   if (data.reasons.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     _buildReasonsSection(theme, isDark),
                   ],
 
-                  // Action buttons
+                  // 操作按鈕
                   const SizedBox(height: 24),
                   Row(
                         children: [
@@ -308,7 +304,7 @@ class StockPreviewSheet extends StatelessWidget {
                       .fadeIn(delay: 200.ms, duration: 300.ms)
                       .slideY(begin: 0.2, duration: 300.ms),
 
-                  // Bottom safe area
+                  // 底部安全區域
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
                 ],
               ),
@@ -324,7 +320,7 @@ class StockPreviewSheet extends StatelessWidget {
 
     return Row(
       children: [
-        // Use shared ScoreRing widget with extraLarge size
+        // 使用共用 ScoreRing 元件（extraLarge 尺寸）
         ScoreRing(
           score: data.score!,
           size: ScoreRingSize.extraLarge,

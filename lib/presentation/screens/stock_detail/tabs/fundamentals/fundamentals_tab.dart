@@ -11,6 +11,7 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/e
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/profitability_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Fundamentals tab - P/E, P/B, Revenue, Dividends
 class FundamentalsTab extends ConsumerStatefulWidget {
@@ -35,7 +36,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(stockDetailProvider(widget.symbol));
-    final showROCYear = ref.watch(settingsProvider).showROCYear;
+    final showROCYear = ref.watch(
+      settingsProvider.select((s) => s.showROCYear),
+    );
 
     return SingleChildScrollView(
       primary: false,
@@ -169,7 +172,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(

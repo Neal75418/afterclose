@@ -22,6 +22,7 @@ import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Stock detail screen - shows comprehensive stock information with tabs
 class StockDetailScreen extends ConsumerStatefulWidget {
@@ -202,6 +203,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
             content: Text(
               'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
             ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -293,7 +296,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                               ),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.radiusXs,
+                                ),
                               ),
                               child: Text(
                                 'stockDetail.otcBadge'.tr(),
@@ -315,7 +320,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                                 ),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(4),
+                                  borderRadius: BorderRadius.circular(
+                                    DesignTokens.radiusXs,
+                                  ),
                                 ),
                                 child: Text(
                                   state.price.stock!.industry!,
@@ -346,7 +353,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                               ),
                               decoration: BoxDecoration(
                                 color: theme.colorScheme.primaryContainer,
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.radiusLg,
+                                ),
                               ),
                               child: Text(
                                 ReasonTags.translateReasonCode(
@@ -394,7 +403,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                                     AppTheme.downColor.withValues(alpha: 0.1),
                                   ],
                           ),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.radiusSm,
+                          ),
                           border: Border.all(
                             color: priceColor.withValues(alpha: 0.3),
                           ),
@@ -502,7 +513,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -532,7 +543,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -599,6 +610,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
           color: theme.colorScheme.surface.withValues(alpha: 0.7),
           child: TabBar(
             controller: tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             labelColor: theme.colorScheme.primary,
             unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
             indicatorColor: theme.colorScheme.primary,

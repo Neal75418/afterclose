@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Foreign shareholding section with ratio card + trend chart.
 class ShareholdingSection extends StatelessWidget {
@@ -61,7 +62,7 @@ class ShareholdingSection extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
           ),
           child: Row(
             children: [
@@ -89,7 +90,7 @@ class ShareholdingSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _trendColor(trendKey).withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                 ),
                 child: Text(
                   trendKey.tr(),
@@ -118,7 +119,7 @@ class ShareholdingSection extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Center(
         child: Text(

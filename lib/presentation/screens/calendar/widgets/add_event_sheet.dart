@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 新增事件 BottomSheet
 class AddEventSheet extends ConsumerStatefulWidget {
@@ -84,6 +85,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                 border: const OutlineInputBorder(),
               ),
               autofocus: true,
+              maxLength: 100,
             ),
             const SizedBox(height: 12),
 
@@ -130,7 +132,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                 margin: const EdgeInsets.only(top: 4),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                   border: Border.all(color: theme.colorScheme.outlineVariant),
                 ),
                 child: ListView.builder(
@@ -164,6 +166,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                 border: const OutlineInputBorder(),
               ),
               maxLines: 3,
+              maxLength: 500,
             ),
             const SizedBox(height: 24),
 
@@ -228,7 +231,15 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   Future<void> _submit() async {
     final title = _titleController.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('calendar.titleRequired'.tr()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     try {
       await ref
@@ -243,16 +254,23 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('calendar.eventAdded'.tr())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('calendar.eventAdded'.tr()),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
   }

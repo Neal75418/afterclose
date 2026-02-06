@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/comparison_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Radar chart comparing stocks across 6 dimensions.
 ///
@@ -30,7 +30,7 @@ class RadarComparisonChart extends StatelessWidget {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         side: BorderSide(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
@@ -107,7 +107,8 @@ class RadarComparisonChart extends StatelessWidget {
 
     for (var i = 0; i < state.symbols.length; i++) {
       final symbol = state.symbols[i];
-      final color = comparisonColors[i % comparisonColors.length];
+      final color =
+          DesignTokens.chartPalette[i % DesignTokens.chartPalette.length];
 
       final values = _computeRadarValues(symbol);
 

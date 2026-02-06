@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/app/router.dart' show completeOnboarding;
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 首次使用引導頁面
 ///
@@ -97,7 +98,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       color: i == _currentPage
                           ? theme.colorScheme.primary
                           : theme.colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusXs,
+                      ),
                     ),
                   ),
                 ),

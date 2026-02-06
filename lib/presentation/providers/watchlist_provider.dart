@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -12,10 +13,10 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/widgets/warning_badge.dart';
 
 // ==================================================
-// Watchlist Sort Options
+// 自選股排序選項
 // ==================================================
 
-/// Sort options for watchlist
+/// 自選股排序選項
 enum WatchlistSort {
   addedDesc,
   addedAsc,
@@ -30,10 +31,10 @@ enum WatchlistSort {
 }
 
 // ==================================================
-// Watchlist Group Options
+// 自選股分組選項
 // ==================================================
 
-/// Group options for watchlist
+/// 自選股分組選項
 enum WatchlistGroup {
   none,
   status,
@@ -43,7 +44,7 @@ enum WatchlistGroup {
       'watchlist.group${name[0].toUpperCase()}${name.substring(1)}'.tr();
 }
 
-/// Status category for grouping
+/// 狀態分類（用於分組）
 enum WatchlistStatus {
   signal('🔥'),
   volatile('👀'),
@@ -56,7 +57,7 @@ enum WatchlistStatus {
       'watchlist.status${name[0].toUpperCase()}${name.substring(1)}'.tr();
 }
 
-/// Trend category for grouping
+/// 趨勢分類（用於分組）
 enum WatchlistTrend {
   up('📈'),
   down('📉'),
@@ -70,15 +71,14 @@ enum WatchlistTrend {
 }
 
 // ==================================================
-// Watchlist Screen State
+// 自選股頁面狀態
 // ==================================================
 
-/// State for watchlist screen
+/// 自選股頁面狀態
 ///
 /// 使用快取策略：[filteredItems]、[groupedByStatus]、[groupedByTrend]
 /// 僅在建構時計算一次，避免每次 build 時重複計算。
 class WatchlistState {
-  static const _sentinel = Object();
   WatchlistState({
     this.items = const [],
     this.isLoading = false,
@@ -90,7 +90,7 @@ class WatchlistState {
        _groupedByStatus = null,
        _groupedByTrend = null;
 
-  /// Private constructor for copyWith to preserve cached values when appropriate
+  /// 內部建構子：copyWith 時保留快取值
   WatchlistState._internal({
     required this.items,
     required this.isLoading,
@@ -116,20 +116,20 @@ class WatchlistState {
   Map<WatchlistStatus, List<WatchlistItemData>>? _groupedByStatus;
   Map<WatchlistTrend, List<WatchlistItemData>>? _groupedByTrend;
 
-  /// Filtered items based on search query (cached)
+  /// 搜尋過濾後的項目（已快取）
   List<WatchlistItemData> get filteredItems => _filteredItems;
 
-  /// Grouped items by status (lazy cached)
+  /// 依狀態分組（延遲初始化快取）
   Map<WatchlistStatus, List<WatchlistItemData>> get groupedByStatus {
     return _groupedByStatus ??= _computeGroupedByStatus(_filteredItems);
   }
 
-  /// Grouped items by trend (lazy cached)
+  /// 依趨勢分組（延遲初始化快取）
   Map<WatchlistTrend, List<WatchlistItemData>> get groupedByTrend {
     return _groupedByTrend ??= _computeGroupedByTrend(_filteredItems);
   }
 
-  /// Compute filtered items based on search query
+  /// 根據搜尋關鍵字計算過濾結果
   static List<WatchlistItemData> _computeFilteredItems(
     List<WatchlistItemData> items,
     String searchQuery,
@@ -142,7 +142,7 @@ class WatchlistState {
     }).toList();
   }
 
-  /// Compute grouped by status
+  /// 計算狀態分組
   static Map<WatchlistStatus, List<WatchlistItemData>> _computeGroupedByStatus(
     List<WatchlistItemData> items,
   ) {
@@ -156,7 +156,7 @@ class WatchlistState {
     return result;
   }
 
-  /// Compute grouped by trend
+  /// 計算趨勢分組
   static Map<WatchlistTrend, List<WatchlistItemData>> _computeGroupedByTrend(
     List<WatchlistItemData> items,
   ) {
@@ -173,14 +173,14 @@ class WatchlistState {
   WatchlistState copyWith({
     List<WatchlistItemData>? items,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
     WatchlistSort? sort,
     WatchlistGroup? group,
     String? searchQuery,
   }) {
     final newItems = items ?? this.items;
     final newSearchQuery = searchQuery ?? this.searchQuery;
-    final newError = error == _sentinel ? this.error : error as String?;
+    final newError = error == sentinel ? this.error : error as String?;
 
     // 若 items 或 searchQuery 變更，需重新計算 filteredItems
     final needsRecompute =
@@ -211,7 +211,7 @@ class WatchlistState {
   }
 }
 
-/// Data class for watchlist item
+/// 自選股項目資料
 class WatchlistItemData {
   const WatchlistItemData({
     required this.symbol,
@@ -245,7 +245,7 @@ class WatchlistItemData {
   /// 警示類型（處置 > 注意 > 高質押），用於顯示警示標記
   final WarningBadgeType? warningType;
 
-  /// Get status category
+  /// 取得狀態分類
   WatchlistStatus get status {
     if (hasSignal) return WatchlistStatus.signal;
     if ((priceChange?.abs() ?? 0) >= 3) {
@@ -254,7 +254,7 @@ class WatchlistItemData {
     return WatchlistStatus.quiet;
   }
 
-  /// Get trend category
+  /// 取得趨勢分類
   WatchlistTrend get trend {
     return switch (trendState) {
       'UP' => WatchlistTrend.up,
@@ -267,7 +267,7 @@ class WatchlistItemData {
 }
 
 // ==================================================
-// Watchlist Notifier
+// 自選股 Notifier
 // ==================================================
 
 class WatchlistNotifier extends StateNotifier<WatchlistState> {
@@ -280,7 +280,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
   WarningRepository get _warningRepo => _ref.read(warningRepositoryProvider);
   InsiderRepository get _insiderRepo => _ref.read(insiderRepositoryProvider);
 
-  /// Load watchlist data
+  /// 載入自選股資料
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -293,7 +293,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         return;
       }
 
-      // Collect all symbols for batch queries
+      // 收集所有代號進行批次查詢
       final symbols = watchlist.map((w) => w.symbol).toList();
 
       // 取得實際資料日期，確保非交易日也能正確顯示趨勢
@@ -302,34 +302,34 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
           ? DateContext.normalize(latestDataDate)
           : dateCtx.today;
 
-      // Type-safe batch load using Dart 3 Records (no manual casting needed)
+      // 使用 Dart 3 Records 進行型別安全的批次載入
       final data = await _cachedDb.loadStockListData(
         symbols: symbols,
         analysisDate: analysisDate,
         historyStart: dateCtx.historyStart,
       );
 
-      // Destructure Record fields - compile-time type safety!
+      // 解構 Record 欄位
       final stocksMap = data.stocks;
       final latestPricesMap = data.latestPrices;
       final analysesMap = data.analyses;
       final reasonsMap = data.reasons;
       final priceHistoriesMap = data.priceHistories;
 
-      // Calculate price changes using utility
+      // 計算漲跌幅
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(
         priceHistoriesMap,
         latestPricesMap,
       );
 
-      // Fetch warning data for watchlist (Killer Features)
+      // 取得自選股警示資料
       final warningsMap = await _warningRepo.getWatchlistWarnings(symbols);
       final highPledgeMap = await _insiderRepo.getWatchlistHighPledgeStocks(
         symbols,
         threshold: RuleParams.highPledgeRatioThreshold,
       );
 
-      // Build items from batch results
+      // 從批次結果建構項目
       final items = watchlist.map((item) {
         final stock = stocksMap[item.symbol];
         final latestPrice = latestPricesMap[item.symbol];
@@ -337,12 +337,12 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         final reasons = reasonsMap[item.symbol] ?? [];
         final priceHistory = priceHistoriesMap[item.symbol] ?? [];
 
-        // Extract recent prices for sparkline (last 20 days)
+        // 提取近期價格用於 sparkline
         final recentPrices = PriceCalculator.extractSparklinePrices(
           priceHistory,
         );
 
-        // Determine warning type (priority: disposal > attention > highPledge)
+        // 判斷警示類型（優先級：處置 > 注意 > 高質押）
         final warningType = _determineWarningType(
           symbol: item.symbol,
           warningsMap: warningsMap,
@@ -365,7 +365,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         );
       }).toList();
 
-      // Sort items
+      // 排序
       final sortedItems = _sortItems(items, state.sort);
 
       state = state.copyWith(items: sortedItems, isLoading: false);
@@ -374,7 +374,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     }
   }
 
-  /// Sort items based on specified sort option
+  /// 依指定選項排序
   List<WatchlistItemData> _sortItems(
     List<WatchlistItemData> items,
     WatchlistSort sort,
@@ -430,46 +430,46 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     return null;
   }
 
-  /// Set sort option
+  /// 設定排序選項
   void setSort(WatchlistSort sort) {
     if (state.sort == sort) return;
     final sortedItems = _sortItems(state.items, sort);
     state = state.copyWith(sort: sort, items: sortedItems);
   }
 
-  /// Set group option
+  /// 設定分組選項
   void setGroup(WatchlistGroup group) {
     state = state.copyWith(group: group);
   }
 
-  /// Set search query
+  /// 設定搜尋關鍵字
   void setSearchQuery(String query) {
     state = state.copyWith(searchQuery: query);
   }
 
-  /// Add stock to watchlist
+  /// 新增股票至自選股
   Future<bool> addStock(String symbol) async {
-    // Check if stock exists
+    // 檢查股票是否存在
     final stock = await _db.getStock(symbol);
     if (stock == null) {
       return false;
     }
 
-    // Check if already in watchlist
+    // 檢查是否已在自選股中
     final existingSymbols = state.items.map((i) => i.symbol).toSet();
     if (existingSymbols.contains(symbol)) {
       return true;
     }
 
     try {
-      // Persist to database
+      // 寫入資料庫
       await _db.addToWatchlist(symbol);
 
       // 從資料庫讀取實際的 createdAt，確保與 loadData 一致
       final watchlistEntry = await _db.getWatchlistEntry(symbol);
       final actualAddedAt = watchlistEntry?.createdAt ?? DateTime.now();
 
-      // Incremental update: load data only for this stock
+      // 增量更新：僅載入此股票資料
       final itemData = await _loadSingleStockData(
         symbol,
         stock.name,
@@ -507,7 +507,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     }
   }
 
-  /// Restore a removed stock
+  /// 還原已移除的股票
   Future<void> restoreStock(String symbol) async {
     try {
       await _db.addToWatchlist(symbol);
@@ -516,7 +516,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       final watchlistEntry = await _db.getWatchlistEntry(symbol);
       final actualAddedAt = watchlistEntry?.createdAt ?? DateTime.now();
 
-      // Incremental update: load data only for this stock
+      // 增量更新：僅載入此股票資料
       final stock = await _db.getStock(symbol);
       final itemData = await _loadSingleStockData(
         symbol,
@@ -531,7 +531,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
     }
   }
 
-  /// Load data for a single stock (used for incremental updates)
+  /// 載入單一股票資料（用於增量更新）
   ///
   /// [addedAt] 應從資料庫的 watchlist entry 取得，以確保與 loadData 一致。
   /// 若未提供則使用當前時間作為 fallback。
@@ -549,7 +549,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
         ? DateContext.normalize(latestDataDate)
         : dateCtx.today;
 
-    // Batch load data for this single stock
+    // 批次載入此股票的資料
     final results = await Future.wait([
       _db.getLatestPrice(symbol),
       _db.getAnalysis(symbol, analysisDate),
@@ -572,10 +572,10 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       latestPrice,
     );
 
-    // Extract recent prices for sparkline
+    // 提取近期價格用於 sparkline
     final recentPrices = PriceCalculator.extractSparklinePrices(priceHistory);
 
-    // Fetch warning data for this stock (Killer Features)
+    // 取得此股票的警示資料
     final warningsMap = await _warningRepo.getWatchlistWarnings([symbol]);
     final highPledgeMap = await _insiderRepo.getWatchlistHighPledgeStocks([
       symbol,
@@ -603,7 +603,7 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
   }
 }
 
-/// Provider for watchlist screen state
+/// 自選股頁面狀態 Provider
 final watchlistProvider =
     StateNotifierProvider<WatchlistNotifier, WatchlistState>((ref) {
       return WatchlistNotifier(ref);

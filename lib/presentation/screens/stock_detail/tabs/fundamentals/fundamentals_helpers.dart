@@ -1,5 +1,6 @@
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Shared helper widgets used across fundamentals section widgets.
 
@@ -33,7 +34,7 @@ Widget buildGrowthBadge(BuildContext context, double? growth) {
         color: isSignificant
             ? color.withValues(alpha: 0.1)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
       ),
       child: Text(
         '$prefix${growth.toStringAsFixed(1)}%',
@@ -55,7 +56,7 @@ Widget buildLoadingState(BuildContext context) {
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
     ),
     child: const Center(child: CircularProgressIndicator()),
   );
@@ -69,7 +70,7 @@ Widget buildEmptyState(BuildContext context, String message) {
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
     ),
     child: Center(
       child: Text(

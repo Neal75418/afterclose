@@ -21,7 +21,7 @@ const _keyAutoUpdateEnabled = 'settings_auto_update_enabled';
 // Settings State
 // ==================================================
 
-/// Supported locales
+/// 支援的語系
 enum AppLocale {
   zhTW('zh', 'TW', '繁體中文'),
   en('en', null, 'English');
@@ -50,7 +50,7 @@ enum AppLocale {
   }
 }
 
-/// Settings state
+/// 設定狀態
 class SettingsState {
   const SettingsState({
     this.themeMode = ThemeMode.system,
@@ -121,7 +121,7 @@ class SettingsState {
 // Settings Notifier
 // ==================================================
 
-/// Settings state notifier with persistence
+/// 設定狀態管理器（含持久化）
 class SettingsNotifier extends StateNotifier<SettingsState> {
   SettingsNotifier() : super(const SettingsState()) {
     _loadSettings();
@@ -131,7 +131,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   /// 確保多個設定變更不會同時寫入造成競態條件
   Future<void>? _saveLock;
 
-  /// Load settings from SharedPreferences
+  /// 從 SharedPreferences 載入設定
   Future<void> _loadSettings() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -180,7 +180,7 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }
   }
 
-  /// Save settings to SharedPreferences
+  /// 儲存設定至 SharedPreferences
   ///
   /// 使用互斥鎖確保多個設定變更不會同時寫入。
   /// 每次儲存都會等待前一次儲存完成後再執行。
@@ -236,14 +236,14 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     }
   }
 
-  /// Set theme mode
+  /// 設定主題模式
   void setThemeMode(ThemeMode mode) {
     state = state.copyWith(themeMode: mode);
     _saveSettings();
     AppLogger.debug('Settings', '主題已變更: $mode');
   }
 
-  /// Toggle between light and dark theme
+  /// 切換深色/淺色主題
   void toggleTheme() {
     final newMode = switch (state.themeMode) {
       ThemeMode.light => ThemeMode.dark,
@@ -253,56 +253,56 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     setThemeMode(newMode);
   }
 
-  /// Set locale
+  /// 設定語系
   void setLocale(AppLocale locale) {
     state = state.copyWith(locale: locale);
     _saveSettings();
     AppLogger.debug('Settings', '語言已變更: ${locale.displayName}');
   }
 
-  /// Set show warning badges
+  /// 設定是否顯示警示標記
   void setShowWarningBadges(bool value) {
     state = state.copyWith(showWarningBadges: value);
     _saveSettings();
     AppLogger.debug('Settings', '警示標記顯示: $value');
   }
 
-  /// Set insider notifications
+  /// 設定董監持股通知
   void setInsiderNotifications(bool value) {
     state = state.copyWith(insiderNotifications: value);
     _saveSettings();
     AppLogger.debug('Settings', '董監持股通知: $value');
   }
 
-  /// Set disposal urgent alerts
+  /// 設定處置股票緊急警報
   void setDisposalUrgentAlerts(bool value) {
     state = state.copyWith(disposalUrgentAlerts: value);
     _saveSettings();
     AppLogger.debug('Settings', '處置股票緊急警報: $value');
   }
 
-  /// Set limit up/down alerts
+  /// 設定漲跌停提示
   void setLimitAlerts(bool value) {
     state = state.copyWith(limitAlerts: value);
     _saveSettings();
     AppLogger.debug('Settings', '漲跌停提示: $value');
   }
 
-  /// Set ROC year display
+  /// 設定民國年顯示
   void setShowROCYear(bool value) {
     state = state.copyWith(showROCYear: value);
     _saveSettings();
     AppLogger.debug('Settings', '民國年顯示: $value');
   }
 
-  /// Set cache duration in minutes
+  /// 設定快取時間（分鐘）
   void setCacheDurationMinutes(int minutes) {
     state = state.copyWith(cacheDurationMinutes: minutes);
     _saveSettings();
     AppLogger.debug('Settings', '快取時間: $minutes 分鐘');
   }
 
-  /// Set auto update enabled
+  /// 設定是否啟用自動更新
   void setAutoUpdateEnabled(bool value) {
     state = state.copyWith(autoUpdateEnabled: value);
     _saveSettings();
@@ -314,29 +314,29 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 // Provider
 // ==================================================
 
-/// Settings provider
+/// 設定 Provider
 final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
   (ref) {
     return SettingsNotifier();
   },
 );
 
-/// Theme mode provider (convenience)
+/// 主題模式 Provider（便捷存取）
 final themeModeProvider = Provider<ThemeMode>((ref) {
   return ref.watch(settingsProvider).themeMode;
 });
 
-/// Locale provider (convenience)
+/// 語系 Provider（便捷存取）
 final localeProvider = Provider<Locale>((ref) {
   return ref.watch(settingsProvider).locale.toLocale();
 });
 
-/// Settings loaded provider
+/// 設定載入完成 Provider
 final settingsLoadedProvider = Provider<bool>((ref) {
   return ref.watch(settingsProvider).isLoaded;
 });
 
-/// Cache duration provider (convenience)
+/// 快取時間 Provider（便捷存取）
 final cacheDurationProvider = Provider<int>((ref) {
   return ref.watch(settingsProvider).cacheDurationMinutes;
 });
@@ -345,7 +345,7 @@ final cacheDurationProvider = Provider<int>((ref) {
 // API Token Provider
 // ==================================================
 
-/// State for API token configuration
+/// API Token 設定狀態
 class ApiTokenState {
   const ApiTokenState({
     this.token,
@@ -356,7 +356,7 @@ class ApiTokenState {
 
   final String? token;
   final bool isLoading;
-  final int? testResult; // Number of stocks fetched in test
+  final int? testResult; // 測試取得的股票數量
   final String? testError;
 
   bool get hasToken => token?.isNotEmpty ?? false;
@@ -379,17 +379,17 @@ class ApiTokenState {
   }
 }
 
-/// API Token notifier - manages token and connection testing
+/// API Token 管理器 — 管理 Token 與連線測試
 class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
   ApiTokenNotifier() : super(const ApiTokenState());
 
-  /// Load token from secure storage
+  /// 從安全儲存載入 Token
   Future<void> loadToken(Future<String?> Function() getToken) async {
     final token = await getToken();
     state = state.copyWith(token: token, clearToken: token == null);
   }
 
-  /// Save token to secure storage
+  /// 儲存 Token 至安全儲存
   Future<void> saveToken(
     String token,
     Future<void> Function(String) setToken,
@@ -402,7 +402,7 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
     );
   }
 
-  /// Clear token from secure storage
+  /// 清除安全儲存中的 Token
   Future<void> clearToken(Future<void> Function() deleteToken) async {
     await deleteToken();
     state = state.copyWith(
@@ -412,7 +412,7 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
     );
   }
 
-  /// Test connection with current token
+  /// 測試當前 Token 連線
   Future<void> testConnection(Future<int> Function() testFn) async {
     state = state.copyWith(
       isLoading: true,
@@ -427,13 +427,13 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
     }
   }
 
-  /// Clear test results
+  /// 清除測試結果
   void clearTestResults() {
     state = state.copyWith(clearTestResult: true, clearTestError: true);
   }
 }
 
-/// API Token provider
+/// API Token Provider
 final apiTokenProvider = StateNotifierProvider<ApiTokenNotifier, ApiTokenState>(
   (ref) {
     return ApiTokenNotifier();

@@ -7,7 +7,7 @@ import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 
-/// Notification state
+/// 通知狀態
 class NotificationState {
   const NotificationState({
     this.isInitialized = false,
@@ -32,7 +32,7 @@ class NotificationState {
   }
 }
 
-/// Notification notifier
+/// 通知管理器
 class NotificationNotifier extends StateNotifier<NotificationState> {
   NotificationNotifier() : super(const NotificationState());
 
@@ -45,7 +45,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     super.dispose();
   }
 
-  /// Initialize notification service
+  /// 初始化通知服務
   ///
   /// 注意：不會自動請求權限，權限會在使用者建立提醒時請求
   Future<void> initialize() async {
@@ -59,7 +59,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     }
   }
 
-  /// Ensure notification permission is granted
+  /// 確保已取得通知權限
   ///
   /// 在建立提醒前呼叫，若尚未取得權限會請求使用者授權
   Future<bool> ensurePermission() async {
@@ -67,7 +67,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     return requestPermissions();
   }
 
-  /// Request notification permissions
+  /// 請求通知權限
   Future<bool> requestPermissions() async {
     try {
       final hasPermission = await _service.requestPermissions();
@@ -79,7 +79,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     }
   }
 
-  /// Show price alert notification
+  /// 顯示價格提醒通知
   Future<void> showPriceAlertNotification(
     PriceAlertEntry alert, {
     double? currentPrice,
@@ -110,7 +110,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     }
   }
 
-  /// Show update complete notification
+  /// 顯示更新完成通知
   Future<void> showUpdateCompleteNotification({
     required int recommendationCount,
     required int alertsTriggered,
@@ -228,18 +228,18 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     return '$baseBody$priceText';
   }
 
-  /// Cancel a notification
+  /// 取消指定通知
   Future<void> cancelNotification(int id) async {
     await _service.cancelNotification(id);
   }
 
-  /// Cancel all notifications
+  /// 取消所有通知
   Future<void> cancelAllNotifications() async {
     await _service.cancelAllNotifications();
   }
 }
 
-/// Notification provider
+/// 通知 Provider
 final notificationProvider =
     StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
       return NotificationNotifier();

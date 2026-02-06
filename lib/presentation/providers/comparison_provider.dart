@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -16,7 +17,6 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // ==================================================
 
 class ComparisonState {
-  static const _sentinel = Object();
   const ComparisonState({
     this.symbols = const [],
     this.stocksMap = const {},
@@ -64,7 +64,7 @@ class ComparisonState {
     Map<String, List<MonthlyRevenueEntry>>? revenueMap,
     Map<String, StockSummary>? summariesMap,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
   }) {
     return ComparisonState(
       symbols: symbols ?? this.symbols,
@@ -79,7 +79,7 @@ class ComparisonState {
       revenueMap: revenueMap ?? this.revenueMap,
       summariesMap: summariesMap ?? this.summariesMap,
       isLoading: isLoading ?? this.isLoading,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
     );
   }
 }

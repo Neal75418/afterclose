@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays today's OHLCV (Open, High, Low, Close, Volume) trading data.
 class OhlcvCard extends StatelessWidget {
@@ -131,7 +132,7 @@ class OhlcvCard extends StatelessWidget {
               color: (isUp ? AppTheme.upColor : AppTheme.downColor).withValues(
                 alpha: 0.1,
               ),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

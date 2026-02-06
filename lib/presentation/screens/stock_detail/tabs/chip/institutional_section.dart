@@ -7,6 +7,7 @@ import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays institutional investor flow data: summary cards, trend chart, and table.
 class InstitutionalSection extends StatelessWidget {
@@ -114,7 +115,7 @@ class InstitutionalSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [

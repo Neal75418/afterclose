@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 單一持倉卡片
 class PositionCard extends StatelessWidget {
@@ -22,12 +23,12 @@ class PositionCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         ),
         child: Row(
           children: [
@@ -58,8 +59,8 @@ class PositionCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${'portfolio.avgCost'.tr()}: \$${position.avgCost.toStringAsFixed(1)}'
-                    '  ${'portfolio.currentPrice'.tr()}: \$${(position.currentPrice ?? 0).toStringAsFixed(1)}',
+                    '${'portfolio.avgCost'.tr()}: ${AppNumberFormat.currency(position.avgCost, decimals: 1)}'
+                    '  ${'portfolio.currentPrice'.tr()}: ${AppNumberFormat.currency(position.currentPrice ?? 0, decimals: 1)}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.outline,
                     ),

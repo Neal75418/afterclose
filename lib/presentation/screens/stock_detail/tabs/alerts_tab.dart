@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Alerts tab - Price alerts for this stock
 class AlertsTab extends ConsumerStatefulWidget {
@@ -109,7 +112,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
                     ),
                   ),
                   Text(
-                    'NT\$${price.toStringAsFixed(2)}',
+                    AppNumberFormat.currency(price, decimals: 2),
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onPrimaryContainer,
@@ -131,7 +134,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Center(
         child: Column(
@@ -221,7 +224,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
               color: alert.isActive
                   ? theme.colorScheme.primaryContainer
                   : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
             ),
             child: Icon(
               _getAlertIcon(alertType),
@@ -345,19 +348,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Drag handle
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(top: 12, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant.withValues(
-                  alpha: 0.3,
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          const DragHandle(margin: EdgeInsets.only(top: 12, bottom: 8)),
           // Header
           Row(
             children: [
@@ -383,7 +374,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [
@@ -399,7 +390,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
                   ),
                   const Spacer(),
                   Text(
-                    'NT\$${currentPrice.toStringAsFixed(2)}',
+                    AppNumberFormat.currency(currentPrice, decimals: 2),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -451,7 +442,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
             controller: _valueController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
             ],
             decoration: InputDecoration(
               hintText: _selectedType == AlertType.changePct
@@ -481,15 +472,16 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
           // Create button
           SizedBox(
             width: double.infinity,
-            child: FilledButton(
+            child: FilledButton.icon(
               onPressed: _isCreating ? null : _createAlert,
-              child: _isCreating
+              icon: _isCreating
                   ? const SizedBox(
-                      width: 20,
-                      height: 20,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : Text('alert.create'.tr()),
+                  : const Icon(Icons.add),
+              label: Text('alert.create'.tr()),
             ),
           ),
         ],
@@ -502,7 +494,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
     if (valueText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('alert.invalidValue'.tr()),
+          content: Text('alert.emptyValue'.tr()),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -510,10 +502,20 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
     }
 
     final value = double.tryParse(valueText);
-    if (value == null || value <= 0) {
+    if (value == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('alert.invalidValue'.tr()),
+          content: Text('alert.notANumber'.tr()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    if (value <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('alert.mustBePositive'.tr()),
           behavior: SnackBarBehavior.floating,
         ),
       );

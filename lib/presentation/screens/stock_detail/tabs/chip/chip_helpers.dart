@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Shared helper widgets and formatting utilities used across chip tab sections.
 
@@ -20,7 +21,7 @@ Widget buildSummaryCard(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
     ),
     child: Column(
@@ -59,7 +60,7 @@ Widget buildEmptyState(ThemeData theme) {
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
     ),
     child: Center(
       child: Text(
@@ -109,7 +110,7 @@ Widget buildDataRow(
       color: index == 0
           ? theme.colorScheme.primaryContainer.withValues(alpha: 0.3)
           : (index.isEven ? theme.colorScheme.surface : Colors.transparent),
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
     ),
     child: Row(
       children: [

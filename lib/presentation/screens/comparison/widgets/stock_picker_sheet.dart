@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Bottom sheet for searching and selecting stocks to compare.
 class StockPickerSheet extends ConsumerStatefulWidget {
@@ -79,15 +81,7 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
         return Column(
           children: [
             // Handle
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            const DragHandle(margin: EdgeInsets.only(top: 8)),
 
             // Search field
             Padding(
@@ -99,7 +93,7 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
                   hintText: 'comparison.searchHint'.tr(),
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 16,

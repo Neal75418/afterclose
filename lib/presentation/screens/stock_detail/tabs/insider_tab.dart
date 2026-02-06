@@ -7,6 +7,7 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 // ==========================================
 // UI 常數
@@ -81,7 +82,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: const Center(child: CircularProgressIndicator()),
     );
@@ -187,7 +188,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         border: Border.all(
           color: isWarning
               ? AppTheme.errorColor.withValues(alpha: 0.5)
@@ -245,7 +246,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [
@@ -324,7 +325,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                       : (index.isEven
                             ? theme.colorScheme.surface
                             : Colors.transparent),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Row(
                   children: [
@@ -404,7 +405,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
           color: isSignificant
               ? color.withValues(alpha: 0.1)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
         ),
         child: Text(
           '$prefix${change.toStringAsFixed(2)}%',
@@ -425,7 +426,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Center(
         child: Text(

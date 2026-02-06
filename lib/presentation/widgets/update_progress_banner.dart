@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 增強版更新進度橫幅，具備：
 /// - 步驟指示器（例如「3/10」）
@@ -36,7 +37,7 @@ class UpdateProgressBanner extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
             border: Border.all(
               color: AppTheme.primaryColor.withValues(alpha: 0.2),
               width: 1,
@@ -65,7 +66,9 @@ class UpdateProgressBanner extends StatelessWidget {
                       height: 32,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(colors: gradientColors),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusMd,
+                        ),
                       ),
                       child: const Icon(
                         Icons.sync,
@@ -100,7 +103,9 @@ class UpdateProgressBanner extends StatelessWidget {
                             gradientColors[1].withValues(alpha: 0.2),
                           ],
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusLg,
+                        ),
                         border: Border.all(
                           color: gradientColors[0].withValues(alpha: 0.3),
                         ),
@@ -126,7 +131,9 @@ class UpdateProgressBanner extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   builder: (context, value, child) {
                     return ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusSm,
+                      ),
                       child: Stack(
                         children: [
                           // 軌道
@@ -144,7 +151,9 @@ class UpdateProgressBanner extends StatelessWidget {
                                 gradient: LinearGradient(
                                   colors: gradientColors,
                                 ),
-                                borderRadius: BorderRadius.circular(6),
+                                borderRadius: BorderRadius.circular(
+                                  DesignTokens.radiusSm,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: gradientColors[0].withValues(

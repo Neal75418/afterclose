@@ -7,9 +7,9 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
-import 'package:afterclose/presentation/screens/comparison/widgets/comparison_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Comparison table with 6 sections, winner highlighting, and verdict banner.
+/// 比較表格：6 個區塊、勝出高亮、綜合判定 banner
 class ComparisonTable extends StatelessWidget {
   const ComparisonTable({super.key, required this.state});
 
@@ -23,7 +23,7 @@ class ComparisonTable extends StatelessWidget {
 
     final sections = _buildSections();
 
-    // Count wins per stock for verdict
+    // 計算各股票勝出區塊數（用於綜合判定）
     final winCounts = <String, int>{};
     for (final symbol in state.symbols) {
       winCounts[symbol] = 0;
@@ -44,7 +44,7 @@ class ComparisonTable extends StatelessWidget {
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
               side: BorderSide(
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
@@ -122,10 +122,11 @@ class ComparisonTable extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
                 decoration: BoxDecoration(
                   color: i == winnerIndex
-                      ? comparisonColors[i % comparisonColors.length]
+                      ? DesignTokens
+                            .chartPalette[i % DesignTokens.chartPalette.length]
                             .withValues(alpha: 0.1)
                       : null,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Text(
                   row.values[i],
@@ -169,7 +170,9 @@ class ComparisonTable extends StatelessWidget {
     return Card(
       elevation: 0,
       color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(

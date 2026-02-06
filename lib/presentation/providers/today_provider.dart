@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -22,7 +23,6 @@ const _updateTimeout = Duration(minutes: 60);
 
 /// 今日推薦與市場總覽的 State
 class TodayState {
-  static const _sentinel = Object();
   const TodayState({
     this.recommendations = const [],
     this.lastUpdate,
@@ -49,8 +49,8 @@ class TodayState {
     DateTime? dataDate,
     bool? isLoading,
     bool? isUpdating,
-    Object? updateProgress = _sentinel,
-    Object? error = _sentinel,
+    Object? updateProgress = sentinel,
+    Object? error = sentinel,
   }) {
     return TodayState(
       recommendations: recommendations ?? this.recommendations,
@@ -58,17 +58,17 @@ class TodayState {
       dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
       isUpdating: isUpdating ?? this.isUpdating,
-      updateProgress: updateProgress == _sentinel
+      updateProgress: updateProgress == sentinel
           ? this.updateProgress
           : updateProgress as UpdateProgress?,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
     );
   }
 }
 
 /// 包含股票詳情與推薦原因的推薦項目
 class RecommendationWithDetails {
-  const RecommendationWithDetails({
+  RecommendationWithDetails({
     required this.symbol,
     required this.score,
     required this.rank,
@@ -93,6 +93,11 @@ class RecommendationWithDetails {
   final List<DailyReasonEntry> reasons;
   final String? trendState;
   final List<double>? recentPrices;
+
+  /// 預計算的 reasonType 列表（避免在 Widget build 中重複轉換）
+  late final List<String> reasonTypes = reasons
+      .map((r) => r.reasonType)
+      .toList();
 }
 
 /// 更新進度資訊

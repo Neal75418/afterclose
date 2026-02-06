@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 可重用的空狀態 Widget，附有動畫插圖
 class EmptyState extends StatelessWidget {
@@ -35,7 +36,7 @@ class EmptyState extends StatelessWidget {
           '$title${subtitle != null ? ', $subtitle' : ''}${actionLabel != null ? ', 按鈕: $actionLabel' : ''}',
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(DesignTokens.spacing32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -316,7 +317,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
                   border: Border.all(
                     color: theme.colorScheme.outline.withValues(alpha: 0.1),
                   ),
@@ -386,7 +387,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
                     color: theme.colorScheme.surfaceContainerHighest.withValues(
                       alpha: 0.5,
                     ),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
                     border: Border.all(
                       color: theme.colorScheme.outline.withValues(alpha: 0.2),
                     ),
@@ -431,7 +432,9 @@ class _EmptyStateWithMeta extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primaryContainer
                                 .withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.radiusSm,
+                            ),
                           ),
                           child: Text(
                             thresholdInfo!,
@@ -476,7 +479,9 @@ class _EmptyStateWithMeta extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: theme.colorScheme.secondaryContainer
                                   .withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(
+                                DesignTokens.radiusXl,
+                              ),
                             ),
                             child: Text(
                               req,

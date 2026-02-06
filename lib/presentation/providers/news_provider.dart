@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -9,7 +10,7 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // News Screen State
 // ==================================================
 
-/// Available news sources for filtering
+/// 可用的新聞來源篩選選項
 enum NewsSource {
   all,
   moneyDJ,
@@ -20,7 +21,7 @@ enum NewsSource {
   String get label =>
       'empty.source${name[0].toUpperCase()}${name.substring(1)}'.tr();
 
-  /// Match source name from RSS feed
+  /// 比對 RSS feed 中的來源名稱
   bool matches(String sourceName) {
     return switch (this) {
       NewsSource.all => true,
@@ -32,10 +33,9 @@ enum NewsSource {
   }
 }
 
-/// State for news screen
+/// 新聞頁面狀態
 class NewsState {
-  static const _sentinel = Object();
-  const NewsState({
+  NewsState({
     this.allNews = const [],
     this.newsStockMap = const {},
     this.isLoading = false,
@@ -49,14 +49,16 @@ class NewsState {
   final String? error;
   final NewsSource selectedSource;
 
-  /// Filtered news based on selected source
+  /// 依選定來源過濾的新聞
   List<NewsItemEntry> get filteredNews {
     if (selectedSource == NewsSource.all) return allNews;
     return allNews.where((n) => selectedSource.matches(n.source)).toList();
   }
 
-  /// Get available sources with counts
-  Map<NewsSource, int> get sourceCounts {
+  /// 各來源的新聞數量（建構時計算一次，避免每次 watch 重新遍歷）
+  late final Map<NewsSource, int> sourceCounts = _computeSourceCounts();
+
+  Map<NewsSource, int> _computeSourceCounts() {
     final counts = <NewsSource, int>{};
     counts[NewsSource.all] = allNews.length;
 
@@ -72,14 +74,14 @@ class NewsState {
     List<NewsItemEntry>? allNews,
     Map<String, List<String>>? newsStockMap,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
     NewsSource? selectedSource,
   }) {
     return NewsState(
       allNews: allNews ?? this.allNews,
       newsStockMap: newsStockMap ?? this.newsStockMap,
       isLoading: isLoading ?? this.isLoading,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
       selectedSource: selectedSource ?? this.selectedSource,
     );
   }
@@ -90,11 +92,11 @@ class NewsState {
 // ==================================================
 
 class NewsNotifier extends StateNotifier<NewsState> {
-  NewsNotifier(this._ref) : super(const NewsState());
+  NewsNotifier(this._ref) : super(NewsState());
 
   final Ref _ref;
 
-  /// Load news data
+  /// 載入新聞資料
   Future<void> loadData({int days = 7}) async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -102,7 +104,7 @@ class NewsNotifier extends StateNotifier<NewsState> {
       final newsRepo = _ref.read(newsRepositoryProvider);
       final db = _ref.read(databaseProvider);
 
-      // Get recent news
+      // 取得近期新聞
       final news = await newsRepo.getRecentNews(days: days);
 
       if (news.isEmpty) {
@@ -110,10 +112,10 @@ class NewsNotifier extends StateNotifier<NewsState> {
         return;
       }
 
-      // Collect all news IDs for batch query
+      // 收集所有新聞 ID 進行批次查詢
       final newsIds = news.map((n) => n.id).toList();
 
-      // Batch load all news-stock mappings in single query
+      // 單次查詢批量載入新聞-股票對應
       final newsStockMap = await db.getNewsStockMappingsBatch(newsIds);
 
       state = state.copyWith(
@@ -126,7 +128,7 @@ class NewsNotifier extends StateNotifier<NewsState> {
     }
   }
 
-  /// Set the selected source filter
+  /// 設定來源篩選
   void setSourceFilter(NewsSource source) {
     state = state.copyWith(selectedSource: source);
   }
@@ -140,7 +142,7 @@ final newsProvider = StateNotifierProvider<NewsNotifier, NewsState>((ref) {
   return NewsNotifier(ref);
 });
 
-/// Provider for available RSS sources (for display purposes)
+/// RSS 來源清單 Provider（供顯示用）
 final newsSourcesProvider = Provider<List<String>>((ref) {
   return RssFeedSource.defaultSources.map((s) => s.name).toList();
 });

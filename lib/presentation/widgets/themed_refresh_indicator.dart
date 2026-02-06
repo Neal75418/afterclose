@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 
-/// Default timeout duration for refresh operations
+/// 重新整理操作的預設逾時時間
 const _defaultTimeout = Duration(seconds: 30);
 
-/// A themed RefreshIndicator with app colors and haptic feedback
+/// 套用主題色與觸覺回饋的 RefreshIndicator
 class ThemedRefreshIndicator extends StatelessWidget {
   const ThemedRefreshIndicator({
     super.key,
@@ -25,7 +25,7 @@ class ThemedRefreshIndicator extends StatelessWidget {
   final double displacement;
   final double edgeOffset;
 
-  /// Timeout duration for the refresh operation (default: 30 seconds)
+  /// 重新整理操作的逾時時間（預設 30 秒）
   final Duration timeout;
 
   @override
@@ -39,7 +39,7 @@ class ThemedRefreshIndicator extends StatelessWidget {
         try {
           await onRefresh().timeout(timeout);
         } on TimeoutException {
-          // Silently handle timeout - the indicator will stop spinning
+          // 逾時靜默處理 — indicator 會自動停止旋轉
         }
         HapticFeedback.lightImpact();
       },
@@ -53,7 +53,7 @@ class ThemedRefreshIndicator extends StatelessWidget {
   }
 }
 
-/// An animated refresh indicator with custom loading animation
+/// 帶自訂載入動畫的 RefreshIndicator
 class AnimatedRefreshIndicator extends StatefulWidget {
   const AnimatedRefreshIndicator({
     super.key,
@@ -65,7 +65,7 @@ class AnimatedRefreshIndicator extends StatefulWidget {
   final Widget child;
   final Future<void> Function() onRefresh;
 
-  /// Timeout duration for the refresh operation (default: 30 seconds)
+  /// 重新整理操作的逾時時間（預設 30 秒）
   final Duration timeout;
 
   @override
@@ -103,7 +103,7 @@ class _AnimatedRefreshIndicatorState extends State<AnimatedRefreshIndicator>
     try {
       await widget.onRefresh().timeout(widget.timeout);
     } on TimeoutException {
-      // Silently handle timeout - the indicator will stop spinning
+      // 逾時靜默處理 — indicator 會自動停止旋轉
     } finally {
       _controller.stop();
       setState(() => _isRefreshing = false);

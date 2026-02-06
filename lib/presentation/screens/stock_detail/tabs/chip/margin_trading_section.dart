@@ -7,6 +7,7 @@ import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays margin trading data: summary cards, trend chart, and table.
 class MarginTradingSection extends StatelessWidget {
@@ -59,7 +60,7 @@ class MarginTradingSection extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
               border: Border.all(
                 color: AppTheme.upColor.withValues(alpha: 0.3),
                 width: 1,
@@ -101,7 +102,7 @@ class MarginTradingSection extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
               border: Border.all(
                 color:
                     (isHighRatio
@@ -180,7 +181,7 @@ class MarginTradingSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [
@@ -248,7 +249,7 @@ class MarginTradingSection extends StatelessWidget {
                       : (index.isEven
                             ? theme.colorScheme.surface
                             : Colors.transparent),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Row(
                   children: [
@@ -290,7 +291,9 @@ class MarginTradingSection extends StatelessWidget {
                           color: ratio > 10
                               ? AppTheme.downColor.withValues(alpha: 0.1)
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.radiusXs,
+                          ),
                         ),
                         child: Text(
                           '${ratio.toStringAsFixed(1)}%',

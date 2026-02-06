@@ -1,9 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/allocation_pie_chart.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/industry_allocation_card.dart';
@@ -36,6 +38,13 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
 
     if (state.isLoading && state.positions.isEmpty) {
       return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null && state.positions.isEmpty) {
+      return EmptyStates.error(
+        message: state.error!,
+        onRetry: () => ref.read(portfolioProvider.notifier).loadPositions(),
+      );
     }
 
     if (state.positions.isEmpty) {
@@ -112,7 +121,10 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
               for (final position in state.positions) ...[
                 PositionCard(
                   position: position,
-                  onTap: () => context.push('/portfolio/${position.symbol}'),
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    context.push('/portfolio/${position.symbol}');
+                  },
                 ),
                 const SizedBox(height: 8),
               ],
@@ -123,7 +135,7 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
         // FAB
         Positioned(
           right: 16,
-          bottom: 16,
+          bottom: 16 + MediaQuery.of(context).padding.bottom,
           child: FloatingActionButton(
             onPressed: _showAddTransaction,
             child: const Icon(Icons.add),
@@ -169,6 +181,7 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
   }
 
   void _showAddTransaction() {
+    HapticFeedback.lightImpact();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,

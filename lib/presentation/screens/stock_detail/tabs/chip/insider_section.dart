@@ -6,6 +6,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays insider holding data: ratios, shares change, and pledge warning.
 class InsiderSection extends StatelessWidget {
@@ -127,7 +128,7 @@ class InsiderSection extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.downColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,

@@ -5,6 +5,7 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Day trading section with ratio card + trend chart.
 class DayTradingSection extends StatelessWidget {
@@ -64,7 +65,7 @@ class DayTradingSection extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
             border: isHigh
                 ? Border.all(color: AppTheme.downColor.withValues(alpha: 0.3))
                 : null,
@@ -132,7 +133,7 @@ class DayTradingSection extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Center(
         child: Text(

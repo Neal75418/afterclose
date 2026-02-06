@@ -4,7 +4,9 @@ import 'package:k_chart_plus/k_chart_plus.dart';
 import 'package:k_chart_plus/chart_translations.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Professional K-line chart widget using k_chart_plus package
 /// Supports MA, BOLL, RSI, KDJ, MACD, WR, CCI indicators
@@ -100,7 +102,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
         height: widget.height,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         ),
         child: Center(
           child: Text(
@@ -117,23 +119,23 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
     // Configure chart colors based on theme
     final chartColors = ChartColors(
       bgColor: isDark
-          ? const Color(0xFF0F172A)
+          ? IndicatorColors.chartDarkBackground
           : Colors.white, // Match AppTheme.scaffoldBackgroundColor
       kLineColor: theme.colorScheme.primary,
       gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.1),
-      ma5Color: const Color(0xFF60A5FA), // Blue 400
-      ma10Color: const Color(0xFFFACC15), // Yellow 400
-      ma30Color: const Color(0xFFA78BFA), // Purple 400
+      ma5Color: IndicatorColors.chartPrimary,
+      ma10Color: IndicatorColors.chartSecondary,
+      ma30Color: IndicatorColors.chartTertiary,
       upColor: AppTheme.upColor, // Red
       dnColor: AppTheme.downColor, // Green
       volColor: theme.colorScheme.primary.withValues(alpha: 0.5),
-      macdColor: const Color(0xFF60A5FA), // Blue 400
-      difColor: const Color(0xFF60A5FA),
-      deaColor: const Color(0xFFFACC15), // Yellow 400
-      kColor: const Color(0xFF60A5FA),
-      dColor: const Color(0xFFFACC15),
-      jColor: const Color(0xFFA78BFA),
-      rsiColor: const Color(0xFFFACC15),
+      macdColor: IndicatorColors.chartPrimary,
+      difColor: IndicatorColors.chartPrimary,
+      deaColor: IndicatorColors.chartSecondary,
+      kColor: IndicatorColors.chartPrimary,
+      dColor: IndicatorColors.chartSecondary,
+      jColor: IndicatorColors.chartTertiary,
+      rsiColor: IndicatorColors.chartSecondary,
       defaultTextColor: theme.colorScheme.onSurfaceVariant,
       nowPriceUpColor: AppTheme.upColor,
       nowPriceDnColor: AppTheme.downColor,
@@ -169,8 +171,8 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       child: Container(
         height: widget.height,
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF0F172A) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? IndicatorColors.chartDarkBackground : Colors.white,
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
           // Subtle border to define the chart area
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),

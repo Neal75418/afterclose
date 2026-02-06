@@ -249,9 +249,12 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     if (confirmed == true && mounted) {
       await ref.read(eventCalendarProvider.notifier).deleteEvent(event.id);
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('calendar.eventDeleted'.tr())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('calendar.eventDeleted'.tr()),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -266,6 +269,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           content: Text(
             'calendar.syncComplete'.tr(namedArgs: {'count': '$count'}),
           ),
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }

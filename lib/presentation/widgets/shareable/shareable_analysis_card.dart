@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 分析分享卡片（用於 PNG 匯出）
 ///
@@ -32,7 +33,9 @@ class ShareableAnalysisCard extends StatelessWidget {
       width: 400,
       child: Card(
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -204,7 +207,7 @@ class _ScoreBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
       ),
       child: Text(
         '${score.toStringAsFixed(0)} 分',
@@ -230,7 +233,7 @@ class _TrendChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
       ),
       child: Text(
         trend,
@@ -256,7 +259,7 @@ class _ReversalChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(

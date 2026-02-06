@@ -141,7 +141,7 @@ class _StockCardState extends State<StockCard> {
                       HapticFeedback.mediumImpact();
                       widget.onLongPress?.call();
                     },
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
                     child: Padding(
                       padding: const EdgeInsets.all(
                         DesignTokens.stockCardPadding,
@@ -150,7 +150,7 @@ class _StockCardState extends State<StockCard> {
                         children: [
                           // 趨勢指示器（現代設計）
                           _buildTrendIndicator(theme, isDark),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: DesignTokens.spacing12),
 
                           // 股票資訊區塊
                           Expanded(
@@ -160,7 +160,7 @@ class _StockCardState extends State<StockCard> {
                               children: [
                                 _buildHeader(theme),
                                 if (widget.stockName != null) ...[
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: DesignTokens.spacing2),
                                   _buildStockName(theme),
                                 ],
                                 if (widget.reasons.isNotEmpty) ...[
@@ -268,7 +268,7 @@ class _StockCardState extends State<StockCard> {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: theme.colorScheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             ),
             child: Text(
               marketLabel,
@@ -287,7 +287,7 @@ class _StockCardState extends State<StockCard> {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
               color: AppTheme.getPriceColor(widget.priceChange),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             ),
             child: Text(
               isLimitUp ? '漲停' : '跌停',
@@ -357,7 +357,7 @@ class _StockCardState extends State<StockCard> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: priceColor.withValues(alpha: isNeutral ? 0.1 : 0.15),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
               border: (isLimitUp || isLimitDown)
                   ? Border.all(color: priceColor, width: 1.5)
                   : null,

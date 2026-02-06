@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -15,6 +16,9 @@ class AppShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   void _onDestinationSelected(int index) {
+    if (index != navigationShell.currentIndex) {
+      HapticFeedback.selectionClick();
+    }
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,

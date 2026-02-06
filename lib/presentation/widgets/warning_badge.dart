@@ -93,8 +93,12 @@ class _WarningBadgeState extends State<WarningBadge> {
 
     Widget badge = Container(
       padding: EdgeInsets.symmetric(
-        horizontal: widget.compact ? DesignTokens.spacing6 : 10,
-        vertical: widget.compact ? 3 : 5,
+        horizontal: widget.compact
+            ? DesignTokens.spacing6
+            : DesignTokens.spacing8,
+        vertical: widget.compact
+            ? DesignTokens.spacing2
+            : DesignTokens.spacing4,
       ),
       decoration: BoxDecoration(
         color: widget.type.color.withValues(

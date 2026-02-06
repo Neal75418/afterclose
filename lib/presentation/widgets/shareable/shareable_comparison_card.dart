@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 比較結果分享卡片（用於 PNG 匯出）
 class ShareableComparisonCard extends StatelessWidget {
@@ -26,7 +27,9 @@ class ShareableComparisonCard extends StatelessWidget {
       width: 420,
       child: Card(
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -201,7 +204,7 @@ class _Tag extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
       ),
       child: Text(
         text,

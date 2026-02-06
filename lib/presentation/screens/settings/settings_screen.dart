@@ -11,6 +11,7 @@ import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/settings/widgets/api_token_tile.dart';
 import 'package:afterclose/presentation/screens/settings/widgets/data_management_tile.dart';
 import 'package:afterclose/presentation/widgets/common/radio_selection_dialog.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Supported locales with display names
 const _supportedLocales = [
@@ -150,7 +151,7 @@ class SettingsScreen extends ConsumerWidget {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
             ),
@@ -182,7 +183,7 @@ class SettingsScreen extends ConsumerWidget {
       height: 32,
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
       ),
       child: Icon(icon, color: Colors.white, size: 20),
     );

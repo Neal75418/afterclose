@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/add_transaction_sheet.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 持倉明細頁面
 class PositionDetailScreen extends ConsumerWidget {
@@ -80,7 +82,7 @@ class PositionDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
       ),
       child: Column(
         children: [
@@ -95,12 +97,15 @@ class PositionDetailScreen extends ConsumerWidget {
               ),
               _InfoTile(
                 label: 'portfolio.avgCost'.tr(),
-                value: '\$${pos.avgCost.toStringAsFixed(1)}',
+                value: AppNumberFormat.currency(pos.avgCost, decimals: 1),
                 theme: theme,
               ),
               _InfoTile(
                 label: 'portfolio.currentPrice'.tr(),
-                value: '\$${(pos.currentPrice ?? 0).toStringAsFixed(1)}',
+                value: AppNumberFormat.currency(
+                  pos.currentPrice ?? 0,
+                  decimals: 1,
+                ),
                 theme: theme,
               ),
             ],
@@ -110,7 +115,7 @@ class PositionDetailScreen extends ConsumerWidget {
             children: [
               _InfoTile(
                 label: 'portfolio.marketValue'.tr(),
-                value: '\$${pos.marketValue.toStringAsFixed(0)}',
+                value: AppNumberFormat.currency(pos.marketValue),
                 theme: theme,
               ),
               _InfoTile(
@@ -142,9 +147,9 @@ class PositionDetailScreen extends ConsumerWidget {
               ),
               _InfoTile(
                 label: 'portfolio.dividendIncome'.tr(),
-                value: pos.totalDividendReceived > 0
-                    ? '+\$${pos.totalDividendReceived.toStringAsFixed(0)}'
-                    : '\$${pos.totalDividendReceived.toStringAsFixed(0)}',
+                value: AppNumberFormat.signedCurrency(
+                  pos.totalDividendReceived,
+                ),
                 theme: theme,
                 valueColor: pos.totalDividendReceived > 0
                     ? AppTheme.upColor
@@ -217,6 +222,7 @@ class PositionDetailScreen extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('portfolio.transactionDeleted'.tr()),
+                      behavior: SnackBarBehavior.floating,
                     ),
                   );
                 }
@@ -304,8 +310,8 @@ class _TransactionRow extends StatelessWidget {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
+        color: theme.colorScheme.error,
+        child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
@@ -324,7 +330,7 @@ class _TransactionRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
               ),
               child: Text(
                 txType.i18nKey.tr(),
@@ -338,7 +344,7 @@ class _TransactionRow extends StatelessWidget {
             // 金額
             if (isDividend)
               Text(
-                '+\$${tx.quantity.toStringAsFixed(0)}',
+                AppNumberFormat.signedCurrency(tx.quantity),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: const Color(0xFF2196F3),
                   fontWeight: FontWeight.w600,
@@ -346,7 +352,7 @@ class _TransactionRow extends StatelessWidget {
               )
             else
               Text(
-                '${tx.quantity.toStringAsFixed(0)} @ \$${tx.price.toStringAsFixed(1)}',
+                '${tx.quantity.toStringAsFixed(0)} @ ${AppNumberFormat.currency(tx.price, decimals: 1)}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

@@ -9,13 +9,12 @@ import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/domain/services/screening_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 
 // ==================================================
 // State
 // ==================================================
-
-const _kPageSize = 50;
 
 class CustomScreeningState {
   const CustomScreeningState({
@@ -224,7 +223,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
 
       // 載入第一頁
       final firstPage = await _loadStockItems(
-        _allResultSymbols.take(_kPageSize).toList(),
+        _allResultSymbols.take(kPageSize).toList(),
       );
 
       if (mounted) {
@@ -232,7 +231,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
           result: result,
           stocks: firstPage,
           isExecuting: false,
-          hasMore: _allResultSymbols.length > _kPageSize,
+          hasMore: _allResultSymbols.length > kPageSize,
         );
       }
     } catch (e) {
@@ -253,7 +252,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
       final currentLen = state.stocks.length;
       final nextSymbols = _allResultSymbols
           .skip(currentLen)
-          .take(_kPageSize)
+          .take(kPageSize)
           .toList();
 
       if (nextSymbols.isEmpty) {

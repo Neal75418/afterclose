@@ -1,17 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
-/// Stock comparison color palette.
-const comparisonColors = [
-  Color(0xFF2196F3), // Blue
-  Color(0xFFFF9800), // Orange
-  Color(0xFF9C27B0), // Purple
-  Color(0xFF4CAF50), // Green
-];
-
-/// Horizontal chips bar showing selected stocks with remove buttons.
+/// 水平 Chip 列：顯示已選股票並提供移除按鈕
 class ComparisonHeader extends StatelessWidget {
   const ComparisonHeader({
     super.key,
@@ -42,7 +35,8 @@ class ComparisonHeader extends StatelessWidget {
               child: _StockChip(
                 symbol: symbols[i],
                 name: stocksMap[symbols[i]]?.name ?? '',
-                color: comparisonColors[i % comparisonColors.length],
+                color: DesignTokens
+                    .chartPalette[i % DesignTokens.chartPalette.length],
                 onRemove: () => onRemove(symbols[i]),
               ),
             ),

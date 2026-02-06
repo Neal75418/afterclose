@@ -7,6 +7,7 @@ import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
+import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // Re-export scan models for backward compatibility
@@ -15,9 +16,6 @@ export 'package:afterclose/domain/models/scan_models.dart';
 // ==================================================
 // Scan Screen State
 // ==================================================
-
-/// Page size for scan screen pagination
-const _kPageSize = 50;
 
 /// State for scan screen
 class ScanState {
@@ -196,7 +194,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
       // Load first page
       final firstPageItems = await _loadItemsForAnalyses(
-        _filteredAnalyses.take(_kPageSize).toList(),
+        _filteredAnalyses.take(kPageSize).toList(),
       );
 
       state = state.copyWith(
@@ -205,7 +203,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
         industries: industries,
         dataDate: dataDate,
         isLoading: false,
-        hasMore: _filteredAnalyses.length > _kPageSize,
+        hasMore: _filteredAnalyses.length > kPageSize,
         totalCount: _filteredAnalyses.length,
         totalAnalyzedCount: _allAnalyses.length,
       );
@@ -225,7 +223,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
       final currentLen = state.stocks.length;
       final nextPageAnalyses = _filteredAnalyses
           .skip(currentLen)
-          .take(_kPageSize)
+          .take(kPageSize)
           .toList();
 
       if (nextPageAnalyses.isEmpty) {
@@ -289,13 +287,13 @@ class ScanNotifier extends StateNotifier<ScanState> {
   Future<void> _reloadFirstPage() async {
     try {
       final firstPageItems = await _loadItemsForAnalyses(
-        _filteredAnalyses.take(_kPageSize).toList(),
+        _filteredAnalyses.take(kPageSize).toList(),
       );
 
       state = state.copyWith(
         stocks: firstPageItems,
         isLoading: false,
-        hasMore: _filteredAnalyses.length > _kPageSize,
+        hasMore: _filteredAnalyses.length > kPageSize,
         totalCount: _filteredAnalyses.length,
       );
     } catch (e) {

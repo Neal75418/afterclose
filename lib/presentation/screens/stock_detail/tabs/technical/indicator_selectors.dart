@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/theme/indicator_colors.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Selector for main chart indicators (MA, BOLL, SAR).
 class MainIndicatorSelector extends StatelessWidget {
@@ -23,7 +25,7 @@ class MainIndicatorSelector extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Row(
         children: [
@@ -44,19 +46,19 @@ class MainIndicatorSelector extends StatelessWidget {
               children: [
                 _IndicatorChip(
                   label: 'MA',
-                  color: const Color(0xFF3498DB),
+                  color: IndicatorColors.selectorBlue,
                   isSelected: selectedIndicators.contains(MainState.MA),
                   onTap: () => onToggle(MainState.MA),
                 ),
                 _IndicatorChip(
                   label: 'BOLL',
-                  color: const Color(0xFF9B59B6),
+                  color: IndicatorColors.selectorPurple,
                   isSelected: selectedIndicators.contains(MainState.BOLL),
                   onTap: () => onToggle(MainState.BOLL),
                 ),
                 _IndicatorChip(
                   label: 'SAR',
-                  color: const Color(0xFFE67E22),
+                  color: IndicatorColors.selectorOrange,
                   isSelected: selectedIndicators.contains(MainState.SAR),
                   onTap: () => onToggle(MainState.SAR),
                 ),
@@ -88,7 +90,7 @@ class SecondaryIndicatorSelector extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Row(
         children: [
@@ -113,31 +115,31 @@ class SecondaryIndicatorSelector extends StatelessWidget {
               children: [
                 _IndicatorChip(
                   label: 'MACD',
-                  color: const Color(0xFF3498DB),
+                  color: IndicatorColors.selectorBlue,
                   isSelected: selectedIndicators.contains(SecondaryState.MACD),
                   onTap: () => onToggle(SecondaryState.MACD),
                 ),
                 _IndicatorChip(
                   label: 'KDJ',
-                  color: const Color(0xFFE67E22),
+                  color: IndicatorColors.selectorOrange,
                   isSelected: selectedIndicators.contains(SecondaryState.KDJ),
                   onTap: () => onToggle(SecondaryState.KDJ),
                 ),
                 _IndicatorChip(
                   label: 'RSI',
-                  color: const Color(0xFF9B59B6),
+                  color: IndicatorColors.selectorPurple,
                   isSelected: selectedIndicators.contains(SecondaryState.RSI),
                   onTap: () => onToggle(SecondaryState.RSI),
                 ),
                 _IndicatorChip(
                   label: 'WR',
-                  color: const Color(0xFF1ABC9C),
+                  color: IndicatorColors.selectorTeal,
                   isSelected: selectedIndicators.contains(SecondaryState.WR),
                   onTap: () => onToggle(SecondaryState.WR),
                 ),
                 _IndicatorChip(
                   label: 'CCI',
-                  color: const Color(0xFFE74C3C),
+                  color: IndicatorColors.selectorRed,
                   isSelected: selectedIndicators.contains(SecondaryState.CCI),
                   onTap: () => onToggle(SecondaryState.CCI),
                 ),
@@ -177,7 +179,7 @@ class _IndicatorChip extends StatelessWidget {
           color: isSelected
               ? color.withValues(alpha: 0.15)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
           border: Border.all(
             color: isSelected
                 ? color

@@ -1,7 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Top banner card showing chip strength score (0-100) with progress bar
 /// and institutional attitude label.
@@ -19,7 +21,7 @@ class ChipStrengthIndicator extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Column(
@@ -45,7 +47,7 @@ class ChipStrengthIndicator extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
                 ),
                 child: Text(
                   strength.rating.i18nKey.tr(),
@@ -78,7 +80,7 @@ class ChipStrengthIndicator extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                   child: LinearProgressIndicator(
                     value: strength.score / 100,
                     backgroundColor: theme.colorScheme.surfaceContainerHighest,
@@ -117,21 +119,21 @@ class ChipStrengthIndicator extends StatelessWidget {
 
   Color _ratingColor(ChipRating rating) {
     return switch (rating) {
-      ChipRating.strong => const Color(0xFF4CAF50),
-      ChipRating.bullish => const Color(0xFF8BC34A),
-      ChipRating.neutral => const Color(0xFFFFC107),
-      ChipRating.bearish => const Color(0xFFFF9800),
-      ChipRating.weak => const Color(0xFFF44336),
+      ChipRating.strong => IndicatorColors.ratingStrong,
+      ChipRating.bullish => IndicatorColors.ratingBullish,
+      ChipRating.neutral => IndicatorColors.ratingNeutral,
+      ChipRating.bearish => IndicatorColors.ratingBearish,
+      ChipRating.weak => IndicatorColors.ratingWeak,
     };
   }
 
   Color _attitudeColor(InstitutionalAttitude attitude, ThemeData theme) {
     return switch (attitude) {
-      InstitutionalAttitude.aggressiveBuy => const Color(0xFF4CAF50),
-      InstitutionalAttitude.moderateBuy => const Color(0xFF8BC34A),
+      InstitutionalAttitude.aggressiveBuy => IndicatorColors.ratingStrong,
+      InstitutionalAttitude.moderateBuy => IndicatorColors.ratingBullish,
       InstitutionalAttitude.neutral => theme.colorScheme.onSurfaceVariant,
-      InstitutionalAttitude.moderateSell => const Color(0xFFFF9800),
-      InstitutionalAttitude.aggressiveSell => const Color(0xFFF44336),
+      InstitutionalAttitude.moderateSell => IndicatorColors.ratingBearish,
+      InstitutionalAttitude.aggressiveSell => IndicatorColors.ratingWeak,
     };
   }
 }

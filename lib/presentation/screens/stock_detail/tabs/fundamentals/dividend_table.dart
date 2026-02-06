@@ -1,9 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays a table of the most recent 5 years of dividend data with
 /// a summary row showing the average cash dividend.
@@ -31,7 +33,9 @@ class DividendTable extends StatelessWidget {
     for (final div in displayData) {
       totalCash += div.cashDividend;
     }
-    final avgCash = displayData.isNotEmpty ? totalCash / displayData.length : 0;
+    final avgCash = displayData.isNotEmpty
+        ? totalCash / displayData.length
+        : 0.0;
 
     return Card(
       child: Padding(
@@ -45,7 +49,7 @@ class DividendTable extends StatelessWidget {
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: const Color(0xFF27AE60).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                   border: Border.all(
                     color: const Color(0xFF27AE60).withValues(alpha: 0.3),
                   ),
@@ -66,7 +70,7 @@ class DividendTable extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '\$${avgCash.toStringAsFixed(2)}',
+                      AppNumberFormat.currency(avgCash, decimals: 2),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: const Color(0xFF27AE60),
@@ -80,7 +84,7 @@ class DividendTable extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [
@@ -134,7 +138,7 @@ class DividendTable extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                 decoration: BoxDecoration(
                   color: getRowColor(context, index),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Row(
                   children: [
@@ -155,7 +159,10 @@ class DividendTable extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         div.cashDividend > 0
-                            ? '\$${div.cashDividend.toStringAsFixed(2)}'
+                            ? AppNumberFormat.currency(
+                                div.cashDividend,
+                                decimals: 2,
+                              )
                             : '-',
                         textAlign: TextAlign.end,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -181,7 +188,9 @@ class DividendTable extends StatelessWidget {
                     Expanded(
                       flex: 2,
                       child: Text(
-                        total > 0 ? '\$${total.toStringAsFixed(2)}' : '-',
+                        total > 0
+                            ? AppNumberFormat.currency(total, decimals: 2)
+                            : '-',
                         textAlign: TextAlign.end,
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontWeight: FontWeight.bold,

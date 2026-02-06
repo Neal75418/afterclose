@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// K-line chart widget using candlesticks package
 /// Note: This package doesn't support technical indicator overlays.
@@ -79,7 +80,7 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
         height: 300,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         ),
         child: Center(
           child: Text(
@@ -95,7 +96,7 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
     return Container(
       height: 300,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       clipBehavior: Clip.antiAlias,
@@ -132,7 +133,7 @@ class VolumeChartWidget extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         ),
         child: Center(
           child: Text(
@@ -158,7 +159,7 @@ class VolumeChartWidget extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       padding: const EdgeInsets.all(8),

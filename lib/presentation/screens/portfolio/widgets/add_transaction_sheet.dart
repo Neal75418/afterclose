@@ -7,6 +7,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 新增交易 BottomSheet
 class AddTransactionSheet extends ConsumerStatefulWidget {
@@ -145,7 +146,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                 ),
                 child: Row(
                   children: [
@@ -222,7 +223,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   decimal: true,
                 ),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
                 ],
               ),
             ] else ...[
@@ -239,7 +240,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         decimal: true,
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       onChanged: (_) => _autoCalcFees(),
                     ),
@@ -257,7 +260,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         decimal: true,
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       onChanged: (_) => _autoCalcFees(),
                     ),
@@ -282,7 +287,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         decimal: true,
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       onChanged: (_) => _feeManuallyEdited = true,
                     ),
@@ -303,7 +310,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         decimal: true,
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(RegExp(r'[\d.]')),
+                        FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d{0,2}'),
+                        ),
                       ],
                       onChanged: (_) => _taxManuallyEdited = true,
                     ),
@@ -399,7 +408,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   Future<void> _submit() async {
-    if (_selectedSymbol == null) return;
+    if (_selectedSymbol == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('portfolio.selectStock'.tr()),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
 
     final notifier = ref.read(portfolioProvider.notifier);
     final symbol = _selectedSymbol!;
@@ -410,7 +427,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     try {
       if (_txType == TransactionType.dividendCash) {
         final amount = double.tryParse(_quantityController.text);
-        if (amount == null || amount <= 0) return;
+        if (amount == null || amount <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('portfolio.invalidInput'.tr()),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
 
         await notifier.addDividend(
           symbol: symbol,
@@ -422,7 +447,15 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       } else {
         final qty = double.tryParse(_quantityController.text);
         final price = double.tryParse(_priceController.text);
-        if (qty == null || qty <= 0 || price == null || price <= 0) return;
+        if (qty == null || qty <= 0 || price == null || price <= 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('portfolio.invalidInput'.tr()),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
 
         final fee = double.tryParse(_feeController.text);
         final tax = double.tryParse(_taxController.text);
@@ -451,15 +484,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('portfolio.transactionAdded'.tr())),
+          SnackBar(
+            content: Text('portfolio.transactionAdded'.tr()),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     }
   }

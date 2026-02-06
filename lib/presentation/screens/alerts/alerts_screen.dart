@@ -10,6 +10,7 @@ import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/price_alert_dialog.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Screen for managing price alerts
 class AlertsScreen extends ConsumerStatefulWidget {
@@ -93,7 +94,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusXs,
+                        ),
                       ),
                       child: Text(
                         symbol,
@@ -141,8 +144,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 16),
-        color: Colors.red,
-        child: const Icon(Icons.delete, color: Colors.white),
+        color: theme.colorScheme.error,
+        child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
       confirmDismiss: (_) async {
         return await _confirmDelete(alert);
@@ -162,7 +165,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           height: 40,
           decoration: BoxDecoration(
             color: _getAlertColor(alertType).withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
           ),
           child: Icon(
             _getAlertIcon(alertType),
@@ -205,7 +208,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                         : theme.colorScheme.onSurfaceVariant.withValues(
                             alpha: 0.15,
                           ),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                     border: Border.all(
                       color: wasTriggered
                           ? Colors.orange.withValues(alpha: 0.5)

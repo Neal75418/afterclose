@@ -2,6 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
+
 /// 持倉配置圓餅圖
 class AllocationPieChart extends StatelessWidget {
   const AllocationPieChart({super.key, required this.allocationMap});
@@ -9,16 +11,7 @@ class AllocationPieChart extends StatelessWidget {
   /// symbol -> 百分比
   final Map<String, double> allocationMap;
 
-  static const _colors = [
-    Color(0xFF2196F3),
-    Color(0xFFFF9800),
-    Color(0xFF9C27B0),
-    Color(0xFF4CAF50),
-    Color(0xFFF44336),
-    Color(0xFF00BCD4),
-    Color(0xFFFFEB3B),
-    Color(0xFF795548),
-  ];
+  static const _colors = DesignTokens.chartPalette;
 
   @override
   Widget build(BuildContext context) {

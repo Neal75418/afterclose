@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
@@ -119,7 +120,6 @@ class PortfolioSummary {
 // ==================================================
 
 class PortfolioState {
-  static const _sentinel = Object();
   const PortfolioState({
     this.positions = const [],
     this.performance,
@@ -172,14 +172,14 @@ class PortfolioState {
     PortfolioPerformance? performance,
     DividendAnalysis? dividendAnalysis,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
   }) {
     return PortfolioState(
       positions: positions ?? this.positions,
       performance: performance ?? this.performance,
       dividendAnalysis: dividendAnalysis ?? this.dividendAnalysis,
       isLoading: isLoading ?? this.isLoading,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
     );
   }
 }

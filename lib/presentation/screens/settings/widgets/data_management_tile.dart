@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Data management tile for force sync and historical data progress
 class DataManagementTile extends ConsumerStatefulWidget {
@@ -229,7 +230,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
           ),
           const SizedBox(height: 6),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             child: LinearProgressIndicator(
               value: progress.total > 0
                   ? progress.completed / progress.total

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 事件色點對照
 Color eventTypeColor(EventType type) {
@@ -51,7 +52,7 @@ class EventListTile extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
           border: Border(left: BorderSide(color: color, width: 4)),
         ),
         child: Row(
@@ -62,7 +63,7 @@ class EventListTile extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Icon(_typeIcon(type), size: 20, color: color),
             ),
@@ -81,7 +82,9 @@ class EventListTile extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.radiusXs,
+                          ),
                         ),
                         child: Text(
                           type.i18nKey.tr(),

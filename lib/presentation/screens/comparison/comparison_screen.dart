@@ -83,6 +83,8 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             content: Text(
               'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
             ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }

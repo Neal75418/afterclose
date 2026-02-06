@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -76,7 +77,7 @@ class EventCalendarState {
     List<StockEventEntry>? selectedDayEvents,
     CalendarFilter? filter,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
   }) {
     return EventCalendarState(
       focusedMonth: focusedMonth ?? this.focusedMonth,
@@ -85,11 +86,9 @@ class EventCalendarState {
       selectedDayEvents: selectedDayEvents ?? this.selectedDayEvents,
       filter: filter ?? this.filter,
       isLoading: isLoading ?? this.isLoading,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
     );
   }
-
-  static const _sentinel = Object();
 }
 
 // ==========================================
