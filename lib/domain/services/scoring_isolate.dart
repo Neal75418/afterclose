@@ -189,6 +189,39 @@ class ScoringIsolateInput {
   }
 }
 
+/// Isolate 通訊邊界的 reason 型別安全封裝
+///
+/// 替代 `Map<String, dynamic>`，在 isolate 邊界提供編譯期型別檢查
+class IsolateReasonOutput {
+  const IsolateReasonOutput({
+    required this.type,
+    required this.score,
+    required this.description,
+    required this.evidenceJson,
+  });
+
+  final String type;
+  final int score;
+  final String description;
+  final String evidenceJson;
+
+  Map<String, dynamic> toMap() => {
+    'type': type,
+    'score': score,
+    'description': description,
+    'evidenceJson': evidenceJson,
+  };
+
+  factory IsolateReasonOutput.fromMap(Map<String, dynamic> map) {
+    return IsolateReasonOutput(
+      type: map['type'] as String,
+      score: map['score'] as int,
+      description: map['description'] as String,
+      evidenceJson: map['evidenceJson'] as String,
+    );
+  }
+}
+
 /// Isolate 評分輸出結果
 class ScoringIsolateOutput {
   const ScoringIsolateOutput({
@@ -209,7 +242,7 @@ class ScoringIsolateOutput {
   final String reversalState;
   final double? supportLevel;
   final double? resistanceLevel;
-  final List<Map<String, dynamic>> reasons;
+  final List<IsolateReasonOutput> reasons;
 
   Map<String, dynamic> toMap() => {
     'symbol': symbol,
@@ -219,7 +252,7 @@ class ScoringIsolateOutput {
     'reversalState': reversalState,
     'supportLevel': supportLevel,
     'resistanceLevel': resistanceLevel,
-    'reasons': reasons,
+    'reasons': reasons.map((r) => r.toMap()).toList(),
   };
 
   factory ScoringIsolateOutput.fromMap(Map<String, dynamic> map) {
@@ -231,9 +264,9 @@ class ScoringIsolateOutput {
       reversalState: map['reversalState'] as String,
       supportLevel: map['supportLevel'] as double?,
       resistanceLevel: map['resistanceLevel'] as double?,
-      reasons: List<Map<String, dynamic>>.from(
-        (map['reasons'] as List).map((e) => Map<String, dynamic>.from(e)),
-      ),
+      reasons: (map['reasons'] as List)
+          .map((e) => IsolateReasonOutput.fromMap(Map<String, dynamic>.from(e)))
+          .toList(),
     );
   }
 }
@@ -495,7 +528,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
         reversalState: analysisResult.reversalState.code,
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
-        reasons: topReasons.map(_reasonToMap).toList(),
+        reasons: topReasons.map(_reasonToOutput).toList(),
       ),
     );
   }
@@ -655,13 +688,13 @@ Map<String, dynamic> financialDataEntryToMap(FinancialDataEntry entry) {
   };
 }
 
-Map<String, dynamic> _reasonToMap(TriggeredReason reason) {
-  return {
-    'type': reason.type.code,
-    'score': reason.score,
-    'description': reason.description,
-    'evidenceJson': reason.evidenceJson != null
+IsolateReasonOutput _reasonToOutput(TriggeredReason reason) {
+  return IsolateReasonOutput(
+    type: reason.type.code,
+    score: reason.score,
+    description: reason.description,
+    evidenceJson: reason.evidenceJson != null
         ? jsonEncode(reason.evidenceJson)
         : '{}',
-  };
+  );
 }

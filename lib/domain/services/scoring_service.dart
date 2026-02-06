@@ -294,23 +294,15 @@ class ScoringService {
 
     // 批次儲存分析結果
     for (final output in result.outputs) {
-      // 轉換原因（含型別安全檢查）
-      final reasonDataList = <ReasonData>[];
-      for (final r in output.reasons) {
-        final type = r['type'];
-        final evidenceJson = r['evidenceJson'];
-        final score = r['score'];
-
-        // 跳過格式不正確的資料
-        if (type is! String || evidenceJson is! String || score is! int) {
-          AppLogger.warning('ScoringSvc', '${output.symbol}: 原因資料格式錯誤，跳過');
-          continue;
-        }
-
-        reasonDataList.add(
-          ReasonData(type: type, evidenceJson: evidenceJson, score: score),
-        );
-      }
+      final reasonDataList = output.reasons
+          .map(
+            (r) => ReasonData(
+              type: r.type,
+              evidenceJson: r.evidenceJson,
+              score: r.score,
+            ),
+          )
+          .toList();
 
       await _persistAnalysisResult(
         symbol: output.symbol,
