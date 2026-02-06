@@ -262,7 +262,7 @@ class ScoringService {
     try {
       result = await evaluateStocksInIsolate(input);
     } catch (e, stackTrace) {
-      AppLogger.warning('ScoringSvc', 'Isolate 執行失敗，回退至主執行緒: $e', stackTrace);
+      AppLogger.warning('ScoringSvc', 'Isolate 執行失敗，回退至主執行緒', e, stackTrace);
 
       // 回退：在主執行緒執行評分，並傳入 marketDataBuilder 以確保市場資料一致性
       return await scoreStocks(

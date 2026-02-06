@@ -4,6 +4,7 @@
 // and domain services can reference them without violating layer boundaries.
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/signal_names.dart';
 
 /// Filter options for scan screen
 enum ScanFilter {
@@ -13,224 +14,248 @@ enum ScanFilter {
   // Reversal signals
   reversalW2S(
     'scan.filterReversalW2S',
-    'REVERSAL_W2S',
+    SignalName.reversalW2S,
     ScanFilterGroup.reversal,
   ),
   reversalS2W(
     'scan.filterReversalS2W',
-    'REVERSAL_S2W',
+    SignalName.reversalS2W,
     ScanFilterGroup.reversal,
   ),
 
   // Technical breakout/breakdown
-  breakout('scan.filterBreakout', 'TECH_BREAKOUT', ScanFilterGroup.technical),
+  breakout(
+    'scan.filterBreakout',
+    SignalName.techBreakout,
+    ScanFilterGroup.technical,
+  ),
   breakdown(
     'scan.filterBreakdown',
-    'TECH_BREAKDOWN',
+    SignalName.techBreakdown,
     ScanFilterGroup.technical,
   ),
 
   // Volume signals
-  volumeSpike('scan.filterVolumeSpike', 'VOLUME_SPIKE', ScanFilterGroup.volume),
+  volumeSpike(
+    'scan.filterVolumeSpike',
+    SignalName.volumeSpike,
+    ScanFilterGroup.volume,
+  ),
 
   // Price signals
-  priceSpike('scan.filterPriceSpike', 'PRICE_SPIKE', ScanFilterGroup.price),
+  priceSpike(
+    'scan.filterPriceSpike',
+    SignalName.priceSpike,
+    ScanFilterGroup.price,
+  ),
 
   // KD signals
   kdGoldenCross(
     'scan.filterKdGoldenCross',
-    'KD_GOLDEN_CROSS',
+    SignalName.kdGoldenCross,
     ScanFilterGroup.indicator,
   ),
   kdDeathCross(
     'scan.filterKdDeathCross',
-    'KD_DEATH_CROSS',
+    SignalName.kdDeathCross,
     ScanFilterGroup.indicator,
   ),
 
   // RSI signals
   rsiOverbought(
     'scan.filterRsiOverbought',
-    'RSI_EXTREME_OVERBOUGHT',
+    SignalName.rsiExtremeOverbought,
     ScanFilterGroup.indicator,
   ),
   rsiOversold(
     'scan.filterRsiOversold',
-    'RSI_EXTREME_OVERSOLD',
+    SignalName.rsiExtremeOversold,
     ScanFilterGroup.indicator,
   ),
 
   // Institutional signals
   institutionalBuy(
     'scan.filterInstitutionalBuy',
-    'INSTITUTIONAL_BUY',
+    SignalName.institutionalBuy,
     ScanFilterGroup.institutional,
   ),
   institutionalSell(
     'scan.filterInstitutionalSell',
-    'INSTITUTIONAL_SELL',
+    SignalName.institutionalSell,
     ScanFilterGroup.institutional,
   ),
   institutionalBuyStreak(
     'scan.filterInstitutionalBuyStreak',
-    'INSTITUTIONAL_BUY_STREAK',
+    SignalName.institutionalBuyStreak,
     ScanFilterGroup.institutional,
   ),
   institutionalSellStreak(
     'scan.filterInstitutionalSellStreak',
-    'INSTITUTIONAL_SELL_STREAK',
+    SignalName.institutionalSellStreak,
     ScanFilterGroup.institutional,
   ),
 
   // Extended market data signals (Phase 4)
   dayTradingHigh(
     'scan.filterDayTradingHigh',
-    'DAY_TRADING_HIGH',
+    SignalName.dayTradingHigh,
     ScanFilterGroup.extendedMarket,
   ),
   dayTradingExtreme(
     'scan.filterDayTradingExtreme',
-    'DAY_TRADING_EXTREME',
+    SignalName.dayTradingExtreme,
     ScanFilterGroup.extendedMarket,
   ),
   // NOTE: concentrationHigh removed - requires paid API (股權分散表)
 
   // News signals
-  newsRelated('scan.filterNewsRelated', 'NEWS_RELATED', ScanFilterGroup.news),
+  newsRelated(
+    'scan.filterNewsRelated',
+    SignalName.newsRelated,
+    ScanFilterGroup.news,
+  ),
 
   // 52-week signals
-  week52High('scan.filterWeek52High', 'WEEK_52_HIGH', ScanFilterGroup.week52),
-  week52Low('scan.filterWeek52Low', 'WEEK_52_LOW', ScanFilterGroup.week52),
+  week52High(
+    'scan.filterWeek52High',
+    SignalName.week52High,
+    ScanFilterGroup.week52,
+  ),
+  week52Low(
+    'scan.filterWeek52Low',
+    SignalName.week52Low,
+    ScanFilterGroup.week52,
+  ),
 
   // MA alignment signals
   maAlignmentBullish(
     'scan.filterMaAlignmentBullish',
-    'MA_ALIGNMENT_BULLISH',
+    SignalName.maAlignmentBullish,
     ScanFilterGroup.maAlignment,
   ),
   maAlignmentBearish(
     'scan.filterMaAlignmentBearish',
-    'MA_ALIGNMENT_BEARISH',
+    SignalName.maAlignmentBearish,
     ScanFilterGroup.maAlignment,
   ),
 
   // Candlestick patterns - neutral
   patternDoji(
     'scan.filterPatternDoji',
-    'PATTERN_DOJI',
+    SignalName.patternDoji,
     ScanFilterGroup.pattern,
   ),
 
   // Candlestick patterns - bullish
   patternBullishEngulfing(
     'scan.filterPatternBullishEngulfing',
-    'PATTERN_BULLISH_ENGULFING',
+    SignalName.patternBullishEngulfing,
     ScanFilterGroup.pattern,
   ),
   patternHammer(
     'scan.filterPatternHammer',
-    'PATTERN_HAMMER',
+    SignalName.patternHammer,
     ScanFilterGroup.pattern,
   ),
   patternMorningStar(
     'scan.filterPatternMorningStar',
-    'PATTERN_MORNING_STAR',
+    SignalName.patternMorningStar,
     ScanFilterGroup.pattern,
   ),
   patternThreeWhiteSoldiers(
     'scan.filterPatternThreeWhiteSoldiers',
-    'PATTERN_THREE_WHITE_SOLDIERS',
+    SignalName.patternThreeWhiteSoldiers,
     ScanFilterGroup.pattern,
   ),
   patternGapUp(
     'scan.filterPatternGapUp',
-    'PATTERN_GAP_UP',
+    SignalName.patternGapUp,
     ScanFilterGroup.pattern,
   ),
 
   // Candlestick patterns - bearish
   patternBearishEngulfing(
     'scan.filterPatternBearishEngulfing',
-    'PATTERN_BEARISH_ENGULFING',
+    SignalName.patternBearishEngulfing,
     ScanFilterGroup.pattern,
   ),
   patternHangingMan(
     'scan.filterPatternHangingMan',
-    'PATTERN_HANGING_MAN',
+    SignalName.patternHangingMan,
     ScanFilterGroup.pattern,
   ),
   patternEveningStar(
     'scan.filterPatternEveningStar',
-    'PATTERN_EVENING_STAR',
+    SignalName.patternEveningStar,
     ScanFilterGroup.pattern,
   ),
   patternThreeBlackCrows(
     'scan.filterPatternThreeBlackCrows',
-    'PATTERN_THREE_BLACK_CROWS',
+    SignalName.patternThreeBlackCrows,
     ScanFilterGroup.pattern,
   ),
   patternGapDown(
     'scan.filterPatternGapDown',
-    'PATTERN_GAP_DOWN',
+    SignalName.patternGapDown,
     ScanFilterGroup.pattern,
   ),
 
   // Price-volume divergence signals
   priceVolumeBullishDivergence(
     'scan.filterPriceVolumeBullishDivergence',
-    'PRICE_VOLUME_BULLISH_DIVERGENCE',
+    SignalName.priceVolumeBullishDivergence,
     ScanFilterGroup.priceVolume,
   ),
   priceVolumeBearishDivergence(
     'scan.filterPriceVolumeBearishDivergence',
-    'PRICE_VOLUME_BEARISH_DIVERGENCE',
+    SignalName.priceVolumeBearishDivergence,
     ScanFilterGroup.priceVolume,
   ),
   highVolumeBreakout(
     'scan.filterHighVolumeBreakout',
-    'HIGH_VOLUME_BREAKOUT',
+    SignalName.highVolumeBreakout,
     ScanFilterGroup.priceVolume,
   ),
   lowVolumeAccumulation(
     'scan.filterLowVolumeAccumulation',
-    'LOW_VOLUME_ACCUMULATION',
+    SignalName.lowVolumeAccumulation,
     ScanFilterGroup.priceVolume,
   ),
 
   // Fundamental analysis signals (基本面訊號)
   revenueYoySurge(
     'scan.filterRevenueYoySurge',
-    'REVENUE_YOY_SURGE',
+    SignalName.revenueYoySurge,
     ScanFilterGroup.fundamental,
   ),
   revenueYoyDecline(
     'scan.filterRevenueYoyDecline',
-    'REVENUE_YOY_DECLINE',
+    SignalName.revenueYoyDecline,
     ScanFilterGroup.fundamental,
   ),
   revenueMomGrowth(
     'scan.filterRevenueMomGrowth',
-    'REVENUE_MOM_GROWTH',
+    SignalName.revenueMomGrowth,
     ScanFilterGroup.fundamental,
   ),
   highDividendYield(
     'scan.filterHighDividendYield',
-    'HIGH_DIVIDEND_YIELD',
+    SignalName.highDividendYield,
     ScanFilterGroup.fundamental,
   ),
   peUndervalued(
     'scan.filterPeUndervalued',
-    'PE_UNDERVALUED',
+    SignalName.peUndervalued,
     ScanFilterGroup.fundamental,
   ),
   peOvervalued(
     'scan.filterPeOvervalued',
-    'PE_OVERVALUED',
+    SignalName.peOvervalued,
     ScanFilterGroup.fundamental,
   ),
   pbrUndervalued(
     'scan.filterPbrUndervalued',
-    'PBR_UNDERVALUED',
+    SignalName.pbrUndervalued,
     ScanFilterGroup.fundamental,
   );
 
@@ -284,7 +309,7 @@ enum ScanSort {
 
 /// A single stock item displayed in the scan screen.
 class ScanStockItem {
-  const ScanStockItem({
+  ScanStockItem({
     required this.symbol,
     required this.score,
     this.stockName,
@@ -315,6 +340,11 @@ class ScanStockItem {
   final List<DailyReasonEntry> reasons;
   final bool isInWatchlist;
   final List<double>? recentPrices;
+
+  /// 預計算的 reasonType 列表（避免在 Widget build 中重複轉換）
+  late final List<String> reasonTypes = reasons
+      .map((r) => r.reasonType)
+      .toList();
 
   /// Get trend icon
   String get trendIcon => trendState.trendEmoji;

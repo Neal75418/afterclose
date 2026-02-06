@@ -1,4 +1,5 @@
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/signal_names.dart';
 
 /// 訊號匯流模式定義
 ///
@@ -95,17 +96,17 @@ class SignalConfluenceDetector {
     );
   }
 
-  // ──────────────────────────────────────────
+  // ==================================================
   // 多頭匯流模式
-  // ──────────────────────────────────────────
+  // ==================================================
 
   static const _bullishPatterns = [
     // 量價齊揚：突破 + 量能放大
     SignalConfluence(
       id: 'volume_price_breakout',
       signalGroups: [
-        {'TECH_BREAKOUT', 'HIGH_VOLUME_BREAKOUT'},
-        {'VOLUME_SPIKE'},
+        {SignalName.techBreakout, SignalName.highVolumeBreakout},
+        {SignalName.volumeSpike},
       ],
       summaryKey: 'summary.confluenceVolumeBreakout',
     ),
@@ -114,8 +115,12 @@ class SignalConfluenceDetector {
     SignalConfluence(
       id: 'institutional_confirmation',
       signalGroups: [
-        {'INSTITUTIONAL_BUY', 'INSTITUTIONAL_BUY_STREAK'},
-        {'TECH_BREAKOUT', 'REVERSAL_W2S', 'MA_ALIGNMENT_BULLISH'},
+        {SignalName.institutionalBuy, SignalName.institutionalBuyStreak},
+        {
+          SignalName.techBreakout,
+          SignalName.reversalW2S,
+          SignalName.maAlignmentBullish,
+        },
       ],
       summaryKey: 'summary.confluenceInstitutional',
     ),
@@ -124,12 +129,12 @@ class SignalConfluenceDetector {
     SignalConfluence(
       id: 'bottom_reversal',
       signalGroups: [
-        {'REVERSAL_W2S'},
+        {SignalName.reversalW2S},
         {
-          'KD_GOLDEN_CROSS',
-          'PATTERN_HAMMER',
-          'PATTERN_MORNING_STAR',
-          'RSI_EXTREME_OVERSOLD',
+          SignalName.kdGoldenCross,
+          SignalName.patternHammer,
+          SignalName.patternMorningStar,
+          SignalName.rsiExtremeOversold,
         },
       ],
       summaryKey: 'summary.confluenceBottomReversal',
@@ -139,28 +144,36 @@ class SignalConfluenceDetector {
     SignalConfluence(
       id: 'fundamental_technical',
       signalGroups: [
-        {'REVENUE_YOY_SURGE', 'EPS_YOY_SURGE', 'EPS_CONSECUTIVE_GROWTH'},
-        {'TECH_BREAKOUT', 'REVERSAL_W2S', 'MA_ALIGNMENT_BULLISH'},
+        {
+          SignalName.revenueYoySurge,
+          SignalName.epsYoySurge,
+          SignalName.epsConsecutiveGrowth,
+        },
+        {
+          SignalName.techBreakout,
+          SignalName.reversalW2S,
+          SignalName.maAlignmentBullish,
+        },
       ],
       summaryKey: 'summary.confluenceFundamentalTechnical',
     ),
   ];
 
-  // ──────────────────────────────────────────
+  // ==================================================
   // 空頭匯流模式
-  // ──────────────────────────────────────────
+  // ==================================================
 
   static const _bearishPatterns = [
     // 頭部反轉：強轉弱 + KD 死亡交叉
     SignalConfluence(
       id: 'top_reversal',
       signalGroups: [
-        {'REVERSAL_S2W'},
+        {SignalName.reversalS2W},
         {
-          'KD_DEATH_CROSS',
-          'PATTERN_HANGING_MAN',
-          'PATTERN_EVENING_STAR',
-          'RSI_EXTREME_OVERBOUGHT',
+          SignalName.kdDeathCross,
+          SignalName.patternHangingMan,
+          SignalName.patternEveningStar,
+          SignalName.rsiExtremeOverbought,
         },
       ],
       summaryKey: 'summary.confluenceTopReversal',
@@ -171,8 +184,8 @@ class SignalConfluenceDetector {
     SignalConfluence(
       id: 'bearish_breakdown',
       signalGroups: [
-        {'TECH_BREAKDOWN'},
-        {'MA_ALIGNMENT_BEARISH', 'KD_DEATH_CROSS'},
+        {SignalName.techBreakdown},
+        {SignalName.maAlignmentBearish, SignalName.kdDeathCross},
       ],
       summaryKey: 'summary.confluenceBearishBreakdown',
       isBullish: false,
@@ -182,12 +195,12 @@ class SignalConfluenceDetector {
     SignalConfluence(
       id: 'value_trap',
       signalGroups: [
-        {'PE_UNDERVALUED', 'PBR_UNDERVALUED'},
+        {SignalName.peUndervalued, SignalName.pbrUndervalued},
         {
-          'REVERSAL_S2W',
-          'TECH_BREAKDOWN',
-          'EPS_DECLINE_WARNING',
-          'MA_ALIGNMENT_BEARISH',
+          SignalName.reversalS2W,
+          SignalName.techBreakdown,
+          SignalName.epsDeclineWarning,
+          SignalName.maAlignmentBearish,
         },
       ],
       summaryKey: 'summary.confluenceValueTrap',
