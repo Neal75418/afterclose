@@ -64,6 +64,10 @@ class MarketOverviewState {
     this.advanceDecline = const AdvanceDecline(),
     this.institutional = const InstitutionalTotals(),
     this.margin = const MarginTradingTotals(),
+    // 新增：依市場分組的統計（預設空 Map）
+    this.advanceDeclineByMarket = const {},
+    this.institutionalByMarket = const {},
+    this.marginByMarket = const {},
     this.isLoading = false,
     this.error,
   });
@@ -75,6 +79,19 @@ class MarketOverviewState {
   final AdvanceDecline advanceDecline;
   final InstitutionalTotals institutional;
   final MarginTradingTotals margin;
+
+  /// 漲跌家數（依市場分組）
+  /// Key: 'TWSE' / 'TPEx'
+  final Map<String, AdvanceDecline> advanceDeclineByMarket;
+
+  /// 法人買賣超（依市場分組）
+  /// Key: 'TWSE' / 'TPEx'
+  final Map<String, InstitutionalTotals> institutionalByMarket;
+
+  /// 融資融券（依市場分組）
+  /// Key: 'TWSE' / 'TPEx'
+  final Map<String, MarginTradingTotals> marginByMarket;
+
   final bool isLoading;
   final String? error;
 
@@ -87,6 +104,9 @@ class MarketOverviewState {
     AdvanceDecline? advanceDecline,
     InstitutionalTotals? institutional,
     MarginTradingTotals? margin,
+    Map<String, AdvanceDecline>? advanceDeclineByMarket,
+    Map<String, InstitutionalTotals>? institutionalByMarket,
+    Map<String, MarginTradingTotals>? marginByMarket,
     bool? isLoading,
     String? error,
   }) {
@@ -96,6 +116,11 @@ class MarketOverviewState {
       advanceDecline: advanceDecline ?? this.advanceDecline,
       institutional: institutional ?? this.institutional,
       margin: margin ?? this.margin,
+      advanceDeclineByMarket:
+          advanceDeclineByMarket ?? this.advanceDeclineByMarket,
+      institutionalByMarket:
+          institutionalByMarket ?? this.institutionalByMarket,
+      marginByMarket: marginByMarket ?? this.marginByMarket,
       isLoading: isLoading ?? this.isLoading,
       error: error,
     );
@@ -131,6 +156,13 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
         _loadInstitutionalTotals(dataDate), // [2] InstitutionalTotals
         _loadMarginTotals(dataDate), // [3] MarginTradingTotals
         _loadIndexHistory(), // [4] Map<String, List<double>>
+        _loadAdvanceDeclineByMarket(
+          dataDate,
+        ), // [5] Map<String, AdvanceDecline>
+        _loadInstitutionalByMarket(
+          dataDate,
+        ), // [6] Map<String, InstitutionalTotals>
+        _loadMarginByMarket(dataDate), // [7] Map<String, MarginTradingTotals>
       ]);
 
       if (!mounted) return;
@@ -141,6 +173,9 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
         institutional: results[2] as InstitutionalTotals,
         margin: results[3] as MarginTradingTotals,
         indexHistory: results[4] as Map<String, List<double>>,
+        advanceDeclineByMarket: results[5] as Map<String, AdvanceDecline>,
+        institutionalByMarket: results[6] as Map<String, InstitutionalTotals>,
+        marginByMarket: results[7] as Map<String, MarginTradingTotals>,
       );
     } catch (e) {
       // getLatestDataDate() 可能拋出例外
@@ -224,6 +259,68 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入融資融券總額失敗: $e');
       return const MarginTradingTotals();
+    }
+  }
+
+  /// 載入漲跌家數（依市場分組）
+  Future<Map<String, AdvanceDecline>> _loadAdvanceDeclineByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final data = await _db.getAdvanceDeclineCountsByMarket(date);
+      return {
+        for (final entry in data.entries)
+          entry.key: AdvanceDecline(
+            advance: entry.value['advance'] ?? 0,
+            decline: entry.value['decline'] ?? 0,
+            unchanged: entry.value['unchanged'] ?? 0,
+          ),
+      };
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入分市場漲跌家數失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入法人買賣超（依市場分組）
+  Future<Map<String, InstitutionalTotals>> _loadInstitutionalByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final data = await _db.getInstitutionalTotalsByMarket(date);
+      return {
+        for (final entry in data.entries)
+          entry.key: InstitutionalTotals(
+            foreignNet: entry.value['foreignNet'] ?? 0,
+            trustNet: entry.value['trustNet'] ?? 0,
+            dealerNet: entry.value['dealerNet'] ?? 0,
+            totalNet: entry.value['totalNet'] ?? 0,
+          ),
+      };
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入分市場法人總額失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入融資融券（依市場分組）
+  Future<Map<String, MarginTradingTotals>> _loadMarginByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final data = await _db.getMarginTradingTotalsByMarket(date);
+      return {
+        for (final entry in data.entries)
+          entry.key: MarginTradingTotals(
+            marginBalance: entry.value['marginBalance'] ?? 0,
+            marginChange: entry.value['marginChange'] ?? 0,
+            shortBalance: entry.value['shortBalance'] ?? 0,
+            shortChange: entry.value['shortChange'] ?? 0,
+          ),
+      };
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入分市場融資融券總額失敗: $e');
+      return {};
     }
   }
 }

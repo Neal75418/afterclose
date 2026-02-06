@@ -34,6 +34,11 @@
   },
   "marketOverview": {
     "title": "Market Overview",
+    "twse": "TWSE",
+    "tpex": "TPEx",
+    "tpexNoIndex": "No index data for OTC market",
+    "noData": "No data",
+    "loadError": "Failed to load market data",
     "taiex": "TAIEX",
     "exFinance": "Ex-Finance",
     "electronics": "Electronics",

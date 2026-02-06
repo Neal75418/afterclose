@@ -34,6 +34,11 @@
   },
   "marketOverview": {
     "title": "大盤總覽",
+    "twse": "上市",
+    "tpex": "上櫃",
+    "tpexNoIndex": "上櫃市場無指數資料",
+    "noData": "暫無資料",
+    "loadError": "載入大盤數據失敗",
     "taiex": "加權指數",
     "exFinance": "未含金融",
     "electronics": "電子類",
