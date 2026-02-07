@@ -396,69 +396,57 @@ void main() {
         verify(() => mockDb.insertPrices(any())).called(1);
       });
 
-      // Skipped: Dart test framework reports unhandled Future errors even when
-      // caught properly by the code. The actual implementation handles errors correctly.
-      test(
-        'returns empty result when both APIs fail',
-        () async {
-          when(
-            () => mockDb.getPriceCountForDate(any()),
-          ).thenAnswer((_) async => 0);
-          when(() => mockTwseClient.getAllDailyPrices()).thenAnswer((_) async {
-            throw Exception('API Error');
-          });
-          when(() => mockTpexClient.getAllDailyPrices()).thenAnswer((_) async {
-            throw Exception('API Error');
-          });
+      test('returns empty result when both APIs fail', () async {
+        when(
+          () => mockDb.getPriceCountForDate(any()),
+        ).thenAnswer((_) async => 0);
+        when(() => mockTwseClient.getAllDailyPrices()).thenAnswer((_) async {
+          throw Exception('API Error');
+        });
+        when(() => mockTpexClient.getAllDailyPrices()).thenAnswer((_) async {
+          throw Exception('API Error');
+        });
 
-          final result = await repository.syncAllPricesForDate(DateTime.now());
+        final result = await repository.syncAllPricesForDate(DateTime.now());
 
-          expect(result.count, equals(0));
-          expect(result.candidates, isEmpty);
-        },
-        skip: 'Async error propagation in concurrent futures is hard to test',
-      );
+        expect(result.count, equals(0));
+        expect(result.candidates, isEmpty);
+      });
 
-      // Skipped: Dart test framework reports unhandled Future errors even when
-      // caught properly by the code. The actual implementation handles errors correctly.
-      test(
-        'continues when one API fails',
-        () async {
-          when(
-            () => mockDb.getPriceCountForDate(any()),
-          ).thenAnswer((_) async => 0);
+      test('continues when one API fails', () async {
+        when(
+          () => mockDb.getPriceCountForDate(any()),
+        ).thenAnswer((_) async => 0);
 
-          final twsePrices = [
-            TwseDailyPrice(
-              code: '2330',
-              name: '台積電',
-              date: DateTime(2024, 6, 15),
-              open: 500.0,
-              high: 510.0,
-              low: 495.0,
-              close: 505.0,
-              change: 5.0,
-              volume: 20000000,
-            ),
-          ];
+        final twsePrices = [
+          TwseDailyPrice(
+            code: '2330',
+            name: '台積電',
+            date: DateTime(2024, 6, 15),
+            open: 500.0,
+            high: 510.0,
+            low: 495.0,
+            close: 505.0,
+            change: 5.0,
+            volume: 20000000,
+          ),
+        ];
 
-          when(
-            () => mockTwseClient.getAllDailyPrices(),
-          ).thenAnswer((_) async => twsePrices);
-          when(() => mockTpexClient.getAllDailyPrices()).thenAnswer((_) async {
-            throw Exception('TPEX Error');
-          });
-          when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
-          when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
+        when(
+          () => mockTwseClient.getAllDailyPrices(),
+        ).thenAnswer((_) async => twsePrices);
+        when(() => mockTpexClient.getAllDailyPrices()).thenAnswer((_) async {
+          throw Exception('TPEX Error');
+        });
+        when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
 
-          final result = await repository.syncAllPricesForDate(
-            DateTime(2024, 6, 15),
-          );
+        final result = await repository.syncAllPricesForDate(
+          DateTime(2024, 6, 15),
+        );
 
-          expect(result.count, equals(1));
-        },
-        skip: 'Async error propagation in concurrent futures is hard to test',
-      );
+        expect(result.count, equals(1));
+      });
     });
 
     group('syncTodayPrices', () {

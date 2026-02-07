@@ -288,21 +288,22 @@ class PriceRepository implements IPriceRepository {
       }
 
       // 並行取得上市與上櫃價格資料（錯誤隔離，允許部分成功）
-      final twseFuture = _twseClient.getAllDailyPrices();
-      final tpexFuture = _tpexClient.getAllDailyPrices();
-
-      final twsePrices = await safeAwait(
-        twseFuture,
+      // safeAwait 立即包裹原始 Future，避免 unhandled async error
+      final twseFuture = safeAwait(
+        _twseClient.getAllDailyPrices(),
         <TwseDailyPrice>[],
         tag: 'PriceRepo',
         description: '上市價格取得失敗，繼續處理上櫃',
       );
-      final tpexPrices = await safeAwait(
-        tpexFuture,
+      final tpexFuture = safeAwait(
+        _tpexClient.getAllDailyPrices(),
         <TpexDailyPrice>[],
         tag: 'PriceRepo',
         description: '上櫃價格取得失敗，繼續處理上市',
       );
+
+      final twsePrices = await twseFuture;
+      final tpexPrices = await tpexFuture;
 
       if (twsePrices.isEmpty && tpexPrices.isEmpty) {
         AppLogger.warning('PriceRepo', '價格同步: 無資料');

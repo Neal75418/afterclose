@@ -101,21 +101,22 @@ class InstitutionalRepository {
       }
 
       // 並行取得上市與上櫃法人資料（錯誤隔離，允許部分成功）
-      final twseFuture = _twseClient.getAllInstitutionalData(date: date);
-      final tpexFuture = _tpexClient.getAllInstitutionalData(date: date);
-
-      final twseData = await safeAwait(
-        twseFuture,
+      // safeAwait 立即包裹原始 Future，避免 unhandled async error
+      final twseFuture = safeAwait(
+        _twseClient.getAllInstitutionalData(date: date),
         <TwseInstitutional>[],
         tag: 'InstRepo',
         description: '上市法人資料取得失敗，繼續處理上櫃',
       );
-      final tpexData = await safeAwait(
-        tpexFuture,
+      final tpexFuture = safeAwait(
+        _tpexClient.getAllInstitutionalData(date: date),
         <TpexInstitutional>[],
         tag: 'InstRepo',
         description: '上櫃法人資料取得失敗，繼續處理上市',
       );
+
+      final twseData = await twseFuture;
+      final tpexData = await tpexFuture;
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 

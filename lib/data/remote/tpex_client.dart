@@ -1,14 +1,13 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/models/tpex/models.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
+import 'package:afterclose/data/models/tpex/models.dart';
+import 'package:afterclose/data/remote/market_client_mixin.dart';
+
 export 'package:afterclose/data/models/tpex/models.dart';
 
 /// 台灣證券櫃檯買賣中心 (TPEX/OTC) API 客戶端
@@ -21,40 +20,19 @@ export 'package:afterclose/data/models/tpex/models.dart';
 /// - 每日股價: https://www.tpex.org.tw/web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php
 /// - 法人買賣: https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php
 class TpexClient {
-  TpexClient({Dio? dio}) : _dio = dio ?? _createDio();
+  TpexClient({Dio? dio})
+    : _dio = dio ?? MarketClientMixin.createDio(ApiEndpoints.tpexBaseUrl);
 
-  /// TPEX 官方網站基礎 URL
-  static const String _baseUrl = ApiEndpoints.tpexBaseUrl;
-
+  static const String _tag = 'TPEX';
   final Dio _dio;
-
-  static Dio _createDio() {
-    return Dio(
-      BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: const Duration(
-          seconds: ApiConfig.twseConnectTimeoutSec,
-        ),
-        receiveTimeout: const Duration(
-          seconds: ApiConfig.twseReceiveTimeoutSec,
-        ),
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent':
-              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        },
-        responseType: ResponseType.json,
-      ),
-    );
-  }
 
   /// 取得最新交易日所有上櫃股票價格
   ///
   /// 回傳所有上櫃股票的 OHLCV 資料。
   ///
   /// 端點: /web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php
-  Future<List<TpexDailyPrice>> getAllDailyPrices({DateTime? date}) async {
-    try {
+  Future<List<TpexDailyPrice>> getAllDailyPrices({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -64,31 +42,23 @@ class TpexClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '全市場價格: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TPEX', '全市場價格: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '全市場價格',
+        );
+        if (data == null) return [];
 
         // TPEX API 回傳格式: { tables: [{ data: [...] }] }
         final tables = data['tables'] as List<dynamic>?;
         if (tables == null || tables.isEmpty) {
-          AppLogger.warning('TPEX', '全市場價格: 無 tables');
+          AppLogger.warning(_tag, '全市場價格: 無 tables');
           return [];
         }
 
         final firstTable = tables[0] as Map<String, dynamic>?;
         if (firstTable == null) {
-          AppLogger.warning('TPEX', '全市場價格: 無資料表');
+          AppLogger.warning(_tag, '全市場價格: 無資料表');
           return [];
         }
 
@@ -102,7 +72,7 @@ class TpexClient {
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
         if (rows == null || rows.isEmpty) {
-          AppLogger.warning('TPEX', '全市場價格: 無資料');
+          AppLogger.warning(_tag, '全市場價格: 無資料');
           return [];
         }
 
@@ -123,31 +93,20 @@ class TpexClient {
         final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
         if (failedCount > 0) {
           AppLogger.info(
-            'TPEX',
+            _tag,
             '全市場價格: ${prices.length} 筆 ($dateFormatted, 略過 $failedCount 筆)',
           );
         } else {
-          AppLogger.info('TPEX', '全市場價格: ${prices.length} 筆 ($dateFormatted)');
+          AppLogger.info(_tag, '全市場價格: ${prices.length} 筆 ($dateFormatted)');
         }
         return prices;
       }
 
       throw ApiException(
-        'TPEX API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        AppLogger.warning('TPEX', '全市場價格: 連線逾時');
-        throw NetworkException('TPEX connection timeout', e);
-      }
-      AppLogger.warning('TPEX', '全市場價格: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    } catch (e, stack) {
-      AppLogger.error('TPEX', '全市場價格: 非預期錯誤', e, stack);
-      rethrow;
-    }
+    });
   }
 
   /// 解析每日價格資料列
@@ -183,10 +142,8 @@ class TpexClient {
   /// 取得所有上櫃股票的法人買賣超資料
   ///
   /// 端點: /web/stock/3insti/daily_trade/3itrade_hedge_result.php
-  Future<List<TpexInstitutional>> getAllInstitutionalData({
-    DateTime? date,
-  }) async {
-    try {
+  Future<List<TpexInstitutional>> getAllInstitutionalData({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '法人資料', () async {
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -196,31 +153,23 @@ class TpexClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '法人資料: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TPEX', '法人資料: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '法人資料',
+        );
+        if (data == null) return [];
 
         // TPEX API 回傳格式: { tables: [{ data: [...] }] }
         final tables = data['tables'] as List<dynamic>?;
         if (tables == null || tables.isEmpty) {
-          AppLogger.warning('TPEX', '法人資料: 無 tables');
+          AppLogger.warning(_tag, '法人資料: 無 tables');
           return [];
         }
 
         final firstTable = tables[0] as Map<String, dynamic>?;
         if (firstTable == null) {
-          AppLogger.warning('TPEX', '法人資料: 無資料表');
+          AppLogger.warning(_tag, '法人資料: 無資料表');
           return [];
         }
 
@@ -234,7 +183,7 @@ class TpexClient {
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
         if (rows == null || rows.isEmpty) {
-          AppLogger.warning('TPEX', '法人資料: 無資料');
+          AppLogger.warning(_tag, '法人資料: 無資料');
           return [];
         }
 
@@ -247,18 +196,15 @@ class TpexClient {
             .toList();
 
         final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
-        AppLogger.info('TPEX', '法人資料: ${results.length} 筆 ($dateFormatted)');
+        AppLogger.info(_tag, '法人資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
 
       throw ApiException(
-        'TPEX API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '法人資料: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 解析法人資料列
@@ -315,10 +261,8 @@ class TpexClient {
   /// 回傳外資、投信、自營商的買賣金額（元），可用於大盤總覽顯示
   ///
   /// [date] 可選，指定日期。省略則取最新。
-  Future<TpexInstitutionalAmounts?> getInstitutionalAmounts({
-    DateTime? date,
-  }) async {
-    try {
+  Future<TpexInstitutionalAmounts?> getInstitutionalAmounts({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '法人金額統計', () async {
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -328,30 +272,22 @@ class TpexClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '法人金額統計: JSON 解析失敗');
-            return null;
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TPEX', '法人金額統計: 非預期資料型別');
-          return null;
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '法人金額統計',
+        );
+        if (data == null) return null;
 
         final tables = data['tables'] as List<dynamic>?;
         if (tables == null || tables.isEmpty) {
-          AppLogger.warning('TPEX', '法人金額統計: 無 tables');
+          AppLogger.warning(_tag, '法人金額統計: 無 tables');
           return null;
         }
 
         final firstTable = tables[0] as Map<String, dynamic>?;
         if (firstTable == null) {
-          AppLogger.warning('TPEX', '法人金額統計: 無資料表');
+          AppLogger.warning(_tag, '法人金額統計: 無資料表');
           return null;
         }
 
@@ -365,7 +301,7 @@ class TpexClient {
 
         final rows = firstTable['data'] as List<dynamic>?;
         if (rows == null || rows.isEmpty) {
-          AppLogger.warning('TPEX', '法人金額統計: 無資料');
+          AppLogger.warning(_tag, '法人金額統計: 無資料');
           return null;
         }
 
@@ -401,10 +337,9 @@ class TpexClient {
           dealerNet: dealerNet,
         );
       }
-    } catch (e) {
-      AppLogger.warning('TPEX', '法人金額統計: $e');
-    }
-    return null;
+
+      return null;
+    });
   }
 
   /// 取得所有上櫃股票的估值資料（本益比、股價淨值比、殖利率）
@@ -413,8 +348,8 @@ class TpexClient {
   /// 端點: /openapi/v1/tpex_mainboard_peratio_analysis
   ///
   /// 回傳所有上櫃股票的估值資料，一次 API 呼叫取得全市場。
-  Future<List<TpexValuation>> getAllValuation({DateTime? date}) async {
-    try {
+  Future<List<TpexValuation>> getAllValuation({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '估值資料', () async {
       final targetDate = date ?? DateTime.now();
 
       // TPEX OpenAPI 只回傳最新資料，不接受日期參數
@@ -424,18 +359,9 @@ class TpexClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '估值資料: JSON 解析失敗');
-            return [];
-          }
-        }
-
+        final data = response.data;
         if (data is! List) {
-          AppLogger.warning('TPEX', '估值資料: 非預期資料型別 (expected List)');
+          AppLogger.warning(_tag, '估值資料: 非預期資料型別 (expected List)');
           return [];
         }
 
@@ -455,18 +381,15 @@ class TpexClient {
             ? results.first.date
             : targetDate;
         final dateFormatted = TwParseUtils.formatDateYmd(effectiveDate);
-        AppLogger.info('TPEX', '估值資料: ${results.length} 筆 ($dateFormatted)');
+        AppLogger.info(_tag, '估值資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
 
       throw ApiException(
-        'TPEX OpenAPI error: ${response.statusCode}',
+        '$_tag OpenAPI error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '估值資料: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 解析估值資料項目
@@ -546,47 +469,40 @@ class TpexClient {
       if (response.statusCode == 302) {
         final location = response.headers.value('location') ?? '';
         if (location.contains('error')) {
-          AppLogger.debug('TPEX', '當沖 API 被 Cloudflare 阻擋 (302 重定向)');
+          AppLogger.debug(_tag, '當沖 API 被 Cloudflare 阻擋 (302 重定向)');
           return [];
         }
       }
 
       if (response.statusCode == 200) {
-        var data = response.data;
-
         // 檢查是否為 HTML 錯誤頁面（而非 JSON）
-        if (data is String) {
-          // 偵測 HTML 錯誤頁面
-          if (data.contains('<!DOCTYPE') ||
-              data.contains('<html') ||
-              data.contains('error')) {
-            AppLogger.debug('TPEX', '當沖 API 回傳錯誤頁面 (可能被 Cloudflare 阻擋)');
-            return [];
-          }
-
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.debug('TPEX', '當沖 API 回傳非 JSON 格式');
+        final rawData = response.data;
+        if (rawData is String) {
+          if (rawData.contains('<!DOCTYPE') ||
+              rawData.contains('<html') ||
+              rawData.contains('error')) {
+            AppLogger.debug(_tag, '當沖 API 回傳錯誤頁面 (可能被 Cloudflare 阻擋)');
             return [];
           }
         }
 
-        if (data is! Map<String, dynamic>) {
-          AppLogger.debug('TPEX', '當沖資料: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          rawData,
+          _tag,
+          '當沖資料',
+        );
+        if (data == null) return [];
 
         // TPEX API 回傳格式: { tables: [{ data: [...] }] }
         final tables = data['tables'] as List<dynamic>?;
         if (tables == null || tables.isEmpty) {
-          AppLogger.debug('TPEX', '當沖資料: 無 tables (可能無該日資料)');
+          AppLogger.debug(_tag, '當沖資料: 無 tables (可能無該日資料)');
           return [];
         }
 
         final firstTable = tables[0] as Map<String, dynamic>?;
         if (firstTable == null) {
-          AppLogger.debug('TPEX', '當沖資料: 無資料表');
+          AppLogger.debug(_tag, '當沖資料: 無資料表');
           return [];
         }
 
@@ -600,7 +516,7 @@ class TpexClient {
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
         if (rows == null || rows.isEmpty) {
-          AppLogger.debug('TPEX', '當沖資料: 無資料 (該日可能無交易)');
+          AppLogger.debug(_tag, '當沖資料: 無資料 (該日可能無交易)');
           return [];
         }
 
@@ -611,21 +527,21 @@ class TpexClient {
             .toList();
 
         final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
-        AppLogger.info('TPEX', '當沖資料: ${results.length} 筆 ($dateFormatted)');
+        AppLogger.info(_tag, '當沖資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
 
       throw ApiException(
-        'TPEX API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
     } on DioException catch (e) {
       // 處理重定向相關錯誤
       if (e.response?.statusCode == 302) {
-        AppLogger.debug('TPEX', '當沖 API 被阻擋 (302)');
+        AppLogger.debug(_tag, '當沖 API 被阻擋 (302)');
         return [];
       }
-      AppLogger.debug('TPEX', '當沖資料: ${e.message ?? "網路錯誤"}');
+      AppLogger.debug(_tag, '當沖資料: ${e.message ?? "網路錯誤"}');
       // 當沖資料非必要，回傳空清單而非拋出例外
       return [];
     }
@@ -669,10 +585,8 @@ class TpexClient {
   /// 取得所有上櫃股票的融資融券資料
   ///
   /// 端點: /web/stock/margin_trading/margin_sbl/margin_sbl_result.php
-  Future<List<TpexMarginTrading>> getAllMarginTradingData({
-    DateTime? date,
-  }) async {
-    try {
+  Future<List<TpexMarginTrading>> getAllMarginTradingData({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '融資融券', () async {
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -682,31 +596,23 @@ class TpexClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '融資融券: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TPEX', '融資融券: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '融資融券',
+        );
+        if (data == null) return [];
 
         // TPEX API 回傳格式: { tables: [{ data: [...] }] }
         final tables = data['tables'] as List<dynamic>?;
         if (tables == null || tables.isEmpty) {
-          AppLogger.warning('TPEX', '融資融券: 無 tables');
+          AppLogger.warning(_tag, '融資融券: 無 tables');
           return [];
         }
 
         final firstTable = tables[0] as Map<String, dynamic>?;
         if (firstTable == null) {
-          AppLogger.warning('TPEX', '融資融券: 無資料表');
+          AppLogger.warning(_tag, '融資融券: 無資料表');
           return [];
         }
 
@@ -720,7 +626,7 @@ class TpexClient {
 
         final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
         if (rows == null || rows.isEmpty) {
-          AppLogger.warning('TPEX', '融資融券: 無資料');
+          AppLogger.warning(_tag, '融資融券: 無資料');
           return [];
         }
 
@@ -733,18 +639,15 @@ class TpexClient {
             .toList();
 
         final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
-        AppLogger.info('TPEX', '融資融券: ${results.length} 筆 ($dateFormatted)');
+        AppLogger.info(_tag, '融資融券: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
 
       throw ApiException(
-        'TPEX API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '融資融券: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 解析融資融券資料列
@@ -792,26 +695,17 @@ class TpexClient {
   /// 端點: /openapi/v1/tpex_trading_warning_information
   ///
   /// 回傳交易量異常、價格異常波動的股票清單。
-  Future<List<TpexTradingWarning>> getTradingWarnings() async {
-    try {
+  Future<List<TpexTradingWarning>> getTradingWarnings() {
+    return MarketClientMixin.executeRequest(_tag, '注意股票', () async {
       final response = await _dio.get(
         ApiEndpoints.tpexTradingWarning,
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '注意股票: JSON 解析失敗');
-            return [];
-          }
-        }
-
+        final data = response.data;
         if (data is! List) {
-          AppLogger.warning('TPEX', '注意股票: 非預期資料型別');
+          AppLogger.warning(_tag, '注意股票: 非預期資料型別');
           return [];
         }
 
@@ -824,18 +718,15 @@ class TpexClient {
           }
         }
 
-        AppLogger.info('TPEX', '注意股票: ${results.length} 筆');
+        AppLogger.info(_tag, '注意股票: ${results.length} 筆');
         return results;
       }
 
       throw ApiException(
-        'TPEX OpenAPI error: ${response.statusCode}',
+        '$_tag OpenAPI error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '注意股票: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 解析注意股票項目
@@ -851,7 +742,7 @@ class TpexClient {
       final dateStr = json['Date']?.toString();
       final date = TwParseUtils.parseCompactRocDate(dateStr);
       if (date == null) {
-        AppLogger.debug('TPEX', '注意股票日期解析失敗: code=$code, date=$dateStr');
+        AppLogger.debug(_tag, '注意股票日期解析失敗: code=$code, date=$dateStr');
         return null;
       }
 
@@ -864,7 +755,7 @@ class TpexClient {
         warningType: 'ATTENTION',
       );
     } catch (e) {
-      AppLogger.debug('TPEX', '注意股票項目解析失敗: $e');
+      AppLogger.debug(_tag, '注意股票項目解析失敗: $e');
       return null;
     }
   }
@@ -875,26 +766,17 @@ class TpexClient {
   /// 端點: /openapi/v1/tpex_disposal_information
   ///
   /// 回傳交易受限制的股票清單。
-  Future<List<TpexTradingWarning>> getDisposalInfo() async {
-    try {
+  Future<List<TpexTradingWarning>> getDisposalInfo() {
+    return MarketClientMixin.executeRequest(_tag, '處置股票', () async {
       final response = await _dio.get(
         ApiEndpoints.tpexDisposal,
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '處置股票: JSON 解析失敗');
-            return [];
-          }
-        }
-
+        final data = response.data;
         if (data is! List) {
-          AppLogger.warning('TPEX', '處置股票: 非預期資料型別');
+          AppLogger.warning(_tag, '處置股票: 非預期資料型別');
           return [];
         }
 
@@ -907,18 +789,15 @@ class TpexClient {
           }
         }
 
-        AppLogger.info('TPEX', '處置股票: ${results.length} 筆');
+        AppLogger.info(_tag, '處置股票: ${results.length} 筆');
         return results;
       }
 
       throw ApiException(
-        'TPEX OpenAPI error: ${response.statusCode}',
+        '$_tag OpenAPI error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '處置股票: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 解析處置股票項目
@@ -934,7 +813,7 @@ class TpexClient {
       final dateStr = json['Date']?.toString();
       final date = TwParseUtils.parseCompactRocDate(dateStr);
       if (date == null) {
-        AppLogger.debug('TPEX', '處置股票日期解析失敗: code=$code, date=$dateStr');
+        AppLogger.debug(_tag, '處置股票日期解析失敗: code=$code, date=$dateStr');
         return null;
       }
 
@@ -963,7 +842,7 @@ class TpexClient {
         warningType: 'DISPOSAL',
       );
     } catch (e) {
-      AppLogger.debug('TPEX', '處置股票項目解析失敗: $e');
+      AppLogger.debug(_tag, '處置股票項目解析失敗: $e');
       return null;
     }
   }
@@ -976,8 +855,8 @@ class TpexClient {
   /// 3. 彙總計算每家公司的董監持股比例和質押比例
   ///
   /// 回傳彙總後的董監事持股資料（每家公司一筆）。
-  Future<List<TpexInsiderHolding>> getInsiderHoldings() async {
-    try {
+  Future<List<TpexInsiderHolding>> getInsiderHoldings() {
+    return MarketClientMixin.executeRequest(_tag, '董監持股', () async {
       // 1. 取得已發行股數
       final stockInfoResponse = await _dio.get(
         ApiEndpoints.tpexStockInfo,
@@ -986,10 +865,8 @@ class TpexClient {
 
       final issuedSharesMap = <String, double>{};
       if (stockInfoResponse.statusCode == 200) {
-        var stockData = stockInfoResponse.data;
-        if (stockData is String) {
-          stockData = jsonDecode(stockData);
-        }
+        // OpenData API 回傳 List（Dio responseType: json 會自動解析）
+        final stockData = stockInfoResponse.data;
         if (stockData is List) {
           for (final item in stockData) {
             if (item is! Map<String, dynamic>) continue;
@@ -1005,7 +882,7 @@ class TpexClient {
         }
       }
 
-      AppLogger.debug('TPEX', '已發行股數: ${issuedSharesMap.length} 家公司');
+      AppLogger.debug(_tag, '已發行股數: ${issuedSharesMap.length} 家公司');
 
       // 2. 取得個別董監持股記錄
       final response = await _dio.get(
@@ -1014,18 +891,10 @@ class TpexClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '董監持股: JSON 解析失敗');
-            return [];
-          }
-        }
-
+        // 董監持股 API 回傳 List（Dio responseType: json 會自動解析）
+        final data = response.data;
         if (data is! List) {
-          AppLogger.warning('TPEX', '董監持股: 非預期資料型別');
+          AppLogger.warning(_tag, '董監持股: 非預期資料型別');
           return [];
         }
 
@@ -1096,18 +965,15 @@ class TpexClient {
           );
         }
 
-        AppLogger.info('TPEX', '董監持股彙總: ${results.length} 家公司');
+        AppLogger.info(_tag, '董監持股彙總: ${results.length} 家公司');
         return results;
       }
 
       throw ApiException(
-        'TPEX OpenAPI error: ${response.statusCode}',
+        '$_tag OpenAPI error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '董監持股: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 取得上櫃公司每月營業收入彙總表
@@ -1117,26 +983,17 @@ class TpexClient {
   ///
   /// 回傳所有上櫃公司的月營收資料，包含月增率和年增率。
   /// 一次 API 呼叫取得全市場資料，取代 FinMind 批次 API。
-  Future<List<TpexMonthlyRevenue>> getAllMonthlyRevenue() async {
-    try {
+  Future<List<TpexMonthlyRevenue>> getAllMonthlyRevenue() {
+    return MarketClientMixin.executeRequest(_tag, '月營收', () async {
       final response = await _dio.get(
         ApiEndpoints.tpexMonthlyRevenue,
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TPEX', '月營收: JSON 解析失敗');
-            return [];
-          }
-        }
-
+        final data = response.data;
         if (data is! List) {
-          AppLogger.warning('TPEX', '月營收: 非預期資料型別');
+          AppLogger.warning(_tag, '月營收: 非預期資料型別');
           return [];
         }
 
@@ -1149,18 +1006,15 @@ class TpexClient {
           }
         }
 
-        AppLogger.info('TPEX', '月營收: ${results.length} 筆');
+        AppLogger.info(_tag, '月營收: ${results.length} 筆');
         return results;
       }
 
       throw ApiException(
-        'TPEX OpenAPI error: ${response.statusCode}',
+        '$_tag OpenAPI error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TPEX', '月營收: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TPEX network error', e);
-    }
+    });
   }
 
   /// 解析月營收項目
@@ -1215,7 +1069,7 @@ class TpexClient {
         yoyGrowth: parseValue(json['營業收入-去年同月增減(%)']),
       );
     } catch (e) {
-      AppLogger.debug('TPEX', '月營收項目解析失敗: $e');
+      AppLogger.debug(_tag, '月營收項目解析失敗: $e');
       return null;
     }
   }

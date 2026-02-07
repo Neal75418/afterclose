@@ -1,13 +1,11 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 
-import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/twse/models.dart';
+import 'package:afterclose/data/remote/market_client_mixin.dart';
 
 export 'package:afterclose/data/models/twse/models.dart';
 
@@ -21,34 +19,11 @@ export 'package:afterclose/data/models/twse/models.dart';
 /// - 每日股價: https://www.twse.com.tw/rwd/zh/afterTrading/STOCK_DAY_ALL
 /// - 歷史資料: https://www.twse.com.tw/exchangeReport/STOCK_DAY
 class TwseClient {
-  TwseClient({Dio? dio}) : _dio = dio ?? _createDio();
+  TwseClient({Dio? dio})
+    : _dio = dio ?? MarketClientMixin.createDio(ApiEndpoints.twseBaseUrl);
 
-  /// TWSE 官方網站基礎 URL（比 Open Data API 更新更快）
-  static const String _baseUrl = ApiEndpoints.twseBaseUrl;
-
+  static const String _tag = 'TWSE';
   final Dio _dio;
-
-  static Dio _createDio() {
-    return Dio(
-      BaseOptions(
-        baseUrl: _baseUrl,
-        connectTimeout: const Duration(
-          seconds: ApiConfig.twseConnectTimeoutSec,
-        ),
-        receiveTimeout: const Duration(
-          seconds: ApiConfig.twseReceiveTimeoutSec,
-        ),
-        headers: {
-          'Accept': 'application/json',
-          // 加入 User-Agent 模擬瀏覽器請求
-          'User-Agent':
-              'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        },
-        // 確保 JSON 回應在所有平台正確解析
-        responseType: ResponseType.json,
-      ),
-    );
-  }
 
   /// 取得最新交易日所有股票價格
   ///
@@ -56,34 +31,25 @@ class TwseClient {
   /// 使用 TWSE 官方網站 API，更新速度比 Open Data API 快。
   ///
   /// 端點: /rwd/zh/afterTrading/STOCK_DAY_ALL
-  Future<List<TwseDailyPrice>> getAllDailyPrices() async {
-    try {
+  Future<List<TwseDailyPrice>> getAllDailyPrices() {
+    return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
       final response = await _dio.get(
         '/rwd/zh/afterTrading/STOCK_DAY_ALL',
         queryParameters: {'response': 'json'},
       );
 
       if (response.statusCode == 200) {
-        // 處理 String 和 Map 兩種回應（iOS 可能回傳 String）
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TWSE', '全市場價格: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TWSE', '全市場價格: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '全市場價格',
+        );
+        if (data == null) return [];
 
         // 檢查回應狀態
         final stat = data['stat'];
         if (stat != 'OK' || data['data'] == null) {
-          AppLogger.warning('TWSE', '全市場價格: 無資料 (stat=$stat)');
+          AppLogger.warning(_tag, '全市場價格: 無資料 (stat=$stat)');
           return [];
         }
 
@@ -109,31 +75,20 @@ class TwseClient {
         final dateFormatted = TwParseUtils.formatDateYmd(date);
         if (failedCount > 0) {
           AppLogger.info(
-            'TWSE',
+            _tag,
             '全市場價格: ${prices.length} 筆 ($dateFormatted, 略過 $failedCount 筆)',
           );
         } else {
-          AppLogger.info('TWSE', '全市場價格: ${prices.length} 筆 ($dateFormatted)');
+          AppLogger.info(_tag, '全市場價格: ${prices.length} 筆 ($dateFormatted)');
         }
         return prices;
       }
 
       throw ApiException(
-        'TWSE API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        AppLogger.warning('TWSE', '全市場價格: 連線逾時');
-        throw NetworkException('TWSE connection timeout', e);
-      }
-      AppLogger.warning('TWSE', '全市場價格: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    } catch (e, stack) {
-      AppLogger.error('TWSE', '全市場價格: 非預期錯誤', e, stack);
-      rethrow;
-    }
+    });
   }
 
   /// 解析每日價格資料列
@@ -166,10 +121,8 @@ class TwseClient {
   ///
   /// 端點: /rwd/zh/fund/T86（三大法人買賣超日報）
   /// 注意：TWSE API 回傳的是「股數」，存入資料庫時需除以 1000 轉換為「張」
-  Future<List<TwseInstitutional>> getAllInstitutionalData({
-    DateTime? date,
-  }) async {
-    try {
+  Future<List<TwseInstitutional>> getAllInstitutionalData({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '法人資料', () async {
       final queryParams = <String, dynamic>{
         'response': 'json',
         'selectType': 'ALLBUT0999',
@@ -204,18 +157,15 @@ class TwseClient {
             .toList();
 
         final dateFormatted = TwParseUtils.formatDateYmd(date);
-        AppLogger.info('TWSE', '法人資料: ${results.length} 筆 ($dateFormatted)');
+        AppLogger.info(_tag, '法人資料: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
 
       throw ApiException(
-        'TWSE API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TWSE', '法人資料: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    }
+    });
   }
 
   /// 解析法人資料列
@@ -262,7 +212,7 @@ class TwseClient {
     required String code,
     required int year,
     required int month,
-  }) async {
+  }) {
     // 驗證股票代碼（台股通常為 4-6 碼數字）
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'Stock code cannot be empty');
@@ -299,7 +249,7 @@ class TwseClient {
       throw ArgumentError('Cannot fetch data for future dates: $year/$month');
     }
 
-    try {
+    return MarketClientMixin.executeRequest(_tag, '月價格', () async {
       // 格式化日期為 YYYYMMDD（該月第一天）
       final dateStr = '$year${month.toString().padLeft(2, '0')}01';
 
@@ -309,11 +259,12 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        // 處理 iOS Dio 回傳 String 而非 Map 的情況
-        var data = response.data;
-        if (data is String) {
-          data = jsonDecode(data);
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '月價格',
+        );
+        if (data == null) return [];
 
         if (data['stat'] != 'OK' || data['data'] == null) {
           return [];
@@ -325,19 +276,17 @@ class TwseClient {
             .whereType<TwseDailyPrice>()
             .toList();
         AppLogger.debug(
-          'TWSE',
+          _tag,
           '月價格($code): $year/$month -> ${results.length} 筆',
         );
         return results;
       }
 
       throw ApiException(
-        'TWSE historical API error: ${response.statusCode}',
+        '$_tag historical API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      throw NetworkException(e.message ?? 'TWSE historical API error', e);
-    }
+    });
   }
 
   /// 解析 TWSE 歷史資料列
@@ -379,7 +328,7 @@ class TwseClient {
     required String code,
     int months = 6,
     Duration delayBetweenRequests = const Duration(milliseconds: 300),
-  }) async {
+  }) {
     // 驗證股票代碼
     if (code.isEmpty) {
       throw ArgumentError.value(code, 'code', 'Stock code cannot be empty');
@@ -410,43 +359,45 @@ class TwseClient {
       );
     }
 
-    final results = <TwseDailyPrice>[];
-    final now = DateTime.now();
+    return MarketClientMixin.executeRequest(_tag, '歷史價格', () async {
+      final results = <TwseDailyPrice>[];
+      final now = DateTime.now();
 
-    for (var i = 0; i < months; i++) {
-      final targetDate = DateTime(now.year, now.month - i, 1);
+      for (var i = 0; i < months; i++) {
+        final targetDate = DateTime(now.year, now.month - i, 1);
 
-      try {
-        final monthData = await getStockMonthlyPrices(
-          code: code,
-          year: targetDate.year,
-          month: targetDate.month,
-        );
-        results.addAll(monthData);
-      } catch (e) {
-        // 記錄錯誤但繼續處理其他月份
-        AppLogger.debug(
-          'TWSE',
-          '歷史價格($code): ${targetDate.year}/${targetDate.month} 取得失敗: $e',
-        );
+        try {
+          final monthData = await getStockMonthlyPrices(
+            code: code,
+            year: targetDate.year,
+            month: targetDate.month,
+          );
+          results.addAll(monthData);
+        } catch (e) {
+          // 記錄錯誤但繼續處理其他月份
+          AppLogger.debug(
+            _tag,
+            '歷史價格($code): ${targetDate.year}/${targetDate.month} 取得失敗: $e',
+          );
+        }
+
+        // 流量限制延遲
+        if (i < months - 1) {
+          await Future.delayed(delayBetweenRequests);
+        }
       }
 
-      // 流量限制延遲
-      if (i < months - 1) {
-        await Future.delayed(delayBetweenRequests);
-      }
-    }
-
-    // 依日期升冪排序
-    results.sort((a, b) => a.date.compareTo(b.date));
-    return results;
+      // 依日期升冪排序
+      results.sort((a, b) => a.date.compareTo(b.date));
+      return results;
+    });
   }
 
   /// 取得所有股票的融資融券資料
   ///
   /// 端點: /rwd/zh/marginTrading/MI_MARGN（融資融券餘額）
-  Future<List<TwseMarginTrading>> getAllMarginTradingData() async {
-    try {
+  Future<List<TwseMarginTrading>> getAllMarginTradingData() {
+    return MarketClientMixin.executeRequest(_tag, '融資融券', () async {
       final response = await _dio.get(
         '/rwd/zh/marginTrading/MI_MARGN',
         queryParameters: {'response': 'json', 'selectType': 'ALL'},
@@ -479,18 +430,15 @@ class TwseClient {
             .toList();
 
         final dateFormatted = TwParseUtils.formatDateYmd(date);
-        AppLogger.info('TWSE', '融資融券: ${results.length} 筆 ($dateFormatted)');
+        AppLogger.info(_tag, '融資融券: ${results.length} 筆 ($dateFormatted)');
         return results;
       }
 
       throw ApiException(
-        'TWSE API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TWSE', '融資融券: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    }
+    });
   }
 
   /// 解析融資融券資料列
@@ -524,8 +472,8 @@ class TwseClient {
   ///
   /// 使用 TWSE Open Data API 取得可靠的結構化資料
   /// 端點: https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL
-  Future<List<TwseValuation>> getAllStockValuation({DateTime? date}) async {
-    try {
+  Future<List<TwseValuation>> getAllStockValuation({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '估值資料', () async {
       // 建立獨立的 Dio 以避免基礎 URL 衝突
       // Open Data 欄位: Code, Name, PEratio, DividendYield, PBratio
       final response = await Dio().get(
@@ -534,10 +482,14 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> list = response.data;
+        final data = response.data;
+        if (data is! List) {
+          AppLogger.warning(_tag, '估值資料: 非預期資料型別');
+          return [];
+        }
         final resDate = DateTime.now(); // Open Data 總是回傳最新資料
 
-        final results = list.map((item) {
+        final results = data.map((item) {
           final map = item as Map<String, dynamic>;
 
           final code = map['Code']?.toString() ?? '';
@@ -559,15 +511,12 @@ class TwseClient {
           );
         }).toList();
 
-        AppLogger.info('TWSE', '估值資料: ${results.length} 筆');
+        AppLogger.info(_tag, '估值資料: ${results.length} 筆');
         return results;
       }
 
       return [];
-    } catch (e) {
-      AppLogger.warning('TWSE', '估值資料: 取得失敗');
-      return [];
-    }
+    });
   }
 
   /// 取得所有股票的月營收（最新月份）
@@ -577,35 +526,36 @@ class TwseClient {
   ///
   /// 此 API 回傳所有上市公司的最新營收資料。
   /// 比透過 FinMind 逐檔擷取快得多。
-  Future<List<TwseMonthlyRevenue>> getAllMonthlyRevenue() async {
-    try {
+  Future<List<TwseMonthlyRevenue>> getAllMonthlyRevenue() {
+    return MarketClientMixin.executeRequest(_tag, '月營收', () async {
       // 使用完整 URL 以覆蓋基礎 URL (www.twse.com.tw)
       final response = await _dio.get(ApiEndpoints.twseMonthlyRevenue);
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = response.data;
+        final data = response.data;
+        if (data is! List) {
+          AppLogger.warning(_tag, '月營收: 非預期資料型別');
+          return [];
+        }
         final results = data
             .map(
               (json) =>
                   TwseMonthlyRevenue.fromJson(json as Map<String, dynamic>),
             )
             .toList();
-        AppLogger.info('TWSE', '月營收: ${results.length} 筆');
+        AppLogger.info(_tag, '月營收: ${results.length} 筆');
         return results;
       }
       return [];
-    } catch (e) {
-      AppLogger.warning('TWSE', '月營收: 取得失敗');
-      return [];
-    }
+    });
   }
 
   /// 取得所有股票的當沖資料
   ///
   /// 端點: /exchangeReport/TWTB4U（當日沖銷交易標的）
   /// 免費 API，無需 token。
-  Future<List<TwseDayTrading>> getAllDayTradingData({DateTime? date}) async {
-    try {
+  Future<List<TwseDayTrading>> getAllDayTradingData({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '當沖資料', () async {
       final targetDate = date ?? DateTime.now();
 
       final response = await _dio.get(
@@ -618,8 +568,14 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        final dynamic data = jsonDecode(response.data);
-        if (data == null || data['stat'] != 'OK') {
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '當沖資料',
+        );
+        if (data == null) return [];
+
+        if (data['stat'] != 'OK') {
           return [];
         }
 
@@ -659,22 +615,11 @@ class TwseClient {
           }
         }
 
-        AppLogger.info('TWSE', '當沖資料: ${result.length} 筆');
+        AppLogger.info(_tag, '當沖資料: ${result.length} 筆');
         return result;
       }
       return [];
-    } on DioException catch (e) {
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout) {
-        AppLogger.warning('TWSE', '當沖資料: 連線逾時');
-        throw NetworkException('TWSE connection timeout', e);
-      }
-      AppLogger.warning('TWSE', '當沖資料: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    } catch (e, stack) {
-      AppLogger.error('TWSE', '當沖資料: 非預期錯誤', e, stack);
-      return [];
-    }
+    });
   }
 
   /// 解析當沖資料列
@@ -717,8 +662,8 @@ class TwseClient {
   /// 回傳加權指數、電子類指數、金融保險類指數等
   ///
   /// [date] 可選，指定日期取歷史指數（格式 YYYYMMDD）。省略則取最新。
-  Future<List<TwseMarketIndex>> getMarketIndices({DateTime? date}) async {
-    try {
+  Future<List<TwseMarketIndex>> getMarketIndices({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '大盤指數', () async {
       final queryParams = <String, dynamic>{'response': 'json', 'type': 'IND'};
       if (date != null) {
         queryParams['date'] = TwParseUtils.formatDateCompact(date);
@@ -730,23 +675,15 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TWSE', '大盤指數: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TWSE', '大盤指數: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '大盤指數',
+        );
+        if (data == null) return [];
 
         if (data['stat'] != 'OK') {
-          AppLogger.warning('TWSE', '大盤指數: stat=${data['stat']}，可能為非交易日或盤中');
+          AppLogger.warning(_tag, '大盤指數: stat=${data['stat']}，可能為非交易日或盤中');
           return [];
         }
 
@@ -787,9 +724,9 @@ class TwseClient {
               // 記錄第一筆資料以利診斷格式問題
               final sample = rows.first;
               AppLogger.debug(
-                'TWSE',
+                _tag,
                 '大盤指數 table[$ti] "$title": ${rows.length} 行全部跳過，'
-                    '樣本=${sample is List ? sample.take(3).toList() : sample}',
+                '樣本=${sample is List ? sample.take(3).toList() : sample}',
               );
             }
           }
@@ -797,26 +734,20 @@ class TwseClient {
 
         if (results.isEmpty) {
           AppLogger.warning(
-            'TWSE',
+            _tag,
             '大盤指數: 解析後 0 筆 (tables=${tables?.length ?? 0})',
           );
         } else {
-          AppLogger.debug('TWSE', '大盤指數 API 原始: ${results.length} 筆');
+          AppLogger.debug(_tag, '大盤指數 API 原始: ${results.length} 筆');
         }
         return results;
       }
 
       throw ApiException(
-        'TWSE API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TWSE', '大盤指數: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    } catch (e, stack) {
-      AppLogger.error('TWSE', '大盤指數: 非預期錯誤', e, stack);
-      rethrow;
-    }
+    });
   }
 
   /// 解析大盤指數資料列
@@ -874,10 +805,8 @@ class TwseClient {
   /// 回傳外資、投信、自營商的買賣金額（元），可用於大盤總覽顯示
   ///
   /// [date] 可選，指定日期。省略則取最新。
-  Future<TwseInstitutionalAmounts?> getInstitutionalAmounts({
-    DateTime? date,
-  }) async {
-    try {
+  Future<TwseInstitutionalAmounts?> getInstitutionalAmounts({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '法人金額統計', () async {
       final queryParams = <String, dynamic>{'response': 'json'};
       if (date != null) {
         queryParams['dayDate'] = TwParseUtils.formatDateCompact(date);
@@ -889,23 +818,15 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TWSE', '法人金額統計: JSON 解析失敗');
-            return null;
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TWSE', '法人金額統計: 非預期資料型別');
-          return null;
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '法人金額統計',
+        );
+        if (data == null) return null;
 
         if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.warning('TWSE', '法人金額統計: 無資料');
+          AppLogger.warning(_tag, '法人金額統計: 無資料');
           return null;
         }
 
@@ -951,10 +872,9 @@ class TwseClient {
           dealerNet: dealerNet + dealerHedgeNet, // 合併自營商
         );
       }
-    } catch (e) {
-      AppLogger.warning('TWSE', '法人金額統計: $e');
-    }
-    return null;
+
+      return null;
+    });
   }
 
   // ==========================================
@@ -967,8 +887,8 @@ class TwseClient {
   ///
   /// 回傳交易量異常、價格異常波動的股票清單。
   /// 2025 年後端點變更，查詢參數改為 startDate/endDate。
-  Future<List<TwseTradingWarning>> getTradingWarnings({DateTime? date}) async {
-    try {
+  Future<List<TwseTradingWarning>> getTradingWarnings({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '注意股票', () async {
       final targetDate = date ?? DateTime.now();
       final dateStr = TwParseUtils.formatDateCompact(targetDate);
 
@@ -982,23 +902,15 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TWSE', '注意股票: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TWSE', '注意股票: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '注意股票',
+        );
+        if (data == null) return [];
 
         if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.warning('TWSE', '注意股票: 無資料');
+          AppLogger.warning(_tag, '注意股票: 無資料');
           return [];
         }
 
@@ -1015,18 +927,15 @@ class TwseClient {
           }
         }
 
-        AppLogger.info('TWSE', '注意股票: ${results.length} 筆');
+        AppLogger.info(_tag, '注意股票: ${results.length} 筆');
         return results;
       }
 
       throw ApiException(
-        'TWSE API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TWSE', '注意股票: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    }
+    });
   }
 
   /// 解析注意股票資料列
@@ -1060,8 +969,8 @@ class TwseClient {
   ///
   /// 回傳交易受限制的股票清單。
   /// 2025 年後端點變更，回傳現行有效的處置股票清單（無需日期參數）。
-  Future<List<TwseTradingWarning>> getDisposalInfo({DateTime? date}) async {
-    try {
+  Future<List<TwseTradingWarning>> getDisposalInfo({DateTime? date}) {
+    return MarketClientMixin.executeRequest(_tag, '處置股票', () async {
       final targetDate = date ?? DateTime.now();
 
       final response = await _dio.get(
@@ -1070,23 +979,15 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TWSE', '處置股票: JSON 解析失敗');
-            return [];
-          }
-        }
-
-        if (data is! Map<String, dynamic>) {
-          AppLogger.warning('TWSE', '處置股票: 非預期資料型別');
-          return [];
-        }
+        final data = MarketClientMixin.decodeResponseData(
+          response.data,
+          _tag,
+          '處置股票',
+        );
+        if (data == null) return [];
 
         if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.warning('TWSE', '處置股票: 無資料');
+          AppLogger.warning(_tag, '處置股票: 無資料');
           return [];
         }
 
@@ -1103,18 +1004,15 @@ class TwseClient {
           }
         }
 
-        AppLogger.info('TWSE', '處置股票: ${results.length} 筆');
+        AppLogger.info(_tag, '處置股票: ${results.length} 筆');
         return results;
       }
 
       throw ApiException(
-        'TWSE API error: ${response.statusCode}',
+        '$_tag API error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TWSE', '處置股票: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    }
+    });
   }
 
   /// 解析處置股票資料列
@@ -1162,8 +1060,8 @@ class TwseClient {
   /// 3. 彙總計算每家公司的董監持股比例和質押比例
   ///
   /// 回傳彙總後的董監事持股資料（每家公司一筆）。
-  Future<List<TwseInsiderHolding>> getInsiderHoldings() async {
-    try {
+  Future<List<TwseInsiderHolding>> getInsiderHoldings() {
+    return MarketClientMixin.executeRequest(_tag, '董監持股', () async {
       // 1. 取得已發行股數
       final stockInfoResponse = await _dio.get(
         ApiEndpoints.twseStockInfo,
@@ -1172,10 +1070,8 @@ class TwseClient {
 
       final issuedSharesMap = <String, double>{};
       if (stockInfoResponse.statusCode == 200) {
-        var stockData = stockInfoResponse.data;
-        if (stockData is String) {
-          stockData = jsonDecode(stockData);
-        }
+        // OpenData API 回傳 List（Dio responseType: json 會自動解析）
+        final stockData = stockInfoResponse.data;
         if (stockData is List) {
           for (final item in stockData) {
             if (item is! Map<String, dynamic>) continue;
@@ -1195,7 +1091,7 @@ class TwseClient {
         }
       }
 
-      AppLogger.debug('TWSE', '已發行股數: ${issuedSharesMap.length} 家公司');
+      AppLogger.debug(_tag, '已發行股數: ${issuedSharesMap.length} 家公司');
 
       // 2. 取得個別董監持股記錄
       final response = await _dio.get(
@@ -1204,18 +1100,10 @@ class TwseClient {
       );
 
       if (response.statusCode == 200) {
-        var data = response.data;
-        if (data is String) {
-          try {
-            data = jsonDecode(data);
-          } catch (e) {
-            AppLogger.warning('TWSE', '董監持股: JSON 解析失敗');
-            return [];
-          }
-        }
-
+        // 董監持股 API 回傳 List（Dio responseType: json 會自動解析）
+        final data = response.data;
         if (data is! List) {
-          AppLogger.warning('TWSE', '董監持股: 非預期資料型別');
+          AppLogger.warning(_tag, '董監持股: 非預期資料型別');
           return [];
         }
 
@@ -1285,17 +1173,14 @@ class TwseClient {
           );
         }
 
-        AppLogger.info('TWSE', '董監持股彙總: ${results.length} 家公司');
+        AppLogger.info(_tag, '董監持股彙總: ${results.length} 家公司');
         return results;
       }
 
       throw ApiException(
-        'TWSE OpenData error: ${response.statusCode}',
+        '$_tag OpenData error: ${response.statusCode}',
         response.statusCode,
       );
-    } on DioException catch (e) {
-      AppLogger.warning('TWSE', '董監持股: ${e.message ?? "網路錯誤"}');
-      throw NetworkException(e.message ?? 'TWSE network error', e);
-    }
+    });
   }
 }

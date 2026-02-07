@@ -7,33 +7,26 @@ import 'package:afterclose/presentation/widgets/stock_card.dart';
 
 void main() {
   group('App', () {
-    // Note: These tests are skipped because EmptyState uses repeating animations
-    // (flutter_animate with controller.repeat) that never settle, causing
-    // pumpAndSettle to timeout. Consider using integration_test for full app tests.
+    // Note: AfterCloseApp requires EasyLocalization, Riverpod providers (DB, storage),
+    // and router setup. These integration-level tests need a full mock environment.
+    // Consider using integration_test package for full app tests.
     testWidgets('renders with navigation bar', (WidgetTester tester) async {
       await tester.pumpWidget(const ProviderScope(child: AfterCloseApp()));
-      // Pump a few frames to let initial UI render
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Check app title
       expect(find.text('AfterClose'), findsOneWidget);
-
-      // Check bottom navigation destinations
       expect(find.text('今日'), findsOneWidget);
       expect(find.text('掃描'), findsOneWidget);
       expect(find.text('自選'), findsOneWidget);
       expect(find.text('新聞'), findsOneWidget);
-      // Skip: Repeating animations in EmptyState prevent test from settling
     }, skip: true);
 
     testWidgets('has material 3 theme', (WidgetTester tester) async {
       await tester.pumpWidget(const ProviderScope(child: AfterCloseApp()));
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Find MaterialApp and verify theme
       final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
       expect(materialApp.theme?.useMaterial3, isTrue);
-      // Skip: Repeating animations in EmptyState prevent test from settling
     }, skip: true);
   });
 

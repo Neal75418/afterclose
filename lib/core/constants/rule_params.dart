@@ -38,13 +38,9 @@ abstract final class RuleParams {
   static const double topNMinTurnover = 80000000;
 
   /// 高當沖規則最低成交量（10,000 張 = 10,000,000 股）
-  ///
-  /// v0.1.3：從 1000 張調升至萬張，當沖需要有量才有意義。
   static const double minDayTradingVolumeShares = 10000000;
 
   /// 極高當沖規則最低成交量（30,000 張 = 30,000,000 股）
-  ///
-  /// v0.1.3：極高當沖需要 3 萬張以上量能，確保大型標的才觸發。
   static const double minDayTradingExtremeVolumeShares = 30000000;
 
   /// 候選股快篩最低成交量（100 張 = 100,000 股）
@@ -55,9 +51,7 @@ abstract final class RuleParams {
   /// 波段高低點偵測視窗
   static const int swingWindow = 20;
 
-  /// 價格異動門檻百分比
-  ///
-  /// v0.1.3：從 6% 提高至 7%，提升精準度
+  /// 價格異動門檻百分比（7%）
   static const double priceSpikePercent = 7.0;
 
   /// 價格異動成交量確認倍數
@@ -93,6 +87,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 新聞規則關鍵字（可設定）
+  // Used by: news_rules.dart
   // ==========================================
 
   /// 新聞情緒分析正面關鍵字
@@ -180,6 +175,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 技術指標參數
+  // Used by: indicator_rules.dart (RSI*, KD*, MAAlignment*, Week52*)
   // ==========================================
 
   /// RSI 週期（預設 14）
@@ -193,14 +189,12 @@ abstract final class RuleParams {
 
   /// RSI 極度超買（高風險區）
   ///
-  /// v0.1.1：從 85 放寬至 80，解決 0 觸發問題。
   /// 標準超買區為 70，80 以上即為極度超買。
   static const double rsiExtremeOverbought = 80.0;
 
   /// RSI 極度超賣（潛在反彈區）
   ///
-  /// v0.1.2：從 25 放寬至 30，解決 0 觸發問題。
-  /// RSI 30 以下即為超賣區，提供更多篩選結果。
+  /// RSI 30 以下即為超賣區。
   static const double rsiExtremeOversold = 30.0;
 
   /// KD %K 計算週期
@@ -216,48 +210,41 @@ abstract final class RuleParams {
   static const double kdOversold = 20.0;
 
   /// 法人連續買賣天數門檻
-  ///
-  /// v0.1.2：從 6 天放寬至 4 天，解決 0 觸發問題
   static const int institutionalStreakDays = 4;
 
   /// 法人每日最低淨買賣門檻（股）
   ///
   /// 每日淨買賣超須達此門檻才算有效交易日。
-  /// v0.1.2：從 100 張放寬至 50 張
   static const int institutionalMinDailyNetShares = 50000;
 
   /// 法人每日顯著淨買賣門檻（股）
   ///
   /// 超過此門檻的交易日視為「顯著」交易日。
-  /// v0.1.2：從 300 張放寬至 150 張
   static const int institutionalSignificantDailyNetShares = 150000;
 
   /// 法人連買總量門檻（股）
   ///
   /// 連續買超期間的總淨買超須達此門檻。
-  /// v0.1.2：從 5000 張放寬至 2000 張
   static const int institutionalBuyTotalThresholdShares = 2000000;
 
   /// 法人連買日均門檻（股）
   ///
   /// 連續買超期間的日均淨買超須達此門檻。
-  /// v0.1.2：從 700 張放寬至 300 張
   static const int institutionalBuyDailyAvgThresholdShares = 300000;
 
   /// 法人連賣總量門檻（股）
   ///
   /// 連續賣超期間的總淨賣超須達此門檻（負值）。
-  /// v0.1.2：從 -5000 張放寬至 -2000 張
   static const int institutionalSellTotalThresholdShares = -2000000;
 
   /// 法人連賣日均門檻（股）
   ///
   /// 連續賣超期間的日均淨賣超須達此門檻（負值）。
-  /// v0.1.2：從 -700 張放寬至 -300 張
   static const int institutionalSellDailyAvgThresholdShares = -300000;
 
   // ==========================================
   // 52 週高低點參數
+  // Used by: indicator_rules.dart (Week52HighRule, Week52LowRule)
   // ==========================================
 
   /// 一年交易日數（約 52 週 * 5 天）
@@ -286,6 +273,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 均線排列參數
+  // Used by: indicator_rules.dart (MAAlignmentBullishRule, MAAlignmentBearishRule)
   // ==========================================
 
   /// 排列檢查用均線週期
@@ -322,6 +310,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // K 線型態參數
+  // Used by: candlestick_rules.dart (Doji, Engulfing, Hammer, Gap, Star, ThreeLine)
   // ==========================================
 
   /// 錘子線實體最小比例（5%）
@@ -361,12 +350,11 @@ abstract final class RuleParams {
   static const double starSmallBodyMaxRatio = 0.5;
 
   /// 強勢 K 線跌幅門檻（1.0%）
-  ///
-  /// v0.1.2：從 1.5% 放寬至 1.0%，讓三黑鴉更容易觸發。
   static const double strongCandleDropThreshold = 0.01;
 
   // ==========================================
   // 第四階段：延伸市場資料參數
+  // Used by: extended_market_rules.dart (Foreign*, DayTrading*, Concentration*)
   // ==========================================
 
   /// 外資持股增加門檻（%）
@@ -377,14 +365,10 @@ abstract final class RuleParams {
   /// 外資持股變化回溯天數
   static const int foreignShareholdingLookbackDays = 5;
 
-  /// 高當沖比例門檻（%）
-  ///
-  /// v0.1.3：從 35% 調升至 50%，超過 50% 才算高當沖。
+  /// 高當沖比例門檻（50%）
   static const double dayTradingHighThreshold = 50.0;
 
-  /// 極高當沖比例門檻（%）
-  ///
-  /// v0.1.3：從 50% 調升至 70%，超過 70% 且量能 3 萬張以上才算極高當沖。
+  /// 極高當沖比例門檻（70%）
   static const double dayTradingExtremeThreshold = 70.0;
 
   /// 大戶持股集中度門檻（%）
@@ -394,6 +378,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 第五階段：價量背離參數
+  // Used by: divergence_rules.dart (PriceVolume*, HighVolumeBreakout, LowVolumeAccumulation)
   // ==========================================
 
   /// 價量背離分析回溯天數
@@ -414,12 +399,12 @@ abstract final class RuleParams {
 
   /// 「低檔吸籌」訊號的低位門檻（百分位）
   ///
-  /// 價格需在 60 日區間後 X% 才視為「低位」。
-  /// v0.1.1：從 0.15 放寬至 0.25（底部 25%），解決 0 觸發問題
+  /// 價格需在 60 日區間後 25% 才視為「低位」。
   static const double lowPositionThreshold = 0.25;
 
   // ==========================================
   // 第六階段：基本面分析參數
+  // Used by: fundamental_scan_rules.dart (Revenue*, Dividend, PE, PBR)
   // ==========================================
 
   /// 營收年增率暴增門檻（%）
@@ -468,6 +453,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // Killer Features 參數（注意/處置股、董監持股）
+  // Used by: insider_rules.dart, warning_rules.dart
   // ==========================================
 
   /// 董監連續減持月數門檻
@@ -513,6 +499,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // EPS 規則參數
+  // Used by: fundamental_scan_rules.dart (EPS*)
   // ==========================================
 
   /// EPS 年增暴增門檻（%）
@@ -532,6 +519,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // ROE 規則參數
+  // Used by: fundamental_scan_rules.dart (ROE*)
   // ==========================================
 
   /// ROE 優異門檻（%）
@@ -548,6 +536,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 分析服務參數
+  // Used by: technical_rules.dart (WeakToStrong, StrongToWeak)
   // ==========================================
 
   /// 波段點聚類閾值（2%）
@@ -585,7 +574,6 @@ abstract final class RuleParams {
   /// 更低高點確認緩衝（5%）
   ///
   /// 近期高點需低於前期高點 5% 才確認為「更低高點」。
-  /// v0.1.1：從 0.93（7%）放寬至 0.95（5%），解決 0 觸發問題。
   /// 頭部反轉不需要像底部反轉那樣嚴格。
   static const double lowerHighBuffer = 0.95;
 
@@ -593,7 +581,6 @@ abstract final class RuleParams {
   ///
   /// 近期成交量需達前期平均的此倍數以上。
   /// 用於弱轉強（底部反轉）訊號確認。
-  /// v0.1.1：從 2.0 放寬至 1.5，但仍保留量能配合要求。
   static const double reversalVolumeConfirm = 1.5;
 
   /// 強轉弱成交量確認門檻
@@ -601,11 +588,11 @@ abstract final class RuleParams {
   /// 頭部反轉（強轉弱）的成交量要求較寬鬆。
   /// 頭部形成時往往是「量縮」而非「量增」，
   /// 因此只需要基本成交量即可。
-  /// v0.1.1：新增獨立參數，解決強轉弱 0 觸發問題。
   static const double s2wVolumeConfirm = 0.8;
 
   // ==========================================
   // 流動性加權排序參數
+  // Used by: scoring_service.dart
   // ==========================================
 
   /// 成交金額單位（1 億台幣）
@@ -625,6 +612,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // ATR 與支撐壓力搜尋參數
+  // Used by: technical_analysis_service.dart
   // ==========================================
 
   /// ATR 計算週期
@@ -660,6 +648,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 法人動向規則參數
+  // Used by: institutional_rules.dart, extended_market_rules.dart
   // ==========================================
 
   /// 1 張 = 1000 股
@@ -703,6 +692,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 掃描規則專用參數
+  // Used by: fundamental_scan_rules.dart
   // ==========================================
 
   /// 掃描用殖利率最低門檻（%）
@@ -729,6 +719,7 @@ abstract final class RuleParams {
 
   // ==========================================
   // 價量背離規則參數
+  // Used by: divergence_rules.dart
   // ==========================================
 
   /// 背離價格變動門檻（%）
@@ -750,6 +741,16 @@ abstract final class RuleParams {
 /// - 價格異動 (15)：較低 - 無量配合可能是雜訊
 /// - 法人動向 (18)：台股重要指標 - 法人資金流向影響股價
 /// - 新聞 (8)：輔助 - 僅提供背景資訊
+///
+/// ## 分數校準原則
+///
+/// | 層級 | 分數範圍 | 訊號類型 | 校準依據 |
+/// |------|---------|---------|---------|
+/// | S | 35 | 反轉訊號 (W2S) | 趨勢改變最具操作價值 |
+/// | A | 20–28 | 突破/K線/法人連買/52週高 | 有明確方向且經量確認 |
+/// | B | 15–18 | 法人轉向/KD/外資/殖利率 | 單一維度但可靠 |
+/// | C | 8–12 | 新聞/十字線/當沖/52週低 | 輔助訊號或中性 |
+/// | 扣分 | −5 ~ −50 | 空方/風險訊號 | 處置股最重(−50)，技術空方中等(−12~−25) |
 ///
 /// 最高分數限制為 80，避免多訊號造成分數膨脹。
 abstract final class RuleScores {
@@ -983,25 +984,6 @@ abstract final class RuleScores {
 
   /// ROE 衰退（空方）
   static const int roeDeclining = -10;
-
-  // ==========================================
-  // 向後相容（舊欄位名稱，標記為棄用）
-  // ==========================================
-
-  /// @deprecated 使用 patternEngulfingBullish 或 patternEngulfingBearish
-  static const int patternEngulfing = 22;
-
-  /// @deprecated 使用 patternHammerBullish 或 patternHammerBearish
-  static const int patternHammer = 18;
-
-  /// @deprecated 使用 patternGapUp 或 patternGapDown
-  static const int patternGap = 20;
-
-  /// @deprecated 使用 patternMorningStar 或 patternEveningStar
-  static const int patternStar = 25;
-
-  /// @deprecated 使用 patternThreeWhiteSoldiers 或 patternThreeBlackCrows
-  static const int patternThreeSoldiers = 22;
 }
 
 /// 推薦理由類型

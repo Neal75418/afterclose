@@ -251,7 +251,7 @@ void main() {
     test('triggers when concentration ratio >= threshold', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(concentrationRatio: 65.0), // >= 60
+        marketData: MarketDataContext(concentrationRatio: 75.0), // >= 60
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
@@ -265,7 +265,7 @@ void main() {
     test('does not trigger below threshold', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(concentrationRatio: 50.0), // < 60
+        marketData: MarketDataContext(concentrationRatio: 55.0), // < 60
       );
       const data = StockData(symbol: 'TEST', prices: []);
 
