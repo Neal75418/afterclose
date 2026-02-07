@@ -2,7 +2,7 @@
 
 **Local-First 盤後台股掃描 App** — 收盤後，把整個市場掃一遍，只留下「今天跟平常不一樣的地方」。
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.29-02569B?logo=flutter)](https://flutter.dev)
+[![Flutter](https://img.shields.io/badge/Flutter-3.38-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart)](https://dart.dev)
 
 ---
@@ -12,23 +12,24 @@
 > 收盤後自動掃描全市場，找出「今天跟平常不一樣」的股票
 
 | 原則 | 說明 | 優勢 |
-|:----:|------|------|
-| 📱 **On-Device** | 所有運算在裝置端完成 | 隱私保護、離線可用 |
-| 💰 **零成本** | 免費公開 API + 本地 SQLite | 無月費、無訂閱 |
-| 🕐 **盤後批次** | 收盤後一次更新 | 省電、省流量 |
-| ⚠️ **異常提示** | 只說「發生什麼」不說「該怎麼做」 | 客觀、不帶立場 |
+|:--:|:--|:--|
+| **On-Device** | 所有運算在裝置端完成 | 隱私保護、離線可用 |
+| **零成本** | 免費公開 API + 本地 SQLite | 無月費、無訂閱 |
+| **盤後批次** | 收盤後一次更新 | 省電、省流量 |
+| **異常提示** | 只說「發生什麼」不說「該怎麼做」 | 客觀、不帶立場 |
 
 ---
 
 ## 功能
 
 | 頁面 | 功能 |
-|------|------|
+|:--|:--|
 | **Today** | 市場摘要 + 今日 Top 20 推薦 |
 | **Scan** | 上市櫃全市場掃描，依評分排序 |
 | **Watchlist** | 自選清單狀態追蹤 |
 | **Stock Detail** | 趨勢、關鍵價位、推薦理由、新聞 |
-| **Custom Screening** | 自定義篩選策略 + 回測 |
+| **Custom Screening** | 自定義篩選策略 |
+| **Backtest** | 策略回測驗證 |
 | **Comparison** | 多檔股票並列比較 |
 | **Portfolio** | 持倉追蹤與損益計算 |
 | **News** | 多源 RSS 新聞彙整 |
@@ -42,11 +43,12 @@
 ## 技術棧
 
 | 類別 | 技術 |
-|------|------|
-| Framework | Flutter 3.29 + Dart 3.10 |
+|:--|:--|
+| Framework | Flutter 3.38 + Dart 3.10 |
 | State | Riverpod 2.6 |
-| Database | Drift 2.27（SQLite, 35 tables） |
+| Database | Drift 2.27 (SQLite, 35 tables) |
 | Network | Dio 5.8 |
+| Navigation | GoRouter 15 |
 | Charts | fl_chart + k_chart_plus |
 
 ---
@@ -54,8 +56,8 @@
 ## 資料來源
 
 | 資料 | 來源 |
-|------|------|
-| 台股日價 | TWSE / TPEX Open Data（主）、FinMind（備） |
+|:--|:--|
+| 台股日價 | TWSE / TPEX Open Data (主)、FinMind (備) |
 | 法人籌碼 | FinMind |
 | 基本面 | TWSE / TPEX / FinMind |
 | 新聞 | 多源 RSS |
@@ -67,30 +69,31 @@
 ### 資料流
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'secondaryColor': '#F59E0B', 'tertiaryColor': '#10B981', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
 flowchart LR
-    subgraph External["☁️ 外部資料"]
-        TWSE["TWSE API"]
-        TPEX["TPEX API"]
-        FM["FinMind API"]
-        RSS["RSS 新聞"]
+    subgraph External["External APIs"]
+        TWSE["TWSE"]
+        TPEX["TPEX"]
+        FM["FinMind"]
+        RSS["RSS"]
     end
 
-    subgraph Data["💾 Data Layer"]
+    subgraph Data["Data Layer"]
         Remote["API Clients"]
-        Repo["Repositories (10)"]
+        Repo["Repositories (15)"]
         DB[("SQLite")]
     end
 
-    subgraph Domain["⚙️ Domain Layer"]
+    subgraph Domain["Domain Layer"]
         IF["Interfaces (3)"]
         Services["Analysis / Scoring"]
         Rules["Rule Engine (59)"]
         Update["Syncers (7)"]
     end
 
-    subgraph Presentation["📱 Presentation"]
+    subgraph Presentation["Presentation"]
         Provider["Riverpod"]
-        UI["13 Screens"]
+        UI["14 Screens"]
     end
 
     TWSE & TPEX & FM & RSS --> Remote
@@ -100,6 +103,11 @@ flowchart LR
     Rules --> DB
     Update --> Repo
     DB --> Provider --> UI
+
+    style External fill:#F3F4F6,stroke:#9CA3AF
+    style Data fill:#DBEAFE,stroke:#3B82F6
+    style Domain fill:#D1FAE5,stroke:#10B981
+    style Presentation fill:#EDE9FE,stroke:#8B5CF6
 ```
 
 ### 目錄結構
@@ -107,7 +115,7 @@ flowchart LR
 ```
 lib/
 ├── core/
-│   ├── constants/       # 13 files: RuleParams, AppRoutes, DefaultStocks...
+│   ├── constants/       # 13 files — RuleParams, AppRoutes, DefaultStocks
 │   ├── exceptions/      # AppException sealed hierarchy
 │   ├── services/        # ShareService
 │   ├── theme/           # AppTheme, DesignTokens
@@ -115,7 +123,7 @@ lib/
 ├── data/
 │   ├── database/        # Drift SQLite (35 tables, 10 files)
 │   ├── remote/          # TWSE, TPEX, FinMind, RSS clients
-│   └── repositories/    # 10 concrete implementations
+│   └── repositories/    # 15 concrete implementations
 ├── domain/
 │   ├── models/          # 14 domain model files
 │   ├── repositories/    # 3 abstract interfaces
@@ -128,7 +136,7 @@ lib/
 │       └── ohlcv_data.dart
 └── presentation/
     ├── providers/       # Riverpod state management
-    ├── screens/         # 13 screens
+    ├── screens/         # 14 screens
     ├── services/        # ExportService
     └── widgets/         # Shared UI components
 ```
@@ -140,15 +148,16 @@ lib/
 59 條異常偵測規則，涵蓋技術面、籌碼面、基本面。
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
 pie showData title 59 條規則分佈
-    "技術型態" : 19
-    "價量訊號" : 12
-    "基本面" : 14
-    "籌碼面" : 7
-    "殺手級功能" : 7
+    "技術型態 (19)" : 19
+    "價量訊號 (12)" : 12
+    "基本面 (14)" : 14
+    "籌碼面 (7)" : 7
+    "殺手級功能 (7)" : 7
 ```
 
-- 每日掃描上市+上櫃約 1,770 檔，產出 **Top 20**
+- 每日掃描上市 + 上櫃約 1,770 檔，產出 **Top 20**
 - 每檔最多 **2 條理由**，分數上限 **100 分**
 - Isolate 平行運算，型別安全通訊
 
@@ -160,7 +169,7 @@ pie showData title 59 條規則分佈
 
 ```bash
 flutter pub get                    # 安裝依賴
-flutter test                       # 執行測試
+flutter test                       # 執行測試 (983 cases)
 flutter analyze                    # 靜態分析
 dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生成
 ```
@@ -170,7 +179,7 @@ dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生�
 ## 文件
 
 | 文件 | 說明 |
-|------|------|
+|:--|:--|
 | [CLAUDE.md](CLAUDE.md) | AI 開發指引 |
 | [RELEASE.md](RELEASE.md) | 發布建置指南 |
 | [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎定義 |

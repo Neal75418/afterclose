@@ -7,14 +7,20 @@ AfterClose 推薦規則引擎 — **59 條異常偵測規則**
 ## 定位
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
 flowchart LR
-    Data["📊 市場資料"] --> Engine["⚙️ Rule Engine<br/>59 Rules"]
-    Engine --> Score["🧮 分數合成"]
-    Score --> Top["🏆 Top 20"]
+    Data["市場資料"] --> Engine["Rule Engine\n59 Rules"]
+    Engine --> Score["分數合成"]
+    Score --> Top["Top 20"]
+
+    style Data fill:#DBEAFE,stroke:#3B82F6
+    style Engine fill:#4F46E5,stroke:#3730A3,color:#fff
+    style Score fill:#D1FAE5,stroke:#10B981
+    style Top fill:#FEF3C7,stroke:#F59E0B
 ```
 
 | 項目 | 說明 |
-|:-----|:-----|
+|:--|:--|
 | 目的 | 異常提示（Attention Alert） |
 | 產出 | 每檔最多 2 個理由 |
 | 分數 | 0 ~ 100（負分歸零） |
@@ -25,12 +31,13 @@ flowchart LR
 ## 規則分佈
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
 pie showData title 59 條規則分佈
-    "技術型態" : 19
-    "價量訊號" : 12
-    "基本面" : 14
-    "籌碼面" : 7
-    "殺手級功能" : 7
+    "技術型態 (19)" : 19
+    "價量訊號 (12)" : 12
+    "基本面 (14)" : 14
+    "籌碼面 (7)" : 7
+    "殺手級功能 (7)" : 7
 ```
 
 ---
@@ -40,7 +47,7 @@ pie showData title 59 條規則分佈
 ### 基礎規則 (8)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | REVERSAL_W2S | +35 | 弱轉強：突破區間上緣 |
 | REVERSAL_S2W | -25 | 強轉弱：跌破支撐 |
 | TECH_BREAKOUT | +25 | 突破壓力位（3% buffer + MA20 確認） |
@@ -53,7 +60,7 @@ pie showData title 59 條規則分佈
 ### K 線型態 (11)
 
 | 規則 | 分數 | 說明 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | PATTERN_DOJI | +10 | 十字線（猶豫訊號） |
 | PATTERN_BULLISH_ENGULFING | +22 | 多頭吞噬 |
 | PATTERN_BEARISH_ENGULFING | -18 | 空頭吞噬 |
@@ -73,7 +80,7 @@ pie showData title 59 條規則分佈
 ### 技術指標 (8)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | WEEK_52_HIGH | +28 | 52 週新高 |
 | WEEK_52_LOW | +8 | 52 週新低（逆勢機會） |
 | MA_ALIGNMENT_BULLISH | +22 | 多頭排列（5>10>20>60） |
@@ -86,7 +93,7 @@ pie showData title 59 條規則分佈
 ### 價量背離 (4)
 
 | 規則 | 分數 | 說明 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | PRICE_VOLUME_BULLISH_DIVERGENCE | -8 | 價漲量縮（警示） |
 | PRICE_VOLUME_BEARISH_DIVERGENCE | -15 | 價跌量增（恐慌） |
 | HIGH_VOLUME_BREAKOUT | +22 | 高檔爆量突破 |
@@ -97,7 +104,7 @@ pie showData title 59 條規則分佈
 ## 籌碼面 (7)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | INSTITUTIONAL_BUY_STREAK | +20 | 法人連買 >= 6 日 |
 | INSTITUTIONAL_SELL_STREAK | -15 | 法人連賣 >= 6 日 |
 | FOREIGN_SHAREHOLDING_INCREASING | +18 | 外資持股 5 日增 >= 0.5% |
@@ -113,7 +120,7 @@ pie showData title 59 條規則分佈
 ### 營收與估值 (7)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | REVENUE_YOY_SURGE | +20 | 營收年增 > 50% + 站上 MA60 |
 | REVENUE_YOY_DECLINE | -10 | 營收年減 > 20% |
 | REVENUE_MOM_GROWTH | +15 | 營收月增連續正成長 + 站上 MA20 |
@@ -125,7 +132,7 @@ pie showData title 59 條規則分佈
 ### EPS 分析 (4)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | EPS_YOY_SURGE | +22 | EPS 年增 >= 50% + 站上 MA60 |
 | EPS_CONSECUTIVE_GROWTH | +18 | 連續 >= 2 季 EPS 季增 >= 10% + 站上 MA20 |
 | EPS_TURNAROUND | +15 | 前季虧損、本季 EPS >= 0.3 元 |
@@ -134,7 +141,7 @@ pie showData title 59 條規則分佈
 ### ROE 分析 (3)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | ROE_EXCELLENT | +18 | ROE >= 15% + 站上 MA20 |
 | ROE_IMPROVING | +15 | 連續 >= 2 季 ROE 改善 >= 5pt + 站上 MA20 |
 | ROE_DECLINING | -10 | 連續 >= 2 季 ROE 衰退 >= 5pt |
@@ -146,14 +153,14 @@ pie showData title 59 條規則分佈
 ### 警示股票 (2)
 
 | 規則 | 分數 | 條件 | 來源 |
-|:-----|-----:|:-----|:-----|
+|:--|--:|:--|:--|
 | TRADING_WARNING_ATTENTION | -15 | 被列為注意股票 | TWSE/TPEX |
 | TRADING_WARNING_DISPOSAL | -50 | 被列為處置股票 | TWSE/TPEX |
 
 ### 董監持股 (3)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | INSIDER_SELLING_STREAK | -25 | 董監連續減持 >= 3 個月 |
 | INSIDER_SIGNIFICANT_BUYING | +20 | 董監增持 >= 5% |
 | HIGH_PLEDGE_RATIO | -18 | 質押比例 >= 50% |
@@ -161,7 +168,7 @@ pie showData title 59 條規則分佈
 ### 外資集中度 (2)
 
 | 規則 | 分數 | 條件 |
-|:-----|-----:|:-----|
+|:--|--:|:--|
 | FOREIGN_CONCENTRATION_WARNING | -8 | 外資持股 >= 60% |
 | FOREIGN_EXODUS | -20 | 5 日外資流出 >= 0.5% |
 
@@ -170,14 +177,20 @@ pie showData title 59 條規則分佈
 ## 分數合成
 
 ```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
 flowchart LR
-    Rules["Σ rule_score"] --> Bonus["✨ 加成"]
-    Bonus --> Cooldown["❄️ 冷卻"]
+    Rules["Rule Scores"] --> Bonus["加成"]
+    Bonus --> Cooldown["冷卻"]
     Cooldown --> Cap["0 ~ 100"]
+
+    style Rules fill:#DBEAFE,stroke:#3B82F6
+    style Bonus fill:#D1FAE5,stroke:#10B981
+    style Cooldown fill:#EDE9FE,stroke:#8B5CF6
+    style Cap fill:#FEF3C7,stroke:#F59E0B
 ```
 
 | 階段 | 邏輯 |
-|:-----|:-----|
+|:--|:--|
 | 加成 | VOLUME + BREAKOUT → +10、VOLUME + REVERSAL → +10、INSTITUTIONAL + BREAKOUT/REVERSAL → +15 |
 | 冷卻 | 同股票 2 日內已推薦 → x0.5 |
 | 截斷 | 負分歸零、上限 100 |
@@ -186,10 +199,10 @@ flowchart LR
 
 ## 關鍵參數
 
-> 來源：`lib/core/constants/rule_params.dart`（175+ 參數）
+> 來源：`lib/core/constants/rule_params.dart`（200+ 參數）
 
 | 參數 | 值 | 說明 |
-|:-----|---:|:-----|
+|:--|--:|:--|
 | lookbackPrice | 370 | 分析視窗（日曆日） |
 | volMa | 20 | 均量計算天數 |
 | volumeSpikeMult | 4x | 放量門檻 |
@@ -209,7 +222,7 @@ flowchart LR
 ## 資料表
 
 | 表 | 用途 |
-|:---|:-----|
+|:--|:--|
 | stock_master | 股票主檔 |
 | daily_price | 日 K 資料 |
 | daily_institutional | 法人買賣超 |
