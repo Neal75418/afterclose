@@ -119,7 +119,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.priceSpike: FilterMetadata(
     conditionKey: 'filterMeta.priceSpike',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '單日漲跌幅 ≥ 7% + 成交量 ≥ 1.5 倍均量',
+    thresholdInfo: '單日漲跌幅 ≥ 7% + 量 ≥ 1.5 倍均量',
   ),
 
   // === KD 訊號 ===
@@ -143,7 +143,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.rsiOversold: FilterMetadata(
     conditionKey: 'filterMeta.rsiOversold',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'RSI ≤ 20',
+    thresholdInfo: 'RSI ≤ 30',
   ),
 
   // === 法人訊號 ===
@@ -160,24 +160,24 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.institutionalBuyStreak: FilterMetadata(
     conditionKey: 'filterMeta.institutionalBuyStreak',
     dataRequirements: [DataRequirement.institutional],
-    thresholdInfo: '連續3天以上法人買超',
+    thresholdInfo: '連續4天以上法人買超',
   ),
   ScanFilter.institutionalSellStreak: FilterMetadata(
     conditionKey: 'filterMeta.institutionalSellStreak',
     dataRequirements: [DataRequirement.institutional],
-    thresholdInfo: '連續3天以上法人賣超',
+    thresholdInfo: '連續4天以上法人賣超',
   ),
 
   // === 延伸市場資料訊號 ===
   ScanFilter.dayTradingHigh: FilterMetadata(
     conditionKey: 'filterMeta.dayTradingHigh',
     dataRequirements: [DataRequirement.dayTrading],
-    thresholdInfo: '當沖比例 ≥ 60%',
+    thresholdInfo: '當沖比例 ≥ 50% + 萬張以上',
   ),
   ScanFilter.dayTradingExtreme: FilterMetadata(
     conditionKey: 'filterMeta.dayTradingExtreme',
     dataRequirements: [DataRequirement.dayTrading],
-    thresholdInfo: '當沖比例 ≥ 70%',
+    thresholdInfo: '當沖比例 ≥ 70% + 3萬張以上',
   ),
 
   // === 新聞訊號 ===
@@ -293,7 +293,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.revenueYoySurge: FilterMetadata(
     conditionKey: 'filterMeta.revenueYoySurge',
     dataRequirements: [DataRequirement.monthlyRevenue],
-    thresholdInfo: '營收年增率 ≥ 20%',
+    thresholdInfo: '營收年增率 ≥ 30%',
   ),
   ScanFilter.revenueYoyDecline: FilterMetadata(
     conditionKey: 'filterMeta.revenueYoyDecline',
@@ -308,7 +308,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.highDividendYield: FilterMetadata(
     conditionKey: 'filterMeta.highDividendYield',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '殖利率 ≥ 7%',
+    thresholdInfo: '殖利率 ≥ 5.5%',
   ),
   ScanFilter.peUndervalued: FilterMetadata(
     conditionKey: 'filterMeta.peUndervalued',
@@ -318,7 +318,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.peOvervalued: FilterMetadata(
     conditionKey: 'filterMeta.peOvervalued',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '本益比 ≥ 30',
+    thresholdInfo: '本益比 ≥ 100',
   ),
   ScanFilter.pbrUndervalued: FilterMetadata(
     conditionKey: 'filterMeta.pbrUndervalued',
