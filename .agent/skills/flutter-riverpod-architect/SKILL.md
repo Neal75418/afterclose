@@ -12,13 +12,13 @@ Your goal is to build a robust, offline-capable "AfterClose" app that processes 
 
 ## 核心技術棧
 
-| 類別 | 技術 |
-|:--|:--|
-| Framework | Flutter 3.38+ (Dart 3.10+) |
-| State | Riverpod 2.6（手動定義 Provider，不使用 code generation） |
-| Database | Drift (SQLite) |
-| Network | Dio |
-| Navigation | GoRouter |
+| 類別         | 技術                                              |
+|:-----------|:------------------------------------------------|
+| Framework  | Flutter 3.38+ (Dart 3.10+)                      |
+| State      | Riverpod 2.6（手動定義 Provider，不使用 code generation） |
+| Database   | Drift (SQLite)                                  |
+| Network    | Dio                                             |
+| Navigation | GoRouter                                        |
 
 ---
 
@@ -82,13 +82,13 @@ class DailyStockListNotifier extends AsyncNotifier<List<StockMasterEntry>> {
 
 ## 代碼風格
 
-| 原則 | 說明 |
-|:--|:--|
-| Dart 3 Records | `(double, double)` 處理簡單雙回傳值 |
-| Pattern Matching | `switch` 處理複雜邏輯分支 |
-| Sealed Classes | 定義例外階層（`AppException`） |
-| Constants | 使用 `const` 建構子優化性能 |
-| Lints | 遵循 `flutter_lints` |
+| 原則               | 說明                          |
+|:-----------------|:----------------------------|
+| Dart 3 Records   | `(double, double)` 處理簡單雙回傳值 |
+| Pattern Matching | `switch` 處理複雜邏輯分支           |
+| Sealed Classes   | 定義例外階層（`AppException`）      |
+| Constants        | 使用 `const` 建構子優化性能          |
+| Lints            | 遵循 `flutter_lints`          |
 
 ---
 
@@ -118,8 +118,8 @@ abstract class StockRule {
 
 ## 常見任務
 
-| 任務 | 流程 |
-|:--|:--|
-| 新增功能 | Drift Table → Code Gen → Repository → Controller → UI |
+| 任務   | 流程                                                                             |
+|:-----|:-------------------------------------------------------------------------------|
+| 新增功能 | Drift Table → Code Gen → Repository → Controller → UI                          |
 | 錯誤處理 | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException` |
-| 測試 | 使用 `mocktail` mock Repositories，測試 Notifiers |
+| 測試   | 使用 `mocktail` mock Repositories，測試 Notifiers                                   |

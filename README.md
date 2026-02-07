@@ -11,56 +11,56 @@
 
 > 收盤後自動掃描全市場，找出「今天跟平常不一樣」的股票
 
-| 原則 | 說明 | 優勢 |
-|:--:|:--|:--|
-| **On-Device** | 所有運算在裝置端完成 | 隱私保護、離線可用 |
-| **零成本** | 免費公開 API + 本地 SQLite | 無月費、無訂閱 |
-| **盤後批次** | 收盤後一次更新 | 省電、省流量 |
-| **異常提示** | 只說「發生什麼」不說「該怎麼做」 | 客觀、不帶立場 |
+|      原則       | 說明                   | 優勢        |
+|:-------------:|:---------------------|:----------|
+| **On-Device** | 所有運算在裝置端完成           | 隱私保護、離線可用 |
+|    **零成本**    | 免費公開 API + 本地 SQLite | 無月費、無訂閱   |
+|   **盤後批次**    | 收盤後一次更新              | 省電、省流量    |
+|   **異常提示**    | 只說「發生什麼」不說「該怎麼做」     | 客觀、不帶立場   |
 
 ---
 
 ## 功能
 
-| 頁面 | 功能 |
-|:--|:--|
-| **Today** | 市場摘要 + 今日 Top 20 推薦 |
-| **Scan** | 上市櫃全市場掃描，依評分排序 |
-| **Watchlist** | 自選清單狀態追蹤 |
-| **Stock Detail** | 趨勢、關鍵價位、推薦理由、新聞 |
-| **Custom Screening** | 自定義篩選策略 |
-| **Backtest** | 策略回測驗證 |
-| **Comparison** | 多檔股票並列比較 |
-| **Portfolio** | 持倉追蹤與損益計算 |
-| **News** | 多源 RSS 新聞彙整 |
-| **Alerts** | 價格提醒管理 |
-| **Calendar** | 事件行事曆 |
-| **Industry** | 產業概覽 |
-| **Settings** | 偏好設定 |
+| 頁面                   | 功能                  |
+|:---------------------|:--------------------|
+| **Today**            | 市場摘要 + 今日 Top 20 推薦 |
+| **Scan**             | 上市櫃全市場掃描，依評分排序      |
+| **Watchlist**        | 自選清單狀態追蹤            |
+| **Stock Detail**     | 趨勢、關鍵價位、推薦理由、新聞     |
+| **Custom Screening** | 自定義篩選策略             |
+| **Backtest**         | 策略回測驗證              |
+| **Comparison**       | 多檔股票並列比較            |
+| **Portfolio**        | 持倉追蹤與損益計算           |
+| **News**             | 多源 RSS 新聞彙整         |
+| **Alerts**           | 價格提醒管理              |
+| **Calendar**         | 事件行事曆               |
+| **Industry**         | 產業概覽                |
+| **Settings**         | 偏好設定                |
 
 ---
 
 ## 技術棧
 
-| 類別 | 技術 |
-|:--|:--|
-| Framework | Flutter 3.38 + Dart 3.10 |
-| State | Riverpod 2.6 |
-| Database | Drift 2.27 (SQLite, 35 tables) |
-| Network | Dio 5.8 |
-| Navigation | GoRouter 15 |
-| Charts | fl_chart + k_chart_plus |
+| 類別         | 技術                             |
+|:-----------|:-------------------------------|
+| Framework  | Flutter 3.38 + Dart 3.10       |
+| State      | Riverpod 2.6                   |
+| Database   | Drift 2.27 (SQLite, 35 tables) |
+| Network    | Dio 5.8                        |
+| Navigation | GoRouter 15                    |
+| Charts     | fl_chart + k_chart_plus        |
 
 ---
 
 ## 資料來源
 
-| 資料 | 來源 |
-|:--|:--|
+| 資料   | 來源                                    |
+|:-----|:--------------------------------------|
 | 台股日價 | TWSE / TPEX Open Data (主)、FinMind (備) |
-| 法人籌碼 | FinMind |
-| 基本面 | TWSE / TPEX / FinMind |
-| 新聞 | 多源 RSS |
+| 法人籌碼 | FinMind                               |
+| 基本面  | TWSE / TPEX / FinMind                 |
+| 新聞   | 多源 RSS                                |
 
 ---
 
@@ -178,11 +178,11 @@ dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生�
 
 ## 文件
 
-| 文件 | 說明 |
-|:--|:--|
-| [CLAUDE.md](CLAUDE.md) | AI 開發指引 |
-| [RELEASE.md](RELEASE.md) | 發布建置指南 |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎定義 |
+| 文件                                         | 說明      |
+|:-------------------------------------------|:--------|
+| [CLAUDE.md](CLAUDE.md)                     | AI 開發指引 |
+| [RELEASE.md](RELEASE.md)                   | 發布建置指南  |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎定義  |
 
 ---
 
