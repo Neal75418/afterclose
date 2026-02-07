@@ -107,7 +107,7 @@ void main() {
     test('triggers when day trading ratio is in high range', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 40.0), // 35-50 range
+        marketData: MarketDataContext(dayTradingRatio: 60.0), // 50-80 range
       );
       final data = StockData(
         symbol: 'TEST',
@@ -115,7 +115,7 @@ void main() {
           createTestPrice(
             date: DateTime.now(),
             close: 100.0,
-            volume: 2000000, // > 1000000
+            volume: 15000000, // > 10,000,000 (萬張)
           ),
         ],
       );
@@ -130,12 +130,12 @@ void main() {
     test('does not trigger when ratio is below high threshold', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 30.0), // < 35
+        marketData: MarketDataContext(dayTradingRatio: 45.0), // < 50
       );
       final data = StockData(
         symbol: 'TEST',
         prices: [
-          createTestPrice(date: DateTime.now(), close: 100.0, volume: 2000000),
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 15000000),
         ],
       );
 
@@ -145,23 +145,23 @@ void main() {
     test('does not trigger when ratio is at extreme level', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 55.0), // >= 50
+        marketData: MarketDataContext(dayTradingRatio: 85.0), // >= 80
       );
       final data = StockData(
         symbol: 'TEST',
         prices: [
-          createTestPrice(date: DateTime.now(), close: 100.0, volume: 2000000),
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 15000000),
         ],
       );
 
-      // DayTradingHighRule only triggers for [35, 50), extreme is handled by DayTradingExtremeRule
+      // DayTradingHighRule only triggers for [50, 80), extreme is handled by DayTradingExtremeRule
       expect(rule.evaluate(context, data), isNull);
     });
 
     test('does not trigger when volume is too low', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 40.0),
+        marketData: MarketDataContext(dayTradingRatio: 60.0),
       );
       final data = StockData(
         symbol: 'TEST',
@@ -169,7 +169,7 @@ void main() {
           createTestPrice(
             date: DateTime.now(),
             close: 100.0,
-            volume: 500000, // < 1000000
+            volume: 5000000, // < 10,000,000 (萬張)
           ),
         ],
       );
@@ -187,12 +187,16 @@ void main() {
     test('triggers when day trading ratio is extreme', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 55.0), // >= 50
+        marketData: MarketDataContext(dayTradingRatio: 85.0), // >= 80
       );
       final data = StockData(
         symbol: 'TEST',
         prices: [
-          createTestPrice(date: DateTime.now(), close: 100.0, volume: 2000000),
+          createTestPrice(
+            date: DateTime.now(),
+            close: 100.0,
+            volume: 60000000, // > 50,000,000 (5 萬張)
+          ),
         ],
       );
 
@@ -206,12 +210,12 @@ void main() {
     test('does not trigger below extreme threshold', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 45.0), // < 50
+        marketData: MarketDataContext(dayTradingRatio: 75.0), // < 80
       );
       final data = StockData(
         symbol: 'TEST',
         prices: [
-          createTestPrice(date: DateTime.now(), close: 100.0, volume: 2000000),
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 60000000),
         ],
       );
 
@@ -221,12 +225,16 @@ void main() {
     test('does not trigger when volume is too low', () {
       const context = AnalysisContext(
         trendState: TrendState.range,
-        marketData: MarketDataContext(dayTradingRatio: 55.0),
+        marketData: MarketDataContext(dayTradingRatio: 85.0), // >= 80
       );
       final data = StockData(
         symbol: 'TEST',
         prices: [
-          createTestPrice(date: DateTime.now(), close: 100.0, volume: 500000),
+          createTestPrice(
+            date: DateTime.now(),
+            close: 100.0,
+            volume: 30000000, // < 50,000,000 (5 萬張)
+          ),
         ],
       );
 

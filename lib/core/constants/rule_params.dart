@@ -37,10 +37,15 @@ abstract final class RuleParams {
   /// 確保推薦的都是主流標的。
   static const double topNMinTurnover = 80000000;
 
-  /// 當沖規則最低成交量（1000 張 = 1,000,000 股）
+  /// 高當沖規則最低成交量（10,000 張 = 10,000,000 股）
   ///
-  /// 當沖需要有量才有意義，1000 張確保流動性。
-  static const double minDayTradingVolumeShares = 1000000;
+  /// v0.1.3：從 1000 張調升至萬張，當沖需要有量才有意義。
+  static const double minDayTradingVolumeShares = 10000000;
+
+  /// 極高當沖規則最低成交量（50,000 張 = 50,000,000 股）
+  ///
+  /// v0.1.3：極高當沖需要 5 萬張以上量能，只有大型標的才觸發。
+  static const double minDayTradingExtremeVolumeShares = 50000000;
 
   /// 候選股快篩最低成交量（100 張 = 100,000 股）
   ///
@@ -368,13 +373,13 @@ abstract final class RuleParams {
 
   /// 高當沖比例門檻（%）
   ///
-  /// v0.1.2：從 45% 放寬至 35%，提供更多篩選結果。
-  static const double dayTradingHighThreshold = 35.0;
+  /// v0.1.3：從 35% 調升至 50%，超過 50% 才算高當沖。
+  static const double dayTradingHighThreshold = 50.0;
 
   /// 極高當沖比例門檻（%）
   ///
-  /// v0.1.2：從 60% 放寬至 50%，提供更多篩選結果。
-  static const double dayTradingExtremeThreshold = 50.0;
+  /// v0.1.3：從 50% 調升至 80%，超過 80% 且量能萬張以上才算極高當沖。
+  static const double dayTradingExtremeThreshold = 80.0;
 
   /// 大戶持股集中度門檻（%）
   ///

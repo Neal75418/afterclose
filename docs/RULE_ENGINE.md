@@ -109,8 +109,8 @@ pie showData title 59 條規則分佈
 | INSTITUTIONAL_SELL_STREAK       | -15 | 法人連賣 >= 6 日       |
 | FOREIGN_SHAREHOLDING_INCREASING | +18 | 外資持股 5 日增 >= 0.5% |
 | FOREIGN_SHAREHOLDING_DECREASING | -12 | 外資持股 5 日減 >= 0.5% |
-| DAY_TRADING_HIGH                | +12 | 當沖比例 > 45%        |
-| DAY_TRADING_EXTREME             |  -5 | 當沖比例 > 60%（投機警示）  |
+| DAY_TRADING_HIGH                | +12 | 當沖比例 >= 50% + 萬張以上    |
+| DAY_TRADING_EXTREME             |  -5 | 當沖比例 >= 80% + 5 萬張以上  |
 | CONCENTRATION_HIGH              | +16 | 大戶持股集中度 >= 60%    |
 
 ---
