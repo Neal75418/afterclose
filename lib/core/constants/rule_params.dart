@@ -1,6 +1,14 @@
 /// 規則引擎參數 v1
 ///
 /// 這些是 v1 的固定值，v2 將可設定。
+///
+/// ### 數值慣例
+/// - **比例值**（0.0~1.0）：用於乘法運算，如 `price * (1 + ratio)`
+///   例：`breakoutBuffer = 0.03`（3%）、`maDeviationThreshold = 0.05`（5%）
+/// - **百分比值**（0~100）：用於直接比較，如 `if (rsi >= threshold)`
+///   例：`rsiOverbought = 75.0`、`dayTradingHighThreshold = 50.0`
+/// - **倍數值**：用於量能比較，如 `volume >= avg * multiplier`
+///   例：`volumeSpikeMult = 4.0`、`priceSpikeVolumeMult = 1.5`
 abstract final class RuleParams {
   /// 分析回溯天數（日曆日）
   ///
@@ -182,15 +190,15 @@ abstract final class RuleParams {
   static const int rsiPeriod = 14;
 
   /// RSI 超買門檻（RSI 高於此值避免買入）
-  static const double rsiOverbought = 80.0;
+  static const double rsiOverbought = 75.0;
 
   /// RSI 超賣門檻（RSI 低於此值避免賣出）
   static const double rsiOversold = 20.0;
 
   /// RSI 極度超買（高風險區）
   ///
-  /// 標準超買區為 70，80 以上即為極度超買。
-  static const double rsiExtremeOverbought = 80.0;
+  /// 標準超買起點為 75，85 以上即為極度超買。
+  static const double rsiExtremeOverbought = 85.0;
 
   /// RSI 極度超賣（潛在反彈區）
   ///
@@ -655,10 +663,10 @@ abstract final class RuleParams {
   static const int sheetToShares = 1000;
 
   /// 法人分析最低成交量（1000 張 = 1,000,000 股）
-  static const double institutionalMinVolume = 1000000;
+  static const double institutionalMinVolumeShares = 1000000;
 
   /// 法人數據有效最低成交量（2000 張 = 2,000,000 股）
-  static const double institutionalValidVolume = 2000000;
+  static const double institutionalValidVolumeShares = 2000000;
 
   /// 法人佔總成交量顯著比例門檻
   static const double institutionalSignificantRatio = 0.35;
@@ -667,19 +675,19 @@ abstract final class RuleParams {
   static const double institutionalExplosiveRatio = 0.50;
 
   /// 法人反轉訊號最低量（500 張 = 500,000 股）
-  static const double institutionalReversalSheets = 500000;
+  static const double institutionalReversalShares = 500000;
 
   /// 法人小量方向判斷門檻（100 張 = 100,000 股）
-  static const double institutionalSmallSheets = 100000;
+  static const double institutionalSmallShares = 100000;
 
   /// 法人大量訊號門檻（5000 張 = 5,000,000 股）
-  static const double institutionalLargeSignalSheets = 5000000;
+  static const double institutionalLargeSignalShares = 5000000;
 
   /// 法人加速買賣倍數門檻
   static const double institutionalAccelerationMult = 2.0;
 
   /// 法人加速買賣最低量（1000 張 = 1,000,000 股）
-  static const double institutionalAccelerationMinSheets = 1000000;
+  static const double institutionalAccelerationMinShares = 1000000;
 
   /// 法人大量訊號價格變動確認門檻（1%）
   static const double institutionalSignificantPriceChange = 0.01;

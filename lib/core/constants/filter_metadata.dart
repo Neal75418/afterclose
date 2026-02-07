@@ -141,7 +141,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.rsiOverbought: FilterMetadata(
     conditionKey: 'filterMeta.rsiOverbought',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'RSI ≥ 80',
+    thresholdInfo: 'RSI ≥ 85',
   ),
   ScanFilter.rsiOversold: FilterMetadata(
     conditionKey: 'filterMeta.rsiOversold',

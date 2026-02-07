@@ -697,7 +697,7 @@
     "priceSpike": "單日漲跌幅 ≧ 7% 且 量 ≧ 1.5 倍均量",
     "kdGoldenCross": "KD黃金交叉 (K<30)",
     "kdDeathCross": "KD死亡交叉 (K>70)",
-    "rsiOverbought": "RSI指標 > 80",
+    "rsiOverbought": "RSI指標 > 85",
     "rsiOversold": "RSI指標 < 30",
     "institutionalShift": "法人買賣超方向轉折",
     "institutionalBuy": "單日買超 ＞ 2500張 且 佔比 ＞ 25%",

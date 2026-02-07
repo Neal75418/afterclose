@@ -696,7 +696,7 @@
     "priceSpike": "Price change > 3%",
     "kdGoldenCross": "KD Golden Cross (K<30)",
     "kdDeathCross": "KD Death Cross (K>70)",
-    "rsiOverbought": "RSI > 80",
+    "rsiOverbought": "RSI > 85",
     "rsiOversold": "RSI < 20",
     "institutionalShift": "Institutional Net Buy/Sell Reversal",
     "institutionalBuy": "Net Buy > 2500 lots AND Ratio > 25%",
