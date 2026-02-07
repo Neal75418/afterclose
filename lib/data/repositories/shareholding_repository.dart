@@ -183,6 +183,31 @@ class ShareholdingRepository {
     return largeHolderPercent;
   }
 
+  /// 批次計算多檔股票的籌碼集中度
+  ///
+  /// 回傳 symbol -> 大戶持股比例(%) 的 Map。
+  /// 無資料的股票不會出現在結果中。
+  Future<Map<String, double>> getConcentrationRatioBatch(
+    List<String> symbols, {
+    int thresholdLevel = 400,
+  }) async {
+    final batchData = await _db.getLatestHoldingDistributionBatch(symbols);
+    final result = <String, double>{};
+
+    for (final entry in batchData.entries) {
+      double largeHolderPercent = 0;
+      for (final dist in entry.value) {
+        final minShares = _parseMinSharesFromLevel(dist.level);
+        if (minShares >= thresholdLevel) {
+          largeHolderPercent += dist.percent ?? 0;
+        }
+      }
+      result[entry.key] = largeHolderPercent;
+    }
+
+    return result;
+  }
+
   // ============================================
   // Private helpers
   // ============================================

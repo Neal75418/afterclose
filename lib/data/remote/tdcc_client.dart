@@ -116,9 +116,7 @@ class TdccClient {
   TdccHoldingLevel? _parseItem(Map<String, dynamic> json) {
     try {
       // TDCC API 的 key 可能帶 BOM（\uFEFF），統一移除
-      final clean = json.map(
-        (k, v) => MapEntry(k.replaceAll('\uFEFF', ''), v),
-      );
+      final clean = json.map((k, v) => MapEntry(k.replaceAll('\uFEFF', ''), v));
       final dateStr = clean['資料日期']?.toString() ?? '';
       if (dateStr.length != 8) return null;
 

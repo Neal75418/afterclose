@@ -5,6 +5,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
@@ -250,6 +251,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
       fundamentalRepository: fundamentalRepo,
       insiderRepository: insiderRepo,
       twseClient: twseClient,
+      tdccClient: TdccClient(),
     );
 
     // 執行更新

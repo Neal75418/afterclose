@@ -127,6 +127,7 @@
     "filterForeignShareholdingDecreasing": "Foreign ↓",
     "filterDayTradingHigh": "High DT",
     "filterDayTradingExtreme": "Extreme DT",
+    "filterConcentrationHigh": "High Conc.",
     "filterNewsRelated": "News",
     "groupAll": "All",
     "groupReversal": "Reversal",
@@ -681,6 +682,7 @@
     "dayTrading": "Day Trading",
     "monthlyRevenue": "Monthly Revenue",
     "valuation": "Valuation (PE/PBR/Yield)",
+    "holdingDistribution": "Holding Distribution (TDCC)",
     "news": "Stock News"
   },
   "filterMeta": {
@@ -705,6 +707,7 @@
     "foreignShareholdingDecreasing": "Consecutive decrease in foreign shareholding",
     "dayTradingHigh": "Day trading ratio ≧ 30%",
     "dayTradingExtreme": "Day trading ratio ≧ 50%",
+    "concentrationHigh": "Large holder concentration ≧ 70%",
     "newsRelated": "Recent related news",
     "week52High": "52-Week High",
     "week52Low": "52-Week Low",

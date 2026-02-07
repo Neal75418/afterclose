@@ -123,6 +123,15 @@ abstract final class ApiEndpoints {
       '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap03_O';
 
   // ==========================================
+  // TDCC (台灣集中保管結算所)
+  // ==========================================
+
+  /// TDCC 股權分散表 - Open Data（免費、無需認證、每週更新）
+  /// 一次回傳全市場所有股票的持股級距分布
+  static const String tdccHoldingDistribution =
+      'https://openapi.tdcc.com.tw/v1/opendata/1-5';
+
+  // ==========================================
   // FinMind
   // ==========================================
 

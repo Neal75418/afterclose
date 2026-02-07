@@ -443,6 +443,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
         dayTradingRatio: dayTradingRatio,
         foreignSharesRatio: shareholdingData?['foreignSharesRatio'],
         foreignSharesRatioChange: shareholdingData?['foreignSharesRatioChange'],
+        concentrationRatio: shareholdingData?['concentrationRatio'],
         warningData: warningContext,
         insiderData: insiderContext,
       );

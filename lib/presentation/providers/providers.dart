@@ -7,6 +7,7 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
+import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
@@ -68,6 +69,11 @@ final twseClientProvider = Provider<TwseClient>((ref) {
 /// TPEX 開放資料客戶端（用於取得每日全市場上櫃價格）
 final tpexClientProvider = Provider<TpexClient>((ref) {
   return TpexClient();
+});
+
+/// TDCC 集保中心 Open Data 客戶端（股權分散表，每週更新）
+final tdccClientProvider = Provider<TdccClient>((ref) {
+  return TdccClient();
 });
 
 /// RSS 解析器
@@ -216,7 +222,9 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     tradingRepository: ref.watch(tradingRepositoryProvider),
     shareholdingRepository: ref.watch(shareholdingRepositoryProvider),
     fundamentalRepository: ref.watch(fundamentalRepositoryProvider),
+    insiderRepository: ref.watch(insiderRepositoryProvider),
     twseClient: ref.watch(twseClientProvider),
+    tdccClient: ref.watch(tdccClientProvider),
   );
 });
 

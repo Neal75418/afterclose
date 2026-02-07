@@ -106,7 +106,11 @@ enum ScanFilter {
     SignalName.dayTradingExtreme,
     ScanFilterGroup.extendedMarket,
   ),
-  // NOTE: concentrationHigh removed - requires paid API (股權分散表)
+  concentrationHigh(
+    'scan.filterConcentrationHigh',
+    SignalName.concentrationHigh,
+    ScanFilterGroup.extendedMarket,
+  ),
 
   // News signals
   newsRelated(

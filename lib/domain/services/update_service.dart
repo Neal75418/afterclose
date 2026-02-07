@@ -18,6 +18,7 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
+import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/services/update/update.dart';
 
@@ -48,6 +49,7 @@ class UpdateService {
     FundamentalRepository? fundamentalRepository,
     InsiderRepository? insiderRepository,
     TwseClient? twseClient,
+    TdccClient? tdccClient,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
     ScoringService? scoringService,
@@ -57,6 +59,7 @@ class UpdateService {
        _newsRepo = newsRepository,
        _analysisRepo = analysisRepository,
        _institutionalRepo = institutionalRepository,
+       _shareholdingRepo = shareholdingRepository,
        _insiderRepo = insiderRepository,
        _analysisService = analysisService ?? AnalysisService(),
        _ruleEngine = ruleEngine ?? RuleEngine(),
@@ -91,6 +94,9 @@ class UpdateService {
            : null,
        _marketIndexSyncer = twseClient != null
            ? MarketIndexSyncer(database: database, twseClient: twseClient)
+           : null,
+       _tdccHoldingSyncer = tdccClient != null
+           ? TdccHoldingSyncer(database: database, tdccClient: tdccClient)
            : null;
 
   final AppDatabase _db;
@@ -98,6 +104,7 @@ class UpdateService {
   final NewsRepository _newsRepo;
   final AnalysisRepository _analysisRepo;
   final InstitutionalRepository? _institutionalRepo;
+  final ShareholdingRepository? _shareholdingRepo;
   final InsiderRepository? _insiderRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
@@ -112,6 +119,7 @@ class UpdateService {
   final MarketDataUpdater? _marketDataUpdater;
   final FundamentalSyncer? _fundamentalSyncer;
   final MarketIndexSyncer? _marketIndexSyncer;
+  final TdccHoldingSyncer? _tdccHoldingSyncer;
 
   /// 取得或建立 ScoringService（延遲初始化）
   ScoringService get _scoring =>
@@ -208,6 +216,15 @@ class UpdateService {
       // 步驟 3.8：同步大盤指數歷史（sync() 內部已處理例外）
       if (_marketIndexSyncer != null) {
         await _marketIndexSyncer.sync();
+      }
+
+      // 步驟 3.9：同步 TDCC 股權分散表（每週，syncer 內部有新鮮度檢查）
+      if (_tdccHoldingSyncer != null) {
+        try {
+          await _tdccHoldingSyncer.sync();
+        } catch (e) {
+          AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗: $e');
+        }
       }
 
       // 步驟 4：同步法人資料
@@ -633,23 +650,32 @@ class UpdateService {
     final dividendHistoryMap =
         batchResults[baseIndex + 10] as Map<String, List<DividendHistoryEntry>>;
 
-    // 轉換為 Isolate 可用的 Map 格式（含外資持股變化量計算）
-    final shareholdingMap = shareholdingEntries.map((k, v) {
-      final currentRatio = v.foreignSharesRatio;
+    // 批次載入籌碼集中度（TDCC 股權分散表）
+    final concentrationMap = _shareholdingRepo != null
+        ? await _shareholdingRepo.getConcentrationRatioBatch(candidates)
+        : <String, double>{};
+
+    // 轉換為 Isolate 可用的 Map 格式（含外資持股變化量計算 + 籌碼集中度）
+    final shareholdingMap = <String, Map<String, double?>>{};
+    final allSymbols = {...shareholdingEntries.keys, ...concentrationMap.keys};
+    for (final k in allSymbols) {
+      final entry = shareholdingEntries[k];
+      final currentRatio = entry?.foreignSharesRatio;
       final prevEntry = prevShareholdingEntries[k];
       final prevRatio = prevEntry?.foreignSharesRatio;
 
-      // 計算變化量：current - previous
       double? ratioChange;
       if (currentRatio != null && prevRatio != null) {
         ratioChange = currentRatio - prevRatio;
       }
 
-      return MapEntry(k, {
+      shareholdingMap[k] = {
         'foreignSharesRatio': currentRatio,
         'foreignSharesRatioChange': ratioChange,
-      });
-    });
+        'concentrationRatio': concentrationMap[k],
+      };
+    }
+
     final warningMap = warningEntries.map(
       (k, v) => MapEntry(k, {
         'warningType': v.warningType,

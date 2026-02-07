@@ -126,6 +126,7 @@
     "filterPbrUndervalued": "低淨值比",
     "filterDayTradingHigh": "高當沖",
     "filterDayTradingExtreme": "極高當沖",
+    "filterConcentrationHigh": "籌碼集中",
     "filterForeignShareholdingIncreasing": "外資增持",
     "filterForeignShareholdingDecreasing": "外資減持",
     "filterNewsRelated": "新聞相關",
@@ -682,6 +683,7 @@
     "dayTrading": "現股當沖",
     "monthlyRevenue": "每月營收",
     "valuation": "個股估值(本益比/淨值比)",
+    "holdingDistribution": "股權分散表(集保中心)",
     "news": "個股新聞"
   },
   "filterMeta": {
@@ -706,6 +708,7 @@
     "foreignShareholdingDecreasing": "外資持股連續減少",
     "dayTradingHigh": "當沖佔比 ≧ 50% 且 量 ≧ 萬張",
     "dayTradingExtreme": "當沖佔比 ≧ 70% 且 量 ≧ 3萬張",
+    "concentrationHigh": "大戶持股比例 ≧ 70%",
     "newsRelated": "近期有相關新聞",
     "week52High": "創52週新高",
     "week52Low": "創52週新低",

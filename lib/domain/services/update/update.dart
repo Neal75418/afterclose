@@ -10,3 +10,4 @@ export 'market_data_updater.dart';
 export 'news_syncer.dart';
 export 'market_index_syncer.dart';
 export 'stock_list_syncer.dart';
+export 'tdcc_holding_syncer.dart';

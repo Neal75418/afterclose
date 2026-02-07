@@ -494,6 +494,7 @@ class ScoringService {
       dayTradingRatio: dayTradingRatio,
       foreignSharesRatio: shareholding?['foreignSharesRatio'],
       foreignSharesRatioChange: shareholding?['foreignSharesRatioChange'],
+      concentrationRatio: shareholding?['concentrationRatio'],
       warningData: warningData,
       insiderData: insiderData,
     );

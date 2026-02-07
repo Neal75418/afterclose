@@ -70,7 +70,7 @@ class RuleEngine {
     ForeignShareholdingDecreasingRule(),
     DayTradingHighRule(),
     DayTradingExtremeRule(),
-    // 備註：ConcentrationHighRule 已移除 - 需要付費 API（股權分散表）
+    ConcentrationHighRule(),
     // 第 5 階段：價量背離規則
     PriceVolumeBullishDivergenceRule(),
     PriceVolumeBearishDivergenceRule(),

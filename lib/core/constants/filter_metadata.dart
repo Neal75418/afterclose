@@ -35,6 +35,9 @@ enum DataRequirement {
   /// 估值資料（本益比、股價淨值比、殖利率）
   valuation('dataReq.valuation'),
 
+  /// 股權分散表（TDCC 集保中心）
+  holdingDistribution('dataReq.holdingDistribution'),
+
   /// 新聞資料
   news('dataReq.news');
 
@@ -178,6 +181,12 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
     conditionKey: 'filterMeta.dayTradingExtreme',
     dataRequirements: [DataRequirement.dayTrading],
     thresholdInfo: '當沖比例 ≥ 70% + 3萬張以上',
+  ),
+
+  ScanFilter.concentrationHigh: FilterMetadata(
+    conditionKey: 'filterMeta.concentrationHigh',
+    dataRequirements: [DataRequirement.holdingDistribution],
+    thresholdInfo: '大戶持股比例 ≥ 70%',
   ),
 
   // === 新聞訊號 ===
