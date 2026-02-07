@@ -9,6 +9,28 @@ import 'package:afterclose/domain/services/technical_indicator_service.dart';
 // 第 3 階段：技術訊號規則
 // ==========================================
 
+/// 計算價格歷史期間內的累計現金股利
+///
+/// 遍歷 [StockData.dividendHistory]，篩選除息日落在價格資料起始日之後的股利，
+/// 回傳累計現金股利金額。用於調整 52 週新高/新低的歷史價格基準。
+double _sumDividendsInPeriod(StockData data) {
+  final dividends = data.dividendHistory;
+  if (dividends == null || dividends.isEmpty || data.prices.isEmpty) {
+    return 0;
+  }
+
+  final lookbackStart = data.prices.first.date;
+  double total = 0;
+  for (final div in dividends) {
+    if (div.exDividendDate == null) continue;
+    final exDate = DateTime.tryParse(div.exDividendDate!);
+    if (exDate != null && exDate.isAfter(lookbackStart)) {
+      total += div.cashDividend;
+    }
+  }
+  return total;
+}
+
 /// 規則：52 週新高偵測
 ///
 /// 當收盤價處於或接近 52 週高點時觸發
@@ -53,13 +75,22 @@ class Week52HighRule extends StockRule {
     // 需要足夠有效資料才有意義
     if (maxHigh <= 0 || validCount < 20) return null;
 
+    // 除息調整：扣除分析期間內的累計現金股利
+    // 除息後歷史高點包含「含息價」，需調降以反映除息影響
+    final totalDividend = _sumDividendsInPeriod(data);
+    final adjustedMaxHigh = maxHigh - totalDividend;
+    if (adjustedMaxHigh <= 0) return null;
+
     // 檢查當前收盤是否處於或接近 52 週高點（在門檻範圍內）
-    final threshold = maxHigh * (1 - RuleParams.week52HighThreshold);
+    final threshold = adjustedMaxHigh * (1 - RuleParams.week52HighThreshold);
     if (close >= threshold) {
-      final isNewHigh = close >= maxHigh;
+      final isNewHigh = close >= adjustedMaxHigh;
       AppLogger.debug(
         'Week52High',
-        '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, 52週高=${maxHigh.toStringAsFixed(2)}, 新高=$isNewHigh',
+        '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, '
+            '52週高=${maxHigh.toStringAsFixed(2)}, '
+            '除息調整=${adjustedMaxHigh.toStringAsFixed(2)}, '
+            '新高=$isNewHigh',
       );
       return TriggeredReason(
         type: ReasonType.week52High,
@@ -68,6 +99,8 @@ class Week52HighRule extends StockRule {
         evidence: {
           'close': close,
           'week52High': maxHigh,
+          'adjustedHigh': adjustedMaxHigh,
+          'dividendAdjustment': totalDividend,
           'isNewHigh': isNewHigh,
         },
       );
@@ -123,10 +156,16 @@ class Week52LowRule extends StockRule {
       return null;
     }
 
+    // 除息調整：歷史低點需調降以反映除息影響
+    // 歷史低點在除息前的價格基準，需扣除累計股利才能與當前價格比較
+    final totalDividend = _sumDividendsInPeriod(data);
+    final adjustedMinLow = minLow - totalDividend;
+    if (adjustedMinLow <= 0) return null;
+
     // 檢查當前收盤是否處於或接近 52 週低點（在門檻範圍內）
-    final threshold = minLow * (1 + RuleParams.week52LowThreshold);
+    final threshold = adjustedMinLow * (1 + RuleParams.week52LowThreshold);
     if (close <= threshold) {
-      final isNewLow = close <= minLow;
+      final isNewLow = close <= adjustedMinLow;
 
       // 精準度過濾：確認近期確實處於下跌趨勢
       // 避免長期盤整在低檔區的股票誤觸發
@@ -148,13 +187,22 @@ class Week52LowRule extends StockRule {
 
       AppLogger.debug(
         'Week52Low',
-        '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, 52週低=${minLow.toStringAsFixed(2)}, 新低=$isNewLow',
+        '${data.symbol}: 收盤=${close.toStringAsFixed(2)}, '
+            '52週低=${minLow.toStringAsFixed(2)}, '
+            '除息調整=${adjustedMinLow.toStringAsFixed(2)}, '
+            '新低=$isNewLow',
       );
       return TriggeredReason(
         type: ReasonType.week52Low,
         score: RuleScores.week52Low,
         description: isNewLow ? '創 52 週新低' : '接近 52 週新低',
-        evidence: {'close': close, 'week52Low': minLow, 'isNewLow': isNewLow},
+        evidence: {
+          'close': close,
+          'week52Low': minLow,
+          'adjustedLow': adjustedMinLow,
+          'dividendAdjustment': totalDividend,
+          'isNewLow': isNewLow,
+        },
       );
     }
 

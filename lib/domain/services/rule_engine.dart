@@ -125,6 +125,7 @@ class RuleEngine {
     List<MonthlyRevenueEntry>? revenueHistory,
     List<FinancialDataEntry>? epsHistory,
     List<FinancialDataEntry>? roeHistory,
+    List<DividendHistoryEntry>? dividendHistory,
   }) {
     if (priceHistory.isEmpty) return [];
 
@@ -138,6 +139,7 @@ class RuleEngine {
       revenueHistory: revenueHistory,
       epsHistory: epsHistory,
       roeHistory: roeHistory,
+      dividendHistory: dividendHistory,
     );
 
     final triggered = <TriggeredReason>[];

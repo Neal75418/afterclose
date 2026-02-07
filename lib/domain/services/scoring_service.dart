@@ -46,6 +46,7 @@ class ScoringService {
     Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap,
     Map<String, List<FinancialDataEntry>>? epsHistoryMap,
     Map<String, List<FinancialDataEntry>>? roeHistoryMap,
+    Map<String, List<DividendHistoryEntry>>? dividendHistoryMap,
     Set<String>? recentlyRecommended,
     Future<MarketDataContext?> Function(String)? marketDataBuilder,
     void Function(int current, int total)? onProgress,
@@ -134,6 +135,7 @@ class ScoringService {
         revenueHistory: revenueHistoryMap?[symbol],
         epsHistory: epsHistoryMap?[symbol],
         roeHistory: roeHistoryMap?[symbol],
+        dividendHistory: dividendHistoryMap?[symbol],
       );
 
       if (reasons.isEmpty) continue;
@@ -225,6 +227,7 @@ class ScoringService {
     Map<String, Map<String, dynamic>>? insiderMap,
     Map<String, List<FinancialDataEntry>>? epsHistoryMap,
     Map<String, List<FinancialDataEntry>>? roeHistoryMap,
+    Map<String, List<DividendHistoryEntry>>? dividendHistoryMap,
   }) async {
     if (candidates.isEmpty) return [];
 
@@ -255,6 +258,9 @@ class ScoringService {
       roeHistoryMap: roeHistoryMap != null
           ? _convertEpsHistoryMap(roeHistoryMap)
           : null,
+      dividendHistoryMap: dividendHistoryMap != null
+          ? _convertDividendHistoryMap(dividendHistoryMap)
+          : null,
     );
 
     // 在背景 Isolate 執行運算（含回退機制）
@@ -276,6 +282,7 @@ class ScoringService {
         revenueHistoryMap: revenueHistoryMap,
         epsHistoryMap: epsHistoryMap,
         roeHistoryMap: roeHistoryMap,
+        dividendHistoryMap: dividendHistoryMap,
         recentlyRecommended: recentlyRecommended,
         marketDataBuilder: (symbol) async {
           return _buildMarketDataFromMaps(
@@ -552,6 +559,15 @@ class ScoringService {
     return map.map(
       (key, value) =>
           MapEntry(key, value.map(financialDataEntryToMap).toList()),
+    );
+  }
+
+  Map<String, List<Map<String, dynamic>>> _convertDividendHistoryMap(
+    Map<String, List<DividendHistoryEntry>> map,
+  ) {
+    return map.map(
+      (key, value) =>
+          MapEntry(key, value.map(dividendHistoryEntryToMap).toList()),
     );
   }
 }

@@ -27,6 +27,7 @@ class ScoringIsolateInput {
     this.insiderMap,
     this.epsHistoryMap,
     this.roeHistoryMap,
+    this.dividendHistoryMap,
   });
 
   final List<String> candidates;
@@ -56,6 +57,9 @@ class ScoringIsolateInput {
   /// ROE 歷史資料 Map（symbol -> 最近 8 季 ROE，降序）
   final Map<String, List<Map<String, dynamic>>>? roeHistoryMap;
 
+  /// 股利歷史資料 Map（symbol -> 歷年股利，降序）
+  final Map<String, List<Map<String, dynamic>>>? dividendHistoryMap;
+
   Map<String, dynamic> toMap() => {
     'candidates': candidates,
     'pricesMap': pricesMap,
@@ -71,6 +75,7 @@ class ScoringIsolateInput {
     'insiderMap': insiderMap,
     'epsHistoryMap': epsHistoryMap,
     'roeHistoryMap': roeHistoryMap,
+    'dividendHistoryMap': dividendHistoryMap,
   };
 
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
@@ -117,7 +122,22 @@ class ScoringIsolateInput {
       roeHistoryMap: map['roeHistoryMap'] != null
           ? _castEpsHistoryMap(map['roeHistoryMap'])
           : null,
+      dividendHistoryMap: map['dividendHistoryMap'] != null
+          ? _castDividendHistoryMap(map['dividendHistoryMap'])
+          : null,
     );
+  }
+
+  static Map<String, List<Map<String, dynamic>>> _castDividendHistoryMap(
+    dynamic map,
+  ) {
+    final result = <String, List<Map<String, dynamic>>>{};
+    for (final entry in (map as Map).entries) {
+      result[entry.key as String] = List<Map<String, dynamic>>.from(
+        (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
+      );
+    }
+    return result;
   }
 
   static Map<String, Map<String, double?>> _castShareholdingMap(dynamic map) {
@@ -488,6 +508,15 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       roeHistory = roeHistoryMaps.map(_mapToFinancialDataEntry).toList();
     }
 
+    // 轉換股利歷史
+    List<DividendHistoryEntry>? dividendHistory;
+    final dividendHistoryMaps = input.dividendHistoryMap?[symbol];
+    if (dividendHistoryMaps != null && dividendHistoryMaps.isNotEmpty) {
+      dividendHistory = dividendHistoryMaps
+          .map(_mapToDividendHistoryEntry)
+          .toList();
+    }
+
     // 執行規則引擎
     final reasons = ruleEngine.evaluateStock(
       priceHistory: prices,
@@ -500,6 +529,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       revenueHistory: revenueHistory,
       epsHistory: epsHistory,
       roeHistory: roeHistory,
+      dividendHistory: dividendHistory,
     );
 
     if (reasons.isEmpty) continue;
@@ -685,6 +715,28 @@ Map<String, dynamic> financialDataEntryToMap(FinancialDataEntry entry) {
     'dataType': entry.dataType,
     'value': entry.value,
     'originName': entry.originName,
+  };
+}
+
+DividendHistoryEntry _mapToDividendHistoryEntry(Map<String, dynamic> map) {
+  return DividendHistoryEntry(
+    symbol: map['symbol'] as String,
+    year: map['year'] as int,
+    cashDividend: (map['cashDividend'] as num).toDouble(),
+    stockDividend: (map['stockDividend'] as num).toDouble(),
+    exDividendDate: map['exDividendDate'] as String?,
+    exRightsDate: map['exRightsDate'] as String?,
+  );
+}
+
+Map<String, dynamic> dividendHistoryEntryToMap(DividendHistoryEntry entry) {
+  return {
+    'symbol': entry.symbol,
+    'year': entry.year,
+    'cashDividend': entry.cashDividend,
+    'stockDividend': entry.stockDividend,
+    'exDividendDate': entry.exDividendDate,
+    'exRightsDate': entry.exRightsDate,
   };
 }
 

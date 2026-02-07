@@ -495,6 +495,12 @@ class ThreeWhiteSoldiersRule extends StockRule {
     // 三根 K 線皆為紅 K
     if (!c1.isBullish || !c2.isBullish || !c3.isBullish) return false;
 
+    // 每根 K 線實體比例須 >= 門檻，避免微小漲幅誤觸發
+    for (final c in [c1, c2, c3]) {
+      final bodyRatio = (c.close! - c.open!).abs() / c.close!;
+      if (bodyRatio < RuleParams.threeLineMinBodyRatio) return false;
+    }
+
     // 連續創高收盤
     if (c2.close! <= c1.close!) return false;
     if (c3.close! <= c2.close!) return false;
@@ -551,6 +557,12 @@ class ThreeBlackCrowsRule extends StockRule {
 
     // 三根 K 線皆為黑 K
     if (!c1.isBearish || !c2.isBearish || !c3.isBearish) return false;
+
+    // 每根 K 線實體比例須 >= 門檻，避免微小跌幅誤觸發
+    for (final c in [c1, c2, c3]) {
+      final bodyRatio = (c.open! - c.close!).abs() / c.close!;
+      if (bodyRatio < RuleParams.threeLineMinBodyRatio) return false;
+    }
 
     // 連續創低收盤
     if (c2.close! >= c1.close!) return false;

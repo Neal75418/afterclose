@@ -127,6 +127,56 @@ void main() {
 
       expect(rule.evaluate(context, data), isNull);
     });
+
+    test('triggers with dividend adjustment (stock at adjusted high)', () {
+      // 歷史高點 100, 期間內配 5 元現金股利
+      // 調整後高點 = 100 - 5 = 95, 門檻 = 95 * 0.99 = 94.05
+      // 收盤 96 > 94.05 → 應觸發
+      final now = DateTime.now();
+      final prices = generateConstantPrices(days: 249, basePrice: 100.0);
+      prices.add(createTestPrice(date: now, close: 96.0, volume: 1000));
+
+      // 期間內有除息紀錄
+      final dividends = [
+        DividendHistoryEntry(
+          symbol: 'TEST',
+          year: now.year,
+          cashDividend: 5.0,
+          stockDividend: 0,
+          exDividendDate: now
+              .subtract(const Duration(days: 30))
+              .toIso8601String()
+              .split('T')
+              .first,
+        ),
+      ];
+
+      const context = AnalysisContext(trendState: TrendState.up);
+      final data = StockData(
+        symbol: 'TEST',
+        prices: prices,
+        dividendHistory: dividends,
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.type, equals(ReasonType.week52High));
+      expect(result.evidence!['dividendAdjustment'], equals(5.0));
+    });
+
+    test('does not trigger without dividend adjustment for same price', () {
+      // 同上場景但無 dividend data → 96 < 99 (100*0.99) → 不觸發
+      final prices = generateConstantPrices(days: 249, basePrice: 100.0);
+      prices.add(
+        createTestPrice(date: DateTime.now(), close: 96.0, volume: 1000),
+      );
+
+      const context = AnalysisContext(trendState: TrendState.up);
+      final data = StockData(symbol: 'TEST', prices: prices);
+
+      expect(rule.evaluate(context, data), isNull);
+    });
   });
 
   // ==========================================

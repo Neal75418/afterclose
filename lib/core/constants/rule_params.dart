@@ -339,6 +339,12 @@ abstract final class RuleParams {
   /// 上影線不可超過實體的 0.5 倍。
   static const double hammerUpperShadowMaxRatio = 0.5;
 
+  /// 三白兵/三黑鴉每根 K 線最小實體比例（1%）
+  ///
+  /// 每根 K 線的 |open - close| / close 須 >= 1%，
+  /// 避免微小漲跌幅的 K 線誤觸發。
+  static const double threeLineMinBodyRatio = 0.01;
+
   /// 十字線實體最大比例（10%）
   ///
   /// 實體小於振幅的 10% 視為十字線。

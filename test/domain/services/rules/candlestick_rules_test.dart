@@ -613,6 +613,36 @@ void main() {
 
       expect(rule.evaluate(context, data), isNull);
     });
+
+    test('does not trigger with tiny body candles (< 1% body ratio)', () {
+      const context = AnalysisContext(trendState: TrendState.down);
+      final now = DateTime.now();
+      // 三根微小漲幅的 K 線：body/close < 1%
+      final c1 = createTestPrice(
+        date: now.subtract(const Duration(days: 2)),
+        open: 100.0,
+        high: 100.5,
+        low: 99.5,
+        close: 100.3, // body = 0.3%
+      );
+      final c2 = createTestPrice(
+        date: now.subtract(const Duration(days: 1)),
+        open: 100.3,
+        high: 100.8,
+        low: 100.0,
+        close: 100.5, // body = 0.2%
+      );
+      final c3 = createTestPrice(
+        date: now,
+        open: 100.5,
+        high: 101.0,
+        low: 100.2,
+        close: 100.8, // body = 0.3%
+      );
+      final data = StockData(symbol: 'TEST', prices: [c1, c2, c3]);
+
+      expect(rule.evaluate(context, data), isNull);
+    });
   });
 
   // ==========================================
@@ -642,6 +672,36 @@ void main() {
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
       final data = StockData(symbol: 'TEST', prices: pattern);
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('does not trigger with tiny body candles (< 1% body ratio)', () {
+      const context = AnalysisContext(trendState: TrendState.up);
+      final now = DateTime.now();
+      // 三根微小跌幅的 K 線：body/close < 1%
+      final c1 = createTestPrice(
+        date: now.subtract(const Duration(days: 2)),
+        open: 100.3,
+        high: 100.5,
+        low: 99.8,
+        close: 100.0, // body = 0.3%
+      );
+      final c2 = createTestPrice(
+        date: now.subtract(const Duration(days: 1)),
+        open: 100.0,
+        high: 100.3,
+        low: 99.5,
+        close: 99.8, // body = 0.2%
+      );
+      final c3 = createTestPrice(
+        date: now,
+        open: 99.8,
+        high: 100.0,
+        low: 99.3,
+        close: 99.5, // body = 0.3%
+      );
+      final data = StockData(symbol: 'TEST', prices: [c1, c2, c3]);
 
       expect(rule.evaluate(context, data), isNull);
     });

@@ -386,10 +386,12 @@ class EPSYoYSurgeRule extends StockRule {
     final latestEps = latest.value;
     if (latestEps == null || latestEps <= 0) return null;
 
-    // 找去年同季（同季 = 同月份）
+    // 找去年同季（用季度編號比較，避免申報日期月份偏移問題）
+    final latestQuarter = (latest.date.month - 1) ~/ 3;
     double? lastYearEps;
     for (int i = RuleParams.epsQuarterOffset; i < eps.length; i++) {
-      if (eps[i].date.month == latest.date.month) {
+      final candidateQuarter = (eps[i].date.month - 1) ~/ 3;
+      if (candidateQuarter == latestQuarter) {
         lastYearEps = eps[i].value;
         break;
       }

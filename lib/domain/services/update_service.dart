@@ -600,6 +600,7 @@ class UpdateService {
       _db.getLatestInsiderHoldingsBatch(candidates),
       _db.getEPSHistoryBatch(candidates), // baseIndex + 8
       _db.getROEHistoryBatch(candidates), // baseIndex + 9
+      _db.getDividendHistoryBatch(candidates), // baseIndex + 10
     ];
 
     final batchResults = await Future.wait(futures);
@@ -629,6 +630,8 @@ class UpdateService {
         batchResults[baseIndex + 8] as Map<String, List<FinancialDataEntry>>;
     final roeHistoryMap =
         batchResults[baseIndex + 9] as Map<String, List<FinancialDataEntry>>;
+    final dividendHistoryMap =
+        batchResults[baseIndex + 10] as Map<String, List<DividendHistoryEntry>>;
 
     // 轉換為 Isolate 可用的 Map 格式（含外資持股變化量計算）
     final shareholdingMap = shareholdingEntries.map((k, v) {
@@ -697,6 +700,7 @@ class UpdateService {
       insiderMap: insiderMap,
       epsHistoryMap: epsHistoryMap,
       roeHistoryMap: roeHistoryMap,
+      dividendHistoryMap: dividendHistoryMap,
     );
 
     AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
