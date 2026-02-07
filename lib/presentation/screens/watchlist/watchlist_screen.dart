@@ -175,23 +175,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               )
             : Text('watchlist.title'.tr()),
         actions: [
-          // Calendar icon (both tabs)
-          IconButton(
-            icon: const Icon(Icons.calendar_month_outlined),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              context.push(AppRoutes.calendar);
-            },
-            tooltip: 'calendar.title'.tr(),
-          ),
-          // Export button (both tabs)
-          IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            onPressed: () => _exportCsv(isWatchlistTab),
-            tooltip: isWatchlistTab
-                ? 'export.exportWatchlist'.tr()
-                : 'export.exportPortfolio'.tr(),
-          ),
           if (isWatchlistTab) ...[
             // Search toggle
             IconButton(
@@ -200,32 +183,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               tooltip: _isSearching
                   ? 'common.close'.tr()
                   : 'common.search'.tr(),
-            ),
-            // Group menu
-            PopupMenuButton<WatchlistGroup>(
-              icon: const Icon(Icons.workspaces_outlined),
-              tooltip: 'watchlist.group'.tr(),
-              initialValue: state.group,
-              onSelected: (group) {
-                ref.read(watchlistProvider.notifier).setGroup(group);
-              },
-              itemBuilder: (context) {
-                return WatchlistGroup.values.map((group) {
-                  return PopupMenuItem(
-                    value: group,
-                    child: Row(
-                      children: [
-                        if (state.group == group)
-                          const Icon(Icons.check, size: 18)
-                        else
-                          const SizedBox(width: 18),
-                        const SizedBox(width: 8),
-                        Text(group.label),
-                      ],
-                    ),
-                  );
-                }).toList();
-              },
             ),
             // Sort menu
             PopupMenuButton<WatchlistSort>(
@@ -276,6 +233,76 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               tooltip: 'watchlist.add'.tr(),
             ),
           ],
+          // More menu (Calendar, Export, Group)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'calendar':
+                  HapticFeedback.selectionClick();
+                  context.push(AppRoutes.calendar);
+                case 'export':
+                  _exportCsv(isWatchlistTab);
+                case 'group_none':
+                  ref
+                      .read(watchlistProvider.notifier)
+                      .setGroup(WatchlistGroup.none);
+                case 'group_status':
+                  ref
+                      .read(watchlistProvider.notifier)
+                      .setGroup(WatchlistGroup.status);
+                case 'group_trend':
+                  ref
+                      .read(watchlistProvider.notifier)
+                      .setGroup(WatchlistGroup.trend);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'calendar',
+                child: Row(
+                  children: [
+                    const Icon(Icons.calendar_month_outlined, size: 20),
+                    const SizedBox(width: 12),
+                    Text('calendar.title'.tr()),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'export',
+                child: Row(
+                  children: [
+                    const Icon(Icons.file_download_outlined, size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      isWatchlistTab
+                          ? 'export.exportWatchlist'.tr()
+                          : 'export.exportPortfolio'.tr(),
+                    ),
+                  ],
+                ),
+              ),
+              if (isWatchlistTab) ...[
+                const PopupMenuDivider(),
+                ...WatchlistGroup.values.map((group) {
+                  final value = 'group_${group.name}';
+                  return PopupMenuItem(
+                    value: value,
+                    child: Row(
+                      children: [
+                        if (state.group == group)
+                          const Icon(Icons.check, size: 18)
+                        else
+                          const SizedBox(width: 18),
+                        const SizedBox(width: 8),
+                        Text(group.label),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -399,14 +426,21 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     final showLimitMarkers = ref.watch(
       settingsProvider.select((s) => s.limitAlerts),
     );
+
+    Widget list;
     switch (state.group) {
       case WatchlistGroup.none:
-        return _buildFlatList(state.filteredItems, showLimitMarkers);
+        list = _buildFlatList(state.filteredItems, showLimitMarkers);
       case WatchlistGroup.status:
-        return _buildGroupedByStatusList(state, showLimitMarkers);
+        list = _buildGroupedByStatusList(state, showLimitMarkers);
       case WatchlistGroup.trend:
-        return _buildGroupedByTrendList(state, showLimitMarkers);
+        list = _buildGroupedByTrendList(state, showLimitMarkers);
     }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: KeyedSubtree(key: ValueKey(state.group), child: list),
+    );
   }
 
   Widget _buildFlatList(List<WatchlistItemData> items, bool showLimitMarkers) {

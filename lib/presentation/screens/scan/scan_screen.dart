@@ -248,56 +248,67 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          // 「全部」標籤
-          FilterChip(
-            label: Text(ScanFilter.all.labelKey.tr()),
-            labelStyle: TextStyle(
-              color: state.filter == ScanFilter.all
-                  ? theme.colorScheme.onSecondaryContainer
-                  : theme.colorScheme.onSurface,
-            ),
-            selected: state.filter == ScanFilter.all,
-            onSelected: (_) {
-              HapticFeedback.selectionClick();
-              ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
-            },
-          ),
-          const SizedBox(width: 8),
-          // 目前選中的篩選條件（若非「全部」）
-          if (state.filter != ScanFilter.all)
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // 「全部」標籤
             FilterChip(
-              label: Text(state.filter.labelKey.tr()),
-              selected: true,
+              label: Text(ScanFilter.all.labelKey.tr()),
+              labelStyle: TextStyle(
+                color: state.filter == ScanFilter.all
+                    ? theme.colorScheme.onSecondaryContainer
+                    : theme.colorScheme.onSurface,
+              ),
+              selected: state.filter == ScanFilter.all,
               onSelected: (_) {
                 HapticFeedback.selectionClick();
                 ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
               },
-              deleteIcon: const Icon(Icons.close, size: 16),
-              onDeleted: () {
-                HapticFeedback.selectionClick();
-                ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
-              },
             ),
-          if (state.filter != ScanFilter.all) const SizedBox(width: 8),
-          // 產業篩選
-          if (state.industries.isNotEmpty)
-            _IndustryFilterChip(
-              industries: state.industries,
-              selected: state.industryFilter,
-              onSelected: (industry) {
-                ref.read(scanProvider.notifier).setIndustryFilter(industry);
-              },
+            const SizedBox(width: 8),
+            // 目前選中的篩選條件（若非「全部」）
+            if (state.filter != ScanFilter.all)
+              FilterChip(
+                label: Text(state.filter.labelKey.tr()),
+                selected: true,
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+                },
+                deleteIcon: const Icon(Icons.close, size: 16),
+                onDeleted: () {
+                  HapticFeedback.selectionClick();
+                  ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
+                },
+              ),
+            if (state.filter != ScanFilter.all) const SizedBox(width: 8),
+            // 產業篩選
+            if (state.industries.isNotEmpty)
+              _IndustryFilterChip(
+                industries: state.industries,
+                selected: state.industryFilter,
+                onSelected: (industry) {
+                  ref.read(scanProvider.notifier).setIndustryFilter(industry);
+                },
+              ),
+            if (state.industries.isNotEmpty) const SizedBox(width: 8),
+            // 「更多篩選」按鈕 — 使用主色邊框提升視覺辨識度
+            ActionChip(
+              avatar: Icon(
+                Icons.filter_list,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              label: Text('scan.moreFilters'.tr()),
+              side: BorderSide(
+                color: theme.colorScheme.primary.withValues(alpha: 0.5),
+              ),
+              onPressed: () =>
+                  _showFilterBottomSheet(context, ref, state.filter),
             ),
-          if (state.industries.isNotEmpty) const SizedBox(width: 8),
-          // 「更多篩選」按鈕
-          ActionChip(
-            avatar: const Icon(Icons.filter_list, size: 18),
-            label: Text('scan.moreFilters'.tr()),
-            onPressed: () => _showFilterBottomSheet(context, ref, state.filter),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -346,6 +357,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         ),
       );
     }
+
+    // 篩選切換中：顯示輕量 indicator + 保留空狀態或列表
+    if (state.isFiltering && state.stocks.isEmpty) {
+      return const Expanded(child: Center(child: LinearProgressIndicator()));
+    }
+
     if (state.stocks.isEmpty) {
       return Expanded(child: _buildEmptyState(state.filter, ref));
     }

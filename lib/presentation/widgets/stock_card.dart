@@ -146,47 +146,69 @@ class _StockCardState extends State<StockCard> {
                       padding: const EdgeInsets.all(
                         DesignTokens.stockCardPadding,
                       ),
-                      child: Row(
-                        children: [
-                          // 趨勢指示器（現代設計）
-                          _buildTrendIndicator(theme, isDark),
-                          const SizedBox(width: DesignTokens.spacing12),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // 寬度不足時（Grid 多欄或切換瞬間）隱藏走勢圖
+                          final isCompactLayout = constraints.maxWidth < 320;
+                          final showSparkline =
+                              !isCompactLayout &&
+                              widget.recentPrices != null &&
+                              widget.recentPrices!.length >= 7;
 
-                          // 股票資訊區塊
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildHeader(theme),
-                                if (widget.stockName != null) ...[
-                                  const SizedBox(height: DesignTokens.spacing2),
-                                  _buildStockName(theme),
-                                ],
-                                if (widget.reasons.isNotEmpty) ...[
-                                  const SizedBox(height: 6),
-                                  _buildReasonTags(theme, isDark),
-                                ],
+                          return Row(
+                            children: [
+                              // 趨勢指示器（現代設計）
+                              _buildTrendIndicator(theme, isDark),
+                              const SizedBox(width: DesignTokens.spacing12),
+
+                              // 股票資訊區塊
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildHeader(
+                                      theme,
+                                      showScore: !isCompactLayout,
+                                    ),
+                                    if (widget.stockName != null) ...[
+                                      const SizedBox(
+                                        height: DesignTokens.spacing2,
+                                      ),
+                                      _buildStockName(
+                                        theme,
+                                        showBadges: !isCompactLayout,
+                                      ),
+                                    ],
+                                    if (widget.reasons.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      _buildReasonTags(
+                                        theme,
+                                        isDark,
+                                        maxTags: isCompactLayout ? 1 : 2,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(width: 12),
+
+                              // 迷你走勢圖（窄卡片時自動隱藏）
+                              if (showSparkline) ...[
+                                _buildSparkline(priceColor),
+                                const SizedBox(width: 8),
                               ],
-                            ),
-                          ),
 
-                          const SizedBox(width: 12),
+                              // 價格區塊（帶顏色編碼）
+                              _buildPriceSection(theme, priceColor),
 
-                          // 迷你走勢圖（需至少 7 天資料）
-                          if (widget.recentPrices != null &&
-                              widget.recentPrices!.length >= 7) ...[
-                            _buildSparkline(priceColor),
-                            const SizedBox(width: 8),
-                          ],
-
-                          // 價格區塊（帶顏色編碼）
-                          _buildPriceSection(theme, priceColor),
-
-                          // 自選按鈕
-                          if (widget.onWatchlistTap != null)
-                            _buildWatchlistButton(theme),
-                        ],
+                              // 自選按鈕
+                              if (widget.onWatchlistTap != null)
+                                _buildWatchlistButton(theme),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -222,7 +244,7 @@ class _StockCardState extends State<StockCard> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
+  Widget _buildHeader(ThemeData theme, {bool showScore = true}) {
     return Row(
       children: [
         Flexible(
@@ -235,20 +257,24 @@ class _StockCardState extends State<StockCard> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (widget.score != null && widget.score! > 0) ...[
-          const SizedBox(width: 10),
-          ScoreRing(score: widget.score!, size: ScoreRingSize.medium),
+        if (showScore && widget.score != null && widget.score! > 0) ...[
+          const SizedBox(width: 6),
+          ScoreRing(score: widget.score!, size: ScoreRingSize.small),
         ],
       ],
     );
   }
 
-  Widget _buildStockName(ThemeData theme) {
-    final marketLabel = widget.market == 'TPEx' ? '櫃' : null;
+  Widget _buildStockName(ThemeData theme, {bool showBadges = true}) {
+    final marketLabel = showBadges && widget.market == 'TPEx' ? '櫃' : null;
     final isLimitUp =
-        widget.showLimitMarkers && PriceLimit.isLimitUp(widget.priceChange);
+        showBadges &&
+        widget.showLimitMarkers &&
+        PriceLimit.isLimitUp(widget.priceChange);
     final isLimitDown =
-        widget.showLimitMarkers && PriceLimit.isLimitDown(widget.priceChange);
+        showBadges &&
+        widget.showLimitMarkers &&
+        PriceLimit.isLimitDown(widget.priceChange);
 
     return Row(
       children: [
@@ -303,18 +329,49 @@ class _StockCardState extends State<StockCard> {
     );
   }
 
-  Widget _buildReasonTags(ThemeData theme, bool isDark) {
-    // 使用 ConstrainedBox 限制高度為單行，防止標籤換行導致溢出
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 28),
-      child: ClipRect(
-        child: ReasonTags(
-          reasons: widget.reasons,
-          size: ReasonTagSize.compact,
-          maxTags: 2,
-          translateCodes: true,
-        ),
-      ),
+  Widget _buildReasonTags(ThemeData theme, bool isDark, {int maxTags = 2}) {
+    // 使用 Row + Flexible 確保標籤不會超出可用寬度
+    // 長文字用 ellipsis 截斷，不會換行溢出卡片
+    final displayReasons = widget.reasons.take(maxTags).toList();
+    final tagColor = isDark ? AppTheme.secondaryColor : AppTheme.primaryColor;
+    final bgColor = isDark
+        ? AppTheme.secondaryColor.withValues(alpha: DesignTokens.opacity25)
+        : AppTheme.primaryColor.withValues(alpha: DesignTokens.opacity10);
+
+    return Row(
+      children: [
+        for (int i = 0; i < displayReasons.length; i++) ...[
+          if (i > 0) const SizedBox(width: DesignTokens.spacing6),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.spacing8,
+                vertical: DesignTokens.spacing4,
+              ),
+              decoration: BoxDecoration(
+                color: bgColor,
+                borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+                border: isDark
+                    ? Border.all(
+                        color: AppTheme.secondaryColor.withValues(
+                          alpha: DesignTokens.opacity40,
+                        ),
+                      )
+                    : null,
+              ),
+              child: Text(
+                ReasonTags.translateReasonCode(displayReasons[i]),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: tagColor,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

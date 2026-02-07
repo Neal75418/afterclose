@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 
 /// K-line chart widget using candlesticks package
 /// Note: This package doesn't support technical indicator overlays.
@@ -74,10 +75,15 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final chartHeight = context.responsive(
+      mobile: 280.0,
+      tablet: 360.0,
+      desktop: 420.0,
+    );
 
     if (_candles.isEmpty) {
       return Container(
-        height: 300,
+        height: chartHeight,
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -94,7 +100,7 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
     }
 
     return Container(
-      height: 300,
+      height: chartHeight,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
         border: Border.all(color: theme.colorScheme.outlineVariant),

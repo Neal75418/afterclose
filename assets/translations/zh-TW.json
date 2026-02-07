@@ -252,6 +252,7 @@
     "dividendYear": "年度",
     "cashDividend": "現金股利",
     "stockDividend": "股票股利",
+    "totalDividend": "合計",
     "perLabel": "本益比",
     "pbrLabel": "股價淨值比",
     "yield": "殖利率",
@@ -749,7 +750,8 @@
     "titleWithFilter": "「{filter}」無符合條件的股票",
     "labelClear": "清除篩選",
     "labelScanned": "已掃描 {count} 檔",
-    "labelDate": "資料日期 {date}"
+    "labelDate": "資料日期 {date}",
+    "moreDetails": "更多詳情"
   },
   "customScreening": {
     "title": "自訂選股",

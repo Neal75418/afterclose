@@ -251,6 +251,7 @@
     "dividendYear": "Year",
     "cashDividend": "Cash",
     "stockDividend": "Stock",
+    "totalDividend": "Total",
     "perLabel": "P/E Ratio",
     "pbrLabel": "P/B Ratio",
     "yield": "Yield",
@@ -748,7 +749,8 @@
     "titleWithFilter": "\"{filter}\" No Matching Stocks",
     "labelClear": "Clear Filter",
     "labelScanned": "Scanned {count}",
-    "labelDate": "Data Date {date}"
+    "labelDate": "Data Date {date}",
+    "moreDetails": "More Details"
   },
   "customScreening": {
     "title": "Custom Screening",

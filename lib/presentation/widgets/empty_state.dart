@@ -222,7 +222,10 @@ class EmptyStates {
 }
 
 /// 附有篩選條件元資料的空狀態 Widget
-class _EmptyStateWithMeta extends StatelessWidget {
+///
+/// 核心資訊（條件 + 閾值）預設顯示，
+/// 「診斷資訊」和「資料需求」折疊在「更多詳情」中，降低新用戶資訊密度。
+class _EmptyStateWithMeta extends StatefulWidget {
   const _EmptyStateWithMeta({
     required this.filterName,
     required this.conditionDescription,
@@ -242,9 +245,20 @@ class _EmptyStateWithMeta extends StatelessWidget {
   final VoidCallback? onClearFilter;
 
   @override
+  State<_EmptyStateWithMeta> createState() => _EmptyStateWithMetaState();
+}
+
+class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final hasDetails =
+        widget.totalScanned != null ||
+        widget.dataDate != null ||
+        widget.dataRequirements.isNotEmpty;
 
     return Center(
       child: SingleChildScrollView(
@@ -296,7 +310,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
             // 帶有篩選名稱的標題
             Text(
               'filterMeta.titleWithFilter'.tr(
-                namedArgs: {'filter': filterName},
+                namedArgs: {'filter': widget.filterName},
               ),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -307,79 +321,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // 診斷資訊（掃描數量與日期）
-            if (totalScanned != null || dataDate != null) ...[
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainer,
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (dataDate != null) ...[
-                      Icon(
-                        Icons.calendar_today_outlined,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'filterMeta.labelDate'.tr(
-                          namedArgs: {
-                            'date': DateFormat('MM/dd').format(dataDate!),
-                          },
-                        ),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (totalScanned != null) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 1,
-                          height: 12,
-                          color: theme.colorScheme.outline.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                    ],
-                    if (totalScanned != null) ...[
-                      Icon(
-                        Icons.analytics_outlined,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'filterMeta.labelScanned'.tr(
-                          namedArgs: {
-                            'count': NumberFormat.decimalPattern().format(
-                              totalScanned,
-                            ),
-                          },
-                        ),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ).animate().fadeIn(delay: 150.ms, duration: 300.ms),
-            ],
-
-            // 條件說明卡片
+            // 條件說明卡片（核心：條件 + 閾值）
             Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
@@ -415,14 +357,14 @@ class _EmptyStateWithMeta extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        conditionDescription,
+                        widget.conditionDescription,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
 
                       // 閾值資訊（若有）
-                      if (thresholdInfo != null) ...[
+                      if (widget.thresholdInfo != null) ...[
                         const SizedBox(height: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -437,7 +379,7 @@ class _EmptyStateWithMeta extends StatelessWidget {
                             ),
                           ),
                           child: Text(
-                            thresholdInfo!,
+                            widget.thresholdInfo!,
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.onPrimaryContainer,
                               fontFamily: 'monospace',
@@ -445,53 +387,6 @@ class _EmptyStateWithMeta extends StatelessWidget {
                           ),
                         ),
                       ],
-
-                      const Divider(height: 24),
-
-                      // 資料需求區塊
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.storage_outlined,
-                            size: 18,
-                            color: theme.colorScheme.secondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'filterMeta.labelData'.tr(),
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.secondary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: dataRequirements.map((req) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.secondaryContainer
-                                  .withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(
-                                DesignTokens.radiusXl,
-                              ),
-                            ),
-                            child: Text(
-                              req,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSecondaryContainer,
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
                     ],
                   ),
                 )
@@ -499,7 +394,34 @@ class _EmptyStateWithMeta extends StatelessWidget {
                 .fadeIn(delay: 200.ms, duration: 300.ms)
                 .slideY(begin: 0.1, duration: 300.ms),
 
-            const SizedBox(height: 16),
+            // 更多詳情展開按鈕
+            if (hasDetails) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                icon: AnimatedRotation(
+                  turns: _isExpanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 200),
+                  child: const Icon(Icons.expand_more, size: 20),
+                ),
+                label: Text(
+                  'filterMeta.moreDetails'.tr(),
+                  style: theme.textTheme.labelMedium,
+                ),
+              ),
+            ],
+
+            // 折疊內容：診斷資訊 + 資料需求
+            AnimatedCrossFade(
+              firstChild: const SizedBox.shrink(),
+              secondChild: _buildExpandedDetails(theme),
+              crossFadeState: _isExpanded
+                  ? CrossFadeState.showSecond
+                  : CrossFadeState.showFirst,
+              duration: const Duration(milliseconds: 300),
+            ),
+
+            const SizedBox(height: 8),
 
             // 提示文字
             Text(
@@ -511,10 +433,10 @@ class _EmptyStateWithMeta extends StatelessWidget {
             ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
 
             // 清除篩選按鈕
-            if (onClearFilter != null) ...[
+            if (widget.onClearFilter != null) ...[
               const SizedBox(height: 20),
               FilledButton.tonal(
-                    onPressed: onClearFilter,
+                    onPressed: widget.onClearFilter,
                     child: Text('filterMeta.labelClear'.tr()),
                   )
                   .animate()
@@ -524,6 +446,145 @@ class _EmptyStateWithMeta extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// 展開後的詳情內容：診斷資訊 + 資料需求
+  Widget _buildExpandedDetails(ThemeData theme) {
+    return Column(
+      children: [
+        // 診斷資訊（掃描數量與日期）
+        if (widget.totalScanned != null || widget.dataDate != null)
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (widget.dataDate != null) ...[
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'filterMeta.labelDate'.tr(
+                      namedArgs: {
+                        'date': DateFormat('MM/dd').format(widget.dataDate!),
+                      },
+                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (widget.totalScanned != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 1,
+                      height: 12,
+                      color: theme.colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ],
+                if (widget.totalScanned != null) ...[
+                  Icon(
+                    Icons.analytics_outlined,
+                    size: 14,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'filterMeta.labelScanned'.tr(
+                      namedArgs: {
+                        'count': NumberFormat.decimalPattern().format(
+                          widget.totalScanned,
+                        ),
+                      },
+                    ),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+        // 資料需求區塊
+        if (widget.dataRequirements.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.1),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.storage_outlined,
+                      size: 18,
+                      color: theme.colorScheme.secondary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'filterMeta.labelData'.tr(),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.secondary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: widget.dataRequirements.map((req) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.secondaryContainer.withValues(
+                          alpha: 0.6,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          DesignTokens.radiusXl,
+                        ),
+                      ),
+                      child: Text(
+                        req,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

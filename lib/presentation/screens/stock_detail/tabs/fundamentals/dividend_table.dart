@@ -120,9 +120,16 @@ class DividendTable extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     flex: 2,
-                    child: SizedBox(), // Total column placeholder
+                    child: Text(
+                      'stockDetail.totalDividend'.tr(),
+                      textAlign: TextAlign.end,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -177,7 +184,10 @@ class DividendTable extends StatelessWidget {
                       flex: 2,
                       child: Text(
                         div.stockDividend > 0
-                            ? div.stockDividend.toStringAsFixed(2)
+                            ? AppNumberFormat.currency(
+                                div.stockDividend,
+                                decimals: 2,
+                              )
                             : '-',
                         textAlign: TextAlign.end,
                         style: theme.textTheme.bodySmall?.copyWith(

@@ -22,22 +22,35 @@ class ProfitabilityCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     final items = <ProfitMetric>[];
-    if (metrics.containsKey('GrossProfit')) {
-      items.add(
-        ProfitMetric('stockDetail.grossMargin'.tr(), metrics['GrossProfit']!),
-      );
-    }
-    if (metrics.containsKey('OperatingIncome')) {
+    final revenue = metrics['Revenue'];
+
+    // 毛利率 = GrossProfit / Revenue × 100
+    if (metrics.containsKey('GrossProfit') && revenue != null && revenue != 0) {
       items.add(
         ProfitMetric(
-          'stockDetail.operatingMargin'.tr(),
-          metrics['OperatingIncome']!,
+          'stockDetail.grossMargin'.tr(),
+          metrics['GrossProfit']! / revenue * 100,
         ),
       );
     }
-    if (metrics.containsKey('NetIncome')) {
+    // 營業利益率 = OperatingIncome / Revenue × 100
+    if (metrics.containsKey('OperatingIncome') &&
+        revenue != null &&
+        revenue != 0) {
       items.add(
-        ProfitMetric('stockDetail.netMargin'.tr(), metrics['NetIncome']!),
+        ProfitMetric(
+          'stockDetail.operatingMargin'.tr(),
+          metrics['OperatingIncome']! / revenue * 100,
+        ),
+      );
+    }
+    // 稅後淨利率 = NetIncome / Revenue × 100
+    if (metrics.containsKey('NetIncome') && revenue != null && revenue != 0) {
+      items.add(
+        ProfitMetric(
+          'stockDetail.netMargin'.tr(),
+          metrics['NetIncome']! / revenue * 100,
+        ),
       );
     }
     if (metrics.containsKey('ROE')) {

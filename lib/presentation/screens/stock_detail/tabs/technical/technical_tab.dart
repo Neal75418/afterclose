@@ -10,6 +10,7 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indi
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/ohlcv_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/k_line_chart_widget.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
 /// 圖表時間範圍選項
@@ -133,7 +134,11 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
     }
 
     // Calculate chart height based on selected secondary indicators
-    const baseHeight = 350.0;
+    final baseHeight = context.responsive(
+      mobile: 320.0,
+      tablet: 400.0,
+      desktop: 450.0,
+    );
     final secondaryHeight = _secondaryIndicators.isEmpty
         ? 0.0
         : 120.0 * _secondaryIndicators.length;

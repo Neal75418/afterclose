@@ -269,32 +269,37 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             child: UpdateProgressBanner(progress: state.updateProgress!),
           ),
 
-        // 最後更新時間 + 資料日期
+        // 最後更新時間 + 資料日期（Wrap 自動換行，避免窄螢幕截斷）
         if (state.lastUpdate != null || state.dataDate != null)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text.rich(
-                TextSpan(
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  children: [
-                    if (state.lastUpdate != null)
-                      TextSpan(
-                        text: S.todayLastUpdate(
-                          S.dateFormat(state.lastUpdate!),
-                        ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  if (state.lastUpdate != null)
+                    Text(
+                      S.todayLastUpdate(S.dateFormat(state.lastUpdate!)),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    if (state.lastUpdate != null && state.dataDate != null)
-                      const TextSpan(text: '  ·  '),
-                    if (state.dataDate != null)
-                      TextSpan(
-                        text: S.todayDataDate(_formatDataDate(state.dataDate!)),
+                    ),
+                  if (state.lastUpdate != null && state.dataDate != null)
+                    Text(
+                      '·',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                  ],
-                ),
-                overflow: TextOverflow.ellipsis,
+                    ),
+                  if (state.dataDate != null)
+                    Text(
+                      S.todayDataDate(_formatDataDate(state.dataDate!)),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
               ),
             ),
           ),
@@ -335,8 +340,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     HapticFeedback.lightImpact();
     final notifier = ref.read(watchlistProvider.notifier);
 
-    // 隱藏目前的 SnackBar（比 clearSnackBars 更溫和）
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    // 清除現有的 SnackBar，避免堆積（與 watchlist_screen 一致）
+    ScaffoldMessenger.of(context).clearSnackBars();
 
     if (currentlyInWatchlist) {
       await notifier.removeStock(symbol);

@@ -28,6 +28,7 @@ class ScanState {
     this.industries = const [],
     this.dataDate,
     this.isLoading = false,
+    this.isFiltering = false,
     this.isLoadingMore = false,
     this.hasMore = true,
     this.totalCount = 0,
@@ -48,7 +49,12 @@ class ScanState {
 
   /// The actual date of the data being displayed
   final DateTime? dataDate;
+
+  /// 首次載入或 pull-to-refresh
   final bool isLoading;
+
+  /// 篩選器/排序切換中（輕量 loading，不顯示全骨架）
+  final bool isFiltering;
 
   /// Whether more items are being loaded (infinite scroll)
   final bool isLoadingMore;
@@ -74,6 +80,7 @@ class ScanState {
     List<String>? industries,
     DateTime? dataDate,
     bool? isLoading,
+    bool? isFiltering,
     bool? isLoadingMore,
     bool? hasMore,
     int? totalCount,
@@ -91,6 +98,7 @@ class ScanState {
       industries: industries ?? this.industries,
       dataDate: dataDate ?? this.dataDate,
       isLoading: isLoading ?? this.isLoading,
+      isFiltering: isFiltering ?? this.isFiltering,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       totalCount: totalCount ?? this.totalCount,
@@ -250,8 +258,8 @@ class ScanNotifier extends StateNotifier<ScanState> {
     // Apply global filter
     _applyGlobalFilter(filter);
 
-    // Reset pagination and reload first page
-    state = state.copyWith(filter: filter, isLoading: true, stocks: []);
+    // 篩選切換使用 isFiltering（輕量 indicator），不替換為全骨架
+    state = state.copyWith(filter: filter, isFiltering: true, stocks: []);
     _reloadFirstPage();
   }
 
@@ -265,7 +273,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(
       industryFilter: industry,
       clearIndustryFilter: industry == null,
-      isLoading: true,
+      isFiltering: true,
       stocks: [],
     );
 
@@ -293,11 +301,16 @@ class ScanNotifier extends StateNotifier<ScanState> {
       state = state.copyWith(
         stocks: firstPageItems,
         isLoading: false,
+        isFiltering: false,
         hasMore: _filteredAnalyses.length > kPageSize,
         totalCount: _filteredAnalyses.length,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        isFiltering: false,
+        error: e.toString(),
+      );
     }
   }
 
@@ -333,8 +346,8 @@ class ScanNotifier extends StateNotifier<ScanState> {
     // Apply global sort
     _applyGlobalSort(sort);
 
-    // Reset pagination and reload first page
-    state = state.copyWith(sort: sort, isLoading: true, stocks: []);
+    // 排序切換使用 isFiltering（輕量 indicator）
+    state = state.copyWith(sort: sort, isFiltering: true, stocks: []);
     _reloadFirstPage();
   }
 
