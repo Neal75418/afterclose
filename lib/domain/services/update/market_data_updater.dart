@@ -203,7 +203,12 @@ class MarketDataUpdater {
               !latestShareholding.date.isBefore(normalizedFreshnessDate);
 
           if (hasFreshShareholding) {
-            return (true, false, false); // skipped, synced, error
+            return (
+              true,
+              false,
+              false,
+              false,
+            ); // skipped, synced, error, quotaError
           }
 
           // 同步外資持股資料
@@ -213,25 +218,24 @@ class MarketDataUpdater {
               startDate: marketDataStartDate,
               endDate: date,
             );
-            return (false, shResult > 0, false);
+            return (false, shResult > 0, false, false);
           } on RateLimitException {
-            return (false, false, true); // quota error
+            return (false, false, true, true); // quota error
           }
         } catch (e) {
           AppLogger.debug('MarketDataUpdater', '$symbol 外資持股同步失敗: $e');
-          return (false, false, true);
+          return (false, false, true, false);
         }
       });
 
       final results = await Future.wait(futures);
 
-      for (final (skipped, synced, isError) in results) {
+      for (final (skipped, synced, isError, isQuotaError) in results) {
         if (skipped) skippedCount++;
         if (synced) shareholdingCount++;
         if (isError) {
           totalErrorCount++;
-          // 檢查是否為配額錯誤
-          if (totalErrorCount == 1) quotaExhausted = true;
+          if (isQuotaError) quotaExhausted = true;
         }
       }
 

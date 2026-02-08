@@ -103,6 +103,7 @@ class ScoringService {
         analysisResult,
         priceHistory: prices,
         marketData: marketData,
+        evaluationTime: date,
       );
 
       // 從批次載入的 map 取得可選資料
@@ -226,6 +227,7 @@ class ScoringService {
           ? _convertRevenueHistoryMap(batchData.revenueHistoryMap!)
           : null,
       recentlyRecommended: recentlyRecommended,
+      date: date,
       dayTradingMap: batchData.dayTradingMap,
       shareholdingMap: batchData.shareholdingMap,
       warningMap: batchData.warningMap,

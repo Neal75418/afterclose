@@ -120,14 +120,30 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       final dataDate = syncResult.dataDate;
       final hasDataMismatch = syncResult.hasDataMismatch;
 
+      // 使用同步後的價格確保與 dataDate 一致
+      final displayPrice = syncResult.latestPrice ?? latestPrice;
+      final displayPreviousPrice = _findPreviousPrice(
+        priceHistory,
+        displayPrice,
+      );
+
+      if (hasDataMismatch) {
+        AppLogger.debug(
+          'StockDetail',
+          'Data mismatch: using synced price '
+              '${displayPrice?.close} (${displayPrice?.date}) '
+              'instead of ${latestPrice?.close} (${latestPrice?.date})',
+        );
+      }
+
       // 生成 AI 智慧分析摘要
       final summaryData = const AnalysisSummaryService().generate(
         analysis: analysis,
         reasons: reasons,
-        latestPrice: latestPrice,
+        latestPrice: displayPrice,
         priceChange: PriceCalculator.calculatePriceChange(
           priceHistory,
-          latestPrice,
+          displayPrice,
         ),
         institutionalHistory: syncedInstHistory,
         revenueHistory: state.fundamentals.revenueHistory,
@@ -137,8 +153,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       state = state.copyWith(
         stock: stock,
-        latestPrice: latestPrice,
-        previousPrice: previousPrice,
+        latestPrice: displayPrice,
+        previousPrice: displayPreviousPrice,
         priceHistory: priceHistory,
         analysis: analysis,
         reasons: reasons,
@@ -279,6 +295,21 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       AppLogger.warning('StockDetail', '載入籌碼分析資料失敗: $_symbol', e);
       state = state.copyWith(isLoadingChip: false);
     }
+  }
+
+  /// 從升序價格歷史中找到 [targetPrice] 的前一筆
+  static DailyPriceEntry? _findPreviousPrice(
+    List<DailyPriceEntry> history,
+    DailyPriceEntry? targetPrice,
+  ) {
+    if (targetPrice == null || history.length < 2) return null;
+    final targetDate = DateContext.normalize(targetPrice.date);
+    for (var i = history.length - 1; i >= 1; i--) {
+      if (DateContext.normalize(history[i].date) == targetDate) {
+        return history[i - 1];
+      }
+    }
+    return null;
   }
 
   /// 重新生成 AI 智慧分析摘要（含營收/估值資料）

@@ -199,6 +199,7 @@ void main() {
           any(),
           priceHistory: any(named: 'priceHistory'),
           marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
         ),
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
@@ -343,6 +344,7 @@ void main() {
           any(),
           priceHistory: any(named: 'priceHistory'),
           marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
         ),
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
@@ -414,6 +416,7 @@ void main() {
             any(),
             priceHistory: any(named: 'priceHistory'),
             marketData: any(named: 'marketData'),
+            evaluationTime: any(named: 'evaluationTime'),
           ),
         ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 

@@ -22,6 +22,7 @@ class ScoringIsolateInput {
     this.valuationMap,
     this.revenueHistoryMap,
     this.recentlyRecommended,
+    this.date,
     this.dayTradingMap,
     this.shareholdingMap,
     this.warningMap,
@@ -39,6 +40,9 @@ class ScoringIsolateInput {
   final Map<String, Map<String, dynamic>>? valuationMap;
   final Map<String, List<Map<String, dynamic>>>? revenueHistoryMap;
   final Set<String>? recentlyRecommended;
+
+  /// 評估目標日期（供規則判斷資料新鮮度）
+  final DateTime? date;
 
   /// 當沖資料 Map（symbol -> dayTradingRatio）
   final Map<String, double>? dayTradingMap;
@@ -70,6 +74,7 @@ class ScoringIsolateInput {
     'valuationMap': valuationMap,
     'revenueHistoryMap': revenueHistoryMap,
     'recentlyRecommended': recentlyRecommended?.toList(),
+    'date': date?.millisecondsSinceEpoch,
     'dayTradingMap': dayTradingMap,
     'shareholdingMap': shareholdingMap,
     'warningMap': warningMap,
@@ -96,6 +101,9 @@ class ScoringIsolateInput {
           : null,
       recentlyRecommended: map['recentlyRecommended'] != null
           ? Set<String>.from(map['recentlyRecommended'])
+          : null,
+      date: map['date'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['date'] as int)
           : null,
       dayTradingMap: map['dayTradingMap'] != null
           ? Map<String, double>.from(map['dayTradingMap'])
@@ -498,7 +506,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
         analysisResult,
         priceHistory: prices,
         marketData: marketData,
-        evaluationTime: DateTime.now(),
+        evaluationTime: input.date ?? DateTime.now(),
       );
 
       // 轉換法人資料

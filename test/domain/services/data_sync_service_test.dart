@@ -94,6 +94,26 @@ void main() {
       );
     });
 
+    test('latestPrice matches dataDate when mismatch exists', () {
+      final prices = [
+        createTestPrice(date: DateTime(2025, 1, 13), close: 99.0),
+        createTestPrice(date: DateTime(2025, 1, 14), close: 100.0),
+        createTestPrice(date: DateTime(2025, 1, 15), close: 101.0),
+      ];
+      final instHistory = createInstHistory([
+        DateTime(2025, 1, 13),
+        DateTime(2025, 1, 14),
+      ]);
+
+      final result = service.synchronizeDataDates(prices, instHistory);
+
+      expect(result.hasDataMismatch, isTrue);
+      expect(result.dataDate, equals(DateTime(2025, 1, 14)));
+      // latestPrice should be the 1/14 entry, NOT the 1/15 entry
+      expect(result.latestPrice!.close, equals(100.0));
+      expect(result.latestPrice!.date, equals(DateTime(2025, 1, 14)));
+    });
+
     test('uses earlier date when no common dates exist', () {
       final prices = [
         createTestPrice(date: DateTime(2025, 1, 15), close: 100.0),
