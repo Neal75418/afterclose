@@ -1,362 +1,27 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/l10n/app_strings.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:afterclose/domain/models/chip_strength.dart';
-import 'package:afterclose/domain/services/chip_analysis_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/domain/services/personalization_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/presentation/providers/stock_detail_state.dart';
+import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
+import 'package:afterclose/presentation/providers/stock_chip_loader.dart';
 
-// ==================================================
-// 子狀態類別
-// ==================================================
-
-/// 價格相關狀態：股票資訊、價格、歷史、分析
-class StockPriceState {
-  const StockPriceState({
-    this.stock,
-    this.latestPrice,
-    this.previousPrice,
-    this.priceHistory = const [],
-    this.analysis,
-  });
-
-  final StockMasterEntry? stock;
-  final DailyPriceEntry? latestPrice;
-  final DailyPriceEntry? previousPrice;
-  final List<DailyPriceEntry> priceHistory;
-  final DailyAnalysisEntry? analysis;
-
-  /// 漲跌幅百分比
-  ///
-  /// 委託給 PriceCalculator，優先使用 API 漲跌價差，回退到歷史收盤價
-  double? get priceChange {
-    return PriceCalculator.calculatePriceChange(priceHistory, latestPrice);
-  }
-
-  StockPriceState copyWith({
-    StockMasterEntry? stock,
-    DailyPriceEntry? latestPrice,
-    DailyPriceEntry? previousPrice,
-    List<DailyPriceEntry>? priceHistory,
-    DailyAnalysisEntry? analysis,
-  }) {
-    return StockPriceState(
-      stock: stock ?? this.stock,
-      latestPrice: latestPrice ?? this.latestPrice,
-      previousPrice: previousPrice ?? this.previousPrice,
-      priceHistory: priceHistory ?? this.priceHistory,
-      analysis: analysis ?? this.analysis,
-    );
-  }
-}
-
-/// 基本面狀態：營收、股利、本益比、EPS、季度指標
-class FundamentalsState {
-  const FundamentalsState({
-    this.revenueHistory = const [],
-    this.dividendHistory = const [],
-    this.latestPER,
-    this.latestQuarterMetrics = const {},
-    this.epsHistory = const [],
-  });
-
-  final List<FinMindRevenue> revenueHistory;
-  final List<FinMindDividend> dividendHistory;
-  final FinMindPER? latestPER;
-  final Map<String, double> latestQuarterMetrics;
-  final List<FinancialDataEntry> epsHistory;
-
-  FundamentalsState copyWith({
-    List<FinMindRevenue>? revenueHistory,
-    List<FinMindDividend>? dividendHistory,
-    FinMindPER? latestPER,
-    Map<String, double>? latestQuarterMetrics,
-    List<FinancialDataEntry>? epsHistory,
-  }) {
-    return FundamentalsState(
-      revenueHistory: revenueHistory ?? this.revenueHistory,
-      dividendHistory: dividendHistory ?? this.dividendHistory,
-      latestPER: latestPER ?? this.latestPER,
-      latestQuarterMetrics: latestQuarterMetrics ?? this.latestQuarterMetrics,
-      epsHistory: epsHistory ?? this.epsHistory,
-    );
-  }
-}
-
-/// 籌碼分析狀態：法人進出、融資融券、當沖、持股比例等
-class ChipAnalysisState {
-  const ChipAnalysisState({
-    this.institutionalHistory = const [],
-    this.marginHistory = const [],
-    this.marginTradingHistory = const [],
-    this.dayTradingHistory = const [],
-    this.shareholdingHistory = const [],
-    this.holdingDistribution = const [],
-    this.insiderHistory = const [],
-    this.chipStrength,
-    this.hasInstitutionalError = false,
-  });
-
-  final List<DailyInstitutionalEntry> institutionalHistory;
-  final List<FinMindMarginData> marginHistory;
-  final List<MarginTradingEntry> marginTradingHistory;
-  final List<DayTradingEntry> dayTradingHistory;
-  final List<ShareholdingEntry> shareholdingHistory;
-  final List<HoldingDistributionEntry> holdingDistribution;
-  final List<InsiderHoldingEntry> insiderHistory;
-  final ChipStrengthResult? chipStrength;
-
-  /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
-  final bool hasInstitutionalError;
-
-  ChipAnalysisState copyWith({
-    List<DailyInstitutionalEntry>? institutionalHistory,
-    List<FinMindMarginData>? marginHistory,
-    List<MarginTradingEntry>? marginTradingHistory,
-    List<DayTradingEntry>? dayTradingHistory,
-    List<ShareholdingEntry>? shareholdingHistory,
-    List<HoldingDistributionEntry>? holdingDistribution,
-    List<InsiderHoldingEntry>? insiderHistory,
-    ChipStrengthResult? chipStrength,
-    bool? hasInstitutionalError,
-  }) {
-    return ChipAnalysisState(
-      institutionalHistory: institutionalHistory ?? this.institutionalHistory,
-      marginHistory: marginHistory ?? this.marginHistory,
-      marginTradingHistory: marginTradingHistory ?? this.marginTradingHistory,
-      dayTradingHistory: dayTradingHistory ?? this.dayTradingHistory,
-      shareholdingHistory: shareholdingHistory ?? this.shareholdingHistory,
-      holdingDistribution: holdingDistribution ?? this.holdingDistribution,
-      insiderHistory: insiderHistory ?? this.insiderHistory,
-      chipStrength: chipStrength ?? this.chipStrength,
-      hasInstitutionalError:
-          hasInstitutionalError ?? this.hasInstitutionalError,
-    );
-  }
-}
-
-/// 各區塊載入狀態旗標
-class LoadingState {
-  const LoadingState({
-    this.isLoading = false,
-    this.isLoadingMargin = false,
-    this.isLoadingFundamentals = false,
-    this.isLoadingInsider = false,
-    this.isLoadingChip = false,
-  });
-
-  final bool isLoading;
-  final bool isLoadingMargin;
-  final bool isLoadingFundamentals;
-  final bool isLoadingInsider;
-  final bool isLoadingChip;
-
-  LoadingState copyWith({
-    bool? isLoading,
-    bool? isLoadingMargin,
-    bool? isLoadingFundamentals,
-    bool? isLoadingInsider,
-    bool? isLoadingChip,
-  }) {
-    return LoadingState(
-      isLoading: isLoading ?? this.isLoading,
-      isLoadingMargin: isLoadingMargin ?? this.isLoadingMargin,
-      isLoadingFundamentals:
-          isLoadingFundamentals ?? this.isLoadingFundamentals,
-      isLoadingInsider: isLoadingInsider ?? this.isLoadingInsider,
-      isLoadingChip: isLoadingChip ?? this.isLoadingChip,
-    );
-  }
-}
-
-// ==================================================
-// 股票詳情狀態
-// ==================================================
-
-/// 股票詳情頁面狀態
-class StockDetailState {
-  const StockDetailState({
-    this.price = const StockPriceState(),
-    this.fundamentals = const FundamentalsState(),
-    this.chip = const ChipAnalysisState(),
-    this.loading = const LoadingState(),
-    this.isInWatchlist = false,
-    this.error,
-    this.dataDate,
-    this.hasDataMismatch = false,
-    this.reasons = const [],
-    this.aiSummary,
-    this.recentNews = const [],
-  });
-
-  final StockPriceState price;
-  final FundamentalsState fundamentals;
-  final ChipAnalysisState chip;
-  final LoadingState loading;
-
-  // 其他直接欄位
-  final bool isInWatchlist;
-  final String? error;
-
-  /// 同步後的資料日期 — 所有顯示資料應來自此日期
-  final DateTime? dataDate;
-
-  /// 價格與法人資料日期不一致時為 true
-  final bool hasDataMismatch;
-
-  final List<DailyReasonEntry> reasons;
-  final StockSummary? aiSummary;
-  final List<NewsItemEntry> recentNews;
-
-  /// 便捷存取：漲跌幅（委託給 price 子狀態）
-  double? get priceChange => price.priceChange;
-
-  /// 趨勢狀態標籤
-  String get trendLabel => S.getTrendLabel(price.analysis?.trendState);
-
-  /// 反轉狀態標籤
-  String? get reversalLabel =>
-      S.getReversalLabel(price.analysis?.reversalState);
-
-  StockDetailState copyWith({
-    // Price fields
-    StockMasterEntry? stock,
-    DailyPriceEntry? latestPrice,
-    DailyPriceEntry? previousPrice,
-    List<DailyPriceEntry>? priceHistory,
-    DailyAnalysisEntry? analysis,
-    // Fundamentals fields
-    List<FinMindRevenue>? revenueHistory,
-    List<FinMindDividend>? dividendHistory,
-    FinMindPER? latestPER,
-    Map<String, double>? latestQuarterMetrics,
-    List<FinancialDataEntry>? epsHistory,
-    // Chip fields
-    List<DailyInstitutionalEntry>? institutionalHistory,
-    List<FinMindMarginData>? marginHistory,
-    List<MarginTradingEntry>? marginTradingHistory,
-    List<DayTradingEntry>? dayTradingHistory,
-    List<ShareholdingEntry>? shareholdingHistory,
-    List<HoldingDistributionEntry>? holdingDistribution,
-    List<InsiderHoldingEntry>? insiderHistory,
-    ChipStrengthResult? chipStrength,
-    bool? hasInstitutionalError,
-    // Loading fields
-    bool? isLoading,
-    bool? isLoadingMargin,
-    bool? isLoadingFundamentals,
-    bool? isLoadingInsider,
-    bool? isLoadingChip,
-    // Direct fields
-    bool? isInWatchlist,
-    Object? error = sentinel,
-    DateTime? dataDate,
-    bool? hasDataMismatch,
-    List<DailyReasonEntry>? reasons,
-    StockSummary? aiSummary,
-    List<NewsItemEntry>? recentNews,
-  }) {
-    // Only create new sub-state objects when their fields are being updated
-    final needsPriceUpdate =
-        stock != null ||
-        latestPrice != null ||
-        previousPrice != null ||
-        priceHistory != null ||
-        analysis != null;
-
-    final needsFundamentalsUpdate =
-        revenueHistory != null ||
-        dividendHistory != null ||
-        latestPER != null ||
-        latestQuarterMetrics != null ||
-        epsHistory != null;
-
-    final needsChipUpdate =
-        institutionalHistory != null ||
-        marginHistory != null ||
-        marginTradingHistory != null ||
-        dayTradingHistory != null ||
-        shareholdingHistory != null ||
-        holdingDistribution != null ||
-        insiderHistory != null ||
-        chipStrength != null ||
-        hasInstitutionalError != null;
-
-    final needsLoadingUpdate =
-        isLoading != null ||
-        isLoadingMargin != null ||
-        isLoadingFundamentals != null ||
-        isLoadingInsider != null ||
-        isLoadingChip != null;
-
-    return StockDetailState(
-      price: needsPriceUpdate
-          ? price.copyWith(
-              stock: stock,
-              latestPrice: latestPrice,
-              previousPrice: previousPrice,
-              priceHistory: priceHistory,
-              analysis: analysis,
-            )
-          : price,
-      fundamentals: needsFundamentalsUpdate
-          ? fundamentals.copyWith(
-              revenueHistory: revenueHistory,
-              dividendHistory: dividendHistory,
-              latestPER: latestPER,
-              latestQuarterMetrics: latestQuarterMetrics,
-              epsHistory: epsHistory,
-            )
-          : fundamentals,
-      chip: needsChipUpdate
-          ? chip.copyWith(
-              institutionalHistory: institutionalHistory,
-              marginHistory: marginHistory,
-              marginTradingHistory: marginTradingHistory,
-              dayTradingHistory: dayTradingHistory,
-              shareholdingHistory: shareholdingHistory,
-              holdingDistribution: holdingDistribution,
-              insiderHistory: insiderHistory,
-              chipStrength: chipStrength,
-              hasInstitutionalError: hasInstitutionalError,
-            )
-          : chip,
-      loading: needsLoadingUpdate
-          ? loading.copyWith(
-              isLoading: isLoading,
-              isLoadingMargin: isLoadingMargin,
-              isLoadingFundamentals: isLoadingFundamentals,
-              isLoadingInsider: isLoadingInsider,
-              isLoadingChip: isLoadingChip,
-            )
-          : loading,
-      isInWatchlist: isInWatchlist ?? this.isInWatchlist,
-      error: error == sentinel ? this.error : error as String?,
-      dataDate: dataDate ?? this.dataDate,
-      hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
-      reasons: reasons ?? this.reasons,
-      aiSummary: aiSummary ?? this.aiSummary,
-      recentNews: recentNews ?? this.recentNews,
-    );
-  }
-}
+// Re-export state classes for consumers
+export 'package:afterclose/presentation/providers/stock_detail_state.dart';
 
 // ==================================================
 // 股票詳情 Notifier
@@ -364,31 +29,24 @@ class StockDetailState {
 
 class StockDetailNotifier extends StateNotifier<StockDetailState> {
   StockDetailNotifier(this._ref, this._symbol)
-    : super(const StockDetailState());
+    : _fundamentalsLoader = StockFundamentalsLoader(
+        db: _ref.read(databaseProvider),
+        finMind: _ref.read(finMindClientProvider),
+      ),
+      _chipLoader = StockChipLoader(
+        db: _ref.read(databaseProvider),
+        finMind: _ref.read(finMindClientProvider),
+        insiderRepo: _ref.read(insiderRepositoryProvider),
+      ),
+      super(const StockDetailState());
 
   final Ref _ref;
   final String _symbol;
+  final StockFundamentalsLoader _fundamentalsLoader;
+  final StockChipLoader _chipLoader;
 
   AppDatabase get _db => _ref.read(databaseProvider);
-  FinMindClient get _finMind => _ref.read(finMindClientProvider);
   DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
-
-  /// 將資料庫營收資料轉換為 FinMindRevenue 格式
-  List<FinMindRevenue> _convertDbRevenuesToFinMind(
-    List<MonthlyRevenueEntry> dbRevenues,
-  ) {
-    return dbRevenues.map((r) {
-      return FinMindRevenue(
-        stockId: r.symbol,
-        date: DateContext.formatYmd(r.date),
-        revenueYear: r.revenueYear,
-        revenueMonth: r.revenueMonth,
-        revenue: r.revenue,
-        momGrowth: r.momGrowth ?? 0,
-        yoyGrowth: r.yoyGrowth ?? 0,
-      );
-    }).toList();
-  }
 
   /// 載入股票詳情資料
   Future<void> loadData() async {
@@ -406,25 +64,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
           ? DateContext.normalize(latestDataDate)
           : normalizedToday;
 
-      // 平行載入所有資料
-      final stockFuture = _db.getStock(_symbol);
-      final priceFuture = _db.getPriceHistory(
-        _symbol,
-        startDate: startDate,
-        endDate: normalizedToday,
-      );
-      // 使用 getRecentPrices 獲取最近兩筆價格，用於計算漲跌幅
-      final recentPricesFuture = _db.getRecentPrices(_symbol, count: 2);
-      final analysisFuture = _db.getAnalysis(_symbol, analysisDate);
-      final reasonsFuture = _db.getReasons(_symbol, analysisDate);
-      final instFuture = _db.getInstitutionalHistory(
-        _symbol,
-        startDate: normalizedToday.subtract(const Duration(days: 10)),
-        endDate: normalizedToday,
-      );
-      final watchlistFuture = _db.isInWatchlist(_symbol);
-
-      // 使用 Dart 3 Records 進行型別安全的平行載入（無需手動 index casting）
+      // 使用 Dart 3 Records 進行型別安全的平行載入
       final (
         stock,
         priceHistory,
@@ -434,13 +74,21 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
         dbInstHistory,
         isInWatchlist,
       ) = await (
-        stockFuture,
-        priceFuture,
-        recentPricesFuture,
-        analysisFuture,
-        reasonsFuture,
-        instFuture,
-        watchlistFuture,
+        _db.getStock(_symbol),
+        _db.getPriceHistory(
+          _symbol,
+          startDate: startDate,
+          endDate: normalizedToday,
+        ),
+        _db.getRecentPrices(_symbol, count: 2),
+        _db.getAnalysis(_symbol, analysisDate),
+        _db.getReasons(_symbol, analysisDate),
+        _db.getInstitutionalHistory(
+          _symbol,
+          startDate: normalizedToday.subtract(const Duration(days: 10)),
+          endDate: normalizedToday,
+        ),
+        _db.isInWatchlist(_symbol),
       ).wait;
       var instHistory = dbInstHistory;
 
@@ -448,7 +96,6 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       final latestPrice = recentPrices.isNotEmpty ? recentPrices.first : null;
       final previousPrice = recentPrices.length >= 2 ? recentPrices[1] : null;
 
-      // DEBUG: 除錯漲跌幅計算
       AppLogger.debug(
         'StockDetail',
         'recentPrices count=${recentPrices.length}, '
@@ -457,10 +104,9 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
       );
 
       // DB 無法人資料時從 API 取得
-      // 追蹤 API 是否失敗，以便 UI 顯示部分錯誤提示
       var hasInstitutionalError = false;
       if (instHistory.isEmpty) {
-        final apiResult = await _fetchInstitutionalFromApi();
+        final apiResult = await _chipLoader.fetchInstitutionalFromApi(_symbol);
         instHistory = apiResult.data;
         hasInstitutionalError = apiResult.hasError;
       }
@@ -520,39 +166,6 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     }
   }
 
-  /// 直接從 FinMind API 取得法人資料
-  ///
-  /// 返回 record 包含資料與錯誤狀態，讓呼叫端能區分「API 失敗」與「真的沒資料」。
-  Future<({List<DailyInstitutionalEntry> data, bool hasError})>
-  _fetchInstitutionalFromApi() async {
-    try {
-      final today = DateTime.now();
-      final startDate = today.subtract(const Duration(days: 20));
-
-      final data = await _finMind.getInstitutionalData(
-        stockId: _symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: DateContext.formatYmd(today),
-      );
-
-      // 轉換為 DailyInstitutionalEntry 格式
-      final entries = data.map((item) {
-        return DailyInstitutionalEntry(
-          symbol: item.stockId,
-          date: DateTime.parse(item.date),
-          foreignNet: item.foreignNet,
-          investmentTrustNet: item.investmentTrustNet,
-          dealerNet: item.dealerNet,
-        );
-      }).toList();
-
-      return (data: entries, hasError: false);
-    } catch (e) {
-      AppLogger.warning('StockDetail', '取得法人資料失敗: $_symbol', e);
-      return (data: <DailyInstitutionalEntry>[], hasError: true);
-    }
-  }
-
   /// 切換自選股 — 同步更新全域 watchlistProvider
   Future<void> toggleWatchlist() async {
     final watchlistNotifier = _ref.read(watchlistProvider.notifier);
@@ -581,44 +194,19 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     );
   }
 
-  /// Load margin trading data (融資融券) from FinMind API
+  /// 載入融資融券資料
   Future<void> loadMarginData() async {
-    // Skip if already loading or already loaded
     if (state.loading.isLoadingMargin || state.chip.marginHistory.isNotEmpty) {
       return;
     }
 
     state = state.copyWith(isLoadingMargin: true);
-
-    try {
-      // Load margin data for the past 20 days
-      final today = DateTime.now();
-      final startDate = today.subtract(const Duration(days: 20));
-
-      final marginData = await _finMind.getMarginData(
-        stockId: _symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: DateContext.formatYmd(today),
-      );
-
-      state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
-    } catch (e) {
-      if (e.toString().contains('402')) {
-        AppLogger.info('StockDetail', '融資融券 API 不可用 (402)，跳過');
-      } else {
-        AppLogger.warning('StockDetail', '載入融資融券資料失敗: $_symbol', e);
-      }
-      state = state.copyWith(isLoadingMargin: false, marginHistory: []);
-    }
+    final marginData = await _chipLoader.loadMarginFromApi(_symbol);
+    state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
   }
 
-  /// Load fundamentals data (營收/股利/本益比)
-  ///
-  /// 估值資料（PER/PBR/殖利率）優先從資料庫（TWSE）取得，
-  /// 確保與規則評估使用相同資料來源。
-  /// 營收和股利歷史從 FinMind API 取得。
+  /// 載入基本面資料（營收/股利/本益比/EPS）
   Future<void> loadFundamentals() async {
-    // Skip if already loading or already loaded
     if (state.loading.isLoadingFundamentals ||
         state.fundamentals.revenueHistory.isNotEmpty ||
         state.fundamentals.dividendHistory.isNotEmpty) {
@@ -628,259 +216,69 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     state = state.copyWith(isLoadingFundamentals: true);
 
     try {
-      final today = DateTime.now();
-      final revenueStartDate = DateTime(today.year - 2, today.month, 1);
+      final result = await _fundamentalsLoader.loadAll(_symbol);
 
-      // 1. 優先從資料庫取得估值資料（TWSE 來源，與規則評估一致）
-      var latestPER = await _loadValuationData(today);
-
-      // 2. 營收資料：優先從 DB，不足則 fallback FinMind API
-      final revenueData = await _loadMonthlyRevenue(
-        today: today,
-        revenueStartDate: revenueStartDate,
-      );
-
-      // 3. 股利歷史：優先從 DB 取得，無資料則從 API 取得並存入 DB
-      final dividendData = await _loadDividendHistory();
-
-      // 4. EPS 歷史與季度財務指標（含 ROE 計算）
-      final (:epsData, :quarterMetrics) = await _loadFinancialStatements();
-
-      // 5. 若資料庫無估值資料，才用 FinMind API
-      latestPER ??= await _loadValuationFromApi(today);
-
-      // 更新 state
       state = state.copyWith(
-        revenueHistory: revenueData,
-        dividendHistory: dividendData,
-        latestPER: latestPER,
-        epsHistory: epsData,
-        latestQuarterMetrics: quarterMetrics,
+        revenueHistory: result.revenueData,
+        dividendHistory: result.dividendData,
+        latestPER: result.latestPER,
+        epsHistory: result.epsData,
+        latestQuarterMetrics: result.quarterMetrics,
         isLoadingFundamentals: false,
       );
 
       // 基本面載入後重新生成 AI 摘要（含營收/估值資料）
-      _regenerateAiSummary(revenueData: revenueData, latestPER: latestPER);
+      _regenerateAiSummary(
+        revenueData: result.revenueData,
+        latestPER: result.latestPER,
+      );
     } catch (e) {
       AppLogger.warning('StockDetail', '載入基本面資料失敗: $_symbol', e);
       state = state.copyWith(isLoadingFundamentals: false);
     }
   }
 
-  /// 從資料庫取得估值資料（PER/PBR/殖利率）
-  ///
-  /// 優先使用 TWSE 來源的資料，確保與規則評估一致。
-  /// 若資料庫無資料則回傳 null，後續由 [_loadValuationFromApi] 補充。
-  Future<FinMindPER?> _loadValuationData(DateTime today) async {
+  /// 載入董監持股資料
+  Future<void> loadInsiderData() async {
+    if (state.loading.isLoadingInsider ||
+        state.chip.insiderHistory.isNotEmpty) {
+      return;
+    }
+
+    state = state.copyWith(isLoadingInsider: true);
+    final insiderHistory = await _chipLoader.loadInsiderFromDb(_symbol);
+    state = state.copyWith(
+      insiderHistory: insiderHistory,
+      isLoadingInsider: false,
+    );
+  }
+
+  /// 載入完整籌碼分析資料
+  Future<void> loadChipData() async {
+    if (state.loading.isLoadingChip || state.chip.chipStrength != null) return;
+
+    state = state.copyWith(isLoadingChip: true);
+
     try {
-      final perStartDate = today.subtract(const Duration(days: 30));
-      final dbValuations = await _db.getValuationHistory(
+      final result = await _chipLoader.loadAllChipData(
         _symbol,
-        startDate: perStartDate,
+        existingInstitutional: state.chip.institutionalHistory,
+        existingInsider: state.chip.insiderHistory,
       );
 
-      if (dbValuations.isNotEmpty) {
-        final latest = dbValuations.last;
-        final per = FinMindPER(
-          stockId: latest.symbol,
-          date: DateContext.formatYmd(latest.date),
-          per: latest.per ?? 0,
-          pbr: latest.pbr ?? 0,
-          dividendYield: latest.dividendYield ?? 0,
-        );
-        AppLogger.debug(
-          'StockDetail',
-          '$_symbol: 使用 DB 估值 (殖利率=${per.dividendYield.toStringAsFixed(2)}%)',
-        );
-        return per;
-      }
-    } catch (e) {
-      AppLogger.warning('StockDetail', '$_symbol: 取得 DB 估值失敗', e);
-    }
-    return null;
-  }
-
-  /// 載入月營收資料
-  ///
-  /// 優先從資料庫取得（已由 TWSE 同步）。
-  /// 若 DB 資料少於 6 個月，改用 FinMind API 取得完整歷史。
-  /// API 失敗時 fallback 至 DB 部分資料。
-  Future<List<FinMindRevenue>> _loadMonthlyRevenue({
-    required DateTime today,
-    required DateTime revenueStartDate,
-  }) async {
-    try {
-      final dbRevenues = await _db.getMonthlyRevenueHistory(
-        _symbol,
-        startDate: revenueStartDate,
+      state = state.copyWith(
+        dayTradingHistory: result.dayTrading,
+        shareholdingHistory: result.shareholding,
+        marginTradingHistory: result.marginTrading,
+        holdingDistribution: result.holdingDist,
+        insiderHistory: result.insider.isNotEmpty ? result.insider : null,
+        chipStrength: result.strength,
+        isLoadingChip: false,
       );
-
-      // 若 DB 有足夠資料（>=6 個月），使用 DB；否則用 FinMind API
-      const minMonthsForDbUsage = 6;
-      if (dbRevenues.length >= minMonthsForDbUsage) {
-        final data = _convertDbRevenuesToFinMind(dbRevenues);
-        AppLogger.debug('StockDetail', '$_symbol: 使用 DB 營收 (${data.length} 筆)');
-        return data;
-      }
-
-      // DB 資料不足時用 FinMind API（可取得歷史資料）
-      try {
-        var revenueData = await _finMind.getMonthlyRevenue(
-          stockId: _symbol,
-          startDate: DateContext.formatYmd(revenueStartDate),
-          endDate: DateContext.formatYmd(today),
-        );
-        if (revenueData.isNotEmpty) {
-          revenueData = FinMindRevenue.calculateGrowthRates(revenueData);
-        }
-        AppLogger.debug(
-          'StockDetail',
-          '$_symbol: 使用 FinMind 營收 (${revenueData.length} 筆，DB 僅 ${dbRevenues.length} 筆)',
-        );
-        return revenueData;
-      } catch (apiError) {
-        // API 失敗時，若 DB 有部分資料則使用之
-        if (dbRevenues.isNotEmpty) {
-          final data = _convertDbRevenuesToFinMind(dbRevenues);
-          AppLogger.debug(
-            'StockDetail',
-            '$_symbol: FinMind 失敗，fallback 使用 DB 營收 (${data.length} 筆)',
-          );
-          return data;
-        }
-        AppLogger.warning('StockDetail', '取得營收資料失敗: $_symbol', apiError);
-      }
     } catch (e) {
-      AppLogger.warning('StockDetail', '$_symbol: 載入營收資料失敗', e);
+      AppLogger.warning('StockDetail', '載入籌碼分析資料失敗: $_symbol', e);
+      state = state.copyWith(isLoadingChip: false);
     }
-    return [];
-  }
-
-  /// 載入股利歷史
-  ///
-  /// 優先從 DB 取得，無資料則從 FinMind API 取得並背景寫入 DB。
-  Future<List<FinMindDividend>> _loadDividendHistory() async {
-    try {
-      final dbDividends = await _db.getDividendHistory(_symbol);
-      if (dbDividends.isNotEmpty) {
-        AppLogger.debug(
-          'StockDetail',
-          '$_symbol: 使用 DB 股利歷史 (${dbDividends.length} 筆)',
-        );
-        return dbDividends
-            .map(
-              (d) => FinMindDividend(
-                stockId: d.symbol,
-                year: d.year,
-                cashDividend: d.cashDividend,
-                stockDividend: d.stockDividend,
-                exDividendDate: d.exDividendDate,
-                exRightsDate: d.exRightsDate,
-              ),
-            )
-            .toList();
-      }
-
-      // DB 無資料，從 API 取得並存入 DB
-      final apiData = await _finMind.getDividends(stockId: _symbol);
-      if (apiData.isNotEmpty) {
-        // 背景寫入 DB（不阻塞 UI）
-        unawaited(
-          _db
-              .insertDividendData(
-                apiData
-                    .map(
-                      (d) => DividendHistoryCompanion.insert(
-                        symbol: _symbol,
-                        year: d.year,
-                        cashDividend: Value(d.cashDividend),
-                        stockDividend: Value(d.stockDividend),
-                        exDividendDate: Value(d.exDividendDate),
-                        exRightsDate: Value(d.exRightsDate),
-                      ),
-                    )
-                    .toList(),
-              )
-              .catchError((e) {
-                AppLogger.warning('StockDetail', '$_symbol: 背景寫入股利失敗', e);
-              }),
-        );
-        AppLogger.debug(
-          'StockDetail',
-          '$_symbol: 從 API 取得股利歷史 (${apiData.length} 筆) 並存入 DB',
-        );
-        return apiData;
-      }
-    } catch (e) {
-      AppLogger.debug('StockDetail', '$_symbol: 取得股利歷史失敗');
-    }
-    return [];
-  }
-
-  /// 載入 EPS 歷史與季度財務指標（含 ROE 計算）
-  ///
-  /// 從 DB 取得 EPS 資料與最新季度指標，
-  /// 若有 NetIncome 但缺 ROE，則計算年化 ROE。
-  Future<
-    ({List<FinancialDataEntry> epsData, Map<String, double> quarterMetrics})
-  >
-  _loadFinancialStatements() async {
-    List<FinancialDataEntry> epsData = [];
-    Map<String, double> quarterMetrics = {};
-    try {
-      epsData = await _db.getEPSHistory(_symbol);
-      if (epsData.isNotEmpty) {
-        quarterMetrics = await _db.getLatestQuarterMetrics(_symbol);
-      }
-      // 計算 ROE：從 Equity 歷史 join NetIncome（需同季日期對齊）
-      if (quarterMetrics.containsKey('NetIncome') &&
-          !quarterMetrics.containsKey('ROE') &&
-          epsData.isNotEmpty) {
-        final latestIncomeDate = epsData.first.date;
-        final equityEntries = await _db.getEquityHistory(_symbol);
-        // 找到與最新 INCOME 同季的 Equity
-        for (final eq in equityEntries) {
-          if (eq.date == latestIncomeDate &&
-              eq.value != null &&
-              eq.value! > 0) {
-            // 年化 ROE：季度 NetIncome × 4 / Equity × 100
-            quarterMetrics['ROE'] =
-                quarterMetrics['NetIncome']! * 4 / eq.value! * 100;
-            break;
-          }
-        }
-      }
-    } catch (e) {
-      AppLogger.debug('StockDetail', '$_symbol: 取得 EPS 歷史失敗');
-    }
-    return (epsData: epsData, quarterMetrics: quarterMetrics);
-  }
-
-  /// 從 FinMind API 取得估值資料（PER/PBR/殖利率）
-  ///
-  /// 僅在 DB 無估值資料時呼叫，作為 fallback。
-  Future<FinMindPER?> _loadValuationFromApi(DateTime today) async {
-    try {
-      final perApiStart = today.subtract(const Duration(days: 5));
-      final perData = await _finMind.getPERData(
-        stockId: _symbol,
-        startDate: DateContext.formatYmd(perApiStart),
-        endDate: DateContext.formatYmd(today),
-      );
-
-      if (perData.isNotEmpty) {
-        perData.sort((a, b) => b.date.compareTo(a.date));
-        final per = perData.first;
-        AppLogger.debug(
-          'StockDetail',
-          '$_symbol: 使用 FinMind 估值 (殖利率=${per.dividendYield.toStringAsFixed(2)}%)',
-        );
-        return per;
-      }
-    } catch (e) {
-      AppLogger.warning('StockDetail', '取得估值資料失敗: $_symbol', e);
-    }
-    return null;
   }
 
   /// 重新生成 AI 智慧分析摘要（含營收/估值資料）
@@ -900,106 +298,6 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     state = state.copyWith(
       aiSummary: const SummaryLocalizer().localize(summaryData),
     );
-  }
-
-  /// 載入董監持股資料
-  ///
-  /// 從資料庫取得董監持股歷史資料，用於顯示在股票詳情頁的董監持股頁籤。
-  Future<void> loadInsiderData() async {
-    // Skip if already loading or already loaded
-    if (state.loading.isLoadingInsider ||
-        state.chip.insiderHistory.isNotEmpty) {
-      return;
-    }
-
-    state = state.copyWith(isLoadingInsider: true);
-
-    try {
-      final insiderRepo = _ref.read(insiderRepositoryProvider);
-
-      // 取得近 12 個月的董監持股歷史
-      final insiderHistory = await insiderRepo.getInsiderHoldingHistory(
-        _symbol,
-        months: 12,
-      );
-
-      // 依日期降序排列（最新在前）
-      insiderHistory.sort((a, b) => b.date.compareTo(a.date));
-
-      state = state.copyWith(
-        insiderHistory: insiderHistory,
-        isLoadingInsider: false,
-      );
-    } catch (e) {
-      AppLogger.warning('StockDetail', '載入董監持股資料失敗: $_symbol', e);
-      state = state.copyWith(isLoadingInsider: false, insiderHistory: []);
-    }
-  }
-
-  /// 載入完整籌碼分析資料
-  ///
-  /// 包含當沖、持股比例、融資融券（DB）、持股集中度、
-  /// 內部人持股，並計算籌碼強度。
-  Future<void> loadChipData() async {
-    if (state.loading.isLoadingChip || state.chip.chipStrength != null) return;
-
-    state = state.copyWith(isLoadingChip: true);
-
-    try {
-      final today = DateTime.now();
-      final startDate10d = today.subtract(const Duration(days: 15));
-      final startDate60d = today.subtract(const Duration(days: 90));
-
-      final results = await Future.wait([
-        _db.getDayTradingHistory(_symbol, startDate: startDate10d),
-        _db.getShareholdingHistory(_symbol, startDate: startDate60d),
-        _db.getMarginTradingHistory(_symbol, startDate: startDate10d),
-        _db.getLatestHoldingDistribution(_symbol),
-        state.chip.insiderHistory.isNotEmpty
-            ? Future.value(state.chip.insiderHistory)
-            : _db.getRecentInsiderHoldings(_symbol, months: 6),
-      ]);
-
-      List<DayTradingEntry> dayTrading = [];
-      List<ShareholdingEntry> shareholding = [];
-      List<MarginTradingEntry> marginTrading = [];
-      List<HoldingDistributionEntry> holdingDist = [];
-      List<InsiderHoldingEntry> insider = [];
-
-      try {
-        dayTrading = results[0] as List<DayTradingEntry>;
-        shareholding = results[1] as List<ShareholdingEntry>;
-        marginTrading = results[2] as List<MarginTradingEntry>;
-        holdingDist = results[3] as List<HoldingDistributionEntry>;
-        insider = results[4] as List<InsiderHoldingEntry>;
-      } catch (e) {
-        AppLogger.warning('StockDetail', '籌碼資料型別轉換失敗: $_symbol', e);
-      }
-
-      // 計算籌碼強度
-      const service = ChipAnalysisService();
-      final strength = service.compute(
-        institutionalHistory: state.chip.institutionalHistory,
-        shareholdingHistory: shareholding,
-        marginHistory: marginTrading,
-        dayTradingHistory: dayTrading,
-        holdingDistribution: holdingDist,
-        insiderHistory: insider,
-      );
-
-      state = state.copyWith(
-        dayTradingHistory: dayTrading,
-        shareholdingHistory: shareholding,
-        marginTradingHistory: marginTrading,
-        holdingDistribution: holdingDist,
-        insiderHistory: insider.isNotEmpty ? insider : null,
-        chipStrength: strength,
-        isLoadingChip: false,
-      );
-    } catch (e) {
-      AppLogger.warning('StockDetail', '載入籌碼分析資料失敗: $_symbol', e);
-      state = state.copyWith(isLoadingChip: false);
-    }
   }
 }
 

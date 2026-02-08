@@ -335,7 +335,9 @@
     "label": "價格",
     "up": "上漲",
     "down": "下跌",
-    "neutral": "持平"
+    "neutral": "持平",
+    "limitUp": "漲停",
+    "limitDown": "跌停"
   },
   "reasons": {
     "label": "推薦理由",

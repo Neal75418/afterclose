@@ -170,111 +170,51 @@ class AnalysisService {
       return (null, null);
     }
 
-    // 找出所有波段高點與低點及其索引
-    final swingHighs = <_SwingPoint>[];
-    final swingLows = <_SwingPoint>[];
-
-    // 左右各使用半個波段窗口
-    const halfWindow = RuleParams.swingWindow ~/ 2;
-
-    for (var i = halfWindow; i < prices.length - halfWindow; i++) {
-      final current = prices[i];
-      final high = current.high;
-      final low = current.low;
-
-      if (high == null || low == null) continue;
-
-      // 檢查是否為波段高點
-      var isSwingHigh = true;
-      var isSwingLow = true;
-
-      for (var j = i - halfWindow; j <= i + halfWindow; j++) {
-        if (j == i) continue;
-        final other = prices[j];
-
-        // 使用嚴格不等式（>），允許相同價格成為波段點
-        if (isSwingHigh && other.high != null && other.high! > high) {
-          isSwingHigh = false;
-        }
-        if (isSwingLow && other.low != null && other.low! < low) {
-          isSwingLow = false;
-        }
-
-        // 若兩條件皆不成立則提前結束（效能優化）
-        if (!isSwingHigh && !isSwingLow) break;
-      }
-
-      if (isSwingHigh) swingHighs.add(_SwingPoint(price: high, index: i));
-      if (isSwingLow) swingLows.add(_SwingPoint(price: low, index: i));
-    }
+    // 找出所有波段高點與低點
+    final (:highs, :lows) = _detectSwingPoints(prices);
 
     // 取得當前價格作為參考
     final currentClose = prices.last.close;
     if (currentClose == null) {
-      // 若無當前價格則使用簡易方法
-      final resistance = swingHighs.isNotEmpty ? swingHighs.last.price : null;
-      final support = swingLows.isNotEmpty ? swingLows.last.price : null;
+      final resistance = highs.isNotEmpty ? highs.last.price : null;
+      final support = lows.isNotEmpty ? lows.last.price : null;
       return (support, resistance);
     }
 
     // 聚類波段點並找出最顯著的關卡
-    final resistanceZones = _clusterSwingPoints(swingHighs, prices.length);
-    final supportZones = _clusterSwingPoints(swingLows, prices.length);
+    final resistanceZones = _clusterSwingPoints(highs, prices.length);
+    final supportZones = _clusterSwingPoints(lows, prices.length);
 
     // ATR-based 動態距離：高波動股用更寬的搜尋半徑
     final atrDistance = _calculateATRDistance(prices, currentClose);
     final maxDistance = atrDistance ?? RuleParams.maxSupportResistanceDistance;
 
-    // 找出現價上方最近的壓力（在最大距離內）
-    // 加入距離衰減因子：距離現價越近的關卡操作價值越高
-    double? resistance;
-    var bestResistanceScore = 0.0;
     final maxResistance = currentClose * (1 + maxDistance);
-    for (final zone in resistanceZones) {
-      // 僅考慮最大距離內的壓力
-      if (zone.avgPrice > currentClose && zone.avgPrice <= maxResistance) {
-        final distance = zone.avgPrice - currentClose;
-        final distanceFactor =
-            1.0 /
-            (1.0 + (distance / currentClose) * RuleParams.distanceDecayFactor);
-        final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
-        if (score > bestResistanceScore) {
-          bestResistanceScore = score;
-          resistance = zone.avgPrice;
-        }
-      }
-    }
-
-    // 找出現價下方最近的支撐（在最大距離內）
-    // 這對 BREAKDOWN 和 S2W 訊號至關重要
-    double? support;
-    var bestSupportScore = 0.0;
     final minSupport = currentClose * (1 - maxDistance);
-    for (final zone in supportZones) {
-      // 僅考慮最大距離內的支撐
-      if (zone.avgPrice < currentClose && zone.avgPrice >= minSupport) {
-        final distance = currentClose - zone.avgPrice;
-        final distanceFactor =
-            1.0 /
-            (1.0 + (distance / currentClose) * RuleParams.distanceDecayFactor);
-        final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
-        if (score > bestSupportScore) {
-          bestSupportScore = score;
-          support = zone.avgPrice;
-        }
-      }
-    }
+
+    // 找出最佳壓力與支撐
+    var resistance = _scoreBestZone(
+      resistanceZones,
+      currentClose,
+      above: true,
+      boundPrice: maxResistance,
+    );
+    var support = _scoreBestZone(
+      supportZones,
+      currentClose,
+      above: false,
+      boundPrice: minSupport,
+    );
 
     // 僅在最大距離內才回退至最近的波段點
-    // 不回退至過遠的關卡，因其不具操作參考價值
-    if (resistance == null && swingHighs.isNotEmpty) {
-      final lastHigh = swingHighs.last.price;
+    if (resistance == null && highs.isNotEmpty) {
+      final lastHigh = highs.last.price;
       if (lastHigh > currentClose && lastHigh <= maxResistance) {
         resistance = lastHigh;
       }
     }
-    if (support == null && swingLows.isNotEmpty) {
-      final lastLow = swingLows.last.price;
+    if (support == null && lows.isNotEmpty) {
+      final lastLow = lows.last.price;
       if (lastLow < currentClose && lastLow >= minSupport) {
         support = lastLow;
       }
@@ -346,6 +286,80 @@ class AnalysisService {
       touches: points.length,
       recencyWeight: recencyWeight,
     );
+  }
+
+  /// 偵測價格序列中的波段高低點
+  ({List<_SwingPoint> highs, List<_SwingPoint> lows}) _detectSwingPoints(
+    List<DailyPriceEntry> prices,
+  ) {
+    final swingHighs = <_SwingPoint>[];
+    final swingLows = <_SwingPoint>[];
+
+    const halfWindow = RuleParams.swingWindow ~/ 2;
+
+    for (var i = halfWindow; i < prices.length - halfWindow; i++) {
+      final current = prices[i];
+      final high = current.high;
+      final low = current.low;
+
+      if (high == null || low == null) continue;
+
+      var isSwingHigh = true;
+      var isSwingLow = true;
+
+      for (var j = i - halfWindow; j <= i + halfWindow; j++) {
+        if (j == i) continue;
+        final other = prices[j];
+
+        if (isSwingHigh && other.high != null && other.high! > high) {
+          isSwingHigh = false;
+        }
+        if (isSwingLow && other.low != null && other.low! < low) {
+          isSwingLow = false;
+        }
+
+        if (!isSwingHigh && !isSwingLow) break;
+      }
+
+      if (isSwingHigh) swingHighs.add(_SwingPoint(price: high, index: i));
+      if (isSwingLow) swingLows.add(_SwingPoint(price: low, index: i));
+    }
+
+    return (highs: swingHighs, lows: swingLows);
+  }
+
+  /// 從區域列表中找出最佳評分的關卡價位
+  ///
+  /// [above] 為 true 時搜尋壓力（現價上方），false 時搜尋支撐（現價下方）。
+  /// 使用觸及次數、時近性、距離衰減三因子綜合評分。
+  double? _scoreBestZone(
+    List<_PriceZone> zones,
+    double currentClose, {
+    required bool above,
+    required double boundPrice,
+  }) {
+    double? bestPrice;
+    var bestScore = 0.0;
+
+    for (final zone in zones) {
+      final inRange = above
+          ? (zone.avgPrice > currentClose && zone.avgPrice <= boundPrice)
+          : (zone.avgPrice < currentClose && zone.avgPrice >= boundPrice);
+
+      if (inRange) {
+        final distance = (zone.avgPrice - currentClose).abs();
+        final distanceFactor =
+            1.0 /
+            (1.0 + (distance / currentClose) * RuleParams.distanceDecayFactor);
+        final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
+        if (score > bestScore) {
+          bestScore = score;
+          bestPrice = zone.avgPrice;
+        }
+      }
+    }
+
+    return bestPrice;
   }
 
   /// 波段點聚類閾值
@@ -425,63 +439,30 @@ class AnalysisService {
   }) {
     if (prices.length < 2) return ReversalState.none;
 
-    final today = prices.last;
-    final todayClose = today.close;
+    final todayClose = prices.last.close;
     if (todayClose == null) return ReversalState.none;
 
     // 預先計算 MA20，供 _hasHigherLow 使用（避免在 helper 中重複計算）
     final ma20 = TechnicalIndicatorService.latestSMA(prices, 20);
 
-    // 檢查弱轉強 (W2S)
-    if (trendState == TrendState.down || trendState == TrendState.range) {
-      // 突破區間頂部
-      if (rangeTop != null) {
-        final breakoutLevel = rangeTop * (1 + RuleParams.breakoutBuffer);
-        if (todayClose > breakoutLevel) {
-          return ReversalState.weakToStrong;
-        }
-      }
-
-      // 形成更高的低點
-      if (_hasHigherLow(prices, ma20: ma20)) {
-        return ReversalState.weakToStrong;
-      }
+    if (_checkWeakToStrong(
+      prices,
+      todayClose,
+      trendState: trendState,
+      rangeTop: rangeTop,
+      ma20: ma20,
+    )) {
+      return ReversalState.weakToStrong;
     }
 
-    // 檢查強轉弱 (S2W)
-    // v0.1.1：移除趨勢狀態檢查，讓更多股票有機會觸發
-    // 原本要求 trendState == up || range，但這過於嚴格
-    // 因為下跌中的股票往往被判定為 down trend，就無法觸發 S2W
-
-    // 跌破支撐
-    if (support != null) {
-      final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
-      if (todayClose < breakdownLevel) {
-        AppLogger.debug(
-          'S2W',
-          '跌破支撐: close=$todayClose < support=$support * 0.97 = $breakdownLevel',
-        );
-        return ReversalState.strongToWeak;
-      }
-    }
-
-    // 跌破區間底部
-    if (rangeBottom != null) {
-      final breakdownLevel = rangeBottom * (1 - RuleParams.breakdownBuffer);
-      if (todayClose < breakdownLevel) {
-        AppLogger.debug(
-          'S2W',
-          '跌破區間底部: close=$todayClose < rangeBottom=$rangeBottom * 0.97 = $breakdownLevel',
-        );
-        return ReversalState.strongToWeak;
-      }
-    }
-
-    // 形成更低的高點（只在上升或盤整趨勢中檢查）
-    if (trendState == TrendState.up || trendState == TrendState.range) {
-      if (_hasLowerHigh(prices)) {
-        return ReversalState.strongToWeak;
-      }
+    if (_checkStrongToWeak(
+      prices,
+      todayClose,
+      trendState: trendState,
+      support: support,
+      rangeBottom: rangeBottom,
+    )) {
+      return ReversalState.strongToWeak;
     }
 
     return ReversalState.none;
@@ -591,6 +572,79 @@ class AnalysisService {
     return (n * sumXY - sumX * sumY) / denominator;
   }
 
+  /// 檢查弱轉強條件（W2S）
+  ///
+  /// 滿足以下任一條件即為弱轉強：
+  /// - 突破區間頂部（需在下跌或盤整趨勢中）
+  /// - 形成更高的低點且站上 MA20（需在下跌或盤整趨勢中）
+  bool _checkWeakToStrong(
+    List<DailyPriceEntry> prices,
+    double todayClose, {
+    required TrendState trendState,
+    double? rangeTop,
+    double? ma20,
+  }) {
+    if (trendState != TrendState.down && trendState != TrendState.range) {
+      return false;
+    }
+
+    // 突破區間頂部
+    if (rangeTop != null) {
+      final breakoutLevel = rangeTop * (1 + RuleParams.breakoutBuffer);
+      if (todayClose > breakoutLevel) {
+        return true;
+      }
+    }
+
+    // 形成更高的低點
+    return _hasHigherLow(prices, ma20: ma20);
+  }
+
+  /// 檢查強轉弱條件（S2W）
+  ///
+  /// 滿足以下任一條件即為強轉弱：
+  /// - 跌破支撐位（任何趨勢皆檢查）
+  /// - 跌破區間底部（任何趨勢皆檢查）
+  /// - 形成更低的高點（僅在上升或盤整趨勢中檢查）
+  bool _checkStrongToWeak(
+    List<DailyPriceEntry> prices,
+    double todayClose, {
+    required TrendState trendState,
+    double? support,
+    double? rangeBottom,
+  }) {
+    // 跌破支撐
+    if (support != null) {
+      final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
+      if (todayClose < breakdownLevel) {
+        AppLogger.debug(
+          'S2W',
+          '跌破支撐: close=$todayClose < support=$support * 0.97 = $breakdownLevel',
+        );
+        return true;
+      }
+    }
+
+    // 跌破區間底部
+    if (rangeBottom != null) {
+      final breakdownLevel = rangeBottom * (1 - RuleParams.breakdownBuffer);
+      if (todayClose < breakdownLevel) {
+        AppLogger.debug(
+          'S2W',
+          '跌破區間底部: close=$todayClose < rangeBottom=$rangeBottom * 0.97 = $breakdownLevel',
+        );
+        return true;
+      }
+    }
+
+    // 形成更低的高點（只在上升或盤整趨勢中檢查）
+    if (trendState == TrendState.up || trendState == TrendState.range) {
+      return _hasLowerHigh(prices);
+    }
+
+    return false;
+  }
+
   /// 檢查是否形成更高的低點（反轉訊號）
   ///
   /// 條件：
@@ -642,9 +696,8 @@ class AnalysisService {
 
   /// 檢查是否形成更低的高點（趨勢反轉訊號）
   ///
-  /// v0.1.2：簡化強轉弱偵測
-  /// 移除 MA20 和成交量過濾，頭部形成往往是「量縮價跌」
-  /// 只檢查是否形成更低高點即可
+  /// 簡化偵測：移除 MA20 和成交量過濾，頭部形成往往是「量縮價跌」，
+  /// 只檢查是否形成更低高點即可。
   bool _hasLowerHigh(List<DailyPriceEntry> prices) {
     if (prices.length < RuleParams.swingWindow * 2) return false;
 
@@ -785,16 +838,91 @@ class AnalysisService {
   /// 分析價量關係以偵測背離
   ///
   /// 回傳包含背離狀態和上下文的 [PriceVolumeAnalysis]
+  /// 計算成交量變化百分比
+  ///
+  /// 比較近期和前期的平均成交量，回傳變化百分比。
+  /// 資料不足時回傳 null。
+  double? _calculateVolumeChange(
+    List<DailyPriceEntry> allPrices,
+    List<DailyPriceEntry> recentPrices,
+    int lookback,
+  ) {
+    final recentVolumes = recentPrices
+        .take(lookback)
+        .map((p) => p.volume ?? 0.0)
+        .where((v) => v > 0)
+        .toList();
+
+    if (recentVolumes.length < lookback ~/ 2) return null;
+
+    final avgRecentVolume =
+        recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
+
+    final prevVolumes = _lastN(
+      allPrices,
+      lookback,
+      skip: lookback,
+    ).map((p) => p.volume ?? 0.0).where((v) => v > 0).toList();
+
+    if (prevVolumes.isEmpty) return null;
+
+    final avgPrevVolume =
+        prevVolumes.reduce((a, b) => a + b) / prevVolumes.length;
+    if (avgPrevVolume <= 0) return null;
+
+    return ((avgRecentVolume - avgPrevVolume) / avgPrevVolume) * 100;
+  }
+
+  /// 依據價量變化與價格位置判斷背離狀態
+  PriceVolumeState _classifyPriceVolumeState({
+    required double priceChangePercent,
+    required double volumeChangePercent,
+    double? pricePosition,
+  }) {
+    const priceThreshold = RuleParams.priceVolumePriceThreshold;
+    const volumeThreshold = RuleParams.priceVolumeVolumeThreshold;
+
+    // 價漲量縮 = 多頭背離（警訊）
+    if (priceChangePercent >= priceThreshold &&
+        volumeChangePercent <= -volumeThreshold) {
+      return PriceVolumeState.bullishDivergence;
+    }
+    // 價跌量增 = 空頭背離（恐慌）
+    if (priceChangePercent <= -priceThreshold &&
+        volumeChangePercent >= volumeThreshold) {
+      return PriceVolumeState.bearishDivergence;
+    }
+    // 高檔爆量 = 可能出貨
+    if (pricePosition != null &&
+        pricePosition >= RuleParams.highPositionThreshold &&
+        volumeChangePercent >=
+            volumeThreshold * RuleParams.highVolumeMultiplier) {
+      return PriceVolumeState.highVolumeAtHigh;
+    }
+    // 低檔縮量 = 可能吸籌
+    if (pricePosition != null &&
+        pricePosition <= RuleParams.lowPositionThreshold &&
+        volumeChangePercent <= -volumeThreshold) {
+      return PriceVolumeState.lowVolumeAtLow;
+    }
+    // 健康：價漲量增
+    if (priceChangePercent >= priceThreshold &&
+        volumeChangePercent >= volumeThreshold) {
+      return PriceVolumeState.healthyUptrend;
+    }
+
+    return PriceVolumeState.neutral;
+  }
+
   PriceVolumeAnalysis analyzePriceVolume(List<DailyPriceEntry> prices) {
     if (prices.length < RuleParams.priceVolumeLookbackDays + 1) {
       return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
     }
 
-    // 取得近期價格（排除今日作為比較基準）
     const lookback = RuleParams.priceVolumeLookbackDays;
     final recentPrices = _lastN(prices, lookback + 1);
 
-    // 計算回看期間的價格變化
+    // 計算價格變化
     final todayClose = recentPrices.first.close;
     final startClose = recentPrices.last.close;
     if (todayClose == null || startClose == null || startClose <= 0) {
@@ -803,41 +931,13 @@ class AnalysisService {
 
     final priceChangePercent = ((todayClose - startClose) / startClose) * 100;
 
-    // 計算成交量變化（近期與前期的平均比較）
-    final recentVolumes = recentPrices
-        .take(lookback)
-        .map((p) => p.volume ?? 0.0)
-        .where((v) => v > 0)
-        .toList();
-
-    if (recentVolumes.length < lookback ~/ 2) {
+    // 計算成交量變化
+    final volumeChange = _calculateVolumeChange(prices, recentPrices, lookback);
+    if (volumeChange == null) {
       return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
     }
 
-    final avgRecentVolume =
-        recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
-
-    // 取得前期成交量作為比較
-    final prevPrices = _lastN(
-      prices,
-      lookback,
-      skip: lookback,
-    ).map((p) => p.volume ?? 0.0).where((v) => v > 0).toList();
-
-    if (prevPrices.isEmpty) {
-      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
-    }
-
-    final avgPrevVolume =
-        prevPrices.reduce((a, b) => a + b) / prevPrices.length;
-    if (avgPrevVolume <= 0) {
-      return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
-    }
-
-    final volumeChangePercent =
-        ((avgRecentVolume - avgPrevVolume) / avgPrevVolume) * 100;
-
-    // 計算價格在 60 日區間中的位置（用於高低點偵測）
+    // 計算價格在 60 日區間中的位置
     final (rangeLow, rangeHigh) = findRange(prices);
     double? pricePosition;
     if (rangeLow != null && rangeHigh != null && rangeHigh > rangeLow) {
@@ -845,44 +945,16 @@ class AnalysisService {
     }
 
     // 判斷背離狀態
-    const priceThreshold = RuleParams.priceVolumePriceThreshold;
-    const volumeThreshold = RuleParams.priceVolumeVolumeThreshold;
-
-    PriceVolumeState state = PriceVolumeState.neutral;
-
-    // 價漲量縮 = 多頭背離（警訊）
-    if (priceChangePercent >= priceThreshold &&
-        volumeChangePercent <= -volumeThreshold) {
-      state = PriceVolumeState.bullishDivergence;
-    }
-    // 價跌量增 = 空頭背離（恐慌）
-    else if (priceChangePercent <= -priceThreshold &&
-        volumeChangePercent >= volumeThreshold) {
-      state = PriceVolumeState.bearishDivergence;
-    }
-    // 高檔爆量 = 可能出貨
-    else if (pricePosition != null &&
-        pricePosition >= RuleParams.highPositionThreshold &&
-        volumeChangePercent >=
-            volumeThreshold * RuleParams.highVolumeMultiplier) {
-      state = PriceVolumeState.highVolumeAtHigh;
-    }
-    // 低檔縮量 = 可能吸籌
-    else if (pricePosition != null &&
-        pricePosition <= RuleParams.lowPositionThreshold &&
-        volumeChangePercent <= -volumeThreshold) {
-      state = PriceVolumeState.lowVolumeAtLow;
-    }
-    // 健康：價漲量增
-    else if (priceChangePercent >= priceThreshold &&
-        volumeChangePercent >= volumeThreshold) {
-      state = PriceVolumeState.healthyUptrend;
-    }
+    final state = _classifyPriceVolumeState(
+      priceChangePercent: priceChangePercent,
+      volumeChangePercent: volumeChange,
+      pricePosition: pricePosition,
+    );
 
     return PriceVolumeAnalysis(
       state: state,
       priceChangePercent: priceChangePercent,
-      volumeChangePercent: volumeChangePercent,
+      volumeChangePercent: volumeChange,
       pricePosition: pricePosition,
     );
   }

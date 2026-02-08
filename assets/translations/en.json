@@ -334,7 +334,9 @@
     "label": "Price",
     "up": "Up",
     "down": "Down",
-    "neutral": "Unchanged"
+    "neutral": "Unchanged",
+    "limitUp": "Limit Up",
+    "limitDown": "Limit Down"
   },
   "reasons": {
     "label": "Recommendation Reasons",

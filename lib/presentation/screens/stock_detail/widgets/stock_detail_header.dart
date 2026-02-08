@@ -67,10 +67,10 @@ class StockDetailHeader extends StatelessWidget {
 
   String _buildSemanticLabel() {
     final parts = <String>[];
-    final name = state.price.stock?.name;
+    final name = state.stockName;
     if (name != null) parts.add(name);
     parts.add(symbol);
-    final close = state.price.latestPrice?.close;
+    final close = state.latestClose;
     if (close != null) parts.add('收盤價 ${close.toStringAsFixed(2)} 元');
     final change = state.priceChange;
     if (change != null) {
@@ -86,13 +86,13 @@ class StockDetailHeader extends StatelessWidget {
       children: [
         Flexible(
           child: Text(
-            state.price.stock?.name ?? symbol,
+            state.stockName ?? symbol,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        if (state.price.stock?.market == 'TPEx') ...[
+        if (state.stockMarket == 'TPEx') ...[
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -109,8 +109,7 @@ class StockDetailHeader extends StatelessWidget {
             ),
           ),
         ],
-        if (state.price.stock?.industry != null &&
-            state.price.stock!.industry!.isNotEmpty) ...[
+        if (state.stockIndustry != null && state.stockIndustry!.isNotEmpty) ...[
           const SizedBox(width: 8),
           Flexible(
             child: Container(
@@ -120,7 +119,7 @@ class StockDetailHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
               ),
               child: Text(
-                state.price.stock!.industry!,
+                state.stockIndustry!,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onTertiaryContainer,
                   fontWeight: FontWeight.w500,
@@ -168,7 +167,7 @@ class StockDetailHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          state.price.latestPrice?.close?.toStringAsFixed(2) ?? '-',
+          state.latestClose?.toStringAsFixed(2) ?? '-',
           style: theme.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.w800,
             fontFamily: 'RobotoMono',
@@ -244,28 +243,25 @@ class StockDetailHeader extends StatelessWidget {
   }
 
   Widget _buildTrendRow(ThemeData theme) {
+    final analysis = state.price.analysis;
+    final trendState = analysis?.trendState;
+
     return Row(
       children: [
         _InfoChip(
-          label:
-              'trend.${state.price.analysis?.trendState.trendKey ?? 'sideways'}'
-                  .tr(),
-          icon:
-              state.price.analysis?.trendState.trendIconData ??
-              Icons.trending_flat,
-          color:
-              state.price.analysis?.trendState.trendColor ??
-              AppTheme.neutralColor,
+          label: 'trend.${trendState?.trendKey ?? 'sideways'}'.tr(),
+          icon: trendState?.trendIconData ?? Icons.trending_flat,
+          color: trendState?.trendColor ?? AppTheme.neutralColor,
         ),
         const SizedBox(width: 8),
-        if (state.price.analysis?.supportLevel case final supportLevel?)
+        if (analysis?.supportLevel case final supportLevel?)
           _LevelChip(
             label: 'stockDetail.support'.tr(),
             value: supportLevel,
             color: AppTheme.downColor,
           ),
         const SizedBox(width: 8),
-        if (state.price.analysis?.resistanceLevel case final resistanceLevel?)
+        if (analysis?.resistanceLevel case final resistanceLevel?)
           _LevelChip(
             label: 'stockDetail.resistance'.tr(),
             value: resistanceLevel,

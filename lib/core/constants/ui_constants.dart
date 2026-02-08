@@ -17,4 +17,16 @@ abstract final class UiConstants {
 
   /// 無限捲動觸發距離（像素）
   static const double infiniteScrollThresholdPx = 300.0;
+
+  /// 卡片寬度低於此值時切換為緊湊佈局（像素）
+  static const double compactCardBreakpoint = 320.0;
+
+  /// 推薦列表動畫時長（毫秒）
+  static const int recommendationAnimationDurationMs = 320;
+
+  /// 圖表動畫時長（毫秒）
+  static const int chartAnimationDurationMs = 400;
+
+  /// 自訂篩選捲動載入觸發距離（像素）
+  static const double scrollLoadMoreThreshold = 200.0;
 }

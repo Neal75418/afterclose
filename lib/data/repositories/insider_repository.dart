@@ -154,6 +154,8 @@ class InsiderRepository {
 
         return entries.length;
       });
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {

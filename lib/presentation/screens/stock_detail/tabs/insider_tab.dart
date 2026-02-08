@@ -6,8 +6,9 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/presentation/widgets/metric_card.dart';
+import 'package:afterclose/presentation/widgets/section_header.dart';
 
 // ==========================================
 // UI 常數
@@ -109,26 +110,24 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     return Row(
       children: [
         Expanded(
-          child: _buildMetricCard(
-            context,
-            'stockDetail.insiderRatio'.tr(),
-            latest?.insiderRatio != null
+          child: MetricCard(
+            label: 'stockDetail.insiderRatio'.tr(),
+            value: latest?.insiderRatio != null
                 ? '${latest!.insiderRatio!.toStringAsFixed(1)}%'
                 : '-',
-            Icons.people_alt,
+            icon: Icons.people_alt,
             accentColor: _kInsiderRatioColor,
             subtitle: 'stockDetail.insiderRatioLabel'.tr(),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildMetricCard(
-            context,
-            'stockDetail.pledgeRatio'.tr(),
-            latest?.pledgeRatio != null
+          child: MetricCard(
+            label: 'stockDetail.pledgeRatio'.tr(),
+            value: latest?.pledgeRatio != null
                 ? '${latest!.pledgeRatio!.toStringAsFixed(1)}%'
                 : '-',
-            Icons.account_balance,
+            icon: Icons.account_balance,
             accentColor: isHighPledge
                 ? AppTheme.errorColor
                 : _kPledgeRatioColor,
@@ -138,13 +137,12 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildMetricCard(
-            context,
-            'stockDetail.insiderChange'.tr(),
-            change != null
+          child: MetricCard(
+            label: 'stockDetail.insiderChange'.tr(),
+            value: change != null
                 ? '${change > 0 ? '+' : ''}${change.toStringAsFixed(2)}%'
                 : '-',
-            _getChangeIcon(change),
+            icon: _getChangeIcon(change),
             accentColor: _getChangeColor(change),
             subtitle: 'stockDetail.insiderChangeLabel'.tr(),
           ),
@@ -171,60 +169,6 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
   Color _getChangeColor(double? change) {
     if (change == null || change == 0) return Colors.grey;
     return change > 0 ? AppTheme.upColor : AppTheme.downColor;
-  }
-
-  Widget _buildMetricCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    String? subtitle,
-    Color accentColor = Colors.blue,
-    bool isWarning = false,
-  }) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-        border: Border.all(
-          color: isWarning
-              ? AppTheme.errorColor.withValues(alpha: 0.5)
-              : accentColor.withValues(alpha: 0.3),
-          width: isWarning ? 2 : 1,
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 18, color: accentColor),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: isWarning ? AppTheme.errorColor : null,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle ?? label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildInsiderTable(

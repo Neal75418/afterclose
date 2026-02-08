@@ -18,9 +18,11 @@ import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/models/scoring_batch_data.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/domain/services/update/update.dart';
 
 /// 每日市場資料更新協調服務
@@ -152,7 +154,7 @@ class UpdateService {
       targetDate = lastTradingDay;
     }
 
-    var normalizedDate = _normalizeDate(targetDate);
+    final normalizedDate = _normalizeDate(targetDate);
     final runId = await _db.createUpdateRun(
       normalizedDate,
       UpdateStatus.partial.code,
@@ -187,70 +189,27 @@ class UpdateService {
       }
 
       // 步驟 2：更新股票清單
-      onProgress?.call(2, 10, '更新股票清單');
-      final stockResult = await _stockListSyncer.smartSync(
-        date: targetDate,
-        force: forceFetch,
-      );
-      result.stocksUpdated = stockResult.stockCount;
-      if (!stockResult.success && stockResult.error != null) {
-        result.errors.add('股票清單更新失敗: ${stockResult.error}');
-      }
+      await _syncStockList(ctx, targetDate);
 
-      // 步驟 3：取得每日價格
-      onProgress?.call(3, 10, '取得今日價格');
-      final originalDate = normalizedDate;
-      normalizedDate = await _syncDailyPrices(ctx, normalizedDate);
-      ctx.normalizedDate = normalizedDate;
+      // 步驟 3-3.5：同步價格（含日期校正）+ 歷史資料
+      await _syncPricesAndHistory(ctx);
 
-      // 若日期被校正，更新 UpdateRun 的 runDate
-      if (normalizedDate != originalDate) {
-        await _db.updateRunDate(runId, normalizedDate);
-        result.date = normalizedDate;
-        AppLogger.info(
-          'UpdateSvc',
-          '日期校正: $originalDate -> $normalizedDate，已更新 UpdateRun',
-        );
-      }
+      // 步驟 3.8-3.9：大盤指數 + TDCC 股權分散表
+      await _syncAuxiliaryData(ctx);
 
-      // 步驟 3.5：同步歷史價格
-      ctx.reportProgress(4, 10, '取得歷史資料');
-      await _syncHistoricalData(ctx);
-
-      // 步驟 3.8：同步大盤指數歷史（sync() 內部已處理例外）
-      if (_marketIndexSyncer != null) {
-        await _marketIndexSyncer.sync();
-      }
-
-      // 步驟 3.9：同步 TDCC 股權分散表（每週，syncer 內部有新鮮度檢查）
-      if (_tdccHoldingSyncer != null) {
-        try {
-          await _tdccHoldingSyncer.sync();
-        } catch (e) {
-          AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗: $e');
-        }
-      }
-
-      // 步驟 4：同步法人資料
+      // 步驟 4-4.7：法人 + 籌碼 + 基本面
       ctx.reportProgress(4, 10, '取得法人資料');
       await _syncInstitutionalData(ctx);
+      await _syncMarketAndFundamentalData(ctx, ctx.normalizedDate);
 
-      // 步驟 4.5-4.7：同步籌碼和基本面資料
-      await _syncMarketAndFundamentalData(ctx, normalizedDate);
+      // 步驟 5：新聞
+      await _syncNews(ctx);
 
-      // 步驟 5：同步新聞
-      onProgress?.call(5, 10, '取得新聞資料');
-      final newsResult = await _newsSyncer.syncAndCleanup();
-      result.newsUpdated = newsResult.itemsAdded;
-      result.errors.addAll(newsResult.errors);
-
-      // 步驟 6：篩選候選股票
+      // 步驟 6：篩選候選股票 + 補充上櫃資料
       ctx.reportProgress(6, 10, '篩選候選股票');
       final candidates = await _filterCandidates(ctx: ctx);
       result.candidatesFound = candidates.length;
-
-      // 步驟 6.5：補充上櫃候選股票資料
-      await _syncOtcCandidatesData(ctx, candidates, normalizedDate);
+      await _syncOtcCandidatesData(ctx, candidates, ctx.normalizedDate);
 
       // 步驟 7-8：執行分析
       ctx.reportProgress(7, 10, '執行分析');
@@ -260,22 +219,20 @@ class UpdateService {
       );
       result.stocksAnalyzed = scoredStocks.length;
 
-      // 步驟 9：產生推薦
-      onProgress?.call(9, 10, '產生推薦');
-      await _generateRecommendations(scoredStocks, normalizedDate);
+      // 步驟 9-10：推薦 + 完成
+      ctx.onProgress?.call(9, 10, '產生推薦');
+      await _generateRecommendations(scoredStocks, ctx.normalizedDate);
       result.recommendationsGenerated = scoredStocks
           .take(RuleParams.dailyTopN)
           .length;
-
-      // 步驟 10：完成
-      onProgress?.call(10, 10, '完成');
+      ctx.onProgress?.call(10, 10, '完成');
       await _finishUpdate(ctx, result);
 
       return result;
     } catch (e) {
       result.success = false;
       result.message = '更新失敗: $e';
-      result.errors.add(e.toString());
+      result.recordError(e.toString(), e);
       await _db.finishUpdateRun(
         runId,
         UpdateStatus.failed.code,
@@ -302,6 +259,59 @@ class UpdateService {
     }
   }
 
+  Future<void> _syncStockList(_UpdateContext ctx, DateTime targetDate) async {
+    ctx.onProgress?.call(2, 10, '更新股票清單');
+    final stockResult = await _stockListSyncer.smartSync(
+      date: targetDate,
+      force: ctx.forceFetch,
+    );
+    ctx.result.stocksUpdated = stockResult.stockCount;
+    if (!stockResult.success && stockResult.error != null) {
+      ctx.result.errors.add('股票清單更新失敗: ${stockResult.error}');
+    }
+  }
+
+  Future<void> _syncPricesAndHistory(_UpdateContext ctx) async {
+    ctx.onProgress?.call(3, 10, '取得今日價格');
+    final originalDate = ctx.normalizedDate;
+    final correctedDate = await _syncDailyPrices(ctx, ctx.normalizedDate);
+    ctx.normalizedDate = correctedDate;
+
+    // 若日期被校正，更新 UpdateRun 的 runDate
+    if (correctedDate != originalDate) {
+      await _db.updateRunDate(ctx.runId, correctedDate);
+      ctx.result.date = correctedDate;
+      AppLogger.info(
+        'UpdateSvc',
+        '日期校正: $originalDate -> $correctedDate，已更新 UpdateRun',
+      );
+    }
+
+    ctx.reportProgress(4, 10, '取得歷史資料');
+    await _syncHistoricalData(ctx);
+  }
+
+  Future<void> _syncAuxiliaryData(_UpdateContext ctx) async {
+    if (_marketIndexSyncer != null) {
+      await _marketIndexSyncer.sync();
+    }
+
+    if (_tdccHoldingSyncer != null) {
+      try {
+        await _tdccHoldingSyncer.sync();
+      } catch (e) {
+        AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗: $e');
+      }
+    }
+  }
+
+  Future<void> _syncNews(_UpdateContext ctx) async {
+    ctx.onProgress?.call(5, 10, '取得新聞資料');
+    final newsResult = await _newsSyncer.syncAndCleanup();
+    ctx.result.newsUpdated = newsResult.itemsAdded;
+    ctx.result.errors.addAll(newsResult.errors);
+  }
+
   Future<DateTime> _syncDailyPrices(
     _UpdateContext ctx,
     DateTime normalizedDate,
@@ -326,7 +336,7 @@ class UpdateService {
       ctx.marketCandidates = syncResult.candidates;
     } catch (e) {
       AppLogger.warning('UpdateSvc', '價格同步失敗');
-      ctx.result.errors.add('價格資料更新失敗: $e');
+      ctx.result.recordError('價格資料更新失敗: $e', e);
     }
     return normalizedDate;
   }
@@ -350,7 +360,7 @@ class UpdateService {
         );
       }
     } catch (e) {
-      ctx.result.errors.add('歷史資料更新失敗: $e');
+      ctx.result.recordError('歷史資料更新失敗: $e', e);
     }
   }
 
@@ -365,7 +375,7 @@ class UpdateService {
       );
       ctx.result.institutionalUpdated = instResult.estimatedCount;
     } catch (e) {
-      ctx.result.errors.add('法人資料更新失敗: $e');
+      ctx.result.recordError('法人資料更新失敗: $e', e);
     }
   }
 
@@ -404,7 +414,7 @@ class UpdateService {
               '融資=$marginLabel, 持股=$syncedCount',
         );
       } catch (e) {
-        ctx.result.errors.add('籌碼資料更新失敗: $e');
+        ctx.result.recordError('籌碼資料更新失敗: $e', e);
       }
     }
 
@@ -459,7 +469,7 @@ class UpdateService {
           AppLogger.warning('UpdateSvc', '財報資料同步失敗: $e');
         }
       } catch (e) {
-        ctx.result.errors.add('基本面資料更新失敗: $e');
+        ctx.result.recordError('基本面資料更新失敗: $e', e);
       }
     }
 
@@ -593,66 +603,75 @@ class UpdateService {
     );
 
     final instRepo = _institutionalRepo;
-    final futures = <Future>[
-      _db.getPriceHistoryBatch(
-        candidates,
-        startDate: startDate,
-        endDate: ctx.normalizedDate,
-      ),
-      _newsRepo.getNewsForStocksBatch(candidates, days: 2),
-      if (instRepo != null)
-        _db.getInstitutionalHistoryBatch(
-          candidates,
-          startDate: instStartDate,
-          endDate: ctx.normalizedDate,
-        ),
-      _db.getLatestMonthlyRevenuesBatch(candidates),
-      _db.getLatestValuationsBatch(candidates),
-      _db.getRecentMonthlyRevenueBatch(candidates, months: 6),
-      _db.getDayTradingMapForDate(ctx.normalizedDate),
-      _db.getLatestShareholdingsBatch(candidates),
-      _db.getShareholdingsBeforeDateBatch(
-        candidates,
-        beforeDate: ctx.normalizedDate.subtract(
-          const Duration(days: RuleParams.foreignShareholdingLookbackDays),
-        ),
-      ),
-      _db.getActiveWarningsMapBatch(candidates),
-      _db.getLatestInsiderHoldingsBatch(candidates),
-      _db.getEPSHistoryBatch(candidates), // baseIndex + 8
-      _db.getROEHistoryBatch(candidates), // baseIndex + 9
-      _db.getDividendHistoryBatch(candidates), // baseIndex + 10
-    ];
 
-    final batchResults = await Future.wait(futures);
-    final pricesMap = batchResults[0] as Map<String, List<DailyPriceEntry>>;
-    final newsMap = batchResults[1] as Map<String, List<NewsItemEntry>>;
-    final institutionalMap = instRepo != null
-        ? batchResults[2] as Map<String, List<DailyInstitutionalEntry>>
-        : <String, List<DailyInstitutionalEntry>>{};
-    // 根據 instRepo 調整 index
-    final baseIndex = instRepo != null ? 3 : 2;
-    final revenueMap =
-        batchResults[baseIndex] as Map<String, MonthlyRevenueEntry>;
-    final valuationMap =
-        batchResults[baseIndex + 1] as Map<String, StockValuationEntry>;
-    final revenueHistoryMap =
-        batchResults[baseIndex + 2] as Map<String, List<MonthlyRevenueEntry>>;
-    final dayTradingMap = batchResults[baseIndex + 3] as Map<String, double>;
-    final shareholdingEntries =
-        batchResults[baseIndex + 4] as Map<String, ShareholdingEntry>;
-    final prevShareholdingEntries =
-        batchResults[baseIndex + 5] as Map<String, ShareholdingEntry>;
-    final warningEntries =
-        batchResults[baseIndex + 6] as Map<String, TradingWarningEntry>;
-    final insiderEntries =
-        batchResults[baseIndex + 7] as Map<String, InsiderHoldingEntry>;
-    final epsHistoryMap =
-        batchResults[baseIndex + 8] as Map<String, List<FinancialDataEntry>>;
-    final roeHistoryMap =
-        batchResults[baseIndex + 9] as Map<String, List<FinancialDataEntry>>;
-    final dividendHistoryMap =
-        batchResults[baseIndex + 10] as Map<String, List<DividendHistoryEntry>>;
+    // 同時啟動所有批次查詢（所有 Future 在建立時即開始並行執行）
+    final pricesFuture = _db.getPriceHistoryBatch(
+      candidates,
+      startDate: startDate,
+      endDate: ctx.normalizedDate,
+    );
+    final newsFuture = _newsRepo.getNewsForStocksBatch(candidates, days: 2);
+    final instFuture = instRepo != null
+        ? _db.getInstitutionalHistoryBatch(
+            candidates,
+            startDate: instStartDate,
+            endDate: ctx.normalizedDate,
+          )
+        : Future.value(<String, List<DailyInstitutionalEntry>>{});
+    final revenueFuture = _db.getLatestMonthlyRevenuesBatch(candidates);
+    final valuationFuture = _db.getLatestValuationsBatch(candidates);
+    final revenueHistoryFuture = _db.getRecentMonthlyRevenueBatch(
+      candidates,
+      months: 6,
+    );
+    final dayTradingFuture = _db.getDayTradingMapForDate(ctx.normalizedDate);
+    final shareholdingFuture = _db.getLatestShareholdingsBatch(candidates);
+    final prevShareholdingFuture = _db.getShareholdingsBeforeDateBatch(
+      candidates,
+      beforeDate: ctx.normalizedDate.subtract(
+        const Duration(days: RuleParams.foreignShareholdingLookbackDays),
+      ),
+    );
+    final warningFuture = _db.getActiveWarningsMapBatch(candidates);
+    final insiderFuture = _db.getLatestInsiderHoldingsBatch(candidates);
+    final epsFuture = _db.getEPSHistoryBatch(candidates);
+    final roeFuture = _db.getROEHistoryBatch(candidates);
+    final dividendFuture = _db.getDividendHistoryBatch(candidates);
+
+    // 型別安全的並行等待（Dart 3 Record 解構，取代 baseIndex 偏移模式）
+    final (pricesMap, newsMap, institutionalMap) = await (
+      pricesFuture,
+      newsFuture,
+      instFuture,
+    ).wait;
+    final (
+      revenueMap,
+      valuationMap,
+      revenueHistoryMap,
+      dayTradingMap,
+      shareholdingEntries,
+    ) = await (
+      revenueFuture,
+      valuationFuture,
+      revenueHistoryFuture,
+      dayTradingFuture,
+      shareholdingFuture,
+    ).wait;
+    final (
+      prevShareholdingEntries,
+      warningEntries,
+      insiderEntries,
+      epsHistoryMap,
+      roeHistoryMap,
+      dividendHistoryMap,
+    ) = await (
+      prevShareholdingFuture,
+      warningFuture,
+      insiderFuture,
+      epsFuture,
+      roeFuture,
+      dividendFuture,
+    ).wait;
 
     // 批次載入籌碼集中度（TDCC 股權分散表）
     final concentrationMap = _shareholdingRepo != null
@@ -714,23 +733,26 @@ class UpdateService {
     await _analysisRepo.clearAnalysisForDate(ctx.normalizedDate);
 
     ctx.reportProgress(7, 10, '分析中 (${candidates.length} 檔)');
-    final scoredStocks = await _scoring.scoreStocksInIsolate(
-      candidates: candidates,
-      date: ctx.normalizedDate,
+    final batchData = ScoringBatchData(
       pricesMap: pricesMap,
       newsMap: newsMap,
       institutionalMap: institutionalMap,
       revenueMap: revenueMap,
       valuationMap: valuationMap,
       revenueHistoryMap: revenueHistoryMap,
-      recentlyRecommended: recentlyRecommended,
+      epsHistoryMap: epsHistoryMap,
+      roeHistoryMap: roeHistoryMap,
+      dividendHistoryMap: dividendHistoryMap,
       dayTradingMap: dayTradingMap,
       shareholdingMap: shareholdingMap,
       warningMap: warningMap,
       insiderMap: insiderMap,
-      epsHistoryMap: epsHistoryMap,
-      roeHistoryMap: roeHistoryMap,
-      dividendHistoryMap: dividendHistoryMap,
+    );
+    final scoredStocks = await _scoring.scoreStocksInIsolate(
+      candidates: candidates,
+      date: ctx.normalizedDate,
+      batchData: batchData,
+      recentlyRecommended: recentlyRecommended,
     );
 
     AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
@@ -871,8 +893,15 @@ class UpdateResult {
   int stocksAnalyzed = 0;
   int recommendationsGenerated = 0;
   List<String> errors = [];
+  bool hasRateLimitError = false;
   Map<String, double> currentPrices = {};
   Map<String, double> priceChanges = {};
+
+  /// 記錄錯誤，同時自動偵測 RateLimitException
+  void recordError(String message, Object exception) {
+    errors.add(message);
+    if (exception is RateLimitException) hasRateLimitError = true;
+  }
 
   String get summary {
     if (skipped) return message ?? '跳過更新';

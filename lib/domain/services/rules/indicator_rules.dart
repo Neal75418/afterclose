@@ -308,7 +308,6 @@ class MAAlignmentBearishRule extends StockRule {
     if (ma5 < ma10 * (1 - minSep) &&
         ma10 < ma20 * (1 - minSep) &&
         ma20 < ma60 * (1 - minSep)) {
-      // v0.1.2：簡化過濾條件，只檢查收盤 < MA5 且乖離率不超過門檻
       // 移除成交量過濾，讓更多股票能觸發
       final today = data.prices.last;
       final close = today.close;
@@ -332,7 +331,6 @@ class MAAlignmentBearishRule extends StockRule {
 /// 規則：RSI 極度超買
 ///
 /// 當 RSI >= 80 時觸發（高風險警示）
-/// v0.1.1：從 85 放寬至 80
 class RSIExtremeOverboughtRule extends StockRule {
   const RSIExtremeOverboughtRule();
 
@@ -372,7 +370,6 @@ class RSIExtremeOverboughtRule extends StockRule {
 /// 規則：RSI 極度超賣
 ///
 /// 當 RSI <= 25 時觸發（潛在反彈機會）
-/// v0.1.1：從 30 收緊至 25，提高精準度
 class RSIExtremeOversoldRule extends StockRule {
   const RSIExtremeOversoldRule();
 

@@ -334,6 +334,38 @@ class FinMindClient {
     await Future.delayed(totalDelay);
   }
 
+  /// 通用日期範圍查詢
+  ///
+  /// 用於所有「按股票代碼 + 日期範圍」查詢的 API 方法。
+  /// [dataset]: FinMind 資料集名稱
+  /// [stockId]: 股票代碼（選用，批次查詢可省略）
+  /// [fromJson]: 反序列化函數，回傳 null 表示跳過該筆
+  /// [stockIdKey]: 股票代碼參數名稱（預設 'data_id'）
+  Future<List<T>> _fetchDateRange<T>({
+    required String dataset,
+    String? stockId,
+    required String startDate,
+    String? endDate,
+    required T? Function(Map<String, dynamic>) fromJson,
+    String stockIdKey = 'data_id',
+  }) async {
+    final params = <String, String>{
+      'dataset': dataset,
+      'start_date': startDate,
+    };
+
+    if (stockId != null) {
+      params[stockIdKey] = stockId;
+    }
+
+    if (endDate != null) {
+      params['end_date'] = endDate;
+    }
+
+    final data = await _request(params);
+    return data.map(fromJson).whereType<T>().toList();
+  }
+
   /// 取得台股股票清單
   ///
   /// 資料集: TaiwanStockInfo
@@ -358,24 +390,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockPrice',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    // 使用 tryFromJson 跳過格式錯誤的記錄
-    return data
-        .map((json) => FinMindDailyPrice.tryFromJson(json))
-        .whereType<FinMindDailyPrice>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockPrice',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindDailyPrice.tryFromJson,
+  );
 
   /// 取得日期範圍內所有股票價格（批次）
   ///
@@ -384,20 +405,12 @@ class FinMindClient {
   Future<List<FinMindDailyPrice>> getAllDailyPrices({
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {'dataset': 'TaiwanStockPrice', 'start_date': startDate};
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    // 使用 tryFromJson 跳過格式錯誤的記錄
-    return data
-        .map((json) => FinMindDailyPrice.tryFromJson(json))
-        .whereType<FinMindDailyPrice>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockPrice',
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindDailyPrice.tryFromJson,
+  );
 
   /// 取得三大法人買賣超資料
   ///
@@ -465,24 +478,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockMarginPurchaseShortSale',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    // 使用 tryFromJson 跳過格式錯誤的記錄
-    return data
-        .map((json) => FinMindMarginData.tryFromJson(json))
-        .whereType<FinMindMarginData>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockMarginPurchaseShortSale',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindMarginData.tryFromJson,
+  );
 
   /// 取得月營收資料
   ///
@@ -491,23 +493,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockMonthRevenue',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindRevenue.tryFromJson(json))
-        .whereType<FinMindRevenue>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockMonthRevenue',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindRevenue.tryFromJson,
+  );
 
   /// 取得日期範圍內所有股票月營收（批次）
   ///
@@ -516,22 +508,12 @@ class FinMindClient {
   Future<List<FinMindRevenue>> getAllMonthlyRevenue({
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockMonthRevenue',
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindRevenue.tryFromJson(json))
-        .whereType<FinMindRevenue>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockMonthRevenue',
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindRevenue.tryFromJson,
+  );
 
   /// 取得股利資料
   ///
@@ -539,20 +521,13 @@ class FinMindClient {
   Future<List<FinMindDividend>> getDividends({
     required String stockId,
     String? startDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockDividend',
-      'data_id': stockId,
-      // 未指定時預設為 5 年前
-      'start_date': startDate ?? '${DateTime.now().year - 5}-01-01',
-    };
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindDividend.tryFromJson(json))
-        .whereType<FinMindDividend>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockDividend',
+    stockId: stockId,
+    // 未指定時預設為 5 年前
+    startDate: startDate ?? '${DateTime.now().year - 5}-01-01',
+    fromJson: FinMindDividend.tryFromJson,
+  );
 
   /// 取得本益比/股價淨值比資料
   ///
@@ -561,23 +536,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockPER',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindPER.tryFromJson(json))
-        .whereType<FinMindPER>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockPER',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindPER.tryFromJson,
+  );
 
   /// 檢查是否已設定 token
   bool get hasToken => _token?.isNotEmpty ?? false;
@@ -597,23 +562,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockShareholding',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindShareholding.tryFromJson(json))
-        .whereType<FinMindShareholding>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockShareholding',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindShareholding.tryFromJson,
+  );
 
   /// 取得股權分散表資料
   ///
@@ -626,23 +581,14 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockHoldingSharesPer',
-      'stock_id': stockId, // 此 API 使用 stock_id 而非 data_id
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindHoldingSharesPer.tryFromJson(json))
-        .whereType<FinMindHoldingSharesPer>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockHoldingSharesPer',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindHoldingSharesPer.tryFromJson,
+    stockIdKey: 'stock_id', // 此 API 使用 stock_id 而非 data_id
+  );
 
   /// 取得當沖比例資料
   ///
@@ -652,23 +598,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockDayTrading',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindDayTrading.tryFromJson(json))
-        .whereType<FinMindDayTrading>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockDayTrading',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindDayTrading.tryFromJson,
+  );
 
   /// 取得綜合損益表資料
   ///
@@ -678,23 +614,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockFinancialStatements',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindFinancialStatement.tryFromJson(json))
-        .whereType<FinMindFinancialStatement>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockFinancialStatements',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindFinancialStatement.tryFromJson,
+  );
 
   /// 取得資產負債表資料
   ///
@@ -704,23 +630,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockBalanceSheet',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindBalanceSheet.tryFromJson(json))
-        .whereType<FinMindBalanceSheet>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockBalanceSheet',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindBalanceSheet.tryFromJson,
+  );
 
   /// 取得現金流量表資料
   ///
@@ -730,23 +646,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockCashFlowsStatement',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindCashFlowStatement.tryFromJson(json))
-        .whereType<FinMindCashFlowStatement>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockCashFlowsStatement',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindCashFlowStatement.tryFromJson,
+  );
 
   /// 取得還原股價資料
   ///
@@ -756,23 +662,13 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockPriceAdj',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindAdjustedPrice.tryFromJson(json))
-        .whereType<FinMindAdjustedPrice>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockPriceAdj',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindAdjustedPrice.tryFromJson,
+  );
 
   /// 取得週 K 線資料
   ///
@@ -782,21 +678,11 @@ class FinMindClient {
     required String stockId,
     required String startDate,
     String? endDate,
-  }) async {
-    final params = {
-      'dataset': 'TaiwanStockWeekPrice',
-      'data_id': stockId,
-      'start_date': startDate,
-    };
-
-    if (endDate != null) {
-      params['end_date'] = endDate;
-    }
-
-    final data = await _request(params);
-    return data
-        .map((json) => FinMindWeeklyPrice.tryFromJson(json))
-        .whereType<FinMindWeeklyPrice>()
-        .toList();
-  }
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockWeekPrice',
+    stockId: stockId,
+    startDate: startDate,
+    endDate: endDate,
+    fromJson: FinMindWeeklyPrice.tryFromJson,
+  );
 }

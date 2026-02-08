@@ -39,15 +39,7 @@ class ScoringService {
   Future<List<ScoredStock>> scoreStocks({
     required List<String> candidates,
     required DateTime date,
-    required Map<String, List<DailyPriceEntry>> pricesMap,
-    required Map<String, List<NewsItemEntry>> newsMap,
-    Map<String, List<DailyInstitutionalEntry>>? institutionalMap,
-    Map<String, MonthlyRevenueEntry>? revenueMap,
-    Map<String, StockValuationEntry>? valuationMap,
-    Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap,
-    Map<String, List<FinancialDataEntry>>? epsHistoryMap,
-    Map<String, List<FinancialDataEntry>>? roeHistoryMap,
-    Map<String, List<DividendHistoryEntry>>? dividendHistoryMap,
+    required ScoringBatchData batchData,
     Set<String>? recentlyRecommended,
     Future<MarketDataContext?> Function(String)? marketDataBuilder,
     void Function(int current, int total)? onProgress,
@@ -57,10 +49,10 @@ class ScoringService {
     final scoredStocks = <ScoredStock>[];
     final recentSet = recentlyRecommended ?? <String>{};
     final instMap =
-        institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
+        batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
     // 記錄價格資料統計
-    _logCandidateStats(candidates, pricesMap);
+    _logCandidateStats(candidates, batchData.pricesMap);
 
     // 使用預載資料處理每個候選
     var skippedNoData = 0;
@@ -73,7 +65,7 @@ class ScoringService {
       onProgress?.call(i + 1, candidates.length);
 
       // 從批次載入資料取得價格歷史
-      final prices = pricesMap[symbol];
+      final prices = batchData.pricesMap[symbol];
       if (prices == null || prices.isEmpty) {
         skippedNoData++;
         continue;
@@ -115,7 +107,7 @@ class ScoringService {
 
       // 從批次載入的 map 取得可選資料
       final institutionalHistory = instMap[symbol];
-      final recentNews = newsMap[symbol];
+      final recentNews = batchData.newsMap[symbol];
 
       // 執行規則引擎
       final reasons = _ruleEngine.evaluateStock(
@@ -124,12 +116,12 @@ class ScoringService {
         institutionalHistory: institutionalHistory,
         recentNews: recentNews,
         symbol: symbol,
-        latestRevenue: revenueMap?[symbol],
-        latestValuation: valuationMap?[symbol],
-        revenueHistory: revenueHistoryMap?[symbol],
-        epsHistory: epsHistoryMap?[symbol],
-        roeHistory: roeHistoryMap?[symbol],
-        dividendHistory: dividendHistoryMap?[symbol],
+        latestRevenue: batchData.revenueMap?[symbol],
+        latestValuation: batchData.valuationMap?[symbol],
+        revenueHistory: batchData.revenueHistoryMap?[symbol],
+        epsHistory: batchData.epsHistoryMap?[symbol],
+        roeHistory: batchData.roeHistoryMap?[symbol],
+        dividendHistory: batchData.dividendHistoryMap?[symbol],
       );
 
       if (reasons.isEmpty) continue;
@@ -208,52 +200,44 @@ class ScoringService {
   Future<List<ScoredStock>> scoreStocksInIsolate({
     required List<String> candidates,
     required DateTime date,
-    required Map<String, List<DailyPriceEntry>> pricesMap,
-    required Map<String, List<NewsItemEntry>> newsMap,
-    Map<String, List<DailyInstitutionalEntry>>? institutionalMap,
-    Map<String, MonthlyRevenueEntry>? revenueMap,
-    Map<String, StockValuationEntry>? valuationMap,
-    Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap,
+    required ScoringBatchData batchData,
     Set<String>? recentlyRecommended,
-    Map<String, double>? dayTradingMap,
-    Map<String, Map<String, double?>>? shareholdingMap,
-    Map<String, Map<String, dynamic>>? warningMap,
-    Map<String, Map<String, dynamic>>? insiderMap,
-    Map<String, List<FinancialDataEntry>>? epsHistoryMap,
-    Map<String, List<FinancialDataEntry>>? roeHistoryMap,
-    Map<String, List<DividendHistoryEntry>>? dividendHistoryMap,
   }) async {
     if (candidates.isEmpty) return [];
 
     // 記錄價格資料統計
-    _logCandidateStats(candidates, pricesMap, suffix: ' (Isolate)');
+    _logCandidateStats(candidates, batchData.pricesMap, suffix: ' (Isolate)');
 
     // 將資料轉換為可跨 Isolate 傳遞的格式
     final input = ScoringIsolateInput(
       candidates: candidates,
-      pricesMap: _convertPricesMap(pricesMap),
-      newsMap: _convertNewsMap(newsMap),
-      institutionalMap: _convertInstitutionalMap(institutionalMap ?? {}),
-      revenueMap: revenueMap != null ? _convertRevenueMap(revenueMap) : null,
-      valuationMap: valuationMap != null
-          ? _convertValuationMap(valuationMap)
+      pricesMap: _convertPricesMap(batchData.pricesMap),
+      newsMap: _convertNewsMap(batchData.newsMap),
+      institutionalMap: _convertInstitutionalMap(
+        batchData.institutionalMap ?? {},
+      ),
+      revenueMap: batchData.revenueMap != null
+          ? _convertRevenueMap(batchData.revenueMap!)
           : null,
-      revenueHistoryMap: revenueHistoryMap != null
-          ? _convertRevenueHistoryMap(revenueHistoryMap)
+      valuationMap: batchData.valuationMap != null
+          ? _convertValuationMap(batchData.valuationMap!)
+          : null,
+      revenueHistoryMap: batchData.revenueHistoryMap != null
+          ? _convertRevenueHistoryMap(batchData.revenueHistoryMap!)
           : null,
       recentlyRecommended: recentlyRecommended,
-      dayTradingMap: dayTradingMap,
-      shareholdingMap: shareholdingMap,
-      warningMap: warningMap,
-      insiderMap: insiderMap,
-      epsHistoryMap: epsHistoryMap != null
-          ? _convertEpsHistoryMap(epsHistoryMap)
+      dayTradingMap: batchData.dayTradingMap,
+      shareholdingMap: batchData.shareholdingMap,
+      warningMap: batchData.warningMap,
+      insiderMap: batchData.insiderMap,
+      epsHistoryMap: batchData.epsHistoryMap != null
+          ? _convertEpsHistoryMap(batchData.epsHistoryMap!)
           : null,
-      roeHistoryMap: roeHistoryMap != null
-          ? _convertEpsHistoryMap(roeHistoryMap)
+      roeHistoryMap: batchData.roeHistoryMap != null
+          ? _convertEpsHistoryMap(batchData.roeHistoryMap!)
           : null,
-      dividendHistoryMap: dividendHistoryMap != null
-          ? _convertDividendHistoryMap(dividendHistoryMap)
+      dividendHistoryMap: batchData.dividendHistoryMap != null
+          ? _convertDividendHistoryMap(batchData.dividendHistoryMap!)
           : null,
     );
 
@@ -268,23 +252,15 @@ class ScoringService {
       return await scoreStocks(
         candidates: candidates,
         date: date,
-        pricesMap: pricesMap,
-        newsMap: newsMap,
-        institutionalMap: institutionalMap,
-        revenueMap: revenueMap,
-        valuationMap: valuationMap,
-        revenueHistoryMap: revenueHistoryMap,
-        epsHistoryMap: epsHistoryMap,
-        roeHistoryMap: roeHistoryMap,
-        dividendHistoryMap: dividendHistoryMap,
+        batchData: batchData,
         recentlyRecommended: recentlyRecommended,
         marketDataBuilder: (symbol) async {
           return _buildMarketDataFromMaps(
             symbol: symbol,
-            dayTradingMap: dayTradingMap,
-            shareholdingMap: shareholdingMap,
-            warningMap: warningMap,
-            insiderMap: insiderMap,
+            dayTradingMap: batchData.dayTradingMap,
+            shareholdingMap: batchData.shareholdingMap,
+            warningMap: batchData.warningMap,
+            insiderMap: batchData.insiderMap,
           );
         },
       );

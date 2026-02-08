@@ -1,8 +1,8 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
@@ -10,6 +10,8 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
+import 'package:afterclose/presentation/widgets/stock_card_price.dart';
+import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
 import 'package:afterclose/presentation/widgets/warning_badge.dart';
 
 /// 現代化股票資訊卡片 Widget
@@ -82,9 +84,9 @@ class _StockCardState extends State<StockCard> {
       parts.add(S.accessibilityPriceChange(widget.priceChange!));
       if (widget.showLimitMarkers) {
         if (PriceLimit.isLimitUp(widget.priceChange)) {
-          parts.add('漲停');
+          parts.add(S.priceLimitUp);
         } else if (PriceLimit.isLimitDown(widget.priceChange)) {
-          parts.add('跌停');
+          parts.add(S.priceLimitDown);
         }
       }
     }
@@ -103,7 +105,6 @@ class _StockCardState extends State<StockCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final priceColor = AppTheme.getPriceColor(widget.priceChange);
 
     return Semantics(
@@ -149,7 +150,9 @@ class _StockCardState extends State<StockCard> {
                       child: LayoutBuilder(
                         builder: (context, constraints) {
                           // 寬度不足時（Grid 多欄或切換瞬間）隱藏走勢圖
-                          final isCompactLayout = constraints.maxWidth < 320;
+                          final isCompactLayout =
+                              constraints.maxWidth <
+                              UiConstants.compactCardBreakpoint;
                           final showSparkline =
                               !isCompactLayout &&
                               widget.recentPrices != null &&
@@ -158,7 +161,7 @@ class _StockCardState extends State<StockCard> {
                           return Row(
                             children: [
                               // 趨勢指示器（現代設計）
-                              _buildTrendIndicator(theme, isDark),
+                              _buildTrendIndicator(),
                               const SizedBox(width: DesignTokens.spacing12),
 
                               // 股票資訊區塊
@@ -182,10 +185,11 @@ class _StockCardState extends State<StockCard> {
                                     ],
                                     if (widget.reasons.isNotEmpty) ...[
                                       const SizedBox(height: 6),
-                                      _buildReasonTags(
-                                        theme,
-                                        isDark,
+                                      ReasonTags(
+                                        reasons: widget.reasons,
                                         maxTags: isCompactLayout ? 1 : 2,
+                                        translateCodes: true,
+                                        size: ReasonTagSize.compact,
                                       ),
                                     ],
                                   ],
@@ -201,7 +205,12 @@ class _StockCardState extends State<StockCard> {
                               ],
 
                               // 價格區塊（帶顏色編碼）
-                              _buildPriceSection(theme, priceColor),
+                              StockCardPriceSection(
+                                latestClose: widget.latestClose,
+                                priceChange: widget.priceChange,
+                                showLimitMarkers: widget.showLimitMarkers,
+                                priceColor: priceColor,
+                              ),
 
                               // 自選按鈕
                               if (widget.onWatchlistTap != null)
@@ -232,7 +241,7 @@ class _StockCardState extends State<StockCard> {
     );
   }
 
-  Widget _buildTrendIndicator(ThemeData theme, bool isDark) {
+  Widget _buildTrendIndicator() {
     final trendColor = widget.trendState.trendColor;
     final icon = widget.trendState.trendIconData;
 
@@ -316,57 +325,11 @@ class _StockCardState extends State<StockCard> {
               borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             ),
             child: Text(
-              isLimitUp ? '漲停' : '跌停',
+              isLimitUp ? S.priceLimitUp : S.priceLimitDown,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: Colors.white,
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildReasonTags(ThemeData theme, bool isDark, {int maxTags = 2}) {
-    // 使用 Row + Flexible 確保標籤不會超出可用寬度
-    // 長文字用 ellipsis 截斷，不會換行溢出卡片
-    final displayReasons = widget.reasons.take(maxTags).toList();
-    final tagColor = isDark ? AppTheme.secondaryColor : AppTheme.primaryColor;
-    final bgColor = isDark
-        ? AppTheme.secondaryColor.withValues(alpha: DesignTokens.opacity25)
-        : AppTheme.primaryColor.withValues(alpha: DesignTokens.opacity10);
-
-    return Row(
-      children: [
-        for (int i = 0; i < displayReasons.length; i++) ...[
-          if (i > 0) const SizedBox(width: DesignTokens.spacing6),
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: DesignTokens.spacing8,
-                vertical: DesignTokens.spacing4,
-              ),
-              decoration: BoxDecoration(
-                color: bgColor,
-                borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
-                border: isDark
-                    ? Border.all(
-                        color: AppTheme.secondaryColor.withValues(
-                          alpha: DesignTokens.opacity40,
-                        ),
-                      )
-                    : null,
-              ),
-              child: Text(
-                ReasonTags.translateReasonCode(displayReasons[i]),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: tagColor,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -383,83 +346,13 @@ class _StockCardState extends State<StockCard> {
     if (prices == null || prices.length < 7) {
       return const SizedBox.shrink();
     }
-    return _MiniSparkline(prices: prices, color: priceColor);
-  }
-
-  Widget _buildPriceSection(ThemeData theme, Color priceColor) {
-    final isPositive = (widget.priceChange ?? 0) >= 0;
-    final isNeutral = widget.priceChange == null || widget.priceChange == 0;
-    final isLimitUp =
-        widget.showLimitMarkers && PriceLimit.isLimitUp(widget.priceChange);
-    final isLimitDown =
-        widget.showLimitMarkers && PriceLimit.isLimitDown(widget.priceChange);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (widget.latestClose != null)
-          Text(
-            widget.latestClose!.toStringAsFixed(2),
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              fontSize: DesignTokens.fontSizeXl,
-              letterSpacing: 0.5,
-              fontFamily: 'RobotoMono',
-            ),
-          ),
-        if (widget.priceChange != null) ...[
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: priceColor.withValues(alpha: isNeutral ? 0.1 : 0.15),
-              borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
-              border: (isLimitUp || isLimitDown)
-                  ? Border.all(color: priceColor, width: 1.5)
-                  : null,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 漲跌停標記
-                if (isLimitUp || isLimitDown)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 2),
-                    child: Icon(
-                      isLimitUp
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
-                      color: priceColor,
-                      size: 14,
-                    ),
-                  )
-                // 裝飾圖示 - 文字已包含正負號
-                else if (!isNeutral)
-                  ExcludeSemantics(
-                    child: Icon(
-                      isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
-                      color: priceColor,
-                      size: 18,
-                    ),
-                  ),
-                Text(
-                  '${isPositive && !isNeutral ? '+' : ''}${widget.priceChange!.toStringAsFixed(2)}%',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: priceColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
+    return MiniSparkline(prices: prices, color: priceColor);
   }
 
   Widget _buildWatchlistButton(ThemeData theme) {
-    final tooltipText = widget.isInWatchlist ? '從自選移除' : '加入自選';
+    final tooltipText = widget.isInWatchlist
+        ? S.watchlistRemoveTooltip
+        : S.watchlistAddTooltip;
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Semantics(
@@ -482,153 +375,6 @@ class _StockCardState extends State<StockCard> {
           },
           splashRadius: 20,
         ),
-      ),
-    );
-  }
-}
-
-/// 優化的迷你走勢圖 Widget
-///
-/// 效能優化：
-/// 1. RepaintBoundary 將重繪與父元件隔離
-/// 2. 資料正規化僅在建置時執行一次
-/// 3. 最小化 LineChartData 設定
-class _MiniSparkline extends StatelessWidget {
-  const _MiniSparkline({required this.prices, required this.color});
-
-  final List<double> prices;
-  final Color color;
-
-  /// 顯示的最大資料點數（為清晰呈現）
-  static const int _maxDataPoints = 20;
-
-  /// 有意義圖表所需的最小資料點數
-  static const int _minDataPoints = 5;
-
-  /// 垂直間距百分比（上下各 10%）
-  static const double _verticalPadding = 0.1;
-
-  /// 間距後可用的內容範圍（1.0 - 2 * padding）
-  static const double _contentRange = 0.8;
-
-  /// 顯示圖表的最小價格變化百分比（0.3%）
-  static const double _minVariationPercent = 0.003;
-
-  /// 建立無障礙語意標籤
-  String _buildSemanticLabel(List<double> sampledPrices) {
-    if (sampledPrices.length < 2) return S.sparklineDefault;
-
-    final first = sampledPrices.first;
-    final last = sampledPrices.last;
-    final change = first > 0 ? ((last - first) / first * 100) : 0.0;
-    final days = sampledPrices.length;
-
-    if (change.abs() < 0.1) {
-      return S.sparklineFlat(days);
-    }
-    return S.sparklineTrend(days, change);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 需至少 5 個資料點才能呈現有意義的視覺化
-    if (prices.length < _minDataPoints) {
-      return const SizedBox.shrink();
-    }
-
-    // 取樣最近 N 個交易日以獲得更清晰的呈現
-    final sampledPrices = _samplePrices(prices);
-
-    // 檢查是否有足夠的價格變化
-    final result = _normalizeToSpots(sampledPrices);
-    if (result == null) {
-      // 變化不足以顯示有意義的圖表
-      return const SizedBox.shrink();
-    }
-
-    // 使用 RepaintBoundary 隔離圖表重繪
-    return Semantics(
-      label: _buildSemanticLabel(sampledPrices),
-      image: true,
-      child: RepaintBoundary(
-        child: SizedBox(
-          width: 70,
-          height: 32,
-          child: LineChart(
-            LineChartData(
-              minY: 0,
-              maxY: 1,
-              lineBarsData: [
-                LineChartBarData(
-                  spots: result,
-                  isCurved: true,
-                  curveSmoothness: 0.35,
-                  color: color,
-                  barWidth: 2,
-                  isStrokeCapRound: true,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        color.withValues(alpha: 0.25),
-                        color.withValues(alpha: 0.05),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-              titlesData: const FlTitlesData(show: false),
-              borderData: FlBorderData(show: false),
-              gridData: const FlGridData(show: false),
-              lineTouchData: const LineTouchData(enabled: false),
-            ),
-            duration: Duration.zero, // 停用動畫以提升效能
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 取樣價格至最近 N 個資料點以獲得更清晰的呈現
-  List<double> _samplePrices(List<double> prices) {
-    if (prices.length <= _maxDataPoints) return prices;
-    // 取最近 N 個價格（最近的交易日）
-    return prices.sublist(prices.length - _maxDataPoints);
-  }
-
-  /// 將價格正規化至 0-1 範圍以獲得一致的圖表高度
-  /// 若變化不足以顯示有意義的圖表則回傳 null
-  List<FlSpot>? _normalizeToSpots(List<double> prices) {
-    if (prices.isEmpty) return null;
-    if (prices.length == 1) return null;
-
-    // 找出最小值和最大值
-    var min = prices[0];
-    var max = prices[0];
-    for (final price in prices) {
-      if (price < min) min = price;
-      if (price > max) max = price;
-    }
-
-    // 檢查是否有足夠的變化（至少 0.3%）
-    final range = max - min;
-    final avgPrice = (max + min) / 2;
-    final variationPercent = avgPrice > 0 ? range / avgPrice : 0;
-
-    if (variationPercent < _minVariationPercent) {
-      // 變化不足，不顯示圖表
-      return null;
-    }
-
-    // 正規化至 0-1 範圍，並加上垂直間距
-    return List.generate(
-      prices.length,
-      (i) => FlSpot(
-        i.toDouble(),
-        ((prices[i] - min) / range) * _contentRange + _verticalPadding,
       ),
     );
   }

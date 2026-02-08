@@ -119,7 +119,6 @@ class BullishEngulfingRule extends StockRule {
     final yesterday = data.prices[data.prices.length - 2];
 
     if (isEngulfing(today, yesterday, bullish: true)) {
-      // v0.1.2：移除成交量過濾，底部反轉可能量縮
       return TriggeredReason(
         type: ReasonType.patternBullishEngulfing,
         score: RuleScores.patternEngulfingBullish,
@@ -329,7 +328,6 @@ class GapDownRule extends StockRule {
 /// - 晨星：長黑 K + 小實體（靠近底部）+ 長紅 K 收在中點上
 /// - 暮星：長紅 K + 小實體（靠近頂部）+ 長黑 K 收在中點下
 ///
-/// v0.1.2：放寬跳空要求，台股有漲跌停限制，真正跳空很少
 /// 改為檢查第二根 K 線是否在第一根的極端位置即可
 bool isStarPattern(
   DailyPriceEntry c1,
@@ -353,7 +351,6 @@ bool isStarPattern(
     // 晨星：第一根長黑 K
     if (!c1.isBearish) return false;
 
-    // v0.1.2：放寬條件 - 第二根中點在第一根收盤附近或更低即可
     // 不強制要求跳空
     if (c2Mid > c1.close! * 1.02) return false; // 允許 2% 容差
 
@@ -364,7 +361,6 @@ bool isStarPattern(
     // 暮星：第一根長紅 K
     if (!c1.isBullish) return false;
 
-    // v0.1.2：放寬條件 - 第二根中點在第一根收盤附近或更高即可
     // 不強制要求跳空
     if (c2Mid < c1.close! * 0.98) return false; // 允許 2% 容差
 
@@ -529,7 +525,6 @@ class ThreeBlackCrowsRule extends StockRule {
     final c1 = data.prices[data.prices.length - 3];
 
     if (_isThreeBlackCrows(c1, c2, c3)) {
-      // v0.1.2：移除每根 K 線跌幅門檻限制，只要三根連續黑 K 即可
       return TriggeredReason(
         type: ReasonType.patternThreeBlackCrows,
         score: RuleScores.patternThreeBlackCrows,

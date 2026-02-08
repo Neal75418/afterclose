@@ -49,6 +49,15 @@ class ChipScoringParams {
   /// 融券連增 4 天加分 (軋空潛力)
   static const int shortIncreaseBonus = 8;
 
+  /// 券資比高於此值視為軋空潛力大 (%)
+  static const double highShortMarginRatio = 30.0;
+
+  /// 券資比低於此值視為新空單建立 (%)
+  static const double lowShortMarginRatio = 10.0;
+
+  /// 低券資比下融券連增的扣分
+  static const int shortIncreaseLowRatioPenalty = -3;
+
   // ==========================================
   // 4. Day Trading (當沖)
   // ==========================================

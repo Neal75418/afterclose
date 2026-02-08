@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
@@ -37,7 +38,8 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
 
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+        _scrollController.position.maxScrollExtent -
+            UiConstants.scrollLoadMoreThreshold) {
       ref.read(customScreeningProvider.notifier).loadMore();
     }
   }

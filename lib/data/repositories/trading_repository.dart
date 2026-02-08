@@ -277,6 +277,8 @@ class TradingRepository {
         AppLogger.info('MarketData', '高當沖股票: $highSymbols');
       }
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {
@@ -391,6 +393,8 @@ class TradingRepository {
       );
 
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {
@@ -508,6 +512,8 @@ class TradingRepository {
       );
 
       return allEntries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {

@@ -93,6 +93,8 @@ class S {
   static const String watchlistAddFailed = '加入自選失敗';
   static String watchlistNotFound(String symbol) => '找不到股票 $symbol';
   static const String watchlistUndo = '復原';
+  static const String watchlistRemoveTooltip = '從自選移除';
+  static const String watchlistAddTooltip = '加入自選';
 
   // ==================================================
   // 股票詳情
@@ -149,6 +151,8 @@ class S {
   static const String priceUp = '上漲';
   static const String priceDown = '下跌';
   static const String priceNeutral = '持平';
+  static const String priceLimitUp = '漲停';
+  static const String priceLimitDown = '跌停';
 
   static String priceChangeLabel(double? change) {
     if (change == null || change == 0) return priceNeutral;

@@ -192,6 +192,8 @@ class InstitutionalRepository {
       );
 
       return allEntries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {

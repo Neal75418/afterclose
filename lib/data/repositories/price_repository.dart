@@ -1,8 +1,5 @@
-import 'package:drift/drift.dart';
-
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
-import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -11,12 +8,17 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/data/repositories/price_candidate_filter.dart';
+import 'package:afterclose/data/repositories/twse_price_source.dart';
+import 'package:afterclose/data/repositories/tpex_price_source.dart';
 import 'package:afterclose/domain/repositories/price_repository.dart';
 
 /// 每日價格資料 Repository
 ///
 /// 主要資料來源：TWSE/TPEX Open Data（免費、無限制、全市場）
 /// 備援資料來源：FinMind（歷史資料）
+///
+/// 將市場特定的 API 呼叫與資料轉換委託給 [TwsePriceSource] 和 [TpexPriceSource]。
 class PriceRepository implements IPriceRepository {
   PriceRepository({
     required AppDatabase database,
@@ -24,14 +26,15 @@ class PriceRepository implements IPriceRepository {
     TwseClient? twseClient,
     TpexClient? tpexClient,
   }) : _db = database,
-       _finMindClient = finMindClient,
-       _twseClient = twseClient ?? TwseClient(),
-       _tpexClient = tpexClient ?? TpexClient();
+       _twseSource = TwsePriceSource(client: twseClient ?? TwseClient()),
+       _tpexSource = TpexPriceSource(
+         client: tpexClient ?? TpexClient(),
+         finMind: finMindClient,
+       );
 
   final AppDatabase _db;
-  final FinMindClient _finMindClient;
-  final TwseClient _twseClient;
-  final TpexClient _tpexClient;
+  final TwsePriceSource _twseSource;
+  final TpexPriceSource _tpexSource;
 
   /// 取得價格歷史資料供分析使用
   ///
@@ -114,114 +117,19 @@ class PriceRepository implements IPriceRepository {
       final stock = await _db.getStock(symbol);
       final isOtc = stock?.market == 'TPEx';
 
-      // 上櫃股票使用 FinMind
-      if (isOtc) {
-        return _syncOtcStockPrices(
-          symbol,
-          startDate: startDate,
-          endDate: effectiveEndDate,
-        );
-      }
-
-      // 上市股票使用 TWSE：僅抓取缺少的月份
-      final allPrices = <TwseDailyPrice>[];
-      for (var i = 0; i < monthsToFetch.length; i++) {
-        final month = monthsToFetch[i];
-        try {
-          final monthData = await _twseClient.getStockMonthlyPrices(
-            code: symbol,
-            year: month.year,
-            month: month.month,
-          );
-          allPrices.addAll(monthData);
-        } on RateLimitException {
-          AppLogger.warning('PriceRepo', '$symbol: 上市價格同步觸發 API 速率限制');
-          rethrow;
-        } catch (e) {
-          // 記錄個別月份失敗，繼續處理其他月份
-          AppLogger.warning(
-            'PriceRepo',
-            '$symbol: ${month.year}-${month.month} 月份價格取得失敗',
-            e,
-          );
-        }
-
-        // API 請求間隔（250ms：batchSize=2 的安全甜蜜點）
-        if (i < monthsToFetch.length - 1) {
-          await Future.delayed(const Duration(milliseconds: 250));
-        }
-      }
-
-      // 過濾至請求的日期範圍
-      final filteredPrices = allPrices.where(
-        (p) => !p.date.isBefore(startDate) && !p.date.isAfter(effectiveEndDate),
-      );
-
-      final entries = filteredPrices.map((price) {
-        return DailyPriceCompanion.insert(
-          symbol: price.code,
-          date: price.date,
-          open: Value(price.open),
-          high: Value(price.high),
-          low: Value(price.low),
-          close: Value(price.close),
-          volume: Value(price.volume),
-          priceChange: Value(price.change),
-        );
-      }).toList();
-
-      if (entries.isNotEmpty) {
-        await _db.insertPrices(entries);
-      }
-
-      return entries.length;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      throw DatabaseException('Failed to sync prices for $symbol', e);
-    }
-  }
-
-  /// 使用 FinMind 同步上櫃股票價格（內部方法）
-  Future<int> _syncOtcStockPrices(
-    String symbol, {
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
-    try {
-      final startStr = _formatDate(startDate);
-      final endStr = _formatDate(endDate);
-
-      final data = await _finMindClient.getDailyPrices(
-        stockId: symbol,
-        startDate: startStr,
-        endDate: endStr,
-      );
-
-      if (data.isEmpty) return 0;
-
-      final entries = <DailyPriceCompanion>[];
-      for (final price in data) {
-        final date = DateTime.tryParse(price.date);
-        if (date == null) {
-          AppLogger.warning(
-            'PriceRepo',
-            '上櫃價格日期解析失敗，跳過: $symbol, date=${price.date}',
-          );
-          continue;
-        }
-        entries.add(
-          DailyPriceCompanion.insert(
-            symbol: symbol,
-            date: date,
-            open: Value(price.open),
-            high: Value(price.high),
-            low: Value(price.low),
-            close: Value(price.close),
-            volume: Value(price.volume),
-          ),
-        );
-      }
+      // 委託給對應的市場資料來源
+      final entries = isOtc
+          ? await _tpexSource.fetchSingleStockPrices(
+              symbol: symbol,
+              startDate: startDate,
+              endDate: effectiveEndDate,
+            )
+          : await _twseSource.fetchMonthlyPrices(
+              symbol: symbol,
+              months: monthsToFetch,
+              startDate: startDate,
+              endDate: effectiveEndDate,
+            );
 
       if (entries.isNotEmpty) {
         await _db.insertPrices(entries);
@@ -229,16 +137,12 @@ class PriceRepository implements IPriceRepository {
 
       return entries.length;
     } on RateLimitException {
-      AppLogger.warning('PriceRepo', '$symbol: 上櫃價格同步觸發 API 速率限制');
+      rethrow;
+    } on NetworkException {
       rethrow;
     } catch (e) {
-      throw DatabaseException('Failed to sync OTC prices for $symbol', e);
+      throw DatabaseException('Failed to sync prices for $symbol', e);
     }
-  }
-
-  /// 格式化日期為 YYYY-MM-DD
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   /// 同步今日所有股票價格（批次模式）
@@ -267,16 +171,18 @@ class PriceRepository implements IPriceRepository {
       final normalizedDate = DateContext.normalize(date);
 
       // 最佳化：先檢查 Database，避免不必要的 API 呼叫
-      // 提高閾值至 1500 以涵蓋上市+上櫃股票
       if (!force) {
         final existingCount = await _db.getPriceCountForDate(normalizedDate);
         if (existingCount > DataFreshness.fullMarketThreshold) {
-          // 仍需取得候選股供 Pipeline 使用，從 Database 載入
-          final candidates = await _quickFilterCandidatesFromDb(normalizedDate);
+          final candidates = await quickFilterCandidatesFromDb(
+            _db,
+            normalizedDate,
+          );
 
-          final dateStr =
-              '${normalizedDate.year}-${normalizedDate.month.toString().padLeft(2, '0')}-${normalizedDate.day.toString().padLeft(2, '0')}';
-          AppLogger.info('PriceRepo', '價格同步: $existingCount 筆 ($dateStr, 快取)');
+          AppLogger.info(
+            'PriceRepo',
+            '價格同步: $existingCount 筆 (${DateContext.formatYmd(normalizedDate)}, 快取)',
+          );
 
           return MarketSyncResult(
             count: existingCount,
@@ -288,93 +194,40 @@ class PriceRepository implements IPriceRepository {
       }
 
       // 並行取得上市與上櫃價格資料（錯誤隔離，允許部分成功）
-      // safeAwait 立即包裹原始 Future，避免 unhandled async error
-      final twseFuture = safeAwait(
-        _twseClient.getAllDailyPrices(),
+      final twsePrices = await safeAwait(
+        _twseSource.fetchAllDailyPrices(),
         <TwseDailyPrice>[],
         tag: 'PriceRepo',
         description: '上市價格取得失敗，繼續處理上櫃',
       );
-      final tpexFuture = safeAwait(
-        _tpexClient.getAllDailyPrices(),
+      final tpexPrices = await safeAwait(
+        _tpexSource.fetchAllDailyPrices(),
         <TpexDailyPrice>[],
         tag: 'PriceRepo',
         description: '上櫃價格取得失敗，繼續處理上市',
       );
-
-      final twsePrices = await twseFuture;
-      final tpexPrices = await tpexFuture;
 
       if (twsePrices.isEmpty && tpexPrices.isEmpty) {
         AppLogger.warning('PriceRepo', '價格同步: 無資料');
         return const MarketSyncResult(count: 0, candidates: []);
       }
 
-      // 建立上市價格資料（過濾無效代碼）
-      final twsePriceEntries = twsePrices
-          .where((price) => StockPatterns.isValidCode(price.code))
-          .map((price) {
-            return DailyPriceCompanion.insert(
-              symbol: price.code,
-              date: price.date,
-              open: Value(price.open),
-              high: Value(price.high),
-              low: Value(price.low),
-              close: Value(price.close),
-              volume: Value(price.volume),
-              priceChange: Value(price.change),
-            );
-          })
-          .toList();
+      // 委託給市場資料來源處理轉換和篩選
+      final twseResult = _twseSource.processDailyPrices(twsePrices);
+      final tpexResult = _tpexSource.processDailyPrices(tpexPrices);
 
-      // 建立上櫃價格資料（過濾無效代碼）
-      final tpexPriceEntries = tpexPrices
-          .where((price) => StockPatterns.isValidCode(price.code))
-          .map((price) {
-            return DailyPriceCompanion.insert(
-              symbol: price.code,
-              date: price.date,
-              open: Value(price.open),
-              high: Value(price.high),
-              low: Value(price.low),
-              close: Value(price.close),
-              volume: Value(price.volume),
-              priceChange: Value(price.change),
-            );
-          })
-          .toList();
-
-      // 合併價格資料
-      final allPriceEntries = [...twsePriceEntries, ...tpexPriceEntries];
-
-      // 從 TWSE 資料建立股票主檔（上市，過濾無效代碼）
-      final twseStockEntries = twsePrices
-          .where((p) => p.name.isNotEmpty && StockPatterns.isValidCode(p.code))
-          .map((price) {
-            return StockMasterCompanion.insert(
-              symbol: price.code,
-              name: price.name,
-              market: 'TWSE',
-              isActive: const Value(true),
-            );
-          })
-          .toList();
-
-      // 從 TPEX 資料建立股票主檔（上櫃，過濾無效代碼）
-      final tpexStockEntries = tpexPrices
-          .where((p) => p.name.isNotEmpty && StockPatterns.isValidCode(p.code))
-          .map((price) {
-            return StockMasterCompanion.insert(
-              symbol: price.code,
-              name: price.name,
-              market: 'TPEx',
-              isActive: const Value(true),
-            );
-          })
-          .toList();
-
-      // 合併股票主檔
-      final allStockEntries = [...twseStockEntries, ...tpexStockEntries];
+      final allPriceEntries = [
+        ...twseResult.priceEntries,
+        ...tpexResult.priceEntries,
+      ];
+      final allStockEntries = [
+        ...twseResult.stockEntries,
+        ...tpexResult.stockEntries,
+      ];
+      final allCandidates = [
+        ...twseResult.candidates,
+        ...tpexResult.candidates,
+      ];
 
       // 寫入資料庫
       if (allStockEntries.isNotEmpty) {
@@ -382,142 +235,32 @@ class PriceRepository implements IPriceRepository {
       }
       await _db.insertPrices(allPriceEntries);
 
-      // 快篩候選股（合併上市與上櫃）
-      final twseCandidates = _quickFilterCandidates(twsePrices);
-      final tpexCandidates = _quickFilterTpexCandidates(tpexPrices);
-      final allCandidates = [...twseCandidates, ...tpexCandidates];
+      // 決定資料日期
+      final dataDate = twseResult.dataDate ?? tpexResult.dataDate;
 
-      // 決定資料日期（分別記錄 TWSE 和 TPEX）
-      final twseDataDate = twsePrices.isNotEmpty ? twsePrices.first.date : null;
-      final tpexDataDate = tpexPrices.isNotEmpty ? tpexPrices.first.date : null;
-      final dataDate = twseDataDate ?? tpexDataDate;
-
-      final dateStr = dataDate != null
-          ? '${dataDate.year}-${dataDate.month.toString().padLeft(2, '0')}-${dataDate.day.toString().padLeft(2, '0')}'
-          : 'N/A';
       AppLogger.info(
         'PriceRepo',
         '價格同步: ${allPriceEntries.length} 筆 '
-            '(上市 ${twsePriceEntries.length}, 上櫃 ${tpexPriceEntries.length}, '
-            '$dateStr, 候選 ${allCandidates.length})',
+            '(上市 ${twseResult.priceEntries.length}, '
+            '上櫃 ${tpexResult.priceEntries.length}, '
+            '${dataDate != null ? DateContext.formatYmd(dataDate) : 'N/A'}, '
+            '候選 ${allCandidates.length})',
       );
 
       return MarketSyncResult(
         count: allPriceEntries.length,
         candidates: allCandidates,
         dataDate: dataDate,
-        tpexDataDate: tpexDataDate,
+        tpexDataDate: tpexResult.dataDate,
       );
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e, stack) {
       AppLogger.error('PriceRepo', '價格同步失敗', e, stack);
       throw DatabaseException('Failed to sync prices from TWSE/TPEX', e);
     }
-  }
-
-  /// 從今日市場資料快篩候選股
-  ///
-  /// 條件（任一觸發）：
-  /// 1. 漲跌幅 >= 2%（顯著波動）
-  /// 2. 接近漲停或跌停
-  /// 3. 漲跌幅 >= 1.5% 且具高成交量潛力
-  ///
-  /// 回傳約 100 檔股票供進一步分析
-  /// 從今日上市市場資料快篩候選股
-  List<String> _quickFilterCandidates(List<TwseDailyPrice> prices) {
-    return _quickFilterPrices(
-      prices,
-      getCode: (p) => p.code,
-      getClose: (p) => p.close,
-      getChange: (p) => p.change,
-      getVolume: (p) => p.volume,
-    );
-  }
-
-  /// 從今日上櫃市場資料快篩候選股
-  List<String> _quickFilterTpexCandidates(List<TpexDailyPrice> prices) {
-    return _quickFilterPrices(
-      prices,
-      getCode: (p) => p.code,
-      getClose: (p) => p.close,
-      getChange: (p) => p.change,
-      getVolume: (p) => p.volume,
-    );
-  }
-
-  /// 共用的快篩邏輯
-  ///
-  /// 將 TWSE 與 TPEX 的共用過濾邏輯抽取為泛型方法：
-  /// - 跳過缺少關鍵資料的股票
-  /// - 過濾無效股票代碼（權證、TDR 等）
-  /// - 過濾極低成交量股票
-  /// - 依波動度排序
-  List<String> _quickFilterPrices<T>(
-    List<T> prices, {
-    required String Function(T) getCode,
-    required double? Function(T) getClose,
-    required double? Function(T) getChange,
-    required double? Function(T) getVolume,
-  }) {
-    final candidates = <_QuickCandidate>[];
-
-    for (final price in prices) {
-      final code = getCode(price);
-      final close = getClose(price);
-      final change = getChange(price);
-      final volume = getVolume(price);
-
-      // 跳過缺少關鍵資料的股票
-      if (close == null || close <= 0) continue;
-      if (change == null) continue;
-
-      // 過濾無效股票代碼（權證、TDR 等）
-      if (!StockPatterns.isValidCode(code)) continue;
-
-      // 計算漲跌幅
-      final prevClose = close - change;
-      if (prevClose <= 0) continue;
-
-      // 過濾：跳過極低成交量股票（< 50 張）
-      if ((volume ?? 0) < RuleParams.minQuickFilterVolumeShares) continue;
-
-      // 全市場策略：納入所有活躍股票，不論漲跌幅
-      final changePercent = (change / prevClose).abs() * 100;
-      candidates.add(_QuickCandidate(symbol: code, score: changePercent));
-    }
-
-    // 依波動度排序
-    candidates.sort((a, b) => b.score.compareTo(a.score));
-
-    return candidates.map((c) => c.symbol).toList();
-  }
-
-  /// 從 Database 快篩候選股（當跳過 API 時使用）
-  ///
-  /// 類似 _quickFilterCandidates，但從本地 Database 讀取，
-  /// 而非 API 回應。當已有今日資料時使用。
-  Future<List<String>> _quickFilterCandidatesFromDb(DateTime date) async {
-    final prices = await _db.getPricesForDate(date);
-    if (prices.isEmpty) return [];
-
-    final symbols = <String>[];
-
-    for (final price in prices) {
-      // 跳過缺少關鍵資料的股票
-      final close = price.close;
-      if (close == null || close <= 0) continue;
-
-      // 使用共用驗證邏輯（與 _quickFilterPrices 一致）
-      if (!StockPatterns.isValidCode(price.symbol)) continue;
-
-      // 跳過極低成交量股票
-      if ((price.volume ?? 0) < RuleParams.minQuickFilterVolumeShares) continue;
-
-      symbols.add(price.symbol);
-    }
-
-    return symbols;
   }
 
   /// 同步指定股票清單的價格（免費帳號備援方案）
@@ -786,12 +529,4 @@ class PriceRepository implements IPriceRepository {
       throw DatabaseException('Failed to fetch volume MA batch', e);
     }
   }
-}
-
-/// 快篩候選股輔助類別
-class _QuickCandidate {
-  const _QuickCandidate({required this.symbol, required this.score});
-
-  final String symbol;
-  final double score;
 }

@@ -116,8 +116,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_VOL'],
         date: DateTime.now(),
-        pricesMap: pricesMap,
-        newsMap: {},
+        batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
       // Assert
@@ -153,8 +152,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_TURN'],
         date: DateTime.now(),
-        pricesMap: pricesMap,
-        newsMap: {},
+        batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
       // Assert
@@ -258,8 +256,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: ['GOOD'],
         date: DateTime.now(),
-        pricesMap: pricesMap,
-        newsMap: {},
+        batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
       // Assert
@@ -370,8 +367,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_SCORE', 'HIGH_SCORE'],
         date: DateTime.now(),
-        pricesMap: pricesMap,
-        newsMap: {},
+        batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
       // Assert
@@ -468,8 +464,7 @@ void main() {
         await scoringService.scoreStocks(
           candidates: ['COOLDOWN'],
           date: DateTime.now(),
-          pricesMap: pricesMap,
-          newsMap: {},
+          batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
           recentlyRecommended: {'COOLDOWN'},
         );
 

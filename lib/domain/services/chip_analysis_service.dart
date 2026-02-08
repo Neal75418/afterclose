@@ -150,12 +150,12 @@ class ChipAnalysisService {
       final short = latest.shortBalance ?? 0;
       final shortMarginRatio = margin > 0 ? (short / margin * 100) : 0.0;
 
-      if (shortMarginRatio > 30) {
-        // 券資比 > 30%：融券高且持續增加 → 軋空潛力大
+      if (shortMarginRatio > ChipScoringParams.highShortMarginRatio) {
+        // 券資比高：融券高且持續增加 → 軋空潛力大
         adj += ChipScoringParams.shortIncreaseBonus;
-      } else if (shortMarginRatio < 10) {
-        // 券資比 < 10%：新空單建立居多 → 偏空
-        adj -= 3;
+      } else if (shortMarginRatio < ChipScoringParams.lowShortMarginRatio) {
+        // 券資比低：新空單建立居多 → 偏空
+        adj += ChipScoringParams.shortIncreaseLowRatioPenalty;
       } else {
         // 中等券資比：方向不明，維持小幅加分
         adj += ChipScoringParams.shortIncreaseBonus ~/ 2;

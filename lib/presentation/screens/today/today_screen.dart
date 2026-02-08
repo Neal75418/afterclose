@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -398,16 +399,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       final result = await ref.read(todayProvider.notifier).runUpdate();
 
       if (mounted) {
-        // Check for rate limit errors
-        final hasRateLimitError = result.errors.any(
-          (e) =>
-              e.contains('流量') ||
-              e.contains('limit') ||
-              e.contains('quota') ||
-              e.contains('429'),
-        );
-
-        if (hasRateLimitError) {
+        if (result.hasRateLimitError) {
           _showRateLimitDialog();
         }
 
@@ -420,21 +412,13 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       }
     } catch (e) {
       if (mounted) {
-        // Check if exception is rate limit related
-        final errorStr = e.toString();
-        final isRateLimit =
-            errorStr.contains('流量') ||
-            errorStr.contains('limit') ||
-            errorStr.contains('quota') ||
-            errorStr.contains('429');
-
-        if (isRateLimit) {
+        if (e is RateLimitException) {
           _showRateLimitDialog();
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.todayUpdateFailed(errorStr)),
+            content: Text(S.todayUpdateFailed(e.toString())),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
           ),

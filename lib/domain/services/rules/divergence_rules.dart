@@ -59,7 +59,6 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     final volumeChange = (todayVolume - avgVolume) / avgVolume * 100;
 
     // 價格上漲但成交量下降
-    // v0.1.2：大幅放寬門檻，解決 0 觸發問題
     // 原先：1.5% 價格 / -15% 成交量（仍過於嚴格）
     // 目前：1.0% 價格 / -10% 成交量
     if (priceChange >= RuleParams.divergencePriceThreshold &&
@@ -136,7 +135,6 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
     final volumeChange = (todayVolume - avgVolume) / avgVolume * 100;
 
     // 價格下跌且成交量上升
-    // v0.1.2：大幅放寬門檻，解決 0 觸發問題
     // 原先：-1.5% 價格 / +15% 成交量（仍過於嚴格）
     // 目前：-1.0% 價格 / +10% 成交量
     if (priceChange <= -RuleParams.divergencePriceThreshold &&
@@ -287,7 +285,6 @@ class LowVolumeAccumulationRule extends StockRule {
     final avgVolume = volumeSum / volumeCount;
 
     // 低檔位置（後 25%）且成交量低迷（低於平均的 60%）
-    // v0.1.1：放寬門檻，解決 0 觸發問題
     if (position <= RuleParams.lowPositionThreshold &&
         volume < avgVolume * RuleParams.lowAccumulationVolumeRatio) {
       AppLogger.debug(

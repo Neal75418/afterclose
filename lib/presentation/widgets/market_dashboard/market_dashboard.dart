@@ -26,8 +26,19 @@ class MarketDashboard extends StatefulWidget {
   State<MarketDashboard> createState() => _MarketDashboardState();
 }
 
+/// 市場區段（避免使用 magic string）
+enum MarketSegment {
+  // ignore: constant_identifier_names
+  TWSE,
+  // ignore: constant_identifier_names
+  TPEx;
+
+  /// 對應 state map 的 key
+  String get key => name;
+}
+
 class _MarketDashboardState extends State<MarketDashboard> {
-  String _selectedMarket = 'TWSE'; // 預設顯示上市
+  MarketSegment _selectedMarket = MarketSegment.TWSE;
 
   @override
   Widget build(BuildContext context) {
@@ -125,17 +136,17 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
   /// 建構市場選擇器（SegmentedButton）
   Widget _buildMarketSelector(ThemeData theme) {
-    return SegmentedButton<String>(
+    return SegmentedButton<MarketSegment>(
       segments: [
         ButtonSegment(
-          value: 'TWSE',
+          value: MarketSegment.TWSE,
           label: Text(
             'marketOverview.twse'.tr(),
             style: const TextStyle(fontSize: 12),
           ),
         ),
         ButtonSegment(
-          value: 'TPEx',
+          value: MarketSegment.TPEx,
           label: Text(
             'marketOverview.tpex'.tr(),
             style: const TextStyle(fontSize: 12),
@@ -143,7 +154,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
         ),
       ],
       selected: {_selectedMarket},
-      onSelectionChanged: (Set<String> newSelection) {
+      onSelectionChanged: (Set<MarketSegment> newSelection) {
         setState(() {
           _selectedMarket = newSelection.first;
         });
@@ -162,7 +173,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final sections = <Widget>[];
 
     // Section 1: Hero 加權指數（僅 TWSE）
-    if (_selectedMarket == 'TWSE') {
+    if (_selectedMarket == MarketSegment.TWSE) {
       final taiex = widget.state.indices
           .where((idx) => idx.name == MarketIndexNames.taiex)
           .toList();
@@ -212,10 +223,11 @@ class _MarketDashboardState extends State<MarketDashboard> {
     }
 
     // Section 3-6: 統計數據（依選擇的市場顯示）
-    final adData = widget.state.advanceDeclineByMarket[_selectedMarket];
-    final instData = widget.state.institutionalByMarket[_selectedMarket];
-    final marginData = widget.state.marginByMarket[_selectedMarket];
-    final turnoverData = widget.state.turnoverByMarket[_selectedMarket];
+    final marketKey = _selectedMarket.key;
+    final adData = widget.state.advanceDeclineByMarket[marketKey];
+    final instData = widget.state.institutionalByMarket[marketKey];
+    final marginData = widget.state.marginByMarket[marketKey];
+    final turnoverData = widget.state.turnoverByMarket[marketKey];
 
     if (adData != null && adData.total > 0) {
       sections.add(AdvanceDeclineGauge(data: adData));

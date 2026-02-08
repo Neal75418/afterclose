@@ -148,6 +148,8 @@ class FundamentalRepository {
       AppLogger.info('FundamentalRepo', '估值同步: ${entries.length} 筆 (上市, TWSE)');
 
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {
@@ -240,6 +242,8 @@ class FundamentalRepository {
       );
 
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {
@@ -313,6 +317,8 @@ class FundamentalRepository {
 
       await _db.insertMonthlyRevenue(entries);
       return entries.length;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {
@@ -413,6 +419,8 @@ class FundamentalRepository {
       );
 
       return successCount;
+    } on RateLimitException {
+      rethrow;
     } on NetworkException {
       rethrow;
     } catch (e) {

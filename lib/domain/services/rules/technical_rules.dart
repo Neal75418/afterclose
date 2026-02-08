@@ -119,7 +119,6 @@ class BreakdownRule extends StockRule {
     final close = today.close;
     if (close == null) return null;
 
-    // v0.1.2：若無支撐位則使用 20 日低點作為 fallback
     double? support = context.supportLevel;
     if (support == null && data.prices.length >= 20) {
       support = _calculate20DayLow(data.prices);
@@ -129,9 +128,6 @@ class BreakdownRule extends StockRule {
       // 使用跌破緩衝區（3%）
       final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
       if (close < breakdownLevel) {
-        // v0.1.2：移除 MA20 過濾，簡化邏輯
-        // v0.1.2：移除成交量過濾，跌破可能伴隨恐慌性量縮
-
         return TriggeredReason(
           type: ReasonType.techBreakdown,
           score: RuleScores.techBreakdown,

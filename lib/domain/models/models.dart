@@ -7,6 +7,7 @@ export 'analysis_context.dart';
 export 'analysis_result.dart';
 export 'price_volume_analysis.dart';
 export 'price_zone.dart';
+export 'scoring_batch_data.dart';
 export 'swing_point.dart';
 export 'technical_indicators.dart';
 export 'triggered_reason.dart';

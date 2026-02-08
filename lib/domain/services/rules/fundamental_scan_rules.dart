@@ -68,7 +68,6 @@ class RevenueYoYSurgeRule extends StockRule {
 
 /// 規則：營收年減警示
 ///
-/// v0.1.2：移除 MA60 過濾，只看營收年減率 < -20% 即可
 class RevenueYoYDeclineRule extends StockRule {
   const RevenueYoYDeclineRule();
 

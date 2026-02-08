@@ -11,7 +11,7 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/e
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/profitability_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/presentation/widgets/metric_card.dart';
 
 /// Fundamentals tab - P/E, P/B, Revenue, Dividends
 class FundamentalsTab extends ConsumerStatefulWidget {
@@ -121,87 +121,41 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     return Row(
       children: [
         Expanded(
-          child: _buildMetricCard(
-            context,
-            'P/E',
-            per != null && per.per > 0 ? per.per.toStringAsFixed(1) : '-',
-            Icons.analytics,
+          child: MetricCard(
+            label: 'P/E',
+            value: per != null && per.per > 0
+                ? per.per.toStringAsFixed(1)
+                : '-',
+            icon: Icons.analytics,
             accentColor: const Color(0xFF3498DB),
             subtitle: 'stockDetail.perLabel'.tr(),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildMetricCard(
-            context,
-            'P/B',
-            per != null && per.pbr > 0 ? per.pbr.toStringAsFixed(2) : '-',
-            Icons.account_balance,
+          child: MetricCard(
+            label: 'P/B',
+            value: per != null && per.pbr > 0
+                ? per.pbr.toStringAsFixed(2)
+                : '-',
+            icon: Icons.account_balance,
             accentColor: const Color(0xFF9B59B6),
             subtitle: 'stockDetail.pbrLabel'.tr(),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: _buildMetricCard(
-            context,
-            'stockDetail.yield'.tr(),
-            per != null && per.dividendYield > 0
+          child: MetricCard(
+            label: 'stockDetail.yield'.tr(),
+            value: per != null && per.dividendYield > 0
                 ? '${per.dividendYield.toStringAsFixed(2)}%'
                 : '-',
-            Icons.percent,
+            icon: Icons.percent,
             accentColor: const Color(0xFF27AE60),
             subtitle: 'stockDetail.yieldLabel'.tr(),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildMetricCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon, {
-    String? subtitle,
-    Color accentColor = Colors.blue,
-  }) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-        border: Border.all(color: accentColor.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, size: 18, color: accentColor),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle ?? label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }
