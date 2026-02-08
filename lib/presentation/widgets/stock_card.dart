@@ -149,54 +149,82 @@ class _StockCardState extends State<StockCard> {
                       ),
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          // 寬度不足時（Grid 多欄或切換瞬間）隱藏走勢圖
+                          // 緊湊模式：縮小字體/圖示/間距
                           final isCompactLayout =
                               constraints.maxWidth <
                               UiConstants.compactCardBreakpoint;
+                          // Grid 固定高度時用 Flexible 防止垂直溢出
+                          final isHeightConstrained =
+                              constraints.maxHeight <
+                              DesignTokens.stockCardHeight;
+                          // 價格區塊是 Row 中佔最多寬度的元素，
+                          // 需要比其他元素更早 compact 以釋放空間給訊號
+                          final isCompactPrice =
+                              constraints.maxWidth <
+                              UiConstants.sparklineMinWidth;
+                          // 走勢圖佔 78px，需要比 compact 更寬的門檻
                           final showSparkline =
-                              !isCompactLayout &&
+                              !isCompactPrice &&
                               widget.recentPrices != null &&
                               widget.recentPrices!.length >= 7;
 
                           return Row(
                             children: [
-                              // 趨勢指示器（現代設計）
-                              _buildTrendIndicator(),
-                              const SizedBox(width: DesignTokens.spacing12),
+                              // 趨勢指示器（響應式）
+                              _buildTrendIndicator(compact: isCompactLayout),
+                              SizedBox(
+                                width: isCompactLayout
+                                    ? DesignTokens.spacing8
+                                    : DesignTokens.spacing12,
+                              ),
 
                               // 股票資訊區塊
                               Expanded(
                                 child: Column(
-                                  mainAxisSize: MainAxisSize.min,
+                                  // Grid 固定高度時用 max 才能讓
+                                  // Flexible 正確分配剩餘空間
+                                  mainAxisSize: isHeightConstrained
+                                      ? MainAxisSize.max
+                                      : MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    _buildHeader(
-                                      theme,
-                                      showScore: !isCompactLayout,
-                                    ),
+                                    _buildHeader(theme),
                                     if (widget.stockName != null) ...[
                                       const SizedBox(
                                         height: DesignTokens.spacing2,
                                       ),
-                                      _buildStockName(
-                                        theme,
-                                        showBadges: !isCompactLayout,
-                                      ),
+                                      _buildStockName(theme),
                                     ],
                                     if (widget.reasons.isNotEmpty) ...[
                                       const SizedBox(height: 6),
-                                      ReasonTags(
-                                        reasons: widget.reasons,
-                                        maxTags: isCompactLayout ? 1 : 2,
-                                        translateCodes: true,
-                                        size: ReasonTagSize.compact,
-                                      ),
+                                      if (isHeightConstrained)
+                                        Flexible(
+                                          child: ClipRect(
+                                            child: ReasonTags(
+                                              reasons: widget.reasons,
+                                              maxTags: isCompactLayout ? 1 : 2,
+                                              translateCodes: true,
+                                              size: ReasonTagSize.compact,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        ReasonTags(
+                                          reasons: widget.reasons,
+                                          maxTags: isCompactLayout ? 1 : 2,
+                                          translateCodes: true,
+                                          size: ReasonTagSize.compact,
+                                        ),
                                     ],
                                   ],
                                 ),
                               ),
 
-                              const SizedBox(width: 12),
+                              SizedBox(
+                                width: isCompactLayout
+                                    ? DesignTokens.spacing6
+                                    : DesignTokens.spacing12,
+                              ),
 
                               // 迷你走勢圖（窄卡片時自動隱藏）
                               if (showSparkline) ...[
@@ -204,17 +232,21 @@ class _StockCardState extends State<StockCard> {
                                 const SizedBox(width: 8),
                               ],
 
-                              // 價格區塊（帶顏色編碼）
+                              // 價格區塊（兩級響應式：400px 以下即 compact）
                               StockCardPriceSection(
                                 latestClose: widget.latestClose,
                                 priceChange: widget.priceChange,
                                 showLimitMarkers: widget.showLimitMarkers,
                                 priceColor: priceColor,
+                                compact: isCompactPrice,
                               ),
 
-                              // 自選按鈕
+                              // 自選按鈕（響應式）
                               if (widget.onWatchlistTap != null)
-                                _buildWatchlistButton(theme),
+                                _buildWatchlistButton(
+                                  theme,
+                                  compact: isCompactLayout,
+                                ),
                             ],
                           );
                         },
@@ -241,19 +273,22 @@ class _StockCardState extends State<StockCard> {
     );
   }
 
-  Widget _buildTrendIndicator() {
+  Widget _buildTrendIndicator({bool compact = false}) {
     final trendColor = widget.trendState.trendColor;
     final icon = widget.trendState.trendIconData;
+    final iconSize = compact ? 18.0 : 24.0;
 
     // Simplified design: Icon only, no background container to reduce color noise
     return SizedBox(
-      width: 24,
-      height: 24,
-      child: Center(child: Icon(icon, color: trendColor, size: 24)),
+      width: iconSize,
+      height: iconSize,
+      child: Center(
+        child: Icon(icon, color: trendColor, size: iconSize),
+      ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme, {bool showScore = true}) {
+  Widget _buildHeader(ThemeData theme) {
     return Row(
       children: [
         Flexible(
@@ -266,7 +301,7 @@ class _StockCardState extends State<StockCard> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (showScore && widget.score != null && widget.score! > 0) ...[
+        if (widget.score != null && widget.score! > 0) ...[
           const SizedBox(width: 6),
           ScoreRing(score: widget.score!, size: ScoreRingSize.small),
         ],
@@ -274,16 +309,12 @@ class _StockCardState extends State<StockCard> {
     );
   }
 
-  Widget _buildStockName(ThemeData theme, {bool showBadges = true}) {
-    final marketLabel = showBadges && widget.market == 'TPEx' ? '櫃' : null;
+  Widget _buildStockName(ThemeData theme) {
+    final marketLabel = widget.market == 'TPEx' ? '櫃' : null;
     final isLimitUp =
-        showBadges &&
-        widget.showLimitMarkers &&
-        PriceLimit.isLimitUp(widget.priceChange);
+        widget.showLimitMarkers && PriceLimit.isLimitUp(widget.priceChange);
     final isLimitDown =
-        showBadges &&
-        widget.showLimitMarkers &&
-        PriceLimit.isLimitDown(widget.priceChange);
+        widget.showLimitMarkers && PriceLimit.isLimitDown(widget.priceChange);
 
     return Row(
       children: [
@@ -349,12 +380,13 @@ class _StockCardState extends State<StockCard> {
     return MiniSparkline(prices: prices, color: priceColor);
   }
 
-  Widget _buildWatchlistButton(ThemeData theme) {
+  Widget _buildWatchlistButton(ThemeData theme, {bool compact = false}) {
     final tooltipText = widget.isInWatchlist
         ? S.watchlistRemoveTooltip
         : S.watchlistAddTooltip;
+    final iconSize = compact ? 20.0 : 26.0;
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
+      padding: EdgeInsets.only(left: compact ? 2 : 4),
       child: Semantics(
         label: tooltipText,
         button: true,
@@ -366,14 +398,18 @@ class _StockCardState extends State<StockCard> {
             color: widget.isInWatchlist
                 ? Colors.amber
                 : theme.colorScheme.onSurfaceVariant,
-            size: 26,
+            size: iconSize,
           ),
           tooltip: tooltipText,
           onPressed: () {
             HapticFeedback.mediumImpact();
             widget.onWatchlistTap?.call();
           },
-          splashRadius: 20,
+          constraints: compact
+              ? const BoxConstraints(minWidth: 32, minHeight: 32)
+              : null,
+          padding: compact ? EdgeInsets.zero : null,
+          splashRadius: compact ? 16 : 20,
         ),
       ),
     );

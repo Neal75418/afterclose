@@ -14,12 +14,16 @@ class StockCardPriceSection extends StatelessWidget {
     this.priceChange,
     this.showLimitMarkers = true,
     required this.priceColor,
+    this.compact = false,
   });
 
   final double? latestClose;
   final double? priceChange;
   final bool showLimitMarkers;
   final Color priceColor;
+
+  /// 緊湊模式：縮小字體、省略絕對漲跌金額，僅顯示百分比
+  final bool compact;
 
   /// 從收盤價與漲跌幅百分比反算絕對漲跌金額
   double? get _absoluteChange {
@@ -49,15 +53,20 @@ class StockCardPriceSection extends StatelessWidget {
             latestClose!.toStringAsFixed(2),
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
-              fontSize: DesignTokens.fontSizeXl,
+              fontSize: compact
+                  ? DesignTokens.fontSizeMd
+                  : DesignTokens.fontSizeXl,
               letterSpacing: 0.5,
               fontFamily: 'RobotoMono',
             ),
           ),
         if (priceChange != null) ...[
-          const SizedBox(height: 4),
+          SizedBox(height: compact ? 2 : 4),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 4 : 8,
+              vertical: compact ? 2 : 4,
+            ),
             decoration: BoxDecoration(
               color: priceColor.withValues(alpha: isNeutral ? 0.1 : 0.15),
               borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
@@ -77,7 +86,7 @@ class StockCardPriceSection extends StatelessWidget {
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
                       color: priceColor,
-                      size: 14,
+                      size: compact ? 12 : 14,
                     ),
                   )
                 // 裝飾圖示 - 文字已包含正負號
@@ -86,14 +95,17 @@ class StockCardPriceSection extends StatelessWidget {
                     child: Icon(
                       isPositive ? Icons.arrow_drop_up : Icons.arrow_drop_down,
                       color: priceColor,
-                      size: 18,
+                      size: compact ? 14 : 18,
                     ),
                   ),
                 Text(
-                  _formatChangeText(absChange, isPositive, isNeutral),
+                  compact
+                      ? _formatCompactChangeText(isPositive, isNeutral)
+                      : _formatChangeText(absChange, isPositive, isNeutral),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: priceColor,
                     fontWeight: FontWeight.bold,
+                    fontSize: compact ? DesignTokens.fontSizeXs : null,
                   ),
                 ),
               ],
@@ -113,5 +125,11 @@ class StockCardPriceSection extends StatelessWidget {
       return '$absText ($pctText)';
     }
     return pctText;
+  }
+
+  /// 緊湊模式漲跌文字：僅顯示百分比「+1.67%」
+  String _formatCompactChangeText(bool isPositive, bool isNeutral) {
+    final sign = isPositive && !isNeutral ? '+' : '';
+    return '$sign${priceChange!.toStringAsFixed(2)}%';
   }
 }

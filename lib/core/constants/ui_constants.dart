@@ -21,6 +21,12 @@ abstract final class UiConstants {
   /// 卡片寬度低於此值時切換為緊湊佈局（像素）
   static const double compactCardBreakpoint = 320.0;
 
+  /// 卡片寬度達此值時才顯示迷你走勢圖（像素）
+  ///
+  /// 走勢圖佔 78px (70+8)，需要比 compact 門檻更多空間，
+  /// 避免 320-400px 邊界寬度的水平溢出。
+  static const double sparklineMinWidth = 400.0;
+
   /// 推薦列表動畫時長（毫秒）
   static const int recommendationAnimationDurationMs = 320;
 
