@@ -66,7 +66,12 @@ abstract final class AppLogger {
       LogLevel.error => '[E]',
     };
 
-    final timestamp = DateTime.now().toIso8601String().substring(11, 23);
+    final now = DateTime.now();
+    final timestamp =
+        '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}.'
+        '${now.millisecond.toString().padLeft(3, '0')}';
     final logMessage = '$timestamp $prefix [$tag] $message';
 
     debugPrint(logMessage);

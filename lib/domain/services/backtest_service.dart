@@ -1,3 +1,4 @@
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -13,11 +14,14 @@ class BacktestService {
   const BacktestService({
     required AppDatabase database,
     required ScreeningService screeningService,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
-       _screeningService = screeningService;
+       _screeningService = screeningService,
+       _clock = clock;
 
   final AppDatabase _db;
   final ScreeningService _screeningService;
+  final AppClock _clock;
 
   /// 執行回測
   ///
@@ -132,7 +136,7 @@ class BacktestService {
 
   /// 找到最新有分析資料的日期
   Future<DateTime?> _findLatestAnalysisDate() async {
-    final now = DateTime.now();
+    final now = _clock.now();
     for (var daysAgo = 0; daysAgo <= 7; daysAgo++) {
       final date = DateContext.normalize(now.subtract(Duration(days: daysAgo)));
       final analyses = await _db.getAnalysisForDate(date);

@@ -123,23 +123,102 @@ class FinMindClient {
     return sorted.map((e) => '${e.key}=${e.value}').join('&');
   }
 
-  /// 通用請求處理器（含錯誤對應和重試邏輯）
-  Future<List<Map<String, dynamic>>> _request(
-    Map<String, dynamic> params,
-  ) async {
-    // 建立請求標籤供日誌使用
+  // 建立請求標籤供日誌使用
+  String _buildRequestLabel(Map<String, dynamic> params) {
     final dataset = params['dataset']?.toString() ?? '';
     final stockId =
         params['data_id']?.toString() ?? params['stock_id']?.toString() ?? '';
-    final label = stockId.isNotEmpty ? '$dataset($stockId)' : dataset;
+    return stockId.isNotEmpty ? '$dataset($stockId)' : dataset;
+  }
 
-    // 快取查詢（回傳複本，避免呼叫端修改快取內容）
+  // 快取查詢（回傳複本，避免呼叫端修改快取內容）
+  List<Map<String, dynamic>>? _checkCache(
+    Map<String, dynamic> params,
+    String label,
+  ) {
     final cacheKey = _cacheKey(params);
     final cached = _responseCache.get(cacheKey);
     if (cached != null) {
       AppLogger.debug('FinMind', '$label: cache hit (${cached.length} 筆)');
       return List<Map<String, dynamic>>.from(cached);
     }
+    return null;
+  }
+
+  /// 處理 HTTP 200 回應：檢查 API 錯誤、快取結果、回傳資料
+  List<Map<String, dynamic>> _handleSuccessResponse(
+    Response<dynamic> response,
+    Map<String, dynamic> params,
+    String label,
+  ) {
+    final data = response.data;
+
+    // 檢查 API 錯誤回應
+    if (data['status'] != null && data['status'] != 200) {
+      final msg = data['msg'] ?? 'Unknown API error';
+      final msgStr = msg.toString();
+
+      // 流量限制檢查
+      if (msgStr.contains('limit') || msgStr.contains('quota')) {
+        AppLogger.warning('FinMind', '$label: 流量限制');
+        throw const RateLimitException();
+      }
+
+      // 付費功能檢查 (批次 API 需要贊助者)
+      if (msgStr.contains('level is free') || msgStr.contains('Sponsor')) {
+        AppLogger.debug('FinMind', '$label: 此功能需要付費會員 (贊助者)');
+        throw const ApiException('批次 API 需要付費會員資格', 400);
+      }
+
+      AppLogger.warning('FinMind', '$label: $msgStr');
+      throw ApiException(msgStr, data['status'] as int?);
+    }
+
+    // 回傳資料陣列
+    final cacheKey = _cacheKey(params);
+    final dataList = data['data'];
+    if (dataList is List) {
+      final result = dataList.cast<Map<String, dynamic>>();
+      _responseCache.put(cacheKey, List.unmodifiable(result));
+      AppLogger.debug('FinMind', '$label: ${result.length} 筆');
+      return result;
+    }
+    // 空結果也快取，避免重複對同一參數請求 API
+    _responseCache.put(cacheKey, const []);
+    AppLogger.debug('FinMind', '$label: 0 筆');
+    return [];
+  }
+
+  /// 將 DioException 轉換為適當的應用例外（總是拋出，不回傳）
+  Never _handleDioException(DioException e, String label, int attempt) {
+    // 轉換為適當的例外
+    if (e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout) {
+      AppLogger.warning('FinMind', '$label: 連線逾時 (重試 $attempt 次)');
+      throw NetworkException('Connection timeout after $attempt attempts', e);
+    }
+    if (e.response?.statusCode == 429) {
+      // 以較長退避時間重試流量限制錯誤（有限次數重試）
+      AppLogger.warning('FinMind', '$label: 429 流量限制，等待重試');
+      throw const RateLimitException();
+    }
+    if (e.response?.statusCode == 402) {
+      // 402 Payment Required = API 額度耗盡，不重試直接拋出
+      AppLogger.warning('FinMind', '$label: 402 API 額度耗盡');
+      throw const RateLimitException('API 額度已用完，請稍後再試');
+    }
+    AppLogger.warning('FinMind', '$label: ${e.message ?? "網路錯誤"}');
+    throw NetworkException(e.message ?? 'Network error', e);
+  }
+
+  /// 通用請求處理器（含錯誤對應和重試邏輯）
+  Future<List<Map<String, dynamic>>> _request(
+    Map<String, dynamic> params,
+  ) async {
+    final label = _buildRequestLabel(params);
+
+    final cached = _checkCache(params, label);
+    if (cached != null) return cached;
 
     int attempt = 0;
     Object? lastError;
@@ -152,42 +231,7 @@ class FinMindClient {
         );
 
         if (response.statusCode == 200) {
-          final data = response.data;
-
-          // 檢查 API 錯誤回應
-          if (data['status'] != null && data['status'] != 200) {
-            final msg = data['msg'] ?? 'Unknown API error';
-            final msgStr = msg.toString();
-
-            // 流量限制檢查
-            if (msgStr.contains('limit') || msgStr.contains('quota')) {
-              AppLogger.warning('FinMind', '$label: 流量限制');
-              throw const RateLimitException();
-            }
-
-            // 付費功能檢查 (批次 API 需要贊助者)
-            if (msgStr.contains('level is free') ||
-                msgStr.contains('Sponsor')) {
-              AppLogger.debug('FinMind', '$label: 此功能需要付費會員 (贊助者)');
-              throw const ApiException('批次 API 需要付費會員資格', 400);
-            }
-
-            AppLogger.warning('FinMind', '$label: $msgStr');
-            throw ApiException(msgStr, data['status'] as int?);
-          }
-
-          // 回傳資料陣列
-          final dataList = data['data'];
-          if (dataList is List) {
-            final result = dataList.cast<Map<String, dynamic>>();
-            _responseCache.put(cacheKey, List.unmodifiable(result));
-            AppLogger.debug('FinMind', '$label: ${result.length} 筆');
-            return result;
-          }
-          // 空結果也快取，避免重複對同一參數請求 API
-          _responseCache.put(cacheKey, const []);
-          AppLogger.debug('FinMind', '$label: 0 筆');
-          return [];
+          return _handleSuccessResponse(response, params, label);
         }
 
         // 伺服器錯誤 (5xx) 可重試
@@ -219,33 +263,7 @@ class FinMindClient {
           }
         }
 
-        // 轉換為適當的例外
-        if (e.type == DioExceptionType.connectionTimeout ||
-            e.type == DioExceptionType.receiveTimeout) {
-          AppLogger.warning('FinMind', '$label: 連線逾時 (重試 $attempt 次)');
-          throw NetworkException(
-            'Connection timeout after $attempt attempts',
-            e,
-          );
-        }
-        if (e.response?.statusCode == 429) {
-          // 以較長退避時間重試流量限制錯誤（有限次數重試）
-          AppLogger.warning('FinMind', '$label: 429 流量限制，等待重試');
-          lastError = const RateLimitException();
-          attempt++;
-          if (attempt <= _maxRetries) {
-            await _delay(attempt, isRateLimit: true);
-            continue;
-          }
-          throw const RateLimitException();
-        }
-        if (e.response?.statusCode == 402) {
-          // 402 Payment Required = API 額度耗盡，不重試直接拋出
-          AppLogger.warning('FinMind', '$label: 402 API 額度耗盡');
-          throw const RateLimitException('API 額度已用完，請稍後再試');
-        }
-        AppLogger.warning('FinMind', '$label: ${e.message ?? "網路錯誤"}');
-        throw NetworkException(e.message ?? 'Network error', e);
+        _handleDioException(e, label, attempt);
       } on RateLimitException {
         // 巢狀呼叫的流量限制 - 達到最大重試次數後仍重新拋出
         rethrow;

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -17,11 +18,14 @@ class MarketIndexSyncer {
   MarketIndexSyncer({
     required AppDatabase database,
     required TwseClient twseClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
-       _twse = twseClient;
+       _twse = twseClient,
+       _clock = clock;
 
   final AppDatabase _db;
   final TwseClient _twse;
+  final AppClock _clock;
 
   /// DB 中指數筆數低於此值時，自動觸發回補
   static const _backfillThreshold = 20;
@@ -67,7 +71,7 @@ class MarketIndexSyncer {
   /// 逐日呼叫 TWSE API（僅交易日），每次間隔 [_requestDelay]。
   /// 回傳總寫入筆數。
   Future<int> backfill() async {
-    final now = DateTime.now();
+    final now = _clock.now();
     var totalInserted = 0;
     var apiCalls = 0;
 

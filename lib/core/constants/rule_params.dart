@@ -59,8 +59,11 @@ abstract final class RuleParams {
   /// 波段高低點偵測視窗
   static const int swingWindow = 20;
 
-  /// 價格異動門檻百分比（7%）
-  static const double priceSpikePercent = 7.0;
+  /// 價格異動門檻百分比（5%）
+  ///
+  /// 從 7% 降至 5%，原 7% 接近台股漲跌幅極值（10%），
+  /// 導致 5-6% 的顯著異動被錯過。
+  static const double priceSpikePercent = 5.0;
 
   /// 價格異動成交量確認倍數
   ///
@@ -233,12 +236,15 @@ abstract final class RuleParams {
   /// 法人連買總量門檻（股）
   ///
   /// 連續買超期間的總淨買超須達此門檻。
-  static const int institutionalBuyTotalThresholdShares = 2000000;
+  /// 從 2,000,000 降至 1,500,000，因三重過濾（連續天數 + 總量 + 日均）
+  /// 導致觸發率過低（0-2 檔/日）。
+  static const int institutionalBuyTotalThresholdShares = 1500000;
 
   /// 法人連買日均門檻（股）
   ///
   /// 連續買超期間的日均淨買超須達此門檻。
-  static const int institutionalBuyDailyAvgThresholdShares = 300000;
+  /// 從 300,000 降至 200,000，配合總量門檻調降。
+  static const int institutionalBuyDailyAvgThresholdShares = 200000;
 
   /// 法人連賣總量門檻（股）
   ///
@@ -287,8 +293,11 @@ abstract final class RuleParams {
   /// 排列檢查用均線週期
   static const List<int> maAlignmentPeriods = [5, 10, 20, 60];
 
-  /// 有效排列的均線最小間距（0.5%）
-  static const double maMinSeparation = 0.005;
+  /// 有效排列的均線最小間距（0.3%）
+  ///
+  /// 從 0.5% 降至 0.3%，在高價股（如 500 元以上）
+  /// 0.5% 間距僅 2.5 元，容易誤判均線糾結為有效排列。
+  static const double maMinSeparation = 0.003;
 
   /// 均線乖離率過濾門檻（5%）
   ///

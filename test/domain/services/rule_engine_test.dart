@@ -380,7 +380,7 @@ void main() {
     group('PriceSpikeRule', () {
       const rule = PriceSpikeRule();
 
-      test('should trigger when price moves 7%+ with volume confirmation', () {
+      test('should trigger when price moves 5%+ with volume confirmation', () {
         // v0.1.3: 需要 21 天資料計算均量，且成交量需達 1.5 倍
         final now = DateTime.now();
         const baseVolume = 1000.0;
@@ -412,7 +412,7 @@ void main() {
       });
 
       test('should NOT trigger with small price change', () {
-        // 5% 漲幅不觸發（門檻 7%）
+        // 4% 漲幅不觸發（門檻 5%）
         final now = DateTime.now();
         final prices = List.generate(21, (i) {
           if (i < 20) {
@@ -424,7 +424,7 @@ void main() {
           } else {
             return createTestPrice(
               date: now,
-              close: 105.0, // 只漲 5%
+              close: 104.0, // 只漲 4%
               volume: 2000.0,
             );
           }

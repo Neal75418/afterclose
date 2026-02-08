@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -54,7 +55,9 @@ class UpdateService {
     RuleEngine? ruleEngine,
     ScoringService? scoringService,
     List<String>? popularStocks,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
+       _clock = clock,
        _priceRepo = priceRepository,
        _newsRepo = newsRepository,
        _analysisRepo = analysisRepository,
@@ -100,6 +103,7 @@ class UpdateService {
            : null;
 
   final AppDatabase _db;
+  final AppClock _clock;
   final PriceRepository _priceRepo;
   final NewsRepository _newsRepo;
   final AnalysisRepository _analysisRepo;
@@ -136,7 +140,7 @@ class UpdateService {
     bool forceFetch = false,
     UpdateProgressCallback? onProgress,
   }) async {
-    var targetDate = forDate ?? DateTime.now();
+    var targetDate = forDate ?? _clock.now();
 
     // 智慧回溯：若為預設「現在」但非交易日，自動回溯至最近交易日
     if (forDate == null && !TaiwanCalendar.isTradingDay(targetDate)) {

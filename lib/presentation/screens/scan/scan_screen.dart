@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/filter_metadata.dart';
+import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -51,7 +52,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   /// 當使用者捲動接近底部時觸發載入更多
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
+        _scrollController.position.maxScrollExtent -
+            UiConstants.infiniteScrollThresholdPx) {
       ref.read(scanProvider.notifier).loadMore();
     }
   }
@@ -398,6 +400,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           state.stocks[index],
           index,
           showLimitMarkers,
+          isGrid: false,
         );
       },
     );
@@ -427,11 +430,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         if (index == state.stocks.length) {
           return _buildLoadingIndicator(state);
         }
-        return _buildStockCardForGrid(
+        return _buildStockCard(
           context,
           state.stocks[index],
           index,
           showLimitMarkers,
+          isGrid: true,
         );
       },
     );
@@ -449,158 +453,162 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
-  /// 單張股票卡片：Slidable 手勢 + 動畫
+  /// 共用的 StockCard 建構（不含 Slidable 包裝與動畫）
+  Widget _buildCoreStockCard(
+    BuildContext context,
+    ScanStockItem stock,
+    bool showLimitMarkers, {
+    required bool isGrid,
+  }) {
+    return StockCard(
+      symbol: stock.symbol,
+      stockName: stock.stockName,
+      market: stock.market,
+      latestClose: stock.latestClose,
+      priceChange: stock.priceChange,
+      score: stock.score,
+      reasons: stock.reasonTypes,
+      trendState: stock.trendState,
+      isInWatchlist: stock.isInWatchlist,
+      recentPrices: stock.recentPrices,
+      showLimitMarkers: showLimitMarkers,
+      onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
+      onLongPress: isGrid
+          ? () => _showStockContextMenu(context, stock)
+          : () {
+              showStockPreviewSheet(
+                context: context,
+                data: StockPreviewData(
+                  symbol: stock.symbol,
+                  stockName: stock.stockName,
+                  latestClose: stock.latestClose,
+                  priceChange: stock.priceChange,
+                  score: stock.score,
+                  trendState: stock.trendState,
+                  reasons: stock.reasonTypes,
+                  isInWatchlist: stock.isInWatchlist,
+                ),
+                onViewDetails: () =>
+                    context.push(AppRoutes.stockDetail(stock.symbol)),
+                onToggleWatchlist: () {
+                  ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+                },
+              );
+            },
+      onWatchlistTap: () {
+        HapticFeedback.lightImpact();
+        ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+      },
+    );
+  }
+
+  /// 單張股票卡片：List 模式包 Slidable，Grid 模式直接顯示，各自使用對應動畫
   Widget _buildStockCard(
     BuildContext context,
     ScanStockItem stock,
     int index,
-    bool showLimitMarkers,
-  ) {
-    final card = RepaintBoundary(
-      child: Slidable(
-        key: ValueKey(stock.symbol),
-        // 向左滑動 → 檢視詳情
-        startActionPane: ActionPane(
-          motion: const BehindMotion(),
-          extentRatio: 0.25,
-          children: [
-            SlidableAction(
-              onPressed: (_) {
-                HapticFeedback.lightImpact();
-                context.push(AppRoutes.stockDetail(stock.symbol));
-              },
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              icon: Icons.visibility_outlined,
-              label: 'scan.view'.tr(),
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(16),
-                bottomRight: Radius.circular(16),
-              ),
-            ),
-          ],
-        ),
-        // 向右滑動 → 切換自選
-        endActionPane: ActionPane(
-          motion: const BehindMotion(),
-          extentRatio: 0.25,
-          children: [
-            SlidableAction(
-              onPressed: (_) {
-                HapticFeedback.lightImpact();
-                ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-              },
-              backgroundColor: stock.isInWatchlist
-                  ? Colors.red.shade400
-                  : Colors.amber,
-              foregroundColor: Colors.white,
-              icon: stock.isInWatchlist ? Icons.star_outline : Icons.star,
-              label: stock.isInWatchlist
-                  ? 'scan.remove'.tr()
-                  : 'scan.favorite'.tr(),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                bottomLeft: Radius.circular(16),
-              ),
-            ),
-          ],
-        ),
-        child: StockCard(
-          symbol: stock.symbol,
-          stockName: stock.stockName,
-          market: stock.market,
-          latestClose: stock.latestClose,
-          priceChange: stock.priceChange,
-          score: stock.score,
-          reasons: stock.reasonTypes,
-          trendState: stock.trendState,
-          isInWatchlist: stock.isInWatchlist,
-          recentPrices: stock.recentPrices,
-          showLimitMarkers: showLimitMarkers,
-          onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
-          onLongPress: () {
-            showStockPreviewSheet(
-              context: context,
-              data: StockPreviewData(
-                symbol: stock.symbol,
-                stockName: stock.stockName,
-                latestClose: stock.latestClose,
-                priceChange: stock.priceChange,
-                score: stock.score,
-                trendState: stock.trendState,
-                reasons: stock.reasonTypes,
-                isInWatchlist: stock.isInWatchlist,
-              ),
-              onViewDetails: () =>
-                  context.push(AppRoutes.stockDetail(stock.symbol)),
-              onToggleWatchlist: () {
-                ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-              },
-            );
-          },
-          onWatchlistTap: () {
-            HapticFeedback.lightImpact();
-            ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-          },
-        ),
-      ),
+    bool showLimitMarkers, {
+    required bool isGrid,
+  }) {
+    final coreCard = _buildCoreStockCard(
+      context,
+      stock,
+      showLimitMarkers,
+      isGrid: isGrid,
     );
 
-    // 前 10 筆項目使用交錯進場動畫
-    if (index < 10) {
-      return card
-          .animate()
-          .fadeIn(
-            delay: Duration(milliseconds: 50 * index),
-            duration: 400.ms,
-          )
-          .slideX(begin: 0.05, duration: 400.ms, curve: Curves.easeOutQuart);
+    // List 模式：包裝 Slidable 手勢
+    final Widget card;
+    if (isGrid) {
+      card = RepaintBoundary(child: coreCard);
+    } else {
+      card = RepaintBoundary(
+        child: Slidable(
+          key: ValueKey(stock.symbol),
+          // 向左滑動 → 檢視詳情
+          startActionPane: ActionPane(
+            motion: const BehindMotion(),
+            extentRatio: 0.25,
+            children: [
+              SlidableAction(
+                onPressed: (_) {
+                  HapticFeedback.lightImpact();
+                  context.push(AppRoutes.stockDetail(stock.symbol));
+                },
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                icon: Icons.visibility_outlined,
+                label: 'scan.view'.tr(),
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+            ],
+          ),
+          // 向右滑動 → 切換自選
+          endActionPane: ActionPane(
+            motion: const BehindMotion(),
+            extentRatio: 0.25,
+            children: [
+              SlidableAction(
+                onPressed: (_) {
+                  HapticFeedback.lightImpact();
+                  ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
+                },
+                backgroundColor: stock.isInWatchlist
+                    ? Colors.red.shade400
+                    : Colors.amber,
+                foregroundColor: Colors.white,
+                icon: stock.isInWatchlist ? Icons.star_outline : Icons.star,
+                label: stock.isInWatchlist
+                    ? 'scan.remove'.tr()
+                    : 'scan.favorite'.tr(),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
+              ),
+            ],
+          ),
+          child: coreCard,
+        ),
+      );
     }
-    return card;
-  }
 
-  /// Grid 佈局用的股票卡片（無 Slidable，改用 PopupMenu）
-  Widget _buildStockCardForGrid(
-    BuildContext context,
-    ScanStockItem stock,
-    int index,
-    bool showLimitMarkers,
-  ) {
-    final card = RepaintBoundary(
-      child: StockCard(
-        symbol: stock.symbol,
-        stockName: stock.stockName,
-        market: stock.market,
-        latestClose: stock.latestClose,
-        priceChange: stock.priceChange,
-        score: stock.score,
-        reasons: stock.reasonTypes,
-        trendState: stock.trendState,
-        isInWatchlist: stock.isInWatchlist,
-        recentPrices: stock.recentPrices,
-        showLimitMarkers: showLimitMarkers,
-        onTap: () => context.push(AppRoutes.stockDetail(stock.symbol)),
-        onLongPress: () => _showStockContextMenu(context, stock),
-        onWatchlistTap: () {
-          HapticFeedback.lightImpact();
-          ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-        },
-      ),
-    );
-
-    // 前 20 筆項目使用交錯進場動畫（Grid 顯示更多）
-    if (index < 20) {
-      return card
-          .animate()
-          .fadeIn(
-            delay: Duration(milliseconds: 30 * index),
-            duration: 300.ms,
-          )
-          .scale(
-            begin: const Offset(0.95, 0.95),
-            duration: 300.ms,
-            curve: Curves.easeOutQuart,
-          );
+    // 交錯進場動畫：List 前 10 筆 fadeIn+slideX，Grid 前 20 筆 fadeIn+scale
+    if (isGrid) {
+      if (index < 20) {
+        return card
+            .animate()
+            .fadeIn(
+              delay: Duration(
+                milliseconds: UiConstants.gridAnimationDelayMs * index,
+              ),
+              duration: UiConstants.gridAnimationDurationMs.ms,
+            )
+            .scale(
+              begin: const Offset(0.95, 0.95),
+              duration: UiConstants.gridAnimationDurationMs.ms,
+              curve: Curves.easeOutQuart,
+            );
+      }
+    } else {
+      if (index < 10) {
+        return card
+            .animate()
+            .fadeIn(
+              delay: Duration(
+                milliseconds: UiConstants.listAnimationDelayMs * index,
+              ),
+              duration: UiConstants.listAnimationDurationMs.ms,
+            )
+            .slideX(
+              begin: 0.05,
+              duration: UiConstants.listAnimationDurationMs.ms,
+              curve: Curves.easeOutQuart,
+            );
+      }
     }
     return card;
   }

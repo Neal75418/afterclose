@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
@@ -16,11 +17,14 @@ class TdccHoldingSyncer {
   TdccHoldingSyncer({
     required AppDatabase database,
     required TdccClient tdccClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
-       _tdcc = tdccClient;
+       _tdcc = tdccClient,
+       _clock = clock;
 
   final AppDatabase _db;
   final TdccClient _tdcc;
+  final AppClock _clock;
 
   /// 同步股權分散表資料
   ///
@@ -97,7 +101,7 @@ class TdccHoldingSyncer {
     // 用台積電 (2330) 作為哨兵檢查
     final latestDate = await _db.getLatestHoldingDistributionDate('2330');
     if (latestDate == null) return false;
-    return _isSameWeek(latestDate, DateTime.now());
+    return _isSameWeek(latestDate, _clock.now());
   }
 
   /// 檢查兩個日期是否在同一週（週一至週日）

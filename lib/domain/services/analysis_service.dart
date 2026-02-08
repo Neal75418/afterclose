@@ -68,6 +68,7 @@ class AnalysisService {
     AnalysisResult result, {
     List<DailyPriceEntry>? priceHistory,
     MarketDataContext? marketData,
+    DateTime? evaluationTime,
   }) {
     TechnicalIndicators? indicators;
 
@@ -86,6 +87,7 @@ class AnalysisService {
       rangeBottom: result.rangeBottom,
       indicators: indicators,
       marketData: marketData,
+      evaluationTime: evaluationTime,
     );
   }
 
@@ -427,6 +429,9 @@ class AnalysisService {
     final todayClose = today.close;
     if (todayClose == null) return ReversalState.none;
 
+    // 預先計算 MA20，供 _hasHigherLow 使用（避免在 helper 中重複計算）
+    final ma20 = TechnicalIndicatorService.latestSMA(prices, 20);
+
     // 檢查弱轉強 (W2S)
     if (trendState == TrendState.down || trendState == TrendState.range) {
       // 突破區間頂部
@@ -438,7 +443,7 @@ class AnalysisService {
       }
 
       // 形成更高的低點
-      if (_hasHigherLow(prices)) {
+      if (_hasHigherLow(prices, ma20: ma20)) {
         return ReversalState.weakToStrong;
       }
     }
@@ -592,7 +597,7 @@ class AnalysisService {
   /// 1. 近期低點高於前期低點 5%
   /// 2. 收盤站上 MA20
   /// 3. 近期成交量高於前期平均（量能確認）
-  bool _hasHigherLow(List<DailyPriceEntry> prices) {
+  bool _hasHigherLow(List<DailyPriceEntry> prices, {double? ma20}) {
     if (prices.length < RuleParams.swingWindow * 2) return false;
 
     // 找出近期波段低點
@@ -609,13 +614,18 @@ class AnalysisService {
     if (recentLow == null || prevLow == null) return false;
 
     // MA20 過濾：需站上 MA20 才確認上漲反轉
-    final ma20 = TechnicalIndicatorService.latestSMA(prices, 20);
+    // 使用呼叫端傳入的 MA20（避免重複計算），若未提供則自行計算
+    final effectiveMa20 =
+        ma20 ?? TechnicalIndicatorService.latestSMA(prices, 20);
     final currentClose = prices.last.close;
 
-    if (ma20 != null && currentClose != null) {
+    if (effectiveMa20 != null && currentClose != null) {
       // 需站上 MA20 以確認強勢
-      if (currentClose < ma20) {
-        AppLogger.debug('Analysis', '弱轉強未觸發：股價 $currentClose 低於 MA20 $ma20');
+      if (currentClose < effectiveMa20) {
+        AppLogger.debug(
+          'Analysis',
+          '弱轉強未觸發：股價 $currentClose 低於 MA20 $effectiveMa20',
+        );
         return false;
       }
     }

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
@@ -7,9 +8,14 @@ import 'package:afterclose/data/database/app_database.dart';
 ///
 /// 負責回溯驗證過去的推薦，計算每條規則的命中率和平均報酬率。
 class RuleAccuracyService {
-  RuleAccuracyService({required AppDatabase database}) : _db = database;
+  RuleAccuracyService({
+    required AppDatabase database,
+    AppClock clock = const SystemClock(),
+  }) : _db = database,
+       _clock = clock;
 
   final AppDatabase _db;
+  final AppClock _clock;
 
   static const String _logTag = 'RuleAccuracy';
 
@@ -22,7 +28,7 @@ class RuleAccuracyService {
   Future<ValidationResult> validatePastRecommendations({
     int daysAgo = defaultHoldingDays,
   }) async {
-    final today = DateTime.now();
+    final today = _clock.now();
     final targetDate = DateTime(today.year, today.month, today.day - daysAgo);
 
     AppLogger.info(_logTag, '開始驗證 ${_formatDate(targetDate)} 的推薦');

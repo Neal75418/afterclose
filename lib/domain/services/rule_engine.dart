@@ -218,18 +218,18 @@ class RuleEngine {
 
   /// 取得觸發原因（去重複）供資料庫儲存與篩選
   ///
-  /// 回傳所有不重複類型的原因，確保篩選功能正常。
+  /// 依 description 去重複（每條規則產生唯一描述），保留所有不同規則的觸發結果。
+  /// 例如同為 institutionalBuy 類型的「外資連續買超」和「法人由賣轉買」都會被保留。
   /// UI 層自行使用 .take(2) 或 .take(3) 控制顯示數量。
   List<TriggeredReason> getTopReasons(List<TriggeredReason> reasons) {
     if (reasons.isEmpty) return [];
 
-    // 依類型去重複，保留所有觸發的規則供篩選使用
-    final distinct = <ReasonType>{};
+    // 依 description 去重複，同一規則不會產生相同描述
+    final seenDescriptions = <String>{};
     final result = <TriggeredReason>[];
 
     for (final r in reasons) {
-      if (!distinct.contains(r.type)) {
-        distinct.add(r.type);
+      if (seenDescriptions.add(r.description)) {
         result.add(r);
       }
     }

@@ -1063,124 +1063,154 @@ class TwseClient {
   Future<List<TwseInsiderHolding>> getInsiderHoldings() {
     return MarketClientMixin.executeRequest(_tag, '董監持股', () async {
       // 1. 取得已發行股數
-      final stockInfoResponse = await _dio.get(
-        ApiEndpoints.twseStockInfo,
-        options: Options(headers: {'Accept': 'application/json'}),
-      );
+      final issuedSharesMap = await _fetchIssuedShares();
 
-      final issuedSharesMap = <String, double>{};
-      if (stockInfoResponse.statusCode == 200) {
-        // OpenData API 回傳 List（Dio responseType: json 會自動解析）
-        final stockData = stockInfoResponse.data;
-        if (stockData is List) {
-          for (final item in stockData) {
-            if (item is! Map<String, dynamic>) continue;
-            final code = item['公司代號']?.toString().trim() ?? '';
-            // TWSE OpenData API 欄位名稱：已發行普通股數或TDR原股發行股數
-            final shares = item['已發行普通股數或TDR原股發行股數']?.toString().replaceAll(
-              ',',
-              '',
-            );
-            if (code.isNotEmpty && shares != null) {
-              final sharesNum = double.tryParse(shares);
-              if (sharesNum != null && sharesNum > 0) {
-                issuedSharesMap[code] = sharesNum;
-              }
+      // 2. 取得個別董監持股記錄並彙總
+      final companyData = await _fetchAndAggregateInsiderRecords();
+
+      // 3. 計算比例並建立結果
+      final results = _buildInsiderHoldingResults(companyData, issuedSharesMap);
+
+      AppLogger.info(_tag, '董監持股彙總: ${results.length} 家公司');
+      return results;
+    });
+  }
+
+  /// 從 TWSE OpenData 取得已發行股數
+  ///
+  /// 端點: t187ap03_L
+  /// 回傳 Map<公司代號, 已發行股數>
+  Future<Map<String, double>> _fetchIssuedShares() async {
+    final stockInfoResponse = await _dio.get(
+      ApiEndpoints.twseStockInfo,
+      options: Options(headers: {'Accept': 'application/json'}),
+    );
+
+    final issuedSharesMap = <String, double>{};
+    if (stockInfoResponse.statusCode == 200) {
+      // OpenData API 回傳 List（Dio responseType: json 會自動解析）
+      final stockData = stockInfoResponse.data;
+      if (stockData is List) {
+        for (final item in stockData) {
+          if (item is! Map<String, dynamic>) continue;
+          final code = item['公司代號']?.toString().trim() ?? '';
+          // TWSE OpenData API 欄位名稱：已發行普通股數或TDR原股發行股數
+          final shares = item['已發行普通股數或TDR原股發行股數']?.toString().replaceAll(
+            ',',
+            '',
+          );
+          if (code.isNotEmpty && shares != null) {
+            final sharesNum = double.tryParse(shares);
+            if (sharesNum != null && sharesNum > 0) {
+              issuedSharesMap[code] = sharesNum;
             }
           }
         }
       }
+    }
 
-      AppLogger.debug(_tag, '已發行股數: ${issuedSharesMap.length} 家公司');
+    AppLogger.debug(_tag, '已發行股數: ${issuedSharesMap.length} 家公司');
+    return issuedSharesMap;
+  }
 
-      // 2. 取得個別董監持股記錄
-      final response = await _dio.get(
-        ApiEndpoints.twseInsiderHolding,
-        options: Options(headers: {'Accept': 'application/json'}),
-      );
+  /// 從 TWSE OpenData 取得個別董監持股記錄並彙總
+  ///
+  /// 端點: t187ap11_L
+  /// 只計算董事和監察人的「本人」記錄，使用姓名去重。
+  /// 回傳 Map<公司代號, TwseInsiderAggregation>
+  Future<Map<String, TwseInsiderAggregation>>
+  _fetchAndAggregateInsiderRecords() async {
+    final response = await _dio.get(
+      ApiEndpoints.twseInsiderHolding,
+      options: Options(headers: {'Accept': 'application/json'}),
+    );
 
-      if (response.statusCode == 200) {
-        // 董監持股 API 回傳 List（Dio responseType: json 會自動解析）
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '董監持股: 非預期資料型別');
-          return [];
-        }
-
-        // 3. 彙總計算每家公司的董監持股
-        final companyData = <String, TwseInsiderAggregation>{};
-
-        for (final item in data) {
-          if (item is! Map<String, dynamic>) continue;
-
-          final code = item['公司代號']?.toString().trim() ?? '';
-          if (code.isEmpty || code.length < 4) continue;
-
-          final companyName = item['公司名稱']?.toString().trim() ?? '';
-          final position = item['職稱']?.toString() ?? '';
-          final personName = item['姓名']?.toString().trim() ?? '';
-
-          // 只計算董事和監察人的「本人」記錄
-          final isDirectorOrSupervisor =
-              (position.contains('董事') || position.contains('監察人')) &&
-              position.endsWith('本人');
-          if (!isDirectorOrSupervisor) continue;
-
-          // 解析日期
-          final dateStr = item['出表日期']?.toString();
-          final date = TwParseUtils.parseCompactRocDate(dateStr);
-          if (date == null) continue;
-
-          // 解析持股和質押數
-          final sharesStr = item['目前持股']?.toString().replaceAll(',', '') ?? '0';
-          final pledgedStr =
-              item['設質股數']?.toString().replaceAll(',', '') ?? '0';
-          final shares = double.tryParse(sharesStr) ?? 0;
-          final pledged = double.tryParse(pledgedStr) ?? 0;
-
-          // 彙總（使用姓名去重）
-          companyData.putIfAbsent(
-            code,
-            () => TwseInsiderAggregation(
-              code: code,
-              name: companyName,
-              date: date,
-            ),
-          );
-          companyData[code]!.addHoldingIfNew(personName, shares, pledged);
-        }
-
-        // 4. 計算比例並建立結果
-        final results = <TwseInsiderHolding>[];
-        for (final agg in companyData.values) {
-          final issuedShares = issuedSharesMap[agg.code];
-          if (issuedShares == null || issuedShares <= 0) continue;
-
-          final insiderRatio = (agg.totalShares / issuedShares) * 100;
-          final pledgeRatio = agg.totalShares > 0
-              ? (agg.totalPledged / agg.totalShares) * 100
-              : 0.0;
-
-          results.add(
-            TwseInsiderHolding(
-              date: agg.date,
-              code: agg.code,
-              name: agg.name,
-              insiderRatio: insiderRatio,
-              pledgeRatio: pledgeRatio,
-              sharesIssued: issuedShares,
-            ),
-          );
-        }
-
-        AppLogger.info(_tag, '董監持股彙總: ${results.length} 家公司');
-        return results;
-      }
-
+    if (response.statusCode != 200) {
       throw ApiException(
         '$_tag OpenData error: ${response.statusCode}',
         response.statusCode,
       );
-    });
+    }
+
+    // 董監持股 API 回傳 List（Dio responseType: json 會自動解析）
+    final data = response.data;
+    if (data is! List) {
+      AppLogger.warning(_tag, '董監持股: 非預期資料型別');
+      return {};
+    }
+
+    // 彙總計算每家公司的董監持股
+    final companyData = <String, TwseInsiderAggregation>{};
+
+    for (final item in data) {
+      if (item is! Map<String, dynamic>) continue;
+
+      final code = item['公司代號']?.toString().trim() ?? '';
+      if (code.isEmpty || code.length < 4) continue;
+
+      final companyName = item['公司名稱']?.toString().trim() ?? '';
+      final position = item['職稱']?.toString() ?? '';
+      final personName = item['姓名']?.toString().trim() ?? '';
+
+      // 只計算董事和監察人的「本人」記錄
+      final isDirectorOrSupervisor =
+          (position.contains('董事') || position.contains('監察人')) &&
+          position.endsWith('本人');
+      if (!isDirectorOrSupervisor) continue;
+
+      // 解析日期
+      final dateStr = item['出表日期']?.toString();
+      final date = TwParseUtils.parseCompactRocDate(dateStr);
+      if (date == null) continue;
+
+      // 解析持股和質押數
+      final sharesStr = item['目前持股']?.toString().replaceAll(',', '') ?? '0';
+      final pledgedStr = item['設質股數']?.toString().replaceAll(',', '') ?? '0';
+      final shares = double.tryParse(sharesStr) ?? 0;
+      final pledged = double.tryParse(pledgedStr) ?? 0;
+
+      // 彙總（使用姓名去重）
+      companyData.putIfAbsent(
+        code,
+        () => TwseInsiderAggregation(code: code, name: companyName, date: date),
+      );
+      companyData[code]!.addHoldingIfNew(personName, shares, pledged);
+    }
+
+    return companyData;
+  }
+
+  /// 計算董監持股比例和質押比例，建立最終結果
+  ///
+  /// [companyData] - 彙總後的各公司董監持股資料
+  /// [issuedSharesMap] - 各公司已發行股數
+  List<TwseInsiderHolding> _buildInsiderHoldingResults(
+    Map<String, TwseInsiderAggregation> companyData,
+    Map<String, double> issuedSharesMap,
+  ) {
+    // 計算比例並建立結果
+    final results = <TwseInsiderHolding>[];
+    for (final agg in companyData.values) {
+      final issuedShares = issuedSharesMap[agg.code];
+      if (issuedShares == null || issuedShares <= 0) continue;
+
+      final insiderRatio = (agg.totalShares / issuedShares) * 100;
+      final pledgeRatio = agg.totalShares > 0
+          ? (agg.totalPledged / agg.totalShares) * 100
+          : 0.0;
+
+      results.add(
+        TwseInsiderHolding(
+          date: agg.date,
+          code: agg.code,
+          name: agg.name,
+          insiderRatio: insiderRatio,
+          pledgeRatio: pledgeRatio,
+          sharesIssued: issuedShares,
+        ),
+      );
+    }
+
+    return results;
   }
 }

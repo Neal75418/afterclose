@@ -1,3 +1,4 @@
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 股利智慧分析服務
@@ -7,7 +8,10 @@ import 'package:afterclose/data/database/app_database.dart';
 /// - 個人殖利率（以成本計算）
 /// - 股利趨勢分析
 class DividendIntelligenceService {
-  const DividendIntelligenceService();
+  const DividendIntelligenceService({AppClock clock = const SystemClock()})
+    : _clock = clock;
+
+  final AppClock _clock;
 
   /// 計算持倉的股利預測資訊
   ///
@@ -99,7 +103,7 @@ class DividendIntelligenceService {
   double _estimateAnnualDividend(List<DividendHistoryEntry> history) {
     if (history.isEmpty) return 0;
 
-    final currentYear = DateTime.now().year;
+    final currentYear = _clock.now().year;
 
     // 嘗試找當年度資料
     final thisYearData = history.where((h) => h.year == currentYear).toList();
@@ -157,7 +161,7 @@ class DividendIntelligenceService {
     int daysAhead = 60,
   }) {
     final upcoming = <UpcomingDividend>[];
-    final now = DateTime.now();
+    final now = _clock.now();
     final cutoffDate = now.add(Duration(days: daysAhead));
 
     for (final pos in positions) {
@@ -288,5 +292,5 @@ class UpcomingDividend {
   final double estimatedAmount;
 
   /// 距離除息日天數
-  int get daysUntil => exDividendDate.difference(DateTime.now()).inDays;
+  int daysUntilFrom(DateTime now) => exDividendDate.difference(now).inDays;
 }

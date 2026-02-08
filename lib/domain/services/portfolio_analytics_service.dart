@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 投資組合績效分析服務
@@ -10,7 +11,10 @@ import 'package:afterclose/data/database/app_database.dart';
 /// - Max Drawdown（最大回撤）
 /// - Industry Allocation（產業配置）
 class PortfolioAnalyticsService {
-  const PortfolioAnalyticsService();
+  const PortfolioAnalyticsService({AppClock clock = const SystemClock()})
+    : _clock = clock;
+
+  final AppClock _clock;
 
   /// 計算投資組合績效
   ///
@@ -122,7 +126,7 @@ class PortfolioAnalyticsService {
     }
 
     // 計算持有天數
-    final daysSinceStart = DateTime.now().difference(firstTxDate).inDays;
+    final daysSinceStart = _clock.now().difference(firstTxDate).inDays;
     if (daysSinceStart == 0) {
       return PeriodReturns.empty;
     }

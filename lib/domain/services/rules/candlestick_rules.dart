@@ -355,7 +355,7 @@ bool isStarPattern(
 
     // v0.1.2：放寬條件 - 第二根中點在第一根收盤附近或更低即可
     // 不強制要求跳空
-    if (c2Mid > c1.close! * 1.01) return false; // 允許 1% 容差
+    if (c2Mid > c1.close! * 1.02) return false; // 允許 2% 容差
 
     // 第三根長紅 K，收盤高於第一根中點
     if (!c3.isBullish) return false;
@@ -366,7 +366,7 @@ bool isStarPattern(
 
     // v0.1.2：放寬條件 - 第二根中點在第一根收盤附近或更高即可
     // 不強制要求跳空
-    if (c2Mid < c1.close! * 0.99) return false; // 允許 1% 容差
+    if (c2Mid < c1.close! * 0.98) return false; // 允許 2% 容差
 
     // 第三根長黑 K，收盤低於第一根中點
     if (!c3.isBearish) return false;

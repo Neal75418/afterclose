@@ -1,4 +1,5 @@
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
@@ -12,13 +13,16 @@ class FundamentalSyncer {
     required AppDatabase database,
     required FundamentalRepository fundamentalRepository,
     MarketDataRepository? marketDataRepository,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
        _fundamentalRepo = fundamentalRepository,
-       _marketDataRepo = marketDataRepository;
+       _marketDataRepo = marketDataRepository,
+       _clock = clock;
 
   final AppDatabase _db;
   final FundamentalRepository _fundamentalRepo;
   final MarketDataRepository? _marketDataRepo;
+  final AppClock _clock;
 
   /// 同步全市場基本面資料（TWSE 批次 API）
   ///
@@ -175,8 +179,9 @@ class FundamentalSyncer {
   Future<int> syncFinancialStatements({required List<String> symbols}) async {
     if (symbols.isEmpty) return 0;
 
-    final start = DateTime.now().subtract(const Duration(days: 730));
-    final end = DateTime.now();
+    final now = _clock.now();
+    final start = now.subtract(const Duration(days: 730));
+    final end = now;
     var count = 0;
 
     const chunkSize = 10;
@@ -215,8 +220,9 @@ class FundamentalSyncer {
     final marketDataRepo = _marketDataRepo;
     if (marketDataRepo == null || symbols.isEmpty) return 0;
 
-    final start = DateTime.now().subtract(const Duration(days: 730));
-    final end = DateTime.now();
+    final now = _clock.now();
+    final start = now.subtract(const Duration(days: 730));
+    final end = now;
     var count = 0;
 
     const chunkSize = 10;

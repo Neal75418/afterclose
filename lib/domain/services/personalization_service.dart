@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
@@ -64,9 +65,14 @@ class UserPreferences {
 ///
 /// 負責記錄使用者行為、分析偏好、計算個人化加成分數。
 class PersonalizationService {
-  PersonalizationService({required AppDatabase database}) : _db = database;
+  PersonalizationService({
+    required AppDatabase database,
+    AppClock clock = const SystemClock(),
+  }) : _db = database,
+       _clock = clock;
 
   final AppDatabase _db;
+  final AppClock _clock;
 
   static const String _logTag = 'Personalization';
 
@@ -114,7 +120,7 @@ class PersonalizationService {
   /// 從過去 30 天的互動記錄中分析使用者的產業、市值、風格偏好。
   Future<UserPreferences> analyzePreferences() async {
     try {
-      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+      final thirtyDaysAgo = _clock.now().subtract(const Duration(days: 30));
 
       // 取得過去 30 天的互動記錄
       final interactions =
@@ -250,7 +256,7 @@ class PersonalizationService {
   /// 清除過期的互動記錄（保留最近 90 天）
   Future<int> cleanupOldInteractions() async {
     try {
-      final ninetyDaysAgo = DateTime.now().subtract(const Duration(days: 90));
+      final ninetyDaysAgo = _clock.now().subtract(const Duration(days: 90));
       final deleted = await (_db.delete(
         _db.userInteraction,
       )..where((t) => t.timestamp.isSmallerThanValue(ninetyDaysAgo))).go();

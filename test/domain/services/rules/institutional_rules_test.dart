@@ -52,8 +52,8 @@ void main() {
 
     test('triggers with consecutive buy days meeting all thresholds', () {
       // 5 days, each: foreign 400000 + trust 200000 = 600000 > 50000 (min)
-      // totalNet = 600000 * 5 = 3000000 > 2000000 (totalThreshold)
-      // dailyAvg = 600000 > 300000 (dailyAvgThreshold)
+      // totalNet = 600000 * 5 = 3000000 > 1500000 (totalThreshold)
+      // dailyAvg = 600000 > 200000 (dailyAvgThreshold)
       // significantDays: 600000 > 150000 → all 5 days significant (5 >= 5/2)
       final institutional = _generateBuyStreak(days: 5);
       const context = AnalysisContext(trendState: TrendState.range);
@@ -92,7 +92,7 @@ void main() {
     });
 
     test('does not trigger when total net is below threshold', () {
-      // Each day combined = 80000, 5 days total = 400000 < 2000000
+      // Each day combined = 80000, 5 days total = 400000 < 1500000
       final institutional = _generateBuyStreak(
         days: 5,
         foreignNet: 50000,
@@ -109,12 +109,12 @@ void main() {
     });
 
     test('does not trigger when daily avg is below threshold', () {
-      // 10 days, each 250000 combined → total 2500000 > 2000000
-      // dailyAvg = 250000 < 300000
+      // 10 days, each 180000 combined → total 1800000 > 1500000
+      // dailyAvg = 180000 < 200000
       final institutional = _generateBuyStreak(
         days: 10,
-        foreignNet: 150000,
-        trustNet: 100000,
+        foreignNet: 110000,
+        trustNet: 70000,
       );
       const context = AnalysisContext(trendState: TrendState.range);
       final data = StockData(
@@ -145,8 +145,8 @@ void main() {
       // non-sig combined = 100000 > 50000 (streak continues)
       // but 100000 < 150000 (not significant)
       // significant days: 2 of 6 → 2 < 3 → fails
-      // total = 4*100000 + 2*900000 = 2200000 > 2000000
-      // dailyAvg = 366666 > 300000
+      // total = 4*100000 + 2*900000 = 2200000 > 1500000
+      // dailyAvg = 366666 > 200000
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -184,8 +184,8 @@ void main() {
 
     test('triggers with consecutive sell days meeting all thresholds', () {
       // 5 days, each: foreign -400000 + trust -200000 = -600000 < -50000
-      // totalNet = -3000000 < -2000000
-      // dailyAvg = -600000 < -300000
+      // totalNet = -3000000 < -1500000
+      // dailyAvg = -600000 < -200000
       // significantDays: |-600000| > 150000 → all 5 significant
       final institutional = _generateSellStreak(days: 5);
       const context = AnalysisContext(trendState: TrendState.range);
@@ -226,7 +226,7 @@ void main() {
     );
 
     test('does not trigger when total net is above threshold', () {
-      // Small sells: combined = -80000 per day, 5 days = -400000 > -2000000
+      // Small sells: combined = -80000 per day, 5 days = -400000 > -1500000
       final institutional = _generateSellStreak(
         days: 5,
         foreignNet: -50000,

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
@@ -82,25 +83,18 @@ class ScoringService {
         continue;
       }
 
-      // 檢查最小成交金額與成交量（流動性過濾）
+      // 流動性過濾（使用共用工具）
       final latest = prices.last;
-      if (latest.close == null || latest.volume == null) {
-        skippedNoData++;
+      final liquidityResult = LiquidityChecker.checkCandidateLiquidity(latest);
+      if (liquidityResult != null) {
+        if (liquidityResult == 'MISSING_DATA') {
+          skippedNoData++;
+        } else {
+          skippedLowLiquidity++;
+        }
         continue;
       }
-
-      // 檢查成交量（股數）
-      if (latest.volume! < RuleParams.minCandidateVolumeShares) {
-        skippedLowLiquidity++;
-        continue;
-      }
-
-      // 檢查成交金額（價格 * 股數）
       final turnover = latest.close! * latest.volume!;
-      if (turnover < RuleParams.minCandidateTurnover) {
-        skippedLowLiquidity++;
-        continue;
-      }
 
       // 執行分析
       final analysisResult = _analysisService.analyzeStock(prices);

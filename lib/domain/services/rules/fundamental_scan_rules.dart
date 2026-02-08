@@ -201,7 +201,9 @@ class HighDividendYieldRule extends StockRule {
 
     // 資料新鮮度檢查：確保估值資料在有效期限內
     // TWSE 並非每日更新所有股票，過時資料可能導致誤判
-    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    final dataAge = (context.evaluationTime ?? DateTime.now())
+        .difference(valuation.date)
+        .inDays;
     if (dataAge > RuleParams.valuationMaxStaleDays) {
       AppLogger.debug(
         'HighYieldRule',
@@ -261,7 +263,9 @@ class PEUndervaluedRule extends StockRule {
     if (valuation == null) return null;
 
     // 資料新鮮度檢查
-    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    final dataAge = (context.evaluationTime ?? DateTime.now())
+        .difference(valuation.date)
+        .inDays;
     if (dataAge > RuleParams.valuationMaxStaleDays) {
       return null;
     }
@@ -302,7 +306,9 @@ class PEOvervaluedRule extends StockRule {
     if (valuation == null) return null;
 
     // 資料新鮮度檢查
-    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    final dataAge = (context.evaluationTime ?? DateTime.now())
+        .difference(valuation.date)
+        .inDays;
     if (dataAge > RuleParams.valuationMaxStaleDays) {
       return null;
     }
@@ -341,7 +347,9 @@ class PBRUndervaluedRule extends StockRule {
     if (valuation == null) return null;
 
     // 資料新鮮度檢查
-    final dataAge = DateTime.now().difference(valuation.date).inDays;
+    final dataAge = (context.evaluationTime ?? DateTime.now())
+        .difference(valuation.date)
+        .inDays;
     if (dataAge > RuleParams.valuationMaxStaleDays) {
       return null;
     }

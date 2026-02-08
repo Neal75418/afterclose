@@ -12,6 +12,7 @@ class AnalysisContext {
     this.rangeBottom,
     this.marketData,
     this.indicators,
+    this.evaluationTime,
   });
 
   final TrendState trendState;
@@ -22,6 +23,11 @@ class AnalysisContext {
   final double? rangeBottom;
   final MarketDataContext? marketData;
   final TechnicalIndicators? indicators;
+
+  /// 評估時間點，供規則判斷資料新鮮度等時間相關邏輯
+  ///
+  /// 若為 null 則回退至 DateTime.now()（向後相容）
+  final DateTime? evaluationTime;
 }
 
 /// 第四階段訊號所需的額外市場資料

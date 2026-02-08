@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/extensions/router_extensions.dart';
 
 import 'package:afterclose/presentation/screens/alerts/alerts_screen.dart';
 import 'package:afterclose/presentation/screens/onboarding/onboarding_screen.dart';
-import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/screens/custom_screening/backtest/backtest_screen.dart';
 import 'package:afterclose/presentation/screens/custom_screening/custom_screening_screen.dart';
 import 'package:afterclose/presentation/screens/industry/industry_overview_screen.dart';
@@ -163,8 +163,7 @@ final router = GoRouter(
       path: AppRoutes.compare,
       name: 'comparison',
       builder: (context, state) {
-        final symbols = state.extra as List<String>? ?? const [];
-        return ComparisonScreen(initialSymbols: symbols);
+        return ComparisonScreen(initialSymbols: state.symbolsExtra);
       },
     ),
 
@@ -173,8 +172,7 @@ final router = GoRouter(
       path: AppRoutes.backtest,
       name: 'backtest',
       builder: (context, state) {
-        final conditions = state.extra as List<ScreeningCondition>? ?? const [];
-        return BacktestScreen(conditions: conditions);
+        return BacktestScreen(conditions: state.conditionsExtra);
       },
     ),
 

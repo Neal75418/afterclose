@@ -1,3 +1,4 @@
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
@@ -11,7 +12,10 @@ import 'package:afterclose/domain/models/scan_models.dart';
 /// 負責篩選、排序、資料轉換等業務邏輯，
 /// 不持有狀態，不依賴 Riverpod，可獨立測試。
 class ScanFilterService {
-  const ScanFilterService();
+  const ScanFilterService({AppClock clock = const SystemClock()})
+    : _clock = clock;
+
+  final AppClock _clock;
 
   // ==================================================
   // 日期回退邏輯
@@ -27,7 +31,7 @@ class ScanFilterService {
   /// 回傳 (targetDate, analyses)，analyses 可能為空（若連備援都無資料）。
   Future<({DateTime targetDate, List<DailyAnalysisEntry> analyses})>
   findLatestAnalyses(AppDatabase db, {DateTime? now}) async {
-    final effectiveNow = now ?? DateTime.now();
+    final effectiveNow = now ?? _clock.now();
     var targetDate = DateTime(
       effectiveNow.year,
       effectiveNow.month,

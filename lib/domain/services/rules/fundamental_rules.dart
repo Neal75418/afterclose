@@ -170,7 +170,7 @@ class NewsRule extends StockRule {
     if (news == null || news.isEmpty) return null;
 
     // 分析今日新聞（或驗證非常近期的新聞）
-    final now = DateTime.now();
+    final now = context.evaluationTime ?? DateTime.now();
     final recentNews = news.where((n) {
       final age = now.difference(n.publishedAt).inHours;
       return age < RuleParams.newsLookbackHours;
