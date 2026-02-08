@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -122,7 +123,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       // 使用同步後的價格確保與 dataDate 一致
       final displayPrice = syncResult.latestPrice ?? latestPrice;
-      final displayPreviousPrice = _findPreviousPrice(
+      final displayPreviousPrice = findPreviousPrice(
         priceHistory,
         displayPrice,
       );
@@ -298,7 +299,8 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
   }
 
   /// 從升序價格歷史中找到 [targetPrice] 的前一筆
-  static DailyPriceEntry? _findPreviousPrice(
+  @visibleForTesting
+  static DailyPriceEntry? findPreviousPrice(
     List<DailyPriceEntry> history,
     DailyPriceEntry? targetPrice,
   ) {

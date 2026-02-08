@@ -24,7 +24,7 @@ void main() {
     });
 
     test('should handle null date', () {
-      final input = ScoringIsolateInput(
+      const input = ScoringIsolateInput(
         candidates: ['2330'],
         pricesMap: {'2330': []},
         newsMap: {'2330': []},
