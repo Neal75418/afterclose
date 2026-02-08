@@ -126,6 +126,51 @@ void main() {
       expect(result.hasDataMismatch, isTrue);
     });
 
+    test('filters instHistory to <= dataDate when no common dates', () {
+      final prices = [
+        createTestPrice(date: DateTime(2025, 1, 14), close: 100.0),
+      ];
+      // inst 有早於和晚於 price 的日期，但沒有共同日期
+      final instHistory = createInstHistory([
+        DateTime(2025, 1, 12),
+        DateTime(2025, 1, 13),
+        DateTime(2025, 1, 15),
+        DateTime(2025, 1, 16),
+      ]);
+
+      final result = service.synchronizeDataDates(prices, instHistory);
+
+      // dataDate = min(1/14, 1/16) = 1/14
+      expect(result.dataDate, equals(DateTime(2025, 1, 14)));
+      // instHistory 應只包含 <= 1/14 的項目（1/12, 1/13）
+      expect(result.institutionalHistory.length, equals(2));
+      expect(
+        result.institutionalHistory.every(
+          (i) => !i.date.isAfter(DateTime(2025, 1, 14)),
+        ),
+        isTrue,
+      );
+    });
+
+    test('orElse returns first price when all prices are after dataDate', () {
+      // instDay (1/10) < priceDay (1/15) => dataDate = 1/10
+      // 但所有價格都在 1/13 之後（晚於 dataDate）
+      final prices = [
+        createTestPrice(date: DateTime(2025, 1, 13), close: 99.0),
+        createTestPrice(date: DateTime(2025, 1, 14), close: 100.0),
+        createTestPrice(date: DateTime(2025, 1, 15), close: 101.0),
+      ];
+      final instHistory = createInstHistory([DateTime(2025, 1, 10)]);
+
+      final result = service.synchronizeDataDates(prices, instHistory);
+
+      // dataDate = min(1/15, 1/10) = 1/10
+      expect(result.dataDate, equals(DateTime(2025, 1, 10)));
+      // 沒有 <= 1/10 的價格，應回傳 first（1/13）而非 last（1/15）
+      expect(result.latestPrice, isNotNull);
+      expect(result.latestPrice!.date, equals(DateTime(2025, 1, 13)));
+    });
+
     test('sets hasDataMismatch when dates do not match', () {
       final prices = [
         createTestPrice(date: DateTime(2025, 1, 15), close: 100.0),

@@ -271,29 +271,31 @@ class ScoringService {
     // 記錄分析統計
     _logScoringResultsFromIsolate(result);
 
-    // 批次儲存分析結果
-    for (final output in result.outputs) {
-      final reasonDataList = output.reasons
-          .map(
-            (r) => ReasonData(
-              type: r.type,
-              evidenceJson: r.evidenceJson,
-              score: r.score,
-            ),
-          )
-          .toList();
+    // 批次儲存分析結果（單一 transaction 減少 I/O）
+    await _analysisRepo.runInTransaction(() async {
+      for (final output in result.outputs) {
+        final reasonDataList = output.reasons
+            .map(
+              (r) => ReasonData(
+                type: r.type,
+                evidenceJson: r.evidenceJson,
+                score: r.score,
+              ),
+            )
+            .toList();
 
-      await _persistAnalysisResult(
-        symbol: output.symbol,
-        date: date,
-        trendState: output.trendState,
-        reversalState: output.reversalState,
-        supportLevel: output.supportLevel,
-        resistanceLevel: output.resistanceLevel,
-        score: output.score.toDouble(),
-        reasons: reasonDataList,
-      );
-    }
+        await _persistAnalysisResult(
+          symbol: output.symbol,
+          date: date,
+          trendState: output.trendState,
+          reversalState: output.reversalState,
+          supportLevel: output.supportLevel,
+          resistanceLevel: output.resistanceLevel,
+          score: output.score.toDouble(),
+          reasons: reasonDataList,
+        );
+      }
+    });
 
     // 轉換為 ScoredStock 並排序
     final scoredStocks = result.outputs

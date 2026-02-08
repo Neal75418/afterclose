@@ -1,7 +1,6 @@
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,7 +9,7 @@ class _SecureKeys {
   static const finmindToken = 'finmind_api_token';
 }
 
-/// SharedPreferences fallback key（當 SecureStorage 不可用時）
+/// SharedPreferences 舊版遺留 key（僅用於 clearFinMindToken 清除遺留資料）
 class _FallbackKeys {
   static const finmindToken = 'finmind_token_fallback';
 }
@@ -18,7 +17,7 @@ class _FallbackKeys {
 /// 應用程式設定 Repository（包含 Token 管理）
 ///
 /// Token 優先使用 [FlutterSecureStorage] 加密儲存
-/// 若平台不支援（如 macOS 無 Keychain 權限），自動降級為 SharedPreferences
+/// 若平台不支援（如 macOS 無 Keychain 權限），自動降級為記憶體暫存
 /// 其他設定使用 SQLite 資料庫
 class SettingsRepository {
   SettingsRepository({required AppDatabase database, SharedPreferences? prefs})
@@ -30,6 +29,9 @@ class SettingsRepository {
 
   /// 標記 Secure Storage 是否可用
   bool? _secureStorageAvailable;
+
+  /// SecureStorage 不可用時的記憶體暫存（不寫入磁碟）
+  String? _inMemoryToken;
 
   /// Secure Storage 實例（用於敏感資料如 API Token）
   static const _secureStorage = FlutterSecureStorage(
@@ -63,7 +65,7 @@ class SettingsRepository {
   }
 
   // ==========================================
-  // FinMind Token 管理（優先 Secure Storage，降級 SharedPreferences）
+  // FinMind Token 管理（優先 Secure Storage，降級記憶體暫存）
   // ==========================================
 
   /// 取得 FinMind Token
@@ -71,9 +73,8 @@ class SettingsRepository {
     if (await _isSecureStorageAvailable()) {
       return _secureStorage.read(key: _SecureKeys.finmindToken);
     }
-    // Fallback to SharedPreferences
-    final prefs = await _sharedPrefs;
-    return prefs.getString(_FallbackKeys.finmindToken);
+    // Fallback: 僅從記憶體讀取（不落地磁碟）
+    return _inMemoryToken;
   }
 
   /// 儲存 FinMind Token
@@ -81,18 +82,16 @@ class SettingsRepository {
     if (await _isSecureStorageAvailable()) {
       await _secureStorage.write(key: _SecureKeys.finmindToken, value: token);
     } else {
-      // Fallback to SharedPreferences
-      final prefs = await _sharedPrefs;
-      await prefs.setString(_FallbackKeys.finmindToken, token);
-      if (kDebugMode) {
-        AppLogger.warning('SettingsRepo', 'Token 儲存於 SharedPreferences（未加密）');
-      }
+      // Fallback: 僅存記憶體，重啟 App 後需重新輸入
+      _inMemoryToken = token;
+      AppLogger.warning('SettingsRepo', 'Token 僅存於記憶體，重啟 App 後需重新輸入');
     }
   }
 
   /// 清除 FinMind Token
   Future<void> clearFinMindToken() async {
-    // 清除兩個位置以確保完全清除
+    _inMemoryToken = null;
+    // 清除所有儲存位置（含舊版 SharedPreferences 遺留資料）
     try {
       await _secureStorage.delete(key: _SecureKeys.finmindToken);
     } catch (e) {

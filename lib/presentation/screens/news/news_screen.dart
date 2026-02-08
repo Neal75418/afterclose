@@ -38,9 +38,18 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
   }
 
   Future<void> _openUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final uri = Uri.tryParse(url);
+    if (uri == null || !{'http', 'https'}.contains(uri.scheme)) return;
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('無法開啟連結')));
+      }
     }
   }
 

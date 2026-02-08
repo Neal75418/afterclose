@@ -265,6 +265,11 @@ class AnalysisRepository implements IAnalysisRepository {
     return output;
   }
 
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    return _db.transaction(() => action());
+  }
+
   /// 正規化日期至本地時間當日開始（移除時間部分）
   ///
   /// 使用本地時間以匹配資料庫儲存格式

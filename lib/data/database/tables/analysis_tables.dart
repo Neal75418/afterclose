@@ -159,4 +159,9 @@ class RecommendationValidation extends Table {
 
   /// 驗證天數（預設 5 日）
   IntColumn get holdingDays => integer().withDefault(const Constant(5))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {recommendationDate, symbol, holdingDays},
+  ];
 }

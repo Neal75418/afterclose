@@ -122,7 +122,7 @@ class AppDatabase extends _$AppDatabase
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -422,6 +422,14 @@ class AppDatabase extends _$AppDatabase
             PRIMARY KEY (preference_type, preference_value)
           )
         ''');
+      }
+
+      // v12: recommendation_validation 加 unique constraint 防止重複驗證
+      if (from < 12) {
+        await customStatement(
+          'CREATE UNIQUE INDEX IF NOT EXISTS idx_rec_validation_unique '
+          'ON recommendation_validation(recommendation_date, symbol, holding_days)',
+        );
       }
     },
     beforeOpen: (details) async {

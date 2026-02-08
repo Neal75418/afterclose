@@ -555,40 +555,37 @@ class UpdateService {
     final watchlist = await _db.getWatchlist();
     final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
-    final orderedCandidates = <String>[];
+    final allAnalyzableSet = allAnalyzable.toSet();
+    final orderedCandidates = <String>{};
 
     // 1. 自選清單優先
     for (final symbol in watchlistSymbols) {
-      if (allAnalyzable.contains(symbol)) {
+      if (allAnalyzableSet.contains(symbol)) {
         orderedCandidates.add(symbol);
       }
     }
 
     // 2. 熱門股第二
     for (final symbol in _popularStocks) {
-      if (allAnalyzable.contains(symbol) &&
-          !orderedCandidates.contains(symbol)) {
+      if (allAnalyzableSet.contains(symbol)) {
         orderedCandidates.add(symbol);
       }
     }
 
     // 3. 市場候選股第三
     for (final symbol in ctx.marketCandidates) {
-      if (allAnalyzable.contains(symbol) &&
-          !orderedCandidates.contains(symbol)) {
+      if (allAnalyzableSet.contains(symbol)) {
         orderedCandidates.add(symbol);
       }
     }
 
     // 4. 其餘可分析股票
-    for (final symbol in allAnalyzable) {
-      if (!orderedCandidates.contains(symbol)) {
-        orderedCandidates.add(symbol);
-      }
+    for (final symbol in allAnalyzableSet) {
+      orderedCandidates.add(symbol);
     }
 
     AppLogger.info('UpdateSvc', '步驟 6: 篩選 ${orderedCandidates.length} 檔');
-    return orderedCandidates;
+    return orderedCandidates.toList();
   }
 
   Future<List<ScoredStock>> _analyzeStocks({

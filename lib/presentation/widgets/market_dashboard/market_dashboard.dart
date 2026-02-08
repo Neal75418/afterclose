@@ -11,6 +11,7 @@ import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_
 import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 
 /// 大盤總覽 Dashboard
 ///
@@ -95,11 +96,15 @@ class _MarketDashboardState extends State<MarketDashboard> {
   /// 建構標題列
   Widget _buildHeader(ThemeData theme, bool isMobile) {
     final dataDate = widget.state.dataDate;
-    final isToday =
+    final now = DateTime.now();
+    final latestTradingDay = TaiwanCalendar.isTradingDay(now)
+        ? DateTime(now.year, now.month, now.day)
+        : TaiwanCalendar.getPreviousTradingDay(now);
+    final isLatest =
         dataDate != null &&
-        dataDate.year == DateTime.now().year &&
-        dataDate.month == DateTime.now().month &&
-        dataDate.day == DateTime.now().day;
+        dataDate.year == latestTradingDay.year &&
+        dataDate.month == latestTradingDay.month &&
+        dataDate.day == latestTradingDay.day;
 
     return Row(
       children: [
@@ -118,11 +123,11 @@ class _MarketDashboardState extends State<MarketDashboard> {
             if (dataDate != null)
               Text(
                 DateFormat('MM/dd').format(dataDate) +
-                    (isToday ? '' : ' ${'marketOverview.notToday'.tr()}'),
+                    (isLatest ? '' : ' ${'marketOverview.notToday'.tr()}'),
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: isToday
+                  color: isLatest
                       ? theme.colorScheme.onSurfaceVariant
-                      : theme.colorScheme.error,
+                      : theme.colorScheme.onSurfaceVariant.withAlpha(178),
                 ),
               ),
           ],

@@ -91,6 +91,13 @@ abstract class IAnalysisRepository {
   Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
     DateTime date,
   );
+
+  // ==========================================
+  // 交易控制
+  // ==========================================
+
+  /// 在單一資料庫 transaction 內執行回呼
+  Future<T> runInTransaction<T>(Future<T> Function() action);
 }
 
 /// 儲存推薦原因的資料類別

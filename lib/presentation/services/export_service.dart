@@ -159,15 +159,17 @@ class ExportService {
       return state.latestPricesMap[s]?.close?.toStringAsFixed(2) ?? '';
     });
 
-    // 漲跌幅
+    // 漲跌幅（前收基準）
     _addComparisonRow(rows, 'export.csvChange'.tr(), state.symbols, (s) {
       final price = state.latestPricesMap[s];
       if (price == null) return '';
       final close = price.close;
-      final open = price.open;
-      if (close == null || open == null || open == 0) return '';
-      final change = (close - open) / open * 100;
-      return '${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%';
+      final change = price.priceChange;
+      if (close == null || change == null) return '';
+      final prevClose = close - change;
+      if (prevClose <= 0) return '';
+      final changePercent = (change / prevClose) * 100;
+      return '${changePercent >= 0 ? "+" : ""}${changePercent.toStringAsFixed(2)}%';
     });
 
     // 趨勢

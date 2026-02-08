@@ -149,10 +149,10 @@ class RuleAccuracyService {
               .getSingleOrNull();
       final primaryRule = reasonResult?.reasonType ?? 'unknown';
 
-      // 儲存驗證結果
+      // 儲存驗證結果（upsert：同日同檔同持有天數覆寫舊結果）
       await _db
           .into(_db.recommendationValidation)
-          .insert(
+          .insertOnConflictUpdate(
             RecommendationValidationCompanion.insert(
               recommendationDate: recommendationDate,
               symbol: rec.symbol,

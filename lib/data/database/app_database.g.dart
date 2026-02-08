@@ -4052,6 +4052,10 @@ class $RecommendationValidationTable extends RecommendationValidation
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {recommendationDate, symbol, holdingDays},
+  ];
+  @override
   RecommendationValidationEntry map(
     Map<String, dynamic> data, {
     String? tablePrefix,

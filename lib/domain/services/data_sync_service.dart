@@ -80,15 +80,20 @@ class DataSyncService {
       // 無共同日期 - 使用較早的日期
       final dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
 
-      // 尋找該日期的價格
+      // 尋找 <= dataDate 的最新價格（避免回傳晚於 dataDate 的價格）
       final matchingPrice = priceHistory.lastWhere(
         (p) => DateContext.isBeforeOrEqual(p.date, dataDate),
-        orElse: () => priceHistory.last,
+        orElse: () => priceHistory.first,
       );
+
+      // 過濾法人資料至 <= dataDate（與有共同日期分支一致）
+      final filteredInstHistory = instHistory
+          .where((i) => DateContext.isBeforeOrEqual(i.date, dataDate))
+          .toList();
 
       return (
         latestPrice: matchingPrice,
-        institutionalHistory: instHistory,
+        institutionalHistory: filteredInstHistory,
         dataDate: dataDate,
         hasDataMismatch: true,
       );
