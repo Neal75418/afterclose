@@ -74,7 +74,13 @@ class StockDetailHeader extends StatelessWidget {
     if (close != null) parts.add('收盤價 ${close.toStringAsFixed(2)} 元');
     final change = state.priceChange;
     if (change != null) {
-      parts.add('漲跌幅 ${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%');
+      final absChange = _calculateAbsoluteChange(close, change);
+      final absText = absChange != null
+          ? '${absChange >= 0 ? "+" : ""}${absChange.toStringAsFixed(2)} 元, '
+          : '';
+      parts.add(
+        '漲跌 $absText${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%',
+      );
     }
     final trend = state.price.analysis?.trendState;
     if (trend != null) parts.add('趨勢 ${trend.trendKey}');
@@ -157,12 +163,21 @@ class StockDetailHeader extends StatelessWidget {
     );
   }
 
+  /// 從收盤價與漲跌幅百分比反算絕對漲跌金額
+  double? _calculateAbsoluteChange(double? close, double? pctChange) {
+    if (close == null || pctChange == null || pctChange == 0) return null;
+    return close * pctChange / (100 + pctChange);
+  }
+
   Widget _buildPriceColumn(
     ThemeData theme,
     double? priceChange,
     bool isPositive,
     Color priceColor,
   ) {
+    final absChange = _calculateAbsoluteChange(state.latestClose, priceChange);
+    final isNeutral = priceChange == null || priceChange == 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -203,7 +218,12 @@ class StockDetailHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${isPositive ? '+' : ''}${priceChange.toStringAsFixed(2)}%',
+                  _formatDetailChangeText(
+                    absChange,
+                    priceChange,
+                    isPositive,
+                    isNeutral,
+                  ),
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: priceColor,
                     fontWeight: FontWeight.bold,
@@ -269,6 +289,22 @@ class StockDetailHeader extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  /// 格式化詳情頁漲跌文字：有絕對金額時顯示「+2.50 (+1.67%)」
+  String _formatDetailChangeText(
+    double? absChange,
+    double priceChange,
+    bool isPositive,
+    bool isNeutral,
+  ) {
+    final sign = isPositive && !isNeutral ? '+' : '';
+    final pctText = '$sign${priceChange.toStringAsFixed(2)}%';
+    if (absChange != null) {
+      final absText = '${isPositive ? '+' : ''}${absChange.toStringAsFixed(2)}';
+      return '$absText ($pctText)';
+    }
+    return pctText;
   }
 
   String _formatDataDate(DateTime date) {

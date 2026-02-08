@@ -144,7 +144,7 @@ class OhlcvCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${isUp ? '+' : ''}${priceChange!.toStringAsFixed(2)}%',
+                  _formatChangeBadge(isUp),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -156,6 +156,19 @@ class OhlcvCard extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  /// 格式化 OHLCV 卡片標題的漲跌 badge
+  String _formatChangeBadge(bool isUp) {
+    final sign = isUp ? '+' : '';
+    final pctText = '$sign${priceChange!.toStringAsFixed(2)}%';
+    final close = latestPrice?.close;
+    if (close != null && priceChange != 0) {
+      final absChange = close * priceChange! / (100 + priceChange!);
+      final absText = '${isUp ? '+' : ''}${absChange.toStringAsFixed(2)}';
+      return '$absText ($pctText)';
+    }
+    return pctText;
   }
 
   /// 格式化成交量（處理 null）

@@ -62,7 +62,8 @@ void main() {
         ),
       );
 
-      expect(find.text('+3.50%'), findsOneWidget);
+      // 新格式包含絕對漲跌金額："+19.61 (+3.50%)"
+      expect(find.textContaining('+3.50%'), findsOneWidget);
     });
 
     testWidgets('displays negative price change with green color', (
@@ -78,7 +79,8 @@ void main() {
         ),
       );
 
-      expect(find.text('-2.50%'), findsOneWidget);
+      // 新格式包含絕對漲跌金額："-14.87 (-2.50%)"
+      expect(find.textContaining('-2.50%'), findsOneWidget);
     });
 
     testWidgets('displays score badge when score is provided', (

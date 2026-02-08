@@ -5,7 +5,8 @@ import 'package:afterclose/core/utils/price_limit.dart';
 
 /// 股票卡片的價格區塊 Widget
 ///
-/// 顯示最新收盤價和漲跌幅百分比，包含漲跌停標記。
+/// 顯示最新收盤價、絕對漲跌金額與漲跌幅百分比，包含漲跌停標記。
+/// 格式符合台股慣例：▲2.50 (+1.67%)
 class StockCardPriceSection extends StatelessWidget {
   const StockCardPriceSection({
     super.key,
@@ -20,6 +21,16 @@ class StockCardPriceSection extends StatelessWidget {
   final bool showLimitMarkers;
   final Color priceColor;
 
+  /// 從收盤價與漲跌幅百分比反算絕對漲跌金額
+  double? get _absoluteChange {
+    if (latestClose == null || priceChange == null || priceChange == 0) {
+      return null;
+    }
+    // prevClose = latestClose / (1 + pct/100)
+    // absoluteChange = latestClose - prevClose
+    return latestClose! * priceChange! / (100 + priceChange!);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -27,6 +38,7 @@ class StockCardPriceSection extends StatelessWidget {
     final isNeutral = priceChange == null || priceChange == 0;
     final isLimitUp = showLimitMarkers && PriceLimit.isLimitUp(priceChange);
     final isLimitDown = showLimitMarkers && PriceLimit.isLimitDown(priceChange);
+    final absChange = _absoluteChange;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -78,7 +90,7 @@ class StockCardPriceSection extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  '${isPositive && !isNeutral ? '+' : ''}${priceChange!.toStringAsFixed(2)}%',
+                  _formatChangeText(absChange, isPositive, isNeutral),
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: priceColor,
                     fontWeight: FontWeight.bold,
@@ -90,5 +102,16 @@ class StockCardPriceSection extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// 格式化漲跌文字：有絕對金額時顯示「2.50 (+1.67%)」，否則僅顯示百分比
+  String _formatChangeText(double? absChange, bool isPositive, bool isNeutral) {
+    final sign = isPositive && !isNeutral ? '+' : '';
+    final pctText = '$sign${priceChange!.toStringAsFixed(2)}%';
+    if (absChange != null) {
+      final absText = '${isPositive ? '+' : ''}${absChange.toStringAsFixed(2)}';
+      return '$absText ($pctText)';
+    }
+    return pctText;
   }
 }
