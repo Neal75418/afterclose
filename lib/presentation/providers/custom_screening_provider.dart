@@ -291,12 +291,17 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
       final analyses = await _db.getAnalysisForDate(normalizedDate);
       if (analyses.isNotEmpty) return normalizedDate;
     }
-    // 備援至前一交易日
+    // 備援至前一交易日（正規化為午夜，與資料庫儲存格式一致）
     final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
       now.subtract(const Duration(days: 3)),
     );
-    final analyses = await _db.getAnalysisForDate(prevTradingDay);
-    if (analyses.isNotEmpty) return prevTradingDay;
+    final normalizedPrev = DateTime(
+      prevTradingDay.year,
+      prevTradingDay.month,
+      prevTradingDay.day,
+    );
+    final analyses = await _db.getAnalysisForDate(normalizedPrev);
+    if (analyses.isNotEmpty) return normalizedPrev;
     return null;
   }
 

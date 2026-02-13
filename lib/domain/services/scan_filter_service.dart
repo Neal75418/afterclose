@@ -54,8 +54,13 @@ class ScanFilterService {
     final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
       effectiveNow.subtract(const Duration(days: 3)),
     );
-    AppLogger.info('ScanFilterService', '最近 3 天無資料，備援至前一交易日 $prevTradingDay');
-    targetDate = prevTradingDay;
+    // 正規化為午夜，與資料庫儲存格式一致（避免時間分量導致 .equals() 比對失敗）
+    targetDate = DateTime(
+      prevTradingDay.year,
+      prevTradingDay.month,
+      prevTradingDay.day,
+    );
+    AppLogger.info('ScanFilterService', '最近 3 天無資料，備援至前一交易日 $targetDate');
     analyses = await db.getAnalysisForDate(targetDate);
 
     return (targetDate: targetDate, analyses: analyses);
