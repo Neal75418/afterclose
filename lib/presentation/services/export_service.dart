@@ -38,7 +38,7 @@ class ExportService {
       ];
     }).toList();
 
-    return const ListToCsvConverter().convert([headers, ...rows]);
+    return const CsvEncoder().convert([headers, ...rows]);
   }
 
   /// 投資組合 → CSV
@@ -69,7 +69,7 @@ class ExportService {
       ];
     }).toList();
 
-    return const ListToCsvConverter().convert([headers, ...rows]);
+    return const CsvEncoder().convert([headers, ...rows]);
   }
 
   /// 個股分析 → CSV
@@ -138,7 +138,7 @@ class ExportService {
       ]);
     }
 
-    return const ListToCsvConverter().convert(rows);
+    return const CsvEncoder().convert(rows);
   }
 
   /// 比較結果 → CSV
@@ -206,7 +206,7 @@ class ExportService {
       return summary.sentiment.name;
     });
 
-    return const ListToCsvConverter().convert(rows);
+    return const CsvEncoder().convert(rows);
   }
 
   void _addComparisonRow(

@@ -58,7 +58,7 @@ class BackgroundUpdateService {
       return;
     }
 
-    await Workmanager().initialize(_callbackDispatcher, isInDebugMode: false);
+    await Workmanager().initialize(_callbackDispatcher);
     AppLogger.debug('BackgroundUpdate', '服務已初始化');
   }
 
@@ -93,7 +93,7 @@ class BackgroundUpdateService {
         networkType: NetworkType.connected,
         requiresBatteryNotLow: true,
       ),
-      existingWorkPolicy: ExistingWorkPolicy.replace,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
       backoffPolicy: BackoffPolicy.exponential,
       backoffPolicyDelay: const Duration(minutes: 15),
     );
