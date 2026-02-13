@@ -16151,6 +16151,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_daily_institutional_date',
     'CREATE INDEX idx_daily_institutional_date ON daily_institutional (date)',
   );
+  late final Index idxDailyInstitutionalSymbolDate = Index(
+    'idx_daily_institutional_symbol_date',
+    'CREATE INDEX idx_daily_institutional_symbol_date ON daily_institutional (symbol, date)',
+  );
   late final Index idxNewsItemPublishedAt = Index(
     'idx_news_item_published_at',
     'CREATE INDEX idx_news_item_published_at ON news_item (published_at)',
@@ -16178,6 +16182,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxDailyAnalysisSymbolDate = Index(
     'idx_daily_analysis_symbol_date',
     'CREATE INDEX idx_daily_analysis_symbol_date ON daily_analysis (symbol, date)',
+  );
+  late final Index idxDailyAnalysisDateScore = Index(
+    'idx_daily_analysis_date_score',
+    'CREATE INDEX idx_daily_analysis_date_score ON daily_analysis (date, score)',
   );
   late final Index idxDailyReasonSymbolDate = Index(
     'idx_daily_reason_symbol_date',
@@ -16311,6 +16319,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_trading_warning_type',
     'CREATE INDEX idx_trading_warning_type ON trading_warning (warning_type)',
   );
+  late final Index idxTradingWarningSymbolDate = Index(
+    'idx_trading_warning_symbol_date',
+    'CREATE INDEX idx_trading_warning_symbol_date ON trading_warning (symbol, date)',
+  );
   late final Index idxInsiderHoldingSymbol = Index(
     'idx_insider_holding_symbol',
     'CREATE INDEX idx_insider_holding_symbol ON insider_holding (symbol)',
@@ -16318,6 +16330,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Index idxInsiderHoldingDate = Index(
     'idx_insider_holding_date',
     'CREATE INDEX idx_insider_holding_date ON insider_holding (date)',
+  );
+  late final Index idxInsiderHoldingSymbolDate = Index(
+    'idx_insider_holding_symbol_date',
+    'CREATE INDEX idx_insider_holding_symbol_date ON insider_holding (symbol, date)',
   );
   late final Index idxPortfolioPositionSymbol = Index(
     'idx_portfolio_position_symbol',
@@ -16392,6 +16408,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDailyPriceSymbolDate,
     idxDailyInstitutionalSymbol,
     idxDailyInstitutionalDate,
+    idxDailyInstitutionalSymbolDate,
     idxNewsItemPublishedAt,
     idxNewsItemSource,
     idxNewsStockMapSymbol,
@@ -16399,6 +16416,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxDailyAnalysisDate,
     idxDailyAnalysisScore,
     idxDailyAnalysisSymbolDate,
+    idxDailyAnalysisDateScore,
     idxDailyReasonSymbolDate,
     idxDailyRecommendationDate,
     idxDailyRecommendationSymbol,
@@ -16432,8 +16450,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxTradingWarningSymbol,
     idxTradingWarningDate,
     idxTradingWarningType,
+    idxTradingWarningSymbolDate,
     idxInsiderHoldingSymbol,
     idxInsiderHoldingDate,
+    idxInsiderHoldingSymbolDate,
     idxPortfolioPositionSymbol,
     idxPortfolioTxSymbol,
     idxPortfolioTxDate,

@@ -6,6 +6,42 @@
 
 ## 已完成升級 (2026-02-13)
 
+### 2026-02-13: Riverpod 3.x 生態系統升級 ✅
+
+**升級套件**（10 個）:
+- flutter_riverpod: 2.6.1 → 3.2.1 ✅
+- riverpod_annotation: 2.6.1 → 4.0.2 ✅
+- riverpod_generator: 2.6.4 → 4.0.3 ✅
+- freezed: 2.5.8 → 3.2.5 ✅
+- freezed_annotation: 2.4.4 → 3.1.0 ✅
+- json_serializable: 6.9.5 → 6.12.0 ✅
+- drift: 2.28.2 → 2.31.0 ✅
+- drift_dev: 2.28.0 → 2.31.0 ✅
+- build_runner: 2.5.4 → 2.11.1 ✅
+- source_gen: 2.0.0 → 4.2.0 ✅
+
+**程式碼變更**:
+- 添加 `legacy.dart` import 到 14 個 provider 檔案（使用 StateNotifier）
+- 使用 `dependency_overrides` 解決依賴衝突（analyzer: ^10.0.0, dart_style: ^3.1.5, io: ^1.0.3）
+
+**測試結果**: 1069/1069 通過 ✅
+
+**已移除的停用套件**:
+- analyzer_plugin ❌
+- build_resolvers ❌
+- build_runner_core ❌
+- custom_lint_core ❌
+- custom_lint_visitor ❌
+
+**解決問題**:
+- 解決 source_gen 版本衝突
+- 移除所有已停用套件依賴
+- 解鎖後續 UI 套件升級路徑（go_router 17.x, fl_chart 1.x 等）
+
+**實際工作量**: 約 3 小時（比預估的 8-12 小時快，因為使用 legacy.dart 避免了大量程式碼重寫）
+
+---
+
 ### Patch & Minor 版本升級 ✅
 - **dio**: 5.9.0 → 5.9.1
 - **drift**: 2.27.0 → 2.28.2
@@ -27,72 +63,6 @@
 ---
 
 ## 待升級項目（需要獨立計劃）
-
-### 🔴 優先度 P0: Riverpod 3.x 生態系統升級
-
-**影響範圍**: 整個狀態管理層 (200+ 檔案)
-
-**升級套件清單**:
-- `flutter_riverpod`: 2.6.1 → 3.2.1
-- `riverpod_annotation`: 2.6.1 → 4.0.2
-- `riverpod_generator`: 2.6.4 → 4.0.3
-- `freezed`: 2.5.8 → 3.2.5
-- `freezed_annotation`: 2.4.4 → 3.1.0
-- `json_serializable`: 6.9.5 → 6.12.0
-- `drift_dev`: 2.28.0 → 2.31.0
-- `build_runner`: 2.5.4 → 2.11.1
-
-**Riverpod 3.0 Breaking Changes** ([Migration Guide](https://riverpod.dev/docs/3.0_migration)):
-
-1. **Ref Type Parameter 移除**
-   - `ProviderRef.state` → `Notifier.state`
-   - `Ref.listenSelf` → `Notifier.listenSelf`
-   - `FutureProviderRef.future` → `AsyncNotifier.future`
-
-2. **AutoDispose 語法改變**
-   - 移除所有 `AutoDispose` 關鍵字
-   - Notifier API 已統一處理
-
-3. **Family Notifiers 移除**
-   - `FamilyNotifier` → `Notifier`
-   - `FamilyAsyncNotifier` → `AsyncNotifier`
-   - `FamilyStreamNotifier` → `StreamNotifier`
-
-4. **錯誤處理**
-   - 所有 provider 失敗會被包裝為 `ProviderException`
-   - Provider 預設自動重試機制
-
-5. **ProviderObserver 介面變更**
-   - 改用單一 `ProviderObserverContext` 物件
-
-6. **通知過濾**
-   - 使用 `==` 來過濾通知（影響 StreamProvider/StreamNotifier）
-
-7. **Legacy Providers**
-   - `StateProvider`, `StateNotifierProvider`, `ChangeNotifierProvider` 移至 `legacy.dart`
-
-**依賴鏈衝突原因**:
-- Riverpod 2.x 使用 `source_gen 2.x`
-- Riverpod 3.x/4.x 需要 `source_gen 3.x+`
-- 新版 freezed, drift_dev, build_runner 也需要 `source_gen 3.x+`
-- **無法單獨升級，必須全部一起升級**
-
-**預估工作量**: 8-12 小時
-- 程式碼修改: 6-8 小時
-- 測試驗證: 2-3 小時
-- 文檔更新: 1 小時
-
-**實作步驟**:
-1. 更新 pubspec.yaml 所有相關套件
-2. 執行 code generation: `dart run build_runner build --delete-conflicting-outputs`
-3. 修復編譯錯誤（按 migration guide）
-4. 更新所有使用 `ProviderRef.state` 的程式碼
-5. 移除所有 `AutoDispose` 關鍵字
-6. 更新 Family Notifier 用法
-7. 執行完整測試套件
-8. 更新 CLAUDE.md 和 README.md
-
----
 
 ### 🟠 優先度 P1: UI 套件升級
 
@@ -143,23 +113,11 @@
 
 ---
 
-## 已停用套件狀態
-
-以下套件已停用但為 transitive dependencies（間接依賴），無法直接移除：
-
-- **js** (0.6.7) - 來自舊版依賴，已被 `dart:js_interop` 取代
-- **build_resolvers** - 來自 `build_runner 2.x`
-- **build_runner_core** - 來自 `build_runner 2.x`
-
-**處理方式**: 升級到 Riverpod 3.x 生態系統後，這些停用套件應該會被新版本替換。
-
----
-
 ## 建議升級順序
 
-1. **第一階段**: Riverpod 3.x 生態系統升級（P0）
-   - 這會解決已停用套件問題
-   - 解鎖其他依賴升級
+1. **第一階段**: ~~Riverpod 3.x 生態系統升級（P0）~~ ✅ **已完成 (2026-02-13)**
+   - ✅ 已解決已停用套件問題
+   - ✅ 已解鎖其他依賴升級
 
 2. **第二階段**: UI 套件升級（P1）
    - fl_chart 1.x

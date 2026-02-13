@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
