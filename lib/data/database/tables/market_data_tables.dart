@@ -328,6 +328,7 @@ class MarginTrading extends Table {
 @TableIndex(name: 'idx_trading_warning_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_trading_warning_date', columns: {#date})
 @TableIndex(name: 'idx_trading_warning_type', columns: {#warningType})
+@TableIndex(name: 'idx_trading_warning_symbol_date', columns: {#symbol, #date})
 class TradingWarning extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -370,6 +371,7 @@ class TradingWarning extends Table {
 @DataClassName('InsiderHoldingEntry')
 @TableIndex(name: 'idx_insider_holding_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_insider_holding_date', columns: {#date})
+@TableIndex(name: 'idx_insider_holding_symbol_date', columns: {#symbol, #date})
 class InsiderHolding extends Table {
   /// 股票代碼
   TextColumn get symbol =>

@@ -6,6 +6,10 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 @DataClassName('DailyInstitutionalEntry')
 @TableIndex(name: 'idx_daily_institutional_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_daily_institutional_date', columns: {#date})
+@TableIndex(
+  name: 'idx_daily_institutional_symbol_date',
+  columns: {#symbol, #date},
+)
 class DailyInstitutional extends Table {
   /// 股票代碼
   TextColumn get symbol =>

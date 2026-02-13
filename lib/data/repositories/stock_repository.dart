@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 
@@ -16,9 +17,14 @@ class StockRepository {
   final AppDatabase _db;
   final FinMindClient _client;
 
+  /// Request deduplicator for getAllStocks
+  final _stockListDedup = RequestDeduplicator<List<StockMasterEntry>>();
+
   /// 取得所有上市中的股票
+  ///
+  /// 使用 Request Deduplication 防止同時多次查詢
   Future<List<StockMasterEntry>> getAllStocks() {
-    return _db.getAllActiveStocks();
+    return _stockListDedup.call('all_stocks', () => _db.getAllActiveStocks());
   }
 
   /// 依代碼取得股票

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 
@@ -12,14 +13,28 @@ class AnalysisRepository implements IAnalysisRepository {
 
   final AppDatabase _db;
 
+  /// Request deduplicators
+  final _todayRecommendationsDedup =
+      RequestDeduplicator<List<DailyRecommendationEntry>>();
+  final _analysisDedup = RequestDeduplicator<DailyAnalysisEntry?>();
+  final _reasonsDedup = RequestDeduplicator<List<DailyReasonEntry>>();
+
   // ==========================================
   // 每日分析
   // ==========================================
 
   /// 取得特定股票和日期的分析結果
+  ///
+  /// 使用 Request Deduplication 防止同時多次查詢相同股票
   @override
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date) {
-    return _db.getAnalysis(symbol, _normalizeDate(date));
+    final normalizedDate = _normalizeDate(date);
+    final cacheKey = 'analysis_${symbol}_${normalizedDate.toIso8601String()}';
+
+    return _analysisDedup.call(
+      cacheKey,
+      () => _db.getAnalysis(symbol, normalizedDate),
+    );
   }
 
   /// 取得某日期的所有分析結果
@@ -57,9 +72,17 @@ class AnalysisRepository implements IAnalysisRepository {
   // ==========================================
 
   /// 取得股票在某日期的觸發原因
+  ///
+  /// 使用 Request Deduplication 防止同時多次查詢相同股票
   @override
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date) {
-    return _db.getReasons(symbol, _normalizeDate(date));
+    final normalizedDate = _normalizeDate(date);
+    final cacheKey = 'reasons_${symbol}_${normalizedDate.toIso8601String()}';
+
+    return _reasonsDedup.call(
+      cacheKey,
+      () => _db.getReasons(symbol, normalizedDate),
+    );
   }
 
   /// 儲存股票的觸發原因（原子性取代既有原因）
@@ -104,24 +127,28 @@ class AnalysisRepository implements IAnalysisRepository {
   /// - 盤前：資料可能來自前一日
   /// - API 日期延遲：TWSE/TPEX 資料日期可能落後
   /// - 日期不同步：不同 API 返回不同日期
+  ///
+  /// 使用 Request Deduplication 防止同時多次查詢
   @override
   Future<List<DailyRecommendationEntry>> getTodayRecommendations() async {
-    final now = DateTime.now();
+    return _todayRecommendationsDedup.call('today_recommendations', () async {
+      final now = DateTime.now();
 
-    // 依序嘗試今天、昨天、前天的資料
-    for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
-      final date = now.subtract(Duration(days: daysAgo));
-      final recs = await getRecommendations(date);
-      if (recs.isNotEmpty) {
-        return recs;
+      // 依序嘗試今天、昨天、前天的資料
+      for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
+        final date = now.subtract(Duration(days: daysAgo));
+        final recs = await getRecommendations(date);
+        if (recs.isNotEmpty) {
+          return recs;
+        }
       }
-    }
 
-    // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
-    final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
-      now.subtract(const Duration(days: 3)),
-    );
-    return getRecommendations(prevTradingDay);
+      // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
+      final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
+        now.subtract(const Duration(days: 3)),
+      );
+      return getRecommendations(prevTradingDay);
+    });
   }
 
   /// 取得某日期的推薦股

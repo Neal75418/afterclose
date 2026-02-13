@@ -7,6 +7,7 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 @TableIndex(name: 'idx_daily_analysis_date', columns: {#date})
 @TableIndex(name: 'idx_daily_analysis_score', columns: {#score})
 @TableIndex(name: 'idx_daily_analysis_symbol_date', columns: {#symbol, #date})
+@TableIndex(name: 'idx_daily_analysis_date_score', columns: {#date, #score})
 class DailyAnalysis extends Table {
   /// 股票代碼
   TextColumn get symbol =>

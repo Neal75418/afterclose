@@ -3,6 +3,7 @@ import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
@@ -36,9 +37,14 @@ class PriceRepository implements IPriceRepository {
   final TwsePriceSource _twseSource;
   final TpexPriceSource _tpexSource;
 
+  /// Request deduplicator for price history queries
+  final _priceHistoryDedup = RequestDeduplicator<List<DailyPriceEntry>>();
+
   /// 取得價格歷史資料供分析使用
   ///
   /// 若可用，至少回傳 [RuleParams.lookbackPrice] 天的資料
+  ///
+  /// 使用 Request Deduplication 防止同時多次查詢相同股票的歷史資料
   @override
   Future<List<DailyPriceEntry>> getPriceHistory(
     String symbol, {
@@ -56,10 +62,19 @@ class PriceRepository implements IPriceRepository {
           ),
         );
 
-    return _db.getPriceHistory(
-      symbol,
-      startDate: effectiveStartDate,
-      endDate: endDate,
+    // 建立唯一的快取鍵
+    final cacheKey =
+        'price_history_${symbol}_'
+        '${effectiveStartDate.toIso8601String()}_'
+        '${endDate?.toIso8601String() ?? 'now'}';
+
+    return _priceHistoryDedup.call(
+      cacheKey,
+      () => _db.getPriceHistory(
+        symbol,
+        startDate: effectiveStartDate,
+        endDate: endDate,
+      ),
     );
   }
 
