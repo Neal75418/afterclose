@@ -180,6 +180,29 @@ graph LR
 
 ## 開發工作流程
 
+### 檢查現有實作
+
+修改前先確認功能是否已實作：
+
+```bash
+# 檢查工具檔案
+ls lib/core/utils/request_deduplicator.dart
+ls lib/core/utils/circuit_breaker.dart
+ls lib/core/utils/error_handler.dart
+ls lib/core/utils/performance_monitor.dart
+ls lib/core/utils/validators.dart
+ls lib/domain/services/isolate_pool.dart
+
+# 檢查資料庫索引
+grep "@TableIndex" lib/data/database/tables/*.dart
+
+# 檢查 CI 配置
+cat .github/workflows/flutter.yml
+
+# 查看最近改進
+git log --oneline -10
+```
+
 ### Pre-commit Hooks
 
 專案使用自訂 pre-commit hooks，提交前自動執行：
@@ -207,9 +230,23 @@ flutter test
 
 ### 測試要求
 
-- 所有變更必須通過完整測試套件（1054+ 測試）
-- 測試執行時間約 9 秒
+- 所有變更必須通過完整測試套件（1069 個測試）
+- 測試執行時間約 8-9 秒
 - Critical 功能變更需補充對應測試
+
+```bash
+# 完整測試（含覆蓋率）
+flutter test --coverage
+
+# 快速測試（不含覆蓋率）
+flutter test
+
+# 測試特定檔案
+flutter test test/domain/services/analysis_service_test.dart
+
+# 測試特定目錄
+flutter test test/domain/services/
+```
 
 ---
 
@@ -236,17 +273,19 @@ flutter test
 
 ## 效能優化記錄
 
-### 2026-02-13 改進
+### 2026-02-13 改進 ✅ (已完成並推送)
 
-| 項目       | 改進內容                                                                       | 預期效果           |
-|:---------|:---------------------------------------------------------------------------|:---------------|
-| **API 優化** | Request Deduplication + Circuit Breaker                                   | 減少 30-50% API 呼叫 |
-| **資料庫優化** | 4 個關鍵索引（`daily_analysis`, `daily_institutional`, `insider_holding`, `trading_warning`） | 查詢速度提升 30%      |
-| **並行處理**  | Isolate 池重用機制                                                              | 減少 20-30% 啟動開銷  |
-| **錯誤處理**  | 細化錯誤處理 wrapper 區分不同錯誤類型                                                    | 提升穩定性和診斷能力     |
-| **安全性**   | 輸入驗證機制（股票代碼、日期範圍）                                                          | 防止 SQL injection |
-| **可觀測性**  | PerformanceMonitor 追蹤關鍵操作耗時                                                | 識別效能瓶頸         |
-| **CI/CD** | Codecov 測試覆蓋率上傳                                                           | 追蹤品質趨勢         |
+| 項目       | 改進內容                                                                       | 預期效果           | 實作狀態  | Commit  |
+|:---------|:---------------------------------------------------------------------------|:---------------|:------|:--------|
+| **API 優化** | Request Deduplication + Circuit Breaker                                   | 減少 30-50% API 呼叫 | ✅ 已實作 | 0ae2e3e |
+| **資料庫優化** | 4 個關鍵索引（`daily_analysis`, `daily_institutional`, `insider_holding`, `trading_warning`） | 查詢速度提升 30%      | ✅ 已實作 | 0ae2e3e |
+| **並行處理**  | Isolate 池重用機制                                                              | 減少 20-30% 啟動開銷  | ✅ 已實作 | 0ae2e3e |
+| **錯誤處理**  | 細化錯誤處理 wrapper 區分不同錯誤類型                                                    | 提升穩定性和診斷能力     | ✅ 已實作 | 0ae2e3e |
+| **安全性**   | 輸入驗證機制（股票代碼、日期範圍）                                                          | 防止 SQL injection | ✅ 已實作 | 0ae2e3e |
+| **可觀測性**  | PerformanceMonitor 追蹤關鍵操作耗時                                                | 識別效能瓶頸         | ✅ 已實作 | 0ae2e3e |
+| **CI/CD** | Codecov 測試覆蓋率上傳                                                           | 追蹤品質趨勢         | ✅ 已實作 | 0ae2e3e |
+| **架構重構**  | 拆分 AnalysisService (991行) 為 5 個專門服務                                        | 提升可維護性         | ✅ 已實作 | 1056b61 |
+| **測試增強**  | 新增 TodayProvider 完整測試 + 測試覆蓋率計劃                                           | 提升測試覆蓋率        | ✅ 已實作 | 239957e |
 
 ---
 
