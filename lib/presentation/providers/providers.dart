@@ -23,6 +23,7 @@ import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
+import 'package:afterclose/core/services/cache_warmup_service.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/personalization_service.dart';
@@ -236,4 +237,12 @@ final ruleAccuracyServiceProvider = Provider<RuleAccuracyService>((ref) {
 /// 個人化推薦服務 Provider（Sprint 11）
 final personalizationServiceProvider = Provider<PersonalizationService>((ref) {
   return PersonalizationService(database: ref.watch(databaseProvider));
+});
+
+/// 快取預熱服務 Provider
+final cacheWarmupServiceProvider = Provider<CacheWarmupService>((ref) {
+  return CacheWarmupService(
+    cachedDb: ref.watch(cachedDbProvider),
+    db: ref.watch(databaseProvider),
+  );
 });

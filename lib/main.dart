@@ -29,6 +29,17 @@ void main() async {
   // Check if onboarding has been completed
   await initOnboardingStatus();
 
+  // 快取預熱（非阻塞）
+  container
+      .read(cacheWarmupServiceProvider)
+      .warmup()
+      .then((_) {
+        AppLogger.info('Main', '快取預熱完成');
+      })
+      .catchError((error) {
+        AppLogger.warning('Main', '快取預熱失敗（不影響使用）', error);
+      });
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('zh', 'TW'), Locale('en')],

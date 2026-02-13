@@ -36,6 +36,7 @@ enum _WatchlistTab { watchlist, portfolio }
 
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   Timer? _searchDebounce;
   bool _isSearching = false;
   _WatchlistTab _currentTab = _WatchlistTab.watchlist;
@@ -45,13 +46,25 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     super.initState();
     // Load data on first build
     Future.microtask(() => ref.read(watchlistProvider.notifier).loadData());
+    // Add scroll listener for infinite scroll
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 當使用者捲動接近底部時觸發載入更多
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 300) {
+      ref.read(watchlistProvider.notifier).loadMore();
+    }
   }
 
   Future<void> _onRefresh() async {
@@ -431,7 +444,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     Widget list;
     switch (state.group) {
       case WatchlistGroup.none:
-        list = _buildFlatList(state.filteredItems, showLimitMarkers);
+        list = _buildFlatList(state, showLimitMarkers);
       case WatchlistGroup.status:
         list = _buildGroupedByStatusList(state, showLimitMarkers);
       case WatchlistGroup.trend:
@@ -444,19 +457,26 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     );
   }
 
-  Widget _buildFlatList(List<WatchlistItemData> items, bool showLimitMarkers) {
+  Widget _buildFlatList(WatchlistState state, bool showLimitMarkers) {
     final columns = context.responsiveGridColumns;
     final useGrid = columns > 1;
 
     if (useGrid) {
-      return _buildFlatGrid(items, columns, showLimitMarkers);
+      return _buildFlatGrid(state.displayedItems, columns, showLimitMarkers);
     }
 
+    final items = state.displayedItems;
     return ListView.builder(
+      controller: _scrollController,
       cacheExtent: 500,
       addAutomaticKeepAlives: false,
-      itemCount: items.length,
+      itemCount: items.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
+        // 載入指示器
+        if (index == items.length) {
+          return _buildLoadingIndicator(state);
+        }
+
         final item = items[index];
         return WatchlistStockItem(
           item: item,
@@ -499,6 +519,18 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           onLongPress: () => _showStockPreview(item),
         );
       },
+    );
+  }
+
+  /// 載入指示器
+  Widget _buildLoadingIndicator(WatchlistState state) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: state.isLoadingMore
+            ? const CircularProgressIndicator()
+            : const SizedBox.shrink(),
+      ),
     );
   }
 

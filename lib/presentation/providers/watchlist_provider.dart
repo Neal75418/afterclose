@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -86,6 +87,9 @@ class WatchlistState {
     this.sort = WatchlistSort.addedDesc,
     this.group = WatchlistGroup.none,
     this.searchQuery = '',
+    this.isLoadingMore = false,
+    this.hasMore = true,
+    this.displayedCount = kPageSize,
   }) : _filteredItems = _computeFilteredItems(items, searchQuery),
        _groupedByStatus = null,
        _groupedByTrend = null;
@@ -98,6 +102,9 @@ class WatchlistState {
     required this.sort,
     required this.group,
     required this.searchQuery,
+    required this.isLoadingMore,
+    required this.hasMore,
+    required this.displayedCount,
     required List<WatchlistItemData> filteredItems,
   }) : _filteredItems = filteredItems,
        _groupedByStatus = null,
@@ -110,6 +117,15 @@ class WatchlistState {
   final WatchlistGroup group;
   final String searchQuery;
 
+  /// 是否正在載入更多（無限滾動）
+  final bool isLoadingMore;
+
+  /// 是否還有更多資料可載入
+  final bool hasMore;
+
+  /// 目前已顯示的數量
+  final int displayedCount;
+
   // 快取的過濾結果
   final List<WatchlistItemData> _filteredItems;
   // 延遲初始化的分組快取
@@ -118,6 +134,11 @@ class WatchlistState {
 
   /// 搜尋過濾後的項目（已快取）
   List<WatchlistItemData> get filteredItems => _filteredItems;
+
+  /// 目前顯示的項目（分頁後）
+  List<WatchlistItemData> get displayedItems {
+    return _filteredItems.take(displayedCount).toList();
+  }
 
   /// 依狀態分組（延遲初始化快取）
   Map<WatchlistStatus, List<WatchlistItemData>> get groupedByStatus {
@@ -177,6 +198,9 @@ class WatchlistState {
     WatchlistSort? sort,
     WatchlistGroup? group,
     String? searchQuery,
+    bool? isLoadingMore,
+    bool? hasMore,
+    int? displayedCount,
   }) {
     final newItems = items ?? this.items;
     final newSearchQuery = searchQuery ?? this.searchQuery;
@@ -195,6 +219,9 @@ class WatchlistState {
         sort: sort ?? this.sort,
         group: group ?? this.group,
         searchQuery: newSearchQuery,
+        isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+        hasMore: hasMore ?? this.hasMore,
+        displayedCount: displayedCount ?? this.displayedCount,
       );
     }
 
@@ -206,6 +233,9 @@ class WatchlistState {
       sort: sort ?? this.sort,
       group: group ?? this.group,
       searchQuery: newSearchQuery,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMore: hasMore ?? this.hasMore,
+      displayedCount: displayedCount ?? this.displayedCount,
       filteredItems: _filteredItems,
     );
   }
@@ -368,9 +398,46 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
       // 排序
       final sortedItems = _sortItems(items, state.sort);
 
-      state = state.copyWith(items: sortedItems, isLoading: false);
+      // 初始化分頁狀態
+      final hasMore = sortedItems.length > kPageSize;
+      final displayedCount = hasMore ? kPageSize : sortedItems.length;
+
+      state = state.copyWith(
+        items: sortedItems,
+        isLoading: false,
+        hasMore: hasMore,
+        displayedCount: displayedCount,
+      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  /// 載入更多自選股（無限滾動）
+  Future<void> loadMore() async {
+    // 防止重複載入
+    if (state.isLoadingMore || !state.hasMore) return;
+
+    state = state.copyWith(isLoadingMore: true);
+
+    try {
+      // 計算下一頁的範圍
+      final currentCount = state.displayedCount;
+      final totalCount = state.filteredItems.length;
+      const nextPageSize = kPageSize;
+      final newDisplayedCount = (currentCount + nextPageSize).clamp(
+        0,
+        totalCount,
+      );
+
+      // 更新狀態
+      state = state.copyWith(
+        displayedCount: newDisplayedCount,
+        hasMore: newDisplayedCount < totalCount,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false);
     }
   }
 

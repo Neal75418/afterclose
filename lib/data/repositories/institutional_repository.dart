@@ -6,6 +6,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/models/extensions/dto_extensions.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -62,13 +63,7 @@ class InstitutionalRepository {
         // 正規化日期，確保時間部分為 00:00:00（避免同日重複）
         final parsed = DateTime.parse(item.date);
         final normalizedDate = DateTime(parsed.year, parsed.month, parsed.day);
-        return DailyInstitutionalCompanion.insert(
-          symbol: item.stockId,
-          date: normalizedDate,
-          foreignNet: Value(item.foreignNet),
-          investmentTrustNet: Value(item.investmentTrustNet),
-          dealerNet: Value(item.dealerNet),
-        );
+        return item.toDatabaseCompanion(normalizedDate);
       }).toList();
 
       await _db.insertInstitutionalData(entries);

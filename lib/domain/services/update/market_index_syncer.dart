@@ -1,9 +1,8 @@
-import 'package:drift/drift.dart';
-
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/models/extensions/dto_extensions.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 
@@ -146,16 +145,6 @@ class MarketIndexSyncer {
       return [];
     }
 
-    return filtered
-        .map(
-          (idx) => MarketIndexCompanion(
-            date: Value(idx.date),
-            name: Value(idx.name),
-            close: Value(idx.close),
-            change: Value(idx.change),
-            changePercent: Value(idx.changePercent),
-          ),
-        )
-        .toList();
+    return filtered.map((idx) => idx.toDatabaseCompanion()).toList();
   }
 }
