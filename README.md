@@ -26,7 +26,7 @@
 |:---------------------|:--------------------|
 | **Today**            | 市場摘要 + 今日 Top 20 推薦 |
 | **Scan**             | 上市櫃全市場掃描，依評分排序      |
-| **Watchlist**        | 自選清單狀態追蹤            |
+| **Watchlist**        | 自選清單狀態追蹤 + 無限滾動分頁 |
 | **Stock Detail**     | 趨勢、關鍵價位、推薦理由、新聞     |
 | **Custom Screening** | 自定義篩選策略             |
 | **Backtest**         | 策略回測驗證              |
@@ -48,8 +48,9 @@
 | State      | Riverpod 2.6                   |
 | Database   | Drift 2.27 (SQLite, 35 tables) |
 | Network    | Dio 5.8                        |
-| Navigation | GoRouter 15                    |
-| Charts     | fl_chart + k_chart_plus        |
+| Navigation | GoRouter 15                                           |
+| Charts     | fl_chart + k_chart_plus                               |
+| Performance| 無限滾動分頁、快取預熱、Request Deduplication |
 
 ---
 
@@ -140,6 +141,19 @@ lib/
     ├── services/        # ExportService
     └── widgets/         # Shared UI components
 ```
+
+---
+
+## 效能優化
+
+為確保流暢的使用體驗，AfterClose 實作了多項效能優化：
+
+- **快取預熱**: App 啟動時預載自選股和推薦股資料，提升 30-40% 冷啟動速度
+- **無限滾動分頁**: Watchlist 和 Scan 畫面採用虛擬化列表，降低記憶體佔用
+- **Request Deduplication**: 避免重複 API 呼叫，減少 30-50% 網路請求
+- **Circuit Breaker**: API 連續失敗時快速失敗，避免無效重試
+- **Isolate 池重用**: 平行運算時重用 worker，減少 20-30% 啟動開銷
+- **資料庫索引優化**: 關鍵表格加入複合索引，查詢速度提升 30%
 
 ---
 

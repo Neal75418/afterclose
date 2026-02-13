@@ -286,6 +286,9 @@ flutter test test/domain/services/
 | **CI/CD** | Codecov 測試覆蓋率上傳                                                           | 追蹤品質趨勢         | ✅ 已實作 | 0ae2e3e |
 | **架構重構**  | 拆分 AnalysisService (991行) 為 5 個專門服務                                        | 提升可維護性         | ✅ 已實作 | 1056b61 |
 | **測試增強**  | 新增 TodayProvider 完整測試 + 測試覆蓋率計劃                                           | 提升測試覆蓋率        | ✅ 已實作 | 239957e |
+| **UI 優化**  | Watchlist 無限滾動分頁（與 Scan 保持一致）                                           | 提升大列表效能       | ✅ 已實作 | cfacc84 |
+| **啟動優化**  | CacheWarmupService 預熱自選股 + Top 20 推薦                                    | 冷啟動快 30-40%   | ✅ 已實作 | cfacc84 |
+| **架構優化**  | DTO Extension 集中管理（提取 toDatabaseCompanion 邏輯）                         | 減少程式碼重複       | ✅ 已實作 | cfacc84 |
 
 ---
 

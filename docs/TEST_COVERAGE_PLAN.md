@@ -339,6 +339,53 @@ open coverage/html/index.html
 
 已配置 Codecov 自動上傳覆蓋率報告到 CI，每次 PR 都會顯示覆蓋率變化。
 
+---
+
+## 新增功能測試計劃（2026-02-13）
+
+### Watchlist 無限滾動分頁
+
+優先級：**中**
+
+測試項目：
+- [ ] 分頁載入正確性（displayedCount 更新）
+- [ ] 滾動觸發時機（距離底部 300px）
+- [ ] 載入指示器顯示/隱藏
+- [ ] 邊界條件（最後一頁、空列表）
+- [ ] hasMore 狀態正確切換
+- [ ] isLoadingMore 防止重複載入
+
+測試檔案：`test/presentation/providers/watchlist_provider_pagination_test.dart`
+
+### 快取預熱服務
+
+優先級：**中**
+
+測試項目：
+- [ ] CacheWarmupService.warmup() 成功執行
+- [ ] 自選股和推薦股正確預載
+- [ ] 預熱失敗不影響 App 啟動
+- [ ] 批次載入效能測試（stopwatch 驗證）
+- [ ] 空資料情況處理（無自選股/無推薦）
+- [ ] DateContext 正確計算 historyStart
+
+測試檔案：`test/core/services/cache_warmup_service_test.dart`
+
+### DTO Extension
+
+優先級：**高**
+
+測試項目：
+- [ ] FinMindInstitutionalExt.toDatabaseCompanion() 轉換正確性
+- [ ] TwseMarketIndexExt.toDatabaseCompanion() 轉換正確性
+- [ ] 日期正規化邏輯測試（去除時間部分）
+- [ ] Value() wrapper 正確應用
+- [ ] 欄位對映完整性（foreignNet, investmentTrustNet, dealerNet）
+
+測試檔案：`test/data/models/extensions/dto_extensions_test.dart`
+
+---
+
 ## 總結
 
 **預估總工作量**: 30-40 小時
