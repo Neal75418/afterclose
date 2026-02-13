@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/providers.dart';

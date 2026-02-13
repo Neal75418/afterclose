@@ -40,7 +40,7 @@ dependencies:
   riverpod_annotation: ^4.0.2
 
   # Database
-  drift: ^2.28.2
+  drift: ^2.31.0
   sqlite3_flutter_libs: ^0.5.30
   path_provider: ^2.1.5
   path: ^1.9.1
@@ -124,11 +124,12 @@ dev_dependencies:
   # Splash Screen
   flutter_native_splash: ^2.4.4
 
-# Dependency overrides to resolve version conflicts
+# Dependency overrides to resolve riverpod_generator 4.x + drift_dev 2.31 version conflicts.
+# Can be removed when riverpod stops depending on test package (see: riverpod#4364).
 dependency_overrides:
-  analyzer: ^10.0.0
-  dart_style: ^3.1.5
-  io: ^1.0.3
+  analyzer: ^10.0.0     # Required by dart_style 3.1.5
+  dart_style: ^3.1.5    # Required by build_runner with analyzer 10.x
+  io: ^1.0.3            # Required by riverpod_generator 4.x (test dependency chain)
 
 # App Icon Configuration
 flutter_launcher_icons:

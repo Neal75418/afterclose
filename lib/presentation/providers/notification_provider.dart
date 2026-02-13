@@ -150,26 +150,62 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       AlertType.changePct => 'notification.priceChangeTarget'.tr(
         namedArgs: {'symbol': symbol},
       ),
-      AlertType.volumeSpike || AlertType.volumeAbove => '$symbol 成交量警報',
-      AlertType.rsiOverbought => '$symbol RSI 超買',
-      AlertType.rsiOversold => '$symbol RSI 超賣',
-      AlertType.kdGoldenCross => '$symbol KD 黃金交叉',
-      AlertType.kdDeathCross => '$symbol KD 死亡交叉',
-      AlertType.breakResistance => '$symbol 突破壓力',
-      AlertType.breakSupport => '$symbol 跌破支撐',
-      AlertType.week52High => '$symbol 創52週新高',
-      AlertType.week52Low => '$symbol 創52週新低',
-      AlertType.crossAboveMa => '$symbol 站上均線',
-      AlertType.crossBelowMa => '$symbol 跌破均線',
-      AlertType.revenueYoySurge => '$symbol 營收年增暴增',
-      AlertType.highDividendYield => '$symbol 高殖利率達標',
-      AlertType.peUndervalued => '$symbol PE低估達標',
-      // Killer Features：警示通知
-      AlertType.tradingWarning => '⚠️ $symbol 注意股票',
-      AlertType.tradingDisposal => '🚨 $symbol 處置股票',
-      AlertType.insiderSelling => '$symbol 董監減持',
-      AlertType.insiderBuying => '$symbol 董監增持',
-      AlertType.highPledgeRatio => '⚠️ $symbol 高質押警示',
+      AlertType.volumeSpike || AlertType.volumeAbove =>
+        'notification.volumeAlertTitle'.tr(namedArgs: {'symbol': symbol}),
+      AlertType.rsiOverbought => 'notification.rsiOverboughtTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.rsiOversold => 'notification.rsiOversoldTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.kdGoldenCross => 'notification.kdGoldenCrossTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.kdDeathCross => 'notification.kdDeathCrossTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.breakResistance => 'notification.breakResistanceTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.breakSupport => 'notification.breakSupportTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.week52High => 'notification.week52HighTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.week52Low => 'notification.week52LowTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.crossAboveMa => 'notification.crossAboveMaTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.crossBelowMa => 'notification.crossBelowMaTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.revenueYoySurge => 'notification.revenueYoySurgeTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.highDividendYield => 'notification.highDividendYieldTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.peUndervalued => 'notification.peUndervaluedTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.tradingWarning => 'notification.tradingWarningTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.tradingDisposal => 'notification.tradingDisposalTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.insiderSelling => 'notification.insiderSellingTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.insiderBuying => 'notification.insiderBuyingTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
+      AlertType.highPledgeRatio => 'notification.highPledgeRatioTitle'.tr(
+        namedArgs: {'symbol': symbol},
+      ),
     };
   }
 
@@ -194,36 +230,48 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       AlertType.changePct => 'notification.changeBody'.tr(
         namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
       ),
-      AlertType.volumeSpike =>
-        '成交量達到均量的 ${alert.targetValue.toStringAsFixed(0)} 倍',
-      AlertType.volumeAbove =>
-        '成交量超過 ${alert.targetValue.toStringAsFixed(0)} 張',
-      AlertType.rsiOverbought =>
-        'RSI 已達超買區域（≥${alert.targetValue.toStringAsFixed(0)}）',
-      AlertType.rsiOversold =>
-        'RSI 已達超賣區域（≤${alert.targetValue.toStringAsFixed(0)}）',
-      AlertType.kdGoldenCross => 'KD 指標出現黃金交叉',
-      AlertType.kdDeathCross => 'KD 指標出現死亡交叉',
-      AlertType.breakResistance =>
-        '價格突破壓力位 ${alert.targetValue.toStringAsFixed(2)} 元',
-      AlertType.breakSupport =>
-        '價格跌破支撐位 ${alert.targetValue.toStringAsFixed(2)} 元',
-      AlertType.week52High => '價格創下52週新高',
-      AlertType.week52Low => '價格創下52週新低',
-      AlertType.crossAboveMa => '價格站上 ${alert.targetValue.toInt()} 日均線',
-      AlertType.crossBelowMa => '價格跌破 ${alert.targetValue.toInt()} 日均線',
-      AlertType.revenueYoySurge =>
-        '營收年增率達 ${alert.targetValue.toStringAsFixed(1)}%',
-      AlertType.highDividendYield =>
-        '殖利率達 ${alert.targetValue.toStringAsFixed(1)}%',
-      AlertType.peUndervalued =>
-        'PE 低於 ${alert.targetValue.toStringAsFixed(1)} 倍',
-      // Killer Features：警示通知內容
-      AlertType.tradingWarning => '該股票被列入注意股票，請注意風險',
-      AlertType.tradingDisposal => '該股票被列入處置股票，交易受限，請立即檢視',
-      AlertType.insiderSelling => '董監事持股比例持續下降',
-      AlertType.insiderBuying => '董監事大量增持股票',
-      AlertType.highPledgeRatio => '董監質押比例偏高，請注意風險',
+      AlertType.volumeSpike => 'notification.volumeSpikeBody'.tr(
+        namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+      ),
+      AlertType.volumeAbove => 'notification.volumeAboveBody'.tr(
+        namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+      ),
+      AlertType.rsiOverbought => 'notification.rsiOverboughtBody'.tr(
+        namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+      ),
+      AlertType.rsiOversold => 'notification.rsiOversoldBody'.tr(
+        namedArgs: {'value': alert.targetValue.toStringAsFixed(0)},
+      ),
+      AlertType.kdGoldenCross => 'notification.kdGoldenCrossBody'.tr(),
+      AlertType.kdDeathCross => 'notification.kdDeathCrossBody'.tr(),
+      AlertType.breakResistance => 'notification.breakResistanceBody'.tr(
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+      ),
+      AlertType.breakSupport => 'notification.breakSupportBody'.tr(
+        namedArgs: {'price': alert.targetValue.toStringAsFixed(2)},
+      ),
+      AlertType.week52High => 'notification.week52HighBody'.tr(),
+      AlertType.week52Low => 'notification.week52LowBody'.tr(),
+      AlertType.crossAboveMa => 'notification.crossAboveMaBody'.tr(
+        namedArgs: {'days': alert.targetValue.toInt().toString()},
+      ),
+      AlertType.crossBelowMa => 'notification.crossBelowMaBody'.tr(
+        namedArgs: {'days': alert.targetValue.toInt().toString()},
+      ),
+      AlertType.revenueYoySurge => 'notification.revenueYoySurgeBody'.tr(
+        namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
+      ),
+      AlertType.highDividendYield => 'notification.highDividendYieldBody'.tr(
+        namedArgs: {'percent': alert.targetValue.toStringAsFixed(1)},
+      ),
+      AlertType.peUndervalued => 'notification.peUndervaluedBody'.tr(
+        namedArgs: {'value': alert.targetValue.toStringAsFixed(1)},
+      ),
+      AlertType.tradingWarning => 'notification.tradingWarningBody'.tr(),
+      AlertType.tradingDisposal => 'notification.tradingDisposalBody'.tr(),
+      AlertType.insiderSelling => 'notification.insiderSellingBody'.tr(),
+      AlertType.insiderBuying => 'notification.insiderBuyingBody'.tr(),
+      AlertType.highPledgeRatio => 'notification.highPledgeRatioBody'.tr(),
     };
 
     return '$baseBody$priceText';
