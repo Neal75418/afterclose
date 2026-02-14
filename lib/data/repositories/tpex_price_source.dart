@@ -67,9 +67,11 @@ class TpexPriceSource {
     }
   }
 
-  /// 取得全市場上櫃股票今日價格
-  Future<List<TpexDailyPrice>> fetchAllDailyPrices() {
-    return _client.getAllDailyPrices();
+  /// 取得全市場上櫃股票價格
+  ///
+  /// [date] 指定交易日期，避免非交易日取到空資料。
+  Future<List<TpexDailyPrice>> fetchAllDailyPrices({DateTime? date}) {
+    return _client.getAllDailyPrices(date: date);
   }
 
   /// 將原始上櫃股票資料轉換為 DB 格式（價格 + 股票主檔 + 候選股）

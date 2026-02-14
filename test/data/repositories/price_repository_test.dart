@@ -333,7 +333,7 @@ void main() {
           () => mockTwseClient.getAllDailyPrices(),
         ).thenAnswer((_) async => []);
         when(
-          () => mockTpexClient.getAllDailyPrices(),
+          () => mockTpexClient.getAllDailyPrices(date: any(named: 'date')),
         ).thenAnswer((_) async => []);
 
         final result = await repository.syncAllPricesForDate(
@@ -382,7 +382,7 @@ void main() {
           () => mockTwseClient.getAllDailyPrices(),
         ).thenAnswer((_) async => twsePrices);
         when(
-          () => mockTpexClient.getAllDailyPrices(),
+          () => mockTpexClient.getAllDailyPrices(date: any(named: 'date')),
         ).thenAnswer((_) async => tpexPrices);
         when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
         when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
@@ -403,7 +403,9 @@ void main() {
         when(() => mockTwseClient.getAllDailyPrices()).thenAnswer((_) async {
           throw Exception('API Error');
         });
-        when(() => mockTpexClient.getAllDailyPrices()).thenAnswer((_) async {
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: any(named: 'date')),
+        ).thenAnswer((_) async {
           throw Exception('API Error');
         });
 
@@ -435,7 +437,9 @@ void main() {
         when(
           () => mockTwseClient.getAllDailyPrices(),
         ).thenAnswer((_) async => twsePrices);
-        when(() => mockTpexClient.getAllDailyPrices()).thenAnswer((_) async {
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: any(named: 'date')),
+        ).thenAnswer((_) async {
           throw Exception('TPEX Error');
         });
         when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});

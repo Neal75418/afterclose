@@ -353,11 +353,40 @@ class _MarketDashboardState extends State<MarketDashboard> {
   }
 
   /// 建構單一市場欄位（用於平板/桌面並排）
+  ///
+  /// 各 section 獨立顯示，不以漲跌家數作為 gatekeeper。
   Widget _buildMarketColumn(ThemeData theme, String market) {
     final adData = widget.state.advanceDeclineByMarket[market];
     final instData = widget.state.institutionalByMarket[market];
     final marginData = widget.state.marginByMarket[market];
     final turnoverData = widget.state.turnoverByMarket[market];
+
+    final sections = <Widget>[];
+
+    // 漲跌家數
+    if (adData != null && adData.total > 0) {
+      sections.add(AdvanceDeclineGauge(data: adData));
+    }
+
+    // 成交量統計
+    if (turnoverData != null && turnoverData.totalTurnover > 0) {
+      sections.add(TradingTurnoverRow(data: turnoverData));
+    }
+
+    // 法人動向
+    if (instData != null &&
+        (instData.totalNet != 0 ||
+            instData.foreignNet != 0 ||
+            instData.trustNet != 0 ||
+            instData.dealerNet != 0)) {
+      sections.add(InstitutionalFlowChart(data: instData));
+    }
+
+    // 融資融券
+    if (marginData != null &&
+        (marginData.marginChange != 0 || marginData.shortChange != 0)) {
+      sections.add(MarginCompactRow(data: marginData));
+    }
 
     final children = <Widget>[
       // 標題
@@ -374,8 +403,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       const SizedBox(height: 12),
     ];
 
-    // 統計數據
-    if (adData == null || adData.total == 0) {
+    if (sections.isEmpty) {
       children.add(
         Padding(
           padding: const EdgeInsets.all(16),
@@ -389,53 +417,18 @@ class _MarketDashboardState extends State<MarketDashboard> {
         ),
       );
     } else {
-      // 漲跌家數
-      if (adData.total > 0) {
-        children.add(AdvanceDeclineGauge(data: adData));
-        children.add(const SizedBox(height: 12));
-        children.add(
-          Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-        );
-        children.add(const SizedBox(height: 12));
-      }
-
-      // 成交量統計
-      if (turnoverData != null && turnoverData.totalTurnover > 0) {
-        children.add(TradingTurnoverRow(data: turnoverData));
-        children.add(const SizedBox(height: 12));
-        children.add(
-          Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-        );
-        children.add(const SizedBox(height: 12));
-      }
-
-      // 法人動向
-      if (instData != null &&
-          (instData.totalNet != 0 ||
-              instData.foreignNet != 0 ||
-              instData.trustNet != 0 ||
-              instData.dealerNet != 0)) {
-        children.add(InstitutionalFlowChart(data: instData));
-        children.add(const SizedBox(height: 12));
-        children.add(
-          Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-        );
-        children.add(const SizedBox(height: 12));
-      }
-
-      // 融資融券
-      if (marginData != null &&
-          (marginData.marginChange != 0 || marginData.shortChange != 0)) {
-        children.add(MarginCompactRow(data: marginData));
+      for (int i = 0; i < sections.length; i++) {
+        if (i > 0) {
+          children.add(const SizedBox(height: 12));
+          children.add(
+            Divider(
+              height: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+            ),
+          );
+          children.add(const SizedBox(height: 12));
+        }
+        children.add(sections[i]);
       }
     }
 

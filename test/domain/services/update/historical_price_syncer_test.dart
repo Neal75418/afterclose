@@ -235,6 +235,44 @@ void main() {
       });
     });
 
+    group('fresh database scenario', () {
+      test('syncs popular stocks with only 1 day of data (fresh DB)', () async {
+        // Fresh DB: 每檔股票只有今天 1 天資料
+        // _hasEnoughDataForAge 會誤判為「剛上市」，但新增的 swingWindow guard 應觸發同步
+        setupSufficientDataSymbols([]);
+        setupPriceHistoryBatch({
+          '2330': createPrices('2330', 1, firstDate: testDate),
+          '2317': createPrices('2317', 1, firstDate: testDate),
+        });
+        setupSyncSuccess('2330', count: 250);
+        setupSyncSuccess('2317', count: 250);
+
+        final result = await syncer.syncHistoricalPrices(
+          date: testDate,
+          watchlistSymbols: [],
+          popularStocks: ['2330', '2317'],
+          marketCandidates: [],
+        );
+
+        expect(result.syncedCount, 500);
+        expect(result.symbolsProcessed, 2);
+        verify(
+          () => mockPriceRepo.syncStockPrices(
+            '2330',
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+        verify(
+          () => mockPriceRepo.syncStockPrices(
+            '2317',
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+      });
+    });
+
     group('_hasEnoughDataForAge', () {
       test('skips new stock with proportional data', () async {
         // Stock listed 100 days ago with 50 days of data
@@ -284,23 +322,37 @@ void main() {
 
     group('_prioritizeSymbols', () {
       test('prioritizes watchlist over popular over others', () async {
-        // Create 65 symbols that all need data (> maxSyncCount of 60)
+        // Create 205 symbols that all need data (> maxSyncCount of 200)
         final allSymbols = List.generate(
-          65,
+          205,
           (i) => 'S${i.toString().padLeft(3, '0')}',
         );
         final watchlistSymbols = [
-          'S060',
-          'S061',
-          'S062',
+          'S200',
+          'S201',
+          'S202',
         ]; // last 3 are watchlist
-        final popularSymbols = ['S063', 'S064']; // and 2 popular
+        final popularSymbols = ['S203', 'S204']; // and 2 popular
 
         setupSufficientDataSymbols([]);
         setupPriceHistoryBatch(
           Map.fromEntries(
             allSymbols.map((s) => MapEntry(s, <DailyPriceEntry>[])),
           ),
+        );
+
+        // Mock getStocksBatch for market-aware prioritization
+        when(() => mockDb.getStocksBatch(any())).thenAnswer(
+          (_) async => {
+            for (final s in allSymbols)
+              s: StockMasterEntry(
+                symbol: s,
+                name: s,
+                market: 'TWSE',
+                isActive: true,
+                updatedAt: testDate,
+              ),
+          },
         );
 
         // Setup sync for all
@@ -315,9 +367,9 @@ void main() {
           marketCandidates: allSymbols,
         );
 
-        // Should process exactly 60 (maxSyncCount)
-        expect(result.symbolsProcessed, 60);
-        expect(result.totalSymbolsNeeded, 65);
+        // Should process exactly 200 (maxSyncCount)
+        expect(result.symbolsProcessed, 200);
+        expect(result.totalSymbolsNeeded, 205);
 
         // Watchlist symbols should always be synced
         for (final symbol in watchlistSymbols) {

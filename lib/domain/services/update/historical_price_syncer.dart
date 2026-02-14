@@ -71,7 +71,7 @@ class HistoricalPriceSyncer {
 
     _logSyncDiagnostics(symbolsNeedingData, priceHistoryBatch);
 
-    final limitedSymbols = _prioritizeSymbols(
+    final limitedSymbols = await _prioritizeSymbols(
       symbolsNeedingData,
       watchlistSymbols: watchlistSymbols,
       popularStocks: popularStocks,
@@ -104,6 +104,15 @@ class HistoricalPriceSyncer {
       if (priceCount >= nearThreshold) continue;
 
       if (priceCount == 0) {
+        result.add(symbol);
+        continue;
+      }
+
+      // 低於分析最低門檻時一律補抓歷史資料
+      // 避免 fresh DB 場景下 _hasEnoughDataForAge 誤判
+      // （DB 僅有 1 天資料時 firstTradeDate = today，
+      //  導致所有股票被當作「剛上市」而跳過同步）
+      if (priceCount < RuleParams.swingWindow) {
         result.add(symbol);
         continue;
       }
@@ -172,12 +181,13 @@ class HistoricalPriceSyncer {
   /// 依重要性排序並限制同步數量
   ///
   /// 優先順序：自選 > 熱門 > 其他
-  List<String> _prioritizeSymbols(
+  /// 確保 TWSE 和 TPEX 都按比例分配到名額
+  Future<List<String>> _prioritizeSymbols(
     List<String> symbolsNeedingData, {
     required List<String> watchlistSymbols,
     required List<String> popularStocks,
-  }) {
-    const maxSyncCount = 60;
+  }) async {
+    const maxSyncCount = 200;
     if (symbolsNeedingData.length <= maxSyncCount) {
       return symbolsNeedingData;
     }
@@ -185,19 +195,80 @@ class HistoricalPriceSyncer {
     final watchlistSet = watchlistSymbols.toSet();
     final popularSet = popularStocks.toSet();
 
-    final sorted = symbolsNeedingData.toList()
-      ..sort((a, b) {
-        final aScore =
-            (watchlistSet.contains(a) ? 2 : 0) +
-            (popularSet.contains(a) ? 1 : 0);
-        final bScore =
-            (watchlistSet.contains(b) ? 2 : 0) +
-            (popularSet.contains(b) ? 1 : 0);
-        return bScore.compareTo(aScore);
-      });
+    // 分成優先股（自選+熱門）和一般股
+    final prioritySymbols = <String>[];
+    final otherSymbols = <String>[];
 
-    AppLogger.info('HistoricalPriceSyncer', '限制同步 $maxSyncCount 檔（優先自選和熱門股）');
-    return sorted.take(maxSyncCount).toList();
+    for (final symbol in symbolsNeedingData) {
+      if (watchlistSet.contains(symbol) || popularSet.contains(symbol)) {
+        prioritySymbols.add(symbol);
+      } else {
+        otherSymbols.add(symbol);
+      }
+    }
+
+    // 排序優先股（自選 > 熱門）
+    prioritySymbols.sort((a, b) {
+      final aScore =
+          (watchlistSet.contains(a) ? 2 : 0) + (popularSet.contains(a) ? 1 : 0);
+      final bScore =
+          (watchlistSet.contains(b) ? 2 : 0) + (popularSet.contains(b) ? 1 : 0);
+      return bScore.compareTo(aScore);
+    });
+
+    final priorityCount = prioritySymbols.length.clamp(0, maxSyncCount);
+    final remainingSlots = maxSyncCount - priorityCount;
+
+    if (remainingSlots <= 0) {
+      AppLogger.info('HistoricalPriceSyncer', '限制同步 $maxSyncCount 檔（全為自選/熱門）');
+      return prioritySymbols.take(maxSyncCount).toList();
+    }
+
+    // 查詢市場資訊，按比例分配名額給 TWSE 和 TPEX
+    final stockMap = await _db.getStocksBatch(otherSymbols);
+    final twseOther = <String>[];
+    final tpexOther = <String>[];
+
+    for (final symbol in otherSymbols) {
+      if (stockMap[symbol]?.market == 'TPEx') {
+        tpexOther.add(symbol);
+      } else {
+        twseOther.add(symbol);
+      }
+    }
+
+    // 按市場比例分配（確保少數市場至少分到 1 個名額）
+    final totalOther = twseOther.length + tpexOther.length;
+    int tpexSlots;
+    int twseSlots;
+
+    if (totalOther == 0 || tpexOther.isEmpty) {
+      tpexSlots = 0;
+      twseSlots = remainingSlots;
+    } else if (twseOther.isEmpty) {
+      tpexSlots = remainingSlots;
+      twseSlots = 0;
+    } else {
+      tpexSlots = (remainingSlots * tpexOther.length / totalOther)
+          .round()
+          .clamp(1, remainingSlots - 1);
+      twseSlots = remainingSlots - tpexSlots;
+    }
+
+    final result = <String>[
+      ...prioritySymbols.take(priorityCount),
+      ...twseOther.take(twseSlots),
+      ...tpexOther.take(tpexSlots),
+    ];
+
+    AppLogger.info(
+      'HistoricalPriceSyncer',
+      '限制同步 ${result.length} 檔'
+          '（優先 $priorityCount, '
+          'TWSE ${twseOther.take(twseSlots).length}, '
+          'TPEx ${tpexOther.take(tpexSlots).length}）',
+    );
+    return result;
   }
 
   /// 執行批次同步

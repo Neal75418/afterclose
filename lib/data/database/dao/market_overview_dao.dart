@@ -13,33 +13,20 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
     final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    // 用子查詢計算每檔漲跌：當日收盤 vs 前一交易日收盤，依市場分組
+    // 直接使用 daily_price.price_change 欄位（API 同步時已填入）
+    // 避免 INNER JOIN 前一交易日，確保只有 1 天資料的股票也能統計
     const query = '''
-    WITH today AS (
-      SELECT dp.symbol, dp.close, sm.market
-      FROM daily_price dp
-      INNER JOIN stock_master sm ON dp.symbol = sm.symbol
-      WHERE dp.date >= ? AND dp.date < ?
-        AND dp.close IS NOT NULL
-    ),
-    prev AS (
-      SELECT dp.symbol, dp.close
-      FROM daily_price dp
-      INNER JOIN (
-        SELECT symbol, MAX(date) as prev_date
-        FROM daily_price
-        WHERE date < ? AND close IS NOT NULL
-        GROUP BY symbol
-      ) latest ON dp.symbol = latest.symbol AND dp.date = latest.prev_date
-    )
     SELECT
-      t.market,
-      SUM(CASE WHEN t.close > p.close THEN 1 ELSE 0 END) as advance,
-      SUM(CASE WHEN t.close < p.close THEN 1 ELSE 0 END) as decline,
-      SUM(CASE WHEN t.close = p.close THEN 1 ELSE 0 END) as unchanged
-    FROM today t
-    INNER JOIN prev p ON t.symbol = p.symbol
-    GROUP BY t.market
+      sm.market,
+      SUM(CASE WHEN dp.price_change > 0 THEN 1 ELSE 0 END) as advance,
+      SUM(CASE WHEN dp.price_change < 0 THEN 1 ELSE 0 END) as decline,
+      SUM(CASE WHEN dp.price_change = 0 THEN 1 ELSE 0 END) as unchanged
+    FROM daily_price dp
+    INNER JOIN stock_master sm ON dp.symbol = sm.symbol
+    WHERE dp.date >= ? AND dp.date < ?
+      AND dp.close IS NOT NULL
+      AND dp.price_change IS NOT NULL
+    GROUP BY sm.market
   ''';
 
     final results = await customSelect(
@@ -47,7 +34,6 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
       variables: [
         Variable.withDateTime(startOfDay),
         Variable.withDateTime(endOfDay),
-        Variable.withDateTime(startOfDay),
       ],
       readsFrom: {dailyPrice, stockMaster},
     ).get();

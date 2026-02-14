@@ -213,6 +213,9 @@ class PriceRepository implements IPriceRepository {
       }
 
       // 並行取得上市與上櫃價格資料（錯誤隔離，允許部分成功）
+      // TWSE 端點自動回傳最新交易日資料（不接受日期參數）
+      // TPEX 端點需要明確傳入日期，否則 fallback 到 DateTime.now()
+      // 在非交易日（週末/假日）會導致 TPEX 回傳空資料
       final twsePrices = await safeAwait(
         _twseSource.fetchAllDailyPrices(),
         <TwseDailyPrice>[],
@@ -220,7 +223,7 @@ class PriceRepository implements IPriceRepository {
         description: '上市價格取得失敗，繼續處理上櫃',
       );
       final tpexPrices = await safeAwait(
-        _tpexSource.fetchAllDailyPrices(),
+        _tpexSource.fetchAllDailyPrices(date: normalizedDate),
         <TpexDailyPrice>[],
         tag: 'PriceRepo',
         description: '上櫃價格取得失敗，繼續處理上市',
