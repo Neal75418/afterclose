@@ -252,42 +252,28 @@ class _SourceFilterChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: NewsSource.values.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final source = NewsSource.values[index];
-          final count = sourceCounts[source] ?? 0;
-          final isSelected = source == selectedSource;
-
-          // Skip sources with 0 news (except "all")
-          if (count == 0 && source != NewsSource.all) {
-            return const SizedBox.shrink();
-          }
-
-          return FilterChip(
-            selected: isSelected,
-            label: Text(
-              source == NewsSource.all
-                  ? '${source.label} ($count)'
-                  : '${source.label} ($count)',
-            ),
-            labelStyle: theme.textTheme.labelMedium?.copyWith(
-              color: isSelected
-                  ? theme.colorScheme.onSecondaryContainer
-                  : theme.colorScheme.onSurface,
-            ),
-            onSelected: (_) {
-              HapticFeedback.selectionClick();
-              onSelected(source);
-            },
-          );
-        },
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final source in NewsSource.values)
+            if (source == NewsSource.all || (sourceCounts[source] ?? 0) > 0)
+              FilterChip(
+                selected: source == selectedSource,
+                label: Text('${source.label} (${sourceCounts[source] ?? 0})'),
+                labelStyle: theme.textTheme.labelMedium?.copyWith(
+                  color: source == selectedSource
+                      ? theme.colorScheme.onSecondaryContainer
+                      : theme.colorScheme.onSurface,
+                ),
+                onSelected: (_) {
+                  HapticFeedback.selectionClick();
+                  onSelected(source);
+                },
+              ),
+        ],
       ),
     );
   }

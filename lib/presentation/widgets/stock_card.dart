@@ -186,6 +186,11 @@ class _StockCardState extends State<StockCard> {
                                   mainAxisSize: isHeightConstrained
                                       ? MainAxisSize.max
                                       : MainAxisSize.min,
+                                  // Grid 並排時垂直置中，對齊 Row 中其他
+                                  // crossAxisAlignment.center 的元素
+                                  mainAxisAlignment: isHeightConstrained
+                                      ? MainAxisAlignment.center
+                                      : MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     _buildHeader(theme),
