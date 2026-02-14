@@ -77,14 +77,17 @@ class DataSyncService {
     final commonDates = priceDates.intersection(instDates);
 
     if (commonDates.isEmpty) {
-      // 無共同日期 - 使用較早的日期
-      final dataDate = priceDay.isBefore(instDay) ? priceDay : instDay;
+      // 無共同日期 - 以較早日期為目標搜尋
+      final targetDate = priceDay.isBefore(instDay) ? priceDay : instDay;
 
-      // 尋找 <= dataDate 的最新價格（避免回傳晚於 dataDate 的價格）
+      // 尋找 <= targetDate 的最新價格
       final matchingPrice = priceHistory.lastWhere(
-        (p) => DateContext.isBeforeOrEqual(p.date, dataDate),
+        (p) => DateContext.isBeforeOrEqual(p.date, targetDate),
         orElse: () => priceHistory.first,
       );
+
+      // 以實際回傳價格的日期作為 dataDate，確保與 latestPrice.date 一致
+      final dataDate = DateContext.normalize(matchingPrice.date);
 
       // 過濾法人資料至 <= dataDate（與有共同日期分支一致）
       final filteredInstHistory = instHistory

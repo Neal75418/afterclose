@@ -114,7 +114,10 @@ void main() {
       expect(result.latestPrice!.date, equals(DateTime(2025, 1, 14)));
     });
 
-    test('uses earlier date when no common dates exist', () {
+    test('dataDate matches matchingPrice when no common dates exist', () {
+      // price=1/15, inst=1/14 → targetDate=1/14
+      // 無 price <= 1/14 → orElse 回傳 first (1/15)
+      // dataDate 應跟隨 matchingPrice = 1/15
       final prices = [
         createTestPrice(date: DateTime(2025, 1, 15), close: 100.0),
       ];
@@ -122,8 +125,9 @@ void main() {
 
       final result = service.synchronizeDataDates(prices, instHistory);
 
-      expect(result.dataDate, equals(DateTime(2025, 1, 14)));
       expect(result.hasDataMismatch, isTrue);
+      expect(result.dataDate, equals(DateTime(2025, 1, 15)));
+      expect(result.latestPrice!.date, equals(result.dataDate));
     });
 
     test('filters instHistory to <= dataDate when no common dates', () {
@@ -152,9 +156,10 @@ void main() {
       );
     });
 
-    test('orElse returns first price when all prices are after dataDate', () {
-      // instDay (1/10) < priceDay (1/15) => dataDate = 1/10
-      // 但所有價格都在 1/13 之後（晚於 dataDate）
+    test('dataDate follows matchingPrice when orElse fallback triggers', () {
+      // instDay=1/10, priceDay=1/15 → targetDate=1/10
+      // 所有價格都在 1/13 之後（> targetDate） → orElse 回傳 first (1/13)
+      // dataDate 應跟隨 matchingPrice = 1/13（而非 targetDate = 1/10）
       final prices = [
         createTestPrice(date: DateTime(2025, 1, 13), close: 99.0),
         createTestPrice(date: DateTime(2025, 1, 14), close: 100.0),
@@ -164,11 +169,13 @@ void main() {
 
       final result = service.synchronizeDataDates(prices, instHistory);
 
-      // dataDate = min(1/15, 1/10) = 1/10
-      expect(result.dataDate, equals(DateTime(2025, 1, 10)));
-      // 沒有 <= 1/10 的價格，應回傳 first（1/13）而非 last（1/15）
-      expect(result.latestPrice, isNotNull);
+      expect(result.hasDataMismatch, isTrue);
+      // dataDate 與 latestPrice.date 一致（皆為 1/13）
       expect(result.latestPrice!.date, equals(DateTime(2025, 1, 13)));
+      expect(result.dataDate, equals(DateTime(2025, 1, 13)));
+      expect(result.dataDate, equals(result.latestPrice!.date));
+      // inst 1/10 <= 1/13，應被包含
+      expect(result.institutionalHistory, hasLength(1));
     });
 
     test('sets hasDataMismatch when dates do not match', () {
@@ -207,6 +214,54 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'invariant: dataDate always equals latestPrice.date when non-null',
+      () {
+        // 各種 mismatch 場景都應保證 dataDate == latestPrice.date
+        final scenarios =
+            <(List<DailyPriceEntry>, List<DailyInstitutionalEntry>)>[
+              // 有共同日期
+              (
+                [
+                  createTestPrice(date: DateTime(2025, 1, 13), close: 99),
+                  createTestPrice(date: DateTime(2025, 1, 15), close: 101),
+                ],
+                createInstHistory([
+                  DateTime(2025, 1, 13),
+                  DateTime(2025, 1, 14),
+                ]),
+              ),
+              // 無共同日期，price 較早
+              (
+                [createTestPrice(date: DateTime(2025, 1, 10), close: 100)],
+                createInstHistory([DateTime(2025, 1, 15)]),
+              ),
+              // 無共同日期，inst 較早，orElse 觸發
+              (
+                [
+                  createTestPrice(date: DateTime(2025, 1, 20), close: 100),
+                  createTestPrice(date: DateTime(2025, 1, 21), close: 101),
+                ],
+                createInstHistory([DateTime(2025, 1, 10)]),
+              ),
+            ];
+
+        for (final (prices, inst) in scenarios) {
+          final result = service.synchronizeDataDates(prices, inst);
+          if (result.latestPrice != null && result.dataDate != null) {
+            expect(
+              result.dataDate,
+              equals(result.latestPrice!.date),
+              reason:
+                  'dataDate should match latestPrice.date, '
+                  'got dataDate=${result.dataDate}, '
+                  'latestPrice.date=${result.latestPrice!.date}',
+            );
+          }
+        }
+      },
+    );
   });
 
   // ==========================================
