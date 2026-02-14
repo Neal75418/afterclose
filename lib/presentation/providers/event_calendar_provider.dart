@@ -1,7 +1,7 @@
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
@@ -97,19 +97,18 @@ class EventCalendarState {
 // Notifier
 // ==========================================
 
-class EventCalendarNotifier extends StateNotifier<EventCalendarState> {
-  EventCalendarNotifier({
-    required EventRepository eventRepository,
-    required AppDatabase database,
-    required AppClock clock,
-  }) : _repo = eventRepository,
-       _db = database,
-       _clock = clock,
-       super(const EventCalendarState());
+class EventCalendarNotifier extends Notifier<EventCalendarState> {
+  late final EventRepository _repo;
+  late final AppDatabase _db;
+  late final AppClock _clock;
 
-  final EventRepository _repo;
-  final AppDatabase _db;
-  final AppClock _clock;
+  @override
+  EventCalendarState build() {
+    _repo = ref.watch(eventRepositoryProvider);
+    _db = ref.watch(databaseProvider);
+    _clock = ref.watch(appClockProvider);
+    return const EventCalendarState();
+  }
 
   /// 初始化：設定焦點月份為當月，載入事件
   Future<void> init() async {
@@ -234,7 +233,7 @@ class EventCalendarNotifier extends StateNotifier<EventCalendarState> {
 
   /// 將 DateTime 正規化為只有日期的 key（table_calendar 比較用）
   static DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+    return DateContext.normalize(date);
   }
 }
 
@@ -243,10 +242,6 @@ class EventCalendarNotifier extends StateNotifier<EventCalendarState> {
 // ==========================================
 
 final eventCalendarProvider =
-    StateNotifierProvider<EventCalendarNotifier, EventCalendarState>((ref) {
-      return EventCalendarNotifier(
-        eventRepository: ref.watch(eventRepositoryProvider),
-        database: ref.watch(databaseProvider),
-        clock: ref.watch(appClockProvider),
-      );
-    });
+    NotifierProvider<EventCalendarNotifier, EventCalendarState>(
+      EventCalendarNotifier.new,
+    );

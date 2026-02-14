@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/screens/calendar/widgets/add_event_sheet.dart';
@@ -93,7 +94,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             calendarFormat: _calendarFormat,
             startingDayOfWeek: StartingDayOfWeek.monday,
             eventLoader: (day) {
-              final dateKey = DateTime(day.year, day.month, day.day);
+              final dateKey = DateContext.normalize(day);
               return state.events[dateKey] ?? [];
             },
             onDaySelected: (selectedDay, focusedDay) {

@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -17,13 +19,16 @@ class WarningRepository {
     required AppDatabase database,
     TpexClient? tpexClient,
     TwseClient? twseClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
        _tpexClient = tpexClient ?? TpexClient(),
-       _twseClient = twseClient ?? TwseClient();
+       _twseClient = twseClient ?? TwseClient(),
+       _clock = clock;
 
   final AppDatabase _db;
   final TpexClient _tpexClient;
   final TwseClient _twseClient;
+  final AppClock _clock;
 
   /// 取得股票的警示歷史
   Future<List<TradingWarningEntry>> getWarningHistory(
@@ -81,8 +86,8 @@ class WarningRepository {
   /// [force] - 若為 true，則無視新鮮度檢查強制同步
   Future<int> syncAllMarketWarnings({bool force = false}) async {
     try {
-      final today = DateTime.now();
-      final normalizedDate = DateTime(today.year, today.month, today.day);
+      final today = _clock.now();
+      final normalizedDate = DateContext.normalize(today);
 
       // 新鮮度檢查：檢查今日是否已有資料且最近 6 小時內同步過
       if (!force) {

@@ -19,11 +19,11 @@ class AnalysisCoordinatorService {
     SupportResistanceService? srService,
     PriceVolumeAnalysisService? pvService,
     TechnicalIndicatorService? indicatorService,
-  }) : this.trendService = trendService ?? TrendDetectionService(),
-       this.reversalService = reversalService ?? ReversalDetectionService(),
-       this.srService = srService ?? SupportResistanceService(),
-       this.pvService = pvService ?? PriceVolumeAnalysisService(),
-       this.indicatorService = indicatorService ?? TechnicalIndicatorService();
+  }) : trendService = trendService ?? TrendDetectionService(),
+       reversalService = reversalService ?? ReversalDetectionService(),
+       srService = srService ?? SupportResistanceService(),
+       pvService = pvService ?? PriceVolumeAnalysisService(),
+       indicatorService = indicatorService ?? TechnicalIndicatorService();
 
   /// 趨勢檢測服務
   final TrendDetectionService trendService;

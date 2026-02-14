@@ -125,17 +125,17 @@ mixin _TradingWarningDaoMixin on _$AppDatabase {
   /// 更新過期的警示狀態
   ///
   /// 將處置結束日已過的警示標記為非生效
-  Future<int> updateExpiredWarnings() async {
-    final now = DateTime.now();
+  Future<int> updateExpiredWarnings({DateTime? now}) async {
+    final effectiveNow = now ?? DateTime.now();
     return (update(tradingWarning)
           ..where((t) => t.isActive.equals(true))
-          ..where((t) => t.disposalEndDate.isSmallerThanValue(now)))
+          ..where((t) => t.disposalEndDate.isSmallerThanValue(effectiveNow)))
         .write(const TradingWarningCompanion(isActive: Value(false)));
   }
 
   /// 取得指定日期的警示資料筆數（新鮮度檢查用）
   Future<int> getWarningCountForDate(DateTime date) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     final countExpr = tradingWarning.symbol.count();
     final query = selectOnly(tradingWarning)

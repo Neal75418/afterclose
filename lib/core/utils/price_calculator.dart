@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 股價相關計算工具
@@ -37,8 +38,8 @@ class PriceCalculator {
     // 回退：使用歷史收盤價計算
     if (history.isEmpty) return null;
 
-    final latestDate = _normalizeDate(latestPrice.date);
-    final historyLastDate = _normalizeDate(history.last.date);
+    final latestDate = DateContext.normalize(latestPrice.date);
+    final historyLastDate = DateContext.normalize(history.last.date);
 
     // 判斷 history 是否已包含 latestPrice 的日期
     final historyIncludesLatest = historyLastDate == latestDate;
@@ -56,13 +57,6 @@ class PriceCalculator {
     if (prevClose == null || prevClose == 0) return null;
 
     return ((latestClose - prevClose) / prevClose) * 100;
-  }
-
-  /// 標準化日期為本地時間午夜以確保比較一致性
-  ///
-  /// 使用本地時間以匹配資料庫中儲存的日期格式
-  static DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
   }
 
   /// 直接由兩個價格計算漲跌幅

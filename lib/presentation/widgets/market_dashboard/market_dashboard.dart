@@ -11,6 +11,7 @@ import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_
 import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 
 /// 大盤總覽 Dashboard
@@ -98,7 +99,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final dataDate = widget.state.dataDate;
     final now = DateTime.now();
     final latestTradingDay = TaiwanCalendar.isTradingDay(now)
-        ? DateTime(now.year, now.month, now.day)
+        ? DateContext.normalize(now)
         : TaiwanCalendar.getPreviousTradingDay(now);
     final isLatest =
         dataDate != null &&

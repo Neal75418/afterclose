@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 
 /// 台灣股市 API 回應的共用解析工具
 ///
@@ -25,7 +26,7 @@ abstract final class TwParseUtils {
   static DateTime parseAdDate(String dateStr) {
     if (dateStr.length != 8) {
       final now = DateTime.now();
-      return DateTime(now.year, now.month, now.day);
+      return DateContext.normalize(now);
     }
     final year = int.parse(dateStr.substring(0, 4));
     final month = int.parse(dateStr.substring(4, 6));

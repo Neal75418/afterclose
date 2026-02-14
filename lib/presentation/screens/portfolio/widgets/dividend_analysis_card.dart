@@ -14,7 +14,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 Color _getYieldColor(double yield_) {
   if (yield_ >= 5) return AppTheme.upColor;
   if (yield_ >= 3) return const Color(0xFFF59E0B); // 橘色
-  return const Color(0xFF64748B); // 灰色
+  return AppTheme.neutralSlateColor;
 }
 
 /// 股利分析卡片
@@ -307,7 +307,7 @@ class _TrendIcon extends StatelessWidget {
         color = AppTheme.downColor;
       case DividendTrend.stable:
         icon = Icons.trending_flat;
-        color = const Color(0xFF64748B);
+        color = AppTheme.neutralSlateColor;
     }
 
     return Icon(icon, size: 14, color: color);

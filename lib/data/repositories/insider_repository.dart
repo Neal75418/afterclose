@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -16,13 +18,16 @@ class InsiderRepository {
     required AppDatabase database,
     TpexClient? tpexClient,
     TwseClient? twseClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
        _tpexClient = tpexClient ?? TpexClient(),
-       _twseClient = twseClient ?? TwseClient();
+       _twseClient = twseClient ?? TwseClient(),
+       _clock = clock;
 
   final AppDatabase _db;
   final TpexClient _tpexClient;
   final TwseClient _twseClient;
+  final AppClock _clock;
 
   /// 取得股票的董監持股歷史
   Future<List<InsiderHoldingEntry>> getInsiderHoldingHistory(
@@ -30,7 +35,7 @@ class InsiderRepository {
     int? months,
   }) async {
     final lookback = months ?? DataFreshness.insiderDefaultMonths;
-    final now = DateTime.now();
+    final now = _clock.now();
     // 使用 DateTime 自動處理跨年和月份溢位
     // 例如: 2026-01 往前 3 個月 = 2025-10
     final startDate = DateTime(now.year, now.month - lookback, 1);
@@ -75,7 +80,7 @@ class InsiderRepository {
   /// [force] - 若為 true，則無視新鮮度檢查強制同步
   Future<int> syncAllInsiderHoldings({bool force = false}) async {
     try {
-      final now = DateTime.now();
+      final now = _clock.now();
 
       // 新鮮度檢查（月報，每月只需同步一次）
       if (!force) {
@@ -117,7 +122,7 @@ class InsiderRepository {
           entries.add(
             InsiderHoldingCompanion.insert(
               symbol: item.code,
-              date: DateTime(item.date.year, item.date.month, item.date.day),
+              date: DateContext.normalize(item.date),
               insiderRatio: Value(item.insiderRatio),
               pledgeRatio: Value(item.pledgeRatio),
               sharesIssued: Value(item.sharesIssued),
@@ -131,7 +136,7 @@ class InsiderRepository {
           entries.add(
             InsiderHoldingCompanion.insert(
               symbol: item.code,
-              date: DateTime(item.date.year, item.date.month, item.date.day),
+              date: DateContext.normalize(item.date),
               insiderRatio: Value(item.insiderRatio),
               pledgeRatio: Value(item.pledgeRatio),
               sharesIssued: Value(item.sharesIssued),

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
@@ -48,10 +49,10 @@ class DividendTable extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF27AE60).withValues(alpha: 0.1),
+                  color: AppTheme.dividendColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
                   border: Border.all(
-                    color: const Color(0xFF27AE60).withValues(alpha: 0.3),
+                    color: AppTheme.dividendColor.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -60,7 +61,7 @@ class DividendTable extends StatelessWidget {
                     const Icon(
                       Icons.payments,
                       size: 16,
-                      color: Color(0xFF27AE60),
+                      color: AppTheme.dividendColor,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -73,144 +74,97 @@ class DividendTable extends StatelessWidget {
                       AppNumberFormat.currency(avgCash, decimals: 2),
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: const Color(0xFF27AE60),
+                        color: AppTheme.dividendColor,
                       ),
                     ),
                   ],
                 ),
               ),
-            // Header row with styled background
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+            buildTableHeader(context, [
+              buildHeaderCell(context, 'stockDetail.dividendYear'.tr()),
+              buildHeaderCell(
+                context,
+                'stockDetail.cashDividend'.tr(),
+                textAlign: TextAlign.end,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.dividendYear'.tr(),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.cashDividend'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.stockDividend'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.totalDividend'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ],
+              buildHeaderCell(
+                context,
+                'stockDetail.stockDividend'.tr(),
+                textAlign: TextAlign.end,
               ),
-            ),
+              buildHeaderCell(
+                context,
+                'stockDetail.totalDividend'.tr(),
+                textAlign: TextAlign.end,
+              ),
+            ]),
             const SizedBox(height: 8),
-            // Data rows
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final div = entry.value;
               final total = div.cashDividend + div.stockDividend;
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: getRowColor(context, index),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+              return buildTableDataRow(context, index, [
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    showROCYear
+                        ? TaiwanDateFormatter.formatDualYear(div.year)
+                        : div.year.toString(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: index == 0
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        showROCYear
-                            ? TaiwanDateFormatter.formatDualYear(div.year)
-                            : div.year.toString(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    div.cashDividend > 0
+                        ? AppNumberFormat.currency(
+                            div.cashDividend,
+                            decimals: 2,
+                          )
+                        : '-',
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: div.cashDividend > 0
+                          ? AppTheme.dividendColor
+                          : null,
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        div.cashDividend > 0
-                            ? AppNumberFormat.currency(
-                                div.cashDividend,
-                                decimals: 2,
-                              )
-                            : '-',
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: div.cashDividend > 0
-                              ? const Color(0xFF27AE60)
-                              : null,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        div.stockDividend > 0
-                            ? AppNumberFormat.currency(
-                                div.stockDividend,
-                                decimals: 2,
-                              )
-                            : '-',
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        total > 0
-                            ? AppNumberFormat.currency(total, decimals: 2)
-                            : '-',
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              );
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    div.stockDividend > 0
+                        ? AppNumberFormat.currency(
+                            div.stockDividend,
+                            decimals: 2,
+                          )
+                        : '-',
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    total > 0
+                        ? AppNumberFormat.currency(total, decimals: 2)
+                        : '-',
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ]);
             }),
           ],
         ),

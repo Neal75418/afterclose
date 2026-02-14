@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
@@ -34,7 +35,7 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 使用 Request Deduplication 防止同時多次查詢相同股票
   @override
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date) {
-    final normalizedDate = _normalizeDate(date);
+    final normalizedDate = DateContext.normalize(date);
     final cacheKey = 'analysis_${symbol}_${normalizedDate.toIso8601String()}';
 
     return _analysisDedup.call(
@@ -46,7 +47,7 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 取得某日期的所有分析結果
   @override
   Future<List<DailyAnalysisEntry>> getAnalysesForDate(DateTime date) {
-    return _db.getAnalysisForDate(_normalizeDate(date));
+    return _db.getAnalysisForDate(DateContext.normalize(date));
   }
 
   /// 儲存分析結果
@@ -63,7 +64,7 @@ class AnalysisRepository implements IAnalysisRepository {
     return _db.insertAnalysis(
       DailyAnalysisCompanion.insert(
         symbol: symbol,
-        date: _normalizeDate(date),
+        date: DateContext.normalize(date),
         trendState: trendState,
         reversalState: Value(reversalState),
         supportLevel: Value(supportLevel),
@@ -82,7 +83,7 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 使用 Request Deduplication 防止同時多次查詢相同股票
   @override
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date) {
-    final normalizedDate = _normalizeDate(date);
+    final normalizedDate = DateContext.normalize(date);
     final cacheKey = 'reasons_${symbol}_${normalizedDate.toIso8601String()}';
 
     return _reasonsDedup.call(
@@ -100,7 +101,7 @@ class AnalysisRepository implements IAnalysisRepository {
   ) async {
     // 限制最大原因數
     final limitedReasons = reasons.take(RuleParams.maxReasonsPerStock).toList();
-    final normalizedDate = _normalizeDate(date);
+    final normalizedDate = DateContext.normalize(date);
 
     final entries = <DailyReasonCompanion>[];
     for (var i = 0; i < limitedReasons.length; i++) {
@@ -160,7 +161,7 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 取得某日期的推薦股
   @override
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date) {
-    return _db.getRecommendations(_normalizeDate(date));
+    return _db.getRecommendations(DateContext.normalize(date));
   }
 
   /// 儲存每日推薦股（原子性取代既有推薦）
@@ -171,7 +172,7 @@ class AnalysisRepository implements IAnalysisRepository {
   ) async {
     // 限制為 Top N
     final limited = recommendations.take(RuleParams.dailyTopN).toList();
-    final normalizedDate = _normalizeDate(date);
+    final normalizedDate = DateContext.normalize(date);
 
     final entries = <DailyRecommendationCompanion>[];
     for (var i = 0; i < limited.length; i++) {
@@ -208,8 +209,10 @@ class AnalysisRepository implements IAnalysisRepository {
     int days = RuleParams.cooldownDays,
   }) {
     final now = _clock.now();
-    final endDate = _normalizeDate(now.subtract(const Duration(days: 1)));
-    final startDate = _normalizeDate(now.subtract(Duration(days: days)));
+    final endDate = DateContext.normalize(
+      now.subtract(const Duration(days: 1)),
+    );
+    final startDate = DateContext.normalize(now.subtract(Duration(days: days)));
 
     return _db.wasSymbolRecommendedInRange(
       symbol,
@@ -224,8 +227,10 @@ class AnalysisRepository implements IAnalysisRepository {
     int days = RuleParams.cooldownDays,
   }) {
     final now = _clock.now();
-    final endDate = _normalizeDate(now.subtract(const Duration(days: 1)));
-    final startDate = _normalizeDate(now.subtract(Duration(days: days)));
+    final endDate = DateContext.normalize(
+      now.subtract(const Duration(days: 1)),
+    );
+    final startDate = DateContext.normalize(now.subtract(Duration(days: days)));
 
     return _db.getRecommendedSymbolsInRange(
       startDate: startDate,
@@ -247,7 +252,7 @@ class AnalysisRepository implements IAnalysisRepository {
 
     // 依序嘗試今天、昨天、前天的資料
     for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
-      final date = _normalizeDate(now.subtract(Duration(days: daysAgo)));
+      final date = DateContext.normalize(now.subtract(Duration(days: daysAgo)));
       final analyses = await getAnalysesForDate(date);
       if (analyses.isNotEmpty) {
         return (targetDate: date, analyses: analyses);
@@ -256,9 +261,9 @@ class AnalysisRepository implements IAnalysisRepository {
 
     // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
     final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
-      _normalizeDate(now.subtract(const Duration(days: 3))),
+      DateContext.normalize(now.subtract(const Duration(days: 3))),
     );
-    final normalizedDate = _normalizeDate(prevTradingDay);
+    final normalizedDate = DateContext.normalize(prevTradingDay);
     final analyses = await getAnalysesForDate(normalizedDate);
     return (targetDate: normalizedDate, analyses: analyses);
   }
@@ -277,13 +282,13 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 清除指定日期的所有原因記錄
   @override
   Future<int> clearReasonsForDate(DateTime date) {
-    return _db.clearReasonsForDate(_normalizeDate(date));
+    return _db.clearReasonsForDate(DateContext.normalize(date));
   }
 
   /// 清除指定日期的所有分析記錄
   @override
   Future<int> clearAnalysisForDate(DateTime date) {
-    return _db.clearAnalysisForDate(_normalizeDate(date));
+    return _db.clearAnalysisForDate(DateContext.normalize(date));
   }
 
   // ==========================================
@@ -306,7 +311,7 @@ class AnalysisRepository implements IAnalysisRepository {
 
     // 收集所有股票代碼供批次查詢
     final symbols = recs.map((r) => r.symbol).toList();
-    final normalizedDate = _normalizeDate(date);
+    final normalizedDate = DateContext.normalize(date);
 
     // 平行執行批次查詢
     final results = await Future.wait([
@@ -338,12 +343,5 @@ class AnalysisRepository implements IAnalysisRepository {
   @override
   Future<T> runInTransaction<T>(Future<T> Function() action) {
     return _db.transaction(() => action());
-  }
-
-  /// 正規化日期至本地時間當日開始（移除時間部分）
-  ///
-  /// 使用本地時間以匹配資料庫儲存格式
-  DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
   }
 }

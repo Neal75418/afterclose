@@ -17,8 +17,6 @@ class InstitutionalSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -34,7 +32,7 @@ class InstitutionalSection extends StatelessWidget {
         const SizedBox(height: 12),
 
         if (history.isEmpty)
-          buildEmptyState(theme)
+          buildEmptyState(context, 'chip.noData'.tr())
         else ...[
           _buildTrendChart(),
           const SizedBox(height: 12),

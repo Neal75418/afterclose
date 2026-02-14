@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
@@ -101,15 +102,6 @@ class TdccHoldingSyncer {
     // 用台積電 (2330) 作為哨兵檢查
     final latestDate = await _db.getLatestHoldingDistributionDate('2330');
     if (latestDate == null) return false;
-    return _isSameWeek(latestDate, _clock.now());
-  }
-
-  /// 檢查兩個日期是否在同一週（週一至週日）
-  bool _isSameWeek(DateTime a, DateTime b) {
-    final aWeekStart = a.subtract(Duration(days: a.weekday - 1));
-    final bWeekStart = b.subtract(Duration(days: b.weekday - 1));
-    return aWeekStart.year == bWeekStart.year &&
-        aWeekStart.month == bWeekStart.month &&
-        aWeekStart.day == bWeekStart.day;
+    return DateContext.isSameWeek(latestDate, _clock.now());
   }
 }

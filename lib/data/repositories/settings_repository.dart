@@ -4,6 +4,8 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:afterclose/domain/repositories/settings_repository.dart';
+
 /// Secure Storage Key 常數
 class _SecureKeys {
   static const finmindToken = 'finmind_api_token';
@@ -19,7 +21,7 @@ class _FallbackKeys {
 /// Token 優先使用 [FlutterSecureStorage] 加密儲存
 /// 若平台不支援（如 macOS 無 Keychain 權限），自動降級為記憶體暫存
 /// 其他設定使用 SQLite 資料庫
-class SettingsRepository {
+class SettingsRepository implements ISettingsRepository {
   SettingsRepository({required AppDatabase database, SharedPreferences? prefs})
     : _db = database,
       _prefs = prefs;
@@ -69,6 +71,7 @@ class SettingsRepository {
   // ==========================================
 
   /// 取得 FinMind Token
+  @override
   Future<String?> getFinMindToken() async {
     if (await _isSecureStorageAvailable()) {
       return _secureStorage.read(key: _SecureKeys.finmindToken);
@@ -78,6 +81,7 @@ class SettingsRepository {
   }
 
   /// 儲存 FinMind Token
+  @override
   Future<void> setFinMindToken(String token) async {
     if (await _isSecureStorageAvailable()) {
       await _secureStorage.write(key: _SecureKeys.finmindToken, value: token);
@@ -89,6 +93,7 @@ class SettingsRepository {
   }
 
   /// 清除 FinMind Token
+  @override
   Future<void> clearFinMindToken() async {
     _inMemoryToken = null;
     // 清除所有儲存位置（含舊版 SharedPreferences 遺留資料）
@@ -102,6 +107,7 @@ class SettingsRepository {
   }
 
   /// 檢查是否已設定 Token
+  @override
   Future<bool> hasFinMindToken() async {
     final token = await getFinMindToken();
     return token != null && token.isNotEmpty;
@@ -112,6 +118,7 @@ class SettingsRepository {
   /// 遷移來源優先順序：
   /// 1. Database (最舊)
   /// 2. SharedPreferences 舊 key (舊版)
+  @override
   Future<void> migrateTokenToSecureStorage() async {
     // 檢查是否已有 Token（無論是 SecureStorage 或 fallback）
     final existingToken = await getFinMindToken();
@@ -145,6 +152,7 @@ class SettingsRepository {
   // ==========================================
 
   /// 取得最後成功更新的日期
+  @override
   Future<DateTime?> getLastUpdateDate() async {
     final value = await _db.getSetting(SettingsKeys.lastUpdateDate);
     if (value == null) return null;
@@ -152,6 +160,7 @@ class SettingsRepository {
   }
 
   /// 設定最後成功更新的日期
+  @override
   Future<void> setLastUpdateDate(DateTime date) {
     return _db.setSetting(SettingsKeys.lastUpdateDate, date.toIso8601String());
   }
@@ -161,17 +170,20 @@ class SettingsRepository {
   // ==========================================
 
   /// 取得是否同步法人資料
+  @override
   Future<bool> shouldFetchInstitutional() async {
     final value = await _db.getSetting(SettingsKeys.fetchInstitutional);
     return value == 'true';
   }
 
   /// 設定是否同步法人資料
+  @override
   Future<void> setFetchInstitutional(bool enabled) {
     return _db.setSetting(SettingsKeys.fetchInstitutional, enabled.toString());
   }
 
   /// 取得是否同步新聞
+  @override
   Future<bool> shouldFetchNews() async {
     final value = await _db.getSetting(SettingsKeys.fetchNews);
     // 預設為 true
@@ -179,6 +191,7 @@ class SettingsRepository {
   }
 
   /// 設定是否同步新聞
+  @override
   Future<void> setFetchNews(bool enabled) {
     return _db.setSetting(SettingsKeys.fetchNews, enabled.toString());
   }
@@ -188,16 +201,19 @@ class SettingsRepository {
   // ==========================================
 
   /// 依 Key 取得設定值
+  @override
   Future<String?> getSetting(String key) {
     return _db.getSetting(key);
   }
 
   /// 設定值
+  @override
   Future<void> setSetting(String key, String value) {
     return _db.setSetting(key, value);
   }
 
   /// 刪除設定
+  @override
   Future<void> deleteSetting(String key) {
     return _db.deleteSetting(key);
   }

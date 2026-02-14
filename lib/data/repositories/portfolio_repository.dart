@@ -1,11 +1,12 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/repositories/portfolio_repository.dart';
 
 /// 投資組合 Repository
 ///
 /// 管理持倉與交易紀錄，使用 FIFO 方法計算損益。
-class PortfolioRepository {
+class PortfolioRepository implements IPortfolioRepository {
   PortfolioRepository({required AppDatabase database}) : _db = database;
 
   final AppDatabase _db;
@@ -20,12 +21,15 @@ class PortfolioRepository {
   // 持倉查詢
   // ==========================================
 
+  @override
   Future<List<PortfolioPositionEntry>> getPositions() =>
       _db.getPortfolioPositions();
 
+  @override
   Future<PortfolioPositionEntry?> getPosition(String symbol) =>
       _db.getPortfolioPosition(symbol);
 
+  @override
   Future<List<PortfolioTransactionEntry>> getTransactions(String symbol) =>
       _db.getTransactionsForSymbol(symbol);
 
@@ -46,6 +50,7 @@ class PortfolioRepository {
   }
 
   /// 新增買進交易
+  @override
   Future<void> addBuyTransaction({
     required String symbol,
     required DateTime date,
@@ -77,6 +82,7 @@ class PortfolioRepository {
   /// 新增賣出交易
   ///
   /// 若賣出數量超過持有數量，會拋出 [StateError]。
+  @override
   Future<void> addSellTransaction({
     required String symbol,
     required DateTime date,
@@ -116,6 +122,7 @@ class PortfolioRepository {
   }
 
   /// 新增股利交易
+  @override
   Future<void> addDividendTransaction({
     required String symbol,
     required DateTime date,
@@ -140,6 +147,7 @@ class PortfolioRepository {
   }
 
   /// 刪除交易紀錄並重新計算
+  @override
   Future<void> deleteTransaction(int txId, String symbol) async {
     await _db.deleteTransaction(txId);
     await _recalculatePosition(symbol);

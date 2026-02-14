@@ -48,6 +48,13 @@ class DateContext {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
+  /// 檢查兩個日期是否在同一週（週一至週日，忽略時間）
+  static bool isSameWeek(DateTime a, DateTime b) {
+    final aWeekStart = a.subtract(Duration(days: a.weekday - 1));
+    final bWeekStart = b.subtract(Duration(days: b.weekday - 1));
+    return isSameDay(aWeekStart, bWeekStart);
+  }
+
   /// 取得兩日期中較早的日期（已標準化）
   ///
   /// 若兩者皆為 null 則回傳 null。
@@ -96,5 +103,19 @@ class DateContext {
   /// 解析 'YYYY-MM-DD' 格式字串，失敗時回傳預設值
   static DateTime parseYmdOr(String? dateStr, DateTime defaultValue) {
     return tryParseYmd(dateStr) ?? defaultValue;
+  }
+
+  /// 解析季度日期字串（如 "2024-Q1" → DateTime(2024, 1, 1)）
+  ///
+  /// 若非季度格式則視為標準日期字串解析。
+  static DateTime parseQuarterDate(String dateStr) {
+    if (dateStr.contains('Q')) {
+      final parts = dateStr.split('-Q');
+      final year = int.parse(parts[0]);
+      final quarter = int.parse(parts[1]);
+      final month = (quarter - 1) * 3 + 1;
+      return DateTime(year, month, 1);
+    }
+    return DateTime.parse(dateStr);
   }
 }

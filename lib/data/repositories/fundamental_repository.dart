@@ -1,4 +1,5 @@
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -7,27 +8,32 @@ import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:drift/drift.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/domain/repositories/fundamental_repository.dart';
 
 /// 基本面資料 Repository（營收、本益比、股價淨值比、殖利率）
-class FundamentalRepository {
+class FundamentalRepository implements IFundamentalRepository {
   FundamentalRepository({
     required AppDatabase db,
     required FinMindClient finMind,
     TwseClient? twse,
     TpexClient? tpex,
+    AppClock clock = const SystemClock(),
   }) : _db = db,
        _finMind = finMind,
        _twse = twse ?? TwseClient(),
-       _tpex = tpex ?? TpexClient();
+       _tpex = tpex ?? TpexClient(),
+       _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _finMind;
   final TwseClient _twse;
   final TpexClient _tpex;
+  final AppClock _clock;
 
   /// 同步單檔股票的月營收資料
   ///
   /// 回傳同步筆數
+  @override
   Future<int> syncMonthlyRevenue({
     required String symbol,
     required DateTime startDate,
@@ -73,6 +79,7 @@ class FundamentalRepository {
   /// 同步單檔股票的估值資料（本益比/股價淨值比/殖利率）
   ///
   /// 回傳同步筆數
+  @override
   Future<int> syncValuationData({
     required String symbol,
     required DateTime startDate,
@@ -90,7 +97,7 @@ class FundamentalRepository {
       // 轉換為 Database 資料
       final entries = data.map((r) {
         // 解析日期字串
-        final parsedDate = DateTime.tryParse(r.date) ?? DateTime.now();
+        final parsedDate = DateTime.tryParse(r.date) ?? _clock.now();
         return StockValuationCompanion.insert(
           symbol: symbol,
           date: parsedDate,
@@ -114,6 +121,7 @@ class FundamentalRepository {
   ///
   /// 取代個別 FinMind 呼叫以進行每日更新。
   /// 注意：此方法僅同步上市股票，上櫃股票需使用 [syncOtcValuation]。
+  @override
   Future<int> syncAllMarketValuation(
     DateTime date, {
     bool force = false,
@@ -165,6 +173,7 @@ class FundamentalRepository {
   /// 設定 [force] 為 true 可略過新鮮度檢查。
   ///
   /// 回傳成功同步的股票數量。
+  @override
   Future<int> syncOtcValuation(
     List<String> symbols, {
     DateTime? date,
@@ -172,7 +181,7 @@ class FundamentalRepository {
   }) async {
     if (symbols.isEmpty) return 0;
 
-    final targetDate = date ?? DateTime.now();
+    final targetDate = date ?? _clock.now();
 
     // 新鮮度檢查：過濾掉已有近期估值資料的股票（3 天內視為新鮮）
     List<String> symbolsToSync = symbols;
@@ -259,6 +268,7 @@ class FundamentalRepository {
   /// 注意：此方法僅同步上市股票，上櫃股票需使用 [syncOtcRevenue]。
   ///
   /// 回傳：同步筆數，或 -1 表示跳過（已有資料）
+  @override
   Future<int> syncAllMarketRevenue(DateTime date, {bool force = false}) async {
     try {
       // 註：OpenData 僅回傳「最新」月份
@@ -334,6 +344,7 @@ class FundamentalRepository {
   /// 設定 [force] 為 true 可略過新鮮度檢查。
   ///
   /// 回傳成功同步的股票數量。
+  @override
   Future<int> syncOtcRevenue(
     List<String> symbols, {
     DateTime? date,
@@ -341,7 +352,7 @@ class FundamentalRepository {
   }) async {
     if (symbols.isEmpty) return 0;
 
-    final targetDate = date ?? DateTime.now();
+    final targetDate = date ?? _clock.now();
 
     // 新鮮度檢查：過濾掉已有當月營收資料的股票
     // 營收以年/月為單位，同月內不需重複同步
@@ -433,12 +444,13 @@ class FundamentalRepository {
   ///
   /// 從 FinMind API 取得近 5 年的股利資料並寫入 DB。
   /// 回傳同步筆數。
+  @override
   Future<int> syncDividends({required String symbol}) async {
     try {
       // 新鮮度檢查：股利資料通常在次年公佈（如 2025 年股利在 2026 年公佈）
       // 使用 currentYear - 2 作為基準，確保能抓到最新公佈的資料
       final latestYear = await _db.getLatestDividendYear(symbol);
-      final currentYear = DateTime.now().year;
+      final currentYear = _clock.now().year;
       if (latestYear != null && latestYear >= currentYear - 2) {
         return 0; // 已有近期資料
       }
@@ -472,6 +484,7 @@ class FundamentalRepository {
   ///
   /// 從 FinMind API 取得近 2 年的季度損益表資料並寫入 DB。
   /// 含 90 天新鮮度檢查，避免重複同步。
+  @override
   Future<int> syncFinancialStatements({
     required String symbol,
     required DateTime startDate,
@@ -482,7 +495,7 @@ class FundamentalRepository {
       // 季報每 ~90 天發布，60 天確保不會錯過最新一季
       final latestDate = await _db.getLatestFinancialDataDate(symbol, 'INCOME');
       if (latestDate != null &&
-          DateTime.now().difference(latestDate).inDays <
+          _clock.now().difference(latestDate).inDays <
               DataFreshness.financialStatementStaleDays) {
         return 0;
       }
@@ -500,7 +513,7 @@ class FundamentalRepository {
           entries.add(
             FinancialDataCompanion.insert(
               symbol: symbol,
-              date: _parseQuarterDate(item.date),
+              date: DateContext.parseQuarterDate(item.date),
               statementType: 'INCOME',
               dataType: item.type,
               value: Value(item.value),
@@ -525,22 +538,8 @@ class FundamentalRepository {
     }
   }
 
-  /// 解析季度日期字串（如 "2024-Q1" 或 "2024-01-01"）
-  ///
-  /// 與 MarketDataRepository._parseQuarterDate 保持一致：
-  /// "2024-Q1" → DateTime(2024, 1, 1)（季度首日）
-  DateTime _parseQuarterDate(String dateStr) {
-    if (dateStr.contains('Q')) {
-      final parts = dateStr.split('-Q');
-      final year = int.parse(parts[0]);
-      final quarter = int.parse(parts[1]);
-      final month = (quarter - 1) * 3 + 1;
-      return DateTime(year, month, 1);
-    }
-    return DateTime.parse(dateStr);
-  }
-
   /// 同步單檔股票的所有基本面資料
+  @override
   Future<({int revenue, int valuation})> syncAll({
     required String symbol,
     required DateTime startDate,

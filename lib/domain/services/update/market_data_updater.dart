@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -171,12 +172,8 @@ class MarketDataUpdater {
     // 取得新鮮度檢查基準日期
     final latestDayTradingDate = await _db.getLatestDayTradingDate();
     final normalizedFreshnessDate = latestDayTradingDate != null
-        ? DateTime(
-            latestDayTradingDate.year,
-            latestDayTradingDate.month,
-            latestDayTradingDate.day,
-          )
-        : DateTime(date.year, date.month, date.day);
+        ? DateContext.normalize(latestDayTradingDate)
+        : DateContext.normalize(date);
 
     final marketDataStartDate = date.subtract(
       const Duration(days: RuleParams.foreignShareholdingLookbackDays + 5),

@@ -23,6 +23,7 @@ import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/domain/services/update/update.dart';
 
 /// 每日市場資料更新協調服務
@@ -157,7 +158,7 @@ class UpdateService {
       targetDate = lastTradingDay;
     }
 
-    final normalizedDate = _normalizeDate(targetDate);
+    final normalizedDate = DateContext.normalize(targetDate);
     final runId = await _db.createUpdateRun(
       normalizedDate,
       UpdateStatus.partial.code,
@@ -327,7 +328,7 @@ class UpdateService {
 
       // 日期校正
       if (syncResult.dataDate != null) {
-        final dataDate = _normalizeDate(syncResult.dataDate!);
+        final dataDate = DateContext.normalize(syncResult.dataDate!);
         if (dataDate.year != normalizedDate.year ||
             dataDate.month != normalizedDate.month ||
             dataDate.day != normalizedDate.day) {
@@ -877,9 +878,6 @@ class UpdateService {
       AppLogger.warning('UpdateSvc', '警示價格擷取失敗', e);
     }
   }
-
-  DateTime _normalizeDate(DateTime date) =>
-      DateTime(date.year, date.month, date.day);
 }
 
 /// 更新進度回呼

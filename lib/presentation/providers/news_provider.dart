@@ -1,7 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -93,18 +91,17 @@ class NewsState {
 // News Notifier
 // ==================================================
 
-class NewsNotifier extends StateNotifier<NewsState> {
-  NewsNotifier(this._ref) : super(NewsState());
-
-  final Ref _ref;
+class NewsNotifier extends Notifier<NewsState> {
+  @override
+  NewsState build() => NewsState();
 
   /// 載入新聞資料
   Future<void> loadData({int days = 7}) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final newsRepo = _ref.read(newsRepositoryProvider);
-      final db = _ref.read(databaseProvider);
+      final newsRepo = ref.read(newsRepositoryProvider);
+      final db = ref.read(databaseProvider);
 
       // 取得近期新聞
       final news = await newsRepo.getRecentNews(days: days);
@@ -140,9 +137,9 @@ class NewsNotifier extends StateNotifier<NewsState> {
 // Provider
 // ==================================================
 
-final newsProvider = StateNotifierProvider<NewsNotifier, NewsState>((ref) {
-  return NewsNotifier(ref);
-});
+final newsProvider = NotifierProvider<NewsNotifier, NewsState>(
+  NewsNotifier.new,
+);
 
 /// RSS 來源清單 Provider（供顯示用）
 final newsSourcesProvider = Provider<List<String>>((ref) {

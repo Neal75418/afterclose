@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
+export 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
+    show buildEmptyState;
+
 /// Shared helper widgets and formatting utilities used across chip tab sections.
 
 Widget buildSummaryCard(
@@ -51,24 +54,6 @@ Widget buildSummaryCard(
           ),
         ),
       ],
-    ),
-  );
-}
-
-Widget buildEmptyState(ThemeData theme) {
-  return Container(
-    padding: const EdgeInsets.all(24),
-    decoration: BoxDecoration(
-      color: theme.colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-    ),
-    child: Center(
-      child: Text(
-        'chip.noData'.tr(),
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
-      ),
     ),
   );
 }
@@ -141,31 +126,28 @@ Widget buildNetValue(BuildContext context, double value) {
   );
 }
 
+/// Format a lot count (張) with unit escalation (萬張/千張/張)
+///
+/// Core helper used by [formatNet], [formatBalance], and volume formatting.
+String formatLots(double lots) {
+  if (lots >= 10000) {
+    return '${(lots / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
+  } else if (lots >= 1000) {
+    return '${(lots / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
+  }
+  return '${lots.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
+}
+
 /// Format net value with Chinese units (shares -> 張)
 String formatNet(double value) {
-  final prefix = value >= 0 ? '+' : '';
-  final absValue = value.abs();
-  final lots = absValue / 1000;
-
-  if (lots >= 10000) {
-    return '$prefix${(value / 1000 / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
-  } else if (lots >= 1000) {
-    return '$prefix${(value / 1000 / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
-  } else if (lots >= 1) {
-    return '$prefix${(value / 1000).toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
-  }
-  return '$prefix${value.toStringAsFixed(0)}';
+  final prefix = value >= 0 ? '+' : '-';
+  final lots = value.abs() / 1000;
+  if (lots < 1) return '${value >= 0 ? '+' : ''}${value.toStringAsFixed(0)}';
+  return '$prefix${formatLots(lots)}';
 }
 
 /// Format balance with Chinese units (already in 張)
-String formatBalance(double value) {
-  if (value >= 10000) {
-    return '${(value / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
-  } else if (value >= 1000) {
-    return '${(value / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
-  }
-  return '${value.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
-}
+String formatBalance(double value) => formatLots(value);
 
 /// Format shares change (in 千股)
 String formatSharesChange(double value) {

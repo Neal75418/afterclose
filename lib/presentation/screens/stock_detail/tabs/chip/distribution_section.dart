@@ -14,8 +14,6 @@ class DistributionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -25,7 +23,7 @@ class DistributionSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (distribution.isEmpty)
-          buildEmptyState(theme)
+          buildEmptyState(context, 'chip.noData'.tr())
         else
           _buildBars(context),
       ],

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' show Color;
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -119,7 +120,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: const Color(0xFF6C63FF),
+      color: AppTheme.notificationColor,
       enableVibration: true,
       playSound: true,
     );

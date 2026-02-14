@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
@@ -125,14 +123,16 @@ class SettingsState {
 // ==================================================
 
 /// 設定狀態管理器（含持久化）
-class SettingsNotifier extends StateNotifier<SettingsState> {
-  SettingsNotifier() : super(const SettingsState()) {
-    _loadSettings();
-  }
-
+class SettingsNotifier extends Notifier<SettingsState> {
   /// 用於序列化儲存操作的互斥鎖
   /// 確保多個設定變更不會同時寫入造成競態條件
   Future<void>? _saveLock;
+
+  @override
+  SettingsState build() {
+    _loadSettings();
+    return const SettingsState();
+  }
 
   /// 從 SharedPreferences 載入設定
   Future<void> _loadSettings() async {
@@ -318,10 +318,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
 // ==================================================
 
 /// 設定 Provider
-final settingsProvider = StateNotifierProvider<SettingsNotifier, SettingsState>(
-  (ref) {
-    return SettingsNotifier();
-  },
+final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
+  SettingsNotifier.new,
 );
 
 /// 主題模式 Provider（便捷存取）
@@ -383,8 +381,9 @@ class ApiTokenState {
 }
 
 /// API Token 管理器 — 管理 Token 與連線測試
-class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
-  ApiTokenNotifier() : super(const ApiTokenState());
+class ApiTokenNotifier extends Notifier<ApiTokenState> {
+  @override
+  ApiTokenState build() => const ApiTokenState();
 
   /// 從安全儲存載入 Token
   Future<void> loadToken(Future<String?> Function() getToken) async {
@@ -437,8 +436,6 @@ class ApiTokenNotifier extends StateNotifier<ApiTokenState> {
 }
 
 /// API Token Provider
-final apiTokenProvider = StateNotifierProvider<ApiTokenNotifier, ApiTokenState>(
-  (ref) {
-    return ApiTokenNotifier();
-  },
+final apiTokenProvider = NotifierProvider<ApiTokenNotifier, ApiTokenState>(
+  ApiTokenNotifier.new,
 );

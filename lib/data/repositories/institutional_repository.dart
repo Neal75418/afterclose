@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -10,43 +11,50 @@ import 'package:afterclose/data/models/extensions/dto_extensions.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/domain/repositories/institutional_repository.dart';
 
 /// 三大法人買賣超資料 Repository
-class InstitutionalRepository {
+class InstitutionalRepository implements IInstitutionalRepository {
   InstitutionalRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
     TwseClient? twseClient,
     TpexClient? tpexClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
        _client = finMindClient,
        _twseClient = twseClient ?? TwseClient(),
-       _tpexClient = tpexClient ?? TpexClient();
+       _tpexClient = tpexClient ?? TpexClient(),
+       _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _client;
   final TwseClient _twseClient;
   final TpexClient _tpexClient;
+  final AppClock _clock;
 
   /// 取得法人資料歷史供分析使用
   ///
   /// 若可用，回傳 [RuleParams.lookbackPrice] 天的資料
+  @override
   Future<List<DailyInstitutionalEntry>> getInstitutionalHistory(
     String symbol, {
     int? days,
   }) async {
     final lookback = days ?? RuleParams.lookbackPrice;
-    final startDate = DateTime.now().subtract(Duration(days: lookback + 30));
+    final startDate = _clock.now().subtract(Duration(days: lookback + 30));
 
     return _db.getInstitutionalHistory(symbol, startDate: startDate);
   }
 
   /// 取得股票最新法人資料
+  @override
   Future<DailyInstitutionalEntry?> getLatestInstitutional(String symbol) {
     return _db.getLatestInstitutional(symbol);
   }
 
   /// 同步單檔股票的法人資料
+  @override
   Future<int> syncInstitutionalData(
     String symbol, {
     required DateTime startDate,
@@ -62,7 +70,7 @@ class InstitutionalRepository {
       final entries = data.map((item) {
         // 正規化日期，確保時間部分為 00:00:00（避免同日重複）
         final parsed = DateTime.parse(item.date);
-        final normalizedDate = DateTime(parsed.year, parsed.month, parsed.day);
+        final normalizedDate = DateContext.normalize(parsed);
         return item.toDatabaseCompanion(normalizedDate);
       }).toList();
 
@@ -84,6 +92,7 @@ class InstitutionalRepository {
   ///
   /// 使用 TWSE T86 API + TPEX API（免費、全市場）。
   /// 可分析非自選股的法人動向。
+  @override
   Future<int> syncAllMarketInstitutional(
     DateTime date, {
     bool force = false,
@@ -141,41 +150,27 @@ class InstitutionalRepository {
           )
           .toList();
 
-      // 建立上市法人資料 entries
-      // 注意：TWSE API 回傳的是股數，直接儲存股數以符合規則參數單位
-      final twseEntries = validTwseData.map((item) {
-        final normalizedDate = DateTime(
-          item.date.year,
-          item.date.month,
-          item.date.day,
-        );
-        return DailyInstitutionalCompanion.insert(
-          symbol: item.code,
-          date: normalizedDate,
-          // TWSE API 回傳股數，直接儲存（規則參數單位為股）
-          foreignNet: Value(item.foreignNet.toDouble()),
-          investmentTrustNet: Value(item.investmentTrustNet.toDouble()),
-          dealerNet: Value(item.dealerNet.toDouble()),
-        );
-      }).toList();
-
-      // 建立上櫃法人資料 entries
-      // 注意：TPEX API 回傳的是股數，直接儲存股數以符合規則參數單位
-      final tpexEntries = validTpexData.map((item) {
-        final normalizedDate = DateTime(
-          item.date.year,
-          item.date.month,
-          item.date.day,
-        );
-        return DailyInstitutionalCompanion.insert(
-          symbol: item.code,
-          date: normalizedDate,
-          // TPEX API 回傳股數，直接儲存（規則參數單位為股）
-          foreignNet: Value(item.foreignNet.toDouble()),
-          investmentTrustNet: Value(item.investmentTrustNet.toDouble()),
-          dealerNet: Value(item.dealerNet.toDouble()),
-        );
-      }).toList();
+      // TWSE/TPEX API 回傳股數，直接儲存（規則參數單位為股）
+      final twseEntries = _toInstitutionalEntries(
+        validTwseData,
+        (i) => (
+          code: i.code,
+          date: i.date,
+          foreignNet: i.foreignNet.toDouble(),
+          investmentTrustNet: i.investmentTrustNet.toDouble(),
+          dealerNet: i.dealerNet.toDouble(),
+        ),
+      );
+      final tpexEntries = _toInstitutionalEntries(
+        validTpexData,
+        (i) => (
+          code: i.code,
+          date: i.date,
+          foreignNet: i.foreignNet.toDouble(),
+          investmentTrustNet: i.investmentTrustNet.toDouble(),
+          dealerNet: i.dealerNet.toDouble(),
+        ),
+      );
 
       // 合併並寫入
       final allEntries = [...twseEntries, ...tpexEntries];
@@ -199,6 +194,7 @@ class InstitutionalRepository {
   /// 檢查法人買賣方向是否反轉
   ///
   /// 若近期淨買賣方向與前期相反則回傳 true
+  @override
   Future<bool> hasDirectionReversal(String symbol, {int days = 5}) async {
     final history = await getInstitutionalHistory(symbol, days: days + 5);
     if (history.length < days) return false;
@@ -233,6 +229,7 @@ class InstitutionalRepository {
   }
 
   /// 取得近期法人淨買賣總額
+  @override
   Future<double?> getTotalNetBuying(String symbol, {int days = 5}) async {
     final history = await getInstitutionalHistory(symbol, days: days + 5);
     if (history.isEmpty) return null;
@@ -254,5 +251,31 @@ class InstitutionalRepository {
   /// 清除所有法人資料
   ///
   /// 用於單位修正後強制重新同步，避免新舊資料單位混用
+  @override
   Future<int> clearAllData() => _db.clearAllInstitutionalData();
+
+  /// 將法人資料轉換為資料庫 entries（TWSE/TPEX 共用）
+  List<DailyInstitutionalCompanion> _toInstitutionalEntries<T>(
+    List<T> items,
+    ({
+      String code,
+      DateTime date,
+      double foreignNet,
+      double investmentTrustNet,
+      double dealerNet,
+    })
+    Function(T)
+    extract,
+  ) {
+    return items.map((item) {
+      final f = extract(item);
+      return DailyInstitutionalCompanion.insert(
+        symbol: f.code,
+        date: DateContext.normalize(f.date),
+        foreignNet: Value(f.foreignNet),
+        investmentTrustNet: Value(f.investmentTrustNet),
+        dealerNet: Value(f.dealerNet),
+      );
+    }).toList();
+  }
 }

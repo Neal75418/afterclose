@@ -1,20 +1,28 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
+import 'package:afterclose/domain/repositories/news_repository.dart';
 
 /// 新聞資料 Repository
-class NewsRepository {
-  NewsRepository({required AppDatabase database, required RssParser rssParser})
-    : _db = database,
-      _rssParser = rssParser;
+class NewsRepository implements INewsRepository {
+  NewsRepository({
+    required AppDatabase database,
+    required RssParser rssParser,
+    AppClock clock = const SystemClock(),
+  }) : _db = database,
+       _rssParser = rssParser,
+       _clock = clock;
 
   final AppDatabase _db;
   final RssParser _rssParser;
+  final AppClock _clock;
 
   /// 從所有 RSS feeds 同步新聞
   ///
   /// 回傳 [NewsSyncResult]，包含新增筆數和錯誤資訊
+  @override
   Future<NewsSyncResult> syncNews({List<RssFeedSource>? sources}) async {
     final feedSources = sources ?? RssFeedSource.defaultSources;
     final parseResult = await _rssParser.parseAllFeeds(feedSources);
@@ -91,12 +99,13 @@ class NewsRepository {
   /// [days] - 回溯天數（預設 3 天）
   /// [limit] - 回傳上限（預設無限制）
   /// [offset] - 略過筆數（分頁用，預設 0）
+  @override
   Future<List<NewsItemEntry>> getRecentNews({
     int days = 3,
     int? limit,
     int offset = 0,
   }) async {
-    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final cutoff = _clock.now().subtract(Duration(days: days));
     final query = _db.select(_db.newsItem)
       ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
       ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]);
@@ -115,13 +124,14 @@ class NewsRepository {
   /// [days] - 回溯天數（預設 3 天）
   /// [limit] - 回傳上限（預設無限制）
   /// [offset] - 略過筆數（分頁用，預設 0）
+  @override
   Future<List<NewsItemEntry>> getNewsForStock(
     String symbol, {
     int days = 3,
     int? limit,
     int offset = 0,
   }) async {
-    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final cutoff = _clock.now().subtract(Duration(days: days));
 
     // 取得該股票關聯的新聞 ID
     final mappings = await (_db.select(
@@ -149,13 +159,14 @@ class NewsRepository {
   /// 批次取得多檔股票的新聞（避免 N+1 問題）
   ///
   /// 回傳 Map：symbol -> 新聞清單
+  @override
   Future<Map<String, List<NewsItemEntry>>> getNewsForStocksBatch(
     List<String> symbols, {
     int days = 3,
   }) async {
     if (symbols.isEmpty) return {};
 
-    final cutoff = DateTime.now().subtract(Duration(days: days));
+    final cutoff = _clock.now().subtract(Duration(days: days));
 
     // 一次查詢所有關聯
     final mappings = await (_db.select(
@@ -191,12 +202,14 @@ class NewsRepository {
   }
 
   /// 檢查股票是否有近期新聞
+  @override
   Future<bool> hasRecentNews(String symbol, {int days = 2}) async {
     final news = await getNewsForStock(symbol, days: days);
     return news.isNotEmpty;
   }
 
   /// 依 ID 取得新聞
+  @override
   Future<NewsItemEntry?> getNewsById(String id) async {
     return (_db.select(
       _db.newsItem,
@@ -206,26 +219,13 @@ class NewsRepository {
   /// 清理舊新聞（超過 N 天）
   ///
   /// 使用 Cascade Delete 自動刪除關聯資料
+  @override
   Future<int> cleanupOldNews({int olderThanDays = 30}) async {
-    final cutoff = DateTime.now().subtract(Duration(days: olderThanDays));
+    final cutoff = _clock.now().subtract(Duration(days: olderThanDays));
 
     // 刪除舊新聞，Cascade Delete 會處理關聯
     return (_db.delete(
       _db.newsItem,
     )..where((n) => n.publishedAt.isSmallerThanValue(cutoff))).go();
   }
-}
-
-/// 新聞同步結果
-class NewsSyncResult {
-  const NewsSyncResult({required this.itemsAdded, required this.errors});
-
-  final int itemsAdded;
-  final List<RssFeedError> errors;
-
-  /// 是否有 Feed 解析失敗
-  bool get hasErrors => errors.isNotEmpty;
-
-  /// 是否完全成功（無錯誤）
-  bool get isFullySuccessful => errors.isEmpty;
 }

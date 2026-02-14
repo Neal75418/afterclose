@@ -1,5 +1,6 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -26,16 +27,19 @@ class PriceRepository implements IPriceRepository {
     required FinMindClient finMindClient,
     TwseClient? twseClient,
     TpexClient? tpexClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
        _twseSource = TwsePriceSource(client: twseClient ?? TwseClient()),
        _tpexSource = TpexPriceSource(
          client: tpexClient ?? TpexClient(),
          finMind: finMindClient,
-       );
+       ),
+       _clock = clock;
 
   final AppDatabase _db;
   final TwsePriceSource _twseSource;
   final TpexPriceSource _tpexSource;
+  final AppClock _clock;
 
   /// Request deduplicator for price history queries
   final _priceHistoryDedup = RequestDeduplicator<List<DailyPriceEntry>>();
@@ -54,7 +58,7 @@ class PriceRepository implements IPriceRepository {
   }) async {
     final effectiveStartDate =
         startDate ??
-        DateTime.now().subtract(
+        _clock.now().subtract(
           Duration(
             days:
                 (days ?? RuleParams.lookbackPrice) +
@@ -95,7 +99,7 @@ class PriceRepository implements IPriceRepository {
     DateTime? endDate,
   }) async {
     try {
-      final effectiveEndDate = endDate ?? DateTime.now();
+      final effectiveEndDate = endDate ?? _clock.now();
 
       // 最佳化：檢查既有資料
       final existingHistory = await _db.getPriceHistory(
@@ -165,7 +169,7 @@ class PriceRepository implements IPriceRepository {
   /// [syncAllPricesForDate] 的別名，使用預設日期
   @override
   Future<MarketSyncResult> syncTodayPrices({DateTime? date}) {
-    return syncAllPricesForDate(date ?? DateTime.now());
+    return syncAllPricesForDate(date ?? _clock.now());
   }
 
   /// 同步最新交易日的所有價格，並回傳快篩候選股
@@ -309,7 +313,7 @@ class PriceRepository implements IPriceRepository {
         final latestDate = latestPrice?.date;
 
         // 若已有今日資料則跳過
-        if (latestDate != null && _isSameDay(latestDate, date)) {
+        if (latestDate != null && DateContext.isSameDay(latestDate, date)) {
           continue;
         }
 
@@ -361,11 +365,6 @@ class PriceRepository implements IPriceRepository {
     return totalSynced;
   }
 
-  /// 檢查兩個日期是否為同一天
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
   /// 同步多檔指定股票的價格（供 Update Service 使用的公開 API）
   ///
   /// 當您有特定股票清單需要更新時使用。
@@ -397,7 +396,8 @@ class PriceRepository implements IPriceRepository {
 
     return symbols.where((symbol) {
       final latestPrice = latestPrices[symbol];
-      return latestPrice == null || !_isSameDay(latestPrice.date, targetDate);
+      return latestPrice == null ||
+          !DateContext.isSameDay(latestPrice.date, targetDate);
     }).toList();
   }
 
@@ -451,7 +451,7 @@ class PriceRepository implements IPriceRepository {
     if (symbols.isEmpty) return {};
 
     try {
-      final today = DateTime.now();
+      final today = _clock.now();
       final startDate = today.subtract(const Duration(days: 5));
 
       // 單一批次查詢所有股票（包含最新價格）
@@ -502,7 +502,7 @@ class PriceRepository implements IPriceRepository {
     if (symbols.isEmpty) return {};
 
     try {
-      final today = DateTime.now();
+      final today = _clock.now();
       final startDate = today.subtract(
         const Duration(days: RuleParams.volMa + 10),
       );

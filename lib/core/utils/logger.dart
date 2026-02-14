@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// 日誌等級，用於過濾輸出
 enum LogLevel { debug, info, warning, error }
@@ -12,6 +13,10 @@ enum LogLevel { debug, info, warning, error }
 /// AppLogger.warning('StockDetail', 'No institutional data for $symbol');
 /// AppLogger.error('Network', 'API request failed', e, stackTrace);
 /// ```
+///
+/// 整合 Sentry：
+/// - `error()` 自動上報至 Sentry（`Sentry.captureException`）
+/// - `warning()` 加入 Sentry breadcrumb 供後續錯誤追蹤參考
 abstract final class AppLogger {
   /// 最低輸出等級（僅在 debug 模式生效）
   static LogLevel minLevel = LogLevel.debug;
@@ -27,6 +32,8 @@ abstract final class AppLogger {
   }
 
   /// 記錄 warning 訊息，可附帶例外與堆疊追蹤
+  ///
+  /// 同時加入 Sentry breadcrumb，供後續錯誤上報時提供上下文。
   static void warning(
     String tag,
     String message, [
@@ -34,9 +41,20 @@ abstract final class AppLogger {
     StackTrace? stackTrace,
   ]) {
     _log(LogLevel.warning, tag, message, error, stackTrace);
+
+    Sentry.addBreadcrumb(
+      Breadcrumb(
+        message: '[$tag] $message',
+        category: tag,
+        level: SentryLevel.warning,
+        data: error != null ? {'error': error.toString()} : null,
+      ),
+    );
   }
 
   /// 記錄 error 訊息，可附帶例外與堆疊追蹤
+  ///
+  /// 同時上報至 Sentry（若已初始化）。
   static void error(
     String tag,
     String message, [
@@ -44,6 +62,17 @@ abstract final class AppLogger {
     StackTrace? stackTrace,
   ]) {
     _log(LogLevel.error, tag, message, error, stackTrace);
+
+    if (error != null) {
+      Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          scope.setTag('logger.tag', tag);
+          scope.setContexts('logger', {'message': message, 'tag': tag});
+        },
+      );
+    }
   }
 
   static void _log(

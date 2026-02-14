@@ -32,7 +32,7 @@ mixin _DayTradingDaoMixin on _$AppDatabase {
   /// 取得指定日期的當沖資料筆數（新鮮度檢查用）
   Future<int> getDayTradingCountForDate(DateTime date) async {
     // 使用本地時間午夜以匹配資料庫儲存格式
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     final countExpr = dayTrading.symbol.count();
     final query = selectOnly(dayTrading)
@@ -50,7 +50,7 @@ mixin _DayTradingDaoMixin on _$AppDatabase {
     DateTime date,
     String market,
   ) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     // 使用 JOIN 查詢統計特定市場的當沖資料筆數
@@ -114,7 +114,7 @@ mixin _DayTradingDaoMixin on _$AppDatabase {
   /// 優先取得指定日期的資料，若無則取得最近 5 天內的最新資料。
   /// 回傳 symbol -> dayTradingRatio 的對應表。
   Future<Map<String, double>> getDayTradingMapForDate(DateTime date) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     // 先嘗試取得指定日期的資料
@@ -142,11 +142,7 @@ mixin _DayTradingDaoMixin on _$AppDatabase {
       final latestDateStr = latestDateResult?.read<String?>('latest_date');
       if (latestDateStr != null) {
         final latestDate = DateTime.parse(latestDateStr);
-        final latestStartOfDay = DateTime(
-          latestDate.year,
-          latestDate.month,
-          latestDate.day,
-        );
+        final latestStartOfDay = DateContext.normalize(latestDate);
         final latestEndOfDay = latestStartOfDay.add(const Duration(days: 1));
 
         results =

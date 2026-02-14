@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:afterclose/app/router.dart';
 import 'package:afterclose/core/services/background_update_service.dart';
@@ -40,6 +42,22 @@ void main() async {
         AppLogger.warning('Main', '快取預熱失敗（不影響使用）', error);
       });
 
+  // Sentry DSN 由 --dart-define=SENTRY_DSN=xxx 編譯時注入
+  const sentryDsn = String.fromEnvironment('SENTRY_DSN');
+
+  if (sentryDsn.isNotEmpty) {
+    await SentryFlutter.init((options) {
+      options.dsn = sentryDsn;
+      options.environment = kDebugMode ? 'development' : 'production';
+      options.sendDefaultPii = false;
+      options.tracesSampleRate = kDebugMode ? 1.0 : 0.2;
+    }, appRunner: () => _runApp(container));
+  } else {
+    _runApp(container);
+  }
+}
+
+void _runApp(ProviderContainer container) {
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('zh', 'TW'), Locale('en')],

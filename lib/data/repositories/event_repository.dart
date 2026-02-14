@@ -3,11 +3,12 @@ import 'package:intl/intl.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/repositories/event_repository.dart';
 
 /// 事件日曆 Repository
 ///
 /// 管理行事曆事件，包括使用者自訂事件與系統自動產生的除權息事件。
-class EventRepository {
+class EventRepository implements IEventRepository {
   EventRepository({required AppDatabase database}) : _db = database;
 
   final AppDatabase _db;
@@ -19,6 +20,7 @@ class EventRepository {
   // ==========================================
 
   /// 取得指定日期範圍內的事件
+  @override
   Future<List<StockEventEntry>> getEventsInRange(
     DateTime start,
     DateTime end, {
@@ -28,6 +30,7 @@ class EventRepository {
   }
 
   /// 取得指定 symbol 的所有事件
+  @override
   Future<List<StockEventEntry>> getEventsForSymbol(String symbol) {
     return _db.getEventsForSymbol(symbol);
   }
@@ -37,6 +40,7 @@ class EventRepository {
   // ==========================================
 
   /// 新增自訂事件
+  @override
   Future<int> addCustomEvent({
     String? symbol,
     required DateTime eventDate,
@@ -55,6 +59,7 @@ class EventRepository {
   }
 
   /// 刪除事件
+  @override
   Future<void> deleteEvent(int id) {
     return _db.deleteStockEvent(id);
   }
@@ -69,6 +74,7 @@ class EventRepository {
   /// 1. 取得自選股 + 持倉股的 symbol
   /// 2. 從 DividendHistory 取得有除權息日期的紀錄，收集所有待插入事件
   /// 3. 在單一交易中：刪除舊的自動事件 → 批次插入新事件
+  @override
   Future<int> syncDividendEvents() async {
     // 1. 取得所有相關 symbol（自選股 + 持倉股）
     final watchlistEntries = await _db.getWatchlist();

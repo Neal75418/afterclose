@@ -92,14 +92,19 @@ mixin _InsiderHoldingDaoMixin on _$AppDatabase {
   Future<Map<String, List<InsiderHoldingEntry>>> getRecentInsiderHoldingsBatch(
     List<String> symbols, {
     int months = 4,
+    DateTime? now,
   }) async {
     if (symbols.isEmpty) return {};
 
     final placeholders = List.filled(symbols.length, '?').join(', ');
 
     // 計算起始日期（Dart 側計算，避免 SQL 字串插值）
-    final now = DateTime.now();
-    final startDate = DateTime(now.year, now.month - months, now.day);
+    final effectiveNow = now ?? DateTime.now();
+    final startDate = DateTime(
+      effectiveNow.year,
+      effectiveNow.month - months,
+      effectiveNow.day,
+    );
     final startDateStr =
         '${startDate.year}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')}';
 

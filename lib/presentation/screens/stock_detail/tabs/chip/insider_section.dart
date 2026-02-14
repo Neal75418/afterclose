@@ -16,8 +16,6 @@ class InsiderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -26,7 +24,10 @@ class InsiderSection extends StatelessWidget {
           icon: Icons.shield_outlined,
         ),
         const SizedBox(height: 12),
-        if (history.isEmpty) buildEmptyState(theme) else _buildCard(context),
+        if (history.isEmpty)
+          buildEmptyState(context, 'chip.noData'.tr())
+        else
+          _buildCard(context),
       ],
     );
   }

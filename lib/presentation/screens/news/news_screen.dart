@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/news_provider.dart';
@@ -310,7 +311,7 @@ class _GroupedNewsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = DateContext.normalize(now);
     final yesterday = today.subtract(const Duration(days: 1));
 
     // Group news by date

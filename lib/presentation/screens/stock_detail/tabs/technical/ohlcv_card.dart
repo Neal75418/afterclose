@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart'
+    show formatLots;
 
 /// Displays today's OHLCV (Open, High, Low, Close, Volume) trading data.
 class OhlcvCard extends StatelessWidget {
@@ -181,21 +183,9 @@ class OhlcvCard extends StatelessWidget {
   ///
   /// API 回傳單位為「股」，台灣股市習慣用「張」（1張 = 1000股）
   String _formatVolume(double volume) {
-    // 先轉為張
     final lots = volume / 1000;
-
-    if (lots >= 10000) {
-      // 萬張
-      return '${(lots / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
-    } else if (lots >= 1000) {
-      // 千張
-      return '${(lots / 1000).toStringAsFixed(1)}${'stockDetail.unitThousand'.tr()}${'stockDetail.unitShares'.tr()}';
-    } else if (lots >= 1) {
-      // 張
-      return '${lots.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
-    }
-    // 不足 1 張，顯示股數
-    return volume.toStringAsFixed(0);
+    if (lots < 1) return volume.toStringAsFixed(0);
+    return formatLots(lots);
   }
 }
 

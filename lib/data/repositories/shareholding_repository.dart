@@ -1,38 +1,45 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/domain/repositories/shareholding_repository.dart';
 
 /// 持股相關 Repository
 ///
 /// 處理：外資持股、股權分散表
-class ShareholdingRepository {
+class ShareholdingRepository implements IShareholdingRepository {
   ShareholdingRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
-       _client = finMindClient;
+       _client = finMindClient,
+       _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _client;
+  final AppClock _clock;
 
   // ============================================
   // 外資持股
   // ============================================
 
   /// 取得外資持股歷史資料
+  @override
   Future<List<ShareholdingEntry>> getShareholdingHistory(
     String symbol, {
     int days = 60,
   }) async {
-    final startDate = DateTime.now().subtract(Duration(days: days + 30));
+    final startDate = _clock.now().subtract(Duration(days: days + 30));
     return _db.getShareholdingHistory(symbol, startDate: startDate);
   }
 
   /// 取得股票最新外資持股資料
+  @override
   Future<ShareholdingEntry?> getLatestShareholding(String symbol) {
     return _db.getLatestShareholding(symbol);
   }
@@ -41,6 +48,7 @@ class ShareholdingRepository {
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 若 [endDate]（或今日）的資料已存在則跳過。
+  @override
   Future<int> syncShareholding(
     String symbol, {
     required DateTime startDate,
@@ -48,9 +56,9 @@ class ShareholdingRepository {
   }) async {
     try {
       // 新鮮度檢查：若已有目標日期資料則跳過
-      final targetDate = endDate ?? DateTime.now();
+      final targetDate = endDate ?? _clock.now();
       final latest = await getLatestShareholding(symbol);
-      if (latest != null && _isSameDay(latest.date, targetDate)) {
+      if (latest != null && DateContext.isSameDay(latest.date, targetDate)) {
         return 0;
       }
 
@@ -82,6 +90,7 @@ class ShareholdingRepository {
   }
 
   /// 檢查外資持股比例是否增加中
+  @override
   Future<bool> isForeignShareholdingIncreasing(
     String symbol, {
     int days = 5,
@@ -103,6 +112,7 @@ class ShareholdingRepository {
   // ============================================
 
   /// 取得最新股權分散表
+  @override
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(
     String symbol,
   ) {
@@ -115,6 +125,7 @@ class ShareholdingRepository {
   /// 股權分散表每週公布，若已有本週資料則跳過。
   ///
   /// 註：此 API 需要 FinMind 付費訂閱。
+  @override
   Future<int> syncHoldingDistribution(
     String symbol, {
     required DateTime startDate,
@@ -123,7 +134,8 @@ class ShareholdingRepository {
     try {
       // 新鮮度檢查：若已有本週資料則跳過
       final latestDate = await _db.getLatestHoldingDistributionDate(symbol);
-      if (latestDate != null && _isSameWeek(latestDate, DateTime.now())) {
+      if (latestDate != null &&
+          DateContext.isSameWeek(latestDate, _clock.now())) {
         return 0;
       }
 
@@ -160,6 +172,7 @@ class ShareholdingRepository {
   /// 計算籌碼集中度（大戶持股比例）
   ///
   /// 回傳持股超過 [threshold] 張的股東持股百分比
+  @override
   Future<double?> getConcentrationRatio(
     String symbol, {
     int thresholdLevel = 400, // 400張 = 40萬股
@@ -187,6 +200,7 @@ class ShareholdingRepository {
   ///
   /// 回傳 symbol -> 大戶持股比例(%) 的 Map。
   /// 無資料的股票不會出現在結果中。
+  @override
   Future<Map<String, double>> getConcentrationRatioBatch(
     List<String> symbols, {
     int thresholdLevel = 400,
@@ -211,19 +225,6 @@ class ShareholdingRepository {
   // ============================================
   // Private helpers
   // ============================================
-
-  /// 檢查兩個日期是否為同一天（忽略時間）
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  /// 檢查兩個日期是否在同一週（週一至週日）
-  bool _isSameWeek(DateTime a, DateTime b) {
-    // 正規化至該週開始（週一）
-    final aWeekStart = a.subtract(Duration(days: a.weekday - 1));
-    final bWeekStart = b.subtract(Duration(days: b.weekday - 1));
-    return _isSameDay(aWeekStart, bWeekStart);
-  }
 
   /// 從級距字串解析最小持股數
   int _parseMinSharesFromLevel(String level) {

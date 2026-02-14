@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:easy_localization/easy_localization.dart';
 
@@ -34,16 +33,15 @@ class NotificationState {
 }
 
 /// 通知管理器
-class NotificationNotifier extends StateNotifier<NotificationState> {
-  NotificationNotifier() : super(const NotificationState());
-
+class NotificationNotifier extends Notifier<NotificationState> {
   final _service = NotificationService.instance;
 
   @override
-  void dispose() {
-    // Fire-and-forget: singleton async dispose completes independently
-    unawaited(_service.dispose());
-    super.dispose();
+  NotificationState build() {
+    ref.onDispose(() {
+      unawaited(_service.dispose());
+    });
+    return const NotificationState();
   }
 
   /// 初始化通知服務
@@ -290,6 +288,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
 /// 通知 Provider
 final notificationProvider =
-    StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-      return NotificationNotifier();
-    });
+    NotifierProvider<NotificationNotifier, NotificationState>(
+      NotificationNotifier.new,
+    );

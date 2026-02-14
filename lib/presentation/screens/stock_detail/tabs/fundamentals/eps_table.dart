@@ -5,7 +5,6 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays a table of the most recent 8 quarters of EPS data with
 /// quarter-over-quarter growth badges.
@@ -29,52 +28,20 @@ class EpsTable extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Header row
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+            buildTableHeader(context, [
+              buildHeaderCell(context, 'stockDetail.quarter'.tr(), flex: 3),
+              buildHeaderCell(
+                context,
+                'stockDetail.eps'.tr(),
+                textAlign: TextAlign.end,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'stockDetail.quarter'.tr(),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.eps'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.qoqGrowth'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ],
+              buildHeaderCell(
+                context,
+                'stockDetail.qoqGrowth'.tr(),
+                textAlign: TextAlign.end,
               ),
-            ),
+            ]),
             const SizedBox(height: 8),
-            // Data rows
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final eps = entry.value;
@@ -95,45 +62,33 @@ class EpsTable extends StatelessWidget {
                   ? TaiwanDateFormatter.formatQuarter(eps.date.year, quarter)
                   : '${eps.date.year} Q$quarter';
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: getRowColor(context, index),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+              return buildTableDataRow(context, index, [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    quarterLabel,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: index == 0
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        quarterLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    epsValue != null ? epsValue.toStringAsFixed(2) : '-',
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: epsValue != null && epsValue < 0
+                          ? AppTheme.downColor
+                          : null,
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        epsValue != null ? epsValue.toStringAsFixed(2) : '-',
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: epsValue != null && epsValue < 0
-                              ? AppTheme.downColor
-                              : null,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: buildGrowthBadge(context, qoqGrowth),
-                    ),
-                  ],
+                  ),
                 ),
-              );
+                Expanded(flex: 2, child: buildGrowthBadge(context, qoqGrowth)),
+              ]);
             }),
           ],
         ),

@@ -2,6 +2,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
+import 'package:afterclose/domain/repositories/news_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 

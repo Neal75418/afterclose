@@ -40,6 +40,7 @@ mixin _PortfolioDaoMixin on _$AppDatabase {
     required double avgCost,
     required double realizedPnl,
     required double totalDividendReceived,
+    DateTime? now,
   }) {
     return (update(portfolioPosition)..where((t) => t.id.equals(id))).write(
       PortfolioPositionCompanion(
@@ -47,7 +48,7 @@ mixin _PortfolioDaoMixin on _$AppDatabase {
         avgCost: Value(avgCost),
         realizedPnl: Value(realizedPnl),
         totalDividendReceived: Value(totalDividendReceived),
-        updatedAt: Value(DateTime.now()),
+        updatedAt: Value(now ?? DateTime.now()),
       ),
     );
   }

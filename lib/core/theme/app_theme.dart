@@ -45,6 +45,15 @@ class AppTheme {
   /// 注意 - 琥珀色（觀望等級分數等）
   static const cautionColor = Color(0xFFFFC107);
 
+  /// 股利正面指標 - 綠色
+  static const dividendColor = Color(0xFF27AE60);
+
+  /// 中性灰 - 用於非漲跌的平穩狀態
+  static const neutralSlateColor = Color(0xFF64748B);
+
+  /// 通知紫 - 用於推播通知
+  static const notificationColor = Color(0xFF6C63FF);
+
   // 法人類別顏色
   /// 外資 - 藍色
   static const foreignColor = Color(0xFF3498DB);

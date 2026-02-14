@@ -5,9 +5,10 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/domain/repositories/stock_repository.dart';
 
 /// 股票主檔 Repository
-class StockRepository {
+class StockRepository implements IStockRepository {
   StockRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
@@ -23,11 +24,13 @@ class StockRepository {
   /// 取得所有上市中的股票
   ///
   /// 使用 Request Deduplication 防止同時多次查詢
+  @override
   Future<List<StockMasterEntry>> getAllStocks() {
     return _stockListDedup.call('all_stocks', () => _db.getAllActiveStocks());
   }
 
   /// 依代碼取得股票
+  @override
   Future<StockMasterEntry?> getStock(String symbol) {
     return _db.getStock(symbol);
   }
@@ -36,6 +39,7 @@ class StockRepository {
   ///
   /// 建議定期執行（如每週一次）以更新股票清單
   /// 僅同步有效股票代碼（4 位數一般股票 + 00 開頭 ETF）
+  @override
   Future<int> syncStockList() async {
     try {
       final stocks = await _client.getStockList();
@@ -69,16 +73,19 @@ class StockRepository {
   }
 
   /// 依名稱或代碼搜尋股票（Database 層級過濾）
+  @override
   Future<List<StockMasterEntry>> searchStocks(String query) {
     return _db.searchStocks(query);
   }
 
   /// 依市場篩選股票（Database 層級過濾）
+  @override
   Future<List<StockMasterEntry>> getStocksByMarket(String market) {
     return _db.getStocksByMarket(market);
   }
 
   /// 檢查股票是否存在
+  @override
   Future<bool> stockExists(String symbol) async {
     final stock = await getStock(symbol);
     return stock != null;

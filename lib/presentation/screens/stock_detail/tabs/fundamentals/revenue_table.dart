@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Displays a table of the most recent 12 months of revenue data with
 /// month-over-month and year-over-year growth badges.
@@ -36,112 +35,70 @@ class RevenueTable extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Header row with styled background
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+            buildTableHeader(context, [
+              buildHeaderCell(
+                context,
+                'stockDetail.revenueMonth'.tr(),
+                flex: 3,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'stockDetail.revenueMonth'.tr(),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      'stockDetail.revenueAmount'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.revenueMoM'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      'stockDetail.revenueYoY'.tr(),
-                      textAlign: TextAlign.end,
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.outline,
-                      ),
-                    ),
-                  ),
-                ],
+              buildHeaderCell(
+                context,
+                'stockDetail.revenueAmount'.tr(),
+                flex: 3,
+                textAlign: TextAlign.end,
               ),
-            ),
+              buildHeaderCell(
+                context,
+                'stockDetail.revenueMoM'.tr(),
+                textAlign: TextAlign.end,
+              ),
+              buildHeaderCell(
+                context,
+                'stockDetail.revenueYoY'.tr(),
+                textAlign: TextAlign.end,
+              ),
+            ]),
             const SizedBox(height: 8),
-            // Data rows
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final rev = entry.value;
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                decoration: BoxDecoration(
-                  color: getRowColor(context, index),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+              return buildTableDataRow(context, index, [
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    showROCYear
+                        ? TaiwanDateFormatter.formatYearMonth(
+                            rev.revenueYear,
+                            rev.revenueMonth,
+                          )
+                        : '${rev.revenueYear}/${rev.revenueMonth.toString().padLeft(2, '0')}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: index == 0
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        showROCYear
-                            ? TaiwanDateFormatter.formatYearMonth(
-                                rev.revenueYear,
-                                rev.revenueMonth,
-                              )
-                            : '${rev.revenueYear}/${rev.revenueMonth.toString().padLeft(2, '0')}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: index == 0
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    _formatRevenue(rev.revenue),
+                    textAlign: TextAlign.end,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        _formatRevenue(rev.revenue),
-                        textAlign: TextAlign.end,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: buildGrowthBadge(context, rev.momGrowth),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: buildGrowthBadge(context, rev.yoyGrowth),
-                    ),
-                  ],
+                  ),
                 ),
-              );
+                Expanded(
+                  flex: 2,
+                  child: buildGrowthBadge(context, rev.momGrowth),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: buildGrowthBadge(context, rev.yoyGrowth),
+                ),
+              ]);
             }),
           ],
         ),

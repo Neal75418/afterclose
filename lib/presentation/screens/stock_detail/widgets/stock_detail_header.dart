@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -309,8 +310,8 @@ class StockDetailHeader extends StatelessWidget {
 
   String _formatDataDate(DateTime date) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dataDay = DateTime(date.year, date.month, date.day);
+    final today = DateContext.normalize(now);
+    final dataDay = DateContext.normalize(date);
 
     if (dataDay == today) {
       return 'stockDetail.dataToday'.tr();

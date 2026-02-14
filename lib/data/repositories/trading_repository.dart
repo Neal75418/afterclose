@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/stock_patterns.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -10,25 +11,29 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/domain/repositories/trading_repository.dart';
 
 /// 交易資料 Repository
 ///
 /// 處理：當沖、融資融券
-class TradingRepository {
+class TradingRepository implements ITradingRepository {
   TradingRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
     TwseClient? twseClient,
     TpexClient? tpexClient,
+    AppClock clock = const SystemClock(),
   }) : _db = database,
        _client = finMindClient,
        _twseClient = twseClient ?? TwseClient(),
-       _tpexClient = tpexClient ?? TpexClient();
+       _tpexClient = tpexClient ?? TpexClient(),
+       _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _client;
   final TwseClient _twseClient;
   final TpexClient _tpexClient;
+  final AppClock _clock;
 
   /// 判定批次資料為「最新」的最低筆數門檻
   /// 若該日期已有超過此數量的資料，則跳過 API 呼叫
@@ -39,17 +44,19 @@ class TradingRepository {
   // ============================================
 
   /// 取得當沖歷史資料
+  @override
   Future<List<DayTradingEntry>> getDayTradingHistory(
     String symbol, {
     int days = 30,
   }) async {
-    final startDate = DateTime.now().subtract(
+    final startDate = _clock.now().subtract(
       Duration(days: days + DataFreshness.dayTradingBufferDays),
     );
     return _db.getDayTradingHistory(symbol, startDate: startDate);
   }
 
   /// 取得最新當沖資料
+  @override
   Future<DayTradingEntry?> getLatestDayTrading(String symbol) {
     return _db.getLatestDayTrading(symbol);
   }
@@ -68,9 +75,9 @@ class TradingRepository {
   }) async {
     try {
       // 新鮮度檢查：若已有目標日期資料則跳過
-      final targetDate = endDate ?? DateTime.now();
+      final targetDate = endDate ?? _clock.now();
       final latest = await getLatestDayTrading(symbol);
-      if (latest != null && _isSameDay(latest.date, targetDate)) {
+      if (latest != null && DateContext.isSameDay(latest.date, targetDate)) {
         return 0;
       }
 
@@ -102,6 +109,7 @@ class TradingRepository {
   }
 
   /// 檢查是否為高當沖股（當沖比 > 30%）
+  @override
   Future<bool> isHighDayTradingStock(String symbol) async {
     final latest = await getLatestDayTrading(symbol);
     if (latest == null) return false;
@@ -109,6 +117,7 @@ class TradingRepository {
   }
 
   /// 取得平均當沖比例
+  @override
   Future<double?> getAverageDayTradingRatio(
     String symbol, {
     int days = 5,
@@ -138,14 +147,13 @@ class TradingRepository {
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  @override
   Future<int> syncAllDayTradingFromTwse({
     DateTime? date,
     bool forceRefresh = false,
   }) async {
     try {
-      // 統一使用本地時間午夜，確保與 DateContext.normalize 一致
-      final rawDate = date ?? DateTime.now();
-      final targetDate = DateTime(rawDate.year, rawDate.month, rawDate.day);
+      final targetDate = DateContext.normalize(date ?? _clock.now());
 
       // 新鮮度檢查：若已有目標日期資料則跳過
       if (!forceRefresh) {
@@ -293,14 +301,13 @@ class TradingRepository {
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  @override
   Future<int> syncAllDayTradingFromTpex({
     DateTime? date,
     bool forceRefresh = false,
   }) async {
     try {
-      // 統一使用本地時間午夜，確保與 DateContext.normalize 一致
-      final rawDate = date ?? DateTime.now();
-      final targetDate = DateTime(rawDate.year, rawDate.month, rawDate.day);
+      final targetDate = DateContext.normalize(date ?? _clock.now());
 
       // 新鮮度檢查：若已有目標日期的上櫃當沖資料則跳過
       // 使用較低閾值（50），因為上櫃股票數量較少
@@ -407,17 +414,19 @@ class TradingRepository {
   // ============================================
 
   /// 取得融資融券歷史資料
+  @override
   Future<List<MarginTradingEntry>> getMarginTradingHistory(
     String symbol, {
     int days = 30,
   }) async {
-    final startDate = DateTime.now().subtract(
+    final startDate = _clock.now().subtract(
       Duration(days: days + DataFreshness.marginTradingBufferDays),
     );
     return _db.getMarginTradingHistory(symbol, startDate: startDate);
   }
 
   /// 取得最新融資融券資料
+  @override
   Future<MarginTradingEntry?> getLatestMarginTrading(String symbol) {
     return _db.getLatestMarginTrading(symbol);
   }
@@ -429,12 +438,13 @@ class TradingRepository {
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  @override
   Future<int> syncAllMarginTradingFromTwse({
     DateTime? date,
     bool forceRefresh = false,
   }) async {
     try {
-      final targetDate = date ?? DateTime.now();
+      final targetDate = date ?? _clock.now();
 
       // 新鮮度檢查：若已有目標日期資料則跳過
       // 提高閾值至 1500 以涵蓋上市+上櫃股票
@@ -527,6 +537,7 @@ class TradingRepository {
   /// 計算券資比
   ///
   /// 較高的券資比（> 30%）表示潛在軋空機會
+  @override
   Future<double?> getShortMarginRatio(String symbol) async {
     final latest = await getLatestMarginTrading(symbol);
     if (latest == null) return null;
@@ -539,6 +550,7 @@ class TradingRepository {
   }
 
   /// 檢查融資餘額是否增加中（散戶追多）
+  @override
   Future<bool> isMarginIncreasing(String symbol, {int days = 5}) async {
     final history = await getMarginTradingHistory(symbol, days: days + 5);
     if (history.length < days) return false;
@@ -553,6 +565,7 @@ class TradingRepository {
   }
 
   /// 檢查融券餘額是否增加中（空單增加）
+  @override
   Future<bool> isShortIncreasing(String symbol, {int days = 5}) async {
     final history = await getMarginTradingHistory(symbol, days: days + 5);
     if (history.length < days) return false;
@@ -569,9 +582,4 @@ class TradingRepository {
   // ============================================
   // 內部輔助方法
   // ============================================
-
-  /// 檢查兩個日期是否為同一天（忽略時間）
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
 }

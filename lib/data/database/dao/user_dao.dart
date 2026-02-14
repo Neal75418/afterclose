@@ -77,10 +77,15 @@ mixin _UserDaoMixin on _$AppDatabase {
   }
 
   /// 更新執行狀態
-  Future<void> finishUpdateRun(int id, String status, {String? message}) {
+  Future<void> finishUpdateRun(
+    int id,
+    String status, {
+    String? message,
+    DateTime? now,
+  }) {
     return (update(updateRun)..where((t) => t.id.equals(id))).write(
       UpdateRunCompanion(
-        finishedAt: Value(DateTime.now()),
+        finishedAt: Value(now ?? DateTime.now()),
         status: Value(status),
         message: Value(message),
       ),
@@ -170,11 +175,11 @@ mixin _UserDaoMixin on _$AppDatabase {
   }
 
   /// 停用股價提醒（標記為已觸發）
-  Future<void> triggerAlert(int id) {
+  Future<void> triggerAlert(int id, {DateTime? now}) {
     return (update(priceAlert)..where((t) => t.id.equals(id))).write(
       PriceAlertCompanion(
         isActive: const Value(false),
-        triggeredAt: Value(DateTime.now()),
+        triggeredAt: Value(now ?? DateTime.now()),
       ),
     );
   }

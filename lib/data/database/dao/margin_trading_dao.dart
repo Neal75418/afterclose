@@ -32,7 +32,7 @@ mixin _MarginTradingDaoMixin on _$AppDatabase {
   /// 取得指定日期的所有融資融券資料
   Future<List<MarginTradingEntry>> getMarginTradingForDate(DateTime date) {
     // 使用本地時間午夜以匹配資料庫儲存格式
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     return (select(marginTrading)
           ..where((t) => t.date.isBiggerOrEqualValue(startOfDay))
@@ -43,7 +43,7 @@ mixin _MarginTradingDaoMixin on _$AppDatabase {
   /// 取得指定日期的融資融券資料筆數（新鮮度檢查用）
   Future<int> getMarginTradingCountForDate(DateTime date) async {
     // 使用本地時間午夜以匹配資料庫儲存格式
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     final countExpr = marginTrading.symbol.count();
     final query = selectOnly(marginTrading)

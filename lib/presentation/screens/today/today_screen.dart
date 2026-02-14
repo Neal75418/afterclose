@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -429,8 +430,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   String _formatDataDate(DateTime date) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dataDay = DateTime(date.year, date.month, date.day);
+    final today = DateContext.normalize(now);
+    final dataDay = DateContext.normalize(date);
 
     if (dataDay == today) {
       return S.todayDataToday;

@@ -10,7 +10,7 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
   Future<Map<String, Map<String, int>>> getAdvanceDeclineCountsByMarket(
     DateTime date,
   ) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     // 用子查詢計算每檔漲跌：當日收盤 vs 前一交易日收盤，依市場分組
@@ -94,7 +94,7 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
   Future<Map<String, Map<String, double>>> getInstitutionalTotalsByMarket(
     DateTime date,
   ) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     const query = '''
@@ -163,7 +163,7 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
   Future<Map<String, Map<String, double>>> getMarginTradingTotalsByMarket(
     DateTime date,
   ) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     const query = '''
@@ -233,7 +233,7 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
   Future<Map<String, Map<String, double>>> getTurnoverSummaryByMarket(
     DateTime date,
   ) async {
-    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
     const query = '''

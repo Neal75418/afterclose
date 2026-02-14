@@ -98,3 +98,57 @@ Color? getRowColor(BuildContext context, int index) {
   }
   return Colors.transparent;
 }
+
+// ==========================================
+// Table structure helpers
+// ==========================================
+
+/// Builds a styled header row for data tables.
+Widget buildTableHeader(BuildContext context, List<Widget> columns) {
+  final theme = Theme.of(context);
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    decoration: BoxDecoration(
+      color: theme.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+    ),
+    child: Row(children: columns),
+  );
+}
+
+/// Builds a single header cell with consistent styling.
+Widget buildHeaderCell(
+  BuildContext context,
+  String label, {
+  int flex = 2,
+  TextAlign? textAlign,
+}) {
+  final theme = Theme.of(context);
+  return Expanded(
+    flex: flex,
+    child: Text(
+      label,
+      textAlign: textAlign,
+      style: theme.textTheme.labelMedium?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: theme.colorScheme.outline,
+      ),
+    ),
+  );
+}
+
+/// Builds a data row container with alternating row colors.
+Widget buildTableDataRow(
+  BuildContext context,
+  int index,
+  List<Widget> columns,
+) {
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    decoration: BoxDecoration(
+      color: getRowColor(context, index),
+      borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+    ),
+    child: Row(children: columns),
+  );
+}

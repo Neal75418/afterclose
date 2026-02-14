@@ -26,8 +26,9 @@ mixin _MarketIndexDaoMixin on _$AppDatabase {
   Future<List<MarketIndexEntry>> getIndexHistory(
     String indexName, {
     int days = 30,
+    DateTime? now,
   }) {
-    final cutoff = DateTime.now().subtract(Duration(days: days + 10));
+    final cutoff = (now ?? DateTime.now()).subtract(Duration(days: days + 10));
     return (select(marketIndex)
           ..where(
             (t) => t.name.equals(indexName) & t.date.isBiggerThanValue(cutoff),
@@ -41,8 +42,9 @@ mixin _MarketIndexDaoMixin on _$AppDatabase {
   Future<Map<String, List<MarketIndexEntry>>> getIndexHistoryBatch(
     List<String> indexNames, {
     int days = 30,
+    DateTime? now,
   }) async {
-    final cutoff = DateTime.now().subtract(Duration(days: days + 10));
+    final cutoff = (now ?? DateTime.now()).subtract(Duration(days: days + 10));
     final rows =
         await (select(marketIndex)
               ..where(
