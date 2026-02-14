@@ -77,7 +77,9 @@ class TaiwanCalendar {
   static final Set<DateTime> _holidays2026 = {
     // 元旦
     DateTime.utc(2026, 1, 1),
-    // 農曆春節 (2/14-2/20 estimated)
+    // 農曆春節 (封關日 2/11 週三，2/12-2/20 休市)
+    DateTime.utc(2026, 2, 12),
+    DateTime.utc(2026, 2, 13),
     DateTime.utc(2026, 2, 14),
     DateTime.utc(2026, 2, 15),
     DateTime.utc(2026, 2, 16),

@@ -1,7 +1,10 @@
-import 'package:afterclose/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:afterclose/core/utils/logger.dart';
 
 // ==================================================
 // Settings Keys

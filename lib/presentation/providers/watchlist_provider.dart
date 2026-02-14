@@ -1,5 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/core/constants/rule_params.dart';

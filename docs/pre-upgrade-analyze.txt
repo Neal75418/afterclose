@@ -1,0 +1,9 @@
+Analyzing afterclose...                                         
+
+   info • Unnecessary 'this.' qualifier • lib/domain/services/analysis/analysis_coordinator_service.dart:22:8 • unnecessary_this
+   info • Unnecessary 'this.' qualifier • lib/domain/services/analysis/analysis_coordinator_service.dart:23:8 • unnecessary_this
+   info • Unnecessary 'this.' qualifier • lib/domain/services/analysis/analysis_coordinator_service.dart:24:8 • unnecessary_this
+   info • Unnecessary 'this.' qualifier • lib/domain/services/analysis/analysis_coordinator_service.dart:25:8 • unnecessary_this
+   info • Unnecessary 'this.' qualifier • lib/domain/services/analysis/analysis_coordinator_service.dart:26:8 • unnecessary_this
+
+5 issues found. (ran in 5.3s)

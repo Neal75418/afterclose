@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';

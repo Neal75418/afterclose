@@ -297,5 +297,30 @@ flutter test test/domain/services/
 | 文件                                                                                                     | 說明              |
 |:-------------------------------------------------------------------------------------------------------|:----------------|
 | [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (59 條規則) |
+| [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md)                                                   | 待完成的依賴升級任務      |
 | [RELEASE.md](RELEASE.md)                                                                               | 發布建置指南          |
 | [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |
+
+---
+
+## 依賴版本（2026-02-13 更新）
+
+### State Management
+- `flutter_riverpod`: ^3.2.1 ⬆️ (from 2.6.1)
+- `riverpod_annotation`: ^4.0.2 ⬆️ (from 2.6.1)
+
+### Code Generation
+- `build_runner`: 自動選擇相容版本
+- `riverpod_generator`: ^4.0.3 ⬆️ (from 2.6.4)
+- `freezed`: ^3.2.5 ⬆️ (from 2.5.8)
+- `freezed_annotation`: ^3.1.0 ⬆️ (from 2.4.4)
+- `json_serializable`: ^6.12.0 ⬆️ (from 6.9.5)
+- `drift_dev`: ^2.31.0 ⬆️ (from 2.28.0)
+
+### Database
+- `drift`: ^2.31.0 ⬆️ (from 2.28.2)
+- `sqlite3_flutter_libs`: ^0.5.30
+
+### Important Notes
+- **Riverpod 3.x**: StateNotifier/StateNotifierProvider 需從 `flutter_riverpod/legacy.dart` 導入
+- **dependency_overrides**: 使用 `analyzer: ^10.0.0`, `dart_style: ^3.1.5`, `io: ^1.0.3` 解決依賴衝突

@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'
+    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
