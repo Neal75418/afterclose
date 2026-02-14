@@ -1,6 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:easy_localization/easy_localization.dart';
 
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
@@ -10,11 +8,7 @@ void main() {
 
   /// Without full EasyLocalization widget context, `.tr()` returns the raw key.
   /// This is fine for verifying structural mapping and recursive resolution.
-
-  setUpAll(() async {
-    SharedPreferences.setMockInitialValues({});
-    await EasyLocalization.ensureInitialized();
-  });
+  /// Localization warnings are suppressed by flutter_test_config.dart.
 
   group('SummaryLocalizer.localize', () {
     test('should map all SummaryData fields to StockSummary', () {

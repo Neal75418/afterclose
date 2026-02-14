@@ -708,7 +708,7 @@ class UpdateService {
         : <String, double>{};
 
     // 轉換為 Isolate 可用的 Map 格式
-    final shareholdingMap = _buildShareholdingMap(
+    final shareholdingMap = BatchDataBuilder.buildShareholdingMap(
       shareholdingEntries,
       prevShareholdingEntries,
       concentrationMap,
@@ -723,7 +723,11 @@ class UpdateService {
       }),
     );
 
-    final insiderMap = await _buildInsiderMap(insiderEntries, candidates);
+    final insiderMap = await BatchDataBuilder.buildInsiderMap(
+      insiderEntries,
+      candidates,
+      _insiderRepo,
+    );
 
     return ScoringBatchData(
       pricesMap: pricesMap,
@@ -740,57 +744,6 @@ class UpdateService {
       warningMap: warningMap,
       insiderMap: insiderMap,
     );
-  }
-
-  /// 建構外資持股 Map（含變化量計算 + 籌碼集中度）
-  Map<String, Map<String, double?>> _buildShareholdingMap(
-    Map<String, ShareholdingEntry> shareholdingEntries,
-    Map<String, ShareholdingEntry> prevShareholdingEntries,
-    Map<String, double> concentrationMap,
-  ) {
-    final result = <String, Map<String, double?>>{};
-    final allSymbols = {...shareholdingEntries.keys, ...concentrationMap.keys};
-    for (final k in allSymbols) {
-      final entry = shareholdingEntries[k];
-      final currentRatio = entry?.foreignSharesRatio;
-      final prevEntry = prevShareholdingEntries[k];
-      final prevRatio = prevEntry?.foreignSharesRatio;
-
-      double? ratioChange;
-      if (currentRatio != null && prevRatio != null) {
-        ratioChange = currentRatio - prevRatio;
-      }
-
-      result[k] = {
-        'foreignSharesRatio': currentRatio,
-        'foreignSharesRatioChange': ratioChange,
-        'concentrationRatio': concentrationMap[k],
-      };
-    }
-    return result;
-  }
-
-  /// 建構董監持股狀態 Map（含連續減持/增持判斷）
-  Future<Map<String, Map<String, dynamic>>> _buildInsiderMap(
-    Map<String, InsiderHoldingEntry> insiderEntries,
-    List<String> candidates,
-  ) async {
-    final insiderRepo = _insiderRepo;
-    final insiderStatusMap = insiderRepo != null
-        ? await insiderRepo.calculateInsiderStatusBatch(candidates)
-        : <String, InsiderStatus>{};
-
-    return insiderEntries.map((k, v) {
-      final status = insiderStatusMap[k];
-      return MapEntry(k, {
-        'insiderRatio': v.insiderRatio,
-        'pledgeRatio': v.pledgeRatio,
-        'hasSellingStreak': status?.hasSellingStreak ?? false,
-        'sellingStreakMonths': status?.sellingStreakMonths ?? 0,
-        'hasSignificantBuying': status?.hasSignificantBuying ?? false,
-        'buyingChange': status?.buyingChange ?? v.sharesChange,
-      });
-    });
   }
 
   Future<void> _generateRecommendations(

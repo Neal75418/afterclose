@@ -56,11 +56,7 @@ class SettingsRepository implements ISettingsRepository {
       await _secureStorage.delete(key: '_test_availability');
       _secureStorageAvailable = true;
     } catch (e) {
-      AppLogger.warning(
-        'SettingsRepo',
-        'SecureStorage 無法使用，改用 SharedPreferences',
-        e,
-      );
+      AppLogger.warning('SettingsRepo', 'SecureStorage 無法使用，改用記憶體暫存', e);
       _secureStorageAvailable = false;
     }
     return _secureStorageAvailable!;

@@ -3,6 +3,7 @@
 /// 統一匯出所有更新服務類別
 library;
 
+export 'batch_data_builder.dart';
 export 'fundamental_syncer.dart';
 export 'historical_price_syncer.dart';
 export 'institutional_syncer.dart';
