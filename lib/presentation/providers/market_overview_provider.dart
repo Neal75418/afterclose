@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
@@ -154,14 +152,19 @@ class MarketOverviewState {
 // Market Overview Notifier
 // ==================================================
 
-class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
-  MarketOverviewNotifier(this._ref) : super(const MarketOverviewState());
+class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
+  var _active = true;
 
-  final Ref _ref;
+  @override
+  MarketOverviewState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+    return const MarketOverviewState();
+  }
 
-  AppDatabase get _db => _ref.read(databaseProvider);
-  TwseClient get _twse => _ref.read(twseClientProvider);
-  TpexClient get _tpex => _ref.read(tpexClientProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  TwseClient get _twse => ref.read(twseClientProvider);
+  TpexClient get _tpex => ref.read(tpexClientProvider);
 
   /// 載入大盤總覽資料
   ///
@@ -190,7 +193,7 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
         _loadTurnoverByMarket(dataDate), // [8] Map<String, TradingTurnover>
       ]);
 
-      if (!mounted) return;
+      if (!_active) return;
 
       state = MarketOverviewState(
         indices: results[0] as List<TwseMarketIndex>,
@@ -207,7 +210,7 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
     } catch (e) {
       // getLatestDataDate() 可能拋出例外
       AppLogger.error('MarketOverview', '載入大盤總覽失敗', e);
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(isLoading: false, error: e.toString());
       }
     }
@@ -413,6 +416,6 @@ class MarketOverviewNotifier extends StateNotifier<MarketOverviewState> {
 // ==================================================
 
 final marketOverviewProvider =
-    StateNotifierProvider<MarketOverviewNotifier, MarketOverviewState>((ref) {
-      return MarketOverviewNotifier(ref);
-    });
+    NotifierProvider<MarketOverviewNotifier, MarketOverviewState>(
+      MarketOverviewNotifier.new,
+    );

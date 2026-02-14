@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -30,28 +28,41 @@ export 'package:afterclose/presentation/providers/stock_detail_state.dart';
 // 股票詳情 Notifier
 // ==================================================
 
-class StockDetailNotifier extends StateNotifier<StockDetailState> {
-  StockDetailNotifier(this._ref, this._symbol)
-    : _fundamentalsLoader = StockFundamentalsLoader(
-        db: _ref.read(databaseProvider),
-        finMind: _ref.read(finMindClientProvider),
-        clock: _ref.read(appClockProvider),
-      ),
-      _chipLoader = StockChipLoader(
-        db: _ref.read(databaseProvider),
-        finMind: _ref.read(finMindClientProvider),
-        insiderRepo: _ref.read(insiderRepositoryProvider),
-        clock: _ref.read(appClockProvider),
-      ),
-      super(const StockDetailState());
+class StockDetailNotifier extends Notifier<StockDetailState> {
+  StockDetailNotifier(this._symbol);
 
-  final Ref _ref;
   final String _symbol;
-  final StockFundamentalsLoader _fundamentalsLoader;
-  final StockChipLoader _chipLoader;
+  late final StockFundamentalsLoader _fundamentalsLoader;
+  late final StockChipLoader _chipLoader;
 
-  AppDatabase get _db => _ref.read(databaseProvider);
-  DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
+  @override
+  StockDetailState build() {
+    _fundamentalsLoader = StockFundamentalsLoader(
+      db: ref.read(databaseProvider),
+      finMind: ref.read(finMindClientProvider),
+      clock: ref.read(appClockProvider),
+    );
+    _chipLoader = StockChipLoader(
+      db: ref.read(databaseProvider),
+      finMind: ref.read(finMindClientProvider),
+      insiderRepo: ref.read(insiderRepositoryProvider),
+      clock: ref.read(appClockProvider),
+    );
+
+    // 保活機制：3 分鐘內返回同一頁面時使用快取
+    final link = ref.keepAlive();
+    final timer = Timer(const Duration(minutes: 3), () {
+      try {
+        link.close();
+      } catch (_) {}
+    });
+    ref.onDispose(() => timer.cancel());
+
+    return const StockDetailState();
+  }
+
+  AppDatabase get _db => ref.read(databaseProvider);
+  DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
 
   /// 載入股票詳情資料
   Future<void> loadData() async {
@@ -174,7 +185,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
       // 記錄瀏覽行為（Sprint 11 - 個人化推薦）
       unawaited(
-        _ref
+        ref
             .read(personalizationServiceProvider)
             .trackInteraction(
               type: InteractionType.view,
@@ -189,7 +200,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
   /// 切換自選股 — 同步更新全域 watchlistProvider
   Future<void> toggleWatchlist() async {
-    final watchlistNotifier = _ref.read(watchlistProvider.notifier);
+    final watchlistNotifier = ref.read(watchlistProvider.notifier);
     final wasInWatchlist = state.isInWatchlist;
 
     if (wasInWatchlist) {
@@ -203,7 +214,7 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 
     // 記錄自選股變更行為（Sprint 11 - 個人化推薦）
     unawaited(
-      _ref
+      ref
           .read(personalizationServiceProvider)
           .trackInteraction(
             type: wasInWatchlist
@@ -342,27 +353,10 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
 /// 使用 autoDispose + keepAlive 組合：
 /// - autoDispose: 無訂閱者時觸發清理
 /// - keepAlive: 保留 5 分鐘快取，改善列表↔詳情切換體驗
-final stockDetailProvider = StateNotifierProvider.family
-    .autoDispose<StockDetailNotifier, StockDetailState, String>((ref, symbol) {
-      // 保活機制：5 分鐘內返回同一頁面時使用快取
-      final link = ref.keepAlive();
-
-      // 3 分鐘後自動釋放
-      final timer = Timer(const Duration(minutes: 3), () {
-        try {
-          link.close();
-        } catch (_) {
-          // Timer 可能在 dispose 邊界觸發，忽略已關閉的 link
-        }
-      });
-
-      // 清理：當 Provider 真正被釋放時取消 Timer
-      ref.onDispose(() {
-        timer.cancel();
-      });
-
-      return StockDetailNotifier(ref, symbol);
-    });
+final stockDetailProvider = NotifierProvider.autoDispose
+    .family<StockDetailNotifier, StockDetailState, String>(
+      StockDetailNotifier.new,
+    );
 
 /// 規則準確度 Provider（Sprint 10）
 ///

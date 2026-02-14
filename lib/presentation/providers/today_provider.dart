@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
@@ -121,15 +118,14 @@ class UpdateProgress {
 // Today Notifier
 // ==================================================
 
-class TodayNotifier extends StateNotifier<TodayState> {
-  TodayNotifier(this._ref) : super(const TodayState());
+class TodayNotifier extends Notifier<TodayState> {
+  @override
+  TodayState build() => const TodayState();
 
-  final Ref _ref;
-
-  AppDatabase get _db => _ref.read(databaseProvider);
-  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
-  UpdateService get _updateService => _ref.read(updateServiceProvider);
-  DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
+  UpdateService get _updateService => ref.read(updateServiceProvider);
+  DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
 
   /// 載入今日資料
   Future<void> loadData() async {
@@ -143,7 +139,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
       final dateCtx = DateContext.now();
 
       // 取得今日推薦（使用 repo 的智慧回退機制處理週末）
-      final repo = _ref.read(analysisRepositoryProvider);
+      final repo = ref.read(analysisRepositoryProvider);
       final recommendations = await repo.getTodayRecommendations();
 
       // 取得實際資料日期供顯示用（非查詢用途）
@@ -279,7 +275,7 @@ class TodayNotifier extends StateNotifier<TodayState> {
 
       // 若有警示被觸發，顯示更新完成通知
       if (alertsTriggered > 0) {
-        final notificationNotifier = _ref.read(notificationProvider.notifier);
+        final notificationNotifier = ref.read(notificationProvider.notifier);
         await notificationNotifier.showUpdateCompleteNotification(
           recommendationCount: result.recommendationsGenerated,
           alertsTriggered: alertsTriggered,
@@ -318,13 +314,13 @@ class TodayNotifier extends StateNotifier<TodayState> {
 
     try {
       // 確保通知服務已初始化
-      final notificationState = _ref.read(notificationProvider);
+      final notificationState = ref.read(notificationProvider);
       if (!notificationState.isInitialized) {
-        await _ref.read(notificationProvider.notifier).initialize();
+        await ref.read(notificationProvider.notifier).initialize();
       }
 
-      final alertNotifier = _ref.read(priceAlertProvider.notifier);
-      final notificationNotifier = _ref.read(notificationProvider.notifier);
+      final alertNotifier = ref.read(priceAlertProvider.notifier);
+      final notificationNotifier = ref.read(notificationProvider.notifier);
 
       // 檢查並觸發警示
       final triggered = await alertNotifier.checkAndTriggerAlerts(
@@ -350,6 +346,6 @@ class TodayNotifier extends StateNotifier<TodayState> {
 }
 
 /// 今日畫面 State 的 Provider
-final todayProvider = StateNotifierProvider<TodayNotifier, TodayState>((ref) {
-  return TodayNotifier(ref);
-});
+final todayProvider = NotifierProvider<TodayNotifier, TodayState>(
+  TodayNotifier.new,
+);

@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -65,12 +63,17 @@ class BacktestState {
 // Notifier
 // ==================================================
 
-class BacktestNotifier extends StateNotifier<BacktestState> {
-  BacktestNotifier(this._ref) : super(const BacktestState());
+class BacktestNotifier extends Notifier<BacktestState> {
+  var _active = true;
 
-  final Ref _ref;
+  @override
+  BacktestState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+    return const BacktestState();
+  }
 
-  AppDatabase get _db => _ref.read(databaseProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
 
   // ==========================================
   // 設定管理
@@ -137,7 +140,7 @@ class BacktestNotifier extends StateNotifier<BacktestState> {
         conditions: conditions,
         config: state.config,
         onProgress: (current, total) {
-          if (mounted) {
+          if (_active) {
             state = state.copyWith(
               progress: total > 0 ? current / total : 0,
               progressCurrent: current,
@@ -145,10 +148,10 @@ class BacktestNotifier extends StateNotifier<BacktestState> {
             );
           }
         },
-        isCancelled: () => !mounted,
+        isCancelled: () => !_active,
       );
 
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(
           result: result,
           isExecuting: false,
@@ -157,7 +160,7 @@ class BacktestNotifier extends StateNotifier<BacktestState> {
       }
     } catch (e) {
       AppLogger.error('Backtest', '回測執行失敗', e);
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(isExecuting: false, error: e.toString());
       }
     }
@@ -172,8 +175,6 @@ class BacktestNotifier extends StateNotifier<BacktestState> {
 // Provider
 // ==================================================
 
-final backtestProvider = StateNotifierProvider<BacktestNotifier, BacktestState>(
-  (ref) {
-    return BacktestNotifier(ref);
-  },
+final backtestProvider = NotifierProvider<BacktestNotifier, BacktestState>(
+  BacktestNotifier.new,
 );

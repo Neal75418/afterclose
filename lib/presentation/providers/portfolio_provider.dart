@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -190,12 +188,12 @@ class PortfolioState {
 // PortfolioNotifier
 // ==================================================
 
-class PortfolioNotifier extends StateNotifier<PortfolioState> {
-  PortfolioNotifier(this._ref) : super(const PortfolioState());
+class PortfolioNotifier extends Notifier<PortfolioState> {
+  @override
+  PortfolioState build() => const PortfolioState();
 
-  final Ref _ref;
-  AppDatabase get _db => _ref.read(databaseProvider);
-  PortfolioRepository get _repo => _ref.read(portfolioRepositoryProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  PortfolioRepository get _repo => ref.read(portfolioRepositoryProvider);
 
   static const _analyticsService = PortfolioAnalyticsService();
   static const _dividendService = DividendIntelligenceService();
@@ -358,10 +356,9 @@ class PortfolioNotifier extends StateNotifier<PortfolioState> {
 // Providers
 // ==================================================
 
-final portfolioProvider =
-    StateNotifierProvider<PortfolioNotifier, PortfolioState>((ref) {
-      return PortfolioNotifier(ref);
-    });
+final portfolioProvider = NotifierProvider<PortfolioNotifier, PortfolioState>(
+  PortfolioNotifier.new,
+);
 
 /// 單一 symbol 的交易紀錄
 final positionTransactionsProvider =

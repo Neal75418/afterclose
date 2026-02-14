@@ -1,7 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -302,15 +300,14 @@ class WatchlistItemData {
 // 自選股 Notifier
 // ==================================================
 
-class WatchlistNotifier extends StateNotifier<WatchlistState> {
-  WatchlistNotifier(this._ref) : super(WatchlistState());
+class WatchlistNotifier extends Notifier<WatchlistState> {
+  @override
+  WatchlistState build() => WatchlistState();
 
-  final Ref _ref;
-
-  AppDatabase get _db => _ref.read(databaseProvider);
-  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
-  WarningRepository get _warningRepo => _ref.read(warningRepositoryProvider);
-  InsiderRepository get _insiderRepo => _ref.read(insiderRepositoryProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
+  WarningRepository get _warningRepo => ref.read(warningRepositoryProvider);
+  InsiderRepository get _insiderRepo => ref.read(insiderRepositoryProvider);
 
   /// 載入自選股資料
   Future<void> loadData() async {
@@ -673,7 +670,6 @@ class WatchlistNotifier extends StateNotifier<WatchlistState> {
 }
 
 /// 自選股頁面狀態 Provider
-final watchlistProvider =
-    StateNotifierProvider<WatchlistNotifier, WatchlistState>((ref) {
-      return WatchlistNotifier(ref);
-    });
+final watchlistProvider = NotifierProvider<WatchlistNotifier, WatchlistState>(
+  WatchlistNotifier.new,
+);

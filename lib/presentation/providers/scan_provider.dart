@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -117,15 +115,14 @@ class ScanState {
 // Scan Notifier
 // ==================================================
 
-class ScanNotifier extends StateNotifier<ScanState> {
-  ScanNotifier(this._ref) : super(const ScanState());
+class ScanNotifier extends Notifier<ScanState> {
+  @override
+  ScanState build() => const ScanState();
 
-  final Ref _ref;
-
-  AppDatabase get _db => _ref.read(databaseProvider);
-  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
-  DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
-  AnalysisRepository get _analysisRepo => _ref.read(analysisRepositoryProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
+  DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
+  AnalysisRepository get _analysisRepo => ref.read(analysisRepositoryProvider);
 
   static const _service = ScanFilterService();
 
@@ -381,6 +378,6 @@ class ScanNotifier extends StateNotifier<ScanState> {
 }
 
 /// Provider for scan screen state
-final scanProvider = StateNotifierProvider<ScanNotifier, ScanState>((ref) {
-  return ScanNotifier(ref);
-});
+final scanProvider = NotifierProvider<ScanNotifier, ScanState>(
+  ScanNotifier.new,
+);

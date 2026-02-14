@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -73,14 +71,19 @@ class CustomScreeningState {
 // Notifier
 // ==================================================
 
-class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
-  CustomScreeningNotifier(this._ref) : super(const CustomScreeningState());
+class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
+  var _active = true;
 
-  final Ref _ref;
+  @override
+  CustomScreeningState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+    return const CustomScreeningState();
+  }
 
-  AppDatabase get _db => _ref.read(databaseProvider);
-  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
-  AnalysisRepository get _analysisRepo => _ref.read(analysisRepositoryProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
+  AnalysisRepository get _analysisRepo => ref.read(analysisRepositoryProvider);
 
   // 暫存篩選結果的全部 symbol，供分頁使用
   List<String> _allResultSymbols = [];
@@ -132,7 +135,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
           updatedAt: e.updatedAt,
         );
       }).toList();
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(
           savedStrategies: strategies,
           isLoadingStrategies: false,
@@ -140,7 +143,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
       }
     } catch (e) {
       AppLogger.error('CustomScreening', '載入策略失敗', e);
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(isLoadingStrategies: false);
       }
     }
@@ -203,7 +206,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
       // 找到有資料的日期
       final targetDate = await _analysisRepo.findLatestAnalysisDate();
       if (targetDate == null) {
-        if (mounted) {
+        if (_active) {
           state = state.copyWith(isExecuting: false, error: '找不到分析資料');
         }
         return;
@@ -219,7 +222,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
         targetDate: targetDate,
       );
 
-      if (!mounted) return;
+      if (!_active) return;
 
       _allResultSymbols = result.symbols;
 
@@ -232,7 +235,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
         _allResultSymbols.take(kPageSize).toList(),
       );
 
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(
           result: result,
           stocks: firstPage,
@@ -242,7 +245,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
       }
     } catch (e) {
       AppLogger.error('CustomScreening', '篩選執行失敗', e);
-      if (mounted) {
+      if (_active) {
         state = state.copyWith(isExecuting: false, error: e.toString());
       }
     }
@@ -268,14 +271,14 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
 
       final newItems = await _loadStockItems(nextSymbols);
 
-      if (!mounted) return;
+      if (!_active) return;
       state = state.copyWith(
         stocks: [...state.stocks, ...newItems],
         isLoadingMore: false,
         hasMore: (currentLen + newItems.length) < _allResultSymbols.length,
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!_active) return;
       state = state.copyWith(isLoadingMore: false);
     }
   }
@@ -347,6 +350,6 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
 // ==================================================
 
 final customScreeningProvider =
-    StateNotifierProvider<CustomScreeningNotifier, CustomScreeningState>((ref) {
-      return CustomScreeningNotifier(ref);
-    });
+    NotifierProvider<CustomScreeningNotifier, CustomScreeningState>(
+      CustomScreeningNotifier.new,
+    );

@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -90,13 +88,18 @@ class ComparisonState {
 // Comparison Notifier
 // ==================================================
 
-class ComparisonNotifier extends StateNotifier<ComparisonState> {
-  ComparisonNotifier(this._ref) : super(const ComparisonState());
+class ComparisonNotifier extends Notifier<ComparisonState> {
+  var _active = true;
 
-  final Ref _ref;
+  @override
+  ComparisonState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+    return const ComparisonState();
+  }
 
-  AppDatabase get _db => _ref.read(databaseProvider);
-  CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
+  AppDatabase get _db => ref.read(databaseProvider);
+  CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
 
   /// Add a stock and reload all comparison data.
   Future<void> addStock(String symbol) async {
@@ -194,6 +197,8 @@ class ComparisonNotifier extends StateNotifier<ComparisonState> {
         _db.getRecentMonthlyRevenueBatch(symbols, months: 6),
       ]);
 
+      if (!_active) return;
+
       final valuations = results[0] as Map<String, StockValuationEntry>;
       final institutional =
           results[1] as Map<String, List<DailyInstitutionalEntry>>;
@@ -277,6 +282,6 @@ class ComparisonNotifier extends StateNotifier<ComparisonState> {
 // ==================================================
 
 final comparisonProvider =
-    StateNotifierProvider.autoDispose<ComparisonNotifier, ComparisonState>(
-      (ref) => ComparisonNotifier(ref),
+    NotifierProvider.autoDispose<ComparisonNotifier, ComparisonState>(
+      ComparisonNotifier.new,
     );

@@ -1,8 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'
-    show StateNotifier, StateNotifierProvider;
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -244,10 +242,14 @@ class PriceAlertState {
 }
 
 /// Price alert notifier
-class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
-  PriceAlertNotifier(this._db) : super(const PriceAlertState());
+class PriceAlertNotifier extends Notifier<PriceAlertState> {
+  late final AppDatabase _db;
 
-  final AppDatabase _db;
+  @override
+  PriceAlertState build() {
+    _db = ref.watch(databaseProvider);
+    return const PriceAlertState();
+  }
 
   /// Load all alerts (active and inactive)
   Future<void> loadAlerts() async {
@@ -395,10 +397,9 @@ class PriceAlertNotifier extends StateNotifier<PriceAlertState> {
 
 /// Price alert provider
 final priceAlertProvider =
-    StateNotifierProvider<PriceAlertNotifier, PriceAlertState>((ref) {
-      final db = ref.watch(databaseProvider);
-      return PriceAlertNotifier(db);
-    });
+    NotifierProvider<PriceAlertNotifier, PriceAlertState>(
+      PriceAlertNotifier.new,
+    );
 
 /// Get alerts for a specific symbol
 final alertsForSymbolProvider =
