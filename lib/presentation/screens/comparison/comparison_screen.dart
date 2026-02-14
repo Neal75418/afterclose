@@ -4,7 +4,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/comparison_header.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/comparison_table.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/price_overlay_chart.dart';
@@ -137,7 +139,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
         ],
       ),
       body: state.isLoading && state.symbols.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const GenericListShimmer(itemCount: 4)
           : Column(
               children: [
                 // Stock chips bar
@@ -214,7 +216,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
           // Price overlay chart
           Semantics(
-            label: '價格走勢比較圖，比較 ${state.symbols.join("、")} 的歷史價格',
+            label: S.accessibilityPriceComparisonChart(state.symbols.join('、')),
             image: true,
             child: PriceOverlayChart(
               symbols: state.symbols,
@@ -227,7 +229,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
           // Radar chart
           Semantics(
-            label: '雷達圖比較 ${state.symbols.join("、")} 的各維度指標',
+            label: S.accessibilityRadarChart(state.symbols.join('、')),
             image: true,
             child: RadarComparisonChart(state: state),
           ),
@@ -236,7 +238,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
           // Comparison table
           Semantics(
-            label: '${state.symbols.join("、")} 的詳細數據比較表格',
+            label: S.accessibilityComparisonTable(state.symbols.join('、')),
             container: true,
             child: ComparisonTable(state: state),
           ),

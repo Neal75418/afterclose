@@ -5,11 +5,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/price_alert_dialog.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Screen for managing price alerts
@@ -37,7 +39,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     return Scaffold(
       appBar: AppBar(title: Text('alert.title'.tr())),
       body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const GenericListShimmer(itemCount: 5)
+          : state.error != null
+          ? EmptyStates.error(
+              message: state.error!,
+              onRetry: () => ref.read(priceAlertProvider.notifier).loadAlerts(),
+            )
           : state.alerts.isEmpty
           ? _buildEmptyState()
           : _buildAlertsList(state.alerts, theme),
@@ -64,8 +71,13 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       groupedAlerts.putIfAbsent(alert.symbol, () => []).add(alert);
     }
 
+    final horizontalPadding = context.responsiveHorizontalPadding;
+
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 16,
+      ),
       itemCount: groupedAlerts.length,
       itemBuilder: (context, index) {
         final symbol = groupedAlerts.keys.elementAt(index);

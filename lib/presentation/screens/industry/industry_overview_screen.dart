@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
 /// 產業概覽狀態
 class _IndustryOverviewState {
@@ -82,73 +85,84 @@ class _IndustryOverviewScreenState
     return Scaffold(
       appBar: AppBar(title: Text('scan.selectIndustry'.tr())),
       body: _state.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const GenericListShimmer(itemCount: 8)
           : _state.error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _state.error!,
-                    style: theme.textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton.tonal(
-                    onPressed: () {
-                      setState(() {
-                        _state = const _IndustryOverviewState();
-                      });
-                      _loadData();
-                    },
-                    child: Text('common.retry'.tr()),
-                  ),
-                ],
-              ),
-            )
-          : ListView.separated(
-              padding: EdgeInsets.only(
-                top: 8,
-                bottom: MediaQuery.of(context).padding.bottom + 16,
-              ),
-              itemCount: _state.industries.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final item = _state.industries[index];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.tertiaryContainer,
-                    child: Icon(
-                      Icons.factory_outlined,
-                      color: theme.colorScheme.onTertiaryContainer,
-                      size: 20,
-                    ),
-                  ),
-                  title: Text(item.name),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'scan.industryStockCount'.tr(
-                          namedArgs: {'count': item.stockCount.toString()},
-                        ),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.chevron_right, size: 20),
-                    ],
-                  ),
-                  onTap: () {
-                    ref
-                        .read(scanProvider.notifier)
-                        .setIndustryFilter(item.name);
-                    context.pop();
-                  },
-                );
+          ? EmptyStates.error(
+              message: _state.error!,
+              onRetry: () {
+                setState(() {
+                  _state = const _IndustryOverviewState();
+                });
+                _loadData();
               },
+            )
+          : _buildIndustryList(theme),
+    );
+  }
+
+  Widget _buildIndustryList(ThemeData theme) {
+    final columns = context.responsiveGridColumns;
+    final useGrid = columns > 1;
+    final padding = context.responsiveHorizontalPadding;
+    final spacing = context.responsiveCardSpacing;
+
+    if (useGrid) {
+      return GridView.builder(
+        padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
+          crossAxisSpacing: spacing,
+          mainAxisSpacing: spacing,
+          mainAxisExtent: 64,
+        ),
+        itemCount: _state.industries.length,
+        itemBuilder: (context, index) =>
+            _buildIndustryTile(theme, _state.industries[index]),
+      );
+    }
+
+    return ListView.separated(
+      padding: EdgeInsets.only(
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 16,
+      ),
+      itemCount: _state.industries.length,
+      separatorBuilder: (_, _) => const Divider(height: 1),
+      itemBuilder: (context, index) =>
+          _buildIndustryTile(theme, _state.industries[index]),
+    );
+  }
+
+  Widget _buildIndustryTile(ThemeData theme, _IndustryItem item) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: theme.colorScheme.tertiaryContainer,
+        child: Icon(
+          Icons.factory_outlined,
+          color: theme.colorScheme.onTertiaryContainer,
+          size: 20,
+        ),
+      ),
+      title: Text(item.name),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'scan.industryStockCount'.tr(
+              namedArgs: {'count': item.stockCount.toString()},
             ),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right, size: 20),
+        ],
+      ),
+      onTap: () {
+        ref.read(scanProvider.notifier).setIndustryFilter(item.name);
+        context.pop();
+      },
     );
   }
 }

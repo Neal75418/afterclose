@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -156,7 +157,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
                         radius: 16,
                         backgroundColor: theme.colorScheme.primaryContainer,
                         child: Text(
-                          stock.market == 'TPEx' ? '櫃' : '市',
+                          stock.market == 'TPEx' ? S.marketTPEx : S.marketTWSE,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.w600,

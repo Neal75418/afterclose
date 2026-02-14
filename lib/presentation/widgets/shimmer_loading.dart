@@ -54,6 +54,11 @@ abstract final class ShimmerDimensions {
   static const newsMetaWidth2 = 80.0;
   static const newsMetaHeight = 14.0;
 
+  // 通用列表骨架
+  static const genericIconSize = 40.0;
+  static const genericTitleWidth = 160.0;
+  static const genericSubtitleWidth = 100.0;
+
   // 常用間距
   static const spacingXs = 4.0;
   static const spacingSm = 6.0;
@@ -470,6 +475,112 @@ class NewsListShimmer extends StatelessWidget {
           itemCount: itemCount,
           itemBuilder: (context, index) => _NewsCardSkeleton(isDark: isDark),
         ),
+      ),
+    );
+  }
+}
+
+/// 通用列表的微光載入骨架
+///
+/// 適用於 alerts、portfolio、industry overview 等畫面
+class GenericListShimmer extends StatelessWidget {
+  const GenericListShimmer({super.key, this.itemCount = 5});
+
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Semantics(
+      label: S.shimmerLoadingGenericList,
+      excludeSemantics: true,
+      child: Shimmer.fromColors(
+        baseColor: ShimmerColors.baseColor(isDark),
+        highlightColor: ShimmerColors.highlightColor(isDark),
+        child: ListView.builder(
+          physics: const NeverScrollableScrollPhysics(),
+          shrinkWrap: true,
+          itemCount: itemCount,
+          itemBuilder: (context, index) =>
+              _GenericListItemSkeleton(isDark: isDark),
+        ),
+      ),
+    );
+  }
+}
+
+/// 單一通用列表項目骨架
+class _GenericListItemSkeleton extends StatelessWidget {
+  const _GenericListItemSkeleton({required this.isDark});
+
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final skeletonColor = ShimmerColors.skeletonColor(isDark);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: ShimmerDimensions.cardMarginH,
+        vertical: ShimmerDimensions.cardMarginV,
+      ),
+      padding: const EdgeInsets.all(ShimmerDimensions.cardPadding),
+      decoration: BoxDecoration(
+        color: skeletonColor,
+        borderRadius: BorderRadius.circular(ShimmerDimensions.cardRadius),
+      ),
+      child: Row(
+        children: [
+          // Leading icon placeholder
+          Container(
+            width: ShimmerDimensions.genericIconSize,
+            height: ShimmerDimensions.genericIconSize,
+            decoration: BoxDecoration(
+              color: skeletonColor,
+              borderRadius: BorderRadius.circular(ShimmerDimensions.iconRadius),
+            ),
+          ),
+          const SizedBox(width: ShimmerDimensions.spacingLg),
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: ShimmerDimensions.genericTitleWidth,
+                  height: ShimmerDimensions.symbolHeight,
+                  decoration: BoxDecoration(
+                    color: skeletonColor,
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.spacingXs,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: ShimmerDimensions.spacingMd),
+                Container(
+                  width: ShimmerDimensions.genericSubtitleWidth,
+                  height: ShimmerDimensions.nameHeight,
+                  decoration: BoxDecoration(
+                    color: skeletonColor,
+                    borderRadius: BorderRadius.circular(
+                      ShimmerDimensions.spacingXs,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Trailing
+          Container(
+            width: ShimmerDimensions.changeWidth,
+            height: ShimmerDimensions.changeHeight,
+            decoration: BoxDecoration(
+              color: skeletonColor,
+              borderRadius: BorderRadius.circular(ShimmerDimensions.spacingXs),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -55,47 +55,11 @@ class HistoricalPriceSyncer {
       endDate: date,
     );
 
-    final symbolsNeedingData = <String>[];
-    const minRequiredDays = RuleParams.week52Days;
-
-    for (final symbol in symbolsForHistory) {
-      final prices = priceHistoryBatch[symbol];
-      final priceCount = prices?.length ?? 0;
-
-      if (priceCount < minRequiredDays) {
-        // 接近完整資料時（>= 180 天）可以跳過
-        const nearThreshold = 180;
-        if (priceCount >= nearThreshold) {
-          continue;
-        }
-
-        // 檢查是否為較新的股票（資料天數已符合其上市天數的預期）
-        // 避免反覆呼叫 API 試圖取得不存在的歷史資料
-        if (prices != null && prices.isNotEmpty) {
-          final firstTradeDate = prices.first.date;
-          final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
-
-          if (daysSinceFirstTrade < 365) {
-            // 計算預期交易天數（約 71% 的日曆天是交易日）
-            final expectedTradingDays = (daysSinceFirstTrade * 0.71)
-                .round()
-                .clamp(1, 365);
-
-            // 只要資料達到預期的 50% 就視為足夠
-            final minAcceptableDays = (expectedTradingDays * 0.5).round();
-            if (priceCount >= minAcceptableDays) {
-              continue;
-            }
-          }
-        } else if (priceCount == 0) {
-          // 完全無資料，需要同步
-          symbolsNeedingData.add(symbol);
-          continue;
-        }
-
-        symbolsNeedingData.add(symbol);
-      }
-    }
+    final symbolsNeedingData = _findSymbolsNeedingData(
+      symbolsForHistory,
+      priceHistoryBatch,
+      date,
+    );
 
     if (symbolsNeedingData.isEmpty) {
       onProgress?.call('歷史資料已完整');
@@ -105,7 +69,86 @@ class HistoricalPriceSyncer {
       );
     }
 
-    // 記錄需要同步的股票及其原因（便於診斷）
+    _logSyncDiagnostics(symbolsNeedingData, priceHistoryBatch);
+
+    final limitedSymbols = _prioritizeSymbols(
+      symbolsNeedingData,
+      watchlistSymbols: watchlistSymbols,
+      popularStocks: popularStocks,
+    );
+
+    return _performBatchSync(
+      limitedSymbols,
+      historyStartDate: historyStartDate,
+      endDate: date,
+      totalNeeded: symbolsNeedingData.length,
+      onProgress: onProgress,
+    );
+  }
+
+  /// 判斷哪些 symbol 需要補歷史資料
+  List<String> _findSymbolsNeedingData(
+    List<String> symbols,
+    Map<String, List<DailyPriceEntry>> priceHistoryBatch,
+    DateTime date,
+  ) {
+    final result = <String>[];
+    const minRequiredDays = RuleParams.week52Days;
+    const nearThreshold = 180;
+
+    for (final symbol in symbols) {
+      final prices = priceHistoryBatch[symbol];
+      final priceCount = prices?.length ?? 0;
+
+      if (priceCount >= minRequiredDays) continue;
+      if (priceCount >= nearThreshold) continue;
+
+      if (priceCount == 0) {
+        result.add(symbol);
+        continue;
+      }
+
+      if (prices != null &&
+          prices.isNotEmpty &&
+          _hasEnoughDataForAge(prices, priceCount, date)) {
+        continue;
+      }
+
+      result.add(symbol);
+    }
+
+    return result;
+  }
+
+  /// 檢查較新上市的股票是否已有足夠的資料
+  ///
+  /// 避免反覆呼叫 API 試圖取得不存在的歷史資料
+  bool _hasEnoughDataForAge(
+    List<DailyPriceEntry> prices,
+    int priceCount,
+    DateTime date,
+  ) {
+    final firstTradeDate = prices.first.date;
+    final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
+
+    if (daysSinceFirstTrade >= 365) return false;
+
+    // 約 71% 的日曆天是交易日
+    final expectedTradingDays = (daysSinceFirstTrade * 0.71).round().clamp(
+      1,
+      365,
+    );
+
+    // 只要資料達到預期的 50% 就視為足夠
+    final minAcceptableDays = (expectedTradingDays * 0.5).round();
+    return priceCount >= minAcceptableDays;
+  }
+
+  /// 記錄需要同步的股票診斷資訊
+  void _logSyncDiagnostics(
+    List<String> symbolsNeedingData,
+    Map<String, List<DailyPriceEntry>> priceHistoryBatch,
+  ) {
     if (symbolsNeedingData.length <= 10) {
       final details = symbolsNeedingData
           .map((symbol) {
@@ -124,33 +167,48 @@ class HistoricalPriceSyncer {
         '需要歷史資料的股票: ${symbolsNeedingData.length} 檔',
       );
     }
+  }
 
-    // 若需要同步的股票過多，限制數量避免 API 超限
-    // 優先同步自選清單和熱門股
+  /// 依重要性排序並限制同步數量
+  ///
+  /// 優先順序：自選 > 熱門 > 其他
+  List<String> _prioritizeSymbols(
+    List<String> symbolsNeedingData, {
+    required List<String> watchlistSymbols,
+    required List<String> popularStocks,
+  }) {
     const maxSyncCount = 60;
-    var limitedSymbols = symbolsNeedingData;
-    if (symbolsNeedingData.length > maxSyncCount) {
-      final watchlistSet = watchlistSymbols.toSet();
-      final popularSet = popularStocks.toSet();
-
-      // 優先排序：自選 > 熱門 > 其他
-      limitedSymbols = symbolsNeedingData.toList()
-        ..sort((a, b) {
-          final aScore =
-              (watchlistSet.contains(a) ? 2 : 0) +
-              (popularSet.contains(a) ? 1 : 0);
-          final bScore =
-              (watchlistSet.contains(b) ? 2 : 0) +
-              (popularSet.contains(b) ? 1 : 0);
-          return bScore.compareTo(aScore);
-        });
-      limitedSymbols = limitedSymbols.take(maxSyncCount).toList();
-
-      AppLogger.info('HistoricalPriceSyncer', '限制同步 $maxSyncCount 檔（優先自選和熱門股）');
+    if (symbolsNeedingData.length <= maxSyncCount) {
+      return symbolsNeedingData;
     }
 
-    // 批次同步歷史資料
-    final total = limitedSymbols.length;
+    final watchlistSet = watchlistSymbols.toSet();
+    final popularSet = popularStocks.toSet();
+
+    final sorted = symbolsNeedingData.toList()
+      ..sort((a, b) {
+        final aScore =
+            (watchlistSet.contains(a) ? 2 : 0) +
+            (popularSet.contains(a) ? 1 : 0);
+        final bScore =
+            (watchlistSet.contains(b) ? 2 : 0) +
+            (popularSet.contains(b) ? 1 : 0);
+        return bScore.compareTo(aScore);
+      });
+
+    AppLogger.info('HistoricalPriceSyncer', '限制同步 $maxSyncCount 檔（優先自選和熱門股）');
+    return sorted.take(maxSyncCount).toList();
+  }
+
+  /// 執行批次同步
+  Future<HistoricalPriceSyncResult> _performBatchSync(
+    List<String> symbols, {
+    required DateTime historyStartDate,
+    required DateTime endDate,
+    required int totalNeeded,
+    void Function(String message)? onProgress,
+  }) async {
+    final total = symbols.length;
     var historySynced = 0;
     const batchSize = 2;
     final failedSymbols = <String>[];
@@ -159,7 +217,7 @@ class HistoricalPriceSyncer {
       if (i > 0) await Future.delayed(const Duration(milliseconds: 200));
 
       final batchEnd = (i + batchSize).clamp(0, total);
-      final batch = limitedSymbols.sublist(i, batchEnd);
+      final batch = symbols.sublist(i, batchEnd);
 
       onProgress?.call('歷史資料 (${i + 1}~$batchEnd / $total)');
 
@@ -168,7 +226,7 @@ class HistoricalPriceSyncer {
           final count = await _priceRepo.syncStockPrices(
             symbol,
             startDate: historyStartDate,
-            endDate: date,
+            endDate: endDate,
           );
           return (symbol, count, null as Object?);
         } catch (e) {
@@ -187,17 +245,17 @@ class HistoricalPriceSyncer {
       }
     }
 
-    final successCount = limitedSymbols.length - failedSymbols.length;
+    final successCount = symbols.length - failedSymbols.length;
     AppLogger.info(
       'HistoricalPriceSyncer',
-      '歷史資料同步完成 $successCount/${limitedSymbols.length} 檔'
-          '${symbolsNeedingData.length > limitedSymbols.length ? " (共需 ${symbolsNeedingData.length} 檔)" : ""}',
+      '歷史資料同步完成 $successCount/${symbols.length} 檔'
+          '${totalNeeded > symbols.length ? " (共需 $totalNeeded 檔)" : ""}',
     );
 
     return HistoricalPriceSyncResult(
       syncedCount: historySynced,
       symbolsProcessed: successCount,
-      totalSymbolsNeeded: symbolsNeedingData.length,
+      totalSymbolsNeeded: totalNeeded,
       failedSymbols: failedSymbols,
     );
   }

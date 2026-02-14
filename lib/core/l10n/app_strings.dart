@@ -60,6 +60,7 @@ class S {
   static const String newsEarlier = '更早';
   static const String newsRelatedStocks = '相關股票';
   static const String newsOpenInBrowser = '開啟原文';
+  static const String newsCannotOpenLink = '無法開啟連結';
   static String newsMinutesAgo(int minutes) => '$minutes 分鐘前';
   static String newsHoursAgo(int hours) => '$hours 小時前';
   static String newsDaysAgo(int days) => '$days 天前';
@@ -212,6 +213,27 @@ class S {
   static const String accessibilityRemoveFromWatchlist = '從自選移除';
   static String accessibilityButtonPress(String label) => '按鈕: $label';
 
+  // 股票詳情頁無障礙標籤
+  static String accessibilityClosePrice(String price) => '收盤價 $price 元';
+  static String accessibilityAbsoluteChange(String change) => '$change 元';
+  static String accessibilityPriceChangeDetail(
+    String absText,
+    String pctText,
+  ) => '漲跌 $absText$pctText';
+  static String accessibilityTrend(String trend) => '趨勢 $trend';
+
+  // 比較頁面無障礙標籤
+  static String accessibilityPriceComparisonChart(String symbols) =>
+      '價格走勢比較圖，比較 $symbols 的歷史價格';
+  static String accessibilityRadarChart(String symbols) =>
+      '雷達圖比較 $symbols 的各維度指標';
+  static String accessibilityComparisonTable(String symbols) =>
+      '$symbols 的詳細數據比較表格';
+
+  // 投資組合無障礙標籤
+  static String accessibilityAllocationPieChart(int count) =>
+      '投資組合配置圓餅圖，共 $count 檔持股';
+
   // 走勢圖無障礙標籤
   static const String sparklineDefault = '近期價格走勢圖';
   static String sparklineFlat(int days) => '近 $days 日價格持平走勢圖';
@@ -224,6 +246,7 @@ class S {
   static const String shimmerLoadingStockList = '股票列表載入中';
   static const String shimmerLoadingStockDetail = '股票詳情載入中';
   static const String shimmerLoadingNewsList = '新聞列表載入中';
+  static const String shimmerLoadingGenericList = '列表載入中';
 
   // ==================================================
   // 自選股狀態圖示
@@ -232,6 +255,17 @@ class S {
   static const String statusVolatile = '波動中';
   static const String statusQuiet = '平靜';
   static String signalType(String? type) => '有訊號: ${type ?? "異常"}';
+
+  // ==================================================
+  // 市場類型
+  // ==================================================
+  static const String marketTWSE = '市';
+  static const String marketTPEx = '櫃';
+
+  // ==================================================
+  // 基本面
+  // ==================================================
+  static String dividendYearAverage(int years) => '$years年平均: ';
 
   // ==================================================
   // 時間與日期

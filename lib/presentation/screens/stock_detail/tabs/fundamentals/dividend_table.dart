@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
@@ -65,7 +66,7 @@ class DividendTable extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '${displayData.length}年平均: ',
+                      S.dividendYearAverage(displayData.length),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.outline,
                       ),

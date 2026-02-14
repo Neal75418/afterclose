@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -72,19 +73,20 @@ class StockDetailHeader extends StatelessWidget {
     if (name != null) parts.add(name);
     parts.add(symbol);
     final close = state.latestClose;
-    if (close != null) parts.add('收盤價 ${close.toStringAsFixed(2)} 元');
+    if (close != null) {
+      parts.add(S.accessibilityClosePrice(close.toStringAsFixed(2)));
+    }
     final change = state.priceChange;
     if (change != null) {
       final absChange = _calculateAbsoluteChange(close, change);
       final absText = absChange != null
-          ? '${absChange >= 0 ? "+" : ""}${absChange.toStringAsFixed(2)} 元, '
+          ? '${S.accessibilityAbsoluteChange('${absChange >= 0 ? "+" : ""}${absChange.toStringAsFixed(2)}')}, '
           : '';
-      parts.add(
-        '漲跌 $absText${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%',
-      );
+      final pctText = '${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%';
+      parts.add(S.accessibilityPriceChangeDetail(absText, pctText));
     }
     final trend = state.price.analysis?.trendState;
-    if (trend != null) parts.add('趨勢 ${trend.trendKey}');
+    if (trend != null) parts.add(S.accessibilityTrend(trend.trendKey));
     return parts.join(', ');
   }
 

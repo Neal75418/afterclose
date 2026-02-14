@@ -49,7 +49,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('無法開啟連結')));
+        ).showSnackBar(const SnackBar(content: Text(S.newsCannotOpenLink)));
       }
     }
   }

@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/allocation_pie_chart.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/dividend_analysis_card.dart';
 import 'package:afterclose/presentation/screens/portfolio/widgets/industry_allocation_card.dart';
@@ -38,7 +40,7 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
     final theme = Theme.of(context);
 
     if (state.isLoading && state.positions.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const GenericListShimmer(itemCount: 4);
     }
 
     if (state.error != null && state.positions.isEmpty) {
@@ -72,7 +74,9 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
               // 配置圓餅圖
               if (state.allocationMap.isNotEmpty) ...[
                 Semantics(
-                  label: '投資組合配置圓餅圖，共 ${state.allocationMap.length} 檔持股',
+                  label: S.accessibilityAllocationPieChart(
+                    state.allocationMap.length,
+                  ),
                   image: true,
                   child: AllocationPieChart(allocationMap: state.allocationMap),
                 ),
