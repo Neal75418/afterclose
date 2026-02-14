@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
@@ -9,9 +10,14 @@ import 'package:afterclose/core/utils/taiwan_calendar.dart';
 
 /// 分析結果與推薦股 Repository 實作
 class AnalysisRepository implements IAnalysisRepository {
-  AnalysisRepository({required AppDatabase database}) : _db = database;
+  AnalysisRepository({
+    required AppDatabase database,
+    AppClock clock = const SystemClock(),
+  }) : _db = database,
+       _clock = clock;
 
   final AppDatabase _db;
+  final AppClock _clock;
 
   /// Request deduplicators
   final _todayRecommendationsDedup =
@@ -132,7 +138,7 @@ class AnalysisRepository implements IAnalysisRepository {
   @override
   Future<List<DailyRecommendationEntry>> getTodayRecommendations() async {
     return _todayRecommendationsDedup.call('today_recommendations', () async {
-      final now = DateTime.now();
+      final now = _clock.now();
 
       // 依序嘗試今天、昨天、前天的資料
       for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
@@ -201,7 +207,7 @@ class AnalysisRepository implements IAnalysisRepository {
     String symbol, {
     int days = RuleParams.cooldownDays,
   }) {
-    final now = DateTime.now();
+    final now = _clock.now();
     final endDate = _normalizeDate(now.subtract(const Duration(days: 1)));
     final startDate = _normalizeDate(now.subtract(Duration(days: days)));
 
@@ -217,7 +223,7 @@ class AnalysisRepository implements IAnalysisRepository {
   Future<Set<String>> getRecentlyRecommendedSymbols({
     int days = RuleParams.cooldownDays,
   }) {
-    final now = DateTime.now();
+    final now = _clock.now();
     final endDate = _normalizeDate(now.subtract(const Duration(days: 1)));
     final startDate = _normalizeDate(now.subtract(Duration(days: days)));
 
@@ -225,6 +231,43 @@ class AnalysisRepository implements IAnalysisRepository {
       startDate: startDate,
       endDate: endDate,
     );
+  }
+
+  // ==========================================
+  // 智慧日期回退
+  // ==========================================
+
+  /// 尋找最近有分析資料的日期和結果
+  ///
+  /// 統一的 3 天窗口 + 交易日回退邏輯，所有日期已正規化。
+  @override
+  Future<({DateTime targetDate, List<DailyAnalysisEntry> analyses})>
+  findLatestAnalyses() async {
+    final now = _clock.now();
+
+    // 依序嘗試今天、昨天、前天的資料
+    for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
+      final date = _normalizeDate(now.subtract(Duration(days: daysAgo)));
+      final analyses = await getAnalysesForDate(date);
+      if (analyses.isNotEmpty) {
+        return (targetDate: date, analyses: analyses);
+      }
+    }
+
+    // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
+    final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
+      _normalizeDate(now.subtract(const Duration(days: 3))),
+    );
+    final normalizedDate = _normalizeDate(prevTradingDay);
+    final analyses = await getAnalysesForDate(normalizedDate);
+    return (targetDate: normalizedDate, analyses: analyses);
+  }
+
+  /// 尋找最近有分析資料的日期
+  @override
+  Future<DateTime?> findLatestAnalysisDate() async {
+    final result = await findLatestAnalyses();
+    return result.analyses.isNotEmpty ? result.targetDate : null;
   }
 
   // ==========================================

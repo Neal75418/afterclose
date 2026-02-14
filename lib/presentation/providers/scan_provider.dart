@@ -6,6 +6,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
+import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
@@ -124,6 +125,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
   AppDatabase get _db => _ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
   DataSyncService get _dataSyncService => _ref.read(dataSyncServiceProvider);
+  AnalysisRepository get _analysisRepo => _ref.read(analysisRepositoryProvider);
 
   static const _service = ScanFilterService();
 
@@ -142,8 +144,8 @@ class ScanNotifier extends StateNotifier<ScanState> {
     state = state.copyWith(isLoading: true, error: null, hasMore: true);
 
     try {
-      // 智慧回退：找到最近有資料的日期
-      final result = await _service.findLatestAnalyses(_db);
+      // 智慧回退：找到最近有資料的日期（統一由 Repository 處理日期正規化）
+      final result = await _analysisRepo.findLatestAnalyses();
       final targetDate = result.targetDate;
       final analyses = result.analyses;
 

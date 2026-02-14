@@ -23,6 +23,7 @@ import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/services/cache_warmup_service.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
@@ -33,6 +34,9 @@ import 'package:afterclose/domain/services/update_service.dart';
 // ==================================================
 // 核心基礎設施
 // ==================================================
+
+/// 時間抽象層，用於測試中注入假時間
+final appClockProvider = Provider<AppClock>((ref) => const SystemClock());
 
 /// 應用程式資料庫單例
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -115,7 +119,10 @@ final newsRepositoryProvider = Provider<NewsRepository>((ref) {
 
 /// 分析資料儲存庫 Provider
 final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
-  return AnalysisRepository(database: ref.watch(databaseProvider));
+  return AnalysisRepository(
+    database: ref.watch(databaseProvider),
+    clock: ref.watch(appClockProvider),
+  );
 });
 
 /// 法人資料儲存庫 Provider

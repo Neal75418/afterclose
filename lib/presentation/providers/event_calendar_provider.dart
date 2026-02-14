@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/legacy.dart'
     show StateNotifier, StateNotifierProvider;
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
@@ -100,16 +101,19 @@ class EventCalendarNotifier extends StateNotifier<EventCalendarState> {
   EventCalendarNotifier({
     required EventRepository eventRepository,
     required AppDatabase database,
+    required AppClock clock,
   }) : _repo = eventRepository,
        _db = database,
+       _clock = clock,
        super(const EventCalendarState());
 
   final EventRepository _repo;
   final AppDatabase _db;
+  final AppClock _clock;
 
   /// 初始化：設定焦點月份為當月，載入事件
   Future<void> init() async {
-    final now = DateTime.now();
+    final now = _clock.now();
     final focused = DateTime(now.year, now.month);
     state = state.copyWith(focusedMonth: focused, selectedDate: now);
     await loadMonthEvents(focused);
@@ -243,5 +247,6 @@ final eventCalendarProvider =
       return EventCalendarNotifier(
         eventRepository: ref.watch(eventRepositoryProvider),
         database: ref.watch(databaseProvider),
+        clock: ref.watch(appClockProvider),
       );
     });

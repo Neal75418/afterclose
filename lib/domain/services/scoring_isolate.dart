@@ -87,9 +87,12 @@ class ScoringIsolateInput {
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
     return ScoringIsolateInput(
       candidates: List<String>.from(map['candidates']),
-      pricesMap: _castPricesMap(map['pricesMap']),
-      newsMap: _castNewsMap(map['newsMap']),
-      institutionalMap: _castInstitutionalMap(map['institutionalMap']),
+      pricesMap: _castMapOfLists(map['pricesMap'], 'pricesMap'),
+      newsMap: _castMapOfLists(map['newsMap'], 'newsMap'),
+      institutionalMap: _castMapOfLists(
+        map['institutionalMap'],
+        'institutionalMap',
+      ),
       revenueMap: map['revenueMap'] != null
           ? Map<String, Map<String, dynamic>>.from(map['revenueMap'])
           : null,
@@ -97,7 +100,7 @@ class ScoringIsolateInput {
           ? Map<String, Map<String, dynamic>>.from(map['valuationMap'])
           : null,
       revenueHistoryMap: map['revenueHistoryMap'] != null
-          ? _castRevenueHistoryMap(map['revenueHistoryMap'])
+          ? _castMapOfLists(map['revenueHistoryMap'], 'revenueHistoryMap')
           : null,
       recentlyRecommended: map['recentlyRecommended'] != null
           ? Set<String>.from(map['recentlyRecommended'])
@@ -126,19 +129,24 @@ class ScoringIsolateInput {
             )
           : null,
       epsHistoryMap: map['epsHistoryMap'] != null
-          ? _castEpsHistoryMap(map['epsHistoryMap'])
+          ? _castMapOfLists(map['epsHistoryMap'], 'epsHistoryMap')
           : null,
       roeHistoryMap: map['roeHistoryMap'] != null
-          ? _castEpsHistoryMap(map['roeHistoryMap'])
+          ? _castMapOfLists(map['roeHistoryMap'], 'roeHistoryMap')
           : null,
       dividendHistoryMap: map['dividendHistoryMap'] != null
-          ? _castDividendHistoryMap(map['dividendHistoryMap'])
+          ? _castMapOfLists(map['dividendHistoryMap'], 'dividendHistoryMap')
           : null,
     );
   }
 
-  static Map<String, List<Map<String, dynamic>>> _castDividendHistoryMap(
+  /// Isolate 邊界型別轉換：symbol → list of maps
+  ///
+  /// Isolate 傳輸會遺失泛型資訊，需逐層手動轉型。
+  /// [fieldName] 用於錯誤日誌識別。
+  static Map<String, List<Map<String, dynamic>>> _castMapOfLists(
     dynamic map,
+    String fieldName,
   ) {
     if (map is! Map) return {};
     final result = <String, List<Map<String, dynamic>>>{};
@@ -147,13 +155,15 @@ class ScoringIsolateInput {
         result[entry.key as String] = List<Map<String, dynamic>>.from(
           (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
         );
-      } catch (_) {
-        // 跳過無法轉換的條目
+      } catch (e) {
+        // Isolate 內無法使用 AppLogger，改用 debugPrint
+        debugPrint('ScoringIsolate: $fieldName skip key=${entry.key}: $e');
       }
     }
     return result;
   }
 
+  /// Isolate 邊界型別轉換：symbol → shareholding map
   static Map<String, Map<String, double?>> _castShareholdingMap(dynamic map) {
     if (map is! Map) return {};
     final result = <String, Map<String, double?>>{};
@@ -164,89 +174,8 @@ class ScoringIsolateInput {
           innerMap[inner.key as String] = inner.value as double?;
         }
         result[entry.key as String] = innerMap;
-      } catch (_) {
-        // 跳過無法轉換的條目
-      }
-    }
-    return result;
-  }
-
-  static Map<String, List<Map<String, dynamic>>> _castPricesMap(dynamic map) {
-    if (map is! Map) return {};
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in map.entries) {
-      try {
-        result[entry.key as String] = List<Map<String, dynamic>>.from(
-          (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
-        );
-      } catch (_) {
-        // 跳過無法轉換的條目
-      }
-    }
-    return result;
-  }
-
-  static Map<String, List<Map<String, dynamic>>> _castNewsMap(dynamic map) {
-    if (map is! Map) return {};
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in map.entries) {
-      try {
-        result[entry.key as String] = List<Map<String, dynamic>>.from(
-          (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
-        );
-      } catch (_) {
-        // 跳過無法轉換的條目
-      }
-    }
-    return result;
-  }
-
-  static Map<String, List<Map<String, dynamic>>> _castInstitutionalMap(
-    dynamic map,
-  ) {
-    if (map is! Map) return {};
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in map.entries) {
-      try {
-        result[entry.key as String] = List<Map<String, dynamic>>.from(
-          (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
-        );
-      } catch (_) {
-        // 跳過無法轉換的條目
-      }
-    }
-    return result;
-  }
-
-  static Map<String, List<Map<String, dynamic>>> _castRevenueHistoryMap(
-    dynamic map,
-  ) {
-    if (map is! Map) return {};
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in map.entries) {
-      try {
-        result[entry.key as String] = List<Map<String, dynamic>>.from(
-          (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
-        );
-      } catch (_) {
-        // 跳過無法轉換的條目
-      }
-    }
-    return result;
-  }
-
-  static Map<String, List<Map<String, dynamic>>> _castEpsHistoryMap(
-    dynamic map,
-  ) {
-    if (map is! Map) return {};
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in map.entries) {
-      try {
-        result[entry.key as String] = List<Map<String, dynamic>>.from(
-          (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
-        );
-      } catch (_) {
-        // 跳過無法轉換的條目
+      } catch (e) {
+        debugPrint('ScoringIsolate: shareholdingMap skip key=${entry.key}: $e');
       }
     }
     return result;

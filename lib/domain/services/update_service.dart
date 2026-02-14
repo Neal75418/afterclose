@@ -117,6 +117,9 @@ class UpdateService {
   final ScoringService? _scoringService;
   final List<String> _popularStocks;
 
+  /// 提前載入的緩衝天數（確保有足夠歷史資料用於技術指標計算）
+  static const int _historyLoadBuffer = 20;
+
   // 專責 updater
   final StockListSyncer _stockListSyncer;
   final NewsSyncer _newsSyncer;
@@ -335,7 +338,7 @@ class UpdateService {
       ctx.result.pricesUpdated = syncResult.count;
       ctx.marketCandidates = syncResult.candidates;
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '價格同步失敗');
+      AppLogger.warning('UpdateSvc', '價格同步失敗: $e', e);
       ctx.result.recordError('價格資料更新失敗: $e', e);
     }
     return normalizedDate;
@@ -544,7 +547,7 @@ class UpdateService {
 
   Future<List<String>> _filterCandidates({required _UpdateContext ctx}) async {
     final historyStartDate = ctx.normalizedDate.subtract(
-      const Duration(days: RuleParams.historyRequiredDays - 20),
+      const Duration(days: RuleParams.historyRequiredDays - _historyLoadBuffer),
     );
     final allAnalyzable = await _db.getSymbolsWithSufficientData(
       minDays: RuleParams.swingWindow,
@@ -592,6 +595,34 @@ class UpdateService {
     required _UpdateContext ctx,
     required List<String> candidates,
   }) async {
+    final batchData = await _loadBatchData(ctx, candidates);
+
+    final recentlyRecommended = await _analysisRepo
+        .getRecentlyRecommendedSymbols();
+
+    await _analysisRepo.clearReasonsForDate(ctx.normalizedDate);
+    await _analysisRepo.clearAnalysisForDate(ctx.normalizedDate);
+
+    ctx.reportProgress(7, 10, '分析中 (${candidates.length} 檔)');
+    final scoredStocks = await _scoring.scoreStocksInIsolate(
+      candidates: candidates,
+      date: ctx.normalizedDate,
+      batchData: batchData,
+      recentlyRecommended: recentlyRecommended,
+    );
+
+    AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
+    return scoredStocks;
+  }
+
+  /// 平行載入所有評分所需的批次資料
+  ///
+  /// 同時啟動 14+ 個 DB 查詢，使用 Dart 3 Record 解構等待，
+  /// 再將原始資料轉換為 Isolate 可用的 Map 格式。
+  Future<ScoringBatchData> _loadBatchData(
+    _UpdateContext ctx,
+    List<String> candidates,
+  ) async {
     final startDate = ctx.normalizedDate.subtract(
       const Duration(days: RuleParams.lookbackPrice + 10),
     );
@@ -635,7 +666,7 @@ class UpdateService {
     final roeFuture = _db.getROEHistoryBatch(candidates);
     final dividendFuture = _db.getDividendHistoryBatch(candidates);
 
-    // 型別安全的並行等待（Dart 3 Record 解構，取代 baseIndex 偏移模式）
+    // 型別安全的並行等待（Dart 3 Record 解構）
     final (pricesMap, newsMap, institutionalMap) = await (
       pricesFuture,
       newsFuture,
@@ -675,26 +706,12 @@ class UpdateService {
         ? await _shareholdingRepo.getConcentrationRatioBatch(candidates)
         : <String, double>{};
 
-    // 轉換為 Isolate 可用的 Map 格式（含外資持股變化量計算 + 籌碼集中度）
-    final shareholdingMap = <String, Map<String, double?>>{};
-    final allSymbols = {...shareholdingEntries.keys, ...concentrationMap.keys};
-    for (final k in allSymbols) {
-      final entry = shareholdingEntries[k];
-      final currentRatio = entry?.foreignSharesRatio;
-      final prevEntry = prevShareholdingEntries[k];
-      final prevRatio = prevEntry?.foreignSharesRatio;
-
-      double? ratioChange;
-      if (currentRatio != null && prevRatio != null) {
-        ratioChange = currentRatio - prevRatio;
-      }
-
-      shareholdingMap[k] = {
-        'foreignSharesRatio': currentRatio,
-        'foreignSharesRatioChange': ratioChange,
-        'concentrationRatio': concentrationMap[k],
-      };
-    }
+    // 轉換為 Isolate 可用的 Map 格式
+    final shareholdingMap = _buildShareholdingMap(
+      shareholdingEntries,
+      prevShareholdingEntries,
+      concentrationMap,
+    );
 
     final warningMap = warningEntries.map(
       (k, v) => MapEntry(k, {
@@ -705,32 +722,9 @@ class UpdateService {
       }),
     );
 
-    // 批次計算董監連續減持/增持狀態
-    final insiderRepo = _insiderRepo;
-    final insiderStatusMap = insiderRepo != null
-        ? await insiderRepo.calculateInsiderStatusBatch(candidates)
-        : <String, InsiderStatus>{};
+    final insiderMap = await _buildInsiderMap(insiderEntries, candidates);
 
-    final insiderMap = insiderEntries.map((k, v) {
-      final status = insiderStatusMap[k];
-      return MapEntry(k, {
-        'insiderRatio': v.insiderRatio,
-        'pledgeRatio': v.pledgeRatio,
-        'hasSellingStreak': status?.hasSellingStreak ?? false,
-        'sellingStreakMonths': status?.sellingStreakMonths ?? 0,
-        'hasSignificantBuying': status?.hasSignificantBuying ?? false,
-        'buyingChange': status?.buyingChange ?? v.sharesChange,
-      });
-    });
-
-    final recentlyRecommended = await _analysisRepo
-        .getRecentlyRecommendedSymbols();
-
-    await _analysisRepo.clearReasonsForDate(ctx.normalizedDate);
-    await _analysisRepo.clearAnalysisForDate(ctx.normalizedDate);
-
-    ctx.reportProgress(7, 10, '分析中 (${candidates.length} 檔)');
-    final batchData = ScoringBatchData(
+    return ScoringBatchData(
       pricesMap: pricesMap,
       newsMap: newsMap,
       institutionalMap: institutionalMap,
@@ -745,15 +739,57 @@ class UpdateService {
       warningMap: warningMap,
       insiderMap: insiderMap,
     );
-    final scoredStocks = await _scoring.scoreStocksInIsolate(
-      candidates: candidates,
-      date: ctx.normalizedDate,
-      batchData: batchData,
-      recentlyRecommended: recentlyRecommended,
-    );
+  }
 
-    AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
-    return scoredStocks;
+  /// 建構外資持股 Map（含變化量計算 + 籌碼集中度）
+  Map<String, Map<String, double?>> _buildShareholdingMap(
+    Map<String, ShareholdingEntry> shareholdingEntries,
+    Map<String, ShareholdingEntry> prevShareholdingEntries,
+    Map<String, double> concentrationMap,
+  ) {
+    final result = <String, Map<String, double?>>{};
+    final allSymbols = {...shareholdingEntries.keys, ...concentrationMap.keys};
+    for (final k in allSymbols) {
+      final entry = shareholdingEntries[k];
+      final currentRatio = entry?.foreignSharesRatio;
+      final prevEntry = prevShareholdingEntries[k];
+      final prevRatio = prevEntry?.foreignSharesRatio;
+
+      double? ratioChange;
+      if (currentRatio != null && prevRatio != null) {
+        ratioChange = currentRatio - prevRatio;
+      }
+
+      result[k] = {
+        'foreignSharesRatio': currentRatio,
+        'foreignSharesRatioChange': ratioChange,
+        'concentrationRatio': concentrationMap[k],
+      };
+    }
+    return result;
+  }
+
+  /// 建構董監持股狀態 Map（含連續減持/增持判斷）
+  Future<Map<String, Map<String, dynamic>>> _buildInsiderMap(
+    Map<String, InsiderHoldingEntry> insiderEntries,
+    List<String> candidates,
+  ) async {
+    final insiderRepo = _insiderRepo;
+    final insiderStatusMap = insiderRepo != null
+        ? await insiderRepo.calculateInsiderStatusBatch(candidates)
+        : <String, InsiderStatus>{};
+
+    return insiderEntries.map((k, v) {
+      final status = insiderStatusMap[k];
+      return MapEntry(k, {
+        'insiderRatio': v.insiderRatio,
+        'pledgeRatio': v.pledgeRatio,
+        'hasSellingStreak': status?.hasSellingStreak ?? false,
+        'sellingStreakMonths': status?.sellingStreakMonths ?? 0,
+        'hasSignificantBuying': status?.hasSignificantBuying ?? false,
+        'buyingChange': status?.buyingChange ?? v.sharesChange,
+      });
+    });
   }
 
   Future<void> _generateRecommendations(

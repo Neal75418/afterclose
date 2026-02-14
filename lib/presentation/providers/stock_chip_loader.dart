@@ -1,3 +1,4 @@
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -25,20 +26,23 @@ class StockChipLoader {
     required AppDatabase db,
     required FinMindClient finMind,
     required InsiderRepository insiderRepo,
+    AppClock clock = const SystemClock(),
   }) : _db = db,
        _finMind = finMind,
-       _insiderRepo = insiderRepo;
+       _insiderRepo = insiderRepo,
+       _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _finMind;
   final InsiderRepository _insiderRepo;
+  final AppClock _clock;
 
   /// 從 FinMind API 載入融資融券資料
   ///
   /// 若 API 返回 402 錯誤，靜默跳過（API 不可用）。
   Future<List<FinMindMarginData>> loadMarginFromApi(String symbol) async {
     try {
-      final today = DateTime.now();
+      final today = _clock.now();
       final startDate = today.subtract(const Duration(days: 20));
 
       return await _finMind.getMarginData(
@@ -86,7 +90,7 @@ class StockChipLoader {
     required List<DailyInstitutionalEntry> existingInstitutional,
     List<InsiderHoldingEntry> existingInsider = const [],
   }) async {
-    final today = DateTime.now();
+    final today = _clock.now();
     final startDate10d = today.subtract(const Duration(days: 15));
     final startDate60d = today.subtract(const Duration(days: 90));
 
@@ -134,7 +138,7 @@ class StockChipLoader {
   Future<({List<DailyInstitutionalEntry> data, bool hasError})>
   fetchInstitutionalFromApi(String symbol) async {
     try {
-      final today = DateTime.now();
+      final today = _clock.now();
       final startDate = today.subtract(const Duration(days: 20));
 
       final data = await _finMind.getInstitutionalData(

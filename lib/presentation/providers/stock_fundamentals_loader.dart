@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -24,18 +25,21 @@ class StockFundamentalsLoader {
   StockFundamentalsLoader({
     required AppDatabase db,
     required FinMindClient finMind,
+    AppClock clock = const SystemClock(),
   }) : _db = db,
-       _finMind = finMind;
+       _finMind = finMind,
+       _clock = clock;
 
   final AppDatabase _db;
   final FinMindClient _finMind;
+  final AppClock _clock;
 
   /// 載入全部基本面資料
   ///
   /// 依序載入估值、營收、股利、EPS 與季度指標。
   /// 估值資料優先從 DB（TWSE 來源）取得，確保與規則評估一致。
   Future<FundamentalsResult> loadAll(String symbol) async {
-    final today = DateTime.now();
+    final today = _clock.now();
     final revenueStartDate = DateTime(today.year - 2, today.month, 1);
 
     // 1. 優先從資料庫取得估值資料（TWSE 來源，與規則評估一致）

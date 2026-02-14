@@ -69,6 +69,22 @@ abstract class IAnalysisRepository {
   Future<Set<String>> getRecentlyRecommendedSymbols({int days});
 
   // ==========================================
+  // 智慧日期回退
+  // ==========================================
+
+  /// 尋找最近有分析資料的日期和結果
+  ///
+  /// 依序嘗試今天、昨天、前天，若 3 天都無資料則回退至前一交易日。
+  /// 所有日期已正規化，安全用於資料庫查詢。
+  Future<({DateTime targetDate, List<DailyAnalysisEntry> analyses})>
+  findLatestAnalyses();
+
+  /// 尋找最近有分析資料的日期
+  ///
+  /// 若完全無資料則回傳 null。
+  Future<DateTime?> findLatestAnalysisDate();
+
+  // ==========================================
   // 資料清理
   // ==========================================
 

@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/legacy.dart'
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
-import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
+import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/data/repositories/screening_repository.dart';
 import 'package:afterclose/domain/services/screening_service.dart';
@@ -80,6 +80,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
 
   AppDatabase get _db => _ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => _ref.read(cachedDbProvider);
+  AnalysisRepository get _analysisRepo => _ref.read(analysisRepositoryProvider);
 
   // 暫存篩選結果的全部 symbol，供分頁使用
   List<String> _allResultSymbols = [];
@@ -200,7 +201,7 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
 
     try {
       // 找到有資料的日期
-      final targetDate = await _findDataDate();
+      final targetDate = await _analysisRepo.findLatestAnalysisDate();
       if (targetDate == null) {
         if (mounted) {
           state = state.copyWith(isExecuting: false, error: '找不到分析資料');
@@ -282,28 +283,6 @@ class CustomScreeningNotifier extends StateNotifier<CustomScreeningState> {
   // ==========================================
   // 私有輔助
   // ==========================================
-
-  Future<DateTime?> _findDataDate() async {
-    final now = DateTime.now();
-    for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
-      final date = now.subtract(Duration(days: daysAgo));
-      final normalizedDate = DateTime(date.year, date.month, date.day);
-      final analyses = await _db.getAnalysisForDate(normalizedDate);
-      if (analyses.isNotEmpty) return normalizedDate;
-    }
-    // 備援至前一交易日（正規化為午夜，與資料庫儲存格式一致）
-    final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
-      now.subtract(const Duration(days: 3)),
-    );
-    final normalizedPrev = DateTime(
-      prevTradingDay.year,
-      prevTradingDay.month,
-      prevTradingDay.day,
-    );
-    final analyses = await _db.getAnalysisForDate(normalizedPrev);
-    if (analyses.isNotEmpty) return normalizedPrev;
-    return null;
-  }
 
   Future<List<ScanStockItem>> _loadStockItems(List<String> symbols) async {
     final dateCtx = _dateCtx;

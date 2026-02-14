@@ -35,11 +35,13 @@ class StockDetailNotifier extends StateNotifier<StockDetailState> {
     : _fundamentalsLoader = StockFundamentalsLoader(
         db: _ref.read(databaseProvider),
         finMind: _ref.read(finMindClientProvider),
+        clock: _ref.read(appClockProvider),
       ),
       _chipLoader = StockChipLoader(
         db: _ref.read(databaseProvider),
         finMind: _ref.read(finMindClientProvider),
         insiderRepo: _ref.read(insiderRepositoryProvider),
+        clock: _ref.read(appClockProvider),
       ),
       super(const StockDetailState());
 
