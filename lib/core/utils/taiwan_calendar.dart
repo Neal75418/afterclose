@@ -87,7 +87,8 @@ class TaiwanCalendar {
     DateTime.utc(2026, 2, 18),
     DateTime.utc(2026, 2, 19),
     DateTime.utc(2026, 2, 20),
-    // 228 和平紀念日
+    // 228 和平紀念日（2/28 週六，補假 2/27 週五）
+    DateTime.utc(2026, 2, 27),
     DateTime.utc(2026, 2, 28),
     // 兒童節/清明節 (4/3-4/6 estimated)
     DateTime.utc(2026, 4, 3),
@@ -100,7 +101,8 @@ class TaiwanCalendar {
     DateTime.utc(2026, 6, 19),
     // 中秋節 (9/25 estimated)
     DateTime.utc(2026, 9, 25),
-    // 國慶日
+    // 國慶日（10/10 週六，補假 10/9 週五）
+    DateTime.utc(2026, 10, 9),
     DateTime.utc(2026, 10, 10),
   };
 
