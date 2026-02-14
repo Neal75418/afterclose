@@ -30,7 +30,7 @@ class DividendTable extends StatelessWidget {
       ..sort((a, b) => b.year.compareTo(a.year));
     final displayData = sortedData.take(5).toList();
 
-    // Calculate average cash dividend for summary
+    // 計算現金股利平均值供摘要使用
     double totalCash = 0;
     for (final div in displayData) {
       totalCash += div.cashDividend;
@@ -44,7 +44,7 @@ class DividendTable extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Average summary row
+            // 平均值摘要列
             if (displayData.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(12),

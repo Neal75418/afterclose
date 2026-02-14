@@ -37,9 +37,9 @@ class TechnicalTab extends ConsumerStatefulWidget {
 }
 
 class _TechnicalTabState extends ConsumerState<TechnicalTab> {
-  // Main indicators (overlaid on K-line chart): MA, BOLL
+  // 主圖指標（疊加於 K 線圖）：MA、BOLL
   final Set<MainState> _mainIndicators = {MainState.MA};
-  // Secondary indicators (sub-charts): MACD, KDJ, RSI, WR, CCI
+  // 副圖指標（子圖表）：MACD、KDJ、RSI、WR、CCI
   final Set<SecondaryState> _secondaryIndicators = {};
   // 時間範圍（預設 3 個月）
   ChartTimeRange _timeRange = ChartTimeRange.threeMonths;
@@ -133,7 +133,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       );
     }
 
-    // Calculate chart height based on selected secondary indicators
+    // 依選取的副圖指標計算圖表高度
     final baseHeight = context.responsive(
       mobile: 320.0,
       tablet: 400.0,
@@ -150,25 +150,25 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // K-line chart section
+          // K 線圖區段
           SectionHeader(
             title: 'stockDetail.klineChart'.tr(),
             icon: Icons.candlestick_chart,
           ),
           const SizedBox(height: 12),
 
-          // Main indicator selector (MA, BOLL)
+          // 主圖指標選擇（MA、BOLL）
           MainIndicatorSelector(
             selectedIndicators: _mainIndicators,
             onToggle: _toggleMainIndicator,
           ),
           const SizedBox(height: 8),
 
-          // Time range selector
+          // 時間區間選擇
           _buildTimeRangeSelector(theme),
           const SizedBox(height: 12),
 
-          // K-line chart with indicators
+          // 含指標的 K 線圖
           KLineChartWidget(
             priceHistory: _filterPriceHistory(state.price.priceHistory),
             mainIndicators: _mainIndicators,
@@ -178,7 +178,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
           ),
           const SizedBox(height: 16),
 
-          // Secondary indicator selector (RSI, KD, MACD)
+          // 副圖指標選擇（RSI、KD、MACD）
           SectionHeader(
             title: 'stockDetail.secondaryIndicators'.tr(),
             icon: Icons.show_chart,
@@ -190,13 +190,13 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
           ),
           const SizedBox(height: 16),
 
-          // OHLCV data card
+          // OHLCV 資料卡片
           OhlcvCard(
             latestPrice: state.price.latestPrice,
             priceChange: state.priceChange,
           ),
 
-          // Detailed indicator values
+          // 詳細指標數值
           if (_secondaryIndicators.isNotEmpty) ...[
             const SizedBox(height: 16),
             SectionHeader(

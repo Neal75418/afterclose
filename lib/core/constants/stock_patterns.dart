@@ -1,9 +1,7 @@
 /// 股票代碼驗證模式
 ///
 /// 集中管理股票代碼的驗證邏輯，確保全專案一致性。
-class StockPatterns {
-  StockPatterns._();
-
+abstract final class StockPatterns {
   /// 有效股票代碼模式（上市 + 上櫃）
   ///
   /// 允許：

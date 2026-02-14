@@ -107,7 +107,7 @@ class RevenueTable extends StatelessWidget {
   }
 
   String _formatRevenue(double revenue) {
-    // Revenue is in thousands (千元), convert to 億
+    // 營收單位為千元，轉換為億
     if (revenue >= 100000) {
       return '${(revenue / 100000).toStringAsFixed(1)}${'stockDetail.unitBillion'.tr()}';
     } else if (revenue >= 10000) {

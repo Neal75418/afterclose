@@ -2,9 +2,9 @@
 ///
 /// 集中管理所有外部 API URL，便於維護與修改。
 abstract final class ApiEndpoints {
-  // ==========================================
+  // ==================================================
   // TWSE (台灣證券交易所)
-  // ==========================================
+  // ==================================================
 
   /// TWSE 官方網站基礎 URL
   static const String twseBaseUrl = 'https://www.twse.com.tw';
@@ -61,9 +61,9 @@ abstract final class ApiEndpoints {
   static const String twseStockInfo =
       '$twseOpenDataBaseUrl/v1/opendata/t187ap03_L';
 
-  // ==========================================
+  // ==================================================
   // TPEX (台灣櫃檯買賣中心)
-  // ==========================================
+  // ==================================================
 
   /// TPEX 官方網站基礎 URL
   static const String tpexBaseUrl = 'https://www.tpex.org.tw';
@@ -122,18 +122,18 @@ abstract final class ApiEndpoints {
   static const String tpexStockInfo =
       '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap03_O';
 
-  // ==========================================
+  // ==================================================
   // TDCC (台灣集中保管結算所)
-  // ==========================================
+  // ==================================================
 
   /// TDCC 股權分散表 - Open Data（免費、無需認證、每週更新）
   /// 一次回傳全市場所有股票的持股級距分布
   static const String tdccHoldingDistribution =
       'https://openapi.tdcc.com.tw/v1/opendata/1-5';
 
-  // ==========================================
+  // ==================================================
   // FinMind
-  // ==========================================
+  // ==================================================
 
   /// FinMind API 基礎 URL
   static const String finmindBaseUrl =
@@ -142,9 +142,9 @@ abstract final class ApiEndpoints {
   /// FinMind 網站（供使用者註冊 Token）
   static const String finmindWebsite = 'https://finmindtrade.com/';
 
-  // ==========================================
+  // ==================================================
   // RSS 新聞來源
-  // ==========================================
+  // ==================================================
 
   /// MoneyDJ 理財網
   static const String rssMoneyDj =

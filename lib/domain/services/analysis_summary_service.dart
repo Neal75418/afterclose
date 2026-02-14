@@ -513,7 +513,7 @@ class AnalysisSummaryService {
   }
 
   // ==================================================
-  // Dispatch map: ReasonType code → LocalizableString builder
+  // 映射表：ReasonType 代碼 → LocalizableString 建構
   // ==================================================
 
   static final Map<String, LocalizableString Function(Map<String, dynamic>)>

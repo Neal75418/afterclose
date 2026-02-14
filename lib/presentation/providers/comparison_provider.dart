@@ -128,7 +128,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
   void removeStock(String symbol) {
     final newSymbols = state.symbols.where((s) => s != symbol).toList();
 
-    // Remove data for the removed symbol
+    // 移除該股票的比較資料
     final newStocks = Map<String, StockMasterEntry>.from(state.stocksMap)
       ..remove(symbol);
     final newPrices = Map<String, DailyPriceEntry>.from(state.latestPricesMap)
@@ -215,7 +215,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         final latestPrice = coreData.latestPrices[symbol];
         final priceHistory = coreData.priceHistories[symbol] ?? [];
 
-        // Convert DB models to API models for summary service
+        // 將 DB Model 轉換為 API Model 供摘要服務使用
         final revenueEntries = revenue[symbol] ?? [];
         final finMindRevenues = revenueEntries
             .map(

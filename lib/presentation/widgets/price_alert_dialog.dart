@@ -52,7 +52,7 @@ class _CreatePriceAlertDialogState
   @override
   void initState() {
     super.initState();
-    // Pre-fill with current price if available
+    // 若有當前價格則預填
     if (widget.currentPrice case final price?) {
       _valueController.text = price.toStringAsFixed(2);
     }
@@ -76,7 +76,7 @@ class _CreatePriceAlertDialogState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Stock info
+            // 股票資訊
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -109,7 +109,7 @@ class _CreatePriceAlertDialogState
 
             const SizedBox(height: 16),
 
-            // Alert type selector
+            // 警示類型選擇
             Text(
               'alert.type'.tr(),
               style: theme.textTheme.labelMedium?.copyWith(
@@ -137,7 +137,7 @@ class _CreatePriceAlertDialogState
 
             const SizedBox(height: 16),
 
-            // Target value input
+            // 目標值輸入
             TextField(
               controller: _valueController,
               decoration: InputDecoration(
@@ -158,7 +158,7 @@ class _CreatePriceAlertDialogState
 
             const SizedBox(height: 16),
 
-            // Note input (optional)
+            // 備註輸入（選填）
             TextField(
               controller: _noteController,
               decoration: InputDecoration(
@@ -169,7 +169,7 @@ class _CreatePriceAlertDialogState
               maxLines: 2,
             ),
 
-            // Current price hint
+            // 當前價格提示
             if (widget.currentPrice case final price?) ...[
               const SizedBox(height: 12),
               Text(

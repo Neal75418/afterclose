@@ -80,10 +80,10 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
       builder: (context, scrollController) {
         return Column(
           children: [
-            // Handle
+            // 把手
             const DragHandle(margin: EdgeInsets.only(top: 8)),
 
-            // Search field
+            // 搜尋欄位
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(

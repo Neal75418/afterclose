@@ -24,9 +24,9 @@ class ShareholdingRepository implements IShareholdingRepository {
   final FinMindClient _client;
   final AppClock _clock;
 
-  // ============================================
+  // ==================================================
   // 外資持股
-  // ============================================
+  // ==================================================
 
   /// 取得外資持股歷史資料
   @override
@@ -107,9 +107,9 @@ class ShareholdingRepository implements IShareholdingRepository {
     return last > first;
   }
 
-  // ============================================
+  // ==================================================
   // 股權分散表
-  // ============================================
+  // ==================================================
 
   /// 取得最新股權分散表
   @override
@@ -222,9 +222,9 @@ class ShareholdingRepository implements IShareholdingRepository {
     return result;
   }
 
-  // ============================================
-  // Private helpers
-  // ============================================
+  // ==================================================
+  // 私有輔助方法
+  // ==================================================
 
   /// 從級距字串解析最小持股數
   int _parseMinSharesFromLevel(String level) {

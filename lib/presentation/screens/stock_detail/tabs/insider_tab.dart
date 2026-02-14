@@ -10,9 +10,9 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/widgets/metric_card.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
-// ==========================================
+// ==================================================
 // UI 常數
-// ==========================================
+// ==================================================
 
 /// 表格顯示的最大月數
 const _kMaxDisplayMonths = 12;
@@ -38,7 +38,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
   @override
   void initState() {
     super.initState();
-    // Load insider data when tab is initialized
+    // Tab 初始化時載入內部人資料
     Future.microtask(() {
       ref.read(stockDetailProvider(widget.symbol).notifier).loadInsiderData();
     });
@@ -54,11 +54,11 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Key metrics cards
+          // 關鍵指標卡片
           _buildMetricsRow(context, state),
           const SizedBox(height: 24),
 
-          // Insider holding history section
+          // 內部人持股歷史區段
           SectionHeader(
             title: 'stockDetail.insiderHistory'.tr(),
             icon: Icons.history,
@@ -97,13 +97,13 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
         ? state.chip.insiderHistory[1]
         : null;
 
-    // Calculate change
+    // 計算變動
     double? change;
     if (latest?.insiderRatio != null && previous?.insiderRatio != null) {
       change = latest!.insiderRatio! - previous!.insiderRatio!;
     }
 
-    // Determine if pledge ratio is high risk
+    // 判斷質押比是否為高風險
     final pledgeRatio = latest?.pledgeRatio ?? 0;
     final isHighPledge = pledgeRatio >= RuleParams.highPledgeRatioThreshold;
 
@@ -177,7 +177,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
   ) {
     final theme = Theme.of(context);
 
-    // Take last N entries (already sorted by date descending)
+    // 取最近 N 筆（已依日期降冪排序）
     final displayData = holdings.take(_kMaxDisplayMonths).toList();
 
     return Card(
@@ -185,7 +185,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Header row with styled background
+            // 含樣式背景的標題列
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(
@@ -241,12 +241,12 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
               ),
             ),
             const SizedBox(height: 8),
-            // Data rows
+            // 資料列
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final holding = entry.value;
 
-              // Calculate change from previous entry
+              // 計算與前一筆的變動
               double? change;
               if (index < displayData.length - 1) {
                 final prev = displayData[index + 1];

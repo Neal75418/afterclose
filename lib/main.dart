@@ -19,16 +19,16 @@ void main() async {
   // Initialize notification service (權限請求延遲到使用者啟用通知時)
   await NotificationService.instance.initialize();
 
-  // Initialize background update service
+  // 初始化背景更新服務
   await BackgroundUpdateService.instance.initialize();
 
-  // Create container to initialize providers before runApp
+  // 建立 Container 以在 runApp 前初始化 Provider
   final container = ProviderContainer();
 
-  // Load FinMind API token from secure storage
+  // 從安全儲存載入 FinMind API Token
   await _initializeFinMindToken(container);
 
-  // Check if onboarding has been completed
+  // 檢查是否已完成引導流程
   await initOnboardingStatus();
 
   // 快取預熱（非阻塞）
@@ -71,7 +71,7 @@ void _runApp(ProviderContainer container) {
   );
 }
 
-/// Load stored FinMind API token and set it on the client
+/// 從安全儲存載入 FinMind API Token 並設定至 Client
 Future<void> _initializeFinMindToken(ProviderContainer container) async {
   try {
     final settingsRepo = container.read(settingsRepositoryProvider);
@@ -80,7 +80,7 @@ Future<void> _initializeFinMindToken(ProviderContainer container) async {
       container.read(finMindClientProvider).token = token;
     }
   } catch (e) {
-    // Token loading is optional, continue without it
+    // Token 載入為選用，失敗不影響啟動
     AppLogger.warning('Main', '載入 FinMind Token 失敗', e);
   }
 }

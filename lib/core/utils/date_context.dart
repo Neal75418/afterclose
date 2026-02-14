@@ -1,3 +1,5 @@
+import 'package:afterclose/core/utils/logger.dart';
+
 /// 日期處理工具類別，確保應用程式中日期處理的一致性
 ///
 /// 提供標準化的日期供資料庫查詢與 UI 顯示使用。
@@ -74,9 +76,9 @@ class DateContext {
     return normalA.isBefore(normalB) || isSameDay(normalA, normalB);
   }
 
-  // ==========================================
+  // ==================================================
   // 日期格式化與解析
-  // ==========================================
+  // ==================================================
 
   /// 將 DateTime 格式化為 'YYYY-MM-DD' 字串
   ///
@@ -95,7 +97,8 @@ class DateContext {
     if (dateStr == null || dateStr.isEmpty) return null;
     try {
       return DateTime.parse(dateStr);
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('DateContext', '解析日期失敗: $dateStr ($e)');
       return null;
     }
   }

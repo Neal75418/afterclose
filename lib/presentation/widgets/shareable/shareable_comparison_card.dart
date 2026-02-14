@@ -36,7 +36,7 @@ class ShareableComparisonCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
+              // 標題
               Row(
                 children: [
                   Icon(

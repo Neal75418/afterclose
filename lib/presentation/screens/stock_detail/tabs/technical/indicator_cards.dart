@@ -99,9 +99,9 @@ class IndicatorCardsSection extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Private sub-widgets
-// ---------------------------------------------------------------------------
+// ==================================================
+// 私有子元件
+// ==================================================
 
 class _RSICard extends StatelessWidget {
   const _RSICard({required this.prices, required this.indicatorService});
@@ -696,9 +696,9 @@ class _ATRCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared building blocks
-// ---------------------------------------------------------------------------
+// ==================================================
+// 共用建構元件
+// ==================================================
 
 /// Glassmorphism-style card container used by all indicator cards.
 class _IndicatorCardContainer extends StatelessWidget {

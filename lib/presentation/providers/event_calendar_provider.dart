@@ -7,9 +7,9 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-// ==========================================
+// ==================================================
 // 狀態模型
-// ==========================================
+// ==================================================
 
 /// 事件類型枚舉
 enum EventType {
@@ -93,9 +93,9 @@ class EventCalendarState {
   }
 }
 
-// ==========================================
+// ==================================================
 // Notifier
-// ==========================================
+// ==================================================
 
 class EventCalendarNotifier extends Notifier<EventCalendarState> {
   late final EventRepository _repo;
@@ -237,9 +237,9 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   }
 }
 
-// ==========================================
+// ==================================================
 // Providers
-// ==========================================
+// ==================================================
 
 final eventCalendarProvider =
     NotifierProvider<EventCalendarNotifier, EventCalendarState>(

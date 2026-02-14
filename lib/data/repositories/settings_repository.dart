@@ -62,9 +62,9 @@ class SettingsRepository implements ISettingsRepository {
     return _secureStorageAvailable!;
   }
 
-  // ==========================================
+  // ==================================================
   // FinMind Token 管理（優先 Secure Storage，降級記憶體暫存）
-  // ==========================================
+  // ==================================================
 
   /// 取得 FinMind Token
   @override
@@ -143,9 +143,9 @@ class SettingsRepository implements ISettingsRepository {
     }
   }
 
-  // ==========================================
+  // ==================================================
   // 最後更新時間追蹤
-  // ==========================================
+  // ==================================================
 
   /// 取得最後成功更新的日期
   @override
@@ -161,9 +161,9 @@ class SettingsRepository implements ISettingsRepository {
     return _db.setSetting(SettingsKeys.lastUpdateDate, date.toIso8601String());
   }
 
-  // ==========================================
+  // ==================================================
   // 功能開關
-  // ==========================================
+  // ==================================================
 
   /// 取得是否同步法人資料
   @override
@@ -192,9 +192,9 @@ class SettingsRepository implements ISettingsRepository {
     return _db.setSetting(SettingsKeys.fetchNews, enabled.toString());
   }
 
-  // ==========================================
+  // ==================================================
   // 通用設定存取
-  // ==========================================
+  // ==================================================
 
   /// 依 Key 取得設定值
   @override

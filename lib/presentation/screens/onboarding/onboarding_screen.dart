@@ -46,7 +46,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Skip button
+            // 略過按鈕
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
@@ -55,7 +55,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Page content
+            // 頁面內容
             Expanded(
               child: PageView(
                 controller: _controller,
@@ -83,7 +83,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Page indicator dots
+            // 頁面指示圓點
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Row(
@@ -108,7 +108,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
 
-            // Action buttons
+            // 操作按鈕
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
               child: SizedBox(

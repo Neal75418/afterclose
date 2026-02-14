@@ -70,7 +70,7 @@ abstract final class ShimmerDimensions {
 
 /// 淺色與深色主題的微光效果顏色
 abstract final class ShimmerColors {
-  // Midnight Slate Theme Colors
+  // 深色主題配色（Midnight Slate）
   static Color baseColor(bool isDark) =>
       isDark ? const Color(0xFF1E293B) : Colors.grey[300]!; // Slate 800
 
@@ -532,7 +532,7 @@ class _GenericListItemSkeleton extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Leading icon placeholder
+          // 前導圖示佔位
           Container(
             width: ShimmerDimensions.genericIconSize,
             height: ShimmerDimensions.genericIconSize,
@@ -542,7 +542,7 @@ class _GenericListItemSkeleton extends StatelessWidget {
             ),
           ),
           const SizedBox(width: ShimmerDimensions.spacingLg),
-          // Content
+          // 內容
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,7 +571,7 @@ class _GenericListItemSkeleton extends StatelessWidget {
               ],
             ),
           ),
-          // Trailing
+          // 尾端
           Container(
             width: ShimmerDimensions.changeWidth,
             height: ShimmerDimensions.changeHeight,

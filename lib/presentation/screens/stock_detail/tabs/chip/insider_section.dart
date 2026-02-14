@@ -49,7 +49,7 @@ class InsiderSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ratio row
+            // 比率列
             Row(
               children: [
                 Expanded(
@@ -98,7 +98,7 @@ class InsiderSection extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Shares change
+            // 持股變動
             Row(
               children: [
                 Text(
@@ -122,7 +122,7 @@ class InsiderSection extends StatelessWidget {
               ],
             ),
 
-            // Pledge warning
+            // 質押警示
             if (isHighPledge) ...[
               const SizedBox(height: 8),
               Container(

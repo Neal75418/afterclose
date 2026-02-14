@@ -60,7 +60,7 @@ class DayTradingSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Summary card
+        // 摘要卡片
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -118,7 +118,7 @@ class DayTradingSection extends StatelessWidget {
         ),
         const SizedBox(height: 8),
 
-        // Trend chart
+        // 趨勢圖
         MiniTrendChart(
           dataPoints: chartData,
           lineColor: isHigh ? AppTheme.downColor : const Color(0xFFFF9800),

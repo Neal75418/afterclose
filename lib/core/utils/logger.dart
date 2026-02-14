@@ -8,10 +8,10 @@ enum LogLevel { debug, info, warning, error }
 ///
 /// 使用範例：
 /// ```dart
-/// AppLogger.debug('PriceRepo', 'Fetching prices for 2330');
-/// AppLogger.info('UpdateService', 'Update completed');
-/// AppLogger.warning('StockDetail', 'No institutional data for $symbol');
-/// AppLogger.error('Network', 'API request failed', e, stackTrace);
+/// AppLogger.debug('PriceRepo', '取得 2330 價格資料');
+/// AppLogger.info('UpdateService', '更新完成');
+/// AppLogger.warning('StockDetail', '無 $symbol 的法人資料');
+/// AppLogger.error('Network', 'API 請求失敗', e, stackTrace);
 /// ```
 ///
 /// 整合 Sentry：
@@ -82,10 +82,10 @@ abstract final class AppLogger {
     Object? error,
     StackTrace? stackTrace,
   ]) {
-    // Skip logs below minimum level
+    // 低於最低等級的日誌不輸出
     if (level.index < minLevel.index) return;
 
-    // Only log in debug mode
+    // 僅在 debug 模式輸出日誌
     if (!kDebugMode) return;
 
     final prefix = switch (level) {

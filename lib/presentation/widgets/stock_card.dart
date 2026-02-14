@@ -283,7 +283,7 @@ class _StockCardState extends State<StockCard> {
     final icon = widget.trendState.trendIconData;
     final iconSize = compact ? 18.0 : 24.0;
 
-    // Simplified design: Icon only, no background container to reduce color noise
+    // 簡化設計：僅圖示，不加背景容器以減少色彩干擾
     return SizedBox(
       width: iconSize,
       height: iconSize,

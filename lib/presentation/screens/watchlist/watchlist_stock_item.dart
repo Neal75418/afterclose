@@ -43,7 +43,7 @@ class WatchlistStockItem extends StatelessWidget {
     final card = RepaintBoundary(
       child: Slidable(
         key: ValueKey(item.symbol),
-        // Left swipe → View details
+        // 向左滑動 → 查看詳情
         startActionPane: ActionPane(
           motion: const BehindMotion(),
           extentRatio: 0.25,
@@ -64,7 +64,7 @@ class WatchlistStockItem extends StatelessWidget {
             ),
           ],
         ),
-        // Right swipe → Remove from watchlist
+        // 向右滑動 → 從自選股移除
         endActionPane: ActionPane(
           motion: const BehindMotion(),
           extentRatio: 0.25,
@@ -89,7 +89,7 @@ class WatchlistStockItem extends StatelessWidget {
       ),
     );
 
-    // Staggered entry animation for first 10 items
+    // 前 10 項的交錯入場動畫
     if (index < 10) {
       return card
           .animate()

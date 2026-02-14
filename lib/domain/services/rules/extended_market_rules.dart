@@ -3,9 +3,9 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
-// ==========================================
+// ==================================================
 // 第 4 階段：擴展市場資料規則
-// ==========================================
+// ==================================================
 
 /// 規則：外資持股增加
 ///

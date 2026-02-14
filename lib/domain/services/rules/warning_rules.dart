@@ -2,9 +2,9 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
-// ==========================================
+// ==================================================
 // Killer Features：注意/處置股票規則
-// ==========================================
+// ==================================================
 
 /// 規則：注意股票
 ///

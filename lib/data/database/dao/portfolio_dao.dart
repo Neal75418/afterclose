@@ -2,9 +2,9 @@ part of 'package:afterclose/data/database/app_database.dart';
 
 /// 投資組合相關資料存取：持倉與交易紀錄
 mixin _PortfolioDaoMixin on _$AppDatabase {
-  // ==========================================
+  // ==================================================
   // 投資組合操作（Phase 4.4）
-  // ==========================================
+  // ==================================================
 
   /// 取得所有有持倉的 position
   Future<List<PortfolioPositionEntry>> getPortfolioPositions() {

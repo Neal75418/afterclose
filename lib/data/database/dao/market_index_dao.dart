@@ -2,9 +2,9 @@ part of 'package:afterclose/data/database/app_database.dart';
 
 /// 大盤指數歷史資料存取
 mixin _MarketIndexDaoMixin on _$AppDatabase {
-  // ==========================================
+  // ==================================================
   // 大盤指數歷史操作
-  // ==========================================
+  // ==================================================
 
   /// 批次寫入大盤指數資料（upsert on conflict (date, name)）
   Future<void> upsertMarketIndices(List<MarketIndexCompanion> entries) async {

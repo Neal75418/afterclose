@@ -273,7 +273,7 @@ class ReasonTags extends StatelessWidget {
     };
     if (key == null) return null;
     final translated = key.tr();
-    // If translation returned the key itself, it's missing
+    // 若翻譯結果等於 key 本身，表示缺少翻譯
     return translated == key ? null : translated;
   }
 }

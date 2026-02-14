@@ -34,7 +34,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
   Future<void> _refresh() async {
     await ref.read(newsProvider.notifier).loadData();
-    // Haptic feedback on refresh complete
+    // 刷新完成時觸覺回饋
     HapticFeedback.mediumImpact();
   }
 
@@ -68,7 +68,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
         expand: false,
         builder: (context, scrollController) => Column(
           children: [
-            // Drag handle
+            // 拖曳把手
             const DragHandle(margin: EdgeInsets.symmetric(vertical: 8)),
             Expanded(
               child: SingleChildScrollView(
@@ -77,7 +77,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Source and time
+                    // 來源與時間
                     Row(
                       children: [
                         Container(
@@ -108,14 +108,14 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    // Title
+                    // 標題
                     Text(
                       item.title,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    // Related stocks
+                    // 相關股票
                     if (relatedStocks.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Text(
@@ -141,7 +141,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                       ),
                     ],
                     const SizedBox(height: 24),
-                    // Open in browser button
+                    // 在瀏覽器開啟按鈕
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton.icon(
@@ -180,7 +180,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       ),
       body: Column(
         children: [
-          // Source filter chips
+          // 來源篩選標籤
           if (!state.isLoading && state.allNews.isNotEmpty)
             _SourceFilterChips(
               selectedSource: state.selectedSource,
@@ -189,7 +189,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                 ref.read(newsProvider.notifier).setSourceFilter(source);
               },
             ),
-          // News list
+          // 新聞列表
           Expanded(
             child: ThemedRefreshIndicator(
               onRefresh: _refresh,
@@ -234,7 +234,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 }
 
 // ==================================================
-// Source Filter Chips
+// 來源篩選標籤
 // ==================================================
 
 class _SourceFilterChips extends StatelessWidget {
@@ -280,7 +280,7 @@ class _SourceFilterChips extends StatelessWidget {
 }
 
 // ==================================================
-// Grouped News List
+// 分組新聞列表
 // ==================================================
 
 class _GroupedNewsList extends StatelessWidget {
@@ -300,7 +300,7 @@ class _GroupedNewsList extends StatelessWidget {
     final today = DateContext.normalize(now);
     final yesterday = today.subtract(const Duration(days: 1));
 
-    // Group news by date
+    // 依日期分組新聞
     final todayNews = <NewsItemEntry>[];
     final yesterdayNews = <NewsItemEntry>[];
     final earlierNews = <NewsItemEntry>[];
@@ -359,7 +359,7 @@ class _GroupedNewsList extends StatelessWidget {
 }
 
 // ==================================================
-// Section Header
+// 區段標題
 // ==================================================
 
 class _SectionHeader extends StatelessWidget {
@@ -405,7 +405,7 @@ class _SectionHeader extends StatelessWidget {
 }
 
 // ==================================================
-// News List Item
+// 新聞列表項目
 // ==================================================
 
 class _NewsListItem extends StatelessWidget {
@@ -435,7 +435,7 @@ class _NewsListItem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
+            // 標題
             Text(
               item.title,
               maxLines: 2,
@@ -445,7 +445,7 @@ class _NewsListItem extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            // Source and time
+            // 來源與時間
             Row(
               children: [
                 Container(
@@ -479,7 +479,7 @@ class _NewsListItem extends StatelessWidget {
                 ),
               ],
             ),
-            // Related stocks
+            // 相關股票
             if (relatedStocks.isNotEmpty) ...[
               const SizedBox(height: 8),
               Wrap(
@@ -524,7 +524,7 @@ class _NewsListItem extends StatelessWidget {
 }
 
 // ==================================================
-// Stock Chip
+// 股票標籤
 // ==================================================
 
 class _StockChip extends StatelessWidget {

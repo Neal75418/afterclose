@@ -41,7 +41,7 @@ class ScanFilterService {
       // 規則篩選
       if (filter == ScanFilter.all) return true;
 
-      // Must have detailed reasons loaded
+      // 須已載入詳細推薦理由
       final reasons = allReasons[analysis.symbol];
       if (reasons == null || reasons.isEmpty) return false;
 
@@ -62,7 +62,7 @@ class ScanFilterService {
     if (sort == ScanSort.scoreAsc) {
       analyses.sort((a, b) => a.score.compareTo(b.score));
     } else {
-      // Default: Score Desc
+      // 預設：分數降冪
       analyses.sort((b, a) => a.score.compareTo(b.score));
     }
   }
@@ -91,19 +91,19 @@ class ScanFilterService {
       historyStart: dateCtx.historyStart,
     );
 
-    // Destructure Record fields
+    // 解構 Record 欄位
     final stocksMap = data.stocks;
     final latestPricesMap = data.latestPrices;
     final reasonsMap = data.reasons;
     final priceHistoriesMap = data.priceHistories;
 
-    // Calculate price changes using utility
+    // 使用工具計算漲跌幅
     final priceChanges = PriceCalculator.calculatePriceChangesBatch(
       priceHistoriesMap,
       latestPricesMap,
     );
 
-    // Build stock items
+    // 建構股票項目
     return analyses.map((analysis) {
       final latestPrice = latestPricesMap[analysis.symbol];
       final priceHistory = priceHistoriesMap[analysis.symbol];

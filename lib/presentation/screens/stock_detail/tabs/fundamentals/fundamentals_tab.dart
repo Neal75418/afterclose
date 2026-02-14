@@ -27,7 +27,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
   @override
   void initState() {
     super.initState();
-    // Load fundamentals data when tab is initialized
+    // Tab 初始化時載入基本面資料
     Future.microtask(() {
       ref.read(stockDetailProvider(widget.symbol).notifier).loadFundamentals();
     });
@@ -46,11 +46,11 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Key metrics cards
+          // 關鍵指標卡片
           _buildMetricsRow(context, state),
           const SizedBox(height: 24),
 
-          // Monthly revenue section
+          // 月營收區段
           SectionHeader(
             title: 'stockDetail.monthlyRevenue'.tr(),
             icon: Icons.trending_up,
@@ -69,7 +69,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           const SizedBox(height: 24),
 
-          // EPS history section
+          // EPS 歷史區段
           SectionHeader(
             title: 'stockDetail.epsHistory'.tr(),
             icon: Icons.bar_chart,
@@ -86,7 +86,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
               showROCYear: showROCYear,
             ),
 
-          // Profitability card
+          // 獲利能力卡片
           if (state.fundamentals.latestQuarterMetrics.isNotEmpty) ...[
             const SizedBox(height: 16),
             ProfitabilityCard(metrics: state.fundamentals.latestQuarterMetrics),
@@ -94,7 +94,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           const SizedBox(height: 24),
 
-          // Dividend section
+          // 股利區段
           SectionHeader(
             title: 'stockDetail.dividendHistory'.tr(),
             icon: Icons.payments,

@@ -415,7 +415,7 @@ class PatternService {
       return null;
     }
 
-    // Calculate body ratios to ensure significant candles
+    // 計算實體比以確保有效 K 線
     final day1Range = day1High - day1Low;
     final day2Range = day2High - day2Low;
     final day3Range = day3High - day3Low;

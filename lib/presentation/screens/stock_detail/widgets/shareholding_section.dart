@@ -35,7 +35,7 @@ class ShareholdingSection extends StatelessWidget {
     final latest = sorted.last;
     final ratio = latest.foreignSharesRatio ?? 0;
 
-    // Determine trend
+    // 判斷趨勢
     String trendKey = 'chip.trendStable';
     if (sorted.length >= 5) {
       final fiveDaysAgo = sorted[sorted.length - 5].foreignSharesRatio ?? 0;

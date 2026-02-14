@@ -42,7 +42,7 @@ class ShareableAnalysisCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header: AfterClose 品牌
+              // 標題: AfterClose 品牌
               Row(
                 children: [
                   Icon(

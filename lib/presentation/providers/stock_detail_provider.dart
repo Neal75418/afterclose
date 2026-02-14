@@ -21,7 +21,7 @@ import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
 import 'package:afterclose/presentation/providers/stock_chip_loader.dart';
 
-// Re-export state classes for consumers
+// Re-export 狀態類別供外部使用
 export 'package:afterclose/presentation/providers/stock_detail_state.dart';
 
 // ==================================================

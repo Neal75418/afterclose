@@ -47,7 +47,7 @@ class MarginTradingSection extends StatelessWidget {
     final marginBal = latest.marginBalance ?? 0;
     final shortBal = latest.shortBalance ?? 0;
 
-    // Compute short/margin ratio
+    // 計算融券/融資比
     final shortMarginRatio = marginBal > 0 ? (shortBal / marginBal * 100) : 0.0;
     final isHighRatio = shortMarginRatio > 10;
 
@@ -174,7 +174,7 @@ class MarginTradingSection extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Header
+            // 標題
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(

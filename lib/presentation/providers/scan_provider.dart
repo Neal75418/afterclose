@@ -11,7 +11,7 @@ import 'package:afterclose/domain/services/scan_filter_service.dart';
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-// Re-export scan models for backward compatibility
+// Re-export（向後相容）
 export 'package:afterclose/domain/models/scan_models.dart';
 
 // ==================================================
@@ -126,7 +126,7 @@ class ScanNotifier extends Notifier<ScanState> {
 
   static const _service = ScanFilterService();
 
-  // Cached data for pagination
+  // 分頁快取資料
   List<DailyAnalysisEntry> _allAnalyses = [];
   List<DailyAnalysisEntry> _filteredAnalyses = [];
   Map<String, List<DailyReasonEntry>> _allReasons = {};
@@ -146,7 +146,7 @@ class ScanNotifier extends Notifier<ScanState> {
       final targetDate = result.targetDate;
       final analyses = result.analyses;
 
-      // Update DateContext to reflect the actual data date
+      // 更新 DateContext 以反映實際資料日期
       final dateCtx = DateContext.forDate(targetDate);
       _dateCtx = dateCtx;
       _allAnalyses = analyses
@@ -159,7 +159,7 @@ class ScanNotifier extends Notifier<ScanState> {
         _allReasons = {};
       }
 
-      // Get actual data dates for display purposes
+      // 取得實際資料日期供顯示
       final latestPriceDate = await _db.getLatestDataDate();
       final latestInstDate = await _db.getLatestInstitutionalDate();
       final dataDate = _dataSyncService.getDisplayDataDate(
@@ -197,11 +197,11 @@ class ScanNotifier extends Notifier<ScanState> {
         return;
       }
 
-      // Get watchlist for checking
+      // 取得自選股清單供比對
       final watchlist = await _db.getWatchlist();
       _watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
-      // Load first page
+      // 載入第一頁
       final firstPageItems = await _loadItemsForAnalyses(
         _filteredAnalyses.take(kPageSize).toList(),
       );
@@ -256,7 +256,7 @@ class ScanNotifier extends Notifier<ScanState> {
   void setFilter(ScanFilter filter) {
     if (filter == state.filter) return;
 
-    // Apply global filter
+    // 套用全域篩選
     _applyGlobalFilter(filter);
 
     // 篩選切換使用 isFiltering（輕量 indicator），不替換為全骨架
@@ -315,7 +315,7 @@ class ScanNotifier extends Notifier<ScanState> {
     }
   }
 
-  /// Apply global filter to _allAnalyses -> _filteredAnalyses
+  /// 套用全域篩選（_allAnalyses → _filteredAnalyses）
   void _applyGlobalFilter(ScanFilter filter) {
     _filteredAnalyses = _service.applyFilter(
       allAnalyses: _allAnalyses,
@@ -344,7 +344,7 @@ class ScanNotifier extends Notifier<ScanState> {
   void setSort(ScanSort sort) {
     if (sort == state.sort) return;
 
-    // Apply global sort
+    // 套用全域排序
     _applyGlobalSort(sort);
 
     // 排序切換使用 isFiltering（輕量 indicator）
@@ -352,7 +352,7 @@ class ScanNotifier extends Notifier<ScanState> {
     _reloadFirstPage();
   }
 
-  /// Apply global sort to _filteredAnalyses
+  /// 套用全域排序至 _filteredAnalyses
   void _applyGlobalSort(ScanSort sort) {
     _service.applySort(_filteredAnalyses, sort);
   }
@@ -367,7 +367,7 @@ class ScanNotifier extends Notifier<ScanState> {
       await _db.addToWatchlist(symbol);
     }
 
-    // Update stocks using copyWith (allStocks is unused)
+    // 使用 copyWith 更新股票（allStocks 未使用）
     final updatedFiltered = state.stocks.map((s) {
       if (s.symbol == symbol) return s.copyWith(isInWatchlist: !isInWatchlist);
       return s;

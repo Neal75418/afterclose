@@ -47,8 +47,8 @@ abstract final class MarketClientMixin {
     if (decoded is String) {
       try {
         decoded = jsonDecode(decoded);
-      } catch (_) {
-        AppLogger.warning(tag, '$operation: JSON 解析失敗');
+      } catch (e) {
+        AppLogger.warning(tag, '$operation: JSON 解析失敗: $e');
         return null;
       }
     }

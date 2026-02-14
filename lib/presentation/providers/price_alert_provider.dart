@@ -7,24 +7,24 @@ import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Alert type enum
 enum AlertType {
-  // Price-based alerts
+  // 價格類警示
   above('ABOVE', AlertCategory.price),
   below('BELOW', AlertCategory.price),
   changePct('CHANGE_PCT', AlertCategory.price),
 
-  // Volume alerts
+  // 成交量警示
   volumeSpike('VOLUME_SPIKE', AlertCategory.volume),
   volumeAbove('VOLUME_ABOVE', AlertCategory.volume),
 
-  // RSI alerts
+  // RSI 警示
   rsiOverbought('RSI_OVERBOUGHT', AlertCategory.indicator),
   rsiOversold('RSI_OVERSOLD', AlertCategory.indicator),
 
-  // KD alerts
+  // KD 警示
   kdGoldenCross('KD_GOLDEN_CROSS', AlertCategory.indicator),
   kdDeathCross('KD_DEATH_CROSS', AlertCategory.indicator),
 
-  // Support/Resistance alerts
+  // 支撐/壓力警示
   breakResistance('BREAK_RESISTANCE', AlertCategory.level),
   breakSupport('BREAK_SUPPORT', AlertCategory.level),
 
@@ -32,20 +32,20 @@ enum AlertType {
   week52High('WEEK_52_HIGH', AlertCategory.week52),
   week52Low('WEEK_52_LOW', AlertCategory.week52),
 
-  // MA alerts
+  // 均線警示
   crossAboveMa('CROSS_ABOVE_MA', AlertCategory.ma),
   crossBelowMa('CROSS_BELOW_MA', AlertCategory.ma),
 
-  // Fundamental alerts
+  // 基本面警示
   revenueYoySurge('REVENUE_YOY_SURGE', AlertCategory.fundamental),
   highDividendYield('HIGH_DIVIDEND_YIELD', AlertCategory.fundamental),
   peUndervalued('PE_UNDERVALUED', AlertCategory.fundamental),
 
-  // Trading warning alerts
+  // 交易警示
   tradingWarning('TRADING_WARNING', AlertCategory.warning),
   tradingDisposal('TRADING_DISPOSAL', AlertCategory.warning),
 
-  // Insider alerts
+  // 內部人警示
   insiderSelling('INSIDER_SELLING', AlertCategory.insider),
   insiderBuying('INSIDER_BUYING', AlertCategory.insider),
   highPledgeRatio('HIGH_PLEDGE_RATIO', AlertCategory.insider);
@@ -72,7 +72,7 @@ enum AlertType {
     AlertType.revenueYoySurge ||
     AlertType.highDividendYield ||
     AlertType.peUndervalued => true,
-    // These don't require explicit target value (auto-triggered)
+    // 以下類型不需明確目標值（自動觸發）
     AlertType.volumeSpike ||
     AlertType.kdGoldenCross ||
     AlertType.kdDeathCross ||
@@ -288,8 +288,8 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
         note: note,
       );
 
-      // Incremental update: add new alert to state instead of full reload
-      // Insert at beginning to maintain createdAt DESC order
+      // 增量更新：新增至 state 而非全量重載
+      // 插入開頭以維持建立時間降冪
       final newAlert = await _db.getAlertById(id);
       if (newAlert != null) {
         state = state.copyWith(alerts: [newAlert, ...state.alerts]);
@@ -303,7 +303,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
   /// Delete an alert
   Future<void> deleteAlert(int id) async {
-    // Optimistic update: remove from state immediately
+    // 樂觀更新：立即從 state 移除
     final previousAlerts = state.alerts;
     state = state.copyWith(
       alerts: state.alerts.where((a) => a.id != id).toList(),
@@ -312,14 +312,14 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     try {
       await _db.deletePriceAlert(id);
     } catch (e) {
-      // Rollback on error
+      // 錯誤時回滾
       state = state.copyWith(alerts: previousAlerts, error: e.toString());
     }
   }
 
   /// Toggle alert active status
   Future<void> toggleAlert(int id, bool isActive) async {
-    // Optimistic update: toggle in state immediately
+    // 樂觀更新：立即切換 state
     final previousAlerts = state.alerts;
     state = state.copyWith(
       alerts: state.alerts.map((a) {
@@ -345,7 +345,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
         PriceAlertCompanion(isActive: Value(isActive)),
       );
     } catch (e) {
-      // Rollback on error
+      // 錯誤時回滾
       state = state.copyWith(alerts: previousAlerts, error: e.toString());
     }
   }
@@ -360,13 +360,13 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       final triggeredIds = <int>{};
       final now = DateTime.now();
 
-      // Mark triggered alerts in database
+      // 在資料庫標記已觸發的警示
       for (final alert in triggered) {
         await _db.triggerAlert(alert.id);
         triggeredIds.add(alert.id);
       }
 
-      // Incremental update: update triggered alerts in state
+      // 增量更新：更新 state 中已觸發的警示
       if (triggeredIds.isNotEmpty) {
         state = state.copyWith(
           alerts: state.alerts.map((a) {

@@ -112,7 +112,8 @@ class TwseClient {
         volume: TwParseUtils.parseFormattedDouble(row[2]),
         change: TwParseUtils.parseFormattedDouble(row[8]),
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析每日價格失敗: $e');
       return null;
     }
   }
@@ -194,7 +195,8 @@ class TwseClient {
         dealerNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
         totalNet: TwParseUtils.parseFormattedDouble(row[17]) ?? 0,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析法人資料失敗: $e');
       return null;
     }
   }
@@ -310,7 +312,8 @@ class TwseClient {
         volume: TwParseUtils.parseFormattedDouble(row[1]),
         change: TwParseUtils.parseFormattedDouble(row[7]),
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析歷史價格失敗: $e');
       return null;
     }
   }
@@ -463,7 +466,8 @@ class TwseClient {
         shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
         shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析融資融券失敗: $e');
       return null;
     }
   }
@@ -647,14 +651,15 @@ class TwseClient {
         totalVolume: totalVolume,
         ratio: 0, // 比例需要稍後計算
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析當沖資料失敗: $e');
       return null;
     }
   }
 
-  // ==========================================
+  // ==================================================
   // 大盤指數 API
-  // ==========================================
+  // ==================================================
 
   /// 取得大盤各類指數收盤行情
   ///
@@ -790,14 +795,15 @@ class TwseClient {
         change: change,
         changePercent: changePercent,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析大盤指數失敗: $e');
       return null;
     }
   }
 
-  // ==========================================
+  // ==================================================
   // 三大法人買賣金額統計 API
-  // ==========================================
+  // ==================================================
 
   /// 取得三大法人買賣金額統計（市場總計）
   ///
@@ -877,9 +883,9 @@ class TwseClient {
     });
   }
 
-  // ==========================================
+  // ==================================================
   // Killer Features API (注意/處置股票)
-  // ==========================================
+  // ==================================================
 
   /// 取得上市注意股票清單
   ///
@@ -958,7 +964,8 @@ class TwseClient {
         reasonDescription: row.length > 4 ? row[4]?.toString().trim() : null,
         warningType: 'ATTENTION',
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析注意股票失敗: $e');
       return null;
     }
   }
@@ -1047,7 +1054,8 @@ class TwseClient {
         disposalEndDate: endDate,
         warningType: 'DISPOSAL',
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析處置股票失敗: $e');
       return null;
     }
   }

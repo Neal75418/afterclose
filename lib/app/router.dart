@@ -64,13 +64,13 @@ final router = GoRouter(
       name: 'onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
-    // Shell route with bottom navigation
+    // 含底部導航的 Shell 路由
     StatefulShellRoute.indexedStack(
       builder: (context, state, navigationShell) {
         return AppShell(navigationShell: navigationShell);
       },
       branches: [
-        // Today branch
+        // 今日分頁
         StatefulShellBranch(
           navigatorKey: _todayNavigatorKey,
           routes: [
@@ -82,7 +82,7 @@ final router = GoRouter(
           ],
         ),
 
-        // Scan branch
+        // 掃描分頁
         StatefulShellBranch(
           navigatorKey: _scanNavigatorKey,
           routes: [
@@ -94,7 +94,7 @@ final router = GoRouter(
           ],
         ),
 
-        // Watchlist branch
+        // 自選股分頁
         StatefulShellBranch(
           navigatorKey: _watchlistNavigatorKey,
           routes: [
@@ -106,7 +106,7 @@ final router = GoRouter(
           ],
         ),
 
-        // News branch
+        // 新聞分頁
         StatefulShellBranch(
           navigatorKey: _newsNavigatorKey,
           routes: [
@@ -120,7 +120,7 @@ final router = GoRouter(
       ],
     ),
 
-    // Stock detail (full screen, outside shell)
+    // 個股詳情（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.stockDetailTemplate,
       name: 'stockDetail',
@@ -130,35 +130,35 @@ final router = GoRouter(
       },
     ),
 
-    // Settings (full screen, outside shell)
+    // 設定（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.settings,
       name: 'settings',
       builder: (context, state) => const SettingsScreen(),
     ),
 
-    // Alerts (full screen, outside shell)
+    // 價格警示（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.alerts,
       name: 'alerts',
       builder: (context, state) => const AlertsScreen(),
     ),
 
-    // Industry overview (full screen, outside shell)
+    // 產業總覽（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.industry,
       name: 'industry',
       builder: (context, state) => const IndustryOverviewScreen(),
     ),
 
-    // Custom screening (full screen, outside shell)
+    // 自訂篩選（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.customScreening,
       name: 'customScreening',
       builder: (context, state) => const CustomScreeningScreen(),
     ),
 
-    // Stock comparison (full screen, outside shell)
+    // 股票比較（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.compare,
       name: 'comparison',
@@ -167,7 +167,7 @@ final router = GoRouter(
       },
     ),
 
-    // Backtest (full screen, outside shell)
+    // 回測（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.backtest,
       name: 'backtest',
@@ -176,7 +176,7 @@ final router = GoRouter(
       },
     ),
 
-    // Portfolio position detail (full screen, outside shell)
+    // 持股詳情（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.positionDetailTemplate,
       name: 'positionDetail',
@@ -186,7 +186,7 @@ final router = GoRouter(
       },
     ),
 
-    // Event calendar (full screen, outside shell)
+    // 行事曆（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.calendar,
       name: 'eventCalendar',

@@ -220,7 +220,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     return CustomScrollView(
       slivers: [
-        // Glassmorphism App Bar
+        // 毛玻璃效果 App Bar
         SliverAppBar(
           pinned: true,
           floating: true,

@@ -75,9 +75,9 @@ class BacktestNotifier extends Notifier<BacktestState> {
 
   AppDatabase get _db => ref.read(databaseProvider);
 
-  // ==========================================
+  // ==================================================
   // 設定管理
-  // ==========================================
+  // ==================================================
 
   void updatePeriod(int months) {
     state = state.copyWith(
@@ -112,9 +112,9 @@ class BacktestNotifier extends Notifier<BacktestState> {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 回測執行
-  // ==========================================
+  // ==================================================
 
   Future<void> executeBacktest(List<ScreeningCondition> conditions) async {
     if (conditions.isEmpty) return;

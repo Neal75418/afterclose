@@ -27,7 +27,7 @@ class ChipStrengthIndicator extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title row
+          // 標題列
           Row(
             children: [
               Icon(Icons.battery_charging_full, size: 18, color: color),
@@ -39,7 +39,7 @@ class ChipStrengthIndicator extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Rating badge
+              // 評等徽章
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -61,7 +61,7 @@ class ChipStrengthIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Score + progress bar
+          // 分數＋進度條
           Row(
             children: [
               Text(
@@ -93,7 +93,7 @@ class ChipStrengthIndicator extends StatelessWidget {
           ),
           const SizedBox(height: 8),
 
-          // Institutional attitude
+          // 法人態度
           Row(
             children: [
               Text(

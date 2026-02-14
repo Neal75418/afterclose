@@ -43,14 +43,14 @@ class LruCache<K, V> {
       return null;
     }
 
-    // Check if entry has expired
+    // 檢查是否已過期
     if (entry.isExpired) {
       _cache.remove(key);
       _misses++;
       return null;
     }
 
-    // Move to end (most recently used)
+    // 移至尾端（最近使用）
     _cache.remove(key);
     _cache[key] = entry;
 
@@ -62,15 +62,15 @@ class LruCache<K, V> {
   ///
   /// 若快取已滿，會移除最久未使用的項目。
   void put(K key, V value) {
-    // Remove if exists to update position
+    // 若已存在先移除，以更新位置
     _cache.remove(key);
 
-    // Evict oldest if at capacity
+    // 容量已滿時淘汰最久未使用的項目
     while (_cache.length >= maxSize) {
       _cache.remove(_cache.keys.first);
     }
 
-    // Add new entry
+    // 新增項目
     _cache[key] = _CacheEntry(value: value, expiresAt: DateTime.now().add(ttl));
   }
 

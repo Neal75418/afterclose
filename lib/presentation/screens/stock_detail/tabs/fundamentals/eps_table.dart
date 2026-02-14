@@ -47,7 +47,7 @@ class EpsTable extends StatelessWidget {
               final eps = entry.value;
               final epsValue = eps.value;
 
-              // Calculate QoQ growth
+              // 計算季增率
               double? qoqGrowth;
               if (index < displayData.length - 1) {
                 final prevEps = displayData[index + 1].value;
@@ -56,7 +56,7 @@ class EpsTable extends StatelessWidget {
                 }
               }
 
-              // Format quarter label from date
+              // 從日期格式化季度標籤
               final quarter = ((eps.date.month - 1) ~/ 3) + 1;
               final quarterLabel = showROCYear
                   ? TaiwanDateFormatter.formatQuarter(eps.date.year, quarter)

@@ -65,7 +65,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
   }
 
   Widget _buildAlertsList(List<PriceAlertEntry> alerts, ThemeData theme) {
-    // Group alerts by symbol
+    // 依股票代號分組警示
     final groupedAlerts = <String, List<PriceAlertEntry>>{};
     for (final alert in alerts) {
       groupedAlerts.putIfAbsent(alert.symbol, () => []).add(alert);
@@ -88,7 +88,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Symbol header
+              // 股票標題
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -129,7 +129,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                 ),
               ),
 
-              // Alerts list
+              // 警示列表
               ...symbolAlerts.asMap().entries.map((entry) {
                 final alertIndex = entry.key;
                 final alert = entry.value;
@@ -368,7 +368,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
 
     if (symbol == null || !mounted) return;
 
-    // Get stock info for the dialog
+    // 取得對話框用的股票資訊
     final results = await Future.wait([
       db.getStock(symbol),
       db.getLatestPrice(symbol),

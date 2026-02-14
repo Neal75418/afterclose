@@ -76,9 +76,9 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 設定區
-  // ==========================================
+  // ==================================================
 
   Widget _buildConfigSection(ThemeData theme, BacktestState state) {
     return Padding(
@@ -165,9 +165,9 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 執行區
-  // ==========================================
+  // ==================================================
 
   Widget _buildExecuteSection(ThemeData theme, BacktestState state) {
     return Padding(
@@ -233,9 +233,9 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 結果區
-  // ==========================================
+  // ==================================================
 
   Widget _buildResultsSection(ThemeData theme, BacktestState state) {
     final result = state.result!;
@@ -273,9 +273,9 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
   }
 }
 
-// ==========================================
+// ==================================================
 // 持有天數 Slider
-// ==========================================
+// ==================================================
 
 class _HoldingDaysSlider extends StatelessWidget {
   const _HoldingDaysSlider({

@@ -25,7 +25,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
   @override
   void initState() {
     super.initState();
-    // Load alerts when tab is initialized
+    // Tab 初始化時載入警示
     Future.microtask(() {
       ref.read(priceAlertProvider.notifier).loadAlerts();
     });
@@ -36,7 +36,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     final stockState = ref.watch(stockDetailProvider(widget.symbol));
     final alertState = ref.watch(priceAlertProvider);
 
-    // Filter alerts for this stock
+    // 篩選此股票的警示
     final stockAlerts = alertState.alerts
         .where((alert) => alert.symbol == widget.symbol)
         .toList();
@@ -49,7 +49,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Current price display
+          // 當前價格顯示
           if (currentPrice != null) ...[
             _buildCurrentPriceCard(context, currentPrice),
             const SizedBox(height: 24),
@@ -71,7 +71,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
 
           const SizedBox(height: 16),
 
-          // Add alert button
+          // 新增警示按鈕
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(

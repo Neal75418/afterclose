@@ -150,7 +150,8 @@ class TdccClient {
         shares: shares,
         percent: percent,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug('TDCC', '解析持股分級失敗: $e');
       return null;
     }
   }

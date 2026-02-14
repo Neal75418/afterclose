@@ -20,7 +20,7 @@ class InstitutionalSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Summary cards
+        // 摘要卡片
         if (history.isNotEmpty) _buildSummary(context),
 
         if (history.isNotEmpty) const SizedBox(height: 12),
@@ -88,7 +88,7 @@ class InstitutionalSection extends StatelessWidget {
     final deduped = _getDeduplicatedData(history);
     if (deduped.length < 2) return const SizedBox.shrink();
 
-    // Show total net (foreign + trust) trend
+    // 顯示法人（外資＋投信）合計趨勢
     final sorted = deduped.reversed.toList(); // chronological order
     final totalNets = sorted
         .map((e) => (e.foreignNet ?? 0) + (e.investmentTrustNet ?? 0))
@@ -108,7 +108,7 @@ class InstitutionalSection extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            // Header row
+            // 標題列
             Container(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               decoration: BoxDecoration(

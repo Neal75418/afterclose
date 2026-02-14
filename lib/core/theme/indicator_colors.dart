@@ -4,9 +4,9 @@ import 'dart:ui';
 ///
 /// 統一管理所有指標相關的硬編碼顏色，確保一致性並便於維護。
 abstract final class IndicatorColors {
-  // ============================
-  // Chart Line Colors
-  // ============================
+  // ==================================================
+  // 圖表線條顏色
+  // ==================================================
 
   /// 主要指標線（K, DIF, MA5, MACD）— Sky Blue
   static const chartPrimary = Color(0xFF60A5FA);
@@ -17,16 +17,16 @@ abstract final class IndicatorColors {
   /// 第三指標線（J, MA30）— Purple
   static const chartTertiary = Color(0xFFA78BFA);
 
-  // ============================
-  // Chart Background
-  // ============================
+  // ==================================================
+  // 圖表背景
+  // ==================================================
 
   /// K 線圖深色模式背景
   static const chartDarkBackground = Color(0xFF0F172A);
 
-  // ============================
-  // Indicator Label Colors
-  // ============================
+  // ==================================================
+  // 指標標籤顏色
+  // ==================================================
 
   /// OBV 指標標籤色（Emerald）
   static const obvLabel = Color(0xFF10B981);
@@ -34,9 +34,9 @@ abstract final class IndicatorColors {
   /// ATR 指標標籤色（Violet）
   static const atrLabel = Color(0xFF8B5CF6);
 
-  // ============================
-  // Volatility Scale
-  // ============================
+  // ==================================================
+  // 波動度色階
+  // ==================================================
 
   /// 低波動（ATR）— Green
   static const volatilityLow = Color(0xFF10B981);
@@ -47,9 +47,9 @@ abstract final class IndicatorColors {
   /// 高波動（ATR）— Red
   static const volatilityHigh = Color(0xFFEF4444);
 
-  // ============================
-  // Chip Rating Scale
-  // ============================
+  // ==================================================
+  // 籌碼評等色階
+  // ==================================================
 
   /// 強：籌碼強勢 / 法人積極買入
   static const ratingStrong = Color(0xFF4CAF50);
@@ -66,9 +66,9 @@ abstract final class IndicatorColors {
   /// 弱：籌碼弱勢 / 法人積極賣出
   static const ratingWeak = Color(0xFFF44336);
 
-  // ============================
-  // Indicator Selector Chips
-  // ============================
+  // ==================================================
+  // 指標選擇標籤
+  // ==================================================
 
   /// MA / MACD 選擇器
   static const selectorBlue = Color(0xFF3498DB);

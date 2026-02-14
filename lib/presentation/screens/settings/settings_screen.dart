@@ -40,22 +40,22 @@ class SettingsScreen extends ConsumerWidget {
       ),
       body: ListView(
         children: [
-          // API Section
+          // API 區段
           _buildSettingsSection(context, 'settings.api'.tr(), [
             const ApiTokenTile(),
           ]),
 
-          // Theme Section
+          // 主題區段
           _buildSettingsSection(context, 'settings.appearance'.tr(), [
             _buildThemeTile(context, ref, theme, settings),
           ]),
 
-          // Language Section
+          // 語言區段
           _buildSettingsSection(context, 'settings.language'.tr(), [
             _buildLanguageTile(context, theme, currentLocale),
           ]),
 
-          // Advanced Features Section
+          // 進階功能區段
           _buildSettingsSection(context, 'settings.advancedFeatures'.tr(), [
             _buildFeatureTile(
               context,
@@ -105,18 +105,18 @@ class SettingsScreen extends ConsumerWidget {
             _buildCacheDurationTile(context, ref, theme, settings),
           ]),
 
-          // Background Update Section (only on supported platforms)
+          // 背景更新區段（僅支援平台）
           if (BackgroundUpdateService.isSupported)
             _buildSettingsSection(context, 'settings.backgroundUpdate'.tr(), [
               _buildAutoUpdateTile(context, ref, theme, settings),
             ]),
 
-          // Data Management Section
+          // 資料管理區段
           _buildSettingsSection(context, 'settings.dataManagement'.tr(), [
             const DataManagementTile(),
           ]),
 
-          // About Section
+          // 關於區段
           _buildSettingsSection(context, 'settings.about'.tr(), [
             _buildAboutTile(context, theme),
             _buildVersionTile(theme),

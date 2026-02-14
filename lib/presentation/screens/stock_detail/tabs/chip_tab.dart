@@ -1,3 +1,3 @@
-// Barrel file for backward compatibility.
-// The ChipTab implementation has been moved to the chip/ subdirectory.
+// Barrel file（向後相容）
+// ChipTab 實作已移至 chip/ 子目錄
 export 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_tab.dart';

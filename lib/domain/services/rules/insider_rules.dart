@@ -2,9 +2,9 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
-// ==========================================
+// ==================================================
 // Killer Features：董監持股規則
-// ==========================================
+// ==================================================
 
 /// 規則：董監連續減持
 ///

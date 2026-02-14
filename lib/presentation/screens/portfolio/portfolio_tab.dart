@@ -137,7 +137,7 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
           ),
         ),
 
-        // FAB
+        // 浮動按鈕
         Positioned(
           right: 16,
           bottom: 16 + MediaQuery.of(context).padding.bottom,

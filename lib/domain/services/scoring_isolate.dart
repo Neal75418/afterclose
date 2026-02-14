@@ -556,9 +556,9 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   ).toMap();
 }
 
-// =============================================
+// ==================================================
 // 資料轉換輔助函數
-// =============================================
+// ==================================================
 
 DailyPriceEntry _mapToDailyPriceEntry(Map<String, dynamic> map) {
   return DailyPriceEntry(

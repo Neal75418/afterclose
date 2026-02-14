@@ -216,7 +216,7 @@ class PositionDetailScreen extends ConsumerWidget {
                 await ref
                     .read(portfolioProvider.notifier)
                     .deleteTransaction(tx.id, symbol);
-                // Refresh transactions
+                // 刷新交易紀錄
                 ref.invalidate(positionTransactionsProvider(symbol));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

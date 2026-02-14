@@ -31,7 +31,7 @@ class OhlcvCard extends StatelessWidget {
           children: [
             _buildHeader(context, theme, isUp),
             const SizedBox(height: 16),
-            // Price grid
+            // 價格格線
             Row(
               children: [
                 Expanded(
@@ -81,7 +81,7 @@ class OhlcvCard extends StatelessWidget {
               ],
             ),
             Divider(height: 24, color: theme.colorScheme.outlineVariant),
-            // Volume
+            // 成交量
             Row(
               children: [
                 Icon(

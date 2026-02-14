@@ -17,9 +17,9 @@ class PortfolioRepository implements IPortfolioRepository {
   /// 台灣證交稅率（0.3%）
   static const double transactionTaxRate = 0.003;
 
-  // ==========================================
+  // ==================================================
   // 持倉查詢
-  // ==========================================
+  // ==================================================
 
   @override
   Future<List<PortfolioPositionEntry>> getPositions() =>
@@ -33,9 +33,9 @@ class PortfolioRepository implements IPortfolioRepository {
   Future<List<PortfolioTransactionEntry>> getTransactions(String symbol) =>
       _db.getTransactionsForSymbol(symbol);
 
-  // ==========================================
+  // ==================================================
   // 交易操作
-  // ==========================================
+  // ==================================================
 
   /// 計算建議手續費
   static double calculateFee(double quantity, double price) {
@@ -153,9 +153,9 @@ class PortfolioRepository implements IPortfolioRepository {
     await _recalculatePosition(symbol);
   }
 
-  // ==========================================
+  // ==================================================
   // FIFO 損益計算
-  // ==========================================
+  // ==================================================
 
   /// 從所有交易紀錄重新計算某 symbol 的持倉
   ///

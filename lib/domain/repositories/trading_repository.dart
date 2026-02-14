@@ -5,9 +5,9 @@ import 'package:afterclose/data/database/app_database.dart';
 /// 處理當沖與融資融券資料的查詢、同步與分析功能。
 /// 支援測試時的 Mock 及不同實作。
 abstract class ITradingRepository {
-  // ==========================================
+  // ==================================================
   // 當沖
-  // ==========================================
+  // ==================================================
 
   /// 取得當沖歷史資料
   Future<List<DayTradingEntry>> getDayTradingHistory(
@@ -36,9 +36,9 @@ abstract class ITradingRepository {
   /// 取得平均當沖比例
   Future<double?> getAverageDayTradingRatio(String symbol, {int days = 5});
 
-  // ==========================================
+  // ==================================================
   // 融資融券
-  // ==========================================
+  // ==================================================
 
   /// 取得融資融券歷史資料
   Future<List<MarginTradingEntry>> getMarginTradingHistory(

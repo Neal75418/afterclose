@@ -76,9 +76,9 @@ mixin _AnalysisDaoMixin on _$AppDatabase {
     return (delete(dailyAnalysis)..where((t) => t.date.equals(date))).go();
   }
 
-  // ==========================================
+  // ==================================================
   // 每日原因操作
-  // ==========================================
+  // ==================================================
 
   /// 取得股票在指定日期的觸發原因
   Future<List<DailyReasonEntry>> getReasons(String symbol, DateTime date) {
@@ -157,9 +157,9 @@ mixin _AnalysisDaoMixin on _$AppDatabase {
     return (delete(dailyReason)..where((t) => t.date.equals(date))).go();
   }
 
-  // ==========================================
+  // ==================================================
   // 推薦股操作
-  // ==========================================
+  // ==================================================
 
   /// 取得指定日期的推薦股
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date) {

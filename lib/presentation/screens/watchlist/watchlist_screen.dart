@@ -44,9 +44,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   @override
   void initState() {
     super.initState();
-    // Load data on first build
+    // 首次建構時載入資料
     Future.microtask(() => ref.read(watchlistProvider.notifier).loadData());
-    // Add scroll listener for infinite scroll
+    // 加入滾動監聽器（無限滾動）
     _scrollController.addListener(_onScroll);
   }
 
@@ -69,7 +69,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   Future<void> _onRefresh() async {
     await ref.read(watchlistProvider.notifier).loadData();
-    // Haptic feedback on refresh complete
+    // 刷新完成時觸覺回饋
     HapticFeedback.mediumImpact();
   }
 
@@ -188,7 +188,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             : Text('watchlist.title'.tr()),
         actions: [
           if (isWatchlistTab) ...[
-            // Search toggle
+            // 搜尋切換
             IconButton(
               icon: Icon(_isSearching ? Icons.close : Icons.search),
               onPressed: _toggleSearch,
@@ -196,7 +196,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                   ? 'common.close'.tr()
                   : 'common.search'.tr(),
             ),
-            // Sort menu
+            // 排序選單
             PopupMenuButton<WatchlistSort>(
               icon: const Icon(Icons.sort),
               tooltip: 'watchlist.sort'.tr(),
@@ -222,7 +222,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                 }).toList();
               },
             ),
-            // Compare button
+            // 比較按鈕
             if (state.filteredItems.length >= 2)
               IconButton(
                 icon: const Icon(Icons.compare_arrows),
@@ -235,7 +235,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                 },
                 tooltip: 'comparison.compare'.tr(),
               ),
-            // Add button
+            // 新增按鈕
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: () {
@@ -245,7 +245,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               tooltip: 'watchlist.add'.tr(),
             ),
           ],
-          // More menu (Calendar, Export, Group)
+          // 更多選單（行事曆、匯出、分組）
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
@@ -319,7 +319,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       ),
       body: Column(
         children: [
-          // SegmentedButton for tab switching
+          // 分段按鈕切換分頁
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SegmentedButton<_WatchlistTab>(
@@ -352,7 +352,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               },
             ),
           ),
-          // Tab content
+          // 分頁內容
           Expanded(
             child: isWatchlistTab
                 ? _buildWatchlistBody(state, theme)
@@ -376,7 +376,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             )
           : Column(
               children: [
-                // Stock count
+                // 股票數量
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -418,7 +418,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                     ],
                   ),
                 ),
-                // Stock list
+                // 股票列表
                 Expanded(
                   child: state.filteredItems.isEmpty
                       ? Center(

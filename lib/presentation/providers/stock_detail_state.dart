@@ -220,19 +220,19 @@ class StockDetailState {
       S.getReversalLabel(price.analysis?.reversalState);
 
   StockDetailState copyWith({
-    // Price fields
+    // 價格欄位
     StockMasterEntry? stock,
     DailyPriceEntry? latestPrice,
     DailyPriceEntry? previousPrice,
     List<DailyPriceEntry>? priceHistory,
     DailyAnalysisEntry? analysis,
-    // Fundamentals fields
+    // 基本面欄位
     List<FinMindRevenue>? revenueHistory,
     List<FinMindDividend>? dividendHistory,
     FinMindPER? latestPER,
     Map<String, double>? latestQuarterMetrics,
     List<FinancialDataEntry>? epsHistory,
-    // Chip fields
+    // 籌碼欄位
     List<DailyInstitutionalEntry>? institutionalHistory,
     List<FinMindMarginData>? marginHistory,
     List<MarginTradingEntry>? marginTradingHistory,
@@ -242,13 +242,13 @@ class StockDetailState {
     List<InsiderHoldingEntry>? insiderHistory,
     ChipStrengthResult? chipStrength,
     bool? hasInstitutionalError,
-    // Loading fields
+    // 載入狀態欄位
     bool? isLoading,
     bool? isLoadingMargin,
     bool? isLoadingFundamentals,
     bool? isLoadingInsider,
     bool? isLoadingChip,
-    // Direct fields
+    // 直接欄位
     bool? isInWatchlist,
     Object? error = sentinel,
     DateTime? dataDate,
@@ -257,7 +257,7 @@ class StockDetailState {
     StockSummary? aiSummary,
     List<NewsItemEntry>? recentNews,
   }) {
-    // Only create new sub-state objects when their fields are being updated
+    // 僅在子狀態欄位有更新時才建立新物件
     final needsPriceUpdate =
         stock != null ||
         latestPrice != null ||

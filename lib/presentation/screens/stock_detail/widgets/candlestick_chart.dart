@@ -44,7 +44,7 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
       return;
     }
 
-    // Convert DailyPriceEntry to Candle (sorted by date descending for candlesticks package)
+    // 將 DailyPriceEntry 轉換為 Candle（依日期降冪排序供套件使用）
     final sortedHistory = List<DailyPriceEntry>.from(widget.priceHistory)
       ..sort((a, b) => b.date.compareTo(a.date));
 
@@ -109,10 +109,10 @@ class _CandlestickChartWidgetState extends State<CandlestickChartWidget> {
       child: Candlesticks(
         candles: _candles,
         onLoadMoreCandles: () async {
-          // Could implement pagination here if needed
+          // 如需要可在此實作分頁
         },
         actions: const [
-          // Period selector actions could be added here
+          // 可在此新增週期選擇功能
         ],
       ),
     );
@@ -208,7 +208,7 @@ class _VolumePainter extends CustomPainter {
       final close = entry.close ?? 0;
       final open = entry.open ?? 0;
 
-      // Determine color based on price movement
+      // 依漲跌決定顏色
       final isUp = close >= open;
       paint.color = (isUp ? upColor : downColor).withValues(alpha: 0.7);
 
@@ -222,16 +222,16 @@ class _VolumePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _VolumePainter oldDelegate) {
-    // Compare by reference first (fastest check)
+    // 先比較參照（最快速檢查）
     if (identical(data, oldDelegate.data) &&
         maxVolume == oldDelegate.maxVolume) {
       return false;
     }
-    // Compare lengths as secondary check
+    // 再比較長度作為次要檢查
     if (data.length != oldDelegate.data.length) {
       return true;
     }
-    // Compare maxVolume
+    // 比較最大成交量
     return maxVolume != oldDelegate.maxVolume;
   }
 }

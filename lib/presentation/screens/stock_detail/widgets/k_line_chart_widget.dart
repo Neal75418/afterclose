@@ -58,7 +58,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       return;
     }
 
-    // Convert DailyPriceEntry to KLineEntity
+    // 將 DailyPriceEntry 轉換為 KLineEntity
     // k_chart_plus requires data sorted from oldest to newest
     final sortedHistory = List<DailyPriceEntry>.from(widget.priceHistory)
       ..sort((a, b) => a.date.compareTo(b.date));
@@ -82,7 +82,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       }
     }
 
-    // Calculate all technical indicators
+    // 計算所有技術指標
     if (kLineData.isNotEmpty) {
       DataUtil.calculate(kLineData, widget.maDayList);
     }
@@ -115,8 +115,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       );
     }
 
-    // Configure chart colors based on theme
-    // Configure chart colors based on theme
+    // 依主題設定圖表顏色
     final chartColors = ChartColors(
       bgColor: isDark
           ? IndicatorColors.chartDarkBackground
@@ -144,7 +143,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
       minColor: AppTheme.downColor,
     );
 
-    // Configure chart style (uses mutable properties)
+    // 設定圖表樣式（使用可變屬性）
     final chartStyle = ChartStyle()
       ..topPadding = 30
       ..bottomPadding = 20
@@ -173,7 +172,7 @@ class _KLineChartWidgetState extends State<KLineChartWidget> {
         decoration: BoxDecoration(
           color: isDark ? IndicatorColors.chartDarkBackground : Colors.white,
           borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
-          // Subtle border to define the chart area
+          // 以細框線定義圖表區域
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
           ),

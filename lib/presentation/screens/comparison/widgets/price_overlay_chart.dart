@@ -115,7 +115,7 @@ class PriceOverlayChart extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Legend
+            // 圖例
             _buildLegend(theme),
           ],
         ),
@@ -131,7 +131,7 @@ class PriceOverlayChart extends StatelessWidget {
       final history = priceHistoriesMap[symbol];
       if (history == null || history.isEmpty) continue;
 
-      // Sort by date ascending
+      // 依日期升冪排序
       final sorted = List<DailyPriceEntry>.from(history)
         ..sort((a, b) => a.date.compareTo(b.date));
 

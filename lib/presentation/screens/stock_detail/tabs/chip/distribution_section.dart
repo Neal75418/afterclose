@@ -33,7 +33,7 @@ class DistributionSection extends StatelessWidget {
   Widget _buildBars(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Group and display top levels by percent
+    // 依百分比分組顯示各級距
     final sorted = List<HoldingDistributionEntry>.from(distribution)
       ..sort((a, b) => (b.percent ?? 0).compareTo(a.percent ?? 0));
 

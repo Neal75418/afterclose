@@ -134,7 +134,8 @@ class TpexClient {
         volume: TwParseUtils.parseFormattedDouble(row[8]),
         turnover: TwParseUtils.parseFormattedDouble(row[9]),
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析每日價格失敗: $e');
       return null;
     }
   }
@@ -250,7 +251,8 @@ class TpexClient {
         // 三大法人合計 - index 23
         totalNet: TwParseUtils.parseFormattedDouble(row[23]) ?? 0,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析法人資料失敗: $e');
       return null;
     }
   }
@@ -435,7 +437,8 @@ class TpexClient {
         dividendYield: parsePer(json['YieldRatio']),
         dividendPerShare: parsePer(json['DividendPerShare']),
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析估值資料失敗: $e');
       return null;
     }
   }
@@ -577,7 +580,8 @@ class TpexClient {
         sellVolume: sellVolume,
         totalVolume: totalVolume,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析當沖資料失敗: $e');
       return null;
     }
   }
@@ -680,14 +684,15 @@ class TpexClient {
         shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0, // 賣出
         shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
       );
-    } catch (_) {
+    } catch (e) {
+      AppLogger.debug(_tag, '解析融資融券失敗: $e');
       return null;
     }
   }
 
-  // ==========================================
+  // ==================================================
   // Killer Features API (免費 OpenAPI)
-  // ==========================================
+  // ==================================================
 
   /// 取得上櫃注意股票清單
   ///

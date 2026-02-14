@@ -59,7 +59,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     final state = ref.watch(stockDetailProvider(widget.symbol));
     final theme = Theme.of(context);
 
-    // Dynamic gradient based on price change
+    // 依漲跌幅動態漸層
     final priceChange = state.priceChange ?? 0;
     final isPositive = priceChange > 0;
     final isNegative = priceChange < 0;
@@ -98,7 +98,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
               )
             : NestedScrollView(
                 headerSliverBuilder: (context, innerBoxScrolled) => [
-                  // App bar (Glassmorphism)
+                  // App Bar（毛玻璃效果）
                   SliverAppBar(
                     pinned: true,
                     floating: true,
@@ -145,7 +145,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     ],
                   ),
 
-                  // Stock header
+                  // 股票標題
                   SliverToBoxAdapter(
                     child: StockDetailHeader(
                       state: state,
@@ -158,7 +158,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     child: AiSummaryCard(symbol: widget.symbol),
                   ),
 
-                  // Tab bar (Glassmorphism)
+                  // Tab Bar（毛玻璃效果）
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _TabBarDelegate(

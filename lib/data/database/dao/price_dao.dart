@@ -371,9 +371,9 @@ mixin _PriceDaoMixin on _$AppDatabase {
     return results.map((row) => row.read<String>('symbol')).toList();
   }
 
-  // ==========================================
+  // ==================================================
   // 還原股價操作
-  // ==========================================
+  // ==================================================
 
   /// 取得股票的還原股價歷史
   Future<List<AdjustedPriceEntry>> getAdjustedPriceHistory(
@@ -415,9 +415,9 @@ mixin _PriceDaoMixin on _$AppDatabase {
     return result?.date;
   }
 
-  // ==========================================
+  // ==================================================
   // 週K線操作
-  // ==========================================
+  // ==================================================
 
   /// 取得股票的週K線歷史
   Future<List<WeeklyPriceEntry>> getWeeklyPriceHistory(

@@ -1,5 +1,5 @@
 /// 集中定義所有路由路徑，避免硬編碼字串散佈各處。
-abstract class AppRoutes {
+abstract final class AppRoutes {
   // Tab 頁面
   static const home = '/';
   static const scan = '/scan';

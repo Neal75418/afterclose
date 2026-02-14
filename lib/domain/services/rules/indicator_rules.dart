@@ -5,9 +5,9 @@ import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
-// ==========================================
+// ==================================================
 // 第 3 階段：技術訊號規則
-// ==========================================
+// ==================================================
 
 /// 計算價格歷史期間內的累計現金股利
 ///
@@ -178,7 +178,7 @@ class Week52LowRule extends StockRule {
           if (close >= ma20 || ma20 >= ma60) {
             AppLogger.debug(
               'Week52Low',
-              '${data.symbol}: 過濾 - 未確認空頭趨勢 (close=$close, MA20=$ma20, MA60=$ma60)',
+              '${data.symbol}: 過濾（未確認空頭趨勢 close=$close, MA20=$ma20, MA60=$ma60）',
             );
             return null;
           }

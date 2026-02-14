@@ -4,9 +4,9 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
-// ==========================================
+// ==================================================
 // K 線型態規則
-// ==========================================
+// ==================================================
 
 /// 判斷 K 棒是否為錘子/吊人形態
 ///

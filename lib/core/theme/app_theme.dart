@@ -9,9 +9,9 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // ==========================================
+  // ==================================================
   // 色彩調色盤（Material Design 標準）
-  // ==========================================
+  // ==================================================
 
   /// 主品牌色 - Material Blue
   static const primaryColor = Color(0xFF2196F3);
@@ -75,9 +75,9 @@ class AppTheme {
   static const _backgroundLight = Color(0xFFFFFFFF);
   static const _cardLight = Color(0xFFFFFFFF);
 
-  // ==========================================
+  // ==================================================
   // 深色主題
-  // ==========================================
+  // ==================================================
 
   static ThemeData get darkTheme {
     return ThemeData(
@@ -108,7 +108,7 @@ class AppTheme {
         ),
       ),
 
-      // Cards
+      // 卡片
       cardTheme: CardThemeData(
         elevation: 0,
         color: _cardDark,
@@ -116,14 +116,14 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
 
-      // ListTile
+      // 列表項目
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: _cardDark,
       ),
 
-      // Bottom Navigation
+      // 底部導航
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: Colors.transparent, // Handled by AppShell for blur
         indicatorColor: primaryColor.withValues(alpha: 0.2),
@@ -137,7 +137,7 @@ class AppTheme {
         }),
       ),
 
-      // Buttons
+      // 按鈕
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -156,7 +156,7 @@ class AppTheme {
         ),
       ),
 
-      // Input
+      // 輸入框
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: _cardDark,
@@ -178,7 +178,7 @@ class AppTheme {
         ),
       ),
 
-      // Chips
+      // 標籤
       chipTheme: ChipThemeData(
         backgroundColor: _cardDarkSurface,
         labelStyle: const TextStyle(fontSize: 12, color: Color(0xFFF1F5F9)),
@@ -189,14 +189,14 @@ class AppTheme {
         ),
       ),
 
-      // Divider
+      // 分隔線
       dividerTheme: const DividerThemeData(
         color: Color(0xFF334155),
         thickness: 1,
         space: 1,
       ),
 
-      // Snackbar
+      // 提示訊息列
       snackBarTheme: SnackBarThemeData(
         backgroundColor: _cardDarkSurface,
         contentTextStyle: const TextStyle(color: Color(0xFFF1F5F9)),
@@ -205,7 +205,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
-      // Dialog
+      // 對話框
       dialogTheme: DialogThemeData(
         backgroundColor: _surfaceDark,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -214,9 +214,9 @@ class AppTheme {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 淺色主題
-  // ==========================================
+  // ==================================================
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -248,7 +248,7 @@ class AppTheme {
         iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
       ),
 
-      // Cards
+      // 卡片
       cardTheme: CardThemeData(
         elevation: 0,
         color: _cardLight,
@@ -259,14 +259,14 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
 
-      // ListTile
+      // 列表項目
       listTileTheme: ListTileThemeData(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         tileColor: _cardLight,
       ),
 
-      // Bottom Navigation
+      // 底部導航
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: _backgroundLight.withValues(alpha: 0.95),
         indicatorColor: primaryColor.withValues(alpha: 0.15),
@@ -274,7 +274,7 @@ class AppTheme {
         height: 70,
       ),
 
-      // Buttons
+      // 按鈕
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
@@ -292,7 +292,7 @@ class AppTheme {
         ),
       ),
 
-      // Input
+      // 輸入框
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: _surfaceLight,
@@ -314,7 +314,7 @@ class AppTheme {
         ),
       ),
 
-      // Chips
+      // 標籤
       chipTheme: ChipThemeData(
         backgroundColor: _surfaceLight,
         selectedColor: primaryColor.withValues(alpha: 0.15),
@@ -333,14 +333,14 @@ class AppTheme {
         ),
       ),
 
-      // Divider
+      // 分隔線
       dividerTheme: const DividerThemeData(
         color: Color(0xFFE8E8F0),
         thickness: 1,
         space: 1,
       ),
 
-      // Snackbar
+      // 提示訊息列
       snackBarTheme: SnackBarThemeData(
         backgroundColor: const Color(0xFF1A1A2E),
         contentTextStyle: const TextStyle(color: Colors.white),
@@ -349,7 +349,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
 
-      // Dialog
+      // 對話框
       dialogTheme: DialogThemeData(
         backgroundColor: _backgroundLight,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -357,9 +357,9 @@ class AppTheme {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 輔助方法
-  // ==========================================
+  // ==================================================
 
   /// 根據漲跌幅取得對應顏色
   static Color getPriceColor(double? change) {

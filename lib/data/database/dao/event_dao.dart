@@ -2,9 +2,9 @@ part of 'package:afterclose/data/database/app_database.dart';
 
 /// 事件行事曆相關資料存取
 mixin _EventDaoMixin on _$AppDatabase {
-  // ==========================================
+  // ==================================================
   // 事件行事曆操作（Phase 4.3）
-  // ==========================================
+  // ==================================================
 
   /// 取得日期範圍內的事件
   Future<List<StockEventEntry>> getEventsInRange(

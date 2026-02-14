@@ -90,9 +90,9 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   Set<String> _watchlistSymbols = {};
   DateContext? _dateCtx;
 
-  // ==========================================
+  // ==================================================
   // 條件管理
-  // ==========================================
+  // ==================================================
 
   void addCondition(ScreeningCondition condition) {
     state = state.copyWith(
@@ -118,9 +118,9 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     state = state.copyWith(conditions: [], clearResult: true, stocks: []);
   }
 
-  // ==========================================
+  // ==================================================
   // 策略 CRUD
-  // ==========================================
+  // ==================================================
 
   Future<void> loadSavedStrategies() async {
     state = state.copyWith(isLoadingStrategies: true);
@@ -188,9 +188,9 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     );
   }
 
-  // ==========================================
+  // ==================================================
   // 篩選執行
-  // ==========================================
+  // ==================================================
 
   Future<void> executeScreening() async {
     if (state.conditions.isEmpty) return;
@@ -283,9 +283,9 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     }
   }
 
-  // ==========================================
+  // ==================================================
   // 私有輔助
-  // ==========================================
+  // ==================================================
 
   Future<List<ScanStockItem>> _loadStockItems(List<String> symbols) async {
     final dateCtx = _dateCtx;

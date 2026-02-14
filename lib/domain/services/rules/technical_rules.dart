@@ -3,9 +3,9 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
-// ==========================================
+// ==================================================
 // 反轉規則
-// ==========================================
+// ==================================================
 
 class WeakToStrongRule extends StockRule {
   const WeakToStrongRule();
@@ -55,9 +55,9 @@ class StrongToWeakRule extends StockRule {
   }
 }
 
-// ==========================================
+// ==================================================
 // 突破/跌破規則
-// ==========================================
+// ==================================================
 
 class BreakoutRule extends StockRule {
   const BreakoutRule();
@@ -158,9 +158,9 @@ double? _calculate20DayLow(List<DailyPriceEntry> prices) {
   return minLow == double.infinity ? null : minLow;
 }
 
-// ==========================================
+// ==================================================
 // 輔助方法
-// ==========================================
+// ==================================================
 
 /// 計算 MA20
 double? _calculateMA20(List<DailyPriceEntry> prices) {

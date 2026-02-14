@@ -142,7 +142,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
           ? const GenericListShimmer(itemCount: 4)
           : Column(
               children: [
-                // Stock chips bar
+                // 股票標籤列
                 if (state.symbols.isNotEmpty)
                   ComparisonHeader(
                     symbols: state.symbols,
@@ -155,7 +155,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
                 const SizedBox(height: 4),
 
-                // Main content
+                // 主要內容
                 Expanded(
                   child: state.hasEnoughToCompare
                       ? _buildComparisonContent(state, theme)
@@ -207,14 +207,14 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Loading overlay
+          // 載入遮罩
           if (state.isLoading)
             const Padding(
               padding: EdgeInsets.only(bottom: 8),
               child: LinearProgressIndicator(),
             ),
 
-          // Price overlay chart
+          // 價格疊加圖
           Semantics(
             label: S.accessibilityPriceComparisonChart(state.symbols.join('、')),
             image: true,
@@ -227,7 +227,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
           const SizedBox(height: 16),
 
-          // Radar chart
+          // 雷達圖
           Semantics(
             label: S.accessibilityRadarChart(state.symbols.join('、')),
             image: true,
@@ -236,7 +236,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
 
           const SizedBox(height: 16),
 
-          // Comparison table
+          // 比較表格
           Semantics(
             label: S.accessibilityComparisonTable(state.symbols.join('、')),
             container: true,

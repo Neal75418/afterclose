@@ -38,7 +38,7 @@ class ComparisonTable extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Table sections
+        // 表格區段
         for (final section in sections) ...[
           _buildSectionHeader(theme, section),
           Card(
@@ -61,7 +61,7 @@ class ComparisonTable extends StatelessWidget {
           const SizedBox(height: 12),
         ],
 
-        // Verdict banner
+        // 結論橫幅
         _buildVerdict(theme, winCounts),
       ],
     );
@@ -86,7 +86,7 @@ class ComparisonTable extends StatelessWidget {
   }
 
   Widget _buildMetricRow(ThemeData theme, _MetricRow row) {
-    // Find winner index
+    // 找出優勝者索引
     int? winnerIndex;
     if (row.higherIsBetter != null) {
       double? bestVal;
@@ -105,7 +105,7 @@ class ComparisonTable extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: Row(
         children: [
-          // Metric label
+          // 指標標籤
           SizedBox(
             width: 80,
             child: Text(
@@ -115,7 +115,7 @@ class ComparisonTable extends StatelessWidget {
               ),
             ),
           ),
-          // Values
+          // 數值
           for (var i = 0; i < row.values.length; i++)
             Expanded(
               child: Container(
@@ -146,7 +146,7 @@ class ComparisonTable extends StatelessWidget {
   }
 
   Widget _buildVerdict(ThemeData theme, Map<String, int> winCounts) {
-    // Find overall winner
+    // 找出整體優勝者
     String? winner;
     int maxWins = 0;
     bool isTie = false;
@@ -198,7 +198,7 @@ class ComparisonTable extends StatelessWidget {
   }
 
   // ──────────────────────────────────────────
-  // Section builders
+  // 區段建構
   // ──────────────────────────────────────────
 
   List<_ComparisonSection> _buildSections() {
@@ -598,7 +598,7 @@ class ComparisonTable extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────
-// Data models
+// 資料模型
 // ──────────────────────────────────────────
 
 class _ComparisonSection {

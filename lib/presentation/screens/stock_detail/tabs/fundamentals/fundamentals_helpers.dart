@@ -99,9 +99,9 @@ Color? getRowColor(BuildContext context, int index) {
   return Colors.transparent;
 }
 
-// ==========================================
-// Table structure helpers
-// ==========================================
+// ==================================================
+// 表格結構輔助
+// ==================================================
 
 /// Builds a styled header row for data tables.
 Widget buildTableHeader(BuildContext context, List<Widget> columns) {
