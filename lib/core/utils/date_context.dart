@@ -1,17 +1,17 @@
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_time.dart';
 
 /// 日期處理工具類別，確保應用程式中日期處理的一致性
 ///
 /// 提供標準化的日期供資料庫查詢與 UI 顯示使用。
-/// 所有日期皆標準化為本地時間午夜，以匹配資料庫中的日期格式。
+/// 所有日期皆標準化為午夜，以匹配資料庫中的日期格式。
+/// 使用台灣時區 (UTC+8) 判斷「今天」。
 class DateContext {
   DateContext._({required this.today, required this.historyStart});
 
-  /// 以目前日期建立 DateContext，預設回溯 5 天歷史資料
+  /// 以目前台灣日期建立 DateContext，預設回溯 5 天歷史資料
   factory DateContext.now({int historyDays = 5}) {
-    final now = DateTime.now();
-    // 使用本地時間午夜，以匹配資料庫中儲存的日期格式
-    final today = DateTime(now.year, now.month, now.day);
+    final today = TaiwanTime.today();
     return DateContext._(
       today: today,
       historyStart: today.subtract(Duration(days: historyDays)),

@@ -1,4 +1,5 @@
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_time.dart';
 
 /// 台灣股市交易日曆
 ///
@@ -238,7 +239,7 @@ class TaiwanCalendar {
   ///
   /// 若當前年份超出資料範圍則回傳 true
   static bool isCalendarExpired() {
-    return DateTime.now().year > _maxYear;
+    return TaiwanTime.now().year > _maxYear;
   }
 
   /// 取得日曆資料涵蓋的最大年份

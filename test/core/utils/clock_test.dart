@@ -3,14 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('SystemClock', () {
-    test('now() returns current time', () {
+    test('now() returns current Taiwan time', () {
       const clock = SystemClock();
-      final before = DateTime.now();
       final result = clock.now();
-      final after = DateTime.now();
+      final reference = DateTime.now();
 
-      expect(result.isAfter(before) || result.isAtSameMomentAs(before), isTrue);
-      expect(result.isBefore(after) || result.isAtSameMomentAs(after), isTrue);
+      // 允許最多 2 秒誤差（TaiwanTime.now() 截斷毫秒）
+      final diff = result.difference(reference).abs();
+      expect(diff.inSeconds, lessThanOrEqualTo(2));
     });
 
     test('is const constructible', () {
