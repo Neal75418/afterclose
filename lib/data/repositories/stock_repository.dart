@@ -61,11 +61,15 @@ class StockRepository implements IStockRepository {
           })
           .toList();
 
-      await _db.upsertStocks(entries);
+      // upsert + deactivate 應為原子操作，避免中途失敗造成不一致
+      int deactivated = 0;
+      await _db.transaction(() async {
+        await _db.upsertStocks(entries);
 
-      // 將不在 API 回傳清單中的股票標記為下市
-      final activeSymbols = entries.map((e) => e.symbol.value).toSet();
-      final deactivated = await _db.deactivateStocksNotIn(activeSymbols);
+        // 將不在 API 回傳清單中的股票標記為下市
+        final activeSymbols = entries.map((e) => e.symbol.value).toSet();
+        deactivated = await _db.deactivateStocksNotIn(activeSymbols);
+      });
       if (deactivated > 0) {
         AppLogger.info('StockRepo', '標記 $deactivated 檔股票為下市');
       }

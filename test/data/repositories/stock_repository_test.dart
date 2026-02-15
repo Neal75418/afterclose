@@ -6,7 +6,12 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 
-class MockAppDatabase extends Mock implements AppDatabase {}
+class MockAppDatabase extends Mock implements AppDatabase {
+  @override
+  Future<T> transaction<T>(Future<T> Function() action, {bool? requireNew}) {
+    return action();
+  }
+}
 
 class MockFinMindClient extends Mock implements FinMindClient {}
 

@@ -457,41 +457,44 @@ class TwseClient {
         options: Options(responseType: ResponseType.json),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '估值資料: 非預期資料型別');
-          return [];
-        }
-        final resDate = DateTime.now(); // Open Data 總是回傳最新資料
-
-        final results = data.map((item) {
-          final map = item as Map<String, dynamic>;
-
-          final code = map['Code']?.toString() ?? '';
-
-          final peStr = map['PEratio']?.toString().replaceAll(',', '');
-          final yieldStr = map['DividendYield']?.toString().replaceAll(',', '');
-          final pbrStr = map['PBratio']?.toString().replaceAll(',', '');
-
-          final pe = double.tryParse(peStr ?? '') ?? 0.0;
-          final pbr = double.tryParse(pbrStr ?? '') ?? 0.0;
-          final yieldVal = double.tryParse(yieldStr ?? '') ?? 0.0;
-
-          return TwseValuation(
-            code: code,
-            date: resDate,
-            per: pe,
-            pbr: pbr,
-            dividendYield: yieldVal,
-          );
-        }).toList();
-
-        AppLogger.info(_tag, '估值資料: ${results.length} 筆');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      return [];
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '估值資料: 非預期資料型別');
+        return [];
+      }
+      final resDate = DateTime.now(); // Open Data 總是回傳最新資料
+
+      final results = data.map((item) {
+        final map = item as Map<String, dynamic>;
+
+        final code = map['Code']?.toString() ?? '';
+
+        final peStr = map['PEratio']?.toString().replaceAll(',', '');
+        final yieldStr = map['DividendYield']?.toString().replaceAll(',', '');
+        final pbrStr = map['PBratio']?.toString().replaceAll(',', '');
+
+        final pe = double.tryParse(peStr ?? '') ?? 0.0;
+        final pbr = double.tryParse(pbrStr ?? '') ?? 0.0;
+        final yieldVal = double.tryParse(yieldStr ?? '') ?? 0.0;
+
+        return TwseValuation(
+          code: code,
+          date: resDate,
+          per: pe,
+          pbr: pbr,
+          dividendYield: yieldVal,
+        );
+      }).toList();
+
+      AppLogger.info(_tag, '估值資料: ${results.length} 筆');
+      return results;
     });
   }
 
@@ -507,22 +510,25 @@ class TwseClient {
       // 使用完整 URL 以覆蓋基礎 URL (www.twse.com.tw)
       final response = await _dio.get(ApiEndpoints.twseMonthlyRevenue);
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '月營收: 非預期資料型別');
-          return [];
-        }
-        final results = data
-            .map(
-              (json) =>
-                  TwseMonthlyRevenue.fromJson(json as Map<String, dynamic>),
-            )
-            .toList();
-        AppLogger.info(_tag, '月營收: ${results.length} 筆');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
-      return [];
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '月營收: 非預期資料型別');
+        return [];
+      }
+      final results = data
+          .map(
+            (json) => TwseMonthlyRevenue.fromJson(json as Map<String, dynamic>),
+          )
+          .toList();
+      AppLogger.info(_tag, '月營收: ${results.length} 筆');
+      return results;
     });
   }
 
@@ -543,58 +549,53 @@ class TwseClient {
         options: Options(responseType: ResponseType.plain),
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '當沖資料',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        if (data['stat'] != 'OK') {
-          return [];
-        }
-
-        // TWTB4U 回傳多個表格。我們需要含詳細個股資料的那個。
-        // 通常是第二個表格，但以防萬一用標題來找。
-        List<dynamic> rows = [];
-
-        if (data.containsKey('tables')) {
-          final List<dynamic> tables = data['tables'];
-          for (final table in tables) {
-            final title = table['title']?.toString() ?? '';
-            // 尋找「當日沖銷交易標的」
-            if (title.contains('當日沖銷交易標的')) {
-              rows = table['data'] ?? [];
-              break;
-            }
-          }
-          // 若以標題找不到，則嘗試從第二個表格（索引 1）載入作為備案
-          if (rows.isEmpty && tables.length > 1) {
-            rows = tables[1]['data'] ?? [];
-          }
-        } else {
-          // 以防萬一的舊格式備案
-          rows = data['data'] ?? [];
-        }
-
-        final result = <TwseDayTrading>[];
-
-        for (final row in rows) {
-          if (row is List) {
-            if (row.length >= 6) {
-              final parsed = _parseDayTradingRow(row, targetDate);
-              if (parsed != null) {
-                result.add(parsed);
-              }
-            }
-          }
-        }
-
-        AppLogger.info(_tag, '當沖資料: ${result.length} 筆');
-        return result;
       }
-      return [];
+
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '當沖資料',
+      );
+      if (data == null) return [];
+
+      if (data['stat'] != 'OK') return [];
+
+      // TWTB4U 回傳多個表格。我們需要含詳細個股資料的那個。
+      // 通常是第二個表格，但以防萬一用標題來找。
+      List<dynamic> rows = [];
+
+      if (data.containsKey('tables')) {
+        final List<dynamic> tables = data['tables'];
+        for (final table in tables) {
+          final title = table['title']?.toString() ?? '';
+          if (title.contains('當日沖銷交易標的')) {
+            rows = table['data'] ?? [];
+            break;
+          }
+        }
+        // 若以標題找不到，則嘗試從第二個表格（索引 1）載入作為備案
+        if (rows.isEmpty && tables.length > 1) {
+          rows = tables[1]['data'] ?? [];
+        }
+      } else {
+        rows = data['data'] ?? [];
+      }
+
+      final result = <TwseDayTrading>[];
+      for (final row in rows) {
+        if (row is List && row.length >= 6) {
+          final parsed = _parseDayTradingRow(row, targetDate);
+          if (parsed != null) result.add(parsed);
+        }
+      }
+
+      AppLogger.info(_tag, '當沖資料: ${result.length} 筆');
+      return result;
     });
   }
 
