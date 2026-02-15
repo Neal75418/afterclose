@@ -131,7 +131,7 @@ void main() {
           () => MarketClientMixin.executeRequest(
             'TEST',
             'test',
-            () async => throw FormatException('bad format'),
+            () async => throw const FormatException('bad format'),
           ),
           throwsA(isA<FormatException>()),
         );
