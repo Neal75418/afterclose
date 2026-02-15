@@ -16,7 +16,8 @@
     "search": "Search",
     "refresh": "Refresh",
     "settings": "Settings",
-    "next": "Next"
+    "next": "Next",
+    "offline": "You are offline. Showing cached data."
   },
   "unit": {
     "billion": "B",

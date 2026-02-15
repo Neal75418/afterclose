@@ -16,7 +16,8 @@
     "search": "搜尋",
     "refresh": "重新整理",
     "settings": "設定",
-    "next": "下一步"
+    "next": "下一步",
+    "offline": "目前離線，顯示的是快取資料"
   },
   "unit": {
     "billion": "億",

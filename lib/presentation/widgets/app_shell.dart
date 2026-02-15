@@ -2,15 +2,18 @@ import 'dart:ui' as ui;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/utils/responsive_helper.dart';
+import 'package:afterclose/presentation/providers/connectivity_provider.dart';
 
 /// 帶有響應式導覽的外殼 Widget
 ///
 /// - 手機：底部導覽列（NavigationBar）
 /// - 平板/桌面：側邊導覽欄（NavigationRail）
-class AppShell extends StatelessWidget {
+/// - 離線時顯示提示橫幅
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
@@ -26,13 +29,22 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final shouldShowRail = context.shouldShowNavigationRail;
+    final isOnline = ref.watch(connectivityProvider).value ?? true;
 
-    if (shouldShowRail) {
-      return _buildRailLayout(context);
-    }
-    return _buildBottomNavLayout(context);
+    final body = shouldShowRail
+        ? _buildRailLayout(context)
+        : _buildBottomNavLayout(context);
+
+    if (isOnline) return body;
+
+    return Column(
+      children: [
+        _OfflineBanner(),
+        Expanded(child: body),
+      ],
+    );
   }
 
   /// 手機佈局：底部導覽列
@@ -150,5 +162,41 @@ class AppShell extends StatelessWidget {
         label: Text('nav.news'.tr()),
       ),
     ];
+  }
+}
+
+/// 離線提示橫幅
+class _OfflineBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: theme.colorScheme.errorContainer,
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.cloud_off,
+                size: 16,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'common.offline'.tr(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onErrorContainer,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
