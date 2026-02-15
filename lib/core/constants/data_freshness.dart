@@ -80,4 +80,11 @@ abstract final class DataFreshness {
 
   /// 融資融券短期回溯天數（預設）
   static const int marginShortLookbackDays = 5;
+
+  // ==================================================
+  // App Lifecycle
+  // ==================================================
+
+  /// App 回到前景後，超過此時間（分鐘）視為資料過期，自動重新載入
+  static const int appStaleThresholdMinutes = 30;
 }

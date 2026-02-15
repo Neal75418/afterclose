@@ -118,6 +118,9 @@ void main() {
           () => mockClient.getStockList(),
         ).thenAnswer((_) async => stockInfos);
         when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 0);
 
         final result = await repository.syncStockList();
 
@@ -145,6 +148,9 @@ void main() {
           () => mockClient.getStockList(),
         ).thenAnswer((_) async => stockInfos);
         when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 0);
 
         final result = await repository.syncStockList();
 
@@ -177,11 +183,41 @@ void main() {
           () => mockClient.getStockList(),
         ).thenAnswer((_) async => stockInfos);
         when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 0);
 
         final result = await repository.syncStockList();
 
         // Only 2330 is valid (4 digits), 233001 is 6 digits (warrant), 9101 has 4 digits but counts
         expect(result, equals(2)); // 2330 and 9101 are 4 digits
+      });
+
+      test('deactivates stocks not in API response', () async {
+        final stockInfos = [
+          const FinMindStockInfo(
+            stockId: '2330',
+            stockName: '台積電',
+            industryCategory: '半導體',
+            type: 'twse',
+          ),
+        ];
+
+        when(
+          () => mockClient.getStockList(),
+        ).thenAnswer((_) async => stockInfos);
+        when(() => mockDb.upsertStocks(any())).thenAnswer((_) async {});
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 3);
+
+        await repository.syncStockList();
+
+        final captured = verify(
+          () => mockDb.deactivateStocksNotIn(captureAny()),
+        ).captured;
+        final activeSymbols = captured.first as Set<String>;
+        expect(activeSymbols, equals({'2330'}));
       });
 
       test('rethrows RateLimitException', () async {
@@ -218,6 +254,9 @@ void main() {
           () => mockClient.getStockList(),
         ).thenAnswer((_) async => stockInfos);
         when(() => mockDb.upsertStocks(any())).thenThrow(Exception('DB error'));
+        when(
+          () => mockDb.deactivateStocksNotIn(any()),
+        ).thenAnswer((_) async => 0);
 
         expect(
           () => repository.syncStockList(),

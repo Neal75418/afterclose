@@ -351,12 +351,13 @@ mixin _PriceDaoMixin on _$AppDatabase {
     final effectiveEndDate = endDate ?? DateTime.now();
 
     const query = '''
-    SELECT symbol, COUNT(*) as cnt
-    FROM daily_price
-    WHERE date >= ? AND date <= ?
-    GROUP BY symbol
+    SELECT dp.symbol, COUNT(*) as cnt
+    FROM daily_price dp
+    INNER JOIN stock_master sm ON dp.symbol = sm.symbol AND sm.is_active = 1
+    WHERE dp.date >= ? AND dp.date <= ?
+    GROUP BY dp.symbol
     HAVING cnt >= ?
-    ORDER BY cnt DESC, symbol ASC
+    ORDER BY cnt DESC, dp.symbol ASC
   ''';
 
     final results = await customSelect(

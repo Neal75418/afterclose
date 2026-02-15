@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:afterclose/app/router.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/services/background_update_service.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
+import 'package:afterclose/presentation/providers/today_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -85,15 +87,49 @@ Future<void> _initializeFinMindToken(ProviderContainer container) async {
   }
 }
 
-class AfterCloseApp extends ConsumerWidget {
+class AfterCloseApp extends ConsumerStatefulWidget {
   const AfterCloseApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AfterCloseApp> createState() => _AfterCloseAppState();
+}
+
+class _AfterCloseAppState extends ConsumerState<AfterCloseApp>
+    with WidgetsBindingObserver {
+  DateTime? _lastPausedAt;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _lastPausedAt = DateTime.now();
+    } else if (state == AppLifecycleState.resumed && _lastPausedAt != null) {
+      final elapsed = DateTime.now().difference(_lastPausedAt!);
+      if (elapsed.inMinutes >= DataFreshness.appStaleThresholdMinutes) {
+        AppLogger.info('Lifecycle', '離開 ${elapsed.inMinutes} 分鐘，重新載入資料');
+        ref.read(todayProvider.notifier).loadData();
+      }
+      _lastPausedAt = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
-      title: 'AfterClose', // Static title for system-level use
+      title: 'AfterClose',
       onGenerateTitle: (context) => 'app.name'.tr(),
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

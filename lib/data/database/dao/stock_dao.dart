@@ -108,4 +108,19 @@ mixin _StockDaoMixin on _$AppDatabase {
 
     return {for (final stock in results) stock.symbol: stock};
   }
+
+  /// 將不在指定清單中的股票標記為下市（isActive = false）
+  ///
+  /// 回傳被標記為下市的股票數量
+  Future<int> deactivateStocksNotIn(Set<String> activeSymbols) async {
+    if (activeSymbols.isEmpty) return 0;
+
+    final result =
+        await (update(stockMaster)..where(
+              (t) => t.isActive.equals(true) & t.symbol.isNotIn(activeSymbols),
+            ))
+            .write(const StockMasterCompanion(isActive: Value(false)));
+
+    return result;
+  }
 }

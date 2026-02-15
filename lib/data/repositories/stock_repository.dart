@@ -63,6 +63,13 @@ class StockRepository implements IStockRepository {
 
       await _db.upsertStocks(entries);
 
+      // 將不在 API 回傳清單中的股票標記為下市
+      final activeSymbols = entries.map((e) => e.symbol.value).toSet();
+      final deactivated = await _db.deactivateStocksNotIn(activeSymbols);
+      if (deactivated > 0) {
+        AppLogger.info('StockRepo', '標記 $deactivated 檔股票為下市');
+      }
+
       return entries.length;
     } on RateLimitException {
       AppLogger.warning('StockRepo', '股票清單同步觸發 API 速率限制');
