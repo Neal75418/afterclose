@@ -7,6 +7,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/presentation/mappers/finmind_model_mapper.dart';
 
 /// 基本面資料的載入結果
 typedef FundamentalsResult = ({
@@ -83,14 +84,7 @@ class StockFundamentalsLoader {
       );
 
       if (dbValuations.isNotEmpty) {
-        final latest = dbValuations.last;
-        final per = FinMindPER(
-          stockId: latest.symbol,
-          date: DateContext.formatYmd(latest.date),
-          per: latest.per ?? 0,
-          pbr: latest.pbr ?? 0,
-          dividendYield: latest.dividendYield ?? 0,
-        );
+        final per = FinMindModelMapper.toFinMindPER(dbValuations.last)!;
         AppLogger.debug(
           'StockDetail',
           '$symbol: 使用 DB 估值 (殖利率=${per.dividendYield.toStringAsFixed(2)}%)',
@@ -122,7 +116,7 @@ class StockFundamentalsLoader {
       // 若 DB 有足夠資料（>=6 個月），使用 DB；否則用 FinMind API
       const minMonthsForDbUsage = 6;
       if (dbRevenues.length >= minMonthsForDbUsage) {
-        final data = _convertDbRevenuesToFinMind(dbRevenues);
+        final data = FinMindModelMapper.toFinMindRevenues(dbRevenues);
         AppLogger.debug('StockDetail', '$symbol: 使用 DB 營收 (${data.length} 筆)');
         return data;
       }
@@ -145,7 +139,7 @@ class StockFundamentalsLoader {
       } catch (apiError) {
         // API 失敗時，若 DB 有部分資料則使用之
         if (dbRevenues.isNotEmpty) {
-          final data = _convertDbRevenuesToFinMind(dbRevenues);
+          final data = FinMindModelMapper.toFinMindRevenues(dbRevenues);
           AppLogger.debug(
             'StockDetail',
             '$symbol: FinMind 失敗，fallback 使用 DB 營收 (${data.length} 筆)',
@@ -288,22 +282,5 @@ class StockFundamentalsLoader {
       AppLogger.warning('StockDetail', '取得估值資料失敗: $symbol', e);
     }
     return null;
-  }
-
-  /// 將資料庫營收資料轉換為 FinMindRevenue 格式
-  List<FinMindRevenue> _convertDbRevenuesToFinMind(
-    List<MonthlyRevenueEntry> dbRevenues,
-  ) {
-    return dbRevenues.map((r) {
-      return FinMindRevenue(
-        stockId: r.symbol,
-        date: DateContext.formatYmd(r.date),
-        revenueYear: r.revenueYear,
-        revenueMonth: r.revenueMonth,
-        revenue: r.revenue,
-        momGrowth: r.momGrowth ?? 0,
-        yoyGrowth: r.yoyGrowth ?? 0,
-      );
-    }).toList();
   }
 }

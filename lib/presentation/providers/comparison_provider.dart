@@ -6,9 +6,9 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:afterclose/presentation/mappers/finmind_model_mapper.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -210,31 +210,10 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         final priceHistory = coreData.priceHistories[symbol] ?? [];
 
         // 將 DB Model 轉換為 API Model 供摘要服務使用
-        final revenueEntries = revenue[symbol] ?? [];
-        final finMindRevenues = revenueEntries
-            .map(
-              (r) => FinMindRevenue(
-                stockId: r.symbol,
-                date: r.date.toIso8601String().substring(0, 10),
-                revenue: r.revenue,
-                revenueMonth: r.revenueMonth,
-                revenueYear: r.revenueYear,
-                momGrowth: r.momGrowth,
-                yoyGrowth: r.yoyGrowth,
-              ),
-            )
-            .toList();
-
-        final valuation = valuations[symbol];
-        final finMindPER = valuation != null
-            ? FinMindPER(
-                stockId: valuation.symbol,
-                date: valuation.date.toIso8601String().substring(0, 10),
-                per: valuation.per ?? 0,
-                pbr: valuation.pbr ?? 0,
-                dividendYield: valuation.dividendYield ?? 0,
-              )
-            : null;
+        final finMindRevenues = FinMindModelMapper.toFinMindRevenues(
+          revenue[symbol] ?? [],
+        );
+        final finMindPER = FinMindModelMapper.toFinMindPER(valuations[symbol]);
 
         final summaryData = summaryService.generate(
           analysis: analysis,
