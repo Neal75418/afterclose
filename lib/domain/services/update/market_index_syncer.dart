@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -33,7 +34,9 @@ class MarketIndexSyncer {
   static const _backfillCalendarDays = 45;
 
   /// API 請求間隔，避免 TWSE rate limit
-  static const _requestDelay = Duration(milliseconds: 500);
+  static const _requestDelay = Duration(
+    milliseconds: ApiConfig.syncerBatchDelayMs,
+  );
 
   /// 同步當日大盤指數至 DB
   ///

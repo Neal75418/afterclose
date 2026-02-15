@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -199,7 +200,9 @@ class FundamentalSyncer {
       count += results.fold(0, (sum, n) => sum + n);
 
       if (i + chunkSize < symbols.length) {
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(
+          const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
+        );
       }
     }
 
@@ -243,7 +246,9 @@ class FundamentalSyncer {
       count += results.fold(0, (sum, n) => sum + n);
 
       if (i + chunkSize < symbols.length) {
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(
+          const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
+        );
       }
     }
 

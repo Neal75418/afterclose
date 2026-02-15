@@ -40,6 +40,12 @@ abstract final class ApiConfig {
   /// 更新服務批次延遲（毫秒）
   static const int updateBatchDelayMs = 200;
 
+  /// Syncer 批次操作間延遲（毫秒），避免觸發 API rate limit
+  static const int syncerBatchDelayMs = 500;
+
+  /// TWSE 歷史資料逐月請求間延遲（毫秒）
+  static const int twseHistoryRequestDelayMs = 300;
+
   /// 重試延遲（毫秒）
   static const int retryDelayMs = 1000;
 
@@ -81,6 +87,9 @@ abstract final class ApiConfig {
 
   /// 更新操作超時（分鐘）
   static const int updateTimeoutMin = 60;
+
+  /// Provider keepAlive 持續時間（分鐘）
+  static const int keepAliveMin = 3;
 }
 
 /// 快取設定常數

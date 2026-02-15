@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -330,7 +331,9 @@ class TwseClient {
   Future<List<TwseDailyPrice>> getStockHistoricalPrices({
     required String code,
     int months = 6,
-    Duration delayBetweenRequests = const Duration(milliseconds: 300),
+    Duration delayBetweenRequests = const Duration(
+      milliseconds: ApiConfig.twseHistoryRequestDelayMs,
+    ),
   }) {
     // 驗證股票代碼
     if (code.isEmpty) {

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -51,7 +52,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
     // 保活機制：3 分鐘內返回同一頁面時使用快取
     final link = ref.keepAlive();
-    final timer = Timer(const Duration(minutes: 3), () {
+    final timer = Timer(const Duration(minutes: ApiConfig.keepAliveMin), () {
       try {
         link.close();
       } catch (_) {
