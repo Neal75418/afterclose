@@ -16131,6 +16131,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $PortfolioTransactionTable(this);
   late final $StockEventTable stockEvent = $StockEventTable(this);
   late final $MarketIndexTable marketIndex = $MarketIndexTable(this);
+  late final Index idxStockMasterIndustry = Index(
+    'idx_stock_master_industry',
+    'CREATE INDEX idx_stock_master_industry ON stock_master (industry)',
+  );
   late final Index idxDailyPriceSymbol = Index(
     'idx_daily_price_symbol',
     'CREATE INDEX idx_daily_price_symbol ON daily_price (symbol)',
@@ -16287,6 +16291,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_monthly_revenue_date',
     'CREATE INDEX idx_monthly_revenue_date ON monthly_revenue (date)',
   );
+  late final Index idxMonthlyRevenueSymbolDate = Index(
+    'idx_monthly_revenue_symbol_date',
+    'CREATE INDEX idx_monthly_revenue_symbol_date ON monthly_revenue (symbol, date)',
+  );
   late final Index idxStockValuationSymbol = Index(
     'idx_stock_valuation_symbol',
     'CREATE INDEX idx_stock_valuation_symbol ON stock_valuation (symbol)',
@@ -16403,6 +16411,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     portfolioTransaction,
     stockEvent,
     marketIndex,
+    idxStockMasterIndustry,
     idxDailyPriceSymbol,
     idxDailyPriceDate,
     idxDailyPriceSymbolDate,
@@ -16442,6 +16451,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxHoldingDistDate,
     idxMonthlyRevenueSymbol,
     idxMonthlyRevenueDate,
+    idxMonthlyRevenueSymbolDate,
     idxStockValuationSymbol,
     idxStockValuationDate,
     idxDividendHistorySymbol,

@@ -70,7 +70,16 @@ class SettingsRepository implements ISettingsRepository {
   @override
   Future<String?> getFinMindToken() async {
     if (await _isSecureStorageAvailable()) {
-      return _secureStorage.read(key: _SecureKeys.finmindToken);
+      try {
+        return await _secureStorage.read(key: _SecureKeys.finmindToken);
+      } catch (e, stack) {
+        AppLogger.warning(
+          'SettingsRepo',
+          'SecureStorage 讀取 Token 失敗，改用記憶體',
+          e,
+          stack,
+        );
+      }
     }
     // Fallback: 僅從記憶體讀取（不落地磁碟）
     return _inMemoryToken;
@@ -80,12 +89,21 @@ class SettingsRepository implements ISettingsRepository {
   @override
   Future<void> setFinMindToken(String token) async {
     if (await _isSecureStorageAvailable()) {
-      await _secureStorage.write(key: _SecureKeys.finmindToken, value: token);
-    } else {
-      // Fallback: 僅存記憶體，重啟 App 後需重新輸入
-      _inMemoryToken = token;
-      AppLogger.warning('SettingsRepo', 'Token 僅存於記憶體，重啟 App 後需重新輸入');
+      try {
+        await _secureStorage.write(key: _SecureKeys.finmindToken, value: token);
+        return;
+      } catch (e, stack) {
+        AppLogger.warning(
+          'SettingsRepo',
+          'SecureStorage 寫入 Token 失敗，改用記憶體',
+          e,
+          stack,
+        );
+      }
     }
+    // Fallback: 僅存記憶體，重啟 App 後需重新輸入
+    _inMemoryToken = token;
+    AppLogger.warning('SettingsRepo', 'Token 僅存於記憶體，重啟 App 後需重新輸入');
   }
 
   /// 清除 FinMind Token

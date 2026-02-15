@@ -229,6 +229,7 @@ class DividendHistory extends Table {
 @DataClassName('MonthlyRevenueEntry')
 @TableIndex(name: 'idx_monthly_revenue_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_monthly_revenue_date', columns: {#date})
+@TableIndex(name: 'idx_monthly_revenue_symbol_date', columns: {#symbol, #date})
 class MonthlyRevenue extends Table {
   /// 股票代碼
   TextColumn get symbol =>

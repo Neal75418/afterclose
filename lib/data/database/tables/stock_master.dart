@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 /// 股票主檔 Table
 @DataClassName('StockMasterEntry')
+@TableIndex(name: 'idx_stock_master_industry', columns: {#industry})
 class StockMaster extends Table {
   /// 股票代碼（如 "2330"）
   TextColumn get symbol => text()();
