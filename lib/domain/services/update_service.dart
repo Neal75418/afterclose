@@ -18,7 +18,6 @@ import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/models/scoring_batch_data.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -62,11 +61,7 @@ class UpdateService {
   }) : _db = database,
        _clock = clock,
        _priceRepo = priceRepository,
-       _newsRepo = newsRepository,
        _analysisRepo = analysisRepository,
-       _institutionalRepo = institutionalRepository,
-       _shareholdingRepo = shareholdingRepository,
-       _insiderRepo = insiderRepository,
        _analysisService = analysisService ?? AnalysisService(),
        _ruleEngine = ruleEngine ?? RuleEngine(),
        _scoringService = scoringService,
@@ -79,6 +74,17 @@ class UpdateService {
                institutionalRepository: institutionalRepository,
              )
            : null,
+       _batchDataLoader = BatchDataLoader(
+         database: database,
+         newsRepository: newsRepository,
+         institutionalRepository: institutionalRepository,
+         shareholdingRepository: shareholdingRepository,
+         insiderRepository: insiderRepository,
+       ),
+       _candidateSelector = CandidateSelector(
+         database: database,
+         popularStocks: popularStocks ?? DefaultStocks.popularStocks,
+       ),
        _historicalPriceSyncer = HistoricalPriceSyncer(
          database: database,
          priceRepository: priceRepository,
@@ -108,20 +114,15 @@ class UpdateService {
   final AppDatabase _db;
   final AppClock _clock;
   final PriceRepository _priceRepo;
-  final NewsRepository _newsRepo;
   final AnalysisRepository _analysisRepo;
-  final InstitutionalRepository? _institutionalRepo;
-  final ShareholdingRepository? _shareholdingRepo;
-  final InsiderRepository? _insiderRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
   final ScoringService? _scoringService;
   final List<String> _popularStocks;
 
-  /// 提前載入的緩衝天數（確保有足夠歷史資料用於技術指標計算）
-  static const int _historyLoadBuffer = 20;
-
-  // 專責 updater
+  // 專責 updater / loader
+  final BatchDataLoader _batchDataLoader;
+  final CandidateSelector _candidateSelector;
   final StockListSyncer _stockListSyncer;
   final NewsSyncer _newsSyncer;
   final InstitutionalSyncer? _institutionalSyncer;
@@ -211,7 +212,10 @@ class UpdateService {
 
       // 步驟 6：篩選候選股票 + 補充上櫃資料
       ctx.reportProgress(6, 10, '篩選候選股票');
-      final candidates = await _filterCandidates(ctx: ctx);
+      final candidates = await _candidateSelector.filterCandidates(
+        date: ctx.normalizedDate,
+        marketCandidates: ctx.marketCandidates,
+      );
       result.candidatesFound = candidates.length;
       await _syncOtcCandidatesData(ctx, candidates, ctx.normalizedDate);
 
@@ -546,57 +550,14 @@ class UpdateService {
     }
   }
 
-  Future<List<String>> _filterCandidates({required _UpdateContext ctx}) async {
-    final historyStartDate = ctx.normalizedDate.subtract(
-      const Duration(days: RuleParams.historyRequiredDays - _historyLoadBuffer),
-    );
-    final allAnalyzable = await _db.getSymbolsWithSufficientData(
-      minDays: RuleParams.swingWindow,
-      startDate: historyStartDate,
-      endDate: ctx.normalizedDate,
-    );
-
-    final watchlist = await _db.getWatchlist();
-    final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
-
-    final allAnalyzableSet = allAnalyzable.toSet();
-    final orderedCandidates = <String>{};
-
-    // 1. 自選清單優先
-    for (final symbol in watchlistSymbols) {
-      if (allAnalyzableSet.contains(symbol)) {
-        orderedCandidates.add(symbol);
-      }
-    }
-
-    // 2. 熱門股第二
-    for (final symbol in _popularStocks) {
-      if (allAnalyzableSet.contains(symbol)) {
-        orderedCandidates.add(symbol);
-      }
-    }
-
-    // 3. 市場候選股第三
-    for (final symbol in ctx.marketCandidates) {
-      if (allAnalyzableSet.contains(symbol)) {
-        orderedCandidates.add(symbol);
-      }
-    }
-
-    // 4. 其餘可分析股票
-    for (final symbol in allAnalyzableSet) {
-      orderedCandidates.add(symbol);
-    }
-
-    AppLogger.info('UpdateSvc', '步驟 6: 篩選 ${orderedCandidates.length} 檔');
-    return orderedCandidates.toList();
-  }
-
   Future<List<ScoredStock>> _analyzeStocks({
     required _UpdateContext ctx,
     required List<String> candidates,
   }) async {
-    final batchData = await _loadBatchData(ctx, candidates);
+    final batchData = await _batchDataLoader.loadBatchData(
+      ctx.normalizedDate,
+      candidates,
+    );
 
     final recentlyRecommended = await _analysisRepo
         .getRecentlyRecommendedSymbols();
@@ -614,136 +575,6 @@ class UpdateService {
 
     AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
     return scoredStocks;
-  }
-
-  /// 平行載入所有評分所需的批次資料
-  ///
-  /// 同時啟動 14+ 個 DB 查詢，使用 Dart 3 Record 解構等待，
-  /// 再將原始資料轉換為 Isolate 可用的 Map 格式。
-  Future<ScoringBatchData> _loadBatchData(
-    _UpdateContext ctx,
-    List<String> candidates,
-  ) async {
-    final startDate = ctx.normalizedDate.subtract(
-      const Duration(days: RuleParams.lookbackPrice + 10),
-    );
-    final instStartDate = ctx.normalizedDate.subtract(
-      const Duration(days: RuleParams.institutionalLookbackDays),
-    );
-
-    final instRepo = _institutionalRepo;
-
-    // 同時啟動所有批次查詢（所有 Future 在建立時即開始並行執行）
-    final pricesFuture = _db.getPriceHistoryBatch(
-      candidates,
-      startDate: startDate,
-      endDate: ctx.normalizedDate,
-    );
-    final newsFuture = _newsRepo.getNewsForStocksBatch(candidates, days: 2);
-    final instFuture = instRepo != null
-        ? _db.getInstitutionalHistoryBatch(
-            candidates,
-            startDate: instStartDate,
-            endDate: ctx.normalizedDate,
-          )
-        : Future.value(<String, List<DailyInstitutionalEntry>>{});
-    final revenueFuture = _db.getLatestMonthlyRevenuesBatch(candidates);
-    final valuationFuture = _db.getLatestValuationsBatch(candidates);
-    final revenueHistoryFuture = _db.getRecentMonthlyRevenueBatch(
-      candidates,
-      months: 6,
-    );
-    final dayTradingFuture = _db.getDayTradingMapForDate(ctx.normalizedDate);
-    final shareholdingFuture = _db.getLatestShareholdingsBatch(candidates);
-    final prevShareholdingFuture = _db.getShareholdingsBeforeDateBatch(
-      candidates,
-      beforeDate: ctx.normalizedDate.subtract(
-        const Duration(days: RuleParams.foreignShareholdingLookbackDays),
-      ),
-    );
-    final warningFuture = _db.getActiveWarningsMapBatch(candidates);
-    final insiderFuture = _db.getLatestInsiderHoldingsBatch(candidates);
-    final epsFuture = _db.getEPSHistoryBatch(candidates);
-    final roeFuture = _db.getROEHistoryBatch(candidates);
-    final dividendFuture = _db.getDividendHistoryBatch(candidates);
-
-    // 型別安全的並行等待（Dart 3 Record 解構）
-    final (pricesMap, newsMap, institutionalMap) = await (
-      pricesFuture,
-      newsFuture,
-      instFuture,
-    ).wait;
-    final (
-      revenueMap,
-      valuationMap,
-      revenueHistoryMap,
-      dayTradingMap,
-      shareholdingEntries,
-    ) = await (
-      revenueFuture,
-      valuationFuture,
-      revenueHistoryFuture,
-      dayTradingFuture,
-      shareholdingFuture,
-    ).wait;
-    final (
-      prevShareholdingEntries,
-      warningEntries,
-      insiderEntries,
-      epsHistoryMap,
-      roeHistoryMap,
-      dividendHistoryMap,
-    ) = await (
-      prevShareholdingFuture,
-      warningFuture,
-      insiderFuture,
-      epsFuture,
-      roeFuture,
-      dividendFuture,
-    ).wait;
-
-    // 批次載入籌碼集中度（TDCC 股權分散表）
-    final concentrationMap = _shareholdingRepo != null
-        ? await _shareholdingRepo.getConcentrationRatioBatch(candidates)
-        : <String, double>{};
-
-    // 轉換為 Isolate 可用的 Map 格式
-    final shareholdingMap = BatchDataBuilder.buildShareholdingMap(
-      shareholdingEntries,
-      prevShareholdingEntries,
-      concentrationMap,
-    );
-
-    final warningMap = warningEntries.map(
-      (k, v) => MapEntry(k, {
-        'warningType': v.warningType,
-        'reasonDescription': v.reasonDescription,
-        'disposalMeasures': v.disposalMeasures,
-        'disposalEndDate': v.disposalEndDate?.toIso8601String(),
-      }),
-    );
-
-    final insiderMap = await BatchDataBuilder.buildInsiderMap(
-      insiderEntries,
-      candidates,
-      _insiderRepo,
-    );
-
-    return ScoringBatchData(
-      pricesMap: pricesMap,
-      newsMap: newsMap,
-      institutionalMap: institutionalMap,
-      revenueMap: revenueMap,
-      valuationMap: valuationMap,
-      revenueHistoryMap: revenueHistoryMap,
-      epsHistoryMap: epsHistoryMap,
-      roeHistoryMap: roeHistoryMap,
-      dividendHistoryMap: dividendHistoryMap,
-      dayTradingMap: dayTradingMap,
-      shareholdingMap: shareholdingMap,
-      warningMap: warningMap,
-      insiderMap: insiderMap,
-    );
   }
 
   Future<void> _generateRecommendations(

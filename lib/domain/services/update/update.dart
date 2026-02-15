@@ -4,6 +4,8 @@
 library;
 
 export 'batch_data_builder.dart';
+export 'batch_data_loader.dart';
+export 'candidate_selector.dart';
 export 'fundamental_syncer.dart';
 export 'historical_price_syncer.dart';
 export 'institutional_syncer.dart';
