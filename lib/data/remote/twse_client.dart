@@ -39,55 +39,32 @@ class TwseClient {
         queryParameters: {'response': 'json'},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '全市場價格',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        // 檢查回應狀態
-        final stat = data['stat'];
-        if (stat != 'OK' || data['data'] == null) {
-          AppLogger.warning(_tag, '全市場價格: 無資料 (stat=$stat)');
-          return [];
-        }
-
-        // 從回應解析日期（格式: YYYYMMDD）
-        final dateStr = data['date']?.toString() ?? '';
-        final date = TwParseUtils.parseAdDate(dateStr);
-
-        // 解析資料陣列（每列是 List 而非 Map）
-        final List<dynamic> rows = data['data'];
-        var failedCount = 0;
-        final prices = <TwseDailyPrice>[];
-
-        for (final row in rows) {
-          final parsed = _parseDailyPriceRow(row as List<dynamic>, date);
-          if (parsed != null) {
-            prices.add(parsed);
-          } else {
-            failedCount++;
-          }
-        }
-
-        // 統一輸出結果
-        final dateFormatted = TwParseUtils.formatDateYmd(date);
-        if (failedCount > 0) {
-          AppLogger.info(
-            _tag,
-            '全市場價格: ${prices.length} 筆 ($dateFormatted, 略過 $failedCount 筆)',
-          );
-        } else {
-          AppLogger.info(_tag, '全市場價格: ${prices.length} 筆 ($dateFormatted)');
-        }
-        return prices;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '全市場價格',
+      );
+      if (data == null) return [];
+
+      final rows = MarketClientMixin.validateTwseStat(data, _tag, '全市場價格');
+      if (rows == null) return [];
+
+      final dateStr = data['date']?.toString() ?? '';
+      final date = TwParseUtils.parseAdDate(dateStr);
+
+      return MarketClientMixin.parseRows(
+        rows: rows,
+        parser: (row) => _parseDailyPriceRow(row, date),
+        tag: _tag,
+        operation: '全市場價格',
+        date: date,
       );
     });
   }
@@ -139,33 +116,32 @@ class TwseClient {
         queryParameters: queryParams,
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-
-        // 檢查回應狀態
-        if (data['stat'] != 'OK' || data['data'] == null) {
-          return [];
-        }
-
-        // 從回應解析日期
-        final dateStr = data['date']?.toString() ?? '';
-        final date = TwParseUtils.parseAdDate(dateStr);
-
-        // 解析資料陣列
-        final List<dynamic> rows = data['data'];
-        final results = rows
-            .map((row) => _parseInstitutionalRow(row as List<dynamic>, date))
-            .whereType<TwseInstitutional>()
-            .toList();
-
-        final dateFormatted = TwParseUtils.formatDateYmd(date);
-        AppLogger.info(_tag, '法人資料: ${results.length} 筆 ($dateFormatted)');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '法人資料',
+      );
+      if (data == null) return [];
+
+      final rows = MarketClientMixin.validateTwseStat(data, _tag, '法人資料');
+      if (rows == null) return [];
+
+      final dateStr = data['date']?.toString() ?? '';
+      final parsedDate = TwParseUtils.parseAdDate(dateStr);
+
+      return MarketClientMixin.parseRows(
+        rows: rows,
+        parser: (row) => _parseInstitutionalRow(row, parsedDate),
+        tag: _tag,
+        operation: '法人資料',
+        date: parsedDate,
       );
     });
   }
@@ -261,34 +237,29 @@ class TwseClient {
         queryParameters: {'response': 'json', 'date': dateStr, 'stockNo': code},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '月價格',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag historical API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        if (data['stat'] != 'OK' || data['data'] == null) {
-          return [];
-        }
-
-        final List<dynamic> rows = data['data'];
-        final results = rows
-            .map((row) => _parseHistoricalRow(row as List<dynamic>, code))
-            .whereType<TwseDailyPrice>()
-            .toList();
-        AppLogger.debug(
-          _tag,
-          '月價格($code): $year/$month -> ${results.length} 筆',
-        );
-        return results;
       }
 
-      throw ApiException(
-        '$_tag historical API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '月價格',
       );
+      if (data == null) return [];
+
+      final rows = MarketClientMixin.validateTwseStat(data, _tag, '月價格');
+      if (rows == null) return [];
+
+      final results = rows
+          .map((row) => _parseHistoricalRow(row as List<dynamic>, code))
+          .whereType<TwseDailyPrice>()
+          .toList();
+      AppLogger.debug(_tag, '月價格($code): $year/$month -> ${results.length} 筆');
+      return results;
     });
   }
 
@@ -409,40 +380,38 @@ class TwseClient {
         queryParameters: {'response': 'json', 'selectType': 'ALL'},
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-
-        // 檢查回應狀態
-        if (data['stat'] != 'OK') {
-          return [];
-        }
-
-        // 從回應解析日期
-        final dateStr = data['date']?.toString() ?? '';
-        final date = TwParseUtils.parseAdDate(dateStr);
-
-        // 資料在 'tables' 陣列中，第二個表格含個股資料
-        final tables = data['tables'] as List<dynamic>?;
-        if (tables == null || tables.length < 2) {
-          return [];
-        }
-
-        final stockTable = tables[1] as Map<String, dynamic>;
-        final List<dynamic> rows = stockTable['data'] ?? [];
-
-        final results = rows
-            .map((row) => _parseMarginTradingRow(row as List<dynamic>, date))
-            .whereType<TwseMarginTrading>()
-            .toList();
-
-        final dateFormatted = TwParseUtils.formatDateYmd(date);
-        AppLogger.info(_tag, '融資融券: ${results.length} 筆 ($dateFormatted)');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '融資融券',
+      );
+      if (data == null) return [];
+
+      if (data['stat'] != 'OK') return [];
+
+      final dateStr = data['date']?.toString() ?? '';
+      final date = TwParseUtils.parseAdDate(dateStr);
+
+      // 資料在 'tables' 陣列中，第二個表格含個股資料
+      final tables = data['tables'] as List<dynamic>?;
+      if (tables == null || tables.length < 2) return [];
+
+      final stockTable = tables[1] as Map<String, dynamic>;
+      final List<dynamic> rows = stockTable['data'] ?? [];
+
+      return MarketClientMixin.parseRows(
+        rows: rows,
+        parser: (row) => _parseMarginTradingRow(row, date),
+        tag: _tag,
+        operation: '融資融券',
+        date: date,
       );
     });
   }
@@ -682,79 +651,83 @@ class TwseClient {
         queryParameters: queryParams,
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '大盤指數',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        if (data['stat'] != 'OK') {
-          AppLogger.warning(_tag, '大盤指數: stat=${data['stat']}，可能為非交易日或盤中');
-          return [];
-        }
-
-        final results = <TwseMarketIndex>[];
-
-        // 解析日期
-        final dateStr = data['date']?.toString() ?? '';
-        final date = TwParseUtils.parseAdDate(dateStr);
-
-        // MI_INDEX 回傳多個 tables，每個 table 包含不同類型的指數
-        // 我們關注的重點指數通常在前幾個 tables 中
-        final tables = data['tables'] as List<dynamic>?;
-        if (tables == null || tables.isEmpty) {
-          // 嘗試直接從 data 取得（舊格式）
-          final rows = data['data'] as List<dynamic>?;
-          if (rows != null) {
-            for (final row in rows) {
-              final parsed = _parseMarketIndexRow(row as List<dynamic>, date);
-              if (parsed != null) results.add(parsed);
-            }
-          }
-        } else {
-          // 新格式：遍歷所有 tables
-          for (var ti = 0; ti < tables.length; ti++) {
-            final table = tables[ti] as Map<String, dynamic>;
-            final title = table['title']?.toString() ?? '';
-            final rows = table['data'] as List<dynamic>?;
-            if (rows == null || rows.isEmpty) continue;
-            var parsedInTable = 0;
-            for (final row in rows) {
-              final parsed = _parseMarketIndexRow(row as List<dynamic>, date);
-              if (parsed != null) {
-                results.add(parsed);
-                parsedInTable++;
-              }
-            }
-            if (parsedInTable == 0) {
-              // 記錄第一筆資料以利診斷格式問題
-              final sample = rows.first;
-              AppLogger.debug(
-                _tag,
-                '大盤指數 table[$ti] "$title": ${rows.length} 行全部跳過，'
-                '樣本=${sample is List ? sample.take(3).toList() : sample}',
-              );
-            }
-          }
-        }
-
-        if (results.isEmpty) {
-          AppLogger.warning(
-            _tag,
-            '大盤指數: 解析後 0 筆 (tables=${tables?.length ?? 0})',
-          );
-        } else {
-          AppLogger.debug(_tag, '大盤指數 API 原始: ${results.length} 筆');
-        }
-        return results;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '大盤指數',
       );
+      if (data == null) return [];
+
+      if (data['stat'] != 'OK') {
+        AppLogger.warning(_tag, '大盤指數: stat=${data['stat']}，可能為非交易日或盤中');
+        return [];
+      }
+
+      final results = <TwseMarketIndex>[];
+
+      // 解析日期
+      final dateStr = data['date']?.toString() ?? '';
+      final parsedDate = TwParseUtils.parseAdDate(dateStr);
+
+      // MI_INDEX 回傳多個 tables，每個 table 包含不同類型的指數
+      final tables = data['tables'] as List<dynamic>?;
+      if (tables == null || tables.isEmpty) {
+        // 嘗試直接從 data 取得（舊格式）
+        final rows = data['data'] as List<dynamic>?;
+        if (rows != null) {
+          for (final row in rows) {
+            final parsed = _parseMarketIndexRow(
+              row as List<dynamic>,
+              parsedDate,
+            );
+            if (parsed != null) results.add(parsed);
+          }
+        }
+      } else {
+        // 新格式：遍歷所有 tables
+        for (var ti = 0; ti < tables.length; ti++) {
+          final table = tables[ti] as Map<String, dynamic>;
+          final title = table['title']?.toString() ?? '';
+          final rows = table['data'] as List<dynamic>?;
+          if (rows == null || rows.isEmpty) continue;
+          var parsedInTable = 0;
+          for (final row in rows) {
+            final parsed = _parseMarketIndexRow(
+              row as List<dynamic>,
+              parsedDate,
+            );
+            if (parsed != null) {
+              results.add(parsed);
+              parsedInTable++;
+            }
+          }
+          if (parsedInTable == 0) {
+            final sample = rows.first;
+            AppLogger.debug(
+              _tag,
+              '大盤指數 table[$ti] "$title": ${rows.length} 行全部跳過，'
+              '樣本=${sample is List ? sample.take(3).toList() : sample}',
+            );
+          }
+        }
+      }
+
+      if (results.isEmpty) {
+        AppLogger.warning(
+          _tag,
+          '大盤指數: 解析後 0 筆 (tables=${tables?.length ?? 0})',
+        );
+      } else {
+        AppLogger.debug(_tag, '大盤指數 API 原始: ${results.length} 筆');
+      }
+      return results;
     });
   }
 
@@ -826,63 +799,56 @@ class TwseClient {
         queryParameters: queryParams,
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '法人金額統計',
-        );
-        if (data == null) return null;
+      if (response.statusCode != 200) return null;
 
-        if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.warning(_tag, '法人金額統計: 無資料');
-          return null;
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '法人金額統計',
+      );
+      if (data == null) return null;
+
+      final rows = MarketClientMixin.validateTwseStat(data, _tag, '法人金額統計');
+      if (rows == null) return null;
+
+      // 解析日期
+      final dateStr = data['date']?.toString() ?? '';
+      final parsedDate = TwParseUtils.parseAdDate(dateStr);
+
+      // data 結構:
+      // [["自營商(自行買賣)", "買進", "賣出", "買賣差額"],
+      //  ["自營商(避險)", ...],
+      //  ["投信", ...],
+      //  ["外資及陸資(不含外資自營商)", ...],
+      //  ["外資自營商", ...],
+      //  ["合計", ...]]
+      double foreignNet = 0;
+      double trustNet = 0;
+      double dealerNet = 0;
+      double dealerHedgeNet = 0;
+
+      for (final row in rows) {
+        if (row is! List || row.length < 4) continue;
+        final name = row[0]?.toString() ?? '';
+        final netAmount = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
+
+        if (name.contains('外資及陸資') && name.contains('不含')) {
+          foreignNet = netAmount;
+        } else if (name == '投信') {
+          trustNet = netAmount;
+        } else if (name == '自營商(自行買賣)') {
+          dealerNet = netAmount;
+        } else if (name == '自營商(避險)') {
+          dealerHedgeNet = netAmount;
         }
-
-        // 解析日期
-        final dateStr = data['date']?.toString() ?? '';
-        final parsedDate = TwParseUtils.parseAdDate(dateStr);
-
-        // data 結構:
-        // [["自營商(自行買賣)", "買進", "賣出", "買賣差額"],
-        //  ["自營商(避險)", ...],
-        //  ["投信", ...],
-        //  ["外資及陸資(不含外資自營商)", ...],
-        //  ["外資自營商", ...],
-        //  ["合計", ...]]
-        final rows = data['data'] as List<dynamic>;
-
-        double foreignNet = 0;
-        double trustNet = 0;
-        double dealerNet = 0;
-        double dealerHedgeNet = 0;
-
-        for (final row in rows) {
-          if (row is! List || row.length < 4) continue;
-          final name = row[0]?.toString() ?? '';
-          final netAmount = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
-
-          if (name.contains('外資及陸資') && name.contains('不含')) {
-            // 匹配「外資及陸資(不含外資自營商)」
-            foreignNet = netAmount;
-          } else if (name == '投信') {
-            trustNet = netAmount;
-          } else if (name == '自營商(自行買賣)') {
-            dealerNet = netAmount;
-          } else if (name == '自營商(避險)') {
-            dealerHedgeNet = netAmount;
-          }
-        }
-
-        return TwseInstitutionalAmounts(
-          date: parsedDate,
-          foreignNet: foreignNet,
-          trustNet: trustNet,
-          dealerNet: dealerNet + dealerHedgeNet, // 合併自營商
-        );
       }
 
-      return null;
+      return TwseInstitutionalAmounts(
+        date: parsedDate,
+        foreignNet: foreignNet,
+        trustNet: trustNet,
+        dealerNet: dealerNet + dealerHedgeNet, // 合併自營商
+      );
     });
   }
 
@@ -910,40 +876,33 @@ class TwseClient {
         },
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '注意股票',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.warning(_tag, '注意股票: 無資料');
-          return [];
-        }
-
-        final List<dynamic> rows = data['data'];
-        final results = <TwseTradingWarning>[];
-
-        for (final row in rows) {
-          // 新格式有 8 欄
-          if (row is List && row.length >= 5) {
-            final parsed = _parseTradingWarningRow(row, targetDate);
-            if (parsed != null) {
-              results.add(parsed);
-            }
-          }
-        }
-
-        AppLogger.info(_tag, '注意股票: ${results.length} 筆');
-        return results;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '注意股票',
       );
+      if (data == null) return [];
+
+      final rows = MarketClientMixin.validateTwseStat(data, _tag, '注意股票');
+      if (rows == null) return [];
+
+      final results = <TwseTradingWarning>[];
+      for (final row in rows) {
+        if (row is List && row.length >= 5) {
+          final parsed = _parseTradingWarningRow(row, targetDate);
+          if (parsed != null) results.add(parsed);
+        }
+      }
+
+      AppLogger.info(_tag, '注意股票: ${results.length} 筆');
+      return results;
     });
   }
 
@@ -988,40 +947,33 @@ class TwseClient {
         queryParameters: {'response': 'json'},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '處置股票',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        if (data['stat'] != 'OK' || data['data'] == null) {
-          AppLogger.warning(_tag, '處置股票: 無資料');
-          return [];
-        }
-
-        final List<dynamic> rows = data['data'];
-        final results = <TwseTradingWarning>[];
-
-        for (final row in rows) {
-          // 新格式有 10 欄
-          if (row is List && row.length >= 7) {
-            final parsed = _parseDisposalRow(row, targetDate);
-            if (parsed != null) {
-              results.add(parsed);
-            }
-          }
-        }
-
-        AppLogger.info(_tag, '處置股票: ${results.length} 筆');
-        return results;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '處置股票',
       );
+      if (data == null) return [];
+
+      final rows = MarketClientMixin.validateTwseStat(data, _tag, '處置股票');
+      if (rows == null) return [];
+
+      final results = <TwseTradingWarning>[];
+      for (final row in rows) {
+        if (row is List && row.length >= 7) {
+          final parsed = _parseDisposalRow(row, targetDate);
+          if (parsed != null) results.add(parsed);
+        }
+      }
+
+      AppLogger.info(_tag, '處置股票: ${results.length} 筆');
+      return results;
     });
   }
 

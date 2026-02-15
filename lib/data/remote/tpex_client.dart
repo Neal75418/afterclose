@@ -41,70 +41,34 @@ class TpexClient {
         queryParameters: {'l': 'zh-tw', 'd': rocDateStr, 'o': 'json'},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '全市場價格',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        // TPEX API 回傳格式: { tables: [{ data: [...] }] }
-        final tables = data['tables'] as List<dynamic>?;
-        if (tables == null || tables.isEmpty) {
-          AppLogger.warning(_tag, '全市場價格: 無 tables');
-          return [];
-        }
-
-        final firstTable = tables[0] as Map<String, dynamic>?;
-        if (firstTable == null) {
-          AppLogger.warning(_tag, '全市場價格: 無資料表');
-          return [];
-        }
-
-        // 從回傳資料取得實際日期（格式: "115/01/23"）
-        final dateStr = firstTable['date'] as String?;
-        final actualDate =
-            (dateStr != null
-                ? TwParseUtils.parseSlashRocDate(dateStr)
-                : null) ??
-            targetDate;
-
-        final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
-        if (rows == null || rows.isEmpty) {
-          AppLogger.warning(_tag, '全市場價格: 無資料');
-          return [];
-        }
-
-        // 解析資料陣列
-        var failedCount = 0;
-        final prices = <TpexDailyPrice>[];
-
-        for (final row in rows) {
-          final parsed = _parseDailyPriceRow(row as List<dynamic>, actualDate);
-          if (parsed != null) {
-            prices.add(parsed);
-          } else {
-            failedCount++;
-          }
-        }
-
-        // 統一輸出結果
-        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
-        if (failedCount > 0) {
-          AppLogger.info(
-            _tag,
-            '全市場價格: ${prices.length} 筆 ($dateFormatted, 略過 $failedCount 筆)',
-          );
-        } else {
-          AppLogger.info(_tag, '全市場價格: ${prices.length} 筆 ($dateFormatted)');
-        }
-        return prices;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '全市場價格',
+      );
+      if (data == null) return [];
+
+      final table = MarketClientMixin.extractTpexTable(
+        data,
+        targetDate,
+        _tag,
+        '全市場價格',
+      );
+      if (table == null) return [];
+
+      return MarketClientMixin.parseRows(
+        rows: table.rows,
+        parser: (row) => _parseDailyPriceRow(row, table.date),
+        tag: _tag,
+        operation: '全市場價格',
+        date: table.date,
       );
     });
   }
@@ -153,57 +117,34 @@ class TpexClient {
         queryParameters: {'l': 'zh-tw', 'd': rocDateStr, 't': 'D', 'o': 'json'},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '法人資料',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        // TPEX API 回傳格式: { tables: [{ data: [...] }] }
-        final tables = data['tables'] as List<dynamic>?;
-        if (tables == null || tables.isEmpty) {
-          AppLogger.warning(_tag, '法人資料: 無 tables');
-          return [];
-        }
-
-        final firstTable = tables[0] as Map<String, dynamic>?;
-        if (firstTable == null) {
-          AppLogger.warning(_tag, '法人資料: 無資料表');
-          return [];
-        }
-
-        // 從回傳資料取得實際日期
-        final dateStr = firstTable['date'] as String?;
-        final actualDate =
-            (dateStr != null
-                ? TwParseUtils.parseSlashRocDate(dateStr)
-                : null) ??
-            targetDate;
-
-        final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
-        if (rows == null || rows.isEmpty) {
-          AppLogger.warning(_tag, '法人資料: 無資料');
-          return [];
-        }
-
-        // 解析資料陣列
-        final results = rows
-            .map(
-              (row) => _parseInstitutionalRow(row as List<dynamic>, actualDate),
-            )
-            .whereType<TpexInstitutional>()
-            .toList();
-
-        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
-        AppLogger.info(_tag, '法人資料: ${results.length} 筆 ($dateFormatted)');
-        return results;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '法人資料',
+      );
+      if (data == null) return [];
+
+      final table = MarketClientMixin.extractTpexTable(
+        data,
+        targetDate,
+        _tag,
+        '法人資料',
+      );
+      if (table == null) return [];
+
+      return MarketClientMixin.parseRows(
+        rows: table.rows,
+        parser: (row) => _parseInstitutionalRow(row, table.date),
+        tag: _tag,
+        operation: '法人資料',
+        date: table.date,
       );
     });
   }
@@ -273,74 +214,57 @@ class TpexClient {
         queryParameters: {'l': 'zh-tw', 'd': rocDateStr, 't': 'D', 'o': 'json'},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '法人金額統計',
-        );
-        if (data == null) return null;
+      if (response.statusCode != 200) return null;
 
-        final tables = data['tables'] as List<dynamic>?;
-        if (tables == null || tables.isEmpty) {
-          AppLogger.warning(_tag, '法人金額統計: 無 tables');
-          return null;
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '法人金額統計',
+      );
+      if (data == null) return null;
+
+      final table = MarketClientMixin.extractTpexTable(
+        data,
+        targetDate,
+        _tag,
+        '法人金額統計',
+      );
+      if (table == null) return null;
+
+      final actualDate = table.date;
+      final rows = table.rows;
+
+      // data 結構:
+      // [["外資及陸資合計", "買進金額", "賣出金額", "買賣超"],
+      //  ["　外資及陸資(不含自營商)", ...],
+      //  ["　外資自營商", ...],
+      //  ["投信", ...],
+      //  ["自營商合計", ...], ...]
+      double foreignNet = 0;
+      double trustNet = 0;
+      double dealerNet = 0;
+
+      for (final row in rows) {
+        if (row is! List || row.length < 4) continue;
+        final name = row[0]?.toString().trim() ?? '';
+        final netAmount = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
+
+        // 使用「外資及陸資(不含自營商)」而非合計，與 TWSE 一致
+        if (name.contains('外資及陸資') && name.contains('不含')) {
+          foreignNet = netAmount;
+        } else if (name == '投信') {
+          trustNet = netAmount;
+        } else if (name == '自營商合計') {
+          dealerNet = netAmount;
         }
-
-        final firstTable = tables[0] as Map<String, dynamic>?;
-        if (firstTable == null) {
-          AppLogger.warning(_tag, '法人金額統計: 無資料表');
-          return null;
-        }
-
-        // 從回傳資料取得實際日期
-        final dateStr = firstTable['date'] as String?;
-        final actualDate =
-            (dateStr != null
-                ? TwParseUtils.parseSlashRocDate(dateStr)
-                : null) ??
-            targetDate;
-
-        final rows = firstTable['data'] as List<dynamic>?;
-        if (rows == null || rows.isEmpty) {
-          AppLogger.warning(_tag, '法人金額統計: 無資料');
-          return null;
-        }
-
-        // data 結構:
-        // [["外資及陸資合計", "買進金額", "賣出金額", "買賣超"],
-        //  ["　外資及陸資(不含自營商)", ...],
-        //  ["　外資自營商", ...],
-        //  ["投信", ...],
-        //  ["自營商合計", ...], ...]
-        double foreignNet = 0;
-        double trustNet = 0;
-        double dealerNet = 0;
-
-        for (final row in rows) {
-          if (row is! List || row.length < 4) continue;
-          final name = row[0]?.toString().trim() ?? '';
-          final netAmount = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
-
-          // 使用「外資及陸資(不含自營商)」而非合計，與 TWSE 一致
-          if (name.contains('外資及陸資') && name.contains('不含')) {
-            foreignNet = netAmount;
-          } else if (name == '投信') {
-            trustNet = netAmount;
-          } else if (name == '自營商合計') {
-            dealerNet = netAmount;
-          }
-        }
-
-        return TpexInstitutionalAmounts(
-          date: actualDate,
-          foreignNet: foreignNet,
-          trustNet: trustNet,
-          dealerNet: dealerNet,
-        );
       }
 
-      return null;
+      return TpexInstitutionalAmounts(
+        date: actualDate,
+        foreignNet: foreignNet,
+        trustNet: trustNet,
+        dealerNet: dealerNet,
+      );
     });
   }
 
@@ -360,37 +284,33 @@ class TpexClient {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '估值資料: 非預期資料型別 (expected List)');
-          return [];
-        }
-
-        // 解析 JSON 陣列
-        final results = <TpexValuation>[];
-        for (final item in data) {
-          if (item is! Map<String, dynamic>) continue;
-
-          final parsed = _parseValuationItem(item, targetDate);
-          if (parsed != null) {
-            results.add(parsed);
-          }
-        }
-
-        // 估值 API 不回傳統一日期欄位，使用第一筆資料的日期或 targetDate
-        final effectiveDate = results.isNotEmpty
-            ? results.first.date
-            : targetDate;
-        final dateFormatted = TwParseUtils.formatDateYmd(effectiveDate);
-        AppLogger.info(_tag, '估值資料: ${results.length} 筆 ($dateFormatted)');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      throw ApiException(
-        '$_tag OpenAPI error: ${response.statusCode}',
-        response.statusCode,
-      );
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '估值資料: 非預期資料型別 (expected List)');
+        return [];
+      }
+
+      final results = <TpexValuation>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = _parseValuationItem(item, targetDate);
+        if (parsed != null) results.add(parsed);
+      }
+
+      // 估值 API 不回傳統一日期欄位，使用第一筆資料的日期或 targetDate
+      final effectiveDate = results.isNotEmpty
+          ? results.first.date
+          : targetDate;
+      final dateFormatted = TwParseUtils.formatDateYmd(effectiveDate);
+      AppLogger.info(_tag, '估值資料: ${results.length} 筆 ($dateFormatted)');
+      return results;
     });
   }
 
@@ -599,57 +519,34 @@ class TpexClient {
         queryParameters: {'l': 'zh-tw', 'd': rocDateStr, 'o': 'json'},
       );
 
-      if (response.statusCode == 200) {
-        final data = MarketClientMixin.decodeResponseData(
-          response.data,
-          _tag,
-          '融資融券',
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag API error: ${response.statusCode}',
+          response.statusCode,
         );
-        if (data == null) return [];
-
-        // TPEX API 回傳格式: { tables: [{ data: [...] }] }
-        final tables = data['tables'] as List<dynamic>?;
-        if (tables == null || tables.isEmpty) {
-          AppLogger.warning(_tag, '融資融券: 無 tables');
-          return [];
-        }
-
-        final firstTable = tables[0] as Map<String, dynamic>?;
-        if (firstTable == null) {
-          AppLogger.warning(_tag, '融資融券: 無資料表');
-          return [];
-        }
-
-        // 從回傳資料取得實際日期
-        final dateStr = firstTable['date'] as String?;
-        final actualDate =
-            (dateStr != null
-                ? TwParseUtils.parseSlashRocDate(dateStr)
-                : null) ??
-            targetDate;
-
-        final List<dynamic>? rows = firstTable['data'] as List<dynamic>?;
-        if (rows == null || rows.isEmpty) {
-          AppLogger.warning(_tag, '融資融券: 無資料');
-          return [];
-        }
-
-        // 解析資料陣列
-        final results = rows
-            .map(
-              (row) => _parseMarginTradingRow(row as List<dynamic>, actualDate),
-            )
-            .whereType<TpexMarginTrading>()
-            .toList();
-
-        final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
-        AppLogger.info(_tag, '融資融券: ${results.length} 筆 ($dateFormatted)');
-        return results;
       }
 
-      throw ApiException(
-        '$_tag API error: ${response.statusCode}',
-        response.statusCode,
+      final data = MarketClientMixin.decodeResponseData(
+        response.data,
+        _tag,
+        '融資融券',
+      );
+      if (data == null) return [];
+
+      final table = MarketClientMixin.extractTpexTable(
+        data,
+        targetDate,
+        _tag,
+        '融資融券',
+      );
+      if (table == null) return [];
+
+      return MarketClientMixin.parseRows(
+        rows: table.rows,
+        parser: (row) => _parseMarginTradingRow(row, table.date),
+        tag: _tag,
+        operation: '融資融券',
+        date: table.date,
       );
     });
   }
@@ -707,30 +604,28 @@ class TpexClient {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '注意股票: 非預期資料型別');
-          return [];
-        }
-
-        final results = <TpexTradingWarning>[];
-        for (final item in data) {
-          if (item is! Map<String, dynamic>) continue;
-          final parsed = _parseTradingWarningItem(item);
-          if (parsed != null) {
-            results.add(parsed);
-          }
-        }
-
-        AppLogger.info(_tag, '注意股票: ${results.length} 筆');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      throw ApiException(
-        '$_tag OpenAPI error: ${response.statusCode}',
-        response.statusCode,
-      );
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '注意股票: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexTradingWarning>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = _parseTradingWarningItem(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '注意股票: ${results.length} 筆');
+      return results;
     });
   }
 
@@ -778,30 +673,28 @@ class TpexClient {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '處置股票: 非預期資料型別');
-          return [];
-        }
-
-        final results = <TpexTradingWarning>[];
-        for (final item in data) {
-          if (item is! Map<String, dynamic>) continue;
-          final parsed = _parseDisposalItem(item);
-          if (parsed != null) {
-            results.add(parsed);
-          }
-        }
-
-        AppLogger.info(_tag, '處置股票: ${results.length} 筆');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      throw ApiException(
-        '$_tag OpenAPI error: ${response.statusCode}',
-        response.statusCode,
-      );
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '處置股票: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexTradingWarning>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = _parseDisposalItem(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '處置股票: ${results.length} 筆');
+      return results;
     });
   }
 
@@ -995,30 +888,28 @@ class TpexClient {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      if (response.statusCode == 200) {
-        final data = response.data;
-        if (data is! List) {
-          AppLogger.warning(_tag, '月營收: 非預期資料型別');
-          return [];
-        }
-
-        final results = <TpexMonthlyRevenue>[];
-        for (final item in data) {
-          if (item is! Map<String, dynamic>) continue;
-          final parsed = _parseMonthlyRevenueItem(item);
-          if (parsed != null) {
-            results.add(parsed);
-          }
-        }
-
-        AppLogger.info(_tag, '月營收: ${results.length} 筆');
-        return results;
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
       }
 
-      throw ApiException(
-        '$_tag OpenAPI error: ${response.statusCode}',
-        response.statusCode,
-      );
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '月營收: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexMonthlyRevenue>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = _parseMonthlyRevenueItem(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '月營收: ${results.length} 筆');
+      return results;
     });
   }
 

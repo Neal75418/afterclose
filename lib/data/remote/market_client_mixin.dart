@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/tw_parse_utils.dart';
 
 /// TWSE / TPEX client 的共用工具。
 ///
@@ -143,6 +144,104 @@ abstract final class MarketClientMixin {
       default:
         return false;
     }
+  }
+
+  // ==================================================
+  // 回應驗證與解析 Helper
+  // ==================================================
+  //
+  // 錯誤處理慣例：
+  // - 非 200 HTTP status → 呼叫端 throw ApiException
+  // - stat != 'OK' / 空資料 → 回傳 null（非交易日正常情況）
+  // - 個別 row 解析失敗 → 跳過，debug log
+
+  /// 驗證 TWSE stat-based 回應。
+  ///
+  /// TWSE API 在 stat == 'OK' 且 data 存在時才是有效回應。
+  /// 回傳 data 中的 rows，無資料時回傳 null。
+  static List<dynamic>? validateTwseStat(
+    Map<String, dynamic> data,
+    String tag,
+    String operation,
+  ) {
+    final stat = data['stat'];
+    if (stat != 'OK' || data['data'] == null) {
+      AppLogger.warning(tag, '$operation: 無資料 (stat=$stat)');
+      return null;
+    }
+    return data['data'] as List<dynamic>;
+  }
+
+  /// 提取 TPEX tables 格式回應中的資料。
+  ///
+  /// TPEX API 回傳 `{ tables: [{ date: "...", data: [...] }] }` 格式。
+  /// 回傳 (actualDate, rows) record，無資料時回傳 null。
+  static ({DateTime date, List<dynamic> rows})? extractTpexTable(
+    Map<String, dynamic> data,
+    DateTime fallbackDate,
+    String tag,
+    String operation,
+  ) {
+    final tables = data['tables'] as List<dynamic>?;
+    if (tables == null || tables.isEmpty) {
+      AppLogger.warning(tag, '$operation: 無 tables');
+      return null;
+    }
+
+    final firstTable = tables[0] as Map<String, dynamic>?;
+    if (firstTable == null) {
+      AppLogger.warning(tag, '$operation: 無資料表');
+      return null;
+    }
+
+    final dateStr = firstTable['date'] as String?;
+    final actualDate =
+        (dateStr != null ? TwParseUtils.parseSlashRocDate(dateStr) : null) ??
+        fallbackDate;
+
+    final rows = firstTable['data'] as List<dynamic>?;
+    if (rows == null || rows.isEmpty) {
+      AppLogger.warning(tag, '$operation: 無資料');
+      return null;
+    }
+
+    return (date: actualDate, rows: rows);
+  }
+
+  /// 統一解析資料 rows 並記錄結果日誌。
+  ///
+  /// 逐 row 套用 [parser]，跳過回傳 null 的 row。
+  /// 結束後輸出 info log 含成功筆數、日期、略過筆數。
+  static List<T> parseRows<T>({
+    required List<dynamic> rows,
+    required T? Function(List<dynamic> row) parser,
+    required String tag,
+    required String operation,
+    required DateTime date,
+  }) {
+    var failedCount = 0;
+    final results = <T>[];
+
+    for (final row in rows) {
+      final parsed = parser(row as List<dynamic>);
+      if (parsed != null) {
+        results.add(parsed);
+      } else {
+        failedCount++;
+      }
+    }
+
+    final dateFormatted = TwParseUtils.formatDateYmd(date);
+    if (failedCount > 0) {
+      AppLogger.info(
+        tag,
+        '$operation: ${results.length} 筆 ($dateFormatted, 略過 $failedCount 筆)',
+      );
+    } else {
+      AppLogger.info(tag, '$operation: ${results.length} 筆 ($dateFormatted)');
+    }
+
+    return results;
   }
 
   /// 指數退避延遲（含 ±25% 抖動）。
