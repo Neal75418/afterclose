@@ -454,9 +454,9 @@ class TechnicalIndicatorService {
   /// 計算最新的 SMA 值（僅供規則使用）
   ///
   /// 從價格物件列表中提取收盤價並計算 SMA
-  /// [prices] 價格物件列表（需有 close 屬性）
+  /// [prices] 每日收盤價列表
   /// [period] 計算週期
-  static double? latestSMA(List<dynamic> prices, int period) {
+  static double? latestSMA(List<DailyPriceEntry> prices, int period) {
     if (prices.length < period) return null;
 
     double sum = 0;
@@ -464,7 +464,7 @@ class TechnicalIndicatorService {
     for (int i = prices.length - period; i < prices.length; i++) {
       final close = prices[i].close;
       if (close != null) {
-        sum += close as double;
+        sum += close;
         count++;
       }
     }
@@ -473,9 +473,9 @@ class TechnicalIndicatorService {
 
   /// 計算最新的 RSI 值（使用 Wilder's 平滑法）
   ///
-  /// [prices] 價格物件列表（需有 close 屬性）
+  /// [prices] 每日收盤價列表
   /// [period] 計算週期，預設 14
-  static double? latestRSI(List<dynamic> prices, {int period = 14}) {
+  static double? latestRSI(List<DailyPriceEntry> prices, {int period = 14}) {
     if (prices.length < period + 1) return null;
 
     // 步驟 1：計算初始平均漲跌幅
@@ -489,7 +489,7 @@ class TechnicalIndicatorService {
       final previous = prices[i - 1].close;
       if (current == null || previous == null) continue;
 
-      final change = (current as double) - (previous as double);
+      final change = current - previous;
       if (change > 0) {
         initialGains += change;
       } else {
@@ -509,7 +509,7 @@ class TechnicalIndicatorService {
       final previous = prices[i - 1].close;
       if (current == null || previous == null) continue;
 
-      final change = (current as double) - (previous as double);
+      final change = current - previous;
       final currentGain = change > 0 ? change : 0.0;
       final currentLoss = change < 0 ? -change : 0.0;
 
@@ -525,16 +525,16 @@ class TechnicalIndicatorService {
 
   /// 計算成交量 MA 並比較今日成交量
   ///
-  /// [prices] 價格物件列表（需有 volume 屬性）
+  /// [prices] 每日收盤價列表
   /// [period] 計算週期
   /// 回傳 (volumeMA, 今日成交量)
   static ({double? volumeMA, double? todayVolume}) latestVolumeMA(
-    List<dynamic> prices,
+    List<DailyPriceEntry> prices,
     int period,
   ) {
     if (prices.isEmpty) return (volumeMA: null, todayVolume: null);
 
-    final todayVol = prices.last.volume as double?;
+    final todayVol = prices.last.volume;
     if (prices.length < period) return (volumeMA: null, todayVolume: todayVol);
 
     double volSum = 0;
@@ -542,7 +542,7 @@ class TechnicalIndicatorService {
     for (int i = prices.length - period; i < prices.length; i++) {
       final vol = prices[i].volume;
       if (vol != null) {
-        volSum += vol as double;
+        volSum += vol;
         count++;
       }
     }

@@ -127,11 +127,6 @@ class FundamentalRepository implements IFundamentalRepository {
     bool force = false,
   }) async {
     try {
-      // 強制同步以確保錯誤資料（錯誤的 PE/殖利率解析）被覆蓋
-      // if (!force) {
-      //   final existingCount = await _db.getValuationCountForDate(date);
-      //   if (existingCount > DataFreshness.revenueRecordThreshold) return existingCount;
-      // }
       final data = await _twse.getAllStockValuation(date: date);
 
       if (data.isEmpty) return 0;

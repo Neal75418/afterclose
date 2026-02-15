@@ -54,7 +54,9 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     final timer = Timer(const Duration(minutes: 3), () {
       try {
         link.close();
-      } catch (_) {}
+      } catch (_) {
+        // link 可能已在 dispose 時關閉，忽略此例外
+      }
     });
     ref.onDispose(() => timer.cancel());
 
