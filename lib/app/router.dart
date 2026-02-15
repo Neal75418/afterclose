@@ -125,7 +125,7 @@ final router = GoRouter(
       path: AppRoutes.stockDetailTemplate,
       name: 'stockDetail',
       builder: (context, state) {
-        final symbol = state.pathParameters['symbol']!;
+        final symbol = state.pathParameters['symbol'] ?? '';
         return StockDetailScreen(symbol: symbol);
       },
     ),
@@ -181,7 +181,7 @@ final router = GoRouter(
       path: AppRoutes.positionDetailTemplate,
       name: 'positionDetail',
       builder: (context, state) {
-        final symbol = state.pathParameters['symbol']!;
+        final symbol = state.pathParameters['symbol'] ?? '';
         return PositionDetailScreen(symbol: symbol);
       },
     ),

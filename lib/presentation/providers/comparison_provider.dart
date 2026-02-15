@@ -190,20 +190,14 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
 
       // 2. Additional data in parallel
       final instStartDate = dateCtx.today.subtract(const Duration(days: 10));
-      final results = await Future.wait([
+      final (valuations, institutional, eps, revenue) = await (
         _db.getLatestValuationsBatch(symbols),
         _db.getInstitutionalHistoryBatch(symbols, startDate: instStartDate),
         _db.getEPSHistoryBatch(symbols),
         _db.getRecentMonthlyRevenueBatch(symbols, months: 6),
-      ]);
+      ).wait;
 
       if (!_active) return;
-
-      final valuations = results[0] as Map<String, StockValuationEntry>;
-      final institutional =
-          results[1] as Map<String, List<DailyInstitutionalEntry>>;
-      final eps = results[2] as Map<String, List<FinancialDataEntry>>;
-      final revenue = results[3] as Map<String, List<MonthlyRevenueEntry>>;
 
       // 3. Generate AI summaries per stock
       const summaryService = AnalysisSummaryService();

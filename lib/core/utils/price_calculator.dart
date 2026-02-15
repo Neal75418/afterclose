@@ -208,12 +208,13 @@ extension CandleValidation on DailyPriceEntry {
   /// 若開盤或收盤為 null，回傳 0
   double get bodySize {
     if (open == null || close == null) return 0;
-    return (close! - open!).abs();
+    return (close! - open!).abs(); // Safe: null check above
   }
 
   /// 判斷是否為紅 K（收盤 > 開盤）
   ///
   /// 若資料無效，回傳 false
+  // Safe: hasValidOpenClose guarantees open/close non-null
   bool get isBullish {
     if (!hasValidOpenClose) return false;
     return close! > open!;
@@ -222,6 +223,7 @@ extension CandleValidation on DailyPriceEntry {
   /// 判斷是否為黑 K（收盤 < 開盤）
   ///
   /// 若資料無效，回傳 false
+  // Safe: hasValidOpenClose guarantees open/close non-null
   bool get isBearish {
     if (!hasValidOpenClose) return false;
     return close! < open!;
@@ -232,13 +234,14 @@ extension CandleValidation on DailyPriceEntry {
   /// 若 high 或 low 為 null，回傳 0
   double get range {
     if (high == null || low == null) return 0;
-    return high! - low!;
+    return high! - low!; // Safe: null check above
   }
 
   /// 取得上影線長度
   ///
   /// 上影線 = 最高價 - max(開盤, 收盤)
   /// 若 OHLC 資料不完整，回傳 0
+  // Safe: hasValidOHLC guarantees all OHLC fields non-null
   double get upperShadow {
     if (!hasValidOHLC) return 0;
     return high! - max(open!, close!);
@@ -248,6 +251,7 @@ extension CandleValidation on DailyPriceEntry {
   ///
   /// 下影線 = min(開盤, 收盤) - 最低價
   /// 若 OHLC 資料不完整，回傳 0
+  // Safe: hasValidOHLC guarantees all OHLC fields non-null
   double get lowerShadow {
     if (!hasValidOHLC) return 0;
     return min(open!, close!) - low!;

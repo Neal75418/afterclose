@@ -10,15 +10,12 @@ import 'package:timezone/timezone.dart' as tz;
 class TaiwanTime {
   TaiwanTime._();
 
-  static tz.Location? _taipei;
+  /// Asia/Taipei 時區（首次存取時自動初始化）
+  static final tz.Location _location = _initLocation();
 
-  /// 取得 Asia/Taipei 時區（延遲初始化）
-  static tz.Location get _location {
-    if (_taipei == null) {
-      tz_data.initializeTimeZones();
-      _taipei = tz.getLocation('Asia/Taipei');
-    }
-    return _taipei!;
+  static tz.Location _initLocation() {
+    tz_data.initializeTimeZones();
+    return tz.getLocation('Asia/Taipei');
   }
 
   /// 取得目前台灣時間

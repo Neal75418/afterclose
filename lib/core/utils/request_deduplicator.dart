@@ -25,8 +25,9 @@ class RequestDeduplicator<T> {
   /// - 否則執行新請求並快取 Future
   Future<T> call(String key, Future<T> Function() fetch) async {
     // 檢查是否已有進行中的請求
-    if (_pending.containsKey(key)) {
-      return _pending[key]!;
+    final existing = _pending[key];
+    if (existing != null) {
+      return existing;
     }
 
     // 執行新請求
