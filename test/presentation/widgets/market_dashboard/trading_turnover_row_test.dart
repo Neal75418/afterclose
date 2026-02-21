@@ -35,6 +35,36 @@ void main() {
       expect(find.byType(TradingTurnoverRow), findsOneWidget);
     });
 
+    testWidgets('formats small turnover (< 1000 億) with 2 decimals', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // 500 億元 = 5e10 → 500.00
+      const data = TradingTurnover(totalTurnover: 5e10);
+      await tester.pumpWidget(
+        buildTestApp(const TradingTurnoverRow(data: data)),
+      );
+
+      expect(find.textContaining('500.00'), findsOneWidget);
+    });
+
+    testWidgets('formats large turnover (>= 10000 億) with 2 decimals', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // 12000 億元 = 1.2e12 → 12,000.00
+      const data = TradingTurnover(totalTurnover: 1.2e12);
+      await tester.pumpWidget(
+        buildTestApp(const TradingTurnoverRow(data: data)),
+      );
+
+      expect(find.textContaining('12,000.00'), findsOneWidget);
+    });
+
     testWidgets('renders in dark mode', (tester) async {
       tester.view.physicalSize = const Size(3000, 2400);
       addTearDown(() => tester.view.resetPhysicalSize());
