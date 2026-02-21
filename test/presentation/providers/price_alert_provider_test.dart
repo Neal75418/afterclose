@@ -384,4 +384,42 @@ void main() {
       expect(notifier, isA<PriceAlertNotifier>());
     });
   });
+
+  // ===========================================================================
+  // getAlertDescription — top-level function
+  // ===========================================================================
+
+  group('getAlertDescription', () {
+    for (final alertType in AlertType.values) {
+      test('returns non-empty description for ${alertType.name}', () {
+        final alert = createAlert(
+          alertType: alertType.value,
+          targetValue: 100.0,
+        );
+        final description = getAlertDescription(alert, alertType);
+        expect(description, isNotEmpty);
+      });
+    }
+
+    test('above returns non-empty string', () {
+      final alert = createAlert(alertType: 'ABOVE', targetValue: 900.50);
+      final desc = getAlertDescription(alert, AlertType.above);
+      expect(desc, isA<String>());
+      expect(desc.isNotEmpty, isTrue);
+    });
+
+    test('below returns non-empty string', () {
+      final alert = createAlert(alertType: 'BELOW', targetValue: 700.25);
+      final desc = getAlertDescription(alert, AlertType.below);
+      expect(desc, isA<String>());
+      expect(desc.isNotEmpty, isTrue);
+    });
+
+    test('changePct returns non-empty string', () {
+      final alert = createAlert(alertType: 'CHANGE_PCT', targetValue: 5.0);
+      final desc = getAlertDescription(alert, AlertType.changePct);
+      expect(desc, isA<String>());
+      expect(desc.isNotEmpty, isTrue);
+    });
+  });
 }

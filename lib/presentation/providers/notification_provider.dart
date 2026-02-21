@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import 'package:easy_localization/easy_localization.dart';
 
@@ -86,8 +87,8 @@ class NotificationNotifier extends Notifier<NotificationState> {
     if (!state.isInitialized || !state.hasPermission) return;
 
     final alertType = AlertType.fromValue(alert.alertType);
-    final title = _getAlertTitle(alert.symbol, alertType);
-    final body = _getAlertBody(alert, alertType, currentPrice);
+    final title = getAlertTitle(alert.symbol, alertType);
+    final body = getAlertBody(alert, alertType, currentPrice);
 
     // 處置股票使用緊急通知（Importance.max）
     if (alertType == AlertType.tradingDisposal) {
@@ -137,7 +138,8 @@ class NotificationNotifier extends Notifier<NotificationState> {
     );
   }
 
-  String _getAlertTitle(String symbol, AlertType alertType) {
+  @visibleForTesting
+  static String getAlertTitle(String symbol, AlertType alertType) {
     return switch (alertType) {
       AlertType.above => 'notification.priceAboveTarget'.tr(
         namedArgs: {'symbol': symbol},
@@ -207,7 +209,8 @@ class NotificationNotifier extends Notifier<NotificationState> {
     };
   }
 
-  String _getAlertBody(
+  @visibleForTesting
+  static String getAlertBody(
     PriceAlertEntry alert,
     AlertType alertType,
     double? currentPrice,

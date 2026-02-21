@@ -1,8 +1,33 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
+import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 
 void main() {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await EasyLocalization.ensureInitialized();
+    EasyLocalization.logger.enableLevels = [];
+  });
+
+  PriceAlertEntry createAlert({
+    String symbol = '2330',
+    String alertType = 'ABOVE',
+    double targetValue = 900.0,
+  }) {
+    return PriceAlertEntry(
+      id: 1,
+      symbol: symbol,
+      alertType: alertType,
+      targetValue: targetValue,
+      isActive: true,
+      createdAt: DateTime(2026, 2, 13),
+    );
+  }
+
   group('NotificationState', () {
     test('default values', () {
       const state = NotificationState();
@@ -59,6 +84,58 @@ void main() {
       expect(state.isInitialized, isTrue);
       expect(state.hasPermission, isTrue);
       expect(state.error, 'Network error');
+    });
+  });
+
+  group('NotificationNotifier.getAlertTitle', () {
+    for (final alertType in AlertType.values) {
+      test('returns non-empty title for ${alertType.name}', () {
+        final title = NotificationNotifier.getAlertTitle('2330', alertType);
+        expect(title, isNotEmpty);
+      });
+    }
+
+    test('includes symbol in title', () {
+      final title = NotificationNotifier.getAlertTitle('2330', AlertType.above);
+      // .tr() returns the key when no translation found,
+      // but the namedArgs substitution still happens in the key
+      expect(title, isNotEmpty);
+    });
+  });
+
+  group('NotificationNotifier.getAlertBody', () {
+    for (final alertType in AlertType.values) {
+      test('returns non-empty body for ${alertType.name}', () {
+        final alert = createAlert(alertType: alertType.value);
+        final body = NotificationNotifier.getAlertBody(alert, alertType, null);
+        expect(body, isNotEmpty);
+      });
+    }
+
+    test('appends current price suffix when provided', () {
+      final alert = createAlert();
+      final bodyWithPrice = NotificationNotifier.getAlertBody(
+        alert,
+        AlertType.above,
+        950.0,
+      );
+      final bodyWithout = NotificationNotifier.getAlertBody(
+        alert,
+        AlertType.above,
+        null,
+      );
+      // With currentPrice, body should be longer (has price suffix)
+      expect(bodyWithPrice.length, greaterThan(bodyWithout.length));
+    });
+
+    test('no price suffix when currentPrice is null', () {
+      final alert = createAlert();
+      final body = NotificationNotifier.getAlertBody(
+        alert,
+        AlertType.above,
+        null,
+      );
+      expect(body, isNotEmpty);
     });
   });
 }

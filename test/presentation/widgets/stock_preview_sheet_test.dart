@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -124,6 +125,113 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(find.byType(StockPreviewSheet), findsOneWidget);
+    });
+
+    testWidgets('shows score section when score > 0', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(score: 85))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.scoreLabel), findsOneWidget);
+      expect(find.text(S.scoreLevelStrong), findsOneWidget);
+    });
+
+    testWidgets('hides score section when score is null', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(score: null))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.scoreLabel), findsNothing);
+    });
+
+    testWidgets('hides score section when score is 0', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(score: 0))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.scoreLabel), findsNothing);
+    });
+
+    testWidgets('shows reasons section when reasons non-empty', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          StockPreviewSheet(data: createData(reasons: ['W2S', 'VOL'])),
+        ),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.reasonsLabel), findsOneWidget);
+    });
+
+    testWidgets('hides reasons section when reasons empty', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(reasons: []))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.reasonsLabel), findsNothing);
+    });
+
+    testWidgets('hides stock name when null', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(stockName: null))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('2330'), findsOneWidget);
+      expect(find.text('台積電'), findsNothing);
+    });
+
+    testWidgets('hides price when latestClose is null', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(latestClose: null))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('850.00'), findsNothing);
+    });
+
+    testWidgets('shows +0.00% for zero price change', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(priceChange: 0))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('+0.00%'), findsOneWidget);
+    });
+
+    testWidgets('shows view details button text', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData())),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.stockViewDetails), findsOneWidget);
+    });
+
+    testWidgets('shows add to watchlist text when not in watchlist', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(isInWatchlist: false))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.stockAddToWatchlist), findsOneWidget);
+    });
+
+    testWidgets('shows remove from watchlist text when in watchlist', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(StockPreviewSheet(data: createData(isInWatchlist: true))),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text(S.stockRemoveFromWatchlist), findsOneWidget);
     });
   });
 

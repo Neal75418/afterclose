@@ -49,6 +49,90 @@ void main() {
 
       expect(find.byType(ShareOptionsSheet), findsOneWidget);
     });
+
+    testWidgets('tapping PNG option pops with ShareFormat.png', (tester) async {
+      ShareFormat? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  result = await showModalBottomSheet<ShareFormat>(
+                    context: context,
+                    builder: (_) => const ShareOptionsSheet(),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.image_outlined));
+      await tester.pumpAndSettle();
+
+      expect(result, ShareFormat.png);
+    });
+
+    testWidgets('tapping CSV option pops with ShareFormat.csv', (tester) async {
+      ShareFormat? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  result = await showModalBottomSheet<ShareFormat>(
+                    context: context,
+                    builder: (_) => const ShareOptionsSheet(),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.table_chart_outlined));
+      await tester.pumpAndSettle();
+
+      expect(result, ShareFormat.csv);
+    });
+
+    testWidgets('tapping close button pops with null', (tester) async {
+      ShareFormat? result = ShareFormat.png; // sentinel
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  result = await showModalBottomSheet<ShareFormat>(
+                    context: context,
+                    builder: (_) => const ShareOptionsSheet(),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      expect(result, isNull);
+    });
   });
 
   group('ShareFormat', () {

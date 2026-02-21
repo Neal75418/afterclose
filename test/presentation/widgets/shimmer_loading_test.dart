@@ -87,6 +87,14 @@ void main() {
       expect(find.byType(Shimmer), findsOneWidget);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
+
+    testWidgets('renders in dark mode', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const StockDetailShimmer(), brightness: Brightness.dark),
+      );
+
+      expect(find.byType(Shimmer), findsOneWidget);
+    });
   });
 
   group('NewsListShimmer', () {
