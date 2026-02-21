@@ -230,8 +230,8 @@ flutter test
 
 ### 測試要求
 
-- 所有變更必須通過完整測試套件（1069 個測試）
-- 測試執行時間約 8-9 秒
+- 所有變更必須通過完整測試套件（1954+ 個測試）
+- 測試執行時間約 25-30 秒
 - Critical 功能變更需補充對應測試
 
 ```bash
@@ -247,6 +247,46 @@ flutter test test/domain/services/analysis_service_test.dart
 # 測試特定目錄
 flutter test test/domain/services/
 ```
+
+### 測試覆蓋率現況
+
+| Layer | 覆蓋率 |
+|:------|:------|
+| Domain | 85%+ |
+| Data | 85%+ |
+| Presentation | 40%+ |
+
+### Widget 測試慣例
+
+**基本結構**：使用 `test/helpers/widget_test_helpers.dart` 提供的工具
+
+```dart
+import 'package:afterclose/...widget.dart';
+import '../../helpers/widget_test_helpers.dart';
+
+void main() {
+  setUpAll(() async {
+    await setupTestLocalization(); // 使用 .tr() 的 widget 必須呼叫
+  });
+
+  void widenViewport(WidgetTester tester) {
+    tester.view.physicalSize = const Size(5000, 4000);
+    addTearDown(() => tester.view.resetPhysicalSize());
+  }
+
+  testWidgets('example', (tester) async {
+    widenViewport(tester); // 避免 i18n key 未翻譯導致 RenderFlex overflow
+    await tester.pumpWidget(buildTestApp(MyWidget(), brightness: Brightness.light));
+  });
+}
+```
+
+**注意事項**：
+- `SectionHeader` 使用 `flutter_animate` 動畫，需在 `pumpWidget` 後加 `await tester.pump(const Duration(seconds: 1))` 推進動畫
+- `TechnicalIndicatorService` 為 plain class，可直接 `new` 出來使用，不需 mock
+- `FinMindRevenue.date` 型別為 `String`（非 `DateTime`）
+- `PortfolioPositionData.quantity` 型別為 `double`（非 `int`）
+- 每個測試檔案自行宣告 mock classes，不使用共享 mock 檔案
 
 ---
 
