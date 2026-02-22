@@ -285,5 +285,113 @@ void main() {
       expect(find.byType(AlertsTab), findsOneWidget);
       expect(find.byType(ListTile), findsOneWidget);
     });
+
+    testWidgets('shows percent icon for changePct alert', (tester) async {
+      widenViewport(tester);
+      final alerts = [createAlert(alertType: 'CHANGE_PCT', targetValue: 5.0)];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byIcon(Icons.percent), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('shows bar_chart icon for volumeSpike alert', (tester) async {
+      widenViewport(tester);
+      final alerts = [
+        createAlert(alertType: 'VOLUME_SPIKE', targetValue: 200.0),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byIcon(Icons.bar_chart), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('inactive alert shows switch off', (tester) async {
+      widenViewport(tester);
+      final alerts = [createAlert(isActive: false)];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final switchWidget = tester.widget<Switch>(find.byType(Switch));
+      expect(switchWidget.value, isFalse);
+    });
+
+    testWidgets('active alert shows switch on', (tester) async {
+      widenViewport(tester);
+      final alerts = [createAlert(isActive: true)];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final switchWidget = tester.widget<Switch>(find.byType(Switch));
+      expect(switchWidget.value, isTrue);
+    });
+
+    testWidgets('empty state shows hint text', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(seconds: 1));
+
+      // Empty state container is rendered
+      expect(find.byIcon(Icons.notifications_off_outlined), findsOneWidget);
+      // Container with empty state exists
+      expect(find.byType(AlertsTab), findsOneWidget);
+    });
+
+    testWidgets('alert card is wrapped in Dismissible', (tester) async {
+      widenViewport(tester);
+      final alerts = [createAlert()];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(Dismissible), findsOneWidget);
+    });
+
+    testWidgets('shows add alert icon button', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byIcon(Icons.add), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('shows multiple icon types for mixed alerts', (tester) async {
+      widenViewport(tester);
+      final alerts = [
+        createAlert(id: 1, alertType: 'ABOVE'),
+        createAlert(id: 2, alertType: 'BELOW'),
+        createAlert(id: 3, alertType: 'CHANGE_PCT', targetValue: 3.0),
+      ];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(Switch), findsNWidgets(3));
+      expect(find.byIcon(Icons.trending_up), findsAtLeastNWidgets(1));
+      expect(find.byIcon(Icons.trending_down), findsAtLeastNWidgets(1));
+      expect(find.byIcon(Icons.percent), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('hides note subtitle when note is null', (tester) async {
+      widenViewport(tester);
+      final alerts = [createAlert(note: null)];
+      await tester.pumpWidget(
+        buildTestWidget(alertState: PriceAlertState(alerts: alerts)),
+      );
+      await tester.pump(const Duration(seconds: 1));
+
+      final listTile = tester.widget<ListTile>(find.byType(ListTile));
+      expect(listTile.subtitle, isNull);
+    });
   });
 }

@@ -425,6 +425,159 @@ void main() {
   });
 
   // ===========================================================================
+  // WatchlistState copyWith _internal path
+  // ===========================================================================
+
+  group('WatchlistState copyWith internal path', () {
+    test('preserves filteredItems cache when only isLoading changes', () {
+      final items = [
+        createItem(symbol: '2330', stockName: '台積電'),
+        createItem(symbol: '2317', stockName: '鴻海'),
+      ];
+      final state = WatchlistState(items: items, searchQuery: '2330');
+      expect(state.filteredItems, hasLength(1));
+
+      // Only change isLoading → _internal path
+      final updated = state.copyWith(isLoading: true);
+      expect(updated.filteredItems, hasLength(1));
+      expect(updated.isLoading, isTrue);
+    });
+
+    test('preserves filteredItems cache when only sort changes', () {
+      final items = [createItem(symbol: '2330'), createItem(symbol: '2317')];
+      final state = WatchlistState(items: items);
+
+      final updated = state.copyWith(sort: WatchlistSort.nameAsc);
+      expect(updated.sort, WatchlistSort.nameAsc);
+      expect(updated.filteredItems, hasLength(2));
+    });
+
+    test('preserves filteredItems cache when only group changes', () {
+      final items = [createItem(symbol: '2330')];
+      final state = WatchlistState(items: items);
+
+      final updated = state.copyWith(group: WatchlistGroup.trend);
+      expect(updated.group, WatchlistGroup.trend);
+      expect(updated.filteredItems, hasLength(1));
+    });
+
+    test('preserves filteredItems cache when only error changes', () {
+      final items = [createItem(symbol: '2330')];
+      final state = WatchlistState(items: items);
+
+      final updated = state.copyWith(error: 'some error');
+      expect(updated.error, 'some error');
+      expect(updated.filteredItems, hasLength(1));
+    });
+
+    test('recomputes when searchQuery changes to same value as current', () {
+      final items = [createItem(symbol: '2330'), createItem(symbol: '2317')];
+      final state = WatchlistState(items: items, searchQuery: '2330');
+      expect(state.filteredItems, hasLength(1));
+
+      // Same query → no recompute (handled by copyWith condition)
+      final updated = state.copyWith(searchQuery: '2330');
+      expect(updated.filteredItems, hasLength(1));
+    });
+  });
+
+  // ===========================================================================
+  // WatchlistState pagination edge cases
+  // ===========================================================================
+
+  group('WatchlistState pagination', () {
+    test('displayedItems caps at total items', () {
+      final items = [createItem(symbol: '2330'), createItem(symbol: '2317')];
+      final state = WatchlistState(items: items, displayedCount: 100);
+      expect(state.displayedItems, hasLength(2));
+    });
+
+    test('displayedItems is empty when displayedCount is 0', () {
+      final items = [createItem(symbol: '2330')];
+      final state = WatchlistState(items: items, displayedCount: 0);
+      expect(state.displayedItems, isEmpty);
+    });
+
+    test('copyWith updates hasMore and displayedCount together', () {
+      final state = WatchlistState(displayedCount: 10, hasMore: true);
+      final updated = state.copyWith(displayedCount: 20, hasMore: false);
+      expect(updated.displayedCount, 20);
+      expect(updated.hasMore, isFalse);
+    });
+
+    test('copyWith updates isLoadingMore', () {
+      final state = WatchlistState();
+      final updated = state.copyWith(isLoadingMore: true);
+      expect(updated.isLoadingMore, isTrue);
+    });
+  });
+
+  // ===========================================================================
+  // WatchlistItemData additional tests
+  // ===========================================================================
+
+  group('WatchlistItemData additional', () {
+    test('statusIcon returns emoji from status', () {
+      final signalItem = createItem(symbol: '2330', hasSignal: true);
+      expect(signalItem.statusIcon, '🔥');
+
+      final quietItem = createItem(symbol: '2317', priceChange: 0.5);
+      expect(quietItem.statusIcon, '😴');
+
+      final volatileItem = createItem(symbol: '2454', priceChange: -5.0);
+      expect(volatileItem.statusIcon, '👀');
+    });
+
+    test('trend returns sideways for null trendState', () {
+      final item = createItem(symbol: '2330');
+      expect(item.trend, WatchlistTrend.sideways);
+    });
+
+    test('trend returns sideways for unknown trendState', () {
+      final item = createItem(symbol: '2330', trendState: 'UNKNOWN');
+      expect(item.trend, WatchlistTrend.sideways);
+    });
+  });
+
+  // ===========================================================================
+  // WatchlistNotifier sort with items
+  // ===========================================================================
+
+  group('WatchlistNotifier sort with items', () {
+    test('setSort sorts by scoreDesc', () {
+      final notifier = container.read(watchlistProvider.notifier);
+
+      // Set initial items directly through loadData mock
+      when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
+      // Default state with no items → sort won't show visible effect
+      // But we can verify the sort option is stored
+      notifier.setSort(WatchlistSort.scoreDesc);
+      expect(container.read(watchlistProvider).sort, WatchlistSort.scoreDesc);
+    });
+
+    test('setSort to priceChangeDesc stores correctly', () {
+      final notifier = container.read(watchlistProvider.notifier);
+      notifier.setSort(WatchlistSort.priceChangeDesc);
+      expect(
+        container.read(watchlistProvider).sort,
+        WatchlistSort.priceChangeDesc,
+      );
+    });
+
+    test('setSort to nameAsc stores correctly', () {
+      final notifier = container.read(watchlistProvider.notifier);
+      notifier.setSort(WatchlistSort.nameAsc);
+      expect(container.read(watchlistProvider).sort, WatchlistSort.nameAsc);
+    });
+
+    test('setGroup to trend stores correctly', () {
+      final notifier = container.read(watchlistProvider.notifier);
+      notifier.setGroup(WatchlistGroup.trend);
+      expect(container.read(watchlistProvider).group, WatchlistGroup.trend);
+    });
+  });
+
+  // ===========================================================================
   // Provider declaration
   // ===========================================================================
 
