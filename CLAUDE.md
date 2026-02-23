@@ -230,7 +230,7 @@ flutter test
 
 ### 測試要求
 
-- 所有變更必須通過完整測試套件（1954+ 個測試）
+- 所有變更必須通過完整測試套件（2458+ 個測試）
 - 測試執行時間約 25-30 秒
 - Critical 功能變更需補充對應測試
 
@@ -254,7 +254,7 @@ flutter test test/domain/services/
 |:------|:------|
 | Domain | 85%+ |
 | Data | 85%+ |
-| Presentation | 40%+ |
+| Presentation | 70%+ |
 
 ### Widget 測試慣例
 

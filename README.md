@@ -45,8 +45,8 @@
 | 類別         | 技術                             |
 |:-----------|:-------------------------------|
 | Framework  | Flutter 3.38 + Dart 3.10       |
-| State      | Riverpod 2.6                   |
-| Database   | Drift 2.27 (SQLite, 35 tables) |
+| State      | Riverpod 3.2                   |
+| Database   | Drift 2.31 (SQLite, 35 tables) |
 | Network    | Dio 5.8                        |
 | Navigation | GoRouter 15                                           |
 | Charts     | fl_chart + k_chart_plus                               |
@@ -183,7 +183,7 @@ pie showData title 59 條規則分佈
 
 ```bash
 flutter pub get                    # 安裝依賴
-flutter test                       # 執行測試 (983 cases)
+flutter test                       # 執行測試 (2458+ cases)
 flutter analyze                    # 靜態分析
 dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生成
 ```
