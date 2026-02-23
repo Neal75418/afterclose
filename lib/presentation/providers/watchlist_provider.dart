@@ -214,17 +214,21 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       // 收集所有代號進行批次查詢
       final symbols = watchlist.map((w) => w.symbol).toList();
 
-      // 取得實際資料日期，確保非交易日也能正確顯示趨勢
-      final latestDataDate = await _db.getLatestDataDate();
-      final analysisDate = latestDataDate != null
-          ? DateContext.normalize(latestDataDate)
-          : dateCtx.today;
+      // 取得實際分析日期（使用分析表的日期，而非價格表）
+      // 價格表的 MAX(date) 可能因歷史同步而超前分析表，
+      // 導致 getAnalysesBatch/getReasonsBatch 查不到對應日期的資料
+      final analysisRepo = ref.read(analysisRepositoryProvider);
+      final latestAnalysisDate = await analysisRepo.findLatestAnalysisDate();
+      final analysisDate = latestAnalysisDate ?? dateCtx.today;
 
       // 使用 Dart 3 Records 進行型別安全的批次載入
+      // historyStart 必須以 analysisDate 為基準（而非今天），
+      // 避免長假/資料過期時 historyStart > analysisDate 導致查詢範圍反轉
+      final historyCtx = DateContext.forDate(analysisDate);
       final data = await _cachedDb.loadStockListData(
         symbols: symbols,
         analysisDate: analysisDate,
-        historyStart: dateCtx.historyStart,
+        historyStart: historyCtx.historyStart,
       );
 
       // 解構 Record 欄位

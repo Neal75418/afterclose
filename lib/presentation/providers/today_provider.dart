@@ -168,10 +168,13 @@ class TodayNotifier extends Notifier<TodayState> {
 
       // 使用 Dart 3 Records 進行型別安全的批次載入（無需手動轉型）
       // 使用實際資料日期查詢分析資料，確保非交易日也能正確顯示趨勢
+      // historyStart 必須以 analysisDate 為基準（而非今天），
+      // 避免長假/資料過期時 historyStart > analysisDate 導致查詢範圍反轉
+      final historyCtx = DateContext.forDate(analysisDate);
       final data = await _cachedDb.loadStockListData(
         symbols: allSymbols,
         analysisDate: analysisDate,
-        historyStart: dateCtx.historyStart,
+        historyStart: historyCtx.historyStart,
       );
 
       // 解構 Record 欄位，享有編譯期型別安全

@@ -84,12 +84,10 @@ class PriceCalculator {
       final history = priceHistories[symbol];
       final latestPrice = latestPrices[symbol];
 
-      if (history == null || history.isEmpty) {
-        result[symbol] = null;
-        continue;
-      }
-
-      result[symbol] = calculatePriceChange(history, latestPrice);
+      // 不可在 history 為空時直接短路回 null：
+      // calculatePriceChange 會優先使用 latestPrice.priceChange（API 提供），
+      // 即使 history 為空也能正確計算漲跌幅
+      result[symbol] = calculatePriceChange(history ?? [], latestPrice);
     }
 
     return result;

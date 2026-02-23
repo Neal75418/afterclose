@@ -325,6 +325,48 @@ void main() {
         expect(result['AAAA'], isNull);
       });
 
+      test('should use latestPrice.priceChange even when history is null', () {
+        final latestPrices = <String, DailyPriceEntry>{
+          'AAAA': createTestPrice(
+            symbol: 'AAAA',
+            close: 105.0,
+            date: DateTime.now(),
+            priceChange: 5.0,
+          ),
+        };
+
+        // history map 完全沒有 AAAA（history == null 的情境）
+        final priceHistories = <String, List<DailyPriceEntry>>{};
+
+        final result = PriceCalculator.calculatePriceChangesBatch(
+          priceHistories,
+          latestPrices,
+        );
+
+        // 應使用 API 提供的 priceChange 計算：(5 / 100) * 100 = 5%
+        expect(result['AAAA'], closeTo(5.0, 0.01));
+      });
+
+      test('should use latestPrice.priceChange even when history is empty', () {
+        final latestPrices = <String, DailyPriceEntry>{
+          'AAAA': createTestPrice(
+            symbol: 'AAAA',
+            close: 105.0,
+            date: DateTime.now(),
+            priceChange: 5.0,
+          ),
+        };
+
+        final priceHistories = <String, List<DailyPriceEntry>>{'AAAA': []};
+
+        final result = PriceCalculator.calculatePriceChangesBatch(
+          priceHistories,
+          latestPrices,
+        );
+
+        expect(result['AAAA'], closeTo(5.0, 0.01));
+      });
+
       test('should handle mixed valid and invalid data', () {
         final priceHistories = <String, List<DailyPriceEntry>>{
           'AAAA': generatePriceHistoryFromList(
