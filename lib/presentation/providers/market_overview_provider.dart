@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -176,21 +177,39 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       // 取得最新資料日期
       final dataDate = await _db.getLatestDataDate() ?? DateTime.now();
 
+      // 回退日期：前一個交易日
+      // 處理開工日盤後資料未釋出、DB 重置後部分同步等情境
+      final fallbackDate = TaiwanCalendar.getPreviousTradingDay(
+        dataDate.subtract(const Duration(days: 1)),
+      );
+
       // 平行載入所有資料（各 _load* 方法內部已處理錯誤）
+      // by-market 方法在主要日期無資料時會自動回退到 fallbackDate
       final results = await Future.wait([
         _loadIndices(), // [0] List<TwseMarketIndex>
         _loadAdvanceDecline(dataDate), // [1] AdvanceDecline
-        _loadInstitutionalTotals(dataDate), // [2] InstitutionalTotals
+        _loadInstitutionalTotals(
+          dataDate,
+          fallbackDate: fallbackDate,
+        ), // [2] InstitutionalTotals
         _loadMarginTotals(dataDate), // [3] MarginTradingTotals
         _loadIndexHistory(), // [4] Map<String, List<double>>
         _loadAdvanceDeclineByMarket(
           dataDate,
+          fallbackDate: fallbackDate,
         ), // [5] Map<String, AdvanceDecline>
         _loadInstitutionalByMarket(
           dataDate,
+          fallbackDate: fallbackDate,
         ), // [6] Map<String, InstitutionalTotals>
-        _loadMarginByMarket(dataDate), // [7] Map<String, MarginTradingTotals>
-        _loadTurnoverByMarket(dataDate), // [8] Map<String, TradingTurnover>
+        _loadMarginByMarket(
+          dataDate,
+          fallbackDate: fallbackDate,
+        ), // [7] Map<String, MarginTradingTotals>
+        _loadTurnoverByMarket(
+          dataDate,
+          fallbackDate: fallbackDate,
+        ), // [8] Map<String, TradingTurnover>
       ]);
 
       if (!_active) return;
@@ -264,8 +283,12 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
   /// 載入法人買賣超金額總額（上市+上櫃合計）
   ///
-  /// 使用 TWSE/TPEX 的法人買賣金額統計 API
-  Future<InstitutionalTotals> _loadInstitutionalTotals(DateTime date) async {
+  /// 使用 TWSE/TPEX 的法人買賣金額統計 API。
+  /// 若主要日期的 API 回傳 null，自動用 [fallbackDate] 重試。
+  Future<InstitutionalTotals> _loadInstitutionalTotals(
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
     try {
       // 平行呼叫 TWSE 和 TPEX API
       final futures = await Future.wait([
@@ -273,8 +296,14 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         _tpex.getInstitutionalAmounts(date: date),
       ]);
 
-      final twseData = futures[0] as TwseInstitutionalAmounts?;
-      final tpexData = futures[1] as TpexInstitutionalAmounts?;
+      var twseData = futures[0] as TwseInstitutionalAmounts?;
+      var tpexData = futures[1] as TpexInstitutionalAmounts?;
+
+      // 回退：對 null 的 API 用前一交易日重試
+      if (fallbackDate != null) {
+        twseData ??= await _twse.getInstitutionalAmounts(date: fallbackDate);
+        tpexData ??= await _tpex.getInstitutionalAmounts(date: fallbackDate);
+      }
 
       final foreignNet =
           (twseData?.foreignNet ?? 0) + (tpexData?.foreignNet ?? 0);
@@ -309,11 +338,25 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   }
 
   /// 載入漲跌家數（依市場分組）
+  ///
+  /// 若主要日期缺少某市場資料，自動用 [fallbackDate] 補齊。
   Future<Map<String, AdvanceDecline>> _loadAdvanceDeclineByMarket(
-    DateTime date,
-  ) async {
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
     try {
       final data = await _db.getAdvanceDeclineCountsByMarket(date);
+
+      // 回退：若缺少某市場，嘗試前一交易日補齊
+      if (fallbackDate != null && data.length < 2) {
+        final fallbackData = await _db.getAdvanceDeclineCountsByMarket(
+          fallbackDate,
+        );
+        for (final entry in fallbackData.entries) {
+          data.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+
       return {
         for (final entry in data.entries)
           entry.key: AdvanceDecline(
@@ -330,10 +373,12 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
   /// 載入法人買賣超金額（依市場分組）
   ///
-  /// 使用 TWSE/TPEX 的法人買賣金額統計 API，直接取得市場總計金額（元）
+  /// 使用 TWSE/TPEX 的法人買賣金額統計 API，直接取得市場總計金額（元）。
+  /// 若主要日期的 API 回傳 null，自動用 [fallbackDate] 重試。
   Future<Map<String, InstitutionalTotals>> _loadInstitutionalByMarket(
-    DateTime date,
-  ) async {
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
     try {
       final results = <String, InstitutionalTotals>{};
 
@@ -343,8 +388,14 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         _tpex.getInstitutionalAmounts(date: date),
       ]);
 
-      final twseData = futures[0] as TwseInstitutionalAmounts?;
-      final tpexData = futures[1] as TpexInstitutionalAmounts?;
+      var twseData = futures[0] as TwseInstitutionalAmounts?;
+      var tpexData = futures[1] as TpexInstitutionalAmounts?;
+
+      // 回退：對 null 的市場用前一交易日重試
+      if (fallbackDate != null) {
+        twseData ??= await _twse.getInstitutionalAmounts(date: fallbackDate);
+        tpexData ??= await _tpex.getInstitutionalAmounts(date: fallbackDate);
+      }
 
       if (twseData != null) {
         results['TWSE'] = InstitutionalTotals(
@@ -372,11 +423,25 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   }
 
   /// 載入融資融券（依市場分組）
+  ///
+  /// 若主要日期缺少某市場資料，自動用 [fallbackDate] 補齊。
   Future<Map<String, MarginTradingTotals>> _loadMarginByMarket(
-    DateTime date,
-  ) async {
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
     try {
       final data = await _db.getMarginTradingTotalsByMarket(date);
+
+      // 回退：若缺少某市場，嘗試前一交易日補齊
+      if (fallbackDate != null && data.length < 2) {
+        final fallbackData = await _db.getMarginTradingTotalsByMarket(
+          fallbackDate,
+        );
+        for (final entry in fallbackData.entries) {
+          data.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+
       return {
         for (final entry in data.entries)
           entry.key: MarginTradingTotals(
@@ -393,11 +458,23 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   }
 
   /// 載入成交額統計（依市場分組）
+  ///
+  /// 若主要日期缺少某市場資料，自動用 [fallbackDate] 補齊。
   Future<Map<String, TradingTurnover>> _loadTurnoverByMarket(
-    DateTime date,
-  ) async {
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
     try {
       final data = await _db.getTurnoverSummaryByMarket(date);
+
+      // 回退：若缺少某市場，嘗試前一交易日補齊
+      if (fallbackDate != null && data.length < 2) {
+        final fallbackData = await _db.getTurnoverSummaryByMarket(fallbackDate);
+        for (final entry in fallbackData.entries) {
+          data.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+
       return {
         for (final entry in data.entries)
           entry.key: TradingTurnover(
