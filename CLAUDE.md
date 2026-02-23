@@ -60,7 +60,7 @@ dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生�
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
 flowchart TB
     subgraph Core["core/"]
-        Constants["constants/ (13 files)"]
+        Constants["constants/ (14 files)"]
         Exceptions["exceptions/ — AppException hierarchy"]
         Utils["utils/ — Logger, Result, Calendar"]
     end
@@ -68,20 +68,20 @@ flowchart TB
     subgraph Data["data/"]
         Database["database/ — Drift SQLite (35 tables)"]
         Remote["remote/ — TWSE, TPEX, FinMind, RSS"]
-        Repos["repositories/ — 15 concrete repos"]
+        Repos["repositories/ — 18 files (15 repos + 3 helpers)"]
     end
 
     subgraph Domain["domain/"]
-        Models["models/ (14 files)"]
-        RepoIF["repositories/ — 3 interfaces"]
+        Models["models/ (15 files)"]
+        RepoIF["repositories/ — 13 interfaces"]
         Services["services/ — Analysis, Scoring, Screening"]
-        Update["services/update/ — 7 Syncers"]
+        Update["services/update/ — 8 Syncers"]
         Rules["services/rules/ — 59 Rules"]
     end
 
     subgraph Presentation["presentation/"]
         Providers["providers/ — Riverpod Notifiers"]
-        Screens["screens/ — 14 Screens"]
+        Screens["screens/ — 13 Screens"]
     end
 
     Core --> Data
@@ -128,11 +128,7 @@ flowchart LR
 | `lib/core/constants/app_routes.dart`       | 路由常數 (集中管理)              |
 | `lib/core/exceptions/app_exception.dart`   | 例外階層 (sealed class)      |
 | `lib/core/utils/request_deduplicator.dart` | Request Deduplication 機制 |
-| `lib/core/utils/circuit_breaker.dart`      | Circuit Breaker 熔斷器      |
-| `lib/core/utils/error_handler.dart`        | 細化錯誤處理 wrapper           |
-| `lib/core/utils/performance_monitor.dart`  | 效能監測系統（P50/P95/P99）      |
-| `lib/core/utils/validators.dart`           | 輸入驗證（防 SQL injection）    |
-| `lib/domain/repositories/`                 | 3 個抽象介面                  |
+| `lib/domain/repositories/`                 | 13 個抽象介面                 |
 | `lib/domain/services/rules/`               | 59 條規則 (12 檔案)           |
 | `lib/domain/services/scoring_isolate.dart` | Isolate 評分 (型別安全)        |
 | `lib/domain/services/isolate_pool.dart`    | Isolate 池重用機制            |
@@ -165,6 +161,7 @@ graph LR
     US --> FS["FundamentalSyncer"]
     US --> NS["NewsSyncer"]
     US --> MIS["MarketIndexSyncer"]
+    US --> THS["TdccHoldingSyncer"]
 
     style US fill:#4F46E5,stroke:#3730A3,color:#fff
     style SLS fill:#DBEAFE,stroke:#3B82F6
@@ -174,6 +171,7 @@ graph LR
     style FS fill:#DBEAFE,stroke:#3B82F6
     style NS fill:#DBEAFE,stroke:#3B82F6
     style MIS fill:#DBEAFE,stroke:#3B82F6
+    style THS fill:#DBEAFE,stroke:#3B82F6
 ```
 
 ---
@@ -187,10 +185,6 @@ graph LR
 ```bash
 # 檢查工具檔案
 ls lib/core/utils/request_deduplicator.dart
-ls lib/core/utils/circuit_breaker.dart
-ls lib/core/utils/error_handler.dart
-ls lib/core/utils/performance_monitor.dart
-ls lib/core/utils/validators.dart
 ls lib/domain/services/isolate_pool.dart
 
 # 檢查資料庫索引
@@ -297,7 +291,6 @@ void main() {
 | **Repository Pattern**    | Domain 透過介面存取資料，Data 層提供實作                                                     |
 | **錯誤處理**                  | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException` |
 | **Request Deduplication** | Repository 層使用 `RequestDeduplicator` 避免重複 API 呼叫                               |
-| **Circuit Breaker**       | API Client 使用 `CircuitBreaker` 實現熔斷保護（5 次失敗後開啟，60 秒冷卻）                         |
 | **狀態管理**                  | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider`                           |
 | **Rule Engine**           | 純函數：輸入 `AnalysisContext` → 輸出 `TriggeredReason`                                |
 | **配置集中**                  | 所有閾值放 `lib/core/constants/`，禁止魔術數字                                             |
@@ -305,8 +298,6 @@ void main() {
 | **Isolate 通訊**            | 使用 typed class (`IsolateReasonOutput`)，避免 `Map<String, dynamic>`               |
 | **Isolate 池**             | 使用 `IsolatePool` 重用 worker，避免重複啟動開銷                                            |
 | **OHLCV 提取**              | 使用 `prices.extractOhlcv()` extension，避免重複迴圈                                    |
-| **效能監測**                  | 使用 `PerformanceMonitor.measure()` 追蹤關鍵操作耗時                                     |
-| **輸入驗證**                  | 使用 `InputValidators` 驗證股票代碼、日期範圍等，防止 SQL injection                             |
 | **Dart 3**                | Records, Pattern Matching, Sealed Classes                                      |
 
 ---
@@ -317,12 +308,9 @@ void main() {
 
 | 項目         | 改進內容                                                                                   | 預期效果             | 實作狀態  | Commit  |
 |:-----------|:---------------------------------------------------------------------------------------|:-----------------|:------|:--------|
-| **API 優化** | Request Deduplication + Circuit Breaker                                                | 減少 30-50% API 呼叫 | ✅ 已實作 | 0ae2e3e |
+| **API 優化** | Request Deduplication                                                                  | 減少 30-50% API 呼叫 | ✅ 已實作 | 0ae2e3e |
 | **資料庫優化**  | 4 個關鍵索引（`daily_analysis`, `daily_institutional`, `insider_holding`, `trading_warning`） | 查詢速度提升 30%       | ✅ 已實作 | 0ae2e3e |
 | **並行處理**   | Isolate 池重用機制                                                                          | 減少 20-30% 啟動開銷   | ✅ 已實作 | 0ae2e3e |
-| **錯誤處理**   | 細化錯誤處理 wrapper 區分不同錯誤類型                                                                | 提升穩定性和診斷能力       | ✅ 已實作 | 0ae2e3e |
-| **安全性**    | 輸入驗證機制（股票代碼、日期範圍）                                                                      | 防止 SQL injection | ✅ 已實作 | 0ae2e3e |
-| **可觀測性**   | PerformanceMonitor 追蹤關鍵操作耗時                                                            | 識別效能瓶頸           | ✅ 已實作 | 0ae2e3e |
 | **CI/CD**  | Codecov 測試覆蓋率上傳                                                                        | 追蹤品質趨勢           | ✅ 已實作 | 0ae2e3e |
 | **架構重構**   | 拆分 AnalysisService (991行) 為 5 個專門服務                                                    | 提升可維護性           | ✅ 已實作 | 1056b61 |
 | **測試增強**   | 新增 TodayProvider 完整測試 + 測試覆蓋率計劃                                                        | 提升測試覆蓋率          | ✅ 已實作 | 239957e |

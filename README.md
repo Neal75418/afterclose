@@ -47,7 +47,7 @@
 | Framework   | Flutter 3.38 + Dart 3.10          |
 | State       | Riverpod 3.2                      |
 | Database    | Drift 2.31 (SQLite, 35 tables)    |
-| Network     | Dio 5.8                           |
+| Network     | Dio 5.9                           |
 | Navigation  | GoRouter 15                       |
 | Charts      | fl_chart + k_chart_plus           |
 | Performance | 無限滾動分頁、快取預熱、Request Deduplication |
@@ -81,20 +81,20 @@ flowchart LR
 
     subgraph Data["Data Layer"]
         Remote["API Clients"]
-        Repo["Repositories (15)"]
+        Repo["Repositories (18)"]
         DB[("SQLite")]
     end
 
     subgraph Domain["Domain Layer"]
-        IF["Interfaces (3)"]
+        IF["Interfaces (13)"]
         Services["Analysis / Scoring"]
         Rules["Rule Engine (59)"]
-        Update["Syncers (7)"]
+        Update["Syncers (8)"]
     end
 
     subgraph Presentation["Presentation"]
         Provider["Riverpod"]
-        UI["14 Screens"]
+        UI["13 Screens"]
     end
 
     TWSE & TPEX & FM & RSS --> Remote
@@ -116,7 +116,7 @@ flowchart LR
 ```
 lib/
 ├── core/
-│   ├── constants/       # 13 files — RuleParams, AppRoutes, DefaultStocks
+│   ├── constants/       # 14 files — RuleParams, AppRoutes, DefaultStocks
 │   ├── exceptions/      # AppException sealed hierarchy
 │   ├── services/        # ShareService
 │   ├── theme/           # AppTheme, DesignTokens
@@ -124,20 +124,20 @@ lib/
 ├── data/
 │   ├── database/        # Drift SQLite (35 tables, 10 files)
 │   ├── remote/          # TWSE, TPEX, FinMind, RSS clients
-│   └── repositories/    # 15 concrete implementations
+│   └── repositories/    # 18 files (15 repos + 3 helpers)
 ├── domain/
-│   ├── models/          # 14 domain model files
-│   ├── repositories/    # 3 abstract interfaces
+│   ├── models/          # 15 domain model files
+│   ├── repositories/    # 13 abstract interfaces
 │   └── services/
 │       ├── rules/       # 59 stock rules (12 files)
-│       ├── update/      # 7 specialized syncers
+│       ├── update/      # 8 specialized syncers
 │       ├── analysis_service.dart
 │       ├── scoring_service.dart
 │       ├── screening_service.dart
 │       └── ohlcv_data.dart
 └── presentation/
     ├── providers/       # Riverpod state management
-    ├── screens/         # 14 screens
+    ├── screens/         # 13 screens
     ├── services/        # ExportService
     └── widgets/         # Shared UI components
 ```
@@ -151,7 +151,6 @@ lib/
 - **快取預熱**: App 啟動時預載自選股和推薦股資料，提升 30-40% 冷啟動速度
 - **無限滾動分頁**: Watchlist 和 Scan 畫面採用虛擬化列表，降低記憶體佔用
 - **Request Deduplication**: 避免重複 API 呼叫，減少 30-50% 網路請求
-- **Circuit Breaker**: API 連續失敗時快速失敗，避免無效重試
 - **Isolate 池重用**: 平行運算時重用 worker，減少 20-30% 啟動開銷
 - **資料庫索引優化**: 關鍵表格加入複合索引，查詢速度提升 30%
 

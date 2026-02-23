@@ -103,15 +103,15 @@ pie showData title 59 條規則分佈
 
 ## 籌碼面 (7)
 
-| 規則                              |  分數 | 條件                |
-|:--------------------------------|----:|:------------------|
-| INSTITUTIONAL_BUY_STREAK        | +20 | 法人連買 >= 6 日       |
-| INSTITUTIONAL_SELL_STREAK       | -15 | 法人連賣 >= 6 日       |
-| FOREIGN_SHAREHOLDING_INCREASING | +18 | 外資持股 5 日增 >= 0.5% |
-| FOREIGN_SHAREHOLDING_DECREASING | -12 | 外資持股 5 日減 >= 0.5% |
-| DAY_TRADING_HIGH                | +12 | 當沖比例 >= 50% + 萬張以上    |
-| DAY_TRADING_EXTREME             |  -5 | 當沖比例 >= 70% + 3 萬張以上  |
-| CONCENTRATION_HIGH              | +16 | 大戶持股集中度 >= 60%    |
+| 規則                              |  分數 | 條件                   |
+|:--------------------------------|----:|:---------------------|
+| INSTITUTIONAL_BUY_STREAK        | +20 | 法人連買 >= 4 日          |
+| INSTITUTIONAL_SELL_STREAK       | -15 | 法人連賣 >= 4 日          |
+| FOREIGN_SHAREHOLDING_INCREASING | +18 | 外資持股 5 日增 >= 0.5%    |
+| FOREIGN_SHAREHOLDING_DECREASING | -12 | 外資持股 5 日減 >= 0.5%    |
+| DAY_TRADING_HIGH                | +12 | 當沖比例 >= 50% + 萬張以上   |
+| DAY_TRADING_EXTREME             |  -5 | 當沖比例 >= 70% + 3 萬張以上 |
+| CONCENTRATION_HIGH              | +16 | 大戶持股集中度 >= 60%       |
 
 ---
 
@@ -192,7 +192,7 @@ flowchart LR
 | 階段 | 邏輯                                                                                      |
 |:---|:----------------------------------------------------------------------------------------|
 | 加成 | VOLUME + BREAKOUT → +10、VOLUME + REVERSAL → +10、INSTITUTIONAL + BREAKOUT/REVERSAL → +15 |
-| 冷卻 | 同股票 2 日內已推薦 → x0.5                                                                      |
+| 冷卻 | 同股票 2 日內已推薦 → -15 分（固定扣分）                                                               |
 | 截斷 | 負分歸零、上限 100                                                                             |
 
 ---
@@ -207,7 +207,7 @@ flowchart LR
 | volMa                       |  20 | 均量計算天數     |
 | volumeSpikeMult             |  4x | 放量門檻       |
 | breakoutBuffer              |  3% | 突破緩衝區      |
-| institutionalStreakDays     |   6 | 法人連續買賣天數   |
+| institutionalStreakDays     |   4 | 法人連續買賣天數   |
 | insiderSellingStreakMonths  |   3 | 董監連續減持月數   |
 | highPledgeRatioThreshold    | 50% | 高質押門檻      |
 | foreignConcentrationWarning | 60% | 外資集中警告     |

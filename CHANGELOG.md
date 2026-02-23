@@ -57,7 +57,7 @@ flowchart TB
     subgraph Perf["效能優化"]
         P1["Watchlist\n無限滾動分頁"]
         P2["快取預熱\n冷啟動 +30-40%"]
-        P3["Request Dedup\n+ Circuit Breaker"]
+        P3["Request Dedup"]
         P4["DB 索引\n查詢 +30%"]
         P5["Isolate 池\n啟動 -20-30%"]
     end
@@ -68,9 +68,6 @@ flowchart TB
     end
 
     subgraph Quality["品質提升"]
-        Q1["細化錯誤處理"]
-        Q2["輸入驗證"]
-        Q3["效能監測"]
         Q4["Codecov CI"]
     end
 
@@ -81,13 +78,13 @@ flowchart TB
 
 #### Performance Optimizations
 
-| 項目                                      | 效果                         |
-|:----------------------------------------|:---------------------------|
-| Watchlist 無限滾動分頁                        | 與 Scan 一致，降低記憶體佔用          |
-| 快取預熱服務                                  | 預載自選股 + Top 20，冷啟動快 30-40% |
-| Request Deduplication + Circuit Breaker | 減少 30-50% 網路請求             |
-| 資料庫索引優化                                 | 4 個關鍵索引，查詢速度 +30%          |
-| Isolate 池重用                             | 減少 20-30% 啟動開銷             |
+| 項目                    | 效果                         |
+|:----------------------|:---------------------------|
+| Watchlist 無限滾動分頁      | 與 Scan 一致，降低記憶體佔用          |
+| 快取預熱服務                | 預載自選股 + Top 20，冷啟動快 30-40% |
+| Request Deduplication | 減少 30-50% 網路請求             |
+| 資料庫索引優化               | 4 個關鍵索引，查詢速度 +30%          |
+| Isolate 池重用           | 減少 20-30% 啟動開銷             |
 
 #### Architecture Improvements
 
@@ -96,9 +93,6 @@ flowchart TB
 
 #### Quality & Safety
 
-- **細化錯誤處理**: 區分 NetworkException / ParseException / RateLimitException
-- **輸入驗證**: 防止 SQL injection 和資源耗盡
-- **效能監測**: PerformanceMonitor 追蹤關鍵操作耗時
 - **Codecov CI**: 自動上傳覆蓋率報告
 
 ### Changed
@@ -116,7 +110,7 @@ flowchart TB
 | Commit  | 內容                                                       |
 |:--------|:---------------------------------------------------------|
 | cfacc84 | Watchlist 分頁 + 快取預熱 + DTO Extension                      |
-| 0ae2e3e | Request Dedup + Circuit Breaker + DB 索引 + 錯誤處理 + 驗證 + 監測 |
+| 0ae2e3e | Request Dedup + DB 索引                                    |
 | 1056b61 | AnalysisService 架構重構                                     |
 | 239957e | 測試覆蓋率 + TodayProvider 測試                                 |
 
@@ -127,10 +121,6 @@ flowchart TB
 | 新增 | `cache_warmup_service.dart` | 快取預熱服務                |
 | 新增 | `dto_extensions.dart`       | DTO Extension 集中管理    |
 | 新增 | `request_deduplicator.dart` | Request Deduplication |
-| 新增 | `circuit_breaker.dart`      | Circuit Breaker       |
-| 新增 | `error_handler.dart`        | 細化錯誤處理                |
-| 新增 | `performance_monitor.dart`  | 效能監測                  |
-| 新增 | `validators.dart`           | 輸入驗證                  |
 | 新增 | `isolate_pool.dart`         | Isolate 池重用           |
 | 修改 | `watchlist_provider.dart`   | 分頁邏輯                  |
 | 修改 | `watchlist_screen.dart`     | 無限滾動                  |
