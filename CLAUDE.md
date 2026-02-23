@@ -129,7 +129,7 @@ flowchart LR
 | `lib/core/exceptions/app_exception.dart`   | 例外階層 (sealed class)      |
 | `lib/core/utils/request_deduplicator.dart` | Request Deduplication 機制 |
 | `lib/core/utils/circuit_breaker.dart`      | Circuit Breaker 熔斷器      |
-| `lib/core/utils/error_handler.dart`        | 細化錯誤處理 wrapper          |
+| `lib/core/utils/error_handler.dart`        | 細化錯誤處理 wrapper           |
 | `lib/core/utils/performance_monitor.dart`  | 效能監測系統（P50/P95/P99）      |
 | `lib/core/utils/validators.dart`           | 輸入驗證（防 SQL injection）    |
 | `lib/domain/repositories/`                 | 3 個抽象介面                  |
@@ -230,7 +230,7 @@ flutter test
 
 ### 測試要求
 
-- 所有變更必須通過完整測試套件（2462+ 個測試）
+- 所有變更必須通過完整測試套件（2460+ 個測試）
 - 測試執行時間約 25-30 秒
 - Critical 功能變更需補充對應測試
 
@@ -250,10 +250,10 @@ flutter test test/domain/services/
 
 ### 測試覆蓋率現況
 
-| Layer | 覆蓋率 |
-|:------|:------|
-| Domain | 85%+ |
-| Data | 85%+ |
+| Layer        | 覆蓋率  |
+|:-------------|:-----|
+| Domain       | 85%+ |
+| Data         | 85%+ |
 | Presentation | 70%+ |
 
 ### Widget 測試慣例
@@ -297,7 +297,7 @@ void main() {
 | **Repository Pattern**    | Domain 透過介面存取資料，Data 層提供實作                                                     |
 | **錯誤處理**                  | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException` |
 | **Request Deduplication** | Repository 層使用 `RequestDeduplicator` 避免重複 API 呼叫                               |
-| **Circuit Breaker**       | API Client 使用 `CircuitBreaker` 實現熔斷保護（5 次失敗後開啟，60 秒冷卻）                          |
+| **Circuit Breaker**       | API Client 使用 `CircuitBreaker` 實現熔斷保護（5 次失敗後開啟，60 秒冷卻）                         |
 | **狀態管理**                  | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider`                           |
 | **Rule Engine**           | 純函數：輸入 `AnalysisContext` → 輸出 `TriggeredReason`                                |
 | **配置集中**                  | 所有閾值放 `lib/core/constants/`，禁止魔術數字                                             |
@@ -306,7 +306,7 @@ void main() {
 | **Isolate 池**             | 使用 `IsolatePool` 重用 worker，避免重複啟動開銷                                            |
 | **OHLCV 提取**              | 使用 `prices.extractOhlcv()` extension，避免重複迴圈                                    |
 | **效能監測**                  | 使用 `PerformanceMonitor.measure()` 追蹤關鍵操作耗時                                     |
-| **輸入驗證**                  | 使用 `InputValidators` 驗證股票代碼、日期範圍等，防止 SQL injection                            |
+| **輸入驗證**                  | 使用 `InputValidators` 驗證股票代碼、日期範圍等，防止 SQL injection                             |
 | **Dart 3**                | Records, Pattern Matching, Sealed Classes                                      |
 
 ---
@@ -315,20 +315,20 @@ void main() {
 
 ### 2026-02-13 改進 ✅ (已完成並推送)
 
-| 項目       | 改進內容                                                                       | 預期效果           | 實作狀態  | Commit  |
-|:---------|:---------------------------------------------------------------------------|:---------------|:------|:--------|
-| **API 優化** | Request Deduplication + Circuit Breaker                                   | 減少 30-50% API 呼叫 | ✅ 已實作 | 0ae2e3e |
-| **資料庫優化** | 4 個關鍵索引（`daily_analysis`, `daily_institutional`, `insider_holding`, `trading_warning`） | 查詢速度提升 30%      | ✅ 已實作 | 0ae2e3e |
-| **並行處理**  | Isolate 池重用機制                                                              | 減少 20-30% 啟動開銷  | ✅ 已實作 | 0ae2e3e |
-| **錯誤處理**  | 細化錯誤處理 wrapper 區分不同錯誤類型                                                    | 提升穩定性和診斷能力     | ✅ 已實作 | 0ae2e3e |
-| **安全性**   | 輸入驗證機制（股票代碼、日期範圍）                                                          | 防止 SQL injection | ✅ 已實作 | 0ae2e3e |
-| **可觀測性**  | PerformanceMonitor 追蹤關鍵操作耗時                                                | 識別效能瓶頸         | ✅ 已實作 | 0ae2e3e |
-| **CI/CD** | Codecov 測試覆蓋率上傳                                                           | 追蹤品質趨勢         | ✅ 已實作 | 0ae2e3e |
-| **架構重構**  | 拆分 AnalysisService (991行) 為 5 個專門服務                                        | 提升可維護性         | ✅ 已實作 | 1056b61 |
-| **測試增強**  | 新增 TodayProvider 完整測試 + 測試覆蓋率計劃                                           | 提升測試覆蓋率        | ✅ 已實作 | 239957e |
-| **UI 優化**  | Watchlist 無限滾動分頁（與 Scan 保持一致）                                           | 提升大列表效能       | ✅ 已實作 | cfacc84 |
-| **啟動優化**  | CacheWarmupService 預熱自選股 + Top 20 推薦                                    | 冷啟動快 30-40%   | ✅ 已實作 | cfacc84 |
-| **架構優化**  | DTO Extension 集中管理（提取 toDatabaseCompanion 邏輯）                         | 減少程式碼重複       | ✅ 已實作 | cfacc84 |
+| 項目         | 改進內容                                                                                   | 預期效果             | 實作狀態  | Commit  |
+|:-----------|:---------------------------------------------------------------------------------------|:-----------------|:------|:--------|
+| **API 優化** | Request Deduplication + Circuit Breaker                                                | 減少 30-50% API 呼叫 | ✅ 已實作 | 0ae2e3e |
+| **資料庫優化**  | 4 個關鍵索引（`daily_analysis`, `daily_institutional`, `insider_holding`, `trading_warning`） | 查詢速度提升 30%       | ✅ 已實作 | 0ae2e3e |
+| **並行處理**   | Isolate 池重用機制                                                                          | 減少 20-30% 啟動開銷   | ✅ 已實作 | 0ae2e3e |
+| **錯誤處理**   | 細化錯誤處理 wrapper 區分不同錯誤類型                                                                | 提升穩定性和診斷能力       | ✅ 已實作 | 0ae2e3e |
+| **安全性**    | 輸入驗證機制（股票代碼、日期範圍）                                                                      | 防止 SQL injection | ✅ 已實作 | 0ae2e3e |
+| **可觀測性**   | PerformanceMonitor 追蹤關鍵操作耗時                                                            | 識別效能瓶頸           | ✅ 已實作 | 0ae2e3e |
+| **CI/CD**  | Codecov 測試覆蓋率上傳                                                                        | 追蹤品質趨勢           | ✅ 已實作 | 0ae2e3e |
+| **架構重構**   | 拆分 AnalysisService (991行) 為 5 個專門服務                                                    | 提升可維護性           | ✅ 已實作 | 1056b61 |
+| **測試增強**   | 新增 TodayProvider 完整測試 + 測試覆蓋率計劃                                                        | 提升測試覆蓋率          | ✅ 已實作 | 239957e |
+| **UI 優化**  | Watchlist 無限滾動分頁（與 Scan 保持一致）                                                          | 提升大列表效能          | ✅ 已實作 | cfacc84 |
+| **啟動優化**   | CacheWarmupService 預熱自選股 + Top 20 推薦                                                   | 冷啟動快 30-40%      | ✅ 已實作 | cfacc84 |
+| **架構優化**   | DTO Extension 集中管理（提取 toDatabaseCompanion 邏輯）                                          | 減少程式碼重複          | ✅ 已實作 | cfacc84 |
 
 ---
 

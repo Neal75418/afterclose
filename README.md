@@ -26,7 +26,7 @@
 |:---------------------|:--------------------|
 | **Today**            | 市場摘要 + 今日 Top 20 推薦 |
 | **Scan**             | 上市櫃全市場掃描，依評分排序      |
-| **Watchlist**        | 自選清單狀態追蹤 + 無限滾動分頁 |
+| **Watchlist**        | 自選清單狀態追蹤 + 無限滾動分頁   |
 | **Stock Detail**     | 趨勢、關鍵價位、推薦理由、新聞     |
 | **Custom Screening** | 自定義篩選策略             |
 | **Backtest**         | 策略回測驗證              |
@@ -42,15 +42,15 @@
 
 ## 技術棧
 
-| 類別         | 技術                             |
-|:-----------|:-------------------------------|
-| Framework  | Flutter 3.38 + Dart 3.10       |
-| State      | Riverpod 3.2                   |
-| Database   | Drift 2.31 (SQLite, 35 tables) |
-| Network    | Dio 5.8                        |
-| Navigation | GoRouter 15                                           |
-| Charts     | fl_chart + k_chart_plus                               |
-| Performance| 無限滾動分頁、快取預熱、Request Deduplication |
+| 類別          | 技術                                |
+|:------------|:----------------------------------|
+| Framework   | Flutter 3.38 + Dart 3.10          |
+| State       | Riverpod 3.2                      |
+| Database    | Drift 2.31 (SQLite, 35 tables)    |
+| Network     | Dio 5.8                           |
+| Navigation  | GoRouter 15                       |
+| Charts      | fl_chart + k_chart_plus           |
+| Performance | 無限滾動分頁、快取預熱、Request Deduplication |
 
 ---
 
@@ -183,7 +183,7 @@ pie showData title 59 條規則分佈
 
 ```bash
 flutter pub get                    # 安裝依賴
-flutter test                       # 執行測試 (2458+ cases)
+flutter test                       # 執行測試 (2460+ cases)
 flutter analyze                    # 靜態分析
 dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生成
 ```
