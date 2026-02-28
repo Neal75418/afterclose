@@ -122,7 +122,25 @@ enum AlertType {
     // Phase 1: Basic price alerts (implemented in user_dao.dart checkAlerts)
     AlertType.above || AlertType.below || AlertType.changePct => true,
 
-    // Remaining 20 types: not yet implemented
+    // Batch 1: Volume alerts
+    AlertType.volumeSpike || AlertType.volumeAbove => true,
+
+    // Batch 2: 52-week alerts
+    AlertType.week52High || AlertType.week52Low => true,
+
+    // Batch 3: RSI/KD indicator alerts
+    AlertType.rsiOverbought ||
+    AlertType.rsiOversold ||
+    AlertType.kdGoldenCross ||
+    AlertType.kdDeathCross => true,
+
+    // Batch 4: MA cross + trading warning alerts
+    AlertType.crossAboveMa ||
+    AlertType.crossBelowMa ||
+    AlertType.tradingWarning ||
+    AlertType.tradingDisposal => true,
+
+    // Remaining 8 types: not yet implemented
     _ => false,
   };
 
