@@ -124,5 +124,25 @@ void main() {
       expect(find.text('2330'), findsOneWidget);
       expect(find.text('台積電'), findsOneWidget);
     });
+
+    testWidgets('only shows implemented alert types', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildProviderTestApp(const CreatePriceAlertDialog(symbol: '2330')),
+      );
+      await tester.pump();
+
+      // Should show 3 implemented types (ABOVE, BELOW, CHANGE_PCT)
+      expect(find.text('alert.alertType.above'), findsOneWidget);
+      expect(find.text('alert.alertType.below'), findsOneWidget);
+      expect(find.text('alert.alertType.changePct'), findsOneWidget);
+
+      // Should NOT show unimplemented types
+      expect(find.text('alert.alertType.volumeSpike'), findsNothing);
+      expect(find.text('alert.alertType.rsiOverbought'), findsNothing);
+      expect(find.text('alert.alertType.kdGoldenCross'), findsNothing);
+      expect(find.text('alert.alertType.week52High'), findsNothing);
+      expect(find.text('alert.alertType.tradingWarning'), findsNothing);
+    });
   });
 }

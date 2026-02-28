@@ -118,15 +118,20 @@ class _CreatePriceAlertDialogState
             ),
             const SizedBox(height: 8),
             SegmentedButton<AlertType>(
-              segments: AlertType.values.map((type) {
-                return ButtonSegment<AlertType>(
-                  value: type,
-                  label: Text(
-                    _getTypeLabel(type),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                );
-              }).toList(),
+              segments: AlertType.values
+                  .where(
+                    (type) => type.isImplemented,
+                  ) // Only show implemented types
+                  .map((type) {
+                    return ButtonSegment<AlertType>(
+                      value: type,
+                      label: Text(
+                        _getTypeLabel(type),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    );
+                  })
+                  .toList(),
               selected: {_selectedType},
               onSelectionChanged: (selected) {
                 setState(() {

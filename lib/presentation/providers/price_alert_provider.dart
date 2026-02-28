@@ -114,6 +114,18 @@ enum AlertType {
     _ => null,
   };
 
+  /// Check if this alert type has implemented trigger logic
+  ///
+  /// Only implemented types can be created by users in UI.
+  /// Currently only 3 basic price alerts have trigger logic in user_dao.dart.
+  bool get isImplemented => switch (this) {
+    // Phase 1: Basic price alerts (implemented in user_dao.dart checkAlerts)
+    AlertType.above || AlertType.below || AlertType.changePct => true,
+
+    // Remaining 20 types: not yet implemented
+    _ => false,
+  };
+
   /// Parse AlertType from string value.
   ///
   /// Throws [ArgumentError] if the value is not a valid AlertType.
