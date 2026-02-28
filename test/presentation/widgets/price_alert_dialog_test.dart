@@ -132,17 +132,41 @@ void main() {
       );
       await tester.pump();
 
-      // Should show 3 implemented types (ABOVE, BELOW, CHANGE_PCT)
+      // Should show 15 implemented types (Phase 1 + Phase 3)
+      // Phase 1: Basic price alerts (3)
       expect(find.text('alert.alertType.above'), findsOneWidget);
       expect(find.text('alert.alertType.below'), findsOneWidget);
       expect(find.text('alert.alertType.changePct'), findsOneWidget);
 
-      // Should NOT show unimplemented types
-      expect(find.text('alert.alertType.volumeSpike'), findsNothing);
-      expect(find.text('alert.alertType.rsiOverbought'), findsNothing);
-      expect(find.text('alert.alertType.kdGoldenCross'), findsNothing);
-      expect(find.text('alert.alertType.week52High'), findsNothing);
-      expect(find.text('alert.alertType.tradingWarning'), findsNothing);
+      // Phase 3 Batch 1: Volume alerts (2)
+      expect(find.text('alert.alertType.volumeSpike'), findsOneWidget);
+      expect(find.text('alert.alertType.volumeAbove'), findsOneWidget);
+
+      // Phase 3 Batch 2: 52-week alerts (2)
+      expect(find.text('alert.alertType.week52High'), findsOneWidget);
+      expect(find.text('alert.alertType.week52Low'), findsOneWidget);
+
+      // Phase 3 Batch 3: RSI/KD indicator alerts (4)
+      expect(find.text('alert.alertType.rsiOverbought'), findsOneWidget);
+      expect(find.text('alert.alertType.rsiOversold'), findsOneWidget);
+      expect(find.text('alert.alertType.kdGoldenCross'), findsOneWidget);
+      expect(find.text('alert.alertType.kdDeathCross'), findsOneWidget);
+
+      // Phase 3 Batch 4: MA cross + trading warning alerts (4)
+      expect(find.text('alert.alertType.crossAboveMa'), findsOneWidget);
+      expect(find.text('alert.alertType.crossBelowMa'), findsOneWidget);
+      expect(find.text('alert.alertType.tradingWarning'), findsOneWidget);
+      expect(find.text('alert.alertType.tradingDisposal'), findsOneWidget);
+
+      // Should NOT show remaining 8 unimplemented types
+      expect(find.text('alert.alertType.breakResistance'), findsNothing);
+      expect(find.text('alert.alertType.breakSupport'), findsNothing);
+      expect(find.text('alert.alertType.revenueYoySurge'), findsNothing);
+      expect(find.text('alert.alertType.highDividendYield'), findsNothing);
+      expect(find.text('alert.alertType.peUndervalued'), findsNothing);
+      expect(find.text('alert.alertType.insiderSelling'), findsNothing);
+      expect(find.text('alert.alertType.insiderBuying'), findsNothing);
+      expect(find.text('alert.alertType.highPledgeRatio'), findsNothing);
     });
   });
 }
