@@ -7,7 +7,6 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
-import 'package:afterclose/domain/services/personalization_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -24,9 +23,6 @@ class MockFinMindClient extends Mock implements FinMindClient {}
 class MockInsiderRepository extends Mock implements InsiderRepository {}
 
 class MockDataSyncService extends Mock implements DataSyncService {}
-
-class MockPersonalizationService extends Mock
-    implements PersonalizationService {}
 
 class MockRuleAccuracyService extends Mock implements RuleAccuracyService {}
 
@@ -161,7 +157,6 @@ void main() {
   late MockFinMindClient mockFinMind;
   late MockInsiderRepository mockInsiderRepo;
   late MockDataSyncService mockDataSyncService;
-  late MockPersonalizationService mockPersonalization;
   late MockRuleAccuracyService mockRuleAccuracy;
   late MockAppClock mockClock;
   late ProviderContainer container;
@@ -237,7 +232,6 @@ void main() {
   }
 
   setUpAll(() {
-    registerFallbackValue(InteractionType.view);
     registerFallbackValue(DateTime(2026));
     registerFallbackValue(<DailyPriceEntry>[]);
     registerFallbackValue(<DailyInstitutionalEntry>[]);
@@ -248,7 +242,6 @@ void main() {
     mockFinMind = MockFinMindClient();
     mockInsiderRepo = MockInsiderRepository();
     mockDataSyncService = MockDataSyncService();
-    mockPersonalization = MockPersonalizationService();
     mockRuleAccuracy = MockRuleAccuracyService();
     mockClock = MockAppClock();
 
@@ -260,21 +253,11 @@ void main() {
         finMindClientProvider.overrideWithValue(mockFinMind),
         insiderRepositoryProvider.overrideWithValue(mockInsiderRepo),
         dataSyncServiceProvider.overrideWithValue(mockDataSyncService),
-        personalizationServiceProvider.overrideWithValue(mockPersonalization),
         ruleAccuracyServiceProvider.overrideWithValue(mockRuleAccuracy),
         appClockProvider.overrideWithValue(mockClock),
         watchlistProvider.overrideWith(() => MockWatchlistNotifier()),
       ],
     );
-
-    // 個人化追蹤不需要回傳值
-    when(
-      () => mockPersonalization.trackInteraction(
-        type: any(named: 'type'),
-        symbol: any(named: 'symbol'),
-        sourcePage: any(named: 'sourcePage'),
-      ),
-    ).thenAnswer((_) async {});
   });
 
   tearDown(() {
@@ -495,23 +478,6 @@ void main() {
       expect(state.dataDate, equals(_defaultDate));
     });
 
-    test('records personalization interaction', () async {
-      setupLoadDataMocks();
-
-      final notifier = container.read(
-        stockDetailProvider(_testSymbol).notifier,
-      );
-      await notifier.loadData();
-
-      verify(
-        () => mockPersonalization.trackInteraction(
-          type: InteractionType.view,
-          symbol: _testSymbol,
-          sourcePage: 'stock_detail',
-        ),
-      ).called(1);
-    });
-
     test('handles missing stock gracefully', () async {
       setupLoadDataMocks();
       when(() => mockDb.getStock(_testSymbol)).thenAnswer((_) async => null);
@@ -688,14 +654,6 @@ void main() {
 
       final state = container.read(stockDetailProvider(_testSymbol));
       expect(state.isInWatchlist, isTrue);
-
-      verify(
-        () => mockPersonalization.trackInteraction(
-          type: InteractionType.addWatchlist,
-          symbol: _testSymbol,
-          sourcePage: 'stock_detail',
-        ),
-      ).called(1);
     });
 
     test('removes from watchlist when in watchlist', () async {
@@ -709,14 +667,6 @@ void main() {
 
       final state = container.read(stockDetailProvider(_testSymbol));
       expect(state.isInWatchlist, isFalse);
-
-      verify(
-        () => mockPersonalization.trackInteraction(
-          type: InteractionType.removeWatchlist,
-          symbol: _testSymbol,
-          sourcePage: 'stock_detail',
-        ),
-      ).called(1);
     });
   });
 

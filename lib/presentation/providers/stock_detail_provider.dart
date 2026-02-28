@@ -14,7 +14,6 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
-import 'package:afterclose/domain/services/personalization_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
@@ -185,17 +184,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         dataDate: dataDate,
         hasDataMismatch: hasDataMismatch,
       );
-
-      // 記錄瀏覽行為（Sprint 11 - 個人化推薦）
-      unawaited(
-        ref
-            .read(personalizationServiceProvider)
-            .trackInteraction(
-              type: InteractionType.view,
-              symbol: _symbol,
-              sourcePage: 'stock_detail',
-            ),
-      );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -214,19 +202,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
     // 更新本地狀態
     state = state.copyWith(isInWatchlist: !wasInWatchlist);
-
-    // 記錄自選股變更行為（Sprint 11 - 個人化推薦）
-    unawaited(
-      ref
-          .read(personalizationServiceProvider)
-          .trackInteraction(
-            type: wasInWatchlist
-                ? InteractionType.removeWatchlist
-                : InteractionType.addWatchlist,
-            symbol: _symbol,
-            sourcePage: 'stock_detail',
-          ),
-    );
   }
 
   /// 載入融資融券資料

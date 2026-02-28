@@ -64,9 +64,6 @@ part 'dao/valuation_dao.dart';
     UpdateRun,
     AppSettings,
     PriceAlert,
-    // 用戶行為追蹤（Sprint 11 - 個人化推薦）
-    UserInteraction,
-    UserPreference,
     // 擴充市場資料（Phase 1）
     Shareholding,
     DayTrading,
@@ -123,12 +120,19 @@ class AppDatabase extends _$AppDatabase
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from == 1) {
+        // Drop personalization tables (removed as dead code)
+        await m.deleteTable('user_interaction');
+        await m.deleteTable('user_preference');
+      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

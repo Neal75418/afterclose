@@ -131,7 +131,6 @@ flowchart LR
 | `lib/domain/repositories/`                 | 13 個抽象介面                 |
 | `lib/domain/services/rules/`               | 59 條規則 (12 檔案)           |
 | `lib/domain/services/scoring_isolate.dart` | Isolate 評分 (型別安全)        |
-| `lib/domain/services/isolate_pool.dart`    | Isolate 池重用機制            |
 | `lib/domain/services/ohlcv_data.dart`      | OHLCV 提取 extension       |
 | `lib/data/database/tables/`                | 35 張資料表 (10 檔案)          |
 
@@ -185,7 +184,6 @@ graph LR
 ```bash
 # 檢查工具檔案
 ls lib/core/utils/request_deduplicator.dart
-ls lib/domain/services/isolate_pool.dart
 
 # 檢查資料庫索引
 grep "@TableIndex" lib/data/database/tables/*.dart
@@ -296,7 +294,7 @@ void main() {
 | **配置集中**                  | 所有閾值放 `lib/core/constants/`，禁止魔術數字                                             |
 | **路由**                    | 使用 `AppRoutes` 常數，禁止硬編碼路由字串                                                    |
 | **Isolate 通訊**            | 使用 typed class (`IsolateReasonOutput`)，避免 `Map<String, dynamic>`               |
-| **Isolate 池**             | 使用 `IsolatePool` 重用 worker，避免重複啟動開銷                                            |
+| **Isolate 並行**            | 使用 `Isolate.spawn()` 執行批次評分，避免阻塞主執行緒                                          |
 | **OHLCV 提取**              | 使用 `prices.extractOhlcv()` extension，避免重複迴圈                                    |
 | **Dart 3**                | Records, Pattern Matching, Sealed Classes                                      |
 
