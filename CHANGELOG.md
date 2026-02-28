@@ -6,6 +6,58 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Refactored (2026-02-28)
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
+flowchart LR
+    subgraph Phase1["Phase 1: 死代碼清理"]
+        P1A["移除 IsolatePool\n231 行"]
+        P1B["移除 PersonalizationService\n325 行 + 2 表"]
+        P1C["Schema v1 → v2\nMigration"]
+    end
+
+    subgraph Phase2["Phase 2: 警示過濾"]
+        P2A["AlertType.isImplemented\ngetter"]
+        P2B["UI 過濾\n只顯示 3 種已實作"]
+        P2C["Widget 測試\n覆蓋"]
+    end
+
+    Phase1 -->|減少 631 行| Result1["技術債清理\n隱私改善"]
+    Phase2 -->|防止誤用| Result2["UX 改善\nUI/Backend 一致"]
+
+    style Phase1 fill:#FEF3C7,stroke:#F59E0B
+    style Phase2 fill:#DBEAFE,stroke:#3B82F6
+    style Result1 fill:#D1FAE5,stroke:#10B981
+    style Result2 fill:#D1FAE5,stroke:#10B981
+```
+
+#### 死代碼清理（Phase 1）
+
+| 項目                    | 變更                                   | 效果       |
+|:----------------------|:-------------------------------------|:---------|
+| IsolatePool 移除        | 刪除 231 行未使用程式碼                      | 減少認知負擔   |
+| PersonalizationService | 刪除 325 行服務 + 2 張資料表 + 測試 mock       | 停止無效資料收集 |
+| 資料庫 Schema            | v1 → v2，migration 自動清理 user 相關表      | 自動升級     |
+| CLAUDE.md 更新         | 移除 IsolatePool 引用，更新 Isolate 並行描述 | 文件一致性    |
+
+**Commits**: `95f8b93`
+
+#### 警示系統過濾（Phase 2）
+
+| 項目                | 變更                                                      | 效果             |
+|:------------------|:--------------------------------------------------------|:---------------|
+| `isImplemented` getter | 新增到 `AlertType` enum（只有 ABOVE/BELOW/CHANGE_PCT 為 true） | 標記已實作類型        |
+| UI 過濾             | `CreatePriceAlertDialog` 只顯示 3 種已實作警示類型                | 防止建立不會觸發的警示    |
+| Widget 測試         | 驗證過濾邏輯：應顯示 3 種、不應顯示其餘 20 種                             | 測試覆蓋率提升        |
+| 使用者體驗             | 從 23 種 → 3 種可建立警示                                      | UI/Backend 一致性 |
+
+**Commits**: `3d6f6c8`
+
+**測試狀態**: 所有 2460 個測試通過
+
+---
+
 ### Fixed (2026-02-22)
 
 ```mermaid
