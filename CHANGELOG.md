@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Refactored (2026-03-01)
+
+#### 代碼品質改進（Phase 1-2）
+
+系統性改善代碼可維護性，消除重複代碼和 magic numbers。
+
+| 改進項目 | 效果 | 檔案數 |
+|:---|:---|:---:|
+| **提取批次查詢分組邏輯** | 共享 `_BatchQueryHelper.groupBySymbol()` 方法 | 4 |
+| **補充警示系統常數** | 10+ magic numbers → `RuleParams` 集中管理 | 2 |
+| **提取錯誤處理模板** | `_syncDataTemplate` 統一 try-catch 模式 | 1 |
+| **改善變數命名** | 單字母變數 → 描述性命名 | 2 |
+
+**關鍵改進細節**：
+
+1. **批次查詢工具（user_dao.dart）**
+   - 新增 `_BatchQueryHelper.groupBySymbol<E>()` 共享分組邏輯
+   - 重構 `_fetchVolumeDataForAlerts()` 等 3 個批次查詢方法
+   - 消除分組邏輯重複，提升代碼一致性
+
+2. **警示系統參數集中化（rule_params.dart）**
+   - 新增 10 個警示系統常數：
+     - `volumeDataLookbackDays`, `volumeSmaWindow`
+     - `rsiMinDataPoints`, `kdMinDataPoints`
+     - `kdKPeriod`, `kdDPeriod`
+     - `maCrossoverDetectionWindow`, `kdCrossoverDetectionWindow`
+     - `indicatorDataLookbackDays`, `week52LookbackDays`
+   - 替換 `user_dao.dart` 中所有硬編碼數值
+
+3. **錯誤處理模板（fundamental_repository.dart）**
+   - 新增 `_syncDataTemplate<T, C>()` 通用同步方法
+   - 重構 `syncMonthlyRevenue()`, `syncValuationData()` 使用模板
+   - 統一異常處理：空資料檢查 + `RateLimitException` 重拋 + 日誌記錄
+
+**測試驗證**：
+- 所有 2496 個測試通過 ✓
+- 警示系統 36 個測試通過 ✓
+- 基本面資料同步 15 個測試通過 ✓
+
+**Commits**: 待提交
+
+---
+
 ### Added (2026-02-28)
 
 ```mermaid

@@ -30,6 +30,50 @@ class FundamentalRepository implements IFundamentalRepository {
   final TpexClient _tpex;
   final AppClock _clock;
 
+  /// 同步 API 資料的通用模板方法
+  ///
+  /// 自動處理：
+  /// - 空資料檢查
+  /// - RateLimitException 重拋
+  /// - 一般異常記錄
+  ///
+  /// 範例：
+  /// ```dart
+  /// return _syncDataTemplate(
+  ///   operationName: '月營收',
+  ///   symbol: symbol,
+  ///   fetchData: () => _finMind.getMonthlyRevenue(...),
+  ///   mapToCompanion: (data) => data.map(...).toList(),
+  ///   persistData: (entries) => _db.insertMonthlyRevenue(entries),
+  /// );
+  /// ```
+  Future<int> _syncDataTemplate<T, C>({
+    required String operationName,
+    String? symbol,
+    required Future<List<T>> Function() fetchData,
+    required List<C> Function(List<T>) mapToCompanion,
+    required Future<void> Function(List<C>) persistData,
+  }) async {
+    try {
+      final data = await fetchData();
+      if (data.isEmpty) return 0;
+
+      final entries = mapToCompanion(data);
+      await persistData(entries);
+      return entries.length;
+    } on RateLimitException {
+      rethrow;
+    } catch (e) {
+      final symbolInfo = symbol != null ? ': $symbol' : '';
+      AppLogger.warning(
+        'FundamentalRepo',
+        '同步 $operationName 失敗$symbolInfo',
+        e,
+      );
+      return 0;
+    }
+  }
+
   /// 同步單檔股票的月營收資料
   ///
   /// 回傳同步筆數
@@ -38,42 +82,35 @@ class FundamentalRepository implements IFundamentalRepository {
     required String symbol,
     required DateTime startDate,
     required DateTime endDate,
-  }) async {
-    try {
-      final data = await _finMind.getMonthlyRevenue(
+  }) {
+    return _syncDataTemplate(
+      operationName: '月營收',
+      symbol: symbol,
+      fetchData: () => _finMind.getMonthlyRevenue(
         stockId: symbol,
         startDate: DateContext.formatYmd(startDate),
         endDate: DateContext.formatYmd(endDate),
-      );
+      ),
+      mapToCompanion: (data) {
+        // 計算成長率
+        final withGrowth = FinMindRevenue.calculateGrowthRates(data);
 
-      if (data.isEmpty) return 0;
-
-      // 計算成長率
-      final withGrowth = FinMindRevenue.calculateGrowthRates(data);
-
-      // 轉換為 Database 資料
-      final entries = withGrowth.map((r) {
-        // 使用當月第一天作為日期
-        final date = DateTime(r.revenueYear, r.revenueMonth);
-        return MonthlyRevenueCompanion.insert(
-          symbol: symbol,
-          date: date,
-          revenueYear: r.revenueYear,
-          revenueMonth: r.revenueMonth,
-          revenue: r.revenue,
-          momGrowth: Value(r.momGrowth),
-          yoyGrowth: Value(r.yoyGrowth),
-        );
-      }).toList();
-
-      await _db.insertMonthlyRevenue(entries);
-      return entries.length;
-    } on RateLimitException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步月營收失敗: $symbol', e);
-      return 0;
-    }
+        // 轉換為 Database 資料
+        return withGrowth.map((r) {
+          final date = DateTime(r.revenueYear, r.revenueMonth);
+          return MonthlyRevenueCompanion.insert(
+            symbol: symbol,
+            date: date,
+            revenueYear: r.revenueYear,
+            revenueMonth: r.revenueMonth,
+            revenue: r.revenue,
+            momGrowth: Value(r.momGrowth),
+            yoyGrowth: Value(r.yoyGrowth),
+          );
+        }).toList();
+      },
+      persistData: (entries) => _db.insertMonthlyRevenue(entries),
+    );
   }
 
   /// 同步單檔股票的估值資料（本益比/股價淨值比/殖利率）
@@ -84,19 +121,16 @@ class FundamentalRepository implements IFundamentalRepository {
     required String symbol,
     required DateTime startDate,
     required DateTime endDate,
-  }) async {
-    try {
-      final data = await _finMind.getPERData(
+  }) {
+    return _syncDataTemplate(
+      operationName: '估值資料',
+      symbol: symbol,
+      fetchData: () => _finMind.getPERData(
         stockId: symbol,
         startDate: DateContext.formatYmd(startDate),
         endDate: DateContext.formatYmd(endDate),
-      );
-
-      if (data.isEmpty) return 0;
-
-      // 轉換為 Database 資料
-      final entries = data.map((r) {
-        // 解析日期字串
+      ),
+      mapToCompanion: (data) => data.map((r) {
         final parsedDate = DateTime.tryParse(r.date) ?? _clock.now();
         return StockValuationCompanion.insert(
           symbol: symbol,
@@ -105,16 +139,9 @@ class FundamentalRepository implements IFundamentalRepository {
           pbr: Value(r.pbr),
           dividendYield: Value(r.dividendYield),
         );
-      }).toList();
-
-      await _db.insertValuationData(entries);
-      return entries.length;
-    } on RateLimitException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步估值資料失敗: $symbol', e);
-      return 0;
-    }
+      }).toList(),
+      persistData: (entries) => _db.insertValuationData(entries),
+    );
   }
 
   /// 使用 TWSE BWIBBU_d 同步全市場估值資料（免費、無限制）

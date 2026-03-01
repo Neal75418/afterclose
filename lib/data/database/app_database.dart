@@ -20,6 +20,7 @@ import 'package:afterclose/data/database/tables/event_tables.dart';
 import 'package:afterclose/data/database/tables/market_index_tables.dart';
 
 part 'app_database.g.dart';
+part 'dao/batch_query_mixin.dart';
 part 'dao/analysis_dao.dart';
 part 'dao/day_trading_dao.dart';
 part 'dao/dividend_dao.dart';
