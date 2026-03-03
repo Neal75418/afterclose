@@ -6,18 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Refactored (2026-03-01)
+### ♻️ Refactored (2026-03-01)
 
 #### 代碼品質改進（Phase 1-2）
 
 系統性改善代碼可維護性，消除重複代碼和 magic numbers。
 
-| 改進項目 | 效果 | 檔案數 |
-|:---|:---|:---:|
-| **提取批次查詢分組邏輯** | 共享 `_BatchQueryHelper.groupBySymbol()` 方法 | 4 |
-| **補充警示系統常數** | 10+ magic numbers → `RuleParams` 集中管理 | 2 |
-| **提取錯誤處理模板** | `_syncDataTemplate` 統一 try-catch 模式 | 1 |
-| **改善變數命名** | 單字母變數 → 描述性命名 | 2 |
+| 改進項目           | 效果                                        | 檔案數 |
+|:---------------|:------------------------------------------|:---:|
+| **提取批次查詢分組邏輯** | 共享 `_BatchQueryHelper.groupBySymbol()` 方法 |  4  |
+| **補充警示系統常數**   | 10+ magic numbers → `RuleParams` 集中管理     |  2  |
+| **提取錯誤處理模板**   | `_syncDataTemplate` 統一 try-catch 模式       |  1  |
+| **改善變數命名**     | 單字母變數 → 描述性命名                             |  2  |
 
 **關鍵改進細節**：
 
@@ -45,11 +45,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 警示系統 36 個測試通過 ✓
 - 基本面資料同步 15 個測試通過 ✓
 
-**Commits**: 待提交
+**Commits**: `0b42f88`
 
 ---
 
-### Added (2026-02-28)
+### ✨ Added (2026-02-28)
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
@@ -77,23 +77,23 @@ flowchart LR
 
 從 3 種基本價格警示擴充至 15 種高價值警示類型，涵蓋技術指標、成交量、風險控管等多個維度。
 
-| 批次 | 警示類型 | 測試數 | 說明 |
-|:---|:---|:---:|:---|
-| **Batch 1** | 成交量警示 | 6 | `VOLUME_SPIKE`（爆量 4 倍 + 漲跌 1.5%）<br>`VOLUME_ABOVE`（成交量超過設定值） |
-| **Batch 2** | 52 週警示 | 6 | `WEEK_52_HIGH`（創 52 週新高）<br>`WEEK_52_LOW`（創 52 週新低） |
-| **Batch 3** | RSI/KD 指標警示 | 12 | `RSI_OVERBOUGHT`（RSI 超買）<br>`RSI_OVERSOLD`（RSI 超賣）<br>`KD_GOLDEN_CROSS`（KD 黃金交叉）<br>`KD_DEATH_CROSS`（KD 死亡交叉） |
-| **Batch 4** | 均線交叉 + 警示股票 | 12 | `CROSS_ABOVE_MA`（突破均線）<br>`CROSS_BELOW_MA`（跌破均線）<br>`TRADING_WARNING`（一般警示股票）<br>`TRADING_DISPOSAL`（處置股票） |
-| **總計** | **12 種新警示類型** | **36** | 從 3 種 → 15 種（13% → 65% 實作率） |
+| 批次          | 警示類型          |  測試數   | 說明                                                                                                            |
+|:------------|:--------------|:------:|:--------------------------------------------------------------------------------------------------------------|
+| **Batch 1** | 成交量警示         |   6    | `VOLUME_SPIKE`（爆量 4 倍 + 漲跌 1.5%）<br>`VOLUME_ABOVE`（成交量超過設定值）                                                  |
+| **Batch 2** | 52 週警示        |   6    | `WEEK_52_HIGH`（創 52 週新高）<br>`WEEK_52_LOW`（創 52 週新低）                                                           |
+| **Batch 3** | RSI/KD 指標警示   |   12   | `RSI_OVERBOUGHT`（RSI 超買）<br>`RSI_OVERSOLD`（RSI 超賣）<br>`KD_GOLDEN_CROSS`（KD 黃金交叉）<br>`KD_DEATH_CROSS`（KD 死亡交叉） |
+| **Batch 4** | 均線交叉 + 警示股票   |   12   | `CROSS_ABOVE_MA`（突破均線）<br>`CROSS_BELOW_MA`（跌破均線）<br>`TRADING_WARNING`（一般警示股票）<br>`TRADING_DISPOSAL`（處置股票）     |
+| **總計**      | **12 種新警示類型** | **36** | 從 3 種 → 15 種（13% → 65% 實作率）                                                                                   |
 
 #### 技術實作細節
 
 **核心檔案修改**：
 
-| 檔案 | 變更內容 | 行數 |
-|:---|:---|:---:|
-| `user_dao.dart` | 新增 4 個批次查詢方法<br>新增 12 個檢查方法<br>擴充 switch case（12 個新 case） | +400 |
-| `price_alert_provider.dart` | 更新 `isImplemented` getter（4 次更新） | +20 |
-| `user_dao_alert_test.dart` | 新增 4 個測試群組（36 個測試案例） | +600 |
+| 檔案                          | 變更內容                                                      |  行數  |
+|:----------------------------|:----------------------------------------------------------|:----:|
+| `user_dao.dart`             | 新增 4 個批次查詢方法<br>新增 12 個檢查方法<br>擴充 switch case（12 個新 case） | +400 |
+| `price_alert_provider.dart` | 更新 `isImplemented` getter（4 次更新）                          | +20  |
+| `user_dao_alert_test.dart`  | 新增 4 個測試群組（36 個測試案例）                                      | +600 |
 
 **批次查詢策略**（避免 N+1 問題）：
 
@@ -131,7 +131,7 @@ for (int i = startIndex; i < kd.k.length - 1; i++) {
 #### 測試覆蓋率
 
 - **單元測試**: 36 個測試案例，涵蓋觸發條件、邊界情況、資料不足等場景
-- **整合測試**: 與現有 2460+ 測試整合，確保無破壞性變更
+- **整合測試**: 與現有 2496+ 測試整合，確保無破壞性變更
 - **測試策略**: 每批次獨立測試群組，易於維護與擴充
 
 #### 剩餘未實作警示類型（8 種）
@@ -146,7 +146,7 @@ for (int i = startIndex; i < kd.k.length - 1; i++) {
 
 ---
 
-### Refactored (2026-02-28)
+### ♻️ Refactored (2026-02-28)
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
@@ -174,31 +174,31 @@ flowchart LR
 
 #### 死代碼清理（Phase 1）
 
-| 項目                    | 變更                                   | 效果       |
-|:----------------------|:-------------------------------------|:---------|
-| IsolatePool 移除        | 刪除 231 行未使用程式碼                      | 減少認知負擔   |
-| PersonalizationService | 刪除 325 行服務 + 2 張資料表 + 測試 mock       | 停止無效資料收集 |
-| 資料庫 Schema            | v1 → v2，migration 自動清理 user 相關表      | 自動升級     |
-| CLAUDE.md 更新         | 移除 IsolatePool 引用，更新 Isolate 並行描述 | 文件一致性    |
+| 項目                     | 變更                                | 效果       |
+|:-----------------------|:----------------------------------|:---------|
+| IsolatePool 移除         | 刪除 231 行未使用程式碼                    | 減少認知負擔   |
+| PersonalizationService | 刪除 325 行服務 + 2 張資料表 + 測試 mock     | 停止無效資料收集 |
+| 資料庫 Schema             | v1 → v2，migration 自動清理 user 相關表   | 自動升級     |
+| CLAUDE.md 更新           | 移除 IsolatePool 引用，更新 Isolate 並行描述 | 文件一致性    |
 
 **Commits**: `95f8b93`
 
 #### 警示系統過濾（Phase 2）
 
-| 項目                | 變更                                                      | 效果             |
-|:------------------|:--------------------------------------------------------|:---------------|
+| 項目                     | 變更                                                     | 效果             |
+|:-----------------------|:-------------------------------------------------------|:---------------|
 | `isImplemented` getter | 新增到 `AlertType` enum（只有 ABOVE/BELOW/CHANGE_PCT 為 true） | 標記已實作類型        |
-| UI 過濾             | `CreatePriceAlertDialog` 只顯示 3 種已實作警示類型                | 防止建立不會觸發的警示    |
-| Widget 測試         | 驗證過濾邏輯：應顯示 3 種、不應顯示其餘 20 種                             | 測試覆蓋率提升        |
-| 使用者體驗             | 從 23 種 → 3 種可建立警示                                      | UI/Backend 一致性 |
+| UI 過濾                  | `CreatePriceAlertDialog` 只顯示 3 種已實作警示類型                | 防止建立不會觸發的警示    |
+| Widget 測試              | 驗證過濾邏輯：應顯示 3 種、不應顯示其餘 20 種                             | 測試覆蓋率提升        |
+| 使用者體驗                  | 從 23 種 → 3 種可建立警示                                      | UI/Backend 一致性 |
 
 **Commits**: `3d6f6c8`
 
-**測試狀態**: 所有 2460 個測試通過
+**測試狀態**: 所有 2496 個測試通過
 
 ---
 
-### Fixed (2026-02-22)
+### 🔧 Fixed (2026-02-22)
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
@@ -241,7 +241,7 @@ flowchart LR
 
 ---
 
-### Added (2026-02-13)
+### ✨ Added (2026-02-13)
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
@@ -287,7 +287,7 @@ flowchart TB
 
 - **Codecov CI**: 自動上傳覆蓋率報告
 
-### Changed
+### 🔄 Changed
 
 - **Watchlist 畫面**: 使用與 Scan 一致的無限滾動分頁邏輯
 - **InstitutionalRepository**: 使用 `FinMindInstitutionalExt.toDatabaseCompanion()` 統一轉換
@@ -313,7 +313,7 @@ flowchart TB
 | 新增 | `cache_warmup_service.dart` | 快取預熱服務                |
 | 新增 | `dto_extensions.dart`       | DTO Extension 集中管理    |
 | 新增 | `request_deduplicator.dart` | Request Deduplication |
-| 新增 | `isolate_pool.dart`         | Isolate 池重用           |
+| 新增 | ~~`isolate_pool.dart`~~     | Isolate 池重用（後已移除）     |
 | 修改 | `watchlist_provider.dart`   | 分頁邏輯                  |
 | 修改 | `watchlist_screen.dart`     | 無限滾動                  |
 | 修改 | `main.dart`                 | 整合快取預熱                |
@@ -322,6 +322,6 @@ flowchart TB
 
 ## Project Information
 
-**Repository**: [afterclose](https://github.com/yourusername/afterclose)
+**Repository**: [afterclose](https://github.com/Neal75418/afterclose)
 **License**: MIT
-**Maintainer**: AfterClose Team
+**Maintainer**: Neal Chen

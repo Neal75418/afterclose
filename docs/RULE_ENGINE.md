@@ -1,10 +1,12 @@
-# Rule Engine
+# 🧠 Rule Engine
+
+> ← [Back to README](../README.md)
 
 AfterClose 推薦規則引擎 — **59 條異常偵測規則**
 
 ---
 
-## 定位
+## 🎯 定位
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -28,7 +30,7 @@ flowchart LR
 
 ---
 
-## 規則分佈
+## 📊 規則分佈
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
@@ -42,7 +44,7 @@ pie showData title 59 條規則分佈
 
 ---
 
-## 技術型態 (19)
+## 📈 技術型態 (19)
 
 ### 基礎規則 (8)
 
@@ -75,7 +77,7 @@ pie showData title 59 條規則分佈
 
 ---
 
-## 價量訊號 (12)
+## 📉 價量訊號 (12)
 
 ### 技術指標 (8)
 
@@ -101,7 +103,7 @@ pie showData title 59 條規則分佈
 
 ---
 
-## 籌碼面 (7)
+## 👥 籌碼面 (7)
 
 | 規則                              |  分數 | 條件                   |
 |:--------------------------------|----:|:---------------------|
@@ -115,7 +117,7 @@ pie showData title 59 條規則分佈
 
 ---
 
-## 基本面 (14)
+## 🏦 基本面 (14)
 
 ### 營收與估值 (7)
 
@@ -148,7 +150,7 @@ pie showData title 59 條規則分佈
 
 ---
 
-## 殺手級功能 (7)
+## 🚨 殺手級功能 (7)
 
 ### 警示股票 (2)
 
@@ -174,7 +176,7 @@ pie showData title 59 條規則分佈
 
 ---
 
-## 分數合成
+## 🧮 分數合成
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -197,7 +199,7 @@ flowchart LR
 
 ---
 
-## 關鍵參數
+## ⚙️ 關鍵參數
 
 > 來源：`lib/core/constants/rule_params.dart`（200+ 參數）
 
@@ -219,7 +221,7 @@ flowchart LR
 
 ---
 
-## 資料表
+## 💾 資料表
 
 | 表                    | 用途       |
 |:---------------------|:---------|
@@ -230,3 +232,7 @@ flowchart LR
 | insider_holding      | 董監持股     |
 | daily_analysis       | 分析結果     |
 | daily_recommendation | 每日 Top N |
+
+---
+
+← [Back to README](../README.md) | 📚 [All Documentation](../README.md#-文件)

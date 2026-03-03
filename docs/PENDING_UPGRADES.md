@@ -1,10 +1,12 @@
-# 待完成的依賴升級任務
+# ⬆️ 待完成的依賴升級任務
+
+> ← [Back to README](../README.md)
 
 本文檔記錄尚未完成的 Major 版本升級，因涉及大量程式碼修改而需要獨立計劃。
 
 ---
 
-## 升級路線圖
+## 🗺 升級路線圖
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -22,7 +24,7 @@ flowchart LR
 
 ---
 
-## 第一階段：Riverpod 3.x 生態系統 ✅ 已完成
+## ✅ 第一階段：Riverpod 3.x 生態系統
 
 > 2026-02-13 完成，解鎖後續 UI 套件升級路徑
 
@@ -67,7 +69,7 @@ flowchart LR
 
 ---
 
-## 第二階段：UI 套件升級 🟠 P1
+## 🚧 第二階段：UI 套件升級（P1）
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -89,7 +91,7 @@ flowchart LR
 
 ---
 
-## 第三階段：其他 Major 升級 🟡 P2
+## ⏳ 第三階段：其他 Major 升級（P2）
 
 | 套件                          | 目標版本   | 工作量          |
 |:----------------------------|:-------|:-------------|
@@ -99,7 +101,7 @@ flowchart LR
 
 ---
 
-## 參考資源
+## 🔗 參考資源
 
 - [Riverpod 3.0 Migration Guide](https://riverpod.dev/docs/3.0_migration)
 - [Riverpod 3.0 What's New](https://riverpod.dev/docs/whats_new)
@@ -108,5 +110,7 @@ flowchart LR
 
 ---
 
-**最後更新**: 2026-02-22
+← [Back to README](../README.md) | 📚 [All Documentation](../README.md#-文件)
+
+**最後更新**: 2026-03-03
 **下次審查**: 第二階段 UI 套件升級時

@@ -1,20 +1,22 @@
-# 測試覆蓋率計劃
+# 🧪 測試覆蓋率計劃
+
+> ← [Back to README](../README.md)
 
 ---
 
-## 當前狀況
+## 📊 當前狀況
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
-pie showData title 測試進度（2460+ cases）
+pie showData title 測試進度（2496+ cases）
     "Domain 層" : 900
-    "Data 層" : 600
+    "Data 層" : 636
     "Presentation 層" : 960
 ```
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2460+ |
+| 測試總數             | 2496+ |
 | 執行時間             | ~33 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
@@ -22,7 +24,7 @@ pie showData title 測試進度（2460+ cases）
 
 ---
 
-## 完成進度
+## ✅ 完成進度
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -41,7 +43,7 @@ flowchart LR
 
 ---
 
-## 待完成：Phase 3 — 大型服務測試
+## 🚧 待完成：Phase 3 — 大型服務測試
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -93,10 +95,12 @@ flowchart TB
 
 ---
 
-## 測試慣例
+## 📏 測試慣例
 
 詳見 [CLAUDE.md](../CLAUDE.md) 的「Widget 測試慣例」章節。
 
 ---
 
-*最後更新: 2026-02-22*
+← [Back to README](../README.md) | 📚 [All Documentation](../README.md#-文件)
+
+*最後更新: 2026-03-03*

@@ -1,10 +1,10 @@
-# Release Build Guide
+# 📦 Release Build Guide
 
 AfterClose 發布建置指南
 
 ---
 
-## 建置流程
+## 🔄 建置流程
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
@@ -23,7 +23,7 @@ flowchart LR
 
 ---
 
-## 快速指令
+## ⚡ 快速指令
 
 ```bash
 # 清理 + 準備
@@ -40,7 +40,7 @@ flutter build ipa --release --obfuscate --split-debug-info=build/debug-info
 
 ---
 
-## 平台設定
+## ⚙️ 平台設定
 
 ### Android 簽署
 
@@ -68,7 +68,7 @@ cp key.properties.template key.properties
 
 ---
 
-## 版本管理
+## 🏷 版本管理
 
 ```yaml
 # pubspec.yaml
@@ -77,7 +77,7 @@ version: 1.0.0+1  # major.minor.patch+buildNumber
 
 ---
 
-## 發布檢查清單
+## ✅ 發布檢查清單
 
 | 項目           | 指令 / 動作                                 |
 |:-------------|:----------------------------------------|
@@ -91,7 +91,7 @@ version: 1.0.0+1  # major.minor.patch+buildNumber
 
 ---
 
-## 注意事項
+## ⚠️ 注意事項
 
 | 項目       | 說明                                      |
 |:---------|:----------------------------------------|
