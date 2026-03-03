@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/market_index_names.dart';
@@ -170,6 +172,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 載入大盤總覽資料
   ///
   /// 平行執行 API 呼叫與 DB 彙總查詢，任一失敗不影響其他。
+  /// 設有總超時機制：超過 [_loadTimeoutSec] 秒後先結束 loading 顯示 DB 資料，
+  /// API 資料在背景繼續載入，完成後自動更新 UI。
+  static const _loadTimeoutSec = 20;
+
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);
 
@@ -185,7 +191,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       // 平行載入所有資料（各 _load* 方法內部已處理錯誤）
       // by-market 方法在主要日期無資料時會自動回退到 fallbackDate
-      final results = await Future.wait([
+      final allTasks = Future.wait([
         _loadIndices(), // [0] List<TwseMarketIndex>
         _loadAdvanceDecline(dataDate), // [1] AdvanceDecline
         _loadInstitutionalTotals(
@@ -212,20 +218,36 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         ), // [8] Map<String, TradingTurnover>
       ]);
 
+      // 超時機制：最多等 _loadTimeoutSec 秒
+      // 超時後先結束 loading 顯示 DB 資料，API 在背景繼續載入
+      List<Object?> results;
+      try {
+        results = await allTasks.timeout(
+          const Duration(seconds: _loadTimeoutSec),
+        );
+      } on TimeoutException {
+        AppLogger.warning(
+          'MarketOverview',
+          '大盤總覽載入超過 ${_loadTimeoutSec}s，先顯示可用資料',
+        );
+        // 結束 loading 指示器，讓 UI 可互動
+        if (_active) {
+          state = state.copyWith(isLoading: false, dataDate: dataDate);
+        }
+        // 背景繼續等待 API 回應，完成後靜默更新
+        allTasks
+            .then((r) {
+              if (_active) state = _buildState(r, dataDate);
+            })
+            .catchError((Object e) {
+              AppLogger.warning('MarketOverview', '背景載入完成但建構 state 失敗: $e');
+            });
+        return;
+      }
+
       if (!_active) return;
 
-      state = MarketOverviewState(
-        indices: results[0] as List<TwseMarketIndex>,
-        advanceDecline: results[1] as AdvanceDecline,
-        institutional: results[2] as InstitutionalTotals,
-        margin: results[3] as MarginTradingTotals,
-        indexHistory: results[4] as Map<String, List<double>>,
-        advanceDeclineByMarket: results[5] as Map<String, AdvanceDecline>,
-        institutionalByMarket: results[6] as Map<String, InstitutionalTotals>,
-        marginByMarket: results[7] as Map<String, MarginTradingTotals>,
-        turnoverByMarket: results[8] as Map<String, TradingTurnover>,
-        dataDate: dataDate,
-      );
+      state = _buildState(results, dataDate);
     } catch (e) {
       // getLatestDataDate() 可能拋出例外
       AppLogger.error('MarketOverview', '載入大盤總覽失敗', e);
@@ -233,6 +255,22 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         state = state.copyWith(isLoading: false, error: e.toString());
       }
     }
+  }
+
+  /// 從載入結果建構 state
+  MarketOverviewState _buildState(List<Object?> results, DateTime dataDate) {
+    return MarketOverviewState(
+      indices: results[0] as List<TwseMarketIndex>,
+      advanceDecline: results[1] as AdvanceDecline,
+      institutional: results[2] as InstitutionalTotals,
+      margin: results[3] as MarginTradingTotals,
+      indexHistory: results[4] as Map<String, List<double>>,
+      advanceDeclineByMarket: results[5] as Map<String, AdvanceDecline>,
+      institutionalByMarket: results[6] as Map<String, InstitutionalTotals>,
+      marginByMarket: results[7] as Map<String, MarginTradingTotals>,
+      turnoverByMarket: results[8] as Map<String, TradingTurnover>,
+      dataDate: dataDate,
+    );
   }
 
   Future<List<TwseMarketIndex>> _loadIndices() async {

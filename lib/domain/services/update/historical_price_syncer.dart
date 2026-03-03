@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
@@ -108,19 +109,23 @@ class HistoricalPriceSyncer {
         continue;
       }
 
-      // 低於分析最低門檻時一律補抓歷史資料
-      // 避免 fresh DB 場景下 _hasEnoughDataForAge 誤判
-      // （DB 僅有 1 天資料時 firstTradeDate = today，
-      //  導致所有股票被當作「剛上市」而跳過同步）
-      if (priceCount < RuleParams.swingWindow) {
-        result.add(symbol);
-        continue;
-      }
+      // 對已有資料的股票，檢查是否為近期上市且資料已足夠
+      // 避免反覆向 TWSE 查詢不存在的歷史資料
+      if (prices != null && prices.isNotEmpty) {
+        final firstTradeDate = prices.first.date;
+        final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
 
-      if (prices != null &&
-          prices.isNotEmpty &&
-          _hasEnoughDataForAge(prices, priceCount, date)) {
-        continue;
+        // Fresh DB 場景：首筆資料是最近 3 天內（可能只從今日同步取得），
+        // 且資料量極少 → 仍需補歷史
+        if (daysSinceFirstTrade <= 3 && priceCount < RuleParams.swingWindow) {
+          result.add(symbol);
+          continue;
+        }
+
+        // 其他情況：檢查資料量是否與上市時間相符
+        if (_hasEnoughDataForAge(prices, priceCount, date)) {
+          continue;
+        }
       }
 
       result.add(symbol);
@@ -129,9 +134,9 @@ class HistoricalPriceSyncer {
     return result;
   }
 
-  /// 檢查較新上市的股票是否已有足夠的資料
+  /// 檢查股票的資料量是否與其上市時間相符
   ///
-  /// 避免反覆呼叫 API 試圖取得不存在的歷史資料
+  /// 避免反覆同步數據源無法提供更多資料的股票
   bool _hasEnoughDataForAge(
     List<DailyPriceEntry> prices,
     int priceCount,
@@ -140,12 +145,10 @@ class HistoricalPriceSyncer {
     final firstTradeDate = prices.first.date;
     final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
 
-    if (daysSinceFirstTrade >= 365) return false;
-
     // 約 71% 的日曆天是交易日
     final expectedTradingDays = (daysSinceFirstTrade * 0.71).round().clamp(
       1,
-      365,
+      daysSinceFirstTrade,
     );
 
     // 只要資料達到預期的 50% 就視為足夠
@@ -284,7 +287,10 @@ class HistoricalPriceSyncer {
     const batchSize = 2;
     final failedSymbols = <String>[];
 
+    var rateLimited = false;
+
     for (var i = 0; i < total; i += batchSize) {
+      if (rateLimited) break;
       if (i > 0) await Future.delayed(const Duration(milliseconds: 200));
 
       final batchEnd = (i + batchSize).clamp(0, total);
@@ -308,7 +314,14 @@ class HistoricalPriceSyncer {
       final results = await Future.wait(futures);
 
       for (final (symbol, count, error) in results) {
-        if (error != null) {
+        if (error is RateLimitException) {
+          rateLimited = true;
+          failedSymbols.add(symbol);
+          AppLogger.warning(
+            'HistoricalPriceSyncer',
+            '$symbol: API 限流，中止剩餘歷史資料同步',
+          );
+        } else if (error != null) {
           failedSymbols.add(symbol);
         } else {
           historySynced += count;

@@ -108,12 +108,34 @@ class PriceRepository implements IPriceRepository {
         endDate: effectiveEndDate,
       );
 
+      // 取得該股票在 DB 中的最早交易日期，用於跳過上市前的月份
+      // 避免反覆向 TWSE 查詢不存在的歷史資料（永遠回傳空 → 永遠重抓）
+      // 需要足夠資料量（>= 60 天）才信任 firstKnownDate 作為上市日代理，
+      // 避免 partial sync 場景誤跳過有效月份
+      final firstKnownDate = existingHistory.length >= 60
+          ? existingHistory.first.date
+          : null;
+
       // 計算需要抓取的月份（僅抓取資料不足的月份）
       final monthsToFetch = <DateTime>[];
       var current = DateTime(startDate.year, startDate.month, 1);
       final end = DateTime(effectiveEndDate.year, effectiveEndDate.month, 1);
 
       while (!current.isAfter(end)) {
+        // 跳過股票上市前的月份：若 DB 已有資料且該月早於最早紀錄的月份，
+        // 代表該月確實無交易資料，不需要再抓取
+        if (firstKnownDate != null) {
+          final firstKnownMonth = DateTime(
+            firstKnownDate.year,
+            firstKnownDate.month,
+            1,
+          );
+          if (current.isBefore(firstKnownMonth)) {
+            current = DateTime(current.year, current.month + 1, 1);
+            continue;
+          }
+        }
+
         // 僅當該月資料不足時才抓取（少於 10 個交易日）
         final existingDaysInMonth = existingHistory
             .where(
@@ -212,22 +234,25 @@ class PriceRepository implements IPriceRepository {
         }
       }
 
-      // 並行取得上市與上櫃價格資料（錯誤隔離，允許部分成功）
+      // 平行取得上市與上櫃價格資料（錯誤隔離，允許部分成功）
       // TWSE 端點自動回傳最新交易日資料（不接受日期參數）
       // TPEX 端點需要明確傳入日期，否則 fallback 到 DateTime.now()
       // 在非交易日（週末/假日）會導致 TPEX 回傳空資料
-      final twsePrices = await safeAwait(
+      final twseFuture = safeAwait(
         _twseSource.fetchAllDailyPrices(),
         <TwseDailyPrice>[],
         tag: 'PriceRepo',
         description: '上市價格取得失敗，繼續處理上櫃',
       );
-      final tpexPrices = await safeAwait(
+      final tpexFuture = safeAwait(
         _tpexSource.fetchAllDailyPrices(date: normalizedDate),
         <TpexDailyPrice>[],
         tag: 'PriceRepo',
         description: '上櫃價格取得失敗，繼續處理上市',
       );
+      // 等待兩者完成（已平行啟動，TWSE 慢時不阻擋 TPEX）
+      final twsePrices = await twseFuture;
+      final tpexPrices = await tpexFuture;
 
       if (twsePrices.isEmpty && tpexPrices.isEmpty) {
         AppLogger.warning('PriceRepo', '價格同步: 無資料');

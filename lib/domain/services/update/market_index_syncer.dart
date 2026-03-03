@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -70,20 +71,49 @@ class MarketIndexSyncer {
 
   /// 回補近 [_backfillCalendarDays] 天的歷史指數資料
   ///
-  /// 逐日呼叫 TWSE API（僅交易日），每次間隔 [_requestDelay]。
+  /// 先查詢 DB 已有的日期以跳過重複呼叫，遇到 API 限流時提早中止。
   /// 回傳總寫入筆數。
   Future<int> backfill() async {
     final now = _clock.now();
     var totalInserted = 0;
     var apiCalls = 0;
 
-    AppLogger.info('MarketIndexSyncer', '開始歷史回補（過去 $_backfillCalendarDays 天）');
+    // 查詢 DB 已有的指數日期，避免重複呼叫 API
+    final existingHistory = await _db.getIndexHistoryBatch(
+      MarketIndexNames.dashboardIndices,
+      days: _backfillCalendarDays + 10,
+      now: now,
+    );
+    final existingDates = <String>{};
+    for (final entries in existingHistory.values) {
+      for (final entry in entries) {
+        existingDates.add(
+          '${entry.date.year}-${entry.date.month}-${entry.date.day}',
+        );
+      }
+    }
 
+    // 計算需要回補的交易日
+    final datesToFetch = <DateTime>[];
     for (var i = 1; i <= _backfillCalendarDays; i++) {
       final date = now.subtract(Duration(days: i));
-
       if (!TaiwanCalendar.isTradingDay(date)) continue;
+      final key = '${date.year}-${date.month}-${date.day}';
+      if (existingDates.contains(key)) continue;
+      datesToFetch.add(date);
+    }
 
+    if (datesToFetch.isEmpty) {
+      AppLogger.info('MarketIndexSyncer', '歷史回補: DB 已有所有交易日資料，跳過');
+      return 0;
+    }
+
+    AppLogger.info(
+      'MarketIndexSyncer',
+      '開始歷史回補: ${datesToFetch.length} 個交易日需補（已有 ${existingDates.length} 日）',
+    );
+
+    for (final date in datesToFetch) {
       try {
         if (apiCalls > 0) {
           await Future.delayed(_requestDelay);
@@ -99,6 +129,12 @@ class MarketIndexSyncer {
 
         await _db.upsertMarketIndices(companions);
         totalInserted += companions.length;
+      } on RateLimitException {
+        AppLogger.warning(
+          'MarketIndexSyncer',
+          'API 限流，中止歷史回補 (已完成 $apiCalls 次呼叫)',
+        );
+        break;
       } catch (e) {
         // 單日失敗不中斷整個回補
         AppLogger.debug(

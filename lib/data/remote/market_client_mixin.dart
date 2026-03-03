@@ -51,6 +51,12 @@ abstract final class MarketClientMixin {
   ) {
     var decoded = data;
     if (decoded is String) {
+      // 偵測 HTML 回應（TWSE/TPEX 限流時回傳 HTML 頁面而非 JSON）
+      if (decoded.trimLeft().startsWith('<!DOCTYPE') ||
+          decoded.trimLeft().startsWith('<html')) {
+        AppLogger.warning(tag, '$operation: 收到 HTML 回應（疑似 API 限流）');
+        throw const RateLimitException('API 回傳 HTML 而非 JSON，疑似限流');
+      }
       try {
         decoded = jsonDecode(decoded);
       } catch (e) {
@@ -130,12 +136,13 @@ abstract final class MarketClientMixin {
 
   /// 判斷 [DioException] 是否可重試。
   ///
-  /// 逾時、連線錯誤、5xx 可重試；4xx 等客戶端錯誤不重試。
+  /// 連線逾時、發送逾時、連線錯誤、5xx 可重試。
+  /// receiveTimeout 不重試：伺服器已接受連線但不回應，通常是限流，重試無意義。
+  /// 4xx 等客戶端錯誤不重試。
   static bool _isRetryable(DioException e) {
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
       case DioExceptionType.connectionError:
         return true;
       case DioExceptionType.badResponse:
