@@ -296,6 +296,96 @@ void main() {
 
         expect(result, isNull);
       });
+
+      // ============================================================
+      // Phase 3b: 格式化分支補測
+      // ============================================================
+
+      test('description includes disposalMeasures when present', () {
+        const context = AnalysisContext(
+          trendState: TrendState.range,
+          marketData: MarketDataContext(
+            warningData: WarningDataContext(
+              isDisposal: true,
+              disposalMeasures: '分盤交易',
+            ),
+          ),
+        );
+        final prices = generateFlatPrices(days: 20, basePrice: 100.0);
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.description, contains('分盤交易'));
+      });
+
+      test('description includes disposalEndDate when present', () {
+        final context = AnalysisContext(
+          trendState: TrendState.range,
+          marketData: MarketDataContext(
+            warningData: WarningDataContext(
+              isDisposal: true,
+              disposalEndDate: DateTime(2026, 3, 15),
+            ),
+          ),
+        );
+        final prices = generateFlatPrices(days: 20, basePrice: 100.0);
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.description, contains('處置期限至'));
+        expect(result.description, contains('2026'));
+      });
+
+      test('description includes both measures and endDate', () {
+        final context = AnalysisContext(
+          trendState: TrendState.range,
+          marketData: MarketDataContext(
+            warningData: WarningDataContext(
+              isDisposal: true,
+              disposalMeasures: '分盤交易',
+              disposalEndDate: DateTime(2026, 3, 15),
+            ),
+          ),
+        );
+        final prices = generateFlatPrices(days: 20, basePrice: 100.0);
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.description, contains('分盤交易'));
+        expect(result.description, contains('處置期限至'));
+      });
+
+      test('description is basic when both measures and endDate are null', () {
+        const context = AnalysisContext(
+          trendState: TrendState.range,
+          marketData: MarketDataContext(
+            warningData: WarningDataContext(isDisposal: true),
+          ),
+        );
+        final prices = generateFlatPrices(days: 20, basePrice: 100.0);
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.description, equals('被列入處置股票'));
+      });
+
+      test('returns null when warningData is null', () {
+        const context = AnalysisContext(trendState: TrendState.range);
+        final prices = generateFlatPrices(days: 20, basePrice: 100.0);
+        final data = StockData(symbol: 'TEST', prices: prices);
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNull);
+      });
     });
   });
 

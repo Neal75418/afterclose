@@ -137,16 +137,19 @@ class InstitutionalShiftRule extends StockRule {
     }
 
     if (triggered) {
+      final isBuy = todayNet > 0;
       return TriggeredReason(
-        type: todayNet > 0
+        type: isBuy
             ? ReasonType.institutionalBuy
             : ReasonType.institutionalSell,
-        score: RuleScores.institutionalShift,
+        score: isBuy
+            ? RuleScores.institutionalShift
+            : RuleScores.institutionalShiftSell,
         description: description,
         evidence: {
           'todayNet': todayNet,
           'prevAvg': prevAvg,
-          'type': todayNet > 0 ? 'BUY' : 'SELL',
+          'type': isBuy ? 'BUY' : 'SELL',
         },
       );
     }

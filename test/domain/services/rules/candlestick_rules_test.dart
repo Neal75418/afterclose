@@ -31,14 +31,30 @@ void main() {
       expect(result.score, equals(RuleScores.patternDoji));
     });
 
-    test('triggers when RSI is null (no filter)', () {
+    test('returns null when RSI is null (cannot determine position)', () {
       const context = AnalysisContext(trendState: TrendState.range);
       final now = DateTime.now();
       final doji = createDojiCandle(date: now, price: 100.0);
       final data = StockData(symbol: 'TEST', prices: [doji]);
 
       final result = rule.evaluate(context, data);
+      expect(result, isNull);
+    });
+
+    test('triggers bearish doji when RSI > 70', () {
+      const context = AnalysisContext(
+        trendState: TrendState.up,
+        indicators: TechnicalIndicators(rsi: 75.0),
+      );
+      final now = DateTime.now();
+      final doji = createDojiCandle(date: now, price: 100.0, range: 10.0);
+      final data = StockData(symbol: 'TEST', prices: [doji]);
+
+      final result = rule.evaluate(context, data);
+
       expect(result, isNotNull);
+      expect(result!.type, equals(ReasonType.patternDojiBearish));
+      expect(result.score, equals(RuleScores.patternDojiBearish));
     });
 
     test('does not trigger when RSI is in neutral zone (30-70)', () {
@@ -72,11 +88,20 @@ void main() {
     test('triggers in downtrend with valid bullish engulfing', () {
       const context = AnalysisContext(trendState: TrendState.down);
       final now = DateTime.now();
+
+      // Build base prices with normal volume, then append engulfing pair
+      final basePrices = generateConstantPrices(
+        days: 5,
+        basePrice: 100.0,
+        volume: 1000,
+      );
       final pair = createBullishEngulfingPair(
         prevDate: now.subtract(const Duration(days: 1)),
         todayDate: now,
+        volume: 2000, // above average
       );
-      final data = StockData(symbol: 'TEST', prices: [pair.prev, pair.today]);
+      final allPrices = [...basePrices, pair.prev, pair.today];
+      final data = StockData(symbol: 'TEST', prices: allPrices);
 
       final result = rule.evaluate(context, data);
 
@@ -88,11 +113,19 @@ void main() {
     test('triggers in range trend (not uptrend)', () {
       const context = AnalysisContext(trendState: TrendState.range);
       final now = DateTime.now();
+
+      final basePrices = generateConstantPrices(
+        days: 5,
+        basePrice: 100.0,
+        volume: 1000,
+      );
       final pair = createBullishEngulfingPair(
         prevDate: now.subtract(const Duration(days: 1)),
         todayDate: now,
+        volume: 2000,
       );
-      final data = StockData(symbol: 'TEST', prices: [pair.prev, pair.today]);
+      final allPrices = [...basePrices, pair.prev, pair.today];
+      final data = StockData(symbol: 'TEST', prices: allPrices);
 
       expect(rule.evaluate(context, data), isNotNull);
     });

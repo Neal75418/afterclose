@@ -482,4 +482,494 @@ void main() {
       },
     );
   });
+
+  // ==================================================
+  // Group 2: 空值與早期回傳
+  // ==================================================
+
+  group('ScoringService Empty/Null Input', () {
+    test('should return empty list when candidates list is empty', () async {
+      final result = await scoringService.scoreStocks(
+        candidates: [],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(pricesMap: {}, newsMap: {}),
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockAnalysisService.analyzeStock(any()));
+    });
+
+    test('should skip stocks with no price data in pricesMap', () async {
+      final result = await scoringService.scoreStocks(
+        candidates: ['MISSING'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(pricesMap: {}, newsMap: {}),
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockAnalysisService.analyzeStock(any()));
+    });
+
+    test('should skip stocks with insufficient price history', () async {
+      final prices = generateConstantPrices(
+        days: 5, // < RuleParams.swingWindow (20)
+        basePrice: 100.0,
+        volume: 3000000,
+      );
+
+      final result = await scoringService.scoreStocks(
+        candidates: ['SHORT'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(pricesMap: {'SHORT': prices}, newsMap: {}),
+      );
+
+      expect(result, isEmpty);
+      verifyNever(() => mockAnalysisService.analyzeStock(any()));
+    });
+  });
+
+  // ==================================================
+  // Group 3: 分析失敗路徑
+  // ==================================================
+
+  group('ScoringService Analysis Failure Paths', () {
+    /// 建立通過流動性門檻的有效價格資料
+    List<DailyPriceEntry> _validPrices(String symbol) {
+      return generatePricesWithVolumeSpike(
+        days: 30,
+        normalVolume: 2000000,
+        spikeVolume: 5000000,
+        symbol: symbol,
+      );
+    }
+
+    test('should skip stock when analyzeStock returns null', () async {
+      final prices = _validPrices('NULL_ANALYSIS');
+
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(null);
+
+      final result = await scoringService.scoreStocks(
+        candidates: ['NULL_ANALYSIS'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(
+          pricesMap: {'NULL_ANALYSIS': prices},
+          newsMap: {},
+        ),
+      );
+
+      expect(result, isEmpty);
+      verify(() => mockAnalysisService.analyzeStock(any())).called(1);
+      verifyNever(
+        () => mockRuleEngine.evaluateStock(
+          priceHistory: any(named: 'priceHistory'),
+          context: any(named: 'context'),
+          symbol: any(named: 'symbol'),
+          recentNews: any(named: 'recentNews'),
+          institutionalHistory: any(named: 'institutionalHistory'),
+          latestRevenue: any(named: 'latestRevenue'),
+          latestValuation: any(named: 'latestValuation'),
+          revenueHistory: any(named: 'revenueHistory'),
+        ),
+      );
+    });
+
+    test('should skip stock when rule engine returns empty reasons', () async {
+      final prices = _validPrices('EMPTY_REASONS');
+
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 100,
+          resistanceLevel: 120,
+        ),
+      );
+      when(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+
+      when(
+        () => mockRuleEngine.evaluateStock(
+          priceHistory: any(named: 'priceHistory'),
+          context: any(named: 'context'),
+          symbol: any(named: 'symbol'),
+          recentNews: null,
+          institutionalHistory: null,
+          latestRevenue: null,
+          latestValuation: null,
+          revenueHistory: null,
+        ),
+      ).thenReturn([]);
+
+      final result = await scoringService.scoreStocks(
+        candidates: ['EMPTY_REASONS'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(
+          pricesMap: {'EMPTY_REASONS': prices},
+          newsMap: {},
+        ),
+      );
+
+      expect(result, isEmpty);
+      verifyNever(
+        () => mockRuleEngine.calculateScore(
+          any(),
+          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+        ),
+      );
+    });
+  });
+
+  // ==================================================
+  // Group 4: 分數過濾
+  // ==================================================
+
+  group('ScoringService Score Filtering', () {
+    /// 設定完整的 mock pipeline 讓候選通過所有檢查直到分數計算
+    void _setupFullPipeline({
+      required int returnScore,
+      String symbol = 'STOCK',
+    }) {
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 100,
+          resistanceLevel: 120,
+        ),
+      );
+      when(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+
+      when(
+        () => mockRuleEngine.evaluateStock(
+          priceHistory: any(named: 'priceHistory'),
+          context: any(named: 'context'),
+          symbol: any(named: 'symbol'),
+          recentNews: any(named: 'recentNews'),
+          institutionalHistory: any(named: 'institutionalHistory'),
+          latestRevenue: any(named: 'latestRevenue'),
+          latestValuation: any(named: 'latestValuation'),
+          revenueHistory: any(named: 'revenueHistory'),
+        ),
+      ).thenReturn([
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 20,
+          description: 'Test',
+        ),
+      ]);
+
+      when(
+        () => mockRuleEngine.calculateScore(
+          any(),
+          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+        ),
+      ).thenReturn(returnScore);
+
+      when(() => mockRuleEngine.getTopReasons(any())).thenReturn([
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 20,
+          description: 'Test',
+        ),
+      ]);
+
+      when(
+        () => mockAnalysisRepository.saveAnalysis(
+          symbol: any(named: 'symbol'),
+          date: any(named: 'date'),
+          trendState: any(named: 'trendState'),
+          score: any(named: 'score'),
+          reversalState: any(named: 'reversalState'),
+          supportLevel: any(named: 'supportLevel'),
+          resistanceLevel: any(named: 'resistanceLevel'),
+        ),
+      ).thenAnswer((_) async {});
+
+      when(
+        () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+      ).thenAnswer((_) async {});
+    }
+
+    List<DailyPriceEntry> _validPrices(String symbol) {
+      return generatePricesWithVolumeSpike(
+        days: 30,
+        normalVolume: 2000000,
+        spikeVolume: 5000000,
+        symbol: symbol,
+      );
+    }
+
+    test('should skip stock when score is below minScoreThreshold', () async {
+      final prices = _validPrices('LOW');
+      _setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1); // 24
+
+      final result = await scoringService.scoreStocks(
+        candidates: ['LOW'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(pricesMap: {'LOW': prices}, newsMap: {}),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('should include stock when score equals minScoreThreshold', () async {
+      final prices = _validPrices('BOUNDARY');
+      _setupFullPipeline(returnScore: RuleParams.minScoreThreshold); // 25
+
+      final result = await scoringService.scoreStocks(
+        candidates: ['BOUNDARY'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(
+          pricesMap: {'BOUNDARY': prices},
+          newsMap: {},
+        ),
+      );
+
+      expect(result, isNotEmpty);
+      expect(result.first.score, RuleParams.minScoreThreshold);
+    });
+  });
+
+  // ==================================================
+  // Group 5: 選用功能
+  // ==================================================
+
+  group('ScoringService Optional Features', () {
+    List<DailyPriceEntry> _validPrices(String symbol) {
+      return generatePricesWithVolumeSpike(
+        days: 30,
+        normalVolume: 2000000,
+        spikeVolume: 5000000,
+        symbol: symbol,
+      );
+    }
+
+    test('should call onProgress callback for each candidate', () async {
+      final progressCalls = <(int, int)>[];
+      final prices = _validPrices('A');
+
+      // analyzeStock returns null → all skipped, but onProgress still called
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(null);
+
+      await scoringService.scoreStocks(
+        candidates: ['A', 'B', 'C'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(
+          pricesMap: {'A': prices, 'B': prices, 'C': prices},
+          newsMap: {},
+        ),
+        onProgress: (current, total) => progressCalls.add((current, total)),
+      );
+
+      expect(progressCalls, [(1, 3), (2, 3), (3, 3)]);
+    });
+
+    test(
+      'should call marketDataBuilder and pass result to buildContext',
+      () async {
+        final prices = _validPrices('MKT');
+        const marketData = MarketDataContext(foreignSharesRatio: 30.0);
+
+        when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+          const AnalysisResult(
+            trendState: TrendState.up,
+            reversalState: ReversalState.none,
+            supportLevel: 100,
+            resistanceLevel: 120,
+          ),
+        );
+        when(
+          () => mockAnalysisService.buildContext(
+            any(),
+            priceHistory: any(named: 'priceHistory'),
+            marketData: any(named: 'marketData'),
+            evaluationTime: any(named: 'evaluationTime'),
+          ),
+        ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+
+        when(
+          () => mockRuleEngine.evaluateStock(
+            priceHistory: any(named: 'priceHistory'),
+            context: any(named: 'context'),
+            symbol: any(named: 'symbol'),
+            recentNews: any(named: 'recentNews'),
+            institutionalHistory: any(named: 'institutionalHistory'),
+            latestRevenue: any(named: 'latestRevenue'),
+            latestValuation: any(named: 'latestValuation'),
+            revenueHistory: any(named: 'revenueHistory'),
+          ),
+        ).thenReturn([
+          const TriggeredReason(
+            type: ReasonType.techBreakout,
+            score: 30,
+            description: 'Test',
+          ),
+        ]);
+        when(
+          () => mockRuleEngine.calculateScore(
+            any(),
+            wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+          ),
+        ).thenReturn(30);
+        when(() => mockRuleEngine.getTopReasons(any())).thenReturn([
+          const TriggeredReason(
+            type: ReasonType.techBreakout,
+            score: 30,
+            description: 'Test',
+          ),
+        ]);
+        when(
+          () => mockAnalysisRepository.saveAnalysis(
+            symbol: any(named: 'symbol'),
+            date: any(named: 'date'),
+            trendState: any(named: 'trendState'),
+            score: any(named: 'score'),
+            reversalState: any(named: 'reversalState'),
+            supportLevel: any(named: 'supportLevel'),
+            resistanceLevel: any(named: 'resistanceLevel'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+        ).thenAnswer((_) async {});
+
+        var builderCalled = false;
+        await scoringService.scoreStocks(
+          candidates: ['MKT'],
+          date: DateTime.now(),
+          batchData: ScoringBatchData(pricesMap: {'MKT': prices}, newsMap: {}),
+          marketDataBuilder: (symbol) async {
+            builderCalled = true;
+            expect(symbol, 'MKT');
+            return marketData;
+          },
+        );
+
+        expect(builderCalled, isTrue);
+        // Verify buildContext was called with the marketData
+        verify(
+          () => mockAnalysisService.buildContext(
+            any(),
+            priceHistory: any(named: 'priceHistory'),
+            marketData: marketData,
+            evaluationTime: any(named: 'evaluationTime'),
+          ),
+        ).called(1);
+      },
+    );
+  });
+
+  // ==================================================
+  // Group 6: ScoredStock.compareByWeightedScore 排序邏輯
+  // ==================================================
+
+  group('ScoredStock.compareByWeightedScore', () {
+    test('should rank higher score first', () {
+      const a = ScoredStock(
+        symbol: '2330',
+        score: 60,
+        turnover: 100000000,
+        reasons: [],
+      );
+      const b = ScoredStock(
+        symbol: '2317',
+        score: 50,
+        turnover: 100000000,
+        reasons: [],
+      );
+
+      // a should rank first (comparator returns negative for descending)
+      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+    });
+
+    test('should add liquidity bonus (2 per 100M, max 20)', () {
+      // A: score=50, turnover=1B → bonus=20, total=70
+      // B: score=60, turnover=50M → bonus=1, total=61
+      const a = ScoredStock(
+        symbol: '2330',
+        score: 50,
+        turnover: 1000000000, // 1B
+        reasons: [],
+      );
+      const b = ScoredStock(
+        symbol: '2317',
+        score: 60,
+        turnover: 50000000, // 50M
+        reasons: [],
+      );
+
+      // A (70) should rank before B (61)
+      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+    });
+
+    test('should cap liquidity bonus at 20', () {
+      // A: score=50, turnover=2B → bonus=min(40,20)=20, total=70
+      // B: score=50, turnover=1B → bonus=20, total=70
+      // Tied on total → break by turnover (A > B)
+      const a = ScoredStock(
+        symbol: '2330',
+        score: 50,
+        turnover: 2000000000, // 2B
+        reasons: [],
+      );
+      const b = ScoredStock(
+        symbol: '2317',
+        score: 50,
+        turnover: 1000000000, // 1B
+        reasons: [],
+      );
+
+      // Both total=70, A has higher turnover → A ranks first
+      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+    });
+
+    test('should break ties by turnover descending', () {
+      const a = ScoredStock(
+        symbol: '2330',
+        score: 60,
+        turnover: 500000000, // 500M
+        reasons: [],
+      );
+      const b = ScoredStock(
+        symbol: '2317',
+        score: 60,
+        turnover: 300000000, // 300M
+        reasons: [],
+      );
+
+      // Same score, A has higher turnover → A ranks first
+      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+    });
+
+    test('should break final ties by symbol ascending', () {
+      const a = ScoredStock(
+        symbol: '1234',
+        score: 60,
+        turnover: 500000000,
+        reasons: [],
+      );
+      const b = ScoredStock(
+        symbol: '5678',
+        score: 60,
+        turnover: 500000000,
+        reasons: [],
+      );
+
+      // Same score, same turnover → "1234" < "5678" → A ranks first
+      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+    });
+  });
 }

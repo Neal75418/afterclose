@@ -281,5 +281,127 @@ void main() {
 
       expect(rule.evaluate(context, data), isNull);
     });
+
+    test('triggers at exact threshold (60%)', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(
+          concentrationRatio: RuleParams.concentrationHighThreshold, // 60.0
+        ),
+      );
+      const data = StockData(symbol: 'TEST', prices: []);
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.type, equals(ReasonType.concentrationHigh));
+    });
+  });
+
+  // ============================================================
+  // Phase 3c: 邊界/null 測試補充
+  // ============================================================
+
+  group('DayTradingHighRule Edge Cases', () {
+    const rule = DayTradingHighRule();
+
+    test('returns null when dayTradingRatio is null', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(dayTradingRatio: null),
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 15000000),
+        ],
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('returns null when prices are empty', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(dayTradingRatio: 60.0),
+      );
+      const data = StockData(symbol: 'TEST', prices: []);
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('triggers at exact 50% threshold', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(
+          dayTradingRatio: RuleParams.dayTradingHighThreshold, // 50.0
+        ),
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 15000000),
+        ],
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.type, equals(ReasonType.dayTradingHigh));
+    });
+
+    test('returns null when volume is null', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(dayTradingRatio: 60.0),
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: null),
+        ],
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+  });
+
+  group('DayTradingExtremeRule Edge Cases', () {
+    const rule = DayTradingExtremeRule();
+
+    test('returns null when dayTradingRatio is null', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(dayTradingRatio: null),
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 35000000),
+        ],
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('triggers at exact 70% threshold', () {
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        marketData: MarketDataContext(
+          dayTradingRatio: RuleParams.dayTradingExtremeThreshold, // 70.0
+        ),
+      );
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [
+          createTestPrice(date: DateTime.now(), close: 100.0, volume: 35000000),
+        ],
+      );
+
+      final result = rule.evaluate(context, data);
+
+      expect(result, isNotNull);
+      expect(result!.type, equals(ReasonType.dayTradingExtreme));
+    });
   });
 }

@@ -455,7 +455,7 @@ abstract final class RuleParams {
   /// 本益比高估門檻
   ///
   /// 提高至 100 以聚焦泡沫區域。
-  static const double peOvervaluedThreshold = 100.0;
+  static const double peOvervaluedThreshold = 60.0;
 
   /// 股價淨值比低估門檻
   ///
@@ -817,7 +817,8 @@ abstract final class RuleParams {
 /// - 技術訊號 (25)：中等 - 壓力/支撐突破
 /// - 成交量異動 (22)：中等 - 現需 4 倍量 + 1.5% 價格變動
 /// - 價格異動 (15)：較低 - 無量配合可能是雜訊
-/// - 法人動向 (18)：台股重要指標 - 法人資金流向影響股價
+/// - 法人買超 (18)：台股重要指標 - 法人資金流入
+/// - 法人賣超 (-12)：空方扣分 - 法人資金流出
 /// - 新聞 (8)：輔助 - 僅提供背景資訊
 ///
 /// ## 分數校準原則
@@ -851,8 +852,11 @@ abstract final class RuleScores {
   /// 價格急漲分數
   static const int priceSpike = 15;
 
-  /// 法人買賣轉向分數
+  /// 法人買超轉向分數
   static const int institutionalShift = 18;
+
+  /// 法人賣超轉向分數（空方訊號，扣分）
+  static const int institutionalShiftSell = -12;
 
   /// 新聞相關分數
   static const int newsRelated = 8;
@@ -895,8 +899,11 @@ abstract final class RuleScores {
   // K 線型態分數（多空分離）
   // ==================================================
 
-  /// 十字線分數（中性，猶豫訊號）
+  /// 十字線分數 — 低檔（RSI < 30，偏多反轉）
   static const int patternDoji = 10;
+
+  /// 十字線分數 — 高檔（RSI > 70，偏空警告）
+  static const int patternDojiBearish = -5;
 
   /// 多頭吞噬分數（多方）
   static const int patternEngulfingBullish = 22;
@@ -985,7 +992,7 @@ abstract final class RuleScores {
   static const int highVolumeBreakout = 22;
 
   /// 低檔吸籌分數（潛在反轉，多方）
-  static const int lowVolumeAccumulation = 16;
+  static const int lowVolumeAccumulation = 12;
 
   // ==================================================
   // 第六階段：基本面分析分數
@@ -1082,6 +1089,7 @@ enum ReasonType {
   institutionalSellStreak('INSTITUTIONAL_SELL_STREAK'),
   // K 線型態訊號
   patternDoji('PATTERN_DOJI'),
+  patternDojiBearish('PATTERN_DOJI_BEARISH'),
   patternBullishEngulfing('PATTERN_BULLISH_ENGULFING'),
   patternBearishEngulfing('PATTERN_BEARISH_ENGULFING'),
   patternHammer('PATTERN_HAMMER'),
@@ -1150,7 +1158,7 @@ enum ReasonType {
     ReasonType.priceSpike => RuleScores.priceSpike,
 
     ReasonType.institutionalBuy => RuleScores.institutionalShift,
-    ReasonType.institutionalSell => RuleScores.institutionalShift,
+    ReasonType.institutionalSell => RuleScores.institutionalShiftSell,
     ReasonType.newsRelated => RuleScores.newsRelated,
     ReasonType.kdGoldenCross => RuleScores.kdGoldenCross,
     ReasonType.kdDeathCross => RuleScores.kdDeathCross,
@@ -1158,6 +1166,7 @@ enum ReasonType {
     ReasonType.institutionalSellStreak => RuleScores.institutionalSellStreak,
     // K 線型態（多空分離）
     ReasonType.patternDoji => RuleScores.patternDoji,
+    ReasonType.patternDojiBearish => RuleScores.patternDojiBearish,
     ReasonType.patternBullishEngulfing => RuleScores.patternEngulfingBullish,
     ReasonType.patternBearishEngulfing => RuleScores.patternEngulfingBearish,
     ReasonType.patternHammer => RuleScores.patternHammerBullish,

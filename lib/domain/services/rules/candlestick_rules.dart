@@ -68,19 +68,31 @@ class DojiRule extends StockRule {
     final today = data.prices.last;
 
     if (_isDoji(today)) {
-      // 過濾條件：RSI 必須在極端區域（>70 或 <30）
+      // 需要 RSI 判定位置：無 RSI 時無法區分高低檔，跳過
       final rsi = context.indicators?.rsi;
-      if (rsi != null && rsi > 30 && rsi < 70) return null;
+      if (rsi == null) return null;
+      // 過濾條件：RSI 必須在極端區域（>70 或 <30）
+      if (rsi > 30 && rsi < 70) return null;
+
+      // 根據位置給不同分數：高檔十字線偏空，低檔十字線偏多
+      final isBearish = rsi > 70;
+      final score = isBearish
+          ? RuleScores.patternDojiBearish
+          : RuleScores.patternDoji;
+      final description = isBearish ? '高檔十字線（偏空警告）' : '低檔十字線（反轉訊號）';
 
       return TriggeredReason(
-        type: ReasonType.patternDoji,
-        score: RuleScores.patternDoji,
-        description: '出現十字線變盤訊號',
+        type: isBearish
+            ? ReasonType.patternDojiBearish
+            : ReasonType.patternDoji,
+        score: score,
+        description: description,
         evidence: {
           'open': today.open,
           'close': today.close,
           'high': today.high,
           'low': today.low,
+          'rsi': rsi,
         },
       );
     }
@@ -119,6 +131,11 @@ class BullishEngulfingRule extends StockRule {
     final yesterday = data.prices[data.prices.length - 2];
 
     if (isEngulfing(today, yesterday, bullish: true)) {
+      // 過濾條件：成交量須 > 5 日平均量（與空頭吞噬對稱）
+      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+        return null;
+      }
+
       return TriggeredReason(
         type: ReasonType.patternBullishEngulfing,
         score: RuleScores.patternEngulfingBullish,
@@ -260,6 +277,9 @@ class GapUpRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 2) return null;
 
+    // 趨勢過濾：下跌趨勢中的跳空上漲可能只是技術反彈
+    if (context.trendState == TrendState.down) return null;
+
     final today = data.prices.last;
     final prev = data.prices[data.prices.length - 2];
 
@@ -297,6 +317,9 @@ class GapDownRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 2) return null;
+
+    // 趨勢過濾：上漲趨勢中的跳空下跌可能只是正常回調
+    if (context.trendState == TrendState.up) return null;
 
     final today = data.prices.last;
     final prev = data.prices[data.prices.length - 2];

@@ -157,8 +157,8 @@ void main() {
       expect(score, 67);
     });
 
-    test('should cap score at 100', () {
-      // Simulate reasons that sum > 100
+    test('should cap score at maxScore', () {
+      // Simulate reasons that sum > maxScore
       final reasons = List.generate(
         5,
         (i) => const TriggeredReason(
@@ -169,7 +169,7 @@ void main() {
       );
 
       final score = ruleEngine.calculateScore(reasons);
-      expect(score, 100);
+      expect(score, RuleScores.maxScore);
     });
 
     test('should not reduce score below 0', () {
@@ -522,6 +522,327 @@ void main() {
 
         expect(result, isNull);
       });
+
+      // ============================================================
+      // Phase 3a: InstitutionalShiftRule 補測
+      // ============================================================
+
+      test('Scenario 1: should trigger sell-to-buy reversal', () {
+        // prevAvg < -100K, todayNet > 500K, price up, ratio > 35%
+        final now = DateTime.now();
+        final history = List.generate(5, (i) {
+          return DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(Duration(days: 4 - i)),
+            foreignNet: i < 4 ? -150000.0 : 2000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          );
+        });
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 4000000,
+          ),
+          createTestPrice(
+            date: now,
+            close: 102.0, // +2% > 1.5%
+            volume: 4000000, // >= 2M
+          ),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalBuy);
+        expect(result.description, contains('由賣轉買'));
+      });
+
+      test('Scenario 2: should trigger buy-to-sell reversal', () {
+        // prevAvg > 100K, todayNet < -500K, price down, ratio > 35%
+        final now = DateTime.now();
+        final history = List.generate(5, (i) {
+          return DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(Duration(days: 4 - i)),
+            foreignNet: i < 4 ? 150000.0 : -2000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          );
+        });
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 4000000,
+          ),
+          createTestPrice(
+            date: now,
+            close: 98.0, // -2% < -1.5%
+            volume: 4000000,
+          ),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalSell);
+        expect(result.score, RuleScores.institutionalShiftSell);
+        expect(result.description, contains('由買轉賣'));
+      });
+
+      test('Scenario 3: should trigger buy acceleration', () {
+        // prevAvg > 100K, todayNet > prevAvg * 2, > 1M, ratio > 50%
+        final now = DateTime.now();
+        final history = List.generate(5, (i) {
+          return DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(Duration(days: 4 - i)),
+            foreignNet: i < 4 ? 300000.0 : 3000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          );
+        });
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 5000000,
+          ),
+          createTestPrice(date: now, close: 101.0, volume: 5000000),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalBuy);
+        expect(result.description, contains('買超擴大'));
+      });
+
+      test('Scenario 4: should trigger sell acceleration', () {
+        // prevAvg < -100K, todayNet < prevAvg * 2, < -1M, ratio > 50%
+        final now = DateTime.now();
+        final history = List.generate(5, (i) {
+          return DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(Duration(days: 4 - i)),
+            foreignNet: i < 4 ? -300000.0 : -3000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          );
+        });
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 5000000,
+          ),
+          createTestPrice(date: now, close: 99.0, volume: 5000000),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalSell);
+        expect(result.description, contains('賣超擴大'));
+      });
+
+      test('Scenario 6: should trigger significant sell (generic catch)', () {
+        // todayNet < -5M, ratio > 35%, priceChangePercent < -1%
+        final now = DateTime.now();
+        final history = [
+          DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(const Duration(days: 1)),
+            foreignNet: 0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          ),
+          DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now,
+            foreignNet: -6000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          ),
+        ];
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 10000000,
+          ),
+          createTestPrice(
+            date: now,
+            close: 98.0, // -2% < -1%
+            volume: 10000000,
+          ),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalSell);
+        expect(result.description, contains('顯著賣超'));
+      });
+
+      test('should return null when todayNet.abs() < minVolumeShares', () {
+        final now = DateTime.now();
+        final history = [
+          DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now,
+            foreignNet: 500000.0, // < 1,000,000
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          ),
+        ];
+        final prices = generateConstantPrices(
+          days: 5,
+          basePrice: 100.0,
+          volume: 5000000,
+        );
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        expect(rule.evaluate(context, data), isNull);
+      });
+
+      test('should return null when volume < validVolumeShares', () {
+        final now = DateTime.now();
+        final history = [
+          DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now,
+            foreignNet: 2000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          ),
+        ];
+        final prices = [
+          createTestPrice(
+            date: now,
+            close: 100.0,
+            volume: 1000000, // < 2,000,000
+          ),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        expect(rule.evaluate(context, data), isNull);
+      });
+
+      test('should have hasHistory = true when exactly 4 entries', () {
+        // 4 筆法人資料 → hasHistory = true (history.length >= 4)
+        final now = DateTime.now();
+        final history = List.generate(4, (i) {
+          return DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(Duration(days: 3 - i)),
+            foreignNet: i < 3 ? -150000.0 : 2000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          );
+        });
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 4000000,
+          ),
+          createTestPrice(date: now, close: 102.0, volume: 4000000),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        // hasHistory = true, 應該能觸發歷史邏輯（Scenario 1: 賣轉買）
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalBuy);
+      });
+
+      test('should skip history logic when only 3 entries', () {
+        // 3 筆法人資料 → hasHistory = false, 只用通用邏輯
+        final now = DateTime.now();
+        final history = List.generate(3, (i) {
+          return DailyInstitutionalEntry(
+            symbol: 'TEST',
+            date: now.subtract(Duration(days: 2 - i)),
+            foreignNet: i < 2 ? -150000.0 : 6000000.0,
+            investmentTrustNet: 0,
+            dealerNet: 0,
+          );
+        });
+        final prices = [
+          ...generateConstantPrices(
+            days: 14,
+            basePrice: 100.0,
+            volume: 10000000,
+          ),
+          createTestPrice(
+            date: now,
+            close: 102.0, // +2% > 1%
+            volume: 10000000,
+          ),
+        ];
+        const context = AnalysisContext(trendState: TrendState.range);
+        final data = StockData(
+          symbol: 'TEST',
+          prices: prices,
+          institutional: history,
+        );
+
+        final result = rule.evaluate(context, data);
+
+        // hasHistory = false, 觸發 Scenario 5（顯著買超）
+        expect(result, isNotNull);
+        expect(result!.type, ReasonType.institutionalBuy);
+        expect(result.description, contains('顯著買超'));
+      });
     });
 
     group('NewsRule', () {
@@ -626,4 +947,356 @@ void main() {
       expect(data.previousClose, isNull);
     });
   });
+
+  // ============================================================
+  // Phase 2: getTopReasons / calculateScore / evaluateStock 補測
+  // ============================================================
+
+  group('getTopReasons', () {
+    test('should return all reasons when descriptions are unique', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'Breakout above resistance',
+        ),
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 22,
+          description: 'Volume spike 4x avg',
+        ),
+        const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'Weak to strong reversal',
+        ),
+      ];
+
+      final result = ruleEngine.getTopReasons(reasons);
+      expect(result.length, 3);
+    });
+
+    test('should dedup reasons with same description', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'Same description',
+        ),
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 22,
+          description: 'Same description',
+        ),
+      ];
+
+      final result = ruleEngine.getTopReasons(reasons);
+      expect(result.length, 1);
+      expect(result.first.type, ReasonType.techBreakout);
+    });
+
+    test('should return empty list for empty reasons', () {
+      final result = ruleEngine.getTopReasons([]);
+      expect(result, isEmpty);
+    });
+
+    test('should keep first occurrence when duplicates exist', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'Dup',
+        ),
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 22,
+          description: 'Unique',
+        ),
+        const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'Dup',
+        ),
+      ];
+
+      final result = ruleEngine.getTopReasons(reasons);
+      expect(result.length, 2);
+      // 第一個 Dup 保留（techBreakout），第二個 Dup 去除
+      expect(result[0].type, ReasonType.techBreakout);
+      expect(result[1].type, ReasonType.volumeSpike);
+    });
+  });
+
+  group('calculateScore Institutional Combo Bonus', () {
+    test(
+      'should apply institutional combo bonus for institutional + breakout (+15)',
+      () {
+        final reasons = [
+          const TriggeredReason(
+            type: ReasonType.institutionalBuy,
+            score: 18,
+            description: 'Inst buy',
+          ),
+          const TriggeredReason(
+            type: ReasonType.techBreakout,
+            score: 25,
+            description: 'Breakout',
+          ),
+        ];
+
+        // Base: 18 + 25 = 43
+        // Bonus: +15 (institutional + breakout)
+        // Total: 58
+        final score = ruleEngine.calculateScore(reasons);
+        expect(score, 58);
+      },
+    );
+
+    test(
+      'should apply institutional combo bonus for institutional + reversal (+15)',
+      () {
+        final reasons = [
+          const TriggeredReason(
+            type: ReasonType.institutionalBuy,
+            score: 18,
+            description: 'Inst buy',
+          ),
+          const TriggeredReason(
+            type: ReasonType.reversalW2S,
+            score: 35,
+            description: 'Reversal',
+          ),
+        ];
+
+        // Base: 18 + 35 = 53
+        // Bonus: +15 (institutional + reversal)
+        // Total: 68
+        final score = ruleEngine.calculateScore(reasons);
+        expect(score, 68);
+      },
+    );
+
+    test(
+      'should apply all applicable bonuses simultaneously (capped at maxScore)',
+      () {
+        final reasons = [
+          const TriggeredReason(
+            type: ReasonType.institutionalBuy,
+            score: 18,
+            description: 'Inst',
+          ),
+          const TriggeredReason(
+            type: ReasonType.reversalW2S,
+            score: 35,
+            description: 'Reversal',
+          ),
+          const TriggeredReason(
+            type: ReasonType.volumeSpike,
+            score: 22,
+            description: 'Volume',
+          ),
+        ];
+
+        // Base: 18 + 35 + 22 = 75
+        // Bonuses: +10 (reversal+volume) + 15 (institutional+reversal) = +25
+        // Raw: 100 → capped at maxScore (80)
+        final score = ruleEngine.calculateScore(reasons);
+        expect(score, RuleScores.maxScore);
+      },
+    );
+  });
+
+  group('Rule Exception Handling', () {
+    test('should catch and skip rule exceptions without crashing', () {
+      final engine = RuleEngine(customRules: [const _ThrowingRule()]);
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        priceHistory: prices,
+        context: context,
+      );
+
+      // 拋出例外的規則被跳過，不影響結果
+      expect(reasons, isEmpty);
+    });
+
+    test('should return results from remaining rules when one rule throws', () {
+      final engine = RuleEngine(
+        customRules: [const _ThrowingRule(), const VolumeSpikeRule()],
+      );
+      final prices = generatePricesWithVolumeSpike(
+        days: 30,
+        normalVolume: 1000,
+        spikeVolume: 5000,
+      );
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        priceHistory: prices,
+        context: context,
+      );
+
+      // _ThrowingRule 拋例外被跳過，VolumeSpikeRule 正常觸發
+      expect(reasons, isNotEmpty);
+      expect(reasons.any((r) => r.type == ReasonType.volumeSpike), isTrue);
+    });
+  });
+
+  group('calculateScore Edge Cases', () {
+    test('should return 0 for empty reasons list', () {
+      final score = ruleEngine.calculateScore([]);
+      expect(score, 0);
+    });
+
+    test('should apply cooldown penalty correctly', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'Reversal',
+        ),
+      ];
+
+      // Base: 35
+      // Cooldown: -15
+      // Total: 20
+      final score = ruleEngine.calculateScore(
+        reasons,
+        wasRecentlyRecommended: true,
+      );
+      expect(score, 20);
+    });
+
+    test('should not go below 0 with cooldown penalty', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.newsRelated,
+          score: 8,
+          description: 'News',
+        ),
+      ];
+
+      // Base: 8
+      // Cooldown: -15
+      // Raw: -7 → clamped to 0
+      final score = ruleEngine.calculateScore(
+        reasons,
+        wasRecentlyRecommended: true,
+      );
+      expect(score, 0);
+    });
+
+    test('should handle mixed positive and negative scores', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'Breakout',
+        ),
+        const TriggeredReason(
+          type: ReasonType.techBreakdown,
+          score: -20,
+          description: 'Breakdown',
+        ),
+      ];
+
+      // 25 + (-20) = 5
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 5);
+    });
+  });
+
+  group('evaluateStock Edge Cases', () {
+    test('should return empty list for empty price history', () {
+      final reasons = ruleEngine.evaluateStock(
+        priceHistory: [],
+        context: const AnalysisContext(trendState: TrendState.range),
+      );
+      expect(reasons, isEmpty);
+    });
+
+    test('should sort returned reasons by score descending', () {
+      // 使用自訂規則確保產生多個已知分數的結果
+      final engine = RuleEngine(
+        customRules: [
+          const _FixedScoreRule(
+            ruleId: 'low',
+            score: 10,
+            reasonType: ReasonType.newsRelated,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'high',
+            score: 30,
+            reasonType: ReasonType.techBreakout,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'mid',
+            score: 20,
+            reasonType: ReasonType.volumeSpike,
+          ),
+        ],
+      );
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        priceHistory: prices,
+        context: context,
+      );
+
+      expect(reasons.length, 3);
+      expect(reasons[0].score, 30);
+      expect(reasons[1].score, 20);
+      expect(reasons[2].score, 10);
+    });
+  });
+}
+
+// ============================================================
+// 測試用內聯規則
+// ============================================================
+
+/// 永遠拋出例外的規則（用於測試例外處理）
+class _ThrowingRule extends StockRule {
+  const _ThrowingRule();
+
+  @override
+  String get id => 'throwing_rule';
+
+  @override
+  String get name => 'Throwing Rule';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    throw Exception('Test exception from ThrowingRule');
+  }
+}
+
+/// 永遠回傳固定分數的規則（用於測試排序）
+class _FixedScoreRule extends StockRule {
+  const _FixedScoreRule({
+    required this.ruleId,
+    required this.score,
+    required this.reasonType,
+  });
+
+  final String ruleId;
+  final int score;
+  final ReasonType reasonType;
+
+  @override
+  String get id => ruleId;
+
+  @override
+  String get name => 'Fixed Score Rule ($ruleId)';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    return TriggeredReason(
+      type: reasonType,
+      score: score,
+      description: 'Fixed score $score from $ruleId',
+    );
+  }
 }

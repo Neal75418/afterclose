@@ -209,9 +209,9 @@ class RuleEngine {
 
     // 5. 分數範圍限制
     // 下限：0（本系統僅推薦做多，不推薦放空）
-    // 上限：100（避免多訊號造成分數膨脹）
+    // 上限：maxScore（避免多訊號造成分數膨脹）
     if (score < 0) score = 0;
-    if (score > 100) score = 100;
+    if (score > RuleScores.maxScore) score = RuleScores.maxScore.toDouble();
 
     return score.round();
   }

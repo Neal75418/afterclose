@@ -721,9 +721,28 @@ class TwseClient {
       }
 
       if (results.isEmpty) {
+        // 診斷：列出每個 table 的 keys 與 row 數量，幫助排查格式變更
+        final diag = <String>[];
+        if (tables != null) {
+          for (var ti = 0; ti < tables.length && ti < 3; ti++) {
+            final t = tables[ti];
+            if (t is Map<String, dynamic>) {
+              final rowCount = (t['data'] as List?)?.length ?? 0;
+              final sample = (t['data'] as List?)?.firstOrNull;
+              diag.add(
+                't$ti: keys=${t.keys.take(5).toList()}, '
+                'rows=$rowCount, '
+                'sample=${sample is List ? sample.take(3).toList() : sample.runtimeType}',
+              );
+            } else {
+              diag.add('t$ti: type=${t.runtimeType}');
+            }
+          }
+        }
         AppLogger.warning(
           _tag,
-          '大盤指數: 解析後 0 筆 (tables=${tables?.length ?? 0})',
+          '大盤指數: 解析後 0 筆 (tables=${tables?.length ?? 0}) '
+          '${diag.isNotEmpty ? diag.join(' | ') : ""}',
         );
       } else {
         AppLogger.debug(_tag, '大盤指數 API 原始: ${results.length} 筆');
