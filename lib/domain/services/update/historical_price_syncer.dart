@@ -284,7 +284,7 @@ class HistoricalPriceSyncer {
   }) async {
     final total = symbols.length;
     var historySynced = 0;
-    const batchSize = 2;
+    const batchSize = 5;
     final failedSymbols = <String>[];
 
     var rateLimited = false;

@@ -6,6 +6,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/tpex/models.dart';
+import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
 
 export 'package:afterclose/data/models/tpex/models.dart';
@@ -25,6 +26,10 @@ class TpexClient {
 
   static const String _tag = 'TPEX';
   final Dio _dio;
+  final LruCache<String, dynamic> _cache = LruCache(
+    maxSize: 20,
+    ttl: const Duration(minutes: 30),
+  );
 
   /// 取得最新交易日所有上櫃股票價格
   ///
@@ -33,6 +38,12 @@ class TpexClient {
   /// 端點: /web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php
   Future<List<TpexDailyPrice>> getAllDailyPrices({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
+      final cacheKey = date != null
+          ? 'dailyPrices:${TwParseUtils.formatDateCompact(date)}'
+          : 'dailyPrices';
+      final cached = _cache.get(cacheKey) as List<TpexDailyPrice>?;
+      if (cached != null) return cached;
+
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -63,13 +74,15 @@ class TpexClient {
       );
       if (table == null) return [];
 
-      return MarketClientMixin.parseRows(
+      final result = MarketClientMixin.parseRows(
         rows: table.rows,
         parser: (row) => _parseDailyPriceRow(row, table.date),
         tag: _tag,
         operation: '全市場價格',
         date: table.date,
       );
+      _cache.put(cacheKey, result);
+      return result;
     });
   }
 
@@ -109,6 +122,12 @@ class TpexClient {
   /// 端點: /web/stock/3insti/daily_trade/3itrade_hedge_result.php
   Future<List<TpexInstitutional>> getAllInstitutionalData({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '法人資料', () async {
+      final cacheKey = date != null
+          ? 'institutional:${TwParseUtils.formatDateCompact(date)}'
+          : 'institutional';
+      final cached = _cache.get(cacheKey) as List<TpexInstitutional>?;
+      if (cached != null) return cached;
+
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -139,13 +158,15 @@ class TpexClient {
       );
       if (table == null) return [];
 
-      return MarketClientMixin.parseRows(
+      final result = MarketClientMixin.parseRows(
         rows: table.rows,
         parser: (row) => _parseInstitutionalRow(row, table.date),
         tag: _tag,
         operation: '法人資料',
         date: table.date,
       );
+      _cache.put(cacheKey, result);
+      return result;
     });
   }
 
@@ -276,6 +297,10 @@ class TpexClient {
   /// 回傳所有上櫃股票的估值資料，一次 API 呼叫取得全市場。
   Future<List<TpexValuation>> getAllValuation({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '估值資料', () async {
+      const cacheKey = 'valuation';
+      final cached = _cache.get(cacheKey) as List<TpexValuation>?;
+      if (cached != null) return cached;
+
       final targetDate = date ?? DateTime.now();
 
       // TPEX OpenAPI 只回傳最新資料，不接受日期參數
@@ -310,6 +335,7 @@ class TpexClient {
           : targetDate;
       final dateFormatted = TwParseUtils.formatDateYmd(effectiveDate);
       AppLogger.info(_tag, '估值資料: ${results.length} 筆 ($dateFormatted)');
+      _cache.put(cacheKey, results);
       return results;
     });
   }
@@ -374,6 +400,12 @@ class TpexClient {
   /// **注意**: 此端點可能被 Cloudflare 保護，會回傳空清單。
   /// 當沖資料對規則分析非必要，不影響主要功能。
   Future<List<TpexDayTrading>> getAllDayTradingData({DateTime? date}) async {
+    final cacheKey = date != null
+        ? 'dayTrading:${TwParseUtils.formatDateCompact(date)}'
+        : 'dayTrading';
+    final cached = _cache.get(cacheKey) as List<TpexDayTrading>?;
+    if (cached != null) return cached;
+
     try {
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
@@ -451,6 +483,7 @@ class TpexClient {
 
         final dateFormatted = TwParseUtils.formatDateYmd(actualDate);
         AppLogger.info(_tag, '當沖資料: ${results.length} 筆 ($dateFormatted)');
+        _cache.put(cacheKey, results);
         return results;
       }
 
@@ -511,6 +544,12 @@ class TpexClient {
   /// 端點: /web/stock/margin_trading/margin_sbl/margin_sbl_result.php
   Future<List<TpexMarginTrading>> getAllMarginTradingData({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '融資融券', () async {
+      final cacheKey = date != null
+          ? 'marginTrading:${TwParseUtils.formatDateCompact(date)}'
+          : 'marginTrading';
+      final cached = _cache.get(cacheKey) as List<TpexMarginTrading>?;
+      if (cached != null) return cached;
+
       final targetDate = date ?? DateTime.now();
       final rocDateStr = TwParseUtils.toRocDateString(targetDate);
 
@@ -541,13 +580,15 @@ class TpexClient {
       );
       if (table == null) return [];
 
-      return MarketClientMixin.parseRows(
+      final result = MarketClientMixin.parseRows(
         rows: table.rows,
         parser: (row) => _parseMarginTradingRow(row, table.date),
         tag: _tag,
         operation: '融資融券',
         date: table.date,
       );
+      _cache.put(cacheKey, result);
+      return result;
     });
   }
 
@@ -883,6 +924,10 @@ class TpexClient {
   /// 一次 API 呼叫取得全市場資料，取代 FinMind 批次 API。
   Future<List<TpexMonthlyRevenue>> getAllMonthlyRevenue() {
     return MarketClientMixin.executeRequest(_tag, '月營收', () async {
+      const cacheKey = 'monthlyRevenue';
+      final cached = _cache.get(cacheKey) as List<TpexMonthlyRevenue>?;
+      if (cached != null) return cached;
+
       final response = await _dio.get(
         ApiEndpoints.tpexMonthlyRevenue,
         options: Options(headers: {'Accept': 'application/json'}),
@@ -909,6 +954,7 @@ class TpexClient {
       }
 
       AppLogger.info(_tag, '月營收: ${results.length} 筆');
+      _cache.put(cacheKey, results);
       return results;
     });
   }

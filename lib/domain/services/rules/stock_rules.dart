@@ -14,6 +14,7 @@ class StockData {
     this.epsHistory,
     this.roeHistory,
     this.dividendHistory,
+    this.maxHistoricalRevenue,
   });
 
   final String symbol;
@@ -40,6 +41,9 @@ class StockData {
 
   /// 股利歷史（依年度降序，用於 52 週新高/新低除息調整）
   final List<DividendHistoryEntry>? dividendHistory;
+
+  /// 歷史最高月營收（用於營收創新高規則）
+  final double? maxHistoricalRevenue;
 
   /// 取得最新價格，若無資料則為 null
   DailyPriceEntry? get latestPrice => prices.isEmpty ? null : prices.last;

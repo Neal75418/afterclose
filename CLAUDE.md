@@ -18,7 +18,7 @@ flowchart LR
 
     subgraph Process["本地處理"]
         Sync["資料同步"]
-        Rules["59 條規則"]
+        Rules["60 條規則"]
         Score["評分引擎"]
     end
 
@@ -60,13 +60,13 @@ dart run build_runner build --delete-conflicting-outputs  # Drift 程式碼生�
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
 flowchart TB
     subgraph Core["core/"]
-        Constants["constants/ (14 files)"]
+        Constants["constants/ (17 files)"]
         Exceptions["exceptions/ — AppException hierarchy"]
         Utils["utils/ — Logger, Result, Calendar"]
     end
 
     subgraph Data["data/"]
-        Database["database/ — Drift SQLite (35 tables)"]
+        Database["database/ — Drift SQLite (33 tables)"]
         Remote["remote/ — TWSE, TPEX, FinMind, RSS"]
         Repos["repositories/ — 18 files (15 repos + 3 helpers)"]
     end
@@ -74,14 +74,14 @@ flowchart TB
     subgraph Domain["domain/"]
         Models["models/ (15 files)"]
         RepoIF["repositories/ — 13 interfaces"]
-        Services["services/ — Analysis, Scoring, Screening"]
+        Services["services/ — Analysis, Scoring, Screening, RuleAccuracy"]
         Update["services/update/ — 12 Components"]
-        Rules["services/rules/ — 59 Rules"]
+        Rules["services/rules/ — 60 Rules"]
     end
 
     subgraph Presentation["presentation/"]
         Providers["providers/ — Riverpod Notifiers"]
-        Screens["screens/ — 13 Screens"]
+        Screens["screens/ — 14 Screens"]
     end
 
     Core --> Data
@@ -129,12 +129,14 @@ flowchart LR
 | `lib/core/exceptions/app_exception.dart`            | 例外階層 (sealed class)        |
 | `lib/core/utils/request_deduplicator.dart`          | Request Deduplication 機制   |
 | `lib/domain/repositories/`                          | 13 個抽象介面                   |
-| `lib/domain/services/rules/`                        | 59 條規則 (12 檔案)             |
+| `lib/domain/services/rules/`                        | 60 條規則 (12 檔案)             |
 | `lib/domain/services/scoring_isolate.dart`          | Isolate 評分 (型別安全)          |
 | `lib/domain/services/ohlcv_data.dart`               | OHLCV 提取 extension         |
-| `lib/data/database/tables/`                         | 35 張資料表 (10 檔案)            |
+| `lib/data/database/tables/`                         | 33 張資料表 (10 檔案)            |
 | `lib/data/database/dao/batch_query_mixin.dart`      | 批次查詢共享工具 (groupBySymbol)   |
 | `lib/data/repositories/fundamental_repository.dart` | 通用同步模板 (_syncDataTemplate) |
+| `lib/domain/services/rule_accuracy_service.dart`    | 推薦績效回測引擎 (多週期驗證)        |
+| `lib/presentation/screens/recommendation_performance/` | 推薦績效分析頁面              |
 
 ---
 
@@ -172,12 +174,18 @@ graph TB
         CS["CandidateSelector"]
     end
 
+    subgraph PostUpdate["Post-Update"]
+        RAS["RuleAccuracyService<br/>(推薦績效驗證)"]
+    end
+
     US --> Syncers
     US --> Helpers
+    US -->|"非阻塞"| PostUpdate
 
     style US fill:#4F46E5,stroke:#3730A3,color:#fff
     style Syncers fill:#DBEAFE,stroke:#3B82F6
     style Helpers fill:#FEF3C7,stroke:#F59E0B
+    style PostUpdate fill:#D1FAE5,stroke:#10B981
 ```
 
 ---
@@ -329,7 +337,7 @@ void main() {
 
 | 文件                                                                                                     | 說明              |
 |:-------------------------------------------------------------------------------------------------------|:----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (59 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)                                                             | 規則引擎詳解 (60 條規則) |
 | [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md)                                                   | 待完成的依賴升級任務      |
 | [RELEASE.md](RELEASE.md)                                                                               | 發布建置指南          |
 | [.agent/skills/flutter-riverpod-architect/SKILL.md](.agent/skills/flutter-riverpod-architect/SKILL.md) | 架構模式指南          |

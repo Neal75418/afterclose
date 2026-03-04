@@ -7,8 +7,10 @@ class TechnicalIndicators {
     this.prevKdK,
     this.prevKdD,
     this.ma5,
+    this.ma10,
     this.ma20,
     this.ma60,
+    this.volumeMA20,
   });
 
   /// RSI 相對強弱指標
@@ -29,9 +31,15 @@ class TechnicalIndicators {
   /// 5 日移動平均線
   final double? ma5;
 
+  /// 10 日移動平均線
+  final double? ma10;
+
   /// 20 日移動平均線
   final double? ma20;
 
   /// 60 日移動平均線
   final double? ma60;
+
+  /// 20 日成交量移動平均線
+  final double? volumeMA20;
 }

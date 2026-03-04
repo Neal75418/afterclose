@@ -30,6 +30,7 @@ class ScoringIsolateInput {
     this.epsHistoryMap,
     this.roeHistoryMap,
     this.dividendHistoryMap,
+    this.maxHistoricalRevenueMap,
   });
 
   final List<String> candidates;
@@ -65,6 +66,9 @@ class ScoringIsolateInput {
   /// 股利歷史資料 Map（symbol -> 歷年股利，降序）
   final Map<String, List<Map<String, dynamic>>>? dividendHistoryMap;
 
+  /// 歷史最高月營收 Map（symbol -> maxRevenue）
+  final Map<String, double>? maxHistoricalRevenueMap;
+
   Map<String, dynamic> toMap() => {
     'candidates': candidates,
     'pricesMap': pricesMap,
@@ -82,6 +86,7 @@ class ScoringIsolateInput {
     'epsHistoryMap': epsHistoryMap,
     'roeHistoryMap': roeHistoryMap,
     'dividendHistoryMap': dividendHistoryMap,
+    'maxHistoricalRevenueMap': maxHistoricalRevenueMap,
   };
 
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
@@ -136,6 +141,9 @@ class ScoringIsolateInput {
           : null,
       dividendHistoryMap: map['dividendHistoryMap'] != null
           ? _castMapOfLists(map['dividendHistoryMap'], 'dividendHistoryMap')
+          : null,
+      maxHistoricalRevenueMap: map['maxHistoricalRevenueMap'] != null
+          ? Map<String, double>.from(map['maxHistoricalRevenueMap'])
           : null,
     );
   }
@@ -388,6 +396,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       epsHistory: batchData.epsHistory,
       roeHistory: batchData.roeHistory,
       dividendHistory: batchData.dividendHistory,
+      maxHistoricalRevenue: batchData.maxHistoricalRevenue,
     );
 
     if (reasons.isEmpty) continue;
@@ -493,6 +502,7 @@ MarketDataContext? _buildMarketDataContext(
   List<FinancialDataEntry>? epsHistory,
   List<FinancialDataEntry>? roeHistory,
   List<DividendHistoryEntry>? dividendHistory,
+  double? maxHistoricalRevenue,
 })
 _convertBatchData(ScoringIsolateInput input, String symbol) {
   final instMaps = input.institutionalMap[symbol];
@@ -530,6 +540,7 @@ _convertBatchData(ScoringIsolateInput input, String symbol) {
         dividendHistoryMaps != null && dividendHistoryMaps.isNotEmpty
         ? dividendHistoryMaps.map(_mapToDividendHistoryEntry).toList()
         : null,
+    maxHistoricalRevenue: input.maxHistoricalRevenueMap?[symbol],
   );
 }
 

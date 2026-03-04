@@ -70,6 +70,7 @@ abstract final class SignalName {
   static const revenueYoySurge = 'REVENUE_YOY_SURGE';
   static const revenueYoyDecline = 'REVENUE_YOY_DECLINE';
   static const revenueMomGrowth = 'REVENUE_MOM_GROWTH';
+  static const revenueNewHigh = 'REVENUE_NEW_HIGH';
 
   // ── Fundamental: Valuation ──
   static const highDividendYield = 'HIGH_DIVIDEND_YIELD';

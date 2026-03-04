@@ -242,6 +242,11 @@ enum ScanFilter {
     SignalName.revenueMomGrowth,
     ScanFilterGroup.fundamental,
   ),
+  revenueNewHigh(
+    'scan.filterRevenueNewHigh',
+    SignalName.revenueNewHigh,
+    ScanFilterGroup.fundamental,
+  ),
   highDividendYield(
     'scan.filterHighDividendYield',
     SignalName.highDividendYield,

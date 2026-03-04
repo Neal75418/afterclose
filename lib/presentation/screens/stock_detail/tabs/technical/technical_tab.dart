@@ -108,10 +108,12 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(stockDetailProvider(widget.symbol));
+    final priceState = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.price),
+    );
     final theme = Theme.of(context);
 
-    if (state.price.priceHistory.isEmpty) {
+    if (priceState.priceHistory.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -170,7 +172,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
           // 含指標的 K 線圖
           KLineChartWidget(
-            priceHistory: _filterPriceHistory(state.price.priceHistory),
+            priceHistory: _filterPriceHistory(priceState.priceHistory),
             mainIndicators: _mainIndicators,
             secondaryIndicators: _secondaryIndicators,
             height: totalChartHeight,
@@ -192,8 +194,8 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
           // OHLCV 資料卡片
           OhlcvCard(
-            latestPrice: state.price.latestPrice,
-            priceChange: state.priceChange,
+            latestPrice: priceState.latestPrice,
+            priceChange: priceState.priceChange,
           ),
 
           // 詳細指標數值
@@ -205,7 +207,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             ),
             const SizedBox(height: 12),
             IndicatorCardsSection(
-              priceHistory: state.price.priceHistory,
+              priceHistory: priceState.priceHistory,
               secondaryIndicators: _secondaryIndicators,
               mainIndicators: _mainIndicators,
               indicatorService: _indicatorService,

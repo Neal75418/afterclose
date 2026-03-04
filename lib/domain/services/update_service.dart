@@ -18,6 +18,7 @@ import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -56,10 +57,12 @@ class UpdateService {
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
     ScoringService? scoringService,
+    RuleAccuracyService? ruleAccuracyService,
     List<String>? popularStocks,
     AppClock clock = const SystemClock(),
   }) : _db = database,
        _clock = clock,
+       _ruleAccuracyService = ruleAccuracyService,
        _priceRepo = priceRepository,
        _analysisRepo = analysisRepository,
        _analysisService = analysisService ?? AnalysisService(),
@@ -118,6 +121,7 @@ class UpdateService {
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
   final ScoringService? _scoringService;
+  final RuleAccuracyService? _ruleAccuracyService;
   final List<String> _popularStocks;
 
   // 專責 updater / loader
@@ -235,6 +239,9 @@ class UpdateService {
           .length;
       ctx.onProgress?.call(10, 10, '完成');
       await _finishUpdate(ctx, result);
+
+      // 步驟 10+: 非阻塞推薦驗證（失敗不影響更新結果）
+      await _validatePastRecommendations();
 
       return result;
     } catch (e) {
@@ -622,6 +629,19 @@ class UpdateService {
 
     // 擷取警示價格資料
     await _fetchAlertPrices(ctx, result);
+  }
+
+  /// 回溯驗證過去推薦（非阻塞：失敗不影響更新結果）
+  Future<void> _validatePastRecommendations() async {
+    final service = _ruleAccuracyService;
+    if (service == null) return;
+
+    try {
+      await service.validatePastRecommendationsMultiPeriod();
+      AppLogger.info('UpdateSvc', '步驟 10+: 推薦驗證完成');
+    } catch (e, stack) {
+      AppLogger.error('UpdateSvc', '推薦驗證失敗（非阻塞）', e, stack);
+    }
   }
 
   Future<void> _fetchAlertPrices(

@@ -540,26 +540,32 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   ) {
     final grouped = state.groupedByStatus;
 
-    return ListView(
-      children: [
+    return CustomScrollView(
+      slivers: [
         for (final status in WatchlistStatus.values)
           if (grouped[status]!.isNotEmpty) ...[
-            WatchlistGroupHeader(
-              icon: status.icon,
-              title: status.label,
-              count: grouped[status]!.length,
+            SliverToBoxAdapter(
+              child: WatchlistGroupHeader(
+                icon: status.icon,
+                title: status.label,
+                count: grouped[status]!.length,
+              ),
             ),
-            ...grouped[status]!.asMap().entries.map((entry) {
-              return WatchlistStockItem(
-                item: entry.value,
-                index: entry.key,
-                showLimitMarkers: showLimitMarkers,
-                onView: () =>
-                    context.push(AppRoutes.stockDetail(entry.value.symbol)),
-                onRemove: () => _removeFromWatchlist(entry.value.symbol),
-                onLongPress: () => _showStockPreview(entry.value),
-              );
-            }),
+            SliverList.builder(
+              itemCount: grouped[status]!.length,
+              itemBuilder: (_, i) {
+                final item = grouped[status]![i];
+                return WatchlistStockItem(
+                  item: item,
+                  index: i,
+                  showLimitMarkers: showLimitMarkers,
+                  onView: () =>
+                      context.push(AppRoutes.stockDetail(item.symbol)),
+                  onRemove: () => _removeFromWatchlist(item.symbol),
+                  onLongPress: () => _showStockPreview(item),
+                );
+              },
+            ),
           ],
       ],
     );
@@ -568,26 +574,32 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   Widget _buildGroupedByTrendList(WatchlistState state, bool showLimitMarkers) {
     final grouped = state.groupedByTrend;
 
-    return ListView(
-      children: [
+    return CustomScrollView(
+      slivers: [
         for (final trend in WatchlistTrend.values)
           if (grouped[trend]!.isNotEmpty) ...[
-            WatchlistGroupHeader(
-              icon: trend.icon,
-              title: trend.label,
-              count: grouped[trend]!.length,
+            SliverToBoxAdapter(
+              child: WatchlistGroupHeader(
+                icon: trend.icon,
+                title: trend.label,
+                count: grouped[trend]!.length,
+              ),
             ),
-            ...grouped[trend]!.asMap().entries.map((entry) {
-              return WatchlistStockItem(
-                item: entry.value,
-                index: entry.key,
-                showLimitMarkers: showLimitMarkers,
-                onView: () =>
-                    context.push(AppRoutes.stockDetail(entry.value.symbol)),
-                onRemove: () => _removeFromWatchlist(entry.value.symbol),
-                onLongPress: () => _showStockPreview(entry.value),
-              );
-            }),
+            SliverList.builder(
+              itemCount: grouped[trend]!.length,
+              itemBuilder: (_, i) {
+                final item = grouped[trend]![i];
+                return WatchlistStockItem(
+                  item: item,
+                  index: i,
+                  showLimitMarkers: showLimitMarkers,
+                  onView: () =>
+                      context.push(AppRoutes.stockDetail(item.symbol)),
+                  onRemove: () => _removeFromWatchlist(item.symbol),
+                  onLongPress: () => _showStockPreview(item),
+                );
+              },
+            ),
           ],
       ],
     );

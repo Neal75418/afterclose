@@ -19,6 +19,7 @@ class ScoringBatchData {
     this.shareholdingMap,
     this.warningMap,
     this.insiderMap,
+    this.maxHistoricalRevenueMap,
   });
 
   /// 股價歷史（symbol → 日K列表）
@@ -59,4 +60,7 @@ class ScoringBatchData {
 
   /// 董監持股（symbol → {insiderRatio, pledgeRatio, ...}）
   final Map<String, Map<String, dynamic>>? insiderMap;
+
+  /// 歷史最高月營收（symbol → maxRevenue）
+  final Map<String, double>? maxHistoricalRevenueMap;
 }

@@ -2,7 +2,7 @@
 
 > ← [Back to README](../README.md)
 
-AfterClose 推薦規則引擎 — **59 條異常偵測規則**
+AfterClose 推薦規則引擎 — **60 條異常偵測規則**
 
 ---
 
@@ -11,7 +11,7 @@ AfterClose 推薦規則引擎 — **59 條異常偵測規則**
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
 flowchart LR
-    Data["市場資料"] --> Engine["Rule Engine\n59 Rules"]
+    Data["市場資料"] --> Engine["Rule Engine\n60 Rules"]
     Engine --> Score["分數合成"]
     Score --> Top["Top 20"]
 
@@ -34,10 +34,10 @@ flowchart LR
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
-pie showData title 59 條規則分佈
+pie showData title 60 條規則分佈
     "技術型態 (19)" : 19
     "價量訊號 (12)" : 12
-    "基本面 (14)" : 14
+    "基本面 (15)" : 15
     "籌碼面 (7)" : 7
     "殺手級功能 (7)" : 7
 ```
@@ -126,6 +126,7 @@ pie showData title 59 條規則分佈
 | REVENUE_YOY_SURGE   | +20 | 營收年增 > 50% + 站上 MA60    |
 | REVENUE_YOY_DECLINE | -10 | 營收年減 > 20%              |
 | REVENUE_MOM_GROWTH  | +15 | 營收月增連續正成長 + 站上 MA20     |
+| REVENUE_NEW_HIGH    | +22 | 營收創歷史新高 + 站上 MA20       |
 | HIGH_DIVIDEND_YIELD | +18 | 殖利率 > 5%                |
 | PE_UNDERVALUED      | +15 | PE < 10（且 > 0）+ 站上 MA20 |
 | PE_OVERVALUED       |  -8 | PE > 100 + RSI > 75     |

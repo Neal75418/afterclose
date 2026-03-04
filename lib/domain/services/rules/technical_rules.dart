@@ -81,7 +81,7 @@ class BreakoutRule extends StockRule {
           context.resistanceLevel! * (1 + RuleParams.breakoutBuffer);
       if (close > breakoutLevel) {
         // MA20 過濾：需站上 MA20 才確認有效突破
-        final ma20 = _calculateMA20(data.prices);
+        final ma20 = context.indicators?.ma20;
         if (ma20 != null && close < ma20) return null;
 
         // 成交量確認：需有量能配合
@@ -191,25 +191,6 @@ bool _hasBreakdownVolume(List<DailyPriceEntry> prices) {
 // ==================================================
 // 輔助方法
 // ==================================================
-
-/// 計算 MA20
-double? _calculateMA20(List<DailyPriceEntry> prices) {
-  if (prices.length < 20) return null;
-
-  double sum = 0;
-  int count = 0;
-
-  for (var i = prices.length - 1; i >= prices.length - 20; i--) {
-    final close = prices[i].close;
-    if (close != null) {
-      sum += close;
-      count++;
-    }
-  }
-
-  if (count < 20) return null;
-  return sum / count;
-}
 
 /// 檢查是否有突破所需的成交量（多方）
 ///

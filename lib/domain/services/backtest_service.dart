@@ -168,34 +168,13 @@ class BacktestService {
     return days;
   }
 
-  /// 往後推 N 個交易日
-  DateTime _addTradingDays(DateTime date, int tradingDays) {
-    var current = date;
-    var count = 0;
-    while (count < tradingDays) {
-      current = current.add(const Duration(days: 1));
-      if (TaiwanCalendar.isTradingDay(current)) {
-        count++;
-      }
-    }
-    return current;
-  }
+  /// 往後推 N 個交易日（委派至 [TaiwanCalendar]）
+  DateTime _addTradingDays(DateTime date, int tradingDays) =>
+      TaiwanCalendar.addTradingDays(date, tradingDays);
 
-  /// 往前推 N 個交易日
-  DateTime _subtractTradingDays(DateTime date, int tradingDays) {
-    var current = date;
-    var count = 0;
-    var iterations = 0;
-    final maxIterations = tradingDays * 5; // 安全上限，防止無限迴圈
-    while (count < tradingDays && iterations < maxIterations) {
-      current = current.subtract(const Duration(days: 1));
-      iterations++;
-      if (TaiwanCalendar.isTradingDay(current)) {
-        count++;
-      }
-    }
-    return current;
-  }
+  /// 往前推 N 個交易日（委派至 [TaiwanCalendar]）
+  DateTime _subtractTradingDays(DateTime date, int tradingDays) =>
+      TaiwanCalendar.subtractTradingDays(date, tradingDays);
 
   /// 批次解析所有 pending trades 的進出場價格
   ///

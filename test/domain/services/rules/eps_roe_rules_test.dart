@@ -79,7 +79,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -196,7 +199,10 @@ void main() {
         quarterlyGrowth: 0.5,
       );
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -444,7 +450,10 @@ void main() {
         quarterlyChange: 0.0,
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -504,7 +513,10 @@ void main() {
         quarterlyChange: 6.0,
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 

@@ -62,7 +62,10 @@ void main() {
         yoyGrowth: 55.0, // >= 30.0 (revenueYoySurgeThreshold)
       );
       final data = createTestStockData(prices: prices, latestRevenue: revenue);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -152,7 +155,10 @@ void main() {
         prices: prices,
         revenueHistory: revenueHistory,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -280,7 +286,10 @@ void main() {
         prices: prices,
         latestValuation: valuation,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -414,6 +423,120 @@ void main() {
       final valuation = createTestValuation(pbr: 0.0, date: DateTime.now());
       final data = createTestStockData(latestValuation: valuation);
       const context = AnalysisContext(trendState: TrendState.range);
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+  });
+
+  // ==========================================
+  // RevenueNewHighRule
+  // ==========================================
+  group('RevenueNewHighRule', () {
+    const rule = RevenueNewHighRule();
+
+    test(
+      'triggers when current revenue exceeds historical max with MA20 confirmation',
+      () {
+        final prices = _generatePricesAboveMA(maPeriod: 20);
+        final revenue = createTestMonthlyRevenue(
+          revenue: 1500000, // current: 150 億
+          revenueMonth: 3,
+        );
+        final data = createTestStockData(
+          prices: prices,
+          latestRevenue: revenue,
+          maxHistoricalRevenue: 1200000, // historical max: 120 億
+        );
+        final context = AnalysisContext(
+          trendState: TrendState.range,
+          indicators: indicatorsFromPrices(prices),
+        );
+
+        final result = rule.evaluate(context, data);
+
+        expect(result, isNotNull);
+        expect(result!.type, equals(ReasonType.revenueNewHigh));
+        expect(result.score, equals(RuleScores.revenueNewHigh));
+        expect(result.evidence!['currentRevenue'], equals(1500000));
+        expect(result.evidence!['maxHistoricalRevenue'], equals(1200000));
+        expect(result.evidence!['surpassPct'], closeTo(25.0, 0.1));
+      },
+    );
+
+    test('does not trigger when current revenue <= historical max', () {
+      final prices = _generatePricesAboveMA(maPeriod: 20);
+      final revenue = createTestMonthlyRevenue(revenue: 1000000);
+      final data = createTestStockData(
+        prices: prices,
+        latestRevenue: revenue,
+        maxHistoricalRevenue: 1200000, // max > current
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('does not trigger when price is below MA20', () {
+      final prices = _generatePricesBelowMA(maPeriod: 20);
+      final revenue = createTestMonthlyRevenue(revenue: 1500000);
+      final data = createTestStockData(
+        prices: prices,
+        latestRevenue: revenue,
+        maxHistoricalRevenue: 1200000,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('does not trigger when maxHistoricalRevenue is null', () {
+      final prices = _generatePricesAboveMA(maPeriod: 20);
+      final revenue = createTestMonthlyRevenue(revenue: 1500000);
+      final data = createTestStockData(
+        prices: prices,
+        latestRevenue: revenue,
+        // maxHistoricalRevenue not set → null
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('does not trigger when latestRevenue is null', () {
+      final prices = _generatePricesAboveMA(maPeriod: 20);
+      final data = createTestStockData(
+        prices: prices,
+        maxHistoricalRevenue: 1200000,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
+    test('does not trigger when maxHistoricalRevenue is zero', () {
+      final prices = _generatePricesAboveMA(maPeriod: 20);
+      final revenue = createTestMonthlyRevenue(revenue: 1500000);
+      final data = createTestStockData(
+        prices: prices,
+        latestRevenue: revenue,
+        maxHistoricalRevenue: 0,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });

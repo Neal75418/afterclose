@@ -169,9 +169,9 @@ class Week52LowRule extends StockRule {
 
       // 精準度過濾：確認近期確實處於下跌趨勢
       // 避免長期盤整在低檔區的股票誤觸發
-      if (data.prices.length >= 20) {
-        final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
-        final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
+      {
+        final ma20 = context.indicators?.ma20;
+        final ma60 = context.indicators?.ma60;
 
         // 過濾條件：收盤價 < MA20 且 MA20 < MA60（空頭趨勢確認）
         if (ma20 != null && ma60 != null) {
@@ -230,10 +230,10 @@ class MAAlignmentBullishRule extends StockRule {
     );
     if (data.prices.length < maxPeriod) return null;
 
-    final ma5 = TechnicalIndicatorService.latestSMA(data.prices, 5);
-    final ma10 = TechnicalIndicatorService.latestSMA(data.prices, 10);
-    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
-    final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
+    final ma5 = context.indicators?.ma5;
+    final ma10 = context.indicators?.ma10;
+    final ma20 = context.indicators?.ma20;
+    final ma60 = context.indicators?.ma60;
 
     if (ma5 == null || ma10 == null || ma20 == null || ma60 == null) {
       return null;
@@ -255,11 +255,7 @@ class MAAlignmentBullishRule extends StockRule {
       if (close <= ma5) return null;
       if ((close - ma5) / ma5 >= RuleParams.maDeviationThreshold) return null;
 
-      final volResult = TechnicalIndicatorService.latestVolumeMA(
-        data.prices,
-        20,
-      );
-      final volMA20 = volResult.volumeMA ?? 0;
+      final volMA20 = context.indicators?.volumeMA20 ?? 0;
       if (vol <= volMA20 * RuleParams.maAlignmentVolumeMultiplier) return null;
 
       return TriggeredReason(
@@ -294,10 +290,10 @@ class MAAlignmentBearishRule extends StockRule {
     );
     if (data.prices.length < maxPeriod) return null;
 
-    final ma5 = TechnicalIndicatorService.latestSMA(data.prices, 5);
-    final ma10 = TechnicalIndicatorService.latestSMA(data.prices, 10);
-    final ma20 = TechnicalIndicatorService.latestSMA(data.prices, 20);
-    final ma60 = TechnicalIndicatorService.latestSMA(data.prices, 60);
+    final ma5 = context.indicators?.ma5;
+    final ma10 = context.indicators?.ma10;
+    final ma20 = context.indicators?.ma20;
+    final ma60 = context.indicators?.ma60;
 
     if (ma5 == null || ma10 == null || ma20 == null || ma60 == null) {
       return null;

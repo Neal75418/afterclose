@@ -46,7 +46,14 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(stockDetailProvider(widget.symbol));
+    final insiderHistory = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.chip.insiderHistory),
+    );
+    final isLoadingInsider = ref.watch(
+      stockDetailProvider(
+        widget.symbol,
+      ).select((s) => s.loading.isLoadingInsider),
+    );
 
     return SingleChildScrollView(
       primary: false,
@@ -55,7 +62,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 關鍵指標卡片
-          _buildMetricsRow(context, state),
+          _buildMetricsRow(context, insiderHistory),
           const SizedBox(height: 24),
 
           // 內部人持股歷史區段
@@ -65,12 +72,12 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.loading.isLoadingInsider)
+          if (isLoadingInsider)
             _buildLoadingState(context)
-          else if (state.chip.insiderHistory.isEmpty)
+          else if (insiderHistory.isEmpty)
             _buildEmptyState(context, 'stockDetail.insiderComingSoon'.tr())
           else
-            _buildInsiderTable(context, state.chip.insiderHistory),
+            _buildInsiderTable(context, insiderHistory),
         ],
       ),
     );
@@ -89,13 +96,12 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     );
   }
 
-  Widget _buildMetricsRow(BuildContext context, StockDetailState state) {
-    final latest = state.chip.insiderHistory.isNotEmpty
-        ? state.chip.insiderHistory.first
-        : null;
-    final previous = state.chip.insiderHistory.length >= 2
-        ? state.chip.insiderHistory[1]
-        : null;
+  Widget _buildMetricsRow(
+    BuildContext context,
+    List<InsiderHoldingEntry> insiderHistory,
+  ) {
+    final latest = insiderHistory.isNotEmpty ? insiderHistory.first : null;
+    final previous = insiderHistory.length >= 2 ? insiderHistory[1] : null;
 
     // 計算變動
     double? change;

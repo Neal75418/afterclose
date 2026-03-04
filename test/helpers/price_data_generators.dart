@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/technical_indicators.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 測試資料生成工具
 ///
@@ -373,5 +375,23 @@ NewsItemEntry createTestNewsItem({
     category: category,
     publishedAt: publishedAt ?? now,
     fetchedAt: fetchedAt ?? now,
+  );
+}
+
+// ==========================================
+// 技術指標計算（供測試建立 AnalysisContext 用）
+// ==========================================
+
+/// 從價格資料計算 TechnicalIndicators（含所有 MA 值）。
+///
+/// 用於測試中建立帶有預計算指標的 AnalysisContext，
+/// 確保與 production 的 calculateTechnicalIndicators 行為一致。
+TechnicalIndicators indicatorsFromPrices(List<DailyPriceEntry> prices) {
+  return TechnicalIndicators(
+    ma5: TechnicalIndicatorService.latestSMA(prices, 5),
+    ma10: TechnicalIndicatorService.latestSMA(prices, 10),
+    ma20: TechnicalIndicatorService.latestSMA(prices, 20),
+    ma60: TechnicalIndicatorService.latestSMA(prices, 60),
+    volumeMA20: TechnicalIndicatorService.latestVolumeMA(prices, 20).volumeMA,
   );
 }

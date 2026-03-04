@@ -58,81 +58,119 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
       children: [
         RefreshIndicator(
           onRefresh: () => ref.read(portfolioProvider.notifier).loadPositions(),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            children: [
+          child: CustomScrollView(
+            slivers: [
+              // 頂部間距
+              const SliverPadding(padding: EdgeInsets.only(top: 16)),
+
               // 總覽卡片
-              PortfolioSummaryCard(summary: state.summary),
-              const SizedBox(height: 16),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: SliverToBoxAdapter(
+                  child: PortfolioSummaryCard(summary: state.summary),
+                ),
+              ),
 
               // 績效指標卡片
-              if (state.performance != null) ...[
-                PerformanceCard(performance: state.performance!),
-                const SizedBox(height: 16),
-              ],
+              if (state.performance != null)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: PerformanceCard(performance: state.performance!),
+                  ),
+                ),
 
               // 配置圓餅圖
-              if (state.allocationMap.isNotEmpty) ...[
-                Semantics(
-                  label: S.accessibilityAllocationPieChart(
-                    state.allocationMap.length,
+              if (state.allocationMap.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: Semantics(
+                      label: S.accessibilityAllocationPieChart(
+                        state.allocationMap.length,
+                      ),
+                      image: true,
+                      child: AllocationPieChart(
+                        allocationMap: state.allocationMap,
+                      ),
+                    ),
                   ),
-                  image: true,
-                  child: AllocationPieChart(allocationMap: state.allocationMap),
                 ),
-                const SizedBox(height: 16),
-              ],
 
               // 產業配置
               if (state.performance != null &&
-                  state.performance!.industryAllocation.isNotEmpty) ...[
-                IndustryAllocationCard(
-                  allocation: state.performance!.industryAllocation,
+                  state.performance!.industryAllocation.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: IndustryAllocationCard(
+                      allocation: state.performance!.industryAllocation,
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
-              ],
 
               // 股利分析
               if (state.dividendAnalysis != null &&
-                  state.dividendAnalysis!.stockDividends.isNotEmpty) ...[
-                DividendAnalysisCard(analysis: state.dividendAnalysis!),
-                const SizedBox(height: 20),
-              ],
+                  state.dividendAnalysis!.stockDividends.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  sliver: SliverToBoxAdapter(
+                    child: DividendAnalysisCard(
+                      analysis: state.dividendAnalysis!,
+                    ),
+                  ),
+                ),
 
-              // 持倉列表
-              Row(
-                children: [
-                  Text(
-                    'portfolio.positions'.tr(),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+              // 持倉列表標題
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                sliver: SliverToBoxAdapter(
+                  child: Row(
+                    children: [
+                      Text(
+                        'portfolio.positions'.tr(),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'portfolio.positionCount'.tr(
+                          namedArgs: {
+                            'count': state.summary.positionCount.toString(),
+                          },
+                        ),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.outline,
+                        ),
+                      ),
+                    ],
                   ),
-                  const Spacer(),
-                  Text(
-                    'portfolio.positionCount'.tr(
-                      namedArgs: {
-                        'count': state.summary.positionCount.toString(),
-                      },
-                    ),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.outline,
-                    ),
-                  ),
-                ],
+                ),
               ),
-              const SizedBox(height: 8),
 
-              for (final position in state.positions) ...[
-                PositionCard(
-                  position: position,
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    context.push(AppRoutes.positionDetail(position.symbol));
+              // 持倉卡片（懶加載）
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                sliver: SliverList.builder(
+                  itemCount: state.positions.length,
+                  itemBuilder: (_, i) {
+                    final position = state.positions[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: PositionCard(
+                        position: position,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          context.push(
+                            AppRoutes.positionDetail(position.symbol),
+                          );
+                        },
+                      ),
+                    );
                   },
                 ),
-                const SizedBox(height: 8),
-              ],
+              ),
             ],
           ),
         ),

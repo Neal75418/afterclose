@@ -170,7 +170,7 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(CustomScrollView), findsOneWidget);
     });
 
     testWidgets('shows FAB when positions exist', (tester) async {
@@ -192,8 +192,8 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      // PortfolioSummaryCard renders inside ListView
-      expect(find.byType(ListView), findsOneWidget);
+      // PortfolioSummaryCard renders inside CustomScrollView
+      expect(find.byType(CustomScrollView), findsOneWidget);
     });
 
     testWidgets('renders in dark mode', (tester) async {
@@ -245,7 +245,7 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(CustomScrollView), findsOneWidget);
     });
   });
 }

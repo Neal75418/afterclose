@@ -15,6 +15,7 @@ abstract final class AppRoutes {
   static const backtest = '/scan/custom/backtest';
   static const compare = '/compare';
   static const calendar = '/calendar';
+  static const recommendationPerformance = '/recommendation-performance';
 
   // 參數化路由
   static String stockDetail(String symbol) => '/stock/$symbol';

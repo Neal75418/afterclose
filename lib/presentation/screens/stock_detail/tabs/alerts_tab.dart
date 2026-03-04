@@ -33,15 +33,17 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final stockState = ref.watch(stockDetailProvider(widget.symbol));
+    final currentPrice = ref.watch(
+      stockDetailProvider(
+        widget.symbol,
+      ).select((s) => s.price.latestPrice?.close),
+    );
     final alertState = ref.watch(priceAlertProvider);
 
     // 篩選此股票的警示
     final stockAlerts = alertState.alerts
         .where((alert) => alert.symbol == widget.symbol)
         .toList();
-
-    final currentPrice = stockState.price.latestPrice?.close;
 
     return SingleChildScrollView(
       primary: false,

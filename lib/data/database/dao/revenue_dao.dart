@@ -150,6 +150,43 @@ mixin _RevenueDaoMixin on _$AppDatabase {
     });
   }
 
+  /// 批次取得多檔股票的歷史最高月營收（排除最新月份）
+  ///
+  /// 排除每檔股票最新一筆紀錄，僅比較歷史資料。
+  /// 用於「營收創歷史新高」規則，避免當月營收與自身比較。
+  Future<Map<String, double>> getMaxRevenueBatch(List<String> symbols) async {
+    if (symbols.isEmpty) return {};
+
+    final placeholders = List.filled(symbols.length, '?').join(', ');
+    final query =
+        '''
+    SELECT symbol, MAX(revenue) as max_revenue
+    FROM (
+      SELECT symbol, revenue,
+             ROW_NUMBER() OVER (PARTITION BY symbol ORDER BY date DESC) as rn
+      FROM monthly_revenue
+      WHERE symbol IN ($placeholders)
+    ) history
+    WHERE rn > 1
+    GROUP BY symbol
+  ''';
+
+    final results = await customSelect(
+      query,
+      variables: symbols.map((s) => Variable.withString(s)).toList(),
+      readsFrom: {monthlyRevenue},
+    ).get();
+
+    final map = <String, double>{};
+    for (final row in results) {
+      final maxRevenue = row.readNullable<double>('max_revenue');
+      if (maxRevenue != null) {
+        map[row.read<String>('symbol')] = maxRevenue;
+      }
+    }
+    return map;
+  }
+
   /// 取得指定年/月的月營收資料筆數
   ///
   /// 用於檢查是否已有該月的全市場營收資料，以避免重複的 API 呼叫。

@@ -27,8 +27,9 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(stockDetailProvider(widget.symbol));
-    final summary = state.aiSummary;
+    final summary = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.aiSummary),
+    );
     final theme = Theme.of(context);
 
     if (summary == null) return _buildLoadingSkeleton(theme);

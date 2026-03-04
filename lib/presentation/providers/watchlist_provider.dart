@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/pagination.dart';
@@ -6,6 +8,7 @@ import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
@@ -438,10 +441,34 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       final newItems = [...state.items, itemData];
       state = state.copyWith(items: _sortItems(newItems, state.sort));
 
+      // 背景回填歷史月營收（不阻塞 UI）
+      unawaited(_backfillRevenueHistory(symbol));
+
       return true;
     } catch (e) {
       state = state.copyWith(error: e.toString());
       return false;
+    }
+  }
+
+  /// 背景回填歷史月營收（用於「營收創歷史新高」規則）
+  ///
+  /// 僅在 DB 資料不足時才呼叫 FinMind API 回填 5 年歷史。
+  Future<void> _backfillRevenueHistory(String symbol) async {
+    try {
+      final existing = await _db.getRecentMonthlyRevenue(symbol, months: 13);
+      if (existing.length >= 12) return;
+
+      final fundamentalRepo = ref.read(fundamentalRepositoryProvider);
+      final now = DateTime.now();
+      await fundamentalRepo.syncMonthlyRevenue(
+        symbol: symbol,
+        startDate: DateTime(now.year - 5, now.month),
+        endDate: now,
+      );
+      AppLogger.info('Watchlist', '$symbol: 已回填歷史月營收');
+    } catch (e, stack) {
+      AppLogger.warning('Watchlist', '$symbol: 回填營收失敗 (非關鍵)', e, stack);
     }
   }
 

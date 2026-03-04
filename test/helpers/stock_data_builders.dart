@@ -21,6 +21,7 @@ StockData createTestStockData({
   List<MonthlyRevenueEntry>? revenueHistory,
   List<FinancialDataEntry>? epsHistory,
   List<FinancialDataEntry>? roeHistory,
+  double? maxHistoricalRevenue,
 }) {
   return StockData(
     symbol: symbol,
@@ -32,6 +33,7 @@ StockData createTestStockData({
     revenueHistory: revenueHistory,
     epsHistory: epsHistory,
     roeHistory: roeHistory,
+    maxHistoricalRevenue: maxHistoricalRevenue,
   );
 }
 

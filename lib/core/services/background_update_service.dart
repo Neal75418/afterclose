@@ -19,6 +19,7 @@ import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/data/repositories/shareholding_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/data/repositories/trading_repository.dart';
+import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -238,6 +239,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
     );
 
     // 建立 UpdateService
+    final ruleAccuracyService = RuleAccuracyService(database: database);
     final updateService = UpdateService(
       database: database,
       stockRepository: stockRepo,
@@ -252,6 +254,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
       insiderRepository: insiderRepo,
       twseClient: twseClient,
       tdccClient: TdccClient(),
+      ruleAccuracyService: ruleAccuracyService,
     );
 
     // 執行更新

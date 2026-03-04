@@ -259,12 +259,31 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
   /// 從載入結果建構 state
   MarketOverviewState _buildState(List<Object?> results, DateTime dataDate) {
+    final indices = results[0] as List<TwseMarketIndex>;
+    final rawHistory = results[4] as Map<String, List<double>>;
+
+    // 複製歷史資料，避免原地修改導致重複追加
+    final indexHistory = <String, List<double>>{
+      for (final e in rawHistory.entries) e.key: List<double>.from(e.value),
+    };
+
+    // 將即時 API 的今日收盤價追加到歷史資料，確保走勢圖反映最新資料
+    for (final idx in indices) {
+      final history = indexHistory[idx.name];
+      if (history != null && history.isNotEmpty) {
+        // 使用 epsilon 比較避免浮點數精度問題
+        if ((history.last - idx.close).abs() > 0.001) {
+          history.add(idx.close);
+        }
+      }
+    }
+
     return MarketOverviewState(
-      indices: results[0] as List<TwseMarketIndex>,
+      indices: indices,
       advanceDecline: results[1] as AdvanceDecline,
       institutional: results[2] as InstitutionalTotals,
       margin: results[3] as MarginTradingTotals,
-      indexHistory: results[4] as Map<String, List<double>>,
+      indexHistory: indexHistory,
       advanceDeclineByMarket: results[5] as Map<String, AdvanceDecline>,
       institutionalByMarket: results[6] as Map<String, InstitutionalTotals>,
       marginByMarket: results[7] as Map<String, MarginTradingTotals>,

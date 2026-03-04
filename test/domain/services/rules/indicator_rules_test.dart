@@ -215,7 +215,10 @@ void main() {
     test('does not trigger when MA filter not confirmed (close >= MA20)', () {
       // Flat at 100 → close = MA20 ≈ MA60 ≈ 100, close >= MA20 → filtered
       final prices = generateConstantPrices(days: 250, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: indicatorsFromPrices(prices),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -244,7 +247,10 @@ void main() {
         volume: 5000,
         lastVolume: 8000,
       );
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        trendState: TrendState.up,
+        indicators: indicatorsFromPrices(prices),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -297,7 +303,10 @@ void main() {
         startPrice: 200.0,
         dailyLoss: 1.0,
       );
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        trendState: TrendState.down,
+        indicators: indicatorsFromPrices(prices),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);

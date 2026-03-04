@@ -140,8 +140,9 @@ class AnalysisCoordinatorService {
 
   /// 從價格歷史計算技術指標
   ///
-  /// 回傳最近一日的 RSI 和 KD 值，
-  /// 以及前一日的 KD 用於交叉偵測
+  /// 回傳最近一日的 RSI、KD、MA 值，
+  /// 以及前一日的 KD 用於交叉偵測。
+  /// MA 值預先計算一次，供所有規則共用。
   TechnicalIndicators? calculateTechnicalIndicators(
     List<DailyPriceEntry> prices,
   ) {
@@ -185,21 +186,35 @@ class AnalysisCoordinatorService {
       currentD = kd.d.last;
     }
 
+    // 預先計算所有 MA（供規則共用，避免重複計算）
+    final ma5 = TechnicalIndicatorService.latestSMA(prices, 5);
+    final ma10 = TechnicalIndicatorService.latestSMA(prices, 10);
+    final ma20 = TechnicalIndicatorService.latestSMA(prices, 20);
+    final ma60 = TechnicalIndicatorService.latestSMA(prices, 60);
+    final volResult = TechnicalIndicatorService.latestVolumeMA(prices, 20);
+
     return TechnicalIndicators(
       rsi: currentRsi,
       kdK: currentK,
       kdD: currentD,
       prevKdK: prevK,
       prevKdD: prevD,
+      ma5: ma5,
+      ma10: ma10,
+      ma20: ma20,
+      ma60: ma60,
+      volumeMA20: volResult.volumeMA,
     );
   }
 
   /// 技術指標所需的最少資料點數
   /// RSI 需要：rsiPeriod + 1 (14 + 1 = 15)
   /// KD 需要：kdPeriodK + kdPeriodD - 1 + 1 (9 + 3 - 1 + 1 = 12)
-  /// 取最大值以確保兩者皆可計算
+  /// MA60 需要：60
+  /// 取最大值以確保皆可計算
   static final _minIndicatorDataPoints = [
     RuleParams.rsiPeriod + 1,
     RuleParams.kdPeriodK + RuleParams.kdPeriodD,
+    60,
   ].reduce((a, b) => a > b ? a : b);
 }

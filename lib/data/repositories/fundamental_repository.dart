@@ -215,8 +215,9 @@ class FundamentalRepository implements IFundamentalRepository {
       );
       final needSync = <String>[];
 
+      final latestMap = await _db.getLatestValuationsBatch(symbols);
       for (final symbol in symbols) {
-        final latest = await _db.getLatestValuation(symbol);
+        final latest = latestMap[symbol];
         // 若無資料或資料過舊則需要同步
         if (latest == null || latest.date.isBefore(freshThreshold)) {
           needSync.add(symbol);
@@ -386,8 +387,9 @@ class FundamentalRepository implements IFundamentalRepository {
       final currentMonth = targetDate.month;
       final needSync = <String>[];
 
+      final latestMap = await _db.getLatestMonthlyRevenuesBatch(symbols);
       for (final symbol in symbols) {
-        final latest = await _db.getLatestMonthlyRevenue(symbol);
+        final latest = latestMap[symbol];
         // 若無資料或資料不是當月則需要同步
         final isCurrentMonth =
             latest != null &&

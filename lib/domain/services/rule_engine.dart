@@ -80,6 +80,7 @@ class RuleEngine {
     RevenueYoYSurgeRule(),
     RevenueYoYDeclineRule(),
     RevenueMomGrowthRule(),
+    RevenueNewHighRule(),
     HighDividendYieldRule(),
     PEUndervaluedRule(),
     PEOvervaluedRule(),
@@ -126,6 +127,7 @@ class RuleEngine {
     List<FinancialDataEntry>? epsHistory,
     List<FinancialDataEntry>? roeHistory,
     List<DividendHistoryEntry>? dividendHistory,
+    double? maxHistoricalRevenue,
   }) {
     if (priceHistory.isEmpty) return [];
 
@@ -140,6 +142,7 @@ class RuleEngine {
       epsHistory: epsHistory,
       roeHistory: roeHistory,
       dividendHistory: dividendHistory,
+      maxHistoricalRevenue: maxHistoricalRevenue,
     );
 
     final triggered = <TriggeredReason>[];

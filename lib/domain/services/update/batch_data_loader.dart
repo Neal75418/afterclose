@@ -80,6 +80,7 @@ class BatchDataLoader {
     final epsFuture = _db.getEPSHistoryBatch(candidates);
     final roeFuture = _db.getROEHistoryBatch(candidates);
     final dividendFuture = _db.getDividendHistoryBatch(candidates);
+    final maxRevenueFuture = _db.getMaxRevenueBatch(candidates);
 
     // 型別安全的並行等待（Dart 3 Record 解構）
     final (pricesMap, newsMap, institutionalMap) = await (
@@ -107,6 +108,7 @@ class BatchDataLoader {
       epsHistoryMap,
       roeHistoryMap,
       dividendHistoryMap,
+      maxHistoricalRevenueMap,
     ) = await (
       prevShareholdingFuture,
       warningFuture,
@@ -114,6 +116,7 @@ class BatchDataLoader {
       epsFuture,
       roeFuture,
       dividendFuture,
+      maxRevenueFuture,
     ).wait;
 
     // 批次載入籌碼集中度（TDCC 股權分散表）
@@ -157,6 +160,7 @@ class BatchDataLoader {
       shareholdingMap: shareholdingMap,
       warningMap: warningMap,
       insiderMap: insiderMap,
+      maxHistoricalRevenueMap: maxHistoricalRevenueMap,
     );
   }
 }

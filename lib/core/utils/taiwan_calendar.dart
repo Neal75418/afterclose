@@ -211,6 +211,42 @@ class TaiwanCalendar {
     return current;
   }
 
+  /// 從指定日期往後推 N 個交易日
+  ///
+  /// 例如：週五 +1 交易日 = 下週一（跳過週末）。
+  static DateTime addTradingDays(DateTime date, int tradingDays) {
+    var current = date;
+    var count = 0;
+    var iterations = 0;
+    final maxIterations = tradingDays * 5; // 安全上限
+    while (count < tradingDays && iterations < maxIterations) {
+      current = current.add(const Duration(days: 1));
+      iterations++;
+      if (isTradingDay(current)) {
+        count++;
+      }
+    }
+    return current;
+  }
+
+  /// 從指定日期往前推 N 個交易日
+  ///
+  /// 例如：週一 -1 交易日 = 上週五（跳過週末）。
+  static DateTime subtractTradingDays(DateTime date, int tradingDays) {
+    var current = date;
+    var count = 0;
+    var iterations = 0;
+    final maxIterations = tradingDays * 5; // 安全上限
+    while (count < tradingDays && iterations < maxIterations) {
+      current = current.subtract(const Duration(days: 1));
+      iterations++;
+      if (isTradingDay(current)) {
+        count++;
+      }
+    }
+    return current;
+  }
+
   /// 計算兩日期間的交易日數量（含頭尾）
   static int getTradingDaysBetween(DateTime start, DateTime end) {
     if (start.isAfter(end)) {

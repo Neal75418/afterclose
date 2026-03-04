@@ -15,6 +15,7 @@ import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
 import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 import 'package:afterclose/presentation/screens/comparison/comparison_screen.dart';
 import 'package:afterclose/presentation/screens/calendar/event_calendar_screen.dart';
+import 'package:afterclose/presentation/screens/recommendation_performance/recommendation_performance_screen.dart';
 import 'package:afterclose/presentation/screens/portfolio/position_detail_screen.dart';
 import 'package:afterclose/presentation/screens/stock_detail/stock_detail_screen.dart';
 import 'package:afterclose/presentation/screens/today/today_screen.dart';
@@ -191,6 +192,13 @@ final router = GoRouter(
       path: AppRoutes.calendar,
       name: 'eventCalendar',
       builder: (context, state) => const EventCalendarScreen(),
+    ),
+
+    // 推薦績效（全螢幕，Shell 外）
+    GoRoute(
+      path: AppRoutes.recommendationPerformance,
+      name: 'recommendationPerformance',
+      builder: (context, state) => const RecommendationPerformanceScreen(),
     ),
   ],
 );

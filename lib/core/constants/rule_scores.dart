@@ -195,6 +195,9 @@ abstract final class RuleScores {
   /// 營收月增持續成長分數（多方）
   static const int revenueMomGrowth = 15;
 
+  /// 營收創歷史新高分數（強基本面）
+  static const int revenueNewHigh = 22;
+
   /// 高殖利率分數（多方）
   static const int highDividendYield = 18;
 

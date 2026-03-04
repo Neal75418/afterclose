@@ -6,6 +6,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/twse/models.dart';
+import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
 
 export 'package:afterclose/data/models/twse/models.dart';
@@ -25,6 +26,10 @@ class TwseClient {
 
   static const String _tag = 'TWSE';
   final Dio _dio;
+  final LruCache<String, dynamic> _cache = LruCache(
+    maxSize: 20,
+    ttl: const Duration(minutes: 30),
+  );
 
   /// 取得最新交易日所有股票價格
   ///
@@ -34,6 +39,10 @@ class TwseClient {
   /// 端點: /rwd/zh/afterTrading/STOCK_DAY_ALL
   Future<List<TwseDailyPrice>> getAllDailyPrices() {
     return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
+      const cacheKey = 'dailyPrices';
+      final cached = _cache.get(cacheKey) as List<TwseDailyPrice>?;
+      if (cached != null) return cached;
+
       final response = await _dio.get(
         '/rwd/zh/afterTrading/STOCK_DAY_ALL',
         queryParameters: {'response': 'json'},
@@ -59,13 +68,15 @@ class TwseClient {
       final dateStr = data['date']?.toString() ?? '';
       final date = TwParseUtils.parseAdDate(dateStr);
 
-      return MarketClientMixin.parseRows(
+      final result = MarketClientMixin.parseRows(
         rows: rows,
         parser: (row) => _parseDailyPriceRow(row, date),
         tag: _tag,
         operation: '全市場價格',
         date: date,
       );
+      _cache.put(cacheKey, result);
+      return result;
     });
   }
 
@@ -102,6 +113,12 @@ class TwseClient {
   /// 注意：TWSE API 回傳的是「股數」，存入資料庫時需除以 1000 轉換為「張」
   Future<List<TwseInstitutional>> getAllInstitutionalData({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '法人資料', () async {
+      final cacheKey = date != null
+          ? 'institutional:${TwParseUtils.formatDateCompact(date)}'
+          : 'institutional';
+      final cached = _cache.get(cacheKey) as List<TwseInstitutional>?;
+      if (cached != null) return cached;
+
       final queryParams = <String, dynamic>{
         'response': 'json',
         'selectType': 'ALLBUT0999',
@@ -136,13 +153,15 @@ class TwseClient {
       final dateStr = data['date']?.toString() ?? '';
       final parsedDate = TwParseUtils.parseAdDate(dateStr);
 
-      return MarketClientMixin.parseRows(
+      final result = MarketClientMixin.parseRows(
         rows: rows,
         parser: (row) => _parseInstitutionalRow(row, parsedDate),
         tag: _tag,
         operation: '法人資料',
         date: parsedDate,
       );
+      _cache.put(cacheKey, result);
+      return result;
     });
   }
 
@@ -375,6 +394,10 @@ class TwseClient {
   /// 端點: /rwd/zh/marginTrading/MI_MARGN（融資融券餘額）
   Future<List<TwseMarginTrading>> getAllMarginTradingData() {
     return MarketClientMixin.executeRequest(_tag, '融資融券', () async {
+      const cacheKey = 'marginTrading';
+      final cached = _cache.get(cacheKey) as List<TwseMarginTrading>?;
+      if (cached != null) return cached;
+
       final response = await _dio.get(
         '/rwd/zh/marginTrading/MI_MARGN',
         queryParameters: {'response': 'json', 'selectType': 'ALL'},
@@ -406,13 +429,15 @@ class TwseClient {
       final stockTable = tables[1] as Map<String, dynamic>;
       final List<dynamic> rows = stockTable['data'] ?? [];
 
-      return MarketClientMixin.parseRows(
+      final result = MarketClientMixin.parseRows(
         rows: rows,
         parser: (row) => _parseMarginTradingRow(row, date),
         tag: _tag,
         operation: '融資融券',
         date: date,
       );
+      _cache.put(cacheKey, result);
+      return result;
     });
   }
 
@@ -450,6 +475,10 @@ class TwseClient {
   /// 端點: https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL
   Future<List<TwseValuation>> getAllStockValuation({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '估值資料', () async {
+      const cacheKey = 'valuation';
+      final cached = _cache.get(cacheKey) as List<TwseValuation>?;
+      if (cached != null) return cached;
+
       // 建立獨立的 Dio 以避免基礎 URL 衝突
       // Open Data 欄位: Code, Name, PEratio, DividendYield, PBratio
       final response = await Dio().get(
@@ -494,6 +523,7 @@ class TwseClient {
       }).toList();
 
       AppLogger.info(_tag, '估值資料: ${results.length} 筆');
+      _cache.put(cacheKey, results);
       return results;
     });
   }
@@ -507,6 +537,10 @@ class TwseClient {
   /// 比透過 FinMind 逐檔擷取快得多。
   Future<List<TwseMonthlyRevenue>> getAllMonthlyRevenue() {
     return MarketClientMixin.executeRequest(_tag, '月營收', () async {
+      const cacheKey = 'monthlyRevenue';
+      final cached = _cache.get(cacheKey) as List<TwseMonthlyRevenue>?;
+      if (cached != null) return cached;
+
       // 使用完整 URL 以覆蓋基礎 URL (www.twse.com.tw)
       final response = await _dio.get(ApiEndpoints.twseMonthlyRevenue);
 
@@ -528,6 +562,7 @@ class TwseClient {
           )
           .toList();
       AppLogger.info(_tag, '月營收: ${results.length} 筆');
+      _cache.put(cacheKey, results);
       return results;
     });
   }
@@ -539,6 +574,11 @@ class TwseClient {
   Future<List<TwseDayTrading>> getAllDayTradingData({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '當沖資料', () async {
       final targetDate = date ?? DateTime.now();
+      final cacheKey = date != null
+          ? 'dayTrading:${TwParseUtils.formatDateCompact(date)}'
+          : 'dayTrading';
+      final cached = _cache.get(cacheKey) as List<TwseDayTrading>?;
+      if (cached != null) return cached;
 
       final response = await _dio.get(
         '/exchangeReport/TWTB4U',
@@ -595,6 +635,7 @@ class TwseClient {
       }
 
       AppLogger.info(_tag, '當沖資料: ${result.length} 筆');
+      _cache.put(cacheKey, result);
       return result;
     });
   }

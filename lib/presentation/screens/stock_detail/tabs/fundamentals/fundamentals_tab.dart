@@ -35,7 +35,14 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(stockDetailProvider(widget.symbol));
+    final fundamentals = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.fundamentals),
+    );
+    final isLoadingFundamentals = ref.watch(
+      stockDetailProvider(
+        widget.symbol,
+      ).select((s) => s.loading.isLoadingFundamentals),
+    );
     final showROCYear = ref.watch(
       settingsProvider.select((s) => s.showROCYear),
     );
@@ -47,7 +54,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 關鍵指標卡片
-          _buildMetricsRow(context, state),
+          _buildMetricsRow(context, fundamentals),
           const SizedBox(height: 24),
 
           // 月營收區段
@@ -57,13 +64,13 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.loading.isLoadingFundamentals)
+          if (isLoadingFundamentals)
             buildLoadingState(context)
-          else if (state.fundamentals.revenueHistory.isEmpty)
+          else if (fundamentals.revenueHistory.isEmpty)
             buildEmptyState(context, 'stockDetail.revenueComingSoon'.tr())
           else
             RevenueTable(
-              revenues: state.fundamentals.revenueHistory,
+              revenues: fundamentals.revenueHistory,
               showROCYear: showROCYear,
             ),
 
@@ -76,20 +83,20 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.loading.isLoadingFundamentals)
+          if (isLoadingFundamentals)
             buildLoadingState(context)
-          else if (state.fundamentals.epsHistory.isEmpty)
+          else if (fundamentals.epsHistory.isEmpty)
             buildEmptyState(context, 'stockDetail.epsComingSoon'.tr())
           else
             EpsTable(
-              epsHistory: state.fundamentals.epsHistory,
+              epsHistory: fundamentals.epsHistory,
               showROCYear: showROCYear,
             ),
 
           // 獲利能力卡片
-          if (state.fundamentals.latestQuarterMetrics.isNotEmpty) ...[
+          if (fundamentals.latestQuarterMetrics.isNotEmpty) ...[
             const SizedBox(height: 16),
-            ProfitabilityCard(metrics: state.fundamentals.latestQuarterMetrics),
+            ProfitabilityCard(metrics: fundamentals.latestQuarterMetrics),
           ],
 
           const SizedBox(height: 24),
@@ -101,13 +108,13 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (state.loading.isLoadingFundamentals)
+          if (isLoadingFundamentals)
             buildLoadingState(context)
-          else if (state.fundamentals.dividendHistory.isEmpty)
+          else if (fundamentals.dividendHistory.isEmpty)
             buildEmptyState(context, 'stockDetail.dividendComingSoon'.tr())
           else
             DividendTable(
-              dividends: state.fundamentals.dividendHistory,
+              dividends: fundamentals.dividendHistory,
               showROCYear: showROCYear,
             ),
         ],
@@ -115,8 +122,11 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
     );
   }
 
-  Widget _buildMetricsRow(BuildContext context, StockDetailState state) {
-    final per = state.fundamentals.latestPER;
+  Widget _buildMetricsRow(
+    BuildContext context,
+    FundamentalsState fundamentals,
+  ) {
+    final per = fundamentals.latestPER;
 
     return Row(
       children: [

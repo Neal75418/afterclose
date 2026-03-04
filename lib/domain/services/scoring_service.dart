@@ -123,6 +123,7 @@ class ScoringService {
         epsHistory: batchData.epsHistoryMap?[symbol],
         roeHistory: batchData.roeHistoryMap?[symbol],
         dividendHistory: batchData.dividendHistoryMap?[symbol],
+        maxHistoricalRevenue: batchData.maxHistoricalRevenueMap?[symbol],
       );
 
       if (reasons.isEmpty) continue;
@@ -241,6 +242,7 @@ class ScoringService {
       dividendHistoryMap: batchData.dividendHistoryMap != null
           ? _convertDividendHistoryMap(batchData.dividendHistoryMap!)
           : null,
+      maxHistoricalRevenueMap: batchData.maxHistoricalRevenueMap,
     );
 
     // 在背景 Isolate 執行運算（含回退機制）

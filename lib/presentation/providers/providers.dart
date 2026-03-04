@@ -232,6 +232,7 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
     insiderRepository: ref.watch(insiderRepositoryProvider),
     twseClient: ref.watch(twseClientProvider),
     tdccClient: ref.watch(tdccClientProvider),
+    ruleAccuracyService: ref.watch(ruleAccuracyServiceProvider),
   );
 });
 

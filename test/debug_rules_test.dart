@@ -76,9 +76,13 @@ void main() {
         pbr: 1.2,
       );
 
-      const context = AnalysisContext(trendState: TrendState.range);
+      // MA20 = (15×100 + 5×110) / 20 = 102.5; close=110 > 102.5
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: TechnicalIndicators(ma20: 102.5),
+      );
 
-      // Need at least 20 price entries to calculate MA20
+      // Need at least 20 price entries
       // And close must be > ma20 to pass the filter
       // Base prices at 100, last price at 110 (above MA20)
       final prices = List.generate(25, (i) {
