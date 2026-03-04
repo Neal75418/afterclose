@@ -6,12 +6,20 @@ void main() {
   group('DateContext', () {
     group('factory constructors', () {
       test('DateContext.now() creates context with today at midnight', () {
+        final before = DateTime.now();
         final ctx = DateContext.now();
-        final now = DateTime.now();
+        final after = DateTime.now();
 
-        expect(ctx.today.year, equals(now.year));
-        expect(ctx.today.month, equals(now.month));
-        expect(ctx.today.day, equals(now.day));
+        // 驗證 today 落在 [before, after] 同一天（避免 CI 跨午夜 flaky）
+        final matchesBefore =
+            ctx.today.year == before.year &&
+            ctx.today.month == before.month &&
+            ctx.today.day == before.day;
+        final matchesAfter =
+            ctx.today.year == after.year &&
+            ctx.today.month == after.month &&
+            ctx.today.day == after.day;
+        expect(matchesBefore || matchesAfter, isTrue);
         expect(ctx.today.hour, equals(0));
         expect(ctx.today.minute, equals(0));
         expect(ctx.today.second, equals(0));
