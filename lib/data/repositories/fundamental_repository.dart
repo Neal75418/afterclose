@@ -63,6 +63,8 @@ class FundamentalRepository implements IFundamentalRepository {
       return entries.length;
     } on RateLimitException {
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       final symbolInfo = symbol != null ? ': $symbol' : '';
       AppLogger.warning(
@@ -496,6 +498,8 @@ class FundamentalRepository implements IFundamentalRepository {
       return entries.length;
     } on RateLimitException {
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步股利歷史失敗: $symbol', e);
       return 0;
@@ -553,6 +557,8 @@ class FundamentalRepository implements IFundamentalRepository {
       await _db.insertFinancialData(entries);
       return entries.length;
     } on RateLimitException {
+      rethrow;
+    } on NetworkException {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalRepo', '同步財報失敗: $symbol', e);

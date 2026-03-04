@@ -332,219 +332,91 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
   final recentSet = input.recentlyRecommended ?? <String>{};
 
-  // 分批處理候選股票（每批 500 檔）
-  const batchSize = 500;
-  for (
-    var batchStart = 0;
-    batchStart < input.candidates.length;
-    batchStart += batchSize
-  ) {
-    final batchEnd = (batchStart + batchSize < input.candidates.length)
-        ? batchStart + batchSize
-        : input.candidates.length;
-    final batch = input.candidates.sublist(batchStart, batchEnd);
-
-    for (final symbol in batch) {
-      // 取得價格資料
-      final pricesMaps = input.pricesMap[symbol];
-      if (pricesMaps == null || pricesMaps.isEmpty) {
-        skippedNoData++;
-        continue;
-      }
-
-      // 轉換為 DailyPriceEntry
-      final prices = pricesMaps.map(_mapToDailyPriceEntry).toList();
-
-      if (prices.length < RuleParams.swingWindow) {
-        skippedInsufficientData++;
-        continue;
-      }
-
-      // 流動性過濾（使用共用工具）
-      final latest = prices.last;
-      final liquidityResult = LiquidityChecker.checkCandidateLiquidity(latest);
-      if (liquidityResult != null) {
-        if (liquidityResult == 'MISSING_DATA') {
-          skippedNoData++;
-        } else {
-          skippedLowLiquidity++;
-        }
-        continue;
-      }
-      final turnover = latest.close! * latest.volume!;
-
-      // 執行分析
-      final analysisResult = analysisService.analyzeStock(prices);
-      if (analysisResult == null) continue;
-
-      // 建立市場資料上下文（使用預先載入的所有市場資料）
-      final dayTradingRatio = input.dayTradingMap?[symbol];
-      final shareholdingData = input.shareholdingMap?[symbol];
-      final warningData = input.warningMap?[symbol];
-      final insiderData = input.insiderMap?[symbol];
-
-      // 建立警示資料上下文
-      WarningDataContext? warningContext;
-      if (warningData != null) {
-        final warningType = warningData['warningType'] as String?;
-        warningContext = WarningDataContext(
-          isAttention: warningType == 'ATTENTION',
-          isDisposal: warningType == 'DISPOSAL',
-          warningType: warningType,
-          reasonDescription: warningData['reasonDescription'] as String?,
-          disposalMeasures: warningData['disposalMeasures'] as String?,
-          disposalEndDate: warningData['disposalEndDate'] != null
-              ? DateTime.tryParse(warningData['disposalEndDate'] as String)
-              : null,
-        );
-      }
-
-      // 建立董監持股資料上下文
-      InsiderDataContext? insiderContext;
-      if (insiderData != null) {
-        insiderContext = InsiderDataContext(
-          insiderRatio: insiderData['insiderRatio'] as double?,
-          pledgeRatio: insiderData['pledgeRatio'] as double?,
-          hasSellingStreak: insiderData['hasSellingStreak'] as bool? ?? false,
-          sellingStreakMonths: insiderData['sellingStreakMonths'] as int? ?? 0,
-          hasSignificantBuying:
-              insiderData['hasSignificantBuying'] as bool? ?? false,
-          buyingChange: insiderData['buyingChange'] as double?,
-        );
-      }
-
-      // 組合完整的市場資料上下文
-      MarketDataContext? marketData;
-      if (dayTradingRatio != null ||
-          shareholdingData != null ||
-          warningContext != null ||
-          insiderContext != null) {
-        marketData = MarketDataContext(
-          dayTradingRatio: dayTradingRatio,
-          foreignSharesRatio: shareholdingData?['foreignSharesRatio'],
-          foreignSharesRatioChange:
-              shareholdingData?['foreignSharesRatioChange'],
-          concentrationRatio: shareholdingData?['concentrationRatio'],
-          warningData: warningContext,
-          insiderData: insiderContext,
-        );
-      }
-
-      // 建立上下文（注入評估時間，供規則判斷資料新鮮度）
-      final context = analysisService.buildContext(
-        analysisResult,
-        priceHistory: prices,
-        marketData: marketData,
-        evaluationTime: input.date ?? DateTime.now(),
-      );
-
-      // 轉換法人資料
-      List<DailyInstitutionalEntry>? institutionalHistory;
-      final instMaps = input.institutionalMap[symbol];
-      if (instMaps != null && instMaps.isNotEmpty) {
-        institutionalHistory = instMaps
-            .map(_mapToDailyInstitutionalEntry)
-            .toList();
-      }
-
-      // 轉換新聞資料
-      List<NewsItemEntry>? recentNews;
-      final newsMaps = input.newsMap[symbol];
-      if (newsMaps != null && newsMaps.isNotEmpty) {
-        recentNews = newsMaps.map(_mapToNewsItemEntry).toList();
-      }
-
-      // 轉換營收資料
-      MonthlyRevenueEntry? latestRevenue;
-      final revenueMap = input.revenueMap?[symbol];
-      if (revenueMap != null) {
-        latestRevenue = _mapToMonthlyRevenueEntry(revenueMap);
-      }
-
-      // 轉換估值資料
-      StockValuationEntry? latestValuation;
-      final valuationMap = input.valuationMap?[symbol];
-      if (valuationMap != null) {
-        latestValuation = _mapToStockValuationEntry(valuationMap);
-      }
-
-      // 轉換營收歷史
-      List<MonthlyRevenueEntry>? revenueHistory;
-      final revenueHistoryMaps = input.revenueHistoryMap?[symbol];
-      if (revenueHistoryMaps != null && revenueHistoryMaps.isNotEmpty) {
-        revenueHistory = revenueHistoryMaps
-            .map(_mapToMonthlyRevenueEntry)
-            .toList();
-      }
-
-      // 轉換 EPS 歷史
-      List<FinancialDataEntry>? epsHistory;
-      final epsHistoryMaps = input.epsHistoryMap?[symbol];
-      if (epsHistoryMaps != null && epsHistoryMaps.isNotEmpty) {
-        epsHistory = epsHistoryMaps.map(_mapToFinancialDataEntry).toList();
-      }
-
-      // 轉換 ROE 歷史
-      List<FinancialDataEntry>? roeHistory;
-      final roeHistoryMaps = input.roeHistoryMap?[symbol];
-      if (roeHistoryMaps != null && roeHistoryMaps.isNotEmpty) {
-        roeHistory = roeHistoryMaps.map(_mapToFinancialDataEntry).toList();
-      }
-
-      // 轉換股利歷史
-      List<DividendHistoryEntry>? dividendHistory;
-      final dividendHistoryMaps = input.dividendHistoryMap?[symbol];
-      if (dividendHistoryMaps != null && dividendHistoryMaps.isNotEmpty) {
-        dividendHistory = dividendHistoryMaps
-            .map(_mapToDividendHistoryEntry)
-            .toList();
-      }
-
-      // 執行規則引擎
-      final reasons = ruleEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
-        institutionalHistory: institutionalHistory,
-        recentNews: recentNews,
-        symbol: symbol,
-        latestRevenue: latestRevenue,
-        latestValuation: latestValuation,
-        revenueHistory: revenueHistory,
-        epsHistory: epsHistory,
-        roeHistory: roeHistory,
-        dividendHistory: dividendHistory,
-      );
-
-      if (reasons.isEmpty) continue;
-
-      // 計算分數
-      final wasRecent = recentSet.contains(symbol);
-      final score = ruleEngine.calculateScore(
-        reasons,
-        wasRecentlyRecommended: wasRecent,
-      );
-
-      if (score < RuleParams.minScoreThreshold) {
-        skippedLowScore++;
-        continue;
-      }
-
-      // 取得前幾個原因
-      final topReasons = ruleEngine.getTopReasons(reasons);
-
-      outputs.add(
-        ScoringIsolateOutput(
-          symbol: symbol,
-          score: score,
-          turnover: turnover,
-          trendState: analysisResult.trendState.code,
-          reversalState: analysisResult.reversalState.code,
-          supportLevel: analysisResult.supportLevel,
-          resistanceLevel: analysisResult.resistanceLevel,
-          reasons: topReasons.map(_reasonToOutput).toList(),
-        ),
-      );
+  for (final symbol in input.candidates) {
+    // 1. 取得並驗證價格資料
+    final pricesMaps = input.pricesMap[symbol];
+    if (pricesMaps == null || pricesMaps.isEmpty) {
+      skippedNoData++;
+      continue;
     }
+
+    final prices = pricesMaps.map(_mapToDailyPriceEntry).toList();
+    if (prices.length < RuleParams.swingWindow) {
+      skippedInsufficientData++;
+      continue;
+    }
+
+    // 2. 流動性過濾
+    final latest = prices.last;
+    final liquidityResult = LiquidityChecker.checkCandidateLiquidity(latest);
+    if (liquidityResult != null) {
+      if (liquidityResult == 'MISSING_DATA') {
+        skippedNoData++;
+      } else {
+        skippedLowLiquidity++;
+      }
+      continue;
+    }
+    final turnover = latest.close! * latest.volume!;
+
+    // 3. 技術分析
+    final analysisResult = analysisService.analyzeStock(prices);
+    if (analysisResult == null) continue;
+
+    // 4. 建立市場資料上下文
+    final marketData = _buildMarketDataContext(input, symbol);
+
+    // 5. 建立分析上下文
+    final context = analysisService.buildContext(
+      analysisResult,
+      priceHistory: prices,
+      marketData: marketData,
+      evaluationTime: input.date ?? DateTime.now(),
+    );
+
+    // 6. 轉換批次資料並執行規則引擎
+    final batchData = _convertBatchData(input, symbol);
+    final reasons = ruleEngine.evaluateStock(
+      priceHistory: prices,
+      context: context,
+      institutionalHistory: batchData.institutionalHistory,
+      recentNews: batchData.recentNews,
+      symbol: symbol,
+      latestRevenue: batchData.latestRevenue,
+      latestValuation: batchData.latestValuation,
+      revenueHistory: batchData.revenueHistory,
+      epsHistory: batchData.epsHistory,
+      roeHistory: batchData.roeHistory,
+      dividendHistory: batchData.dividendHistory,
+    );
+
+    if (reasons.isEmpty) continue;
+
+    // 7. 計算分數並過濾
+    final wasRecent = recentSet.contains(symbol);
+    final score = ruleEngine.calculateScore(
+      reasons,
+      wasRecentlyRecommended: wasRecent,
+    );
+
+    if (score < RuleParams.minScoreThreshold) {
+      skippedLowScore++;
+      continue;
+    }
+
+    final topReasons = ruleEngine.getTopReasons(reasons);
+    outputs.add(
+      ScoringIsolateOutput(
+        symbol: symbol,
+        score: score,
+        turnover: turnover,
+        trendState: analysisResult.trendState.code,
+        reversalState: analysisResult.reversalState.code,
+        supportLevel: analysisResult.supportLevel,
+        resistanceLevel: analysisResult.resistanceLevel,
+        reasons: topReasons.map(_reasonToOutput).toList(),
+      ),
+    );
   }
 
   return ScoringBatchResult(
@@ -554,6 +426,111 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     skippedLowLiquidity: skippedLowLiquidity,
     skippedLowScore: skippedLowScore,
   ).toMap();
+}
+
+/// 從 input 建立市場資料上下文（警示、董監、外資、當沖）
+MarketDataContext? _buildMarketDataContext(
+  ScoringIsolateInput input,
+  String symbol,
+) {
+  final dayTradingRatio = input.dayTradingMap?[symbol];
+  final shareholdingData = input.shareholdingMap?[symbol];
+  final warningData = input.warningMap?[symbol];
+  final insiderData = input.insiderMap?[symbol];
+
+  WarningDataContext? warningContext;
+  if (warningData != null) {
+    final warningType = warningData['warningType'] as String?;
+    warningContext = WarningDataContext(
+      isAttention: warningType == 'ATTENTION',
+      isDisposal: warningType == 'DISPOSAL',
+      warningType: warningType,
+      reasonDescription: warningData['reasonDescription'] as String?,
+      disposalMeasures: warningData['disposalMeasures'] as String?,
+      disposalEndDate: warningData['disposalEndDate'] != null
+          ? DateTime.tryParse(warningData['disposalEndDate'] as String)
+          : null,
+    );
+  }
+
+  InsiderDataContext? insiderContext;
+  if (insiderData != null) {
+    insiderContext = InsiderDataContext(
+      insiderRatio: insiderData['insiderRatio'] as double?,
+      pledgeRatio: insiderData['pledgeRatio'] as double?,
+      hasSellingStreak: insiderData['hasSellingStreak'] as bool? ?? false,
+      sellingStreakMonths: insiderData['sellingStreakMonths'] as int? ?? 0,
+      hasSignificantBuying:
+          insiderData['hasSignificantBuying'] as bool? ?? false,
+      buyingChange: insiderData['buyingChange'] as double?,
+    );
+  }
+
+  if (dayTradingRatio == null &&
+      shareholdingData == null &&
+      warningContext == null &&
+      insiderContext == null) {
+    return null;
+  }
+
+  return MarketDataContext(
+    dayTradingRatio: dayTradingRatio,
+    foreignSharesRatio: shareholdingData?['foreignSharesRatio'],
+    foreignSharesRatioChange: shareholdingData?['foreignSharesRatioChange'],
+    concentrationRatio: shareholdingData?['concentrationRatio'],
+    warningData: warningContext,
+    insiderData: insiderContext,
+  );
+}
+
+/// 轉換各項批次資料（法人、新聞、營收、估值、EPS、ROE、股利）
+({
+  List<DailyInstitutionalEntry>? institutionalHistory,
+  List<NewsItemEntry>? recentNews,
+  MonthlyRevenueEntry? latestRevenue,
+  StockValuationEntry? latestValuation,
+  List<MonthlyRevenueEntry>? revenueHistory,
+  List<FinancialDataEntry>? epsHistory,
+  List<FinancialDataEntry>? roeHistory,
+  List<DividendHistoryEntry>? dividendHistory,
+})
+_convertBatchData(ScoringIsolateInput input, String symbol) {
+  final instMaps = input.institutionalMap[symbol];
+  final newsMaps = input.newsMap[symbol];
+  final revenueMap = input.revenueMap?[symbol];
+  final valuationMap = input.valuationMap?[symbol];
+  final revenueHistoryMaps = input.revenueHistoryMap?[symbol];
+  final epsHistoryMaps = input.epsHistoryMap?[symbol];
+  final roeHistoryMaps = input.roeHistoryMap?[symbol];
+  final dividendHistoryMaps = input.dividendHistoryMap?[symbol];
+
+  return (
+    institutionalHistory: instMaps != null && instMaps.isNotEmpty
+        ? instMaps.map(_mapToDailyInstitutionalEntry).toList()
+        : null,
+    recentNews: newsMaps != null && newsMaps.isNotEmpty
+        ? newsMaps.map(_mapToNewsItemEntry).toList()
+        : null,
+    latestRevenue: revenueMap != null
+        ? _mapToMonthlyRevenueEntry(revenueMap)
+        : null,
+    latestValuation: valuationMap != null
+        ? _mapToStockValuationEntry(valuationMap)
+        : null,
+    revenueHistory: revenueHistoryMaps != null && revenueHistoryMaps.isNotEmpty
+        ? revenueHistoryMaps.map(_mapToMonthlyRevenueEntry).toList()
+        : null,
+    epsHistory: epsHistoryMaps != null && epsHistoryMaps.isNotEmpty
+        ? epsHistoryMaps.map(_mapToFinancialDataEntry).toList()
+        : null,
+    roeHistory: roeHistoryMaps != null && roeHistoryMaps.isNotEmpty
+        ? roeHistoryMaps.map(_mapToFinancialDataEntry).toList()
+        : null,
+    dividendHistory:
+        dividendHistoryMaps != null && dividendHistoryMaps.isNotEmpty
+        ? dividendHistoryMaps.map(_mapToDividendHistoryEntry).toList()
+        : null,
+  );
 }
 
 // ==================================================

@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/list_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/domain/services/analysis/trend_detection_service.dart';
@@ -89,7 +90,7 @@ class ReversalDetectionService {
     // 檢查成交量爆量
     final todayVolume = today.volume;
     if (todayVolume != null && todayVolume > 0) {
-      final volumeHistory = _lastN(
+      final volumeHistory = lastN(
         prices,
         RuleParams.volMa,
         skip: 1,
@@ -123,17 +124,5 @@ class ReversalDetectionService {
     }
 
     return false;
-  }
-
-  // ==================================================
-  // 私有輔助方法
-  // ==================================================
-
-  /// 從列表尾端取得 [count] 個元素（反序：最新在前），
-  /// 可選跳過尾端 [skip] 個元素。
-  static List<T> _lastN<T>(List<T> list, int count, {int skip = 0}) {
-    final end = (list.length - skip).clamp(0, list.length);
-    final start = (end - count).clamp(0, end);
-    return list.sublist(start, end).reversed.toList();
   }
 }

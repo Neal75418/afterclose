@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/list_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis/support_resistance_service.dart';
@@ -22,7 +23,7 @@ class PriceVolumeAnalysisService {
     }
 
     const lookback = RuleParams.priceVolumeLookbackDays;
-    final recentPrices = _lastN(prices, lookback + 1);
+    final recentPrices = lastN(prices, lookback + 1);
 
     // 計算價格變化
     final todayClose = recentPrices.first.close;
@@ -85,7 +86,7 @@ class PriceVolumeAnalysisService {
     final avgRecentVolume =
         recentVolumes.reduce((a, b) => a + b) / recentVolumes.length;
 
-    final prevVolumes = _lastN(
+    final prevVolumes = lastN(
       allPrices,
       lookback,
       skip: lookback,
@@ -139,13 +140,5 @@ class PriceVolumeAnalysisService {
     }
 
     return PriceVolumeState.neutral;
-  }
-
-  /// 從列表尾端取得 [count] 個元素（反序：最新在前），
-  /// 可選跳過尾端 [skip] 個元素。
-  static List<T> _lastN<T>(List<T> list, int count, {int skip = 0}) {
-    final end = (list.length - skip).clamp(0, list.length);
-    final start = (end - count).clamp(0, end);
-    return list.sublist(start, end).reversed.toList();
   }
 }

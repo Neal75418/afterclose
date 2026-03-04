@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/list_helper.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
@@ -18,7 +19,7 @@ class TrendDetectionService {
     }
 
     // 取得近期價格進行趨勢分析
-    final recentPrices = _lastN(prices, RuleParams.swingWindow);
+    final recentPrices = lastN(prices, RuleParams.swingWindow);
 
     // 使用收盤價計算簡易趨勢
     final closes = recentPrices
@@ -245,15 +246,5 @@ class TrendDetectionService {
     if (denominator.abs() < epsilon) return 0;
 
     return (n * sumXY - sumX * sumY) / denominator;
-  }
-
-  /// 從列表尾端取得 [count] 個元素（反序：最新在前），
-  /// 可選跳過尾端 [skip] 個元素。
-  /// 比 `list.reversed.skip(s).take(n).toList()` 高效，
-  /// 避免對整個列表建立惰性迭代器。
-  static List<T> _lastN<T>(List<T> list, int count, {int skip = 0}) {
-    final end = (list.length - skip).clamp(0, list.length);
-    final start = (end - count).clamp(0, end);
-    return list.sublist(start, end).reversed.toList();
   }
 }

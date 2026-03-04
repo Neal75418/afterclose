@@ -1100,8 +1100,8 @@ class TwseClient {
   ///
   /// 端點: t187ap11_L
   /// 只計算董事和監察人的「本人」記錄，使用姓名去重。
-  /// 回傳 Map<公司代號, TwseInsiderAggregation>
-  Future<Map<String, TwseInsiderAggregation>>
+  /// 回傳 Map<公司代號, InsiderAggregation>
+  Future<Map<String, InsiderAggregation>>
   _fetchAndAggregateInsiderRecords() async {
     final response = await _dio.get(
       ApiEndpoints.twseInsiderHolding,
@@ -1123,7 +1123,7 @@ class TwseClient {
     }
 
     // 彙總計算每家公司的董監持股
-    final companyData = <String, TwseInsiderAggregation>{};
+    final companyData = <String, InsiderAggregation>{};
 
     for (final item in data) {
       if (item is! Map<String, dynamic>) continue;
@@ -1155,7 +1155,7 @@ class TwseClient {
       // 彙總（使用姓名去重）
       companyData.putIfAbsent(
         code,
-        () => TwseInsiderAggregation(code: code, name: companyName, date: date),
+        () => InsiderAggregation(code: code, name: companyName, date: date),
       );
       companyData[code]!.addHoldingIfNew(personName, shares, pledged);
     }
@@ -1168,7 +1168,7 @@ class TwseClient {
   /// [companyData] - 彙總後的各公司董監持股資料
   /// [issuedSharesMap] - 各公司已發行股數
   List<TwseInsiderHolding> _buildInsiderHoldingResults(
-    Map<String, TwseInsiderAggregation> companyData,
+    Map<String, InsiderAggregation> companyData,
     Map<String, double> issuedSharesMap,
   ) {
     // 計算比例並建立結果

@@ -50,7 +50,6 @@ abstract class IPriceRepository {
   /// 同步最新交易日所有價格並回傳快速篩選候選股
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
-    List<String>? fallbackSymbols,
     bool force = false,
   });
 

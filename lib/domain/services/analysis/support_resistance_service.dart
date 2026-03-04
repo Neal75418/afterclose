@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/list_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 支撐壓力檢測服務
@@ -71,7 +72,7 @@ class SupportResistanceService {
   ///
   /// 回傳 (區間底部, 區間頂部) 元組
   (double?, double?) findRange(List<DailyPriceEntry> prices) {
-    final rangePrices = _lastN(prices, RuleParams.rangeLookback);
+    final rangePrices = lastN(prices, RuleParams.rangeLookback);
 
     if (rangePrices.isEmpty) return (null, null);
 
@@ -273,14 +274,6 @@ class SupportResistanceService {
 
     final atr = sumTR / count;
     return (atr / currentClose) * RuleParams.atrDistanceMultiplier;
-  }
-
-  /// 從列表尾端取得 [count] 個元素（反序：最新在前），
-  /// 可選跳過尾端 [skip] 個元素。
-  static List<T> _lastN<T>(List<T> list, int count, {int skip = 0}) {
-    final end = (list.length - skip).clamp(0, list.length);
-    final start = (end - count).clamp(0, end);
-    return list.sublist(start, end).reversed.toList();
   }
 
   /// 波段點聚類閾值

@@ -204,7 +204,6 @@ class PriceRepository implements IPriceRepository {
   @override
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {
-    List<String>? fallbackSymbols,
     bool force = false,
   }) async {
     try {
