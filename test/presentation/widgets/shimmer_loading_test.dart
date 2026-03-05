@@ -68,7 +68,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(const StockListShimmer()));
 
       expect(find.byType(Shimmer), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(Column), findsWidgets);
     });
 
     testWidgets('renders with custom item count', (tester) async {
@@ -102,7 +102,7 @@ void main() {
       await tester.pumpWidget(buildTestApp(const NewsListShimmer()));
 
       expect(find.byType(Shimmer), findsOneWidget);
-      expect(find.byType(ListView), findsOneWidget);
+      expect(find.byType(Column), findsWidgets);
     });
 
     testWidgets('renders with custom item count', (tester) async {

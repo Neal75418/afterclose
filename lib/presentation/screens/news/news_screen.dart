@@ -321,34 +321,24 @@ class _GroupedNewsList extends StatelessWidget {
       }
     }
 
-    return ListView(
-      children: [
-        if (todayNews.isNotEmpty) ...[
-          _SectionHeader(title: S.newsToday, count: todayNews.length),
-          ...todayNews.map(
-            (item) => _NewsListItem(
-              item: item,
-              relatedStocks: newsStockMap[item.id] ?? [],
-              onTap: onTap,
-            ),
+    // 建立帶 section header 的扁平索引清單，用於 lazy loading
+    final sections = <(String title, List<NewsItemEntry> items)>[
+      if (todayNews.isNotEmpty) (S.newsToday, todayNews),
+      if (yesterdayNews.isNotEmpty) (S.newsYesterday, yesterdayNews),
+      if (earlierNews.isNotEmpty) (S.newsEarlier, earlierNews),
+    ];
+
+    return CustomScrollView(
+      slivers: [
+        for (final (title, items) in sections) ...[
+          SliverToBoxAdapter(
+            child: _SectionHeader(title: title, count: items.length),
           ),
-        ],
-        if (yesterdayNews.isNotEmpty) ...[
-          _SectionHeader(title: S.newsYesterday, count: yesterdayNews.length),
-          ...yesterdayNews.map(
-            (item) => _NewsListItem(
-              item: item,
-              relatedStocks: newsStockMap[item.id] ?? [],
-              onTap: onTap,
-            ),
-          ),
-        ],
-        if (earlierNews.isNotEmpty) ...[
-          _SectionHeader(title: S.newsEarlier, count: earlierNews.length),
-          ...earlierNews.map(
-            (item) => _NewsListItem(
-              item: item,
-              relatedStocks: newsStockMap[item.id] ?? [],
+          SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, index) => _NewsListItem(
+              item: items[index],
+              relatedStocks: newsStockMap[items[index].id] ?? [],
               onTap: onTap,
             ),
           ),

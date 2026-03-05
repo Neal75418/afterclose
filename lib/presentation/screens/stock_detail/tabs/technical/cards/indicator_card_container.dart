@@ -1,10 +1,8 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Glassmorphism-style card container used by all indicator cards.
+/// Semi-transparent card container used by all indicator cards.
 class IndicatorCardContainer extends StatelessWidget {
   const IndicatorCardContainer({super.key, required this.child});
 
@@ -16,25 +14,15 @@ class IndicatorCardContainer extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      child: ClipRRect(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.4,
-              ),
-              borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
-              border: Border.all(
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-              ),
-            ),
-            child: child,
-          ),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
         ),
       ),
+      child: child,
     );
   }
 }

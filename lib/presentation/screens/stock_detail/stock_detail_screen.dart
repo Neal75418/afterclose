@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-import 'dart:ui' as ui;
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -98,19 +98,14 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
               )
             : NestedScrollView(
                 headerSliverBuilder: (context, innerBoxScrolled) => [
-                  // App Bar（毛玻璃效果）
+                  // App Bar（半透明背景）
                   SliverAppBar(
                     pinned: true,
                     floating: true,
                     backgroundColor: theme.colorScheme.surface.withValues(
                       alpha: 0.7,
                     ),
-                    flexibleSpace: ClipRect(
-                      child: BackdropFilter(
-                        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                        child: Container(color: Colors.transparent),
-                      ),
-                    ),
+                    surfaceTintColor: Colors.transparent,
                     title: Text(widget.symbol),
                     actions: [
                       IconButton(
@@ -158,7 +153,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     child: AiSummaryCard(symbol: widget.symbol),
                   ),
 
-                  // Tab Bar（毛玻璃效果）
+                  // Tab Bar（半透明背景）
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _TabBarDelegate(
@@ -260,36 +255,28 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          color: theme.colorScheme.surface.withValues(alpha: 0.7),
-          child: TabBar(
-            controller: tabController,
-            isScrollable: true,
-            tabAlignment: TabAlignment.start,
-            labelColor: theme.colorScheme.primary,
-            unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-            indicatorColor: theme.colorScheme.primary,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.normal,
-              fontSize: 14,
-            ),
-            tabs: [
-              Tab(text: 'stockDetail.tabTechnical'.tr()),
-              Tab(text: 'stockDetail.tabChip'.tr()),
-              Tab(text: 'stockDetail.tabFundamentals'.tr()),
-              Tab(text: 'stockDetail.tabInsider'.tr()),
-              Tab(text: 'stockDetail.tabAlerts'.tr()),
-            ],
-          ),
+    return Container(
+      color: theme.colorScheme.surface.withValues(alpha: 0.85),
+      child: TabBar(
+        controller: tabController,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
+        labelColor: theme.colorScheme.primary,
+        unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+        indicatorColor: theme.colorScheme.primary,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        unselectedLabelStyle: const TextStyle(
+          fontWeight: FontWeight.normal,
+          fontSize: 14,
         ),
+        tabs: [
+          Tab(text: 'stockDetail.tabTechnical'.tr()),
+          Tab(text: 'stockDetail.tabChip'.tr()),
+          Tab(text: 'stockDetail.tabFundamentals'.tr()),
+          Tab(text: 'stockDetail.tabInsider'.tr()),
+          Tab(text: 'stockDetail.tabAlerts'.tr()),
+        ],
       ),
     );
   }

@@ -102,11 +102,11 @@ class StockListShimmer extends StatelessWidget {
       child: Shimmer.fromColors(
         baseColor: ShimmerColors.baseColor(isDark),
         highlightColor: ShimmerColors.highlightColor(isDark),
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: itemCount,
-          itemBuilder: (context, index) => _StockCardSkeleton(isDark: isDark),
+        child: Column(
+          children: List.generate(
+            itemCount,
+            (_) => _StockCardSkeleton(isDark: isDark),
+          ),
         ),
       ),
     );
@@ -469,11 +469,11 @@ class NewsListShimmer extends StatelessWidget {
       child: Shimmer.fromColors(
         baseColor: ShimmerColors.baseColor(isDark),
         highlightColor: ShimmerColors.highlightColor(isDark),
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: itemCount,
-          itemBuilder: (context, index) => _NewsCardSkeleton(isDark: isDark),
+        child: Column(
+          children: List.generate(
+            itemCount,
+            (_) => _NewsCardSkeleton(isDark: isDark),
+          ),
         ),
       ),
     );
@@ -498,12 +498,11 @@ class GenericListShimmer extends StatelessWidget {
       child: Shimmer.fromColors(
         baseColor: ShimmerColors.baseColor(isDark),
         highlightColor: ShimmerColors.highlightColor(isDark),
-        child: ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemCount: itemCount,
-          itemBuilder: (context, index) =>
-              _GenericListItemSkeleton(isDark: isDark),
+        child: Column(
+          children: List.generate(
+            itemCount,
+            (_) => _GenericListItemSkeleton(isDark: isDark),
+          ),
         ),
       ),
     );

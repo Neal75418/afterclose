@@ -1,5 +1,3 @@
-import 'dart:ui' as ui;
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -213,25 +211,19 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Widget _buildContent(TodayState state, Set<String> watchlistSymbols) {
     final theme = Theme.of(context);
-    final marketState = ref.watch(marketOverviewProvider);
     final showLimitMarkers = ref.watch(
       settingsProvider.select((s) => s.limitAlerts),
     );
 
     return CustomScrollView(
       slivers: [
-        // 毛玻璃效果 App Bar
+        // App Bar（半透明背景）
         SliverAppBar(
           pinned: true,
           floating: true,
           expandedHeight: 0, // Standard height
           backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.7),
-          flexibleSpace: ClipRect(
-            child: BackdropFilter(
-              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-              child: Container(color: Colors.transparent),
-            ),
-          ),
+          surfaceTintColor: Colors.transparent,
           title: const Text(
             S.appName,
             style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
@@ -306,9 +298,18 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ),
           ),
 
-        // 大盤總覽卡片
-        if (marketState.hasData || marketState.isLoading)
-          SliverToBoxAdapter(child: MarketDashboard(state: marketState)),
+        // 大盤總覽卡片（獨立 Consumer 隔離 market data rebuild）
+        SliverToBoxAdapter(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final marketState = ref.watch(marketOverviewProvider);
+              if (!marketState.hasData && !marketState.isLoading) {
+                return const SizedBox.shrink();
+              }
+              return MarketDashboard(state: marketState);
+            },
+          ),
+        ),
 
         // Top 10 區塊
         const SliverToBoxAdapter(
