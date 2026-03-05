@@ -90,31 +90,28 @@ class TpexClient {
   ///
   /// 列格式: [代號, 名稱, 收盤, 漲跌, 開盤, 最高, 最低, 均價, 成交股數, 成交金額, 成交筆數, 最後買價, 最後賣價, 發行股數, 次日參考價, 次日漲停價, 次日跌停價]
   TpexDailyPrice? _parseDailyPriceRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 11) return null;
-
-      final code = row[0]?.toString().trim() ?? '';
-      if (code.isEmpty) return null;
-
-      // 過濾非股票代碼（上櫃股票為 4 碼數字）
-      if (!StockPatterns.isTpexCode(code)) return null;
-
-      return TpexDailyPrice(
-        date: date,
-        code: code,
-        name: row[1]?.toString().trim() ?? '',
-        close: TwParseUtils.parseFormattedDouble(row[2]),
-        change: TwParseUtils.parseFormattedDouble(row[3]),
-        open: TwParseUtils.parseFormattedDouble(row[4]),
-        high: TwParseUtils.parseFormattedDouble(row[5]),
-        low: TwParseUtils.parseFormattedDouble(row[6]),
-        volume: TwParseUtils.parseFormattedDouble(row[8]),
-        turnover: TwParseUtils.parseFormattedDouble(row[9]),
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析每日價格失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 11,
+      tag: _tag,
+      operation: '每日價格',
+      parser: () {
+        final code = row[0]?.toString().trim() ?? '';
+        if (code.isEmpty || !StockPatterns.isTpexCode(code)) return null;
+        return TpexDailyPrice(
+          date: date,
+          code: code,
+          name: row[1]?.toString().trim() ?? '',
+          close: TwParseUtils.parseFormattedDouble(row[2]),
+          change: TwParseUtils.parseFormattedDouble(row[3]),
+          open: TwParseUtils.parseFormattedDouble(row[4]),
+          high: TwParseUtils.parseFormattedDouble(row[5]),
+          low: TwParseUtils.parseFormattedDouble(row[6]),
+          volume: TwParseUtils.parseFormattedDouble(row[8]),
+          turnover: TwParseUtils.parseFormattedDouble(row[9]),
+        );
+      },
+    );
   }
 
   /// 取得所有上櫃股票的法人買賣超資料
@@ -185,38 +182,31 @@ class TpexClient {
   ///
   /// 注意：TPEX API 回傳的是「股數」，存入資料庫時需除以 1000 轉換為「張」
   TpexInstitutional? _parseInstitutionalRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 24) return null;
-
-      final code = row[0]?.toString().trim() ?? '';
-      if (code.isEmpty) return null;
-
-      // 過濾非股票代碼（上櫃股票為 4 碼數字）
-      if (!StockPatterns.isTpexCode(code)) return null;
-
-      return TpexInstitutional(
-        date: date,
-        code: code,
-        name: row[1]?.toString().trim() ?? '',
-        // 外資及陸資(合計) - indices 8-10
-        foreignBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
-        foreignSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
-        foreignNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
-        // 投信 - indices 11-13
-        investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
-        investmentTrustSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
-        investmentTrustNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
-        // 自營商(合計) - indices 20-22
-        dealerBuy: TwParseUtils.parseFormattedDouble(row[20]) ?? 0,
-        dealerSell: TwParseUtils.parseFormattedDouble(row[21]) ?? 0,
-        dealerNet: TwParseUtils.parseFormattedDouble(row[22]) ?? 0,
-        // 三大法人合計 - index 23
-        totalNet: TwParseUtils.parseFormattedDouble(row[23]) ?? 0,
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析法人資料失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 24,
+      tag: _tag,
+      operation: '法人資料',
+      parser: () {
+        final code = row[0]?.toString().trim() ?? '';
+        if (code.isEmpty || !StockPatterns.isTpexCode(code)) return null;
+        return TpexInstitutional(
+          date: date,
+          code: code,
+          name: row[1]?.toString().trim() ?? '',
+          foreignBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+          foreignSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+          foreignNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
+          investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
+          investmentTrustSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+          investmentTrustNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
+          dealerBuy: TwParseUtils.parseFormattedDouble(row[20]) ?? 0,
+          dealerSell: TwParseUtils.parseFormattedDouble(row[21]) ?? 0,
+          dealerNet: TwParseUtils.parseFormattedDouble(row[22]) ?? 0,
+          totalNet: TwParseUtils.parseFormattedDouble(row[23]) ?? 0,
+        );
+      },
+    );
   }
 
   /// 取得三大法人買賣金額統計（市場總計）
@@ -512,31 +502,24 @@ class TpexClient {
   /// [6] 當沖現股買進成交股數, [7] 當沖現股賣出成交股數
   /// [8] 當沖成交股數
   TpexDayTrading? _parseDayTradingRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 9) return null;
-
-      final code = row[0]?.toString().trim() ?? '';
-      if (code.isEmpty) return null;
-
-      // 過濾非股票代碼（上櫃股票為 4 碼數字）
-      if (!StockPatterns.isTpexCode(code)) return null;
-
-      final buyVolume = TwParseUtils.parseFormattedDouble(row[2]) ?? 0;
-      final sellVolume = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
-      final totalVolume = TwParseUtils.parseFormattedDouble(row[8]) ?? 0;
-
-      return TpexDayTrading(
-        date: date,
-        code: code,
-        name: row[1]?.toString().trim() ?? '',
-        buyVolume: buyVolume,
-        sellVolume: sellVolume,
-        totalVolume: totalVolume,
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析當沖資料失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 9,
+      tag: _tag,
+      operation: '當沖資料',
+      parser: () {
+        final code = row[0]?.toString().trim() ?? '';
+        if (code.isEmpty || !StockPatterns.isTpexCode(code)) return null;
+        return TpexDayTrading(
+          date: date,
+          code: code,
+          name: row[1]?.toString().trim() ?? '',
+          buyVolume: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
+          sellVolume: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
+          totalVolume: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+        );
+      },
+    );
   }
 
   /// 取得所有上櫃股票的融資融券資料
@@ -600,32 +583,27 @@ class TpexClient {
   /// [8] 融券前日餘額, [9] 融券賣出, [10] 融券還券, [11] 融券調整, [12] 融券當日餘額, [13] 融券限額
   /// [14] 備註
   TpexMarginTrading? _parseMarginTradingRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 13) return null;
-
-      final code = row[0]?.toString().trim() ?? '';
-      if (code.isEmpty) return null;
-
-      // 過濾非股票代碼（上櫃股票為 4 碼數字）
-      if (!StockPatterns.isTpexCode(code)) return null;
-
-      return TpexMarginTrading(
-        date: date,
-        code: code,
-        name: row[1]?.toString().trim() ?? '',
-        // 融資
-        marginBuy: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
-        marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
-        marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
-        // 融券
-        shortBuy: TwParseUtils.parseFormattedDouble(row[10]) ?? 0, // 還券
-        shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0, // 賣出
-        shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析融資融券失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 13,
+      tag: _tag,
+      operation: '融資融券',
+      parser: () {
+        final code = row[0]?.toString().trim() ?? '';
+        if (code.isEmpty || !StockPatterns.isTpexCode(code)) return null;
+        return TpexMarginTrading(
+          date: date,
+          code: code,
+          name: row[1]?.toString().trim() ?? '',
+          marginBuy: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
+          marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
+          shortBuy: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
+          shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+          shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+        );
+      },
+    );
   }
 
   // ==================================================

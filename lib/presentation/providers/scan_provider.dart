@@ -117,7 +117,18 @@ class ScanState {
 
 class ScanNotifier extends Notifier<ScanState> {
   @override
-  ScanState build() => const ScanState();
+  ScanState build() {
+    // 重設所有可變快取，避免 Riverpod rebuild 時殘留舊資料
+    _allAnalyses = [];
+    _filteredAnalyses = [];
+    _allReasons = {};
+    _watchlistSymbols = {};
+    _industrySymbols = null;
+    _industryFilterSeq = 0;
+    _cachedIndustries = null;
+    _dateCtx = null;
+    return const ScanState();
+  }
 
   AppDatabase get _db => ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
@@ -126,14 +137,14 @@ class ScanNotifier extends Notifier<ScanState> {
 
   static const _service = ScanFilterService();
 
-  // 分頁快取資料
+  // 分頁快取資料（於 build() 中重設）
   List<DailyAnalysisEntry> _allAnalyses = [];
   List<DailyAnalysisEntry> _filteredAnalyses = [];
   Map<String, List<DailyReasonEntry>> _allReasons = {};
   Set<String> _watchlistSymbols = {};
-  Set<String>? _industrySymbols; // 產業篩選用
-  int _industryFilterSeq = 0; // 防護 race condition
-  List<String>? _cachedIndustries; // 產業列表快取
+  Set<String>? _industrySymbols;
+  int _industryFilterSeq = 0;
+  List<String>? _cachedIndustries;
   DateContext? _dateCtx;
 
   /// Load scan data (first page)

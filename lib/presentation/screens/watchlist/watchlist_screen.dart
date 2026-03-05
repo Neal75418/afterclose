@@ -164,201 +164,200 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     final isWatchlistTab = _currentTab == _WatchlistTab.watchlist;
 
     return Scaffold(
-      appBar: AppBar(
-        title: _isSearching
-            ? TextField(
-                controller: _searchController,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'watchlist.searchHint'.tr(),
-                  border: InputBorder.none,
-                ),
-                onChanged: (value) {
-                  _searchDebounce?.cancel();
-                  _searchDebounce = Timer(
-                    const Duration(milliseconds: 300),
-                    () {
-                      ref
-                          .read(watchlistProvider.notifier)
-                          .setSearchQuery(value);
-                    },
-                  );
-                },
-              )
-            : Text('watchlist.title'.tr()),
-        actions: [
-          if (isWatchlistTab) ...[
-            // 搜尋切換
-            IconButton(
-              icon: Icon(_isSearching ? Icons.close : Icons.search),
-              onPressed: _toggleSearch,
-              tooltip: _isSearching
-                  ? 'common.close'.tr()
-                  : 'common.search'.tr(),
-            ),
-            // 排序選單
-            PopupMenuButton<WatchlistSort>(
-              icon: const Icon(Icons.sort),
-              tooltip: 'watchlist.sort'.tr(),
-              initialValue: state.sort,
-              onSelected: (sort) {
-                ref.read(watchlistProvider.notifier).setSort(sort);
-              },
-              itemBuilder: (context) {
-                return WatchlistSort.values.map((sort) {
-                  return PopupMenuItem(
-                    value: sort,
-                    child: Row(
-                      children: [
-                        if (state.sort == sort)
-                          const Icon(Icons.check, size: 18)
-                        else
-                          const SizedBox(width: 18),
-                        const SizedBox(width: 8),
-                        Text(sort.label),
-                      ],
-                    ),
-                  );
-                }).toList();
-              },
-            ),
-            // 比較按鈕
-            if (state.filteredItems.length >= 2)
-              IconButton(
-                icon: const Icon(Icons.compare_arrows),
-                onPressed: () {
-                  final symbols = state.filteredItems
-                      .take(4)
-                      .map((e) => e.symbol)
-                      .toList();
-                  context.push(AppRoutes.compare, extra: symbols);
-                },
-                tooltip: 'comparison.compare'.tr(),
-              ),
-            // 新增按鈕
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: () {
-                HapticFeedback.selectionClick();
-                showAddStockDialog(context: context, ref: ref);
-              },
-              tooltip: 'watchlist.add'.tr(),
-            ),
-          ],
-          // 更多選單（行事曆、匯出、分組）
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'calendar':
-                  HapticFeedback.selectionClick();
-                  context.push(AppRoutes.calendar);
-                case 'export':
-                  _exportCsv(isWatchlistTab);
-                case 'group_none':
-                  ref
-                      .read(watchlistProvider.notifier)
-                      .setGroup(WatchlistGroup.none);
-                case 'group_status':
-                  ref
-                      .read(watchlistProvider.notifier)
-                      .setGroup(WatchlistGroup.status);
-                case 'group_trend':
-                  ref
-                      .read(watchlistProvider.notifier)
-                      .setGroup(WatchlistGroup.trend);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'calendar',
-                child: Row(
-                  children: [
-                    const Icon(Icons.calendar_month_outlined, size: 20),
-                    const SizedBox(width: 12),
-                    Text('calendar.title'.tr()),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'export',
-                child: Row(
-                  children: [
-                    const Icon(Icons.file_download_outlined, size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      isWatchlistTab
-                          ? 'export.exportWatchlist'.tr()
-                          : 'export.exportPortfolio'.tr(),
-                    ),
-                  ],
-                ),
-              ),
-              if (isWatchlistTab) ...[
-                const PopupMenuDivider(),
-                ...WatchlistGroup.values.map((group) {
-                  final value = 'group_${group.name}';
-                  return PopupMenuItem(
-                    value: value,
-                    child: Row(
-                      children: [
-                        if (state.group == group)
-                          const Icon(Icons.check, size: 18)
-                        else
-                          const SizedBox(width: 18),
-                        const SizedBox(width: 8),
-                        Text(group.label),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ],
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(state, isWatchlistTab),
       body: Column(
         children: [
-          // 分段按鈕切換分頁
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: SegmentedButton<_WatchlistTab>(
-              segments: [
-                ButtonSegment(
-                  value: _WatchlistTab.watchlist,
-                  label: Text('watchlist.title'.tr()),
-                  icon: const Icon(Icons.star_outline, size: 18),
-                ),
-                ButtonSegment(
-                  value: _WatchlistTab.portfolio,
-                  label: Text('portfolio.title'.tr()),
-                  icon: const Icon(
-                    Icons.account_balance_wallet_outlined,
-                    size: 18,
-                  ),
-                ),
-              ],
-              selected: {_currentTab},
-              onSelectionChanged: (selected) {
-                HapticFeedback.selectionClick();
-                setState(() {
-                  _currentTab = selected.first;
-                  if (_isSearching) {
-                    _isSearching = false;
-                    _searchController.clear();
-                    ref.read(watchlistProvider.notifier).setSearchQuery('');
-                  }
-                });
-              },
-            ),
-          ),
-          // 分頁內容
+          _buildTabSelector(theme),
           Expanded(
             child: isWatchlistTab
                 ? _buildWatchlistBody(state, theme)
                 : const PortfolioTab(),
           ),
         ],
+      ),
+    );
+  }
+
+  /// AppBar：搜尋欄 + 排序/比較/新增/更多選單
+  PreferredSizeWidget _buildAppBar(WatchlistState state, bool isWatchlistTab) {
+    return AppBar(
+      title: _isSearching
+          ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'watchlist.searchHint'.tr(),
+                border: InputBorder.none,
+              ),
+              onChanged: (value) {
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+                  ref.read(watchlistProvider.notifier).setSearchQuery(value);
+                });
+              },
+            )
+          : Text('watchlist.title'.tr()),
+      actions: [
+        if (isWatchlistTab) ...[
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: _toggleSearch,
+            tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
+          ),
+          _buildSortMenu(state),
+          if (state.filteredItems.length >= 2)
+            IconButton(
+              icon: const Icon(Icons.compare_arrows),
+              onPressed: () {
+                final symbols = state.filteredItems
+                    .take(4)
+                    .map((e) => e.symbol)
+                    .toList();
+                context.push(AppRoutes.compare, extra: symbols);
+              },
+              tooltip: 'comparison.compare'.tr(),
+            ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              showAddStockDialog(context: context, ref: ref);
+            },
+            tooltip: 'watchlist.add'.tr(),
+          ),
+        ],
+        _buildMoreMenu(state, isWatchlistTab),
+      ],
+    );
+  }
+
+  /// 排序選單
+  Widget _buildSortMenu(WatchlistState state) {
+    return PopupMenuButton<WatchlistSort>(
+      icon: const Icon(Icons.sort),
+      tooltip: 'watchlist.sort'.tr(),
+      initialValue: state.sort,
+      onSelected: (sort) {
+        ref.read(watchlistProvider.notifier).setSort(sort);
+      },
+      itemBuilder: (context) {
+        return WatchlistSort.values.map((sort) {
+          return PopupMenuItem(
+            value: sort,
+            child: Row(
+              children: [
+                if (state.sort == sort)
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                Text(sort.label),
+              ],
+            ),
+          );
+        }).toList();
+      },
+    );
+  }
+
+  /// 更多選單（行事曆、匯出、分組）
+  Widget _buildMoreMenu(WatchlistState state, bool isWatchlistTab) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
+      onSelected: (value) {
+        switch (value) {
+          case 'calendar':
+            HapticFeedback.selectionClick();
+            context.push(AppRoutes.calendar);
+          case 'export':
+            _exportCsv(isWatchlistTab);
+          case 'group_none':
+            ref.read(watchlistProvider.notifier).setGroup(WatchlistGroup.none);
+          case 'group_status':
+            ref
+                .read(watchlistProvider.notifier)
+                .setGroup(WatchlistGroup.status);
+          case 'group_trend':
+            ref.read(watchlistProvider.notifier).setGroup(WatchlistGroup.trend);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'calendar',
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_month_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text('calendar.title'.tr()),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'export',
+          child: Row(
+            children: [
+              const Icon(Icons.file_download_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                isWatchlistTab
+                    ? 'export.exportWatchlist'.tr()
+                    : 'export.exportPortfolio'.tr(),
+              ),
+            ],
+          ),
+        ),
+        if (isWatchlistTab) ...[
+          const PopupMenuDivider(),
+          ...WatchlistGroup.values.map((group) {
+            final value = 'group_${group.name}';
+            return PopupMenuItem(
+              value: value,
+              child: Row(
+                children: [
+                  if (state.group == group)
+                    const Icon(Icons.check, size: 18)
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Text(group.label),
+                ],
+              ),
+            );
+          }),
+        ],
+      ],
+    );
+  }
+
+  /// 分頁選擇器（自選 / 投資組合）
+  Widget _buildTabSelector(ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SegmentedButton<_WatchlistTab>(
+        segments: [
+          ButtonSegment(
+            value: _WatchlistTab.watchlist,
+            label: Text('watchlist.title'.tr()),
+            icon: const Icon(Icons.star_outline, size: 18),
+          ),
+          ButtonSegment(
+            value: _WatchlistTab.portfolio,
+            label: Text('portfolio.title'.tr()),
+            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+          ),
+        ],
+        selected: {_currentTab},
+        onSelectionChanged: (selected) {
+          HapticFeedback.selectionClick();
+          setState(() {
+            _currentTab = selected.first;
+            if (_isSearching) {
+              _isSearching = false;
+              _searchController.clear();
+              ref.read(watchlistProvider.notifier).setSearchQuery('');
+            }
+          });
+        },
       ),
     );
   }

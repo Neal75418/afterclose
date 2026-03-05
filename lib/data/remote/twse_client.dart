@@ -84,27 +84,27 @@ class TwseClient {
   ///
   /// 列格式: [代號, 名稱, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數]
   TwseDailyPrice? _parseDailyPriceRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 10) return null;
-
-      final code = row[0]?.toString() ?? '';
-      if (code.isEmpty) return null;
-
-      return TwseDailyPrice(
-        date: date,
-        code: code,
-        name: row[1]?.toString() ?? '',
-        open: TwParseUtils.parseFormattedDouble(row[4]),
-        high: TwParseUtils.parseFormattedDouble(row[5]),
-        low: TwParseUtils.parseFormattedDouble(row[6]),
-        close: TwParseUtils.parseFormattedDouble(row[7]),
-        volume: TwParseUtils.parseFormattedDouble(row[2]),
-        change: TwParseUtils.parseFormattedDouble(row[8]),
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析每日價格失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 10,
+      tag: _tag,
+      operation: '每日價格',
+      parser: () {
+        final code = row[0]?.toString() ?? '';
+        if (code.isEmpty) return null;
+        return TwseDailyPrice(
+          date: date,
+          code: code,
+          name: row[1]?.toString() ?? '',
+          open: TwParseUtils.parseFormattedDouble(row[4]),
+          high: TwParseUtils.parseFormattedDouble(row[5]),
+          low: TwParseUtils.parseFormattedDouble(row[6]),
+          close: TwParseUtils.parseFormattedDouble(row[7]),
+          volume: TwParseUtils.parseFormattedDouble(row[2]),
+          change: TwParseUtils.parseFormattedDouble(row[8]),
+        );
+      },
+    );
   }
 
   /// 取得所有股票的法人買賣超資料
@@ -170,31 +170,31 @@ class TwseClient {
   /// 列格式: [代號, 名稱, 外資買, 外資賣, 外資淨買, 外資自營買, 外資自營賣, 外資自營淨買,
   ///         投信買, 投信賣, 投信淨買, 自營買, 自營賣, 自營淨買, 自營避險買, 自營避險賣, 自營避險淨買, 三大法人淨買]
   TwseInstitutional? _parseInstitutionalRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 18) return null;
-
-      final code = row[0]?.toString() ?? '';
-      if (code.isEmpty) return null;
-
-      return TwseInstitutional(
-        date: date,
-        code: code,
-        name: row[1]?.toString() ?? '',
-        foreignBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
-        foreignSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
-        foreignNet: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
-        investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
-        investmentTrustSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
-        investmentTrustNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
-        dealerBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
-        dealerSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
-        dealerNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
-        totalNet: TwParseUtils.parseFormattedDouble(row[17]) ?? 0,
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析法人資料失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 18,
+      tag: _tag,
+      operation: '法人資料',
+      parser: () {
+        final code = row[0]?.toString() ?? '';
+        if (code.isEmpty) return null;
+        return TwseInstitutional(
+          date: date,
+          code: code,
+          name: row[1]?.toString() ?? '',
+          foreignBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
+          foreignSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          foreignNet: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
+          investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+          investmentTrustSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+          investmentTrustNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
+          dealerBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
+          dealerSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+          dealerNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
+          totalNet: TwParseUtils.parseFormattedDouble(row[17]) ?? 0,
+        );
+      },
+    );
   }
 
   /// 取得特定股票的歷史價格（每次一個月）
@@ -284,29 +284,28 @@ class TwseClient {
 
   /// 解析 TWSE 歷史資料列
   TwseDailyPrice? _parseHistoricalRow(List<dynamic> row, String code) {
-    try {
-      // 列格式: [日期, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數, ...]
-      if (row.length < 9) return null;
-
-      final dateStr = row[0].toString(); // 格式: "115/01/02"
-      final date = TwParseUtils.parseSlashRocDate(dateStr);
-      if (date == null) return null;
-
-      return TwseDailyPrice(
-        date: date,
-        code: code,
-        name: '', // 歷史資料不含名稱
-        open: TwParseUtils.parseFormattedDouble(row[3]),
-        high: TwParseUtils.parseFormattedDouble(row[4]),
-        low: TwParseUtils.parseFormattedDouble(row[5]),
-        close: TwParseUtils.parseFormattedDouble(row[6]),
-        volume: TwParseUtils.parseFormattedDouble(row[1]),
-        change: TwParseUtils.parseFormattedDouble(row[7]),
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析歷史價格失敗: $e');
-      return null;
-    }
+    // 列格式: [日期, 成交股數, 成交金額, 開盤價, 最高價, 最低價, 收盤價, 漲跌價差, 成交筆數, ...]
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 9,
+      tag: _tag,
+      operation: '歷史價格',
+      parser: () {
+        final date = TwParseUtils.parseSlashRocDate(row[0].toString());
+        if (date == null) return null;
+        return TwseDailyPrice(
+          date: date,
+          code: code,
+          name: '',
+          open: TwParseUtils.parseFormattedDouble(row[3]),
+          high: TwParseUtils.parseFormattedDouble(row[4]),
+          low: TwParseUtils.parseFormattedDouble(row[5]),
+          close: TwParseUtils.parseFormattedDouble(row[6]),
+          volume: TwParseUtils.parseFormattedDouble(row[1]),
+          change: TwParseUtils.parseFormattedDouble(row[7]),
+        );
+      },
+    );
   }
 
   /// 取得多個月的歷史價格
@@ -446,27 +445,27 @@ class TwseClient {
   /// 列格式: [代號, 名稱, 融資買進, 融資賣出, 融資現償, 融資前餘, 融資今餘, 融資限額,
   ///         融券買進, 融券賣出, 融券現償, 融券前餘, 融券今餘, 融券限額, 資券互抵, 備註]
   TwseMarginTrading? _parseMarginTradingRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 14) return null;
-
-      final code = row[0]?.toString() ?? '';
-      if (code.isEmpty) return null;
-
-      return TwseMarginTrading(
-        date: date,
-        code: code,
-        name: row[1]?.toString() ?? '',
-        marginBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
-        marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
-        marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
-        shortBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
-        shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
-        shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析融資融券失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 14,
+      tag: _tag,
+      operation: '融資融券',
+      parser: () {
+        final code = row[0]?.toString() ?? '';
+        if (code.isEmpty) return null;
+        return TwseMarginTrading(
+          date: date,
+          code: code,
+          name: row[1]?.toString() ?? '',
+          marginBuy: TwParseUtils.parseFormattedDouble(row[2]) ?? 0,
+          marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
+          shortBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
+          shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
+          shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+        );
+      },
+    );
   }
 
   /// 取得所有股票的估值資料（本益比、股價淨值比、殖利率）
@@ -645,30 +644,25 @@ class TwseClient {
   /// 列格式: [代號, 名稱, (空), 當沖成交股數, 當沖買進金額, 當沖賣出金額]
   /// 註: TWSE TWTB4U API 不提供比例，需另行計算
   TwseDayTrading? _parseDayTradingRow(List<dynamic> row, DateTime date) {
-    try {
-      final code = row[0]?.toString().trim() ?? '';
-      if (code.isEmpty || code.length < 4) return null;
-
-      final name = row[1]?.toString().trim() ?? '';
-      // 欄位 3 是當沖成交股數
-      final totalVolume = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
-      // 欄位 4 是買進金額，欄位 5 是賣出金額
-      final buyAmount = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
-      final sellAmount = TwParseUtils.parseFormattedDouble(row[5]) ?? 0;
-
-      return TwseDayTrading(
-        date: date,
-        code: code,
-        name: name,
-        buyVolume: buyAmount, // 暫時存金額
-        sellVolume: sellAmount,
-        totalVolume: totalVolume,
-        ratio: 0, // 比例需要稍後計算
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析當沖資料失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 6,
+      tag: _tag,
+      operation: '當沖資料',
+      parser: () {
+        final code = row[0]?.toString().trim() ?? '';
+        if (code.isEmpty || code.length < 4) return null;
+        return TwseDayTrading(
+          date: date,
+          code: code,
+          name: row[1]?.toString().trim() ?? '',
+          buyVolume: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
+          sellVolume: TwParseUtils.parseFormattedDouble(row[5]) ?? 0,
+          totalVolume: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          ratio: 0,
+        );
+      },
+    );
   }
 
   // ==================================================
@@ -799,43 +793,44 @@ class TwseClient {
   /// 注意：TWSE API 的 row[3]（漲跌點數）和 row[4]（漲跌百分比）為絕對值，
   /// 漲跌方向由 row[2] 的符號（`+` 或 `-`）決定。
   TwseMarketIndex? _parseMarketIndexRow(List<dynamic> row, DateTime date) {
-    try {
-      if (row.length < 5) return null;
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 5,
+      tag: _tag,
+      operation: '大盤指數',
+      parser: () {
+        final name = row[0]?.toString().trim() ?? '';
+        if (name.isEmpty) return null;
 
-      final name = row[0]?.toString().trim() ?? '';
-      if (name.isEmpty) return null;
+        final close = TwParseUtils.parseFormattedDouble(row[1]);
+        if (close == null) return null;
 
-      final close = TwParseUtils.parseFormattedDouble(row[1]);
-      if (close == null) return null; // 沒有收盤值的跳過
+        // row[2] 為漲跌方向符號：「+」或「-」或「X」/空值
+        final dirSign = row[2]?.toString().trim() ?? '';
+        final rawChange = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
+        final rawChangePercent = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
 
-      // row[2] 為漲跌方向符號：「+」或「-」或「X」/空值
-      final dirSign = row[2]?.toString().trim() ?? '';
-      final rawChange = TwParseUtils.parseFormattedDouble(row[3]) ?? 0;
-      final rawChangePercent = TwParseUtils.parseFormattedDouble(row[4]) ?? 0;
+        // 根據方向符號套用正負號
+        final change = dirSign.contains('-')
+            ? -rawChange.abs()
+            : dirSign.contains('+')
+            ? rawChange.abs()
+            : rawChange;
+        final changePercent = dirSign.contains('-')
+            ? -rawChangePercent.abs()
+            : dirSign.contains('+')
+            ? rawChangePercent.abs()
+            : rawChangePercent;
 
-      // 根據方向符號套用正負號；無明確符號時保留原值（通常為 0）
-      final change = dirSign.contains('-')
-          ? -rawChange.abs()
-          : dirSign.contains('+')
-          ? rawChange.abs()
-          : rawChange;
-      final changePercent = dirSign.contains('-')
-          ? -rawChangePercent.abs()
-          : dirSign.contains('+')
-          ? rawChangePercent.abs()
-          : rawChangePercent;
-
-      return TwseMarketIndex(
-        date: date,
-        name: name,
-        close: close,
-        change: change,
-        changePercent: changePercent,
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析大盤指數失敗: $e');
-      return null;
-    }
+        return TwseMarketIndex(
+          date: date,
+          name: name,
+          close: close,
+          change: change,
+          changePercent: changePercent,
+        );
+      },
+    );
   }
 
   // ==================================================
@@ -975,22 +970,23 @@ class TwseClient {
     List<dynamic> row,
     DateTime date,
   ) {
-    try {
-      // 新格式: index 1 是證券代號
-      final code = row[1]?.toString().trim() ?? '';
-      if (code.isEmpty || code.length < 4) return null;
-
-      return TwseTradingWarning(
-        date: date,
-        code: code,
-        name: row[2]?.toString().trim() ?? '',
-        reasonDescription: row.length > 4 ? row[4]?.toString().trim() : null,
-        warningType: 'ATTENTION',
-      );
-    } catch (e) {
-      AppLogger.debug(_tag, '解析注意股票失敗: $e');
-      return null;
-    }
+    return MarketClientMixin.safeParseRow(
+      row: row,
+      minLength: 3,
+      tag: _tag,
+      operation: '注意股票',
+      parser: () {
+        final code = row[1]?.toString().trim() ?? '';
+        if (code.isEmpty || code.length < 4) return null;
+        return TwseTradingWarning(
+          date: date,
+          code: code,
+          name: row[2]?.toString().trim() ?? '',
+          reasonDescription: row.length > 4 ? row[4]?.toString().trim() : null,
+          warningType: 'ATTENTION',
+        );
+      },
+    );
   }
 
   /// 取得上市處置股票清單

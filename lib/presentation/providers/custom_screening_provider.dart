@@ -78,6 +78,10 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   CustomScreeningState build() {
     _active = true;
     ref.onDispose(() => _active = false);
+    // 重設可變快取，避免 rebuild 時殘留舊資料
+    _allResultSymbols = [];
+    _watchlistSymbols = {};
+    _dateCtx = null;
     return const CustomScreeningState();
   }
 
@@ -85,7 +89,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
   AnalysisRepository get _analysisRepo => ref.read(analysisRepositoryProvider);
 
-  // 暫存篩選結果的全部 symbol，供分頁使用
+  // 暫存篩選結果（於 build() 中重設）
   List<String> _allResultSymbols = [];
   Set<String> _watchlistSymbols = {};
   DateContext? _dateCtx;

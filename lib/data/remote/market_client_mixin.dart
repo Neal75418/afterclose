@@ -215,6 +215,26 @@ abstract final class MarketClientMixin {
     return (date: actualDate, rows: rows);
   }
 
+  /// 安全解析單一資料列。
+  ///
+  /// 包裝 [parser] 的執行，先檢查 [row] 長度是否 >= [minLength]，
+  /// 解析失敗時記錄 debug log 並回傳 null（不中斷整體解析）。
+  static T? safeParseRow<T>({
+    required List<dynamic> row,
+    required int minLength,
+    required String tag,
+    required String operation,
+    required T? Function() parser,
+  }) {
+    try {
+      if (row.length < minLength) return null;
+      return parser();
+    } catch (e) {
+      AppLogger.debug(tag, '解析$operation失敗: $e');
+      return null;
+    }
+  }
+
   /// 統一解析資料 rows 並記錄結果日誌。
   ///
   /// 逐 row 套用 [parser]，跳過回傳 null 的 row。
