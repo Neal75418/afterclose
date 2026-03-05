@@ -20,19 +20,6 @@ enum ReversalState {
   final String code;
 }
 
-/// 新聞分類
-enum NewsCategory {
-  earnings('EARNINGS'),
-  policy('POLICY'),
-  industry('INDUSTRY'),
-  companyEvent('COMPANY_EVENT'),
-  other('OTHER');
-
-  const NewsCategory(this.code);
-
-  final String code;
-}
-
 /// 更新執行狀態
 enum UpdateStatus {
   success('SUCCESS'),
