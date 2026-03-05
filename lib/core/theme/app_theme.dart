@@ -125,7 +125,7 @@ class AppTheme {
 
       // 底部導航
       navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: Colors.transparent, // Handled by AppShell for blur
+        backgroundColor: _surfaceDark.withValues(alpha: 0.85),
         indicatorColor: primaryColor.withValues(alpha: 0.2),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
         height: 70,
