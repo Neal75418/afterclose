@@ -235,13 +235,15 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           state = state.copyWith(isLoading: false, dataDate: dataDate);
         }
         // 背景繼續等待 API 回應，完成後靜默更新
-        allTasks
-            .then((r) {
-              if (_active) state = _buildState(r, dataDate);
-            })
-            .catchError((Object e) {
-              AppLogger.warning('MarketOverview', '背景載入完成但建構 state 失敗: $e');
-            });
+        unawaited(
+          allTasks
+              .then((r) {
+                if (_active) state = _buildState(r, dataDate);
+              })
+              .catchError((Object e) {
+                AppLogger.warning('MarketOverview', '背景載入完成但建構 state 失敗: $e');
+              }),
+        );
         return;
       }
 

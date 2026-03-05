@@ -3,26 +3,25 @@ import 'dart:async';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
+import 'package:afterclose/presentation/providers/portfolio_provider.dart';
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
 import 'package:afterclose/presentation/screens/watchlist/add_stock_dialog.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_group_header.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_stock_item.dart';
+import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
-import 'package:afterclose/core/services/share_service.dart';
-import 'package:afterclose/presentation/services/export_service.dart';
-import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 
 /// Watchlist screen - shows user's selected stocks
 class WatchlistScreen extends ConsumerStatefulWidget {

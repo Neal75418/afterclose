@@ -1,5 +1,6 @@
-import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:afterclose/domain/models/screening_condition.dart';
 
 /// GoRouterState 的型別安全擴充
 ///

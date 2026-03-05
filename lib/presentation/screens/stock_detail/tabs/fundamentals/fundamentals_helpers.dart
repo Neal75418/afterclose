@@ -1,5 +1,6 @@
-import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Shared helper widgets used across fundamentals section widgets.

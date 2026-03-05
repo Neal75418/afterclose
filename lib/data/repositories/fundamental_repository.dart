@@ -1,3 +1,6 @@
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -6,8 +9,6 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:drift/drift.dart';
-import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/domain/repositories/fundamental_repository.dart';
 
 /// 基本面資料 Repository（營收、本益比、股價淨值比、殖利率）
