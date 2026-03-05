@@ -340,7 +340,7 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final endDate = DateTime.now();
     final startDate = endDate.subtract(
-      Duration(days: RuleParams.volumeDataLookbackDays),
+      const Duration(days: RuleParams.volumeDataLookbackDays),
     );
 
     final query = select(dailyPrice)
@@ -421,7 +421,7 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final endDate = DateTime.now();
     final startDate = endDate.subtract(
-      Duration(days: RuleParams.week52LookbackDays),
+      const Duration(days: RuleParams.week52LookbackDays),
     );
 
     final query = select(dailyPrice)
@@ -489,7 +489,7 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final endDate = DateTime.now();
     final startDate = endDate.subtract(
-      Duration(days: RuleParams.indicatorDataLookbackDays),
+      const Duration(days: RuleParams.indicatorDataLookbackDays),
     );
 
     final query = select(dailyPrice)

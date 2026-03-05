@@ -265,27 +265,6 @@ void main() {
   });
 
   // ==========================================
-  // getSyncedDataDate
-  // ==========================================
-  group('getSyncedDataDate', () {
-    test('delegates to synchronizeDataDates', () {
-      final date = DateTime(2025, 1, 15);
-      final prices = [createTestPrice(date: date, close: 100.0)];
-      final instHistory = createInstHistory([date]);
-
-      final dataDate = service.getSyncedDataDate(prices, instHistory);
-
-      expect(dataDate, equals(date));
-    });
-
-    test('returns null when both are empty', () {
-      final dataDate = service.getSyncedDataDate([], []);
-
-      expect(dataDate, isNull);
-    });
-  });
-
-  // ==========================================
   // getDisplayDataDate
   // ==========================================
   group('getDisplayDataDate', () {

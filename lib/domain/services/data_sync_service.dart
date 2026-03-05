@@ -124,16 +124,6 @@ class DataSyncService {
     );
   }
 
-  /// 僅取得同步後的資料日期（用於 Scanner/Today 等只需日期的場景）
-  ///
-  /// 這是 [synchronizeDataDates] 的簡化版本，當你只需要日期而不需要完整資料時使用。
-  DateTime? getSyncedDataDate(
-    List<DailyPriceEntry> priceHistory,
-    List<DailyInstitutionalEntry> instHistory,
-  ) {
-    return synchronizeDataDates(priceHistory, instHistory).dataDate;
-  }
-
   /// 取得全域顯示用的資料日期
   ///
   /// 用於 Scanner/Today 等批量顯示場景，只有資料庫層級的日期資訊。

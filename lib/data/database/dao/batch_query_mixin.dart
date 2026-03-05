@@ -11,7 +11,7 @@ class _BatchQueryHelper {
   /// [items] - 要分組的項目列表
   /// [getSymbol] - 從項目中提取 symbol 的函數
   ///
-  /// 返回 Map<String, List<E>>，其中 key 是 symbol，value 是該 symbol 的所有項目
+  /// 返回 `Map<String, List<E>>`，其中 key 是 symbol，value 是該 symbol 的所有項目
   ///
   /// 使用範例：
   /// ```dart

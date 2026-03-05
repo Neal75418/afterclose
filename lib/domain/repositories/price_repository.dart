@@ -21,18 +21,6 @@ abstract class IPriceRepository {
   /// 取得股票最新價格
   Future<DailyPriceEntry?> getLatestPrice(String symbol);
 
-  /// 取得股價漲跌幅
-  Future<double?> getPriceChange(String symbol);
-
-  /// 取得 20 日成交量移動平均
-  Future<double?> getVolumeMA20(String symbol);
-
-  /// 批次取得多檔股票的漲跌幅
-  Future<Map<String, double?>> getPriceChangesBatch(List<String> symbols);
-
-  /// 批次取得多檔股票的 20 日成交量均量
-  Future<Map<String, double?>> getVolumeMA20Batch(List<String> symbols);
-
   // ==================================================
   // 同步作業
   // ==================================================
@@ -59,12 +47,6 @@ abstract class IPriceRepository {
     required DateTime targetDate,
     void Function(int current, int total, String symbol)? onProgress,
   });
-
-  /// 取得需要更新價格的股票代碼清單
-  Future<List<String>> getSymbolsNeedingUpdate(
-    List<String> symbols,
-    DateTime targetDate,
-  );
 }
 
 /// 全市場價格同步結果

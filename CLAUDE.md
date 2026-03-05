@@ -145,7 +145,7 @@ flowchart LR
 | 介面                     | 職責               |
 |:-----------------------|:-----------------|
 | `IAnalysisRepository`  | 分析結果存取、推薦紀錄      |
-| `IPriceRepository`     | 價格資料、漲跌幅批次查詢     |
+| `IPriceRepository`     | 價格資料查詢與同步         |
 | `IScreeningRepository` | 自訂篩選 SQL 執行、批次載入 |
 
 ---
