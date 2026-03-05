@@ -59,12 +59,6 @@ extension ResponsiveHelper on BuildContext {
   /// 是否為桌面
   bool get isDesktop => deviceType == DeviceType.desktop;
 
-  /// 是否為平板或更大
-  bool get isTabletOrLarger => screenWidth >= Breakpoints.mobile;
-
-  /// 是否為桌面或更大
-  bool get isDesktopOrLarger => screenWidth >= Breakpoints.desktop;
-
   /// 佈局類型
   LayoutType get layoutType {
     final width = screenWidth;
@@ -150,90 +144,5 @@ extension ResponsiveHelper on BuildContext {
     final totalPadding = responsiveHorizontalPadding * 2;
     final totalSpacing = responsiveCardSpacing * (columns - 1);
     return (screenWidth - totalPadding - totalSpacing) / columns;
-  }
-}
-
-/// 響應式 Widget Builder
-///
-/// 根據螢幕尺寸自動重建 Widget。
-///
-/// 使用範例：
-/// ```dart
-/// ResponsiveBuilder(
-///   mobile: (context) => MobileLayout(),
-///   tablet: (context) => TabletLayout(),
-///   desktop: (context) => DesktopLayout(),
-/// )
-/// ```
-class ResponsiveBuilder extends StatelessWidget {
-  const ResponsiveBuilder({
-    super.key,
-    required this.mobile,
-    this.tablet,
-    this.desktop,
-  });
-
-  /// 手機佈局（必填）
-  final Widget Function(BuildContext context) mobile;
-
-  /// 平板佈局（可選）
-  final Widget Function(BuildContext context)? tablet;
-
-  /// 桌面佈局（可選）
-  final Widget Function(BuildContext context)? desktop;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        if (width >= Breakpoints.desktop && desktop != null) {
-          return desktop!(context);
-        }
-        if (width >= Breakpoints.mobile && tablet != null) {
-          return tablet!(context);
-        }
-        return mobile(context);
-      },
-    );
-  }
-}
-
-/// 響應式佈局 Widget
-///
-/// 根據佈局類型（單欄/雙欄/三欄）自動選擇佈局。
-class ResponsiveLayoutBuilder extends StatelessWidget {
-  const ResponsiveLayoutBuilder({
-    super.key,
-    required this.singlePane,
-    this.dualPane,
-    this.triplePane,
-  });
-
-  /// 單欄佈局（必填）
-  final Widget Function(BuildContext context) singlePane;
-
-  /// 雙欄佈局（可選）
-  final Widget Function(BuildContext context)? dualPane;
-
-  /// 三欄佈局（可選）
-  final Widget Function(BuildContext context)? triplePane;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-
-        if (width >= Breakpoints.triplePaneMinWidth && triplePane != null) {
-          return triplePane!(context);
-        }
-        if (width >= Breakpoints.dualPaneMinWidth && dualPane != null) {
-          return dualPane!(context);
-        }
-        return singlePane(context);
-      },
-    );
   }
 }

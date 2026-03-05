@@ -5,7 +5,6 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
 
 /// 本地通知服務
 class NotificationService {
@@ -229,48 +228,6 @@ class NotificationService {
     );
   }
 
-  /// 排程指定時間的通知
-  Future<void> scheduleNotification({
-    required int id,
-    required String title,
-    required String body,
-    required DateTime scheduledTime,
-    String? payload,
-  }) async {
-    const androidDetails = AndroidNotificationDetails(
-      'scheduled',
-      'Scheduled Notifications',
-      channelDescription: 'Scheduled reminder notifications',
-      importance: Importance.high,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
-    );
-
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    const notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-      macOS: iosDetails,
-    );
-
-    await _notifications.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(scheduledTime, tz.local),
-      notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      payload: payload,
-    );
-  }
-
   /// 取消指定通知
   Future<void> cancelNotification(int id) async {
     await _notifications.cancel(id);
@@ -279,11 +236,6 @@ class NotificationService {
   /// 取消所有通知
   Future<void> cancelAllNotifications() async {
     await _notifications.cancelAll();
-  }
-
-  /// 取得待發送的通知列表
-  Future<List<PendingNotificationRequest>> getPendingNotifications() async {
-    return await _notifications.pendingNotificationRequests();
   }
 
   /// 處理通知點擊事件

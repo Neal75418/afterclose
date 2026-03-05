@@ -41,17 +41,4 @@ class RequestDeduplicator<T> {
       _pending.remove(key);
     }
   }
-
-  /// 清除所有進行中的請求快取
-  ///
-  /// 注意：這不會取消已發出的請求，只是清除內部快取
-  void clear() {
-    _pending.clear();
-  }
-
-  /// 取得目前進行中的請求數量
-  int get pendingCount => _pending.length;
-
-  /// 檢查特定 key 的請求是否正在進行中
-  bool isPending(String key) => _pending.containsKey(key);
 }
