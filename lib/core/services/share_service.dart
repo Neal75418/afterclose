@@ -7,7 +7,7 @@ import 'package:share_plus/share_plus.dart';
 /// 檔案分享服務 — 封裝 share_plus 與臨時檔案 I/O
 ///
 /// 在 macOS 上，NSSharingServicePicker 的 callback 在使用者選擇分享服務後
-/// 就返回，但分享動作（如 AirDrop 傳輸）尚未完成。因此不能在 shareXFiles
+/// 就返回，但分享動作（如 AirDrop 傳輸）尚未完成。因此不能在 share
 /// 返回後立即刪除檔案，改為在下次分享時清理上次的匯出檔案。
 class ShareService {
   const ShareService();
@@ -37,7 +37,9 @@ class ShareService {
     final exportDir = await _getExportDir();
     final file = File('${exportDir.path}/$filename');
     await file.writeAsString(csvContent);
-    await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')]);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path, mimeType: 'text/csv')]),
+    );
   }
 
   /// 分享 PDF 文件
@@ -45,7 +47,9 @@ class ShareService {
     final exportDir = await _getExportDir();
     final file = File('${exportDir.path}/$filename');
     await file.writeAsBytes(pdfBytes);
-    await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')]);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path, mimeType: 'application/pdf')]),
+    );
   }
 
   /// 分享 PNG 圖片
@@ -53,6 +57,8 @@ class ShareService {
     final exportDir = await _getExportDir();
     final file = File('${exportDir.path}/$filename');
     await file.writeAsBytes(imageBytes);
-    await Share.shareXFiles([XFile(file.path, mimeType: 'image/png')]);
+    await SharePlus.instance.share(
+      ShareParams(files: [XFile(file.path, mimeType: 'image/png')]),
+    );
   }
 }
