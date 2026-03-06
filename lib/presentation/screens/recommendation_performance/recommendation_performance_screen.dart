@@ -1,14 +1,18 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/recommendation_performance_provider.dart';
 
-/// 推薦績效畫面
+/// 推薦績效畫面（以個股為中心）
 class RecommendationPerformanceScreen extends ConsumerWidget {
   const RecommendationPerformanceScreen({super.key});
 
@@ -21,7 +25,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: Text('recPerf.title'.tr())),
-      body: state.isLoading && state.ruleStats.isEmpty
+      body: state.isLoading && state.stockRecords.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () => ref
@@ -39,12 +43,12 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                   // 回填按鈕 + 進度
                   _buildBackfillSection(context, ref, theme, state),
 
-                  // 規則績效表
-                  if (state.ruleStats.isNotEmpty)
-                    _buildRuleTable(context, theme, state),
+                  // 個股驗證列表
+                  if (state.stockRecords.isNotEmpty)
+                    _buildStockRecordsList(context, theme, state),
 
                   // 無資料提示
-                  if (state.ruleStats.isEmpty && !state.isLoading)
+                  if (state.stockRecords.isEmpty && !state.isLoading)
                     _buildEmptyHint(context, theme),
 
                   // 免責聲明
@@ -88,10 +92,10 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     ThemeData theme,
     RecommendationPerformanceState state,
   ) {
-    final winRate = state.overallWinRate;
-    final avgReturn = state.overallAvgReturn;
-    final totalValidated = state.totalValidated;
-    final ruleCount = state.ruleStats.length;
+    final stats = state.overallStats;
+    final winRate = stats?.winRate ?? 0;
+    final avgReturn = stats?.avgReturn ?? 0;
+    final totalValidated = stats?.totalCount ?? 0;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -123,24 +127,11 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                     avgReturn >= 0 ? AppTheme.upColor : AppTheme.downColor,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
                 Expanded(
                   child: _buildStatItem(
                     theme,
                     'recPerf.totalValidated'.tr(),
                     '$totalValidated',
-                    theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Expanded(
-                  child: _buildStatItem(
-                    theme,
-                    'recPerf.ruleCount'.tr(),
-                    '$ruleCount',
                     theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -229,14 +220,21 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildRuleTable(
+  Widget _buildStockRecordsList(
     BuildContext context,
     ThemeData theme,
     RecommendationPerformanceState state,
   ) {
-    // 按觸發次數降序排列
-    final sorted = List<RuleStats>.from(state.ruleStats)
-      ..sort((a, b) => b.triggerCount.compareTo(a.triggerCount));
+    // 按推薦日期分組
+    final groupedByDate = <DateTime, List<StockValidationRecord>>{};
+    for (final record in state.stockRecords) {
+      final dateKey = DateContext.normalize(record.recommendationDate);
+      groupedByDate.putIfAbsent(dateKey, () => []).add(record);
+    }
+
+    // 日期降序排列
+    final sortedDates = groupedByDate.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -246,53 +244,40 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'recPerf.ruleBreakdown'.tr(),
+              'recPerf.stockDetails'.tr(),
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
-            // 表頭
-            _buildTableHeader(theme),
-            const Divider(height: 1),
-            // 表身
-            ...sorted.map((rule) => _buildTableRow(theme, rule)),
+            ...sortedDates.expand(
+              (date) => [
+                _buildDateHeader(theme, date),
+                ...groupedByDate[date]!.map(
+                  (record) => _buildStockValidationCard(context, theme, record),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTableHeader(ThemeData theme) {
-    final style = theme.textTheme.labelSmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.bold,
-    );
+  Widget _buildDateHeader(ThemeData theme, DateTime date) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 12, bottom: 6),
       child: Row(
         children: [
-          Expanded(flex: 3, child: Text('recPerf.colRule'.tr(), style: style)),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'recPerf.colCount'.tr(),
-              style: style,
-              textAlign: TextAlign.end,
-            ),
+          Icon(
+            Icons.calendar_today,
+            size: 14,
+            color: theme.colorScheme.primary,
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'recPerf.colWinRate'.tr(),
-              style: style,
-              textAlign: TextAlign.end,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              'recPerf.colAvgReturn'.tr(),
-              style: style,
-              textAlign: TextAlign.end,
+          const SizedBox(width: 6),
+          Text(
+            '${date.year}/${date.month}/${date.day}',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],
@@ -300,52 +285,88 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTableRow(ThemeData theme, RuleStats rule) {
-    final returnColor = rule.avgReturn >= 0
-        ? AppTheme.upColor
-        : AppTheme.downColor;
-    final winColor = rule.hitRate >= 50 ? AppTheme.upColor : AppTheme.downColor;
-
-    // 嘗試翻譯規則名稱，無翻譯時直接顯示 ruleId
-    final ruleLabel = _translateRuleId(rule.ruleId);
+  Widget _buildStockValidationCard(
+    BuildContext context,
+    ThemeData theme,
+    StockValidationRecord record,
+  ) {
+    final returnRate = record.returnRate;
+    final hasResult = returnRate != null;
+    final returnColor = hasResult
+        ? (returnRate >= 0 ? AppTheme.upColor : AppTheme.downColor)
+        : theme.colorScheme.outline;
+    final returnSign = hasResult && returnRate >= 0 ? '+' : '';
+    final statusIcon = hasResult
+        ? (record.isSuccess == true ? Icons.check_circle : Icons.cancel)
+        : Icons.schedule;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              ruleLabel,
-              style: theme.textTheme.bodySmall,
-              overflow: TextOverflow.ellipsis,
-            ),
+      padding: const EdgeInsets.only(bottom: 6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.push(AppRoutes.stockDetail(record.symbol));
+        },
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '${rule.triggerCount}',
-              style: theme.textTheme.bodySmall,
-              textAlign: TextAlign.end,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 股票名稱 + 報酬率
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${record.symbol} ${record.stockName}',
+                      style: theme.textTheme.titleSmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Icon(statusIcon, size: 16, color: returnColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    hasResult
+                        ? '$returnSign${returnRate.toStringAsFixed(1)}%'
+                        : 'recPerf.pendingValidation'.tr(),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: returnColor,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              // 價格區間
+              Text(
+                'recPerf.priceRange'.tr(
+                  namedArgs: {
+                    'entry': record.entryPrice.toStringAsFixed(1),
+                    'exit': record.exitPrice?.toStringAsFixed(1) ?? '-',
+                    'days': '${record.holdingDays}D',
+                  },
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 2),
+              // 主要規則
+              Text(
+                'recPerf.primaryRule'.tr(
+                  namedArgs: {'rule': _translateRuleId(record.primaryRuleId)},
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '${rule.hitRate.toStringAsFixed(0)}%',
-              style: theme.textTheme.bodySmall?.copyWith(color: winColor),
-              textAlign: TextAlign.end,
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '${rule.avgReturn >= 0 ? '+' : ''}${rule.avgReturn.toStringAsFixed(1)}%',
-              style: theme.textTheme.bodySmall?.copyWith(color: returnColor),
-              textAlign: TextAlign.end,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

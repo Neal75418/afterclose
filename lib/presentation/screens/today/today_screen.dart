@@ -312,8 +312,23 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         ),
 
         // Top 10 區塊
-        const SliverToBoxAdapter(
-          child: SectionHeader(title: S.todayTop10, icon: Icons.trending_up),
+        SliverToBoxAdapter(
+          child: SectionHeader(
+            title: S.todayTop10,
+            icon: Icons.trending_up,
+            trailing: IconButton(
+              icon: Icon(
+                Icons.analytics_outlined,
+                size: 20,
+                color: theme.colorScheme.primary,
+              ),
+              tooltip: 'recPerf.title'.tr(),
+              onPressed: () =>
+                  context.push(AppRoutes.recommendationPerformance),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ),
         ),
 
         // 推薦清單（響應式：手機 List，平板/桌面 Grid）

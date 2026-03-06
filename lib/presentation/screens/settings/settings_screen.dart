@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/services/background_update_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -111,23 +110,6 @@ class SettingsScreen extends ConsumerWidget {
             _buildSettingsSection(context, 'settings.backgroundUpdate'.tr(), [
               _buildAutoUpdateTile(context, ref, theme, settings),
             ]),
-
-          // 分析區段
-          _buildSettingsSection(context, 'settings.analytics'.tr(), [
-            ListTile(
-              leading: _buildIconContainer(
-                Colors.amber,
-                Icons.analytics_outlined,
-              ),
-              title: Text('settings.recommendationPerformance'.tr()),
-              trailing: Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              onTap: () => context.push(AppRoutes.recommendationPerformance),
-            ),
-          ]),
 
           // 資料管理區段
           _buildSettingsSection(context, 'settings.dataManagement'.tr(), [

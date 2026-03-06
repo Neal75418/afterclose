@@ -550,9 +550,7 @@
     "cache60min": "1 Hour",
     "backgroundUpdate": "Background Update",
     "autoUpdate": "Daily Auto Update",
-    "autoUpdateDesc": "Automatically update data after market close (15:00) and send notification",
-    "analytics": "Analytics",
-    "recommendationPerformance": "Recommendation Performance"
+    "autoUpdateDesc": "Automatically update data after market close (15:00) and send notification"
   },
   "recPerf": {
     "title": "Recommendation Performance",
@@ -561,16 +559,14 @@
     "winRate": "Win Rate",
     "avgReturn": "Avg Return",
     "totalValidated": "Validated",
-    "ruleCount": "Rules",
     "backfill": "Historical Backfill",
-    "backfillDesc": "Retroactively validate all historical recommendations to calculate actual rule performance. First run may take several minutes.",
+    "backfillDesc": "Retroactively validate all historical recommendations to calculate actual performance. First run may take several minutes.",
     "runBackfill": "Start Backfill",
     "backfillProgress": "{current} / {total} dates",
-    "ruleBreakdown": "Rule Performance Breakdown",
-    "colRule": "Rule",
-    "colCount": "Count",
-    "colWinRate": "Win %",
-    "colAvgReturn": "Return",
+    "stockDetails": "Stock Validation Details",
+    "priceRange": "Buy {entry} → Sell {exit} ({days})",
+    "primaryRule": "Primary: {rule}",
+    "pendingValidation": "Pending",
     "noData": "No Validation Data",
     "noDataHint": "Run a daily update or historical backfill to generate validation data",
     "disclaimer": "Past performance is for reference only and does not represent future returns. This is not investment advice."

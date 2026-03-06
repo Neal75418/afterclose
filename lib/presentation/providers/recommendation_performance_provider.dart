@@ -11,7 +11,8 @@ import 'package:afterclose/presentation/providers/providers.dart';
 class RecommendationPerformanceState {
   const RecommendationPerformanceState({
     this.selectedPeriod = 'ALL',
-    this.ruleStats = const [],
+    this.stockRecords = const [],
+    this.overallStats,
     this.isLoading = false,
     this.isBackfilling = false,
     this.backfillProgress = 0.0,
@@ -21,7 +22,8 @@ class RecommendationPerformanceState {
   });
 
   final String selectedPeriod;
-  final List<RuleStats> ruleStats;
+  final List<StockValidationRecord> stockRecords;
+  final OverallPerformanceStats? overallStats;
   final bool isLoading;
   final bool isBackfilling;
   final double backfillProgress;
@@ -29,34 +31,10 @@ class RecommendationPerformanceState {
   final int backfillTotal;
   final String? error;
 
-  /// 總驗證筆數
-  int get totalValidated => ruleStats.fold(0, (sum, r) => sum + r.triggerCount);
-
-  /// 加權勝率
-  double get overallWinRate {
-    final total = totalValidated;
-    if (total == 0) return 0;
-    final weighted = ruleStats.fold(
-      0.0,
-      (sum, r) => sum + r.hitRate * r.triggerCount,
-    );
-    return weighted / total;
-  }
-
-  /// 加權平均報酬
-  double get overallAvgReturn {
-    final total = totalValidated;
-    if (total == 0) return 0;
-    final weighted = ruleStats.fold(
-      0.0,
-      (sum, r) => sum + r.avgReturn * r.triggerCount,
-    );
-    return weighted / total;
-  }
-
   RecommendationPerformanceState copyWith({
     String? selectedPeriod,
-    List<RuleStats>? ruleStats,
+    List<StockValidationRecord>? stockRecords,
+    OverallPerformanceStats? overallStats,
     bool? isLoading,
     bool? isBackfilling,
     double? backfillProgress,
@@ -67,7 +45,8 @@ class RecommendationPerformanceState {
   }) {
     return RecommendationPerformanceState(
       selectedPeriod: selectedPeriod ?? this.selectedPeriod,
-      ruleStats: ruleStats ?? this.ruleStats,
+      stockRecords: stockRecords ?? this.stockRecords,
+      overallStats: overallStats ?? this.overallStats,
       isLoading: isLoading ?? this.isLoading,
       isBackfilling: isBackfilling ?? this.isBackfilling,
       backfillProgress: backfillProgress ?? this.backfillProgress,
@@ -107,14 +86,21 @@ class RecommendationPerformanceNotifier
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final stats = await _service.getAllRuleStats(
-        period: state.selectedPeriod,
-      );
+      final period = state.selectedPeriod;
+      final (records, stats) = await (
+        _service.getStockValidationRecords(period: period),
+        _service.getOverallPerformanceStats(period: period),
+      ).wait;
+
       if (_active) {
-        state = state.copyWith(ruleStats: stats, isLoading: false);
+        state = state.copyWith(
+          stockRecords: records,
+          overallStats: stats,
+          isLoading: false,
+        );
       }
     } catch (e, stack) {
-      AppLogger.error('RecPerf', '載入規則統計失敗', e, stack);
+      AppLogger.error('RecPerf', '載入績效資料失敗', e, stack);
       if (_active) {
         state = state.copyWith(isLoading: false, error: e.toString());
       }
@@ -127,7 +113,8 @@ class RecommendationPerformanceNotifier
 
   Future<void> selectPeriod(String period) async {
     if (state.selectedPeriod == period) return;
-    state = state.copyWith(selectedPeriod: period);
+    // 清空舊資料，讓 loading spinner 正確顯示
+    state = state.copyWith(selectedPeriod: period, stockRecords: const []);
     await loadData();
   }
 
@@ -162,7 +149,7 @@ class RecommendationPerformanceNotifier
 
       if (_active) {
         state = state.copyWith(isBackfilling: false, backfillProgress: 1.0);
-        // 回填完成後重新載入統計
+        // 回填完成後重新載入資料
         await loadData();
       }
     } catch (e, stack) {

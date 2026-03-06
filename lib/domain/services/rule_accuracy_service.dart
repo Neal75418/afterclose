@@ -458,6 +458,85 @@ class RuleAccuracyService {
     return '命中率 $hitRateStr%，平均 $holdingDays 日報酬 $returnStr';
   }
 
+  /// 取得個股驗證記錄（用於 stock-centric UI）
+  ///
+  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）
+  /// [limit] 最多回傳筆數（預設 200）
+  Future<List<StockValidationRecord>> getStockValidationRecords({
+    String? period,
+    int limit = 200,
+  }) async {
+    final query = _db.select(_db.recommendationValidation)
+      ..orderBy([
+        (t) => OrderingTerm.desc(t.recommendationDate),
+        (t) => OrderingTerm.desc(t.returnRate),
+      ])
+      ..limit(limit);
+
+    // 依 period 過濾 holdingDays
+    // ALL 模式使用預設 5D，避免同一支股票同一天出現 5 筆記錄
+    final holdingDays = _parsePeriod(period) ?? defaultHoldingDays;
+    query.where((t) => t.holdingDays.equals(holdingDays));
+
+    final results = await query.get();
+
+    // 批次查詢股票名稱
+    final symbols = results.map((r) => r.symbol).toSet().toList();
+    final stockMap = await _db.getStocksBatch(symbols);
+
+    return results.map((r) {
+      final stock = stockMap[r.symbol];
+      return StockValidationRecord(
+        symbol: r.symbol,
+        stockName: stock?.name ?? r.symbol,
+        recommendationDate: r.recommendationDate,
+        validationDate: r.validationDate,
+        primaryRuleId: r.primaryRuleId,
+        entryPrice: r.entryPrice,
+        exitPrice: r.exitPrice,
+        returnRate: r.returnRate,
+        isSuccess: r.isSuccess,
+        holdingDays: r.holdingDays,
+      );
+    }).toList();
+  }
+
+  /// 取得整體績效統計（聚合查詢）
+  ///
+  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）
+  Future<OverallPerformanceStats> getOverallPerformanceStats({
+    String? period,
+  }) async {
+    final holdingDays = _parsePeriod(period);
+    final whereClause = holdingDays != null
+        ? 'WHERE return_rate IS NOT NULL AND holding_days = ?'
+        : 'WHERE return_rate IS NOT NULL';
+    final variables = holdingDays != null
+        ? [Variable.withInt(holdingDays)]
+        : <Variable>[];
+
+    final result = await _db.customSelect('''
+      SELECT
+        COUNT(*) AS total_count,
+        COALESCE(SUM(CASE WHEN is_success = 1 THEN 1 ELSE 0 END), 0) AS success_count,
+        COALESCE(AVG(return_rate), 0) AS avg_return
+      FROM recommendation_validation
+      $whereClause
+    ''', variables: variables).getSingle();
+
+    return OverallPerformanceStats(
+      totalCount: result.read<int>('total_count'),
+      successCount: result.read<int>('success_count'),
+      avgReturn: result.read<double>('avg_return'),
+    );
+  }
+
+  /// 解析 period 字串為 holdingDays（'5D' → 5, 'ALL' → null）
+  static int? _parsePeriod(String? period) {
+    if (period == null || period == 'ALL') return null;
+    return int.tryParse(period.replaceAll('D', ''));
+  }
+
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month}/${date.day}';
   }
@@ -510,6 +589,48 @@ class RuleStats {
   final double hitRate;
   final double avgReturn;
   final int triggerCount;
+}
+
+/// 個股驗證記錄（用於 UI 顯示）
+class StockValidationRecord {
+  const StockValidationRecord({
+    required this.symbol,
+    required this.stockName,
+    required this.recommendationDate,
+    this.validationDate,
+    required this.primaryRuleId,
+    required this.entryPrice,
+    this.exitPrice,
+    this.returnRate,
+    this.isSuccess,
+    required this.holdingDays,
+  });
+
+  final String symbol;
+  final String stockName;
+  final DateTime recommendationDate;
+  final DateTime? validationDate;
+  final String primaryRuleId;
+  final double entryPrice;
+  final double? exitPrice;
+  final double? returnRate;
+  final bool? isSuccess;
+  final int holdingDays;
+}
+
+/// 整體績效統計（聚合）
+class OverallPerformanceStats {
+  const OverallPerformanceStats({
+    required this.totalCount,
+    required this.successCount,
+    required this.avgReturn,
+  });
+
+  final int totalCount;
+  final int successCount;
+  final double avgReturn;
+
+  double get winRate => totalCount > 0 ? (successCount / totalCount) * 100 : 0;
 }
 
 class _ValidationData {

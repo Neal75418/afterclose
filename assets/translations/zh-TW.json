@@ -551,9 +551,7 @@
     "cache60min": "1 小時",
     "backgroundUpdate": "背景更新",
     "autoUpdate": "每日自動更新",
-    "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知",
-    "analytics": "分析",
-    "recommendationPerformance": "推薦績效追蹤"
+    "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知"
   },
   "recPerf": {
     "title": "推薦績效追蹤",
@@ -562,16 +560,14 @@
     "winRate": "勝率",
     "avgReturn": "平均報酬",
     "totalValidated": "驗證筆數",
-    "ruleCount": "規則數",
     "backfill": "歷史回填",
-    "backfillDesc": "回溯驗證所有歷史推薦，計算每條規則的實際績效。首次執行可能需要數分鐘。",
+    "backfillDesc": "回溯驗證所有歷史推薦，計算實際績效。首次執行可能需要數分鐘。",
     "runBackfill": "開始回填",
     "backfillProgress": "{current} / {total} 個日期",
-    "ruleBreakdown": "規則績效明細",
-    "colRule": "規則",
-    "colCount": "次數",
-    "colWinRate": "勝率",
-    "colAvgReturn": "報酬",
+    "stockDetails": "個股驗證明細",
+    "priceRange": "買入 {entry} → 賣出 {exit} ({days})",
+    "primaryRule": "主因：{rule}",
+    "pendingValidation": "尚未驗證",
     "noData": "尚無驗證資料",
     "noDataHint": "請先執行每日更新或歷史回填，以產生驗證數據",
     "disclaimer": "歷史績效僅供參考，不代表未來實際報酬，亦不構成投資建議。"
