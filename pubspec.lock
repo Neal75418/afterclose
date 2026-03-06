@@ -269,10 +269,10 @@ packages:
     dependency: "direct main"
     description:
       name: csv
-      sha256: bef2950f7a753eb82f894a2eabc3072e73cf21c17096296a5a992797e50b1d0d
+      sha256: e122a402b966b93a4e98925da241ecb3d58d2e62c0aa6486b0c8de4bd405dad5
       url: "https://pub.dev"
     source: hosted
-    version: "7.1.0"
+    version: "7.2.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -301,10 +301,10 @@ packages:
     dependency: "direct main"
     description:
       name: dio
-      sha256: b9d46faecab38fc8cc286f80bc4d61a3bb5d4ac49e51ed877b4d6706efe57b25
+      sha256: aff32c08f92787a557dd5c0145ac91536481831a01b4648136373cddb0e64f8c
       url: "https://pub.dev"
     source: hosted
-    version: "5.9.1"
+    version: "5.9.2"
   dio_web_adapter:
     dependency: transitive
     description:
@@ -317,18 +317,18 @@ packages:
     dependency: "direct main"
     description:
       name: drift
-      sha256: "970cd188fddb111b26ea6a9b07a62bf5c2432d74147b8122c67044ae3b97e99e"
+      sha256: "61f876c0291b194980bafd203f48e85d5fb04e4a7334367d1a89f44004dbcb83"
       url: "https://pub.dev"
     source: hosted
-    version: "2.31.0"
+    version: "2.32.0"
   drift_dev:
     dependency: "direct dev"
     description:
       name: drift_dev
-      sha256: "917184b2fb867b70a548a83bf0d36268423b38d39968c06cce4905683da49587"
+      sha256: d687e955cc4b1706ad49b3860fcc1045c09bbf1d84c3c7383615f7f9c3320aa2
       url: "https://pub.dev"
     source: hosted
-    version: "2.31.0"
+    version: "2.32.0"
   easy_localization:
     dependency: "direct main"
     description:
@@ -1057,18 +1057,18 @@ packages:
     dependency: transitive
     description:
       name: sentry
-      sha256: e57e57123968b673c8ca19892eecf93113b4811b8e5cd5d165749ca7f7319fdb
+      sha256: "605ad1f6f1ae5b72018cbe8fc20f490fa3bd53e58882e5579566776030d8c8c1"
       url: "https://pub.dev"
     source: hosted
-    version: "9.13.0"
+    version: "9.14.0"
   sentry_flutter:
     dependency: "direct main"
     description:
       name: sentry_flutter
-      sha256: c8f5b805c0346cd0c93b09e584675af7ed8c3ef36c3589181ad19b4adce35954
+      sha256: "7fd0fb80050c1f6a77ae185bda997a76d384326d6777cf5137a6c38952c4ac7d"
       url: "https://pub.dev"
     source: hosted
-    version: "9.13.0"
+    version: "9.14.0"
   share_plus:
     dependency: "direct main"
     description:
@@ -1238,10 +1238,10 @@ packages:
     dependency: transitive
     description:
       name: sqlite3
-      sha256: "3145bd74dcdb4fd6f5c6dda4d4e4490a8087d7f286a14dee5d37087290f0f8a2"
+      sha256: b7cf6b37667f6a921281797d2499ffc60fb878b161058d422064f0ddc78f6aa6
       url: "https://pub.dev"
     source: hosted
-    version: "2.9.4"
+    version: "3.1.6"
   sqlite3_flutter_libs:
     dependency: "direct main"
     description:
@@ -1254,10 +1254,10 @@ packages:
     dependency: transitive
     description:
       name: sqlparser
-      sha256: "337e9997f7141ffdd054259128553c348635fa318f7ca492f07a4ab76f850d19"
+      sha256: b3fe18d3cae6aee84123fb73ab5dcc3b35fbe6c3607394ac49eb2aedaa789c46
       url: "https://pub.dev"
     source: hosted
-    version: "0.43.1"
+    version: "0.44.1"
   stack_trace:
     dependency: transitive
     description:

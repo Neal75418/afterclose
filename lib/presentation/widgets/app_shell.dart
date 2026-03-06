@@ -12,29 +12,43 @@ import 'package:afterclose/presentation/providers/connectivity_provider.dart';
 /// - 手機：底部導覽列（NavigationBar）
 /// - 平板/桌面：側邊導覽欄（NavigationRail）
 /// - 離線時顯示提示橫幅
-class AppShell extends ConsumerWidget {
+///
+/// 使用 GlobalKey 包住 [StatefulNavigationShell]，確保在底部導覽列
+/// 與側邊導覽欄之間切換時 Element tree 被保留而非 unmount/remount，
+/// 避免第一次點擊不響應的問題。
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  /// 確保 navigationShell 在佈局切換時被 reparent 而非重建
+  final _shellKey = GlobalKey();
+
   void _onDestinationSelected(int index) {
-    if (index != navigationShell.currentIndex) {
+    if (index != widget.navigationShell.currentIndex) {
       HapticFeedback.selectionClick();
     }
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final shouldShowRail = context.shouldShowNavigationRail;
     final isOnline = ref.watch(connectivityProvider).value ?? true;
 
+    final shell = KeyedSubtree(key: _shellKey, child: widget.navigationShell);
+
     final body = shouldShowRail
-        ? _buildRailLayout(context)
-        : _buildBottomNavLayout(context);
+        ? _buildRailLayout(context, shell)
+        : _buildBottomNavLayout(shell);
 
     if (isOnline) return body;
 
@@ -47,12 +61,12 @@ class AppShell extends ConsumerWidget {
   }
 
   /// 手機佈局：底部導覽列
-  Widget _buildBottomNavLayout(BuildContext context) {
+  Widget _buildBottomNavLayout(Widget shell) {
     return Scaffold(
       extendBody: true,
-      body: navigationShell,
+      body: shell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
+        selectedIndex: widget.navigationShell.currentIndex,
         onDestinationSelected: _onDestinationSelected,
         destinations: _buildNavigationDestinations(),
       ),
@@ -60,16 +74,15 @@ class AppShell extends ConsumerWidget {
   }
 
   /// 平板/桌面佈局：側邊導覽欄
-  Widget _buildRailLayout(BuildContext context) {
+  Widget _buildRailLayout(BuildContext context, Widget shell) {
     final theme = Theme.of(context);
     final isExtended = context.isDesktop;
 
     return Scaffold(
       body: Row(
         children: [
-          // 側邊導覽欄
           NavigationRail(
-            selectedIndex: navigationShell.currentIndex,
+            selectedIndex: widget.navigationShell.currentIndex,
             onDestinationSelected: _onDestinationSelected,
             extended: isExtended,
             minWidth: 72,
@@ -93,14 +106,12 @@ class AppShell extends ConsumerWidget {
                 : const SizedBox(height: 16),
             destinations: _buildRailDestinations(),
           ),
-          // 分隔線
           VerticalDivider(
             thickness: 1,
             width: 1,
             color: theme.colorScheme.outlineVariant,
           ),
-          // 主內容區
-          Expanded(child: navigationShell),
+          Expanded(child: shell),
         ],
       ),
     );
