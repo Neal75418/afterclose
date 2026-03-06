@@ -79,7 +79,7 @@ dependencies:
   flutter_slidable: ^4.0.3
 
   # Charts
-  fl_chart: ^0.69.2
+  fl_chart: ^1.1.1
   candlesticks: ^2.1.0
   k_chart_plus: ^1.0.3
 
