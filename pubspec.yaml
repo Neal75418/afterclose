@@ -69,7 +69,7 @@ dependencies:
   shared_preferences: ^2.3.5
 
   # Secure Storage (for API tokens)
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.0.0
 
   # UI Animations & Effects
   flutter_animate: ^4.5.0
@@ -95,8 +95,8 @@ dependencies:
   easy_localization: ^3.0.7
 
   # Notifications
-  flutter_local_notifications: ^18.0.1
-  timezone: ^0.10.1
+  flutter_local_notifications: ^21.0.0
+  timezone: ^0.11.0
 
   # Background Tasks
   workmanager: ^0.9.0

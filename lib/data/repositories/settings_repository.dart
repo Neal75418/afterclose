@@ -37,7 +37,7 @@ class SettingsRepository implements ISettingsRepository {
 
   /// Secure Storage 實例（用於敏感資料如 API Token）
   static const _secureStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    aOptions: AndroidOptions(),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
   );
 
