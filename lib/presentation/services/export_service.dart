@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:csv/csv.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -10,11 +11,23 @@ import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
-/// 純 Dart 匯出服務 — 將各種資料格式化為 CSV 字串
+/// 匯出服務 — CSV 與 PDF 格式化
 class ExportService {
   const ExportService();
 
   static final _dateFormat = DateFormat('yyyy-MM-dd');
+
+  /// 快取 CJK 字體，避免每次匯出都重新載入
+  static pw.Font? _cjkFont;
+
+  static Future<pw.Font> _loadCjkFont() async {
+    if (_cjkFont != null) return _cjkFont!;
+    final fontData = await rootBundle.load(
+      'assets/fonts/NotoSansTC-Regular.ttf',
+    );
+    _cjkFont = pw.Font.ttf(fontData);
+    return _cjkFont!;
+  }
 
   /// 自選股清單 → CSV
   String watchlistToCsv(List<WatchlistItemData> items) {
@@ -235,6 +248,7 @@ class ExportService {
     String symbol,
     StockDetailState state,
   ) async {
+    final cjkFont = await _loadCjkFont();
     final pdf = pw.Document();
     final stock = state.price.stock;
     final price = state.price.latestPrice;
@@ -244,6 +258,7 @@ class ExportService {
       pw.Page(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
+        theme: pw.ThemeData.withFont(base: cjkFont, bold: cjkFont),
         build: (pw.Context context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
