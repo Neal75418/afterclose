@@ -21,6 +21,19 @@ class ShareService {
     }
   }
 
+  /// 分享 PDF 文件
+  Future<void> sharePdf(Uint8List pdfBytes, String filename) async {
+    final tempDir = await getTemporaryDirectory();
+    final file = File('${tempDir.path}/$filename');
+    await file.writeAsBytes(pdfBytes);
+
+    try {
+      await Share.shareXFiles([XFile(file.path, mimeType: 'application/pdf')]);
+    } finally {
+      if (file.existsSync()) file.deleteSync();
+    }
+  }
+
   /// 分享 PNG 圖片
   Future<void> shareImage(Uint8List imageBytes, String filename) async {
     final tempDir = await getTemporaryDirectory();

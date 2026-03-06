@@ -90,6 +90,7 @@ dependencies:
   share_plus: ^10.1.4
   csv: ^7.1.0
   screenshot: ^3.0.0
+  pdf: ^3.11.1
 
   # Localization
   easy_localization: ^3.0.7

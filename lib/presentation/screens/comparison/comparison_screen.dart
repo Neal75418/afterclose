@@ -69,14 +69,19 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
     const exportService = ExportService();
 
     try {
-      if (format == ShareFormat.png) {
-        final imageBytes = await _captureComparisonCard(state);
-        if (imageBytes != null) {
-          await shareService.shareImage(imageBytes, 'comparison.png');
-        }
-      } else {
-        final csv = exportService.comparisonToCsv(state);
-        await shareService.shareCsv(csv, 'comparison.csv');
+      switch (format) {
+        case ShareFormat.png:
+          final imageBytes = await _captureComparisonCard(state);
+          if (imageBytes != null) {
+            await shareService.shareImage(imageBytes, 'comparison.png');
+          }
+        case ShareFormat.pdf:
+          // 比較頁面暫不支援 PDF，使用 CSV 替代
+          final csv = exportService.comparisonToCsv(state);
+          await shareService.shareCsv(csv, 'comparison.csv');
+        case ShareFormat.csv:
+          final csv = exportService.comparisonToCsv(state);
+          await shareService.shareCsv(csv, 'comparison.csv');
       }
     } catch (e) {
       if (mounted) {

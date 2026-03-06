@@ -185,18 +185,28 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     const exportService = ExportService();
 
     try {
-      if (format == ShareFormat.png) {
-        // 在 Overlay 中渲染分享卡片再截圖
-        final imageBytes = await _captureAnalysisCard(state);
-        if (imageBytes != null) {
-          await shareService.shareImage(
-            imageBytes,
-            '${widget.symbol}_analysis.png',
+      switch (format) {
+        case ShareFormat.png:
+          // 在 Overlay 中渲染分享卡片再截圖
+          final imageBytes = await _captureAnalysisCard(state);
+          if (imageBytes != null) {
+            await shareService.shareImage(
+              imageBytes,
+              '${widget.symbol}_analysis.png',
+            );
+          }
+        case ShareFormat.pdf:
+          final pdfBytes = await exportService.analysisDataToPdf(
+            widget.symbol,
+            state,
           );
-        }
-      } else {
-        final csv = exportService.analysisDataToCsv(widget.symbol, state);
-        await shareService.shareCsv(csv, '${widget.symbol}_analysis.csv');
+          await shareService.sharePdf(
+            pdfBytes,
+            '${widget.symbol}_analysis.pdf',
+          );
+        case ShareFormat.csv:
+          final csv = exportService.analysisDataToCsv(widget.symbol, state);
+          await shareService.shareCsv(csv, '${widget.symbol}_analysis.csv');
       }
     } catch (e) {
       if (mounted) {

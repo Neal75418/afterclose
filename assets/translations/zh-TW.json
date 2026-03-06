@@ -1221,7 +1221,9 @@
     "shareSuccess": "已分享",
     "shareFailed": "分享失敗：{error}",
     "formatPng": "圖片 (PNG)",
+    "formatPdf": "報告 (PDF)",
     "formatCsv": "表格 (CSV)",
+    "exportPdf": "匯出分析報告",
     "watermark": "由 AfterClose 產生",
     "disclaimer": "以上數據僅供參考，不構成投資建議。",
 

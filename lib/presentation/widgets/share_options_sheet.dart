@@ -4,27 +4,33 @@ import 'package:flutter/material.dart';
 /// 分享選項 BottomSheet
 ///
 /// 顯示可用的匯出格式（PNG / CSV），回傳使用者選擇的格式。
-enum ShareFormat { png, csv }
+enum ShareFormat { png, csv, pdf }
 
 class ShareOptionsSheet extends StatelessWidget {
   const ShareOptionsSheet({
     super.key,
     this.showPng = true,
     this.showCsv = true,
+    this.showPdf = true,
   });
 
   final bool showPng;
   final bool showCsv;
+  final bool showPdf;
 
   static Future<ShareFormat?> show(
     BuildContext context, {
     bool showPng = true,
     bool showCsv = true,
+    bool showPdf = true,
   }) {
     return showModalBottomSheet<ShareFormat>(
       context: context,
-      builder: (context) =>
-          ShareOptionsSheet(showPng: showPng, showCsv: showCsv),
+      builder: (context) => ShareOptionsSheet(
+        showPng: showPng,
+        showCsv: showCsv,
+        showPdf: showPdf,
+      ),
     );
   }
 
@@ -63,6 +69,13 @@ class ShareOptionsSheet extends StatelessWidget {
                 title: Text('export.formatPng'.tr()),
                 subtitle: Text('export.shareAnalysis'.tr()),
                 onTap: () => Navigator.of(context).pop(ShareFormat.png),
+              ),
+            if (showPdf)
+              ListTile(
+                leading: const Icon(Icons.picture_as_pdf_outlined),
+                title: Text('export.formatPdf'.tr()),
+                subtitle: Text('export.exportPdf'.tr()),
+                onTap: () => Navigator.of(context).pop(ShareFormat.pdf),
               ),
             if (showCsv)
               ListTile(

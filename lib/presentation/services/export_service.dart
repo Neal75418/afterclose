@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:csv/csv.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -220,5 +224,291 @@ class ExportService {
       row.add(getValue(s));
     }
     rows.add(row);
+  }
+
+  // ==================================================
+  // PDF Export
+  // ==================================================
+
+  /// 個股分析 → PDF 報告
+  Future<Uint8List> analysisDataToPdf(
+    String symbol,
+    StockDetailState state,
+  ) async {
+    final pdf = pw.Document();
+    final stock = state.price.stock;
+    final price = state.price.latestPrice;
+    final analysis = state.price.analysis;
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(40),
+        build: (pw.Context context) {
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Header
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    'AfterClose',
+                    style: pw.TextStyle(
+                      fontSize: 20,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    _dateFormat.format(DateTime.now()),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.grey600,
+                    ),
+                  ),
+                ],
+              ),
+              pw.Divider(),
+              pw.SizedBox(height: 12),
+
+              // Stock Info
+              pw.Text(
+                '$symbol ${stock?.name ?? ""}',
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.SizedBox(height: 8),
+
+              // Price
+              if (price != null) ...[
+                pw.Row(
+                  children: [
+                    pw.Text(
+                      'export.csvClose'.tr(),
+                      style: const pw.TextStyle(
+                        fontSize: 12,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                    pw.SizedBox(width: 8),
+                    pw.Text(
+                      price.close?.toStringAsFixed(2) ?? '-',
+                      style: pw.TextStyle(
+                        fontSize: 16,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    if (price.priceChange != null) ...[
+                      pw.SizedBox(width: 12),
+                      pw.Text(
+                        '${price.priceChange! >= 0 ? "+" : ""}${price.priceChange!.toStringAsFixed(2)}',
+                        style: pw.TextStyle(
+                          fontSize: 14,
+                          fontWeight: pw.FontWeight.bold,
+                          color: price.priceChange! >= 0
+                              ? PdfColors.red
+                              : PdfColors.green,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  _dateFormat.format(price.date),
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+              ],
+
+              pw.SizedBox(height: 16),
+
+              // Analysis section
+              if (analysis != null) ...[
+                _pdfSectionTitle('export.csvAnalysis'.tr()),
+                pw.SizedBox(height: 6),
+                _pdfKeyValue('export.csvTrend'.tr(), analysis.trendState),
+                if (analysis.reversalState != 'NONE')
+                  _pdfKeyValue(
+                    'export.csvReversal'.tr(),
+                    analysis.reversalState,
+                  ),
+                _pdfKeyValue(
+                  'export.csvScore'.tr(),
+                  analysis.score.toStringAsFixed(0),
+                ),
+                pw.SizedBox(height: 12),
+              ],
+
+              // AI Summary
+              if (state.aiSummary != null) ...[
+                _pdfSectionTitle('export.csvAiSummary'.tr()),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  state.aiSummary!.overallAssessment,
+                  style: const pw.TextStyle(fontSize: 11),
+                ),
+                pw.SizedBox(height: 8),
+                if (state.aiSummary!.keySignals.isNotEmpty) ...[
+                  pw.Text(
+                    'export.csvSignal'.tr(),
+                    style: pw.TextStyle(
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 4),
+                  ...state.aiSummary!.keySignals.map(
+                    (s) => pw.Padding(
+                      padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
+                      child: pw.Text(
+                        '• $s',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ),
+                ],
+                if (state.aiSummary!.riskFactors.isNotEmpty) ...[
+                  pw.SizedBox(height: 6),
+                  pw.Text(
+                    'export.csvRisk'.tr(),
+                    style: pw.TextStyle(
+                      fontSize: 11,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.SizedBox(height: 4),
+                  ...state.aiSummary!.riskFactors.map(
+                    (r) => pw.Padding(
+                      padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
+                      child: pw.Text(
+                        '• $r',
+                        style: const pw.TextStyle(fontSize: 10),
+                      ),
+                    ),
+                  ),
+                ],
+                pw.SizedBox(height: 12),
+              ],
+
+              // Signals
+              if (state.reasons.isNotEmpty) ...[
+                _pdfSectionTitle('export.csvSignals'.tr()),
+                pw.SizedBox(height: 6),
+                pw.Table(
+                  border: pw.TableBorder.all(color: PdfColors.grey300),
+                  columnWidths: {
+                    0: const pw.FlexColumnWidth(3),
+                    1: const pw.FlexColumnWidth(1),
+                  },
+                  children: [
+                    pw.TableRow(
+                      decoration: const pw.BoxDecoration(
+                        color: PdfColors.grey100,
+                      ),
+                      children: [
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(6),
+                          child: pw.Text(
+                            'export.csvSignal'.tr(),
+                            style: pw.TextStyle(
+                              fontSize: 10,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        pw.Padding(
+                          padding: const pw.EdgeInsets.all(6),
+                          child: pw.Text(
+                            'export.csvScore'.tr(),
+                            style: pw.TextStyle(
+                              fontSize: 10,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    ...state.reasons.map(
+                      (r) => pw.TableRow(
+                        children: [
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(6),
+                            child: pw.Text(
+                              r.reasonType,
+                              style: const pw.TextStyle(fontSize: 10),
+                            ),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.all(6),
+                            child: pw.Text(
+                              r.ruleScore.toStringAsFixed(0),
+                              style: const pw.TextStyle(fontSize: 10),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
+              // Spacer + Disclaimer
+              pw.Spacer(),
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'export.disclaimer'.tr(),
+                style: const pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.grey500,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  pw.Widget _pdfSectionTitle(String title) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: const pw.BoxDecoration(
+        color: PdfColors.blueGrey50,
+        borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Text(
+        title,
+        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+      ),
+    );
+  }
+
+  pw.Widget _pdfKeyValue(String key, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      child: pw.Row(
+        children: [
+          pw.SizedBox(
+            width: 100,
+            child: pw.Text(
+              key,
+              style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
+            ),
+          ),
+          pw.Text(
+            value,
+            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+          ),
+        ],
+      ),
+    );
   }
 }

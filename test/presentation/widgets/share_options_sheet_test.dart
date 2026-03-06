@@ -11,10 +11,11 @@ void main() {
   });
 
   group('ShareOptionsSheet', () {
-    testWidgets('displays both options by default', (tester) async {
+    testWidgets('displays all options by default', (tester) async {
       await tester.pumpWidget(buildTestApp(const ShareOptionsSheet()));
 
       expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
       expect(find.byIcon(Icons.table_chart_outlined), findsOneWidget);
     });
 
@@ -24,6 +25,16 @@ void main() {
       );
 
       expect(find.byIcon(Icons.image_outlined), findsNothing);
+      expect(find.byIcon(Icons.table_chart_outlined), findsOneWidget);
+    });
+
+    testWidgets('hides PDF option when showPdf is false', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const ShareOptionsSheet(showPdf: false)),
+      );
+
+      expect(find.byIcon(Icons.image_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.picture_as_pdf_outlined), findsNothing);
       expect(find.byIcon(Icons.table_chart_outlined), findsOneWidget);
     });
 
@@ -76,6 +87,34 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(result, ShareFormat.png);
+    });
+
+    testWidgets('tapping PDF option pops with ShareFormat.pdf', (tester) async {
+      ShareFormat? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  result = await showModalBottomSheet<ShareFormat>(
+                    context: context,
+                    builder: (_) => const ShareOptionsSheet(),
+                  );
+                },
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.picture_as_pdf_outlined));
+      await tester.pumpAndSettle();
+
+      expect(result, ShareFormat.pdf);
     });
 
     testWidgets('tapping CSV option pops with ShareFormat.csv', (tester) async {
@@ -136,9 +175,10 @@ void main() {
   });
 
   group('ShareFormat', () {
-    test('has png and csv values', () {
-      expect(ShareFormat.values, hasLength(2));
+    test('has png, pdf, and csv values', () {
+      expect(ShareFormat.values, hasLength(3));
       expect(ShareFormat.values, contains(ShareFormat.png));
+      expect(ShareFormat.values, contains(ShareFormat.pdf));
       expect(ShareFormat.values, contains(ShareFormat.csv));
     });
   });
