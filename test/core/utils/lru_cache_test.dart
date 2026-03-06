@@ -83,19 +83,15 @@ void main() {
       expect(cache.length, equals(1));
     });
 
-    test('clear removes all entries and resets stats', () {
+    test('clear removes all entries', () {
       final cache = LruCache<String, int>(maxSize: 10);
       cache.put('a', 1);
       cache.put('b', 2);
-      cache.get('a'); // hit
-      cache.get('c'); // miss
 
       cache.clear();
 
       expect(cache.isEmpty, isTrue);
       expect(cache.length, equals(0));
-      expect(cache.stats.hits, equals(0));
-      expect(cache.stats.misses, equals(0));
     });
 
     test('evictExpired removes only expired entries', () async {
@@ -114,22 +110,6 @@ void main() {
       expect(cache.containsKey('old'), isFalse);
       expect(cache.get('fresh'), equals(2));
       expect(cache.length, equals(1));
-    });
-
-    test('stats track hits and misses correctly', () {
-      final cache = LruCache<String, int>(maxSize: 10);
-      cache.put('a', 1);
-      cache.get('a'); // hit
-      cache.get('a'); // hit
-      cache.get('b'); // miss
-
-      final stats = cache.stats;
-      expect(stats.hits, equals(2));
-      expect(stats.misses, equals(1));
-      expect(stats.totalRequests, equals(3));
-      expect(stats.hitRate, closeTo(2 / 3, 0.01));
-      expect(stats.size, equals(1));
-      expect(stats.maxSize, equals(10));
     });
 
     test('put overwrites existing key', () {

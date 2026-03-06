@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 /// 使用範例：
 /// ```dart
 /// AnimatedContainer(
-///   duration: AnimDurations.fast,
+///   duration: AnimDurations.press,
 ///   curve: AnimCurves.enter,
 ///   // ...
 /// )
@@ -13,9 +13,6 @@ import 'package:flutter/widgets.dart';
 abstract final class AnimDurations {
   /// 極快速：微互動（按壓回饋、漣漪效果）- 100ms
   static const press = Duration(milliseconds: 100);
-
-  /// 快速：快速狀態切換（開關、高亮）- 150ms
-  static const fast = Duration(milliseconds: 150);
 
   /// 標準：大多數動畫（淡入淡出、滑動）- 200ms
   static const standard = Duration(milliseconds: 200);

@@ -7,7 +7,6 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
@@ -19,18 +18,15 @@ import 'package:afterclose/domain/repositories/trading_repository.dart';
 class TradingRepository implements ITradingRepository {
   TradingRepository({
     required AppDatabase database,
-    required FinMindClient finMindClient,
     TwseClient? twseClient,
     TpexClient? tpexClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
-       _client = finMindClient,
        _twseClient = twseClient ?? TwseClient(),
        _tpexClient = tpexClient ?? TpexClient(),
        _clock = clock;
 
   final AppDatabase _db;
-  final FinMindClient _client;
   final TwseClient _twseClient;
   final TpexClient _tpexClient;
   final AppClock _clock;
@@ -62,52 +58,6 @@ class TradingRepository implements ITradingRepository {
   }
 
   /// 從 FinMind 同步當沖資料
-  ///
-  /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 若 [endDate]（或今日）的資料已存在則跳過。
-  ///
-  /// 註：建議使用 [syncAllDayTradingFromTwse] 進行批次同步（免費、無配額限制）。
-  @Deprecated('Use syncAllDayTradingFromTwse instead')
-  Future<int> syncDayTrading(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      // 新鮮度檢查：若已有目標日期資料則跳過
-      final targetDate = endDate ?? _clock.now();
-      final latest = await getLatestDayTrading(symbol);
-      if (latest != null && DateContext.isSameDay(latest.date, targetDate)) {
-        return 0;
-      }
-
-      final data = await _client.getDayTrading(
-        stockId: symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
-      );
-
-      final entries = data.map((item) {
-        return DayTradingCompanion.insert(
-          symbol: item.stockId,
-          date: DateTime.parse(item.date),
-          buyVolume: Value(item.buyDayTradingVolume),
-          sellVolume: Value(item.sellDayTradingVolume),
-          dayTradingRatio: Value(item.dayTradingRatio),
-          tradeVolume: Value(item.tradeVolume),
-        );
-      }).toList();
-
-      await _db.insertDayTradingData(entries);
-      return entries.length;
-    } on RateLimitException {
-      AppLogger.warning('TradingRepo', '$symbol: 當沖資料同步觸發 API 速率限制');
-      rethrow;
-    } catch (e) {
-      throw DatabaseException('Failed to sync day trading for $symbol', e);
-    }
-  }
-
   /// 檢查是否為高當沖股（當沖比 > 30%）
   @override
   Future<bool> isHighDayTradingStock(String symbol) async {

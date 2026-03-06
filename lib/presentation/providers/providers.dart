@@ -153,7 +153,6 @@ final marketDataRepositoryProvider = Provider<MarketDataRepository>((ref) {
 final tradingRepositoryProvider = Provider<TradingRepository>((ref) {
   return TradingRepository(
     database: ref.watch(databaseProvider),
-    finMindClient: ref.watch(finMindClientProvider),
     twseClient: ref.watch(twseClientProvider),
     tpexClient: ref.watch(tpexClientProvider),
   );

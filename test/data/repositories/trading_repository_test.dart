@@ -1,5 +1,4 @@
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/trading_repository.dart';
@@ -8,27 +7,22 @@ import 'package:mocktail/mocktail.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
-class MockFinMindClient extends Mock implements FinMindClient {}
-
 class MockTwseClient extends Mock implements TwseClient {}
 
 class MockTpexClient extends Mock implements TpexClient {}
 
 void main() {
   late MockAppDatabase mockDb;
-  late MockFinMindClient mockClient;
   late MockTwseClient mockTwse;
   late MockTpexClient mockTpex;
   late TradingRepository repo;
 
   setUp(() {
     mockDb = MockAppDatabase();
-    mockClient = MockFinMindClient();
     mockTwse = MockTwseClient();
     mockTpex = MockTpexClient();
     repo = TradingRepository(
       database: mockDb,
-      finMindClient: mockClient,
       twseClient: mockTwse,
       tpexClient: mockTpex,
     );

@@ -13,12 +13,6 @@ class AppNumberFormat {
   /// 整數千分位格式（如 1,234,567）
   static String integer(double value) => _intFormat.format(value);
 
-  /// 一位小數千分位（如 1,234.5）
-  static String decimal1(double value) => _decFormat.format(value);
-
-  /// 兩位小數千分位（如 1,234.56）
-  static String decimal2(double value) => _dec2Format.format(value);
-
   /// 自動選擇中文單位：億 / 萬 / 千分位
   ///
   /// 用於成交量、金額等大數值的友善顯示。

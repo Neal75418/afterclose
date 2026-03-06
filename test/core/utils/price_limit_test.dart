@@ -52,27 +52,5 @@ void main() {
         expect(PriceLimit.isLimitDown(null), isFalse);
       });
     });
-
-    group('isAtLimit', () {
-      test('should return true for limit up', () {
-        expect(PriceLimit.isAtLimit(10.0), isTrue);
-      });
-
-      test('should return true for limit down', () {
-        expect(PriceLimit.isAtLimit(-10.0), isTrue);
-      });
-
-      test('should return false for normal change', () {
-        expect(PriceLimit.isAtLimit(5.0), isFalse);
-      });
-
-      test('should return false for null', () {
-        expect(PriceLimit.isAtLimit(null), isFalse);
-      });
-
-      test('should return false for zero', () {
-        expect(PriceLimit.isAtLimit(0.0), isFalse);
-      });
-    });
   });
 }

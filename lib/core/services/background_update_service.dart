@@ -219,7 +219,6 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
     );
     final tradingRepo = TradingRepository(
       database: database,
-      finMindClient: finMindClient,
       twseClient: twseClient,
       tpexClient: tpexClient,
     );

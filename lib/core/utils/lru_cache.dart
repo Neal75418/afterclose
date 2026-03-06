@@ -26,27 +26,17 @@ class LruCache<K, V> {
   /// 使用 LinkedHashMap 維護 LRU 順序
   final LinkedHashMap<K, _CacheEntry<V>> _cache = LinkedHashMap();
 
-  /// 命中次數統計
-  int _hits = 0;
-
-  /// 未命中次數統計
-  int _misses = 0;
-
   /// 從快取取得值
   ///
   /// 若鍵不存在或已過期則回傳 null。
   /// 存取後該鍵會移至最後（最近使用）。
   V? get(K key) {
     final entry = _cache[key];
-    if (entry == null) {
-      _misses++;
-      return null;
-    }
+    if (entry == null) return null;
 
     // 檢查是否已過期
     if (entry.isExpired) {
       _cache.remove(key);
-      _misses++;
       return null;
     }
 
@@ -54,7 +44,6 @@ class LruCache<K, V> {
     _cache.remove(key);
     _cache[key] = entry;
 
-    _hits++;
     return entry.value;
   }
 
@@ -93,8 +82,6 @@ class LruCache<K, V> {
   /// 清除所有快取項目
   void clear() {
     _cache.clear();
-    _hits = 0;
-    _misses = 0;
   }
 
   /// 移除所有已過期的項目
@@ -115,15 +102,6 @@ class LruCache<K, V> {
 
   /// 檢查快取是否為空
   bool get isEmpty => _cache.isEmpty;
-
-  /// 取得快取統計資訊（供除錯用）
-  CacheStats get stats => CacheStats(
-    size: _cache.length,
-    maxSize: maxSize,
-    ttlSeconds: ttl.inSeconds,
-    hits: _hits,
-    misses: _misses,
-  );
 }
 
 /// 快取項目（含過期時間）
@@ -134,39 +112,6 @@ class _CacheEntry<V> {
   final DateTime expiresAt;
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
-}
-
-/// 快取統計資訊（供除錯與監控用）
-class CacheStats {
-  const CacheStats({
-    required this.size,
-    required this.maxSize,
-    required this.ttlSeconds,
-    this.hits = 0,
-    this.misses = 0,
-  });
-
-  final int size;
-  final int maxSize;
-  final int ttlSeconds;
-  final int hits;
-  final int misses;
-
-  /// 快取使用率（size / maxSize）
-  double get usagePercent => maxSize > 0 ? (size / maxSize) * 100 : 0;
-
-  /// 命中率（hits / 總請求數）
-  double get hitRate => (hits + misses) > 0 ? hits / (hits + misses) : 0;
-
-  /// 總查詢次數
-  int get totalRequests => hits + misses;
-
-  @override
-  String toString() =>
-      'CacheStats(size: $size/$maxSize, ttl: ${ttlSeconds}s, '
-      'usage: ${usagePercent.toStringAsFixed(1)}%, '
-      'hitRate: ${(hitRate * 100).toStringAsFixed(1)}%, '
-      'hits: $hits, misses: $misses)';
 }
 
 /// 批次查詢快取管理器（自動產生快取鍵）

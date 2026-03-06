@@ -270,10 +270,4 @@ mixin _MarketOverviewDaoMixin on _$AppDatabase {
 
     return {'totalTurnover': sumKey('totalTurnover')};
   }
-
-  /// 取得指定日期的成交量統計（依市場分組）- 向後相容
-  @Deprecated('Use getTurnoverSummaryByMarket instead')
-  Future<Map<String, Map<String, double>>> getVolumeSummaryByMarket(
-    DateTime date,
-  ) => getTurnoverSummaryByMarket(date);
 }

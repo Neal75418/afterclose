@@ -26,9 +26,4 @@ class PriceLimit {
     if (changePercent == null) return false;
     return changePercent <= -(limitPercent - _tolerance);
   }
-
-  /// 判斷是否觸及漲停或跌停
-  static bool isAtLimit(double? changePercent) {
-    return isLimitUp(changePercent) || isLimitDown(changePercent);
-  }
 }
