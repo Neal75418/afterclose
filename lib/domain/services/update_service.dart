@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -460,12 +461,21 @@ class UpdateService {
           '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=$revenueLabel',
         );
 
-        // 步驟 4.7：同步候選+自選股的財報資料（EPS + 資產負債表）
+        // 步驟 4.7：同步候選+自選股+市場候選的財報資料（EPS + 資產負債表）
         try {
           final watchlist = await _db.getWatchlist();
-          final targetSymbols = {
+          final prioritySymbols = {
             ...watchlist.map((w) => w.symbol),
             ..._popularStocks,
+          };
+          final remainingSlots =
+              ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
+          final targetSymbols = {
+            ...prioritySymbols,
+            if (remainingSlots > 0)
+              ...ctx.marketCandidates
+                  .where((s) => !prioritySymbols.contains(s))
+                  .take(remainingSlots),
           }.toList();
           if (targetSymbols.isNotEmpty) {
             final epsCount = await fundamentalSyncer.syncFinancialStatements(

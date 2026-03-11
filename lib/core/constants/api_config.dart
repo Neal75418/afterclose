@@ -49,6 +49,9 @@ abstract final class ApiConfig {
   /// 重試延遲（毫秒）
   static const int retryDelayMs = 1000;
 
+  /// 財報同步最大市場候選數（避免 FinMind 免費額度耗盡）
+  static const int financialSyncMaxCandidates = 150;
+
   // ==================================================
   // 資料處理設定
   // ==================================================
