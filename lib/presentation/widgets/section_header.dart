@@ -30,7 +30,7 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     Widget content = Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),

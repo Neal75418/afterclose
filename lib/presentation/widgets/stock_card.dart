@@ -410,11 +410,9 @@ class _StockCardState extends State<StockCard> {
             HapticFeedback.mediumImpact();
             widget.onWatchlistTap?.call();
           },
-          constraints: compact
-              ? const BoxConstraints(minWidth: 32, minHeight: 32)
-              : null,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           padding: compact ? EdgeInsets.zero : null,
-          splashRadius: compact ? 16 : 20,
+          splashRadius: compact ? 18 : 20,
         ),
       ),
     );

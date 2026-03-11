@@ -507,8 +507,10 @@ class _NewsListItem extends StatelessWidget {
       return S.newsHoursAgo(diff.inHours);
     } else if (diff.inDays < 7) {
       return S.newsDaysAgo(diff.inDays);
-    } else {
+    } else if (dt.year == now.year) {
       return '${dt.month}/${dt.day}';
+    } else {
+      return '${dt.year}/${dt.month}/${dt.day}';
     }
   }
 }

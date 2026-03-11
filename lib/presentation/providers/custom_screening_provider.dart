@@ -283,7 +283,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
       );
     } catch (e) {
       if (!_active) return;
-      state = state.copyWith(isLoadingMore: false);
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
   }
 

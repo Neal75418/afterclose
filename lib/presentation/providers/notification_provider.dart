@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:easy_localization/easy_localization.dart';
 
 import 'package:afterclose/core/services/notification_service.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 
@@ -47,13 +48,20 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   /// 初始化通知服務
   ///
-  /// 注意：不會自動請求權限，權限會在使用者建立提醒時請求
+  /// 注意：不會自動請求權限，權限會在使用者建立提醒時請求。
+  /// Service 初始化與權限檢查分離處理，確保 hasPermission 失敗不影響 isInitialized 狀態。
   Future<void> initialize() async {
     try {
       await _service.initialize();
-      // 只檢查權限狀態，不主動請求
-      final hasPermission = await _service.hasPermission();
-      state = state.copyWith(isInitialized: true, hasPermission: hasPermission);
+      state = state.copyWith(isInitialized: true);
+
+      // 權限檢查為非關鍵操作，失敗不影響服務可用性
+      try {
+        final hasPermission = await _service.hasPermission();
+        state = state.copyWith(hasPermission: hasPermission);
+      } catch (e) {
+        AppLogger.warning('Notification', '權限檢查失敗（非關鍵）', e);
+      }
     } catch (e) {
       state = state.copyWith(error: e.toString());
     }

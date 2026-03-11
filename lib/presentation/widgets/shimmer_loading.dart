@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
 
 // ==================================================
 // 微光效果尺寸常數
@@ -94,7 +95,7 @@ class StockListShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     return Semantics(
       label: S.shimmerLoadingStockList,
@@ -258,7 +259,7 @@ class ShimmerContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     final shimmer = Shimmer.fromColors(
       baseColor: ShimmerColors.baseColor(isDark),
@@ -291,7 +292,7 @@ class StockDetailShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
     final skeletonColor = ShimmerColors.skeletonColor(isDark);
 
     return Semantics(
@@ -464,7 +465,7 @@ class NewsListShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     return Semantics(
       label: S.shimmerLoadingNewsList,
@@ -496,7 +497,7 @@ class GenericListShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     return Semantics(
       label: S.shimmerLoadingGenericList,

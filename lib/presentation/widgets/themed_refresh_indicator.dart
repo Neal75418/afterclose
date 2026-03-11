@@ -31,7 +31,7 @@ class ThemedRefreshIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -46,7 +46,9 @@ class ThemedRefreshIndicator extends StatelessWidget {
       displacement: displacement,
       edgeOffset: edgeOffset,
       color: AppTheme.primaryColor,
-      backgroundColor: isDark ? const Color(0xFF2A2A3A) : Colors.white,
+      backgroundColor: isDark
+          ? theme.colorScheme.surfaceContainerHigh
+          : theme.colorScheme.surface,
       strokeWidth: 2.5,
       child: child,
     );
@@ -114,12 +116,14 @@ class _AnimatedRefreshIndicatorState extends State<AnimatedRefreshIndicator>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
       color: AppTheme.primaryColor,
-      backgroundColor: isDark ? const Color(0xFF2A2A3A) : Colors.white,
+      backgroundColor: isDark
+          ? theme.colorScheme.surfaceContainerHigh
+          : theme.colorScheme.surface,
       strokeWidth: 2.5,
       child: widget.child,
     );

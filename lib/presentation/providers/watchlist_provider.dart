@@ -207,8 +207,14 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
     try {
       final dateCtx = DateContext.now();
+      final analysisRepo = ref.read(analysisRepositoryProvider);
 
-      final watchlist = await _db.getWatchlist();
+      // Group 1：平行取得自選清單 + 最新分析日期
+      final (watchlist, latestAnalysisDate) = await (
+        _db.getWatchlist(),
+        analysisRepo.findLatestAnalysisDate(),
+      ).wait;
+
       if (watchlist.isEmpty) {
         state = state.copyWith(items: [], isLoading: false);
         return;
@@ -220,19 +226,24 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       // 取得實際分析日期（使用分析表的日期，而非價格表）
       // 價格表的 MAX(date) 可能因歷史同步而超前分析表，
       // 導致 getAnalysesBatch/getReasonsBatch 查不到對應日期的資料
-      final analysisRepo = ref.read(analysisRepositoryProvider);
-      final latestAnalysisDate = await analysisRepo.findLatestAnalysisDate();
       final analysisDate = latestAnalysisDate ?? dateCtx.today;
 
-      // 使用 Dart 3 Records 進行型別安全的批次載入
+      // Group 2：平行載入股票資料 + 警示資料
       // historyStart 必須以 analysisDate 為基準（而非今天），
       // 避免長假/資料過期時 historyStart > analysisDate 導致查詢範圍反轉
       final historyCtx = DateContext.forDate(analysisDate);
-      final data = await _cachedDb.loadStockListData(
-        symbols: symbols,
-        analysisDate: analysisDate,
-        historyStart: historyCtx.historyStart,
-      );
+      final (data, warningsMap, highPledgeMap) = await (
+        _cachedDb.loadStockListData(
+          symbols: symbols,
+          analysisDate: analysisDate,
+          historyStart: historyCtx.historyStart,
+        ),
+        _warningRepo.getWatchlistWarnings(symbols),
+        _insiderRepo.getWatchlistHighPledgeStocks(
+          symbols,
+          threshold: RuleParams.highPledgeRatioThreshold,
+        ),
+      ).wait;
 
       // 解構 Record 欄位
       final stocksMap = data.stocks;
@@ -245,13 +256,6 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       final priceChanges = PriceCalculator.calculatePriceChangesBatch(
         priceHistoriesMap,
         latestPricesMap,
-      );
-
-      // 取得自選股警示資料
-      final warningsMap = await _warningRepo.getWatchlistWarnings(symbols);
-      final highPledgeMap = await _insiderRepo.getWatchlistHighPledgeStocks(
-        symbols,
-        threshold: RuleParams.highPledgeRatioThreshold,
       );
 
       // 從批次結果建構項目
@@ -535,8 +539,15 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         ? DateContext.normalize(latestDataDate)
         : dateCtx.today;
 
-    // 批次載入此股票的資料
-    final results = await Future.wait([
+    // 平行載入此股票的所有資料（含警示）
+    final (
+      latestPrice,
+      analysis,
+      reasons,
+      priceHistory,
+      warningsMap,
+      highPledgeMap,
+    ) = await (
       _db.getLatestPrice(symbol),
       _db.getAnalysis(symbol, analysisDate),
       _db.getReasons(symbol, analysisDate),
@@ -545,12 +556,11 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         startDate: dateCtx.historyStart,
         endDate: dateCtx.today,
       ),
-    ]);
-
-    final latestPrice = results[0] as DailyPriceEntry?;
-    final analysis = results[1] as DailyAnalysisEntry?;
-    final reasons = results[2] as List<DailyReasonEntry>;
-    final priceHistory = results[3] as List<DailyPriceEntry>;
+      _warningRepo.getWatchlistWarnings([symbol]),
+      _insiderRepo.getWatchlistHighPledgeStocks([
+        symbol,
+      ], threshold: RuleParams.highPledgeRatioThreshold),
+    ).wait;
 
     // Calculate price change（統一使用 PriceCalculator，優先取 API 漲跌價差）
     final priceChange = PriceCalculator.calculatePriceChange(
@@ -560,12 +570,6 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
     // 提取近期價格用於 sparkline
     final recentPrices = PriceCalculator.extractSparklinePrices(priceHistory);
-
-    // 取得此股票的警示資料
-    final warningsMap = await _warningRepo.getWatchlistWarnings([symbol]);
-    final highPledgeMap = await _insiderRepo.getWatchlistHighPledgeStocks([
-      symbol,
-    ], threshold: RuleParams.highPledgeRatioThreshold);
     final warningType = _determineWarningType(
       symbol: symbol,
       warningsMap: warningsMap,

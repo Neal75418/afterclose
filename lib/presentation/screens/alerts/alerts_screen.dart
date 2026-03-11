@@ -12,6 +12,7 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/price_alert_dialog.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Screen for managing price alerts
@@ -73,75 +74,78 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
 
     final horizontalPadding = context.responsiveHorizontalPadding;
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: 16,
-      ),
-      itemCount: groupedAlerts.length,
-      itemBuilder: (context, index) {
-        final symbol = groupedAlerts.keys.elementAt(index);
-        final symbolAlerts = groupedAlerts[symbol]!;
+    return ThemedRefreshIndicator(
+      onRefresh: () => ref.read(priceAlertProvider.notifier).loadAlerts(),
+      child: ListView.builder(
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: 16,
+        ),
+        itemCount: groupedAlerts.length,
+        itemBuilder: (context, index) {
+          final symbol = groupedAlerts.keys.elementAt(index);
+          final symbolAlerts = groupedAlerts[symbol]!;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 股票標題
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 股票標題
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.radiusXs,
+                          ),
+                        ),
+                        child: Text(
+                          symbol,
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${symbolAlerts.length} ${'alert.title'.tr()}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(
-                          DesignTokens.radiusXs,
-                        ),
-                      ),
-                      child: Text(
-                        symbol,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${symbolAlerts.length} ${'alert.title'.tr()}',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
 
-              // 警示列表
-              ...symbolAlerts.asMap().entries.map((entry) {
-                final alertIndex = entry.key;
-                final alert = entry.value;
-                return _buildAlertTile(alert, theme, alertIndex);
-              }),
-            ],
-          ),
-        ).animate().fadeIn(
-          delay: Duration(milliseconds: 50 * index),
-          duration: 300.ms,
-        );
-      },
+                // 警示列表
+                ...symbolAlerts.asMap().entries.map((entry) {
+                  final alertIndex = entry.key;
+                  final alert = entry.value;
+                  return _buildAlertTile(alert, theme, alertIndex);
+                }),
+              ],
+            ),
+          ).animate().fadeIn(
+            delay: Duration(milliseconds: 50 * index),
+            duration: 300.ms,
+          );
+        },
+      ),
     );
   }
 
@@ -214,18 +218,18 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: wasTriggered
-                        ? Colors.orange.withValues(alpha: 0.2)
+                        ? AppTheme.warningColor.withValues(alpha: 0.2)
                         : isActive
-                        ? Colors.green.withValues(alpha: 0.2)
+                        ? AppTheme.successColor.withValues(alpha: 0.2)
                         : theme.colorScheme.onSurfaceVariant.withValues(
                             alpha: 0.15,
                           ),
                     borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                     border: Border.all(
                       color: wasTriggered
-                          ? Colors.orange.withValues(alpha: 0.5)
+                          ? AppTheme.warningColor.withValues(alpha: 0.5)
                           : isActive
-                          ? Colors.green.withValues(alpha: 0.5)
+                          ? AppTheme.successColor.withValues(alpha: 0.5)
                           : theme.colorScheme.onSurfaceVariant.withValues(
                               alpha: 0.3,
                             ),
@@ -240,9 +244,9 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                         : 'alert.inactive'.tr(),
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: wasTriggered
-                          ? Colors.orange
+                          ? AppTheme.warningColor
                           : isActive
-                          ? Colors.green
+                          ? AppTheme.successColor
                           : theme.colorScheme.onSurfaceVariant,
                     ),
                   ),

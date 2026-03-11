@@ -67,19 +67,18 @@ class StockPreviewSheet extends StatelessWidget {
   final VoidCallback? onViewDetails;
   final VoidCallback? onToggleWatchlist;
 
-  /// 建構無障礙語義標籤
+  /// 建構無障礙語義標籤（使用 AppStrings 集中管理的字串）
   String _buildSemanticLabel() {
-    final parts = <String>['股票預覽', data.symbol];
+    final parts = <String>[S.stockPreview, data.symbol];
     if (data.stockName != null) parts.add(data.stockName!);
     if (data.latestClose != null) {
-      parts.add('價格 ${data.latestClose!.toStringAsFixed(2)} 元');
+      parts.add(S.accessibilityPrice(data.latestClose!));
     }
     if (data.priceChange != null) {
-      final direction = data.priceChange! >= 0 ? '上漲' : '下跌';
-      parts.add('$direction ${data.priceChange!.abs().toStringAsFixed(2)} 百分比');
+      parts.add(S.accessibilityPriceChange(data.priceChange!));
     }
     if (data.score != null && data.score! > 0) {
-      parts.add('評分 ${data.score!.toInt()} 分');
+      parts.add(S.accessibilityScore(data.score!.toInt()));
       parts.add(_getScoreLevel(data.score!));
     }
     return parts.join(', ');
@@ -88,7 +87,7 @@ class StockPreviewSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
     final priceColor = AppTheme.getPriceColor(data.priceChange);
     final isPositive = (data.priceChange ?? 0) >= 0;
 

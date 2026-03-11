@@ -28,7 +28,7 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
     final effectiveColor = iconColor ?? theme.colorScheme.primary;
 
     return Semantics(
@@ -254,7 +254,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
     final hasDetails =
         widget.totalScanned != null ||
         widget.dataDate != null ||

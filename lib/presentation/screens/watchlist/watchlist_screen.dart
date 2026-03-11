@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -61,7 +62,8 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   /// 當使用者捲動接近底部時觸發載入更多
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
+        _scrollController.position.maxScrollExtent -
+            UiConstants.infiniteScrollThresholdPx) {
       ref.read(watchlistProvider.notifier).loadMore();
     }
   }

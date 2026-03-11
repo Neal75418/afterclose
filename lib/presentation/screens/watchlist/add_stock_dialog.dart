@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,28 +57,34 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
   List<StockMasterEntry> _searchResults = [];
   bool _isSearching = false;
   bool _isAdding = false;
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged(String query) async {
+  void _onSearchChanged(String query) {
+    _debounce?.cancel();
     if (query.length < 2) {
       setState(() => _searchResults = []);
       return;
     }
 
-    setState(() => _isSearching = true);
-    final db = widget.ref.read(databaseProvider);
-    final results = await db.searchStocks(query);
-    if (mounted) {
-      setState(() {
-        _searchResults = results.take(8).toList();
-        _isSearching = false;
-      });
-    }
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
+      setState(() => _isSearching = true);
+      final db = widget.ref.read(databaseProvider);
+      final results = await db.searchStocks(query);
+      if (mounted) {
+        setState(() {
+          _searchResults = results.take(8).toList();
+          _isSearching = false;
+        });
+      }
+    });
   }
 
   Future<void> _addStock(String symbol) async {

@@ -83,7 +83,7 @@ class _WarningBadgeState extends State<WarningBadge> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
 
     // 只在首次建構時播放動畫
     final shouldAnimate = widget.animate && !_hasAnimated;

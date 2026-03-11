@@ -18,15 +18,13 @@ class UpdateProgressBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.isDark;
 
-    // 依據主題的漸層顏色
-    final gradientColors = isDark
-        ? [AppTheme.primaryColor, AppTheme.secondaryColor]
-        : [const Color(0xFF2196F3), const Color(0xFF00BCD4)];
+    // 依據主題的漸層顏色（統一使用 AppTheme 常數）
+    const gradientColors = [AppTheme.primaryColor, AppTheme.secondaryColor];
 
     final backgroundColor = isDark
-        ? const Color(0xFF1A2A3A)
+        ? theme.colorScheme.surfaceContainerLow
         : theme.colorScheme.primaryContainer.withValues(alpha: 0.3);
 
     final trackColor = isDark
