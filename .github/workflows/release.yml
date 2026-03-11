@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -66,13 +66,13 @@ jobs:
           mv build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/afterclose-${VERSION}.aab
 
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: android-apk
           path: build/app/outputs/flutter-apk/*.apk
 
       - name: Upload AAB artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: android-aab
           path: build/app/outputs/bundle/release/*.aab
@@ -127,7 +127,7 @@ jobs:
           rm -rf Payload
 
       - name: Upload iOS artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ios-unsigned
           path: build/ios/ipa/*.ipa
@@ -143,19 +143,19 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Download Android APK
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: android-apk
           path: artifacts/android
 
       - name: Download Android AAB
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: android-aab
           path: artifacts/android
 
       - name: Download iOS
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: ios-unsigned
           path: artifacts/ios
