@@ -94,7 +94,7 @@ class HistoricalPriceSyncer {
     DateTime date,
   ) {
     final result = <String>[];
-    const minRequiredDays = RuleParams.week52Days;
+    const minRequiredDays = IndicatorParams.week52Days;
     const nearThreshold = 180;
 
     for (final symbol in symbols) {

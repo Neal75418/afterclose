@@ -21,11 +21,11 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < RuleParams.priceVolumeLookbackDays + 1) {
+    if (data.prices.length < TrendParams.priceVolumeLookbackDays + 1) {
       return null;
     }
 
-    const lookback = RuleParams.priceVolumeLookbackDays;
+    const lookback = TrendParams.priceVolumeLookbackDays;
     final recentPrices = data.prices.reversed.take(lookback + 1).toList();
 
     if (recentPrices.length < lookback + 1) return null;
@@ -61,8 +61,8 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     // 價格上漲但成交量下降
     // 原先：1.5% 價格 / -15% 成交量（仍過於嚴格）
     // 目前：1.0% 價格 / -10% 成交量
-    if (priceChange >= RuleParams.divergencePriceThreshold &&
-        volumeChange <= -RuleParams.divergenceVolumeThreshold) {
+    if (priceChange >= TrendParams.divergencePriceThreshold &&
+        volumeChange <= -TrendParams.divergenceVolumeThreshold) {
       AppLogger.debug(
         'PriceVolumeBullishDivergence',
         '${data.symbol}: 價漲${priceChange.toStringAsFixed(1)}%, 量縮${volumeChange.toStringAsFixed(1)}%',
@@ -99,11 +99,11 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < RuleParams.priceVolumeLookbackDays + 1) {
+    if (data.prices.length < TrendParams.priceVolumeLookbackDays + 1) {
       return null;
     }
 
-    const lookback = RuleParams.priceVolumeLookbackDays;
+    const lookback = TrendParams.priceVolumeLookbackDays;
     final recentPrices = data.prices.reversed.take(lookback + 1).toList();
 
     if (recentPrices.length < lookback + 1) return null;
@@ -137,8 +137,8 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
     // 價格下跌且成交量上升
     // 原先：-1.5% 價格 / +15% 成交量（仍過於嚴格）
     // 目前：-1.0% 價格 / +10% 成交量
-    if (priceChange <= -RuleParams.divergencePriceThreshold &&
-        volumeChange >= RuleParams.divergenceVolumeThreshold) {
+    if (priceChange <= -TrendParams.divergencePriceThreshold &&
+        volumeChange >= TrendParams.divergenceVolumeThreshold) {
       AppLogger.debug(
         'PriceVolumeBearishDivergence',
         '${data.symbol}: 價跌${priceChange.toStringAsFixed(1)}%, 量增${volumeChange.toStringAsFixed(1)}%',
@@ -214,8 +214,8 @@ class HighVolumeBreakoutRule extends StockRule {
     final avgVolume = volumeSum / volumeCount;
 
     // 高檔位置（前 15%）且成交量暴增（4 倍）
-    if (position >= RuleParams.highPositionThreshold &&
-        volume >= avgVolume * RuleParams.volumeSpikeMult) {
+    if (position >= TrendParams.highPositionThreshold &&
+        volume >= avgVolume * TrendParams.volumeSpikeMult) {
       return TriggeredReason(
         type: ReasonType.highVolumeBreakout,
         score: RuleScores.highVolumeBreakout,
@@ -285,8 +285,8 @@ class LowVolumeAccumulationRule extends StockRule {
     final avgVolume = volumeSum / volumeCount;
 
     // 低檔位置（後 25%）且成交量低迷（低於平均的 60%）
-    if (position <= RuleParams.lowPositionThreshold &&
-        volume < avgVolume * RuleParams.lowAccumulationVolumeRatio) {
+    if (position <= TrendParams.lowPositionThreshold &&
+        volume < avgVolume * TrendParams.lowAccumulationVolumeRatio) {
       AppLogger.debug(
         'LowVolumeAccumulation',
         '${data.symbol}: 位置=${(position * 100).toStringAsFixed(1)}%, 量比=${(volume / avgVolume * 100).toStringAsFixed(0)}%',

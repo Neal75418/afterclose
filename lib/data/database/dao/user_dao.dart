@@ -340,7 +340,7 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final endDate = DateTime.now();
     final startDate = endDate.subtract(
-      const Duration(days: RuleParams.volumeDataLookbackDays),
+      const Duration(days: AlertParams.volumeDataLookbackDays),
     );
 
     final query = select(dailyPrice)
@@ -372,8 +372,8 @@ mixin _UserDaoMixin on _$AppDatabase {
     if (volumes.isEmpty) return null;
 
     // 取最近 20 個交易日（排除今天後的）
-    final recent = volumes.length > RuleParams.volumeSmaWindow
-        ? volumes.sublist(volumes.length - RuleParams.volumeSmaWindow)
+    final recent = volumes.length > AlertParams.volumeSmaWindow
+        ? volumes.sublist(volumes.length - AlertParams.volumeSmaWindow)
         : volumes;
     return recent.reduce((a, b) => a + b) / recent.length;
   }
@@ -421,7 +421,7 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final endDate = DateTime.now();
     final startDate = endDate.subtract(
-      const Duration(days: RuleParams.week52LookbackDays),
+      const Duration(days: AlertParams.week52LookbackDays),
     );
 
     final query = select(dailyPrice)
@@ -489,7 +489,7 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final endDate = DateTime.now();
     final startDate = endDate.subtract(
-      const Duration(days: RuleParams.indicatorDataLookbackDays),
+      const Duration(days: AlertParams.indicatorDataLookbackDays),
     );
 
     final query = select(dailyPrice)
@@ -507,10 +507,10 @@ mixin _UserDaoMixin on _$AppDatabase {
 
   /// 檢查 RSI 超買（RSI >= 目標值，如 70）
   bool _checkRsiOverbought(List<DailyPriceEntry> prices, double targetRsi) {
-    if (prices.length < RuleParams.rsiMinDataPoints) return false;
+    if (prices.length < AlertParams.rsiMinDataPoints) return false;
 
     final closePrices = prices.map((p) => p.close).whereType<double>().toList();
-    if (closePrices.length < RuleParams.rsiMinDataPoints) return false;
+    if (closePrices.length < AlertParams.rsiMinDataPoints) return false;
 
     // 使用 TechnicalIndicatorService 計算 RSI
     final service = TechnicalIndicatorService();
@@ -524,10 +524,10 @@ mixin _UserDaoMixin on _$AppDatabase {
 
   /// 檢查 RSI 超賣（RSI <= 目標值，如 30）
   bool _checkRsiOversold(List<DailyPriceEntry> prices, double targetRsi) {
-    if (prices.length < RuleParams.rsiMinDataPoints) return false;
+    if (prices.length < AlertParams.rsiMinDataPoints) return false;
 
     final closePrices = prices.map((p) => p.close).whereType<double>().toList();
-    if (closePrices.length < RuleParams.rsiMinDataPoints) return false;
+    if (closePrices.length < AlertParams.rsiMinDataPoints) return false;
 
     final service = TechnicalIndicatorService();
     final rsiValues = service.calculateRSI(closePrices, period: 14);
@@ -543,7 +543,7 @@ mixin _UserDaoMixin on _$AppDatabase {
   /// 檢查最近 2 天內是否發生過黃金交叉。
   /// 簡化版本：只檢查交叉本身，不要求在低檔區。
   bool _checkKdGoldenCross(List<DailyPriceEntry> prices) {
-    if (prices.length < RuleParams.kdMinDataPoints) return false;
+    if (prices.length < AlertParams.kdMinDataPoints) return false;
 
     final highs = prices.map((p) => p.high).whereType<double>().toList();
     final lows = prices.map((p) => p.low).whereType<double>().toList();
@@ -582,7 +582,7 @@ mixin _UserDaoMixin on _$AppDatabase {
   /// 檢查最近 2 天內是否發生過死亡交叉。
   /// 簡化版本：只檢查交叉本身，不要求在高檔區。
   bool _checkKdDeathCross(List<DailyPriceEntry> prices) {
-    if (prices.length < RuleParams.kdMinDataPoints) return false;
+    if (prices.length < AlertParams.kdMinDataPoints) return false;
 
     final highs = prices.map((p) => p.high).whereType<double>().toList();
     final lows = prices.map((p) => p.low).whereType<double>().toList();

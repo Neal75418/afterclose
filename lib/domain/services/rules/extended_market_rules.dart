@@ -28,7 +28,7 @@ class ForeignShareholdingIncreasingRule extends StockRule {
     if (change == null) return null;
 
     // 當外資持股增加達到門檻時觸發
-    if (change >= RuleParams.foreignShareholdingIncreaseThreshold) {
+    if (change >= InstitutionalParams.foreignShareholdingIncreaseThreshold) {
       return TriggeredReason(
         type: ReasonType.foreignShareholdingIncreasing,
         score: RuleScores.foreignShareholdingIncreasing,
@@ -62,7 +62,7 @@ class ForeignShareholdingDecreasingRule extends StockRule {
     if (change == null) return null;
 
     // 當外資持股減少達到門檻時觸發
-    if (change <= -RuleParams.foreignShareholdingIncreaseThreshold) {
+    if (change <= -InstitutionalParams.foreignShareholdingIncreaseThreshold) {
       return TriggeredReason(
         type: ReasonType.foreignShareholdingDecreasing,
         score: RuleScores.foreignShareholdingDecreasing,
@@ -112,8 +112,8 @@ class DayTradingHighRule extends StockRule {
     }
 
     // 當當沖比例超過高門檻時觸發
-    if (ratio >= RuleParams.dayTradingHighThreshold &&
-        ratio < RuleParams.dayTradingExtremeThreshold) {
+    if (ratio >= InstitutionalParams.dayTradingHighThreshold &&
+        ratio < InstitutionalParams.dayTradingExtremeThreshold) {
       return TriggeredReason(
         type: ReasonType.dayTradingHigh,
         score: RuleScores.dayTradingHigh,
@@ -155,7 +155,7 @@ class DayTradingExtremeRule extends StockRule {
     }
 
     // 當當沖比例超過極端門檻時觸發
-    if (ratio >= RuleParams.dayTradingExtremeThreshold) {
+    if (ratio >= InstitutionalParams.dayTradingExtremeThreshold) {
       return TriggeredReason(
         type: ReasonType.dayTradingExtreme,
         score: RuleScores.dayTradingExtreme,
@@ -189,7 +189,7 @@ class ConcentrationHighRule extends StockRule {
     if (ratio == null) return null;
 
     // 當籌碼集中度超過門檻時觸發
-    if (ratio >= RuleParams.concentrationHighThreshold) {
+    if (ratio >= InstitutionalParams.concentrationHighThreshold) {
       return TriggeredReason(
         type: ReasonType.concentrationHigh,
         score: RuleScores.concentrationHigh,

@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/models/scoring_batch_data.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
@@ -47,14 +48,14 @@ class ScoringIsolateInput {
   /// 當沖資料 Map（symbol -> dayTradingRatio）
   final Map<String, double>? dayTradingMap;
 
-  /// 外資持股資料 Map（symbol -> {ratio, ratioChange}）
-  final Map<String, Map<String, double?>>? shareholdingMap;
+  /// 外資持股資料（symbol → 持股資料）
+  final Map<String, ShareholdingData>? shareholdingMap;
 
-  /// 警示資料 Map（symbol -> {type, isDisposal, isAttention, ...}）
-  final Map<String, Map<String, dynamic>>? warningMap;
+  /// 警示資料（symbol → 警示上下文）
+  final Map<String, WarningDataContext>? warningMap;
 
-  /// 董監持股資料 Map（symbol -> {pledgeRatio, insiderRatio, ...}）
-  final Map<String, Map<String, dynamic>>? insiderMap;
+  /// 董監持股資料（symbol → 董監上下文）
+  final Map<String, InsiderDataContext>? insiderMap;
 
   /// EPS 歷史資料 Map（symbol -> 最近 8 季 EPS，降序）
   final Map<String, List<Map<String, dynamic>>>? epsHistoryMap;
@@ -79,9 +80,9 @@ class ScoringIsolateInput {
     'recentlyRecommended': recentlyRecommended?.toList(),
     'date': date?.millisecondsSinceEpoch,
     'dayTradingMap': dayTradingMap,
-    'shareholdingMap': shareholdingMap,
-    'warningMap': warningMap,
-    'insiderMap': insiderMap,
+    'shareholdingMap': shareholdingMap?.map((k, v) => MapEntry(k, v.toMap())),
+    'warningMap': warningMap?.map((k, v) => MapEntry(k, v.toMap())),
+    'insiderMap': insiderMap?.map((k, v) => MapEntry(k, v.toMap())),
     'epsHistoryMap': epsHistoryMap,
     'roeHistoryMap': roeHistoryMap,
     'dividendHistoryMap': dividendHistoryMap,
@@ -116,20 +117,21 @@ class ScoringIsolateInput {
           ? Map<String, double>.from(map['dayTradingMap'])
           : null,
       shareholdingMap: map['shareholdingMap'] != null
-          ? _castShareholdingMap(map['shareholdingMap'])
+          ? _castTypedMap(
+              map['shareholdingMap'],
+              (m) => ShareholdingData.fromMap(m),
+            )
           : null,
       warningMap: map['warningMap'] != null
-          ? Map<String, Map<String, dynamic>>.from(
-              (map['warningMap'] as Map).map(
-                (k, v) => MapEntry(k as String, Map<String, dynamic>.from(v)),
-              ),
+          ? _castTypedMap(
+              map['warningMap'],
+              (m) => WarningDataContext.fromMap(m),
             )
           : null,
       insiderMap: map['insiderMap'] != null
-          ? Map<String, Map<String, dynamic>>.from(
-              (map['insiderMap'] as Map).map(
-                (k, v) => MapEntry(k as String, Map<String, dynamic>.from(v)),
-              ),
+          ? _castTypedMap(
+              map['insiderMap'],
+              (m) => InsiderDataContext.fromMap(m),
             )
           : null,
       epsHistoryMap: map['epsHistoryMap'] != null
@@ -169,19 +171,20 @@ class ScoringIsolateInput {
     return result;
   }
 
-  /// Isolate 邊界型別轉換：symbol → shareholding map
-  static Map<String, Map<String, double?>> _castShareholdingMap(dynamic map) {
+  /// Isolate 邊界型別轉換：symbol → typed DTO
+  static Map<String, T> _castTypedMap<T>(
+    dynamic map,
+    T Function(Map<String, dynamic>) fromMap,
+  ) {
     if (map is! Map) return {};
-    final result = <String, Map<String, double?>>{};
+    final result = <String, T>{};
     for (final entry in map.entries) {
       try {
-        final innerMap = <String, double?>{};
-        for (final inner in (entry.value as Map).entries) {
-          innerMap[inner.key as String] = inner.value as double?;
-        }
-        result[entry.key as String] = innerMap;
+        result[entry.key as String] = fromMap(
+          Map<String, dynamic>.from(entry.value as Map),
+        );
       } catch (_) {
-        // 靜默跳過無法轉型的 entry
+        // 靜默跳過無法轉型的 entry（Isolate 內無法使用 AppLogger）
       }
     }
     return result;
@@ -443,52 +446,24 @@ MarketDataContext? _buildMarketDataContext(
   String symbol,
 ) {
   final dayTradingRatio = input.dayTradingMap?[symbol];
-  final shareholdingData = input.shareholdingMap?[symbol];
-  final warningData = input.warningMap?[symbol];
-  final insiderData = input.insiderMap?[symbol];
-
-  WarningDataContext? warningContext;
-  if (warningData != null) {
-    final warningType = warningData['warningType'] as String?;
-    warningContext = WarningDataContext(
-      isAttention: warningType == 'ATTENTION',
-      isDisposal: warningType == 'DISPOSAL',
-      warningType: warningType,
-      reasonDescription: warningData['reasonDescription'] as String?,
-      disposalMeasures: warningData['disposalMeasures'] as String?,
-      disposalEndDate: warningData['disposalEndDate'] != null
-          ? DateTime.tryParse(warningData['disposalEndDate'] as String)
-          : null,
-    );
-  }
-
-  InsiderDataContext? insiderContext;
-  if (insiderData != null) {
-    insiderContext = InsiderDataContext(
-      insiderRatio: insiderData['insiderRatio'] as double?,
-      pledgeRatio: insiderData['pledgeRatio'] as double?,
-      hasSellingStreak: insiderData['hasSellingStreak'] as bool? ?? false,
-      sellingStreakMonths: insiderData['sellingStreakMonths'] as int? ?? 0,
-      hasSignificantBuying:
-          insiderData['hasSignificantBuying'] as bool? ?? false,
-      buyingChange: insiderData['buyingChange'] as double?,
-    );
-  }
+  final shareholding = input.shareholdingMap?[symbol];
+  final warning = input.warningMap?[symbol];
+  final insider = input.insiderMap?[symbol];
 
   if (dayTradingRatio == null &&
-      shareholdingData == null &&
-      warningContext == null &&
-      insiderContext == null) {
+      shareholding == null &&
+      warning == null &&
+      insider == null) {
     return null;
   }
 
   return MarketDataContext(
     dayTradingRatio: dayTradingRatio,
-    foreignSharesRatio: shareholdingData?['foreignSharesRatio'],
-    foreignSharesRatioChange: shareholdingData?['foreignSharesRatioChange'],
-    concentrationRatio: shareholdingData?['concentrationRatio'],
-    warningData: warningContext,
-    insiderData: insiderContext,
+    foreignSharesRatio: shareholding?.foreignSharesRatio,
+    foreignSharesRatioChange: shareholding?.foreignSharesRatioChange,
+    concentrationRatio: shareholding?.concentrationRatio,
+    warningData: warning,
+    insiderData: insider,
   );
 }
 

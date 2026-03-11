@@ -26,7 +26,7 @@ class InsiderSellingStreakRule extends StockRule {
     // 當董監連續減持達到門檻月數時觸發
     if (insiderData.hasSellingStreak &&
         insiderData.sellingStreakMonths >=
-            RuleParams.insiderSellingStreakMonths) {
+            FundamentalParams.insiderSellingStreakMonths) {
       return TriggeredReason(
         type: ReasonType.insiderSellingStreak,
         score: RuleScores.insiderSellingStreak,
@@ -64,7 +64,7 @@ class InsiderSignificantBuyingRule extends StockRule {
     final buyingChange = insiderData.buyingChange;
     if (insiderData.hasSignificantBuying &&
         buyingChange != null &&
-        buyingChange >= RuleParams.insiderSignificantBuyingThreshold) {
+        buyingChange >= FundamentalParams.insiderSignificantBuyingThreshold) {
       return TriggeredReason(
         type: ReasonType.insiderSignificantBuying,
         score: RuleScores.insiderSignificantBuying,
@@ -101,7 +101,7 @@ class HighPledgeRatioRule extends StockRule {
     if (pledgeRatio == null) return null;
 
     // 當質押比例超過門檻時觸發
-    if (pledgeRatio >= RuleParams.highPledgeRatioThreshold) {
+    if (pledgeRatio >= FundamentalParams.highPledgeRatioThreshold) {
       return TriggeredReason(
         type: ReasonType.highPledgeRatio,
         score: RuleScores.highPledgeRatio,
@@ -138,9 +138,10 @@ class ForeignConcentrationWarningRule extends StockRule {
     if (foreignRatio == null) return null;
 
     // 當外資持股超過警示門檻時觸發
-    if (foreignRatio >= RuleParams.foreignConcentrationWarningThreshold) {
+    if (foreignRatio >=
+        FundamentalParams.foreignConcentrationWarningThreshold) {
       final isDanger =
-          foreignRatio >= RuleParams.foreignConcentrationDangerThreshold;
+          foreignRatio >= FundamentalParams.foreignConcentrationDangerThreshold;
       final description = isDanger
           ? '外資持股 ${foreignRatio.toStringAsFixed(1)}%（高度集中風險）'
           : '外資持股 ${foreignRatio.toStringAsFixed(1)}%（集中度警示）';
@@ -178,15 +179,15 @@ class ForeignExodusRule extends StockRule {
     if (change == null) return null;
 
     // 當外資持股變化低於門檻時觸發（門檻為負值）
-    if (change <= RuleParams.foreignExodusThreshold) {
+    if (change <= FundamentalParams.foreignExodusThreshold) {
       return TriggeredReason(
         type: ReasonType.foreignExodus,
         score: RuleScores.foreignExodus,
         description:
-            '外資 ${RuleParams.foreignExodusLookbackDays} 日持股減少 ${change.abs().toStringAsFixed(2)}%（加速流出）',
+            '外資 ${FundamentalParams.foreignExodusLookbackDays} 日持股減少 ${change.abs().toStringAsFixed(2)}%（加速流出）',
         evidence: {
           'foreignSharesRatioChange': change,
-          'lookbackDays': RuleParams.foreignExodusLookbackDays,
+          'lookbackDays': FundamentalParams.foreignExodusLookbackDays,
         },
       );
     }

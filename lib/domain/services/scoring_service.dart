@@ -7,6 +7,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/models/scoring_batch_data.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_isolate.dart';
@@ -414,22 +415,21 @@ class ScoringService {
   // 市場資料建構輔助方法（Isolate 回退時使用）
   // ==================================================
 
-  /// 從 Map 建構 MarketDataContext
+  /// 從 typed DTO 建構 MarketDataContext
   ///
   /// 用於 Isolate 回退時，確保市場資料一致性
   MarketDataContext? _buildMarketDataFromMaps({
     required String symbol,
     Map<String, double>? dayTradingMap,
-    Map<String, Map<String, double?>>? shareholdingMap,
-    Map<String, Map<String, dynamic>>? warningMap,
-    Map<String, Map<String, dynamic>>? insiderMap,
+    Map<String, ShareholdingData>? shareholdingMap,
+    Map<String, WarningDataContext>? warningMap,
+    Map<String, InsiderDataContext>? insiderMap,
   }) {
     final dayTradingRatio = dayTradingMap?[symbol];
     final shareholding = shareholdingMap?[symbol];
     final warning = warningMap?[symbol];
     final insider = insiderMap?[symbol];
 
-    // 若全部都沒有資料，回傳 null
     if (dayTradingRatio == null &&
         shareholding == null &&
         warning == null &&
@@ -437,42 +437,13 @@ class ScoringService {
       return null;
     }
 
-    // 建構警示資料
-    WarningDataContext? warningData;
-    if (warning != null) {
-      final warningType = warning['warningType'] as String?;
-      warningData = WarningDataContext(
-        isAttention: warningType == 'ATTENTION',
-        isDisposal: warningType == 'DISPOSAL',
-        warningType: warningType,
-        reasonDescription: warning['reasonDescription'] as String?,
-        disposalMeasures: warning['disposalMeasures'] as String?,
-        disposalEndDate: warning['disposalEndDate'] != null
-            ? DateTime.tryParse(warning['disposalEndDate'] as String)
-            : null,
-      );
-    }
-
-    // 建構董監持股資料
-    InsiderDataContext? insiderData;
-    if (insider != null) {
-      insiderData = InsiderDataContext(
-        insiderRatio: insider['insiderRatio'] as double?,
-        pledgeRatio: insider['pledgeRatio'] as double?,
-        hasSellingStreak: insider['hasSellingStreak'] as bool? ?? false,
-        sellingStreakMonths: insider['sellingStreakMonths'] as int? ?? 0,
-        hasSignificantBuying: insider['hasSignificantBuying'] as bool? ?? false,
-        buyingChange: insider['buyingChange'] as double?,
-      );
-    }
-
     return MarketDataContext(
       dayTradingRatio: dayTradingRatio,
-      foreignSharesRatio: shareholding?['foreignSharesRatio'],
-      foreignSharesRatioChange: shareholding?['foreignSharesRatioChange'],
-      concentrationRatio: shareholding?['concentrationRatio'],
-      warningData: warningData,
-      insiderData: insiderData,
+      foreignSharesRatio: shareholding?.foreignSharesRatio,
+      foreignSharesRatioChange: shareholding?.foreignSharesRatioChange,
+      concentrationRatio: shareholding?.concentrationRatio,
+      warningData: warning,
+      insiderData: insider,
     );
   }
 

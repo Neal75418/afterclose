@@ -27,7 +27,7 @@ class TrendDetectionService {
         .whereType<double>()
         .toList();
 
-    if (closes.length < RuleParams.minTrendDataPoints) return TrendState.range;
+    if (closes.length < TrendParams.minTrendDataPoints) return TrendState.range;
 
     // 線性迴歸斜率
     // 注意：closes 是由 reversed.take() 得來，順序為新到舊，
@@ -41,9 +41,9 @@ class TrendDetectionService {
     final normalizedSlope = (slope / avgPrice) * 100;
 
     // 趨勢偵測閾值
-    if (normalizedSlope > RuleParams.trendUpThreshold) {
+    if (normalizedSlope > TrendParams.trendUpThreshold) {
       return TrendState.up;
-    } else if (normalizedSlope < RuleParams.trendDownThreshold) {
+    } else if (normalizedSlope < TrendParams.trendDownThreshold) {
       return TrendState.down;
     } else {
       return TrendState.range;
@@ -68,7 +68,7 @@ class TrendDetectionService {
 
     // 突破區間頂部
     if (rangeTop != null) {
-      final breakoutLevel = rangeTop * (1 + RuleParams.breakoutBuffer);
+      final breakoutLevel = rangeTop * (1 + TrendParams.breakoutBuffer);
       if (todayClose > breakoutLevel) {
         return true;
       }
@@ -93,7 +93,7 @@ class TrendDetectionService {
   }) {
     // 跌破支撐
     if (support != null) {
-      final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
+      final breakdownLevel = support * (1 - TrendParams.breakdownBuffer);
       if (todayClose < breakdownLevel) {
         AppLogger.debug(
           'S2W',
@@ -105,7 +105,7 @@ class TrendDetectionService {
 
     // 跌破區間底部
     if (rangeBottom != null) {
-      final breakdownLevel = rangeBottom * (1 - RuleParams.breakdownBuffer);
+      final breakdownLevel = rangeBottom * (1 - TrendParams.breakdownBuffer);
       if (todayClose < breakdownLevel) {
         AppLogger.debug(
           'S2W',
@@ -153,7 +153,7 @@ class TrendDetectionService {
     }
 
     // 條件 1：近期低點高於前期低點（使用 higherLowBuffer）
-    if (recentLow <= priorLow * RuleParams.higherLowBuffer) {
+    if (recentLow <= priorLow * TrendParams.higherLowBuffer) {
       return false;
     }
 
@@ -195,7 +195,7 @@ class TrendDetectionService {
     }
 
     // 條件 1：近期高點低於前期高點（使用 lowerHighBuffer）
-    if (recentHigh >= priorHigh * RuleParams.lowerHighBuffer) {
+    if (recentHigh >= priorHigh * TrendParams.lowerHighBuffer) {
       return false;
     }
 
@@ -205,7 +205,7 @@ class TrendDetectionService {
 
   /// 檢查量能確認
   ///
-  /// 近期平均成交量需高於前期平均成交量的 [RuleParams.reversalVolumeConfirm] 倍
+  /// 近期平均成交量需高於前期平均成交量的 [TrendParams.reversalVolumeConfirm] 倍
   bool _hasVolumeConfirmation(
     List<DailyPriceEntry> recentPrices,
     List<DailyPriceEntry> priorPrices,
@@ -220,7 +220,7 @@ class TrendDetectionService {
 
     if (priorVol <= 0) return false;
 
-    return recentVol >= priorVol * RuleParams.reversalVolumeConfirm;
+    return recentVol >= priorVol * TrendParams.reversalVolumeConfirm;
   }
 
   /// 計算線性迴歸斜率

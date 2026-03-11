@@ -68,7 +68,7 @@ class InsiderRepository {
   Future<List<InsiderHoldingEntry>> getHighPledgeRatioStocks({
     double? threshold,
   }) {
-    final ratio = threshold ?? RuleParams.highPledgeRatioThreshold;
+    final ratio = threshold ?? FundamentalParams.highPledgeRatioThreshold;
     return _db.getHighPledgeRatioStocks(threshold: ratio);
   }
 
@@ -243,7 +243,7 @@ class InsiderRepository {
   ///
   /// 質押比例超過門檻則回傳 true（風險警示）
   Future<bool> isHighPledgeRisk(String symbol, {double? threshold}) async {
-    final ratio = threshold ?? RuleParams.highPledgeRatioThreshold;
+    final ratio = threshold ?? FundamentalParams.highPledgeRatioThreshold;
     final latest = await getLatestInsiderHolding(symbol);
     if (latest == null) return false;
 
@@ -260,7 +260,7 @@ class InsiderRepository {
   }) async {
     if (watchlistSymbols.isEmpty) return {};
 
-    final ratio = threshold ?? RuleParams.highPledgeRatioThreshold;
+    final ratio = threshold ?? FundamentalParams.highPledgeRatioThreshold;
     final holdings = await getLatestInsiderHoldingsBatch(watchlistSymbols);
 
     final result = <String, InsiderHoldingEntry>{};

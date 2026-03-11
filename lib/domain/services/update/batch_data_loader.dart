@@ -4,6 +4,7 @@ import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/shareholding_repository.dart';
+import 'package:afterclose/domain/models/analysis_context.dart';
 import 'package:afterclose/domain/models/scoring_batch_data.dart';
 import 'package:afterclose/domain/services/update/batch_data_builder.dart';
 
@@ -42,7 +43,7 @@ class BatchDataLoader {
       const Duration(days: RuleParams.lookbackPrice + 10),
     );
     final instStartDate = date.subtract(
-      const Duration(days: RuleParams.institutionalLookbackDays),
+      const Duration(days: InstitutionalParams.institutionalLookbackDays),
     );
 
     final instRepo = _institutionalRepo;
@@ -72,7 +73,9 @@ class BatchDataLoader {
     final prevShareholdingFuture = _db.getShareholdingsBeforeDateBatch(
       candidates,
       beforeDate: date.subtract(
-        const Duration(days: RuleParams.foreignShareholdingLookbackDays),
+        const Duration(
+          days: InstitutionalParams.foreignShareholdingLookbackDays,
+        ),
       ),
     );
     final warningFuture = _db.getActiveWarningsMapBatch(candidates);
@@ -132,12 +135,17 @@ class BatchDataLoader {
     );
 
     final warningMap = warningEntries.map(
-      (k, v) => MapEntry(k, {
-        'warningType': v.warningType,
-        'reasonDescription': v.reasonDescription,
-        'disposalMeasures': v.disposalMeasures,
-        'disposalEndDate': v.disposalEndDate?.toIso8601String(),
-      }),
+      (k, v) => MapEntry(
+        k,
+        WarningDataContext(
+          isAttention: v.warningType == 'ATTENTION',
+          isDisposal: v.warningType == 'DISPOSAL',
+          warningType: v.warningType,
+          reasonDescription: v.reasonDescription,
+          disposalMeasures: v.disposalMeasures,
+          disposalEndDate: v.disposalEndDate,
+        ),
+      ),
     );
 
     final insiderMap = await BatchDataBuilder.buildInsiderMap(

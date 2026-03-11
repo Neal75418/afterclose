@@ -18,11 +18,11 @@ class PriceVolumeAnalysisService {
   ///
   /// 回傳包含背離狀態和上下文的 [PriceVolumeAnalysis]
   PriceVolumeAnalysis analyzePriceVolume(List<DailyPriceEntry> prices) {
-    if (prices.length < RuleParams.priceVolumeLookbackDays + 1) {
+    if (prices.length < TrendParams.priceVolumeLookbackDays + 1) {
       return const PriceVolumeAnalysis(state: PriceVolumeState.neutral);
     }
 
-    const lookback = RuleParams.priceVolumeLookbackDays;
+    const lookback = TrendParams.priceVolumeLookbackDays;
     final recentPrices = lastN(prices, lookback + 1);
 
     // 計算價格變化
@@ -107,8 +107,8 @@ class PriceVolumeAnalysisService {
     required double volumeChangePercent,
     double? pricePosition,
   }) {
-    const priceThreshold = RuleParams.priceVolumePriceThreshold;
-    const volumeThreshold = RuleParams.priceVolumeVolumeThreshold;
+    const priceThreshold = TrendParams.priceVolumePriceThreshold;
+    const volumeThreshold = TrendParams.priceVolumeVolumeThreshold;
 
     // 價漲量縮 = 多頭背離（警訊）
     if (priceChangePercent >= priceThreshold &&
@@ -122,14 +122,14 @@ class PriceVolumeAnalysisService {
     }
     // 高檔爆量 = 可能出貨
     if (pricePosition != null &&
-        pricePosition >= RuleParams.highPositionThreshold &&
+        pricePosition >= TrendParams.highPositionThreshold &&
         volumeChangePercent >=
-            volumeThreshold * RuleParams.highVolumeMultiplier) {
+            volumeThreshold * TrendParams.highVolumeMultiplier) {
       return PriceVolumeState.highVolumeAtHigh;
     }
     // 低檔縮量 = 可能吸籌
     if (pricePosition != null &&
-        pricePosition <= RuleParams.lowPositionThreshold &&
+        pricePosition <= TrendParams.lowPositionThreshold &&
         volumeChangePercent <= -volumeThreshold) {
       return PriceVolumeState.lowVolumeAtLow;
     }

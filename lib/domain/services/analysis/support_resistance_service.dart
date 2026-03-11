@@ -32,7 +32,7 @@ class SupportResistanceService {
 
     // ATR-based 動態距離：高波動股用更寬的搜尋半徑
     final atrDistance = _calculateATRDistance(prices, currentClose);
-    final maxDistance = atrDistance ?? RuleParams.maxSupportResistanceDistance;
+    final maxDistance = atrDistance ?? TrendParams.maxSupportResistanceDistance;
 
     final maxResistance = currentClose * (1 + maxDistance);
     final minSupport = currentClose * (1 - maxDistance);
@@ -225,7 +225,7 @@ class SupportResistanceService {
         final distance = (zone.avgPrice - currentClose).abs();
         final distanceFactor =
             1.0 /
-            (1.0 + (distance / currentClose) * RuleParams.distanceDecayFactor);
+            (1.0 + (distance / currentClose) * TrendParams.distanceDecayFactor);
         final score = zone.touches * (1 + zone.recencyWeight) * distanceFactor;
         if (score > bestScore) {
           bestScore = score;
@@ -273,11 +273,11 @@ class SupportResistanceService {
     if (count == 0) return null;
 
     final atr = sumTR / count;
-    return (atr / currentClose) * RuleParams.atrDistanceMultiplier;
+    return (atr / currentClose) * TrendParams.atrDistanceMultiplier;
   }
 
   /// 波段點聚類閾值
-  static const _clusterThreshold = RuleParams.clusterThreshold;
+  static const _clusterThreshold = TrendParams.clusterThreshold;
 }
 
 // ==================================================

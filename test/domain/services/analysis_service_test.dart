@@ -4,252 +4,228 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/services/analysis/analysis_coordinator_service.dart';
 
 import '../../helpers/price_data_generators.dart';
 
 void main() {
   late AnalysisService analysisService;
+  late AnalysisCoordinatorService coordinator;
 
   setUp(() {
     analysisService = AnalysisService();
+    coordinator = AnalysisCoordinatorService();
+  });
+
+  group('TrendDetectionService', () {
+    test('should detect uptrend when prices are rising', () {
+      final prices = generateUptrendPrices(days: 25);
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.up);
+    });
+
+    test('should detect downtrend when prices are falling', () {
+      final prices = generateDowntrendPrices(days: 25);
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.down);
+    });
+
+    test('should detect range when prices are flat', () {
+      final prices = generateFlatPrices(days: 25, basePrice: 100.0);
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.range);
+    });
+
+    test('should return range when not enough data', () {
+      final prices = generateFlatPrices(days: 3, basePrice: 100.0);
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.range);
+    });
+
+    test('should detect uptrend with explicit price increase', () {
+      final now = DateTime.now();
+      final prices = List.generate(25, (i) {
+        final price = 100.0 + (i * 0.5); // 100 → 112
+        return createTestPrice(
+          date: now.subtract(Duration(days: 25 - i - 1)),
+          close: price,
+        );
+      });
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.up);
+    });
+
+    test('should detect downtrend with explicit price decrease', () {
+      final now = DateTime.now();
+      final prices = List.generate(25, (i) {
+        final price = 112.0 - (i * 0.5); // 112 → 100
+        return createTestPrice(
+          date: now.subtract(Duration(days: 25 - i - 1)),
+          close: price,
+        );
+      });
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.down);
+    });
+
+    test('should return range when price change is minimal', () {
+      final now = DateTime.now();
+      final prices = List.generate(25, (i) {
+        final price = 100.0 + (i * 0.02);
+        return createTestPrice(
+          date: now.subtract(Duration(days: 25 - i - 1)),
+          close: price,
+        );
+      });
+
+      final trend = coordinator.trendService.detectTrendState(prices);
+
+      expect(trend, TrendState.range);
+    });
+  });
+
+  group('SupportResistanceService', () {
+    test('should find support and resistance levels', () {
+      final now = DateTime.now();
+      final prices = <DailyPriceEntry>[];
+
+      for (var i = 0; i < 60; i++) {
+        final date = now.subtract(Duration(days: 60 - i - 1));
+        double close;
+        double high;
+        double low;
+
+        if (i < 20) {
+          close = 100.0;
+          high = 100.5;
+          low = 99.5;
+        } else if (i < 30) {
+          final progress = (i - 20) / 10.0;
+          close = 100.0 - 5.0 * (1 - (progress - 0.5).abs() * 2);
+          high = close + 0.5;
+          low = close - 0.5;
+        } else if (i < 45) {
+          final progress = (i - 30) / 15.0;
+          close = 100.0 + 5.0 * (1 - (progress - 0.5).abs() * 2);
+          high = close + 0.5;
+          low = close - 0.5;
+        } else {
+          close = 100.0;
+          high = 100.5;
+          low = 99.5;
+        }
+
+        prices.add(
+          DailyPriceEntry(
+            symbol: 'TEST',
+            date: date,
+            open: close - 0.2,
+            high: high,
+            low: low,
+            close: close,
+            volume: 1000.0,
+          ),
+        );
+      }
+
+      final (support, resistance) = coordinator.srService.findSupportResistance(
+        prices,
+      );
+
+      expect(support, isNotNull);
+      expect(resistance, isNotNull);
+      expect(resistance! > support!, isTrue);
+    });
+
+    test('should return nulls when not enough data', () {
+      final prices = generateFlatPrices(days: 30, basePrice: 100.0);
+
+      final (support, resistance) = coordinator.srService.findSupportResistance(
+        prices,
+      );
+
+      expect(support, isNull);
+      expect(resistance, isNull);
+    });
+
+    test('should find 60-day high and low', () {
+      final prices = generateSwingPrices(days: 70);
+
+      final (rangeLow, rangeHigh) = coordinator.srService.findRange(prices);
+
+      expect(rangeLow, isNotNull);
+      expect(rangeHigh, isNotNull);
+      expect(rangeHigh! > rangeLow!, isTrue);
+    });
+
+    test('should return nulls when empty', () {
+      final (rangeLow, rangeHigh) = coordinator.srService.findRange([]);
+
+      expect(rangeLow, isNull);
+      expect(rangeHigh, isNull);
+    });
+  });
+
+  group('ReversalDetectionService', () {
+    test('should detect weak-to-strong on breakout above range top', () {
+      final prices = generateFlatPrices(days: 25, basePrice: 100.0);
+
+      final pricesWithBreakout = [
+        ...prices.take(prices.length - 1),
+        createTestPrice(date: DateTime.now(), close: 106.0),
+      ];
+
+      final reversal = coordinator.reversalService.detectReversalState(
+        pricesWithBreakout,
+        trendState: TrendState.down,
+        rangeTop: 102.0,
+      );
+
+      expect(reversal, ReversalState.weakToStrong);
+    });
+
+    test('should detect strong-to-weak on breakdown below support', () {
+      final prices = generateFlatPrices(days: 25, basePrice: 100.0);
+
+      final pricesWithBreakdown = [
+        ...prices.take(prices.length - 1),
+        createTestPrice(date: DateTime.now(), close: 94.0),
+      ];
+
+      final reversal = coordinator.reversalService.detectReversalState(
+        pricesWithBreakdown,
+        trendState: TrendState.up,
+        support: 98.0,
+      );
+
+      expect(reversal, ReversalState.strongToWeak);
+    });
+
+    test('should return none when no reversal detected', () {
+      final prices = generateFlatPrices(days: 25, basePrice: 100.0);
+
+      final reversal = coordinator.reversalService.detectReversalState(
+        prices,
+        trendState: TrendState.range,
+      );
+
+      expect(reversal, ReversalState.none);
+    });
   });
 
   group('AnalysisService', () {
-    group('detectTrendState', () {
-      test('should detect uptrend when prices are rising', () {
-        final prices = generateUptrendPrices(days: 25);
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.up);
-      });
-
-      test('should detect downtrend when prices are falling', () {
-        final prices = generateDowntrendPrices(days: 25);
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.down);
-      });
-
-      test('should detect range when prices are flat', () {
-        final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.range);
-      });
-
-      test('should return range when not enough data', () {
-        final prices = generateFlatPrices(days: 3, basePrice: 100.0);
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.range);
-      });
-
-      test('should detect uptrend with explicit price increase', () {
-        // Explicit test: 20 days from 100 → 110 (0.5% per day avg)
-        // This verifies the slope calculation is correct after fix
-        final now = DateTime.now();
-        final prices = List.generate(25, (i) {
-          final price = 100.0 + (i * 0.5); // 100 → 112
-          return createTestPrice(
-            date: now.subtract(Duration(days: 25 - i - 1)),
-            close: price,
-          );
-        });
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.up);
-      });
-
-      test('should detect downtrend with explicit price decrease', () {
-        // Explicit test: 20 days from 110 → 100 (-0.5% per day avg)
-        final now = DateTime.now();
-        final prices = List.generate(25, (i) {
-          final price = 112.0 - (i * 0.5); // 112 → 100
-          return createTestPrice(
-            date: now.subtract(Duration(days: 25 - i - 1)),
-            close: price,
-          );
-        });
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.down);
-      });
-
-      test('should return range when price change is minimal', () {
-        // Price changes less than threshold (±0.15% per day)
-        final now = DateTime.now();
-        final prices = List.generate(25, (i) {
-          // Very small variation: 100 → 100.5 over 25 days
-          final price = 100.0 + (i * 0.02);
-          return createTestPrice(
-            date: now.subtract(Duration(days: 25 - i - 1)),
-            close: price,
-          );
-        });
-
-        final trend = analysisService.detectTrendState(prices);
-
-        expect(trend, TrendState.range);
-      });
-    });
-
-    group('findSupportResistance', () {
-      test('should find support and resistance levels', () {
-        // Create data with clear swing high and swing low patterns
-        // Swing window is 20, half window is 10
-        // Need swing points above and below current price, within 8% distance
-        final now = DateTime.now();
-        final prices = <DailyPriceEntry>[];
-
-        // Generate 60 days of price data with clear oscillation
-        // Pattern: base at 100, dip to 95 (swing low), rise to 105 (swing high)
-        for (var i = 0; i < 60; i++) {
-          final date = now.subtract(Duration(days: 60 - i - 1));
-          double close;
-          double high;
-          double low;
-
-          if (i < 20) {
-            // Phase 1: Establish baseline at 100
-            close = 100.0;
-            high = 100.5;
-            low = 99.5;
-          } else if (i < 30) {
-            // Phase 2: Dip to create swing low around day 25 (close = 95)
-            final progress = (i - 20) / 10.0;
-            close = 100.0 - 5.0 * (1 - (progress - 0.5).abs() * 2);
-            high = close + 0.5;
-            low = close - 0.5;
-          } else if (i < 45) {
-            // Phase 3: Rise to create swing high around day 37 (close = 105)
-            final progress = (i - 30) / 15.0;
-            close = 100.0 + 5.0 * (1 - (progress - 0.5).abs() * 2);
-            high = close + 0.5;
-            low = close - 0.5;
-          } else {
-            // Phase 4: Return to baseline at 100 (current price)
-            close = 100.0;
-            high = 100.5;
-            low = 99.5;
-          }
-
-          prices.add(
-            DailyPriceEntry(
-              symbol: 'TEST',
-              date: date,
-              open: close - 0.2,
-              high: high,
-              low: low,
-              close: close,
-              volume: 1000.0,
-            ),
-          );
-        }
-
-        final (support, resistance) = analysisService.findSupportResistance(
-          prices,
-        );
-
-        // With current close at 100, support should be around 95, resistance around 105
-        // Both within 8% distance
-        expect(support, isNotNull);
-        expect(resistance, isNotNull);
-        expect(resistance! > support!, isTrue);
-      });
-
-      test('should return nulls when not enough data', () {
-        // Less than swingWindow * 2 = 40 days
-        final prices = generateFlatPrices(days: 30, basePrice: 100.0);
-
-        final (support, resistance) = analysisService.findSupportResistance(
-          prices,
-        );
-
-        expect(support, isNull);
-        expect(resistance, isNull);
-      });
-    });
-
-    group('findRange', () {
-      test('should find 60-day high and low', () {
-        final prices = generateSwingPrices(days: 70);
-
-        final (rangeLow, rangeHigh) = analysisService.findRange(prices);
-
-        expect(rangeLow, isNotNull);
-        expect(rangeHigh, isNotNull);
-        expect(rangeHigh! > rangeLow!, isTrue);
-      });
-
-      test('should return nulls when empty', () {
-        final (rangeLow, rangeHigh) = analysisService.findRange([]);
-
-        expect(rangeLow, isNull);
-        expect(rangeHigh, isNull);
-      });
-    });
-
-    group('detectReversalState', () {
-      test('should detect weak-to-strong on breakout above range top', () {
-        final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-        // Add a breakout price
-        final pricesWithBreakout = [
-          ...prices.take(prices.length - 1),
-          createTestPrice(
-            date: DateTime.now(),
-            close: 106.0, // Above range top with buffer
-          ),
-        ];
-
-        final reversal = analysisService.detectReversalState(
-          pricesWithBreakout,
-          trendState: TrendState.down,
-          rangeTop: 102.0,
-        );
-
-        expect(reversal, ReversalState.weakToStrong);
-      });
-
-      test('should detect strong-to-weak on breakdown below support', () {
-        final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-        // Add a breakdown price
-        final pricesWithBreakdown = [
-          ...prices.take(prices.length - 1),
-          createTestPrice(
-            date: DateTime.now(),
-            close: 94.0, // Below support with buffer
-          ),
-        ];
-
-        final reversal = analysisService.detectReversalState(
-          pricesWithBreakdown,
-          trendState: TrendState.up,
-          support: 98.0,
-        );
-
-        expect(reversal, ReversalState.strongToWeak);
-      });
-
-      test('should return none when no reversal detected', () {
-        final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-        final reversal = analysisService.detectReversalState(
-          prices,
-          trendState: TrendState.range,
-        );
-
-        expect(reversal, ReversalState.none);
-      });
-    });
-
     group('isCandidate', () {
       test('should return true for price spike', () {
         final prices = generatePricesWithPriceSpike(

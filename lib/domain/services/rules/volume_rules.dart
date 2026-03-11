@@ -31,7 +31,7 @@ class VolumeSpikeRule extends StockRule {
 
     if (todayClose != null && yesterdayClose != null && yesterdayClose > 0) {
       final pctChange = ((todayClose - yesterdayClose) / yesterdayClose).abs();
-      if (pctChange < RuleParams.minPriceChangeForVolume) return null;
+      if (pctChange < TrendParams.minPriceChangeForVolume) return null;
     }
 
     // 計算 MA20 成交量並處理停牌日
@@ -53,11 +53,11 @@ class VolumeSpikeRule extends StockRule {
 
     // 檢查門檻（均量的 4 倍）
     if (avgVolume > 0 &&
-        todayVolume >= avgVolume * RuleParams.volumeSpikeMult) {
+        todayVolume >= avgVolume * TrendParams.volumeSpikeMult) {
       return TriggeredReason(
         type: ReasonType.volumeSpike,
         score: RuleScores.volumeSpike,
-        description: '成交量異常放大 ${RuleParams.volumeSpikeMult} 倍以上',
+        description: '成交量異常放大 ${TrendParams.volumeSpikeMult} 倍以上',
         evidence: {
           'volume': todayVolume,
           'avgVolume': avgVolume,
@@ -106,7 +106,7 @@ class PriceSpikeRule extends StockRule {
     final pctChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
 
     // 檢查價格門檻（7%）
-    if (pctChange.abs() < RuleParams.priceSpikePercent) {
+    if (pctChange.abs() < TrendParams.priceSpikePercent) {
       return null;
     }
 
@@ -130,7 +130,7 @@ class PriceSpikeRule extends StockRule {
 
     // 成交量需達均量 1.5 倍以上
     if (avgVolume <= 0 ||
-        todayVolume < avgVolume * RuleParams.priceSpikeVolumeMult) {
+        todayVolume < avgVolume * TrendParams.priceSpikeVolumeMult) {
       return null;
     }
 
@@ -140,7 +140,7 @@ class PriceSpikeRule extends StockRule {
       type: ReasonType.priceSpike,
       score: RuleScores.priceSpike,
       description:
-          '股價單日漲跌幅超過 ${RuleParams.priceSpikePercent}%，量增 ${volumeMultiple.toStringAsFixed(1)} 倍',
+          '股價單日漲跌幅超過 ${TrendParams.priceSpikePercent}%，量增 ${volumeMultiple.toStringAsFixed(1)} 倍',
       evidence: {
         'pctChange': pctChange,
         'close': todayClose,

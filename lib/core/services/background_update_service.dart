@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -79,7 +80,13 @@ class BackgroundUpdateService {
 
     // 計算下次 15:00 的延遲時間
     final now = DateTime.now();
-    var scheduledTime = DateTime(now.year, now.month, now.day, 15, 0);
+    var scheduledTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      ApiConfig.marketCloseHour,
+      ApiConfig.marketCloseMinute,
+    );
     if (now.isAfter(scheduledTime)) {
       scheduledTime = scheduledTime.add(const Duration(days: 1));
     }
@@ -97,7 +104,9 @@ class BackgroundUpdateService {
       ),
       existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
       backoffPolicy: BackoffPolicy.exponential,
-      backoffPolicyDelay: const Duration(minutes: 15),
+      backoffPolicyDelay: const Duration(
+        minutes: ApiConfig.backoffDelayMinutes,
+      ),
     );
 
     // 儲存設定

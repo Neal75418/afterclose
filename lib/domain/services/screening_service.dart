@@ -179,7 +179,7 @@ class ScreeningService {
       case ScreeningField.rsi14:
         final rsiValues = indicatorService.calculateRSI(
           closes,
-          period: RuleParams.rsiPeriod,
+          period: IndicatorParams.rsiPeriod,
         );
         fieldValue = rsiValues.isNotEmpty ? rsiValues.last : null;
 
@@ -189,8 +189,8 @@ class ScreeningService {
           highs,
           lows,
           closes,
-          kPeriod: RuleParams.kdPeriodK,
-          dPeriod: RuleParams.kdPeriodD,
+          kPeriod: IndicatorParams.kdPeriodK,
+          dPeriod: IndicatorParams.kdPeriodD,
         );
         if (condition.field == ScreeningField.kValue) {
           fieldValue = kd.k.isNotEmpty ? kd.k.last : null;

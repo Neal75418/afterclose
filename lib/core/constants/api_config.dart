@@ -52,6 +52,25 @@ abstract final class ApiConfig {
   /// 財報同步最大市場候選數（避免 FinMind 免費額度耗盡）
   static const int financialSyncMaxCandidates = 150;
 
+  /// Syncer 批次大小（每批並行處理的股票數）
+  static const int syncerBatchSize = 10;
+
+  /// 財報同步回溯天數（約 2 年）
+  static const int financialSyncLookbackDays = 730;
+
+  // ==================================================
+  // 排程設定
+  // ==================================================
+
+  /// 台股收盤時間（時）
+  static const int marketCloseHour = 15;
+
+  /// 台股收盤時間（分）
+  static const int marketCloseMinute = 0;
+
+  /// 背景更新重試延遲（分鐘）
+  static const int backoffDelayMinutes = 15;
+
   // ==================================================
   // 資料處理設定
   // ==================================================

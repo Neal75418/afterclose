@@ -87,7 +87,9 @@ class MarketDataUpdater {
     if (symbols.isEmpty) return 0;
 
     final marketDataStartDate = date.subtract(
-      const Duration(days: RuleParams.foreignShareholdingLookbackDays + 5),
+      const Duration(
+        days: InstitutionalParams.foreignShareholdingLookbackDays + 5,
+      ),
     );
 
     const chunkSize = 5;
@@ -176,7 +178,9 @@ class MarketDataUpdater {
         : DateContext.normalize(date);
 
     final marketDataStartDate = date.subtract(
-      const Duration(days: RuleParams.foreignShareholdingLookbackDays + 5),
+      const Duration(
+        days: InstitutionalParams.foreignShareholdingLookbackDays + 5,
+      ),
     );
 
     var shareholdingCount = 0;

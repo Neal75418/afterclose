@@ -1,4 +1,31 @@
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/analysis_context.dart';
+
+/// 外資持股資料
+class ShareholdingData {
+  const ShareholdingData({
+    this.foreignSharesRatio,
+    this.foreignSharesRatioChange,
+    this.concentrationRatio,
+  });
+
+  factory ShareholdingData.fromMap(Map<String, dynamic> map) =>
+      ShareholdingData(
+        foreignSharesRatio: map['foreignSharesRatio'] as double?,
+        foreignSharesRatioChange: map['foreignSharesRatioChange'] as double?,
+        concentrationRatio: map['concentrationRatio'] as double?,
+      );
+
+  final double? foreignSharesRatio;
+  final double? foreignSharesRatioChange;
+  final double? concentrationRatio;
+
+  Map<String, double?> toMap() => {
+    'foreignSharesRatio': foreignSharesRatio,
+    'foreignSharesRatioChange': foreignSharesRatioChange,
+    'concentrationRatio': concentrationRatio,
+  };
+}
 
 /// 評分用批次資料封裝
 ///
@@ -52,14 +79,14 @@ class ScoringBatchData {
   /// 當沖比例（symbol → ratio）
   final Map<String, double>? dayTradingMap;
 
-  /// 外資持股（symbol → {foreignSharesRatio, foreignSharesRatioChange, concentrationRatio}）
-  final Map<String, Map<String, double?>>? shareholdingMap;
+  /// 外資持股（symbol → 持股資料）
+  final Map<String, ShareholdingData>? shareholdingMap;
 
-  /// 警示資料（symbol → {warningType, reasonDescription, ...}）
-  final Map<String, Map<String, dynamic>>? warningMap;
+  /// 警示資料（symbol → 警示上下文）
+  final Map<String, WarningDataContext>? warningMap;
 
-  /// 董監持股（symbol → {insiderRatio, pledgeRatio, ...}）
-  final Map<String, Map<String, dynamic>>? insiderMap;
+  /// 董監持股（symbol → 董監上下文）
+  final Map<String, InsiderDataContext>? insiderMap;
 
   /// 歷史最高月營收（symbol → maxRevenue）
   final Map<String, double>? maxHistoricalRevenueMap;

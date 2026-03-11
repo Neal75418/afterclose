@@ -241,7 +241,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         _warningRepo.getWatchlistWarnings(symbols),
         _insiderRepo.getWatchlistHighPledgeStocks(
           symbols,
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         ),
       ).wait;
 
@@ -559,7 +559,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       _warningRepo.getWatchlistWarnings([symbol]),
       _insiderRepo.getWatchlistHighPledgeStocks([
         symbol,
-      ], threshold: RuleParams.highPledgeRatioThreshold),
+      ], threshold: FundamentalParams.highPledgeRatioThreshold),
     ).wait;
 
     // Calculate price change（統一使用 PriceCalculator，優先取 API 漲跌價差）

@@ -18,7 +18,7 @@ class CandidateSelector {
   final List<String> _popularStocks;
 
   /// 提前載入的緩衝天數（確保有足夠歷史資料用於技術指標計算）
-  static const int _historyLoadBuffer = 20;
+  static const int _historyLoadBuffer = RuleParams.historyLoadBuffer;
 
   /// 篩選並排序候選股票
   ///

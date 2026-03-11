@@ -23,7 +23,7 @@ class InstitutionalBuyStreakRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
     if (history == null ||
-        history.length < RuleParams.institutionalStreakDays) {
+        history.length < InstitutionalParams.institutionalStreakDays) {
       return null;
     }
 
@@ -43,11 +43,12 @@ class InstitutionalBuyStreakRule extends StockRule {
 
       // 考量合併的法人動向（外資 + 投信）
       // 需要淨買超 > 100張（100,000股）才算有效買超日（過濾微量波動）
-      if (combinedNet > RuleParams.institutionalMinDailyNetShares) {
+      if (combinedNet > InstitutionalParams.institutionalMinDailyNetShares) {
         streakDays++;
         totalForeignNet += foreignNet;
         totalTrustNet += trustNet;
-        if (combinedNet > RuleParams.institutionalSignificantDailyNetShares) {
+        if (combinedNet >
+            InstitutionalParams.institutionalSignificantDailyNetShares) {
           significantDays++;
         }
       } else {
@@ -55,7 +56,7 @@ class InstitutionalBuyStreakRule extends StockRule {
       }
     }
 
-    if (streakDays >= RuleParams.institutionalStreakDays) {
+    if (streakDays >= InstitutionalParams.institutionalStreakDays) {
       final totalNet = totalForeignNet + totalTrustNet;
       final dailyAvg = totalNet / streakDays;
 
@@ -67,12 +68,14 @@ class InstitutionalBuyStreakRule extends StockRule {
       );
 
       // 過濾條件 1：總淨買超須 > 5000張（5,000,000股）
-      if (totalNet <= RuleParams.institutionalBuyTotalThresholdShares) {
+      if (totalNet <=
+          InstitutionalParams.institutionalBuyTotalThresholdShares) {
         return null;
       }
 
       // 過濾條件 2：日均淨買超須 > 700張（700,000股）
-      if (dailyAvg <= RuleParams.institutionalBuyDailyAvgThresholdShares) {
+      if (dailyAvg <=
+          InstitutionalParams.institutionalBuyDailyAvgThresholdShares) {
         return null;
       }
 
@@ -126,7 +129,7 @@ class InstitutionalSellStreakRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
     if (history == null ||
-        history.length < RuleParams.institutionalStreakDays) {
+        history.length < InstitutionalParams.institutionalStreakDays) {
       return null;
     }
 
@@ -145,11 +148,12 @@ class InstitutionalSellStreakRule extends StockRule {
 
       // 考量合併的法人賣壓
       // 需要淨賣超 < -100張（-100,000股）才算有效賣超日（過濾微量波動）
-      if (combinedNet < -RuleParams.institutionalMinDailyNetShares) {
+      if (combinedNet < -InstitutionalParams.institutionalMinDailyNetShares) {
         streakDays++;
         totalForeignNet += foreignNet;
         totalTrustNet += trustNet;
-        if (combinedNet < -RuleParams.institutionalSignificantDailyNetShares) {
+        if (combinedNet <
+            -InstitutionalParams.institutionalSignificantDailyNetShares) {
           significantDays++;
         }
       } else {
@@ -157,7 +161,7 @@ class InstitutionalSellStreakRule extends StockRule {
       }
     }
 
-    if (streakDays >= RuleParams.institutionalStreakDays) {
+    if (streakDays >= InstitutionalParams.institutionalStreakDays) {
       final totalNet = totalForeignNet + totalTrustNet;
       final dailyAvg = totalNet / streakDays;
 
@@ -169,19 +173,21 @@ class InstitutionalSellStreakRule extends StockRule {
       );
 
       // 過濾條件 1：總淨賣超須 < -15000張（-15,000,000股）
-      if (totalNet >= RuleParams.institutionalSellTotalThresholdShares) {
+      if (totalNet >=
+          InstitutionalParams.institutionalSellTotalThresholdShares) {
         AppLogger.debug(
           'InstSellRule',
-          '${data.symbol}: 未達總量門檻 ${RuleParams.institutionalSellTotalThresholdShares} 股',
+          '${data.symbol}: 未達總量門檻 ${InstitutionalParams.institutionalSellTotalThresholdShares} 股',
         );
         return null;
       }
 
       // 過濾條件 2：日均淨賣超須 < -2000張（-2,000,000股）
-      if (dailyAvg >= RuleParams.institutionalSellDailyAvgThresholdShares) {
+      if (dailyAvg >=
+          InstitutionalParams.institutionalSellDailyAvgThresholdShares) {
         AppLogger.debug(
           'InstSellRule',
-          '${data.symbol}: 未達日均門檻 ${RuleParams.institutionalSellDailyAvgThresholdShares} 股',
+          '${data.symbol}: 未達日均門檻 ${InstitutionalParams.institutionalSellDailyAvgThresholdShares} 股',
         );
         return null;
       }

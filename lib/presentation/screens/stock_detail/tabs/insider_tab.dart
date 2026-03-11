@@ -111,7 +111,8 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
     // 判斷質押比是否為高風險
     final pledgeRatio = latest?.pledgeRatio ?? 0;
-    final isHighPledge = pledgeRatio >= RuleParams.highPledgeRatioThreshold;
+    final isHighPledge =
+        pledgeRatio >= FundamentalParams.highPledgeRatioThreshold;
 
     return Row(
       children: [
@@ -263,7 +264,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
               final isHighPledge =
                   (holding.pledgeRatio ?? 0) >=
-                  RuleParams.highPledgeRatioThreshold;
+                  FundamentalParams.highPledgeRatioThreshold;
 
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),

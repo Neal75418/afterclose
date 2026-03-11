@@ -1,10 +1,23 @@
 export 'package:afterclose/core/constants/reason_type.dart';
 export 'package:afterclose/core/constants/rule_enums.dart';
+export 'package:afterclose/core/constants/rule_params_alert.dart';
+export 'package:afterclose/core/constants/rule_params_fundamental.dart';
+export 'package:afterclose/core/constants/rule_params_indicator.dart';
+export 'package:afterclose/core/constants/rule_params_institutional.dart';
+export 'package:afterclose/core/constants/rule_params_pattern.dart';
+export 'package:afterclose/core/constants/rule_params_trend.dart';
 export 'package:afterclose/core/constants/rule_scores.dart';
 
-/// 規則引擎參數 v1
+/// 規則引擎通用參數
 ///
-/// 這些是 v1 的固定值，v2 將可設定。
+/// 跨類別的通用常數（回溯天數、候選篩選、評分輸出、新聞關鍵字等）。
+/// 領域特定參數已拆至：
+/// - [TrendParams] — 趨勢 / 反轉 / 支撐壓力 / 價量背離
+/// - [IndicatorParams] — RSI / KD / 均線 / 52 週高低點
+/// - [InstitutionalParams] — 法人動向 / 籌碼面
+/// - [FundamentalParams] — 基本面 / EPS / ROE / 估值 / 董監持股
+/// - [PatternParams] — K 線型態
+/// - [AlertParams] — 警示系統
 ///
 /// ### 數值慣例
 /// - **比例值**（0.0~1.0）：用於乘法運算，如 `price * (1 + ratio)`
@@ -14,6 +27,10 @@ export 'package:afterclose/core/constants/rule_scores.dart';
 /// - **倍數值**：用於量能比較，如 `volume >= avg * multiplier`
 ///   例：`volumeSpikeMult = 4.0`、`priceSpikeVolumeMult = 1.5`
 abstract final class RuleParams {
+  // ==================================================
+  // 回溯與歷史資料
+  // ==================================================
+
   /// 分析回溯天數（日曆日）
   ///
   /// 需足夠涵蓋 52 週（約 250 交易日）。
@@ -27,14 +44,24 @@ abstract final class RuleParams {
   /// 所需歷史資料總天數（lookbackPrice + buffer）
   static const int historyRequiredDays = lookbackPrice + historyBufferDays;
 
-  /// 法人資料回溯天數
-  static const int institutionalLookbackDays = 10;
+  /// 候選股篩選時提前載入的緩衝天數
+  ///
+  /// 確保技術指標計算時有足夠的歷史資料。
+  /// 與 [historyBufferDays] 區分：此值用於候選篩選，後者用於分析邊界。
+  static const int historyLoadBuffer = 20;
 
   /// 成交量均線天數
   static const int volMa = 20;
 
   /// 壓力/支撐偵測回溯天數
   static const int rangeLookback = 60;
+
+  /// 波段高低點偵測視窗
+  static const int swingWindow = 20;
+
+  // ==================================================
+  // 候選股篩選
+  // ==================================================
 
   /// 候選股最低成交額（3000 萬台幣）
   ///
@@ -60,49 +87,8 @@ abstract final class RuleParams {
   /// 過濾極低成交量冷門股，確保分析品質。
   static const double minQuickFilterVolumeShares = 100000;
 
-  /// 波段高低點偵測視窗
-  static const int swingWindow = 20;
-
-  /// 價格異動門檻百分比（5%）
-  ///
-  /// 從 7% 降至 5%，原 7% 接近台股漲跌幅極值（10%），
-  /// 導致 5-6% 的顯著異動被錯過。
-  static const double priceSpikePercent = 5.0;
-
-  /// 價格異動成交量確認倍數
-  ///
-  /// 成交量需達 20 日均量的此倍數以上，避免無量異動雜訊。
-  static const double priceSpikeVolumeMult = 1.5;
-
-  /// 成交量異動倍數（相對 20 日均量）
-  ///
-  /// 4.0 倍具高度選擇性，僅捕捉異常成交量。
-  /// 同時需要價格變動（見 minPriceChangeForVolume）。
-  static const double volumeSpikeMult = 4.0;
-
-  /// 成交量異動訊號所需最低價格變動
-  ///
-  /// 過濾無實質價格變動的成交量異動，1.5% 確保量價配合。
-  static const double minPriceChangeForVolume = 0.015;
-
-  /// 突破緩衝容差（3% 以獲得更乾淨的訊號）
-  ///
-  /// 收緊門檻以過濾假突破，需明確突破壓力 3% 以上。
-  static const double breakoutBuffer = 0.03;
-
-  /// 跌破緩衝容差（3%）
-  ///
-  /// 收緊門檻以過濾假跌破，需明確跌破支撐 3% 以上。
-  static const double breakdownBuffer = 0.03;
-
-  /// 壓力/支撐有效最大距離
-  ///
-  /// 超過此距離的壓力/支撐將被忽略，8% 可偵測近期水位並過濾無關水位。
-  static const double maxSupportResistanceDistance = 0.08;
-
   // ==================================================
-  // 新聞規則關鍵字（可設定）
-  // Used by: news_rules.dart
+  // 新聞規則關鍵字
   // ==================================================
 
   /// 新聞情緒分析正面關鍵字
@@ -163,6 +149,10 @@ abstract final class RuleParams {
     '解任',
   ];
 
+  // ==================================================
+  // 評分與輸出
+  // ==================================================
+
   /// 重複推薦冷卻天數
   static const int cooldownDays = 2;
 
@@ -189,431 +179,7 @@ abstract final class RuleParams {
   static const int maxPerIndustry = 3;
 
   // ==================================================
-  // 技術指標參數
-  // Used by: indicator_rules.dart (RSI*, KD*, MAAlignment*, Week52*)
-  // ==================================================
-
-  /// RSI 週期（預設 14）
-  static const int rsiPeriod = 14;
-
-  /// RSI 超買門檻（RSI 高於此值避免買入）
-  static const double rsiOverbought = 75.0;
-
-  /// RSI 超賣門檻（RSI 低於此值避免賣出）
-  static const double rsiOversold = 20.0;
-
-  /// RSI 極度超買（高風險區）
-  ///
-  /// 標準超買起點為 75，85 以上即為極度超買。
-  static const double rsiExtremeOverbought = 85.0;
-
-  /// RSI 極度超賣（潛在反彈區）
-  ///
-  /// RSI 30 以下即為超賣區。
-  static const double rsiExtremeOversold = 30.0;
-
-  /// KD %K 計算週期
-  static const int kdPeriodK = 9;
-
-  /// KD %D 平滑週期
-  static const int kdPeriodD = 3;
-
-  /// KD 超買門檻
-  static const double kdOverbought = 80.0;
-
-  /// KD 超賣門檻
-  static const double kdOversold = 20.0;
-
-  /// 法人連續買賣天數門檻
-  static const int institutionalStreakDays = 4;
-
-  /// 法人每日最低淨買賣門檻（股）
-  ///
-  /// 每日淨買賣超須達此門檻才算有效交易日。
-  static const int institutionalMinDailyNetShares = 50000;
-
-  /// 法人每日顯著淨買賣門檻（股）
-  ///
-  /// 超過此門檻的交易日視為「顯著」交易日。
-  static const int institutionalSignificantDailyNetShares = 150000;
-
-  /// 法人連買總量門檻（股）
-  ///
-  /// 連續買超期間的總淨買超須達此門檻。
-  /// 從 2,000,000 降至 1,500,000，因三重過濾（連續天數 + 總量 + 日均）
-  /// 導致觸發率過低（0-2 檔/日）。
-  static const int institutionalBuyTotalThresholdShares = 1500000;
-
-  /// 法人連買日均門檻（股）
-  ///
-  /// 連續買超期間的日均淨買超須達此門檻。
-  /// 從 300,000 降至 200,000，配合總量門檻調降。
-  static const int institutionalBuyDailyAvgThresholdShares = 200000;
-
-  /// 法人連賣總量門檻（股）
-  ///
-  /// 連續賣超期間的總淨賣超須達此門檻（負值）。
-  static const int institutionalSellTotalThresholdShares = -2000000;
-
-  /// 法人連賣日均門檻（股）
-  ///
-  /// 連續賣超期間的日均淨賣超須達此門檻（負值）。
-  static const int institutionalSellDailyAvgThresholdShares = -300000;
-
-  // ==================================================
-  // 52 週高低點參數
-  // Used by: indicator_rules.dart (Week52HighRule, Week52LowRule)
-  // ==================================================
-
-  /// 一年交易日數（約 52 週 * 5 天）
-  static const int week52Days = 250;
-
-  /// 歷史資料完成度最低天數
-  ///
-  /// 股票需有此天數以上的價格資料，才視為「歷史資料完整」。
-  /// 200 天約涵蓋 10 個月的交易日，可進行大部分技術分析。
-  static const int historicalDataMinDays = 200;
-
-  /// 接近 52 週新高緩衝百分比
-  ///
-  /// 收盤價在 52 週最高價的 1% 範圍內觸發。
-  /// 維持嚴格門檻確保只有真正突破的股票才觸發。
-  static const double week52HighThreshold = 0.01;
-
-  /// 接近 52 週新低緩衝百分比
-  ///
-  /// 收盤價在 52 週最低價的 3% 範圍內觸發。
-  /// 比新高稍寬鬆（3% vs 1%），因為：
-  /// 1. 新低是逆勢操作，需要更多緩衝
-  /// 2. 底部區域通常有支撐震盪
-  /// 3. 避免 0 個新低的極端情況
-  static const double week52LowThreshold = 0.03;
-
-  // ==================================================
-  // 均線排列參數
-  // Used by: indicator_rules.dart (MAAlignmentBullishRule, MAAlignmentBearishRule)
-  // ==================================================
-
-  /// 排列檢查用均線週期
-  static const List<int> maAlignmentPeriods = [5, 10, 20, 60];
-
-  /// 有效排列的均線最小間距（0.3%）
-  ///
-  /// 從 0.5% 降至 0.3%，在高價股（如 500 元以上）
-  /// 0.5% 間距僅 2.5 元，容易誤判均線糾結為有效排列。
-  static const double maMinSeparation = 0.003;
-
-  /// 均線乖離率過濾門檻（5%）
-  ///
-  /// 收盤價離 MA 超過此距離時過濾，避免追高殺低
-  static const double maDeviationThreshold = 0.05;
-
-  /// 多頭排列成交量倍數門檻
-  ///
-  /// 成交量需達 20 日均量的此倍數。
-  /// 1.3 倍（原設計 2.0 倍）考量台股常有量縮上漲現象。
-  static const double maAlignmentVolumeMultiplier = 1.3;
-
-  /// KD 黃金交叉有效區域（低檔區）
-  ///
-  /// K 值需低於此門檻才視為有效黃金交叉。
-  static const double kdGoldenCrossZone = 30.0;
-
-  /// KD 死亡交叉有效區域（高檔區）
-  ///
-  /// K 值需高於此門檻才視為有效死亡交叉。
-  static const double kdDeathCrossZone = 70.0;
-
-  /// KD 交叉價格動能門檻（1%）
-  ///
-  /// 黃金交叉需有至少此漲幅才算有效。
-  static const double kdCrossPriceChangeThreshold = 0.01;
-
-  // ==================================================
-  // K 線型態參數
-  // Used by: candlestick_rules.dart (Doji, Engulfing, Hammer, Gap, Star, ThreeLine)
-  // ==================================================
-
-  /// 錘子線實體最小比例（5%）
-  ///
-  /// 實體須至少占振幅的 5%，過小視為十字線。
-  static const double hammerBodyMinRatio = 0.05;
-
-  /// 錘子線下影線倍數（2 倍實體）
-  ///
-  /// 下影線須至少為實體的 2 倍。
-  static const double hammerLowerShadowMultiplier = 2.0;
-
-  /// 錘子線上影線最大倍數（0.5 倍實體）
-  ///
-  /// 上影線不可超過實體的 0.5 倍。
-  static const double hammerUpperShadowMaxRatio = 0.5;
-
-  /// 三白兵/三黑鴉每根 K 線最小實體比例（1%）
-  ///
-  /// 每根 K 線的 |open - close| / close 須 >= 1%，
-  /// 避免微小漲跌幅的 K 線誤觸發。
-  static const double threeLineMinBodyRatio = 0.01;
-
-  /// 十字線實體最大比例（10%）
-  ///
-  /// 實體小於振幅的 10% 視為十字線。
-  static const double dojiBodyMaxRatio = 0.1;
-
-  /// 跳空缺口最小比例（0.5%）
-  ///
-  /// 缺口須至少為前日收盤的 0.5%。
-  static const double gapMinThreshold = 0.005;
-
-  /// 星線小實體最大比例（0.5 倍第一根）
-  ///
-  /// 第二根 K 線實體不可超過第一根的 0.5 倍。
-  static const double starSmallBodyMaxRatio = 0.5;
-
-  /// 強勢 K 線跌幅門檻（1.0%）
-  static const double strongCandleDropThreshold = 0.01;
-
-  // ==================================================
-  // 第四階段：延伸市場資料參數
-  // Used by: extended_market_rules.dart (Foreign*, DayTrading*, Concentration*)
-  // ==================================================
-
-  /// 外資持股增加門檻（%）
-  ///
-  /// N 天內外資持股增加此百分比時觸發。
-  static const double foreignShareholdingIncreaseThreshold = 0.5;
-
-  /// 外資持股變化回溯天數
-  static const int foreignShareholdingLookbackDays = 5;
-
-  /// 高當沖比例門檻（50%）
-  static const double dayTradingHighThreshold = 50.0;
-
-  /// 極高當沖比例門檻（70%）
-  static const double dayTradingExtremeThreshold = 70.0;
-
-  /// 大戶持股集中度門檻（%）
-  ///
-  /// 400 張以上大戶持有此比例的股票。
-  static const double concentrationHighThreshold = 60.0;
-
-  // ==================================================
-  // 第五階段：價量背離參數
-  // Used by: divergence_rules.dart (PriceVolume*, HighVolumeBreakout, LowVolumeAccumulation)
-  // ==================================================
-
-  /// 價量背離分析回溯天數
-  static const int priceVolumeLookbackDays = 5;
-
-  /// 背離偵測最低價格變動門檻（%）
-  ///
-  /// 價格變動需達此門檻，背離才有意義。
-  static const double priceVolumePriceThreshold = 3.0;
-
-  /// 背離偵測成交量變動門檻（%）
-  static const double priceVolumeVolumeThreshold = 30.0;
-
-  /// 「高檔爆量」訊號的高位門檻（百分位）
-  ///
-  /// 價格需在 60 日區間前 X% 才視為「高位」。
-  static const double highPositionThreshold = 0.85;
-
-  /// 「低檔吸籌」訊號的低位門檻（百分位）
-  ///
-  /// 價格需在 60 日區間後 25% 才視為「低位」。
-  static const double lowPositionThreshold = 0.25;
-
-  // ==================================================
-  // 第六階段：基本面分析參數
-  // Used by: fundamental_scan_rules.dart (Revenue*, Dividend, PE, PBR)
-  // ==================================================
-
-  /// 營收年增率暴增門檻（%）
-  ///
-  /// 30% 在品質與數量間取得平衡。
-  static const double revenueYoySurgeThreshold = 30.0;
-
-  /// 營收年減率衰退門檻（%）
-  static const double revenueYoyDeclineThreshold = 20.0;
-
-  /// 營收月增連續成長月數
-  ///
-  /// 設為 1 以偵測單月暴增。
-  static const int revenueMomConsecutiveMonths = 1;
-
-  /// 營收月增率門檻（%）
-  ///
-  /// 10% 視為有意義的成長。
-  static const double revenueMomGrowthThreshold = 10.0;
-
-  /// 高殖利率門檻（%）
-  ///
-  /// 台股平均 4-6%，5.5% 可篩選出真正高殖利率股。
-  static const double highDividendYieldThreshold = 5.5;
-
-  /// 本益比低估門檻
-  ///
-  /// 本益比低於此值（且 > 0）視為低估。
-  static const double peUndervaluedThreshold = 10.0;
-
-  /// 本益比高估門檻
-  ///
-  /// 提高至 100 以聚焦泡沫區域。
-  static const double peOvervaluedThreshold = 60.0;
-
-  /// 股價淨值比低估門檻
-  ///
-  /// 股價淨值比低於 0.8 代表有意義的折價。
-  static const double pbrUndervaluedThreshold = 0.8;
-
-  /// 估值資料最大過期天數
-  ///
-  /// TWSE 並非每日更新所有股票的估值資料，超過此天數的資料視為過時。
-  /// 7 天確保資料在合理時效內，避免用舊資料觸發規則。
-  static const int valuationMaxStaleDays = 7;
-
-  // ==================================================
-  // Killer Features 參數（注意/處置股、董監持股）
-  // Used by: insider_rules.dart, warning_rules.dart
-  // ==================================================
-
-  /// 董監連續減持月數門檻
-  ///
-  /// 連續 3 個月以上減持視為強賣訊號。
-  static const int insiderSellingStreakMonths = 3;
-
-  /// 董監顯著增持門檻（%）
-  ///
-  /// 單月持股比例增加 5% 以上視為買進訊號。
-  static const double insiderSignificantBuyingThreshold = 5.0;
-
-  /// 高質押比例門檻（%）
-  ///
-  /// 質押比例超過 50% 視為風險警示。
-  static const double highPledgeRatioThreshold = 50.0;
-
-  /// 處置股結束日期寬限天數
-  ///
-  /// 判斷處置股是否仍生效時，在結束日期後加上此天數作為緩衝。
-  /// 1 天確保結束當日仍視為生效狀態。
-  static const int disposalEndDateGraceDays = 1;
-
-  /// 外資持股集中度警示門檻（%）
-  ///
-  /// 外資持股超過 60% 且快速增加時觸發風險警示。
-  static const double foreignConcentrationWarningThreshold = 60.0;
-
-  /// 外資持股集中度危險門檻（%）
-  ///
-  /// 外資持股超過 70% 視為高度集中風險。
-  static const double foreignConcentrationDangerThreshold = 70.0;
-
-  /// 外資流出天數
-  ///
-  /// 追蹤連續 N 天的外資流出趨勢。
-  static const int foreignExodusLookbackDays = 5;
-
-  /// 外資流出門檻（%）
-  ///
-  /// N 天內外資持股減少超過此比例視為流出警示。
-  static const double foreignExodusThreshold = -2.0;
-
-  // ==================================================
-  // EPS 規則參數
-  // Used by: fundamental_scan_rules.dart (EPS*)
-  // ==================================================
-
-  /// EPS 年增暴增門檻（%）
-  static const double epsYoYSurgeThreshold = 50.0;
-
-  /// EPS 季增成長門檻（%）
-  static const double epsGrowthThreshold = 10.0;
-
-  /// EPS 連續成長最少季數
-  static const int epsConsecutiveQuarters = 2;
-
-  /// EPS 由負轉正最低門檻（元）
-  static const double epsTurnaroundThreshold = 0.3;
-
-  /// EPS 衰退警示門檻（%）
-  static const double epsDeclineThreshold = 20.0;
-
-  // ==================================================
-  // ROE 規則參數
-  // Used by: fundamental_scan_rules.dart (ROE*)
-  // ==================================================
-
-  /// ROE 優異門檻（%）
-  static const double roeExcellentThreshold = 15.0;
-
-  /// ROE 改善門檻（百分點）
-  static const double roeImprovingThreshold = 5.0;
-
-  /// ROE 衰退門檻（百分點）
-  static const double roeDecliningThreshold = 5.0;
-
-  /// ROE 趨勢最少季數
-  static const int roeMinQuarters = 2;
-
-  // ==================================================
-  // 分析服務參數
-  // Used by: technical_rules.dart (WeakToStrong, StrongToWeak)
-  // ==================================================
-
-  /// 波段點聚類閾值（2%）
-  ///
-  /// 將差距在此範圍內的波段點聚類為同一價格區域。
-  static const double clusterThreshold = 0.02;
-
-  /// 趨勢偵測上升閾值（每日 0.08%）
-  ///
-  /// 標準化斜率超過此值視為上升趨勢。
-  /// 每日 0.08% = 20 天約 1.6%
-  static const double trendUpThreshold = 0.08;
-
-  /// 趨勢偵測下降閾值（每日 -0.08%）
-  ///
-  /// 標準化斜率低於此值視為下降趨勢。
-  static const double trendDownThreshold = -0.08;
-
-  /// 接近區間高點緩衝（2%）
-  ///
-  /// 當前價格在區間高點 2% 以內視為「接近高點」。
-  static const double nearRangeHighBuffer = 0.98;
-
-  /// 接近區間低點緩衝（2%）
-  ///
-  /// 當前價格在區間低點 2% 以內視為「接近低點」。
-  static const double nearRangeLowBuffer = 1.02;
-
-  /// 更高低點確認緩衝（7%）
-  ///
-  /// 近期低點需高於前期低點 7% 才確認為「更高低點」。
-  /// 收緊門檻以大幅提升精準度，只保留明確反轉訊號。
-  static const double higherLowBuffer = 1.07;
-
-  /// 更低高點確認緩衝（5%）
-  ///
-  /// 近期高點需低於前期高點 5% 才確認為「更低高點」。
-  /// 頭部反轉不需要像底部反轉那樣嚴格。
-  static const double lowerHighBuffer = 0.95;
-
-  /// 反轉/突破訊號成交量確認門檻（多方）
-  ///
-  /// 近期成交量需達前期平均的此倍數以上。
-  /// 用於弱轉強（底部反轉）訊號確認。
-  static const double reversalVolumeConfirm = 1.5;
-
-  /// 強轉弱成交量確認門檻
-  ///
-  /// 頭部反轉（強轉弱）的成交量要求較寬鬆。
-  /// 頭部形成時往往是「量縮」而非「量增」，
-  /// 因此只需要基本成交量即可。
-  static const double s2wVolumeConfirm = 0.8;
-
-  // ==================================================
-  // 流動性加權排序參數
-  // Used by: scoring_service.dart
+  // 流動性加權排序
   // ==================================================
 
   /// 成交金額單位（1 億台幣）
@@ -632,184 +198,12 @@ abstract final class RuleParams {
   static const double liquidityBonusMax = 20;
 
   // ==================================================
-  // ATR 與支撐壓力搜尋參數
-  // Used by: technical_analysis_service.dart
-  // ==================================================
-
-  /// ATR 計算週期
-  ///
-  /// 14 日為業界標準 ATR 週期。
-  static const int atrPeriod = 14;
-
-  /// ATR 距離乘數（支撐/壓力搜尋半徑）
-  ///
-  /// 使用 ATR × 此乘數 / 現價 作為動態搜尋距離。
-  static const double atrDistanceMultiplier = 3.0;
-
-  /// 支撐壓力距離衰減因子
-  ///
-  /// 用於計算 distanceFactor = 1 / (1 + (distance/price) * factor)。
-  /// 數值越大，距離衰減越快（越近的關卡分數越高）。
-  static const double distanceDecayFactor = 10.0;
-
-  /// ATR 動態距離上限（比例）
-  ///
-  /// 限制 ATR-based 搜尋距離的最大值，避免高波動股過度搜尋。
-  static const double maxAtrDistance = 0.20;
-
-  /// 趨勢偵測最少資料點數
-  ///
-  /// 收盤價序列需達此數量才進行趨勢判斷。
-  static const int minTrendDataPoints = 5;
-
-  /// 高檔爆量成交量倍數
-  ///
-  /// 高檔爆量需達成交量變化門檻的此倍數。
-  static const double highVolumeMultiplier = 1.5;
-
-  // ==================================================
-  // 法人動向規則參數
-  // Used by: institutional_rules.dart, extended_market_rules.dart
+  // 雜項
   // ==================================================
 
   /// 1 張 = 1000 股
   static const int sheetToShares = 1000;
 
-  /// 法人分析最低成交量（1000 張 = 1,000,000 股）
-  static const double institutionalMinVolumeShares = 1000000;
-
-  /// 法人數據有效最低成交量（2000 張 = 2,000,000 股）
-  static const double institutionalValidVolumeShares = 2000000;
-
-  /// 法人佔總成交量顯著比例門檻
-  static const double institutionalSignificantRatio = 0.35;
-
-  /// 法人佔總成交量爆量比例門檻
-  static const double institutionalExplosiveRatio = 0.50;
-
-  /// 法人反轉訊號最低量（500 張 = 500,000 股）
-  static const double institutionalReversalShares = 500000;
-
-  /// 法人小量方向判斷門檻（100 張 = 100,000 股）
-  static const double institutionalSmallShares = 100000;
-
-  /// 法人大量訊號門檻（5000 張 = 5,000,000 股）
-  static const double institutionalLargeSignalShares = 5000000;
-
-  /// 法人加速買賣倍數門檻
-  static const double institutionalAccelerationMult = 2.0;
-
-  /// 法人加速買賣最低量（1000 張 = 1,000,000 股）
-  static const double institutionalAccelerationMinShares = 1000000;
-
-  /// 法人大量訊號價格變動確認門檻（1%）
-  static const double institutionalSignificantPriceChange = 0.01;
-
-  /// 法人方向計算取樣數
-  static const int institutionalDirectionSampleSize = 5;
-
   /// 新聞回溯時間（小時）
   static const int newsLookbackHours = 120;
-
-  // ==================================================
-  // 掃描規則專用參數
-  // Used by: fundamental_scan_rules.dart
-  // ==================================================
-
-  /// 掃描用殖利率最低門檻（%）
-  ///
-  /// 低於此值不觸發殖利率相關診斷日誌。
-  static const double scanDividendYieldMin = 4.0;
-
-  /// 異常殖利率過濾上限（%）
-  ///
-  /// 超過此值通常為資料錯誤或特殊情況。
-  static const double scanDividendYieldMax = 20.0;
-
-  /// PE 高估確認 RSI 門檻
-  static const double scanRsiOverboughtThreshold = 75.0;
-
-  /// 動能確認 RSI 門檻（EPS 轉機搭配 RSI 正向確認）
-  static const double scanRsiMomentumThreshold = 50.0;
-
-  /// EPS 年度回溯筆數（找去年同季需要的最少歷史資料）
-  static const int epsYearLookback = 5;
-
-  /// EPS 同期季度偏移（降序排列下去年同季的起始 index）
-  static const int epsQuarterOffset = 4;
-
-  // ==================================================
-  // 價量背離規則參數
-  // Used by: divergence_rules.dart
-  // ==================================================
-
-  /// 背離價格變動門檻（%）
-  static const double divergencePriceThreshold = 1.0;
-
-  /// 背離成交量變動門檻（%）
-  static const double divergenceVolumeThreshold = 10.0;
-
-  /// 低檔吸籌成交量比率門檻
-  static const double lowAccumulationVolumeRatio = 0.6;
-
-  // ==================================================
-  // 警示系統參數（Alert System）
-  // Used by: user_dao.dart (Alert checking methods)
-  // ==================================================
-
-  /// 成交量警示 - 資料查詢天數（確保有 20 個交易日）
-  ///
-  /// 需足夠涵蓋 20 個交易日的成交量資料。
-  /// 20 交易日 ÷ 0.71（扣除週末假日比例）≈ 28 日曆日，使用 30 日確保緩衝。
-  static const int volumeDataLookbackDays = 30;
-
-  /// 成交量警示 - 均量計算視窗（20 日均量）
-  ///
-  /// 計算平均成交量時使用的交易日數量。
-  static const int volumeSmaWindow = 20;
-
-  /// RSI 警示 - 最少資料點（14 期 + 1）
-  ///
-  /// RSI 計算需要至少 14 個交易日的資料，加上當前資料點。
-  static const int rsiMinDataPoints = 15;
-
-  /// KD 警示 - 最少資料點（9 期 + 2）
-  ///
-  /// KD 計算需要至少 9 個交易日（K 值週期）+ 2 個額外資料點（D 值平滑）。
-  static const int kdMinDataPoints = 11;
-
-  /// KD 指標 - K 值計算期數
-  ///
-  /// %K 使用過去 N 個交易日的高低價範圍計算。
-  static const int kdKPeriod = 9;
-
-  /// KD 指標 - D 值計算期數
-  ///
-  /// %D 是 %K 的 N 日簡單移動平均。
-  static const int kdDPeriod = 3;
-
-  /// 均線交叉 - 檢測視窗（最近 N 天內）
-  ///
-  /// 檢查最近 N 天內是否發生過均線交叉（而非只檢查當下是否正在交叉）。
-  /// 使用 2 天視窗避免錯過前一日的交叉訊號。
-  static const int maCrossoverDetectionWindow = 2;
-
-  /// KD 交叉 - 檢測視窗（最近 N 天內）
-  ///
-  /// 檢查最近 N 天內是否發生過 KD 交叉（而非只檢查當下是否正在交叉）。
-  /// 使用 2 天視窗避免錯過前一日的交叉訊號。
-  static const int kdCrossoverDetectionWindow = 2;
-
-  /// 指標資料查詢天數（RSI/KD 計算所需）
-  ///
-  /// 需足夠涵蓋 30 個交易日的指標計算資料（RSI 14 期 + KD 9 期 + 緩衝）。
-  /// 30 交易日 ÷ 0.71（扣除週末假日比例）≈ 42 日曆日，使用 40 日確保足夠資料。
-  static const int indicatorDataLookbackDays = 40;
-
-  /// 52 週價格歷史查詢天數
-  ///
-  /// 需足夠涵蓋 52 週（約 250 交易日）。
-  /// 250 交易日 ÷ 0.71（扣除週末假日比例）≈ 352 日曆日。
-  /// 使用 370 日曆日確保有足夠緩衝（與 lookbackPrice 一致）。
-  static const int week52LookbackDays = 370;
 }

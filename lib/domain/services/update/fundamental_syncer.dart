@@ -181,11 +181,13 @@ class FundamentalSyncer {
     if (symbols.isEmpty) return 0;
 
     final now = _clock.now();
-    final start = now.subtract(const Duration(days: 730));
+    final start = now.subtract(
+      const Duration(days: ApiConfig.financialSyncLookbackDays),
+    );
     final end = now;
     var count = 0;
 
-    const chunkSize = 10;
+    const chunkSize = ApiConfig.syncerBatchSize;
     for (var i = 0; i < symbols.length; i += chunkSize) {
       final chunk = symbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(
@@ -224,11 +226,13 @@ class FundamentalSyncer {
     if (marketDataRepo == null || symbols.isEmpty) return 0;
 
     final now = _clock.now();
-    final start = now.subtract(const Duration(days: 730));
+    final start = now.subtract(
+      const Duration(days: ApiConfig.financialSyncLookbackDays),
+    );
     final end = now;
     var count = 0;
 
-    const chunkSize = 10;
+    const chunkSize = ApiConfig.syncerBatchSize;
     for (var i = 0; i < symbols.length; i += chunkSize) {
       final chunk = symbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(

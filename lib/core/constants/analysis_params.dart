@@ -112,4 +112,17 @@ abstract final class AnalysisParams {
 
   /// 少量訊號加分門檻（>= 此值加 1 分）
   static const int someSignalsThreshold = 3;
+
+  // ==================================================
+  // 交易成本
+  // ==================================================
+
+  /// 台灣券商手續費率（0.1425%）
+  static const double brokerageFeeRate = 0.001425;
+
+  /// 台灣證交稅率（0.3%）
+  static const double transactionTaxRate = 0.003;
+
+  /// 台灣券商最低手續費（元）
+  static const double minBrokerageFee = 20;
 }

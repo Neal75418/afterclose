@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/repositories/portfolio_repository.dart';
 
@@ -12,10 +13,10 @@ class PortfolioRepository implements IPortfolioRepository {
   final AppDatabase _db;
 
   /// 台灣券商手續費率（0.1425%）
-  static const double brokerageFeeRate = 0.001425;
+  static const double brokerageFeeRate = AnalysisParams.brokerageFeeRate;
 
   /// 台灣證交稅率（0.3%）
-  static const double transactionTaxRate = 0.003;
+  static const double transactionTaxRate = AnalysisParams.transactionTaxRate;
 
   // ==================================================
   // 持倉查詢
@@ -40,8 +41,9 @@ class PortfolioRepository implements IPortfolioRepository {
   /// 計算建議手續費
   static double calculateFee(double quantity, double price) {
     final fee = quantity * price * brokerageFeeRate;
-    // 台灣券商最低手續費 20 元
-    return fee < 20 ? 20 : fee;
+    return fee < AnalysisParams.minBrokerageFee
+        ? AnalysisParams.minBrokerageFee
+        : fee;
   }
 
   /// 計算建議交易稅（僅賣出）

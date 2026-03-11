@@ -63,6 +63,20 @@ class WarningDataContext {
     this.disposalEndDate,
   });
 
+  factory WarningDataContext.fromMap(Map<String, dynamic> map) {
+    final warningType = map['warningType'] as String?;
+    return WarningDataContext(
+      isAttention: warningType == 'ATTENTION',
+      isDisposal: warningType == 'DISPOSAL',
+      warningType: warningType,
+      reasonDescription: map['reasonDescription'] as String?,
+      disposalMeasures: map['disposalMeasures'] as String?,
+      disposalEndDate: map['disposalEndDate'] != null
+          ? DateTime.tryParse(map['disposalEndDate'] as String)
+          : null,
+    );
+  }
+
   /// 是否為注意股票
   final bool isAttention;
 
@@ -80,6 +94,13 @@ class WarningDataContext {
 
   /// 處置結束日期
   final DateTime? disposalEndDate;
+
+  Map<String, dynamic> toMap() => {
+    'warningType': warningType,
+    'reasonDescription': reasonDescription,
+    'disposalMeasures': disposalMeasures,
+    'disposalEndDate': disposalEndDate?.toIso8601String(),
+  };
 }
 
 /// 董監持股資料
@@ -92,6 +113,16 @@ class InsiderDataContext {
     this.hasSignificantBuying = false,
     this.buyingChange,
   });
+
+  factory InsiderDataContext.fromMap(Map<String, dynamic> map) =>
+      InsiderDataContext(
+        insiderRatio: map['insiderRatio'] as double?,
+        pledgeRatio: map['pledgeRatio'] as double?,
+        hasSellingStreak: map['hasSellingStreak'] as bool? ?? false,
+        sellingStreakMonths: map['sellingStreakMonths'] as int? ?? 0,
+        hasSignificantBuying: map['hasSignificantBuying'] as bool? ?? false,
+        buyingChange: map['buyingChange'] as double?,
+      );
 
   /// 董監持股比例（%）
   final double? insiderRatio;
@@ -110,4 +141,13 @@ class InsiderDataContext {
 
   /// 增持變化幅度（%）
   final double? buyingChange;
+
+  Map<String, dynamic> toMap() => {
+    'insiderRatio': insiderRatio,
+    'pledgeRatio': pledgeRatio,
+    'hasSellingStreak': hasSellingStreak,
+    'sellingStreakMonths': sellingStreakMonths,
+    'hasSignificantBuying': hasSignificantBuying,
+    'buyingChange': buyingChange,
+  };
 }

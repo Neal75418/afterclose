@@ -46,11 +46,11 @@ class Week52HighRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 診斷：資料不足時記錄
-    if (data.prices.length < RuleParams.week52Days) {
+    if (data.prices.length < IndicatorParams.week52Days) {
       if (data.prices.length >= 200) {
         AppLogger.debug(
           'Week52High',
-          '${data.symbol}: 資料不足 (${data.prices.length}/${RuleParams.week52Days})',
+          '${data.symbol}: 資料不足 (${data.prices.length}/${IndicatorParams.week52Days})',
         );
       }
       return null;
@@ -82,7 +82,8 @@ class Week52HighRule extends StockRule {
     if (adjustedMaxHigh <= 0) return null;
 
     // 檢查當前收盤是否處於或接近 52 週高點（在門檻範圍內）
-    final threshold = adjustedMaxHigh * (1 - RuleParams.week52HighThreshold);
+    final threshold =
+        adjustedMaxHigh * (1 - IndicatorParams.week52HighThreshold);
     if (close >= threshold) {
       final isNewHigh = close >= adjustedMaxHigh;
       AppLogger.debug(
@@ -125,11 +126,11 @@ class Week52LowRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 診斷：資料不足時記錄
-    if (data.prices.length < RuleParams.week52Days) {
+    if (data.prices.length < IndicatorParams.week52Days) {
       if (data.prices.length >= 200) {
         AppLogger.debug(
           'Week52Low',
-          '${data.symbol}: 資料不足 (${data.prices.length}/${RuleParams.week52Days})',
+          '${data.symbol}: 資料不足 (${data.prices.length}/${IndicatorParams.week52Days})',
         );
       }
       return null;
@@ -163,7 +164,7 @@ class Week52LowRule extends StockRule {
     if (adjustedMinLow <= 0) return null;
 
     // 檢查當前收盤是否處於或接近 52 週低點（在門檻範圍內）
-    final threshold = adjustedMinLow * (1 + RuleParams.week52LowThreshold);
+    final threshold = adjustedMinLow * (1 + IndicatorParams.week52LowThreshold);
     if (close <= threshold) {
       final isNewLow = close <= adjustedMinLow;
 
@@ -225,7 +226,7 @@ class MAAlignmentBullishRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 至少需要最大均線週期的資料
-    final maxPeriod = RuleParams.maAlignmentPeriods.reduce(
+    final maxPeriod = IndicatorParams.maAlignmentPeriods.reduce(
       (a, b) => a > b ? a : b,
     );
     if (data.prices.length < maxPeriod) return null;
@@ -241,7 +242,7 @@ class MAAlignmentBullishRule extends StockRule {
 
     // 檢查多頭排列：MA5 > MA10 > MA20 > MA60
     // 並檢查最小間距
-    const minSep = RuleParams.maMinSeparation;
+    const minSep = IndicatorParams.maMinSeparation;
     if (ma5 > ma10 * (1 + minSep) &&
         ma10 > ma20 * (1 + minSep) &&
         ma20 > ma60 * (1 + minSep)) {
@@ -253,10 +254,12 @@ class MAAlignmentBullishRule extends StockRule {
       if (close == null || vol == null) return null;
 
       if (close <= ma5) return null;
-      if ((close - ma5) / ma5 >= RuleParams.maDeviationThreshold) return null;
+      if ((close - ma5) / ma5 >= IndicatorParams.maDeviationThreshold)
+        return null;
 
       final volMA20 = context.indicators?.volumeMA20 ?? 0;
-      if (vol <= volMA20 * RuleParams.maAlignmentVolumeMultiplier) return null;
+      if (vol <= volMA20 * IndicatorParams.maAlignmentVolumeMultiplier)
+        return null;
 
       return TriggeredReason(
         type: ReasonType.maAlignmentBullish,
@@ -285,7 +288,7 @@ class MAAlignmentBearishRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 至少需要最大均線週期的資料
-    final maxPeriod = RuleParams.maAlignmentPeriods.reduce(
+    final maxPeriod = IndicatorParams.maAlignmentPeriods.reduce(
       (a, b) => a > b ? a : b,
     );
     if (data.prices.length < maxPeriod) return null;
@@ -300,7 +303,7 @@ class MAAlignmentBearishRule extends StockRule {
     }
 
     // 檢查空頭排列：MA5 < MA10 < MA20 < MA60
-    const minSep = RuleParams.maMinSeparation;
+    const minSep = IndicatorParams.maMinSeparation;
     if (ma5 < ma10 * (1 - minSep) &&
         ma10 < ma20 * (1 - minSep) &&
         ma20 < ma60 * (1 - minSep)) {
@@ -310,7 +313,8 @@ class MAAlignmentBearishRule extends StockRule {
       if (close == null) return null;
 
       if (close >= ma5) return null;
-      if ((close - ma5) / ma5 <= -RuleParams.maDeviationThreshold) return null;
+      if ((close - ma5) / ma5 <= -IndicatorParams.maDeviationThreshold)
+        return null;
 
       return TriggeredReason(
         type: ReasonType.maAlignmentBearish,
@@ -338,24 +342,27 @@ class RSIExtremeOverboughtRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < RuleParams.rsiPeriod + 1) return null;
+    if (data.prices.length < IndicatorParams.rsiPeriod + 1) return null;
 
     final rsi = TechnicalIndicatorService.latestRSI(
       data.prices,
-      period: RuleParams.rsiPeriod,
+      period: IndicatorParams.rsiPeriod,
     );
     if (rsi == null) return null;
 
-    if (rsi >= RuleParams.rsiExtremeOverbought) {
+    if (rsi >= IndicatorParams.rsiExtremeOverbought) {
       AppLogger.debug(
         'RSIExtremeOverbought',
-        '${data.symbol}: RSI=${rsi.toStringAsFixed(1)} >= ${RuleParams.rsiExtremeOverbought}',
+        '${data.symbol}: RSI=${rsi.toStringAsFixed(1)} >= ${IndicatorParams.rsiExtremeOverbought}',
       );
       return TriggeredReason(
         type: ReasonType.rsiExtremeOverbought,
         score: RuleScores.rsiExtremeOverboughtSignal,
         description: 'RSI 極度超買 (${rsi.toStringAsFixed(1)})',
-        evidence: {'rsi': rsi, 'threshold': RuleParams.rsiExtremeOverbought},
+        evidence: {
+          'rsi': rsi,
+          'threshold': IndicatorParams.rsiExtremeOverbought,
+        },
       );
     }
 
@@ -377,24 +384,24 @@ class RSIExtremeOversoldRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < RuleParams.rsiPeriod + 1) return null;
+    if (data.prices.length < IndicatorParams.rsiPeriod + 1) return null;
 
     final rsi = TechnicalIndicatorService.latestRSI(
       data.prices,
-      period: RuleParams.rsiPeriod,
+      period: IndicatorParams.rsiPeriod,
     );
     if (rsi == null) return null;
 
-    if (rsi <= RuleParams.rsiExtremeOversold) {
+    if (rsi <= IndicatorParams.rsiExtremeOversold) {
       AppLogger.debug(
         'RSIExtremeOversold',
-        '${data.symbol}: RSI=${rsi.toStringAsFixed(1)} <= ${RuleParams.rsiExtremeOversold}',
+        '${data.symbol}: RSI=${rsi.toStringAsFixed(1)} <= ${IndicatorParams.rsiExtremeOversold}',
       );
       return TriggeredReason(
         type: ReasonType.rsiExtremeOversold,
         score: RuleScores.rsiExtremeOversoldSignal,
         description: 'RSI 極度超賣 (${rsi.toStringAsFixed(1)})',
-        evidence: {'rsi': rsi, 'threshold': RuleParams.rsiExtremeOversold},
+        evidence: {'rsi': rsi, 'threshold': IndicatorParams.rsiExtremeOversold},
       );
     }
 
@@ -433,7 +440,7 @@ class KDGoldenCrossRule extends StockRule {
     // 黃金交叉：昨日 K < D，今日 K > D
     if (prevK < prevD && k > d) {
       // 過濾 1：僅在低檔區觸發
-      if (prevK >= RuleParams.kdGoldenCrossZone) return null;
+      if (prevK >= IndicatorParams.kdGoldenCrossZone) return null;
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
       // 使用 PriceCalculator 統一計算，排除今日以正確比較
@@ -448,11 +455,12 @@ class KDGoldenCrossRule extends StockRule {
         final prev = data.prices[data.prices.length - 2];
         if (today.close != null && prev.close != null && prev.close! > 0) {
           final changePct = (today.close! - prev.close!) / prev.close!;
-          if (changePct < RuleParams.kdCrossPriceChangeThreshold) return null;
+          if (changePct < IndicatorParams.kdCrossPriceChangeThreshold)
+            return null;
         }
       }
 
-      final isOversold = prevK < RuleParams.kdOversold;
+      final isOversold = prevK < IndicatorParams.kdOversold;
 
       return TriggeredReason(
         type: ReasonType.kdGoldenCross,
@@ -495,7 +503,7 @@ class KDDeathCrossRule extends StockRule {
     // 死亡交叉：昨日 K > D，今日 K < D
     if (prevK > prevD && k < d) {
       // 過濾 1：僅在高檔區觸發
-      if (prevK <= RuleParams.kdDeathCrossZone) return null;
+      if (prevK <= IndicatorParams.kdDeathCrossZone) return null;
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
       // 使用 PriceCalculator 統一計算，排除今日以正確比較
@@ -503,7 +511,7 @@ class KDDeathCrossRule extends StockRule {
         return null;
       }
 
-      final isOverbought = prevK > RuleParams.kdOverbought;
+      final isOverbought = prevK > IndicatorParams.kdOverbought;
 
       return TriggeredReason(
         type: ReasonType.kdDeathCross,

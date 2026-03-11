@@ -78,7 +78,7 @@ class BreakoutRule extends StockRule {
     if (context.resistanceLevel != null) {
       // 使用突破緩衝區（1%）
       final breakoutLevel =
-          context.resistanceLevel! * (1 + RuleParams.breakoutBuffer);
+          context.resistanceLevel! * (1 + TrendParams.breakoutBuffer);
       if (close > breakoutLevel) {
         // MA20 過濾：需站上 MA20 才確認有效突破
         final ma20 = context.indicators?.ma20;
@@ -126,7 +126,7 @@ class BreakdownRule extends StockRule {
 
     if (support != null) {
       // 使用跌破緩衝區（3%）
-      final breakdownLevel = support * (1 - RuleParams.breakdownBuffer);
+      final breakdownLevel = support * (1 - TrendParams.breakdownBuffer);
       if (close < breakdownLevel) {
         // 成交量確認：恐慌性下跌通常伴隨放量
         if (!_hasBreakdownVolume(data.prices)) return null;
@@ -185,7 +185,7 @@ bool _hasBreakdownVolume(List<DailyPriceEntry> prices) {
   if (count == 0) return true; // 無歷史資料則放行
 
   final avgVolume = sum / count;
-  return todayVolume >= avgVolume * RuleParams.reversalVolumeConfirm;
+  return todayVolume >= avgVolume * TrendParams.reversalVolumeConfirm;
 }
 
 // ==================================================
@@ -216,5 +216,5 @@ bool _hasBreakoutVolume(List<DailyPriceEntry> prices) {
   if (count == 0) return true; // 無歷史資料則放行
 
   final avgVolume = sum / count;
-  return todayVolume >= avgVolume * RuleParams.reversalVolumeConfirm;
+  return todayVolume >= avgVolume * TrendParams.reversalVolumeConfirm;
 }

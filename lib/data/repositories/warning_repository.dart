@@ -298,7 +298,7 @@ class WarningRepository {
     if (warningType == 'DISPOSAL' && disposalEndDate != null) {
       isActive = referenceNow.isBefore(
         disposalEndDate.add(
-          const Duration(days: RuleParams.disposalEndDateGraceDays),
+          const Duration(days: FundamentalParams.disposalEndDateGraceDays),
         ),
       );
     }

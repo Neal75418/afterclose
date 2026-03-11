@@ -27,7 +27,7 @@ class RevenueYoYSurgeRule extends StockRule {
 
     final yoyGrowth = revenue.yoyGrowth ?? 0;
 
-    if (yoyGrowth >= RuleParams.revenueYoySurgeThreshold) {
+    if (yoyGrowth >= FundamentalParams.revenueYoySurgeThreshold) {
       // 技術面過濾：須站上 MA60 且漲幅 > 1.5%
       final ma60 = context.indicators?.ma60;
 
@@ -46,7 +46,7 @@ class RevenueYoYSurgeRule extends StockRule {
         final changePct = (close - prevClose) / prevClose;
 
         // 兩個過濾條件都須通過
-        if (close > ma60 && changePct > RuleParams.minPriceChangeForVolume) {
+        if (close > ma60 && changePct > TrendParams.minPriceChangeForVolume) {
           return TriggeredReason(
             type: ReasonType.revenueYoySurge,
             score: RuleScores.revenueYoySurge,
@@ -84,7 +84,7 @@ class RevenueYoYDeclineRule extends StockRule {
 
     final yoyGrowth = revenue.yoyGrowth ?? 0;
 
-    if (yoyGrowth <= -RuleParams.revenueYoyDeclineThreshold) {
+    if (yoyGrowth <= -FundamentalParams.revenueYoyDeclineThreshold) {
       return TriggeredReason(
         type: ReasonType.revenueYoyDecline,
         score: RuleScores.revenueYoyDecline,
@@ -116,7 +116,7 @@ class RevenueMomGrowthRule extends StockRule {
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.revenueHistory;
     if (history == null ||
-        history.length < RuleParams.revenueMomConsecutiveMonths) {
+        history.length < FundamentalParams.revenueMomConsecutiveMonths) {
       return null;
     }
 
@@ -126,11 +126,11 @@ class RevenueMomGrowthRule extends StockRule {
 
     for (
       int i = 0;
-      i < history.length && i < RuleParams.revenueMomConsecutiveMonths;
+      i < history.length && i < FundamentalParams.revenueMomConsecutiveMonths;
       i++
     ) {
       final momGrowth = history[i].momGrowth ?? 0;
-      if (momGrowth >= RuleParams.revenueMomGrowthThreshold) {
+      if (momGrowth >= FundamentalParams.revenueMomGrowthThreshold) {
         consecutiveMonths++;
         growthRates.add(momGrowth);
       } else {
@@ -138,7 +138,7 @@ class RevenueMomGrowthRule extends StockRule {
       }
     }
 
-    if (consecutiveMonths >= RuleParams.revenueMomConsecutiveMonths) {
+    if (consecutiveMonths >= FundamentalParams.revenueMomConsecutiveMonths) {
       // 技術面過濾：須站上 MA20
       final ma20 = context.indicators?.ma20;
       final close = data.prices.isNotEmpty ? data.prices.last.close : null;
@@ -160,7 +160,7 @@ class RevenueMomGrowthRule extends StockRule {
       if (ma20 != null &&
           close != null &&
           close > ma20 &&
-          changePct > RuleParams.minPriceChangeForVolume) {
+          changePct > TrendParams.minPriceChangeForVolume) {
         final avgGrowth =
             growthRates.reduce((a, b) => a + b) / growthRates.length;
         final description = consecutiveMonths == 1
@@ -226,7 +226,7 @@ class RevenueNewHighRule extends StockRule {
     final close = today.close!;
     final changePct = (close - prev.close!) / prev.close!;
 
-    if (close > ma20 && changePct > RuleParams.minPriceChangeForVolume) {
+    if (close > ma20 && changePct > TrendParams.minPriceChangeForVolume) {
       final revenueInBillion = currentRevenue / 100000;
       final surpassPct = (currentRevenue - maxRevenue) / maxRevenue * 100;
 
@@ -267,7 +267,7 @@ class HighDividendYieldRule extends StockRule {
     final dataAge = (context.evaluationTime ?? DateTime.now())
         .difference(valuation.date)
         .inDays;
-    if (dataAge > RuleParams.valuationMaxStaleDays) {
+    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
       AppLogger.debug(
         'HighYieldRule',
         '${data.symbol}: 資料過時 ($dataAge 天)，跳過評估',
@@ -280,7 +280,7 @@ class HighDividendYieldRule extends StockRule {
     final dividendYield = valuation.dividendYield ?? 0;
 
     // 診斷日誌：記錄所有被評估的殖利率數值（僅記錄 >= 4% 的以減少雜訊）
-    if (dividendYield >= RuleParams.scanDividendYieldMin) {
+    if (dividendYield >= FundamentalParams.scanDividendYieldMin) {
       AppLogger.debug(
         'HighYieldRule',
         '${data.symbol}: 殖利率=${dividendYield.toStringAsFixed(2)}%, '
@@ -289,12 +289,12 @@ class HighDividendYieldRule extends StockRule {
     }
 
     // 過濾無效或過低殖利率（< 5%）
-    if (dividendYield < RuleParams.highDividendYieldThreshold) {
+    if (dividendYield < FundamentalParams.highDividendYieldThreshold) {
       return null;
     }
 
     // 過濾異常高殖利率（> 20% 通常為資料錯誤或特殊情況）
-    if (dividendYield > RuleParams.scanDividendYieldMax) {
+    if (dividendYield > FundamentalParams.scanDividendYieldMax) {
       return null;
     }
 
@@ -329,13 +329,13 @@ class PEUndervaluedRule extends StockRule {
     final dataAge = (context.evaluationTime ?? DateTime.now())
         .difference(valuation.date)
         .inDays;
-    if (dataAge > RuleParams.valuationMaxStaleDays) {
+    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
       return null;
     }
 
     final pe = valuation.per ?? 0;
 
-    if (pe > 0 && pe <= RuleParams.peUndervaluedThreshold) {
+    if (pe > 0 && pe <= FundamentalParams.peUndervaluedThreshold) {
       // 過濾條件：須顯示強勢跡象（股價 > MA20）
       final ma20 = context.indicators?.ma20;
       final close = data.prices.isNotEmpty ? data.prices.last.close : null;
@@ -372,16 +372,16 @@ class PEOvervaluedRule extends StockRule {
     final dataAge = (context.evaluationTime ?? DateTime.now())
         .difference(valuation.date)
         .inDays;
-    if (dataAge > RuleParams.valuationMaxStaleDays) {
+    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
       return null;
     }
 
     final pe = valuation.per ?? 0;
 
-    if (pe >= RuleParams.peOvervaluedThreshold) {
+    if (pe >= FundamentalParams.peOvervaluedThreshold) {
       // 過濾條件：須處於過熱狀態（RSI > 70）
       final rsi = TechnicalIndicatorService.latestRSI(data.prices);
-      if (rsi != null && rsi > RuleParams.scanRsiOverboughtThreshold) {
+      if (rsi != null && rsi > FundamentalParams.scanRsiOverboughtThreshold) {
         return TriggeredReason(
           type: ReasonType.peOvervalued,
           score: RuleScores.peOvervalued,
@@ -413,13 +413,13 @@ class PBRUndervaluedRule extends StockRule {
     final dataAge = (context.evaluationTime ?? DateTime.now())
         .difference(valuation.date)
         .inDays;
-    if (dataAge > RuleParams.valuationMaxStaleDays) {
+    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
       return null;
     }
 
     final pbr = valuation.pbr ?? 0;
 
-    if (pbr > 0 && pbr <= RuleParams.pbrUndervaluedThreshold) {
+    if (pbr > 0 && pbr <= FundamentalParams.pbrUndervaluedThreshold) {
       return TriggeredReason(
         type: ReasonType.pbrUndervalued,
         score: RuleScores.pbrUndervalued,
@@ -450,7 +450,8 @@ class EPSYoYSurgeRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final eps = data.epsHistory;
-    if (eps == null || eps.length < RuleParams.epsYearLookback) return null;
+    if (eps == null || eps.length < FundamentalParams.epsYearLookback)
+      return null;
 
     // 最新一季 & 去年同季（降序排列，index 0 = 最新）
     final latest = eps[0];
@@ -460,7 +461,7 @@ class EPSYoYSurgeRule extends StockRule {
     // 找去年同季（用季度編號比較，避免申報日期月份偏移問題）
     final latestQuarter = (latest.date.month - 1) ~/ 3;
     double? lastYearEps;
-    for (int i = RuleParams.epsQuarterOffset; i < eps.length; i++) {
+    for (int i = FundamentalParams.epsQuarterOffset; i < eps.length; i++) {
       final candidateQuarter = (eps[i].date.month - 1) ~/ 3;
       if (candidateQuarter == latestQuarter) {
         lastYearEps = eps[i].value;
@@ -470,7 +471,7 @@ class EPSYoYSurgeRule extends StockRule {
     if (lastYearEps == null || lastYearEps <= 0) return null;
 
     final yoyGrowth = (latestEps - lastYearEps) / lastYearEps * 100;
-    if (yoyGrowth < RuleParams.epsYoYSurgeThreshold) return null;
+    if (yoyGrowth < FundamentalParams.epsYoYSurgeThreshold) return null;
 
     // 技術面過濾：站上 MA60 + 長紅
     final ma60 = context.indicators?.ma60;
@@ -491,7 +492,7 @@ class EPSYoYSurgeRule extends StockRule {
     final close = today.close!;
     final changePct = (close - prev.close!) / prev.close!;
 
-    if (close > ma60 && changePct > RuleParams.minPriceChangeForVolume) {
+    if (close > ma60 && changePct > TrendParams.minPriceChangeForVolume) {
       return TriggeredReason(
         type: ReasonType.epsYoYSurge,
         score: RuleScores.epsYoYSurge,
@@ -526,7 +527,8 @@ class EPSConsecutiveGrowthRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final eps = data.epsHistory;
-    if (eps == null || eps.length < RuleParams.epsConsecutiveQuarters + 1) {
+    if (eps == null ||
+        eps.length < FundamentalParams.epsConsecutiveQuarters + 1) {
       return null;
     }
 
@@ -540,7 +542,7 @@ class EPSConsecutiveGrowthRule extends StockRule {
       if (current == null || previous == null || previous <= 0) break;
 
       final growth = (current - previous) / previous * 100;
-      if (growth >= RuleParams.epsGrowthThreshold) {
+      if (growth >= FundamentalParams.epsGrowthThreshold) {
         consecutive++;
         growthRates.add(growth);
       } else {
@@ -548,7 +550,7 @@ class EPSConsecutiveGrowthRule extends StockRule {
       }
     }
 
-    if (consecutive < RuleParams.epsConsecutiveQuarters) return null;
+    if (consecutive < FundamentalParams.epsConsecutiveQuarters) return null;
 
     // 技術面過濾：站上 MA20
     final ma20 = context.indicators?.ma20;
@@ -597,7 +599,8 @@ class EPSTurnaroundRule extends StockRule {
     if (latestEps == null || previousEps == null) return null;
 
     // 前季虧損，本季獲利 ≥ 門檻
-    if (previousEps >= 0 || latestEps < RuleParams.epsTurnaroundThreshold) {
+    if (previousEps >= 0 ||
+        latestEps < FundamentalParams.epsTurnaroundThreshold) {
       return null;
     }
 
@@ -608,7 +611,7 @@ class EPSTurnaroundRule extends StockRule {
 
     final aboveMA20 = ma20 != null && close != null && close > ma20;
     final rsiPositive =
-        rsi != null && rsi > RuleParams.scanRsiMomentumThreshold;
+        rsi != null && rsi > FundamentalParams.scanRsiMomentumThreshold;
 
     if (aboveMA20 || rsiPositive) {
       return TriggeredReason(
@@ -656,7 +659,7 @@ class EPSDeclineWarningRule extends StockRule {
       if (current == null || previous == null || previous <= 0) break;
 
       final decline = (previous - current) / previous * 100;
-      if (decline >= RuleParams.epsDeclineThreshold) {
+      if (decline >= FundamentalParams.epsDeclineThreshold) {
         declineCount++;
         declineRates.add(decline);
       } else {
@@ -706,7 +709,8 @@ class ROEExcellentRule extends StockRule {
     if (roe == null || roe.isEmpty) return null;
 
     final latestRoe = roe[0].value;
-    if (latestRoe == null || latestRoe < RuleParams.roeExcellentThreshold) {
+    if (latestRoe == null ||
+        latestRoe < FundamentalParams.roeExcellentThreshold) {
       return null;
     }
 
@@ -720,7 +724,7 @@ class ROEExcellentRule extends StockRule {
       score: RuleScores.roeExcellent,
       description:
           'ROE ${latestRoe.toStringAsFixed(1)}% '
-          '(≥${RuleParams.roeExcellentThreshold.toInt()}%, 站上月線)',
+          '(≥${FundamentalParams.roeExcellentThreshold.toInt()}%, 站上月線)',
       evidence: {'roe': latestRoe, 'ma20': ma20, 'close': close},
     );
   }
@@ -741,7 +745,7 @@ class ROEImprovingRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final roe = data.roeHistory;
-    if (roe == null || roe.length < RuleParams.roeMinQuarters + 1) {
+    if (roe == null || roe.length < FundamentalParams.roeMinQuarters + 1) {
       return null;
     }
 
@@ -755,7 +759,7 @@ class ROEImprovingRule extends StockRule {
       if (current == null || previous == null) break;
 
       final improvement = current - previous;
-      if (improvement >= RuleParams.roeImprovingThreshold) {
+      if (improvement >= FundamentalParams.roeImprovingThreshold) {
         improvingCount++;
         totalImprovement += improvement;
       } else {
@@ -763,7 +767,7 @@ class ROEImprovingRule extends StockRule {
       }
     }
 
-    if (improvingCount < RuleParams.roeMinQuarters) return null;
+    if (improvingCount < FundamentalParams.roeMinQuarters) return null;
 
     // 技術面過濾：站上 MA20
     final ma20 = context.indicators?.ma20;
@@ -801,7 +805,7 @@ class ROEDecliningRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final roe = data.roeHistory;
-    if (roe == null || roe.length < RuleParams.roeMinQuarters + 1) {
+    if (roe == null || roe.length < FundamentalParams.roeMinQuarters + 1) {
       return null;
     }
 
@@ -815,7 +819,7 @@ class ROEDecliningRule extends StockRule {
       if (current == null || previous == null) break;
 
       final decline = previous - current;
-      if (decline >= RuleParams.roeDecliningThreshold) {
+      if (decline >= FundamentalParams.roeDecliningThreshold) {
         decliningCount++;
         totalDecline += decline;
       } else {
@@ -823,7 +827,7 @@ class ROEDecliningRule extends StockRule {
       }
     }
 
-    if (decliningCount < RuleParams.roeMinQuarters) return null;
+    if (decliningCount < FundamentalParams.roeMinQuarters) return null;
 
     final avgDecline = totalDecline / decliningCount;
     return TriggeredReason(

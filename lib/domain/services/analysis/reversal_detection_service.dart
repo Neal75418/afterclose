@@ -82,7 +82,7 @@ class ReversalDetectionService {
     if (todayClose != null && yesterdayClose != null && yesterdayClose > 0) {
       final pctChange =
           ((todayClose - yesterdayClose) / yesterdayClose).abs() * 100;
-      if (pctChange >= RuleParams.priceSpikePercent) {
+      if (pctChange >= TrendParams.priceSpikePercent) {
         return true;
       }
     }
@@ -100,7 +100,7 @@ class ReversalDetectionService {
         final volMa20 =
             volumeHistory.reduce((a, b) => a + b) / volumeHistory.length;
         if (volMa20 > 0 &&
-            todayVolume >= volMa20 * RuleParams.volumeSpikeMult) {
+            todayVolume >= volMa20 * TrendParams.volumeSpikeMult) {
           return true;
         }
       }
@@ -110,14 +110,14 @@ class ReversalDetectionService {
     if (todayClose != null) {
       if (rangeHigh != null && rangeHigh > 0) {
         // 在 60 日高點附近
-        if (todayClose >= rangeHigh * RuleParams.nearRangeHighBuffer) {
+        if (todayClose >= rangeHigh * TrendParams.nearRangeHighBuffer) {
           return true;
         }
       }
 
       if (rangeLow != null && rangeLow > 0) {
         // 在 60 日低點附近
-        if (todayClose <= rangeLow * RuleParams.nearRangeLowBuffer) {
+        if (todayClose <= rangeLow * TrendParams.nearRangeLowBuffer) {
           return true;
         }
       }

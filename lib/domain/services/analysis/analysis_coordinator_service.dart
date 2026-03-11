@@ -154,14 +154,14 @@ class AnalysisCoordinatorService {
     // 擷取 OHLC 資料
     final (:closes, :highs, :lows, volumes: _) = prices.extractOhlcv();
 
-    if (closes.length < RuleParams.rsiPeriod + 2) {
+    if (closes.length < IndicatorParams.rsiPeriod + 2) {
       return null;
     }
 
     // 計算 RSI
     final rsiValues = indicatorService.calculateRSI(
       closes,
-      period: RuleParams.rsiPeriod,
+      period: IndicatorParams.rsiPeriod,
     );
     final currentRsi = rsiValues.isNotEmpty ? rsiValues.last : null;
 
@@ -170,8 +170,8 @@ class AnalysisCoordinatorService {
       highs,
       lows,
       closes,
-      kPeriod: RuleParams.kdPeriodK,
-      dPeriod: RuleParams.kdPeriodD,
+      kPeriod: IndicatorParams.kdPeriodK,
+      dPeriod: IndicatorParams.kdPeriodD,
     );
 
     // 取得當日與前一日的 KD 值
@@ -214,8 +214,8 @@ class AnalysisCoordinatorService {
   /// MA60 需要：60
   /// 取最大值以確保皆可計算
   static final _minIndicatorDataPoints = [
-    RuleParams.rsiPeriod + 1,
-    RuleParams.kdPeriodK + RuleParams.kdPeriodD,
+    IndicatorParams.rsiPeriod + 1,
+    IndicatorParams.kdPeriodK + IndicatorParams.kdPeriodD,
     60,
   ].reduce((a, b) => a > b ? a : b);
 }

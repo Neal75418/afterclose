@@ -21,10 +21,11 @@ bool isHammerShape(DailyPriceEntry candle) {
   if (range == 0) return false;
 
   final body = candle.bodySize;
-  if (body < range * RuleParams.hammerBodyMinRatio) return false;
+  if (body < range * PatternParams.hammerBodyMinRatio) return false;
 
-  return candle.lowerShadow >= body * RuleParams.hammerLowerShadowMultiplier &&
-      candle.upperShadow <= body * RuleParams.hammerUpperShadowMaxRatio;
+  return candle.lowerShadow >=
+          body * PatternParams.hammerLowerShadowMultiplier &&
+      candle.upperShadow <= body * PatternParams.hammerUpperShadowMaxRatio;
 }
 
 /// 判斷是否為吞噬型態
@@ -106,7 +107,7 @@ class DojiRule extends StockRule {
     if (range == 0) return true; // 無波動為十字線
 
     // 實體小於總振幅的指定比例
-    return candle.bodySize <= range * RuleParams.dojiBodyMaxRatio;
+    return candle.bodySize <= range * PatternParams.dojiBodyMaxRatio;
   }
 }
 
@@ -286,7 +287,7 @@ class GapUpRule extends StockRule {
     if (today.low == null || prev.high == null) return null;
 
     final gapSize = today.low! - prev.high!;
-    final threshold = prev.close! * RuleParams.gapMinThreshold;
+    final threshold = prev.close! * PatternParams.gapMinThreshold;
 
     if (gapSize > 0 && gapSize >= threshold) {
       return TriggeredReason(
@@ -327,7 +328,7 @@ class GapDownRule extends StockRule {
     if (today.high == null || prev.low == null) return null;
 
     final gapSize = prev.low! - today.high!;
-    final threshold = prev.close! * RuleParams.gapMinThreshold;
+    final threshold = prev.close! * PatternParams.gapMinThreshold;
 
     if (gapSize > 0 && gapSize >= threshold) {
       return TriggeredReason(
@@ -365,7 +366,7 @@ bool isStarPattern(
   final c1Body = c1.bodySize;
 
   // 第二根 K 線：小實體（星線）
-  if (c2.bodySize > c1Body * RuleParams.starSmallBodyMaxRatio) return false;
+  if (c2.bodySize > c1Body * PatternParams.starSmallBodyMaxRatio) return false;
 
   final c1Mid = (c1.open! + c1.close!) / 2;
   final c2Mid = (c2.open! + c2.close!) / 2;
@@ -517,7 +518,7 @@ class ThreeWhiteSoldiersRule extends StockRule {
     // 每根 K 線實體比例須 >= 門檻，避免微小漲幅誤觸發
     for (final c in [c1, c2, c3]) {
       final bodyRatio = (c.close! - c.open!).abs() / c.close!;
-      if (bodyRatio < RuleParams.threeLineMinBodyRatio) return false;
+      if (bodyRatio < PatternParams.threeLineMinBodyRatio) return false;
     }
 
     // 連續創高收盤
@@ -579,7 +580,7 @@ class ThreeBlackCrowsRule extends StockRule {
     // 每根 K 線實體比例須 >= 門檻，避免微小跌幅誤觸發
     for (final c in [c1, c2, c3]) {
       final bodyRatio = (c.open! - c.close!).abs() / c.close!;
-      if (bodyRatio < RuleParams.threeLineMinBodyRatio) return false;
+      if (bodyRatio < PatternParams.threeLineMinBodyRatio) return false;
     }
 
     // 連續創低收盤

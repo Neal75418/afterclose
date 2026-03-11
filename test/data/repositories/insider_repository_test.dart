@@ -585,7 +585,7 @@ void main() {
 
         final result = await repository.isHighPledgeRisk(
           'TEST',
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         );
 
         expect(result, isTrue);
@@ -604,7 +604,7 @@ void main() {
 
         final result = await repository.isHighPledgeRisk(
           'TEST',
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         );
 
         expect(result, isFalse);
@@ -617,7 +617,7 @@ void main() {
 
         final result = await repository.isHighPledgeRisk(
           'TEST',
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         );
 
         expect(result, isFalse);
@@ -636,7 +636,7 @@ void main() {
 
         final result = await repository.isHighPledgeRisk(
           'TEST',
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         );
 
         expect(result, isFalse);
@@ -651,7 +651,7 @@ void main() {
         final holding = _createInsiderHolding(
           symbol: 'TEST',
           date: DateTime(2026, 1, 15),
-          pledgeRatio: RuleParams.highPledgeRatioThreshold, // 50.0
+          pledgeRatio: FundamentalParams.highPledgeRatioThreshold, // 50.0
         );
 
         when(
@@ -660,7 +660,7 @@ void main() {
 
         final result = await repository.isHighPledgeRisk(
           'TEST',
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         );
 
         expect(result, isTrue);
@@ -679,7 +679,7 @@ void main() {
 
         final result = await repository.isHighPledgeRisk(
           'TEST',
-          threshold: RuleParams.highPledgeRatioThreshold,
+          threshold: FundamentalParams.highPledgeRatioThreshold,
         );
 
         expect(result, isFalse);

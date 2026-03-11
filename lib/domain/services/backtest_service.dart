@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -235,9 +236,11 @@ class BacktestService {
         continue;
       }
 
-      // 扣除台股交易成本：買進手續費 0.1425% + 賣出手續費 0.1425% + 證交稅 0.3%
-      final netEntry = entryPrice * (1 + 0.001425); // 買入含手續費
-      final netExit = exitPrice * (1 - 0.001425 - 0.003); // 賣出扣手續費+稅
+      // 扣除台股交易成本：買進手續費 + 賣出手續費 + 證交稅
+      final fee = AnalysisParams.brokerageFeeRate;
+      final tax = AnalysisParams.transactionTaxRate;
+      final netEntry = entryPrice * (1 + fee); // 買入含手續費
+      final netExit = exitPrice * (1 - fee - tax); // 賣出扣手續費+稅
       final returnPercent = (netExit - netEntry) / netEntry * 100;
 
       trades.add(

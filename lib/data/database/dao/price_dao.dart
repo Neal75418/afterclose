@@ -243,7 +243,7 @@ mixin _PriceDaoMixin on _$AppDatabase {
   ///
   /// 回傳 (已完成檔數, 總檔數)
   /// - total: 有價格資料的股票數量（實際會被分析的候選股票）
-  /// - completed: 有 >= [RuleParams.historicalDataMinDays] 天價格資料的股票數量
+  /// - completed: 有 >= [IndicatorParams.historicalDataMinDays] 天價格資料的股票數量
   Future<({int completed, int total})> getHistoricalDataProgress() async {
     // 計算有價格資料的股票數量（實際會被分析的候選股票）
     final totalResult = await customSelect('''
@@ -266,7 +266,7 @@ mixin _PriceDaoMixin on _$AppDatabase {
       HAVING COUNT(*) >= ?
     )
     ''',
-      variables: [Variable.withInt(RuleParams.historicalDataMinDays)],
+      variables: [Variable.withInt(IndicatorParams.historicalDataMinDays)],
     ).getSingle();
     final completed = completedResult.read<int>('cnt');
 

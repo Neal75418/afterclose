@@ -286,7 +286,8 @@ void main() {
       const context = AnalysisContext(
         trendState: TrendState.range,
         marketData: MarketDataContext(
-          concentrationRatio: RuleParams.concentrationHighThreshold, // 60.0
+          concentrationRatio:
+              InstitutionalParams.concentrationHighThreshold, // 60.0
         ),
       );
       const data = StockData(symbol: 'TEST', prices: []);
@@ -334,7 +335,7 @@ void main() {
       const context = AnalysisContext(
         trendState: TrendState.range,
         marketData: MarketDataContext(
-          dayTradingRatio: RuleParams.dayTradingHighThreshold, // 50.0
+          dayTradingRatio: InstitutionalParams.dayTradingHighThreshold, // 50.0
         ),
       );
       final data = StockData(
@@ -388,7 +389,8 @@ void main() {
       const context = AnalysisContext(
         trendState: TrendState.range,
         marketData: MarketDataContext(
-          dayTradingRatio: RuleParams.dayTradingExtremeThreshold, // 70.0
+          dayTradingRatio:
+              InstitutionalParams.dayTradingExtremeThreshold, // 70.0
         ),
       );
       final data = StockData(
