@@ -30,13 +30,3 @@ enum UpdateStatus {
 
   final String code;
 }
-
-/// 股票市場類型
-enum StockMarket {
-  twse('TWSE'),
-  tpex('TPEx');
-
-  const StockMarket(this.code);
-
-  final String code;
-}

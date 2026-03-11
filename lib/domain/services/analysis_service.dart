@@ -72,14 +72,14 @@ class AnalysisService {
   }
 
   // ==================================================
-  // 以下方法用於測試,委託給內部子服務
+  // 以下為向後相容的 facade 方法，委託給內部子服務
   // 新程式碼應直接使用對應的子服務
   // ==================================================
 
   /// 偵測趨勢狀態
   ///
   /// 委託給 TrendDetectionService
-  /// @deprecated 測試專用,新程式碼應使用 TrendDetectionService
+  /// @deprecated 向後相容,新程式碼應使用 TrendDetectionService
   TrendState detectTrendState(List<DailyPriceEntry> prices) {
     return _coordinator.trendService.detectTrendState(prices);
   }
@@ -87,7 +87,7 @@ class AnalysisService {
   /// 找出支撐與壓力位
   ///
   /// 委託給 SupportResistanceService
-  /// @deprecated 測試專用,新程式碼應使用 SupportResistanceService
+  /// @deprecated 向後相容,新程式碼應使用 SupportResistanceService
   (double?, double?) findSupportResistance(List<DailyPriceEntry> prices) {
     return _coordinator.srService.findSupportResistance(prices);
   }
@@ -95,7 +95,7 @@ class AnalysisService {
   /// 找出 60 日價格區間
   ///
   /// 委託給 SupportResistanceService
-  /// @deprecated 測試專用,新程式碼應使用 SupportResistanceService
+  /// @deprecated 向後相容,新程式碼應使用 SupportResistanceService
   (double?, double?) findRange(List<DailyPriceEntry> prices) {
     return _coordinator.srService.findRange(prices);
   }
@@ -103,7 +103,7 @@ class AnalysisService {
   /// 偵測反轉狀態
   ///
   /// 委託給 ReversalDetectionService
-  /// @deprecated 測試專用,新程式碼應使用 ReversalDetectionService
+  /// @deprecated 向後相容,新程式碼應使用 ReversalDetectionService
   ReversalState detectReversalState(
     List<DailyPriceEntry> prices, {
     required TrendState trendState,

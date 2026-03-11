@@ -121,7 +121,8 @@ class AnalysisCoordinatorService {
 
   /// 檢查候選條件（分析前的預篩選）
   ///
-  /// 委託給 ReversalDetectionService
+  /// 委託給 [SupportResistanceService] 取得價格區間，
+  /// 再交由 [ReversalDetectionService] 判斷是否為候選
   bool isCandidate(List<DailyPriceEntry> prices) {
     final (rangeLow, rangeHigh) = srService.findRange(prices);
     return reversalService.isCandidate(

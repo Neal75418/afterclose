@@ -20,7 +20,8 @@ import 'package:afterclose/domain/repositories/price_repository.dart';
 /// 主要資料來源：TWSE/TPEX Open Data（免費、無限制、全市場）
 /// 備援資料來源：FinMind（歷史資料）
 ///
-/// 將市場特定的 API 呼叫與資料轉換委託給 [TwsePriceSource] 和 [TpexPriceSource]。
+/// 將市場特定的 API 呼叫與資料轉換委託給 [TwsePriceSource] 和 [TpexPriceSource]，
+/// 歷史資料不足時透過 [FinMindClient] 補齊。
 class PriceRepository implements IPriceRepository {
   PriceRepository({
     required AppDatabase database,
