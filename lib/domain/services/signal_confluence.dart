@@ -157,6 +157,28 @@ class SignalConfluenceDetector {
       ],
       summaryKey: 'summary.confluenceFundamentalTechnical',
     ),
+
+    // 高殖利率價值投資：低估 + 高殖利率
+    SignalConfluence(
+      id: 'value_investment',
+      signalGroups: [
+        {SignalName.peUndervalued, SignalName.pbrUndervalued},
+        {SignalName.highDividendYield},
+      ],
+      summaryKey: 'summary.confluenceValueInvestment',
+    ),
+
+    // 動能突破：突破 + 均線多頭排列
+    // 排在 volume_price_breakout 之後：當同時有 VOLUME_SPIKE 時，
+    // 量價齊揚優先消耗 TECH_BREAKOUT，此模式作為無量能放大時的 fallback。
+    SignalConfluence(
+      id: 'momentum_breakout',
+      signalGroups: [
+        {SignalName.techBreakout, SignalName.highVolumeBreakout},
+        {SignalName.maAlignmentBullish},
+      ],
+      summaryKey: 'summary.confluenceMomentumBreakout',
+    ),
   ];
 
   // ==================================================
@@ -204,6 +226,17 @@ class SignalConfluenceDetector {
         },
       ],
       summaryKey: 'summary.confluenceValueTrap',
+      isBullish: false,
+    ),
+
+    // 法人棄守：法人賣超 + 外資減持
+    SignalConfluence(
+      id: 'institutional_exit',
+      signalGroups: [
+        {SignalName.institutionalSell, SignalName.institutionalSellStreak},
+        {SignalName.foreignExodus, SignalName.foreignShareholdingDecreasing},
+      ],
+      summaryKey: 'summary.confluenceInstitutionalExit',
       isBullish: false,
     ),
   ];

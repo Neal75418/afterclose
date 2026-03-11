@@ -173,22 +173,51 @@ class AnalysisSummaryService {
       parts.add(const LocalizableString('summary.reversalS2W'));
     }
 
-    // 支撐/壓力
+    // 支撐/壓力（含距離百分比 + 風險報酬比）
     final support = analysis?.supportLevel;
     final resistance = analysis?.resistanceLevel;
     if (support != null && resistance != null) {
-      parts.add(
-        LocalizableString('summary.supportResistance', {
-          'support': support.toStringAsFixed(1),
-          'resistance': resistance.toStringAsFixed(1),
-        }),
-      );
+      final closeVal = latestPrice?.close;
+      if (closeVal != null && closeVal > 0) {
+        final supportDist = ((closeVal - support) / closeVal * 100).abs();
+        final resistanceDist = ((resistance - closeVal) / closeVal * 100).abs();
+        parts.add(
+          LocalizableString('summary.supportResistanceWithDist', {
+            'support': support.toStringAsFixed(1),
+            'resistance': resistance.toStringAsFixed(1),
+            'supportDist': supportDist.toStringAsFixed(1),
+            'resistanceDist': resistanceDist.toStringAsFixed(1),
+          }),
+        );
+
+        // 風險報酬比（upside / downside）
+        final downside = closeVal - support;
+        final upside = resistance - closeVal;
+        if (downside > 0 && upside > 0) {
+          final rr = upside / downside;
+          parts.add(
+            LocalizableString('summary.riskReward', {
+              'ratio': rr.toStringAsFixed(1),
+            }),
+          );
+        }
+      } else {
+        parts.add(
+          LocalizableString('summary.supportResistance', {
+            'support': support.toStringAsFixed(1),
+            'resistance': resistance.toStringAsFixed(1),
+          }),
+        );
+      }
     }
 
     // 分數評語
     final score = analysis?.score.toInt() ?? 0;
     final scoreKey = switch (score) {
+      >= AnalysisParams.scoreExceptionalThreshold => 'summary.scoreExceptional',
       >= AnalysisParams.scoreStrongThreshold => 'summary.scoreStrong',
+      >= AnalysisParams.scoreWorthwatchingThreshold =>
+        'summary.scoreWorthwatching',
       >= AnalysisParams.scoreWatchThreshold => 'summary.scoreWatch',
       >= AnalysisParams.scoreNeutralThreshold => 'summary.scoreNeutral',
       _ => 'summary.scoreCaution',
@@ -291,7 +320,8 @@ class AnalysisSummaryService {
     final data = <LocalizableString>[];
 
     if (institutionalHistory.isNotEmpty) {
-      final latest = institutionalHistory.first;
+      // DAO 回傳 ascending order，.last 才是最新一天
+      final latest = institutionalHistory.last;
       final foreign = _formatNetLocalizable(latest.foreignNet);
       final trust = _formatNetLocalizable(latest.investmentTrustNet);
       data.add(
@@ -300,6 +330,33 @@ class AnalysisSummaryService {
           'trust': trust,
         }),
       );
+
+      // 多日趨勢：從最新往回算連買/連賣天數
+      if (institutionalHistory.length >= 3) {
+        final consecutiveBuyDays = _countConsecutiveDays(
+          institutionalHistory.reversed,
+          (e) => (e.foreignNet ?? 0) + (e.investmentTrustNet ?? 0) > 0,
+        );
+        if (consecutiveBuyDays >= 3) {
+          data.add(
+            LocalizableString('summary.institutionalBuyTrend', {
+              'days': consecutiveBuyDays.toString(),
+            }),
+          );
+        } else {
+          final consecutiveSellDays = _countConsecutiveDays(
+            institutionalHistory.reversed,
+            (e) => (e.foreignNet ?? 0) + (e.investmentTrustNet ?? 0) < 0,
+          );
+          if (consecutiveSellDays >= 3) {
+            data.add(
+              LocalizableString('summary.institutionalSellTrend', {
+                'days': consecutiveSellDays.toString(),
+              }),
+            );
+          }
+        }
+      }
     }
 
     final pe = latestPER?.per;
@@ -386,7 +443,7 @@ class AnalysisSummaryService {
 
     final bullRatio = adjustedPositive / totalWeight;
 
-    // 衝突時提高判斷門檻
+    // 衝突時提高判斷門檻（不產生 strong 級別）
     if (hasConflict) {
       if (bullRatio > AnalysisParams.conflictBullRatioThreshold &&
           score >= AnalysisParams.conflictBullScoreThreshold) {
@@ -399,9 +456,18 @@ class AnalysisSummaryService {
       return SummarySentiment.neutral;
     }
 
+    // 5 級情緒梯度：先檢查 strong 門檻
+    if (bullRatio >= AnalysisParams.strongBullRatioThreshold &&
+        score >= AnalysisParams.strongBullScoreThreshold) {
+      return SummarySentiment.strongBullish;
+    }
     if (bullRatio >= AnalysisParams.bullRatioThreshold &&
         score >= AnalysisParams.bullScoreThreshold) {
       return SummarySentiment.bullish;
+    }
+    if (bullRatio <= AnalysisParams.strongBearRatioThreshold &&
+        score < AnalysisParams.strongBearScoreThreshold) {
+      return SummarySentiment.strongBearish;
     }
     if (bullRatio <= AnalysisParams.bearRatioThreshold &&
         score < AnalysisParams.bearScoreThreshold) {
@@ -458,6 +524,14 @@ class AnalysisSummaryService {
       points += 1;
     }
 
+    // 高分訊號品質加權：有 2+ 個 |ruleScore| ≥ 15 的訊號
+    final highScoreSignals = reasons
+        .where(
+          (r) => r.ruleScore.abs() >= AnalysisParams.highQualitySignalThreshold,
+        )
+        .length;
+    if (highScoreSignals >= 2) points += 1;
+
     points += confluenceCount;
 
     if (!hasConflict) points += 1;
@@ -512,6 +586,22 @@ class AnalysisSummaryService {
     });
   }
 
+  /// 從最新往回數，符合條件的連續天數
+  int _countConsecutiveDays(
+    Iterable<DailyInstitutionalEntry> entries,
+    bool Function(DailyInstitutionalEntry) predicate,
+  ) {
+    var count = 0;
+    for (final e in entries) {
+      if (predicate(e)) {
+        count++;
+      } else {
+        break;
+      }
+    }
+    return count;
+  }
+
   // ==================================================
   // 映射表：ReasonType 代碼 → LocalizableString 建構
   // ==================================================
@@ -548,11 +638,25 @@ class AnalysisSummaryService {
     SignalName.kdDeathCross: (_) =>
         const LocalizableString('summary.kdDeathCross'),
 
-    // 法人連續
-    SignalName.institutionalBuyStreak: (_) =>
-        const LocalizableString('summary.institutionalBuyStreak'),
-    SignalName.institutionalSellStreak: (_) =>
-        const LocalizableString('summary.institutionalSellStreak'),
+    // 法人連續（含天數時間脈絡）
+    SignalName.institutionalBuyStreak: (e) {
+      final days = e['streakDays'];
+      if (days != null) {
+        return LocalizableString('summary.institutionalBuyStreakDays', {
+          'days': _numStr(days, fractionDigits: 0),
+        });
+      }
+      return const LocalizableString('summary.institutionalBuyStreak');
+    },
+    SignalName.institutionalSellStreak: (e) {
+      final days = e['streakDays'];
+      if (days != null) {
+        return LocalizableString('summary.institutionalSellStreakDays', {
+          'days': _numStr(days, fractionDigits: 0),
+        });
+      }
+      return const LocalizableString('summary.institutionalSellStreak');
+    },
 
     // K 線型態
     SignalName.patternDoji: (_) =>

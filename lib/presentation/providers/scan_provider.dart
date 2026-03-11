@@ -119,13 +119,13 @@ class ScanNotifier extends Notifier<ScanState> {
   @override
   ScanState build() {
     // 重設所有可變快取，避免 Riverpod rebuild 時殘留舊資料
+    // （_staticCachedIndustries 為 static，跨 instance 保留）
     _allAnalyses = [];
     _filteredAnalyses = [];
     _allReasons = {};
     _watchlistSymbols = {};
     _industrySymbols = null;
     _industryFilterSeq = 0;
-    _cachedIndustries = null;
     _dateCtx = null;
     return const ScanState();
   }
@@ -137,6 +137,11 @@ class ScanNotifier extends Notifier<ScanState> {
 
   static const _service = ScanFilterService();
 
+  /// 產業列表跨 instance 快取（極少變動，僅 stock_master 更新時改變）
+  static List<String>? _staticCachedIndustries;
+  static DateTime? _industryCacheTime;
+  static const _industryCacheTtl = Duration(minutes: 5);
+
   // 分頁快取資料（於 build() 中重設）
   List<DailyAnalysisEntry> _allAnalyses = [];
   List<DailyAnalysisEntry> _filteredAnalyses = [];
@@ -144,7 +149,6 @@ class ScanNotifier extends Notifier<ScanState> {
   Set<String> _watchlistSymbols = {};
   Set<String>? _industrySymbols;
   int _industryFilterSeq = 0;
-  List<String>? _cachedIndustries;
   DateContext? _dateCtx;
 
   /// Load scan data (first page)
@@ -178,9 +182,16 @@ class ScanNotifier extends Notifier<ScanState> {
         latestInstDate,
       );
 
-      // 載入產業列表（使用快取）
-      final industries = _cachedIndustries ?? await _db.getDistinctIndustries();
-      _cachedIndustries = industries;
+      // 載入產業列表（使用 static 快取 + TTL）
+      final now = DateTime.now();
+      final cacheExpired =
+          _industryCacheTime == null ||
+          now.difference(_industryCacheTime!) > _industryCacheTtl;
+      final industries = (!cacheExpired && _staticCachedIndustries != null)
+          ? _staticCachedIndustries!
+          : await _db.getDistinctIndustries();
+      _staticCachedIndustries = industries;
+      _industryCacheTime = now;
 
       // 保留使用者的產業篩選（pull-to-refresh 不應清除）
       if (state.industryFilter != null) {

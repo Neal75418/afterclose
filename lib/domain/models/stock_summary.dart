@@ -97,8 +97,14 @@ class StockSummary {
   bool get hasSupportingData => supportingData.isNotEmpty;
 }
 
-/// 摘要整體情緒
-enum SummarySentiment { bullish, neutral, bearish }
+/// 摘要整體情緒（5 級梯度）
+enum SummarySentiment {
+  strongBullish,
+  bullish,
+  neutral,
+  bearish,
+  strongBearish,
+}
 
 /// 分析信心度
 enum AnalysisConfidence { high, medium, low }

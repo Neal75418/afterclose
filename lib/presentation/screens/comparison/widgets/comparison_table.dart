@@ -524,18 +524,24 @@ class ComparisonTable extends StatelessWidget {
             final summary = state.summariesMap[s];
             if (summary == null) return '-';
             return switch (summary.sentiment) {
+              SummarySentiment.strongBullish =>
+                'comparison.sentimentStrongBullish'.tr(),
               SummarySentiment.bullish => 'comparison.sentimentBullish'.tr(),
               SummarySentiment.neutral => 'comparison.sentimentNeutral'.tr(),
               SummarySentiment.bearish => 'comparison.sentimentBearish'.tr(),
+              SummarySentiment.strongBearish =>
+                'comparison.sentimentStrongBearish'.tr(),
             };
           }).toList(),
           numericValues: state.symbols.map((s) {
             final summary = state.summariesMap[s];
             if (summary == null) return null;
             return switch (summary.sentiment) {
+              SummarySentiment.strongBullish => 4.0,
               SummarySentiment.bullish => 3.0,
               SummarySentiment.neutral => 2.0,
               SummarySentiment.bearish => 1.0,
+              SummarySentiment.strongBearish => 0.0,
             };
           }).toList(),
           higherIsBetter: true,
@@ -543,9 +549,11 @@ class ComparisonTable extends StatelessWidget {
             final summary = state.summariesMap[s];
             if (summary == null) return null;
             return switch (summary.sentiment) {
+              SummarySentiment.strongBullish => AppTheme.upColor,
               SummarySentiment.bullish => AppTheme.upColor,
               SummarySentiment.neutral => AppTheme.neutralColor,
               SummarySentiment.bearish => AppTheme.downColor,
+              SummarySentiment.strongBearish => AppTheme.downColor,
             };
           }).toList(),
         ),

@@ -1,6 +1,5 @@
 import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
+import 'dart:isolate';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/liquidity_checker.dart';
@@ -163,9 +162,8 @@ class ScoringIsolateInput {
         result[entry.key as String] = List<Map<String, dynamic>>.from(
           (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
         );
-      } catch (e) {
-        // Isolate 內無法使用 AppLogger，改用 debugPrint
-        debugPrint('ScoringIsolate: $fieldName skip key=${entry.key}: $e');
+      } catch (_) {
+        // 靜默跳過無法轉型的 entry（Isolate 內無法使用 AppLogger）
       }
     }
     return result;
@@ -182,8 +180,8 @@ class ScoringIsolateInput {
           innerMap[inner.key as String] = inner.value as double?;
         }
         result[entry.key as String] = innerMap;
-      } catch (e) {
-        debugPrint('ScoringIsolate: shareholdingMap skip key=${entry.key}: $e');
+      } catch (_) {
+        // 靜默跳過無法轉型的 entry
       }
     }
     return result;
@@ -318,7 +316,9 @@ class ScoringBatchResult {
 Future<ScoringBatchResult> evaluateStocksInIsolate(
   ScoringIsolateInput input,
 ) async {
-  final resultMap = await compute(_evaluateStocksIsolated, input.toMap());
+  final resultMap = await Isolate.run(
+    () => _evaluateStocksIsolated(input.toMap()),
+  );
   return ScoringBatchResult.fromMap(resultMap);
 }
 

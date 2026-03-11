@@ -111,6 +111,68 @@ void main() {
       expect(result.consumedTypes, contains('MA_ALIGNMENT_BULLISH'));
     });
 
+    test('should detect value_investment pattern', () {
+      final reasons = [
+        createTestReason(reasonType: 'PE_UNDERVALUED', ruleScore: 10),
+        createTestReason(
+          reasonType: 'HIGH_DIVIDEND_YIELD',
+          rank: 2,
+          ruleScore: 8,
+        ),
+      ];
+
+      final result = detector.detect(reasons, bullish: true);
+
+      expect(result.matchedCount, greaterThan(0));
+      expect(result.consumedTypes, contains('PE_UNDERVALUED'));
+      expect(result.consumedTypes, contains('HIGH_DIVIDEND_YIELD'));
+      expect(result.summaryKeys, contains('summary.confluenceValueInvestment'));
+    });
+
+    test('should detect momentum_breakout pattern', () {
+      final reasons = [
+        createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
+        createTestReason(
+          reasonType: 'MA_ALIGNMENT_BULLISH',
+          rank: 2,
+          ruleScore: 10,
+        ),
+      ];
+
+      final result = detector.detect(reasons, bullish: true);
+
+      expect(result.matchedCount, greaterThan(0));
+      expect(result.consumedTypes, contains('TECH_BREAKOUT'));
+      expect(result.consumedTypes, contains('MA_ALIGNMENT_BULLISH'));
+      expect(
+        result.summaryKeys,
+        contains('summary.confluenceMomentumBreakout'),
+      );
+    });
+
+    test('volume_price_breakout should take priority over momentum_breakout '
+        'when TECH_BREAKOUT is consumed', () {
+      final reasons = [
+        createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
+        createTestReason(reasonType: 'VOLUME_SPIKE', rank: 2, ruleScore: 15),
+        createTestReason(
+          reasonType: 'MA_ALIGNMENT_BULLISH',
+          rank: 3,
+          ruleScore: 10,
+        ),
+      ];
+
+      final result = detector.detect(reasons, bullish: true);
+
+      // volume_price_breakout matches first, consuming TECH_BREAKOUT
+      expect(result.summaryKeys, contains('summary.confluenceVolumeBreakout'));
+      // momentum_breakout cannot match (TECH_BREAKOUT already consumed)
+      expect(
+        result.summaryKeys,
+        isNot(contains('summary.confluenceMomentumBreakout')),
+      );
+    });
+
     test('should return empty when no bullish confluence found', () {
       final reasons = [
         createTestReason(reasonType: 'VOLUME_SPIKE', ruleScore: 15),
@@ -211,6 +273,23 @@ void main() {
       expect(result.matchedCount, greaterThan(0));
       expect(result.consumedTypes, contains('PE_UNDERVALUED'));
       expect(result.consumedTypes, contains('REVERSAL_S2W'));
+    });
+
+    test('should detect institutional_exit pattern', () {
+      final reasons = [
+        createTestReason(reasonType: 'INSTITUTIONAL_SELL', ruleScore: -10),
+        createTestReason(reasonType: 'FOREIGN_EXODUS', rank: 2, ruleScore: -15),
+      ];
+
+      final result = detector.detect(reasons, bullish: false);
+
+      expect(result.matchedCount, greaterThan(0));
+      expect(result.consumedTypes, contains('INSTITUTIONAL_SELL'));
+      expect(result.consumedTypes, contains('FOREIGN_EXODUS'));
+      expect(
+        result.summaryKeys,
+        contains('summary.confluenceInstitutionalExit'),
+      );
     });
 
     test('should not match bullish patterns when detecting bearish', () {

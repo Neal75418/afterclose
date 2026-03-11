@@ -7,8 +7,14 @@ abstract final class AnalysisParams {
   // 分數評級門檻
   // ==================================================
 
+  /// 卓越信號分數門檻
+  static const int scoreExceptionalThreshold = 70;
+
   /// 強烈信號分數門檻
   static const int scoreStrongThreshold = 60;
+
+  /// 值得觀察分數門檻
+  static const int scoreWorthwatchingThreshold = 45;
 
   /// 值得關注分數門檻
   static const int scoreWatchThreshold = 35;
@@ -64,6 +70,12 @@ abstract final class AnalysisParams {
   /// 衝突狀態下的看空分數上限
   static const int conflictBearScoreThreshold = 15;
 
+  /// 強力看多門檻（比例）
+  static const double strongBullRatioThreshold = 0.75;
+
+  /// 強力看多最低分數
+  static const int strongBullScoreThreshold = 55;
+
   /// 一般看多門檻（比例）
   static const double bullRatioThreshold = 0.6;
 
@@ -76,6 +88,12 @@ abstract final class AnalysisParams {
   /// 一般看空分數上限
   static const int bearScoreThreshold = 20;
 
+  /// 強力看空門檻（比例）
+  static const double strongBearRatioThreshold = 0.25;
+
+  /// 強力看空分數上限（exclusive：score < 此值才判定為 strongBearish）
+  static const int strongBearScoreThreshold = 10;
+
   // ==================================================
   // 信心度計分
   // ==================================================
@@ -85,6 +103,9 @@ abstract final class AnalysisParams {
 
   /// 中等信心度門檻（累計點數）
   static const int confidenceMediumThreshold = 3;
+
+  /// 高品質訊號門檻（|ruleScore| >= 此值視為高品質）
+  static const double highQualitySignalThreshold = 15.0;
 
   /// 多訊號加分門檻（>= 此值加 2 分）
   static const int manySignalsThreshold = 5;

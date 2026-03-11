@@ -220,15 +220,17 @@ class RadarComparisonChart extends StatelessWidget {
     return normalized.clamp(0, 100);
   }
 
-  /// Sentiment: bullish=85, neutral=50, bearish=15.
+  /// Sentiment: strongBullish=95, bullish=75, neutral=50, bearish=25, strongBearish=5.
   double _sentimentValue(String symbol) {
     final summary = state.summariesMap[symbol];
     if (summary == null) return 50;
 
     return switch (summary.sentiment) {
-      SummarySentiment.bullish => 85,
+      SummarySentiment.strongBullish => 95,
+      SummarySentiment.bullish => 75,
       SummarySentiment.neutral => 50,
-      SummarySentiment.bearish => 15,
+      SummarySentiment.bearish => 25,
+      SummarySentiment.strongBearish => 5,
     };
   }
 }

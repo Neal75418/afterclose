@@ -225,6 +225,10 @@ class _SentimentTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (sentiment) {
+      SummarySentiment.strongBullish => (
+        'summary.sentimentStrongBullish'.tr(),
+        AppTheme.upColor,
+      ),
       SummarySentiment.bullish => (
         'summary.sentimentBullish'.tr(),
         AppTheme.upColor,
@@ -235,6 +239,10 @@ class _SentimentTag extends StatelessWidget {
       ),
       SummarySentiment.bearish => (
         'summary.sentimentBearish'.tr(),
+        AppTheme.downColor,
+      ),
+      SummarySentiment.strongBearish => (
+        'summary.sentimentStrongBearish'.tr(),
         AppTheme.downColor,
       ),
     };

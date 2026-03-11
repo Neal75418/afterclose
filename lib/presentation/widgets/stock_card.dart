@@ -71,6 +71,13 @@ class StockCard extends StatefulWidget {
 
 class _StockCardState extends State<StockCard> {
   bool _isPressed = false;
+  String? _cachedSemanticLabel;
+
+  @override
+  void didUpdateWidget(StockCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _cachedSemanticLabel = null;
+  }
 
   /// 建立無障礙語意標籤
   String _buildSemanticLabel() {
@@ -108,7 +115,7 @@ class _StockCardState extends State<StockCard> {
     final priceColor = AppTheme.getPriceColor(widget.priceChange);
 
     return Semantics(
-      label: _buildSemanticLabel(),
+      label: _cachedSemanticLabel ??= _buildSemanticLabel(),
       button: true,
       enabled: true,
       child: GestureDetector(

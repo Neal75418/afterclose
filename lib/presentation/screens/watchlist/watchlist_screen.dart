@@ -478,13 +478,15 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         }
 
         final item = items[index];
-        return WatchlistStockItem(
-          item: item,
-          index: index,
-          showLimitMarkers: showLimitMarkers,
-          onView: () => context.push(AppRoutes.stockDetail(item.symbol)),
-          onRemove: () => _removeFromWatchlist(item.symbol),
-          onLongPress: () => _showStockPreview(item),
+        return RepaintBoundary(
+          child: WatchlistStockItem(
+            item: item,
+            index: index,
+            showLimitMarkers: showLimitMarkers,
+            onView: () => context.push(AppRoutes.stockDetail(item.symbol)),
+            onRemove: () => _removeFromWatchlist(item.symbol),
+            onLongPress: () => _showStockPreview(item),
+          ),
         );
       },
     );
@@ -510,13 +512,15 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
-        return WatchlistStockGridItem(
-          item: item,
-          index: index,
-          showLimitMarkers: showLimitMarkers,
-          onView: () => context.push(AppRoutes.stockDetail(item.symbol)),
-          onRemove: () => _removeFromWatchlist(item.symbol),
-          onLongPress: () => _showStockPreview(item),
+        return RepaintBoundary(
+          child: WatchlistStockGridItem(
+            item: item,
+            index: index,
+            showLimitMarkers: showLimitMarkers,
+            onView: () => context.push(AppRoutes.stockDetail(item.symbol)),
+            onRemove: () => _removeFromWatchlist(item.symbol),
+            onLongPress: () => _showStockPreview(item),
+          ),
         );
       },
     );

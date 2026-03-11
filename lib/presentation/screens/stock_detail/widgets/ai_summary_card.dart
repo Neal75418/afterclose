@@ -72,9 +72,11 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
     final parts = <String>['summary.title'.tr()];
 
     final sentimentLabel = switch (summary.sentiment) {
+      SummarySentiment.strongBullish => 'summary.sentimentStrongBullish'.tr(),
       SummarySentiment.bullish => 'summary.sentimentBullish'.tr(),
-      SummarySentiment.bearish => 'summary.sentimentBearish'.tr(),
       SummarySentiment.neutral => 'summary.sentimentNeutral'.tr(),
+      SummarySentiment.bearish => 'summary.sentimentBearish'.tr(),
+      SummarySentiment.strongBearish => 'summary.sentimentStrongBearish'.tr(),
     };
     parts.add(sentimentLabel);
 
@@ -149,14 +151,18 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
   Widget _buildHeader(StockSummary summary, ThemeData theme) {
     final sentimentColor = switch (summary.sentiment) {
+      SummarySentiment.strongBullish => AppTheme.upColor,
       SummarySentiment.bullish => AppTheme.upColor,
-      SummarySentiment.bearish => AppTheme.downColor,
       SummarySentiment.neutral => AppTheme.neutralColor,
+      SummarySentiment.bearish => AppTheme.downColor,
+      SummarySentiment.strongBearish => AppTheme.downColor,
     };
     final sentimentLabel = switch (summary.sentiment) {
+      SummarySentiment.strongBullish => 'summary.sentimentStrongBullish'.tr(),
       SummarySentiment.bullish => 'summary.sentimentBullish'.tr(),
-      SummarySentiment.bearish => 'summary.sentimentBearish'.tr(),
       SummarySentiment.neutral => 'summary.sentimentNeutral'.tr(),
+      SummarySentiment.bearish => 'summary.sentimentBearish'.tr(),
+      SummarySentiment.strongBearish => 'summary.sentimentStrongBearish'.tr(),
     };
 
     return InkWell(

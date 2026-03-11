@@ -33,7 +33,7 @@ void main() {
       expect(result.overallParts.first.key, 'summary.noSignals');
     });
 
-    test('should return bullish when strong positive signals dominate', () {
+    test('should return strongBullish when ratio ≥ 0.75 and score ≥ 55', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'TECH_BREAKOUT', rank: 2, ruleScore: 20),
@@ -56,10 +56,38 @@ void main() {
         latestPER: null,
       );
 
+      // bullRatio = 1.0 ≥ 0.75, score = 70 ≥ 55 → strongBullish
+      expect(result.sentiment, SummarySentiment.strongBullish);
+    });
+
+    test('should return bullish when ratio ≥ 0.6 but below strong threshold', () {
+      final reasons = [
+        createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
+        createTestReason(
+          reasonType: 'INSTITUTIONAL_BUY',
+          rank: 2,
+          ruleScore: 10,
+        ),
+        createTestReason(reasonType: 'KD_DEATH_CROSS', rank: 3, ruleScore: -5),
+      ];
+
+      final analysis = createTestAnalysis(trendState: 'UP', score: 45);
+
+      final result = service.generate(
+        analysis: analysis,
+        reasons: reasons,
+        latestPrice: null,
+        priceChange: 2.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+      );
+
+      // bullRatio = 30/35 ≈ 0.86 ≥ 0.75, but score = 45 < 55 → bullish (not strong)
       expect(result.sentiment, SummarySentiment.bullish);
     });
 
-    test('should return bearish when strong negative signals dominate', () {
+    test('should return bearish when negative signals dominate', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_S2W', ruleScore: -30),
         createTestReason(reasonType: 'TECH_BREAKDOWN', rank: 2, ruleScore: -20),
@@ -70,6 +98,7 @@ void main() {
         ),
       ];
 
+      // score=10, not < 10 → bearish (not strongBearish)
       final analysis = createTestAnalysis(trendState: 'DOWN', score: 10);
 
       final result = service.generate(
@@ -83,6 +112,33 @@ void main() {
       );
 
       expect(result.sentiment, SummarySentiment.bearish);
+    });
+
+    test('should return strongBearish when ratio ≤ 0.25 and score < 10', () {
+      final reasons = [
+        createTestReason(reasonType: 'REVERSAL_S2W', ruleScore: -30),
+        createTestReason(reasonType: 'TECH_BREAKDOWN', rank: 2, ruleScore: -20),
+        createTestReason(
+          reasonType: 'MA_ALIGNMENT_BEARISH',
+          rank: 3,
+          ruleScore: -15,
+        ),
+      ];
+
+      final analysis = createTestAnalysis(trendState: 'DOWN', score: 5);
+
+      final result = service.generate(
+        analysis: analysis,
+        reasons: reasons,
+        latestPrice: null,
+        priceChange: -7.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+      );
+
+      // bullRatio = 0.0 ≤ 0.25, score = 5 < 10 → strongBearish
+      expect(result.sentiment, SummarySentiment.strongBearish);
     });
   });
 
@@ -429,6 +485,67 @@ void main() {
       expect(result.supportingData.first.key, 'summary.institutionalFlow');
     });
 
+    test('should use latest entry (last) not oldest (first) for flow data', () {
+      final now = DateTime.now();
+      final result = service.generate(
+        analysis: createTestAnalysis(),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: null,
+        priceChange: 2.0,
+        institutionalHistory: [
+          // oldest entry (index 0) — ascending order
+          createTestInstitutional(
+            date: now.subtract(const Duration(days: 2)),
+            foreignNet: -9000000,
+            investmentTrustNet: -3000000,
+          ),
+          createTestInstitutional(
+            date: now.subtract(const Duration(days: 1)),
+            foreignNet: -5000000,
+            investmentTrustNet: -2000000,
+          ),
+          // latest entry (last) — should be used for flow display
+          createTestInstitutional(
+            date: now,
+            foreignNet: 8000000,
+            investmentTrustNet: 3000000,
+          ),
+        ],
+        revenueHistory: [],
+        latestPER: null,
+      );
+
+      // 法人動向應顯示最新一天（買超），不是最舊的（賣超）
+      final flowEntry = result.supportingData
+          .where((ls) => ls.key == 'summary.institutionalFlow')
+          .first;
+      // nestedArgs['foreign'] 應為 netBuy（正數 → buy lots）
+      expect(flowEntry.nestedArgs['foreign']?.key, 'summary.netBuy');
+    });
+
+    test('should detect consecutive buy trend when ≥ 3 days', () {
+      final now = DateTime.now();
+      final result = service.generate(
+        analysis: createTestAnalysis(),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: null,
+        priceChange: 2.0,
+        institutionalHistory: [
+          for (var i = 4; i >= 0; i--)
+            createTestInstitutional(
+              date: now.subtract(Duration(days: i)),
+              foreignNet: 3000000,
+              investmentTrustNet: 1000000,
+            ),
+        ],
+        revenueHistory: [],
+        latestPER: null,
+      );
+
+      final keys = result.supportingData.map((ls) => ls.key).toSet();
+      expect(keys, contains('summary.institutionalBuyTrend'));
+    });
+
     test('should include PE and dividend yield in supporting data', () {
       final result = service.generate(
         analysis: createTestAnalysis(),
@@ -474,11 +591,13 @@ void main() {
 
         // 無匯流 → 使用 overallUp trend key
         expect(_overallContainsKey(result, 'summary.overallUp'), isTrue);
-        // 有支撐壓力 → 應包含 supportResistance key
+        // 有支撐壓力 + close → 使用帶距離版本
         expect(
-          _overallContainsKey(result, 'summary.supportResistance'),
+          _overallContainsKey(result, 'summary.supportResistanceWithDist'),
           isTrue,
         );
+        // 有風險報酬比
+        expect(_overallContainsKey(result, 'summary.riskReward'), isTrue);
       },
     );
 
@@ -525,7 +644,11 @@ void main() {
         latestPER: null,
       );
 
-      expect(_overallContainsKey(result, 'summary.supportResistance'), isTrue);
+      // close=100, support=95, resistance=110 → 使用帶距離版本
+      expect(
+        _overallContainsKey(result, 'summary.supportResistanceWithDist'),
+        isTrue,
+      );
       expect(_overallContainsKey(result, 'summary.overallRange'), isTrue);
     });
 
