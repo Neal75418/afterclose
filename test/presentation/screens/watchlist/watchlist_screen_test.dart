@@ -134,35 +134,31 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late WatchlistState _watchlistState;
-  late PortfolioState _portfolioState;
-  late SettingsState _settingsState;
-
   Widget buildTestWidget({
     WatchlistState? watchlistState,
     PortfolioState? portfolioState,
     SettingsState? settingsState,
     Brightness brightness = Brightness.light,
   }) {
-    _watchlistState = watchlistState ?? WatchlistState();
-    _portfolioState = portfolioState ?? const PortfolioState();
-    _settingsState = settingsState ?? const SettingsState();
+    final watchlist = watchlistState ?? WatchlistState();
+    final portfolio = portfolioState ?? const PortfolioState();
+    final settings = settingsState ?? const SettingsState();
     return buildProviderTestApp(
       const WatchlistScreen(),
       overrides: [
         watchlistProvider.overrideWith(() {
           final n = FakeWatchlistNotifier();
-          n.initialState = _watchlistState;
+          n.initialState = watchlist;
           return n;
         }),
         portfolioProvider.overrideWith(() {
           final n = FakePortfolioNotifier();
-          n.initialState = _portfolioState;
+          n.initialState = portfolio;
           return n;
         }),
         settingsProvider.overrideWith(() {
           final n = FakeSettingsNotifier();
-          n.initialState = _settingsState;
+          n.initialState = settings;
           return n;
         }),
       ],

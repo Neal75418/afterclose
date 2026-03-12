@@ -41,19 +41,19 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late StockDetailState _testState;
+  late StockDetailState testState;
 
   Widget buildTestWidget(
     StockDetailState state, {
     Brightness brightness = Brightness.light,
   }) {
-    _testState = state;
+    testState = state;
     return buildProviderTestApp(
       const AiSummaryCard(symbol: '2330'),
       overrides: [
-        stockDetailProvider.overrideWith(() {
-          final n = FakeStockDetailNotifier('2330');
-          n.initialState = _testState;
+        stockDetailProvider.overrideWith2((symbol) {
+          final n = FakeStockDetailNotifier(symbol);
+          n.initialState = testState;
           return n;
         }),
         primaryRuleAccuracySummaryProvider.overrideWith(
@@ -64,7 +64,7 @@ void main() {
     );
   }
 
-  final bullishSummary = const StockSummary(
+  const bullishSummary = StockSummary(
     overallAssessment: 'Strong bullish trend detected',
     keySignals: ['Volume breakout', 'Golden cross'],
     riskFactors: ['High valuation'],
@@ -74,13 +74,13 @@ void main() {
     confluenceCount: 3,
   );
 
-  final bearishSummary = const StockSummary(
+  const bearishSummary = StockSummary(
     overallAssessment: 'Bearish reversal expected',
     sentiment: SummarySentiment.bearish,
     confidence: AnalysisConfidence.low,
   );
 
-  final neutralSummary = const StockSummary(
+  const neutralSummary = StockSummary(
     overallAssessment: 'Sideways consolidation',
     sentiment: SummarySentiment.neutral,
     confidence: AnalysisConfidence.medium,

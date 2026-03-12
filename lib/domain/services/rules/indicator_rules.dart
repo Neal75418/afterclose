@@ -254,12 +254,14 @@ class MAAlignmentBullishRule extends StockRule {
       if (close == null || vol == null) return null;
 
       if (close <= ma5) return null;
-      if ((close - ma5) / ma5 >= IndicatorParams.maDeviationThreshold)
+      if ((close - ma5) / ma5 >= IndicatorParams.maDeviationThreshold) {
         return null;
+      }
 
       final volMA20 = context.indicators?.volumeMA20 ?? 0;
-      if (vol <= volMA20 * IndicatorParams.maAlignmentVolumeMultiplier)
+      if (vol <= volMA20 * IndicatorParams.maAlignmentVolumeMultiplier) {
         return null;
+      }
 
       return TriggeredReason(
         type: ReasonType.maAlignmentBullish,
@@ -313,8 +315,9 @@ class MAAlignmentBearishRule extends StockRule {
       if (close == null) return null;
 
       if (close >= ma5) return null;
-      if ((close - ma5) / ma5 <= -IndicatorParams.maDeviationThreshold)
+      if ((close - ma5) / ma5 <= -IndicatorParams.maDeviationThreshold) {
         return null;
+      }
 
       return TriggeredReason(
         type: ReasonType.maAlignmentBearish,
@@ -455,8 +458,9 @@ class KDGoldenCrossRule extends StockRule {
         final prev = data.prices[data.prices.length - 2];
         if (today.close != null && prev.close != null && prev.close! > 0) {
           final changePct = (today.close! - prev.close!) / prev.close!;
-          if (changePct < IndicatorParams.kdCrossPriceChangeThreshold)
+          if (changePct < IndicatorParams.kdCrossPriceChangeThreshold) {
             return null;
+          }
         }
       }
 

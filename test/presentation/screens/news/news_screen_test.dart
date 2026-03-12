@@ -63,19 +63,17 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late NewsState _newsState;
-
   Widget buildTestWidget({
     NewsState? newsState,
     Brightness brightness = Brightness.light,
   }) {
-    _newsState = newsState ?? NewsState();
+    final state = newsState ?? NewsState();
     return buildProviderTestApp(
       const NewsScreen(),
       overrides: [
         newsProvider.overrideWith(() {
           final n = FakeNewsNotifier();
-          n.initialState = _newsState;
+          n.initialState = state;
           return n;
         }),
       ],

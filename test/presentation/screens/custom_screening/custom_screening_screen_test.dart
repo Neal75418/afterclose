@@ -174,7 +174,7 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          screeningState: CustomScreeningState(
+          screeningState: const CustomScreeningState(
             conditions: [
               ScreeningCondition(
                 field: ScreeningField.score,
@@ -198,7 +198,7 @@ void main() {
         buildTestWidget(
           screeningState: CustomScreeningState(
             conditions: [
-              ScreeningCondition(
+              const ScreeningCondition(
                 field: ScreeningField.score,
                 operator: ScreeningOperator.greaterThan,
                 value: 60,

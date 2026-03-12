@@ -492,7 +492,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: [],
         date: DateTime.now(),
-        batchData: ScoringBatchData(pricesMap: {}, newsMap: {}),
+        batchData: const ScoringBatchData(pricesMap: {}, newsMap: {}),
       );
 
       expect(result, isEmpty);
@@ -503,7 +503,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: ['MISSING'],
         date: DateTime.now(),
-        batchData: ScoringBatchData(pricesMap: {}, newsMap: {}),
+        batchData: const ScoringBatchData(pricesMap: {}, newsMap: {}),
       );
 
       expect(result, isEmpty);
@@ -534,7 +534,7 @@ void main() {
 
   group('ScoringService Analysis Failure Paths', () {
     /// 建立通過流動性門檻的有效價格資料
-    List<DailyPriceEntry> _validPrices(String symbol) {
+    List<DailyPriceEntry> validPrices(String symbol) {
       return generatePricesWithVolumeSpike(
         days: 30,
         normalVolume: 2000000,
@@ -544,7 +544,7 @@ void main() {
     }
 
     test('should skip stock when analyzeStock returns null', () async {
-      final prices = _validPrices('NULL_ANALYSIS');
+      final prices = validPrices('NULL_ANALYSIS');
 
       when(() => mockAnalysisService.analyzeStock(any())).thenReturn(null);
 
@@ -574,7 +574,7 @@ void main() {
     });
 
     test('should skip stock when rule engine returns empty reasons', () async {
-      final prices = _validPrices('EMPTY_REASONS');
+      final prices = validPrices('EMPTY_REASONS');
 
       when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
         const AnalysisResult(
@@ -631,7 +631,7 @@ void main() {
 
   group('ScoringService Score Filtering', () {
     /// 設定完整的 mock pipeline 讓候選通過所有檢查直到分數計算
-    void _setupFullPipeline({
+    void setupFullPipeline({
       required int returnScore,
       String symbol = 'STOCK',
     }) {
@@ -703,7 +703,7 @@ void main() {
       ).thenAnswer((_) async {});
     }
 
-    List<DailyPriceEntry> _validPrices(String symbol) {
+    List<DailyPriceEntry> validPrices(String symbol) {
       return generatePricesWithVolumeSpike(
         days: 30,
         normalVolume: 2000000,
@@ -713,8 +713,8 @@ void main() {
     }
 
     test('should skip stock when score is below minScoreThreshold', () async {
-      final prices = _validPrices('LOW');
-      _setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1); // 24
+      final prices = validPrices('LOW');
+      setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1); // 24
 
       final result = await scoringService.scoreStocks(
         candidates: ['LOW'],
@@ -726,8 +726,8 @@ void main() {
     });
 
     test('should include stock when score equals minScoreThreshold', () async {
-      final prices = _validPrices('BOUNDARY');
-      _setupFullPipeline(returnScore: RuleParams.minScoreThreshold); // 25
+      final prices = validPrices('BOUNDARY');
+      setupFullPipeline(returnScore: RuleParams.minScoreThreshold); // 25
 
       final result = await scoringService.scoreStocks(
         candidates: ['BOUNDARY'],
@@ -748,7 +748,7 @@ void main() {
   // ==================================================
 
   group('ScoringService Optional Features', () {
-    List<DailyPriceEntry> _validPrices(String symbol) {
+    List<DailyPriceEntry> validPrices(String symbol) {
       return generatePricesWithVolumeSpike(
         days: 30,
         normalVolume: 2000000,
@@ -759,7 +759,7 @@ void main() {
 
     test('should call onProgress callback for each candidate', () async {
       final progressCalls = <(int, int)>[];
-      final prices = _validPrices('A');
+      final prices = validPrices('A');
 
       // analyzeStock returns null → all skipped, but onProgress still called
       when(() => mockAnalysisService.analyzeStock(any())).thenReturn(null);
@@ -780,7 +780,7 @@ void main() {
     test(
       'should call marketDataBuilder and pass result to buildContext',
       () async {
-        final prices = _validPrices('MKT');
+        final prices = validPrices('MKT');
         const marketData = MarketDataContext(foreignSharesRatio: 30.0);
 
         when(() => mockAnalysisService.analyzeStock(any())).thenReturn(

@@ -82,10 +82,10 @@ void main() {
     });
 
     test('copyWith clearResult sets result to null', () {
-      final result = BacktestResult(
-        config: const BacktestConfig(periodMonths: 3, holdingDays: 5),
+      const result = BacktestResult(
+        config: BacktestConfig(periodMonths: 3, holdingDays: 5),
         trades: [],
-        summary: const BacktestSummary(
+        summary: BacktestSummary(
           totalTrades: 0,
           winningTrades: 0,
           losingTrades: 0,
@@ -96,10 +96,10 @@ void main() {
           stdDeviation: 0,
           winRate: 0,
         ),
-        executionTime: const Duration(seconds: 1),
+        executionTime: Duration(seconds: 1),
         tradingDaysScanned: 60,
       );
-      final state = BacktestState(result: result);
+      const state = BacktestState(result: result);
       final cleared = state.copyWith(clearResult: true);
       expect(cleared.result, isNull);
     });

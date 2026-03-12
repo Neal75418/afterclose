@@ -84,27 +84,24 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late ScanState _scanState;
-  late SettingsState _settingsState;
-
   Widget buildTestWidget({
     ScanState? scanState,
     SettingsState? settingsState,
     Brightness brightness = Brightness.light,
   }) {
-    _scanState = scanState ?? const ScanState();
-    _settingsState = settingsState ?? const SettingsState();
+    final scan = scanState ?? const ScanState();
+    final settings = settingsState ?? const SettingsState();
     return buildProviderTestApp(
       const ScanScreen(),
       overrides: [
         scanProvider.overrideWith(() {
           final n = FakeScanNotifier();
-          n.initialState = _scanState;
+          n.initialState = scan;
           return n;
         }),
         settingsProvider.overrideWith(() {
           final n = FakeSettingsNotifier();
-          n.initialState = _settingsState;
+          n.initialState = settings;
           return n;
         }),
       ],

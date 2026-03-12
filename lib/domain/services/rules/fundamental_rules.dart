@@ -22,8 +22,9 @@ class InstitutionalShiftRule extends StockRule {
     final todayNet = today.foreignNet ?? 0.0;
 
     // 提高門檻以減少雜訊：最低 1000 張（資料單位為股，1 張 = 1000 股）
-    if (todayNet.abs() < InstitutionalParams.institutionalMinVolumeShares)
+    if (todayNet.abs() < InstitutionalParams.institutionalMinVolumeShares) {
       return null;
+    }
 
     // 若有足夠資料則計算先前平均方向
     double prevAvg = 0;

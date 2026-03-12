@@ -49,7 +49,7 @@ void main() {
   late ProviderContainer container;
 
   setUpAll(() {
-    registerFallbackValue(PriceAlertCompanion());
+    registerFallbackValue(const PriceAlertCompanion());
   });
 
   setUp(() {

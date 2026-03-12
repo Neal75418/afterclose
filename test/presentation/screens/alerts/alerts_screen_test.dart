@@ -77,19 +77,17 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late PriceAlertState _alertState;
-
   Widget buildTestWidget({
     PriceAlertState? alertState,
     Brightness brightness = Brightness.light,
   }) {
-    _alertState = alertState ?? const PriceAlertState();
+    final state = alertState ?? const PriceAlertState();
     return buildProviderTestApp(
       const AlertsScreen(),
       overrides: [
         priceAlertProvider.overrideWith(() {
           final n = FakePriceAlertNotifier();
-          n.initialState = _alertState;
+          n.initialState = state;
           return n;
         }),
       ],

@@ -63,19 +63,17 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late CustomScreeningState _screeningState;
-
   Widget buildTestWidget({
     CustomScreeningState? screeningState,
     Brightness brightness = Brightness.light,
   }) {
-    _screeningState = screeningState ?? const CustomScreeningState();
+    final state = screeningState ?? const CustomScreeningState();
     return buildProviderTestApp(
       const StrategyManagerSheet(),
       overrides: [
         customScreeningProvider.overrideWith(() {
           final n = FakeCustomScreeningNotifier();
-          n.initialState = _screeningState;
+          n.initialState = state;
           return n;
         }),
       ],
@@ -116,22 +114,22 @@ void main() {
     testWidgets('shows strategy list with names', (tester) async {
       widenViewport(tester);
       final strategies = [
-        ScreeningStrategy(
+        const ScreeningStrategy(
           id: 1,
           name: 'Growth Picks',
           conditions: [
-            const ScreeningCondition(
+            ScreeningCondition(
               field: ScreeningField.pe,
               operator: ScreeningOperator.lessThan,
               value: 20,
             ),
           ],
         ),
-        ScreeningStrategy(
+        const ScreeningStrategy(
           id: 2,
           name: 'Value Stocks',
           conditions: [
-            const ScreeningCondition(
+            ScreeningCondition(
               field: ScreeningField.pbr,
               operator: ScreeningOperator.lessThan,
               value: 1.5,
@@ -154,11 +152,11 @@ void main() {
     testWidgets('shows delete icon on strategy tiles', (tester) async {
       widenViewport(tester);
       final strategies = [
-        ScreeningStrategy(
+        const ScreeningStrategy(
           id: 1,
           name: 'My Strategy',
           conditions: [
-            const ScreeningCondition(
+            ScreeningCondition(
               field: ScreeningField.score,
               operator: ScreeningOperator.greaterOrEqual,
               value: 80,
@@ -240,11 +238,11 @@ void main() {
     ) async {
       widenViewport(tester);
       final strategies = [
-        ScreeningStrategy(
+        const ScreeningStrategy(
           id: 1,
           name: 'Delete Me',
           conditions: [
-            const ScreeningCondition(
+            ScreeningCondition(
               field: ScreeningField.close,
               operator: ScreeningOperator.greaterThan,
               value: 100,
@@ -268,11 +266,11 @@ void main() {
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
       final strategies = [
-        ScreeningStrategy(
+        const ScreeningStrategy(
           id: 1,
           name: 'Dark Strategy',
           conditions: [
-            const ScreeningCondition(
+            ScreeningCondition(
               field: ScreeningField.pe,
               operator: ScreeningOperator.lessThan,
               value: 20,

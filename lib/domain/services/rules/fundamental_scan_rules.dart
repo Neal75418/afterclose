@@ -450,8 +450,9 @@ class EPSYoYSurgeRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final eps = data.epsHistory;
-    if (eps == null || eps.length < FundamentalParams.epsYearLookback)
+    if (eps == null || eps.length < FundamentalParams.epsYearLookback) {
       return null;
+    }
 
     // 最新一季 & 去年同季（降序排列，index 0 = 最新）
     final latest = eps[0];

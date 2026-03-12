@@ -115,8 +115,8 @@ void main() {
 
       await tester.pumpWidget(
         buildTestWidget(
-          state: RecommendationPerformanceState(
-            overallStats: const OverallPerformanceStats(
+          state: const RecommendationPerformanceState(
+            overallStats: OverallPerformanceStats(
               totalCount: 50,
               successCount: 30,
               avgReturn: 2.5,

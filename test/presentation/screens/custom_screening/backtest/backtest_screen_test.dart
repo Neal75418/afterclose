@@ -105,19 +105,17 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late BacktestState _backtestState;
-
   Widget buildTestWidget({
     BacktestState? backtestState,
     Brightness brightness = Brightness.light,
   }) {
-    _backtestState = backtestState ?? const BacktestState();
+    final state = backtestState ?? const BacktestState();
     return buildProviderTestApp(
       const BacktestScreen(conditions: _testConditions),
       overrides: [
         backtestProvider.overrideWith(() {
           final n = FakeBacktestNotifier();
-          n.initialState = _backtestState;
+          n.initialState = state;
           return n;
         }),
       ],

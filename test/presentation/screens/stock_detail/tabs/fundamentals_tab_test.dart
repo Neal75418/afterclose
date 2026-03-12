@@ -78,27 +78,24 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late StockDetailState _stockState;
-  late SettingsState _settingsState;
-
   Widget buildTestWidget({
     StockDetailState? stockState,
     SettingsState? settingsState,
     Brightness brightness = Brightness.light,
   }) {
-    _stockState = stockState ?? const StockDetailState();
-    _settingsState = settingsState ?? const SettingsState();
+    final stock = stockState ?? const StockDetailState();
+    final settings = settingsState ?? const SettingsState();
     return buildProviderTestApp(
       const FundamentalsTab(symbol: '2330'),
       overrides: [
-        stockDetailProvider.overrideWith(() {
-          final n = FakeStockDetailNotifier('2330');
-          n.initialState = _stockState;
+        stockDetailProvider.overrideWith2((symbol) {
+          final n = FakeStockDetailNotifier(symbol);
+          n.initialState = stock;
           return n;
         }),
         settingsProvider.overrideWith(() {
           final n = FakeSettingsNotifier();
-          n.initialState = _settingsState;
+          n.initialState = settings;
           return n;
         }),
       ],

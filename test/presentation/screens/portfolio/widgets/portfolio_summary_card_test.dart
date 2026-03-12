@@ -85,7 +85,9 @@ void main() {
     testWidgets('renders with zero PnL', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
-        buildTestApp(PortfolioSummaryCard(summary: PortfolioSummary.empty)),
+        buildTestApp(
+          const PortfolioSummaryCard(summary: PortfolioSummary.empty),
+        ),
       );
 
       expect(find.byType(PortfolioSummaryCard), findsOneWidget);

@@ -51,7 +51,7 @@ void main() {
   group('loadMarginFromApi', () {
     test('returns data from API on success', () async {
       final marginData = [
-        FinMindMarginData(
+        const FinMindMarginData(
           stockId: '2330',
           date: '2026-02-14',
           marginBuy: 100,
@@ -173,7 +173,7 @@ void main() {
   group('fetchInstitutionalFromApi', () {
     test('returns data with hasError=false on success', () async {
       final apiData = [
-        FinMindInstitutional(
+        const FinMindInstitutional(
           stockId: '2330',
           date: '2026-02-14',
           foreignBuy: 5000,

@@ -112,11 +112,6 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late TodayState _todayState;
-  late WatchlistState _watchlistState;
-  late MarketOverviewState _marketState;
-  late SettingsState _settingsState;
-
   Widget buildTestWidget({
     TodayState? todayState,
     WatchlistState? watchlistState,
@@ -124,31 +119,31 @@ void main() {
     SettingsState? settingsState,
     Brightness brightness = Brightness.light,
   }) {
-    _todayState = todayState ?? const TodayState();
-    _watchlistState = watchlistState ?? WatchlistState();
-    _marketState = marketState ?? const MarketOverviewState();
-    _settingsState = settingsState ?? const SettingsState();
+    final today = todayState ?? const TodayState();
+    final watchlist = watchlistState ?? WatchlistState();
+    final market = marketState ?? const MarketOverviewState();
+    final settings = settingsState ?? const SettingsState();
     return buildProviderTestApp(
       const TodayScreen(),
       overrides: [
         todayProvider.overrideWith(() {
           final n = FakeTodayNotifier();
-          n.initialState = _todayState;
+          n.initialState = today;
           return n;
         }),
         watchlistProvider.overrideWith(() {
           final n = FakeWatchlistNotifier();
-          n.initialState = _watchlistState;
+          n.initialState = watchlist;
           return n;
         }),
         marketOverviewProvider.overrideWith(() {
           final n = FakeMarketOverviewNotifier();
-          n.initialState = _marketState;
+          n.initialState = market;
           return n;
         }),
         settingsProvider.overrideWith(() {
           final n = FakeSettingsNotifier();
-          n.initialState = _settingsState;
+          n.initialState = settings;
           return n;
         }),
       ],

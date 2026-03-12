@@ -237,8 +237,8 @@ class BacktestService {
       }
 
       // 扣除台股交易成本：買進手續費 + 賣出手續費 + 證交稅
-      final fee = AnalysisParams.brokerageFeeRate;
-      final tax = AnalysisParams.transactionTaxRate;
+      const fee = AnalysisParams.brokerageFeeRate;
+      const tax = AnalysisParams.transactionTaxRate;
       final netEntry = entryPrice * (1 + fee); // 買入含手續費
       final netExit = exitPrice * (1 - fee - tax); // 賣出扣手續費+稅
       final returnPercent = (netExit - netEntry) / netEntry * 100;

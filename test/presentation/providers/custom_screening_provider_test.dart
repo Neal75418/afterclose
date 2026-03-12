@@ -113,7 +113,7 @@ void main() {
     });
 
     test('copyWith preserves unset values', () {
-      final state = CustomScreeningState(
+      const state = CustomScreeningState(
         conditions: [_testCondition],
         isExecuting: true,
         hasMore: true,
@@ -335,7 +335,7 @@ void main() {
     });
 
     test('loadStrategy sets conditions from strategy', () {
-      final strategy = ScreeningStrategy(
+      const strategy = ScreeningStrategy(
         id: 1,
         name: '測試策略',
         conditions: [_testCondition, _testCondition2],

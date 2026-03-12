@@ -67,19 +67,19 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late StockDetailState _testState;
+  late StockDetailState testState;
 
   Widget buildTestWidget(
     StockDetailState state, {
     Brightness brightness = Brightness.light,
   }) {
-    _testState = state;
+    testState = state;
     return buildProviderTestApp(
       const InsiderTab(symbol: '2330'),
       overrides: [
-        stockDetailProvider.overrideWith(() {
-          final n = FakeStockDetailNotifier('2330');
-          n.initialState = _testState;
+        stockDetailProvider.overrideWith2((symbol) {
+          final n = FakeStockDetailNotifier(symbol);
+          n.initialState = testState;
           return n;
         }),
       ],

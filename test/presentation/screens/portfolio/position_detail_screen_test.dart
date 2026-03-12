@@ -96,27 +96,24 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late PortfolioState _portfolioState;
-  late List<PortfolioTransactionEntry> _txList;
-
   Widget buildTestWidget({
     PortfolioState? portfolioState,
     List<PortfolioTransactionEntry>? txList,
     Brightness brightness = Brightness.light,
     String symbol = '2330',
   }) {
-    _portfolioState = portfolioState ?? const PortfolioState();
-    _txList = txList ?? [];
+    final state = portfolioState ?? const PortfolioState();
+    final transactions = txList ?? [];
     return buildProviderTestApp(
       PositionDetailScreen(symbol: symbol),
       overrides: [
         portfolioProvider.overrideWith(() {
           final n = FakePortfolioNotifier();
-          n.initialState = _portfolioState;
+          n.initialState = state;
           return n;
         }),
         positionTransactionsProvider.overrideWith(
-          (ref, symbol) async => _txList,
+          (ref, symbol) async => transactions,
         ),
       ],
       brightness: brightness,

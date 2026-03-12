@@ -97,19 +97,17 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late PortfolioState _portfolioState;
-
   Widget buildTestWidget({
     PortfolioState? portfolioState,
     Brightness brightness = Brightness.light,
   }) {
-    _portfolioState = portfolioState ?? const PortfolioState();
+    final state = portfolioState ?? const PortfolioState();
     return buildProviderTestApp(
       const PortfolioTab(),
       overrides: [
         portfolioProvider.overrideWith(() {
           final n = FakePortfolioNotifier();
-          n.initialState = _portfolioState;
+          n.initialState = state;
           return n;
         }),
       ],
@@ -213,13 +211,13 @@ void main() {
     testWidgets('shows performance and industry allocation', (tester) async {
       widenViewport(tester);
       final positions = [createPosition()];
-      final performance = PortfolioPerformance(
+      const performance = PortfolioPerformance(
         totalReturn: 15.5,
         totalMarketValue: 600000,
         totalCostBasis: 500000,
         totalDividends: 13500,
         totalRealizedPnl: 0,
-        periodReturns: const PeriodReturns(
+        periodReturns: PeriodReturns(
           daily: 0.5,
           weekly: 1.2,
           monthly: 3.0,
@@ -227,7 +225,7 @@ void main() {
         ),
         maxDrawdown: -5.2,
         industryAllocation: {
-          '半導體業': const IndustryAllocation(
+          '半導體業': IndustryAllocation(
             industry: '半導體業',
             value: 600000,
             percentage: 100.0,

@@ -144,7 +144,7 @@ void main() {
         ),
       ).thenAnswer((_) async => <StockValuationEntry>[]);
 
-      final apiPer = FinMindPER(
+      const apiPer = FinMindPER(
         stockId: '2330',
         date: '2026-02-14',
         per: 20.0,

@@ -42,19 +42,17 @@ void main() {
     addTearDown(() => tester.view.resetPhysicalSize());
   }
 
-  late ComparisonState _comparisonState;
-
   Widget buildTestWidget({
     ComparisonState? comparisonState,
     Brightness brightness = Brightness.light,
   }) {
-    _comparisonState = comparisonState ?? const ComparisonState();
+    final state = comparisonState ?? const ComparisonState();
     return buildProviderTestApp(
       const ComparisonScreen(),
       overrides: [
         comparisonProvider.overrideWith(() {
           final n = FakeComparisonNotifier();
-          n.initialState = _comparisonState;
+          n.initialState = state;
           return n;
         }),
       ],
