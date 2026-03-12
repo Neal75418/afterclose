@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -88,7 +89,10 @@ class StockPreviewSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = context.isDark;
-    final priceColor = AppTheme.getPriceColor(data.priceChange);
+    final priceColor = AppTheme.getPriceColor(
+      data.priceChange,
+      theme.brightness,
+    );
     final isPositive = (data.priceChange ?? 0) >= 0;
 
     return Semantics(
@@ -100,9 +104,9 @@ class StockPreviewSheet extends StatelessWidget {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+              color: Colors.black.withValues(alpha: DesignTokens.opacity20),
+              blurRadius: DesignTokens.shadowBlurLg,
+              offset: DesignTokens.shadowOffsetUp,
             ),
           ],
         ),
@@ -154,8 +158,8 @@ class StockPreviewSheet extends StatelessWidget {
                         ),
                       ).animate().scale(
                         begin: const Offset(0.8, 0.8),
-                        duration: 300.ms,
-                        curve: Curves.easeOutBack,
+                        duration: AnimDurations.normal,
+                        curve: AnimCurves.bounce,
                       ),
                       const SizedBox(width: 16),
 
@@ -300,8 +304,11 @@ class StockPreviewSheet extends StatelessWidget {
                         ],
                       )
                       .animate()
-                      .fadeIn(delay: 200.ms, duration: 300.ms)
-                      .slideY(begin: 0.2, duration: 300.ms),
+                      .fadeIn(
+                        delay: AnimDurations.standard,
+                        duration: AnimDurations.normal,
+                      )
+                      .slideY(begin: 0.2, duration: AnimDurations.normal),
 
                   // 底部安全區域
                   SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
@@ -325,9 +332,9 @@ class StockPreviewSheet extends StatelessWidget {
           size: ScoreRingSize.extraLarge,
         ).animate().scale(
           begin: const Offset(0.5, 0.5),
-          delay: 100.ms,
-          duration: 400.ms,
-          curve: Curves.easeOutBack,
+          delay: AnimDurations.press,
+          duration: AnimDurations.moderate,
+          curve: AnimCurves.bounce,
         ),
         const SizedBox(width: 16),
         Column(
@@ -367,8 +374,8 @@ class StockPreviewSheet extends StatelessWidget {
           ],
         )
         .animate()
-        .fadeIn(delay: 100.ms, duration: 300.ms)
-        .slideY(begin: 0.1, duration: 300.ms);
+        .fadeIn(delay: AnimDurations.press, duration: AnimDurations.normal)
+        .slideY(begin: 0.1, duration: AnimDurations.normal);
   }
 
   String _getScoreLevel(double score) => S.getScoreLevel(score);

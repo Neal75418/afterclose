@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
+
 /// AfterClose 應用程式主題系統
 ///
 /// 設計理念：
@@ -26,8 +28,11 @@ class AppTheme {
   /// 上漲 - 紅色
   static const upColor = Color(0xFFFF4757);
 
-  /// 下跌 - 綠色
+  /// 下跌 - 鮮綠色（深色主題用）
   static const downColor = Color(0xFF2ED573);
+
+  /// 下跌 - 深綠色（淺色主題用，提高白色背景上的對比度）
+  static const _downColorLight = Color(0xFF1B9E50);
 
   /// 平盤 - 灰色
   static const neutralColor = Color(0xFF747D8C);
@@ -74,6 +79,7 @@ class AppTheme {
   static const _surfaceLight = Color(0xFFF8F9FA);
   static const _backgroundLight = Color(0xFFFFFFFF);
   static const _cardLight = Color(0xFFFFFFFF);
+  static const _inputFillLight = Color(0xFFEFF1F5); // 輸入框底色，與白色背景區隔
 
   // ==================================================
   // 深色主題
@@ -295,7 +301,7 @@ class AppTheme {
       // 輸入框
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: _surfaceLight,
+        fillColor: _inputFillLight,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFE0E0E8)),
@@ -362,10 +368,15 @@ class AppTheme {
   // ==================================================
 
   /// 根據漲跌幅取得對應顏色
-  static Color getPriceColor(double? change) {
+  ///
+  /// [brightness] 必須傳入，淺色模式使用更深的綠色以提高對比度。
+  /// 若有 BuildContext 可用，建議直接使用 `context.priceColor(change)` 擴充方法。
+  static Color getPriceColor(double? change, Brightness brightness) {
     if (change == null) return neutralColor;
     if (change > 0) return upColor;
-    if (change < 0) return downColor;
+    if (change < 0) {
+      return brightness == Brightness.light ? _downColorLight : downColor;
+    }
     return neutralColor;
   }
 
@@ -418,14 +429,14 @@ class AppTheme {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: DesignTokens.opacity20),
+            blurRadius: DesignTokens.shadowBlurMd,
+            offset: DesignTokens.shadowOffsetMd,
           ),
           BoxShadow(
             color: primaryColor.withValues(alpha: 0.05),
-            blurRadius: 16,
-            spreadRadius: -4,
+            blurRadius: DesignTokens.shadowBlurGlow,
+            spreadRadius: DesignTokens.shadowSpreadGlow,
           ),
         ],
       );
@@ -444,8 +455,9 @@ class AppTheme {
 
 /// 便捷存取主題顏色的擴充方法
 extension ThemeExtension on BuildContext {
-  /// 根據漲跌幅取得價格顏色
-  Color priceColor(double? change) => AppTheme.getPriceColor(change);
+  /// 根據漲跌幅取得價格顏色（自動適配深淺色主題）
+  Color priceColor(double? change) =>
+      AppTheme.getPriceColor(change, Theme.of(this).brightness);
 
   /// 取得評分徽章顏色
   Color scoreColor(double score) => AppTheme.getScoreColor(score);

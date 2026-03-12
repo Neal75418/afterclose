@@ -7,6 +7,7 @@ import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -55,8 +56,8 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
               // 內容（可收合）
               AnimatedSize(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
+                duration: AnimDurations.normal,
+                curve: AnimCurves.breathe,
                 child: _isExpanded
                     ? _buildContent(summary, theme)
                     : const SizedBox.shrink(),

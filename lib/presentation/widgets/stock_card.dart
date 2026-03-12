@@ -112,7 +112,10 @@ class _StockCardState extends State<StockCard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final priceColor = AppTheme.getPriceColor(widget.priceChange);
+    final priceColor = AppTheme.getPriceColor(
+      widget.priceChange,
+      theme.brightness,
+    );
 
     return Semantics(
       label: _cachedSemanticLabel ??= _buildSemanticLabel(),
@@ -364,7 +367,10 @@ class _StockCardState extends State<StockCard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             decoration: BoxDecoration(
-              color: AppTheme.getPriceColor(widget.priceChange),
+              color: AppTheme.getPriceColor(
+                widget.priceChange,
+                Theme.of(context).brightness,
+              ),
               borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
             ),
             child: Text(

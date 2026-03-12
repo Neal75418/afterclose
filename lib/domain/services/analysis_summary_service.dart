@@ -737,6 +737,10 @@ class AnalysisSummaryService {
       'summary.revenueMomGrowth',
       {'months': _numStr(e['consecutiveMonths'], fractionDigits: 0)},
     ),
+    SignalName.revenueNewHigh: (e) => LocalizableString(
+      'summary.revenueNewHigh',
+      {'surpassPct': _numStr(e['surpassPct'])},
+    ),
     SignalName.highDividendYield: (e) => LocalizableString(
       'summary.highDividendYield',
       {'yield': _numStr(e['dividendYield'])},

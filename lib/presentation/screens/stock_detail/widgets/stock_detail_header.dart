@@ -27,7 +27,7 @@ class StockDetailHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final priceChange = state.priceChange;
     final isPositive = (priceChange ?? 0) >= 0;
-    final priceColor = AppTheme.getPriceColor(priceChange);
+    final priceColor = AppTheme.getPriceColor(priceChange, theme.brightness);
 
     return Semantics(
       label: _buildSemanticLabel(),

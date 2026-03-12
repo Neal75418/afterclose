@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -142,7 +143,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
             ),
           ).animate().fadeIn(
             delay: Duration(milliseconds: 50 * index),
-            duration: 300.ms,
+            duration: AnimDurations.normal,
           );
         },
       ),

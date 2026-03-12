@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/app/router.dart' show completeOnboarding;
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -91,7 +92,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: List.generate(
                   _totalPages,
                   (i) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: AnimDurations.standard,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     width: i == _currentPage ? 24 : 8,
                     height: 8,
@@ -122,8 +123,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     : FilledButton.tonal(
                         onPressed: () {
                           _controller.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
+                            duration: AnimDurations.normal,
+                            curve: AnimCurves.breathe,
                           );
                         },
                         child: Text('onboarding.next'.tr()),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -43,10 +44,12 @@ class UpdateProgressBanner extends StatelessWidget {
             boxShadow: [
               BoxShadow(
                 color: AppTheme.primaryColor.withValues(
-                  alpha: isDark ? 0.15 : 0.1,
+                  alpha: isDark
+                      ? DesignTokens.opacity15
+                      : DesignTokens.opacity10,
                 ),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                blurRadius: DesignTokens.shadowBlurMd,
+                offset: DesignTokens.shadowOffsetMd,
               ),
             ],
           ),
@@ -63,7 +66,7 @@ class UpdateProgressBanner extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: gradientColors),
+                        gradient: const LinearGradient(colors: gradientColors),
                         borderRadius: BorderRadius.circular(
                           DesignTokens.radiusMd,
                         ),
@@ -125,8 +128,8 @@ class UpdateProgressBanner extends StatelessWidget {
                 // 動畫漸層進度條
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: progress.progress),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
+                  duration: AnimDurations.normal,
+                  curve: AnimCurves.decelerate,
                   builder: (context, value, child) {
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(
@@ -146,7 +149,7 @@ class UpdateProgressBanner extends StatelessWidget {
                             child: Container(
                               height: 8,
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
+                                gradient: const LinearGradient(
                                   colors: gradientColors,
                                 ),
                                 borderRadius: BorderRadius.circular(
@@ -157,8 +160,8 @@ class UpdateProgressBanner extends StatelessWidget {
                                     color: gradientColors[0].withValues(
                                       alpha: 0.5,
                                     ),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 1),
+                                    blurRadius: DesignTokens.shadowBlurSm,
+                                    offset: DesignTokens.shadowOffsetSm,
                                   ),
                                 ],
                               ),
@@ -196,8 +199,8 @@ class UpdateProgressBanner extends StatelessWidget {
                 // 百分比文字
                 TweenAnimationBuilder<double>(
                   tween: Tween(begin: 0, end: progress.progress * 100),
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
+                  duration: AnimDurations.normal,
+                  curve: AnimCurves.decelerate,
                   builder: (context, value, child) {
                     return Text(
                       '${value.toInt()}%',
@@ -213,8 +216,12 @@ class UpdateProgressBanner extends StatelessWidget {
           ),
         )
         .animate()
-        .fadeIn(duration: 300.ms)
-        .slideY(begin: -0.2, duration: 300.ms, curve: Curves.easeOut);
+        .fadeIn(duration: AnimDurations.normal)
+        .slideY(
+          begin: -0.2,
+          duration: AnimDurations.normal,
+          curve: AnimCurves.enter,
+        );
   }
 }
 

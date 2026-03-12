@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/services/share_service.dart';
@@ -452,7 +453,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
+      duration: AnimDurations.normal,
       child: KeyedSubtree(key: ValueKey(state.group), child: list),
     );
   }

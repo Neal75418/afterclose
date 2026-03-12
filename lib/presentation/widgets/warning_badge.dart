@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -115,9 +116,11 @@ class _WarningBadgeState extends State<WarningBadge> {
         boxShadow: widget.type == WarningBadgeType.disposal
             ? [
                 BoxShadow(
-                  color: widget.type.color.withValues(alpha: 0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
+                  color: widget.type.color.withValues(
+                    alpha: DesignTokens.opacity20,
+                  ),
+                  blurRadius: DesignTokens.shadowBlurSm,
+                  offset: DesignTokens.shadowOffsetSm,
                 ),
               ]
             : null,
@@ -153,12 +156,12 @@ class _WarningBadgeState extends State<WarningBadge> {
     if (shouldAnimate) {
       badge = badge
           .animate()
-          .fadeIn(duration: 200.ms, curve: Curves.easeOut)
+          .fadeIn(duration: AnimDurations.standard, curve: AnimCurves.enter)
           .scale(
             begin: const Offset(0.8, 0.8),
             end: const Offset(1.0, 1.0),
-            duration: 200.ms,
-            curve: Curves.easeOut,
+            duration: AnimDurations.standard,
+            curve: AnimCurves.enter,
           );
     }
 

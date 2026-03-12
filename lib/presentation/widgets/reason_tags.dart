@@ -139,6 +139,7 @@ class ReasonTags extends StatelessWidget {
       'REVENUE_YOY_DECLINE' ||
       'revenueYoyDecline' => 'reasons.revenueYoyDecline',
       'REVENUE_MOM_GROWTH' || 'revenueMomGrowth' => 'reasons.revenueMomGrowth',
+      'REVENUE_NEW_HIGH' || 'revenueNewHigh' => 'reasons.revenueNewHigh',
       'HIGH_DIVIDEND_YIELD' ||
       'highDividendYield' => 'reasons.highDividendYield',
       'PE_UNDERVALUED' || 'peUndervalued' => 'reasons.peUndervalued',
@@ -225,6 +226,7 @@ class ReasonTags extends StatelessWidget {
       'revenueYoyDecline' => 'reasonTip.revenueYoyDecline',
       'REVENUE_MOM_GROWTH' ||
       'revenueMomGrowth' => 'reasonTip.revenueMomGrowth',
+      'REVENUE_NEW_HIGH' || 'revenueNewHigh' => 'reasonTip.revenueNewHigh',
       'HIGH_DIVIDEND_YIELD' ||
       'highDividendYield' => 'reasonTip.highDividendYield',
       'PE_UNDERVALUED' || 'peUndervalued' => 'reasonTip.peUndervalued',

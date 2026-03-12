@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
@@ -91,7 +92,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           ),
         ),
       ),
-    ).animate().fadeIn(duration: 200.ms);
+    ).animate().fadeIn(duration: AnimDurations.standard);
   }
 
   /// 建構標題列

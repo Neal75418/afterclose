@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/filter_metadata.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
@@ -589,7 +590,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             .scale(
               begin: const Offset(0.95, 0.95),
               duration: UiConstants.gridAnimationDurationMs.ms,
-              curve: Curves.easeOutQuart,
+              curve: AnimCurves.smooth,
             );
       }
     } else {
@@ -605,7 +606,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             .slideX(
               begin: 0.05,
               duration: UiConstants.listAnimationDurationMs.ms,
-              curve: Curves.easeOutQuart,
+              curve: AnimCurves.smooth,
             );
       }
     }

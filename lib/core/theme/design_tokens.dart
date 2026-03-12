@@ -169,6 +169,34 @@ abstract final class DesignTokens {
   static const int maxAnimatedItems = 10;
 
   // ============================================================
+  // 陰影系統
+  // ============================================================
+
+  /// 小陰影模糊半徑 - 警示標記、進度條光暈
+  static const double shadowBlurSm = 4.0;
+
+  /// 中陰影模糊半徑 - 卡片、浮動元件
+  static const double shadowBlurMd = 12.0;
+
+  /// 大陰影模糊半徑 - 覆蓋層、底部彈出面板
+  static const double shadowBlurLg = 20.0;
+
+  /// 光暈模糊半徑 - Premium 卡片的品牌光暈
+  static const double shadowBlurGlow = 16.0;
+
+  /// 小陰影偏移 - 輕微浮起感
+  static const Offset shadowOffsetSm = Offset(0, 1);
+
+  /// 中陰影偏移 - 標準浮起感
+  static const Offset shadowOffsetMd = Offset(0, 4);
+
+  /// 上方陰影偏移 - 底部彈出面板
+  static const Offset shadowOffsetUp = Offset(0, -5);
+
+  /// 光暈擴散半徑 - 內縮光暈效果
+  static const double shadowSpreadGlow = -4.0;
+
+  // ============================================================
   // 圖表色盤
   // ============================================================
 

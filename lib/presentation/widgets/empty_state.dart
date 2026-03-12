@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:easy_localization/easy_localization.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -73,8 +74,8 @@ class EmptyState extends StatelessWidget {
                   .scale(
                     begin: const Offset(1, 1),
                     end: const Offset(1.05, 1.05),
-                    duration: 2.seconds,
-                    curve: Curves.easeInOut,
+                    duration: AnimDurations.breathe,
+                    curve: AnimCurves.breathe,
                   ),
               const SizedBox(height: 24),
               // 標題
@@ -87,8 +88,11 @@ class EmptyState extends StatelessWidget {
                     textAlign: TextAlign.center,
                   )
                   .animate()
-                  .fadeIn(delay: 200.ms, duration: 400.ms)
-                  .slideY(begin: 0.2, duration: 400.ms),
+                  .fadeIn(
+                    delay: AnimDurations.standard,
+                    duration: AnimDurations.moderate,
+                  )
+                  .slideY(begin: 0.2, duration: AnimDurations.moderate),
               if (subtitle != null) ...[
                 const SizedBox(height: 8),
                 Text(
@@ -99,8 +103,11 @@ class EmptyState extends StatelessWidget {
                       textAlign: TextAlign.center,
                     )
                     .animate()
-                    .fadeIn(delay: 300.ms, duration: 400.ms)
-                    .slideY(begin: 0.2, duration: 400.ms),
+                    .fadeIn(
+                      delay: AnimDurations.normal,
+                      duration: AnimDurations.moderate,
+                    )
+                    .slideY(begin: 0.2, duration: AnimDurations.moderate),
               ],
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: 24),
@@ -109,8 +116,11 @@ class EmptyState extends StatelessWidget {
                       child: Text(actionLabel!),
                     )
                     .animate()
-                    .fadeIn(delay: 400.ms, duration: 400.ms)
-                    .slideY(begin: 0.2, duration: 400.ms),
+                    .fadeIn(
+                      delay: AnimDurations.moderate,
+                      duration: AnimDurations.moderate,
+                    )
+                    .slideY(begin: 0.2, duration: AnimDurations.moderate),
               ],
             ],
           ),
@@ -301,8 +311,8 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                 .scale(
                   begin: const Offset(1, 1),
                   end: const Offset(1.03, 1.03),
-                  duration: 2.seconds,
-                  curve: Curves.easeInOut,
+                  duration: AnimDurations.breathe,
+                  curve: AnimCurves.breathe,
                 ),
 
             const SizedBox(height: 20),
@@ -317,7 +327,10 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                 color: theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
+            ).animate().fadeIn(
+              delay: AnimDurations.press,
+              duration: AnimDurations.normal,
+            ),
 
             const SizedBox(height: 16),
 
@@ -391,8 +404,11 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                   ),
                 )
                 .animate()
-                .fadeIn(delay: 200.ms, duration: 300.ms)
-                .slideY(begin: 0.1, duration: 300.ms),
+                .fadeIn(
+                  delay: AnimDurations.standard,
+                  duration: AnimDurations.normal,
+                )
+                .slideY(begin: 0.1, duration: AnimDurations.normal),
 
             // 更多詳情展開按鈕
             if (hasDetails) ...[
@@ -401,7 +417,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                 onPressed: () => setState(() => _isExpanded = !_isExpanded),
                 icon: AnimatedRotation(
                   turns: _isExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
+                  duration: AnimDurations.standard,
                   child: const Icon(Icons.expand_more, size: 20),
                 ),
                 label: Text(
@@ -418,7 +434,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
               crossFadeState: _isExpanded
                   ? CrossFadeState.showSecond
                   : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 300),
+              duration: AnimDurations.normal,
             ),
 
             const SizedBox(height: 8),
@@ -430,7 +446,10 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
-            ).animate().fadeIn(delay: 300.ms, duration: 300.ms),
+            ).animate().fadeIn(
+              delay: AnimDurations.normal,
+              duration: AnimDurations.normal,
+            ),
 
             // 清除篩選按鈕
             if (widget.onClearFilter != null) ...[
@@ -440,8 +459,11 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                     child: Text('filterMeta.labelClear'.tr()),
                   )
                   .animate()
-                  .fadeIn(delay: 400.ms, duration: 300.ms)
-                  .slideY(begin: 0.1, duration: 300.ms),
+                  .fadeIn(
+                    delay: AnimDurations.moderate,
+                    duration: AnimDurations.normal,
+                  )
+                  .slideY(begin: 0.1, duration: AnimDurations.normal),
             ],
           ],
         ),

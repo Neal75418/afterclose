@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 
 /// 帶有漸層裝飾線的區塊標題
@@ -94,8 +95,12 @@ class SectionHeader extends StatelessWidget {
     if (animate) {
       content = content
           .animate()
-          .fadeIn(duration: 300.ms)
-          .slideX(begin: -0.05, duration: 300.ms, curve: Curves.easeOut);
+          .fadeIn(duration: AnimDurations.normal)
+          .slideX(
+            begin: -0.05,
+            duration: AnimDurations.normal,
+            curve: AnimCurves.enter,
+          );
     }
 
     return content;

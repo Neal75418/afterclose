@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
+import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
@@ -95,9 +96,13 @@ class WatchlistStockItem extends StatelessWidget {
           .animate()
           .fadeIn(
             delay: Duration(milliseconds: 50 * index),
-            duration: 400.ms,
+            duration: AnimDurations.moderate,
           )
-          .slideX(begin: 0.05, duration: 400.ms, curve: Curves.easeOutQuart);
+          .slideX(
+            begin: 0.05,
+            duration: AnimDurations.moderate,
+            curve: AnimCurves.smooth,
+          );
     }
     return card;
   }
@@ -178,12 +183,12 @@ class WatchlistStockGridItem extends StatelessWidget {
           .animate()
           .fadeIn(
             delay: Duration(milliseconds: 30 * index),
-            duration: 300.ms,
+            duration: AnimDurations.normal,
           )
           .scale(
             begin: const Offset(0.95, 0.95),
-            duration: 300.ms,
-            curve: Curves.easeOutQuart,
+            duration: AnimDurations.normal,
+            curve: AnimCurves.smooth,
           );
     }
     return card;
