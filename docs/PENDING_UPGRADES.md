@@ -9,7 +9,7 @@
 ## 🗺 升級路線圖
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     S1["第一階段\nRiverpod 3.x\n生態系統"]
     S2["第二階段\nUI 套件"]
@@ -19,7 +19,7 @@ flowchart LR
 
     style S1 fill:#10B981,stroke:#065F46,color:#fff
     style S2 fill:#F59E0B,stroke:#92400E,color:#fff
-    style S3 fill:#F3F4F6,stroke:#9CA3AF
+    style S3 fill:#4B5563,color:#fff,stroke:#374151
 ```
 
 ---
@@ -29,7 +29,7 @@ flowchart LR
 > 2026-02-13 完成，解鎖後續 UI 套件升級路徑
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '13px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     subgraph Upgraded["升級套件 (10)"]
         R["flutter_riverpod\n2.6.1 → 3.2.1"]
@@ -45,8 +45,8 @@ flowchart LR
         X3["custom_lint_core"]
     end
 
-    style Upgraded fill:#D1FAE5,stroke:#10B981
-    style Removed fill:#FEE2E2,stroke:#EF4444
+    style Upgraded fill:#059669,color:#fff,stroke:#047857
+    style Removed fill:#DC2626,color:#fff,stroke:#B91C1C
 ```
 
 | 項目    | 說明                                                  |
@@ -72,15 +72,15 @@ flowchart LR
 ## 🚧 第二階段：UI 套件升級（P1）
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     FL["fl_chart\n0.69.2 → 1.1.1"]
     GR["go_router\n15.1.3 → 17.1.0"]
     FS["flutter_slidable\n3.1.2 → 4.0.3"]
 
-    style FL fill:#DBEAFE,stroke:#3B82F6
-    style GR fill:#DBEAFE,stroke:#3B82F6
-    style FS fill:#DBEAFE,stroke:#3B82F6
+    style FL fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style GR fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style FS fill:#2563EB,color:#fff,stroke:#1D4ED8
 ```
 
 | 套件               | 目標版本   | 影響範圍                     | 工作量    |
@@ -110,7 +110,7 @@ flowchart LR
 
 ---
 
-← [Back to README](../README.md) | 📚 [All Documentation](../README.md#-文件)
+← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)
 
-**最後更新**: 2026-03-03
+**最後更新**: 2026-03-13
 **下次審查**: 第二階段 UI 套件升級時

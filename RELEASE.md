@@ -7,18 +7,18 @@ AfterClose 發布建置指南
 ## 🔄 建置流程
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     Clean["Clean"] --> CodeGen["Code Gen"]
     CodeGen --> Build["Build"]
     Build --> Sign["Sign"]
     Sign --> Dist["Distribute"]
 
-    style Clean fill:#F3F4F6,stroke:#9CA3AF
-    style CodeGen fill:#DBEAFE,stroke:#3B82F6
-    style Build fill:#D1FAE5,stroke:#10B981
-    style Sign fill:#EDE9FE,stroke:#8B5CF6
-    style Dist fill:#FEF3C7,stroke:#F59E0B
+    style Clean fill:#4B5563,color:#fff,stroke:#374151
+    style CodeGen fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style Build fill:#059669,color:#fff,stroke:#047857
+    style Sign fill:#7C3AED,color:#fff,stroke:#6D28D9
+    style Dist fill:#D97706,color:#fff,stroke:#B45309
 ```
 
 ---

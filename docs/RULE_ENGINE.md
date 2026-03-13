@@ -9,16 +9,16 @@ AfterClose 推薦規則引擎 — **60 條異常偵測規則**
 ## 🎯 定位
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     Data["市場資料"] --> Engine["Rule Engine\n60 Rules"]
     Engine --> Score["分數合成"]
     Score --> Top["Top 20"]
 
-    style Data fill:#DBEAFE,stroke:#3B82F6
+    style Data fill:#2563EB,color:#fff,stroke:#1D4ED8
     style Engine fill:#4F46E5,stroke:#3730A3,color:#fff
-    style Score fill:#D1FAE5,stroke:#10B981
-    style Top fill:#FEF3C7,stroke:#F59E0B
+    style Score fill:#059669,color:#fff,stroke:#047857
+    style Top fill:#D97706,color:#fff,stroke:#B45309
 ```
 
 | 項目 | 說明                    |
@@ -33,7 +33,7 @@ flowchart LR
 ## 📊 規則分佈
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 pie showData title 60 條規則分佈
     "技術型態 (19)" : 19
     "價量訊號 (12)" : 12
@@ -117,9 +117,9 @@ pie showData title 60 條規則分佈
 
 ---
 
-## 🏦 基本面 (14)
+## 🏦 基本面 (15)
 
-### 營收與估值 (7)
+### 營收與估值 (8)
 
 | 規則                  |  分數 | 條件                      |
 |:--------------------|----:|:------------------------|
@@ -180,16 +180,16 @@ pie showData title 60 條規則分佈
 ## 🧮 分數合成
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     Rules["Rule Scores"] --> Bonus["加成"]
     Bonus --> Cooldown["冷卻"]
     Cooldown --> Cap["0 ~ 100"]
 
-    style Rules fill:#DBEAFE,stroke:#3B82F6
-    style Bonus fill:#D1FAE5,stroke:#10B981
-    style Cooldown fill:#EDE9FE,stroke:#8B5CF6
-    style Cap fill:#FEF3C7,stroke:#F59E0B
+    style Rules fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style Bonus fill:#059669,color:#fff,stroke:#047857
+    style Cooldown fill:#7C3AED,color:#fff,stroke:#6D28D9
+    style Cap fill:#D97706,color:#fff,stroke:#B45309
 ```
 
 | 階段 | 邏輯                                                                                      |
@@ -236,4 +236,4 @@ flowchart LR
 
 ---
 
-← [Back to README](../README.md) | 📚 [All Documentation](../README.md#-文件)
+← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)

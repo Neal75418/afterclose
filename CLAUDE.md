@@ -40,7 +40,7 @@ flowchart LR
 ```bash
 flutter pub get                                                # 安裝依賴
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成 (Drift / Freezed / Riverpod)
-flutter test                                                   # 執行測試 (2506+ cases, ~30s)
+flutter test                                                   # 執行測試 (2526+ cases, ~30s)
 flutter test --coverage                                        # 含覆蓋率報告
 flutter analyze --no-fatal-infos                               # 靜態分析
 dart format .                                                  # 格式化 (pre-commit hook 自動執行)
@@ -101,18 +101,18 @@ flowchart LR
 
 ## 關鍵路徑
 
-| 路徑 | 說明 |
-|:-----|:-----|
-| `lib/core/constants/rule_params.dart` | 規則參數 barrel (exports 7 param classes, 150+ 閾值) |
-| `lib/core/constants/analysis_params.dart` | 分析摘要 + 交易成本參數 |
-| `lib/core/exceptions/app_exception.dart` | 例外階層 (sealed class) |
-| `lib/core/utils/request_deduplicator.dart` | Request Deduplication 機制 |
-| `lib/domain/services/rules/` | 60 條規則 (12 檔案) |
-| `lib/domain/services/scoring_isolate.dart` | Isolate 評分 (typed DTO 序列化) |
-| `lib/domain/services/update/` | 12 個更新元件 (8 syncers + 3 helpers + coordinator) |
-| `lib/data/database/tables/` | 33 張資料表 (10 檔案) |
-| `lib/data/database/dao/batch_query_mixin.dart` | 批次查詢共享工具 (groupBySymbol) |
-| `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證) |
+| 路徑                                               | 說明                                             |
+|:-------------------------------------------------|:-----------------------------------------------|
+| `lib/core/constants/rule_params.dart`            | 規則參數 barrel (exports 7 param classes, 150+ 閾值) |
+| `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                                  |
+| `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                            |
+| `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制                       |
+| `lib/domain/services/rules/`                     | 60 條規則 (12 檔案)                                 |
+| `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)                     |
+| `lib/domain/services/update/`                    | 12 個更新元件 (8 syncers + 3 helpers + coordinator) |
+| `lib/data/database/tables/`                      | 33 張資料表 (10 檔案)                                |
+| `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)                       |
+| `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                               |
 
 ---
 
@@ -171,10 +171,10 @@ flutter test
 
 ### 測試
 
-| Layer | 覆蓋率 |
-|:------|:------|
-| Domain | 85%+ |
-| Data | 85%+ |
+| Layer        | 覆蓋率  |
+|:-------------|:-----|
+| Domain       | 85%+ |
+| Data         | 85%+ |
 | Presentation | 70%+ |
 
 ```bash
@@ -216,26 +216,26 @@ void main() {
 
 ## 編碼標準
 
-| 原則 | 說明 |
-|:-----|:-----|
-| **Repository Pattern** | Domain 透過介面存取資料，Data 層提供實作 |
-| **錯誤處理** | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException` |
-| **Request Deduplication** | Repository 層使用 `RequestDeduplicator` 避免重複 API 呼叫 |
-| **狀態管理** | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider` |
-| **Rule Engine** | 純函數：輸入 `AnalysisContext` → 輸出 `TriggeredReason` |
-| **配置集中** | 所有閾值放 `lib/core/constants/`，禁止魔術數字 |
-| **路由** | 使用 `AppRoutes` 常數，禁止硬編碼路由字串 |
-| **Isolate 通訊** | 使用 typed DTO (`ShareholdingData`, `WarningDataContext`, `InsiderDataContext`)，避免 `Map<String, dynamic>` |
-| **OHLCV 提取** | 使用 `prices.extractOhlcv()` extension，避免重複迴圈 |
-| **Dart 3** | Records, Pattern Matching, Sealed Classes |
+| 原則                        | 說明                                                                                                      |
+|:--------------------------|:--------------------------------------------------------------------------------------------------------|
+| **Repository Pattern**    | Domain 透過介面存取資料，Data 層提供實作                                                                              |
+| **錯誤處理**                  | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException`                          |
+| **Request Deduplication** | Repository 層使用 `RequestDeduplicator` 避免重複 API 呼叫                                                        |
+| **狀態管理**                  | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider`                                                    |
+| **Rule Engine**           | 純函數：輸入 `AnalysisContext` → 輸出 `TriggeredReason`                                                         |
+| **配置集中**                  | 所有閾值放 `lib/core/constants/`，禁止魔術數字                                                                      |
+| **路由**                    | 使用 `AppRoutes` 常數，禁止硬編碼路由字串                                                                             |
+| **Isolate 通訊**            | 使用 typed DTO (`ShareholdingData`, `WarningDataContext`, `InsiderDataContext`)，避免 `Map<String, dynamic>` |
+| **OHLCV 提取**              | 使用 `prices.extractOhlcv()` extension，避免重複迴圈                                                             |
+| **Dart 3**                | Records, Pattern Matching, Sealed Classes                                                               |
 
 ---
 
 ## 關鍵文件
 
-| 文件 | 說明 |
-|:-----|:-----|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md) | 規則引擎詳解 (60 條規則) |
-| [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md) | 待完成的依賴升級任務 |
-| [RELEASE.md](RELEASE.md) | 發布建置指南 |
-| [CHANGELOG.md](CHANGELOG.md) | 版本變更紀錄 |
+| 文件                                                   | 說明              |
+|:-----------------------------------------------------|:----------------|
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)           | 規則引擎詳解 (60 條規則) |
+| [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md) | 待完成的依賴升級任務      |
+| [RELEASE.md](RELEASE.md)                             | 發布建置指南          |
+| [CHANGELOG.md](CHANGELOG.md)                         | 版本變更紀錄          |

@@ -7,8 +7,8 @@
 ## 📊 當前狀況
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'pieOuterStrokeWidth': '2px', 'fontSize': '14px'}}}%%
-pie showData title 測試進度（2496+ cases）
+%%{init: {'theme': 'neutral'}}%%
+pie showData title 測試進度（2526+ cases）
     "Domain 層" : 900
     "Data 層" : 636
     "Presentation 層" : 960
@@ -16,7 +16,7 @@ pie showData title 測試進度（2496+ cases）
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2496+ |
+| 測試總數             | 2526+ |
 | 執行時間             | ~33 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
@@ -27,7 +27,7 @@ pie showData title 測試進度（2496+ cases）
 ## ✅ 完成進度
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart LR
     P1["Phase 1\nProvider 測試"]
     P2["Phase 2\nWidget 測試"]
@@ -46,7 +46,7 @@ flowchart LR
 ## 🚧 待完成：Phase 3 — 大型服務測試
 
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1', 'fontSize': '14px'}}}%%
+%%{init: {'theme': 'neutral'}}%%
 flowchart TB
     US["UpdateService\n整合測試"]
     AS["AnalysisService\n子服務測試"]
@@ -58,14 +58,14 @@ flowchart TB
     AS --> IC["IndicatorCalculation"]
     AS --> CO["Coordinator"]
 
-    style US fill:#DBEAFE,stroke:#3B82F6
-    style AS fill:#DBEAFE,stroke:#3B82F6
-    style Edge fill:#DBEAFE,stroke:#3B82F6
-    style TD fill:#F3F4F6,stroke:#9CA3AF
-    style RD fill:#F3F4F6,stroke:#9CA3AF
-    style CA fill:#F3F4F6,stroke:#9CA3AF
-    style IC fill:#F3F4F6,stroke:#9CA3AF
-    style CO fill:#F3F4F6,stroke:#9CA3AF
+    style US fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style AS fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style Edge fill:#2563EB,color:#fff,stroke:#1D4ED8
+    style TD fill:#4B5563,color:#fff,stroke:#374151
+    style RD fill:#4B5563,color:#fff,stroke:#374151
+    style CA fill:#4B5563,color:#fff,stroke:#374151
+    style IC fill:#4B5563,color:#fff,stroke:#374151
+    style CO fill:#4B5563,color:#fff,stroke:#374151
 ```
 
 ### UpdateService 整合測試
@@ -101,6 +101,6 @@ flowchart TB
 
 ---
 
-← [Back to README](../README.md) | 📚 [All Documentation](../README.md#-文件)
+← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)
 
-*最後更新: 2026-03-03*
+*最後更新: 2026-03-13*
