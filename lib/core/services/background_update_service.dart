@@ -26,6 +26,7 @@ import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/data/repositories/trading_repository.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
+import 'package:afterclose/domain/services/update_service_deps.dart';
 
 /// 背景更新任務名稱
 const kBackgroundUpdateTask = 'afterclose_daily_update';
@@ -251,19 +252,24 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
     final ruleAccuracyService = RuleAccuracyService(database: database);
     final updateService = UpdateService(
       database: database,
-      stockRepository: stockRepo,
-      priceRepository: priceRepo,
-      newsRepository: newsRepo,
-      analysisRepository: analysisRepo,
-      institutionalRepository: institutionalRepo,
-      marketDataRepository: marketDataRepo,
-      tradingRepository: tradingRepo,
-      shareholdingRepository: shareholdingRepo,
-      fundamentalRepository: fundamentalRepo,
-      insiderRepository: insiderRepo,
-      twseClient: twseClient,
-      tdccClient: TdccClient(),
-      ruleAccuracyService: ruleAccuracyService,
+      repositories: UpdateRepositories(
+        stock: stockRepo,
+        price: priceRepo,
+        news: newsRepo,
+        analysis: analysisRepo,
+        institutional: institutionalRepo,
+        marketData: marketDataRepo,
+        trading: tradingRepo,
+        shareholding: shareholdingRepo,
+        fundamental: fundamentalRepo,
+        insider: insiderRepo,
+      ),
+      clients: UpdateClients(
+        twse: twseClient,
+        tpex: tpexClient,
+        tdcc: TdccClient(),
+      ),
+      services: UpdateServices(ruleAccuracy: ruleAccuracyService),
     );
 
     // 執行更新

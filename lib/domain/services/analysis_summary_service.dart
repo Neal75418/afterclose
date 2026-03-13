@@ -606,190 +606,247 @@ class AnalysisSummaryService {
   // 映射表：ReasonType 代碼 → LocalizableString 建構
   // ==================================================
 
+  // ── 核心訊號 ──
+  static final _coreSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.reversalW2S: (_) =>
+            const LocalizableString('summary.reversalW2S'),
+        SignalName.reversalS2W: (_) =>
+            const LocalizableString('summary.reversalS2W'),
+        SignalName.techBreakout: (_) =>
+            const LocalizableString('summary.breakout'),
+        SignalName.techBreakdown: (_) =>
+            const LocalizableString('summary.breakdown'),
+        SignalName.volumeSpike: (e) =>
+            LocalizableString('summary.volumeSpike', {
+              'multiple': _numStr(
+                e['multiple'] ?? e['volumeMultiple'],
+                fractionDigits: 1,
+              ),
+            }),
+        SignalName.priceSpike: (e) => LocalizableString('summary.priceSpike', {
+          'pctChange': _numStr(e['pctChange'] ?? e['changePct']),
+        }),
+        SignalName.institutionalBuy: (_) =>
+            const LocalizableString('summary.institutionalBuy'),
+        SignalName.institutionalSell: (_) =>
+            const LocalizableString('summary.institutionalSell'),
+        SignalName.newsRelated: (_) =>
+            const LocalizableString('summary.newsRelated'),
+      };
+
+  // ── KD 訊號 ──
+  static final _kdSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.kdGoldenCross: (_) =>
+            const LocalizableString('summary.kdGoldenCross'),
+        SignalName.kdDeathCross: (_) =>
+            const LocalizableString('summary.kdDeathCross'),
+      };
+
+  // ── 法人連續買賣 ──
+  static final _institutionalStreakSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.institutionalBuyStreak: (e) {
+          final days = e['streakDays'];
+          if (days != null) {
+            return LocalizableString('summary.institutionalBuyStreakDays', {
+              'days': _numStr(days, fractionDigits: 0),
+            });
+          }
+          return const LocalizableString('summary.institutionalBuyStreak');
+        },
+        SignalName.institutionalSellStreak: (e) {
+          final days = e['streakDays'];
+          if (days != null) {
+            return LocalizableString('summary.institutionalSellStreakDays', {
+              'days': _numStr(days, fractionDigits: 0),
+            });
+          }
+          return const LocalizableString('summary.institutionalSellStreak');
+        },
+      };
+
+  // ── K 線型態 ──
+  static final _candlestickPatterns =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.patternDoji: (_) =>
+            const LocalizableString('summary.patternDoji'),
+        SignalName.patternBullishEngulfing: (_) =>
+            const LocalizableString('summary.patternBullishEngulfing'),
+        SignalName.patternBearishEngulfing: (_) =>
+            const LocalizableString('summary.patternBearishEngulfing'),
+        SignalName.patternHammer: (_) =>
+            const LocalizableString('summary.patternHammer'),
+        SignalName.patternHangingMan: (_) =>
+            const LocalizableString('summary.patternHangingMan'),
+        SignalName.patternGapUp: (_) =>
+            const LocalizableString('summary.patternGapUp'),
+        SignalName.patternGapDown: (_) =>
+            const LocalizableString('summary.patternGapDown'),
+        SignalName.patternMorningStar: (_) =>
+            const LocalizableString('summary.patternMorningStar'),
+        SignalName.patternEveningStar: (_) =>
+            const LocalizableString('summary.patternEveningStar'),
+        SignalName.patternThreeWhiteSoldiers: (_) =>
+            const LocalizableString('summary.patternThreeWhiteSoldiers'),
+        SignalName.patternThreeBlackCrows: (_) =>
+            const LocalizableString('summary.patternThreeBlackCrows'),
+      };
+
+  // ── 技術指標訊號 ──
+  static final _technicalIndicators =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.week52High: (_) =>
+            const LocalizableString('summary.week52High'),
+        SignalName.week52Low: (_) =>
+            const LocalizableString('summary.week52Low'),
+        SignalName.maAlignmentBullish: (_) =>
+            const LocalizableString('summary.maAlignmentBullish'),
+        SignalName.maAlignmentBearish: (_) =>
+            const LocalizableString('summary.maAlignmentBearish'),
+        SignalName.rsiExtremeOverbought: (e) => LocalizableString(
+          'summary.rsiOverbought',
+          {'rsi': _numStr(e['rsi'], fractionDigits: 0)},
+        ),
+        SignalName.rsiExtremeOversold: (e) => LocalizableString(
+          'summary.rsiOversold',
+          {'rsi': _numStr(e['rsi'], fractionDigits: 0)},
+        ),
+      };
+
+  // ── 延伸市場資料 ──
+  static final _extendedMarketData =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.foreignShareholdingIncreasing: (_) =>
+            const LocalizableString('summary.foreignIncreasing'),
+        SignalName.foreignShareholdingDecreasing: (_) =>
+            const LocalizableString('summary.foreignDecreasing'),
+        SignalName.dayTradingHigh: (e) => LocalizableString(
+          'summary.dayTradingHigh',
+          {'ratio': _numStr(e['dayTradingRatio'] ?? e['ratio'])},
+        ),
+        SignalName.dayTradingExtreme: (e) => LocalizableString(
+          'summary.dayTradingExtreme',
+          {'ratio': _numStr(e['dayTradingRatio'] ?? e['ratio'])},
+        ),
+        SignalName.concentrationHigh: (_) =>
+            const LocalizableString('summary.concentrationHigh'),
+      };
+
+  // ── 價量背離 ──
+  static final _priceVolumeDivergence =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.priceVolumeBullishDivergence: (_) =>
+            const LocalizableString('summary.bullishDivergence'),
+        SignalName.priceVolumeBearishDivergence: (_) =>
+            const LocalizableString('summary.bearishDivergence'),
+        SignalName.highVolumeBreakout: (_) =>
+            const LocalizableString('summary.highVolumeBreakout'),
+        SignalName.lowVolumeAccumulation: (_) =>
+            const LocalizableString('summary.lowVolumeAccumulation'),
+      };
+
+  // ── 基本面 ──
+  static final _fundamentalSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.revenueYoySurge: (e) => LocalizableString(
+          'summary.revenueYoySurge',
+          {'growth': _numStr(e['yoyGrowth'])},
+        ),
+        SignalName.revenueYoyDecline: (e) => LocalizableString(
+          'summary.revenueYoyDecline',
+          {'growth': _numStr(e['yoyGrowth'])},
+        ),
+        SignalName.revenueMomGrowth: (e) => LocalizableString(
+          'summary.revenueMomGrowth',
+          {'months': _numStr(e['consecutiveMonths'], fractionDigits: 0)},
+        ),
+        SignalName.revenueNewHigh: (e) => LocalizableString(
+          'summary.revenueNewHigh',
+          {'surpassPct': _numStr(e['surpassPct'])},
+        ),
+        SignalName.highDividendYield: (e) => LocalizableString(
+          'summary.highDividendYield',
+          {'yield': _numStr(e['dividendYield'])},
+        ),
+        SignalName.peUndervalued: (e) => LocalizableString(
+          'summary.peUndervalued',
+          {'pe': _numStr(e['pe'])},
+        ),
+        SignalName.peOvervalued: (e) =>
+            LocalizableString('summary.peOvervalued', {'pe': _numStr(e['pe'])}),
+        SignalName.pbrUndervalued: (e) => LocalizableString(
+          'summary.pbrUndervalued',
+          {'pbr': _numStr(e['pbr'])},
+        ),
+      };
+
+  // ── Killer Features ──
+  static final _killerFeatures =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.tradingWarningAttention: (_) =>
+            const LocalizableString('summary.warningAttention'),
+        SignalName.tradingWarningDisposal: (_) =>
+            const LocalizableString('summary.warningDisposal'),
+        SignalName.insiderSellingStreak: (e) => LocalizableString(
+          'summary.insiderSelling',
+          {'months': _numStr(e['sellingStreakMonths'], fractionDigits: 0)},
+        ),
+        SignalName.insiderSignificantBuying: (_) =>
+            const LocalizableString('summary.insiderBuying'),
+        SignalName.highPledgeRatio: (_) =>
+            const LocalizableString('summary.highPledge'),
+        SignalName.foreignConcentrationWarning: (_) =>
+            const LocalizableString('summary.foreignConcentration'),
+        SignalName.foreignExodus: (_) =>
+            const LocalizableString('summary.foreignExodus'),
+      };
+
+  // ── EPS 訊號 ──
+  static final _epsSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.epsYoySurge: (e) => LocalizableString(
+          'summary.epsYoYSurge',
+          {'growth': _numStr(e['yoyGrowth'])},
+        ),
+        SignalName.epsConsecutiveGrowth: (e) => LocalizableString(
+          'summary.epsConsecutiveGrowth',
+          {'quarters': _numStr(e['consecutiveQuarters'], fractionDigits: 0)},
+        ),
+        SignalName.epsTurnaround: (_) =>
+            const LocalizableString('summary.epsTurnaround'),
+        SignalName.epsDeclineWarning: (_) =>
+            const LocalizableString('summary.epsDecline'),
+      };
+
+  // ── ROE 訊號 ──
+  static final _roeSignals =
+      <String, LocalizableString Function(Map<String, dynamic>)>{
+        SignalName.roeExcellent: (e) => LocalizableString(
+          'summary.roeExcellent',
+          {'roe': _numStr(e['roe'])},
+        ),
+        SignalName.roeImproving: (_) =>
+            const LocalizableString('summary.roeImproving'),
+        SignalName.roeDeclining: (_) =>
+            const LocalizableString('summary.roeDeclining'),
+      };
+
+  /// 合併所有分類的 signal builders
   static final Map<String, LocalizableString Function(Map<String, dynamic>)>
   _signalBuilders = {
-    // 核心訊號
-    SignalName.reversalW2S: (_) =>
-        const LocalizableString('summary.reversalW2S'),
-    SignalName.reversalS2W: (_) =>
-        const LocalizableString('summary.reversalS2W'),
-    SignalName.techBreakout: (_) => const LocalizableString('summary.breakout'),
-    SignalName.techBreakdown: (_) =>
-        const LocalizableString('summary.breakdown'),
-    SignalName.volumeSpike: (e) => LocalizableString('summary.volumeSpike', {
-      'multiple': _numStr(
-        e['multiple'] ?? e['volumeMultiple'],
-        fractionDigits: 1,
-      ),
-    }),
-    SignalName.priceSpike: (e) => LocalizableString('summary.priceSpike', {
-      'pctChange': _numStr(e['pctChange'] ?? e['changePct']),
-    }),
-    SignalName.institutionalBuy: (_) =>
-        const LocalizableString('summary.institutionalBuy'),
-    SignalName.institutionalSell: (_) =>
-        const LocalizableString('summary.institutionalSell'),
-    SignalName.newsRelated: (_) =>
-        const LocalizableString('summary.newsRelated'),
-
-    // KD
-    SignalName.kdGoldenCross: (_) =>
-        const LocalizableString('summary.kdGoldenCross'),
-    SignalName.kdDeathCross: (_) =>
-        const LocalizableString('summary.kdDeathCross'),
-
-    // 法人連續（含天數時間脈絡）
-    SignalName.institutionalBuyStreak: (e) {
-      final days = e['streakDays'];
-      if (days != null) {
-        return LocalizableString('summary.institutionalBuyStreakDays', {
-          'days': _numStr(days, fractionDigits: 0),
-        });
-      }
-      return const LocalizableString('summary.institutionalBuyStreak');
-    },
-    SignalName.institutionalSellStreak: (e) {
-      final days = e['streakDays'];
-      if (days != null) {
-        return LocalizableString('summary.institutionalSellStreakDays', {
-          'days': _numStr(days, fractionDigits: 0),
-        });
-      }
-      return const LocalizableString('summary.institutionalSellStreak');
-    },
-
-    // K 線型態
-    SignalName.patternDoji: (_) =>
-        const LocalizableString('summary.patternDoji'),
-    SignalName.patternBullishEngulfing: (_) =>
-        const LocalizableString('summary.patternBullishEngulfing'),
-    SignalName.patternBearishEngulfing: (_) =>
-        const LocalizableString('summary.patternBearishEngulfing'),
-    SignalName.patternHammer: (_) =>
-        const LocalizableString('summary.patternHammer'),
-    SignalName.patternHangingMan: (_) =>
-        const LocalizableString('summary.patternHangingMan'),
-    SignalName.patternGapUp: (_) =>
-        const LocalizableString('summary.patternGapUp'),
-    SignalName.patternGapDown: (_) =>
-        const LocalizableString('summary.patternGapDown'),
-    SignalName.patternMorningStar: (_) =>
-        const LocalizableString('summary.patternMorningStar'),
-    SignalName.patternEveningStar: (_) =>
-        const LocalizableString('summary.patternEveningStar'),
-    SignalName.patternThreeWhiteSoldiers: (_) =>
-        const LocalizableString('summary.patternThreeWhiteSoldiers'),
-    SignalName.patternThreeBlackCrows: (_) =>
-        const LocalizableString('summary.patternThreeBlackCrows'),
-
-    // 技術訊號
-    SignalName.week52High: (_) => const LocalizableString('summary.week52High'),
-    SignalName.week52Low: (_) => const LocalizableString('summary.week52Low'),
-    SignalName.maAlignmentBullish: (_) =>
-        const LocalizableString('summary.maAlignmentBullish'),
-    SignalName.maAlignmentBearish: (_) =>
-        const LocalizableString('summary.maAlignmentBearish'),
-    SignalName.rsiExtremeOverbought: (e) => LocalizableString(
-      'summary.rsiOverbought',
-      {'rsi': _numStr(e['rsi'], fractionDigits: 0)},
-    ),
-    SignalName.rsiExtremeOversold: (e) => LocalizableString(
-      'summary.rsiOversold',
-      {'rsi': _numStr(e['rsi'], fractionDigits: 0)},
-    ),
-
-    // 延伸市場資料
-    SignalName.foreignShareholdingIncreasing: (_) =>
-        const LocalizableString('summary.foreignIncreasing'),
-    SignalName.foreignShareholdingDecreasing: (_) =>
-        const LocalizableString('summary.foreignDecreasing'),
-    SignalName.dayTradingHigh: (e) => LocalizableString(
-      'summary.dayTradingHigh',
-      {'ratio': _numStr(e['dayTradingRatio'] ?? e['ratio'])},
-    ),
-    SignalName.dayTradingExtreme: (e) => LocalizableString(
-      'summary.dayTradingExtreme',
-      {'ratio': _numStr(e['dayTradingRatio'] ?? e['ratio'])},
-    ),
-    SignalName.concentrationHigh: (_) =>
-        const LocalizableString('summary.concentrationHigh'),
-
-    // 價量背離
-    SignalName.priceVolumeBullishDivergence: (_) =>
-        const LocalizableString('summary.bullishDivergence'),
-    SignalName.priceVolumeBearishDivergence: (_) =>
-        const LocalizableString('summary.bearishDivergence'),
-    SignalName.highVolumeBreakout: (_) =>
-        const LocalizableString('summary.highVolumeBreakout'),
-    SignalName.lowVolumeAccumulation: (_) =>
-        const LocalizableString('summary.lowVolumeAccumulation'),
-
-    // 基本面
-    SignalName.revenueYoySurge: (e) => LocalizableString(
-      'summary.revenueYoySurge',
-      {'growth': _numStr(e['yoyGrowth'])},
-    ),
-    SignalName.revenueYoyDecline: (e) => LocalizableString(
-      'summary.revenueYoyDecline',
-      {'growth': _numStr(e['yoyGrowth'])},
-    ),
-    SignalName.revenueMomGrowth: (e) => LocalizableString(
-      'summary.revenueMomGrowth',
-      {'months': _numStr(e['consecutiveMonths'], fractionDigits: 0)},
-    ),
-    SignalName.revenueNewHigh: (e) => LocalizableString(
-      'summary.revenueNewHigh',
-      {'surpassPct': _numStr(e['surpassPct'])},
-    ),
-    SignalName.highDividendYield: (e) => LocalizableString(
-      'summary.highDividendYield',
-      {'yield': _numStr(e['dividendYield'])},
-    ),
-    SignalName.peUndervalued: (e) =>
-        LocalizableString('summary.peUndervalued', {'pe': _numStr(e['pe'])}),
-    SignalName.peOvervalued: (e) =>
-        LocalizableString('summary.peOvervalued', {'pe': _numStr(e['pe'])}),
-    SignalName.pbrUndervalued: (e) =>
-        LocalizableString('summary.pbrUndervalued', {'pbr': _numStr(e['pbr'])}),
-
-    // Killer Features
-    SignalName.tradingWarningAttention: (_) =>
-        const LocalizableString('summary.warningAttention'),
-    SignalName.tradingWarningDisposal: (_) =>
-        const LocalizableString('summary.warningDisposal'),
-    SignalName.insiderSellingStreak: (e) => LocalizableString(
-      'summary.insiderSelling',
-      {'months': _numStr(e['sellingStreakMonths'], fractionDigits: 0)},
-    ),
-    SignalName.insiderSignificantBuying: (_) =>
-        const LocalizableString('summary.insiderBuying'),
-    SignalName.highPledgeRatio: (_) =>
-        const LocalizableString('summary.highPledge'),
-    SignalName.foreignConcentrationWarning: (_) =>
-        const LocalizableString('summary.foreignConcentration'),
-    SignalName.foreignExodus: (_) =>
-        const LocalizableString('summary.foreignExodus'),
-
-    // EPS
-    SignalName.epsYoySurge: (e) => LocalizableString('summary.epsYoYSurge', {
-      'growth': _numStr(e['yoyGrowth']),
-    }),
-    SignalName.epsConsecutiveGrowth: (e) => LocalizableString(
-      'summary.epsConsecutiveGrowth',
-      {'quarters': _numStr(e['consecutiveQuarters'], fractionDigits: 0)},
-    ),
-    SignalName.epsTurnaround: (_) =>
-        const LocalizableString('summary.epsTurnaround'),
-    SignalName.epsDeclineWarning: (_) =>
-        const LocalizableString('summary.epsDecline'),
-
-    // ROE
-    SignalName.roeExcellent: (e) =>
-        LocalizableString('summary.roeExcellent', {'roe': _numStr(e['roe'])}),
-    SignalName.roeImproving: (_) =>
-        const LocalizableString('summary.roeImproving'),
-    SignalName.roeDeclining: (_) =>
-        const LocalizableString('summary.roeDeclining'),
+    ..._coreSignals,
+    ..._kdSignals,
+    ..._institutionalStreakSignals,
+    ..._candlestickPatterns,
+    ..._technicalIndicators,
+    ..._extendedMarketData,
+    ..._priceVolumeDivergence,
+    ..._fundamentalSignals,
+    ..._killerFeatures,
+    ..._epsSignals,
+    ..._roeSignals,
   };
 
   static String _numStr(dynamic value, {int fractionDigits = 1}) {

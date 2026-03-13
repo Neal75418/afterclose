@@ -37,6 +37,13 @@ class AppTheme {
   /// 平盤 - 灰色
   static const neutralColor = Color(0xFF747D8C);
 
+  // 漲跌標記符號（UI 統一使用）
+  /// 上漲標記
+  static const upSymbol = '▲';
+
+  /// 下跌標記
+  static const downSymbol = '▼';
+
   /// 錯誤色 - 使用較深的紅橘色，與上漲顏色區分
   static const errorColor = Color(0xFFE74C3C);
 

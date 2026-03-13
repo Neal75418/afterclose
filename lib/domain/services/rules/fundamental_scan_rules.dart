@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/services/rules/fundamental_technical_filter.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
@@ -11,7 +12,7 @@ import 'package:afterclose/domain/services/technical_indicator_service.dart';
 /// 規則：營收年增暴增
 ///
 /// 當月營收年增率 > 50% 且股價站上 MA60 時觸發
-class RevenueYoYSurgeRule extends StockRule {
+class RevenueYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
   const RevenueYoYSurgeRule();
 
   @override
@@ -26,43 +27,26 @@ class RevenueYoYSurgeRule extends StockRule {
     if (revenue == null) return null;
 
     final yoyGrowth = revenue.yoyGrowth ?? 0;
+    if (yoyGrowth < FundamentalParams.revenueYoySurgeThreshold) return null;
 
-    if (yoyGrowth >= FundamentalParams.revenueYoySurgeThreshold) {
-      // 技術面過濾：須站上 MA60 且漲幅 > 1.5%
-      final ma60 = context.indicators?.ma60;
+    final filter = checkAboveMAWithMomentum(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma60,
+    );
+    if (filter == null) return null;
 
-      final today = data.prices.isNotEmpty ? data.prices.last : null;
-      final prev = data.prices.length >= 2
-          ? data.prices[data.prices.length - 2]
-          : null;
-
-      if (ma60 != null &&
-          today != null &&
-          prev != null &&
-          prev.close != null &&
-          prev.close! > 0) {
-        final close = today.close ?? 0;
-        final prevClose = prev.close!;
-        final changePct = (close - prevClose) / prevClose;
-
-        // 兩個過濾條件都須通過
-        if (close > ma60 && changePct > TrendParams.minPriceChangeForVolume) {
-          return TriggeredReason(
-            type: ReasonType.revenueYoySurge,
-            score: RuleScores.revenueYoySurge,
-            description: '營收年增 ${yoyGrowth.toStringAsFixed(1)}% (站上季線且長紅)',
-            evidence: {
-              'yoyGrowth': yoyGrowth,
-              'revenueMonth': revenue.revenueMonth,
-              'ma60': ma60,
-              'changePct': changePct * 100,
-            },
-          );
-        }
-      }
-    }
-
-    return null;
+    return TriggeredReason(
+      type: ReasonType.revenueYoySurge,
+      score: RuleScores.revenueYoySurge,
+      description: '營收年增 ${yoyGrowth.toStringAsFixed(1)}% (站上季線且長紅)',
+      evidence: {
+        'yoyGrowth': yoyGrowth,
+        'revenueMonth': revenue.revenueMonth,
+        'ma60': filter.ma,
+        'changePct': filter.changePct * 100,
+      },
+    );
   }
 }
 
@@ -103,7 +87,7 @@ class RevenueYoYDeclineRule extends StockRule {
 /// 規則：營收月增持續
 ///
 /// 當月營收月增為正且股價站上 MA20 時觸發
-class RevenueMomGrowthRule extends StockRule {
+class RevenueMomGrowthRule extends StockRule with FundamentalTechnicalFilter {
   const RevenueMomGrowthRule();
 
   @override
@@ -138,55 +122,40 @@ class RevenueMomGrowthRule extends StockRule {
       }
     }
 
-    if (consecutiveMonths >= FundamentalParams.revenueMomConsecutiveMonths) {
-      // 技術面過濾：須站上 MA20
-      final ma20 = context.indicators?.ma20;
-      final close = data.prices.isNotEmpty ? data.prices.last.close : null;
-
-      // 技術面過濾：站上 MA20 且漲幅 > 1.5%
-      final today = data.prices.isNotEmpty ? data.prices.last : null;
-      final prev = data.prices.length >= 2
-          ? data.prices[data.prices.length - 2]
-          : null;
-      final changePct =
-          (today != null &&
-              today.close != null &&
-              prev != null &&
-              prev.close != null &&
-              prev.close! > 0)
-          ? (today.close! - prev.close!) / prev.close!
-          : 0.0;
-
-      if (ma20 != null &&
-          close != null &&
-          close > ma20 &&
-          changePct > TrendParams.minPriceChangeForVolume) {
-        final avgGrowth =
-            growthRates.reduce((a, b) => a + b) / growthRates.length;
-        final description = consecutiveMonths == 1
-            ? '本月營收月增 ${avgGrowth.toStringAsFixed(1)}% (站上月線)'
-            : '營收月增連續 $consecutiveMonths 個月 (站上月線)';
-
-        return TriggeredReason(
-          type: ReasonType.revenueMomGrowth,
-          score: RuleScores.revenueMomGrowth,
-          description: description,
-          evidence: {
-            'consecutiveMonths': consecutiveMonths,
-            'avgMomGrowth': avgGrowth,
-            'ma20': ma20,
-          },
-        );
-      }
+    if (consecutiveMonths < FundamentalParams.revenueMomConsecutiveMonths) {
+      return null;
     }
-    return null;
+
+    // 技術面過濾：站上 MA20 且漲幅 > 1.5%
+    final filter = checkAboveMAWithMomentum(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma20,
+    );
+    if (filter == null) return null;
+
+    final avgGrowth = growthRates.reduce((a, b) => a + b) / growthRates.length;
+    final description = consecutiveMonths == 1
+        ? '本月營收月增 ${avgGrowth.toStringAsFixed(1)}% (站上月線)'
+        : '營收月增連續 $consecutiveMonths 個月 (站上月線)';
+
+    return TriggeredReason(
+      type: ReasonType.revenueMomGrowth,
+      score: RuleScores.revenueMomGrowth,
+      description: description,
+      evidence: {
+        'consecutiveMonths': consecutiveMonths,
+        'avgMomGrowth': avgGrowth,
+        'ma20': filter.ma,
+      },
+    );
   }
 }
 
 /// 規則：營收創歷史新高
 ///
-/// 當月營收超過歷史最高記錄，搭配站上 MA20 且漲幅 > 1.5%
-class RevenueNewHighRule extends StockRule {
+/// 當月營收超過歷史最高記錄，搭配站上 MA20
+class RevenueNewHighRule extends StockRule with FundamentalTechnicalFilter {
   const RevenueNewHighRule();
 
   @override
@@ -207,43 +176,28 @@ class RevenueNewHighRule extends StockRule {
     // 當月營收必須超過歷史最高
     if (currentRevenue <= maxRevenue) return null;
 
-    // 技術面過濾：站上 MA20 且漲幅 > 1.5%
-    final ma20 = context.indicators?.ma20;
-    final today = data.prices.isNotEmpty ? data.prices.last : null;
-    final prev = data.prices.length >= 2
-        ? data.prices[data.prices.length - 2]
-        : null;
+    // 技術面過濾：站上 MA20
+    final filter = checkAboveMA(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma20,
+    );
+    if (filter == null) return null;
 
-    if (ma20 == null ||
-        today == null ||
-        prev == null ||
-        today.close == null ||
-        prev.close == null ||
-        prev.close! <= 0) {
-      return null;
-    }
+    final revenueInBillion = currentRevenue / 100000;
+    final surpassPct = (currentRevenue - maxRevenue) / maxRevenue * 100;
 
-    final close = today.close!;
-    final changePct = (close - prev.close!) / prev.close!;
-
-    if (close > ma20 && changePct > TrendParams.minPriceChangeForVolume) {
-      final revenueInBillion = currentRevenue / 100000;
-      final surpassPct = (currentRevenue - maxRevenue) / maxRevenue * 100;
-
-      return TriggeredReason(
-        type: ReasonType.revenueNewHigh,
-        score: RuleScores.revenueNewHigh,
-        description: '營收 ${revenueInBillion.toStringAsFixed(1)} 億創歷史新高',
-        evidence: {
-          'currentRevenue': currentRevenue,
-          'maxHistoricalRevenue': maxRevenue,
-          'revenueMonth': revenue.revenueMonth,
-          'surpassPct': surpassPct,
-        },
-      );
-    }
-
-    return null;
+    return TriggeredReason(
+      type: ReasonType.revenueNewHigh,
+      score: RuleScores.revenueNewHigh,
+      description: '營收 ${revenueInBillion.toStringAsFixed(1)} 億創歷史新高',
+      evidence: {
+        'currentRevenue': currentRevenue,
+        'maxHistoricalRevenue': maxRevenue,
+        'revenueMonth': revenue.revenueMonth,
+        'surpassPct': surpassPct,
+      },
+    );
   }
 }
 
@@ -311,7 +265,7 @@ class HighDividendYieldRule extends StockRule {
 }
 
 /// 規則：PE 低估
-class PEUndervaluedRule extends StockRule {
+class PEUndervaluedRule extends StockRule with FundamentalTechnicalFilter {
   const PEUndervaluedRule();
 
   @override
@@ -334,22 +288,22 @@ class PEUndervaluedRule extends StockRule {
     }
 
     final pe = valuation.per ?? 0;
+    if (pe <= 0 || pe > FundamentalParams.peUndervaluedThreshold) return null;
 
-    if (pe > 0 && pe <= FundamentalParams.peUndervaluedThreshold) {
-      // 過濾條件：須顯示強勢跡象（股價 > MA20）
-      final ma20 = context.indicators?.ma20;
-      final close = data.prices.isNotEmpty ? data.prices.last.close : null;
+    // 過濾條件：須顯示強勢跡象（股價 > MA20）
+    final filter = checkAboveMA(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma20,
+    );
+    if (filter == null) return null;
 
-      if (ma20 != null && close != null && close > ma20) {
-        return TriggeredReason(
-          type: ReasonType.peUndervalued,
-          score: RuleScores.peUndervalued,
-          description: 'PE 僅 ${pe.toStringAsFixed(2)} 倍 (站上月線)',
-          evidence: {'pe': pe, 'ma20': ma20},
-        );
-      }
-    }
-    return null;
+    return TriggeredReason(
+      type: ReasonType.peUndervalued,
+      score: RuleScores.peUndervalued,
+      description: 'PE 僅 ${pe.toStringAsFixed(2)} 倍 (站上月線)',
+      evidence: {'pe': pe, 'ma20': filter.ma},
+    );
   }
 }
 
@@ -438,7 +392,7 @@ class PBRUndervaluedRule extends StockRule {
 /// 規則：EPS 年增暴增
 ///
 /// 最新一季 EPS 年增率 ≥ 50%，搭配站上季線(MA60) + 長紅
-class EPSYoYSurgeRule extends StockRule {
+class EPSYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
   const EPSYoYSurgeRule();
 
   @override
@@ -475,48 +429,35 @@ class EPSYoYSurgeRule extends StockRule {
     if (yoyGrowth < FundamentalParams.epsYoYSurgeThreshold) return null;
 
     // 技術面過濾：站上 MA60 + 長紅
-    final ma60 = context.indicators?.ma60;
-    final today = data.prices.isNotEmpty ? data.prices.last : null;
-    final prev = data.prices.length >= 2
-        ? data.prices[data.prices.length - 2]
-        : null;
+    final filter = checkAboveMAWithMomentum(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma60,
+    );
+    if (filter == null) return null;
 
-    if (ma60 == null ||
-        today == null ||
-        prev == null ||
-        today.close == null ||
-        prev.close == null ||
-        prev.close! <= 0) {
-      return null;
-    }
-
-    final close = today.close!;
-    final changePct = (close - prev.close!) / prev.close!;
-
-    if (close > ma60 && changePct > TrendParams.minPriceChangeForVolume) {
-      return TriggeredReason(
-        type: ReasonType.epsYoYSurge,
-        score: RuleScores.epsYoYSurge,
-        description:
-            'EPS 年增 ${yoyGrowth.toStringAsFixed(1)}% '
-            '(${latestEps.toStringAsFixed(2)} 元, 站上季線)',
-        evidence: {
-          'eps': latestEps,
-          'lastYearEps': lastYearEps,
-          'yoyGrowth': yoyGrowth,
-          'ma60': ma60,
-          'changePct': changePct * 100,
-        },
-      );
-    }
-    return null;
+    return TriggeredReason(
+      type: ReasonType.epsYoYSurge,
+      score: RuleScores.epsYoYSurge,
+      description:
+          'EPS 年增 ${yoyGrowth.toStringAsFixed(1)}% '
+          '(${latestEps.toStringAsFixed(2)} 元, 站上季線)',
+      evidence: {
+        'eps': latestEps,
+        'lastYearEps': lastYearEps,
+        'yoyGrowth': yoyGrowth,
+        'ma60': filter.ma,
+        'changePct': filter.changePct * 100,
+      },
+    );
   }
 }
 
 /// 規則：EPS 連續成長
 ///
 /// 連續 ≥ 2 季 EPS 季增 ≥ 10%，搭配站上月線(MA20)
-class EPSConsecutiveGrowthRule extends StockRule {
+class EPSConsecutiveGrowthRule extends StockRule
+    with FundamentalTechnicalFilter {
   const EPSConsecutiveGrowthRule();
 
   @override
@@ -554,27 +495,27 @@ class EPSConsecutiveGrowthRule extends StockRule {
     if (consecutive < FundamentalParams.epsConsecutiveQuarters) return null;
 
     // 技術面過濾：站上 MA20
-    final ma20 = context.indicators?.ma20;
-    final close = data.prices.isNotEmpty ? data.prices.last.close : null;
+    final filter = checkAboveMA(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma20,
+    );
+    if (filter == null) return null;
 
-    if (ma20 != null && close != null && close > ma20) {
-      final avgGrowth =
-          growthRates.reduce((a, b) => a + b) / growthRates.length;
-      return TriggeredReason(
-        type: ReasonType.epsConsecutiveGrowth,
-        score: RuleScores.epsConsecutiveGrowth,
-        description:
-            'EPS 連續 $consecutive 季成長 '
-            '(平均 ${avgGrowth.toStringAsFixed(1)}%, 站上月線)',
-        evidence: {
-          'consecutiveQuarters': consecutive,
-          'avgGrowth': avgGrowth,
-          'latestEps': eps[0].value,
-          'ma20': ma20,
-        },
-      );
-    }
-    return null;
+    final avgGrowth = growthRates.reduce((a, b) => a + b) / growthRates.length;
+    return TriggeredReason(
+      type: ReasonType.epsConsecutiveGrowth,
+      score: RuleScores.epsConsecutiveGrowth,
+      description:
+          'EPS 連續 $consecutive 季成長 '
+          '(平均 ${avgGrowth.toStringAsFixed(1)}%, 站上月線)',
+      evidence: {
+        'consecutiveQuarters': consecutive,
+        'avgGrowth': avgGrowth,
+        'latestEps': eps[0].value,
+        'ma20': filter.ma,
+      },
+    );
   }
 }
 
@@ -734,7 +675,7 @@ class ROEExcellentRule extends StockRule {
 /// 規則：ROE 持續改善
 ///
 /// 連續 ≥ 2 季 ROE 改善 ≥ 5pt，搭配站上 MA20
-class ROEImprovingRule extends StockRule {
+class ROEImprovingRule extends StockRule with FundamentalTechnicalFilter {
   const ROEImprovingRule();
 
   @override
@@ -771,9 +712,12 @@ class ROEImprovingRule extends StockRule {
     if (improvingCount < FundamentalParams.roeMinQuarters) return null;
 
     // 技術面過濾：站上 MA20
-    final ma20 = context.indicators?.ma20;
-    final close = data.latestClose;
-    if (ma20 == null || close == null || close <= ma20) return null;
+    final filter = checkAboveMA(
+      context: context,
+      data: data,
+      maSelector: (i) => i.ma20,
+    );
+    if (filter == null) return null;
 
     final avgImprovement = totalImprovement / improvingCount;
     return TriggeredReason(

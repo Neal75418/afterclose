@@ -5,6 +5,7 @@
 *.swp
 .DS_Store
 test_debug.txt
+afterclose.db
 .atom/
 .build/
 .buildlog/

@@ -5,6 +5,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/models/extensions/dto_extensions.dart';
+import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 
@@ -19,13 +20,16 @@ class MarketIndexSyncer {
   MarketIndexSyncer({
     required AppDatabase database,
     required TwseClient twseClient,
+    TpexClient? tpexClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
        _twse = twseClient,
+       _tpex = tpexClient,
        _clock = clock;
 
   final AppDatabase _db;
   final TwseClient _twse;
+  final TpexClient? _tpex;
   final AppClock _clock;
 
   /// DB 中指數筆數低於此值時，自動觸發回補
@@ -54,13 +58,33 @@ class MarketIndexSyncer {
         if (companions.isNotEmpty) {
           await _db.upsertMarketIndices(companions);
           synced = companions.length;
-          AppLogger.info('MarketIndexSyncer', '指數同步完成: $synced 筆');
+          AppLogger.info('MarketIndexSyncer', 'TWSE 指數同步完成: $synced 筆');
         }
       } else {
-        AppLogger.debug('MarketIndexSyncer', '無指數資料可同步（非交易日或盤中）');
+        AppLogger.debug('MarketIndexSyncer', '無 TWSE 指數資料可同步（非交易日或盤中）');
       }
     } catch (e) {
-      AppLogger.warning('MarketIndexSyncer', '指數同步失敗: $e');
+      AppLogger.warning('MarketIndexSyncer', 'TWSE 指數同步失敗: $e');
+    }
+
+    // 同步 TPEx 櫃買指數（OpenAPI 回傳近月歷史，一次寫入）
+    if (_tpex != null) {
+      try {
+        final tpexIndices = await _tpex.getTpexIndex();
+        if (tpexIndices.isNotEmpty) {
+          final companions = tpexIndices
+              .map((idx) => idx.toDatabaseCompanion())
+              .toList();
+          await _db.upsertMarketIndices(companions);
+          synced += companions.length;
+          AppLogger.info(
+            'MarketIndexSyncer',
+            'TPEx 指數同步完成: ${companions.length} 筆',
+          );
+        }
+      } catch (e) {
+        AppLogger.warning('MarketIndexSyncer', 'TPEx 指數同步失敗: $e');
+      }
     }
 
     // 無論今日同步是否成功，都檢查是否需要歷史回補

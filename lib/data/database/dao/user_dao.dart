@@ -200,132 +200,39 @@ mixin _UserDaoMixin on _$AppDatabase {
     Map<String, double> priceChanges,
   ) async {
     final activeAlerts = await getActiveAlerts();
-    final triggered = <PriceAlertEntry>[];
+    if (activeAlerts.isEmpty) return [];
 
-    // 批次預載所有資料（避免 N+1 問題）
     final symbols = activeAlerts.map((a) => a.symbol).toSet().toList();
+
+    // Data fetching stays in DAO (needs DB access)
     final volumeDataMap = await _fetchVolumeDataForAlerts(symbols);
     final priceHistoryMap = await _fetchPriceHistoryForAlerts(symbols);
     final indicatorDataMap = await _fetchIndicatorDataForAlerts(symbols);
 
-    for (final alert in activeAlerts) {
-      final currentPrice = currentPrices[alert.symbol];
-      final priceChange = priceChanges[alert.symbol];
-
-      if (currentPrice == null) continue;
-
-      bool shouldTrigger = false;
-
-      switch (alert.alertType) {
-        case 'ABOVE':
-          shouldTrigger = currentPrice >= alert.targetValue;
-          break;
-        case 'BELOW':
-          shouldTrigger = currentPrice <= alert.targetValue;
-          break;
-        case 'CHANGE_PCT':
-          if (priceChange != null) {
-            shouldTrigger = priceChange.abs() >= alert.targetValue;
-          }
-          break;
-
-        // Batch 1: Volume Alerts
-        case 'VOLUME_SPIKE':
-          final volumeData = volumeDataMap[alert.symbol];
-          if (volumeData != null && volumeData.isNotEmpty) {
-            shouldTrigger = await _checkVolumeSpike(
-              volumeData,
-              currentPrice,
-              priceChange,
-            );
-          }
-          break;
-        case 'VOLUME_ABOVE':
-          final volumeData = volumeDataMap[alert.symbol];
-          if (volumeData != null && volumeData.isNotEmpty) {
-            shouldTrigger = _checkVolumeAbove(
-              volumeData.last,
-              alert.targetValue,
-            );
-          }
-          break;
-
-        // Batch 2: 52-Week Alerts
-        case 'WEEK_52_HIGH':
-          final priceHistory = priceHistoryMap[alert.symbol];
-          if (priceHistory != null && priceHistory.isNotEmpty) {
-            shouldTrigger = _checkWeek52High(priceHistory, currentPrice);
-          }
-          break;
-        case 'WEEK_52_LOW':
-          final priceHistory = priceHistoryMap[alert.symbol];
-          if (priceHistory != null && priceHistory.isNotEmpty) {
-            shouldTrigger = _checkWeek52Low(priceHistory, currentPrice);
-          }
-          break;
-
-        // Batch 3: RSI/KD Indicator Alerts
-        case 'RSI_OVERBOUGHT':
-          final indicatorData = indicatorDataMap[alert.symbol];
-          if (indicatorData != null && indicatorData.isNotEmpty) {
-            shouldTrigger = _checkRsiOverbought(
-              indicatorData,
-              alert.targetValue,
-            );
-          }
-          break;
-        case 'RSI_OVERSOLD':
-          final indicatorData = indicatorDataMap[alert.symbol];
-          if (indicatorData != null && indicatorData.isNotEmpty) {
-            shouldTrigger = _checkRsiOversold(indicatorData, alert.targetValue);
-          }
-          break;
-        case 'KD_GOLDEN_CROSS':
-          final indicatorData = indicatorDataMap[alert.symbol];
-          if (indicatorData != null && indicatorData.isNotEmpty) {
-            shouldTrigger = _checkKdGoldenCross(indicatorData);
-          }
-          break;
-        case 'KD_DEATH_CROSS':
-          final indicatorData = indicatorDataMap[alert.symbol];
-          if (indicatorData != null && indicatorData.isNotEmpty) {
-            shouldTrigger = _checkKdDeathCross(indicatorData);
-          }
-          break;
-
-        // Batch 4: MA Cross + Trading Warning Alerts
-        case 'CROSS_ABOVE_MA':
-          final indicatorData = indicatorDataMap[alert.symbol];
-          if (indicatorData != null && indicatorData.isNotEmpty) {
-            final maDays = alert.targetValue.toInt();
-            shouldTrigger = _checkCrossAboveMa(indicatorData, maDays);
-          }
-          break;
-        case 'CROSS_BELOW_MA':
-          final indicatorData = indicatorDataMap[alert.symbol];
-          if (indicatorData != null && indicatorData.isNotEmpty) {
-            final maDays = alert.targetValue.toInt();
-            shouldTrigger = _checkCrossBelowMa(indicatorData, maDays);
-          }
-          break;
-        case 'TRADING_WARNING':
-          // 警示股票：檢查是否在警示名單中
-          final warnings = await getActiveWarningsForSymbol(alert.symbol);
-          shouldTrigger = warnings.isNotEmpty;
-          break;
-        case 'TRADING_DISPOSAL':
-          // 處置股票：檢查是否在處置名單中
-          final warnings = await getDisposalWarningsForSymbol(alert.symbol);
-          shouldTrigger = warnings.isNotEmpty;
-          break;
-      }
-
-      if (shouldTrigger) {
-        triggered.add(alert);
-      }
+    // Fetch warning/disposal symbols
+    final warningSymbols = <String>{};
+    final disposalSymbols = <String>{};
+    for (final symbol in symbols) {
+      final warnings = await getActiveWarningsForSymbol(symbol);
+      if (warnings.isNotEmpty) warningSymbols.add(symbol);
+      final disposals = await getDisposalWarningsForSymbol(symbol);
+      if (disposals.isNotEmpty) disposalSymbols.add(symbol);
     }
 
-    return triggered;
+    // Delegate evaluation to domain service
+    final service = AlertEvaluationService();
+    return service.evaluateAlerts(
+      activeAlerts,
+      AlertEvaluationContext(
+        currentPrices: currentPrices,
+        priceChanges: priceChanges,
+        volumeDataMap: volumeDataMap,
+        priceHistoryMap: priceHistoryMap,
+        indicatorDataMap: indicatorDataMap,
+        warningSymbols: warningSymbols,
+        disposalSymbols: disposalSymbols,
+      ),
+    );
   }
 
   // ==================================================
@@ -356,63 +263,6 @@ mixin _UserDaoMixin on _$AppDatabase {
     return _BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
   }
 
-  /// 計算平均成交量（排除最新一天，計算前 20 個交易日）
-  double? _calculateAverageVolume(List<DailyPriceEntry> prices) {
-    if (prices.length < 2) return null; // 至少需要 2 筆資料（1 筆歷史 + 1 筆最新）
-
-    // 排除最新一天，只計算歷史資料
-    final historicalPrices = prices.sublist(0, prices.length - 1);
-
-    final volumes = historicalPrices
-        .map((p) => p.volume)
-        .where((v) => v != null && v > 0)
-        .map((v) => v!)
-        .toList();
-
-    if (volumes.isEmpty) return null;
-
-    // 取最近 20 個交易日（排除今天後的）
-    final recent = volumes.length > AlertParams.volumeSmaWindow
-        ? volumes.sublist(volumes.length - AlertParams.volumeSmaWindow)
-        : volumes;
-    return recent.reduce((a, b) => a + b) / recent.length;
-  }
-
-  /// 檢查成交量爆量（成交量 >= 4x 均量 且價格變動 >= 1.5%）
-  Future<bool> _checkVolumeSpike(
-    List<DailyPriceEntry> prices,
-    double currentPrice,
-    double? priceChange,
-  ) async {
-    if (prices.isEmpty) return false;
-
-    final avgVolume = _calculateAverageVolume(prices);
-    if (avgVolume == null) return false;
-
-    final latestVolume = prices.last.volume;
-    if (latestVolume == null || latestVolume <= 0) return false;
-
-    // 條件 1: 成交量 >= 4x 均量
-    final volumeSpike = latestVolume >= avgVolume * 4;
-
-    // 條件 2: 價格變動 >= 1.5%
-    final significantPriceChange =
-        priceChange != null && priceChange.abs() >= 1.5;
-
-    return volumeSpike && significantPriceChange;
-  }
-
-  /// 檢查成交量高於目標值
-  bool _checkVolumeAbove(DailyPriceEntry price, double targetVolume) {
-    final volume = price.volume;
-    if (volume == null || volume <= 0) return false;
-    return volume >= targetVolume;
-  }
-
-  // ==================================================
-  // 警示檢查輔助方法 - Batch 2: 52 週警示
-  // ==================================================
-
   /// 批次查詢 52 週價格歷史
   Future<Map<String, List<DailyPriceEntry>>> _fetchPriceHistoryForAlerts(
     List<String> symbols,
@@ -437,50 +287,6 @@ mixin _UserDaoMixin on _$AppDatabase {
     return _BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
   }
 
-  /// 檢查是否創 52 週新高
-  bool _checkWeek52High(List<DailyPriceEntry> prices, double currentPrice) {
-    if (prices.isEmpty) return false;
-
-    // 找出過去 52 週的最高價
-    double? maxHigh;
-    for (final price in prices) {
-      if (price.high != null) {
-        if (maxHigh == null || price.high! > maxHigh) {
-          maxHigh = price.high;
-        }
-      }
-    }
-
-    if (maxHigh == null) return false;
-
-    // 當前價格 >= 52 週最高價
-    return currentPrice >= maxHigh;
-  }
-
-  /// 檢查是否創 52 週新低
-  bool _checkWeek52Low(List<DailyPriceEntry> prices, double currentPrice) {
-    if (prices.isEmpty) return false;
-
-    // 找出過去 52 週的最低價
-    double? minLow;
-    for (final price in prices) {
-      if (price.low != null) {
-        if (minLow == null || price.low! < minLow) {
-          minLow = price.low;
-        }
-      }
-    }
-
-    if (minLow == null) return false;
-
-    // 當前價格 <= 52 週最低價
-    return currentPrice <= minLow;
-  }
-
-  // ==================================================
-  // 警示檢查輔助方法 - Batch 3: RSI/KD 指標警示
-  // ==================================================
-
   /// 批次查詢技術指標資料（最近 30 天，用於計算 RSI 和 KD）
   Future<Map<String, List<DailyPriceEntry>>> _fetchIndicatorDataForAlerts(
     List<String> symbols,
@@ -503,183 +309,6 @@ mixin _UserDaoMixin on _$AppDatabase {
 
     final results = await query.get();
     return _BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
-  }
-
-  /// 檢查 RSI 超買（RSI >= 目標值，如 70）
-  bool _checkRsiOverbought(List<DailyPriceEntry> prices, double targetRsi) {
-    if (prices.length < AlertParams.rsiMinDataPoints) return false;
-
-    final closePrices = prices.map((p) => p.close).whereType<double>().toList();
-    if (closePrices.length < AlertParams.rsiMinDataPoints) return false;
-
-    // 使用 TechnicalIndicatorService 計算 RSI
-    final service = TechnicalIndicatorService();
-    final rsiValues = service.calculateRSI(closePrices, period: 14);
-
-    final latestRsi = rsiValues.last;
-    if (latestRsi == null) return false;
-
-    return latestRsi >= targetRsi;
-  }
-
-  /// 檢查 RSI 超賣（RSI <= 目標值，如 30）
-  bool _checkRsiOversold(List<DailyPriceEntry> prices, double targetRsi) {
-    if (prices.length < AlertParams.rsiMinDataPoints) return false;
-
-    final closePrices = prices.map((p) => p.close).whereType<double>().toList();
-    if (closePrices.length < AlertParams.rsiMinDataPoints) return false;
-
-    final service = TechnicalIndicatorService();
-    final rsiValues = service.calculateRSI(closePrices, period: 14);
-
-    final latestRsi = rsiValues.last;
-    if (latestRsi == null) return false;
-
-    return latestRsi <= targetRsi;
-  }
-
-  /// 檢查 KD 黃金交叉（K 上穿 D）
-  ///
-  /// 檢查最近 2 天內是否發生過黃金交叉。
-  /// 簡化版本：只檢查交叉本身，不要求在低檔區。
-  bool _checkKdGoldenCross(List<DailyPriceEntry> prices) {
-    if (prices.length < AlertParams.kdMinDataPoints) return false;
-
-    final highs = prices.map((p) => p.high).whereType<double>().toList();
-    final lows = prices.map((p) => p.low).whereType<double>().toList();
-    final closes = prices.map((p) => p.close).whereType<double>().toList();
-
-    if (highs.length < 11 || lows.length < 11 || closes.length < 11) {
-      return false;
-    }
-
-    final service = TechnicalIndicatorService();
-    final kd = service.calculateKD(highs, lows, closes, kPeriod: 9, dPeriod: 3);
-
-    if (kd.k.length < 2 || kd.d.length < 2) return false;
-
-    // 檢查最近 2 天內是否發生過黃金交叉
-    final startIndex = kd.k.length >= 3 ? kd.k.length - 3 : 0;
-    for (int i = startIndex; i < kd.k.length - 1; i++) {
-      final prevK = kd.k[i];
-      final prevD = kd.d[i];
-      final nextK = kd.k[i + 1];
-      final nextD = kd.d[i + 1];
-
-      if (prevK != null && prevD != null && nextK != null && nextD != null) {
-        // K 上穿 D（前一天 K < D，今天 K >= D）
-        if (prevK < prevD && nextK >= nextD) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /// 檢查 KD 死亡交叉（K 下穿 D）
-  ///
-  /// 檢查最近 2 天內是否發生過死亡交叉。
-  /// 簡化版本：只檢查交叉本身，不要求在高檔區。
-  bool _checkKdDeathCross(List<DailyPriceEntry> prices) {
-    if (prices.length < AlertParams.kdMinDataPoints) return false;
-
-    final highs = prices.map((p) => p.high).whereType<double>().toList();
-    final lows = prices.map((p) => p.low).whereType<double>().toList();
-    final closes = prices.map((p) => p.close).whereType<double>().toList();
-
-    if (highs.length < 11 || lows.length < 11 || closes.length < 11) {
-      return false;
-    }
-
-    final service = TechnicalIndicatorService();
-    final kd = service.calculateKD(highs, lows, closes, kPeriod: 9, dPeriod: 3);
-
-    if (kd.k.length < 2 || kd.d.length < 2) return false;
-
-    // 檢查最近 2 天內是否發生過死亡交叉
-    final startIndex = kd.k.length >= 3 ? kd.k.length - 3 : 0;
-    for (int i = startIndex; i < kd.k.length - 1; i++) {
-      final prevK = kd.k[i];
-      final prevD = kd.d[i];
-      final nextK = kd.k[i + 1];
-      final nextD = kd.d[i + 1];
-
-      if (prevK != null && prevD != null && nextK != null && nextD != null) {
-        // K 下穿 D（前一天 K > D，今天 K <= D）
-        if (prevK > prevD && nextK <= nextD) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /// 檢查股價突破均線（價格由下往上穿越均線）
-  ///
-  /// 檢查最近 2 天內是否發生過突破。
-  bool _checkCrossAboveMa(List<DailyPriceEntry> prices, int maDays) {
-    if (prices.length < maDays + 2) return false;
-
-    final closes = prices.map((p) => p.close).whereType<double>().toList();
-    if (closes.length < maDays + 2) return false;
-
-    final service = TechnicalIndicatorService();
-    final maValues = service.calculateSMA(closes, maDays);
-
-    if (maValues.length < 2) return false;
-
-    // 檢查最近 2 天內是否發生過突破
-    final startIndex = maValues.length >= 3 ? maValues.length - 3 : 0;
-    for (int i = startIndex; i < maValues.length - 1; i++) {
-      final prevClose = closes[i];
-      final prevMa = maValues[i];
-      final nextClose = closes[i + 1];
-      final nextMa = maValues[i + 1];
-
-      if (prevMa != null && nextMa != null) {
-        // 價格由下往上穿越均線（前一天 close < MA，今天 close >= MA）
-        if (prevClose < prevMa && nextClose >= nextMa) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /// 檢查股價跌破均線（價格由上往下穿越均線）
-  ///
-  /// 檢查最近 2 天內是否發生過跌破。
-  bool _checkCrossBelowMa(List<DailyPriceEntry> prices, int maDays) {
-    if (prices.length < maDays + 2) return false;
-
-    final closes = prices.map((p) => p.close).whereType<double>().toList();
-    if (closes.length < maDays + 2) return false;
-
-    final service = TechnicalIndicatorService();
-    final maValues = service.calculateSMA(closes, maDays);
-
-    if (maValues.length < 2) return false;
-
-    // 檢查最近 2 天內是否發生過跌破
-    final startIndex = maValues.length >= 3 ? maValues.length - 3 : 0;
-    for (int i = startIndex; i < maValues.length - 1; i++) {
-      final prevClose = closes[i];
-      final prevMa = maValues[i];
-      final nextClose = closes[i + 1];
-      final nextMa = maValues[i + 1];
-
-      if (prevMa != null && nextMa != null) {
-        // 價格由上往下穿越均線（前一天 close > MA，今天 close <= MA）
-        if (prevClose > prevMa && nextClose <= nextMa) {
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 
   /// 取得指定股票的所有有效警示（不含處置）

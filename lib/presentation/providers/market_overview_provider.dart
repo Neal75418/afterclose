@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -67,6 +68,68 @@ class TradingTurnover {
   final double totalTurnover; // 單位：元
 }
 
+/// 漲停/跌停家數
+class LimitUpDown {
+  const LimitUpDown({this.limitUp = 0, this.limitDown = 0});
+
+  final int limitUp;
+  final int limitDown;
+}
+
+/// 成交額 vs 均量比較
+class TurnoverComparison {
+  const TurnoverComparison({this.todayTurnover = 0, this.avg5dTurnover = 0});
+
+  final double todayTurnover;
+  final double avg5dTurnover;
+
+  /// 與 5 日均量的變化百分比
+  double get changePercent => avg5dTurnover > 0
+      ? (todayTurnover - avg5dTurnover) / avg5dTurnover * 100
+      : 0;
+}
+
+/// 注意/處置股家數
+class WarningCounts {
+  const WarningCounts({this.attention = 0, this.disposal = 0});
+
+  final int attention;
+  final int disposal;
+
+  int get total => attention + disposal;
+}
+
+/// 法人連續買賣超天數
+class InstitutionalStreak {
+  const InstitutionalStreak({
+    this.foreignStreak = 0,
+    this.trustStreak = 0,
+    this.dealerStreak = 0,
+  });
+
+  /// 正數 = 連續買超天數，負數 = 連續賣超天數
+  final int foreignStreak;
+  final int trustStreak;
+  final int dealerStreak;
+}
+
+/// 產業表現
+class IndustrySummary {
+  const IndustrySummary({
+    required this.industry,
+    required this.stockCount,
+    required this.avgChangePct,
+    required this.advance,
+    required this.decline,
+  });
+
+  final String industry;
+  final int stockCount;
+  final double avgChangePct;
+  final int advance;
+  final int decline;
+}
+
 /// 大盤總覽狀態
 class MarketOverviewState {
   const MarketOverviewState({
@@ -75,11 +138,16 @@ class MarketOverviewState {
     this.advanceDecline = const AdvanceDecline(),
     this.institutional = const InstitutionalTotals(),
     this.margin = const MarginTradingTotals(),
-    // 新增：依市場分組的統計（預設空 Map）
+    // 依市場分組的統計（預設空 Map）
     this.advanceDeclineByMarket = const {},
     this.institutionalByMarket = const {},
     this.marginByMarket = const {},
     this.turnoverByMarket = const {},
+    this.limitUpDownByMarket = const {},
+    this.turnoverComparisonByMarket = const {},
+    this.warningCountsByMarket = const {},
+    this.institutionalStreakByMarket = const {},
+    this.industrySummaryByMarket = const {},
     this.isLoading = false,
     this.error,
     this.dataDate,
@@ -109,6 +177,21 @@ class MarketOverviewState {
   /// Key: 'TWSE' / 'TPEx'
   final Map<String, TradingTurnover> turnoverByMarket;
 
+  /// 漲停/跌停家數（依市場分組）
+  final Map<String, LimitUpDown> limitUpDownByMarket;
+
+  /// 成交額 vs 5 日均量比較（依市場分組）
+  final Map<String, TurnoverComparison> turnoverComparisonByMarket;
+
+  /// 注意/處置股家數（依市場分組）
+  final Map<String, WarningCounts> warningCountsByMarket;
+
+  /// 法人連續買賣超天數（依市場分組）
+  final Map<String, InstitutionalStreak> institutionalStreakByMarket;
+
+  /// 產業表現（依市場分組）
+  final Map<String, List<IndustrySummary>> industrySummaryByMarket;
+
   final bool isLoading;
   final String? error;
 
@@ -128,6 +211,11 @@ class MarketOverviewState {
     Map<String, InstitutionalTotals>? institutionalByMarket,
     Map<String, MarginTradingTotals>? marginByMarket,
     Map<String, TradingTurnover>? turnoverByMarket,
+    Map<String, LimitUpDown>? limitUpDownByMarket,
+    Map<String, TurnoverComparison>? turnoverComparisonByMarket,
+    Map<String, WarningCounts>? warningCountsByMarket,
+    Map<String, InstitutionalStreak>? institutionalStreakByMarket,
+    Map<String, List<IndustrySummary>>? industrySummaryByMarket,
     bool? isLoading,
     String? error,
     DateTime? dataDate,
@@ -144,6 +232,15 @@ class MarketOverviewState {
           institutionalByMarket ?? this.institutionalByMarket,
       marginByMarket: marginByMarket ?? this.marginByMarket,
       turnoverByMarket: turnoverByMarket ?? this.turnoverByMarket,
+      limitUpDownByMarket: limitUpDownByMarket ?? this.limitUpDownByMarket,
+      turnoverComparisonByMarket:
+          turnoverComparisonByMarket ?? this.turnoverComparisonByMarket,
+      warningCountsByMarket:
+          warningCountsByMarket ?? this.warningCountsByMarket,
+      institutionalStreakByMarket:
+          institutionalStreakByMarket ?? this.institutionalStreakByMarket,
+      industrySummaryByMarket:
+          industrySummaryByMarket ?? this.industrySummaryByMarket,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       dataDate: dataDate ?? this.dataDate,
@@ -198,24 +295,38 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           dataDate,
           fallbackDate: fallbackDate,
         ), // [2] InstitutionalTotals
-        _loadMarginTotals(dataDate), // [3] MarginTradingTotals
-        _loadIndexHistory(), // [4] Map<String, List<double>>
+        _loadIndexHistory(), // [3] Map<String, List<double>>
         _loadAdvanceDeclineByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [5] Map<String, AdvanceDecline>
+        ), // [4] Map<String, AdvanceDecline>
         _loadInstitutionalByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [6] Map<String, InstitutionalTotals>
+        ), // [5] Map<String, InstitutionalTotals>
         _loadMarginByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [7] Map<String, MarginTradingTotals>
+        ), // [6] Map<String, MarginTradingTotals>
         _loadTurnoverByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [8] Map<String, TradingTurnover>
+        ), // [7] Map<String, TradingTurnover>
+        _loadLimitUpDownByMarket(
+          dataDate,
+          fallbackDate: fallbackDate,
+        ), // [8] Map<String, LimitUpDown>
+        _loadTurnoverComparisonByMarket(
+          dataDate,
+        ), // [9] Map<String, TurnoverComparison>
+        _loadWarningCountsByMarket(), // [10] Map<String, WarningCounts>
+        _loadInstitutionalStreakByMarket(
+          dataDate,
+        ), // [11] Map<String, InstitutionalStreak>
+        _loadIndustrySummaryByMarket(
+          dataDate,
+          fallbackDate: fallbackDate,
+        ), // [12] Map<String, List<IndustrySummary>>
       ]);
 
       // 超時機制：最多等 _loadTimeoutSec 秒
@@ -262,7 +373,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 從載入結果建構 state
   MarketOverviewState _buildState(List<Object?> results, DateTime dataDate) {
     final indices = results[0] as List<TwseMarketIndex>;
-    final rawHistory = results[4] as Map<String, List<double>>;
+    final rawHistory = results[3] as Map<String, List<double>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
@@ -280,26 +391,112 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
     }
 
+    final instByMarket = results[5] as Map<String, InstitutionalTotals>;
+    final marginByMarket = results[6] as Map<String, MarginTradingTotals>;
+
+    // 從 byMarket 合併全市場融資融券總額（避免重複查詢）
+    final marginTotal = _mergeMarginTotals(marginByMarket);
+
+    // Streak 來自 DB（per-stock 聚合），顯示金額來自 API（市場總計）。
+    // 兩者資料來源不同，方向可能矛盾（API 含大宗交易等 per-stock 未涵蓋的項目）。
+    // 當 streak 方向與 API 值矛盾時，重置為 ±1（不會顯示 badge，因門檻 ≥ 2）。
+    final rawStreak = results[11] as Map<String, InstitutionalStreak>;
+    final validatedStreak = _validateStreakConsistency(rawStreak, instByMarket);
+
     return MarketOverviewState(
       indices: indices,
       advanceDecline: results[1] as AdvanceDecline,
       institutional: results[2] as InstitutionalTotals,
-      margin: results[3] as MarginTradingTotals,
+      margin: marginTotal,
       indexHistory: indexHistory,
-      advanceDeclineByMarket: results[5] as Map<String, AdvanceDecline>,
-      institutionalByMarket: results[6] as Map<String, InstitutionalTotals>,
-      marginByMarket: results[7] as Map<String, MarginTradingTotals>,
-      turnoverByMarket: results[8] as Map<String, TradingTurnover>,
+      advanceDeclineByMarket: results[4] as Map<String, AdvanceDecline>,
+      institutionalByMarket: instByMarket,
+      marginByMarket: marginByMarket,
+      turnoverByMarket: results[7] as Map<String, TradingTurnover>,
+      limitUpDownByMarket: results[8] as Map<String, LimitUpDown>,
+      turnoverComparisonByMarket: results[9] as Map<String, TurnoverComparison>,
+      warningCountsByMarket: results[10] as Map<String, WarningCounts>,
+      institutionalStreakByMarket: validatedStreak,
+      industrySummaryByMarket:
+          results[12] as Map<String, List<IndustrySummary>>,
       dataDate: dataDate,
     );
   }
 
+  /// 從分市場融資融券合併為全市場總額
+  static MarginTradingTotals _mergeMarginTotals(
+    Map<String, MarginTradingTotals> byMarket,
+  ) {
+    if (byMarket.isEmpty) return const MarginTradingTotals();
+    double sum(double Function(MarginTradingTotals m) fn) =>
+        byMarket.values.fold(0, (acc, m) => acc + fn(m));
+    return MarginTradingTotals(
+      marginBalance: sum((m) => m.marginBalance),
+      marginChange: sum((m) => m.marginChange),
+      shortBalance: sum((m) => m.shortBalance),
+      shortChange: sum((m) => m.shortChange),
+    );
+  }
+
+  /// 驗證 streak 方向與 API 顯示值的一致性
+  ///
+  /// Streak 資料來自 DB（per-stock 聚合），顯示金額來自 API（市場總計）。
+  /// 當兩者方向矛盾時（例如 DB 顯示買超但 API 顯示賣超），
+  /// 重置該法人的 streak 為 ±1，避免 UI 出現「連N日買超」但金額為負的矛盾。
+  static Map<String, InstitutionalStreak> _validateStreakConsistency(
+    Map<String, InstitutionalStreak> streaks,
+    Map<String, InstitutionalTotals> totals,
+  ) {
+    final result = <String, InstitutionalStreak>{};
+    for (final market in streaks.keys) {
+      final streak = streaks[market]!;
+      final inst = totals[market];
+      if (inst == null) {
+        result[market] = streak;
+        continue;
+      }
+      result[market] = InstitutionalStreak(
+        foreignStreak: _alignStreak(streak.foreignStreak, inst.foreignNet),
+        trustStreak: _alignStreak(streak.trustStreak, inst.trustNet),
+        dealerStreak: _alignStreak(streak.dealerStreak, inst.dealerNet),
+      );
+    }
+    return result;
+  }
+
+  /// 若 streak 方向與 API 值矛盾，重置為 ±1（badge 門檻 ≥ 2，不會顯示）
+  static int _alignStreak(int streak, double apiValue) {
+    if (streak == 0 || apiValue == 0) return 0;
+    final streakPositive = streak > 0;
+    final apiPositive = apiValue > 0;
+    if (streakPositive == apiPositive) return streak;
+    // 方向矛盾：今日可能翻轉，重置為 day-1
+    return apiPositive ? 1 : -1;
+  }
+
   Future<List<TwseMarketIndex>> _loadIndices() async {
     try {
-      final indices = await _twse.getMarketIndices();
-      // 精確名稱匹配，僅保留 Dashboard 需要的 4 個重點指數
+      // 平行取得 TWSE + TPEx 指數
+      final futures = await Future.wait([
+        _twse.getMarketIndices(),
+        _tpex.getTpexIndex(),
+      ]);
+
+      final twseIndices = futures[0];
+      final tpexIndices = futures[1];
+
+      // 精確名稱匹配，僅保留 Dashboard 需要的 TWSE 重點指數
       final targetNames = MarketIndexNames.dashboardIndices.toSet();
-      return indices.where((idx) => targetNames.contains(idx.name)).toList();
+      final filtered = twseIndices
+          .where((idx) => targetNames.contains(idx.name))
+          .toList();
+
+      // 加入 TPEx 櫃買指數（取最新一筆作為即時資料）
+      if (tpexIndices.isNotEmpty) {
+        filtered.add(tpexIndices.last);
+      }
+
+      return filtered;
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入大盤指數失敗: $e');
       return [];
@@ -309,8 +506,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 從 DB 載入近 30 日指數歷史（供走勢圖使用）
   Future<Map<String, List<double>>> _loadIndexHistory() async {
     try {
-      // 查詢 4 個重點指數的歷史
-      const indexNames = MarketIndexNames.dashboardIndices;
+      // 查詢 TWSE 重點指數 + TPEx 櫃買指數的歷史
+      final indexNames = [
+        ...MarketIndexNames.dashboardIndices,
+        MarketIndexNames.tpexIndex,
+      ];
 
       final historyMap = await _db.getIndexHistoryBatch(indexNames, days: 30);
 
@@ -378,21 +578,6 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入法人總額失敗: $e');
       return const InstitutionalTotals();
-    }
-  }
-
-  Future<MarginTradingTotals> _loadMarginTotals(DateTime date) async {
-    try {
-      final totals = await _db.getMarginTradingTotals(date);
-      return MarginTradingTotals(
-        marginBalance: totals['marginBalance'] ?? 0,
-        marginChange: totals['marginChange'] ?? 0,
-        shortBalance: totals['shortBalance'] ?? 0,
-        shortChange: totals['shortChange'] ?? 0,
-      );
-    } catch (e) {
-      AppLogger.warning('MarketOverview', '載入融資融券總額失敗: $e');
-      return const MarginTradingTotals();
     }
   }
 
@@ -483,23 +668,16 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
   /// 載入融資融券（依市場分組）
   ///
-  /// 若主要日期缺少某市場資料，自動用 [fallbackDate] 補齊。
+  /// 融資融券資料日期可能與 daily_price 不同步（TPEx 有 T+1 延遲），
+  /// 因此直接使用 [getLatestMarginTradingTotalsByMarket] 取得各市場最新資料，
+  /// 不依賴 daily_price 的日期。
   Future<Map<String, MarginTradingTotals>> _loadMarginByMarket(
     DateTime date, {
     DateTime? fallbackDate,
   }) async {
     try {
-      final data = await _db.getMarginTradingTotalsByMarket(date);
-
-      // 回退：若缺少某市場，嘗試前一交易日補齊
-      if (fallbackDate != null && data.length < 2) {
-        final fallbackData = await _db.getMarginTradingTotalsByMarket(
-          fallbackDate,
-        );
-        for (final entry in fallbackData.entries) {
-          data.putIfAbsent(entry.key, () => entry.value);
-        }
-      }
+      // 直接查詢各市場最新融資融券資料，避免日期不同步問題
+      final data = await _db.getLatestMarginTradingTotalsByMarket();
 
       return {
         for (final entry in data.entries)
@@ -545,6 +723,221 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       return {};
     }
   }
+
+  /// 載入漲停/跌停家數（依市場分組）
+  Future<Map<String, LimitUpDown>> _loadLimitUpDownByMarket(
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
+    try {
+      final data = await _db.getLimitUpDownCountsByMarket(date);
+
+      if (fallbackDate != null && data.length < 2) {
+        final fallbackData = await _db.getLimitUpDownCountsByMarket(
+          fallbackDate,
+        );
+        for (final entry in fallbackData.entries) {
+          data.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+
+      return {
+        for (final entry in data.entries)
+          entry.key: LimitUpDown(
+            limitUp: entry.value['limitUp'] ?? 0,
+            limitDown: entry.value['limitDown'] ?? 0,
+          ),
+      };
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入漲停跌停家數失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入成交額 vs 5 日均量比較（依市場分組）
+  Future<Map<String, TurnoverComparison>> _loadTurnoverComparisonByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final data = await _db.getRecentTurnoverByMarket(date, days: 5);
+      final result = <String, TurnoverComparison>{};
+
+      for (final entry in data.entries) {
+        final list = entry.value;
+        if (list.length < 2) continue; // 至少要有今日 + 1 天歷史
+
+        final todayTurnover = list.first.turnover;
+        // 前 5 天平均（跳過第一筆今日資料）
+        final historyDays = list.skip(1).take(5).toList();
+        if (historyDays.isEmpty) continue;
+
+        final avg5d =
+            historyDays.fold<double>(0, (sum, e) => sum + e.turnover) /
+            historyDays.length;
+
+        result[entry.key] = TurnoverComparison(
+          todayTurnover: todayTurnover,
+          avg5dTurnover: avg5d,
+        );
+      }
+
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入成交額均量比較失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入注意/處置股家數（依市場分組）
+  Future<Map<String, WarningCounts>> _loadWarningCountsByMarket() async {
+    try {
+      final data = await _db.getActiveWarningCountsByMarket();
+
+      return {
+        for (final entry in data.entries)
+          entry.key: WarningCounts(
+            attention: entry.value['ATTENTION'] ?? 0,
+            disposal: entry.value['DISPOSAL'] ?? 0,
+          ),
+      };
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入注意處置股家數失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入法人連續買賣超天數（依市場分組）
+  Future<Map<String, InstitutionalStreak>> _loadInstitutionalStreakByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final data = await _db.getRecentInstitutionalDailyByMarket(date);
+      final result = <String, InstitutionalStreak>{};
+
+      for (final entry in data.entries) {
+        final dailyList = entry.value;
+        if (dailyList.isEmpty) continue;
+
+        result[entry.key] = InstitutionalStreak(
+          foreignStreak: _calculateStreak(
+            dailyList.map((e) => e.foreignNet).toList(),
+          ),
+          trustStreak: _calculateStreak(
+            dailyList.map((e) => e.trustNet).toList(),
+          ),
+          dealerStreak: _calculateStreak(
+            dailyList.map((e) => e.dealerNet).toList(),
+          ),
+        );
+      }
+
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入法人連續買賣超失敗: $e');
+      return {};
+    }
+  }
+
+  /// 計算連續同方向天數（純函式）
+  ///
+  /// [values] 按日期降序（最新在前）
+  /// 回傳：正數 = 連續買超天數，負數 = 連續賣超天數，0 = 最新一天為零
+  static int _calculateStreak(List<double> values) {
+    if (values.isEmpty) return 0;
+
+    final first = values.first;
+    if (first == 0) return 0;
+
+    final isPositive = first > 0;
+    int count = 0;
+    for (final v in values) {
+      if ((isPositive && v > 0) || (!isPositive && v < 0)) {
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    return isPositive ? count : -count;
+  }
+
+  /// 載入產業表現（依市場分組，TWSE + TPEx 各自查詢）
+  Future<Map<String, List<IndustrySummary>>> _loadIndustrySummaryByMarket(
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
+    try {
+      final result = <String, List<IndustrySummary>>{};
+
+      for (final market in ['TWSE', 'TPEx']) {
+        var data = await _db.getIndustrySummaryByMarket(date, market);
+
+        if (data.isEmpty && fallbackDate != null) {
+          data = await _db.getIndustrySummaryByMarket(fallbackDate, market);
+        }
+
+        if (data.isNotEmpty) {
+          result[market] = _mergeNormalizedIndustries(data);
+        }
+      }
+
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入產業表現失敗: $e');
+      return {};
+    }
+  }
+
+  /// 正規化產業名稱並合併重複項（FinMind API 命名不一致）
+  ///
+  /// 例如「其他電子業」與「其他電子類」會被合併為同一筆。
+  /// 合併後重新排序（avgChangePct DESC）。
+  static List<IndustrySummary> _mergeNormalizedIndustries(
+    List<Map<String, dynamic>> rows,
+  ) {
+    final merged = <String, _MutableIndustry>{};
+
+    for (final row in rows) {
+      final rawName = row['industry'] as String;
+      final canonical = IndustryNames.normalize(rawName);
+      final entry = merged.putIfAbsent(canonical, _MutableIndustry.new);
+      entry.addRow(row);
+    }
+
+    final list = merged.entries.map((e) => e.value.toSummary(e.key)).toList()
+      ..sort((a, b) => b.avgChangePct.compareTo(a.avgChangePct));
+    return list;
+  }
+}
+
+/// 可變的產業聚合器（用於合併重複命名的產業）
+class _MutableIndustry {
+  int stockCount = 0;
+  double _changePctSum = 0;
+  int _changePctCount = 0;
+  int advance = 0;
+  int decline = 0;
+
+  void addRow(Map<String, dynamic> row) {
+    final count = row['stockCount'] as int;
+    stockCount += count;
+    _changePctSum += (row['avgChangePct'] as double) * count;
+    _changePctCount += count;
+    advance += row['advance'] as int;
+    decline += row['decline'] as int;
+  }
+
+  /// 加權平均漲跌幅
+  double get avgChangePct =>
+      _changePctCount > 0 ? _changePctSum / _changePctCount : 0;
+
+  IndustrySummary toSummary(String industry) => IndustrySummary(
+    industry: industry,
+    stockCount: stockCount,
+    avgChangePct: avgChangePct,
+    advance: advance,
+    decline: decline,
+  );
 }
 
 // ==================================================

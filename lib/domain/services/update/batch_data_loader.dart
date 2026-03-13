@@ -6,6 +6,7 @@ import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/shareholding_repository.dart';
 import 'package:afterclose/domain/models/analysis_context.dart';
 import 'package:afterclose/domain/models/scoring_batch_data.dart';
+import 'package:afterclose/domain/models/scoring_data_groups.dart';
 import 'package:afterclose/domain/services/update/batch_data_builder.dart';
 
 /// 評分用批次資料載入器
@@ -154,21 +155,27 @@ class BatchDataLoader {
       _insiderRepo,
     );
 
-    return ScoringBatchData(
+    return ScoringBatchData.grouped(
       pricesMap: pricesMap,
       newsMap: newsMap,
-      institutionalMap: institutionalMap,
-      revenueMap: revenueMap,
-      valuationMap: valuationMap,
-      revenueHistoryMap: revenueHistoryMap,
-      epsHistoryMap: epsHistoryMap,
-      roeHistoryMap: roeHistoryMap,
-      dividendHistoryMap: dividendHistoryMap,
       dayTradingMap: dayTradingMap,
-      shareholdingMap: shareholdingMap,
-      warningMap: warningMap,
-      insiderMap: insiderMap,
-      maxHistoricalRevenueMap: maxHistoricalRevenueMap,
+      institutional: InstitutionalIntelligence(
+        institutionalMap: institutionalMap,
+        shareholdingMap: shareholdingMap,
+        warningMap: warningMap,
+        insiderMap: insiderMap,
+      ),
+      fundamental: FundamentalDataGroup(
+        revenueMap: revenueMap,
+        valuationMap: valuationMap,
+        revenueHistoryMap: revenueHistoryMap,
+        maxHistoricalRevenueMap: maxHistoricalRevenueMap,
+      ),
+      financialHealth: FinancialHealthGroup(
+        epsHistoryMap: epsHistoryMap,
+        roeHistoryMap: roeHistoryMap,
+        dividendHistoryMap: dividendHistoryMap,
+      ),
     );
   }
 }

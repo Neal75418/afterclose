@@ -158,3 +158,174 @@ enum ReasonType {
     ReasonType.roeDeclining => RuleScores.roeDeclining,
   };
 }
+
+/// i18n 鍵擴充：將 ReasonType 對應到翻譯鍵
+extension ReasonTypeI18n on ReasonType {
+  /// 取得理由標籤的 i18n 鍵
+  String get i18nLabelKey => switch (this) {
+    ReasonType.reversalW2S => 'reasons.reversalW2S',
+    ReasonType.reversalS2W => 'reasons.reversalS2W',
+    ReasonType.techBreakout => 'reasons.breakout',
+    ReasonType.techBreakdown => 'reasons.breakdown',
+    ReasonType.volumeSpike => 'reasons.volumeSpike',
+    ReasonType.priceSpike => 'reasons.priceSpike',
+    ReasonType.institutionalBuy => 'reasons.institutionalBuy',
+    ReasonType.institutionalSell => 'reasons.institutionalSell',
+    ReasonType.newsRelated => 'reasons.news',
+    ReasonType.kdGoldenCross => 'reasons.kdGoldenCross',
+    ReasonType.kdDeathCross => 'reasons.kdDeathCross',
+    ReasonType.institutionalBuyStreak => 'reasons.institutionalBuyStreak',
+    ReasonType.institutionalSellStreak => 'reasons.institutionalSellStreak',
+    // K 線型態
+    ReasonType.patternDoji => 'reasons.patternDoji',
+    ReasonType.patternDojiBearish => 'reasons.patternDojiBearish',
+    ReasonType.patternBullishEngulfing => 'reasons.patternBullishEngulfing',
+    ReasonType.patternBearishEngulfing => 'reasons.patternBearishEngulfing',
+    ReasonType.patternHammer => 'reasons.patternHammer',
+    ReasonType.patternHangingMan => 'reasons.patternHangingMan',
+    ReasonType.patternGapUp => 'reasons.patternGapUp',
+    ReasonType.patternGapDown => 'reasons.patternGapDown',
+    ReasonType.patternMorningStar => 'reasons.patternMorningStar',
+    ReasonType.patternEveningStar => 'reasons.patternEveningStar',
+    ReasonType.patternThreeWhiteSoldiers => 'reasons.patternThreeWhiteSoldiers',
+    ReasonType.patternThreeBlackCrows => 'reasons.patternThreeBlackCrows',
+    // 52 週高低點與均線排列
+    ReasonType.week52High => 'reasons.week52High',
+    ReasonType.week52Low => 'reasons.week52Low',
+    ReasonType.maAlignmentBullish => 'reasons.maAlignmentBullish',
+    ReasonType.maAlignmentBearish => 'reasons.maAlignmentBearish',
+    ReasonType.rsiExtremeOverbought => 'reasons.rsiExtremeOverbought',
+    ReasonType.rsiExtremeOversold => 'reasons.rsiExtremeOversold',
+    // 擴展市場資料
+    ReasonType.foreignShareholdingIncreasing =>
+      'reasons.foreignShareholdingIncreasing',
+    ReasonType.foreignShareholdingDecreasing =>
+      'reasons.foreignShareholdingDecreasing',
+    ReasonType.dayTradingHigh => 'reasons.dayTradingHigh',
+    ReasonType.dayTradingExtreme => 'reasons.dayTradingExtreme',
+    ReasonType.concentrationHigh => 'reasons.concentrationHigh',
+    // 量價背離
+    ReasonType.priceVolumeBullishDivergence =>
+      'reasons.priceVolumeBullishDivergence',
+    ReasonType.priceVolumeBearishDivergence =>
+      'reasons.priceVolumeBearishDivergence',
+    ReasonType.highVolumeBreakout => 'reasons.highVolumeBreakout',
+    ReasonType.lowVolumeAccumulation => 'reasons.lowVolumeAccumulation',
+    // 基本面訊號
+    ReasonType.revenueYoySurge => 'reasons.revenueYoySurge',
+    ReasonType.revenueYoyDecline => 'reasons.revenueYoyDecline',
+    ReasonType.revenueMomGrowth => 'reasons.revenueMomGrowth',
+    ReasonType.revenueNewHigh => 'reasons.revenueNewHigh',
+    ReasonType.highDividendYield => 'reasons.highDividendYield',
+    ReasonType.peUndervalued => 'reasons.peUndervalued',
+    ReasonType.peOvervalued => 'reasons.peOvervalued',
+    ReasonType.pbrUndervalued => 'reasons.pbrUndervalued',
+    // EPS 分析
+    ReasonType.epsYoYSurge => 'reasons.epsYoYSurge',
+    ReasonType.epsConsecutiveGrowth => 'reasons.epsConsecutiveGrowth',
+    ReasonType.epsTurnaround => 'reasons.epsTurnaround',
+    ReasonType.epsDeclineWarning => 'reasons.epsDeclineWarning',
+    // ROE 分析
+    ReasonType.roeExcellent => 'reasons.roeExcellent',
+    ReasonType.roeImproving => 'reasons.roeImproving',
+    ReasonType.roeDeclining => 'reasons.roeDeclining',
+    // 警示與內部人訊號
+    ReasonType.tradingWarningAttention => 'reasons.tradingWarningAttention',
+    ReasonType.tradingWarningDisposal => 'reasons.tradingWarningDisposal',
+    ReasonType.insiderSellingStreak => 'reasons.insiderSellingStreak',
+    ReasonType.insiderSignificantBuying => 'reasons.insiderSignificantBuying',
+    ReasonType.highPledgeRatio => 'reasons.highPledgeRatio',
+    ReasonType.foreignConcentrationWarning =>
+      'reasons.foreignConcentrationWarning',
+    ReasonType.foreignExodus => 'reasons.foreignExodus',
+  };
+
+  /// 取得理由說明的 i18n 鍵（用於 tooltip），無對應則回傳 null
+  String? get i18nTooltipKey => switch (this) {
+    ReasonType.reversalW2S => 'summary.reversalW2S',
+    ReasonType.reversalS2W => 'summary.reversalS2W',
+    ReasonType.techBreakout => 'summary.breakout',
+    ReasonType.techBreakdown => 'summary.breakdown',
+    ReasonType.volumeSpike => 'reasonTip.volumeSpike',
+    ReasonType.priceSpike => 'reasonTip.priceSpike',
+    ReasonType.institutionalBuy => 'reasonTip.institutional',
+    ReasonType.institutionalSell => 'reasonTip.institutional',
+    ReasonType.newsRelated => 'reasonTip.news',
+    ReasonType.kdGoldenCross => 'summary.kdGoldenCross',
+    ReasonType.kdDeathCross => 'summary.kdDeathCross',
+    ReasonType.institutionalBuyStreak => 'summary.institutionalBuyStreak',
+    ReasonType.institutionalSellStreak => 'summary.institutionalSellStreak',
+    // K 線型態
+    ReasonType.patternDoji => 'summary.patternDoji',
+    ReasonType.patternDojiBearish => 'reasonTip.patternDojiBearish',
+    ReasonType.patternBullishEngulfing => 'summary.patternBullishEngulfing',
+    ReasonType.patternBearishEngulfing => 'summary.patternBearishEngulfing',
+    ReasonType.patternHammer => 'summary.patternHammer',
+    ReasonType.patternHangingMan => 'summary.patternHangingMan',
+    ReasonType.patternMorningStar => 'summary.patternMorningStar',
+    ReasonType.patternEveningStar => 'summary.patternEveningStar',
+    ReasonType.patternThreeWhiteSoldiers => 'summary.patternThreeWhiteSoldiers',
+    ReasonType.patternThreeBlackCrows => 'summary.patternThreeBlackCrows',
+    ReasonType.patternGapUp => 'summary.patternGapUp',
+    ReasonType.patternGapDown => 'summary.patternGapDown',
+    // 52 週高低點與均線排列
+    ReasonType.week52High => 'summary.week52High',
+    ReasonType.week52Low => 'summary.week52Low',
+    ReasonType.maAlignmentBullish => 'summary.maAlignmentBullish',
+    ReasonType.maAlignmentBearish => 'summary.maAlignmentBearish',
+    ReasonType.rsiExtremeOverbought => 'reasonTip.rsiOverbought',
+    ReasonType.rsiExtremeOversold => 'reasonTip.rsiOversold',
+    // 擴展市場資料
+    ReasonType.foreignShareholdingIncreasing => 'reasonTip.foreignIncreasing',
+    ReasonType.foreignShareholdingDecreasing => 'reasonTip.foreignDecreasing',
+    ReasonType.dayTradingHigh => 'reasonTip.dayTradingHigh',
+    ReasonType.dayTradingExtreme => 'reasonTip.dayTradingHigh',
+    ReasonType.concentrationHigh => 'reasonTip.concentrationHigh',
+    // 量價背離
+    ReasonType.priceVolumeBullishDivergence => 'reasonTip.bullishDivergence',
+    ReasonType.priceVolumeBearishDivergence => 'reasonTip.bearishDivergence',
+    ReasonType.highVolumeBreakout => 'reasonTip.highVolumeBreakout',
+    ReasonType.lowVolumeAccumulation => 'reasonTip.lowVolumeAccumulation',
+    // 基本面訊號
+    ReasonType.revenueYoySurge => 'reasonTip.revenueYoySurge',
+    ReasonType.revenueYoyDecline => 'reasonTip.revenueYoyDecline',
+    ReasonType.revenueMomGrowth => 'reasonTip.revenueMomGrowth',
+    ReasonType.revenueNewHigh => 'reasonTip.revenueNewHigh',
+    ReasonType.highDividendYield => 'reasonTip.highDividendYield',
+    ReasonType.peUndervalued => 'reasonTip.peUndervalued',
+    ReasonType.peOvervalued => 'reasonTip.peOvervalued',
+    ReasonType.pbrUndervalued => 'reasonTip.pbrUndervalued',
+    // EPS 分析
+    ReasonType.epsYoYSurge => 'reasonTip.epsYoYSurge',
+    ReasonType.epsConsecutiveGrowth => 'reasonTip.epsConsecutiveGrowth',
+    ReasonType.epsTurnaround => 'reasonTip.epsTurnaround',
+    ReasonType.epsDeclineWarning => 'reasonTip.epsDecline',
+    // ROE 分析
+    ReasonType.roeExcellent => 'reasonTip.roeExcellent',
+    ReasonType.roeImproving => 'reasonTip.roeImproving',
+    ReasonType.roeDeclining => 'reasonTip.roeDeclining',
+    // 警示與內部人訊號
+    ReasonType.tradingWarningAttention => 'summary.warningAttention',
+    ReasonType.tradingWarningDisposal => 'summary.warningDisposal',
+    ReasonType.insiderSellingStreak => 'reasonTip.insiderSelling',
+    ReasonType.insiderSignificantBuying => 'summary.insiderBuying',
+    ReasonType.highPledgeRatio => 'summary.highPledge',
+    ReasonType.foreignConcentrationWarning => 'reasonTip.foreignConcentration',
+    ReasonType.foreignExodus => 'reasonTip.foreignExodus',
+  };
+}
+
+/// 從原因代碼字串查找對應的 [ReasonType]
+///
+/// 支援 SNAKE_CASE（DB 原始碼）、camelCase（JSON 格式）及歷史別名。
+final _reasonCodeMap = <String, ReasonType>{
+  for (final rt in ReasonType.values) ...<String, ReasonType>{
+    rt.code: rt,
+    rt.name: rt,
+  },
+  // Legacy aliases
+  'INSTITUTIONAL_SHIFT': ReasonType.institutionalBuy,
+  'institutionalShift': ReasonType.institutionalBuy,
+};
+
+ReasonType? reasonTypeFromCode(String code) => _reasonCodeMap[code];

@@ -28,7 +28,7 @@ void main() {
   group('HeroIndexSection', () {
     testWidgets('displays formatted close price', (tester) async {
       await tester.pumpWidget(
-        buildTestApp(HeroIndexSection(taiex: createIndex())),
+        buildTestApp(HeroIndexSection(index: createIndex())),
       );
 
       // 22,000.50 should be displayed
@@ -37,7 +37,7 @@ void main() {
 
     testWidgets('shows positive sign for up market', (tester) async {
       await tester.pumpWidget(
-        buildTestApp(HeroIndexSection(taiex: createIndex(change: 150.25))),
+        buildTestApp(HeroIndexSection(index: createIndex(change: 150.25))),
       );
 
       // +150.25 formatted
@@ -48,7 +48,7 @@ void main() {
       await tester.pumpWidget(
         buildTestApp(
           HeroIndexSection(
-            taiex: createIndex(change: -80.10, changePercent: -0.36),
+            index: createIndex(change: -80.10, changePercent: -0.36),
           ),
         ),
       );
@@ -59,7 +59,7 @@ void main() {
     testWidgets('hides sparkline when history has < 2 points', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HeroIndexSection(taiex: createIndex(), historyData: const [22000]),
+          HeroIndexSection(index: createIndex(), historyData: const [22000]),
         ),
       );
 
@@ -70,7 +70,7 @@ void main() {
     testWidgets('renders in dark mode', (tester) async {
       await tester.pumpWidget(
         buildTestApp(
-          HeroIndexSection(taiex: createIndex()),
+          HeroIndexSection(index: createIndex()),
           brightness: Brightness.dark,
         ),
       );

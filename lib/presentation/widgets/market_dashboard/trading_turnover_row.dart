@@ -1,15 +1,22 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
 /// 成交額統計列
 ///
 /// 顯示市場總成交額，單位為億元
 class TradingTurnoverRow extends StatelessWidget {
-  const TradingTurnoverRow({super.key, required this.data});
+  const TradingTurnoverRow({
+    super.key,
+    required this.data,
+    this.turnoverComparison,
+  });
 
   final TradingTurnover data;
+  final TurnoverComparison? turnoverComparison;
 
   @override
   Widget build(BuildContext context) {
@@ -42,13 +49,23 @@ class TradingTurnoverRow extends StatelessWidget {
             ],
           ),
 
-          // 數值
-          Text(
-            _formatTurnover(data.totalTurnover),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          // 數值 + 均量比較
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _formatTurnover(data.totalTurnover),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              if (turnoverComparison != null &&
+                  turnoverComparison!.avg5dTurnover > 0) ...[
+                const SizedBox(width: 8),
+                _Avg5dBadge(changePercent: turnoverComparison!.changePercent),
+              ],
+            ],
           ),
         ],
       ),
@@ -83,5 +100,40 @@ class TradingTurnoverRow extends StatelessWidget {
       ).format(turnoverInHundredMillion);
       return '$formatted ${'marketOverview.unitBillion'.tr()}';
     }
+  }
+}
+
+class _Avg5dBadge extends StatelessWidget {
+  const _Avg5dBadge({required this.changePercent});
+
+  final double changePercent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isUp = changePercent > 0;
+    final color = isUp
+        ? AppTheme.upColor
+        : changePercent < 0
+        ? AppTheme.downColor
+        : AppTheme.neutralColor;
+    final sign = isUp ? '+' : '';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+        color: color.withValues(alpha: 0.1),
+      ),
+      child: Text(
+        '${'marketOverview.avg5d'.tr()} $sign${changePercent.toStringAsFixed(0)}%',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 10,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
   }
 }

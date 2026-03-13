@@ -7,22 +7,13 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/data/repositories/fundamental_repository.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
-import 'package:afterclose/data/repositories/market_data_repository.dart';
-import 'package:afterclose/data/repositories/shareholding_repository.dart';
-import 'package:afterclose/data/repositories/trading_repository.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
-import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
-import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
+import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
-import 'package:afterclose/data/remote/tdcc_client.dart';
-import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/domain/services/update_service_deps.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/domain/services/update/update.dart';
@@ -43,47 +34,34 @@ import 'package:afterclose/domain/services/update/update.dart';
 class UpdateService {
   UpdateService({
     required AppDatabase database,
-    required StockRepository stockRepository,
-    required PriceRepository priceRepository,
-    required NewsRepository newsRepository,
-    required AnalysisRepository analysisRepository,
-    InstitutionalRepository? institutionalRepository,
-    MarketDataRepository? marketDataRepository,
-    TradingRepository? tradingRepository,
-    ShareholdingRepository? shareholdingRepository,
-    FundamentalRepository? fundamentalRepository,
-    InsiderRepository? insiderRepository,
-    TwseClient? twseClient,
-    TdccClient? tdccClient,
-    AnalysisService? analysisService,
-    RuleEngine? ruleEngine,
-    ScoringService? scoringService,
-    RuleAccuracyService? ruleAccuracyService,
+    required UpdateRepositories repositories,
+    UpdateClients clients = const UpdateClients(),
+    UpdateServices services = const UpdateServices(),
     List<String>? popularStocks,
     AppClock clock = const SystemClock(),
   }) : _db = database,
        _clock = clock,
-       _ruleAccuracyService = ruleAccuracyService,
-       _priceRepo = priceRepository,
-       _analysisRepo = analysisRepository,
-       _analysisService = analysisService ?? AnalysisService(),
-       _ruleEngine = ruleEngine ?? RuleEngine(),
-       _scoringService = scoringService,
+       _ruleAccuracyService = services.ruleAccuracy,
+       _priceRepo = repositories.price,
+       _analysisRepo = repositories.analysis,
+       _analysisService = services.analysis ?? AnalysisService(),
+       _ruleEngine = services.ruleEngine ?? RuleEngine(),
+       _scoringService = services.scoring,
        _popularStocks = popularStocks ?? DefaultStocks.popularStocks,
        // 初始化專責 updater
-       _stockListSyncer = StockListSyncer(stockRepository: stockRepository),
-       _newsSyncer = NewsSyncer(newsRepository: newsRepository),
-       _institutionalSyncer = institutionalRepository != null
+       _stockListSyncer = StockListSyncer(stockRepository: repositories.stock),
+       _newsSyncer = NewsSyncer(newsRepository: repositories.news),
+       _institutionalSyncer = repositories.institutional != null
            ? InstitutionalSyncer(
-               institutionalRepository: institutionalRepository,
+               institutionalRepository: repositories.institutional!,
              )
            : null,
        _batchDataLoader = BatchDataLoader(
          database: database,
-         newsRepository: newsRepository,
-         institutionalRepository: institutionalRepository,
-         shareholdingRepository: shareholdingRepository,
-         insiderRepository: insiderRepository,
+         newsRepository: repositories.news,
+         institutionalRepository: repositories.institutional,
+         shareholdingRepository: repositories.shareholding,
+         insiderRepository: repositories.insider,
        ),
        _candidateSelector = CandidateSelector(
          database: database,
@@ -91,28 +69,32 @@ class UpdateService {
        ),
        _historicalPriceSyncer = HistoricalPriceSyncer(
          database: database,
-         priceRepository: priceRepository,
+         priceRepository: repositories.price,
        ),
        _marketDataUpdater =
-           (tradingRepository != null && shareholdingRepository != null)
+           (repositories.trading != null && repositories.shareholding != null)
            ? MarketDataUpdater(
                database: database,
-               tradingRepository: tradingRepository,
-               shareholdingRepository: shareholdingRepository,
+               tradingRepository: repositories.trading!,
+               shareholdingRepository: repositories.shareholding!,
              )
            : null,
-       _fundamentalSyncer = fundamentalRepository != null
+       _fundamentalSyncer = repositories.fundamental != null
            ? FundamentalSyncer(
                database: database,
-               fundamentalRepository: fundamentalRepository,
-               marketDataRepository: marketDataRepository,
+               fundamentalRepository: repositories.fundamental!,
+               marketDataRepository: repositories.marketData,
              )
            : null,
-       _marketIndexSyncer = twseClient != null
-           ? MarketIndexSyncer(database: database, twseClient: twseClient)
+       _marketIndexSyncer = clients.twse != null
+           ? MarketIndexSyncer(
+               database: database,
+               twseClient: clients.twse!,
+               tpexClient: clients.tpex,
+             )
            : null,
-       _tdccHoldingSyncer = tdccClient != null
-           ? TdccHoldingSyncer(database: database, tdccClient: tdccClient)
+       _tdccHoldingSyncer = clients.tdcc != null
+           ? TdccHoldingSyncer(database: database, tdccClient: clients.tdcc!)
            : null;
 
   final AppDatabase _db;

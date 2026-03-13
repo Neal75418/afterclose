@@ -416,8 +416,10 @@ class TradingRepository implements ITradingRepository {
         tag: 'MarketData',
         description: '上市融資融券取得失敗，繼續處理上櫃',
       );
+      // TPEx 融資融券 API 有 T+1 延遲：傳入今日日期會回傳空資料。
+      // 省略 d 參數時 API 自動回傳最新可用資料（與 TWSE 行為一致）。
       final tpexFuture = safeAwait(
-        _tpexClient.getAllMarginTradingData(date: targetDate),
+        _tpexClient.getAllMarginTradingData(),
         <TpexMarginTrading>[],
         tag: 'MarketData',
         description: '上櫃融資融券取得失敗，繼續處理上市',
@@ -428,38 +430,59 @@ class TradingRepository implements ITradingRepository {
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 
-      // 建立上市融資融券 entries（過濾無效代碼）
+      // 建立融資融券 entries（TWSE 和 TPEx 單位皆為張，無需轉換）
+      MarginTradingCompanion buildEntry(
+        String code,
+        DateTime date,
+        double marginBuy,
+        double marginSell,
+        double marginBalance,
+        double shortBuy,
+        double shortSell,
+        double shortBalance,
+      ) {
+        return MarginTradingCompanion.insert(
+          symbol: code,
+          date: date,
+          marginBuy: Value(marginBuy),
+          marginSell: Value(marginSell),
+          marginBalance: Value(marginBalance),
+          shortBuy: Value(shortBuy),
+          shortSell: Value(shortSell),
+          shortBalance: Value(shortBalance),
+        );
+      }
+
       final twseEntries = twseData
           .where((item) => StockPatterns.isValidCode(item.code))
-          .map((item) {
-            return MarginTradingCompanion.insert(
-              symbol: item.code,
-              date: item.date,
-              marginBuy: Value(item.marginBuy),
-              marginSell: Value(item.marginSell),
-              marginBalance: Value(item.marginBalance),
-              shortBuy: Value(item.shortBuy),
-              shortSell: Value(item.shortSell),
-              shortBalance: Value(item.shortBalance),
-            );
-          })
+          .map(
+            (item) => buildEntry(
+              item.code,
+              item.date,
+              item.marginBuy,
+              item.marginSell,
+              item.marginBalance,
+              item.shortBuy,
+              item.shortSell,
+              item.shortBalance,
+            ),
+          )
           .toList();
 
-      // 建立上櫃融資融券 entries（過濾無效代碼）
       final tpexEntries = tpexData
           .where((item) => StockPatterns.isValidCode(item.code))
-          .map((item) {
-            return MarginTradingCompanion.insert(
-              symbol: item.code,
-              date: item.date,
-              marginBuy: Value(item.marginBuy),
-              marginSell: Value(item.marginSell),
-              marginBalance: Value(item.marginBalance),
-              shortBuy: Value(item.shortBuy),
-              shortSell: Value(item.shortSell),
-              shortBalance: Value(item.shortBalance),
-            );
-          })
+          .map(
+            (item) => buildEntry(
+              item.code,
+              item.date,
+              item.marginBuy,
+              item.marginSell,
+              item.marginBalance,
+              item.shortBuy,
+              item.shortSell,
+              item.shortBalance,
+            ),
+          )
           .toList();
 
       // 合併並寫入

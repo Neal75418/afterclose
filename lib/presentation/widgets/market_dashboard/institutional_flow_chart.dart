@@ -33,9 +33,10 @@ String _formatAmount(double value) {
 ///
 /// 以三張小卡呈現外資/投信/自營淨買賣，帶彩色左邊框 + 合計行
 class InstitutionalFlowChart extends StatelessWidget {
-  const InstitutionalFlowChart({super.key, required this.data});
+  const InstitutionalFlowChart({super.key, required this.data, this.streak});
 
   final InstitutionalTotals data;
+  final InstitutionalStreak? streak;
 
   @override
   Widget build(BuildContext context) {
@@ -53,16 +54,19 @@ class InstitutionalFlowChart extends StatelessWidget {
         'marketOverview.foreign'.tr(),
         data.foreignNet,
         AppTheme.foreignColor,
+        streak: streak?.foreignStreak,
       ),
       _FlowItem(
         'marketOverview.trust'.tr(),
         data.trustNet,
         AppTheme.investmentTrustColor,
+        streak: streak?.trustStreak,
       ),
       _FlowItem(
         'marketOverview.dealer'.tr(),
         data.dealerNet,
         AppTheme.dealerColor,
+        streak: streak?.dealerStreak,
       ),
     ];
 
@@ -130,10 +134,11 @@ class InstitutionalFlowChart extends StatelessWidget {
 }
 
 class _FlowItem {
-  const _FlowItem(this.label, this.value, this.color);
+  const _FlowItem(this.label, this.value, this.color, {this.streak});
   final String label;
   final double value;
   final Color color;
+  final int? streak;
 }
 
 class _FlowCard extends StatelessWidget {
@@ -179,12 +184,22 @@ class _FlowCard extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          item.label,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: item.color,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              item.label,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: item.color,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            if (item.streak != null &&
+                                item.streak!.abs() >= 2) ...[
+                              const SizedBox(width: 6),
+                              _StreakBadge(streak: item.streak!),
+                            ],
+                          ],
                         ),
                         Text(
                           _formatAmount(item.value),
@@ -234,6 +249,42 @@ class _FlowCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StreakBadge extends StatelessWidget {
+  const _StreakBadge({required this.streak});
+
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isBuy = streak > 0;
+    final color = isBuy ? AppTheme.upColor : AppTheme.downColor;
+    final text = isBuy
+        ? 'marketOverview.consecutiveBuy'.tr(
+            namedArgs: {'count': '${streak.abs()}'},
+          )
+        : 'marketOverview.consecutiveSell'.tr(
+            namedArgs: {'count': '${streak.abs()}'},
+          );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+        color: color.withValues(alpha: 0.1),
+      ),
+      child: Text(
+        text,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 9,
         ),
       ),
     );

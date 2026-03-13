@@ -51,7 +51,49 @@ class MarginCompactRow extends StatelessWidget {
             ),
           ],
         ),
+        if (data.marginBalance > 0 && data.shortBalance > 0) ...[
+          const SizedBox(height: 8),
+          _ShortMarginRatioRow(
+            ratio: data.shortBalance / data.marginBalance * 100,
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _ShortMarginRatioRow extends StatelessWidget {
+  const _ShortMarginRatioRow({required this.ratio});
+
+  final double ratio;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+        color: theme.colorScheme.surfaceContainerLowest,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'marketOverview.shortMarginRatio'.tr(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            '${ratio.toStringAsFixed(2)}%',
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

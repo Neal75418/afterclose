@@ -9,6 +9,7 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/isolate_map_extensions.dart';
 import 'package:afterclose/domain/services/scoring_isolate.dart';
 
 /// 股票候選評分服務
@@ -454,7 +455,8 @@ class ScoringService {
     Map<String, List<DailyPriceEntry>> map,
   ) {
     return map.map(
-      (key, value) => MapEntry(key, value.map(dailyPriceEntryToMap).toList()),
+      (key, value) =>
+          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
     );
   }
 
@@ -462,7 +464,8 @@ class ScoringService {
     Map<String, List<NewsItemEntry>> map,
   ) {
     return map.map(
-      (key, value) => MapEntry(key, value.map(newsItemEntryToMap).toList()),
+      (key, value) =>
+          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
     );
   }
 
@@ -471,24 +474,20 @@ class ScoringService {
   ) {
     return map.map(
       (key, value) =>
-          MapEntry(key, value.map(dailyInstitutionalEntryToMap).toList()),
+          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
     );
   }
 
   Map<String, Map<String, dynamic>> _convertRevenueMap(
     Map<String, MonthlyRevenueEntry> map,
   ) {
-    return map.map(
-      (key, value) => MapEntry(key, monthlyRevenueEntryToMap(value)),
-    );
+    return map.map((key, value) => MapEntry(key, value.toIsolateMap()));
   }
 
   Map<String, Map<String, dynamic>> _convertValuationMap(
     Map<String, StockValuationEntry> map,
   ) {
-    return map.map(
-      (key, value) => MapEntry(key, stockValuationEntryToMap(value)),
-    );
+    return map.map((key, value) => MapEntry(key, value.toIsolateMap()));
   }
 
   Map<String, List<Map<String, dynamic>>> _convertRevenueHistoryMap(
@@ -496,7 +495,7 @@ class ScoringService {
   ) {
     return map.map(
       (key, value) =>
-          MapEntry(key, value.map(monthlyRevenueEntryToMap).toList()),
+          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
     );
   }
 
@@ -505,7 +504,7 @@ class ScoringService {
   ) {
     return map.map(
       (key, value) =>
-          MapEntry(key, value.map(financialDataEntryToMap).toList()),
+          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
     );
   }
 
@@ -514,7 +513,7 @@ class ScoringService {
   ) {
     return map.map(
       (key, value) =>
-          MapEntry(key, value.map(dividendHistoryEntryToMap).toList()),
+          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
     );
   }
 }

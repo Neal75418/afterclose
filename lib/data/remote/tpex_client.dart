@@ -6,6 +6,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/tpex/models.dart';
+import 'package:afterclose/data/models/twse/twse_market_index.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
 
@@ -533,12 +534,14 @@ class TpexClient {
       final cached = _cache.get(cacheKey) as List<TpexMarginTrading>?;
       if (cached != null) return cached;
 
-      final targetDate = date ?? DateTime.now();
-      final rocDateStr = TwParseUtils.toRocDateString(targetDate);
+      final queryParams = <String, String>{'l': 'zh-tw', 'o': 'json'};
+      if (date != null) {
+        queryParams['d'] = TwParseUtils.toRocDateString(date);
+      }
 
       final response = await _dio.get(
         ApiEndpoints.tpexMarginTrading,
-        queryParameters: {'l': 'zh-tw', 'd': rocDateStr, 'o': 'json'},
+        queryParameters: queryParams,
       );
 
       if (response.statusCode != 200) {
@@ -557,7 +560,7 @@ class TpexClient {
 
       final table = MarketClientMixin.extractTpexTable(
         data,
-        targetDate,
+        date ?? DateTime.now(),
         _tag,
         '融資融券',
       );
@@ -577,15 +580,19 @@ class TpexClient {
 
   /// 解析融資融券資料列
   ///
-  /// TPEX 欄位格式 (15 欄):
+  /// margin_balance 端點欄位格式 (20 欄，單位：張):
   /// [0] 代號, [1] 名稱
-  /// [2] 融資前日餘額, [3] 融資賣出, [4] 融資買進, [5] 融資現券, [6] 融資當日餘額, [7] 融資限額
-  /// [8] 融券前日餘額, [9] 融券賣出, [10] 融券還券, [11] 融券調整, [12] 融券當日餘額, [13] 融券限額
-  /// [14] 備註
+  /// [2] 前資餘額, [3] 資買, [4] 資賣, [5] 現償, [6] 資餘額,
+  /// [7] 資屬證金, [8] 資使用率(%), [9] 資限額
+  /// [10] 前券餘額, [11] 券賣, [12] 券買, [13] 券償, [14] 券餘額,
+  /// [15] 券屬證金, [16] 券使用率(%), [17] 券限額
+  /// [18] 資券相抵(張), [19] 備註
+  ///
+  /// 單位與 TWSE 相同（張），無需額外轉換。
   TpexMarginTrading? _parseMarginTradingRow(List<dynamic> row, DateTime date) {
     return MarketClientMixin.safeParseRow(
       row: row,
-      minLength: 13,
+      minLength: 15,
       tag: _tag,
       operation: '融資融券',
       parser: () {
@@ -595,12 +602,12 @@ class TpexClient {
           date: date,
           code: code,
           name: row[1]?.toString().trim() ?? '',
-          marginBuy: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
-          marginSell: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          marginBuy: TwParseUtils.parseFormattedDouble(row[3]) ?? 0,
+          marginSell: TwParseUtils.parseFormattedDouble(row[4]) ?? 0,
           marginBalance: TwParseUtils.parseFormattedDouble(row[6]) ?? 0,
-          shortBuy: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
-          shortSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
-          shortBalance: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+          shortBuy: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
+          shortSell: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
+          shortBalance: TwParseUtils.parseFormattedDouble(row[14]) ?? 0,
         );
       },
     );
@@ -891,6 +898,89 @@ class TpexClient {
         response.statusCode,
       );
     });
+  }
+
+  /// 取得櫃買指數歷史資料
+  ///
+  /// 使用 TPEX OpenAPI `/v1/tpex_index`，免費無需認證。
+  /// 回傳近月每日 OHLC + Change 資料，轉換為 `TwseMarketIndex` 複用現有 model。
+  ///
+  /// JSON 格式：
+  /// ```json
+  /// [{"Date":"20260312","Open":"293.80","High":"295.00","Low":"290.50",
+  ///   "Close":"291.20","Change":"-2.60",...}]
+  /// ```
+  Future<List<TwseMarketIndex>> getTpexIndex() {
+    return MarketClientMixin.executeRequest(_tag, '櫃買指數', () async {
+      const cacheKey = 'tpexIndex';
+      final cached = _cache.get(cacheKey) as List<TwseMarketIndex>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexIndex,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '櫃買指數: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TwseMarketIndex>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = _parseTpexIndexItem(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      // 按日期升序排列（最舊在前），與 TWSE index history 一致
+      results.sort((a, b) => a.date.compareTo(b.date));
+
+      AppLogger.info(_tag, '櫃買指數: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 解析櫃買指數項目
+  TwseMarketIndex? _parseTpexIndexItem(Map<String, dynamic> json) {
+    try {
+      final dateStr = json['Date']?.toString();
+      if (dateStr == null || dateStr.length != 8) return null;
+
+      final year = int.tryParse(dateStr.substring(0, 4));
+      final month = int.tryParse(dateStr.substring(4, 6));
+      final day = int.tryParse(dateStr.substring(6, 8));
+      if (year == null || month == null || day == null) return null;
+
+      final date = DateTime(year, month, day);
+      final close = double.tryParse(json['Close']?.toString() ?? '');
+      final change = double.tryParse(json['Change']?.toString() ?? '');
+      if (close == null) return null;
+
+      final changeVal = change ?? 0;
+      final prevClose = close - changeVal;
+      final changePct = prevClose != 0 ? (changeVal / prevClose) * 100 : 0.0;
+
+      return TwseMarketIndex(
+        date: date,
+        name: '櫃買指數',
+        close: close,
+        change: changeVal,
+        changePercent: changePct,
+      );
+    } catch (e) {
+      AppLogger.debug(_tag, '解析櫃買指數項目失敗: $e');
+      return null;
+    }
   }
 
   /// 取得上櫃公司每月營業收入彙總表

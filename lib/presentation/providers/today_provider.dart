@@ -9,6 +9,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
+import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -285,8 +286,11 @@ class TodayNotifier extends Notifier<TodayState> {
         );
       }
 
-      // 更新後重新載入資料
-      await loadData();
+      // 更新後重新載入資料（含大盤總覽 Dashboard）
+      await Future.wait([
+        loadData(),
+        ref.read(marketOverviewProvider.notifier).loadData(),
+      ]);
 
       return result;
     } on TimeoutException catch (e) {

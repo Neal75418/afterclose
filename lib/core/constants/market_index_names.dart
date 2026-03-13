@@ -6,6 +6,9 @@ class MarketIndexNames {
   static const taiex = '發行量加權股價指數';
   static const exFinance = '未含金融電子指數';
 
+  // === TPEx 指數 ===
+  static const tpexIndex = '櫃買指數';
+
   // === 產業指數 ===
   static const electronics = '電子工業類指數';
   static const financeInsurance = '金融保險類指數';
@@ -25,5 +28,6 @@ class MarketIndexNames {
     semiconductor,
     shipping,
     biotech,
+    highDividend,
   ];
 }

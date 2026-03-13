@@ -6,6 +6,7 @@ import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/services/isolate_map_extensions.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 
 /// Isolate 評分輸入資料
@@ -350,7 +351,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       continue;
     }
 
-    final prices = pricesMaps.map(_mapToDailyPriceEntry).toList();
+    final prices = pricesMaps.map(IsolateMappers.dailyPrice).toList();
     if (prices.length < RuleParams.swingWindow) {
       skippedInsufficientData++;
       continue;
@@ -490,200 +491,32 @@ _convertBatchData(ScoringIsolateInput input, String symbol) {
 
   return (
     institutionalHistory: instMaps != null && instMaps.isNotEmpty
-        ? instMaps.map(_mapToDailyInstitutionalEntry).toList()
+        ? instMaps.map(IsolateMappers.dailyInstitutional).toList()
         : null,
     recentNews: newsMaps != null && newsMaps.isNotEmpty
-        ? newsMaps.map(_mapToNewsItemEntry).toList()
+        ? newsMaps.map(IsolateMappers.newsItem).toList()
         : null,
     latestRevenue: revenueMap != null
-        ? _mapToMonthlyRevenueEntry(revenueMap)
+        ? IsolateMappers.monthlyRevenue(revenueMap)
         : null,
     latestValuation: valuationMap != null
-        ? _mapToStockValuationEntry(valuationMap)
+        ? IsolateMappers.stockValuation(valuationMap)
         : null,
     revenueHistory: revenueHistoryMaps != null && revenueHistoryMaps.isNotEmpty
-        ? revenueHistoryMaps.map(_mapToMonthlyRevenueEntry).toList()
+        ? revenueHistoryMaps.map(IsolateMappers.monthlyRevenue).toList()
         : null,
     epsHistory: epsHistoryMaps != null && epsHistoryMaps.isNotEmpty
-        ? epsHistoryMaps.map(_mapToFinancialDataEntry).toList()
+        ? epsHistoryMaps.map(IsolateMappers.financialData).toList()
         : null,
     roeHistory: roeHistoryMaps != null && roeHistoryMaps.isNotEmpty
-        ? roeHistoryMaps.map(_mapToFinancialDataEntry).toList()
+        ? roeHistoryMaps.map(IsolateMappers.financialData).toList()
         : null,
     dividendHistory:
         dividendHistoryMaps != null && dividendHistoryMaps.isNotEmpty
-        ? dividendHistoryMaps.map(_mapToDividendHistoryEntry).toList()
+        ? dividendHistoryMaps.map(IsolateMappers.dividendHistory).toList()
         : null,
     maxHistoricalRevenue: input.maxHistoricalRevenueMap?[symbol],
   );
-}
-
-// ==================================================
-// 資料轉換輔助函數
-// ==================================================
-
-DailyPriceEntry _mapToDailyPriceEntry(Map<String, dynamic> map) {
-  return DailyPriceEntry(
-    symbol: map['symbol'] as String,
-    date: DateTime.parse(map['date'] as String),
-    open: map['open'] as double?,
-    high: map['high'] as double?,
-    low: map['low'] as double?,
-    close: map['close'] as double?,
-    volume: map['volume'] as double?,
-    priceChange: map['priceChange'] as double?,
-  );
-}
-
-Map<String, dynamic> dailyPriceEntryToMap(DailyPriceEntry entry) {
-  return {
-    'symbol': entry.symbol,
-    'date': entry.date.toIso8601String(),
-    'open': entry.open,
-    'high': entry.high,
-    'low': entry.low,
-    'close': entry.close,
-    'volume': entry.volume,
-    'priceChange': entry.priceChange,
-  };
-}
-
-DailyInstitutionalEntry _mapToDailyInstitutionalEntry(
-  Map<String, dynamic> map,
-) {
-  return DailyInstitutionalEntry(
-    symbol: map['symbol'] as String,
-    date: DateTime.parse(map['date'] as String),
-    foreignNet: map['foreignNet'] as double?,
-    investmentTrustNet: map['investmentTrustNet'] as double?,
-    dealerNet: map['dealerNet'] as double?,
-  );
-}
-
-Map<String, dynamic> dailyInstitutionalEntryToMap(
-  DailyInstitutionalEntry entry,
-) {
-  return {
-    'symbol': entry.symbol,
-    'date': entry.date.toIso8601String(),
-    'foreignNet': entry.foreignNet,
-    'investmentTrustNet': entry.investmentTrustNet,
-    'dealerNet': entry.dealerNet,
-  };
-}
-
-NewsItemEntry _mapToNewsItemEntry(Map<String, dynamic> map) {
-  return NewsItemEntry(
-    id: map['id'] as String,
-    source: map['source'] as String,
-    title: map['title'] as String,
-    url: map['url'] as String,
-    category: map['category'] as String,
-    publishedAt: DateTime.parse(map['publishedAt'] as String),
-    fetchedAt: DateTime.parse(map['fetchedAt'] as String),
-    content: map['content'] as String?,
-  );
-}
-
-Map<String, dynamic> newsItemEntryToMap(NewsItemEntry entry) {
-  return {
-    'id': entry.id,
-    'source': entry.source,
-    'title': entry.title,
-    'url': entry.url,
-    'category': entry.category,
-    'publishedAt': entry.publishedAt.toIso8601String(),
-    'fetchedAt': entry.fetchedAt.toIso8601String(),
-    'content': entry.content,
-  };
-}
-
-MonthlyRevenueEntry _mapToMonthlyRevenueEntry(Map<String, dynamic> map) {
-  return MonthlyRevenueEntry(
-    symbol: map['symbol'] as String,
-    date: DateTime.parse(map['date'] as String),
-    revenueYear: map['revenueYear'] as int,
-    revenueMonth: map['revenueMonth'] as int,
-    revenue: (map['revenue'] as num).toDouble(),
-    momGrowth: map['momGrowth'] as double?,
-    yoyGrowth: map['yoyGrowth'] as double?,
-  );
-}
-
-Map<String, dynamic> monthlyRevenueEntryToMap(MonthlyRevenueEntry entry) {
-  return {
-    'symbol': entry.symbol,
-    'date': entry.date.toIso8601String(),
-    'revenueYear': entry.revenueYear,
-    'revenueMonth': entry.revenueMonth,
-    'revenue': entry.revenue,
-    'momGrowth': entry.momGrowth,
-    'yoyGrowth': entry.yoyGrowth,
-  };
-}
-
-StockValuationEntry _mapToStockValuationEntry(Map<String, dynamic> map) {
-  return StockValuationEntry(
-    symbol: map['symbol'] as String,
-    date: DateTime.parse(map['date'] as String),
-    per: map['per'] as double?,
-    pbr: map['pbr'] as double?,
-    dividendYield: map['dividendYield'] as double?,
-  );
-}
-
-Map<String, dynamic> stockValuationEntryToMap(StockValuationEntry entry) {
-  return {
-    'symbol': entry.symbol,
-    'date': entry.date.toIso8601String(),
-    'per': entry.per,
-    'pbr': entry.pbr,
-    'dividendYield': entry.dividendYield,
-  };
-}
-
-FinancialDataEntry _mapToFinancialDataEntry(Map<String, dynamic> map) {
-  return FinancialDataEntry(
-    symbol: map['symbol'] as String,
-    date: DateTime.parse(map['date'] as String),
-    statementType: map['statementType'] as String,
-    dataType: map['dataType'] as String,
-    value: map['value'] as double?,
-    originName: map['originName'] as String?,
-  );
-}
-
-Map<String, dynamic> financialDataEntryToMap(FinancialDataEntry entry) {
-  return {
-    'symbol': entry.symbol,
-    'date': entry.date.toIso8601String(),
-    'statementType': entry.statementType,
-    'dataType': entry.dataType,
-    'value': entry.value,
-    'originName': entry.originName,
-  };
-}
-
-DividendHistoryEntry _mapToDividendHistoryEntry(Map<String, dynamic> map) {
-  return DividendHistoryEntry(
-    symbol: map['symbol'] as String,
-    year: map['year'] as int,
-    cashDividend: (map['cashDividend'] as num).toDouble(),
-    stockDividend: (map['stockDividend'] as num).toDouble(),
-    exDividendDate: map['exDividendDate'] as String?,
-    exRightsDate: map['exRightsDate'] as String?,
-  );
-}
-
-Map<String, dynamic> dividendHistoryEntryToMap(DividendHistoryEntry entry) {
-  return {
-    'symbol': entry.symbol,
-    'year': entry.year,
-    'cashDividend': entry.cashDividend,
-    'stockDividend': entry.stockDividend,
-    'exDividendDate': entry.exDividendDate,
-    'exRightsDate': entry.exRightsDate,
-  };
 }
 
 IsolateReasonOutput _reasonToOutput(TriggeredReason reason) {

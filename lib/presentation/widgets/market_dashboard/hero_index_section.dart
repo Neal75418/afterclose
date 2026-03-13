@@ -1,33 +1,35 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Hero 加權指數區域
+/// Hero 指數區域
 ///
-/// 顯示加權指數大數字 + 漲跌幅 + 30 日 Sparkline 走勢圖
+/// 顯示指數大數字 + 漲跌幅 + 30 日 Sparkline 走勢圖
+/// 支援加權指數和櫃買指數，根據 index name 自動選擇標題
 class HeroIndexSection extends StatelessWidget {
   const HeroIndexSection({
     super.key,
-    required this.taiex,
+    required this.index,
     this.historyData = const [],
   });
 
-  final TwseMarketIndex taiex;
+  final TwseMarketIndex index;
   final List<double> historyData;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = taiex.isUp
+    final color = index.isUp
         ? AppTheme.upColor
-        : taiex.change < 0
+        : index.change < 0
         ? AppTheme.downColor
         : AppTheme.neutralColor;
-    final sign = taiex.change > 0 ? '+' : '';
+    final sign = index.change > 0 ? '+' : '';
     final formatter = NumberFormat('#,##0.00');
 
     return Container(
@@ -44,7 +46,9 @@ class HeroIndexSection extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'marketOverview.taiex'.tr(),
+                index.name == MarketIndexNames.tpexIndex
+                    ? 'marketOverview.tpexIndex'.tr()
+                    : 'marketOverview.taiex'.tr(),
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
@@ -58,7 +62,7 @@ class HeroIndexSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
                 ),
                 child: Text(
-                  '$sign${taiex.changePercent.toStringAsFixed(2)}%',
+                  '$sign${index.changePercent.toStringAsFixed(2)}%',
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w700,
@@ -76,7 +80,7 @@ class HeroIndexSection extends StatelessWidget {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                formatter.format(taiex.close),
+                formatter.format(index.close),
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -84,7 +88,7 @@ class HeroIndexSection extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                '$sign${formatter.format(taiex.change)}',
+                '$sign${formatter.format(index.change)}',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: color,
                   fontWeight: FontWeight.w700,

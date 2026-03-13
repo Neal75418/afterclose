@@ -9,9 +9,10 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 ///
 /// 以水平 SegmentedBar 呈現上漲/持平/下跌比例，下方顯示數字
 class AdvanceDeclineGauge extends StatelessWidget {
-  const AdvanceDeclineGauge({super.key, required this.data});
+  const AdvanceDeclineGauge({super.key, required this.data, this.limitUpDown});
 
   final AdvanceDecline data;
+  final LimitUpDown? limitUpDown;
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +108,75 @@ class AdvanceDeclineGauge extends StatelessWidget {
             ),
           ],
         ),
+
+        // 漲停/跌停家數
+        if (limitUpDown != null &&
+            (limitUpDown!.limitUp > 0 || limitUpDown!.limitDown > 0)) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _LimitBadge(
+                label: 'marketOverview.limitUp'.tr(),
+                count: limitUpDown!.limitUp,
+                color: AppTheme.upColor,
+              ),
+              const SizedBox(width: 16),
+              _LimitBadge(
+                label: 'marketOverview.limitDown'.tr(),
+                count: limitUpDown!.limitDown,
+                color: AppTheme.downColor,
+              ),
+            ],
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _LimitBadge extends StatelessWidget {
+  const _LimitBadge({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
+
+  final String label;
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+        color: color.withValues(alpha: 0.1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 10,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '$count',
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

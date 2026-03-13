@@ -80,9 +80,12 @@ abstract final class ApiEndpoints {
   static const String tpexInstitutionalAmounts =
       '/web/stock/3insti/3insti_summary/3itrdsum_result.php';
 
-  /// 上櫃融資融券餘額（回傳 tables[0].data）
+  /// 上櫃融資融券餘額（回傳 tables[0].data，單位：張）
+  ///
+  /// 注意：`margin_balance` 才是正確的融資融券端點（20 欄，單位：張）。
+  /// `margin_sbl` 是融券+借券端點，不包含融資資料。
   static const String tpexMarginTrading =
-      '/web/stock/margin_trading/margin_sbl/margin_sbl_result.php';
+      '/web/stock/margin_trading/margin_balance/margin_bal_result.php';
 
   /// 上櫃當沖交易統計（回傳 tables[0].data）
   /// 類似 TWSE 的 TWTB4U，提供全市場上櫃股票當沖資料
@@ -91,6 +94,10 @@ abstract final class ApiEndpoints {
 
   /// TPEX OpenAPI 基礎 URL（免費、無限制）
   static const String tpexOpenApiBaseUrl = 'https://www.tpex.org.tw/openapi';
+
+  /// 櫃買指數歷史（OHLC + Change）- OpenAPI（免費、無限制）
+  /// 回傳近月每日指數資料，日期格式 YYYYMMDD
+  static const String tpexIndex = '$tpexOpenApiBaseUrl/v1/tpex_index';
 
   /// 上櫃估值資料（本益比、股價淨值比、殖利率）- OpenAPI
   /// 回傳 JSON 陣列，每筆含 SecuritiesCompanyCode, PriceEarningRatio, PriceBookRatio, YieldRatio

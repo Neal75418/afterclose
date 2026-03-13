@@ -29,6 +29,7 @@ import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
+import 'package:afterclose/domain/services/update_service_deps.dart';
 
 // ==================================================
 // 核心基礎設施
@@ -219,19 +220,26 @@ final apiConnectionServiceProvider = Provider<ApiConnectionService>((ref) {
 final updateServiceProvider = Provider<UpdateService>((ref) {
   return UpdateService(
     database: ref.watch(databaseProvider),
-    stockRepository: ref.watch(stockRepositoryProvider),
-    priceRepository: ref.watch(priceRepositoryProvider),
-    newsRepository: ref.watch(newsRepositoryProvider),
-    analysisRepository: ref.watch(analysisRepositoryProvider),
-    institutionalRepository: ref.watch(institutionalRepositoryProvider),
-    marketDataRepository: ref.watch(marketDataRepositoryProvider),
-    tradingRepository: ref.watch(tradingRepositoryProvider),
-    shareholdingRepository: ref.watch(shareholdingRepositoryProvider),
-    fundamentalRepository: ref.watch(fundamentalRepositoryProvider),
-    insiderRepository: ref.watch(insiderRepositoryProvider),
-    twseClient: ref.watch(twseClientProvider),
-    tdccClient: ref.watch(tdccClientProvider),
-    ruleAccuracyService: ref.watch(ruleAccuracyServiceProvider),
+    repositories: UpdateRepositories(
+      stock: ref.watch(stockRepositoryProvider),
+      price: ref.watch(priceRepositoryProvider),
+      news: ref.watch(newsRepositoryProvider),
+      analysis: ref.watch(analysisRepositoryProvider),
+      institutional: ref.watch(institutionalRepositoryProvider),
+      marketData: ref.watch(marketDataRepositoryProvider),
+      trading: ref.watch(tradingRepositoryProvider),
+      shareholding: ref.watch(shareholdingRepositoryProvider),
+      fundamental: ref.watch(fundamentalRepositoryProvider),
+      insider: ref.watch(insiderRepositoryProvider),
+    ),
+    clients: UpdateClients(
+      twse: ref.watch(twseClientProvider),
+      tpex: ref.watch(tpexClientProvider),
+      tdcc: ref.watch(tdccClientProvider),
+    ),
+    services: UpdateServices(
+      ruleAccuracy: ref.watch(ruleAccuracyServiceProvider),
+    ),
   );
 });
 

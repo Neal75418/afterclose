@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
+import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 import 'package:afterclose/data/database/tables/stock_master.dart';
 import 'package:afterclose/data/database/tables/daily_price.dart';
 import 'package:afterclose/data/database/tables/daily_institutional.dart';
@@ -122,7 +122,7 @@ class AppDatabase extends _$AppDatabase
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -130,10 +130,19 @@ class AppDatabase extends _$AppDatabase
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      if (from == 1) {
+      if (from < 2) {
         // Drop personalization tables (removed as dead code)
         await m.deleteTable('user_interaction');
         await m.deleteTable('user_preference');
+      }
+      if (from < 3) {
+        // One-time cleanup: TPEx margin data was synced from wrong endpoint
+        // (margin_sbl = 融券+借券) instead of (margin_balance = 融資+融券).
+        // Delete incorrect historical data; correct data will be re-synced.
+        await customStatement('''
+          DELETE FROM margin_trading
+          WHERE symbol IN (SELECT symbol FROM stock_master WHERE market = 'TPEx')
+        ''');
       }
     },
     beforeOpen: (details) async {

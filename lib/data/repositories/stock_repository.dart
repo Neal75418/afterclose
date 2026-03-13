@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/request_deduplicator.dart';
@@ -55,7 +56,7 @@ class StockRepository implements IStockRepository {
               symbol: stock.stockId,
               name: stock.stockName,
               market: stock.market,
-              industry: Value(stock.industryCategory),
+              industry: Value(_normalizeIndustry(stock.industryCategory)),
               isActive: const Value(true),
             );
           })
@@ -82,6 +83,13 @@ class StockRepository implements IStockRepository {
       throw DatabaseException('Failed to sync stock list', e);
     }
   }
+
+  /// 正規化產業名稱（FinMind API 回傳的名稱有不一致）
+  ///
+  /// 例如 TPEx 同一產業可能出現：「其他電子業」與「其他電子類」、
+  /// 「居家生活」與「居家生活類」等重複命名。
+  /// 對照表定義於 [IndustryNames.normalizationMap]。
+  static String _normalizeIndustry(String raw) => IndustryNames.normalize(raw);
 
   /// 依名稱或代碼搜尋股票（Database 層級過濾）
   @override

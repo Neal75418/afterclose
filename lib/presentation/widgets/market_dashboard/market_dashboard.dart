@@ -7,10 +7,12 @@ import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/industry_performance_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/warnings_summary_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -188,7 +190,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       if (taiex.isNotEmpty) {
         sections.add(
           HeroIndexSection(
-            taiex: taiex.first,
+            index: taiex.first,
             historyData: widget.state.indexHistory[taiex.first.name] ?? [],
           ),
         );
@@ -214,35 +216,60 @@ class _MarketDashboardState extends State<MarketDashboard> {
         );
       }
     } else {
-      // 上櫃無指數，顯示佔位符
-      sections.add(
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'marketOverview.tpexNoIndex'.tr(),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
+      // 上櫃：顯示櫃買指數 Hero
+      final tpexIdx = widget.state.indices
+          .where((idx) => idx.name == MarketIndexNames.tpexIndex)
+          .toList();
+
+      if (tpexIdx.isNotEmpty) {
+        sections.add(
+          HeroIndexSection(
+            index: tpexIdx.first,
+            historyData:
+                widget.state.indexHistory[MarketIndexNames.tpexIndex] ?? [],
           ),
-        ),
-      );
+        );
+      } else {
+        sections.add(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'marketOverview.tpexNoIndex'.tr(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      }
     }
 
-    // Section 3-6: 統計數據（依選擇的市場顯示）
+    // Section 3+: 統計數據（依選擇的市場顯示）
     final marketKey = _selectedMarket.key;
     final adData = widget.state.advanceDeclineByMarket[marketKey];
     final instData = widget.state.institutionalByMarket[marketKey];
     final marginData = widget.state.marginByMarket[marketKey];
     final turnoverData = widget.state.turnoverByMarket[marketKey];
+    final limitUpDown = widget.state.limitUpDownByMarket[marketKey];
+    final turnoverComparison =
+        widget.state.turnoverComparisonByMarket[marketKey];
+    final warningCounts = widget.state.warningCountsByMarket[marketKey];
+    final instStreak = widget.state.institutionalStreakByMarket[marketKey];
+    final industries = widget.state.industrySummaryByMarket[marketKey];
 
     if (adData != null && adData.total > 0) {
-      sections.add(AdvanceDeclineGauge(data: adData));
+      sections.add(AdvanceDeclineGauge(data: adData, limitUpDown: limitUpDown));
     }
 
     // 成交量統計
     if (turnoverData != null && turnoverData.totalTurnover > 0) {
-      sections.add(TradingTurnoverRow(data: turnoverData));
+      sections.add(
+        TradingTurnoverRow(
+          data: turnoverData,
+          turnoverComparison: turnoverComparison,
+        ),
+      );
     }
 
     if (instData != null &&
@@ -250,12 +277,22 @@ class _MarketDashboardState extends State<MarketDashboard> {
             instData.foreignNet != 0 ||
             instData.trustNet != 0 ||
             instData.dealerNet != 0)) {
-      sections.add(InstitutionalFlowChart(data: instData));
+      sections.add(InstitutionalFlowChart(data: instData, streak: instStreak));
     }
 
     if (marginData != null &&
         (marginData.marginChange != 0 || marginData.shortChange != 0)) {
       sections.add(MarginCompactRow(data: marginData));
+    }
+
+    // 注意/處置股摘要
+    if (warningCounts != null && warningCounts.total > 0) {
+      sections.add(WarningsSummaryRow(data: warningCounts));
+    }
+
+    // 產業表現
+    if (industries != null && industries.isNotEmpty) {
+      sections.add(IndustryPerformanceRow(industries: industries));
     }
 
     // 組合所有 sections
@@ -282,62 +319,26 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
   /// 建構平板/桌面並排顯示
   Widget _buildParallelView(ThemeData theme) {
-    // 先顯示 Hero 指數（僅 TWSE）
-    final sections = <Widget>[];
-
-    final taiex = widget.state.indices
-        .where((idx) => idx.name == MarketIndexNames.taiex)
-        .toList();
-
-    if (taiex.isNotEmpty) {
-      sections.add(
-        HeroIndexSection(
-          taiex: taiex.first,
-          historyData: widget.state.indexHistory[taiex.first.name] ?? [],
-        ),
-      );
-    }
-
-    // Section 2: 子指數列
-    const subOrder = MarketIndexNames.dashboardIndices;
-    final subIndices =
-        widget.state.indices
-            .where((idx) => idx.name != MarketIndexNames.taiex)
-            .toList()
-          ..sort(
-            (a, b) =>
-                subOrder.indexOf(a.name).compareTo(subOrder.indexOf(b.name)),
-          );
-
-    if (subIndices.isNotEmpty) {
-      sections.add(
-        SubIndicesRow(
-          subIndices: subIndices,
-          historyMap: widget.state.indexHistory,
-        ),
-      );
-    }
+    // 子指數列（TWSE 產業指數）放在雙欄上方，避免左欄過高
+    final subIndicesWidget = _buildSharedSubIndices();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Hero + 子指數
-        for (int i = 0; i < sections.length; i++) ...[
-          if (i > 0) const SizedBox(height: 10),
-          sections[i],
+        if (subIndicesWidget != null) ...[
+          subIndicesWidget,
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 14),
         ],
-
-        const SizedBox(height: 14),
-        Divider(
-          height: 1,
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-        ),
-        const SizedBox(height: 14),
 
         // 並排顯示上市/上櫃統計數據
         IntrinsicHeight(
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(child: _buildMarketColumn(theme, 'TWSE')),
               VerticalDivider(
@@ -353,6 +354,30 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
+  /// 建構共用子指數列（TWSE 產業指數，放在雙欄上方）
+  Widget? _buildSharedSubIndices() {
+    const subOrder = MarketIndexNames.dashboardIndices;
+    final subIndices =
+        widget.state.indices
+            .where(
+              (idx) =>
+                  idx.name != MarketIndexNames.taiex &&
+                  idx.name != MarketIndexNames.tpexIndex,
+            )
+            .toList()
+          ..sort(
+            (a, b) =>
+                subOrder.indexOf(a.name).compareTo(subOrder.indexOf(b.name)),
+          );
+
+    if (subIndices.isEmpty) return null;
+
+    return SubIndicesRow(
+      subIndices: subIndices,
+      historyMap: widget.state.indexHistory,
+    );
+  }
+
   /// 建構單一市場欄位（用於平板/桌面並排）
   ///
   /// 各 section 獨立顯示，不以漲跌家數作為 gatekeeper。
@@ -361,17 +386,27 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final instData = widget.state.institutionalByMarket[market];
     final marginData = widget.state.marginByMarket[market];
     final turnoverData = widget.state.turnoverByMarket[market];
+    final limitUpDown = widget.state.limitUpDownByMarket[market];
+    final turnoverComparison = widget.state.turnoverComparisonByMarket[market];
+    final warningCounts = widget.state.warningCountsByMarket[market];
+    final instStreak = widget.state.institutionalStreakByMarket[market];
+    final industries = widget.state.industrySummaryByMarket[market];
 
     final sections = <Widget>[];
 
     // 漲跌家數
     if (adData != null && adData.total > 0) {
-      sections.add(AdvanceDeclineGauge(data: adData));
+      sections.add(AdvanceDeclineGauge(data: adData, limitUpDown: limitUpDown));
     }
 
     // 成交量統計
     if (turnoverData != null && turnoverData.totalTurnover > 0) {
-      sections.add(TradingTurnoverRow(data: turnoverData));
+      sections.add(
+        TradingTurnoverRow(
+          data: turnoverData,
+          turnoverComparison: turnoverComparison,
+        ),
+      );
     }
 
     // 法人動向
@@ -380,13 +415,23 @@ class _MarketDashboardState extends State<MarketDashboard> {
             instData.foreignNet != 0 ||
             instData.trustNet != 0 ||
             instData.dealerNet != 0)) {
-      sections.add(InstitutionalFlowChart(data: instData));
+      sections.add(InstitutionalFlowChart(data: instData, streak: instStreak));
     }
 
     // 融資融券
     if (marginData != null &&
         (marginData.marginChange != 0 || marginData.shortChange != 0)) {
       sections.add(MarginCompactRow(data: marginData));
+    }
+
+    // 注意/處置股摘要
+    if (warningCounts != null && warningCounts.total > 0) {
+      sections.add(WarningsSummaryRow(data: warningCounts));
+    }
+
+    // 產業表現
+    if (industries != null && industries.isNotEmpty) {
+      sections.add(IndustryPerformanceRow(industries: industries));
     }
 
     final children = <Widget>[
@@ -403,6 +448,23 @@ class _MarketDashboardState extends State<MarketDashboard> {
       ),
       const SizedBox(height: 12),
     ];
+
+    // Hero 指數區域：各欄顯示自己的 Hero
+    final heroName = market == 'TWSE'
+        ? MarketIndexNames.taiex
+        : MarketIndexNames.tpexIndex;
+    final heroIdx = widget.state.indices
+        .where((idx) => idx.name == heroName)
+        .toList();
+    if (heroIdx.isNotEmpty) {
+      children.add(
+        HeroIndexSection(
+          index: heroIdx.first,
+          historyData: widget.state.indexHistory[heroName] ?? [],
+        ),
+      );
+      children.add(const SizedBox(height: 12));
+    }
 
     if (sections.isEmpty) {
       children.add(

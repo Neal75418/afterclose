@@ -447,9 +447,21 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       case WatchlistGroup.none:
         list = _buildFlatList(state, showLimitMarkers);
       case WatchlistGroup.status:
-        list = _buildGroupedByStatusList(state, showLimitMarkers);
+        list = _buildGroupedList(
+          groupValues: WatchlistStatus.values,
+          grouped: state.groupedByStatus,
+          getIcon: (s) => s.icon,
+          getLabel: (s) => s.label,
+          showLimitMarkers: showLimitMarkers,
+        );
       case WatchlistGroup.trend:
-        list = _buildGroupedByTrendList(state, showLimitMarkers);
+        list = _buildGroupedList(
+          groupValues: WatchlistTrend.values,
+          grouped: state.groupedByTrend,
+          getIcon: (t) => t.icon,
+          getLabel: (t) => t.label,
+          showLimitMarkers: showLimitMarkers,
+        );
     }
 
     return AnimatedSwitcher(
@@ -539,61 +551,28 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     );
   }
 
-  Widget _buildGroupedByStatusList(
-    WatchlistState state,
-    bool showLimitMarkers,
-  ) {
-    final grouped = state.groupedByStatus;
-
+  Widget _buildGroupedList<T extends Enum>({
+    required List<T> groupValues,
+    required Map<T, List<WatchlistItemData>> grouped,
+    required String Function(T) getIcon,
+    required String Function(T) getLabel,
+    required bool showLimitMarkers,
+  }) {
     return CustomScrollView(
       slivers: [
-        for (final status in WatchlistStatus.values)
-          if (grouped[status]!.isNotEmpty) ...[
+        for (final group in groupValues)
+          if (grouped[group]!.isNotEmpty) ...[
             SliverToBoxAdapter(
               child: WatchlistGroupHeader(
-                icon: status.icon,
-                title: status.label,
-                count: grouped[status]!.length,
+                icon: getIcon(group),
+                title: getLabel(group),
+                count: grouped[group]!.length,
               ),
             ),
             SliverList.builder(
-              itemCount: grouped[status]!.length,
+              itemCount: grouped[group]!.length,
               itemBuilder: (_, i) {
-                final item = grouped[status]![i];
-                return WatchlistStockItem(
-                  item: item,
-                  index: i,
-                  showLimitMarkers: showLimitMarkers,
-                  onView: () =>
-                      context.push(AppRoutes.stockDetail(item.symbol)),
-                  onRemove: () => _removeFromWatchlist(item.symbol),
-                  onLongPress: () => _showStockPreview(item),
-                );
-              },
-            ),
-          ],
-      ],
-    );
-  }
-
-  Widget _buildGroupedByTrendList(WatchlistState state, bool showLimitMarkers) {
-    final grouped = state.groupedByTrend;
-
-    return CustomScrollView(
-      slivers: [
-        for (final trend in WatchlistTrend.values)
-          if (grouped[trend]!.isNotEmpty) ...[
-            SliverToBoxAdapter(
-              child: WatchlistGroupHeader(
-                icon: trend.icon,
-                title: trend.label,
-                count: grouped[trend]!.length,
-              ),
-            ),
-            SliverList.builder(
-              itemCount: grouped[trend]!.length,
-              itemBuilder: (_, i) {
-                final item = grouped[trend]![i];
+                final item = grouped[group]![i];
                 return WatchlistStockItem(
                   item: item,
                   index: i,

@@ -15,7 +15,8 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
-import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:afterclose/presentation/screens/scan/widgets/industry_filter_chip.dart';
+import 'package:afterclose/presentation/screens/scan/widgets/scan_filter_bottom_sheet.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
@@ -84,103 +85,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       dataDate: ref.watch(scanProvider).dataDate,
       onClearFilter: () {
         ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
-      },
-    );
-  }
-
-  /// 顯示分組篩選條件的底部選單
-  void _showFilterBottomSheet(
-    BuildContext context,
-    WidgetRef ref,
-    ScanFilter currentFilter,
-  ) {
-    final theme = Theme.of(context);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          minChildSize: 0.5,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                // 拖曳把手
-                const DragHandle(),
-                // 標題
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'scan.moreFilters'.tr(),
-                    style: theme.textTheme.titleLarge,
-                  ),
-                ),
-                // 篩選群組
-                Expanded(
-                  child: ListView(
-                    controller: scrollController,
-                    padding: EdgeInsets.fromLTRB(
-                      16,
-                      0,
-                      16,
-                      MediaQuery.of(context).padding.bottom + 40,
-                    ),
-                    children: ScanFilterGroup.values
-                        .where((group) => group != ScanFilterGroup.all)
-                        .map((group) {
-                          final filters = group.filters;
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 群組標題
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: 16,
-                                  bottom: 8,
-                                ),
-                                child: Text(
-                                  group.labelKey.tr(),
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              // 篩選標籤
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: filters.map((filter) {
-                                  final isSelected = currentFilter == filter;
-                                  return FilterChip(
-                                    label: Text(filter.labelKey.tr()),
-                                    selected: isSelected,
-                                    onSelected: (_) {
-                                      HapticFeedback.selectionClick();
-                                      ref
-                                          .read(scanProvider.notifier)
-                                          .setFilter(filter);
-                                      Navigator.pop(context);
-                                    },
-                                  );
-                                }).toList(),
-                              ),
-                            ],
-                          );
-                        })
-                        .toList(),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
       },
     );
   }
@@ -287,7 +191,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             if (state.filter != ScanFilter.all) const SizedBox(width: 8),
             // 產業篩選
             if (state.industries.isNotEmpty)
-              _IndustryFilterChip(
+              IndustryFilterChip(
                 industries: state.industries,
                 selected: state.industryFilter,
                 onSelected: (industry) {
@@ -306,8 +210,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               side: BorderSide(
                 color: theme.colorScheme.primary.withValues(alpha: 0.5),
               ),
-              onPressed: () =>
-                  _showFilterBottomSheet(context, ref, state.filter),
+              onPressed: () => showScanFilterBottomSheet(
+                context: context,
+                currentFilter: state.filter,
+                onFilterSelected: (filter) {
+                  ref.read(scanProvider.notifier).setFilter(filter);
+                },
+              ),
             ),
           ],
         ),
@@ -630,110 +539,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       onViewDetails: () => context.push(AppRoutes.stockDetail(stock.symbol)),
       onToggleWatchlist: () {
         ref.read(scanProvider.notifier).toggleWatchlist(stock.symbol);
-      },
-    );
-  }
-}
-
-/// 產業篩選 Chip — 點擊展開下拉選單
-class _IndustryFilterChip extends StatelessWidget {
-  const _IndustryFilterChip({
-    required this.industries,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final List<String> industries;
-  final String? selected;
-  final ValueChanged<String?> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasSelection = selected != null;
-
-    return FilterChip(
-      avatar: hasSelection
-          ? null
-          : const Icon(Icons.factory_outlined, size: 16),
-      label: Text(hasSelection ? selected! : 'scan.industry'.tr()),
-      selected: hasSelection,
-      onSelected: (_) => _showIndustryPicker(context, theme),
-      deleteIcon: hasSelection ? const Icon(Icons.close, size: 16) : null,
-      onDeleted: hasSelection ? () => onSelected(null) : null,
-    );
-  }
-
-  void _showIndustryPicker(BuildContext context, ThemeData theme) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: theme.colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.4,
-          maxChildSize: 0.85,
-          expand: false,
-          builder: (context, scrollController) {
-            return Column(
-              children: [
-                // 拖曳把手
-                const DragHandle(),
-                // 標題
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Text(
-                        'scan.selectIndustry'.tr(),
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      const Spacer(),
-                      if (selected != null)
-                        TextButton(
-                          onPressed: () {
-                            onSelected(null);
-                            Navigator.pop(context);
-                          },
-                          child: Text('scan.clearIndustry'.tr()),
-                        ),
-                    ],
-                  ),
-                ),
-                // 產業列表
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: industries.length,
-                    itemBuilder: (context, index) {
-                      final industry = industries[index];
-                      final isSelected = industry == selected;
-                      return ListTile(
-                        title: Text(industry),
-                        trailing: isSelected
-                            ? Icon(
-                                Icons.check,
-                                color: theme.colorScheme.primary,
-                              )
-                            : null,
-                        selected: isSelected,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onSelected(isSelected ? null : industry);
-                          Navigator.pop(context);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            );
-          },
-        );
       },
     );
   }

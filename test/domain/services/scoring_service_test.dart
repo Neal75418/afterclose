@@ -492,7 +492,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: [],
         date: DateTime.now(),
-        batchData: const ScoringBatchData(pricesMap: {}, newsMap: {}),
+        batchData: ScoringBatchData(pricesMap: const {}, newsMap: const {}),
       );
 
       expect(result, isEmpty);
@@ -503,7 +503,7 @@ void main() {
       final result = await scoringService.scoreStocks(
         candidates: ['MISSING'],
         date: DateTime.now(),
-        batchData: const ScoringBatchData(pricesMap: {}, newsMap: {}),
+        batchData: ScoringBatchData(pricesMap: const {}, newsMap: const {}),
       );
 
       expect(result, isEmpty);

@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
@@ -7,6 +5,7 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
+import 'package:afterclose/presentation/screens/comparison/utils/comparison_calculator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 比較表格：6 個區塊、勝出高亮、綜合判定 banner
@@ -87,19 +86,12 @@ class ComparisonTable extends StatelessWidget {
 
   Widget _buildMetricRow(ThemeData theme, _MetricRow row) {
     // 找出優勝者索引
-    int? winnerIndex;
-    if (row.higherIsBetter != null) {
-      double? bestVal;
-      for (var i = 0; i < row.values.length; i++) {
-        final v = row.numericValues[i];
-        if (v == null) continue;
-        if (bestVal == null ||
-            (row.higherIsBetter! ? v > bestVal : v < bestVal)) {
-          bestVal = v;
-          winnerIndex = i;
-        }
-      }
-    }
+    final winnerIndex = row.higherIsBetter != null
+        ? ComparisonCalculator.findWinnerIndex(
+            row.numericValues,
+            higherIsBetter: row.higherIsBetter!,
+          )
+        : null;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -309,54 +301,21 @@ class ComparisonTable extends StatelessWidget {
   }
 
   _MetricRow _buildReturnRow(String label, int tradingDays) {
+    final results = state.symbols
+        .map(
+          (s) => ComparisonCalculator.calculatePriceReturn(
+            state.priceHistoriesMap[s],
+            tradingDays,
+          ),
+        )
+        .toList();
+
     return _MetricRow(
       label: label,
-      values: state.symbols.map((s) {
-        final history = state.priceHistoriesMap[s];
-        if (history == null || history.isEmpty) return '-';
-        final sorted = List<DailyPriceEntry>.from(history)
-          ..sort((a, b) => a.date.compareTo(b.date));
-        final startIdx = max(0, sorted.length - tradingDays);
-        final startPrice = sorted[startIdx].close;
-        final endPrice = sorted.last.close;
-        if (startPrice == null || startPrice == 0 || endPrice == null) {
-          return '-';
-        }
-        final pct = ((endPrice / startPrice) - 1) * 100;
-        return '${pct >= 0 ? "+" : ""}${pct.toStringAsFixed(1)}%';
-      }).toList(),
-      numericValues: state.symbols.map<double?>((s) {
-        final history = state.priceHistoriesMap[s];
-        if (history == null || history.isEmpty) return null;
-        final sorted = List<DailyPriceEntry>.from(history)
-          ..sort((a, b) => a.date.compareTo(b.date));
-        final startIdx = max(0, sorted.length - tradingDays);
-        final startPrice = sorted[startIdx].close;
-        final endPrice = sorted.last.close;
-        if (startPrice == null || startPrice == 0 || endPrice == null) {
-          return null;
-        }
-        return ((endPrice / startPrice) - 1) * 100;
-      }).toList(),
+      values: results.map((r) => r.display).toList(),
+      numericValues: results.map((r) => r.numeric).toList(),
       higherIsBetter: true,
-      valueColors: state.symbols.map((s) {
-        final history = state.priceHistoriesMap[s];
-        if (history == null || history.isEmpty) return null;
-        final sorted = List<DailyPriceEntry>.from(history)
-          ..sort((a, b) => a.date.compareTo(b.date));
-        final startIdx = max(0, sorted.length - tradingDays);
-        final startPrice = sorted[startIdx].close;
-        final endPrice = sorted.last.close;
-        if (startPrice == null || startPrice == 0 || endPrice == null) {
-          return null;
-        }
-        final pct = ((endPrice / startPrice) - 1) * 100;
-        return pct > 0
-            ? AppTheme.upColor
-            : pct < 0
-            ? AppTheme.downColor
-            : null;
-      }).toList(),
+      valueColors: results.map((r) => r.color).toList(),
     );
   }
 
@@ -475,41 +434,21 @@ class ComparisonTable extends StatelessWidget {
     String label,
     double Function(DailyInstitutionalEntry entry) getNet,
   ) {
+    final results = state.symbols
+        .map(
+          (s) => ComparisonCalculator.aggregateInstitutionalNet(
+            state.institutionalMap[s],
+            getNet,
+          ),
+        )
+        .toList();
+
     return _MetricRow(
       label: label,
-      values: state.symbols.map((s) {
-        final instList = state.institutionalMap[s];
-        if (instList == null || instList.isEmpty) return '-';
-        double total = 0;
-        for (final entry in instList.take(5)) {
-          total += getNet(entry);
-        }
-        final lots = (total / 1000).round();
-        return '${lots >= 0 ? "+" : ""}$lots';
-      }).toList(),
-      numericValues: state.symbols.map((s) {
-        final instList = state.institutionalMap[s];
-        if (instList == null || instList.isEmpty) return null;
-        double total = 0;
-        for (final entry in instList.take(5)) {
-          total += getNet(entry);
-        }
-        return total;
-      }).toList(),
+      values: results.map((r) => r.display).toList(),
+      numericValues: results.map((r) => r.numeric).toList(),
       higherIsBetter: true,
-      valueColors: state.symbols.map((s) {
-        final instList = state.institutionalMap[s];
-        if (instList == null || instList.isEmpty) return null;
-        double total = 0;
-        for (final entry in instList.take(5)) {
-          total += getNet(entry);
-        }
-        return total > 0
-            ? AppTheme.upColor
-            : total < 0
-            ? AppTheme.downColor
-            : null;
-      }).toList(),
+      valueColors: results.map((r) => r.color).toList(),
     );
   }
 
@@ -533,29 +472,21 @@ class ComparisonTable extends StatelessWidget {
                 'comparison.sentimentStrongBearish'.tr(),
             };
           }).toList(),
-          numericValues: state.symbols.map((s) {
-            final summary = state.summariesMap[s];
-            if (summary == null) return null;
-            return switch (summary.sentiment) {
-              SummarySentiment.strongBullish => 4.0,
-              SummarySentiment.bullish => 3.0,
-              SummarySentiment.neutral => 2.0,
-              SummarySentiment.bearish => 1.0,
-              SummarySentiment.strongBearish => 0.0,
-            };
-          }).toList(),
+          numericValues: state.symbols
+              .map(
+                (s) => ComparisonCalculator.sentimentToNumeric(
+                  state.summariesMap[s]?.sentiment,
+                ),
+              )
+              .toList(),
           higherIsBetter: true,
-          valueColors: state.symbols.map((s) {
-            final summary = state.summariesMap[s];
-            if (summary == null) return null;
-            return switch (summary.sentiment) {
-              SummarySentiment.strongBullish => AppTheme.upColor,
-              SummarySentiment.bullish => AppTheme.upColor,
-              SummarySentiment.neutral => AppTheme.neutralColor,
-              SummarySentiment.bearish => AppTheme.downColor,
-              SummarySentiment.strongBearish => AppTheme.downColor,
-            };
-          }).toList(),
+          valueColors: state.symbols
+              .map(
+                (s) => ComparisonCalculator.sentimentToColor(
+                  state.summariesMap[s]?.sentiment,
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -571,17 +502,10 @@ class ComparisonTable extends StatelessWidget {
     for (final row in section.rows) {
       if (row.higherIsBetter == null) continue;
 
-      int? bestIdx;
-      double? bestVal;
-      for (var i = 0; i < row.numericValues.length; i++) {
-        final v = row.numericValues[i];
-        if (v == null) continue;
-        if (bestVal == null ||
-            (row.higherIsBetter! ? v > bestVal : v < bestVal)) {
-          bestVal = v;
-          bestIdx = i;
-        }
-      }
+      final bestIdx = ComparisonCalculator.findWinnerIndex(
+        row.numericValues,
+        higherIsBetter: row.higherIsBetter!,
+      );
 
       if (bestIdx != null && bestIdx < state.symbols.length) {
         wins[state.symbols[bestIdx]] = (wins[state.symbols[bestIdx]] ?? 0) + 1;

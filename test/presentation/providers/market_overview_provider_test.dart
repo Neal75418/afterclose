@@ -62,8 +62,8 @@ void main() {
       () => mockTpex.getInstitutionalAmounts(date: any(named: 'date')),
     ).thenAnswer((_) async => null);
     when(
-      () => mockDb.getMarginTradingTotals(any()),
-    ).thenAnswer((_) async => {});
+      () => mockDb.getLatestMarginTradingTotalsByMarket(),
+    ).thenAnswer((_) async => <String, Map<String, double>>{});
     when(
       () => mockDb.getIndexHistoryBatch(any(), days: any(named: 'days')),
     ).thenAnswer((_) async => {});
@@ -71,11 +71,44 @@ void main() {
       () => mockDb.getAdvanceDeclineCountsByMarket(any()),
     ).thenAnswer((_) async => {});
     when(
-      () => mockDb.getMarginTradingTotalsByMarket(any()),
-    ).thenAnswer((_) async => {});
-    when(
       () => mockDb.getTurnoverSummaryByMarket(any()),
     ).thenAnswer((_) async => {});
+    when(
+      () => mockTpex.getTpexIndex(),
+    ).thenAnswer((_) async => <TwseMarketIndex>[]);
+    when(
+      () => mockDb.getLimitUpDownCountsByMarket(any()),
+    ).thenAnswer((_) async => <String, Map<String, int>>{});
+    when(
+      () => mockDb.getRecentTurnoverByMarket(any(), days: any(named: 'days')),
+    ).thenAnswer(
+      (_) async => <String, List<({DateTime date, double turnover})>>{},
+    );
+    when(
+      () => mockDb.getActiveWarningCountsByMarket(),
+    ).thenAnswer((_) async => <String, Map<String, int>>{});
+    when(
+      () => mockDb.getRecentInstitutionalDailyByMarket(
+        any(),
+        days: any(named: 'days'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          <
+            String,
+            List<
+              ({
+                DateTime date,
+                double foreignNet,
+                double trustNet,
+                double dealerNet,
+              })
+            >
+          >{},
+    );
+    when(
+      () => mockDb.getIndustrySummaryByMarket(any(), any()),
+    ).thenAnswer((_) async => <Map<String, dynamic>>[]);
   }
 
   group('MarketOverviewState', () {
@@ -233,12 +266,20 @@ void main() {
     test('loadData populates margin trading totals from DB', () async {
       setupEmptyDefaults();
 
-      when(() => mockDb.getMarginTradingTotals(any())).thenAnswer(
+      when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(
         (_) async => {
-          'marginBalance': 50000.0,
-          'marginChange': 1000.0,
-          'shortBalance': 3000.0,
-          'shortChange': -200.0,
+          'TWSE': {
+            'marginBalance': 30000.0,
+            'marginChange': 700.0,
+            'shortBalance': 2000.0,
+            'shortChange': -100.0,
+          },
+          'TPEx': {
+            'marginBalance': 20000.0,
+            'marginChange': 300.0,
+            'shortBalance': 1000.0,
+            'shortChange': -100.0,
+          },
         },
       );
 
@@ -246,6 +287,7 @@ void main() {
       await notifier.loadData();
 
       final state = container.read(marketOverviewProvider);
+      // TWSE + TPEx 合併
       expect(state.margin.marginBalance, 50000.0);
       expect(state.margin.marginChange, 1000.0);
       expect(state.margin.shortBalance, 3000.0);
@@ -314,32 +356,8 @@ void main() {
     });
 
     test('loadData uses DateTime.now() when no data date in DB', () async {
+      setupEmptyDefaults();
       when(() => mockDb.getLatestDataDate()).thenAnswer((_) async => null);
-      when(() => mockTwse.getMarketIndices()).thenAnswer((_) async => []);
-      when(
-        () => mockDb.getAdvanceDeclineCounts(any()),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockTwse.getInstitutionalAmounts(date: any(named: 'date')),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockTpex.getInstitutionalAmounts(date: any(named: 'date')),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockDb.getMarginTradingTotals(any()),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockDb.getIndexHistoryBatch(any(), days: any(named: 'days')),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockDb.getAdvanceDeclineCountsByMarket(any()),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockDb.getMarginTradingTotalsByMarket(any()),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockDb.getTurnoverSummaryByMarket(any()),
-      ).thenAnswer((_) async => {});
 
       final notifier = container.read(marketOverviewProvider.notifier);
       await notifier.loadData();
