@@ -17,7 +17,7 @@ class MarketIndexNames {
   static const biotech = '生技醫療類指數';
   static const steel = '鋼鐵類指數';
   static const greenEnergy = '綠能環保類指數';
-  static const highDividend = '高股息指數';
+  static const highDividend = '臺灣高股息指數';
 
   /// Dashboard 顯示的重點指數
   static const dashboardIndices = [
