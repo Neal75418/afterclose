@@ -3,6 +3,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Alert type enum
@@ -386,7 +387,11 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     Map<String, double> priceChanges,
   ) async {
     try {
-      final triggered = await _db.checkAlerts(currentPrices, priceChanges);
+      final triggered = await _db.checkAlerts(
+        currentPrices,
+        priceChanges,
+        evaluationService: AlertEvaluationService(),
+      );
       final triggeredIds = <int>{};
       final now = DateTime.now();
 

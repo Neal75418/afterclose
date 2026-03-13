@@ -195,10 +195,13 @@ mixin _UserDaoMixin on _$AppDatabase {
   }
 
   /// 比對提醒與當前價格，回傳已觸發的提醒
+  ///
+  /// [evaluationService] 可由呼叫端注入，避免 DAO 直接建立 domain service。
   Future<List<PriceAlertEntry>> checkAlerts(
     Map<String, double> currentPrices,
-    Map<String, double> priceChanges,
-  ) async {
+    Map<String, double> priceChanges, {
+    AlertEvaluationService? evaluationService,
+  }) async {
     final activeAlerts = await getActiveAlerts();
     if (activeAlerts.isEmpty) return [];
 
@@ -219,8 +222,8 @@ mixin _UserDaoMixin on _$AppDatabase {
       if (disposals.isNotEmpty) disposalSymbols.add(symbol);
     }
 
-    // Delegate evaluation to domain service
-    final service = AlertEvaluationService();
+    // Delegate evaluation to domain service (prefer injection from caller)
+    final service = evaluationService ?? AlertEvaluationService();
     return service.evaluateAlerts(
       activeAlerts,
       AlertEvaluationContext(

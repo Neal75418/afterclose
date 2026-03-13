@@ -248,55 +248,46 @@ class ComparisonTable extends StatelessWidget {
             return close != null ? close.toStringAsFixed(1) : '-';
           }).toList(),
         ),
-        _MetricRow(
-          label: 'comparison.metricPriceChange'.tr(),
-          values: state.symbols.map((s) {
-            final latest = state.latestPricesMap[s]?.close;
-            final history = state.priceHistoriesMap[s];
-            if (latest == null || history == null || history.length < 2) {
-              return '-';
-            }
-            final sorted = List<DailyPriceEntry>.from(history)
-              ..sort((a, b) => a.date.compareTo(b.date));
-            final prev = sorted[sorted.length - 2].close;
-            if (prev == null || prev == 0) return '-';
-            final pct = ((latest / prev) - 1) * 100;
-            return '${pct >= 0 ? "+" : ""}${pct.toStringAsFixed(1)}%';
-          }).toList(),
-          numericValues: state.symbols.map((s) {
-            final latest = state.latestPricesMap[s]?.close;
-            final history = state.priceHistoriesMap[s];
-            if (latest == null || history == null || history.length < 2) {
-              return null;
-            }
-            final sorted = List<DailyPriceEntry>.from(history)
-              ..sort((a, b) => a.date.compareTo(b.date));
-            final prev = sorted[sorted.length - 2].close;
-            if (prev == null || prev == 0) return null;
-            return ((latest / prev) - 1) * 100;
-          }).toList(),
-          higherIsBetter: true,
-          valueColors: state.symbols.map((s) {
-            final latest = state.latestPricesMap[s]?.close;
-            final history = state.priceHistoriesMap[s];
-            if (latest == null || history == null || history.length < 2) {
-              return null;
-            }
-            final sorted = List<DailyPriceEntry>.from(history)
-              ..sort((a, b) => a.date.compareTo(b.date));
-            final prev = sorted[sorted.length - 2].close;
-            if (prev == null || prev == 0) return null;
-            final pct = ((latest / prev) - 1) * 100;
-            return pct > 0
-                ? AppTheme.upColor
-                : pct < 0
-                ? AppTheme.downColor
-                : null;
-          }).toList(),
-        ),
+        _buildPriceChangeRow(),
         _buildReturnRow('comparison.metricReturn1M'.tr(), 20),
         _buildReturnRow('comparison.metricReturn3M'.tr(), 60),
       ],
+    );
+  }
+
+  _MetricRow _buildPriceChangeRow() {
+    // 每支股票只排序一次，避免 values/numericValues/valueColors 重複排序
+    final pctList = state.symbols.map((s) {
+      final latest = state.latestPricesMap[s]?.close;
+      final history = state.priceHistoriesMap[s];
+      if (latest == null || history == null || history.length < 2) return null;
+      final sorted = List<DailyPriceEntry>.from(history)
+        ..sort((a, b) => a.date.compareTo(b.date));
+      final prev = sorted[sorted.length - 2].close;
+      if (prev == null || prev == 0) return null;
+      return ((latest / prev) - 1) * 100;
+    }).toList();
+
+    return _MetricRow(
+      label: 'comparison.metricPriceChange'.tr(),
+      values: pctList
+          .map(
+            (pct) => pct != null
+                ? '${pct >= 0 ? "+" : ""}${pct.toStringAsFixed(1)}%'
+                : '-',
+          )
+          .toList(),
+      numericValues: pctList,
+      higherIsBetter: true,
+      valueColors: pctList
+          .map(
+            (pct) => pct != null && pct > 0
+                ? AppTheme.upColor
+                : pct != null && pct < 0
+                ? AppTheme.downColor
+                : null,
+          )
+          .toList(),
     );
   }
 

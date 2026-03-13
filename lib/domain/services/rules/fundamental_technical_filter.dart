@@ -21,8 +21,12 @@ mixin FundamentalTechnicalFilter on StockRule {
     final prev = data.prices.length >= 2
         ? data.prices[data.prices.length - 2]
         : null;
-    if (today == null || prev == null || prev.close == null || prev.close! <= 0)
+    if (today == null ||
+        prev == null ||
+        prev.close == null ||
+        prev.close! <= 0) {
       return null;
+    }
 
     final close = today.close ?? 0;
     final prevClose = prev.close!;

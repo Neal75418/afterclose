@@ -254,6 +254,7 @@ class MAAlignmentBullishRule extends StockRule {
         return null;
       }
 
+      // 無 MA20 資料時預設 0 → 跳過量能過濾（資料不足不應否定 MA pattern）
       final volMA20 = context.indicators?.volumeMA20 ?? 0;
       if (vol <= volMA20 * IndicatorParams.maAlignmentVolumeMultiplier) {
         return null;

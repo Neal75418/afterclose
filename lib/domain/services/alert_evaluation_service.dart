@@ -281,13 +281,15 @@ class AlertEvaluationService {
   bool _checkKdGoldenCross(List<DailyPriceEntry> prices) {
     if (prices.length < AlertParams.kdMinDataPoints) return false;
 
-    final highs = prices.map((p) => p.high).whereType<double>().toList();
-    final lows = prices.map((p) => p.low).whereType<double>().toList();
-    final closes = prices.map((p) => p.close).whereType<double>().toList();
+    // 只取 high/low/close 皆非 null 的 entry，確保三個陣列索引對齊
+    final valid = prices.where(
+      (p) => p.high != null && p.low != null && p.close != null,
+    );
+    final highs = valid.map((p) => p.high!).toList();
+    final lows = valid.map((p) => p.low!).toList();
+    final closes = valid.map((p) => p.close!).toList();
 
-    if (highs.length < 11 || lows.length < 11 || closes.length < 11) {
-      return false;
-    }
+    if (highs.length < 11) return false;
 
     final kd = _indicatorService.calculateKD(
       highs,
@@ -325,13 +327,15 @@ class AlertEvaluationService {
   bool _checkKdDeathCross(List<DailyPriceEntry> prices) {
     if (prices.length < AlertParams.kdMinDataPoints) return false;
 
-    final highs = prices.map((p) => p.high).whereType<double>().toList();
-    final lows = prices.map((p) => p.low).whereType<double>().toList();
-    final closes = prices.map((p) => p.close).whereType<double>().toList();
+    // 只取 high/low/close 皆非 null 的 entry，確保三個陣列索引對齊
+    final valid = prices.where(
+      (p) => p.high != null && p.low != null && p.close != null,
+    );
+    final highs = valid.map((p) => p.high!).toList();
+    final lows = valid.map((p) => p.low!).toList();
+    final closes = valid.map((p) => p.close!).toList();
 
-    if (highs.length < 11 || lows.length < 11 || closes.length < 11) {
-      return false;
-    }
+    if (highs.length < 11) return false;
 
     final kd = _indicatorService.calculateKD(
       highs,

@@ -478,9 +478,19 @@ class TwseClient {
       final cached = _cache.get(cacheKey) as List<TwseValuation>?;
       if (cached != null) return cached;
 
-      // 建立獨立的 Dio 以避免基礎 URL 衝突
+      // 建立獨立的 Dio 以避免基礎 URL 衝突（Open Data baseUrl 不同）
       // Open Data 欄位: Code, Name, PEratio, DividendYield, PBratio
-      final response = await Dio().get(
+      final openDataDio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(
+            seconds: ApiConfig.twseConnectTimeoutSec,
+          ),
+          receiveTimeout: const Duration(
+            seconds: ApiConfig.twseReceiveTimeoutSec,
+          ),
+        ),
+      );
+      final response = await openDataDio.get(
         ApiEndpoints.twseValuation,
         options: Options(responseType: ResponseType.json),
       );
