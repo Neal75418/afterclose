@@ -291,7 +291,12 @@ class UpdateService {
 
   Future<void> _syncAuxiliaryData(_UpdateContext ctx) async {
     if (_marketIndexSyncer != null) {
-      await _marketIndexSyncer.sync();
+      try {
+        await _marketIndexSyncer.sync();
+      } catch (e) {
+        AppLogger.warning('UpdateSvc', '大盤指數同步失敗: $e');
+        ctx.result.recordError('大盤指數同步失敗: $e', e);
+      }
     }
 
     if (_tdccHoldingSyncer != null) {

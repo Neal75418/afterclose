@@ -476,14 +476,26 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
   Future<List<TwseMarketIndex>> _loadIndices() async {
     try {
-      // 平行取得 TWSE + TPEx 指數
-      final futures = await Future.wait([
-        _twse.getMarketIndices(),
-        _tpex.getTpexIndex(),
-      ]);
+      // 獨立呼叫 TWSE 和 TPEx API，避免一方失敗拖垮另一方
+      List<TwseMarketIndex> twseIndices = [];
+      List<TwseMarketIndex> tpexIndices = [];
 
-      final twseIndices = futures[0];
-      final tpexIndices = futures[1];
+      try {
+        twseIndices = await _twse.getMarketIndices();
+      } catch (e) {
+        AppLogger.warning('MarketOverview', '載入 TWSE 指數失敗: $e');
+      }
+
+      try {
+        tpexIndices = await _tpex.getTpexIndex();
+      } catch (e) {
+        AppLogger.warning('MarketOverview', '載入 TPEx 指數失敗: $e');
+      }
+
+      // API 全部失敗時，從 DB 取最新指數作為備援
+      if (twseIndices.isEmpty && tpexIndices.isEmpty) {
+        return _loadIndicesFromDb();
+      }
 
       // 精確名稱匹配，僅保留 Dashboard 需要的 TWSE 重點指數
       final targetNames = MarketIndexNames.dashboardIndices.toSet();
@@ -491,14 +503,60 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           .where((idx) => targetNames.contains(idx.name))
           .toList();
 
+      // 需要從 DB 補資料時，只查一次（lazy cache）
+      List<TwseMarketIndex>? dbCache;
+      Future<List<TwseMarketIndex>> getDbCache() async =>
+          dbCache ??= await _loadIndicesFromDb();
+
+      // TWSE API 失敗但 TPEx 成功時，從 DB 補 TWSE 指數
+      if (filtered.isEmpty) {
+        final dbIndices = await getDbCache();
+        filtered.addAll(
+          dbIndices.where((idx) => targetNames.contains(idx.name)),
+        );
+      }
+
       // 加入 TPEx 櫃買指數（取最新一筆作為即時資料）
       if (tpexIndices.isNotEmpty) {
         filtered.add(tpexIndices.last);
+      } else {
+        // TPEx API 失敗時，從 DB 補櫃買指數
+        final dbIndices = await getDbCache();
+        final dbTpex = dbIndices
+            .where((idx) => idx.name == MarketIndexNames.tpexIndex)
+            .toList();
+        if (dbTpex.isNotEmpty) filtered.add(dbTpex.last);
       }
 
       return filtered;
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入大盤指數失敗: $e');
+      return _loadIndicesFromDb();
+    }
+  }
+
+  /// 從 DB 載入最新指數值（API 失敗時的備援）
+  Future<List<TwseMarketIndex>> _loadIndicesFromDb() async {
+    try {
+      final indexNames = [
+        ...MarketIndexNames.dashboardIndices,
+        MarketIndexNames.tpexIndex,
+      ];
+      final historyMap = await _db.getIndexHistoryBatch(indexNames, days: 5);
+
+      // 取每個指數的最新一筆
+      return historyMap.entries.where((e) => e.value.isNotEmpty).map((e) {
+        final latest = e.value.last;
+        return TwseMarketIndex(
+          date: latest.date,
+          name: latest.name,
+          close: latest.close,
+          change: latest.change,
+          changePercent: latest.changePercent,
+        );
+      }).toList();
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入 DB 指數備援失敗: $e');
       return [];
     }
   }
@@ -543,42 +601,54 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 載入法人買賣超金額總額（上市+上櫃合計）
   ///
   /// 使用 TWSE/TPEX 的法人買賣金額統計 API。
+  /// TWSE 和 TPEX 獨立呼叫，避免一方失敗拖垮另一方。
   /// 若主要日期的 API 回傳 null，自動用 [fallbackDate] 重試。
   Future<InstitutionalTotals> _loadInstitutionalTotals(
     DateTime date, {
     DateTime? fallbackDate,
   }) async {
-    try {
-      // 平行呼叫 TWSE 和 TPEX API
-      final futures = await Future.wait([
-        _twse.getInstitutionalAmounts(date: date),
-        _tpex.getInstitutionalAmounts(date: date),
-      ]);
+    // 平行呼叫 TWSE 和 TPEX API，各自獨立 catch 避免互相拖垮
+    final results = await Future.wait([
+      () async {
+        try {
+          var data = await _twse.getInstitutionalAmounts(date: date);
+          if (data == null && fallbackDate != null) {
+            data = await _twse.getInstitutionalAmounts(date: fallbackDate);
+          }
+          return data;
+        } catch (e) {
+          AppLogger.warning('MarketOverview', '載入 TWSE 法人總額失敗: $e');
+          return null;
+        }
+      }(),
+      () async {
+        try {
+          var data = await _tpex.getInstitutionalAmounts(date: date);
+          if (data == null && fallbackDate != null) {
+            data = await _tpex.getInstitutionalAmounts(date: fallbackDate);
+          }
+          return data;
+        } catch (e) {
+          AppLogger.warning('MarketOverview', '載入 TPEx 法人總額失敗: $e');
+          return null;
+        }
+      }(),
+    ]);
 
-      var twseData = futures[0] as TwseInstitutionalAmounts?;
-      var tpexData = futures[1] as TpexInstitutionalAmounts?;
+    final twseData = results[0] as TwseInstitutionalAmounts?;
+    final tpexData = results[1] as TpexInstitutionalAmounts?;
 
-      // 回退：對 null 的 API 用前一交易日重試
-      if (fallbackDate != null) {
-        twseData ??= await _twse.getInstitutionalAmounts(date: fallbackDate);
-        tpexData ??= await _tpex.getInstitutionalAmounts(date: fallbackDate);
-      }
+    final foreignNet =
+        (twseData?.foreignNet ?? 0) + (tpexData?.foreignNet ?? 0);
+    final trustNet = (twseData?.trustNet ?? 0) + (tpexData?.trustNet ?? 0);
+    final dealerNet = (twseData?.dealerNet ?? 0) + (tpexData?.dealerNet ?? 0);
 
-      final foreignNet =
-          (twseData?.foreignNet ?? 0) + (tpexData?.foreignNet ?? 0);
-      final trustNet = (twseData?.trustNet ?? 0) + (tpexData?.trustNet ?? 0);
-      final dealerNet = (twseData?.dealerNet ?? 0) + (tpexData?.dealerNet ?? 0);
-
-      return InstitutionalTotals(
-        foreignNet: foreignNet,
-        trustNet: trustNet,
-        dealerNet: dealerNet,
-        totalNet: foreignNet + trustNet + dealerNet,
-      );
-    } catch (e) {
-      AppLogger.warning('MarketOverview', '載入法人總額失敗: $e');
-      return const InstitutionalTotals();
-    }
+    return InstitutionalTotals(
+      foreignNet: foreignNet,
+      trustNet: trustNet,
+      dealerNet: dealerNet,
+      totalNet: foreignNet + trustNet + dealerNet,
+    );
   }
 
   /// 載入漲跌家數（依市場分組）
@@ -618,52 +688,64 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 載入法人買賣超金額（依市場分組）
   ///
   /// 使用 TWSE/TPEX 的法人買賣金額統計 API，直接取得市場總計金額（元）。
+  /// TWSE 和 TPEX 獨立呼叫，避免一方失敗拖垮另一方。
   /// 若主要日期的 API 回傳 null，自動用 [fallbackDate] 重試。
   Future<Map<String, InstitutionalTotals>> _loadInstitutionalByMarket(
     DateTime date, {
     DateTime? fallbackDate,
   }) async {
-    try {
-      final results = <String, InstitutionalTotals>{};
+    // 平行呼叫 TWSE 和 TPEX API，各自獨立 catch 避免互相拖垮
+    final results = await Future.wait([
+      () async {
+        try {
+          var data = await _twse.getInstitutionalAmounts(date: date);
+          if (data == null && fallbackDate != null) {
+            data = await _twse.getInstitutionalAmounts(date: fallbackDate);
+          }
+          return data != null
+              ? MapEntry(
+                  'TWSE',
+                  InstitutionalTotals(
+                    foreignNet: data.foreignNet,
+                    trustNet: data.trustNet,
+                    dealerNet: data.dealerNet,
+                    totalNet: data.totalNet,
+                  ),
+                )
+              : null;
+        } catch (e) {
+          AppLogger.warning('MarketOverview', '載入 TWSE 法人總額失敗: $e');
+          return null;
+        }
+      }(),
+      () async {
+        try {
+          var data = await _tpex.getInstitutionalAmounts(date: date);
+          if (data == null && fallbackDate != null) {
+            data = await _tpex.getInstitutionalAmounts(date: fallbackDate);
+          }
+          return data != null
+              ? MapEntry(
+                  'TPEx',
+                  InstitutionalTotals(
+                    foreignNet: data.foreignNet,
+                    trustNet: data.trustNet,
+                    dealerNet: data.dealerNet,
+                    totalNet: data.totalNet,
+                  ),
+                )
+              : null;
+        } catch (e) {
+          AppLogger.warning('MarketOverview', '載入 TPEx 法人總額失敗: $e');
+          return null;
+        }
+      }(),
+    ]);
 
-      // 平行呼叫 TWSE 和 TPEX API
-      final futures = await Future.wait([
-        _twse.getInstitutionalAmounts(date: date),
-        _tpex.getInstitutionalAmounts(date: date),
-      ]);
-
-      var twseData = futures[0] as TwseInstitutionalAmounts?;
-      var tpexData = futures[1] as TpexInstitutionalAmounts?;
-
-      // 回退：對 null 的市場用前一交易日重試
-      if (fallbackDate != null) {
-        twseData ??= await _twse.getInstitutionalAmounts(date: fallbackDate);
-        tpexData ??= await _tpex.getInstitutionalAmounts(date: fallbackDate);
-      }
-
-      if (twseData != null) {
-        results['TWSE'] = InstitutionalTotals(
-          foreignNet: twseData.foreignNet,
-          trustNet: twseData.trustNet,
-          dealerNet: twseData.dealerNet,
-          totalNet: twseData.totalNet,
-        );
-      }
-
-      if (tpexData != null) {
-        results['TPEx'] = InstitutionalTotals(
-          foreignNet: tpexData.foreignNet,
-          trustNet: tpexData.trustNet,
-          dealerNet: tpexData.dealerNet,
-          totalNet: tpexData.totalNet,
-        );
-      }
-
-      return results;
-    } catch (e) {
-      AppLogger.warning('MarketOverview', '載入分市場法人總額失敗: $e');
-      return {};
-    }
+    return {
+      for (final entry in results)
+        if (entry != null) entry.key: entry.value,
+    };
   }
 
   /// 載入融資融券（依市場分組）

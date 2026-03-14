@@ -322,7 +322,9 @@ void main() {
 
     group('_prioritizeSymbols', () {
       test('prioritizes watchlist over popular over others', () async {
-        // Create 205 symbols that all need data (> maxSyncCount of 200)
+        // Create 205 symbols that all need data
+        // All have 0 data → avgMonthsPerSymbol ≈ 14
+        // Dynamic maxSyncCount = ceil(300/14) = 22
         final allSymbols = List.generate(
           205,
           (i) => 'S${i.toString().padLeft(3, '0')}',
@@ -367,8 +369,9 @@ void main() {
           marketCandidates: allSymbols,
         );
 
-        // Should process exactly 200 (maxSyncCount)
-        expect(result.symbolsProcessed, 200);
+        // 0-data symbols: dynamic maxSyncCount = ceil(300/14) = 22
+        // 5 priority (3 watchlist + 2 popular) + 17 others = 22
+        expect(result.symbolsProcessed, 22);
         expect(result.totalSymbolsNeeded, 205);
 
         // Watchlist symbols should always be synced

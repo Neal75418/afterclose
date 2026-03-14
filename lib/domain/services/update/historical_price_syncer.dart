@@ -75,10 +75,17 @@ class HistoricalPriceSyncer {
 
     _logSyncDiagnostics(symbolsNeedingData, priceHistoryBatch);
 
+    // 估算每檔平均需要的月度 API 呼叫數
+    final avgMonthsPerSymbol = _estimateAvgMonthsNeeded(
+      symbolsNeedingData,
+      priceHistoryBatch,
+    );
+
     final limitedSymbols = await _prioritizeSymbols(
       symbolsNeedingData,
       watchlistSymbols: watchlistSymbols,
       popularStocks: popularStocks,
+      avgMonthsPerSymbol: avgMonthsPerSymbol,
     );
 
     return _performBatchSync(
@@ -184,16 +191,66 @@ class HistoricalPriceSyncer {
     }
   }
 
+  /// 估算每檔股票平均需要的月度 API 呼叫數
+  ///
+  /// DB 無資料的股票需要 ~14 個月（完整歷史），有部分資料的需要較少。
+  /// 用於動態調整 maxSyncCount，避免 Fresh DB 場景一次發出過多請求。
+  double _estimateAvgMonthsNeeded(
+    List<String> symbols,
+    Map<String, List<DailyPriceEntry>> priceHistoryBatch,
+  ) {
+    if (symbols.isEmpty) return 1;
+
+    var zeroDataCount = 0;
+    var partialDataCount = 0;
+    for (final symbol in symbols) {
+      final priceCount = priceHistoryBatch[symbol]?.length ?? 0;
+      if (priceCount == 0) {
+        zeroDataCount++;
+      } else {
+        partialDataCount++;
+      }
+    }
+
+    // 無資料的需要完整 14 個月；有部分資料的平均需要 4 個月
+    const fullMonths = 14;
+    const partialMonths = 4;
+    final total = zeroDataCount * fullMonths + partialDataCount * partialMonths;
+    return total / symbols.length;
+  }
+
   /// 依重要性排序並限制同步數量
   ///
   /// 優先順序：自選 > 熱門 > 其他
   /// 確保 TWSE 和 TPEX 都按比例分配到名額
+  ///
+  /// [avgMonthsPerSymbol] 越大代表每檔需要越多 API 呼叫，
+  /// 動態降低同步數量避免觸發限流。
   Future<List<String>> _prioritizeSymbols(
     List<String> symbolsNeedingData, {
     required List<String> watchlistSymbols,
     required List<String> popularStocks,
+    required double avgMonthsPerSymbol,
   }) async {
-    const maxSyncCount = 200;
+    // 以月度 API 呼叫預算計算動態上限
+    // 正常日（avgMonths ≈ 1）→ 200 檔
+    // Fresh DB（avgMonths ≈ 14）→ ~21 檔
+    const maxMonthlyApiCalls = 300;
+    const absoluteMax = 200;
+    const absoluteMin = 15;
+    final maxSyncCount = (maxMonthlyApiCalls / avgMonthsPerSymbol).ceil().clamp(
+      absoluteMin,
+      absoluteMax,
+    );
+
+    if (avgMonthsPerSymbol > 3) {
+      AppLogger.info(
+        'HistoricalPriceSyncer',
+        '每檔平均需 ${avgMonthsPerSymbol.toStringAsFixed(1)} 個月 API 呼叫，'
+            '動態限制為 $maxSyncCount 檔（API 預算 $maxMonthlyApiCalls）',
+      );
+    }
+
     if (symbolsNeedingData.length <= maxSyncCount) {
       return symbolsNeedingData;
     }
