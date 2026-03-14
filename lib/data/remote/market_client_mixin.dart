@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show RedirectException, SocketException;
 import 'dart:math';
 
 import 'package:dio/dio.dart';
@@ -89,6 +90,20 @@ abstract final class MarketClientMixin {
       try {
         return await fn();
       } on DioException catch (e, stack) {
+        // TWSE/TPEX 透過 redirect loop 實作 rate limiting，
+        // 偵測到時直接視為限流（讓上游 circuit breaker 正確觸發）
+        if (_isRedirectLoop(e)) {
+          AppLogger.warning(
+            tag,
+            '$operation: Redirect loop 偵測為 API 限流',
+            e,
+            stack,
+          );
+          throw const RateLimitException(
+            'Redirect loop detected (API rate limiting)',
+          );
+        }
+
         // 不可重試的錯誤：立即拋出
         if (!_isRetryable(e)) {
           if (e.type == DioExceptionType.connectionTimeout ||
@@ -134,9 +149,18 @@ abstract final class MarketClientMixin {
     throw NetworkException('$tag request failed unexpectedly');
   }
 
+  /// 判斷 [DioException] 是否為 redirect loop。
+  ///
+  /// TWSE/TPEX 透過 HTTP redirect loop 實作 rate limiting，
+  /// Dio 偵測到迴圈重導時拋出內含 `RedirectException` 的 [DioException]。
+  static bool _isRedirectLoop(DioException e) {
+    return e.error is RedirectException ||
+        '${e.error}'.contains('Redirect loop');
+  }
+
   /// 判斷 [DioException] 是否可重試。
   ///
-  /// 連線逾時、發送逾時、連線錯誤、5xx 可重試。
+  /// 連線逾時、發送逾時、連線錯誤、5xx、SocketException 可重試。
   /// receiveTimeout 不重試：伺服器已接受連線但不回應，通常是限流，重試無意義。
   /// 4xx 等客戶端錯誤不重試。
   static bool _isRetryable(DioException e) {
@@ -149,7 +173,8 @@ abstract final class MarketClientMixin {
         final statusCode = e.response?.statusCode;
         return statusCode != null && statusCode >= 500;
       default:
-        return false;
+        // Connection reset by peer 等 socket 錯誤可重試
+        return e.error is SocketException;
     }
   }
 

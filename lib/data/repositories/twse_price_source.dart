@@ -14,11 +14,18 @@ import 'package:afterclose/data/repositories/price_candidate_filter.dart';
 class TwsePriceSource {
   TwsePriceSource({required TwseClient client}) : _client = client;
 
+  /// 連續空月份上限，超過即推測為上市前，停止回溯
+  static const _maxConsecutiveEmptyMonths = 3;
+
   final TwseClient _client;
 
   /// 從 TWSE API 取得指定月份的價格，轉換為 DB 格式
   ///
-  /// 逐月抓取，跳過失敗的月份。API 請求間加入延遲避免 rate limit。
+  /// **從最新月份往回抓取**（newest → oldest），有兩個好處：
+  /// 1. 連續空月份早期終止：連續 3 個月無資料時推測為上市前，跳過更早月份
+  /// 2. 優先取得最新資料：rate limit 時至少已取得近期資料
+  ///
+  /// API 請求間加入延遲避免 rate limit。
   Future<List<DailyPriceCompanion>> fetchMonthlyPrices({
     required String symbol,
     required List<DateTime> months,
@@ -26,8 +33,10 @@ class TwsePriceSource {
     required DateTime endDate,
   }) async {
     final allPrices = <TwseDailyPrice>[];
+    var consecutiveEmpty = 0;
 
-    for (var i = 0; i < months.length; i++) {
+    // 從最新月份往回遍歷
+    for (var i = months.length - 1; i >= 0; i--) {
       final month = months[i];
       try {
         final monthData = await _client.getStockMonthlyPrices(
@@ -35,11 +44,25 @@ class TwsePriceSource {
           year: month.year,
           month: month.month,
         );
-        allPrices.addAll(monthData);
+        if (monthData.isEmpty) {
+          consecutiveEmpty++;
+          if (consecutiveEmpty >= _maxConsecutiveEmptyMonths) {
+            AppLogger.debug(
+              'PriceRepo',
+              '$symbol: 連續 $consecutiveEmpty 個月無資料，推測為上市前，跳過剩餘 $i 個月',
+            );
+            break;
+          }
+        } else {
+          consecutiveEmpty = 0;
+          allPrices.addAll(monthData);
+        }
       } on RateLimitException {
         AppLogger.warning('PriceRepo', '$symbol: 上市價格同步觸發 API 速率限制');
         rethrow;
       } catch (e) {
+        // 網路錯誤是不確定狀態（該月可能有資料），重置計數器避免誤判
+        consecutiveEmpty = 0;
         AppLogger.warning(
           'PriceRepo',
           '$symbol: ${month.year}-${month.month} 月份價格取得失敗',
@@ -47,7 +70,7 @@ class TwsePriceSource {
         );
       }
 
-      if (i < months.length - 1) {
+      if (i > 0) {
         await Future.delayed(
           const Duration(milliseconds: ApiConfig.priceBatchQueryDelayMs),
         );

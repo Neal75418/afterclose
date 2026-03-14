@@ -8,6 +8,9 @@ import 'package:afterclose/data/repositories/price_repository.dart';
 ///
 /// 負責確保分析所需的歷史價格資料完整
 class HistoricalPriceSyncer {
+  /// 連續全部失敗的批次數上限，超過即視為 API 限流
+  static const _maxConsecutiveFailedBatches = 2;
+
   const HistoricalPriceSyncer({
     required AppDatabase database,
     required PriceRepository priceRepository,
@@ -288,6 +291,8 @@ class HistoricalPriceSyncer {
     final failedSymbols = <String>[];
 
     var rateLimited = false;
+    var consecutiveFailedBatches = 0;
+    var symbolsSucceeded = 0;
 
     for (var i = 0; i < total; i += batchSize) {
       if (rateLimited) break;
@@ -313,6 +318,7 @@ class HistoricalPriceSyncer {
 
       final results = await Future.wait(futures);
 
+      var batchHasSuccess = false;
       for (final (symbol, count, error) in results) {
         if (error is RateLimitException) {
           rateLimited = true;
@@ -325,20 +331,39 @@ class HistoricalPriceSyncer {
           failedSymbols.add(symbol);
         } else {
           historySynced += count;
+          batchHasSuccess = true;
+          symbolsSucceeded++;
+        }
+      }
+
+      // 防禦性 circuit breaker：連續多批全部失敗時視為 API 限流
+      // 即使錯誤類型不是 RateLimitException（如 NetworkException），
+      // 連續失敗也代表 API 不可用，應停止發送無效請求
+      if (!rateLimited) {
+        if (batchHasSuccess) {
+          consecutiveFailedBatches = 0;
+        } else {
+          consecutiveFailedBatches++;
+          if (consecutiveFailedBatches >= _maxConsecutiveFailedBatches) {
+            rateLimited = true;
+            AppLogger.warning(
+              'HistoricalPriceSyncer',
+              '連續 $consecutiveFailedBatches 批全部失敗，推測 API 限流，中止同步',
+            );
+          }
         }
       }
     }
 
-    final successCount = symbols.length - failedSymbols.length;
     AppLogger.info(
       'HistoricalPriceSyncer',
-      '歷史資料同步完成 $successCount/${symbols.length} 檔'
+      '歷史資料同步完成 $symbolsSucceeded/${symbols.length} 檔'
           '${totalNeeded > symbols.length ? " (共需 $totalNeeded 檔)" : ""}',
     );
 
     return HistoricalPriceSyncResult(
       syncedCount: historySynced,
-      symbolsProcessed: successCount,
+      symbolsProcessed: symbolsSucceeded,
       totalSymbolsNeeded: totalNeeded,
       failedSymbols: failedSymbols,
     );

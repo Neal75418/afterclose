@@ -244,7 +244,8 @@ class TwseClient {
     // 防止未來日期
     final now = DateTime.now();
     if (year > now.year || (year == now.year && month > now.month)) {
-      throw ArgumentError('Cannot fetch data for future dates: $year/$month');
+      AppLogger.debug(_tag, '$code: 查詢日期大於今日 ($year/$month)，跳過');
+      return Future.value([]);
     }
 
     return MarketClientMixin.executeRequest(_tag, '月價格', () async {
