@@ -59,7 +59,13 @@ Widget buildLoadingState(BuildContext context) {
       color: theme.colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
     ),
-    child: const Center(child: CircularProgressIndicator()),
+    child: const Center(
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      ),
+    ),
   );
 }
 

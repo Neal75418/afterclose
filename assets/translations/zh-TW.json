@@ -36,7 +36,27 @@
     "updateData": "更新資料",
     "startingUpdate": "開始更新...",
     "lastUpdate": "最後更新: {time}",
-    "updateFailed": "更新失敗: {error}"
+    "updateFailed": "更新失敗: {error}",
+    "priceAlert": "價格提醒",
+    "dataDate": "資料日期: {date} 收盤",
+    "dataToday": "今日",
+    "dataYesterday": "昨日"
+  },
+  "news": {
+    "title": "市場新聞",
+    "today": "今天",
+    "yesterday": "昨天",
+    "earlier": "更早",
+    "relatedStocks": "相關股票",
+    "openInBrowser": "開啟原文",
+    "cannotOpenLink": "無法開啟連結",
+    "minutesAgo": "{minutes} 分鐘前",
+    "hoursAgo": "{hours} 小時前",
+    "daysAgo": "{days} 天前"
+  },
+  "market": {
+    "twse": "市",
+    "tpex": "櫃"
   },
   "marketOverview": {
     "title": "大盤總覽",
@@ -206,7 +226,9 @@
     "statusQuiet": "平靜",
     "trendUp": "上升趨勢",
     "trendDown": "下降趨勢",
-    "trendSideways": "盤整"
+    "trendSideways": "盤整",
+    "removeTooltip": "從自選移除",
+    "addTooltip": "加入自選"
   },
   "stock": {
     "detailTitle": "股票詳情",
@@ -352,7 +374,9 @@
     "down": "下跌",
     "neutral": "持平",
     "limitUp": "漲停",
-    "limitDown": "跌停"
+    "limitDown": "跌停",
+    "value": "{price} 元",
+    "changePercent": "{sign}{change}%"
   },
   "reasons": {
     "label": "推薦理由",
@@ -500,12 +524,29 @@
     "sparklineDefault": "近期價格走勢圖",
     "sparklineFlat": "近 {days} 日價格持平走勢圖",
     "sparklineTrendUp": "近 {days} 日價格上漲 {change} 百分比走勢圖",
-    "sparklineTrendDown": "近 {days} 日價格下跌 {change} 百分比走勢圖"
+    "sparklineTrendDown": "近 {days} 日價格下跌 {change} 百分比走勢圖",
+    "buttonPress": "按鈕: {label}",
+    "shimmerStockList": "股票列表載入中",
+    "shimmerStockDetail": "股票詳情載入中",
+    "shimmerNewsList": "新聞列表載入中",
+    "shimmerGenericList": "列表載入中",
+    "closePrice": "收盤價 {price} 元",
+    "absoluteChange": "{change} 元",
+    "priceChangeDetail": "漲跌 {absText}{pctText}",
+    "trend": "趨勢 {trend}",
+    "priceComparisonChart": "價格走勢比較圖，比較 {symbols} 的歷史價格",
+    "radarChart": "雷達圖比較 {symbols} 的各維度指標",
+    "comparisonTable": "{symbols} 的詳細數據比較表格",
+    "allocationPieChart": "投資組合配置圓餅圖，共 {count} 檔持股"
   },
   "status": {
     "hasSignal": "有訊號",
     "volatile": "波動中",
-    "quiet": "平靜"
+    "quiet": "平靜",
+    "signalType": "有訊號: {type}"
+  },
+  "fundamental": {
+    "dividendYearAverage": "{years}年平均: "
   },
   "settings": {
     "title": "設定",

@@ -356,7 +356,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       padding: const EdgeInsets.all(16),
       child: Center(
         child: state.isLoadingMore
-            ? const CircularProgressIndicator()
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
             : const SizedBox.shrink(),
       ),
     );

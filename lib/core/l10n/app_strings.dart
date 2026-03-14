@@ -1,7 +1,9 @@
-/// 應用程式字串常數集中管理
+import 'package:easy_localization/easy_localization.dart';
+
+/// 應用程式字串集中管理（基於 easy_localization）
 ///
 /// 此類別為所有 UI 字串的單一來源，
-/// 便於維護並未來轉換為完整的國際化。
+/// 內部委託 `.tr()` 讀取 JSON 翻譯檔。
 ///
 /// 使用範例：
 /// ```dart
@@ -14,106 +16,117 @@ class S {
   // ==================================================
   // 應用程式通用
   // ==================================================
-  static const String appName = 'AfterClose';
-  static const String loading = '載入中...';
-  static const String retry = '重試';
-  static const String cancel = '取消';
-  static const String confirm = '確認';
-  static const String save = '儲存';
-  static const String delete = '刪除';
-  static const String edit = '編輯';
-  static const String add = '新增';
-  static const String close = '關閉';
-  static const String done = '完成';
-  static const String search = '搜尋';
-  static const String refresh = '重新整理';
-  static const String settings = '設定';
+  static String get appName => 'app.name'.tr();
+  static String get loading => 'common.loading'.tr();
+  static String get retry => 'common.retry'.tr();
+  static String get cancel => 'common.cancel'.tr();
+  static String get confirm => 'common.confirm'.tr();
+  static String get save => 'common.save'.tr();
+  static String get delete => 'common.delete'.tr();
+  static String get edit => 'common.edit'.tr();
+  static String get add => 'common.add'.tr();
+  static String get close => 'common.close'.tr();
+  static String get done => 'common.done'.tr();
+  static String get search => 'common.search'.tr();
+  static String get refresh => 'common.refresh'.tr();
+  static String get settings => 'common.settings'.tr();
 
   // ==================================================
   // 導航
   // ==================================================
-  static const String navToday = '今日';
-  static const String navScan = '掃描';
-  static const String navWatchlist = '自選';
-  static const String navNews = '新聞';
+  static String get navToday => 'nav.today'.tr();
+  static String get navScan => 'nav.scan'.tr();
+  static String get navWatchlist => 'nav.watchlist'.tr();
+  static String get navNews => 'nav.news'.tr();
 
   // ==================================================
   // 今日頁面
   // ==================================================
-  static const String todayTop10 = '今日推薦 Top 20';
-  static const String todayWatchlistStatus = '自選狀態';
-  static const String todayUpdateData = '更新資料';
-  static const String todayStartingUpdate = '開始更新...';
-  static const String todayPriceAlert = '價格提醒';
-  static String todayLastUpdate(String time) => '最後更新: $time';
-  static String todayDataDate(String date) => '資料日期: $date 收盤';
-  static const String todayDataToday = '今日';
-  static const String todayDataYesterday = '昨日';
-  static String todayUpdateFailed(String error) => '更新失敗: $error';
+  static String get todayTop10 => 'today.top10'.tr();
+  static String get todayWatchlistStatus => 'today.watchlistStatus'.tr();
+  static String get todayUpdateData => 'today.updateData'.tr();
+  static String get todayStartingUpdate => 'today.startingUpdate'.tr();
+  static String get todayPriceAlert => 'today.priceAlert'.tr();
+  static String todayLastUpdate(String time) =>
+      'today.lastUpdate'.tr(namedArgs: {'time': time});
+  static String todayDataDate(String date) =>
+      'today.dataDate'.tr(namedArgs: {'date': date});
+  static String get todayDataToday => 'today.dataToday'.tr();
+  static String get todayDataYesterday => 'today.dataYesterday'.tr();
+  static String todayUpdateFailed(String error) =>
+      'today.updateFailed'.tr(namedArgs: {'error': error});
 
   // ==================================================
   // 新聞頁面
   // ==================================================
-  static const String newsTitle = '市場新聞';
-  static const String newsToday = '今天';
-  static const String newsYesterday = '昨天';
-  static const String newsEarlier = '更早';
-  static const String newsRelatedStocks = '相關股票';
-  static const String newsOpenInBrowser = '開啟原文';
-  static const String newsCannotOpenLink = '無法開啟連結';
-  static String newsMinutesAgo(int minutes) => '$minutes 分鐘前';
-  static String newsHoursAgo(int hours) => '$hours 小時前';
-  static String newsDaysAgo(int days) => '$days 天前';
+  static String get newsTitle => 'news.title'.tr();
+  static String get newsToday => 'news.today'.tr();
+  static String get newsYesterday => 'news.yesterday'.tr();
+  static String get newsEarlier => 'news.earlier'.tr();
+  static String get newsRelatedStocks => 'news.relatedStocks'.tr();
+  static String get newsOpenInBrowser => 'news.openInBrowser'.tr();
+  static String get newsCannotOpenLink => 'news.cannotOpenLink'.tr();
+  static String newsMinutesAgo(int minutes) =>
+      'news.minutesAgo'.tr(namedArgs: {'minutes': minutes.toString()});
+  static String newsHoursAgo(int hours) =>
+      'news.hoursAgo'.tr(namedArgs: {'hours': hours.toString()});
+  static String newsDaysAgo(int days) =>
+      'news.daysAgo'.tr(namedArgs: {'days': days.toString()});
 
   // ==================================================
   // 掃描頁面
   // ==================================================
-  static const String scanTitle = '市場掃描';
-  static const String scanFilterAll = '全部';
-  static const String scanFilterReversalW2S = '弱轉強';
-  static const String scanFilterReversalS2W = '強轉弱';
-  static const String scanFilterBreakout = '突破';
-  static const String scanFilterBreakdown = '跌破';
-  static const String scanFilterVolumeSpike = '放量';
-  static const String scanSortScoreDesc = '分數高→低';
-  static const String scanSortScoreAsc = '分數低→高';
-  static const String scanSortPriceChangeDesc = '漲幅高→低';
-  static const String scanSortPriceChangeAsc = '漲幅低→高';
+  static String get scanTitle => 'scan.title'.tr();
+  static String get scanFilterAll => 'scan.filterAll'.tr();
+  static String get scanFilterReversalW2S => 'scan.filterReversalW2S'.tr();
+  static String get scanFilterReversalS2W => 'scan.filterReversalS2W'.tr();
+  static String get scanFilterBreakout => 'scan.filterBreakout'.tr();
+  static String get scanFilterBreakdown => 'scan.filterBreakdown'.tr();
+  static String get scanFilterVolumeSpike => 'scan.filterVolumeSpike'.tr();
+  static String get scanSortScoreDesc => 'scan.sortScoreDesc'.tr();
+  static String get scanSortScoreAsc => 'scan.sortScoreAsc'.tr();
+  static String get scanSortPriceChangeDesc => 'scan.sortPriceChangeDesc'.tr();
+  static String get scanSortPriceChangeAsc => 'scan.sortPriceChangeAsc'.tr();
 
   // ==================================================
   // 自選股頁面
   // ==================================================
-  static const String watchlistTitle = '自選股票';
-  static const String watchlistAdd = '新增股票';
-  static const String watchlistAddDialog = '新增自選';
-  static const String watchlistSymbolLabel = '股票代號';
-  static const String watchlistSymbolHint = '例如: 2330';
-  static String watchlistRemoved(String symbol) => '已從自選移除 $symbol';
-  static String watchlistAdded(String symbol) => '已加入 $symbol';
-  static String watchlistAddedToWatchlist(String symbol) => '已加入自選 $symbol';
-  static const String watchlistAddFailed = '加入自選失敗';
-  static String watchlistNotFound(String symbol) => '找不到股票 $symbol';
-  static const String watchlistUndo = '復原';
-  static const String watchlistRemoveTooltip = '從自選移除';
-  static const String watchlistAddTooltip = '加入自選';
+  static String get watchlistTitle => 'watchlist.title'.tr();
+  static String get watchlistAdd => 'watchlist.add'.tr();
+  static String get watchlistAddDialog => 'watchlist.addDialog'.tr();
+  static String get watchlistSymbolLabel => 'watchlist.symbolLabel'.tr();
+  static String get watchlistSymbolHint => 'watchlist.symbolHint'.tr();
+  static String watchlistRemoved(String symbol) =>
+      'watchlist.removed'.tr(namedArgs: {'symbol': symbol});
+  static String watchlistAdded(String symbol) =>
+      'watchlist.added'.tr(namedArgs: {'symbol': symbol});
+  static String watchlistAddedToWatchlist(String symbol) =>
+      'watchlist.addedToWatchlist'.tr(namedArgs: {'symbol': symbol});
+  static String get watchlistAddFailed => 'watchlist.addFailed'.tr();
+  static String watchlistNotFound(String symbol) =>
+      'watchlist.notFound'.tr(namedArgs: {'symbol': symbol});
+  static String get watchlistUndo => 'watchlist.undo'.tr();
+  static String get watchlistRemoveTooltip => 'watchlist.removeTooltip'.tr();
+  static String get watchlistAddTooltip => 'watchlist.addTooltip'.tr();
 
   // ==================================================
   // 股票詳情
   // ==================================================
-  static const String stockDetailTitle = '股票詳情';
-  static const String stockAddToWatchlist = '加入自選';
-  static const String stockRemoveFromWatchlist = '從自選移除';
-  static const String stockViewDetails = '查看詳情';
-  static const String stockPreview = '股票預覽';
+  static String get stockDetailTitle => 'stock.detailTitle'.tr();
+  static String get stockAddToWatchlist => 'stock.addToWatchlist'.tr();
+  static String get stockRemoveFromWatchlist =>
+      'stock.removeFromWatchlist'.tr();
+  static String get stockViewDetails => 'stock.viewDetails'.tr();
+  static String get stockPreview => 'stock.preview'.tr();
 
   // ==================================================
   // 評分
   // ==================================================
-  static const String scoreLabel = '推薦評分';
-  static const String scoreLevelStrong = '強烈推薦';
-  static const String scoreLevelWatch = '值得關注';
-  static const String scoreLevelNormal = '一般';
-  static const String scoreLevelWait = '觀望';
+  static String get scoreLabel => 'score.label'.tr();
+  static String get scoreLevelStrong => 'score.strong'.tr();
+  static String get scoreLevelWatch => 'score.watch'.tr();
+  static String get scoreLevelNormal => 'score.normal'.tr();
+  static String get scoreLevelWait => 'score.wait'.tr();
 
   static String getScoreLevel(double score) {
     if (score >= 80) return scoreLevelStrong;
@@ -125,9 +138,9 @@ class S {
   // ==================================================
   // 趨勢
   // ==================================================
-  static const String trendUp = '上升趨勢';
-  static const String trendDown = '下跌趨勢';
-  static const String trendSideways = '盤整區間';
+  static String get trendUp => 'trend.up'.tr();
+  static String get trendDown => 'trend.down'.tr();
+  static String get trendSideways => 'trend.sideways'.tr();
 
   static String getTrendLabel(String? trendState) {
     return switch (trendState) {
@@ -148,124 +161,160 @@ class S {
   // ==================================================
   // 價格
   // ==================================================
-  static const String priceLabel = '價格';
-  static const String priceUp = '上漲';
-  static const String priceDown = '下跌';
-  static const String priceNeutral = '持平';
-  static const String priceLimitUp = '漲停';
-  static const String priceLimitDown = '跌停';
+  static String get priceLabel => 'price.label'.tr();
+  static String get priceUp => 'price.up'.tr();
+  static String get priceDown => 'price.down'.tr();
+  static String get priceNeutral => 'price.neutral'.tr();
+  static String get priceLimitUp => 'price.limitUp'.tr();
+  static String get priceLimitDown => 'price.limitDown'.tr();
 
   static String priceChangeLabel(double? change) {
     if (change == null || change == 0) return priceNeutral;
     return change > 0 ? priceUp : priceDown;
   }
 
-  static String priceValue(double price) => '${price.toStringAsFixed(2)} 元';
+  static String priceValue(double price) =>
+      'price.value'.tr(namedArgs: {'price': price.toStringAsFixed(2)});
   static String priceChangePercent(double change) {
     final sign = change >= 0 ? '+' : '';
-    return '$sign${change.toStringAsFixed(2)}%';
+    return 'price.changePercent'.tr(
+      namedArgs: {'sign': sign, 'change': change.toStringAsFixed(2)},
+    );
   }
 
   // ==================================================
   // 推薦理由（訊號類型）
   // ==================================================
-  static const String reasonReversalW2S = '弱轉強';
-  static const String reasonReversalS2W = '強轉弱';
-  static const String reasonBreakout = '技術突破';
-  static const String reasonBreakdown = '技術跌破';
-  static const String reasonVolumeSpike = '放量';
-  static const String reasonPriceSpike = '價格異動';
-  static const String reasonInstitutional = '法人動向';
-  static const String reasonNews = '新聞相關';
-  static const String reasonsLabel = '推薦理由';
+  static String get reasonReversalW2S => 'reasons.reversalW2S'.tr();
+  static String get reasonReversalS2W => 'reasons.reversalS2W'.tr();
+  static String get reasonBreakout => 'reasons.breakout'.tr();
+  static String get reasonBreakdown => 'reasons.breakdown'.tr();
+  static String get reasonVolumeSpike => 'reasons.volumeSpike'.tr();
+  static String get reasonPriceSpike => 'reasons.priceSpike'.tr();
+  static String get reasonInstitutional => 'reasons.institutional'.tr();
+  static String get reasonNews => 'reasons.newsRelated'.tr();
+  static String get reasonsLabel => 'reasons.label'.tr();
 
   // ==================================================
   // 空狀態
   // ==================================================
-  static const String emptyNoRecommendations = '尚無今日推薦';
-  static const String emptyNoRecommendationsHint = '目前沒有符合條件的股票\n請稍後再試或手動更新';
-  static const String emptyNoFilterResults = '無符合條件的股票';
-  static const String emptyNoFilterResultsHint = '試著調整篩選條件';
-  static const String emptyClearFilter = '清除篩選';
-  static const String emptyNoWatchlist = '尚無自選股票';
-  static const String emptyNoWatchlistHint = '在市場掃描頁面\n點擊星號加入自選';
-  static const String emptyGoToScan = '前往掃描';
-  static const String emptyNoNews = '暫無新聞';
-  static const String emptyNoNewsHint = '目前沒有相關新聞';
-  static const String emptyError = '發生錯誤';
-  static const String emptyNetworkError = '網路連線失敗';
-  static const String emptyNetworkErrorHint = '請檢查網路連線後再試';
+  static String get emptyNoRecommendations => 'empty.noRecommendations'.tr();
+  static String get emptyNoRecommendationsHint =>
+      'empty.noRecommendationsHint'.tr();
+  static String get emptyNoFilterResults => 'empty.noFilterResults'.tr();
+  static String get emptyNoFilterResultsHint =>
+      'empty.noFilterResultsHint'.tr();
+  static String get emptyClearFilter => 'empty.clearFilter'.tr();
+  static String get emptyNoWatchlist => 'empty.noWatchlist'.tr();
+  static String get emptyNoWatchlistHint => 'empty.noWatchlistHint'.tr();
+  static String get emptyGoToScan => 'empty.goToScan'.tr();
+  static String get emptyNoNews => 'empty.noNews'.tr();
+  static String get emptyNoNewsHint => 'empty.noNewsHint'.tr();
+  static String get emptyError => 'empty.error'.tr();
+  static String get emptyNetworkError => 'empty.networkError'.tr();
+  static String get emptyNetworkErrorHint => 'empty.networkErrorHint'.tr();
 
   // ==================================================
   // 無障礙
   // ==================================================
-  static String accessibilityStock(String symbol) => '股票 $symbol';
+  static String accessibilityStock(String symbol) =>
+      'accessibility.stock'.tr(namedArgs: {'symbol': symbol});
   static String accessibilityPrice(double price) =>
-      '價格 ${price.toStringAsFixed(2)} 元';
+      'accessibility.price'.tr(namedArgs: {'price': price.toStringAsFixed(2)});
   static String accessibilityPriceChange(double change) {
-    final direction = change >= 0 ? '上漲' : '下跌';
-    return '$direction ${change.abs().toStringAsFixed(2)} 百分比';
+    final key = change >= 0
+        ? 'accessibility.priceChangeUp'
+        : 'accessibility.priceChangeDown';
+    return key.tr(namedArgs: {'change': change.abs().toStringAsFixed(2)});
   }
 
-  static String accessibilityScore(int score) => '評分 $score 分';
-  static String accessibilitySignals(String signals) => '訊號: $signals';
-  static const String accessibilityAddToWatchlist = '加入自選';
-  static const String accessibilityRemoveFromWatchlist = '從自選移除';
-  static String accessibilityButtonPress(String label) => '按鈕: $label';
+  static String accessibilityScore(int score) =>
+      'accessibility.score'.tr(namedArgs: {'score': score.toString()});
+  static String accessibilitySignals(String signals) =>
+      'accessibility.signals'.tr(namedArgs: {'signals': signals});
+  static String get accessibilityAddToWatchlist =>
+      'accessibility.addToWatchlist'.tr();
+  static String get accessibilityRemoveFromWatchlist =>
+      'accessibility.removeFromWatchlist'.tr();
+  static String accessibilityButtonPress(String label) =>
+      'accessibility.buttonPress'.tr(namedArgs: {'label': label});
 
   // 股票詳情頁無障礙標籤
-  static String accessibilityClosePrice(String price) => '收盤價 $price 元';
-  static String accessibilityAbsoluteChange(String change) => '$change 元';
+  static String accessibilityClosePrice(String price) =>
+      'accessibility.closePrice'.tr(namedArgs: {'price': price});
+  static String accessibilityAbsoluteChange(String change) =>
+      'accessibility.absoluteChange'.tr(namedArgs: {'change': change});
   static String accessibilityPriceChangeDetail(
     String absText,
     String pctText,
-  ) => '漲跌 $absText$pctText';
-  static String accessibilityTrend(String trend) => '趨勢 $trend';
+  ) => 'accessibility.priceChangeDetail'.tr(
+    namedArgs: {'absText': absText, 'pctText': pctText},
+  );
+  static String accessibilityTrend(String trend) =>
+      'accessibility.trend'.tr(namedArgs: {'trend': trend});
 
   // 比較頁面無障礙標籤
   static String accessibilityPriceComparisonChart(String symbols) =>
-      '價格走勢比較圖，比較 $symbols 的歷史價格';
+      'accessibility.priceComparisonChart'.tr(namedArgs: {'symbols': symbols});
   static String accessibilityRadarChart(String symbols) =>
-      '雷達圖比較 $symbols 的各維度指標';
+      'accessibility.radarChart'.tr(namedArgs: {'symbols': symbols});
   static String accessibilityComparisonTable(String symbols) =>
-      '$symbols 的詳細數據比較表格';
+      'accessibility.comparisonTable'.tr(namedArgs: {'symbols': symbols});
 
   // 投資組合無障礙標籤
   static String accessibilityAllocationPieChart(int count) =>
-      '投資組合配置圓餅圖，共 $count 檔持股';
+      'accessibility.allocationPieChart'.tr(
+        namedArgs: {'count': count.toString()},
+      );
 
   // 走勢圖無障礙標籤
-  static const String sparklineDefault = '近期價格走勢圖';
-  static String sparklineFlat(int days) => '近 $days 日價格持平走勢圖';
+  static String get sparklineDefault => 'accessibility.sparklineDefault'.tr();
+  static String sparklineFlat(int days) =>
+      'accessibility.sparklineFlat'.tr(namedArgs: {'days': days.toString()});
   static String sparklineTrend(int days, double change) {
-    final direction = change >= 0 ? '上漲' : '下跌';
-    return '近 $days 日價格 $direction ${change.abs().toStringAsFixed(1)} 百分比走勢圖';
+    final key = change >= 0
+        ? 'accessibility.sparklineTrendUp'
+        : 'accessibility.sparklineTrendDown';
+    return key.tr(
+      namedArgs: {
+        'days': days.toString(),
+        'change': change.abs().toStringAsFixed(1),
+      },
+    );
   }
 
   // Shimmer 載入無障礙標籤
-  static const String shimmerLoadingStockList = '股票列表載入中';
-  static const String shimmerLoadingStockDetail = '股票詳情載入中';
-  static const String shimmerLoadingNewsList = '新聞列表載入中';
-  static const String shimmerLoadingGenericList = '列表載入中';
+  static String get shimmerLoadingStockList =>
+      'accessibility.shimmerStockList'.tr();
+  static String get shimmerLoadingStockDetail =>
+      'accessibility.shimmerStockDetail'.tr();
+  static String get shimmerLoadingNewsList =>
+      'accessibility.shimmerNewsList'.tr();
+  static String get shimmerLoadingGenericList =>
+      'accessibility.shimmerGenericList'.tr();
 
   // ==================================================
   // 自選股狀態圖示
   // ==================================================
-  static const String statusHasSignal = '有訊號';
-  static const String statusVolatile = '波動中';
-  static const String statusQuiet = '平靜';
-  static String signalType(String? type) => '有訊號: ${type ?? "異常"}';
+  static String get statusHasSignal => 'status.hasSignal'.tr();
+  static String get statusVolatile => 'status.volatile'.tr();
+  static String get statusQuiet => 'status.quiet'.tr();
+  static String signalType(String? type) =>
+      'status.signalType'.tr(namedArgs: {'type': type ?? '異常'});
 
   // ==================================================
   // 市場類型
   // ==================================================
-  static const String marketTWSE = '市';
-  static const String marketTPEx = '櫃';
+  static String get marketTWSE => 'market.twse'.tr();
+  static String get marketTPEx => 'market.tpex'.tr();
 
   // ==================================================
   // 基本面
   // ==================================================
-  static String dividendYearAverage(int years) => '$years年平均: ';
+  static String dividendYearAverage(int years) =>
+      'fundamental.dividendYearAverage'.tr(
+        namedArgs: {'years': years.toString()},
+      );
 
   // ==================================================
   // 時間與日期

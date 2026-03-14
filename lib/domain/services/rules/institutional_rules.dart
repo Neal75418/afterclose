@@ -32,7 +32,7 @@ class InstitutionalBuyStreakRule extends StockRule {
     int streakDays = 0;
     double totalForeignNet = 0;
     double totalTrustNet = 0;
-    int significantDays = 0; // 單日淨買超 > 300張（300000股）的天數
+    int significantDays = 0; // 單日淨買超 > 150張（150,000股）的天數
 
     // 從最近日期往回檢查直到連續中斷
     for (int i = history.length - 1; i >= 0; i--) {
@@ -42,7 +42,7 @@ class InstitutionalBuyStreakRule extends StockRule {
       final combinedNet = foreignNet + trustNet;
 
       // 考量合併的法人動向（外資 + 投信）
-      // 需要淨買超 > 100張（100,000股）才算有效買超日（過濾微量波動）
+      // 需要淨買超 > 50張（50,000股）才算有效買超日（過濾微量波動）
       if (combinedNet > InstitutionalParams.institutionalMinDailyNetShares) {
         streakDays++;
         totalForeignNet += foreignNet;
@@ -67,19 +67,19 @@ class InstitutionalBuyStreakRule extends StockRule {
             '日均=${dailyAvg.round()}股, 顯著天數=$significantDays',
       );
 
-      // 過濾條件 1：總淨買超須 > 5000張（5,000,000股）
+      // 過濾條件 1：總淨買超須 > 1500張（1,500,000股）
       if (totalNet <=
           InstitutionalParams.institutionalBuyTotalThresholdShares) {
         return null;
       }
 
-      // 過濾條件 2：日均淨買超須 > 700張（700,000股）
+      // 過濾條件 2：日均淨買超須 > 200張（200,000股）
       if (dailyAvg <=
           InstitutionalParams.institutionalBuyDailyAvgThresholdShares) {
         return null;
       }
 
-      // 過濾條件 3：至少一半的天數有顯著買超（> 300張/日）
+      // 過濾條件 3：至少一半的天數有顯著買超（> 150張/日）
       if (significantDays < streakDays / 2) return null;
 
       // 轉換為張顯示（1張 = 1000股）
@@ -138,7 +138,7 @@ class InstitutionalSellStreakRule extends StockRule {
     int streakDays = 0;
     double totalForeignNet = 0;
     double totalTrustNet = 0;
-    int significantDays = 0; // 單日淨賣超 < -300張（-300000股）的天數
+    int significantDays = 0; // 單日淨賣超 < -150張（-150,000股）的天數
 
     for (int i = history.length - 1; i >= 0; i--) {
       final entry = history[i];
@@ -147,7 +147,7 @@ class InstitutionalSellStreakRule extends StockRule {
       final combinedNet = foreignNet + trustNet;
 
       // 考量合併的法人賣壓
-      // 需要淨賣超 < -100張（-100,000股）才算有效賣超日（過濾微量波動）
+      // 需要淨賣超 < -50張（-50,000股）才算有效賣超日（過濾微量波動）
       if (combinedNet < -InstitutionalParams.institutionalMinDailyNetShares) {
         streakDays++;
         totalForeignNet += foreignNet;
@@ -172,7 +172,7 @@ class InstitutionalSellStreakRule extends StockRule {
             '日均=${dailyAvg.round()}股, 顯著天數=$significantDays',
       );
 
-      // 過濾條件 1：總淨賣超須 < -15000張（-15,000,000股）
+      // 過濾條件 1：總淨賣超須 < -2000張（-2,000,000股）
       if (totalNet >=
           InstitutionalParams.institutionalSellTotalThresholdShares) {
         AppLogger.debug(
@@ -182,7 +182,7 @@ class InstitutionalSellStreakRule extends StockRule {
         return null;
       }
 
-      // 過濾條件 2：日均淨賣超須 < -2000張（-2,000,000股）
+      // 過濾條件 2：日均淨賣超須 < -300張（-300,000股）
       if (dailyAvg >=
           InstitutionalParams.institutionalSellDailyAvgThresholdShares) {
         AppLogger.debug(
@@ -192,7 +192,7 @@ class InstitutionalSellStreakRule extends StockRule {
         return null;
       }
 
-      // 過濾條件 3：至少一半的天數有顯著賣超（< -300張/日）
+      // 過濾條件 3：至少一半的天數有顯著賣超（< -150張/日）
       if (significantDays < streakDays / 2) return null;
 
       // 轉換為張顯示（1張 = 1000股）

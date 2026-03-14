@@ -112,7 +112,13 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               if (_isSearching)
                 const Padding(
                   padding: EdgeInsets.all(8),
-                  child: CircularProgressIndicator(),
+                  child: Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
                 ),
               if (_searchResults.isNotEmpty)
                 Container(

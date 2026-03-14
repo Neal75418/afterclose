@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
@@ -245,7 +246,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
       );
     } catch (e) {
       AppLogger.warning('Comparison', '載入比較資料失敗', e);
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 }

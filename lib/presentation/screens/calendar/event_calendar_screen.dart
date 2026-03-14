@@ -147,7 +147,13 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           // 選取日期的事件列表
           Expanded(
             child: state.isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
                 : state.selectedDayEvents.isEmpty
                 ? Center(
                     child: Column(

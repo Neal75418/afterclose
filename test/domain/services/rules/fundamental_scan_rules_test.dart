@@ -599,7 +599,7 @@ void main() {
         NewsItemEntry(
           id: '1',
           url: 'https://example.com/1',
-          title: '取消訂單影響營運',
+          title: '衰退擴產計畫暫緩',
           source: 'Test',
           category: 'COMPANY_EVENT',
           publishedAt: now.subtract(const Duration(hours: 1)),
@@ -611,7 +611,7 @@ void main() {
 
       final result = rule.evaluate(context, data);
 
-      // '訂單' is positive keyword, but '取消' prefix negates it → score = -1
+      // '擴產' is positive keyword, but '衰退' prefix negates it → score = -1
       expect(result, isNotNull);
       expect((result!.evidence!['sentiment'] as int) < 0, isTrue);
     });

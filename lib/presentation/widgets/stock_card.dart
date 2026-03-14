@@ -355,7 +355,7 @@ class _StockCardState extends State<StockCard> {
               marketLabel,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSecondaryContainer,
-                fontSize: 10,
+                fontSize: DesignTokens.fontSizeXs,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -377,7 +377,7 @@ class _StockCardState extends State<StockCard> {
               isLimitUp ? S.priceLimitUp : S.priceLimitDown,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: Colors.white,
-                fontSize: 10,
+                fontSize: DesignTokens.fontSizeXs,
                 fontWeight: FontWeight.w700,
               ),
             ),

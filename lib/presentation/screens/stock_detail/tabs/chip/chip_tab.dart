@@ -40,7 +40,13 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     );
 
     if (isLoadingChip && chip.chipStrength == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
     }
 
     return SingleChildScrollView(

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
@@ -228,7 +229,7 @@ class TodayNotifier extends Notifier<TodayState> {
         isLoading: false,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 
@@ -304,7 +305,7 @@ class TodayNotifier extends Notifier<TodayState> {
       state = state.copyWith(
         isUpdating: false,
         updateProgress: null,
-        error: e.toString(),
+        error: ErrorDisplay.message(e),
       );
       rethrow;
     }

@@ -130,7 +130,7 @@ class _Avg5dBadge extends StatelessWidget {
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
-          fontSize: 10,
+          fontSize: DesignTokens.fontSizeXs,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),

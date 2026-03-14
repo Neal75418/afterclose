@@ -284,7 +284,7 @@ class _StreakBadge extends StatelessWidget {
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
-          fontSize: 9,
+          fontSize: DesignTokens.fontSizeXs,
         ),
       ),
     );

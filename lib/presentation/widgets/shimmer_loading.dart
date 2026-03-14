@@ -70,17 +70,19 @@ abstract final class ShimmerDimensions {
 }
 
 /// 淺色與深色主題的微光效果顏色
+///
+/// 深色主題使用 Midnight Slate 色調，
+/// 淺色主題使用 theme.colorScheme.surfaceContainerHighest 衍生色。
 abstract final class ShimmerColors {
-  // 深色主題配色（Midnight Slate）
   static Color baseColor(bool isDark) =>
-      isDark ? const Color(0xFF1E293B) : Colors.grey[300]!; // Slate 800
+      isDark ? const Color(0xFF1E293B) : const Color(0xFFE0E0E0);
 
   static Color highlightColor(bool isDark) =>
-      isDark ? const Color(0xFF334155) : Colors.grey[100]!; // Slate 700
+      isDark ? const Color(0xFF334155) : const Color(0xFFF5F5F5);
 
   /// 骨架容器填充顏色，在兩種模式下都能提供良好的對比度
   static Color skeletonColor(bool isDark) =>
-      isDark ? const Color(0xFF0F172A) : Colors.white; // Slate 900
+      isDark ? const Color(0xFF0F172A) : Colors.white;
 }
 
 // ==================================================

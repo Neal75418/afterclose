@@ -4,8 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -308,7 +309,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         displayedCount: displayedCount,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 
@@ -450,7 +451,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
     }
   }
@@ -493,7 +494,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       await _db.removeFromWatchlist(symbol);
     } catch (e) {
       // 回滾至完整的先前狀態，確保排序順序一致
-      state = previousState.copyWith(error: e.toString());
+      state = previousState.copyWith(error: ErrorDisplay.message(e));
     }
   }
 
@@ -517,7 +518,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       final newItems = [...state.items, itemData];
       state = state.copyWith(items: _sortItems(newItems, state.sort));
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorDisplay.message(e));
     }
   }
 

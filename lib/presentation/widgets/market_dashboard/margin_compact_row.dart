@@ -168,7 +168,7 @@ class _MarginItem extends StatelessWidget {
                       color: theme.colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.7,
                       ),
-                      fontSize: 10,
+                      fontSize: DesignTokens.fontSizeXs,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),

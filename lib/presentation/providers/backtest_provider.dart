@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/backtest_models.dart';
@@ -161,7 +162,10 @@ class BacktestNotifier extends Notifier<BacktestState> {
     } catch (e) {
       AppLogger.error('Backtest', '回測執行失敗', e);
       if (_active) {
-        state = state.copyWith(isExecuting: false, error: e.toString());
+        state = state.copyWith(
+          isExecuting: false,
+          error: ErrorDisplay.message(e),
+        );
       }
     }
   }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:easy_localization/easy_localization.dart';
 
 import 'package:afterclose/core/services/notification_service.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
@@ -63,7 +64,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         AppLogger.warning('Notification', '權限檢查失敗（非關鍵）', e);
       }
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorDisplay.message(e));
     }
   }
 
@@ -82,7 +83,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
       state = state.copyWith(hasPermission: hasPermission);
       return hasPermission;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
     }
   }

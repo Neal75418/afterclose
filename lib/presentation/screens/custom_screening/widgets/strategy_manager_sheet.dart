@@ -74,7 +74,13 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
 
               // 已儲存策略列表
               if (state.isLoadingStrategies)
-                const Center(child: CircularProgressIndicator())
+                const Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
               else if (state.savedStrategies.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),

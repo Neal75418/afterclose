@@ -455,7 +455,7 @@ void main() {
       final state = container.read(portfolioProvider);
       expect(state.isLoading, isFalse);
       expect(state.error, isNotNull);
-      expect(state.error, contains('DB Error'));
+      expect(state.error, equals('發生未預期的錯誤，請稍後再試'));
     });
 
     test('addBuy delegates to repository and reloads', () async {

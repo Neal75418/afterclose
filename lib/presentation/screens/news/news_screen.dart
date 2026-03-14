@@ -49,7 +49,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text(S.newsCannotOpenLink)));
+        ).showSnackBar(SnackBar(content: Text(S.newsCannotOpenLink)));
       }
     }
   }
@@ -150,7 +150,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                           _openUrl(item.url);
                         },
                         icon: const Icon(Icons.open_in_new),
-                        label: const Text(S.newsOpenInBrowser),
+                        label: Text(S.newsOpenInBrowser),
                       ),
                     ),
                   ],
@@ -169,7 +169,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(S.newsTitle),
+        title: Text(S.newsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

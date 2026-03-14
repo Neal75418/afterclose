@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
@@ -250,7 +251,10 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     } catch (e) {
       AppLogger.error('CustomScreening', '篩選執行失敗', e);
       if (_active) {
-        state = state.copyWith(isExecuting: false, error: e.toString());
+        state = state.copyWith(
+          isExecuting: false,
+          error: ErrorDisplay.message(e),
+        );
       }
     }
   }
@@ -283,7 +287,10 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
       );
     } catch (e) {
       if (!_active) return;
-      state = state.copyWith(isLoadingMore: false, error: e.toString());
+      state = state.copyWith(
+        isLoadingMore: false,
+        error: ErrorDisplay.message(e),
+      );
     }
   }
 

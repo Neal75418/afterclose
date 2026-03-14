@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -289,7 +290,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       final alerts = await _db.getAllAlerts();
       state = state.copyWith(alerts: alerts, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 
@@ -300,7 +301,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       final alerts = await _db.getAlertsForSymbol(symbol);
       state = state.copyWith(alerts: alerts, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 
@@ -327,7 +328,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       }
       return true;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
     }
   }
@@ -344,7 +345,10 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       await _db.deletePriceAlert(id);
     } catch (e) {
       // 錯誤時回滾
-      state = state.copyWith(alerts: previousAlerts, error: e.toString());
+      state = state.copyWith(
+        alerts: previousAlerts,
+        error: ErrorDisplay.message(e),
+      );
     }
   }
 
@@ -377,7 +381,10 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       );
     } catch (e) {
       // 錯誤時回滾
-      state = state.copyWith(alerts: previousAlerts, error: e.toString());
+      state = state.copyWith(
+        alerts: previousAlerts,
+        error: ErrorDisplay.message(e),
+      );
     }
   }
 
@@ -424,7 +431,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
       return triggered;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      state = state.copyWith(error: ErrorDisplay.message(e));
       return [];
     }
   }

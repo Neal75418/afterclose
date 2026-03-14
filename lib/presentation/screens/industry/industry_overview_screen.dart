@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -71,7 +72,7 @@ class _IndustryOverviewScreenState
         setState(() {
           _state = _IndustryOverviewState(
             isLoading: false,
-            error: e.toString(),
+            error: ErrorDisplay.message(e),
           );
         });
       }

@@ -65,7 +65,13 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
           const SizedBox(height: 12),
 
           if (alertState.isLoading)
-            const Center(child: CircularProgressIndicator())
+            const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
           else if (stockAlerts.isEmpty)
             _buildEmptyState(context)
           else

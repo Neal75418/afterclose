@@ -78,7 +78,7 @@ class _WarningBadge extends StatelessWidget {
         style: theme.textTheme.labelSmall?.copyWith(
           color: color,
           fontWeight: FontWeight.w600,
-          fontSize: 10,
+          fontSize: DesignTokens.fontSizeXs,
         ),
       ),
     );

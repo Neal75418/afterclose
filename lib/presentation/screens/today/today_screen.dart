@@ -47,7 +47,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(todayProvider);
+    // 使用 selector 分離 loading/error 狀態，避免 updateProgress 變更時重建整個畫面
+    final isLoading = ref.watch(todayProvider.select((s) => s.isLoading));
+    final error = ref.watch(todayProvider.select((s) => s.error));
     // 使用 selector 只監聽 watchlist 的 symbols，避免不必要的重建
     final watchlistSymbols = ref.watch(
       watchlistProvider.select((s) => s.items.map((i) => i.symbol).toSet()),
@@ -61,11 +63,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ref.read(marketOverviewProvider.notifier).loadData(),
           ]);
         },
-        child: state.isLoading
+        child: isLoading
             ? const StockListShimmer(itemCount: 5)
-            : state.error != null
-            ? _buildError(state.error!)
-            : _buildContent(state, watchlistSymbols),
+            : error != null
+            ? _buildError(error)
+            : _buildContent(watchlistSymbols),
       ),
     );
   }
@@ -80,7 +82,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   /// 響應式推薦清單：手機使用 SliverList，平板/桌面使用 SliverGrid
   Widget _buildRecommendationsList(
     BuildContext context,
-    TodayState state,
+    List<RecommendationWithDetails> recommendations,
     Set<String> watchlistSymbols,
     bool showLimitMarkers,
   ) {
@@ -99,10 +101,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             mainAxisSpacing: spacing,
             mainAxisExtent: DesignTokens.stockCardHeight,
           ),
-          itemCount: state.recommendations.length,
+          itemCount: recommendations.length,
           itemBuilder: (context, index) => _buildRecommendationCard(
             context,
-            state,
+            recommendations,
             watchlistSymbols,
             index,
             showLimitMarkers,
@@ -112,10 +114,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
 
     return SliverList.builder(
-      itemCount: state.recommendations.length,
+      itemCount: recommendations.length,
       itemBuilder: (context, index) => _buildRecommendationCard(
         context,
-        state,
+        recommendations,
         watchlistSymbols,
         index,
         showLimitMarkers,
@@ -126,12 +128,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   /// 建立推薦卡片
   Widget _buildRecommendationCard(
     BuildContext context,
-    TodayState state,
+    List<RecommendationWithDetails> recommendations,
     Set<String> watchlistSymbols,
     int index,
     bool showLimitMarkers,
   ) {
-    final rec = state.recommendations[index];
+    final rec = recommendations[index];
     final isInWatchlist = watchlistSymbols.contains(rec.symbol);
     final columns = context.responsiveGridColumns;
 
@@ -214,7 +216,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     return card;
   }
 
-  Widget _buildContent(TodayState state, Set<String> watchlistSymbols) {
+  Widget _buildContent(Set<String> watchlistSymbols) {
     final theme = Theme.of(context);
     final showLimitMarkers = ref.watch(
       settingsProvider.select((s) => s.limitAlerts),
@@ -222,86 +224,118 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     return CustomScrollView(
       slivers: [
-        // App Bar（半透明背景）
-        SliverAppBar(
-          pinned: true,
-          floating: true,
-          expandedHeight: 0, // Standard height
-          backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.7),
-          surfaceTintColor: Colors.transparent,
-          title: const Text(
-            S.appName,
-            style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.5),
-          ),
-          actions: [
-            if (state.isUpdating)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+        // App Bar（Consumer 隔離 isUpdating 狀態，避免進度更新時重建推薦清單）
+        Consumer(
+          builder: (context, ref, _) {
+            final isUpdating = ref.watch(
+              todayProvider.select((s) => s.isUpdating),
+            );
+            return SliverAppBar(
+              pinned: true,
+              floating: true,
+              expandedHeight: 0, // Standard height
+              backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.7),
+              surfaceTintColor: Colors.transparent,
+              title: Text(
+                S.appName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
                 ),
-              )
-            else
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _runUpdate,
-                tooltip: S.todayUpdateData,
               ),
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () => context.push(AppRoutes.alerts),
-              tooltip: S.todayPriceAlert,
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () => context.push(AppRoutes.settings),
-              tooltip: S.settings,
-            ),
-          ],
+              actions: [
+                if (isUpdating)
+                  const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _runUpdate,
+                    tooltip: S.todayUpdateData,
+                  ),
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () => context.push(AppRoutes.alerts),
+                  tooltip: S.todayPriceAlert,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  onPressed: () => context.push(AppRoutes.settings),
+                  tooltip: S.settings,
+                ),
+              ],
+            );
+          },
         ),
 
-        // 更新進度橫幅
-        if (state.isUpdating && state.updateProgress != null)
-          SliverToBoxAdapter(
-            child: UpdateProgressBanner(progress: state.updateProgress!),
-          ),
+        // 更新進度橫幅（Consumer 隔離 updateProgress 頻繁更新）
+        Consumer(
+          builder: (context, ref, _) {
+            final isUpdating = ref.watch(
+              todayProvider.select((s) => s.isUpdating),
+            );
+            final updateProgress = ref.watch(
+              todayProvider.select((s) => s.updateProgress),
+            );
+            if (isUpdating && updateProgress != null) {
+              return SliverToBoxAdapter(
+                child: UpdateProgressBanner(progress: updateProgress),
+              );
+            }
+            return const SliverToBoxAdapter(child: SizedBox.shrink());
+          },
+        ),
 
-        // 最後更新時間 + 資料日期（Wrap 自動換行，避免窄螢幕截斷）
-        if (state.lastUpdate != null || state.dataDate != null)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  if (state.lastUpdate != null)
-                    Text(
-                      S.todayLastUpdate(S.dateFormat(state.lastUpdate!)),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+        // 最後更新時間 + 資料日期（Consumer 隔離日期狀態）
+        Consumer(
+          builder: (context, ref, _) {
+            final lastUpdate = ref.watch(
+              todayProvider.select((s) => s.lastUpdate),
+            );
+            final dataDate = ref.watch(todayProvider.select((s) => s.dataDate));
+            if (lastUpdate == null && dataDate == null) {
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            }
+            return SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    if (lastUpdate != null)
+                      Text(
+                        S.todayLastUpdate(S.dateFormat(lastUpdate)),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  if (state.lastUpdate != null && state.dataDate != null)
-                    Text(
-                      '·',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    if (lastUpdate != null && dataDate != null)
+                      Text(
+                        '·',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                  if (state.dataDate != null)
-                    Text(
-                      S.todayDataDate(_formatDataDate(state.dataDate!)),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    if (dataDate != null)
+                      Text(
+                        S.todayDataDate(_formatDataDate(dataDate)),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
+        ),
 
         // 大盤總覽卡片（獨立 Consumer 隔離 market data rebuild）
         SliverToBoxAdapter(
@@ -336,19 +370,26 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
         ),
 
-        // 推薦清單（響應式：手機 List，平板/桌面 Grid）
-        if (state.recommendations.isEmpty)
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
-          )
-        else
-          _buildRecommendationsList(
-            context,
-            state,
-            watchlistSymbols,
-            showLimitMarkers,
-          ),
+        // 推薦清單（Consumer 隔離推薦資料，避免 updateProgress 觸發昂貴的清單重建）
+        Consumer(
+          builder: (context, ref, _) {
+            final recommendations = ref.watch(
+              todayProvider.select((s) => s.recommendations),
+            );
+            if (recommendations.isEmpty) {
+              return SliverFillRemaining(
+                hasScrollBody: false,
+                child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
+              );
+            }
+            return _buildRecommendationsList(
+              context,
+              recommendations,
+              watchlistSymbols,
+              showLimitMarkers,
+            );
+          },
+        ),
 
         // 底部間距
         const SliverToBoxAdapter(child: SizedBox(height: 80)),

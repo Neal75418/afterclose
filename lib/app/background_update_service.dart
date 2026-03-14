@@ -7,6 +7,7 @@ import 'package:workmanager/workmanager.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
@@ -183,6 +184,16 @@ void _callbackDispatcher() {
 
 /// 在背景執行更新
 Future<UpdateResult> _executeBackgroundUpdate() async {
+  // 先檢查是否為交易日，避免在非交易日建立完整服務圖
+  final now = DateTime.now();
+  if (!TaiwanCalendar.isTradingDay(now)) {
+    AppLogger.info('BackgroundUpdate', '非交易日，跳過更新');
+    return UpdateResult(date: now)
+      ..success = true
+      ..skipped = true
+      ..message = '非交易日';
+  }
+
   // 初始化資料庫
   final database = AppDatabase();
 

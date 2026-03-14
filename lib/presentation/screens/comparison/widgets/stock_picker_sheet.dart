@@ -107,7 +107,13 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
             // Content
             Expanded(
               child: _isSearching
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
                   : _searchController.text.isNotEmpty
                   ? _buildSearchResults(theme)
                   : _buildWatchlistShortcuts(theme, watchlistSymbols),

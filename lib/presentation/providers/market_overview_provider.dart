@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -365,7 +366,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       // getLatestDataDate() 可能拋出例外
       AppLogger.error('MarketOverview', '載入大盤總覽失敗', e);
       if (_active) {
-        state = state.copyWith(isLoading: false, error: e.toString());
+        state = state.copyWith(
+          isLoading: false,
+          error: ErrorDisplay.message(e),
+        );
       }
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -102,7 +103,10 @@ class RecommendationPerformanceNotifier
     } catch (e, stack) {
       AppLogger.error('RecPerf', '載入績效資料失敗', e, stack);
       if (_active) {
-        state = state.copyWith(isLoading: false, error: e.toString());
+        state = state.copyWith(
+          isLoading: false,
+          error: ErrorDisplay.message(e),
+        );
       }
     }
   }
@@ -155,7 +159,10 @@ class RecommendationPerformanceNotifier
     } catch (e, stack) {
       AppLogger.error('RecPerf', '批次回填失敗', e, stack);
       if (_active) {
-        state = state.copyWith(isBackfilling: false, error: e.toString());
+        state = state.copyWith(
+          isBackfilling: false,
+          error: ErrorDisplay.message(e),
+        );
       }
     }
   }

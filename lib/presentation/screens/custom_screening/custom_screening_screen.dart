@@ -155,7 +155,13 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
 
   Widget _buildResultsSection(ThemeData theme, CustomScreeningState state) {
     if (state.isExecuting) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
     }
 
     final result = state.result;

@@ -331,7 +331,7 @@ void main() {
       final state = container.read(marketOverviewProvider);
       expect(state.isLoading, isFalse);
       expect(state.error, isNotNull);
-      expect(state.error, contains('DB connection failed'));
+      expect(state.error, equals('發生未預期的錯誤，請稍後再試'));
     });
 
     test('individual load failures do not affect other sections', () async {

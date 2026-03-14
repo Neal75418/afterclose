@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
@@ -239,7 +240,7 @@ class ScanNotifier extends Notifier<ScanState> {
         totalAnalyzedCount: _allAnalyses.length,
       );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
       AppLogger.error('ScanProvider', '載入資料失敗', e);
     }
   }
@@ -270,7 +271,10 @@ class ScanNotifier extends Notifier<ScanState> {
         hasMore: (currentLen + newItems.length) < _filteredAnalyses.length,
       );
     } catch (e) {
-      state = state.copyWith(isLoadingMore: false, error: e.toString());
+      state = state.copyWith(
+        isLoadingMore: false,
+        error: ErrorDisplay.message(e),
+      );
     }
   }
 
@@ -332,7 +336,7 @@ class ScanNotifier extends Notifier<ScanState> {
       state = state.copyWith(
         isLoading: false,
         isFiltering: false,
-        error: e.toString(),
+        error: ErrorDisplay.message(e),
       );
     }
   }

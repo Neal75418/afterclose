@@ -292,7 +292,7 @@ class StockPreviewSheet extends StatelessWidget {
                                 onViewDetails?.call();
                               },
                               icon: const Icon(Icons.arrow_forward_rounded),
-                              label: const Text(S.stockViewDetails),
+                              label: Text(S.stockViewDetails),
                               style: FilledButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,

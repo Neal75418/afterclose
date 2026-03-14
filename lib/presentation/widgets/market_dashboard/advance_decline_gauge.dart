@@ -44,7 +44,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant.withValues(
                   alpha: 0.6,
                 ),
-                fontSize: 10,
+                fontSize: DesignTokens.fontSizeXs,
               ),
             ),
           ],
@@ -163,7 +163,7 @@ class _LimitBadge extends StatelessWidget {
             style: theme.textTheme.labelSmall?.copyWith(
               color: color,
               fontWeight: FontWeight.w600,
-              fontSize: 10,
+              fontSize: DesignTokens.fontSizeXs,
             ),
           ),
           const SizedBox(width: 4),
@@ -226,7 +226,7 @@ class _StatChip extends StatelessWidget {
               label,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
-                fontSize: 10,
+                fontSize: DesignTokens.fontSizeXs,
               ),
             ),
           ],

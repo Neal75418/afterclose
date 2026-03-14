@@ -26,7 +26,13 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text('recPerf.title'.tr())),
       body: state.isLoading && state.stockRecords.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
           : RefreshIndicator(
               onRefresh: () => ref
                   .read(recommendationPerformanceProvider.notifier)

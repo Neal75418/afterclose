@@ -1,9 +1,17 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 class InstitutionalShiftRule extends StockRule {
   const InstitutionalShiftRule();
+
+  /// 計算三大法人合計淨額（外資 + 投信 + 自營商）
+  static double _totalNet(DailyInstitutionalEntry entry) {
+    return (entry.foreignNet ?? 0.0) +
+        (entry.investmentTrustNet ?? 0.0) +
+        (entry.dealerNet ?? 0.0);
+  }
 
   @override
   String get id => 'institutional_shift';
@@ -19,7 +27,8 @@ class InstitutionalShiftRule extends StockRule {
     }
 
     final today = history.last;
-    final todayNet = today.foreignNet ?? 0.0;
+    // 使用三大法人合計淨額（外資 + 投信 + 自營商）以捕捉完整籌碼動向
+    final todayNet = _totalNet(today);
 
     // 提高門檻以減少雜訊：最低 1000 張（資料單位為股，1 張 = 1000 股）
     if (todayNet.abs() < InstitutionalParams.institutionalMinVolumeShares) {
@@ -38,7 +47,7 @@ class InstitutionalShiftRule extends StockRule {
       if (prevEntries.isNotEmpty) {
         double prevNetSum = 0;
         for (var e in prevEntries) {
-          prevNetSum += (e.foreignNet ?? 0.0);
+          prevNetSum += _totalNet(e);
         }
         prevAvg = prevNetSum / prevEntries.length;
       }
@@ -88,7 +97,7 @@ class InstitutionalShiftRule extends StockRule {
           priceChange > todayClose * TrendParams.minPriceChangeForVolume &&
           ratio > InstitutionalParams.institutionalSignificantRatio) {
         triggered = true;
-        description = '外資由賣轉買 (佈局)';
+        description = '法人由賣轉買 (佈局)';
       }
       // 情境 2：反轉（買轉賣）- 提高門檻
       else if (prevAvg > InstitutionalParams.institutionalSmallShares &&
@@ -96,7 +105,7 @@ class InstitutionalShiftRule extends StockRule {
           priceChange < -todayClose * TrendParams.minPriceChangeForVolume &&
           ratio > InstitutionalParams.institutionalSignificantRatio) {
         triggered = true;
-        description = '外資由買轉賣 (獲利)';
+        description = '法人由買轉賣 (獲利)';
       }
       // 情境 3：加速（買超擴大）- 提高門檻
       else if (prevAvg > InstitutionalParams.institutionalSmallShares &&
@@ -105,7 +114,7 @@ class InstitutionalShiftRule extends StockRule {
           todayNet > InstitutionalParams.institutionalAccelerationMinShares &&
           ratio > InstitutionalParams.institutionalExplosiveRatio) {
         triggered = true;
-        description = '外資買超擴大 (搶進)';
+        description = '法人買超擴大 (搶進)';
       }
       // 情境 4：加速（賣超擴大）- 提高門檻
       else if (prevAvg < -InstitutionalParams.institutionalSmallShares &&
@@ -114,7 +123,7 @@ class InstitutionalShiftRule extends StockRule {
           todayNet < -InstitutionalParams.institutionalAccelerationMinShares &&
           ratio > InstitutionalParams.institutionalExplosiveRatio) {
         triggered = true;
-        description = '外資賣超擴大 (出脫)';
+        description = '法人賣超擴大 (出脫)';
       }
     }
 
@@ -128,7 +137,7 @@ class InstitutionalShiftRule extends StockRule {
               InstitutionalParams.institutionalSignificantPriceChange) {
         triggered = true;
         description =
-            '外資顯著買超 (${(todayNet / RuleParams.sheetToShares).round()}張)';
+            '法人顯著買超 (${(todayNet / RuleParams.sheetToShares).round()}張)';
       }
       // 情境 6：顯著賣超（< -5000 張且 > 35% 且價格下跌 > 1%）
       else if (todayNet < -InstitutionalParams.institutionalLargeSignalShares &&
@@ -137,7 +146,7 @@ class InstitutionalShiftRule extends StockRule {
               -InstitutionalParams.institutionalSignificantPriceChange) {
         triggered = true;
         description =
-            '外資顯著賣超 (${(todayNet.abs() / RuleParams.sheetToShares).round()}張)';
+            '法人顯著賣超 (${(todayNet.abs() / RuleParams.sheetToShares).round()}張)';
       }
     }
 

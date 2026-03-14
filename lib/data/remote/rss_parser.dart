@@ -404,9 +404,9 @@ class RssNewsItem {
 
   /// 從標題擷取可能的股票代碼
   ///
-  /// 回傳可能的 4 位數股票代碼列表
+  /// 支援 4-6 位數代碼：一般股票（4 位）、ETF/權證（5-6 位）
   List<String> extractStockCodes() {
-    final regex = RegExp(r'\b(\d{4})\b');
+    final regex = RegExp(r'\b(\d{4,6})\b');
     final matches = regex.allMatches(title);
     return matches.map((m) => m.group(1)!).toList();
   }

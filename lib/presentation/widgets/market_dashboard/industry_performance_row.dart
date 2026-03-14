@@ -49,7 +49,7 @@ class IndustryPerformanceRow extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant.withValues(
                     alpha: 0.5,
                   ),
-                  fontSize: 10,
+                  fontSize: DesignTokens.fontSizeXs,
                 ),
               ),
             ],
@@ -178,7 +178,7 @@ class _IndustryCard extends StatelessWidget {
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.7),
-                              fontSize: 10,
+                              fontSize: DesignTokens.fontSizeXs,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
                               ],
@@ -196,7 +196,7 @@ class _IndustryCard extends StatelessWidget {
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.7),
-                              fontSize: 10,
+                              fontSize: DesignTokens.fontSizeXs,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
                               ],

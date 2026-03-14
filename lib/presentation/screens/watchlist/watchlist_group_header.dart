@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
+
 /// 自選股分組標題 Widget
 ///
 /// 顯示分組圖示、標題文字、及項目數量標籤。
@@ -24,7 +26,7 @@ class WatchlistGroupHeader extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerLow,
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 16)),
+          Text(icon, style: const TextStyle(fontSize: DesignTokens.fontSizeLg)),
           const SizedBox(width: 8),
           Text(
             title,

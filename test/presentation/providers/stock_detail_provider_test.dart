@@ -545,7 +545,7 @@ void main() {
       final state = container.read(stockDetailProvider(_testSymbol));
       expect(state.loading.isLoading, isFalse);
       expect(state.error, isNotNull);
-      expect(state.error, contains('Database corrupted'));
+      expect(state.error, equals('發生未預期的錯誤，請稍後再試'));
     });
 
     test('clears previous error on successful load', () async {

@@ -36,7 +36,27 @@
     "updateData": "Update Data",
     "startingUpdate": "Starting update...",
     "lastUpdate": "Last updated: {time}",
-    "updateFailed": "Update failed: {error}"
+    "updateFailed": "Update failed: {error}",
+    "priceAlert": "Price Alerts",
+    "dataDate": "Data: {date}",
+    "dataToday": "Today",
+    "dataYesterday": "Yesterday"
+  },
+  "news": {
+    "title": "Market News",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "earlier": "Earlier",
+    "relatedStocks": "Related Stocks",
+    "openInBrowser": "Open in Browser",
+    "cannotOpenLink": "Cannot open link",
+    "minutesAgo": "{minutes} min ago",
+    "hoursAgo": "{hours} hr ago",
+    "daysAgo": "{days} days ago"
+  },
+  "market": {
+    "twse": "TSE",
+    "tpex": "OTC"
   },
   "marketOverview": {
     "title": "Market Overview",
@@ -205,7 +225,9 @@
     "statusQuiet": "Quiet",
     "trendUp": "Uptrend",
     "trendDown": "Downtrend",
-    "trendSideways": "Sideways"
+    "trendSideways": "Sideways",
+    "removeTooltip": "Remove from watchlist",
+    "addTooltip": "Add to watchlist"
   },
   "stock": {
     "detailTitle": "Stock Details",
@@ -351,7 +373,9 @@
     "down": "Down",
     "neutral": "Unchanged",
     "limitUp": "Limit Up",
-    "limitDown": "Limit Down"
+    "limitDown": "Limit Down",
+    "value": "{price}",
+    "changePercent": "{sign}{change}%"
   },
   "reasons": {
     "label": "Recommendation Reasons",
@@ -499,12 +523,29 @@
     "sparklineDefault": "Recent price trend chart",
     "sparklineFlat": "Price unchanged over {days} days chart",
     "sparklineTrendUp": "Price up {change} percent over {days} days chart",
-    "sparklineTrendDown": "Price down {change} percent over {days} days chart"
+    "sparklineTrendDown": "Price down {change} percent over {days} days chart",
+    "buttonPress": "Button: {label}",
+    "shimmerStockList": "Loading stock list",
+    "shimmerStockDetail": "Loading stock detail",
+    "shimmerNewsList": "Loading news list",
+    "shimmerGenericList": "Loading list",
+    "closePrice": "Close price {price}",
+    "absoluteChange": "{change}",
+    "priceChangeDetail": "Change {absText}{pctText}",
+    "trend": "Trend {trend}",
+    "priceComparisonChart": "Price comparison chart for {symbols}",
+    "radarChart": "Radar chart comparing {symbols}",
+    "comparisonTable": "Comparison table for {symbols}",
+    "allocationPieChart": "Portfolio allocation pie chart, {count} holdings"
   },
   "status": {
     "hasSignal": "Has Signal",
     "volatile": "Volatile",
-    "quiet": "Quiet"
+    "quiet": "Quiet",
+    "signalType": "Signal: {type}"
+  },
+  "fundamental": {
+    "dividendYearAverage": "{years}Y Avg: "
   },
   "settings": {
     "title": "Settings",

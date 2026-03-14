@@ -151,14 +151,14 @@ class _MarketDashboardState extends State<MarketDashboard> {
           value: MarketSegment.TWSE,
           label: Text(
             'marketOverview.twse'.tr(),
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
           ),
         ),
         ButtonSegment(
           value: MarketSegment.TPEx,
           label: Text(
             'marketOverview.tpex'.tr(),
-            style: const TextStyle(fontSize: 12),
+            style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
           ),
         ),
       ],

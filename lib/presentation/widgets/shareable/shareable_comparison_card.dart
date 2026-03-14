@@ -12,12 +12,7 @@ class ShareableComparisonCard extends StatelessWidget {
 
   final ComparisonState state;
 
-  static const _stockColors = [
-    Color(0xFF2196F3),
-    Color(0xFFFF9800),
-    Color(0xFF9C27B0),
-    Color(0xFF4CAF50),
-  ];
+  static const _stockColors = DesignTokens.chartPalette;
 
   @override
   Widget build(BuildContext context) {
