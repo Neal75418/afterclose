@@ -788,6 +788,10 @@ void main() {
           months: any(named: 'months'),
         ),
       ).thenAnswer((_) async => insiderData);
+      when(
+        () =>
+            mockDb.getRecentTransfers(_testSymbol, limit: any(named: 'limit')),
+      ).thenAnswer((_) async => <InsiderTransferEntry>[]);
 
       final notifier = container.read(
         stockDetailProvider(_testSymbol).notifier,
@@ -820,6 +824,10 @@ void main() {
           months: any(named: 'months'),
         ),
       ).thenAnswer((_) async => insiderData);
+      when(
+        () =>
+            mockDb.getRecentTransfers(_testSymbol, limit: any(named: 'limit')),
+      ).thenAnswer((_) async => <InsiderTransferEntry>[]);
 
       final notifier = container.read(
         stockDetailProvider(_testSymbol).notifier,

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/clock.dart';
@@ -17,6 +18,7 @@ enum EventType {
   exDividend('EX_DIVIDEND'),
   exRights('EX_RIGHTS'),
   earnings('EARNINGS'),
+  shareholderMeeting('SHAREHOLDER_MEETING'),
   custom('CUSTOM');
 
   const EventType(this.value);
@@ -37,8 +39,40 @@ enum EventType {
         return 'calendar.typeExRights';
       case EventType.earnings:
         return 'calendar.typeEarnings';
+      case EventType.shareholderMeeting:
+        return 'calendar.typeMeeting';
       case EventType.custom:
         return 'calendar.typeCustom';
+    }
+  }
+
+  Color get color {
+    switch (this) {
+      case EventType.exDividend:
+        return Colors.red;
+      case EventType.exRights:
+        return Colors.orange;
+      case EventType.earnings:
+        return Colors.green;
+      case EventType.shareholderMeeting:
+        return Colors.purple;
+      case EventType.custom:
+        return Colors.blue;
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case EventType.exDividend:
+        return Icons.payments_outlined;
+      case EventType.exRights:
+        return Icons.inventory_2_outlined;
+      case EventType.earnings:
+        return Icons.article_outlined;
+      case EventType.shareholderMeeting:
+        return Icons.groups_outlined;
+      case EventType.custom:
+        return Icons.edit_note;
     }
   }
 }
@@ -48,15 +82,18 @@ enum CalendarFilter { all, watchlistOnly, portfolioOnly }
 
 /// 行事曆狀態
 class EventCalendarState {
-  const EventCalendarState({
+  EventCalendarState({
     this.focusedMonth,
     this.selectedDate,
     this.events = const {},
     this.selectedDayEvents = const [],
+    this.upcomingEvents = const [],
     this.filter = CalendarFilter.all,
+    Set<EventType>? selectedEventTypes,
     this.isLoading = false,
+    this.isSyncing = false,
     this.error,
-  });
+  }) : selectedEventTypes = selectedEventTypes ?? EventType.values.toSet();
 
   final DateTime? focusedMonth;
   final DateTime? selectedDate;
@@ -67,19 +104,48 @@ class EventCalendarState {
   /// 選取日期的事件列表
   final List<StockEventEntry> selectedDayEvents;
 
+  /// 未來 14 天的即將到來事件
+  final List<StockEventEntry> upcomingEvents;
+
   /// 篩選模式
   final CalendarFilter filter;
 
+  /// 選取的事件類型（用於類型篩選）
+  final Set<EventType> selectedEventTypes;
+
   final bool isLoading;
+
+  /// 是否正在同步（防止連續點擊）
+  final bool isSyncing;
+
   final String? error;
+
+  /// 根據 selectedEventTypes 過濾後的事件 map
+  Map<DateTime, List<StockEventEntry>> get filteredEvents {
+    if (selectedEventTypes.length == EventType.values.length) return events;
+    final filtered = <DateTime, List<StockEventEntry>>{};
+    for (final entry in events.entries) {
+      final list = entry.value
+          .where(
+            (e) =>
+                selectedEventTypes.contains(EventType.fromValue(e.eventType)),
+          )
+          .toList();
+      if (list.isNotEmpty) filtered[entry.key] = list;
+    }
+    return filtered;
+  }
 
   EventCalendarState copyWith({
     DateTime? focusedMonth,
     DateTime? selectedDate,
     Map<DateTime, List<StockEventEntry>>? events,
     List<StockEventEntry>? selectedDayEvents,
+    List<StockEventEntry>? upcomingEvents,
     CalendarFilter? filter,
+    Set<EventType>? selectedEventTypes,
     bool? isLoading,
+    bool? isSyncing,
     Object? error = sentinel,
   }) {
     return EventCalendarState(
@@ -87,8 +153,11 @@ class EventCalendarState {
       selectedDate: selectedDate ?? this.selectedDate,
       events: events ?? this.events,
       selectedDayEvents: selectedDayEvents ?? this.selectedDayEvents,
+      upcomingEvents: upcomingEvents ?? this.upcomingEvents,
       filter: filter ?? this.filter,
+      selectedEventTypes: selectedEventTypes ?? this.selectedEventTypes,
       isLoading: isLoading ?? this.isLoading,
+      isSyncing: isSyncing ?? this.isSyncing,
       error: error == sentinel ? this.error : error as String?,
     );
   }
@@ -108,7 +177,7 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     _repo = ref.watch(eventRepositoryProvider);
     _db = ref.watch(databaseProvider);
     _clock = ref.watch(appClockProvider);
-    return const EventCalendarState();
+    return EventCalendarState();
   }
 
   /// 初始化：設定焦點月份為當月，載入事件
@@ -118,6 +187,7 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     state = state.copyWith(focusedMonth: focused, selectedDate: now);
     await loadMonthEvents(focused);
     _updateSelectedDayEvents(now);
+    await _loadUpcomingEvents();
   }
 
   /// 載入某月的事件
@@ -190,6 +260,21 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     }
   }
 
+  /// 切換事件類型篩選
+  void toggleEventType(EventType type) {
+    final current = Set<EventType>.from(state.selectedEventTypes);
+    if (current.contains(type)) {
+      // 至少保留一種類型
+      if (current.length > 1) current.remove(type);
+    } else {
+      current.add(type);
+    }
+    state = state.copyWith(selectedEventTypes: current);
+    if (state.selectedDate != null) {
+      _updateSelectedDayEvents(state.selectedDate!);
+    }
+  }
+
   /// 新增自訂事件
   Future<void> addEvent({
     String? symbol,
@@ -218,17 +303,39 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   }
 
   /// 同步除權息事件
-  Future<int> syncDividendEvents() async {
-    final count = await _repo.syncDividendEvents();
-    if (state.focusedMonth != null) {
-      await loadMonthEvents(state.focusedMonth!);
+  Future<({int exDividend, int exRights, int total})>
+  syncDividendEvents() async {
+    if (state.isSyncing) return (exDividend: 0, exRights: 0, total: 0);
+    state = state.copyWith(isSyncing: true);
+    try {
+      final result = await _repo.syncDividendEvents();
+      if (state.focusedMonth != null) {
+        await loadMonthEvents(state.focusedMonth!);
+      }
+      await _loadUpcomingEvents();
+      return result;
+    } finally {
+      state = state.copyWith(isSyncing: false);
     }
-    return count;
+  }
+
+  /// 載入未來 14 天的事件
+  Future<void> _loadUpcomingEvents() async {
+    try {
+      final now = _clock.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final end = today.add(const Duration(days: 14));
+      final events = await _repo.getEventsInRange(today, end);
+      state = state.copyWith(upcomingEvents: events);
+    } catch (e) {
+      // 不影響主流程，但記錄以便 debug
+      debugPrint('[EventCalendar] _loadUpcomingEvents error: $e');
+    }
   }
 
   void _updateSelectedDayEvents(DateTime date) {
     final dateKey = _normalizeDate(date);
-    final dayEvents = state.events[dateKey] ?? [];
+    final dayEvents = state.filteredEvents[dateKey] ?? [];
     state = state.copyWith(selectedDayEvents: dayEvents);
   }
 

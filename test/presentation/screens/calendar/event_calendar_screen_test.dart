@@ -13,7 +13,7 @@ import '../../../helpers/widget_test_helpers.dart';
 // =============================================================================
 
 class FakeEventCalendarNotifier extends EventCalendarNotifier {
-  EventCalendarState initialState = const EventCalendarState();
+  EventCalendarState initialState = EventCalendarState();
 
   @override
   EventCalendarState build() => initialState;
@@ -42,7 +42,11 @@ class FakeEventCalendarNotifier extends EventCalendarNotifier {
   Future<void> deleteEvent(int id) async {}
 
   @override
-  Future<int> syncDividendEvents() async => 0;
+  Future<({int exDividend, int exRights, int total})>
+  syncDividendEvents() async => (exDividend: 0, exRights: 0, total: 0);
+
+  @override
+  void toggleEventType(EventType type) {}
 }
 
 // =============================================================================
@@ -68,7 +72,7 @@ void main() {
       overrides: [
         eventCalendarProvider.overrideWith(() {
           final n = FakeEventCalendarNotifier();
-          n.initialState = calendarState ?? const EventCalendarState();
+          n.initialState = calendarState ?? EventCalendarState();
           return n;
         }),
       ],
@@ -113,9 +117,7 @@ void main() {
     testWidgets('shows loading indicator', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
-        buildTestWidget(
-          calendarState: const EventCalendarState(isLoading: true),
-        ),
+        buildTestWidget(calendarState: EventCalendarState(isLoading: true)),
       );
       await tester.pump(const Duration(seconds: 1));
 
@@ -183,9 +185,7 @@ void main() {
     testWidgets('shows error state', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
-        buildTestWidget(
-          calendarState: const EventCalendarState(error: 'DB error'),
-        ),
+        buildTestWidget(calendarState: EventCalendarState(error: 'DB error')),
       );
       await tester.pump(const Duration(seconds: 1));
 

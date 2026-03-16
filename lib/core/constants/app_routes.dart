@@ -16,6 +16,8 @@ abstract final class AppRoutes {
   static const compare = '/compare';
   static const calendar = '/calendar';
   static const recommendationPerformance = '/recommendation-performance';
+  static const shortSellRanking = '/short-sell-ranking';
+  static const industryEps = '/industry-eps';
 
   // 參數化路由
   static String stockDetail(String symbol) => '/stock/$symbol';

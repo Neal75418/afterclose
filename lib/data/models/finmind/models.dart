@@ -18,4 +18,5 @@ export 'revenue.dart';
 export 'settings_keys.dart';
 export 'shareholding.dart';
 export 'stock_info.dart';
+export 'total_return_index.dart';
 export 'weekly_price.dart';

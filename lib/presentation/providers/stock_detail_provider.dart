@@ -249,7 +249,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     }
   }
 
-  /// 載入董監持股資料
+  /// 載入董監持股資料與內部人轉讓記錄
   Future<void> loadInsiderData() async {
     if (state.loading.isLoadingInsider ||
         state.chip.insiderHistory.isNotEmpty) {
@@ -257,9 +257,13 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     }
 
     state = state.copyWith(isLoadingInsider: true);
-    final insiderHistory = await _chipLoader.loadInsiderFromDb(_symbol);
+    final (insiderHistory, transfers) = await (
+      _chipLoader.loadInsiderFromDb(_symbol),
+      _db.getRecentTransfers(_symbol),
+    ).wait;
     state = state.copyWith(
       insiderHistory: insiderHistory,
+      insiderTransfers: transfers,
       isLoadingInsider: false,
     );
   }

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io' show RedirectException, SocketException;
+import 'dart:io' show HttpException, RedirectException, SocketException;
 import 'dart:math';
 
 import 'package:dio/dio.dart';
@@ -160,7 +160,7 @@ abstract final class MarketClientMixin {
 
   /// 判斷 [DioException] 是否可重試。
   ///
-  /// 連線逾時、發送逾時、連線錯誤、5xx、SocketException 可重試。
+  /// 連線逾時、發送逾時、連線錯誤、5xx、SocketException、HttpException 可重試。
   /// receiveTimeout 不重試：伺服器已接受連線但不回應，通常是限流，重試無意義。
   /// 4xx 等客戶端錯誤不重試。
   static bool _isRetryable(DioException e) {
@@ -173,8 +173,8 @@ abstract final class MarketClientMixin {
         final statusCode = e.response?.statusCode;
         return statusCode != null && statusCode >= 500;
       default:
-        // Connection reset by peer 等 socket 錯誤可重試
-        return e.error is SocketException;
+        // Connection reset / connection closed 等錯誤可重試
+        return e.error is SocketException || e.error is HttpException;
     }
   }
 

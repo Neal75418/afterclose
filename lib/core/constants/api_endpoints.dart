@@ -61,6 +61,11 @@ abstract final class ApiEndpoints {
   static const String twseStockInfo =
       '$twseOpenDataBaseUrl/v1/opendata/t187ap03_L';
 
+  /// 上市已宣告股利 - Open Data（免費、無限制）
+  /// 回傳已宣告的除權息資料，含除息交易日、現金/股票股利、股東會日期
+  static const String twseDeclaredDividend =
+      '$twseOpenDataBaseUrl/v1/opendata/t187ap45_L';
+
   // ==================================================
   // TPEX (台灣櫃檯買賣中心)
   // ==================================================
@@ -128,6 +133,31 @@ abstract final class ApiEndpoints {
   /// 回傳上櫃公司基本資料，包含已發行股數 (IssueShares)
   static const String tpexStockInfo =
       '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap03_O';
+
+  /// 上櫃已宣告股利 - OpenAPI（免費、無限制）
+  /// 回傳已宣告的除權息資料，含除息交易日、現金/股票股利
+  static const String tpexDeclaredDividend =
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap39_O';
+
+  /// 上櫃股東會日程 - OpenAPI（免費、無限制）
+  /// 回傳股東會開會日期、地點、是否改選董監、電子投票
+  static const String tpexShareholderMeeting =
+      '$tpexOpenApiBaseUrl/v1/t187ap41_O';
+
+  /// 上櫃內部人股權轉讓 - OpenAPI（免費、無限制）
+  /// 回傳董監事/經理人/大股東股權轉讓申報資料
+  static const String tpexInsiderTransfer =
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap12_O';
+
+  /// 上櫃融券賣出排行 - OpenAPI（免費、無限制）
+  /// 回傳融券賣出排名 Top 20
+  static const String tpexShortSellRanking =
+      '$tpexOpenApiBaseUrl/v1/tpex_margin_trading_short_sell';
+
+  /// 上櫃產業別 EPS - OpenAPI（免費、無限制）
+  /// 回傳各產業公司的基本每股盈餘、營收、營業利益、稅後淨利
+  static const String tpexIndustryEps =
+      '$tpexOpenApiBaseUrl/v1/mopsfin_t187ap14_O';
 
   // ==================================================
   // TDCC (台灣集中保管結算所)

@@ -1,0 +1,304 @@
+import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
+import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
+import 'package:afterclose/presentation/providers/industry_eps_provider.dart';
+
+/// 產業別 EPS 排名畫面
+class IndustryEpsScreen extends ConsumerStatefulWidget {
+  const IndustryEpsScreen({super.key});
+
+  @override
+  ConsumerState<IndustryEpsScreen> createState() => _IndustryEpsScreenState();
+}
+
+class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(industryEpsProvider.notifier).loadData();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(industryEpsProvider);
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('industryEps.title'.tr()),
+        actions: [
+          if (state.quarterLabel.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  state.quarterLabel,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.outline,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      body: state.isLoading && state.allData.isEmpty
+          ? const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          : state.error != null && state.allData.isEmpty
+          ? _buildErrorState(theme, state.error!)
+          : RefreshIndicator(
+              onRefresh: () =>
+                  ref.read(industryEpsProvider.notifier).loadData(),
+              child: state.allData.isEmpty
+                  ? _buildEmptyState(theme)
+                  : _buildContent(theme, state),
+            ),
+    );
+  }
+
+  Widget _buildErrorState(ThemeData theme, String error) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.outline),
+          const SizedBox(height: 12),
+          Text(
+            error,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          FilledButton.tonal(
+            onPressed: () => ref.read(industryEpsProvider.notifier).loadData(),
+            child: Text('common.retry'.tr()),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(ThemeData theme) {
+    return ListView(
+      children: [
+        SizedBox(
+          height: 300,
+          child: Center(
+            child: Text(
+              'industryEps.noData'.tr(),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContent(ThemeData theme, IndustryEpsState state) {
+    final filteredData = state.filteredData;
+
+    return Column(
+      children: [
+        // 產業篩選器
+        _buildIndustryFilter(theme, state),
+
+        // 表頭
+        _buildTableHeader(theme),
+
+        // 資料列
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.only(bottom: 32),
+            itemCount: filteredData.length,
+            itemBuilder: (context, index) {
+              return _buildEpsItem(theme, filteredData[index], index);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIndustryFilter(ThemeData theme, IndustryEpsState state) {
+    final industries = state.industries;
+
+    return SizedBox(
+      height: 44,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        itemCount: industries.length + 1, // +1 for "全部"
+        itemBuilder: (context, index) {
+          final isAll = index == 0;
+          final industry = isAll ? null : industries[index - 1];
+          final isSelected = state.selectedIndustry == industry;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: FilterChip(
+              label: Text(
+                isAll ? 'industryEps.all'.tr() : industry!,
+                style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
+              ),
+              selected: isSelected,
+              onSelected: (_) {
+                ref
+                    .read(industryEpsProvider.notifier)
+                    .setIndustryFilter(isSelected ? null : industry);
+              },
+              visualDensity: VisualDensity.compact,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTableHeader(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              'industryEps.stock'.tr(),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'industryEps.eps'.tr(),
+              textAlign: TextAlign.end,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'industryEps.netIncome'.tr(),
+              textAlign: TextAlign.end,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.outline,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEpsItem(ThemeData theme, TpexIndustryEps item, int index) {
+    final epsColor = item.eps > 0
+        ? Colors.green.shade700
+        : item.eps < 0
+        ? Colors.red.shade700
+        : theme.colorScheme.onSurface;
+
+    return InkWell(
+      onTap: () => context.push(AppRoutes.stockDetail(item.symbol)),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.15),
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            // 股票資訊
+            Expanded(
+              flex: 3,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        item.symbol,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          item.companyName,
+                          style: theme.textTheme.bodySmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    item.industry,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // EPS
+            Expanded(
+              flex: 2,
+              child: Text(
+                item.eps.toStringAsFixed(2),
+                textAlign: TextAlign.end,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: epsColor,
+                ),
+              ),
+            ),
+            // 稅後淨利
+            Expanded(
+              flex: 2,
+              child: Text(
+                AppNumberFormat.compact(item.netIncome / 1000), // 千元→百萬
+                textAlign: TextAlign.end,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

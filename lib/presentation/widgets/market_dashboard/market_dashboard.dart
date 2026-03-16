@@ -192,6 +192,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
           HeroIndexSection(
             index: taiex.first,
             historyData: widget.state.indexHistory[taiex.first.name] ?? [],
+            totalReturnHistory:
+                widget.state.indexHistory[MarketIndexNames.totalReturnIndex] ??
+                [],
           ),
         );
       }
@@ -461,6 +464,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
         HeroIndexSection(
           index: heroIdx.first,
           historyData: widget.state.indexHistory[heroName] ?? [],
+          totalReturnHistory: market == 'TWSE'
+              ? widget.state.indexHistory[MarketIndexNames.totalReturnIndex] ??
+                    []
+              : [],
         ),
       );
       children.add(const SizedBox(height: 12));

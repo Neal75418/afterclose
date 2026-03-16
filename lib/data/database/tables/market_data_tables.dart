@@ -405,3 +405,43 @@ class InsiderHolding extends Table {
   @override
   Set<Column> get primaryKey => {symbol, date};
 }
+
+/// 內部人股權轉讓申報 Table
+///
+/// 儲存董監事、經理人、大股東的股權轉讓申報記錄。
+/// 資料來源：TPEX ap12_O API。
+@DataClassName('InsiderTransferEntry')
+@TableIndex(name: 'idx_insider_transfer_symbol', columns: {#symbol})
+@TableIndex(name: 'idx_insider_transfer_date', columns: {#reportDate})
+class InsiderTransfer extends Table {
+  /// 股票代碼
+  TextColumn get symbol =>
+      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
+
+  /// 申報日期
+  DateTimeColumn get reportDate => dateTime()();
+
+  /// 申請人身分（董事、經理人、大股東等）
+  TextColumn get identity => text()();
+
+  /// 姓名
+  TextColumn get name => text()();
+
+  /// 轉讓方式（一般交易、盤後定價等）
+  TextColumn get transferMethod => text()();
+
+  /// 轉讓股數
+  IntColumn get transferShares => integer()();
+
+  /// 目前持有股數
+  IntColumn get currentHolding => integer()();
+
+  /// 有效轉讓期間起始日
+  DateTimeColumn get validPeriodStart => dateTime().nullable()();
+
+  /// 有效轉讓期間結束日
+  DateTimeColumn get validPeriodEnd => dateTime().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {symbol, reportDate, identity, name};
+}

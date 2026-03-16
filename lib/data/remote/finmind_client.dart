@@ -685,4 +685,22 @@ class FinMindClient {
     endDate: endDate,
     fromJson: FinMindWeeklyPrice.tryFromJson,
   );
+
+  /// 取得含息報酬指數（加權股價指數含息版本）
+  ///
+  /// 資料集: TaiwanStockTotalReturnIndex
+  /// stock_id 固定為 'TAIEX'
+  /// 回傳: 每日含息報酬指數（反映股息再投資的累積報酬）
+  Future<List<FinMindTotalReturnIndex>> getTotalReturnIndex({
+    String? startDate,
+  }) => _fetchDateRange(
+    dataset: 'TaiwanStockTotalReturnIndex',
+    stockId: 'TAIEX',
+    startDate:
+        startDate ??
+        '${DateTime.now().subtract(const Duration(days: 60)).year}-'
+            '${DateTime.now().subtract(const Duration(days: 60)).month.toString().padLeft(2, '0')}-'
+            '${DateTime.now().subtract(const Duration(days: 60)).day.toString().padLeft(2, '0')}',
+    fromJson: FinMindTotalReturnIndex.tryFromJson,
+  );
 }

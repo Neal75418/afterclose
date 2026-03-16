@@ -1,5 +1,6 @@
 export 'twse_daily_price.dart';
 export 'twse_day_trading.dart';
+export 'twse_declared_dividend.dart';
 export '../tpex/insider_aggregation.dart';
 export 'twse_insider_holding.dart';
 export 'twse_institutional.dart';

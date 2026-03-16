@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +29,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   // 搜尋結果
   List<StockMasterEntry> _searchResults = [];
-  bool _isSearching = false;
+  Timer? _debounce;
 
   @override
   void initState() {
@@ -37,6 +39,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _titleController.dispose();
     _descriptionController.dispose();
     _symbolController.dispose();
@@ -210,23 +213,20 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     }
   }
 
-  Future<void> _onSymbolSearch(String query) async {
+  void _onSymbolSearch(String query) {
+    _debounce?.cancel();
     if (query.length < 2) {
       setState(() => _searchResults = []);
       return;
     }
-    if (_isSearching) return;
-    _isSearching = true;
-
-    try {
+    _debounce = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
       final db = ref.read(databaseProvider);
       final results = await db.searchStocks(query);
       if (mounted) {
-        setState(() => _searchResults = results);
+        setState(() => _searchResults = results.take(8).toList());
       }
-    } finally {
-      _isSearching = false;
-    }
+    });
   }
 
   Future<void> _submit() async {

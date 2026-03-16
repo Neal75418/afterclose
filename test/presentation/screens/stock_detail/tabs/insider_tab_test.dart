@@ -115,7 +115,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(state));
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // 轉讓申報區段 + 持股歷史區段各一個 loading indicator
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
     });
 
     testWidgets('shows empty state when no insider history', (tester) async {

@@ -26,6 +26,6 @@ abstract class IEventRepository {
   /// 刪除事件
   Future<void> deleteEvent(int id);
 
-  /// 同步除權息事件
-  Future<int> syncDividendEvents();
+  /// 同步除權息事件，回傳分類明細
+  Future<({int exDividend, int exRights, int total})> syncDividendEvents();
 }

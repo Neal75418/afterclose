@@ -279,6 +279,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
         twse: twseClient,
         tpex: tpexClient,
         tdcc: TdccClient(),
+        finMind: finMindClient,
       ),
       services: UpdateServices(ruleAccuracy: ruleAccuracyService),
     );

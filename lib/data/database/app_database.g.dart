@@ -12788,6 +12788,625 @@ class InsiderHoldingCompanion extends UpdateCompanion<InsiderHoldingEntry> {
   }
 }
 
+class $InsiderTransferTable extends InsiderTransfer
+    with TableInfo<$InsiderTransferTable, InsiderTransferEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InsiderTransferTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES stock_master (symbol) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _reportDateMeta = const VerificationMeta(
+    'reportDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> reportDate = GeneratedColumn<DateTime>(
+    'report_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _identityMeta = const VerificationMeta(
+    'identity',
+  );
+  @override
+  late final GeneratedColumn<String> identity = GeneratedColumn<String>(
+    'identity',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _transferMethodMeta = const VerificationMeta(
+    'transferMethod',
+  );
+  @override
+  late final GeneratedColumn<String> transferMethod = GeneratedColumn<String>(
+    'transfer_method',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _transferSharesMeta = const VerificationMeta(
+    'transferShares',
+  );
+  @override
+  late final GeneratedColumn<int> transferShares = GeneratedColumn<int>(
+    'transfer_shares',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _currentHoldingMeta = const VerificationMeta(
+    'currentHolding',
+  );
+  @override
+  late final GeneratedColumn<int> currentHolding = GeneratedColumn<int>(
+    'current_holding',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _validPeriodStartMeta = const VerificationMeta(
+    'validPeriodStart',
+  );
+  @override
+  late final GeneratedColumn<DateTime> validPeriodStart =
+      GeneratedColumn<DateTime>(
+        'valid_period_start',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _validPeriodEndMeta = const VerificationMeta(
+    'validPeriodEnd',
+  );
+  @override
+  late final GeneratedColumn<DateTime> validPeriodEnd =
+      GeneratedColumn<DateTime>(
+        'valid_period_end',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    symbol,
+    reportDate,
+    identity,
+    name,
+    transferMethod,
+    transferShares,
+    currentHolding,
+    validPeriodStart,
+    validPeriodEnd,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'insider_transfer';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InsiderTransferEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('report_date')) {
+      context.handle(
+        _reportDateMeta,
+        reportDate.isAcceptableOrUnknown(data['report_date']!, _reportDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_reportDateMeta);
+    }
+    if (data.containsKey('identity')) {
+      context.handle(
+        _identityMeta,
+        identity.isAcceptableOrUnknown(data['identity']!, _identityMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_identityMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('transfer_method')) {
+      context.handle(
+        _transferMethodMeta,
+        transferMethod.isAcceptableOrUnknown(
+          data['transfer_method']!,
+          _transferMethodMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_transferMethodMeta);
+    }
+    if (data.containsKey('transfer_shares')) {
+      context.handle(
+        _transferSharesMeta,
+        transferShares.isAcceptableOrUnknown(
+          data['transfer_shares']!,
+          _transferSharesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_transferSharesMeta);
+    }
+    if (data.containsKey('current_holding')) {
+      context.handle(
+        _currentHoldingMeta,
+        currentHolding.isAcceptableOrUnknown(
+          data['current_holding']!,
+          _currentHoldingMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_currentHoldingMeta);
+    }
+    if (data.containsKey('valid_period_start')) {
+      context.handle(
+        _validPeriodStartMeta,
+        validPeriodStart.isAcceptableOrUnknown(
+          data['valid_period_start']!,
+          _validPeriodStartMeta,
+        ),
+      );
+    }
+    if (data.containsKey('valid_period_end')) {
+      context.handle(
+        _validPeriodEndMeta,
+        validPeriodEnd.isAcceptableOrUnknown(
+          data['valid_period_end']!,
+          _validPeriodEndMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {symbol, reportDate, identity, name};
+  @override
+  InsiderTransferEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InsiderTransferEntry(
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      reportDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}report_date'],
+      )!,
+      identity: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}identity'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      transferMethod: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}transfer_method'],
+      )!,
+      transferShares: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}transfer_shares'],
+      )!,
+      currentHolding: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_holding'],
+      )!,
+      validPeriodStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}valid_period_start'],
+      ),
+      validPeriodEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}valid_period_end'],
+      ),
+    );
+  }
+
+  @override
+  $InsiderTransferTable createAlias(String alias) {
+    return $InsiderTransferTable(attachedDatabase, alias);
+  }
+}
+
+class InsiderTransferEntry extends DataClass
+    implements Insertable<InsiderTransferEntry> {
+  /// 股票代碼
+  final String symbol;
+
+  /// 申報日期
+  final DateTime reportDate;
+
+  /// 申請人身分（董事、經理人、大股東等）
+  final String identity;
+
+  /// 姓名
+  final String name;
+
+  /// 轉讓方式（一般交易、盤後定價等）
+  final String transferMethod;
+
+  /// 轉讓股數
+  final int transferShares;
+
+  /// 目前持有股數
+  final int currentHolding;
+
+  /// 有效轉讓期間起始日
+  final DateTime? validPeriodStart;
+
+  /// 有效轉讓期間結束日
+  final DateTime? validPeriodEnd;
+  const InsiderTransferEntry({
+    required this.symbol,
+    required this.reportDate,
+    required this.identity,
+    required this.name,
+    required this.transferMethod,
+    required this.transferShares,
+    required this.currentHolding,
+    this.validPeriodStart,
+    this.validPeriodEnd,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['symbol'] = Variable<String>(symbol);
+    map['report_date'] = Variable<DateTime>(reportDate);
+    map['identity'] = Variable<String>(identity);
+    map['name'] = Variable<String>(name);
+    map['transfer_method'] = Variable<String>(transferMethod);
+    map['transfer_shares'] = Variable<int>(transferShares);
+    map['current_holding'] = Variable<int>(currentHolding);
+    if (!nullToAbsent || validPeriodStart != null) {
+      map['valid_period_start'] = Variable<DateTime>(validPeriodStart);
+    }
+    if (!nullToAbsent || validPeriodEnd != null) {
+      map['valid_period_end'] = Variable<DateTime>(validPeriodEnd);
+    }
+    return map;
+  }
+
+  InsiderTransferCompanion toCompanion(bool nullToAbsent) {
+    return InsiderTransferCompanion(
+      symbol: Value(symbol),
+      reportDate: Value(reportDate),
+      identity: Value(identity),
+      name: Value(name),
+      transferMethod: Value(transferMethod),
+      transferShares: Value(transferShares),
+      currentHolding: Value(currentHolding),
+      validPeriodStart: validPeriodStart == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validPeriodStart),
+      validPeriodEnd: validPeriodEnd == null && nullToAbsent
+          ? const Value.absent()
+          : Value(validPeriodEnd),
+    );
+  }
+
+  factory InsiderTransferEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InsiderTransferEntry(
+      symbol: serializer.fromJson<String>(json['symbol']),
+      reportDate: serializer.fromJson<DateTime>(json['reportDate']),
+      identity: serializer.fromJson<String>(json['identity']),
+      name: serializer.fromJson<String>(json['name']),
+      transferMethod: serializer.fromJson<String>(json['transferMethod']),
+      transferShares: serializer.fromJson<int>(json['transferShares']),
+      currentHolding: serializer.fromJson<int>(json['currentHolding']),
+      validPeriodStart: serializer.fromJson<DateTime?>(
+        json['validPeriodStart'],
+      ),
+      validPeriodEnd: serializer.fromJson<DateTime?>(json['validPeriodEnd']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'symbol': serializer.toJson<String>(symbol),
+      'reportDate': serializer.toJson<DateTime>(reportDate),
+      'identity': serializer.toJson<String>(identity),
+      'name': serializer.toJson<String>(name),
+      'transferMethod': serializer.toJson<String>(transferMethod),
+      'transferShares': serializer.toJson<int>(transferShares),
+      'currentHolding': serializer.toJson<int>(currentHolding),
+      'validPeriodStart': serializer.toJson<DateTime?>(validPeriodStart),
+      'validPeriodEnd': serializer.toJson<DateTime?>(validPeriodEnd),
+    };
+  }
+
+  InsiderTransferEntry copyWith({
+    String? symbol,
+    DateTime? reportDate,
+    String? identity,
+    String? name,
+    String? transferMethod,
+    int? transferShares,
+    int? currentHolding,
+    Value<DateTime?> validPeriodStart = const Value.absent(),
+    Value<DateTime?> validPeriodEnd = const Value.absent(),
+  }) => InsiderTransferEntry(
+    symbol: symbol ?? this.symbol,
+    reportDate: reportDate ?? this.reportDate,
+    identity: identity ?? this.identity,
+    name: name ?? this.name,
+    transferMethod: transferMethod ?? this.transferMethod,
+    transferShares: transferShares ?? this.transferShares,
+    currentHolding: currentHolding ?? this.currentHolding,
+    validPeriodStart: validPeriodStart.present
+        ? validPeriodStart.value
+        : this.validPeriodStart,
+    validPeriodEnd: validPeriodEnd.present
+        ? validPeriodEnd.value
+        : this.validPeriodEnd,
+  );
+  InsiderTransferEntry copyWithCompanion(InsiderTransferCompanion data) {
+    return InsiderTransferEntry(
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      reportDate: data.reportDate.present
+          ? data.reportDate.value
+          : this.reportDate,
+      identity: data.identity.present ? data.identity.value : this.identity,
+      name: data.name.present ? data.name.value : this.name,
+      transferMethod: data.transferMethod.present
+          ? data.transferMethod.value
+          : this.transferMethod,
+      transferShares: data.transferShares.present
+          ? data.transferShares.value
+          : this.transferShares,
+      currentHolding: data.currentHolding.present
+          ? data.currentHolding.value
+          : this.currentHolding,
+      validPeriodStart: data.validPeriodStart.present
+          ? data.validPeriodStart.value
+          : this.validPeriodStart,
+      validPeriodEnd: data.validPeriodEnd.present
+          ? data.validPeriodEnd.value
+          : this.validPeriodEnd,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InsiderTransferEntry(')
+          ..write('symbol: $symbol, ')
+          ..write('reportDate: $reportDate, ')
+          ..write('identity: $identity, ')
+          ..write('name: $name, ')
+          ..write('transferMethod: $transferMethod, ')
+          ..write('transferShares: $transferShares, ')
+          ..write('currentHolding: $currentHolding, ')
+          ..write('validPeriodStart: $validPeriodStart, ')
+          ..write('validPeriodEnd: $validPeriodEnd')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    symbol,
+    reportDate,
+    identity,
+    name,
+    transferMethod,
+    transferShares,
+    currentHolding,
+    validPeriodStart,
+    validPeriodEnd,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InsiderTransferEntry &&
+          other.symbol == this.symbol &&
+          other.reportDate == this.reportDate &&
+          other.identity == this.identity &&
+          other.name == this.name &&
+          other.transferMethod == this.transferMethod &&
+          other.transferShares == this.transferShares &&
+          other.currentHolding == this.currentHolding &&
+          other.validPeriodStart == this.validPeriodStart &&
+          other.validPeriodEnd == this.validPeriodEnd);
+}
+
+class InsiderTransferCompanion extends UpdateCompanion<InsiderTransferEntry> {
+  final Value<String> symbol;
+  final Value<DateTime> reportDate;
+  final Value<String> identity;
+  final Value<String> name;
+  final Value<String> transferMethod;
+  final Value<int> transferShares;
+  final Value<int> currentHolding;
+  final Value<DateTime?> validPeriodStart;
+  final Value<DateTime?> validPeriodEnd;
+  final Value<int> rowid;
+  const InsiderTransferCompanion({
+    this.symbol = const Value.absent(),
+    this.reportDate = const Value.absent(),
+    this.identity = const Value.absent(),
+    this.name = const Value.absent(),
+    this.transferMethod = const Value.absent(),
+    this.transferShares = const Value.absent(),
+    this.currentHolding = const Value.absent(),
+    this.validPeriodStart = const Value.absent(),
+    this.validPeriodEnd = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  InsiderTransferCompanion.insert({
+    required String symbol,
+    required DateTime reportDate,
+    required String identity,
+    required String name,
+    required String transferMethod,
+    required int transferShares,
+    required int currentHolding,
+    this.validPeriodStart = const Value.absent(),
+    this.validPeriodEnd = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : symbol = Value(symbol),
+       reportDate = Value(reportDate),
+       identity = Value(identity),
+       name = Value(name),
+       transferMethod = Value(transferMethod),
+       transferShares = Value(transferShares),
+       currentHolding = Value(currentHolding);
+  static Insertable<InsiderTransferEntry> custom({
+    Expression<String>? symbol,
+    Expression<DateTime>? reportDate,
+    Expression<String>? identity,
+    Expression<String>? name,
+    Expression<String>? transferMethod,
+    Expression<int>? transferShares,
+    Expression<int>? currentHolding,
+    Expression<DateTime>? validPeriodStart,
+    Expression<DateTime>? validPeriodEnd,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (symbol != null) 'symbol': symbol,
+      if (reportDate != null) 'report_date': reportDate,
+      if (identity != null) 'identity': identity,
+      if (name != null) 'name': name,
+      if (transferMethod != null) 'transfer_method': transferMethod,
+      if (transferShares != null) 'transfer_shares': transferShares,
+      if (currentHolding != null) 'current_holding': currentHolding,
+      if (validPeriodStart != null) 'valid_period_start': validPeriodStart,
+      if (validPeriodEnd != null) 'valid_period_end': validPeriodEnd,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  InsiderTransferCompanion copyWith({
+    Value<String>? symbol,
+    Value<DateTime>? reportDate,
+    Value<String>? identity,
+    Value<String>? name,
+    Value<String>? transferMethod,
+    Value<int>? transferShares,
+    Value<int>? currentHolding,
+    Value<DateTime?>? validPeriodStart,
+    Value<DateTime?>? validPeriodEnd,
+    Value<int>? rowid,
+  }) {
+    return InsiderTransferCompanion(
+      symbol: symbol ?? this.symbol,
+      reportDate: reportDate ?? this.reportDate,
+      identity: identity ?? this.identity,
+      name: name ?? this.name,
+      transferMethod: transferMethod ?? this.transferMethod,
+      transferShares: transferShares ?? this.transferShares,
+      currentHolding: currentHolding ?? this.currentHolding,
+      validPeriodStart: validPeriodStart ?? this.validPeriodStart,
+      validPeriodEnd: validPeriodEnd ?? this.validPeriodEnd,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (reportDate.present) {
+      map['report_date'] = Variable<DateTime>(reportDate.value);
+    }
+    if (identity.present) {
+      map['identity'] = Variable<String>(identity.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (transferMethod.present) {
+      map['transfer_method'] = Variable<String>(transferMethod.value);
+    }
+    if (transferShares.present) {
+      map['transfer_shares'] = Variable<int>(transferShares.value);
+    }
+    if (currentHolding.present) {
+      map['current_holding'] = Variable<int>(currentHolding.value);
+    }
+    if (validPeriodStart.present) {
+      map['valid_period_start'] = Variable<DateTime>(validPeriodStart.value);
+    }
+    if (validPeriodEnd.present) {
+      map['valid_period_end'] = Variable<DateTime>(validPeriodEnd.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InsiderTransferCompanion(')
+          ..write('symbol: $symbol, ')
+          ..write('reportDate: $reportDate, ')
+          ..write('identity: $identity, ')
+          ..write('name: $name, ')
+          ..write('transferMethod: $transferMethod, ')
+          ..write('transferShares: $transferShares, ')
+          ..write('currentHolding: $currentHolding, ')
+          ..write('validPeriodStart: $validPeriodStart, ')
+          ..write('validPeriodEnd: $validPeriodEnd, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ScreeningStrategyTableTable extends ScreeningStrategyTable
     with TableInfo<$ScreeningStrategyTableTable, ScreeningStrategyEntry> {
   @override
@@ -15355,6 +15974,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MarginTradingTable marginTrading = $MarginTradingTable(this);
   late final $TradingWarningTable tradingWarning = $TradingWarningTable(this);
   late final $InsiderHoldingTable insiderHolding = $InsiderHoldingTable(this);
+  late final $InsiderTransferTable insiderTransfer = $InsiderTransferTable(
+    this,
+  );
   late final $ScreeningStrategyTableTable screeningStrategyTable =
       $ScreeningStrategyTableTable(this);
   late final $PortfolioPositionTable portfolioPosition =
@@ -15563,6 +16185,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_insider_holding_symbol_date',
     'CREATE INDEX idx_insider_holding_symbol_date ON insider_holding (symbol, date)',
   );
+  late final Index idxInsiderTransferSymbol = Index(
+    'idx_insider_transfer_symbol',
+    'CREATE INDEX idx_insider_transfer_symbol ON insider_transfer (symbol)',
+  );
+  late final Index idxInsiderTransferDate = Index(
+    'idx_insider_transfer_date',
+    'CREATE INDEX idx_insider_transfer_date ON insider_transfer (report_date)',
+  );
   late final Index idxPortfolioPositionSymbol = Index(
     'idx_portfolio_position_symbol',
     'CREATE INDEX idx_portfolio_position_symbol ON portfolio_position (symbol)',
@@ -15624,6 +16254,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     marginTrading,
     tradingWarning,
     insiderHolding,
+    insiderTransfer,
     screeningStrategyTable,
     portfolioPosition,
     portfolioTransaction,
@@ -15679,6 +16310,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxInsiderHoldingSymbol,
     idxInsiderHoldingDate,
     idxInsiderHoldingSymbolDate,
+    idxInsiderTransferSymbol,
+    idxInsiderTransferDate,
     idxPortfolioPositionSymbol,
     idxPortfolioTxSymbol,
     idxPortfolioTxDate,
@@ -15849,6 +16482,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('insider_holding', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'stock_master',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('insider_transfer', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -16366,6 +17006,29 @@ final class $$StockMasterTableReferences
     ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
 
     final cache = $_typedResult.readTableOrNull(_insiderHoldingRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$InsiderTransferTable, List<InsiderTransferEntry>>
+  _insiderTransferRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.insiderTransfer,
+    aliasName: $_aliasNameGenerator(
+      db.stockMaster.symbol,
+      db.insiderTransfer.symbol,
+    ),
+  );
+
+  $$InsiderTransferTableProcessedTableManager get insiderTransferRefs {
+    final manager = $$InsiderTransferTableTableManager(
+      $_db,
+      $_db.insiderTransfer,
+    ).filter((f) => f.symbol.symbol.sqlEquals($_itemColumn<String>('symbol')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _insiderTransferRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -17007,6 +17670,31 @@ class $$StockMasterTableFilterComposer
           }) => $$InsiderHoldingTableFilterComposer(
             $db: $db,
             $table: $db.insiderHolding,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> insiderTransferRefs(
+    Expression<bool> Function($$InsiderTransferTableFilterComposer f) f,
+  ) {
+    final $$InsiderTransferTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.insiderTransfer,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$InsiderTransferTableFilterComposer(
+            $db: $db,
+            $table: $db.insiderTransfer,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -17687,6 +18375,31 @@ class $$StockMasterTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> insiderTransferRefs<T extends Object>(
+    Expression<T> Function($$InsiderTransferTableAnnotationComposer a) f,
+  ) {
+    final $$InsiderTransferTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.insiderTransfer,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$InsiderTransferTableAnnotationComposer(
+            $db: $db,
+            $table: $db.insiderTransfer,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> portfolioPositionRefs<T extends Object>(
     Expression<T> Function($$PortfolioPositionTableAnnotationComposer a) f,
   ) {
@@ -17776,6 +18489,7 @@ class $$StockMasterTableTableManager
             bool marginTradingRefs,
             bool tradingWarningRefs,
             bool insiderHoldingRefs,
+            bool insiderTransferRefs,
             bool portfolioPositionRefs,
             bool portfolioTransactionRefs,
           })
@@ -17859,6 +18573,7 @@ class $$StockMasterTableTableManager
                 marginTradingRefs = false,
                 tradingWarningRefs = false,
                 insiderHoldingRefs = false,
+                insiderTransferRefs = false,
                 portfolioPositionRefs = false,
                 portfolioTransactionRefs = false,
               }) {
@@ -17887,6 +18602,7 @@ class $$StockMasterTableTableManager
                     if (marginTradingRefs) db.marginTrading,
                     if (tradingWarningRefs) db.tradingWarning,
                     if (insiderHoldingRefs) db.insiderHolding,
+                    if (insiderTransferRefs) db.insiderTransfer,
                     if (portfolioPositionRefs) db.portfolioPosition,
                     if (portfolioTransactionRefs) db.portfolioTransaction,
                   ],
@@ -18355,6 +19071,27 @@ class $$StockMasterTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (insiderTransferRefs)
+                        await $_getPrefetchedData<
+                          StockMasterEntry,
+                          $StockMasterTable,
+                          InsiderTransferEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$StockMasterTableReferences
+                              ._insiderTransferRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$StockMasterTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).insiderTransferRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.symbol == item.symbol,
+                              ),
+                          typedResults: items,
+                        ),
                       if (portfolioPositionRefs)
                         await $_getPrefetchedData<
                           StockMasterEntry,
@@ -18440,6 +19177,7 @@ typedef $$StockMasterTableProcessedTableManager =
         bool marginTradingRefs,
         bool tradingWarningRefs,
         bool insiderHoldingRefs,
+        bool insiderTransferRefs,
         bool portfolioPositionRefs,
         bool portfolioTransactionRefs,
       })
@@ -27641,6 +28379,426 @@ typedef $$InsiderHoldingTableProcessedTableManager =
       InsiderHoldingEntry,
       PrefetchHooks Function({bool symbol})
     >;
+typedef $$InsiderTransferTableCreateCompanionBuilder =
+    InsiderTransferCompanion Function({
+      required String symbol,
+      required DateTime reportDate,
+      required String identity,
+      required String name,
+      required String transferMethod,
+      required int transferShares,
+      required int currentHolding,
+      Value<DateTime?> validPeriodStart,
+      Value<DateTime?> validPeriodEnd,
+      Value<int> rowid,
+    });
+typedef $$InsiderTransferTableUpdateCompanionBuilder =
+    InsiderTransferCompanion Function({
+      Value<String> symbol,
+      Value<DateTime> reportDate,
+      Value<String> identity,
+      Value<String> name,
+      Value<String> transferMethod,
+      Value<int> transferShares,
+      Value<int> currentHolding,
+      Value<DateTime?> validPeriodStart,
+      Value<DateTime?> validPeriodEnd,
+      Value<int> rowid,
+    });
+
+final class $$InsiderTransferTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $InsiderTransferTable,
+          InsiderTransferEntry
+        > {
+  $$InsiderTransferTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $StockMasterTable _symbolTable(_$AppDatabase db) =>
+      db.stockMaster.createAlias(
+        $_aliasNameGenerator(db.insiderTransfer.symbol, db.stockMaster.symbol),
+      );
+
+  $$StockMasterTableProcessedTableManager get symbol {
+    final $_column = $_itemColumn<String>('symbol')!;
+
+    final manager = $$StockMasterTableTableManager(
+      $_db,
+      $_db.stockMaster,
+    ).filter((f) => f.symbol.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$InsiderTransferTableFilterComposer
+    extends Composer<_$AppDatabase, $InsiderTransferTable> {
+  $$InsiderTransferTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get reportDate => $composableBuilder(
+    column: $table.reportDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get identity => $composableBuilder(
+    column: $table.identity,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get transferMethod => $composableBuilder(
+    column: $table.transferMethod,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get transferShares => $composableBuilder(
+    column: $table.transferShares,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get currentHolding => $composableBuilder(
+    column: $table.currentHolding,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get validPeriodStart => $composableBuilder(
+    column: $table.validPeriodStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get validPeriodEnd => $composableBuilder(
+    column: $table.validPeriodEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$StockMasterTableFilterComposer get symbol {
+    final $$StockMasterTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableFilterComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InsiderTransferTableOrderingComposer
+    extends Composer<_$AppDatabase, $InsiderTransferTable> {
+  $$InsiderTransferTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get reportDate => $composableBuilder(
+    column: $table.reportDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get identity => $composableBuilder(
+    column: $table.identity,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get transferMethod => $composableBuilder(
+    column: $table.transferMethod,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get transferShares => $composableBuilder(
+    column: $table.transferShares,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentHolding => $composableBuilder(
+    column: $table.currentHolding,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get validPeriodStart => $composableBuilder(
+    column: $table.validPeriodStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get validPeriodEnd => $composableBuilder(
+    column: $table.validPeriodEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$StockMasterTableOrderingComposer get symbol {
+    final $$StockMasterTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableOrderingComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InsiderTransferTableAnnotationComposer
+    extends Composer<_$AppDatabase, $InsiderTransferTable> {
+  $$InsiderTransferTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get reportDate => $composableBuilder(
+    column: $table.reportDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get identity =>
+      $composableBuilder(column: $table.identity, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get transferMethod => $composableBuilder(
+    column: $table.transferMethod,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get transferShares => $composableBuilder(
+    column: $table.transferShares,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get currentHolding => $composableBuilder(
+    column: $table.currentHolding,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get validPeriodStart => $composableBuilder(
+    column: $table.validPeriodStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get validPeriodEnd => $composableBuilder(
+    column: $table.validPeriodEnd,
+    builder: (column) => column,
+  );
+
+  $$StockMasterTableAnnotationComposer get symbol {
+    final $$StockMasterTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.symbol,
+      referencedTable: $db.stockMaster,
+      getReferencedColumn: (t) => t.symbol,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$StockMasterTableAnnotationComposer(
+            $db: $db,
+            $table: $db.stockMaster,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$InsiderTransferTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $InsiderTransferTable,
+          InsiderTransferEntry,
+          $$InsiderTransferTableFilterComposer,
+          $$InsiderTransferTableOrderingComposer,
+          $$InsiderTransferTableAnnotationComposer,
+          $$InsiderTransferTableCreateCompanionBuilder,
+          $$InsiderTransferTableUpdateCompanionBuilder,
+          (InsiderTransferEntry, $$InsiderTransferTableReferences),
+          InsiderTransferEntry,
+          PrefetchHooks Function({bool symbol})
+        > {
+  $$InsiderTransferTableTableManager(
+    _$AppDatabase db,
+    $InsiderTransferTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InsiderTransferTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$InsiderTransferTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$InsiderTransferTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> symbol = const Value.absent(),
+                Value<DateTime> reportDate = const Value.absent(),
+                Value<String> identity = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> transferMethod = const Value.absent(),
+                Value<int> transferShares = const Value.absent(),
+                Value<int> currentHolding = const Value.absent(),
+                Value<DateTime?> validPeriodStart = const Value.absent(),
+                Value<DateTime?> validPeriodEnd = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InsiderTransferCompanion(
+                symbol: symbol,
+                reportDate: reportDate,
+                identity: identity,
+                name: name,
+                transferMethod: transferMethod,
+                transferShares: transferShares,
+                currentHolding: currentHolding,
+                validPeriodStart: validPeriodStart,
+                validPeriodEnd: validPeriodEnd,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String symbol,
+                required DateTime reportDate,
+                required String identity,
+                required String name,
+                required String transferMethod,
+                required int transferShares,
+                required int currentHolding,
+                Value<DateTime?> validPeriodStart = const Value.absent(),
+                Value<DateTime?> validPeriodEnd = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InsiderTransferCompanion.insert(
+                symbol: symbol,
+                reportDate: reportDate,
+                identity: identity,
+                name: name,
+                transferMethod: transferMethod,
+                transferShares: transferShares,
+                currentHolding: currentHolding,
+                validPeriodStart: validPeriodStart,
+                validPeriodEnd: validPeriodEnd,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$InsiderTransferTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({symbol = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (symbol) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.symbol,
+                                referencedTable:
+                                    $$InsiderTransferTableReferences
+                                        ._symbolTable(db),
+                                referencedColumn:
+                                    $$InsiderTransferTableReferences
+                                        ._symbolTable(db)
+                                        .symbol,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$InsiderTransferTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $InsiderTransferTable,
+      InsiderTransferEntry,
+      $$InsiderTransferTableFilterComposer,
+      $$InsiderTransferTableOrderingComposer,
+      $$InsiderTransferTableAnnotationComposer,
+      $$InsiderTransferTableCreateCompanionBuilder,
+      $$InsiderTransferTableUpdateCompanionBuilder,
+      (InsiderTransferEntry, $$InsiderTransferTableReferences),
+      InsiderTransferEntry,
+      PrefetchHooks Function({bool symbol})
+    >;
 typedef $$ScreeningStrategyTableTableCreateCompanionBuilder =
     ScreeningStrategyTableCompanion Function({
       Value<int> id,
@@ -29250,6 +30408,8 @@ class $AppDatabaseManager {
       $$TradingWarningTableTableManager(_db, _db.tradingWarning);
   $$InsiderHoldingTableTableManager get insiderHolding =>
       $$InsiderHoldingTableTableManager(_db, _db.insiderHolding);
+  $$InsiderTransferTableTableManager get insiderTransfer =>
+      $$InsiderTransferTableTableManager(_db, _db.insiderTransfer);
   $$ScreeningStrategyTableTableTableManager get screeningStrategyTable =>
       $$ScreeningStrategyTableTableTableManager(
         _db,

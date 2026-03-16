@@ -106,7 +106,9 @@
     "industryPerformance": "Industry Performance",
     "industryTopBottom": "Top/Bottom {count}",
     "industryStockCount": "{count} stocks",
-    "day30Trend": "30-Day Trend"
+    "day30Trend": "30-Day Trend",
+    "totalReturnIndex": "Total Return",
+    "dividendContribution": "Div. Contribution {pct}%"
   },
   "scan": {
     "title": "Market Scan",
@@ -352,7 +354,11 @@
     "insiderDate": "Month",
     "insiderRatioShort": "Hold%",
     "pledgeRatioShort": "Pledge%",
-    "insiderChangeShort": "Change"
+    "insiderChangeShort": "Change",
+    "insiderTransfer": "Recent Transfer Filings",
+    "transferSharesLabel": "Transfer {} shares",
+    "validPeriod": "Valid Period",
+    "noRecentTransfers": "No recent transfer filings"
   },
   "score": {
     "label": "Rating Score",
@@ -1267,7 +1273,20 @@
     "syncComplete": "Synced {count} events",
     "tradingDay": "Trading Day",
     "holiday": "Holiday",
-    "titleRequired": "Please enter an event title"
+    "titleRequired": "Please enter an event title",
+    "typeMeeting": "Shareholder Meeting",
+    "upcomingDividend": "Upcoming Dividend",
+    "meetingLocation": "Location: {location}",
+    "boardElection": "Board Election",
+    "eVoting": "E-Voting",
+    "retry": "Retry",
+    "upcomingTitle": "Next 14 Days",
+    "noUpcoming": "No upcoming events",
+    "syncDetailComplete": "Synced: {exDividend} ex-dividend, {exRights} ex-rights",
+    "viewStock": "View Stock",
+    "eventDetail": "Event Detail",
+    "export": "Export Calendar",
+    "exportEmpty": "No events to export this month"
   },
 
   "warning": {
@@ -1323,5 +1342,25 @@
     "csvSignal": "Key Signal",
     "csvRisk": "Risk Factor",
     "csvSignals": "Signals"
+  },
+  "shortSell": {
+    "title": "Short Sell Ranking",
+    "stock": "Stock",
+    "currentBalance": "Balance",
+    "previousBalance": "Prev Balance",
+    "change": "Change",
+    "shortSell": "Short Sell",
+    "noData": "No short sell ranking data",
+    "viewAll": "View Full Ranking"
+  },
+  "industryEps": {
+    "title": "Industry EPS Ranking",
+    "stock": "Stock",
+    "eps": "EPS",
+    "revenue": "Revenue",
+    "operatingProfit": "Operating Profit",
+    "netIncome": "Net Income",
+    "all": "All",
+    "noData": "No industry EPS data"
   }
 }

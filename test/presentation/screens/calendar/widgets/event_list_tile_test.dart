@@ -32,21 +32,21 @@ void main() {
     );
   }
 
-  group('eventTypeColor', () {
+  group('EventType color', () {
     test('exDividend returns red', () {
-      expect(eventTypeColor(EventType.exDividend), Colors.red);
+      expect(EventType.exDividend.color, Colors.red);
     });
 
     test('exRights returns orange', () {
-      expect(eventTypeColor(EventType.exRights), Colors.orange);
+      expect(EventType.exRights.color, Colors.orange);
     });
 
     test('earnings returns green', () {
-      expect(eventTypeColor(EventType.earnings), Colors.green);
+      expect(EventType.earnings.color, Colors.green);
     });
 
     test('custom returns blue', () {
-      expect(eventTypeColor(EventType.custom), Colors.blue);
+      expect(EventType.custom.color, Colors.blue);
     });
   });
 

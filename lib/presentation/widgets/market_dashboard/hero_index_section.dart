@@ -11,15 +11,22 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 ///
 /// 顯示指數大數字 + 漲跌幅 + 30 日 Sparkline 走勢圖
 /// 支援加權指數和櫃買指數，根據 index name 自動選擇標題
+///
+/// 當顯示加權指數且提供 [totalReturnHistory] 時，
+/// 會在走勢圖下方顯示含息報酬指數的股息貢獻 badge。
 class HeroIndexSection extends StatelessWidget {
   const HeroIndexSection({
     super.key,
     required this.index,
     this.historyData = const [],
+    this.totalReturnHistory = const [],
   });
 
   final TwseMarketIndex index;
   final List<double> historyData;
+
+  /// 含息報酬指數歷史資料（供計算股息貢獻比較）
+  final List<double> totalReturnHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -108,8 +115,91 @@ class HeroIndexSection extends StatelessWidget {
               fillColor: color.withValues(alpha: 0.08),
             ),
           ],
+
+          // 含息報酬指數比較（僅加權指數顯示）
+          if (index.name == MarketIndexNames.taiex &&
+              totalReturnHistory.length >= 2 &&
+              historyData.length >= 2) ...[
+            const SizedBox(height: 8),
+            _TotalReturnBadge(
+              taiexHistory: historyData,
+              totalReturnHistory: totalReturnHistory,
+            ),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// 含息報酬指數 vs 加權指數的股息貢獻 badge
+///
+/// 計算近 30 日期間內，含息報酬指數相對於加權指數的超額報酬，
+/// 即「股息再投資」所貢獻的額外報酬百分比。
+class _TotalReturnBadge extends StatelessWidget {
+  const _TotalReturnBadge({
+    required this.taiexHistory,
+    required this.totalReturnHistory,
+  });
+
+  final List<double> taiexHistory;
+  final List<double> totalReturnHistory;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // 計算期間報酬率差異（股息貢獻）
+    final taiexReturn =
+        (taiexHistory.last - taiexHistory.first) / taiexHistory.first * 100;
+    final triReturn =
+        (totalReturnHistory.last - totalReturnHistory.first) /
+        totalReturnHistory.first *
+        100;
+    final dividendContribution = triReturn - taiexReturn;
+
+    // 貢獻太小時不顯示（避免噪音）
+    if (dividendContribution.abs() < 0.01) return const SizedBox.shrink();
+
+    final sign = dividendContribution > 0 ? '+' : '';
+
+    return Row(
+      children: [
+        Icon(
+          Icons.info_outline,
+          size: 12,
+          color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          'marketOverview.totalReturnIndex'.tr(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+            fontSize: DesignTokens.fontSizeXs,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+          ),
+          child: Text(
+            'marketOverview.dividendContribution'.tr(
+              namedArgs: {
+                'pct': '$sign${dividendContribution.toStringAsFixed(2)}',
+              },
+            ),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onPrimaryContainer,
+              fontSize: DesignTokens.fontSizeXs,
+              fontWeight: FontWeight.w600,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

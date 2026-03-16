@@ -93,6 +93,7 @@ class ChipAnalysisState {
     this.shareholdingHistory = const [],
     this.holdingDistribution = const [],
     this.insiderHistory = const [],
+    this.insiderTransfers = const [],
     this.chipStrength,
     this.hasInstitutionalError = false,
   });
@@ -104,6 +105,7 @@ class ChipAnalysisState {
   final List<ShareholdingEntry> shareholdingHistory;
   final List<HoldingDistributionEntry> holdingDistribution;
   final List<InsiderHoldingEntry> insiderHistory;
+  final List<InsiderTransferEntry> insiderTransfers;
   final ChipStrengthResult? chipStrength;
 
   /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
@@ -117,6 +119,7 @@ class ChipAnalysisState {
     List<ShareholdingEntry>? shareholdingHistory,
     List<HoldingDistributionEntry>? holdingDistribution,
     List<InsiderHoldingEntry>? insiderHistory,
+    List<InsiderTransferEntry>? insiderTransfers,
     ChipStrengthResult? chipStrength,
     bool? hasInstitutionalError,
   }) {
@@ -128,6 +131,7 @@ class ChipAnalysisState {
       shareholdingHistory: shareholdingHistory ?? this.shareholdingHistory,
       holdingDistribution: holdingDistribution ?? this.holdingDistribution,
       insiderHistory: insiderHistory ?? this.insiderHistory,
+      insiderTransfers: insiderTransfers ?? this.insiderTransfers,
       chipStrength: chipStrength ?? this.chipStrength,
       hasInstitutionalError:
           hasInstitutionalError ?? this.hasInstitutionalError,
@@ -240,6 +244,7 @@ class StockDetailState {
     List<ShareholdingEntry>? shareholdingHistory,
     List<HoldingDistributionEntry>? holdingDistribution,
     List<InsiderHoldingEntry>? insiderHistory,
+    List<InsiderTransferEntry>? insiderTransfers,
     ChipStrengthResult? chipStrength,
     bool? hasInstitutionalError,
     // 載入狀態欄位
@@ -280,6 +285,7 @@ class StockDetailState {
         shareholdingHistory != null ||
         holdingDistribution != null ||
         insiderHistory != null ||
+        insiderTransfers != null ||
         chipStrength != null ||
         hasInstitutionalError != null;
 
@@ -318,6 +324,7 @@ class StockDetailState {
               shareholdingHistory: shareholdingHistory,
               holdingDistribution: holdingDistribution,
               insiderHistory: insiderHistory,
+              insiderTransfers: insiderTransfers,
               chipStrength: chipStrength,
               hasInstitutionalError: hasInstitutionalError,
             )

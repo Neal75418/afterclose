@@ -63,6 +63,14 @@ mixin _PriceDaoMixin on _$AppDatabase {
     return distinctPrices;
   }
 
+  /// 取得指定 symbol 在指定日期的價格（事件詳情用）
+  Future<DailyPriceEntry?> getPriceOnDate(String symbol, DateTime date) {
+    final normalized = DateContext.normalize(date);
+    return (select(dailyPrice)
+          ..where((t) => t.symbol.equals(symbol) & t.date.equals(normalized)))
+        .getSingleOrNull();
+  }
+
   /// 取得指定日期的價格筆數
   Future<int> getPriceCountForDate(DateTime date) async {
     final countExpr = dailyPrice.symbol.count();

@@ -91,10 +91,24 @@ class UpdateService {
                database: database,
                twseClient: clients.twse!,
                tpexClient: clients.tpex,
+               finMindClient: clients.finMind,
              )
            : null,
        _tdccHoldingSyncer = clients.tdcc != null
            ? TdccHoldingSyncer(database: database, tdccClient: clients.tdcc!)
+           : null,
+       _dividendSyncer = (clients.twse != null || clients.tpex != null)
+           ? DividendSyncer(
+               database: database,
+               twseClient: clients.twse,
+               tpexClient: clients.tpex,
+             )
+           : null,
+       _insiderTransferSyncer = clients.tpex != null
+           ? InsiderTransferSyncer(
+               database: database,
+               tpexClient: clients.tpex!,
+             )
            : null;
 
   final AppDatabase _db;
@@ -118,6 +132,8 @@ class UpdateService {
   final FundamentalSyncer? _fundamentalSyncer;
   final MarketIndexSyncer? _marketIndexSyncer;
   final TdccHoldingSyncer? _tdccHoldingSyncer;
+  final DividendSyncer? _dividendSyncer;
+  final InsiderTransferSyncer? _insiderTransferSyncer;
 
   /// 取得或建立 ScoringService（延遲初始化）
   ScoringService get _scoring =>
@@ -304,6 +320,33 @@ class UpdateService {
         await _tdccHoldingSyncer.sync();
       } catch (e) {
         AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗: $e');
+      }
+    }
+
+    if (_dividendSyncer != null) {
+      try {
+        final divResult = await _dividendSyncer.sync();
+        if (divResult.dividendsUpserted > 0 ||
+            divResult.meetingEventsCreated > 0) {
+          AppLogger.info(
+            'UpdateSvc',
+            '股利同步: ${divResult.dividendsUpserted} 筆股利, '
+                '${divResult.meetingEventsCreated} 筆股東會',
+          );
+        }
+      } catch (e) {
+        AppLogger.warning('UpdateSvc', '股利/股東會同步失敗: $e');
+      }
+    }
+
+    if (_insiderTransferSyncer != null) {
+      try {
+        final transferCount = await _insiderTransferSyncer.sync();
+        if (transferCount > 0) {
+          AppLogger.info('UpdateSvc', '內部人轉讓同步: $transferCount 筆');
+        }
+      } catch (e) {
+        AppLogger.warning('UpdateSvc', '內部人轉讓同步失敗: $e');
       }
     }
   }

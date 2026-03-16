@@ -5,32 +5,24 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// 事件色點對照
-Color eventTypeColor(EventType type) {
-  switch (type) {
-    case EventType.exDividend:
-      return Colors.red;
-    case EventType.exRights:
-      return Colors.orange;
-    case EventType.earnings:
-      return Colors.green;
-    case EventType.custom:
-      return Colors.blue;
-  }
-}
-
 /// 事件列表項
 class EventListTile extends StatelessWidget {
-  const EventListTile({super.key, required this.event, this.onDelete});
+  const EventListTile({
+    super.key,
+    required this.event,
+    this.onTap,
+    this.onDelete,
+  });
 
   final StockEventEntry event;
+  final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final type = EventType.fromValue(event.eventType);
-    final color = eventTypeColor(type);
+    final color = type.color;
 
     return Dismissible(
       key: ValueKey(event.id),
@@ -47,101 +39,91 @@ class EventListTile extends StatelessWidget {
         color: Colors.red,
         child: const Icon(Icons.delete, color: Colors.white),
       ),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-          border: Border(left: BorderSide(color: color, width: 4)),
-        ),
-        child: Row(
-          children: [
-            // 事件類型圖示
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+            border: Border(left: BorderSide(color: color, width: 4)),
+          ),
+          child: Row(
+            children: [
+              // 事件類型圖示
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                ),
+                child: Icon(type.icon, size: 20, color: color),
               ),
-              child: Icon(_typeIcon(type), size: 20, color: color),
-            ),
-            const SizedBox(width: 12),
-            // 內容
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(
-                            DesignTokens.radiusXs,
+              const SizedBox(width: 12),
+              // 內容
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(
+                              DesignTokens.radiusXs,
+                            ),
+                          ),
+                          child: Text(
+                            type.i18nKey.tr(),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: color,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        child: Text(
-                          type.i18nKey.tr(),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.w600,
+                        if (event.isAutoGenerated) ...[
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 14,
+                            color: theme.colorScheme.outline,
                           ),
-                        ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      event.title,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w500,
                       ),
-                      if (event.isAutoGenerated) ...[
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.auto_awesome,
-                          size: 14,
+                    ),
+                    if (event.description != null &&
+                        event.description!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        event.description!,
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.outline,
                         ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    event.title,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (event.description != null &&
-                      event.description!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      event.description!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.outline,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  IconData _typeIcon(EventType type) {
-    switch (type) {
-      case EventType.exDividend:
-        return Icons.payments_outlined;
-      case EventType.exRights:
-        return Icons.inventory_2_outlined;
-      case EventType.earnings:
-        return Icons.article_outlined;
-      case EventType.custom:
-        return Icons.edit_note;
-    }
   }
 }

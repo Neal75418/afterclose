@@ -16,6 +16,8 @@ import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 import 'package:afterclose/presentation/screens/comparison/comparison_screen.dart';
 import 'package:afterclose/presentation/screens/calendar/event_calendar_screen.dart';
 import 'package:afterclose/presentation/screens/recommendation_performance/recommendation_performance_screen.dart';
+import 'package:afterclose/presentation/screens/short_sell/short_sell_ranking_screen.dart';
+import 'package:afterclose/presentation/screens/industry/industry_eps_screen.dart';
 import 'package:afterclose/presentation/screens/portfolio/position_detail_screen.dart';
 import 'package:afterclose/presentation/screens/stock_detail/stock_detail_screen.dart';
 import 'package:afterclose/presentation/screens/today/today_screen.dart';
@@ -199,6 +201,20 @@ final router = GoRouter(
       path: AppRoutes.recommendationPerformance,
       name: 'recommendationPerformance',
       builder: (context, state) => const RecommendationPerformanceScreen(),
+    ),
+
+    // 融券賣出排行（全螢幕，Shell 外）
+    GoRoute(
+      path: AppRoutes.shortSellRanking,
+      name: 'shortSellRanking',
+      builder: (context, state) => const ShortSellRankingScreen(),
+    ),
+
+    // 產業別 EPS 排名（全螢幕，Shell 外）
+    GoRoute(
+      path: AppRoutes.industryEps,
+      name: 'industryEps',
+      builder: (context, state) => const IndustryEpsScreen(),
     ),
   ],
 );

@@ -8,6 +8,7 @@ import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/shareholding_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/data/repositories/trading_repository.dart';
+import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -45,11 +46,12 @@ class UpdateRepositories {
 
 /// External API client dependencies for [UpdateService]
 class UpdateClients {
-  const UpdateClients({this.twse, this.tpex, this.tdcc});
+  const UpdateClients({this.twse, this.tpex, this.tdcc, this.finMind});
 
   final TwseClient? twse;
   final TpexClient? tpex;
   final TdccClient? tdcc;
+  final FinMindClient? finMind;
 }
 
 /// Optional service overrides for [UpdateService]

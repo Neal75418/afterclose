@@ -1083,4 +1083,213 @@ class TpexClient {
       return null;
     }
   }
+
+  /// 取得上櫃已宣告股利
+  ///
+  /// 使用 TPEX OpenAPI (mopsfin_t187ap39_O)。
+  /// 回傳所有已宣告的除權息資料，含除息交易日、現金/股票股利。
+  Future<List<TpexDeclaredDividend>> getDeclaredDividends() {
+    return MarketClientMixin.executeRequest(_tag, '已宣告股利', () async {
+      const cacheKey = 'declaredDividend';
+      final cached = _cache.get(cacheKey) as List<TpexDeclaredDividend>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexDeclaredDividend,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '已宣告股利: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexDeclaredDividend>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TpexDeclaredDividend.tryFromJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '已宣告股利: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 取得上櫃內部人股權轉讓申報資料
+  ///
+  /// 使用 TPEX OpenAPI (t187ap12_O)。
+  /// 回傳董監事、經理人、大股東的股權轉讓申報記錄。
+  Future<List<TpexInsiderTransfer>> getInsiderTransfers() {
+    return MarketClientMixin.executeRequest(_tag, '內部人轉讓', () async {
+      const cacheKey = 'insiderTransfer';
+      final cached = _cache.get(cacheKey) as List<TpexInsiderTransfer>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexInsiderTransfer,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '內部人轉讓: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexInsiderTransfer>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TpexInsiderTransfer.tryFromJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '內部人轉讓: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 取得上櫃融券賣出排行
+  ///
+  /// 使用 TPEX OpenAPI (tpex_margin_trading_short_sell)。
+  /// 回傳融券賣出排名 Top 20，含前日餘額、當日餘額及融券賣出量。
+  Future<List<TpexShortSellRanking>> getShortSellRanking() {
+    return MarketClientMixin.executeRequest(_tag, '融券排行', () async {
+      const cacheKey = 'shortSellRanking';
+      final cached = _cache.get(cacheKey) as List<TpexShortSellRanking>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexShortSellRanking,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '融券排行: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexShortSellRanking>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TpexShortSellRanking.tryFromJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      // 按排名排序
+      results.sort((a, b) => a.rank.compareTo(b.rank));
+
+      AppLogger.info(_tag, '融券排行: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 取得上櫃股東會日程
+  ///
+  /// 使用 TPEX OpenAPI (t187ap41_O)。
+  /// 回傳股東會開會日期、地點、是否改選董監、電子投票。
+  Future<List<TpexShareholderMeeting>> getShareholderMeetings() {
+    return MarketClientMixin.executeRequest(_tag, '股東會日程', () async {
+      const cacheKey = 'shareholderMeeting';
+      final cached = _cache.get(cacheKey) as List<TpexShareholderMeeting>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexShareholderMeeting,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '股東會日程: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexShareholderMeeting>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TpexShareholderMeeting.tryFromJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '股東會日程: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
+
+  /// 取得上櫃產業別 EPS 資料
+  ///
+  /// 使用 TPEX OpenAPI (mopsfin_t187ap14_O)。
+  /// 回傳各產業公司的基本每股盈餘、營收、營業利益、稅後淨利。
+  /// 為季報資料，每季更新一次。
+  Future<List<TpexIndustryEps>> getIndustryEps() {
+    return MarketClientMixin.executeRequest(_tag, '產業EPS', () async {
+      const cacheKey = 'industryEps';
+      final cached = _cache.get(cacheKey) as List<TpexIndustryEps>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(
+        ApiEndpoints.tpexIndustryEps,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenAPI error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '產業EPS: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TpexIndustryEps>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TpexIndustryEps.tryFromJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '產業EPS: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
 }

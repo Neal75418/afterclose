@@ -1,13 +1,21 @@
+import 'dart:io';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/ics_generator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/screens/calendar/widgets/add_event_sheet.dart';
+import 'package:afterclose/presentation/screens/calendar/widgets/event_detail_sheet.dart';
 import 'package:afterclose/presentation/screens/calendar/widgets/event_list_tile.dart';
+import 'package:afterclose/presentation/screens/calendar/widgets/upcoming_events_section.dart';
 
 /// 事件行事曆頁面
 class EventCalendarScreen extends ConsumerStatefulWidget {
@@ -75,16 +83,51 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
               ];
             },
           ),
-          // 同步除權息
+          // 匯出 .ics
           IconButton(
-            icon: const Icon(Icons.sync),
-            onPressed: _syncDividendEvents,
-            tooltip: 'calendar.syncDividendEvents'.tr(),
+            icon: const Icon(Icons.ios_share),
+            onPressed: _exportMonthEvents,
+            tooltip: 'calendar.export'.tr(),
           ),
+          // 同步除權息
+          if (state.isSyncing)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.sync),
+              onPressed: _syncDividendEvents,
+              tooltip: 'calendar.syncDividendEvents'.tr(),
+            ),
         ],
       ),
       body: Column(
         children: [
+          // 即將到來事件摘要
+          UpcomingEventsSection(
+            events: state.upcomingEvents,
+            onEventTap: (event) {
+              setState(() {
+                _selectedDay = event.eventDate;
+                _focusedDay = event.eventDate;
+              });
+              ref
+                  .read(eventCalendarProvider.notifier)
+                  .selectDate(event.eventDate);
+              ref
+                  .read(eventCalendarProvider.notifier)
+                  .loadMonthEvents(
+                    DateTime(event.eventDate.year, event.eventDate.month),
+                  );
+            },
+          ),
+
           // 日曆
           TableCalendar<StockEventEntry>(
             firstDay: DateTime(2000),
@@ -95,7 +138,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             startingDayOfWeek: StartingDayOfWeek.monday,
             eventLoader: (day) {
               final dateKey = DateContext.normalize(day);
-              return state.events[dateKey] ?? [];
+              return state.filteredEvents[dateKey] ?? [];
             },
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
@@ -144,9 +187,45 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
 
           const Divider(height: 1),
 
+          // 事件類型篩選
+          _buildEventTypeFilterChips(state),
+
           // 選取日期的事件列表
           Expanded(
-            child: state.isLoading
+            child: state.error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: theme.colorScheme.error.withValues(alpha: 0.7),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.error!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        FilledButton.tonalIcon(
+                          onPressed: () {
+                            if (state.focusedMonth != null) {
+                              ref
+                                  .read(eventCalendarProvider.notifier)
+                                  .loadMonthEvents(state.focusedMonth!);
+                            }
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: Text('calendar.retry'.tr()),
+                        ),
+                      ],
+                    ),
+                  )
+                : state.isLoading
                 ? const Center(
                     child: SizedBox(
                       width: 24,
@@ -183,6 +262,13 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
                       final event = state.selectedDayEvents[index];
                       return EventListTile(
                         event: event,
+                        onTap: () => showEventDetailSheet(
+                          context,
+                          event,
+                          onDelete: event.isAutoGenerated
+                              ? null
+                              : () => _confirmDelete(event),
+                        ),
                         onDelete: () => _confirmDelete(event),
                       );
                     },
@@ -193,6 +279,37 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEvent(),
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildEventTypeFilterChips(EventCalendarState state) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: Row(
+        children: EventType.values.map((type) {
+          final selected = state.selectedEventTypes.contains(type);
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: FilterChip(
+              label: Text(type.i18nKey.tr()),
+              selected: selected,
+              onSelected: (_) {
+                ref.read(eventCalendarProvider.notifier).toggleEventType(type);
+              },
+              selectedColor: type.color.withValues(alpha: 0.2),
+              checkmarkColor: type.color,
+              avatar: Icon(type.icon, size: 16, color: type.color),
+              labelStyle: TextStyle(
+                color: selected ? type.color : null,
+                fontSize: 12,
+              ),
+              visualDensity: VisualDensity.compact,
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -214,7 +331,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             height: 6,
             margin: const EdgeInsets.symmetric(horizontal: 1),
             decoration: BoxDecoration(
-              color: eventTypeColor(type),
+              color: type.color,
               shape: BoxShape.circle,
             ),
           );
@@ -266,19 +383,70 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     }
   }
 
-  Future<void> _syncDividendEvents() async {
-    final count = await ref
-        .read(eventCalendarProvider.notifier)
-        .syncDividendEvents();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'calendar.syncComplete'.tr(namedArgs: {'count': '$count'}),
+  Future<void> _exportMonthEvents() async {
+    final state = ref.read(eventCalendarProvider);
+    final allEvents = state.filteredEvents.values.expand((e) => e).toList();
+    if (allEvents.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('calendar.exportEmpty'.tr()),
+            behavior: SnackBarBehavior.floating,
           ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+        );
+      }
+      return;
+    }
+
+    try {
+      final icsContent = IcsGenerator.generateCalendar(allEvents);
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/afterclose_events.ics');
+      await file.writeAsString(icsContent);
+      if (!mounted) return;
+
+      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorDisplay.message(e)),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _syncDividendEvents() async {
+    try {
+      final result = await ref
+          .read(eventCalendarProvider.notifier)
+          .syncDividendEvents();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'calendar.syncDetailComplete'.tr(
+                namedArgs: {
+                  'exDividend': '${result.exDividend}',
+                  'exRights': '${result.exRights}',
+                },
+              ),
+            ),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorDisplay.message(e)),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 }

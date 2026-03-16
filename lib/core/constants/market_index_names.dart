@@ -9,6 +9,9 @@ class MarketIndexNames {
   // === TPEx 指數 ===
   static const tpexIndex = '櫃買指數';
 
+  // === 報酬指數 ===
+  static const totalReturnIndex = '含息報酬指數';
+
   // === 產業指數 ===
   static const electronics = '電子工業類指數';
   static const financeInsurance = '金融保險類指數';

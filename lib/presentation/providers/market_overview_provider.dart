@@ -545,6 +545,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final indexNames = [
         ...MarketIndexNames.dashboardIndices,
         MarketIndexNames.tpexIndex,
+        MarketIndexNames.totalReturnIndex,
       ];
       final historyMap = await _db.getIndexHistoryBatch(indexNames, days: 5);
 
@@ -572,6 +573,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final indexNames = [
         ...MarketIndexNames.dashboardIndices,
         MarketIndexNames.tpexIndex,
+        MarketIndexNames.totalReturnIndex,
       ];
 
       final historyMap = await _db.getIndexHistoryBatch(indexNames, days: 30);

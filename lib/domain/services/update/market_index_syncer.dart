@@ -1,3 +1,5 @@
+import 'package:drift/drift.dart';
+
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -5,6 +7,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/models/extensions/dto_extensions.dart';
+import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
@@ -21,15 +24,18 @@ class MarketIndexSyncer {
     required AppDatabase database,
     required TwseClient twseClient,
     TpexClient? tpexClient,
+    FinMindClient? finMindClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
        _twse = twseClient,
        _tpex = tpexClient,
+       _finMind = finMindClient,
        _clock = clock;
 
   final AppDatabase _db;
   final TwseClient _twse;
   final TpexClient? _tpex;
+  final FinMindClient? _finMind;
   final AppClock _clock;
 
   /// DB 中指數筆數低於此值時，自動觸發回補
@@ -84,6 +90,26 @@ class MarketIndexSyncer {
         }
       } catch (e) {
         AppLogger.warning('MarketIndexSyncer', 'TPEx 指數同步失敗: $e');
+      }
+    }
+
+    // 同步 FinMind 含息報酬指數
+    if (_finMind != null) {
+      try {
+        final triData = await _finMind.getTotalReturnIndex();
+        if (triData.length >= 2) {
+          final companions = _convertTotalReturnIndex(triData);
+          if (companions.isNotEmpty) {
+            await _db.upsertMarketIndices(companions);
+            synced += companions.length;
+            AppLogger.info(
+              'MarketIndexSyncer',
+              '含息報酬指數同步完成: ${companions.length} 筆',
+            );
+          }
+        }
+      } catch (e) {
+        AppLogger.warning('MarketIndexSyncer', '含息報酬指數同步失敗: $e');
       }
     }
 
@@ -194,6 +220,36 @@ class MarketIndexSyncer {
       );
       await backfill();
     }
+  }
+
+  /// 將含息報酬指數轉換為 DB companion
+  ///
+  /// FinMind 只回傳 date + price，需自行計算 change/changePct（前後日比較）
+  List<MarketIndexCompanion> _convertTotalReturnIndex(
+    List<FinMindTotalReturnIndex> data,
+  ) {
+    // 按日期升序排列
+    final sorted = [...data]..sort((a, b) => a.date.compareTo(b.date));
+    final companions = <MarketIndexCompanion>[];
+
+    for (var i = 0; i < sorted.length; i++) {
+      final item = sorted[i];
+      final prevPrice = i > 0 ? sorted[i - 1].price : item.price;
+      final change = item.price - prevPrice;
+      final changePct = prevPrice != 0 ? (change / prevPrice) * 100 : 0.0;
+
+      companions.add(
+        MarketIndexCompanion(
+          date: Value(item.date),
+          name: const Value(MarketIndexNames.totalReturnIndex),
+          close: Value(item.price),
+          change: Value(i > 0 ? change : 0),
+          changePercent: Value(i > 0 ? changePct : 0),
+        ),
+      );
+    }
+
+    return companions;
   }
 
   /// 篩選 Dashboard 重點指數並轉換為 DB companion

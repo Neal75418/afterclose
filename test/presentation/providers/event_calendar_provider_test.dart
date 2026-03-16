@@ -119,7 +119,7 @@ void main() {
 
   group('EventCalendarState', () {
     test('has correct default values', () {
-      const state = EventCalendarState();
+      final state = EventCalendarState();
 
       expect(state.focusedMonth, isNull);
       expect(state.selectedDate, isNull);
@@ -144,7 +144,7 @@ void main() {
     });
 
     test('copyWith with sentinel handles error correctly', () {
-      const state = EventCalendarState(error: 'old error');
+      final state = EventCalendarState(error: 'old error');
 
       final preserved = state.copyWith();
       expect(preserved.error, 'old error');
@@ -328,14 +328,18 @@ void main() {
           symbols: any(named: 'symbols'),
         ),
       ).thenAnswer((_) async => []);
-      when(() => mockEventRepo.syncDividendEvents()).thenAnswer((_) async => 5);
+      when(
+        () => mockEventRepo.syncDividendEvents(),
+      ).thenAnswer((_) async => (exDividend: 3, exRights: 2, total: 5));
 
       final notifier = container.read(eventCalendarProvider.notifier);
       await notifier.init();
 
-      final count = await notifier.syncDividendEvents();
+      final result = await notifier.syncDividendEvents();
 
-      expect(count, 5);
+      expect(result.total, 5);
+      expect(result.exDividend, 3);
+      expect(result.exRights, 2);
       verify(() => mockEventRepo.syncDividendEvents()).called(1);
     });
   });

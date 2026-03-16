@@ -8,6 +8,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/widgets/metric_card.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
 // ==================================================
@@ -49,6 +50,9 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     final insiderHistory = ref.watch(
       stockDetailProvider(widget.symbol).select((s) => s.chip.insiderHistory),
     );
+    final insiderTransfers = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.chip.insiderTransfers),
+    );
     final isLoadingInsider = ref.watch(
       stockDetailProvider(
         widget.symbol,
@@ -64,6 +68,25 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
           // 關鍵指標卡片
           _buildMetricsRow(context, insiderHistory),
           const SizedBox(height: 24),
+
+          // 近期轉讓申報區段
+          if (isLoadingInsider) ...[
+            SectionHeader(
+              title: 'stockDetail.insiderTransfer'.tr(),
+              icon: Icons.swap_horiz,
+            ),
+            const SizedBox(height: 12),
+            _buildLoadingState(context),
+            const SizedBox(height: 24),
+          ] else if (insiderTransfers.isNotEmpty) ...[
+            SectionHeader(
+              title: 'stockDetail.insiderTransfer'.tr(),
+              icon: Icons.swap_horiz,
+            ),
+            const SizedBox(height: 12),
+            _buildTransferSection(context, insiderTransfers),
+            const SizedBox(height: 24),
+          ],
 
           // 內部人持股歷史區段
           SectionHeader(
@@ -376,6 +399,100 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     );
   }
 
+  Widget _buildTransferSection(
+    BuildContext context,
+    List<InsiderTransferEntry> transfers,
+  ) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: transfers.map((t) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 身分 badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.downColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusXs,
+                      ),
+                    ),
+                    child: Text(
+                      t.identity,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.downColor,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // 詳情
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${t.name} - ${t.transferMethod}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'stockDetail.transferSharesLabel'.tr(
+                            args: [
+                              AppNumberFormat.compact(
+                                t.transferShares.toDouble(),
+                              ),
+                            ],
+                          ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppTheme.downColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (t.validPeriodStart != null &&
+                            t.validPeriodEnd != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            '${'stockDetail.validPeriod'.tr()}: '
+                            '${_formatFullDate(t.validPeriodStart!)} ~ '
+                            '${_formatFullDate(t.validPeriodEnd!)}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.outline,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  // 申報日期
+                  Text(
+                    _formatFullDate(t.reportDate),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyState(BuildContext context, String message) {
     final theme = Theme.of(context);
 
@@ -398,5 +515,9 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}';
+  }
+
+  String _formatFullDate(DateTime date) {
+    return '${date.month}/${date.day}';
   }
 }

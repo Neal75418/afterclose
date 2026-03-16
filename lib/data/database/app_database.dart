@@ -28,6 +28,7 @@ part 'dao/event_dao.dart';
 part 'dao/financial_data_dao.dart';
 part 'dao/holding_distribution_dao.dart';
 part 'dao/insider_holding_dao.dart';
+part 'dao/insider_transfer_dao.dart';
 part 'dao/institutional_dao.dart';
 part 'dao/margin_trading_dao.dart';
 part 'dao/market_index_dao.dart';
@@ -83,6 +84,8 @@ part 'dao/valuation_dao.dart';
     // 風險控管資料（Killer Features）
     TradingWarning,
     InsiderHolding,
+    // 內部人股權轉讓（Feature 4）
+    InsiderTransfer,
     // 自訂選股策略（Phase 2.2）
     ScreeningStrategyTable,
     // 投資組合（Phase 4.4）
@@ -115,6 +118,7 @@ class AppDatabase extends _$AppDatabase
         _HoldingDistributionDaoMixin,
         _TradingWarningDaoMixin,
         _InsiderHoldingDaoMixin,
+        _InsiderTransferDaoMixin,
         _MarketOverviewDaoMixin {
   AppDatabase() : super(_openConnection());
 
@@ -122,7 +126,7 @@ class AppDatabase extends _$AppDatabase
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -143,6 +147,9 @@ class AppDatabase extends _$AppDatabase
           DELETE FROM margin_trading
           WHERE symbol IN (SELECT symbol FROM stock_master WHERE market = 'TPEx')
         ''');
+      }
+      if (from < 4) {
+        await m.createTable(insiderTransfer);
       }
     },
     beforeOpen: (details) async {

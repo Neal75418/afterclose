@@ -236,6 +236,7 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
       twse: ref.watch(twseClientProvider),
       tpex: ref.watch(tpexClientProvider),
       tdcc: ref.watch(tdccClientProvider),
+      finMind: ref.watch(finMindClientProvider),
     ),
     services: UpdateServices(
       ruleAccuracy: ref.watch(ruleAccuracyServiceProvider),

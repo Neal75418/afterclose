@@ -1244,4 +1244,43 @@ class TwseClient {
 
     return results;
   }
+
+  /// 取得上市已宣告股利
+  ///
+  /// 使用 TWSE Open Data API (t187ap45_L)。
+  /// 回傳所有已宣告的除權息資料，含除息交易日、股東會日期等。
+  /// 一次 API 呼叫取得全市場資料。
+  Future<List<TwseDeclaredDividend>> getDeclaredDividends() {
+    return MarketClientMixin.executeRequest(_tag, '已宣告股利', () async {
+      const cacheKey = 'declaredDividend';
+      final cached = _cache.get(cacheKey) as List<TwseDeclaredDividend>?;
+      if (cached != null) return cached;
+
+      final response = await _dio.get(ApiEndpoints.twseDeclaredDividend);
+
+      if (response.statusCode != 200) {
+        throw ApiException(
+          '$_tag OpenData API error: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+
+      final data = response.data;
+      if (data is! List) {
+        AppLogger.warning(_tag, '已宣告股利: 非預期資料型別');
+        return [];
+      }
+
+      final results = <TwseDeclaredDividend>[];
+      for (final item in data) {
+        if (item is! Map<String, dynamic>) continue;
+        final parsed = TwseDeclaredDividend.tryFromJson(item);
+        if (parsed != null) results.add(parsed);
+      }
+
+      AppLogger.info(_tag, '已宣告股利: ${results.length} 筆');
+      _cache.put(cacheKey, results);
+      return results;
+    });
+  }
 }

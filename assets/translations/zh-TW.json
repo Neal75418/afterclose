@@ -106,7 +106,9 @@
     "industryPerformance": "產業表現",
     "industryTopBottom": "前後各{count}名",
     "industryStockCount": "{count} 檔",
-    "day30Trend": "近 30 日走勢"
+    "day30Trend": "近 30 日走勢",
+    "totalReturnIndex": "含息報酬",
+    "dividendContribution": "息值貢獻 {pct}%"
   },
   "scan": {
     "title": "市場掃描",
@@ -353,7 +355,11 @@
     "insiderDate": "月份",
     "insiderRatioShort": "持股%",
     "pledgeRatioShort": "質押%",
-    "insiderChangeShort": "變化"
+    "insiderChangeShort": "變化",
+    "insiderTransfer": "近期轉讓申報",
+    "transferSharesLabel": "轉讓 {} 股",
+    "validPeriod": "有效期間",
+    "noRecentTransfers": "近期無轉讓申報"
   },
   "score": {
     "label": "推薦評分",
@@ -1268,7 +1274,20 @@
     "syncComplete": "同步完成，共 {count} 筆",
     "tradingDay": "交易日",
     "holiday": "休市",
-    "titleRequired": "請輸入事件標題"
+    "titleRequired": "請輸入事件標題",
+    "typeMeeting": "股東會",
+    "upcomingDividend": "即將除息",
+    "meetingLocation": "地點：{location}",
+    "boardElection": "改選董監事",
+    "eVoting": "電子投票",
+    "retry": "重試",
+    "upcomingTitle": "未來 14 天事件",
+    "noUpcoming": "近期無事件",
+    "syncDetailComplete": "同步完成：除息 {exDividend} 筆、除權 {exRights} 筆",
+    "viewStock": "查看個股",
+    "eventDetail": "事件詳情",
+    "export": "匯出行事曆",
+    "exportEmpty": "本月無事件可匯出"
   },
 
   "warning": {
@@ -1324,5 +1343,25 @@
     "csvSignal": "關鍵訊號",
     "csvRisk": "風險提示",
     "csvSignals": "訊號"
+  },
+  "shortSell": {
+    "title": "融券排行",
+    "stock": "股票",
+    "currentBalance": "當日餘額",
+    "previousBalance": "前日餘額",
+    "change": "增減",
+    "shortSell": "融券賣出",
+    "noData": "暫無融券排行資料",
+    "viewAll": "查看完整排行"
+  },
+  "industryEps": {
+    "title": "產業 EPS 排名",
+    "stock": "股票",
+    "eps": "EPS",
+    "revenue": "營收",
+    "operatingProfit": "營業利益",
+    "netIncome": "稅後淨利",
+    "all": "全部",
+    "noData": "暫無產業 EPS 資料"
   }
 }
