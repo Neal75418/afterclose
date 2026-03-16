@@ -30,6 +30,7 @@ class S {
   static String get search => 'common.search'.tr();
   static String get refresh => 'common.refresh'.tr();
   static String get settings => 'common.settings'.tr();
+  static String get detail => 'common.detail'.tr();
 
   // ==================================================
   // 導航
@@ -55,6 +56,8 @@ class S {
   static String get todayDataYesterday => 'today.dataYesterday'.tr();
   static String todayUpdateFailed(String error) =>
       'today.updateFailed'.tr(namedArgs: {'error': error});
+  static String get todayWarningDetail => 'today.warningDetail'.tr();
+  static String get todayWarningItems => 'today.warningItems'.tr();
 
   // ==================================================
   // 新聞頁面

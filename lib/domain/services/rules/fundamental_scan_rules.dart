@@ -22,6 +22,9 @@ class RevenueYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
   String get name => '營收年增暴增';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final revenue = data.latestRevenue;
     if (revenue == null) return null;
@@ -62,6 +65,9 @@ class RevenueYoYDeclineRule extends StockRule {
   String get name => '營收年減警示';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final revenue = data.latestRevenue;
     if (revenue == null) return null;
@@ -95,6 +101,9 @@ class RevenueMomGrowthRule extends StockRule with FundamentalTechnicalFilter {
 
   @override
   String get name => '營收月增持續';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -165,6 +174,9 @@ class RevenueNewHighRule extends StockRule with FundamentalTechnicalFilter {
   String get name => '營收創歷史新高';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final revenue = data.latestRevenue;
     final maxRevenue = data.maxHistoricalRevenue;
@@ -210,6 +222,9 @@ class HighDividendYieldRule extends StockRule {
 
   @override
   String get name => '高殖利率';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -275,6 +290,9 @@ class PEUndervaluedRule extends StockRule with FundamentalTechnicalFilter {
   String get name => 'PE 低估';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
@@ -318,6 +336,9 @@ class PEOvervaluedRule extends StockRule {
   String get name => 'PE 偏高';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final valuation = data.latestValuation;
     if (valuation == null) return null;
@@ -357,6 +378,9 @@ class PBRUndervaluedRule extends StockRule {
 
   @override
   String get name => '股價淨值比低於 0.8';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -400,6 +424,9 @@ class EPSYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
 
   @override
   String get name => 'EPS年增暴增';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -467,6 +494,9 @@ class EPSConsecutiveGrowthRule extends StockRule
   String get name => 'EPS連續成長';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final eps = data.epsHistory;
     if (eps == null ||
@@ -532,6 +562,9 @@ class EPSTurnaroundRule extends StockRule {
   String get name => 'EPS由負轉正';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final eps = data.epsHistory;
     if (eps == null || eps.length < 2) return null;
@@ -585,6 +618,9 @@ class EPSDeclineWarningRule extends StockRule {
 
   @override
   String get name => 'EPS衰退警示';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -646,6 +682,9 @@ class ROEExcellentRule extends StockRule {
   String get name => 'ROE優異';
 
   @override
+  RuleCategory get category => RuleCategory.fundamental;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final roe = data.roeHistory;
     if (roe == null || roe.isEmpty) return null;
@@ -683,6 +722,9 @@ class ROEImprovingRule extends StockRule with FundamentalTechnicalFilter {
 
   @override
   String get name => 'ROE改善';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -746,6 +788,9 @@ class ROEDecliningRule extends StockRule {
 
   @override
   String get name => 'ROE衰退';
+
+  @override
+  RuleCategory get category => RuleCategory.fundamental;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

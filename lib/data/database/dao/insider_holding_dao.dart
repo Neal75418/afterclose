@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Insider holding (董監事持股) operations.
-mixin _InsiderHoldingDaoMixin on _$AppDatabase {
+mixin InsiderHoldingDaoMixin on $AppDatabase {
   /// 取得股票的董監持股歷史
   Future<List<InsiderHoldingEntry>> getInsiderHoldingHistory(
     String symbol, {

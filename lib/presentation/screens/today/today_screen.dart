@@ -466,10 +466,22 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           _showRateLimitDialog();
         }
 
+        final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result.summary),
             behavior: SnackBarBehavior.floating,
+            backgroundColor: result.hasWarnings
+                ? theme.colorScheme.tertiary
+                : null,
+            action: result.hasWarnings
+                ? SnackBarAction(
+                    label: S.detail,
+                    textColor: theme.colorScheme.onTertiary,
+                    onPressed: () => _showWarningDetails(result.errors),
+                  )
+                : null,
+            showCloseIcon: result.hasWarnings,
           ),
         );
       }
@@ -502,6 +514,51 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     } else {
       return '${date.month}/${date.day}';
     }
+  }
+
+  void _showWarningDetails(List<String> warnings) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(
+          Icons.warning_amber_rounded,
+          color: Theme.of(dialogContext).colorScheme.tertiary,
+          size: 48,
+        ),
+        title: Text(S.todayWarningDetail),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(S.todayWarningItems),
+            const SizedBox(height: 8),
+            ...warnings.map(
+              (w) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '• ',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Expanded(
+                      child: Text(w, style: const TextStyle(fontSize: 13)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showRateLimitDialog() {

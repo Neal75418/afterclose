@@ -1268,6 +1268,9 @@ class _ThrowingRule extends StockRule {
   String get name => 'Throwing Rule';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     throw Exception('Test exception from ThrowingRule');
   }
@@ -1290,6 +1293,9 @@ class _FixedScoreRule extends StockRule {
 
   @override
   String get name => 'Fixed Score Rule ($ruleId)';
+
+  @override
+  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

@@ -1,9 +1,7 @@
-part of '../app_database.dart';
-
 /// 批次查詢通用工具類
 ///
 /// 提供可重用的分組方法，避免重複代碼。
-class _BatchQueryHelper {
+class BatchQueryHelper {
   /// 依 symbol 分組輔助方法
   ///
   /// 將查詢結果列表依 symbol 分組成 Map。
@@ -16,7 +14,7 @@ class _BatchQueryHelper {
   /// 使用範例：
   /// ```dart
   /// final results = await query.get();
-  /// final grouped = _BatchQueryHelper.groupBySymbol(results, (e) => e.symbol);
+  /// final grouped = BatchQueryHelper.groupBySymbol(results, (e) => e.symbol);
   /// ```
   static Map<String, List<E>> groupBySymbol<E>(
     List<E> items,

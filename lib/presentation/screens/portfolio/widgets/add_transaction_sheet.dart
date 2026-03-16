@@ -48,8 +48,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   Future<void> _loadStockName(String symbol) async {
-    final db = ref.read(databaseProvider);
-    final stock = await db.getStock(symbol);
+    final stockRepo = ref.read(stockRepositoryProvider);
+    final stock = await stockRepo.getStock(symbol);
     if (mounted && stock != null) {
       setState(() => _selectedStockName = stock.name);
     }
@@ -373,8 +373,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     }
 
     setState(() => _isSearching = true);
-    final db = ref.read(databaseProvider);
-    final results = await db.searchStocks(query);
+    final stockRepo = ref.read(stockRepositoryProvider);
+    final results = await stockRepo.searchStocks(query);
     if (mounted) {
       setState(() {
         _searchResults = results.take(5).toList();

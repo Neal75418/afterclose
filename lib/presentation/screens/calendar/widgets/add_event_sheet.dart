@@ -221,8 +221,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     }
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
-      final db = ref.read(databaseProvider);
-      final results = await db.searchStocks(query);
+      final stockRepo = ref.read(stockRepositoryProvider);
+      final results = await stockRepo.searchStocks(query);
       if (mounted) {
         setState(() => _searchResults = results.take(8).toList());
       }

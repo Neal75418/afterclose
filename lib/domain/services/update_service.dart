@@ -778,9 +778,19 @@ class UpdateResult {
     if (exception is RateLimitException) hasRateLimitError = true;
   }
 
+  /// 是否為部分成功（成功但有步驟失敗）
+  bool get hasWarnings => errors.isNotEmpty && success;
+
+  /// 警告數量
+  int get warningCount => errors.length;
+
   String get summary {
     if (skipped) return message ?? '跳過更新';
     if (!success) return '更新失敗: ${errors.join(', ')}';
+    if (errors.isNotEmpty) {
+      return '分析 $stocksAnalyzed 檔，產生 $recommendationsGenerated 個推薦'
+          '（${errors.length} 項警告）';
+    }
     return '分析 $stocksAnalyzed 檔，產生 $recommendationsGenerated 個推薦';
   }
 }

@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Holding distribution (股權分散) operations.
-mixin _HoldingDistributionDaoMixin on _$AppDatabase {
+mixin HoldingDistributionDaoMixin on $AppDatabase {
   /// 取得股票在指定日期的股權分散資料
   Future<List<HoldingDistributionEntry>> getHoldingDistribution(
     String symbol, {

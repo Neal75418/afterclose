@@ -52,8 +52,8 @@ class _IndustryOverviewScreenState
 
   Future<void> _loadData() async {
     try {
-      final db = ref.read(databaseProvider);
-      final counts = await db.getIndustryStockCounts();
+      final stockRepo = ref.read(stockRepositoryProvider);
+      final counts = await stockRepo.getIndustryStockCounts();
 
       final items =
           counts.entries

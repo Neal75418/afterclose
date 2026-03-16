@@ -20,6 +20,9 @@ abstract class IStockRepository {
   /// 檢查股票是否存在
   Future<bool> stockExists(String symbol);
 
+  /// 取得產業股票數量統計
+  Future<Map<String, int>> getIndustryStockCounts();
+
   /// 從遠端 API 同步股票清單
   Future<int> syncStockList();
 }

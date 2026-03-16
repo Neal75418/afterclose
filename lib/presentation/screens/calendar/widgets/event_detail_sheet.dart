@@ -50,8 +50,8 @@ class _EventDetailSheetState extends ConsumerState<EventDetailSheet> {
   Future<void> _loadPriceData() async {
     if (widget.event.symbol == null) return;
     try {
-      final db = ref.read(databaseProvider);
-      final price = await db.getPriceOnDate(
+      final priceRepo = ref.read(priceRepositoryProvider);
+      final price = await priceRepo.getPriceOnDate(
         widget.event.symbol!,
         widget.event.eventDate,
       );

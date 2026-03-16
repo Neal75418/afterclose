@@ -17,7 +17,8 @@
     "refresh": "重新整理",
     "settings": "設定",
     "next": "下一步",
-    "offline": "目前離線，顯示的是快取資料"
+    "offline": "目前離線，顯示的是快取資料",
+    "detail": "詳情"
   },
   "unit": {
     "billion": "億",
@@ -37,6 +38,8 @@
     "startingUpdate": "開始更新...",
     "lastUpdate": "最後更新: {time}",
     "updateFailed": "更新失敗: {error}",
+    "warningDetail": "部分資料未成功同步",
+    "warningItems": "以下步驟發生問題：",
     "priceAlert": "價格提醒",
     "dataDate": "資料日期: {date} 收盤",
     "dataToday": "今日",

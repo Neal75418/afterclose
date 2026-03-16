@@ -1,7 +1,7 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/app_database.drift.dart';
 
 /// 新聞相關資料存取
-mixin _NewsDaoMixin on _$AppDatabase {
+mixin NewsDaoMixin on $AppDatabase {
   // ==================================================
   // 新聞操作
   // ==================================================

@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Insider transfer (內部人股權轉讓) operations.
-mixin _InsiderTransferDaoMixin on _$AppDatabase {
+mixin InsiderTransferDaoMixin on $AppDatabase {
   /// 取得指定股票的近期轉讓申報記錄
   ///
   /// 預設取最近 20 筆，按申報日期降冪排列。

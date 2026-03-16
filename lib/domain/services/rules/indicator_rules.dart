@@ -67,6 +67,9 @@ abstract class _Week52RuleBase extends StockRule {
   @override
   String get name => _ruleName;
 
+  @override
+  RuleCategory get category => RuleCategory.technical;
+
   /// 子類別可覆寫以加入額外過濾條件（例如 MA 空頭確認）。
   /// 回傳 true 表示應過濾掉（不觸發）。
   bool additionalFilter(
@@ -220,6 +223,9 @@ class MAAlignmentBullishRule extends StockRule {
   String get name => '多頭排列';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 至少需要最大均線週期的資料
     final maxPeriod = IndicatorParams.maAlignmentPeriods.reduce(
@@ -285,6 +291,9 @@ class MAAlignmentBearishRule extends StockRule {
   String get name => '空頭排列';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 至少需要最大均線週期的資料
     final maxPeriod = IndicatorParams.maAlignmentPeriods.reduce(
@@ -341,6 +350,9 @@ class RSIExtremeOverboughtRule extends StockRule {
   String get name => 'RSI極度超買';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < IndicatorParams.rsiPeriod + 1) return null;
 
@@ -383,6 +395,9 @@ class RSIExtremeOversoldRule extends StockRule {
   String get name => 'RSI極度超賣';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < IndicatorParams.rsiPeriod + 1) return null;
 
@@ -420,6 +435,9 @@ class KDGoldenCrossRule extends StockRule {
 
   @override
   String get name => 'KD 黃金交叉';
+
+  @override
+  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -484,6 +502,9 @@ class KDDeathCrossRule extends StockRule {
 
   @override
   String get name => 'KD 死亡交叉';
+
+  @override
+  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

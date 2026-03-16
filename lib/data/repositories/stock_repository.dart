@@ -36,6 +36,12 @@ class StockRepository implements IStockRepository {
     return _db.getStock(symbol);
   }
 
+  /// 取得產業股票數量統計
+  @override
+  Future<Map<String, int>> getIndustryStockCounts() {
+    return _db.getIndustryStockCounts();
+  }
+
   /// 從 FinMind API 同步股票清單
   ///
   /// 建議定期執行（如每週一次）以更新股票清單

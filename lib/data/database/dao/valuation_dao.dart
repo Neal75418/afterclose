@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// 股票估值（PER / PBR / 殖利率）資料操作
-mixin _ValuationDaoMixin on _$AppDatabase {
+mixin ValuationDaoMixin on $AppDatabase {
   /// 取得股票的估值歷史
   Future<List<StockValuationEntry>> getValuationHistory(
     String symbol, {

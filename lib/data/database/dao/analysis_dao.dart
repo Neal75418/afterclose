@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
 
 /// Daily analysis, reasons, and recommendations operations.
-mixin _AnalysisDaoMixin on _$AppDatabase {
+mixin AnalysisDaoMixin on $AppDatabase {
   /// 取得指定日期的分析結果
   Future<List<DailyAnalysisEntry>> getAnalysisForDate(DateTime date) {
     return (select(dailyAnalysis)

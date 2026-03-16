@@ -50,8 +50,8 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
     }
 
     setState(() => _isSearching = true);
-    final db = ref.read(databaseProvider);
-    final results = await db.searchStocks(query);
+    final stockRepo = ref.read(stockRepositoryProvider);
+    final results = await stockRepo.searchStocks(query);
     if (mounted) {
       setState(() {
         _searchResults = results

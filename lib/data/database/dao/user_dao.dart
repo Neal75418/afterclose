@@ -1,7 +1,15 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/dao/batch_query_mixin.dart';
+import 'package:afterclose/data/database/tables/user_tables.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
+import 'package:afterclose/data/database/tables/daily_price.drift.dart';
+import 'package:afterclose/core/constants/rule_params_alert.dart';
+import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 
 /// 使用者相關資料存取：自選股、設定、更新紀錄、股價提醒、選股策略
-mixin _UserDaoMixin on _$AppDatabase {
+mixin UserDaoMixin on $AppDatabase {
   // ==================================================
   // 自選股操作
   // ==================================================
@@ -263,7 +271,7 @@ mixin _UserDaoMixin on _$AppDatabase {
       ]);
 
     final results = await query.get();
-    return _BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
+    return BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
   }
 
   /// 批次查詢 52 週價格歷史
@@ -287,7 +295,7 @@ mixin _UserDaoMixin on _$AppDatabase {
       ]);
 
     final results = await query.get();
-    return _BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
+    return BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
   }
 
   /// 批次查詢技術指標資料（最近 30 天，用於計算 RSI 和 KD）
@@ -311,7 +319,7 @@ mixin _UserDaoMixin on _$AppDatabase {
       ]);
 
     final results = await query.get();
-    return _BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
+    return BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
   }
 
   /// 取得指定股票的所有有效警示（不含處置）

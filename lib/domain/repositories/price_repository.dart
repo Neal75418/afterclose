@@ -21,6 +21,9 @@ abstract class IPriceRepository {
   /// 取得股票最新價格
   Future<DailyPriceEntry?> getLatestPrice(String symbol);
 
+  /// 取得特定日期的收盤價
+  Future<DailyPriceEntry?> getPriceOnDate(String symbol, DateTime date);
+
   // ==================================================
   // 同步作業
   // ==================================================

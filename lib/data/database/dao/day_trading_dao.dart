@@ -1,7 +1,11 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Day trading (當沖) operations.
-mixin _DayTradingDaoMixin on _$AppDatabase {
+mixin DayTradingDaoMixin on $AppDatabase {
   /// 取得股票的當沖歷史
   Future<List<DayTradingEntry>> getDayTradingHistory(
     String symbol, {

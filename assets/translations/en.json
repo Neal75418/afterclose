@@ -17,7 +17,8 @@
     "refresh": "Refresh",
     "settings": "Settings",
     "next": "Next",
-    "offline": "You are offline. Showing cached data."
+    "offline": "You are offline. Showing cached data.",
+    "detail": "Detail"
   },
   "unit": {
     "billion": "B",
@@ -37,6 +38,8 @@
     "startingUpdate": "Starting update...",
     "lastUpdate": "Last updated: {time}",
     "updateFailed": "Update failed: {error}",
+    "warningDetail": "Some data failed to sync",
+    "warningItems": "The following steps had issues:",
     "priceAlert": "Price Alerts",
     "dataDate": "Data: {date}",
     "dataToday": "Today",

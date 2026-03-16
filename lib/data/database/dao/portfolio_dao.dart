@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/portfolio_tables.drift.dart';
 
 /// 投資組合相關資料存取：持倉與交易紀錄
-mixin _PortfolioDaoMixin on _$AppDatabase {
+mixin PortfolioDaoMixin on $AppDatabase {
   // ==================================================
   // 投資組合操作（Phase 4.4）
   // ==================================================

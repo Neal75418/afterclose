@@ -20,6 +20,9 @@ class InstitutionalBuyStreakRule extends StockRule {
   String get name => '法人連買';
 
   @override
+  RuleCategory get category => RuleCategory.institutional;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
     if (history == null ||
@@ -124,6 +127,9 @@ class InstitutionalSellStreakRule extends StockRule {
 
   @override
   String get name => '法人連賣';
+
+  @override
+  RuleCategory get category => RuleCategory.institutional;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

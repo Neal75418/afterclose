@@ -20,6 +20,9 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
   String get name => '價漲量縮';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < TrendParams.priceVolumeLookbackDays + 1) {
       return null;
@@ -98,6 +101,9 @@ class PriceVolumeBearishDivergenceRule extends StockRule {
   String get name => '價跌量增';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < TrendParams.priceVolumeLookbackDays + 1) {
       return null;
@@ -174,6 +180,9 @@ class HighVolumeBreakoutRule extends StockRule {
   String get name => '高檔爆量';
 
   @override
+  RuleCategory get category => RuleCategory.technical;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < RuleParams.rangeLookback) return null;
 
@@ -244,6 +253,9 @@ class LowVolumeAccumulationRule extends StockRule {
 
   @override
   String get name => '低檔吸籌';
+
+  @override
+  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

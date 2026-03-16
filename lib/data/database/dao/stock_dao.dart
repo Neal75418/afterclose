@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/stock_master.drift.dart';
 
 /// Stock master table operations.
-mixin _StockDaoMixin on _$AppDatabase {
+mixin StockDaoMixin on $AppDatabase {
   /// 取得所有上市中的股票
   Future<List<StockMasterEntry>> getAllActiveStocks() {
     return (select(stockMaster)..where((t) => t.isActive.equals(true))).get();

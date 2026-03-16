@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/data/database/app_database.drift.dart';
+import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Shareholding (外資持股) operations.
-mixin _ShareholdingDaoMixin on _$AppDatabase {
+mixin ShareholdingDaoMixin on $AppDatabase {
   /// 取得股票的持股歷史
   Future<List<ShareholdingEntry>> getShareholdingHistory(
     String symbol, {

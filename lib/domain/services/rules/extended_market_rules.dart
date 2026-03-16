@@ -20,6 +20,9 @@ class ForeignShareholdingIncreasingRule extends StockRule {
   String get name => '外資持股增加';
 
   @override
+  RuleCategory get category => RuleCategory.market;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final marketData = context.marketData;
     if (marketData == null) return null;
@@ -54,6 +57,9 @@ class ForeignShareholdingDecreasingRule extends StockRule {
   String get name => '外資持股減少';
 
   @override
+  RuleCategory get category => RuleCategory.market;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final marketData = context.marketData;
     if (marketData == null) return null;
@@ -86,6 +92,9 @@ class DayTradingHighRule extends StockRule {
 
   @override
   String get name => '高當沖比例';
+
+  @override
+  RuleCategory get category => RuleCategory.market;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -139,6 +148,9 @@ class DayTradingExtremeRule extends StockRule {
   String get name => '極高當沖比例';
 
   @override
+  RuleCategory get category => RuleCategory.market;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final marketData = context.marketData;
     if (marketData == null) return null;
@@ -179,6 +191,9 @@ class ConcentrationHighRule extends StockRule {
 
   @override
   String get name => '籌碼集中';
+
+  @override
+  RuleCategory get category => RuleCategory.market;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

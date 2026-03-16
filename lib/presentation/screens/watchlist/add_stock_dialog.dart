@@ -76,8 +76,8 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
       setState(() => _isSearching = true);
-      final db = widget.ref.read(databaseProvider);
-      final results = await db.searchStocks(query);
+      final stockRepo = widget.ref.read(stockRepositoryProvider);
+      final results = await stockRepo.searchStocks(query);
       if (mounted) {
         setState(() {
           _searchResults = results.take(8).toList();

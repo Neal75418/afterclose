@@ -89,6 +89,12 @@ class PriceRepository implements IPriceRepository {
     return _db.getLatestPrice(symbol);
   }
 
+  /// 取得特定日期的收盤價
+  @override
+  Future<DailyPriceEntry?> getPriceOnDate(String symbol, DateTime date) {
+    return _db.getPriceOnDate(symbol, date);
+  }
+
   /// 同步單檔股票價格歷史資料
   ///
   /// 上市股票使用 TWSE API，上櫃股票使用 FinMind API。

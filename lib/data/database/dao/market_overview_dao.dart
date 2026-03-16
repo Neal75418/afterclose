@@ -1,7 +1,10 @@
-part of 'package:afterclose/data/database/app_database.dart';
+import 'package:drift/drift.dart';
+
+import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/data/database/app_database.drift.dart';
 
 /// Market overview aggregate query (大盤總覽彙總查詢) operations.
-mixin _MarketOverviewDaoMixin on _$AppDatabase {
+mixin MarketOverviewDaoMixin on $AppDatabase {
   /// 取得指定日期的上漲/下跌/平盤家數（依市場分組）
   ///
   /// 從 DailyPrice 統計當日漲跌家數，依 market 欄位分組。

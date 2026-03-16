@@ -19,6 +19,9 @@ class InsiderSellingStreakRule extends StockRule {
   String get name => '董監連續減持';
 
   @override
+  RuleCategory get category => RuleCategory.risk;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final insiderData = context.marketData?.insiderData;
     if (insiderData == null) return null;
@@ -53,6 +56,9 @@ class InsiderSignificantBuyingRule extends StockRule {
 
   @override
   String get name => '董監大量增持';
+
+  @override
+  RuleCategory get category => RuleCategory.risk;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -93,6 +99,9 @@ class HighPledgeRatioRule extends StockRule {
   String get name => '高質押比例';
 
   @override
+  RuleCategory get category => RuleCategory.risk;
+
+  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final insiderData = context.marketData?.insiderData;
     if (insiderData == null) return null;
@@ -128,6 +137,9 @@ class ForeignConcentrationWarningRule extends StockRule {
 
   @override
   String get name => '外資高度集中';
+
+  @override
+  RuleCategory get category => RuleCategory.risk;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -169,6 +181,9 @@ class ForeignExodusRule extends StockRule {
 
   @override
   String get name => '外資加速流出';
+
+  @override
+  RuleCategory get category => RuleCategory.risk;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

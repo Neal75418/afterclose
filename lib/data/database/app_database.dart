@@ -5,9 +5,6 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/date_context.dart';
-import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 import 'package:afterclose/data/database/tables/stock_master.dart';
 import 'package:afterclose/data/database/tables/daily_price.dart';
 import 'package:afterclose/data/database/tables/daily_institutional.dart';
@@ -19,29 +16,44 @@ import 'package:afterclose/data/database/tables/portfolio_tables.dart';
 import 'package:afterclose/data/database/tables/event_tables.dart';
 import 'package:afterclose/data/database/tables/market_index_tables.dart';
 
-part 'app_database.g.dart';
-part 'dao/batch_query_mixin.dart';
-part 'dao/analysis_dao.dart';
-part 'dao/day_trading_dao.dart';
-part 'dao/dividend_dao.dart';
-part 'dao/event_dao.dart';
-part 'dao/financial_data_dao.dart';
-part 'dao/holding_distribution_dao.dart';
-part 'dao/insider_holding_dao.dart';
-part 'dao/insider_transfer_dao.dart';
-part 'dao/institutional_dao.dart';
-part 'dao/margin_trading_dao.dart';
-part 'dao/market_index_dao.dart';
-part 'dao/market_overview_dao.dart';
-part 'dao/news_dao.dart';
-part 'dao/portfolio_dao.dart';
-part 'dao/price_dao.dart';
-part 'dao/revenue_dao.dart';
-part 'dao/shareholding_dao.dart';
-part 'dao/stock_dao.dart';
-part 'dao/trading_warning_dao.dart';
-part 'dao/user_dao.dart';
-part 'dao/valuation_dao.dart';
+// Drift modular generated code
+import 'package:afterclose/data/database/app_database.drift.dart';
+
+// Re-export generated types for backward compatibility
+export 'package:afterclose/data/database/app_database.drift.dart';
+export 'package:afterclose/data/database/tables/stock_master.drift.dart';
+export 'package:afterclose/data/database/tables/daily_price.drift.dart';
+export 'package:afterclose/data/database/tables/daily_institutional.drift.dart';
+export 'package:afterclose/data/database/tables/news_tables.drift.dart';
+export 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
+export 'package:afterclose/data/database/tables/user_tables.drift.dart';
+export 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
+export 'package:afterclose/data/database/tables/portfolio_tables.drift.dart';
+export 'package:afterclose/data/database/tables/event_tables.drift.dart';
+export 'package:afterclose/data/database/tables/market_index_tables.drift.dart';
+
+// DAO files (standalone)
+import 'package:afterclose/data/database/dao/analysis_dao.dart';
+import 'package:afterclose/data/database/dao/day_trading_dao.dart';
+import 'package:afterclose/data/database/dao/dividend_dao.dart';
+import 'package:afterclose/data/database/dao/event_dao.dart';
+import 'package:afterclose/data/database/dao/financial_data_dao.dart';
+import 'package:afterclose/data/database/dao/holding_distribution_dao.dart';
+import 'package:afterclose/data/database/dao/insider_holding_dao.dart';
+import 'package:afterclose/data/database/dao/insider_transfer_dao.dart';
+import 'package:afterclose/data/database/dao/institutional_dao.dart';
+import 'package:afterclose/data/database/dao/margin_trading_dao.dart';
+import 'package:afterclose/data/database/dao/market_index_dao.dart';
+import 'package:afterclose/data/database/dao/market_overview_dao.dart';
+import 'package:afterclose/data/database/dao/news_dao.dart';
+import 'package:afterclose/data/database/dao/portfolio_dao.dart';
+import 'package:afterclose/data/database/dao/price_dao.dart';
+import 'package:afterclose/data/database/dao/revenue_dao.dart';
+import 'package:afterclose/data/database/dao/shareholding_dao.dart';
+import 'package:afterclose/data/database/dao/stock_dao.dart';
+import 'package:afterclose/data/database/dao/trading_warning_dao.dart';
+import 'package:afterclose/data/database/dao/user_dao.dart';
+import 'package:afterclose/data/database/dao/valuation_dao.dart';
 
 @DriftDatabase(
   tables: [
@@ -97,29 +109,29 @@ part 'dao/valuation_dao.dart';
     MarketIndex,
   ],
 )
-class AppDatabase extends _$AppDatabase
+class AppDatabase extends $AppDatabase
     with
-        _StockDaoMixin,
-        _PriceDaoMixin,
-        _AnalysisDaoMixin,
-        _InstitutionalDaoMixin,
-        _UserDaoMixin,
-        _PortfolioDaoMixin,
-        _EventDaoMixin,
-        _MarketIndexDaoMixin,
-        _NewsDaoMixin,
-        _ShareholdingDaoMixin,
-        _DayTradingDaoMixin,
-        _MarginTradingDaoMixin,
-        _FinancialDataDaoMixin,
-        _RevenueDaoMixin,
-        _ValuationDaoMixin,
-        _DividendDaoMixin,
-        _HoldingDistributionDaoMixin,
-        _TradingWarningDaoMixin,
-        _InsiderHoldingDaoMixin,
-        _InsiderTransferDaoMixin,
-        _MarketOverviewDaoMixin {
+        StockDaoMixin,
+        PriceDaoMixin,
+        AnalysisDaoMixin,
+        InstitutionalDaoMixin,
+        UserDaoMixin,
+        PortfolioDaoMixin,
+        EventDaoMixin,
+        MarketIndexDaoMixin,
+        NewsDaoMixin,
+        ShareholdingDaoMixin,
+        DayTradingDaoMixin,
+        MarginTradingDaoMixin,
+        FinancialDataDaoMixin,
+        RevenueDaoMixin,
+        ValuationDaoMixin,
+        DividendDaoMixin,
+        HoldingDistributionDaoMixin,
+        TradingWarningDaoMixin,
+        InsiderHoldingDaoMixin,
+        InsiderTransferDaoMixin,
+        MarketOverviewDaoMixin {
   AppDatabase() : super(_openConnection());
 
   /// 測試用 - 建立記憶體內 Database
