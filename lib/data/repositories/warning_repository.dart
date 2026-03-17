@@ -113,60 +113,49 @@ class WarningRepository {
       // 即使傳入上一交易日日期也無效，因此非交易日直接跳過。
       final isTradingDay = TaiwanCalendar.isTradingDay(today);
 
-      // 並行取得上櫃警示資料（TPEX OpenAPI 不受交易日限制）
-      final tpexWarningFuture = _tpexClient.getTradingWarnings();
-      final tpexDisposalFuture = _tpexClient.getDisposalInfo();
-      tpexWarningFuture.ignore();
-      tpexDisposalFuture.ignore();
-
-      // 僅在交易日呼叫 TWSE API
-      Future<List<TwseTradingWarning>>? twseWarningFuture;
-      Future<List<TwseTradingWarning>>? twseDisposalFuture;
-      if (isTradingDay) {
-        twseWarningFuture = _twseClient.getTradingWarnings(date: today);
-        twseDisposalFuture = _twseClient.getDisposalInfo(date: today);
-        twseWarningFuture.ignore();
-        twseDisposalFuture.ignore();
-      } else {
-        AppLogger.debug('WarningRepo', '非交易日，跳過 TWSE 注意/處置股票 API');
-      }
-
+      // 逐一取得警示資料（TPEX 伺服器對併行請求敏感，序列化避免 Connection reset）
+      // TWSE 和 TPEX 使用不同伺服器，可分組並行；同一伺服器內序列化
       List<TpexTradingWarning> tpexWarnings = [];
       List<TpexTradingWarning> tpexDisposals = [];
       List<TwseTradingWarning> twseWarnings = [];
       List<TwseTradingWarning> twseDisposals = [];
       var failCount = 0;
 
-      try {
-        tpexWarnings = await tpexWarningFuture;
-      } catch (e) {
-        failCount++;
-        AppLogger.warning('WarningRepo', '上櫃注意股票取得失敗: $e');
-      }
+      // TWSE 請求（僅交易日，兩個 TWSE 請求可並行——TWSE 伺服器穩定）
+      if (isTradingDay) {
+        final twseWarningFuture = _twseClient.getTradingWarnings(date: today);
+        final twseDisposalFuture = _twseClient.getDisposalInfo(date: today);
+        twseWarningFuture.ignore();
+        twseDisposalFuture.ignore();
 
-      try {
-        tpexDisposals = await tpexDisposalFuture;
-      } catch (e) {
-        failCount++;
-        AppLogger.warning('WarningRepo', '上櫃處置股票取得失敗: $e');
-      }
-
-      if (twseWarningFuture != null) {
         try {
           twseWarnings = await twseWarningFuture;
         } catch (e) {
           failCount++;
           AppLogger.warning('WarningRepo', '上市注意股票取得失敗: $e');
         }
-      }
-
-      if (twseDisposalFuture != null) {
         try {
           twseDisposals = await twseDisposalFuture;
         } catch (e) {
           failCount++;
           AppLogger.warning('WarningRepo', '上市處置股票取得失敗: $e');
         }
+      } else {
+        AppLogger.debug('WarningRepo', '非交易日，跳過 TWSE 注意/處置股票 API');
+      }
+
+      // TPEX 請求（序列化——TPEX OpenAPI 對併行連線敏感）
+      try {
+        tpexWarnings = await _tpexClient.getTradingWarnings();
+      } catch (e) {
+        failCount++;
+        AppLogger.warning('WarningRepo', '上櫃注意股票取得失敗: $e');
+      }
+      try {
+        tpexDisposals = await _tpexClient.getDisposalInfo();
+      } catch (e) {
+        failCount++;
+        AppLogger.warning('WarningRepo', '上櫃處置股票取得失敗: $e');
       }
 
       // 全部可用來源都失敗時拋出例外，讓呼叫端知道非「合法的 0 筆」

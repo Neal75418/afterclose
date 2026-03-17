@@ -279,9 +279,10 @@ class MarketDataUpdater {
   /// 同步 Killer Features 資料（警示、董監持股）
   ///
   /// 警示資料每日更新，董監持股資料每月更新。
-  /// 兩者為獨立操作，使用 Future.wait 平行執行以提升效能。
-  /// 即使一項同步失敗，另一項仍會繼續執行（部分成功模式）。
-  /// 錯誤資訊會記錄在結果中供呼叫端檢查。
+  /// 兩者為獨立操作，即使一項同步失敗另一項仍繼續執行（部分成功模式）。
+  ///
+  /// 序列化執行（非平行），避免同時對 TPEX 伺服器發起過多連線，
+  /// 減少 "Connection closed" / "Connection reset" 錯誤。
   Future<KillerFeaturesSyncResult> syncKillerFeaturesData({
     bool force = false,
   }) async {
@@ -290,37 +291,23 @@ class MarketDataUpdater {
     Object? warningError;
     Object? insiderError;
 
-    // 平行同步警示和董監持股資料
-    final results = await Future.wait([
-      _warningRepo
-          .syncAllMarketWarnings(force: force)
-          .then((count) {
-            AppLogger.info('MarketDataUpdater', '警示資料同步完成: $count 筆');
-            return (count, null as Object?);
-          })
-          .catchError((Object e) {
-            AppLogger.warning('MarketDataUpdater', '警示資料同步失敗: $e');
-            return (0, e);
-          }),
-      _insiderRepo
-          .syncOtcInsiderHoldings(force: force)
-          .then((count) {
-            AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $count 筆');
-            return (count, null as Object?);
-          })
-          .catchError((Object e) {
-            AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗: $e');
-            return (0, e);
-          }),
-    ]);
+    // 先同步警示資料（內部包含 TWSE + TPEX 請求）
+    try {
+      warningCount = await _warningRepo.syncAllMarketWarnings(force: force);
+      AppLogger.info('MarketDataUpdater', '警示資料同步完成: $warningCount 筆');
+    } catch (e) {
+      AppLogger.warning('MarketDataUpdater', '警示資料同步失敗: $e');
+      warningError = e;
+    }
 
-    // 解構結果
-    final (wCount, wError) = results[0];
-    final (iCount, iError) = results[1];
-    warningCount = wCount;
-    warningError = wError;
-    insiderCount = iCount;
-    insiderError = iError;
+    // 再同步董監持股資料（內部包含 TWSE + TPEX 請求）
+    try {
+      insiderCount = await _insiderRepo.syncOtcInsiderHoldings(force: force);
+      AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $insiderCount 筆');
+    } catch (e) {
+      AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗: $e');
+      insiderError = e;
+    }
 
     return KillerFeaturesSyncResult(
       warningCount: warningCount,

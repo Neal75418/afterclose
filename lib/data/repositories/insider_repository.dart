@@ -95,13 +95,10 @@ class InsiderRepository {
         }
       }
 
-      // 平行取得 TWSE 和 TPEX 董監持股資料
-      // 先啟動兩個 Future（開始並行執行），再分別 await
-      final twseFuture = _twseClient.getInsiderHoldings();
-      final tpexFuture = _tpexClient.getInsiderHoldings();
-
-      final twseData = await twseFuture;
-      final tpexData = await tpexFuture;
+      // 序列化取得 TWSE 和 TPEX 董監持股資料
+      // TPEX 伺服器對併行連線敏感，序列化避免 Connection reset
+      final twseData = await _twseClient.getInsiderHoldings();
+      final tpexData = await _tpexClient.getInsiderHoldings();
 
       if (twseData.isEmpty && tpexData.isEmpty) {
         AppLogger.warning('InsiderRepo', '無董監持股資料');

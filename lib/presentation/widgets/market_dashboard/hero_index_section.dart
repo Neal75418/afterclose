@@ -20,6 +20,7 @@ class HeroIndexSection extends StatelessWidget {
     required this.index,
     this.historyData = const [],
     this.totalReturnHistory = const [],
+    this.reserveBadgeSpace = false,
   });
 
   final TwseMarketIndex index;
@@ -27,6 +28,9 @@ class HeroIndexSection extends StatelessWidget {
 
   /// 含息報酬指數歷史資料（供計算股息貢獻比較）
   final List<double> totalReturnHistory;
+
+  /// 並排顯示時，為無 badge 的欄位保留相同高度
+  final bool reserveBadgeSpace;
 
   @override
   Widget build(BuildContext context) {
@@ -39,95 +43,117 @@ class HeroIndexSection extends StatelessWidget {
     final sign = index.change > 0 ? '+' : '';
     final formatter = NumberFormat('#,##0.00');
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
-        color: theme.colorScheme.surfaceContainerLowest,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 標題行
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    final showBadge =
+        index.name == MarketIndexNames.taiex &&
+        totalReturnHistory.length >= 2 &&
+        historyData.length >= 2;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Hero 卡片（上市/上櫃共用相同結構，確保高度一致）
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+            color: theme.colorScheme.surfaceContainerLowest,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                index.name == MarketIndexNames.tpexIndex
-                    ? 'marketOverview.tpexIndex'.tr()
-                    : 'marketOverview.taiex'.tr(),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              // 漲跌幅 badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
-                ),
-                child: Text(
-                  '$sign${index.changePercent.toStringAsFixed(2)}%',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+              // 標題行
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    index.name == MarketIndexNames.tpexIndex
+                        ? 'marketOverview.tpexIndex'.tr()
+                        : 'marketOverview.taiex'.tr(),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                  // 漲跌幅 badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusSm,
+                      ),
+                    ),
+                    child: Text(
+                      '$sign${index.changePercent.toStringAsFixed(2)}%',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+
+              // 大數字 + 漲跌
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    formatter.format(index.close),
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '$sign${formatter.format(index.change)}',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+
+              // Sparkline 走勢圖
+              if (historyData.length >= 2) ...[
+                const SizedBox(height: 12),
+                MiniTrendChart(
+                  dataPoints: historyData,
+                  height: 60,
+                  lineColor: color,
+                  fillColor: color.withValues(alpha: 0.08),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 8),
+        ),
 
-          // 大數字 + 漲跌
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                formatter.format(index.close),
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '$sign${formatter.format(index.change)}',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
-
-          // Sparkline 走勢圖
-          if (historyData.length >= 2) ...[
-            const SizedBox(height: 12),
-            MiniTrendChart(
-              dataPoints: historyData,
-              height: 60,
-              lineColor: color,
-              fillColor: color.withValues(alpha: 0.08),
-            ),
-          ],
-
-          // 含息報酬指數比較（僅加權指數顯示）
-          if (index.name == MarketIndexNames.taiex &&
-              totalReturnHistory.length >= 2 &&
-              historyData.length >= 2) ...[
-            const SizedBox(height: 8),
-            _TotalReturnBadge(
+        // 含息報酬指數比較（卡片外部，僅加權指數顯示）
+        // 放在 Container 外確保上市/上櫃卡片高度一致
+        if (showBadge) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: _TotalReturnBadge(
               taiexHistory: historyData,
               totalReturnHistory: totalReturnHistory,
             ),
-          ],
+          ),
+        ] else if (reserveBadgeSpace) ...[
+          // 並排模式：為 TPEx 側保留與 badge 等高的空間
+          const SizedBox(height: 6),
+          const SizedBox(height: 16),
         ],
-      ),
+      ],
     );
   }
 }

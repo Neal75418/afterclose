@@ -460,6 +460,18 @@ class _MarketDashboardState extends State<MarketDashboard> {
         .where((idx) => idx.name == heroName)
         .toList();
     if (heroIdx.isNotEmpty) {
+      // TPEx 側需要保留與 TWSE badge 等高的空間，避免並排高低差
+      final shouldReserveBadge =
+          market == 'TPEx' &&
+          (widget.state.indexHistory[MarketIndexNames.taiex]?.length ?? 0) >=
+              2 &&
+          (widget
+                      .state
+                      .indexHistory[MarketIndexNames.totalReturnIndex]
+                      ?.length ??
+                  0) >=
+              2;
+
       children.add(
         HeroIndexSection(
           index: heroIdx.first,
@@ -468,6 +480,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
               ? widget.state.indexHistory[MarketIndexNames.totalReturnIndex] ??
                     []
               : [],
+          reserveBadgeSpace: shouldReserveBadge,
         ),
       );
       children.add(const SizedBox(height: 12));

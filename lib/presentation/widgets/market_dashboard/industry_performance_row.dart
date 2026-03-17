@@ -152,7 +152,6 @@ class _IndustryCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
                         '$sign${industry.avgChangePct.toStringAsFixed(2)}%',
@@ -162,47 +161,59 @@ class _IndustryCard extends StatelessWidget {
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
+                      const SizedBox(width: 4),
                       // 漲/跌家數（帶 ▲▼ 標記）
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            AppTheme.upSymbol,
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: AppTheme.upColor.withValues(alpha: 0.7),
-                            ),
+                      // 用 Expanded + FittedBox 防止大數字溢出
+                      Expanded(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                AppTheme.upSymbol,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: AppTheme.upColor.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${industry.advance}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                  fontSize: DesignTokens.fontSizeXs,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                ' ${AppTheme.downSymbol}',
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  color: AppTheme.downColor.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '${industry.decline}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                  fontSize: DesignTokens.fontSizeXs,
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            '${industry.advance}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
-                              fontSize: DesignTokens.fontSizeXs,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            ' ${AppTheme.downSymbol}',
-                            style: TextStyle(
-                              fontSize: 8,
-                              color: AppTheme.downColor.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          Text(
-                            '${industry.decline}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.7),
-                              fontSize: DesignTokens.fontSizeXs,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
