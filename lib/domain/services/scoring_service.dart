@@ -235,10 +235,10 @@ class ScoringService {
       warningMap: batchData.warningMap,
       insiderMap: batchData.insiderMap,
       epsHistoryMap: batchData.epsHistoryMap != null
-          ? _convertEpsHistoryMap(batchData.epsHistoryMap!)
+          ? _convertFinancialHistoryMap(batchData.epsHistoryMap!)
           : null,
       roeHistoryMap: batchData.roeHistoryMap != null
-          ? _convertEpsHistoryMap(batchData.roeHistoryMap!)
+          ? _convertFinancialHistoryMap(batchData.roeHistoryMap!)
           : null,
       dividendHistoryMap: batchData.dividendHistoryMap != null
           ? _convertDividendHistoryMap(batchData.dividendHistoryMap!)
@@ -380,6 +380,12 @@ class ScoringService {
       '評分完成: ${result.outputs.length} 檔 (最高 $maxScore 分), '
           '跳過 $skippedTotal 檔 (Isolate)',
     );
+    if (result.skippedDeserialization > 0) {
+      AppLogger.warning(
+        'ScoringSvc',
+        'Isolate 反序列化失敗: ${result.skippedDeserialization} 筆 entry 被跳過',
+      );
+    }
   }
 
   // ==================================================
@@ -499,7 +505,7 @@ class ScoringService {
     );
   }
 
-  Map<String, List<Map<String, dynamic>>> _convertEpsHistoryMap(
+  Map<String, List<Map<String, dynamic>>> _convertFinancialHistoryMap(
     Map<String, List<FinancialDataEntry>> map,
   ) {
     return map.map(
@@ -543,27 +549,9 @@ class ScoredStock {
   /// 2. 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
   /// 3. 第三：股票代碼（由低至高）- 確保平分處理結果一致
   static int compareByWeightedScore(ScoredStock a, ScoredStock b) {
-    final double scoreA = a.score.toDouble();
-    final double scoreB = b.score.toDouble();
-
-    // 計算加成（上限為 10 億 = 20 分）
-    double bonusA =
-        (a.turnover / RuleParams.liquidityTurnoverUnit) *
-        RuleParams.liquidityBonusPerUnit;
-    if (bonusA > RuleParams.liquidityBonusMax) {
-      bonusA = RuleParams.liquidityBonusMax;
-    }
-
-    double bonusB =
-        (b.turnover / RuleParams.liquidityTurnoverUnit) *
-        RuleParams.liquidityBonusPerUnit;
-    if (bonusB > RuleParams.liquidityBonusMax) {
-      bonusB = RuleParams.liquidityBonusMax;
-    }
-
-    // 四捨五入至小數點後 2 位以避免浮點數精度問題
-    final totalA = ((scoreA + bonusA) * 100).round() / 100;
-    final totalB = ((scoreB + bonusB) * 100).round() / 100;
+    // 全部乘以 100 轉整數比較，完全消除浮點精度問題
+    final totalA = a.score * 100 + _liquidityBonus100(a.turnover);
+    final totalB = b.score * 100 + _liquidityBonus100(b.turnover);
 
     // 主要：總分（由高至低）
     final scoreCmp = totalB.compareTo(totalA);
@@ -575,5 +563,17 @@ class ScoredStock {
 
     // 第三：股票代碼（由低至高）- 確保平分處理結果一致
     return a.symbol.compareTo(b.symbol);
+  }
+
+  /// 計算流動性加成（放大 100 倍取整數）
+  static int _liquidityBonus100(double turnover) {
+    final raw =
+        (turnover /
+                RuleParams.liquidityTurnoverUnit *
+                RuleParams.liquidityBonusPerUnit *
+                100)
+            .round();
+    final max = (RuleParams.liquidityBonusMax * 100).toInt();
+    return raw > max ? max : raw;
   }
 }

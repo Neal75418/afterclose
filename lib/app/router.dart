@@ -35,10 +35,14 @@ final _newsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'news');
 /// 快取 onboarding 完成狀態，避免重複 async 讀取
 bool _onboardingComplete = false;
 
+/// 標記 [initOnboardingStatus] 是否已被呼叫過
+bool _onboardingStatusInitialized = false;
+
 /// 預載 onboarding 狀態（須在 router 使用前呼叫）
 Future<void> initOnboardingStatus() async {
   final prefs = await SharedPreferences.getInstance();
   _onboardingComplete = prefs.getBool(OnboardingScreen.completedKey) ?? false;
+  _onboardingStatusInitialized = true;
 }
 
 /// 標記 onboarding 已完成（更新快取 + 持久化）
@@ -52,6 +56,11 @@ Future<void> completeOnboarding() async {
 final router = GoRouter(
   initialLocation: AppRoutes.home,
   redirect: (context, state) {
+    assert(
+      _onboardingStatusInitialized,
+      'initOnboardingStatus() must be awaited before router is used. '
+      'Ensure main() calls await initOnboardingStatus() before _runApp().',
+    );
     if (!_onboardingComplete && state.matchedLocation != AppRoutes.onboarding) {
       return AppRoutes.onboarding;
     }

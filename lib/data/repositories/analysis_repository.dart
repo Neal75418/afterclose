@@ -313,14 +313,11 @@ class AnalysisRepository implements IAnalysisRepository {
     final symbols = recs.map((r) => r.symbol).toList();
     final normalizedDate = DateContext.normalize(date);
 
-    // 平行執行批次查詢
-    final results = await Future.wait([
+    // 平行執行批次查詢，使用 Record unpacking 確保型別安全
+    final (stocksMap, reasonsMap) = await (
       _db.getStocksBatch(symbols),
       _db.getReasonsBatch(symbols, normalizedDate),
-    ]);
-
-    final stocksMap = results[0] as Map<String, StockMasterEntry>;
-    final reasonsMap = results[1] as Map<String, List<DailyReasonEntry>>;
+    ).wait;
 
     // 從批次資料組合結果
     final output = <RecommendationWithStock>[];

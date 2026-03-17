@@ -90,6 +90,7 @@ class ScoringIsolateInput {
   };
 
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
+    _resetDeserializationErrors();
     return ScoringIsolateInput(
       candidates: List<String>.from(map['candidates']),
       pricesMap: _castMapOfLists(map['pricesMap'], 'pricesMap'),
@@ -149,10 +150,20 @@ class ScoringIsolateInput {
     );
   }
 
+  /// Isolate 邊界反序列化累計失敗數（跨所有欄位）
+  ///
+  /// 由 [_castMapOfLists] 和 [_castTypedMap] 累加，
+  /// 最終回報在 [ScoringBatchResult.skippedDeserialization]。
+  static int _deserializationErrors = 0;
+
+  /// 重置反序列化錯誤計數器（每次 fromMap 前呼叫）
+  static void _resetDeserializationErrors() => _deserializationErrors = 0;
+
   /// Isolate 邊界型別轉換：symbol → list of maps
   ///
   /// Isolate 傳輸會遺失泛型資訊，需逐層手動轉型。
   /// [fieldName] 用於錯誤日誌識別。
+  /// 轉型失敗的 entry 會累加至 [_deserializationErrors]。
   static Map<String, List<Map<String, dynamic>>> _castMapOfLists(
     dynamic map,
     String fieldName,
@@ -165,13 +176,15 @@ class ScoringIsolateInput {
           (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
         );
       } catch (_) {
-        // 靜默跳過無法轉型的 entry（Isolate 內無法使用 AppLogger）
+        _deserializationErrors++;
       }
     }
     return result;
   }
 
   /// Isolate 邊界型別轉換：symbol → typed DTO
+  ///
+  /// 轉型失敗的 entry 會累加至 [_deserializationErrors]。
   static Map<String, T> _castTypedMap<T>(
     dynamic map,
     T Function(Map<String, dynamic>) fromMap,
@@ -184,7 +197,7 @@ class ScoringIsolateInput {
           Map<String, dynamic>.from(entry.value as Map),
         );
       } catch (_) {
-        // 靜默跳過無法轉型的 entry（Isolate 內無法使用 AppLogger）
+        _deserializationErrors++;
       }
     }
     return result;
@@ -281,6 +294,7 @@ class ScoringBatchResult {
     required this.skippedInsufficientData,
     required this.skippedLowLiquidity,
     required this.skippedLowScore,
+    this.skippedDeserialization = 0,
   });
 
   final List<ScoringIsolateOutput> outputs;
@@ -289,12 +303,16 @@ class ScoringBatchResult {
   final int skippedLowLiquidity;
   final int skippedLowScore;
 
+  /// Isolate 邊界反序列化失敗的 entry 數量
+  final int skippedDeserialization;
+
   Map<String, dynamic> toMap() => {
     'outputs': outputs.map((o) => o.toMap()).toList(),
     'skippedNoData': skippedNoData,
     'skippedInsufficientData': skippedInsufficientData,
     'skippedLowLiquidity': skippedLowLiquidity,
     'skippedLowScore': skippedLowScore,
+    'skippedDeserialization': skippedDeserialization,
   };
 
   factory ScoringBatchResult.fromMap(Map<String, dynamic> map) {
@@ -308,6 +326,7 @@ class ScoringBatchResult {
       skippedInsufficientData: map['skippedInsufficientData'] as int,
       skippedLowLiquidity: map['skippedLowLiquidity'] as int,
       skippedLowScore: map['skippedLowScore'] as int,
+      skippedDeserialization: (map['skippedDeserialization'] as int?) ?? 0,
     );
   }
 }
@@ -437,6 +456,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     skippedInsufficientData: skippedInsufficientData,
     skippedLowLiquidity: skippedLowLiquidity,
     skippedLowScore: skippedLowScore,
+    skippedDeserialization: ScoringIsolateInput._deserializationErrors,
   ).toMap();
 }
 

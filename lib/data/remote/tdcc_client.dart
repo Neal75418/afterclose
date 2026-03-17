@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/models/tdcc/tdcc_holding_level.dart';
 
 export 'package:afterclose/data/models/tdcc/tdcc_holding_level.dart';
@@ -20,6 +21,12 @@ class TdccClient {
   TdccClient({Dio? dio}) : _dio = dio ?? _createDio();
 
   final Dio _dio;
+
+  /// 快取全市場股權分散表（週資料，60 分鐘 TTL 足夠）
+  final _cache = LruCache<String, Map<String, List<TdccHoldingLevel>>>(
+    maxSize: 1,
+    ttl: const Duration(minutes: 60),
+  );
 
   static Dio _createDio() {
     return Dio(
@@ -40,6 +47,10 @@ class TdccClient {
   /// 過濾掉 level 16（差異數調整）和 17（合計）。
   Future<Map<String, List<TdccHoldingLevel>>>
   getAllHoldingDistribution() async {
+    // 週資料，快取命中直接回傳
+    final cached = _cache.get('all');
+    if (cached != null) return cached;
+
     try {
       final response = await _dio.get(ApiEndpoints.tdccHoldingDistribution);
 
@@ -82,6 +93,7 @@ class TdccClient {
           '股權分散表: ${result.length} 檔股票'
               '${skipped > 0 ? "（略過 $skipped 筆）" : ""}',
         );
+        _cache.put('all', result);
         return result;
       }
 

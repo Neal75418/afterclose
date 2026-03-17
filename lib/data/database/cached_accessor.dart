@@ -182,8 +182,8 @@ class CachedDatabaseAccessor {
 
     final effectiveHistoryEnd = historyEnd ?? analysisDate;
 
-    // 並行擷取所有資料（含快取）
-    final results = await Future.wait([
+    // 並行擷取所有資料（含快取），使用 Record unpacking 確保型別安全
+    final (stocks, latestPrices, analyses, reasons, priceHistories) = await (
       getStocksBatch(symbols),
       getLatestPricesBatch(symbols),
       getAnalysesBatch(symbols, analysisDate),
@@ -193,15 +193,14 @@ class CachedDatabaseAccessor {
         startDate: historyStart,
         endDate: effectiveHistoryEnd,
       ),
-    ]);
+    ).wait;
 
-    // 回傳型別化 Record，呼叫端無需轉型！
     return (
-      stocks: results[0] as Map<String, StockMasterEntry>,
-      latestPrices: results[1] as Map<String, DailyPriceEntry>,
-      analyses: results[2] as Map<String, DailyAnalysisEntry>,
-      reasons: results[3] as Map<String, List<DailyReasonEntry>>,
-      priceHistories: results[4] as Map<String, List<DailyPriceEntry>>,
+      stocks: stocks,
+      latestPrices: latestPrices,
+      analyses: analyses,
+      reasons: reasons,
+      priceHistories: priceHistories,
     );
   }
 
@@ -225,7 +224,8 @@ class CachedDatabaseAccessor {
 
     final effectiveHistoryEnd = historyEnd ?? analysisDate;
 
-    final results = await Future.wait([
+    // 使用 Record unpacking 確保型別安全
+    final (stocks, latestPrices, reasons, priceHistories) = await (
       getStocksBatch(symbols),
       getLatestPricesBatch(symbols),
       getReasonsBatch(symbols, analysisDate),
@@ -234,13 +234,13 @@ class CachedDatabaseAccessor {
         startDate: historyStart,
         endDate: effectiveHistoryEnd,
       ),
-    ]);
+    ).wait;
 
     return (
-      stocks: results[0] as Map<String, StockMasterEntry>,
-      latestPrices: results[1] as Map<String, DailyPriceEntry>,
-      reasons: results[2] as Map<String, List<DailyReasonEntry>>,
-      priceHistories: results[3] as Map<String, List<DailyPriceEntry>>,
+      stocks: stocks,
+      latestPrices: latestPrices,
+      reasons: reasons,
+      priceHistories: priceHistories,
     );
   }
 }
