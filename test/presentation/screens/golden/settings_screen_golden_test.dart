@@ -1,3 +1,4 @@
+@Tags(['golden'])
 /// Golden test: SettingsScreen
 ///
 /// 驗證設定畫面在 light/dark 模式下的視覺一致性。

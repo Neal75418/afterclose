@@ -1,3 +1,4 @@
+@Tags(['golden'])
 /// Golden test: WatchlistScreen
 ///
 /// 驗證自選股清單在 light/dark 模式下的視覺一致性。

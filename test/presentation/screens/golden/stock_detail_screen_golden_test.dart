@@ -1,3 +1,4 @@
+@Tags(['golden'])
 /// Golden test: StockDetailScreen
 ///
 /// 驗證個股詳情頁在 light/dark 模式下的視覺一致性。

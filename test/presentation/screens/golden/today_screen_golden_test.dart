@@ -1,3 +1,4 @@
+@Tags(['golden'])
 /// Golden test: TodayScreen
 ///
 /// 驗證首頁推薦股列表在 light/dark 模式下的視覺一致性。
