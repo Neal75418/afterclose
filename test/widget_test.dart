@@ -1,35 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/main.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 
 void main() {
-  group('App', () {
-    // Note: AfterCloseApp requires EasyLocalization, Riverpod providers (DB, storage),
-    // and router setup. These integration-level tests need a full mock environment.
-    // Consider using integration_test package for full app tests.
-    testWidgets('renders with navigation bar', (WidgetTester tester) async {
-      await tester.pumpWidget(const ProviderScope(child: AfterCloseApp()));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('AfterClose'), findsOneWidget);
-      expect(find.text('今日'), findsOneWidget);
-      expect(find.text('掃描'), findsOneWidget);
-      expect(find.text('自選'), findsOneWidget);
-      expect(find.text('新聞'), findsOneWidget);
-    }, skip: true);
-
-    testWidgets('has material 3 theme', (WidgetTester tester) async {
-      await tester.pumpWidget(const ProviderScope(child: AfterCloseApp()));
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.theme?.useMaterial3, isTrue);
-    }, skip: true);
-  });
-
   group('StockCard', () {
     Widget buildTestApp(Widget child) {
       return MaterialApp(

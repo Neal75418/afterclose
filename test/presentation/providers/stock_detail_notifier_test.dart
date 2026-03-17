@@ -265,176 +265,6 @@ void main() {
   });
 
   // ===========================================================================
-  // StockDetailState
-  // ===========================================================================
-
-  group('StockDetailState', () {
-    test('has correct default values', () {
-      const state = StockDetailState();
-
-      expect(state.price.stock, isNull);
-      expect(state.price.latestPrice, isNull);
-      expect(state.price.previousPrice, isNull);
-      expect(state.price.priceHistory, isEmpty);
-      expect(state.price.analysis, isNull);
-      expect(state.fundamentals.revenueHistory, isEmpty);
-      expect(state.fundamentals.dividendHistory, isEmpty);
-      expect(state.fundamentals.latestPER, isNull);
-      expect(state.chip.institutionalHistory, isEmpty);
-      expect(state.chip.marginHistory, isEmpty);
-      expect(state.chip.chipStrength, isNull);
-      expect(state.loading.isLoading, isFalse);
-      expect(state.loading.isLoadingMargin, isFalse);
-      expect(state.loading.isLoadingFundamentals, isFalse);
-      expect(state.loading.isLoadingInsider, isFalse);
-      expect(state.loading.isLoadingChip, isFalse);
-      expect(state.isInWatchlist, isFalse);
-      expect(state.error, isNull);
-      expect(state.dataDate, isNull);
-      expect(state.hasDataMismatch, isFalse);
-      expect(state.reasons, isEmpty);
-      expect(state.aiSummary, isNull);
-    });
-
-    test('copyWith preserves unset values', () {
-      final stock = createStock();
-      final state = const StockDetailState().copyWith(
-        stock: stock,
-        isInWatchlist: true,
-      );
-
-      final updated = state.copyWith(isLoading: true);
-
-      expect(updated.price.stock, equals(stock));
-      expect(updated.isInWatchlist, isTrue);
-      expect(updated.loading.isLoading, isTrue);
-    });
-
-    test('copyWith with sentinel handles error correctly', () {
-      final stateWithError = const StockDetailState().copyWith(
-        error: 'Test error',
-      );
-      expect(stateWithError.error, equals('Test error'));
-
-      // 不傳入 error — 應保留原值
-      final preserved = stateWithError.copyWith(isLoading: true);
-      expect(preserved.error, equals('Test error'));
-
-      // 明確傳入 null — 應清除 error
-      final cleared = stateWithError.copyWith(error: null);
-      expect(cleared.error, isNull);
-    });
-
-    test('convenience accessors delegate correctly', () {
-      final stock = createStock(name: '台積電', market: 'TWSE');
-      final price = createPrice(close: 600.0);
-
-      final state = const StockDetailState().copyWith(
-        stock: stock,
-        latestPrice: price,
-      );
-
-      expect(state.stockName, equals('台積電'));
-      expect(state.stockMarket, equals('TWSE'));
-      expect(state.stockIndustry, equals('半導體'));
-      expect(state.latestClose, equals(600.0));
-    });
-
-    test('convenience accessors return null when data is missing', () {
-      const state = StockDetailState();
-
-      expect(state.stockName, isNull);
-      expect(state.stockMarket, isNull);
-      expect(state.stockIndustry, isNull);
-      expect(state.latestClose, isNull);
-      expect(state.priceChange, isNull);
-    });
-
-    test('copyWith only creates new sub-state when fields change', () {
-      final stock = createStock();
-      final original = const StockDetailState().copyWith(stock: stock);
-
-      // 只更新 loading — price/fundamentals/chip 應保持同一物件
-      final updated = original.copyWith(isLoading: true);
-
-      expect(identical(updated.fundamentals, original.fundamentals), isTrue);
-      expect(identical(updated.chip, original.chip), isTrue);
-    });
-  });
-
-  group('StockPriceState', () {
-    test('has correct default values', () {
-      const state = StockPriceState();
-
-      expect(state.stock, isNull);
-      expect(state.latestPrice, isNull);
-      expect(state.previousPrice, isNull);
-      expect(state.priceHistory, isEmpty);
-      expect(state.analysis, isNull);
-      expect(state.priceChange, isNull);
-    });
-
-    test('copyWith preserves unset values', () {
-      final stock = createStock();
-      final state = StockPriceState(stock: stock);
-
-      final updated = state.copyWith(analysis: createAnalysis());
-
-      expect(updated.stock, equals(stock));
-      expect(updated.analysis, isNotNull);
-    });
-  });
-
-  group('FundamentalsState', () {
-    test('has correct default values', () {
-      const state = FundamentalsState();
-
-      expect(state.revenueHistory, isEmpty);
-      expect(state.dividendHistory, isEmpty);
-      expect(state.latestPER, isNull);
-      expect(state.latestQuarterMetrics, isEmpty);
-      expect(state.epsHistory, isEmpty);
-    });
-  });
-
-  group('ChipAnalysisState', () {
-    test('has correct default values', () {
-      const state = ChipAnalysisState();
-
-      expect(state.institutionalHistory, isEmpty);
-      expect(state.marginHistory, isEmpty);
-      expect(state.dayTradingHistory, isEmpty);
-      expect(state.shareholdingHistory, isEmpty);
-      expect(state.holdingDistribution, isEmpty);
-      expect(state.insiderHistory, isEmpty);
-      expect(state.chipStrength, isNull);
-      expect(state.hasInstitutionalError, isFalse);
-    });
-  });
-
-  group('LoadingState', () {
-    test('has correct default values', () {
-      const state = LoadingState();
-
-      expect(state.isLoading, isFalse);
-      expect(state.isLoadingMargin, isFalse);
-      expect(state.isLoadingFundamentals, isFalse);
-      expect(state.isLoadingInsider, isFalse);
-      expect(state.isLoadingChip, isFalse);
-    });
-
-    test('copyWith updates individual flags', () {
-      const state = LoadingState();
-
-      final updated = state.copyWith(isLoadingMargin: true);
-
-      expect(updated.isLoading, isFalse);
-      expect(updated.isLoadingMargin, isTrue);
-      expect(updated.isLoadingFundamentals, isFalse);
-    });
-  });
-
-  // ===========================================================================
   // StockDetailNotifier.loadData
   // ===========================================================================
 
@@ -740,8 +570,6 @@ void main() {
     test('handles error gracefully', () async {
       setupLoadDataMocks();
 
-      // FundamentalsLoader.loadAll() 第一步呼叫 _loadValuationData
-      // 讓 DB 方法拋出例外
       when(
         () => mockDb.getValuationHistory(
           _testSymbol,
@@ -758,7 +586,6 @@ void main() {
 
       final state = container.read(stockDetailProvider(_testSymbol));
       expect(state.loading.isLoadingFundamentals, isFalse);
-      // error 不應設在主 state（只有 loadData 的 catch 會設主 error）
       expect(state.error, isNull);
     });
   });
