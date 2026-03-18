@@ -144,8 +144,47 @@ class UpdateService {
         analysisRepository: _analysisRepo,
       );
 
+  /// 防止並發更新的 Completer 鎖
+  ///
+  /// 當更新正在執行時，後續呼叫會共享同一個 Future 結果，
+  /// 避免重複 API 呼叫和 DB 寫入競爭。
+  Completer<UpdateResult>? _activeUpdate;
+
   /// 執行完整每日更新流程
+  ///
+  /// 若已有更新正在執行，會等待並回傳該更新的結果，不重複執行。
   Future<UpdateResult> runDailyUpdate({
+    DateTime? forDate,
+    bool forceFetch = false,
+    UpdateProgressCallback? onProgress,
+  }) async {
+    // 已有更新在執行中 → 共享結果，避免重複 API 呼叫
+    if (_activeUpdate != null) {
+      AppLogger.info('UpdateSvc', '更新已在執行中，等待現有結果');
+      return _activeUpdate!.future;
+    }
+
+    final completer = Completer<UpdateResult>();
+    _activeUpdate = completer;
+
+    try {
+      final result = await _executeUpdate(
+        forDate: forDate,
+        forceFetch: forceFetch,
+        onProgress: onProgress,
+      );
+      completer.complete(result);
+      return result;
+    } catch (e, s) {
+      completer.completeError(e, s);
+      rethrow;
+    } finally {
+      _activeUpdate = null;
+    }
+  }
+
+  /// 實際執行更新邏輯（由 [runDailyUpdate] 的鎖保護）
+  Future<UpdateResult> _executeUpdate({
     DateTime? forDate,
     bool forceFetch = false,
     UpdateProgressCallback? onProgress,
