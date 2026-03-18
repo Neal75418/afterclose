@@ -186,9 +186,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
   /// 計算指定市場的市場情緒分數
   MarketSentiment? _computeSentiment(String marketKey) {
     final ad = widget.state.advanceDeclineByMarket[marketKey];
-    final instHist = widget.state.institutionalTotalNetHistory[marketKey];
-    final turnHist = widget.state.turnoverHistory[marketKey];
-    final marginHist = widget.state.marginBalanceHistory[marketKey];
+    final trends = widget.state.historyTrends;
+    final instHist = trends.institutionalTotalNet[marketKey];
+    final turnHist = trends.turnover[marketKey];
+    final marginHist = trends.marginBalance[marketKey];
     final limitUD = widget.state.limitUpDownByMarket[marketKey];
     final industries = widget.state.industrySummaryByMarket[marketKey];
 
@@ -211,10 +212,11 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
   /// 計算歷史情緒分數序列（供趨勢 sparkline）
   List<double> _computeSentimentHistory(String marketKey) {
-    final advRatioHist = widget.state.advanceRatioHistory[marketKey];
-    final instHist = widget.state.institutionalTotalNetHistory[marketKey];
-    final turnHist = widget.state.turnoverHistory[marketKey];
-    final marginHist = widget.state.marginBalanceHistory[marketKey];
+    final trends = widget.state.historyTrends;
+    final advRatioHist = trends.advanceRatio[marketKey];
+    final instHist = trends.institutionalTotalNet[marketKey];
+    final turnHist = trends.turnover[marketKey];
+    final marginHist = trends.marginBalance[marketKey];
 
     if (advRatioHist == null ||
         instHist == null ||
@@ -351,11 +353,12 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final industries = widget.state.industrySummaryByMarket[marketKey];
 
     // 30日歷史趨勢
-    final instNetHist = widget.state.institutionalTotalNetHistory[marketKey];
-    final turnoverHist = widget.state.turnoverHistory[marketKey];
-    final marginHist = widget.state.marginBalanceHistory[marketKey];
-    final shortHist = widget.state.shortBalanceHistory[marketKey];
-    final advRatioHist = widget.state.advanceRatioHistory[marketKey];
+    final trends = widget.state.historyTrends;
+    final instNetHist = trends.institutionalTotalNet[marketKey];
+    final turnoverHist = trends.turnover[marketKey];
+    final marginHist = trends.marginBalance[marketKey];
+    final shortHist = trends.shortBalance[marketKey];
+    final advRatioHist = trends.advanceRatio[marketKey];
 
     if (adData != null && adData.total > 0) {
       sections.add(
@@ -659,7 +662,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return AdvanceDeclineGauge(
       data: adData,
       limitUpDown: widget.state.limitUpDownByMarket[market],
-      advanceRatioHistory: widget.state.advanceRatioHistory[market],
+      advanceRatioHistory: widget.state.historyTrends.advanceRatio[market],
     );
   }
 
@@ -669,7 +672,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return TradingTurnoverRow(
       data: turnoverData,
       turnoverComparison: widget.state.turnoverComparisonByMarket[market],
-      turnoverHistory: widget.state.turnoverHistory[market],
+      turnoverHistory: widget.state.historyTrends.turnover[market],
     );
   }
 
@@ -685,7 +688,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return InstitutionalFlowChart(
       data: instData,
       streak: widget.state.institutionalStreakByMarket[market],
-      totalNetHistory: widget.state.institutionalTotalNetHistory[market],
+      totalNetHistory: widget.state.historyTrends.institutionalTotalNet[market],
     );
   }
 
@@ -697,8 +700,8 @@ class _MarketDashboardState extends State<MarketDashboard> {
     }
     return MarginCompactRow(
       data: marginData,
-      marginBalanceHistory: widget.state.marginBalanceHistory[market],
-      shortBalanceHistory: widget.state.shortBalanceHistory[market],
+      marginBalanceHistory: widget.state.historyTrends.marginBalance[market],
+      shortBalanceHistory: widget.state.historyTrends.shortBalance[market],
     );
   }
 

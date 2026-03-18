@@ -174,6 +174,35 @@ class IndustrySummary {
   final int decline;
 }
 
+/// 30 日歷史趨勢資料（供 sparkline / bar chart，時序排列 oldest→newest）
+///
+/// 將 5 個同型別的歷史趨勢欄位封裝為一個物件，
+/// 避免 [MarketOverviewState] 中的 data clump。
+class HistoryTrends {
+  const HistoryTrends({
+    this.institutionalTotalNet = const {},
+    this.turnover = const {},
+    this.marginBalance = const {},
+    this.shortBalance = const {},
+    this.advanceRatio = const {},
+  });
+
+  /// 法人合計淨額（元）
+  final Map<String, List<double>> institutionalTotalNet;
+
+  /// 成交量（元）
+  final Map<String, List<double>> turnover;
+
+  /// 融資餘額（張）
+  final Map<String, List<double>> marginBalance;
+
+  /// 融券餘額（張）
+  final Map<String, List<double>> shortBalance;
+
+  /// 漲跌比 (advance/total, 0~1)
+  final Map<String, List<double>> advanceRatio;
+}
+
 /// 大盤總覽狀態
 class MarketOverviewState {
   const MarketOverviewState({
@@ -190,12 +219,7 @@ class MarketOverviewState {
     this.warningCountsByMarket = const {},
     this.institutionalStreakByMarket = const {},
     this.industrySummaryByMarket = const {},
-    // 30日歷史趨勢（供 sparkline / bar chart，時序排列 oldest→newest）
-    this.institutionalTotalNetHistory = const {},
-    this.turnoverHistory = const {},
-    this.marginBalanceHistory = const {},
-    this.shortBalanceHistory = const {},
-    this.advanceRatioHistory = const {},
+    this.historyTrends = const HistoryTrends(),
     this.recommendationPerformance,
     this.chipAnomaliesByMarket = const {},
     this.isLoading = false,
@@ -240,20 +264,8 @@ class MarketOverviewState {
   /// 產業表現（依市場分組）
   final Map<String, List<IndustrySummary>> industrySummaryByMarket;
 
-  /// 30日法人合計淨額歷史（供趨勢 bar chart，元，oldest→newest）
-  final Map<String, List<double>> institutionalTotalNetHistory;
-
-  /// 30日成交量歷史（供趨勢 bar chart，元，oldest→newest）
-  final Map<String, List<double>> turnoverHistory;
-
-  /// 30日融資餘額歷史（供趨勢 sparkline，張，oldest→newest）
-  final Map<String, List<double>> marginBalanceHistory;
-
-  /// 30日融券餘額歷史（供趨勢 sparkline，張，oldest→newest）
-  final Map<String, List<double>> shortBalanceHistory;
-
-  /// 30日漲跌比歷史（供趨勢 sparkline，advance/total 0~1，oldest→newest）
-  final Map<String, List<double>> advanceRatioHistory;
+  /// 30 日歷史趨勢資料（法人、成交量、融資融券、漲跌比）
+  final HistoryTrends historyTrends;
 
   /// 推薦績效摘要（全市場，非 per-market）
   final RecommendationPerformance? recommendationPerformance;
@@ -283,11 +295,7 @@ class MarketOverviewState {
     Map<String, WarningCounts>? warningCountsByMarket,
     Map<String, InstitutionalStreak>? institutionalStreakByMarket,
     Map<String, List<IndustrySummary>>? industrySummaryByMarket,
-    Map<String, List<double>>? institutionalTotalNetHistory,
-    Map<String, List<double>>? turnoverHistory,
-    Map<String, List<double>>? marginBalanceHistory,
-    Map<String, List<double>>? shortBalanceHistory,
-    Map<String, List<double>>? advanceRatioHistory,
+    HistoryTrends? historyTrends,
     RecommendationPerformance? recommendationPerformance,
     Map<String, List<ChipAnomaly>>? chipAnomaliesByMarket,
     bool? isLoading,
@@ -313,12 +321,7 @@ class MarketOverviewState {
           institutionalStreakByMarket ?? this.institutionalStreakByMarket,
       industrySummaryByMarket:
           industrySummaryByMarket ?? this.industrySummaryByMarket,
-      institutionalTotalNetHistory:
-          institutionalTotalNetHistory ?? this.institutionalTotalNetHistory,
-      turnoverHistory: turnoverHistory ?? this.turnoverHistory,
-      marginBalanceHistory: marginBalanceHistory ?? this.marginBalanceHistory,
-      shortBalanceHistory: shortBalanceHistory ?? this.shortBalanceHistory,
-      advanceRatioHistory: advanceRatioHistory ?? this.advanceRatioHistory,
+      historyTrends: historyTrends ?? this.historyTrends,
       recommendationPerformance:
           recommendationPerformance ?? this.recommendationPerformance,
       chipAnomaliesByMarket:
@@ -459,8 +462,27 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
   /// 從載入結果建構 state
   MarketOverviewState _buildState(List<Object?> results, DateTime dataDate) {
+    // 集中解構所有 Future.wait 結果（索引對應 loadData 中的順序）
     final indices = results[0] as List<TwseMarketIndex>;
+    final advanceDecline = results[1] as AdvanceDecline;
     final rawHistory = results[2] as Map<String, List<double>>;
+    final advDecByMarket = results[3] as Map<String, AdvanceDecline>;
+    final instByMarket = results[4] as Map<String, InstitutionalTotals>;
+    final marginByMarket = results[5] as Map<String, MarginTradingTotals>;
+    final turnoverByMarket = results[6] as Map<String, TradingTurnover>;
+    final limitUpDownByMarket = results[7] as Map<String, LimitUpDown>;
+    final turnoverCompByMarket = results[8] as Map<String, TurnoverComparison>;
+    final warningCountsByMarket = results[9] as Map<String, WarningCounts>;
+    final rawStreak = results[10] as Map<String, InstitutionalStreak>;
+    final industrySummaryByMarket =
+        results[11] as Map<String, List<IndustrySummary>>;
+    final instHistory = results[12] as Map<String, List<double>>;
+    final turnoverHist = results[13] as Map<String, List<double>>;
+    final marginHistory =
+        results[14] as Map<String, ({List<double> margin, List<double> short})>;
+    final advRatioHistory = results[15] as Map<String, List<double>>;
+    final recPerf = results[16] as RecommendationPerformance?;
+    final chipAnomalies = results[17] as Map<String, List<ChipAnomaly>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
@@ -478,47 +500,35 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
     }
 
-    final instByMarket = results[4] as Map<String, InstitutionalTotals>;
-    final marginByMarket = results[5] as Map<String, MarginTradingTotals>;
-
     // Streak 來自 DB（per-stock 聚合），顯示金額來自 API（市場總計）。
     // 兩者資料來源不同，方向可能矛盾（API 含大宗交易等 per-stock 未涵蓋的項目）。
     // 當 streak 方向與 API 值矛盾時，重置為 ±1（不會顯示 badge，因門檻 ≥ 2）。
-    final rawStreak = results[10] as Map<String, InstitutionalStreak>;
     final validatedStreak = _validateStreakConsistency(rawStreak, instByMarket);
-
-    // 30日歷史趨勢資料
-    final instHistory = results[12] as Map<String, List<double>>;
-    final turnoverHist = results[13] as Map<String, List<double>>;
-    final marginHistory =
-        results[14] as Map<String, ({List<double> margin, List<double> short})>;
-    final advRatioHistory = results[15] as Map<String, List<double>>;
-    final recPerf = results[16] as RecommendationPerformance?;
-    final chipAnomalies = results[17] as Map<String, List<ChipAnomaly>>;
 
     return MarketOverviewState(
       indices: indices,
-      advanceDecline: results[1] as AdvanceDecline,
+      advanceDecline: advanceDecline,
       indexHistory: indexHistory,
-      advanceDeclineByMarket: results[3] as Map<String, AdvanceDecline>,
+      advanceDeclineByMarket: advDecByMarket,
       institutionalByMarket: instByMarket,
       marginByMarket: marginByMarket,
-      turnoverByMarket: results[6] as Map<String, TradingTurnover>,
-      limitUpDownByMarket: results[7] as Map<String, LimitUpDown>,
-      turnoverComparisonByMarket: results[8] as Map<String, TurnoverComparison>,
-      warningCountsByMarket: results[9] as Map<String, WarningCounts>,
+      turnoverByMarket: turnoverByMarket,
+      limitUpDownByMarket: limitUpDownByMarket,
+      turnoverComparisonByMarket: turnoverCompByMarket,
+      warningCountsByMarket: warningCountsByMarket,
       institutionalStreakByMarket: validatedStreak,
-      industrySummaryByMarket:
-          results[11] as Map<String, List<IndustrySummary>>,
-      institutionalTotalNetHistory: instHistory,
-      turnoverHistory: turnoverHist,
-      marginBalanceHistory: {
-        for (final e in marginHistory.entries) e.key: e.value.margin,
-      },
-      shortBalanceHistory: {
-        for (final e in marginHistory.entries) e.key: e.value.short,
-      },
-      advanceRatioHistory: advRatioHistory,
+      industrySummaryByMarket: industrySummaryByMarket,
+      historyTrends: HistoryTrends(
+        institutionalTotalNet: instHistory,
+        turnover: turnoverHist,
+        marginBalance: {
+          for (final e in marginHistory.entries) e.key: e.value.margin,
+        },
+        shortBalance: {
+          for (final e in marginHistory.entries) e.key: e.value.short,
+        },
+        advanceRatio: advRatioHistory,
+      ),
       recommendationPerformance: recPerf,
       chipAnomaliesByMarket: chipAnomalies,
       dataDate: dataDate,
@@ -677,9 +687,9 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     try {
       final counts = await _db.getAdvanceDeclineCounts(date);
       return AdvanceDecline(
-        advance: counts['advance'] ?? 0,
-        decline: counts['decline'] ?? 0,
-        unchanged: counts['unchanged'] ?? 0,
+        advance: counts.advance,
+        decline: counts.decline,
+        unchanged: counts.unchanged,
       );
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入漲跌家數失敗: $e');
@@ -710,9 +720,9 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       return {
         for (final entry in data.entries)
           entry.key: AdvanceDecline(
-            advance: entry.value['advance'] ?? 0,
-            decline: entry.value['decline'] ?? 0,
-            unchanged: entry.value['unchanged'] ?? 0,
+            advance: entry.value.advance,
+            decline: entry.value.decline,
+            unchanged: entry.value.unchanged,
           ),
       };
     } catch (e) {
@@ -800,10 +810,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       return {
         for (final entry in data.entries)
           entry.key: MarginTradingTotals(
-            marginBalance: entry.value['marginBalance'] ?? 0,
-            marginChange: entry.value['marginChange'] ?? 0,
-            shortBalance: entry.value['shortBalance'] ?? 0,
-            shortChange: entry.value['shortChange'] ?? 0,
+            marginBalance: entry.value.marginBalance,
+            marginChange: entry.value.marginChange,
+            shortBalance: entry.value.shortBalance,
+            shortChange: entry.value.shortChange,
           ),
       };
     } catch (e) {
@@ -832,9 +842,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       return {
         for (final entry in data.entries)
-          entry.key: TradingTurnover(
-            totalTurnover: entry.value['totalTurnover'] ?? 0.0,
-          ),
+          entry.key: TradingTurnover(totalTurnover: entry.value.totalTurnover),
       };
     } catch (e) {
       AppLogger.warning('MarketOverview', '載入分市場成交額失敗: $e');
@@ -862,8 +870,8 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       return {
         for (final entry in data.entries)
           entry.key: LimitUpDown(
-            limitUp: entry.value['limitUp'] ?? 0,
-            limitDown: entry.value['limitDown'] ?? 0,
+            limitUp: entry.value.limitUp,
+            limitDown: entry.value.limitDown,
           ),
       };
     } catch (e) {
@@ -1079,15 +1087,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final service = RuleAccuracyService(database: _db);
 
       // 平行載入三組資料
-      final results = await Future.wait([
+      final (stats, records, allRules) = await (
         service.getOverallPerformanceStats(),
         service.getStockValidationRecords(limit: 30),
         service.getAllRuleStats(),
-      ]);
-
-      final stats = results[0] as OverallPerformanceStats;
-      final records = results[1] as List<StockValidationRecord>;
-      final allRules = results[2] as List<RuleStats>;
+      ).wait;
 
       // 門檻：至少 5 筆驗證資料
       if (stats.totalCount < 5) return null;
@@ -1172,13 +1176,21 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 例如「其他電子業」與「其他電子類」會被合併為同一筆。
   /// 合併後重新排序（avgChangePct DESC）。
   static List<IndustrySummary> _mergeNormalizedIndustries(
-    List<Map<String, dynamic>> rows,
+    List<
+      ({
+        String industry,
+        int stockCount,
+        double avgChangePct,
+        int advance,
+        int decline,
+      })
+    >
+    rows,
   ) {
     final merged = <String, _MutableIndustry>{};
 
     for (final row in rows) {
-      final rawName = row['industry'] as String;
-      final canonical = IndustryNames.normalize(rawName);
+      final canonical = IndustryNames.normalize(row.industry);
       final entry = merged.putIfAbsent(canonical, _MutableIndustry.new);
       entry.addRow(row);
     }
@@ -1197,13 +1209,21 @@ class _MutableIndustry {
   int advance = 0;
   int decline = 0;
 
-  void addRow(Map<String, dynamic> row) {
-    final count = row['stockCount'] as int;
-    stockCount += count;
-    _changePctSum += (row['avgChangePct'] as double) * count;
-    _changePctCount += count;
-    advance += row['advance'] as int;
-    decline += row['decline'] as int;
+  void addRow(
+    ({
+      String industry,
+      int stockCount,
+      double avgChangePct,
+      int advance,
+      int decline,
+    })
+    row,
+  ) {
+    stockCount += row.stockCount;
+    _changePctSum += row.avgChangePct * row.stockCount;
+    _changePctCount += row.stockCount;
+    advance += row.advance;
+    decline += row.decline;
   }
 
   /// 加權平均漲跌幅

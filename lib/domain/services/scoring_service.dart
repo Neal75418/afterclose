@@ -214,19 +214,23 @@ class ScoringService {
     // 將資料轉換為可跨 Isolate 傳遞的格式
     final input = ScoringIsolateInput(
       candidates: candidates,
-      pricesMap: _convertPricesMap(batchData.pricesMap),
-      newsMap: _convertNewsMap(batchData.newsMap),
-      institutionalMap: _convertInstitutionalMap(
-        batchData.institutionalMap ?? {},
+      pricesMap: _convertListMap(batchData.pricesMap, (e) => e.toIsolateMap()),
+      newsMap: _convertListMap(batchData.newsMap, (e) => e.toIsolateMap()),
+      institutionalMap: _convertListMap(
+        batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{},
+        (e) => e.toIsolateMap(),
       ),
       revenueMap: batchData.revenueMap != null
-          ? _convertRevenueMap(batchData.revenueMap!)
+          ? _convertSingleMap(batchData.revenueMap!, (e) => e.toIsolateMap())
           : null,
       valuationMap: batchData.valuationMap != null
-          ? _convertValuationMap(batchData.valuationMap!)
+          ? _convertSingleMap(batchData.valuationMap!, (e) => e.toIsolateMap())
           : null,
       revenueHistoryMap: batchData.revenueHistoryMap != null
-          ? _convertRevenueHistoryMap(batchData.revenueHistoryMap!)
+          ? _convertListMap(
+              batchData.revenueHistoryMap!,
+              (e) => e.toIsolateMap(),
+            )
           : null,
       recentlyRecommended: recentlyRecommended,
       date: date,
@@ -235,13 +239,16 @@ class ScoringService {
       warningMap: batchData.warningMap,
       insiderMap: batchData.insiderMap,
       epsHistoryMap: batchData.epsHistoryMap != null
-          ? _convertFinancialHistoryMap(batchData.epsHistoryMap!)
+          ? _convertListMap(batchData.epsHistoryMap!, (e) => e.toIsolateMap())
           : null,
       roeHistoryMap: batchData.roeHistoryMap != null
-          ? _convertFinancialHistoryMap(batchData.roeHistoryMap!)
+          ? _convertListMap(batchData.roeHistoryMap!, (e) => e.toIsolateMap())
           : null,
       dividendHistoryMap: batchData.dividendHistoryMap != null
-          ? _convertDividendHistoryMap(batchData.dividendHistoryMap!)
+          ? _convertListMap(
+              batchData.dividendHistoryMap!,
+              (e) => e.toIsolateMap(),
+            )
           : null,
       maxHistoricalRevenueMap: batchData.maxHistoricalRevenueMap,
     );
@@ -457,70 +464,20 @@ class ScoringService {
   // 資料轉換輔助方法
   // ==================================================
 
-  Map<String, List<Map<String, dynamic>>> _convertPricesMap(
-    Map<String, List<DailyPriceEntry>> map,
+  /// 將 `Map<String, List<T>>` 轉換為 isolate 安全的 Map
+  static Map<String, List<Map<String, dynamic>>> _convertListMap<T>(
+    Map<String, List<T>> map,
+    Map<String, dynamic> Function(T) toMap,
   ) {
-    return map.map(
-      (key, value) =>
-          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
-    );
+    return map.map((key, value) => MapEntry(key, value.map(toMap).toList()));
   }
 
-  Map<String, List<Map<String, dynamic>>> _convertNewsMap(
-    Map<String, List<NewsItemEntry>> map,
+  /// 將 `Map<String, T>` 轉換為 isolate 安全的 Map
+  static Map<String, Map<String, dynamic>> _convertSingleMap<T>(
+    Map<String, T> map,
+    Map<String, dynamic> Function(T) toMap,
   ) {
-    return map.map(
-      (key, value) =>
-          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
-    );
-  }
-
-  Map<String, List<Map<String, dynamic>>> _convertInstitutionalMap(
-    Map<String, List<DailyInstitutionalEntry>> map,
-  ) {
-    return map.map(
-      (key, value) =>
-          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
-    );
-  }
-
-  Map<String, Map<String, dynamic>> _convertRevenueMap(
-    Map<String, MonthlyRevenueEntry> map,
-  ) {
-    return map.map((key, value) => MapEntry(key, value.toIsolateMap()));
-  }
-
-  Map<String, Map<String, dynamic>> _convertValuationMap(
-    Map<String, StockValuationEntry> map,
-  ) {
-    return map.map((key, value) => MapEntry(key, value.toIsolateMap()));
-  }
-
-  Map<String, List<Map<String, dynamic>>> _convertRevenueHistoryMap(
-    Map<String, List<MonthlyRevenueEntry>> map,
-  ) {
-    return map.map(
-      (key, value) =>
-          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
-    );
-  }
-
-  Map<String, List<Map<String, dynamic>>> _convertFinancialHistoryMap(
-    Map<String, List<FinancialDataEntry>> map,
-  ) {
-    return map.map(
-      (key, value) =>
-          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
-    );
-  }
-
-  Map<String, List<Map<String, dynamic>>> _convertDividendHistoryMap(
-    Map<String, List<DividendHistoryEntry>> map,
-  ) {
-    return map.map(
-      (key, value) =>
-          MapEntry(key, value.map((e) => e.toIsolateMap()).toList()),
-    );
+    return map.map((key, value) => MapEntry(key, toMap(value)));
   }
 }
 

@@ -54,16 +54,25 @@ void main() {
     when(() => mockTwse.getMarketIndices()).thenAnswer((_) async => []);
     when(
       () => mockDb.getAdvanceDeclineCounts(any()),
-    ).thenAnswer((_) async => {});
+    ).thenAnswer((_) async => (advance: 0, decline: 0, unchanged: 0));
     when(
       () => mockTwse.getInstitutionalAmounts(date: any(named: 'date')),
     ).thenAnswer((_) async => null);
     when(
       () => mockTpex.getInstitutionalAmounts(date: any(named: 'date')),
     ).thenAnswer((_) async => null);
-    when(
-      () => mockDb.getLatestMarginTradingTotalsByMarket(),
-    ).thenAnswer((_) async => <String, Map<String, double>>{});
+    when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(
+      (_) async =>
+          <
+            String,
+            ({
+              double marginBalance,
+              double marginChange,
+              double shortBalance,
+              double shortChange,
+            })
+          >{},
+    );
     when(
       () => mockDb.getIndexHistoryBatch(any(), days: any(named: 'days')),
     ).thenAnswer((_) async => {});
@@ -78,7 +87,7 @@ void main() {
     ).thenAnswer((_) async => <TwseMarketIndex>[]);
     when(
       () => mockDb.getLimitUpDownCountsByMarket(any()),
-    ).thenAnswer((_) async => <String, Map<String, int>>{});
+    ).thenAnswer((_) async => <String, ({int limitUp, int limitDown})>{});
     when(
       () => mockDb.getRecentTurnoverByMarket(any(), days: any(named: 'days')),
     ).thenAnswer(
@@ -106,9 +115,18 @@ void main() {
             >
           >{},
     );
-    when(
-      () => mockDb.getIndustrySummaryByMarket(any(), any()),
-    ).thenAnswer((_) async => <Map<String, dynamic>>[]);
+    when(() => mockDb.getIndustrySummaryByMarket(any(), any())).thenAnswer(
+      (_) async =>
+          <
+            ({
+              String industry,
+              int stockCount,
+              double avgChangePct,
+              int advance,
+              int decline,
+            })
+          >[],
+    );
   }
 
   group('MarketOverviewState', () {
@@ -201,9 +219,9 @@ void main() {
         ],
       );
 
-      when(() => mockDb.getAdvanceDeclineCounts(any())).thenAnswer(
-        (_) async => {'advance': 500, 'decline': 300, 'unchanged': 200},
-      );
+      when(
+        () => mockDb.getAdvanceDeclineCounts(any()),
+      ).thenAnswer((_) async => (advance: 500, decline: 300, unchanged: 200));
 
       final notifier = container.read(marketOverviewProvider.notifier);
       final loadFuture = notifier.loadData();
@@ -268,18 +286,18 @@ void main() {
 
       when(() => mockDb.getLatestMarginTradingTotalsByMarket()).thenAnswer(
         (_) async => {
-          'TWSE': {
-            'marginBalance': 30000.0,
-            'marginChange': 700.0,
-            'shortBalance': 2000.0,
-            'shortChange': -100.0,
-          },
-          'TPEx': {
-            'marginBalance': 20000.0,
-            'marginChange': 300.0,
-            'shortBalance': 1000.0,
-            'shortChange': -100.0,
-          },
+          'TWSE': (
+            marginBalance: 30000.0,
+            marginChange: 700.0,
+            shortBalance: 2000.0,
+            shortChange: -100.0,
+          ),
+          'TPEx': (
+            marginBalance: 20000.0,
+            marginChange: 300.0,
+            shortBalance: 1000.0,
+            shortChange: -100.0,
+          ),
         },
       );
 
@@ -300,15 +318,15 @@ void main() {
 
       when(() => mockDb.getAdvanceDeclineCountsByMarket(any())).thenAnswer(
         (_) async => {
-          'TWSE': {'advance': 400, 'decline': 200, 'unchanged': 100},
-          'TPEx': {'advance': 100, 'decline': 100, 'unchanged': 100},
+          'TWSE': (advance: 400, decline: 200, unchanged: 100),
+          'TPEx': (advance: 100, decline: 100, unchanged: 100),
         },
       );
 
       when(() => mockDb.getTurnoverSummaryByMarket(any())).thenAnswer(
         (_) async => {
-          'TWSE': {'totalTurnover': 200000000000.0},
-          'TPEx': {'totalTurnover': 50000000000.0},
+          'TWSE': (totalTurnover: 200000000000.0),
+          'TPEx': (totalTurnover: 50000000000.0),
         },
       );
 
@@ -343,9 +361,9 @@ void main() {
         () => mockTwse.getMarketIndices(),
       ).thenThrow(Exception('Network error'));
 
-      when(() => mockDb.getAdvanceDeclineCounts(any())).thenAnswer(
-        (_) async => {'advance': 100, 'decline': 50, 'unchanged': 20},
-      );
+      when(
+        () => mockDb.getAdvanceDeclineCounts(any()),
+      ).thenAnswer((_) async => (advance: 100, decline: 50, unchanged: 20));
 
       final notifier = container.read(marketOverviewProvider.notifier);
       await notifier.loadData();
