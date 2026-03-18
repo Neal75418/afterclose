@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 /// 成交額統計列
 ///
@@ -13,10 +14,14 @@ class TradingTurnoverRow extends StatelessWidget {
     super.key,
     required this.data,
     this.turnoverComparison,
+    this.turnoverHistory,
   });
 
   final TradingTurnover data;
   final TurnoverComparison? turnoverComparison;
+
+  /// 30日成交額歷史（供趨勢 bar chart，oldest→newest）
+  final List<double>? turnoverHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -28,45 +33,60 @@ class TradingTurnoverRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          // 標籤
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.paid_rounded,
-                size: 16,
-                color: theme.colorScheme.onSurfaceVariant,
+              // 標籤
+              Row(
+                children: [
+                  Icon(
+                    Icons.paid_rounded,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'marketOverview.tradingTurnover'.tr(),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                'marketOverview.tradingTurnover'.tr(),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
 
-          // 數值 + 均量比較
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _formatTurnover(data.totalTurnover),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+              // 數值 + 均量比較
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _formatTurnover(data.totalTurnover),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  if (turnoverComparison != null &&
+                      turnoverComparison!.avg5dTurnover > 0) ...[
+                    const SizedBox(width: 8),
+                    _Avg5dBadge(
+                      changePercent: turnoverComparison!.changePercent,
+                    ),
+                  ],
+                ],
               ),
-              if (turnoverComparison != null &&
-                  turnoverComparison!.avg5dTurnover > 0) ...[
-                const SizedBox(width: 8),
-                _Avg5dBadge(changePercent: turnoverComparison!.changePercent),
-              ],
             ],
           ),
+          // 30日趨勢 bar chart
+          if (turnoverHistory != null && turnoverHistory!.length >= 2) ...[
+            const SizedBox(height: 8),
+            MiniBarChart(
+              dataPoints: turnoverHistory!,
+              height: 32,
+              positiveOnlyColor: theme.colorScheme.primary,
+            ),
+          ],
         ],
       ),
     );

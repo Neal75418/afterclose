@@ -1,14 +1,15 @@
-@Tags(['golden'])
 /// Golden test: WatchlistScreen
 ///
 /// 驗證自選股清單在 light/dark 模式下的視覺一致性。
+@Tags(['golden'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/providers/watchlist_types.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_screen.dart';
 
 import '../../../helpers/provider_test_helpers.dart';

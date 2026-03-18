@@ -10,10 +10,22 @@ import 'package:afterclose/core/l10n/app_strings.dart';
 /// 2. 資料正規化僅在建置時執行一次
 /// 3. 最小化 LineChartData 設定
 class MiniSparkline extends StatelessWidget {
-  const MiniSparkline({super.key, required this.prices, required this.color});
+  const MiniSparkline({
+    super.key,
+    required this.prices,
+    required this.color,
+    this.width,
+    this.height,
+  });
 
   final List<double> prices;
   final Color color;
+
+  /// 圖表寬度（預設 70）
+  final double? width;
+
+  /// 圖表高度（預設 32）
+  final double? height;
 
   /// 顯示的最大資料點數（為清晰呈現）
   static const int _maxDataPoints = 20;
@@ -67,8 +79,8 @@ class MiniSparkline extends StatelessWidget {
       image: true,
       child: RepaintBoundary(
         child: SizedBox(
-          width: 70,
-          height: 32,
+          width: width ?? 70,
+          height: height ?? 32,
           child: LineChart(
             LineChartData(
               minY: 0,

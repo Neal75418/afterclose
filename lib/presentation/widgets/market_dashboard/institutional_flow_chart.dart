@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 /// 格式化金額（元 → 億/千萬/百萬）
 String _formatAmount(double value) {
@@ -33,10 +34,18 @@ String _formatAmount(double value) {
 ///
 /// 以三張小卡呈現外資/投信/自營淨買賣，帶彩色左邊框 + 合計行
 class InstitutionalFlowChart extends StatelessWidget {
-  const InstitutionalFlowChart({super.key, required this.data, this.streak});
+  const InstitutionalFlowChart({
+    super.key,
+    required this.data,
+    this.streak,
+    this.totalNetHistory,
+  });
 
   final InstitutionalTotals data;
   final InstitutionalStreak? streak;
+
+  /// 30日法人合計淨額歷史（供趨勢 bar chart，oldest→newest）
+  final List<double>? totalNetHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -103,28 +112,37 @@ class InstitutionalFlowChart extends StatelessWidget {
             borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
             color: theme.colorScheme.surfaceContainerLowest,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
             children: [
-              Text(
-                'marketOverview.totalNet'.tr(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'marketOverview.totalNet'.tr(),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    _formatAmount(data.totalNet),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: data.totalNet > 0
+                          ? AppTheme.upColor
+                          : data.totalNet < 0
+                          ? AppTheme.downColor
+                          : AppTheme.neutralColor,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                _formatAmount(data.totalNet),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: data.totalNet > 0
-                      ? AppTheme.upColor
-                      : data.totalNet < 0
-                      ? AppTheme.downColor
-                      : AppTheme.neutralColor,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
+              // 30日趨勢 bar chart
+              if (totalNetHistory != null && totalNetHistory!.length >= 2) ...[
+                const SizedBox(height: 8),
+                MiniBarChart(dataPoints: totalNetHistory!, height: 36),
+              ],
             ],
           ),
         ),

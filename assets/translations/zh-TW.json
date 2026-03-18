@@ -111,7 +111,88 @@
     "industryStockCount": "{count} 檔",
     "day30Trend": "近 30 日走勢",
     "totalReturnIndex": "含息報酬",
-    "dividendContribution": "息值貢獻 {pct}%"
+    "dividendContribution": "息值貢獻 {pct}%",
+    "sentiment": {
+      "title": "市場情緒",
+      "extremeFear": "極度恐懼",
+      "fear": "恐懼",
+      "neutral": "中性",
+      "greed": "貪婪",
+      "extremeGreed": "極度貪婪",
+      "fearLabel": "恐懼",
+      "greedLabel": "貪婪",
+      "advanceRatio": "漲跌比",
+      "institutional": "法人動向",
+      "volumeMomentum": "量能",
+      "marginChange": "融資變化",
+      "limitRatio": "漲停比",
+      "industryBreadth": "產業廣度",
+      "trend": "趨勢"
+    },
+    "keyInsights": {
+      "title": "智慧摘要",
+      "sentimentExtreme": {
+        "title": "情緒極端",
+        "descFear": "市場恐慌情緒 — 情緒分數僅 {score}",
+        "descGreed": "市場過熱 — 情緒分數高達 {score}"
+      },
+      "institutionalStreak": {
+        "title": "法人動向",
+        "descForeignBuy": "外資連續買超 {days} 天",
+        "descForeignSell": "外資連續賣超 {days} 天",
+        "descTrustBuy": "投信連續買超 {days} 天",
+        "descTrustSell": "投信連續賣超 {days} 天"
+      },
+      "volumeAnomaly": {
+        "title": "量能異常",
+        "descHigh": "今日成交量較 5 日均量增加 {pct}%",
+        "descLow": "今日成交量較 5 日均量萎縮 {pct}%"
+      },
+      "chipAlert": {
+        "title": "籌碼警示",
+        "desc": "{count} 檔個股出現高度異動"
+      },
+      "limitImbalance": {
+        "title": "漲跌停失衡",
+        "descUp": "漲停 {up} 家、跌停 {down} 家",
+        "descDown": "跌停 {down} 家、漲停 {up} 家"
+      },
+      "marginSurge": {
+        "title": "融資融券異動",
+        "descMargin": "融資餘額單日變化 {pct}%",
+        "descShort": "融券餘額單日變化 {pct}%"
+      },
+      "industryConcentration": {
+        "title": "產業齊漲跌",
+        "descUp": "{pct}% 產業上漲，市場方向一致",
+        "descDown": "{pct}% 產業下跌，市場方向一致"
+      }
+    },
+    "chipAnomaly": {
+      "title": "籌碼異動",
+      "highPledge": "高質押",
+      "insiderTransfer": "內部人轉讓",
+      "foreignNearLimit": "外資逼近上限",
+      "shortSurge": "融券暴增",
+      "institutionalSurge": "法人集中買賣",
+      "desc": {
+        "pledgeRatio": "質押率 {value}%",
+        "transfer": "{identity} 轉讓 {shares}張",
+        "foreignRatio": "外資 {ratio}% / 上限 {limit}%",
+        "shortSellRatio": "融券賣 {shares}張 ({ratio}x)",
+        "instBuy": "法人大買 {amount}",
+        "instSell": "法人大賣 {amount}"
+      }
+    },
+    "recPerformance": {
+      "title": "推薦績效",
+      "recentResults": "近 {count} 筆驗證結果",
+      "winRate": "勝率",
+      "avgReturn": "平均報酬",
+      "totalCount": "驗證筆數",
+      "topRules": "最強規則 Top 3",
+      "accumulating": "推薦績效累積中，需至少 5 筆驗證資料"
+    }
   },
   "scan": {
     "title": "市場掃描",

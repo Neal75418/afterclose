@@ -7,15 +7,21 @@ import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/key_insights_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/industry_performance_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_row.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/recommendation_performance_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/warnings_summary_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
+import 'package:afterclose/domain/services/market_insight_service.dart';
+import 'package:afterclose/domain/services/market_sentiment_service.dart';
 
 /// 大盤總覽 Dashboard
 ///
@@ -177,6 +183,72 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
+  /// 計算指定市場的市場情緒分數
+  MarketSentiment? _computeSentiment(String marketKey) {
+    final ad = widget.state.advanceDeclineByMarket[marketKey];
+    final instHist = widget.state.institutionalTotalNetHistory[marketKey];
+    final turnHist = widget.state.turnoverHistory[marketKey];
+    final marginHist = widget.state.marginBalanceHistory[marketKey];
+    final limitUD = widget.state.limitUpDownByMarket[marketKey];
+    final industries = widget.state.industrySummaryByMarket[marketKey];
+
+    // 至少需要漲跌家數 + 一項歷史資料
+    if (ad == null || ad.total == 0) return null;
+    if ((instHist == null || instHist.length < 5) &&
+        (turnHist == null || turnHist.length < 2)) {
+      return null;
+    }
+
+    return MarketSentimentService.calculate(
+      advanceDecline: ad,
+      institutionalNetHistory: instHist ?? [],
+      turnoverHistory: turnHist ?? [],
+      marginBalanceHistory: marginHist ?? [],
+      limitUpDown: limitUD,
+      industries: industries ?? [],
+    );
+  }
+
+  /// 計算歷史情緒分數序列（供趨勢 sparkline）
+  List<double> _computeSentimentHistory(String marketKey) {
+    final advRatioHist = widget.state.advanceRatioHistory[marketKey];
+    final instHist = widget.state.institutionalTotalNetHistory[marketKey];
+    final turnHist = widget.state.turnoverHistory[marketKey];
+    final marginHist = widget.state.marginBalanceHistory[marketKey];
+
+    if (advRatioHist == null ||
+        instHist == null ||
+        turnHist == null ||
+        marginHist == null) {
+      return [];
+    }
+
+    return MarketSentimentService.calculateHistoricalScores(
+      advanceRatioHistory: advRatioHist,
+      institutionalNetHistory: instHist,
+      turnoverHistory: turnHist,
+      marginBalanceHistory: marginHist,
+    );
+  }
+
+  /// 偵測智慧摘要洞察
+  ///
+  /// 接受已計算好的 [sentiment] 避免重複呼叫 [_computeSentiment]。
+  List<MarketInsight> _computeInsights(
+    String marketKey,
+    MarketSentiment? sentiment,
+  ) {
+    return MarketInsightService.detect(
+      sentiment: sentiment,
+      streak: widget.state.institutionalStreakByMarket[marketKey],
+      turnoverComparison: widget.state.turnoverComparisonByMarket[marketKey],
+      chipAnomalies: widget.state.chipAnomaliesByMarket[marketKey] ?? [],
+      limitUpDown: widget.state.limitUpDownByMarket[marketKey],
+      margin: widget.state.marginByMarket[marketKey],
+      industries: widget.state.industrySummaryByMarket[marketKey] ?? [],
+    );
+  }
+
   /// 建構手機單欄顯示
   Widget _buildMobileView(ThemeData theme) {
     final sections = <Widget>[];
@@ -248,8 +320,25 @@ class _MarketDashboardState extends State<MarketDashboard> {
       }
     }
 
-    // Section 3+: 統計數據（依選擇的市場顯示）
+    // Section: 市場情緒儀表板
     final marketKey = _selectedMarket.key;
+    final sentiment = _computeSentiment(marketKey);
+    if (sentiment != null) {
+      sections.add(
+        SentimentGaugeSection(
+          sentiment: sentiment,
+          sentimentHistory: _computeSentimentHistory(marketKey),
+        ),
+      );
+    }
+
+    // Section: 智慧摘要
+    final insights = _computeInsights(marketKey, sentiment);
+    if (insights.isNotEmpty) {
+      sections.add(KeyInsightsRow(insights: insights));
+    }
+
+    // Section 3+: 統計數據（依選擇的市場顯示）
     final adData = widget.state.advanceDeclineByMarket[marketKey];
     final instData = widget.state.institutionalByMarket[marketKey];
     final marginData = widget.state.marginByMarket[marketKey];
@@ -261,8 +350,21 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final instStreak = widget.state.institutionalStreakByMarket[marketKey];
     final industries = widget.state.industrySummaryByMarket[marketKey];
 
+    // 30日歷史趨勢
+    final instNetHist = widget.state.institutionalTotalNetHistory[marketKey];
+    final turnoverHist = widget.state.turnoverHistory[marketKey];
+    final marginHist = widget.state.marginBalanceHistory[marketKey];
+    final shortHist = widget.state.shortBalanceHistory[marketKey];
+    final advRatioHist = widget.state.advanceRatioHistory[marketKey];
+
     if (adData != null && adData.total > 0) {
-      sections.add(AdvanceDeclineGauge(data: adData, limitUpDown: limitUpDown));
+      sections.add(
+        AdvanceDeclineGauge(
+          data: adData,
+          limitUpDown: limitUpDown,
+          advanceRatioHistory: advRatioHist,
+        ),
+      );
     }
 
     // 成交量統計
@@ -271,6 +373,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
         TradingTurnoverRow(
           data: turnoverData,
           turnoverComparison: turnoverComparison,
+          turnoverHistory: turnoverHist,
         ),
       );
     }
@@ -280,12 +383,24 @@ class _MarketDashboardState extends State<MarketDashboard> {
             instData.foreignNet != 0 ||
             instData.trustNet != 0 ||
             instData.dealerNet != 0)) {
-      sections.add(InstitutionalFlowChart(data: instData, streak: instStreak));
+      sections.add(
+        InstitutionalFlowChart(
+          data: instData,
+          streak: instStreak,
+          totalNetHistory: instNetHist,
+        ),
+      );
     }
 
     if (marginData != null &&
         (marginData.marginChange != 0 || marginData.shortChange != 0)) {
-      sections.add(MarginCompactRow(data: marginData));
+      sections.add(
+        MarginCompactRow(
+          data: marginData,
+          marginBalanceHistory: marginHist,
+          shortBalanceHistory: shortHist,
+        ),
+      );
     }
 
     // 注意/處置股摘要
@@ -293,9 +408,21 @@ class _MarketDashboardState extends State<MarketDashboard> {
       sections.add(WarningsSummaryRow(data: warningCounts));
     }
 
+    // 籌碼異動
+    final chipAnomalies = widget.state.chipAnomaliesByMarket[marketKey];
+    if (chipAnomalies != null && chipAnomalies.isNotEmpty) {
+      sections.add(ChipAnomalyRow(anomalies: chipAnomalies));
+    }
+
     // 產業表現
     if (industries != null && industries.isNotEmpty) {
       sections.add(IndustryPerformanceRow(industries: industries));
+    }
+
+    // 推薦績效（全市場，非 per-market）
+    final recPerf = widget.state.recommendationPerformance;
+    if (recPerf != null) {
+      sections.add(RecommendationPerformanceRow(data: recPerf));
     }
 
     // 組合所有 sections
@@ -321,13 +448,37 @@ class _MarketDashboardState extends State<MarketDashboard> {
   }
 
   /// 建構平板/桌面並排顯示
+  ///
+  /// 使用跨欄配對方式，每個 section 型別左右配成一組 [IntrinsicHeight] + [Row]，
+  /// 確保對應 section 水平對齊，避免左右高度差異導致後續 section 錯位。
   Widget _buildParallelView(ThemeData theme) {
-    // 子指數列（TWSE 產業指數）放在雙欄上方，避免左欄過高
     final subIndicesWidget = _buildSharedSubIndices();
+    final sentiment = _computeSentiment('TWSE');
+
+    // 每個 section builder 返回 Widget?，null 表示該市場無此資料
+    final sectionBuilders = <Widget? Function(String)>[
+      _buildAdvanceDeclineSection,
+      _buildTurnoverSection,
+      _buildInstitutionalSection,
+      _buildMarginSection,
+      _buildWarningsSection,
+      _buildChipAnomalySection,
+      _buildIndustrySection,
+    ];
+
+    // 產生配對的 section rows（跳過兩側皆無資料的 section）
+    final pairedRows = <Widget>[];
+    for (final builder in sectionBuilders) {
+      final twse = builder('TWSE');
+      final tpex = builder('TPEx');
+      if (twse == null && tpex == null) continue;
+      pairedRows.add(_buildPairedRow(theme, twse, tpex));
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 共用：子指數列
         if (subIndicesWidget != null) ...[
           subIndicesWidget,
           const SizedBox(height: 14),
@@ -338,21 +489,65 @@ class _MarketDashboardState extends State<MarketDashboard> {
           const SizedBox(height: 14),
         ],
 
-        // 並排顯示上市/上櫃統計數據
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _buildMarketColumn(theme, 'TWSE')),
-              VerticalDivider(
-                width: 32,
-                thickness: 1,
-                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-              ),
-              Expanded(child: _buildMarketColumn(theme, 'TPEx')),
-            ],
+        // 共用：市場情緒儀表板
+        if (sentiment != null) ...[
+          SentimentGaugeSection(
+            sentiment: sentiment,
+            sentimentHistory: _computeSentimentHistory('TWSE'),
           ),
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // 共用：智慧摘要
+        ...() {
+          final insights = _computeInsights('TWSE', sentiment);
+          if (insights.isEmpty) return <Widget>[];
+          return <Widget>[
+            KeyInsightsRow(insights: insights),
+            const SizedBox(height: 14),
+            Divider(
+              height: 1,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 14),
+          ];
+        }(),
+
+        // 標題 + Hero 指數配對
+        _buildPairedRow(
+          theme,
+          _buildMarketHeader(theme, 'TWSE'),
+          _buildMarketHeader(theme, 'TPEx'),
         ),
+
+        // 資料 section 配對（每對等高對齊）
+        for (final row in pairedRows) ...[
+          const SizedBox(height: 12),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 12),
+          row,
+        ],
+
+        // 共用：推薦績效看板
+        if (widget.state.recommendationPerformance != null) ...[
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 14),
+          RecommendationPerformanceRow(
+            data: widget.state.recommendationPerformance!,
+          ),
+        ],
       ],
     );
   }
@@ -381,143 +576,147 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
-  /// 建構單一市場欄位（用於平板/桌面並排）
-  ///
-  /// 各 section 獨立顯示，不以漲跌家數作為 gatekeeper。
-  Widget _buildMarketColumn(ThemeData theme, String market) {
-    final adData = widget.state.advanceDeclineByMarket[market];
-    final instData = widget.state.institutionalByMarket[market];
-    final marginData = widget.state.marginByMarket[market];
-    final turnoverData = widget.state.turnoverByMarket[market];
-    final limitUpDown = widget.state.limitUpDownByMarket[market];
-    final turnoverComparison = widget.state.turnoverComparisonByMarket[market];
-    final warningCounts = widget.state.warningCountsByMarket[market];
-    final instStreak = widget.state.institutionalStreakByMarket[market];
-    final industries = widget.state.industrySummaryByMarket[market];
-
-    final sections = <Widget>[];
-
-    // 漲跌家數
-    if (adData != null && adData.total > 0) {
-      sections.add(AdvanceDeclineGauge(data: adData, limitUpDown: limitUpDown));
-    }
-
-    // 成交量統計
-    if (turnoverData != null && turnoverData.totalTurnover > 0) {
-      sections.add(
-        TradingTurnoverRow(
-          data: turnoverData,
-          turnoverComparison: turnoverComparison,
-        ),
-      );
-    }
-
-    // 法人動向
-    if (instData != null &&
-        (instData.totalNet != 0 ||
-            instData.foreignNet != 0 ||
-            instData.trustNet != 0 ||
-            instData.dealerNet != 0)) {
-      sections.add(InstitutionalFlowChart(data: instData, streak: instStreak));
-    }
-
-    // 融資融券
-    if (marginData != null &&
-        (marginData.marginChange != 0 || marginData.shortChange != 0)) {
-      sections.add(MarginCompactRow(data: marginData));
-    }
-
-    // 注意/處置股摘要
-    if (warningCounts != null && warningCounts.total > 0) {
-      sections.add(WarningsSummaryRow(data: warningCounts));
-    }
-
-    // 產業表現
-    if (industries != null && industries.isNotEmpty) {
-      sections.add(IndustryPerformanceRow(industries: industries));
-    }
-
-    final children = <Widget>[
-      // 標題
-      Text(
-        market == 'TWSE'
-            ? 'marketOverview.twse'.tr()
-            : 'marketOverview.tpex'.tr(),
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: theme.colorScheme.primary,
-        ),
-        textAlign: TextAlign.center,
+  /// 建構配對的跨欄 Row（左右等高）
+  Widget _buildPairedRow(ThemeData theme, Widget? left, Widget? right) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: left ?? const SizedBox.shrink()),
+          VerticalDivider(
+            width: 32,
+            thickness: 1,
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+          ),
+          Expanded(child: right ?? const SizedBox.shrink()),
+        ],
       ),
-      const SizedBox(height: 12),
-    ];
+    );
+  }
 
-    // Hero 指數區域：各欄顯示自己的 Hero
+  /// 建構市場標題 + Hero 指數
+  Widget _buildMarketHeader(ThemeData theme, String market) {
     final heroName = market == 'TWSE'
         ? MarketIndexNames.taiex
         : MarketIndexNames.tpexIndex;
     final heroIdx = widget.state.indices
         .where((idx) => idx.name == heroName)
         .toList();
-    if (heroIdx.isNotEmpty) {
-      // TPEx 側需要保留與 TWSE badge 等高的空間，避免並排高低差
-      final shouldReserveBadge =
-          market == 'TPEx' &&
-          (widget.state.indexHistory[MarketIndexNames.taiex]?.length ?? 0) >=
-              2 &&
-          (widget
-                      .state
-                      .indexHistory[MarketIndexNames.totalReturnIndex]
-                      ?.length ??
-                  0) >=
-              2;
 
-      children.add(
-        HeroIndexSection(
-          index: heroIdx.first,
-          historyData: widget.state.indexHistory[heroName] ?? [],
-          totalReturnHistory: market == 'TWSE'
-              ? widget.state.indexHistory[MarketIndexNames.totalReturnIndex] ??
-                    []
-              : [],
-          reserveBadgeSpace: shouldReserveBadge,
-        ),
-      );
-      children.add(const SizedBox(height: 12));
-    }
-
-    if (sections.isEmpty) {
-      children.add(
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            'marketOverview.noData'.tr(),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    } else {
-      for (int i = 0; i < sections.length; i++) {
-        if (i > 0) {
-          children.add(const SizedBox(height: 12));
-          children.add(
-            Divider(
-              height: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-            ),
-          );
-          children.add(const SizedBox(height: 12));
-        }
-        children.add(sections[i]);
-      }
-    }
+    // TPEx 側保留與 TWSE badge 等高的空間
+    final shouldReserveBadge =
+        market == 'TPEx' &&
+        (widget.state.indexHistory[MarketIndexNames.taiex]?.length ?? 0) >= 2 &&
+        (widget.state.indexHistory[MarketIndexNames.totalReturnIndex]?.length ??
+                0) >=
+            2;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
+      children: [
+        Text(
+          market == 'TWSE'
+              ? 'marketOverview.twse'.tr()
+              : 'marketOverview.tpex'.tr(),
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        if (heroIdx.isNotEmpty)
+          HeroIndexSection(
+            index: heroIdx.first,
+            historyData: widget.state.indexHistory[heroName] ?? [],
+            totalReturnHistory: market == 'TWSE'
+                ? widget.state.indexHistory[MarketIndexNames
+                          .totalReturnIndex] ??
+                      []
+                : [],
+            reserveBadgeSpace: shouldReserveBadge,
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'marketOverview.noData'.tr(),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
     );
+  }
+
+  // ── Section builders ──────────────────────────────────────────────────
+
+  Widget? _buildAdvanceDeclineSection(String market) {
+    final adData = widget.state.advanceDeclineByMarket[market];
+    if (adData == null || adData.total <= 0) return null;
+    return AdvanceDeclineGauge(
+      data: adData,
+      limitUpDown: widget.state.limitUpDownByMarket[market],
+      advanceRatioHistory: widget.state.advanceRatioHistory[market],
+    );
+  }
+
+  Widget? _buildTurnoverSection(String market) {
+    final turnoverData = widget.state.turnoverByMarket[market];
+    if (turnoverData == null || turnoverData.totalTurnover <= 0) return null;
+    return TradingTurnoverRow(
+      data: turnoverData,
+      turnoverComparison: widget.state.turnoverComparisonByMarket[market],
+      turnoverHistory: widget.state.turnoverHistory[market],
+    );
+  }
+
+  Widget? _buildInstitutionalSection(String market) {
+    final instData = widget.state.institutionalByMarket[market];
+    if (instData == null ||
+        (instData.totalNet == 0 &&
+            instData.foreignNet == 0 &&
+            instData.trustNet == 0 &&
+            instData.dealerNet == 0)) {
+      return null;
+    }
+    return InstitutionalFlowChart(
+      data: instData,
+      streak: widget.state.institutionalStreakByMarket[market],
+      totalNetHistory: widget.state.institutionalTotalNetHistory[market],
+    );
+  }
+
+  Widget? _buildMarginSection(String market) {
+    final marginData = widget.state.marginByMarket[market];
+    if (marginData == null ||
+        (marginData.marginChange == 0 && marginData.shortChange == 0)) {
+      return null;
+    }
+    return MarginCompactRow(
+      data: marginData,
+      marginBalanceHistory: widget.state.marginBalanceHistory[market],
+      shortBalanceHistory: widget.state.shortBalanceHistory[market],
+    );
+  }
+
+  Widget? _buildWarningsSection(String market) {
+    final warningCounts = widget.state.warningCountsByMarket[market];
+    if (warningCounts == null || warningCounts.total <= 0) return null;
+    return WarningsSummaryRow(data: warningCounts);
+  }
+
+  Widget? _buildChipAnomalySection(String market) {
+    final chipAnomalies = widget.state.chipAnomaliesByMarket[market];
+    if (chipAnomalies == null || chipAnomalies.isEmpty) return null;
+    return ChipAnomalyRow(anomalies: chipAnomalies);
+  }
+
+  Widget? _buildIndustrySection(String market) {
+    final industries = widget.state.industrySummaryByMarket[market];
+    if (industries == null || industries.isEmpty) return null;
+    return IndustryPerformanceRow(industries: industries);
   }
 }

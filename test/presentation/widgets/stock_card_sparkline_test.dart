@@ -85,6 +85,53 @@ void main() {
       expect(find.byType(RepaintBoundary), findsWidgets);
     });
 
+    testWidgets('uses custom width and height when provided', (tester) async {
+      const prices = [100.0, 105.0, 98.0, 110.0, 103.0, 107.0];
+      await tester.pumpWidget(
+        buildTestApp(
+          const MiniSparkline(
+            prices: prices,
+            color: Colors.blue,
+            width: 120,
+            height: 48,
+          ),
+        ),
+      );
+
+      expect(find.byType(LineChart), findsOneWidget);
+      final sizedBox = tester.widget<SizedBox>(
+        find
+            .ancestor(
+              of: find.byType(LineChart),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(sizedBox.width, 120);
+      expect(sizedBox.height, 48);
+    });
+
+    testWidgets('uses default size when width/height not provided', (
+      tester,
+    ) async {
+      const prices = [100.0, 105.0, 98.0, 110.0, 103.0, 107.0];
+      await tester.pumpWidget(
+        buildTestApp(const MiniSparkline(prices: prices, color: Colors.blue)),
+      );
+
+      expect(find.byType(LineChart), findsOneWidget);
+      final sizedBox = tester.widget<SizedBox>(
+        find
+            .ancestor(
+              of: find.byType(LineChart),
+              matching: find.byType(SizedBox),
+            )
+            .first,
+      );
+      expect(sizedBox.width, 70);
+      expect(sizedBox.height, 32);
+    });
+
     testWidgets('renders in dark mode', (tester) async {
       const prices = [100.0, 105.0, 98.0, 110.0, 103.0, 107.0];
       await tester.pumpWidget(

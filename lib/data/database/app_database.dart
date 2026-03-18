@@ -138,7 +138,7 @@ class AppDatabase extends $AppDatabase
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -162,6 +162,17 @@ class AppDatabase extends $AppDatabase
       }
       if (from < 4) {
         await m.createTable(insiderTransfer);
+      }
+      if (from < 5) {
+        // Add composite indexes for chip anomaly detection SQL performance
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_shareholding_symbol_date '
+          'ON shareholding (symbol, date)',
+        );
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_margin_trading_symbol_date '
+          'ON margin_trading (symbol, date)',
+        );
       }
     },
     beforeOpen: (details) async {

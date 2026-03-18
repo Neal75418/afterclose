@@ -1,8 +1,8 @@
-/// Integration test: 推薦清單從 DB 到 Provider State 的完整流程
-///
-/// 驗證：DB 資料 → AnalysisRepository → TodayNotifier.loadData()
-/// → TodayState.recommendations 的端到端資料流程。
-/// 使用真實 in-memory SQLite 資料庫 + 真實 Repository 邏輯。
+// Integration test: 推薦清單從 DB 到 Provider State 的完整流程
+//
+// 驗證：DB 資料 → AnalysisRepository → TodayNotifier.loadData()
+// → TodayState.recommendations 的端到端資料流程。
+// 使用真實 in-memory SQLite 資料庫 + 真實 Repository 邏輯。
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,7 +58,7 @@ void main() {
             high: Value(510.0 + i),
             low: Value(490.0 + i),
             close: Value(505.0 + i),
-            volume: Value(50000.0),
+            volume: const Value(50000.0),
           ),
         );
       }

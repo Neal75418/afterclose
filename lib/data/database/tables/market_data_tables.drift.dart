@@ -5721,6 +5721,10 @@ i0.Index get idxShareholdingDate => i0.Index(
   'idx_shareholding_date',
   'CREATE INDEX idx_shareholding_date ON shareholding (date)',
 );
+i0.Index get idxShareholdingSymbolDate => i0.Index(
+  'idx_shareholding_symbol_date',
+  'CREATE INDEX idx_shareholding_symbol_date ON shareholding (symbol, date)',
+);
 i0.Index get idxDayTradingSymbol => i0.Index(
   'idx_day_trading_symbol',
   'CREATE INDEX idx_day_trading_symbol ON day_trading (symbol)',
@@ -10016,6 +10020,10 @@ class MarginTradingCompanion extends i0.UpdateCompanion<i1.MarginTradingEntry> {
 i0.Index get idxMarginTradingDate => i0.Index(
   'idx_margin_trading_date',
   'CREATE INDEX idx_margin_trading_date ON margin_trading (date)',
+);
+i0.Index get idxMarginTradingSymbolDate => i0.Index(
+  'idx_margin_trading_symbol_date',
+  'CREATE INDEX idx_margin_trading_symbol_date ON margin_trading (symbol, date)',
 );
 i0.Index get idxTradingWarningSymbol => i0.Index(
   'idx_trading_warning_symbol',

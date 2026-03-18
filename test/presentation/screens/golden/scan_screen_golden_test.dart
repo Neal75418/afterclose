@@ -1,7 +1,9 @@
-@Tags(['golden'])
 /// Golden test: ScanScreen
 ///
 /// 驗證掃描結果列表在 light/dark 模式下的視覺一致性。
+@Tags(['golden'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

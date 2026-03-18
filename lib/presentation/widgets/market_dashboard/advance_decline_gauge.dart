@@ -4,15 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 
 /// 漲跌家數水平分段條
 ///
 /// 以水平 SegmentedBar 呈現上漲/持平/下跌比例，下方顯示數字
 class AdvanceDeclineGauge extends StatelessWidget {
-  const AdvanceDeclineGauge({super.key, required this.data, this.limitUpDown});
+  const AdvanceDeclineGauge({
+    super.key,
+    required this.data,
+    this.limitUpDown,
+    this.advanceRatioHistory,
+  });
 
   final AdvanceDecline data;
   final LimitUpDown? limitUpDown;
+
+  /// 30日漲幅比歷史（advance/total，0~1，oldest→newest）
+  final List<double>? advanceRatioHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +137,20 @@ class AdvanceDeclineGauge extends StatelessWidget {
                 color: AppTheme.downColor,
               ),
             ],
+          ),
+        ],
+
+        // 30日漲幅比趨勢 sparkline
+        if (advanceRatioHistory != null &&
+            advanceRatioHistory!.length >= 2) ...[
+          const SizedBox(height: 10),
+          MiniTrendChart(
+            dataPoints: advanceRatioHistory!,
+            height: 32,
+            lineColor: AppTheme.upColor,
+            fillColor: AppTheme.upColor.withValues(alpha: 0.08),
+            minY: 0,
+            maxY: 1,
           ),
         ],
       ],

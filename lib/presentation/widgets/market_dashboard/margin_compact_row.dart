@@ -4,14 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 
 /// 融資融券精簡顯示
 ///
 /// 兩欄並排，顯示融資增減和融券增減，帶漲跌箭頭
 class MarginCompactRow extends StatelessWidget {
-  const MarginCompactRow({super.key, required this.data});
+  const MarginCompactRow({
+    super.key,
+    required this.data,
+    this.marginBalanceHistory,
+    this.shortBalanceHistory,
+  });
 
   final MarginTradingTotals data;
+
+  /// 30日融資餘額歷史（供趨勢 sparkline，oldest→newest）
+  final List<double>? marginBalanceHistory;
+
+  /// 30日融券餘額歷史（供趨勢 sparkline，oldest→newest）
+  final List<double>? shortBalanceHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +51,7 @@ class MarginCompactRow extends StatelessWidget {
                 label: 'marketOverview.marginBalance'.tr(),
                 change: data.marginChange,
                 balance: data.marginBalance,
+                history: marginBalanceHistory,
               ),
             ),
             const SizedBox(width: 12),
@@ -47,6 +60,7 @@ class MarginCompactRow extends StatelessWidget {
                 label: 'marketOverview.shortBalance'.tr(),
                 change: data.shortChange,
                 balance: data.shortBalance,
+                history: shortBalanceHistory,
               ),
             ),
           ],
@@ -103,11 +117,13 @@ class _MarginItem extends StatelessWidget {
     required this.label,
     required this.change,
     required this.balance,
+    this.history,
   });
 
   final String label;
   final double change;
   final double balance;
+  final List<double>? history;
 
   @override
   Widget build(BuildContext context) {
@@ -171,6 +187,16 @@ class _MarginItem extends StatelessWidget {
                       fontSize: DesignTokens.fontSizeXs,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
+                  ),
+                ],
+                // 30日趨勢 sparkline
+                if (history != null && history!.length >= 2) ...[
+                  const SizedBox(height: 6),
+                  MiniTrendChart(
+                    dataPoints: history!,
+                    height: 28,
+                    lineColor: color,
+                    fillColor: color.withValues(alpha: 0.08),
                   ),
                 ],
               ],

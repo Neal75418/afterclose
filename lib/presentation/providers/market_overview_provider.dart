@@ -11,6 +11,8 @@ import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/domain/services/chip_anomaly_service.dart';
+import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -114,6 +116,47 @@ class InstitutionalStreak {
   final int dealerStreak;
 }
 
+/// 推薦績效摘要（用於 dashboard 精簡顯示）
+class RecommendationPerformance {
+  const RecommendationPerformance({
+    required this.recentResults,
+    required this.winRate,
+    required this.avgReturn,
+    required this.totalCount,
+    required this.topRules,
+  });
+
+  /// 近 30 筆驗證勝負序列（true=獲利，false=虧損），newest→oldest
+  final List<bool> recentResults;
+
+  /// 整體勝率 %
+  final double winRate;
+
+  /// 平均報酬 %
+  final double avgReturn;
+
+  /// 已驗證推薦總筆數
+  final int totalCount;
+
+  /// 勝率最高的 Top 3 規則
+  final List<TopRule> topRules;
+}
+
+/// 勝率最高的規則（用於 dashboard 顯示）
+class TopRule {
+  const TopRule({
+    required this.ruleId,
+    required this.winRate,
+    required this.avgReturn,
+    required this.triggerCount,
+  });
+
+  final String ruleId;
+  final double winRate;
+  final double avgReturn;
+  final int triggerCount;
+}
+
 /// 產業表現
 class IndustrySummary {
   const IndustrySummary({
@@ -149,6 +192,14 @@ class MarketOverviewState {
     this.warningCountsByMarket = const {},
     this.institutionalStreakByMarket = const {},
     this.industrySummaryByMarket = const {},
+    // 30日歷史趨勢（供 sparkline / bar chart，時序排列 oldest→newest）
+    this.institutionalTotalNetHistory = const {},
+    this.turnoverHistory = const {},
+    this.marginBalanceHistory = const {},
+    this.shortBalanceHistory = const {},
+    this.advanceRatioHistory = const {},
+    this.recommendationPerformance,
+    this.chipAnomaliesByMarket = const {},
     this.isLoading = false,
     this.error,
     this.dataDate,
@@ -193,6 +244,27 @@ class MarketOverviewState {
   /// 產業表現（依市場分組）
   final Map<String, List<IndustrySummary>> industrySummaryByMarket;
 
+  /// 30日法人合計淨額歷史（供趨勢 bar chart，元，oldest→newest）
+  final Map<String, List<double>> institutionalTotalNetHistory;
+
+  /// 30日成交量歷史（供趨勢 bar chart，元，oldest→newest）
+  final Map<String, List<double>> turnoverHistory;
+
+  /// 30日融資餘額歷史（供趨勢 sparkline，張，oldest→newest）
+  final Map<String, List<double>> marginBalanceHistory;
+
+  /// 30日融券餘額歷史（供趨勢 sparkline，張，oldest→newest）
+  final Map<String, List<double>> shortBalanceHistory;
+
+  /// 30日漲跌比歷史（供趨勢 sparkline，advance/total 0~1，oldest→newest）
+  final Map<String, List<double>> advanceRatioHistory;
+
+  /// 推薦績效摘要（全市場，非 per-market）
+  final RecommendationPerformance? recommendationPerformance;
+
+  /// 籌碼異動摘要（依市場分組）
+  final Map<String, List<ChipAnomaly>> chipAnomaliesByMarket;
+
   final bool isLoading;
   final String? error;
 
@@ -217,6 +289,13 @@ class MarketOverviewState {
     Map<String, WarningCounts>? warningCountsByMarket,
     Map<String, InstitutionalStreak>? institutionalStreakByMarket,
     Map<String, List<IndustrySummary>>? industrySummaryByMarket,
+    Map<String, List<double>>? institutionalTotalNetHistory,
+    Map<String, List<double>>? turnoverHistory,
+    Map<String, List<double>>? marginBalanceHistory,
+    Map<String, List<double>>? shortBalanceHistory,
+    Map<String, List<double>>? advanceRatioHistory,
+    RecommendationPerformance? recommendationPerformance,
+    Map<String, List<ChipAnomaly>>? chipAnomaliesByMarket,
     bool? isLoading,
     String? error,
     DateTime? dataDate,
@@ -242,6 +321,16 @@ class MarketOverviewState {
           institutionalStreakByMarket ?? this.institutionalStreakByMarket,
       industrySummaryByMarket:
           industrySummaryByMarket ?? this.industrySummaryByMarket,
+      institutionalTotalNetHistory:
+          institutionalTotalNetHistory ?? this.institutionalTotalNetHistory,
+      turnoverHistory: turnoverHistory ?? this.turnoverHistory,
+      marginBalanceHistory: marginBalanceHistory ?? this.marginBalanceHistory,
+      shortBalanceHistory: shortBalanceHistory ?? this.shortBalanceHistory,
+      advanceRatioHistory: advanceRatioHistory ?? this.advanceRatioHistory,
+      recommendationPerformance:
+          recommendationPerformance ?? this.recommendationPerformance,
+      chipAnomaliesByMarket:
+          chipAnomaliesByMarket ?? this.chipAnomaliesByMarket,
       isLoading: isLoading ?? this.isLoading,
       error: error,
       dataDate: dataDate ?? this.dataDate,
@@ -328,6 +417,12 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           dataDate,
           fallbackDate: fallbackDate,
         ), // [12] Map<String, List<IndustrySummary>>
+        _loadInstitutionalHistoryByMarket(dataDate), // [13]
+        _loadTurnoverHistoryByMarket(dataDate), // [14]
+        _loadMarginHistoryByMarket(dataDate), // [15]
+        _loadAdvanceDeclineHistoryByMarket(dataDate), // [16]
+        _loadRecommendationPerformance(), // [17]
+        _loadChipAnomalies(dataDate), // [18]
       ]);
 
       // 超時機制：最多等 _loadTimeoutSec 秒
@@ -407,6 +502,15 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final rawStreak = results[11] as Map<String, InstitutionalStreak>;
     final validatedStreak = _validateStreakConsistency(rawStreak, instByMarket);
 
+    // 30日歷史趨勢資料
+    final instHistory = results[13] as Map<String, List<double>>;
+    final turnoverHist = results[14] as Map<String, List<double>>;
+    final marginHistory =
+        results[15] as Map<String, ({List<double> margin, List<double> short})>;
+    final advRatioHistory = results[16] as Map<String, List<double>>;
+    final recPerf = results[17] as RecommendationPerformance?;
+    final chipAnomalies = results[18] as Map<String, List<ChipAnomaly>>;
+
     return MarketOverviewState(
       indices: indices,
       advanceDecline: results[1] as AdvanceDecline,
@@ -423,6 +527,17 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       institutionalStreakByMarket: validatedStreak,
       industrySummaryByMarket:
           results[12] as Map<String, List<IndustrySummary>>,
+      institutionalTotalNetHistory: instHistory,
+      turnoverHistory: turnoverHist,
+      marginBalanceHistory: {
+        for (final e in marginHistory.entries) e.key: e.value.margin,
+      },
+      shortBalanceHistory: {
+        for (final e in marginHistory.entries) e.key: e.value.short,
+      },
+      advanceRatioHistory: advRatioHistory,
+      recommendationPerformance: recPerf,
+      chipAnomaliesByMarket: chipAnomalies,
       dataDate: dataDate,
     );
   }
@@ -947,6 +1062,167 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     }
 
     return isPositive ? count : -count;
+  }
+
+  /// 載入法人合計淨額 30 日歷史（供趨勢 bar chart）
+  ///
+  /// 複用既有 [getRecentInstitutionalDailyByMarket]，
+  /// 提取 totalNet (foreign+trust+dealer) 並反轉為 oldest→newest。
+  Future<Map<String, List<double>>> _loadInstitutionalHistoryByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final raw = await _db.getRecentInstitutionalDailyByMarket(date);
+      final result = <String, List<double>>{};
+      for (final entry in raw.entries) {
+        result[entry.key] = entry.value
+            .map((e) => e.foreignNet + e.trustNet + e.dealerNet)
+            .toList()
+            .reversed
+            .toList();
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入法人歷史趨勢失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入成交額 30 日歷史（供趨勢 bar chart）
+  ///
+  /// 傳入 days: 30 覆蓋預設的 5 天，反轉為 oldest→newest。
+  Future<Map<String, List<double>>> _loadTurnoverHistoryByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final raw = await _db.getRecentTurnoverByMarket(date, days: 30);
+      final result = <String, List<double>>{};
+      for (final entry in raw.entries) {
+        result[entry.key] = entry.value
+            .map((e) => e.turnover)
+            .toList()
+            .reversed
+            .toList();
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入成交額歷史趨勢失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入融資/融券餘額 30 日歷史（供趨勢 sparkline）
+  ///
+  /// 回傳同時包含 margin 和 short 兩組 List，避免查兩次。
+  Future<Map<String, ({List<double> margin, List<double> short})>>
+  _loadMarginHistoryByMarket(DateTime date) async {
+    try {
+      final raw = await _db.getRecentMarginTradingByMarket(date);
+      final result = <String, ({List<double> margin, List<double> short})>{};
+      for (final entry in raw.entries) {
+        final reversed = entry.value.reversed.toList();
+        result[entry.key] = (
+          margin: reversed.map((e) => e.marginBalance).toList(),
+          short: reversed.map((e) => e.shortBalance).toList(),
+        );
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入融資融券歷史趨勢失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入漲跌比 30 日歷史（供趨勢 sparkline）
+  ///
+  /// 計算 advance / (advance + decline + unchanged)，範圍 0~1。
+  Future<Map<String, List<double>>> _loadAdvanceDeclineHistoryByMarket(
+    DateTime date,
+  ) async {
+    try {
+      final raw = await _db.getRecentAdvanceDeclineByMarket(date);
+      final result = <String, List<double>>{};
+      for (final entry in raw.entries) {
+        result[entry.key] = entry.value.reversed.map((e) {
+          final total = e.advance + e.decline + e.unchanged;
+          return total > 0 ? e.advance / total : 0.5;
+        }).toList();
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入漲跌比歷史趨勢失敗: $e');
+      return {};
+    }
+  }
+
+  /// 載入推薦績效摘要（全市場，非 per-market）
+  ///
+  /// 使用現有 [RuleAccuracyService] 的查詢方法，
+  /// 組合出 dashboard 需要的精簡摘要。
+  Future<RecommendationPerformance?> _loadRecommendationPerformance() async {
+    try {
+      final service = RuleAccuracyService(database: _db);
+
+      // 平行載入三組資料
+      final results = await Future.wait([
+        service.getOverallPerformanceStats(),
+        service.getStockValidationRecords(limit: 30),
+        service.getAllRuleStats(),
+      ]);
+
+      final stats = results[0] as OverallPerformanceStats;
+      final records = results[1] as List<StockValidationRecord>;
+      final allRules = results[2] as List<RuleStats>;
+
+      // 門檻：至少 5 筆驗證資料
+      if (stats.totalCount < 5) return null;
+
+      // 近 30 筆勝負序列
+      final recentResults = records
+          .where((r) => r.isSuccess != null)
+          .take(30)
+          .map((r) => r.isSuccess!)
+          .toList();
+
+      // Top 3 規則（門檻：至少 5 次觸發）
+      final qualifiedRules = allRules.where((r) => r.triggerCount >= 5).toList()
+        ..sort((a, b) => b.hitRate.compareTo(a.hitRate));
+      final topRules = qualifiedRules
+          .take(3)
+          .map(
+            (r) => TopRule(
+              ruleId: r.ruleId,
+              winRate: r.hitRate,
+              avgReturn: r.avgReturn,
+              triggerCount: r.triggerCount,
+            ),
+          )
+          .toList();
+
+      return RecommendationPerformance(
+        recentResults: recentResults,
+        winRate: stats.winRate,
+        avgReturn: stats.avgReturn,
+        totalCount: stats.totalCount,
+        topRules: topRules,
+      );
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入推薦績效摘要失敗: $e');
+      return null;
+    }
+  }
+
+  /// 載入籌碼異動偵測結果（依市場分組）
+  Future<Map<String, List<ChipAnomaly>>> _loadChipAnomalies(
+    DateTime date,
+  ) async {
+    try {
+      final service = ChipAnomalyService(database: _db);
+      return await service.detectAnomaliesByMarket(date);
+    } catch (e) {
+      AppLogger.warning('MarketOverview', '載入籌碼異動失敗: $e');
+      return {};
+    }
   }
 
   /// 載入產業表現（依市場分組，TWSE + TPEx 各自查詢）

@@ -6,6 +6,7 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 @DataClassName('ShareholdingEntry')
 @TableIndex(name: 'idx_shareholding_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_shareholding_date', columns: {#date})
+@TableIndex(name: 'idx_shareholding_symbol_date', columns: {#symbol, #date})
 class Shareholding extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -290,6 +291,7 @@ class StockValuation extends Table {
 @DataClassName('MarginTradingEntry')
 @TableIndex(name: 'idx_margin_trading_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_margin_trading_date', columns: {#date})
+@TableIndex(name: 'idx_margin_trading_symbol_date', columns: {#symbol, #date})
 class MarginTrading extends Table {
   /// 股票代碼
   TextColumn get symbol =>

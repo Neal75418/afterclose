@@ -1,10 +1,10 @@
-/// Integration test: 底部導航列與路由切換驗證
-///
-/// 驗證 GoRouter + StatefulShellRoute 的導航行為：
-/// 4 個分頁正確渲染並可切換。
-///
-/// 注意：不使用真實 AppShell（依賴 EasyLocalization），
-/// 而是使用等效的測試 Shell 來驗證導航邏輯。
+// Integration test: 底部導航列與路由切換驗證
+//
+// 驗證 GoRouter + StatefulShellRoute 的導航行為：
+// 4 個分頁正確渲染並可切換。
+//
+// 注意：不使用真實 AppShell（依賴 EasyLocalization），
+// 而是使用等效的測試 Shell 來驗證導航邏輯。
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -62,7 +62,7 @@ void main() {
                 routes: [
                   GoRoute(
                     path: '/',
-                    builder: (_, __) =>
+                    builder: (_, _) =>
                         const Center(child: Text('Today Content')),
                   ),
                 ],
@@ -71,7 +71,7 @@ void main() {
                 routes: [
                   GoRoute(
                     path: '/scan',
-                    builder: (_, __) =>
+                    builder: (_, _) =>
                         const Center(child: Text('Scan Content')),
                   ),
                 ],
@@ -80,7 +80,7 @@ void main() {
                 routes: [
                   GoRoute(
                     path: '/watchlist',
-                    builder: (_, __) =>
+                    builder: (_, _) =>
                         const Center(child: Text('Watchlist Content')),
                   ),
                 ],
@@ -89,7 +89,7 @@ void main() {
                 routes: [
                   GoRoute(
                     path: '/news',
-                    builder: (_, __) =>
+                    builder: (_, _) =>
                         const Center(child: Text('News Content')),
                   ),
                 ],

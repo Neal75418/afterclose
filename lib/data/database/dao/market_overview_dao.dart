@@ -531,6 +531,136 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     return byMarket;
   }
 
+  /// 取得近 N 個交易日各市場融資融券餘額歷史（供趨勢圖使用）
+  ///
+  /// 回傳 `Map<String, List<({DateTime date, double marginBalance, double shortBalance})>>`
+  /// 日期降序排列（最新在前）
+  Future<
+    Map<
+      String,
+      List<({DateTime date, double marginBalance, double shortBalance})>
+    >
+  >
+  getRecentMarginTradingByMarket(DateTime date, {int days = 30}) async {
+    final endOfDay = DateContext.normalize(date).add(const Duration(days: 1));
+    final startDate = DateContext.normalize(
+      date,
+    ).subtract(Duration(days: days * 2 + 5));
+
+    const query = '''
+    SELECT sm.market, mt.date,
+      COALESCE(SUM(mt.margin_balance), 0) as margin_balance,
+      COALESCE(SUM(mt.short_balance), 0) as short_balance
+    FROM margin_trading mt
+    INNER JOIN stock_master sm ON mt.symbol = sm.symbol
+    WHERE mt.date > ? AND mt.date < ?
+    GROUP BY sm.market, mt.date
+    ORDER BY mt.date DESC
+  ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startDate),
+        Variable.withDateTime(endOfDay),
+      ],
+      readsFrom: {marginTrading, stockMaster},
+    ).get();
+
+    final byMarket =
+        <
+          String,
+          List<({DateTime date, double marginBalance, double shortBalance})>
+        >{};
+    for (final row in results) {
+      final market = row.readNullable<String>('market');
+      final rowDate = row.readNullable<DateTime>('date');
+      if (market == null || rowDate == null) continue;
+
+      byMarket.putIfAbsent(market, () => []).add((
+        date: rowDate,
+        marginBalance: row.readNullable<double>('margin_balance') ?? 0,
+        shortBalance: row.readNullable<double>('short_balance') ?? 0,
+      ));
+    }
+
+    for (final key in byMarket.keys) {
+      final list = byMarket[key]!;
+      if (list.length > days) {
+        byMarket[key] = list.sublist(0, days);
+      }
+    }
+
+    return byMarket;
+  }
+
+  /// 取得近 N 個交易日各市場漲跌家數歷史（供趨勢圖使用）
+  ///
+  /// 回傳 `Map<String, List<({DateTime date, int advance, int decline, int unchanged})>>`
+  /// 日期降序排列（最新在前）
+  Future<
+    Map<
+      String,
+      List<({DateTime date, int advance, int decline, int unchanged})>
+    >
+  >
+  getRecentAdvanceDeclineByMarket(DateTime date, {int days = 30}) async {
+    final endOfDay = DateContext.normalize(date).add(const Duration(days: 1));
+    final startDate = DateContext.normalize(
+      date,
+    ).subtract(Duration(days: days * 2 + 5));
+
+    const query = '''
+    SELECT sm.market, dp.date,
+      SUM(CASE WHEN dp.price_change > 0 THEN 1 ELSE 0 END) as advance,
+      SUM(CASE WHEN dp.price_change < 0 THEN 1 ELSE 0 END) as decline,
+      SUM(CASE WHEN dp.price_change = 0 THEN 1 ELSE 0 END) as unchanged
+    FROM daily_price dp
+    INNER JOIN stock_master sm ON dp.symbol = sm.symbol
+    WHERE dp.date > ? AND dp.date < ?
+      AND dp.close IS NOT NULL
+      AND dp.price_change IS NOT NULL
+    GROUP BY sm.market, dp.date
+    ORDER BY dp.date DESC
+  ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startDate),
+        Variable.withDateTime(endOfDay),
+      ],
+      readsFrom: {dailyPrice, stockMaster},
+    ).get();
+
+    final byMarket =
+        <
+          String,
+          List<({DateTime date, int advance, int decline, int unchanged})>
+        >{};
+    for (final row in results) {
+      final market = row.readNullable<String>('market');
+      final rowDate = row.readNullable<DateTime>('date');
+      if (market == null || rowDate == null) continue;
+
+      byMarket.putIfAbsent(market, () => []).add((
+        date: rowDate,
+        advance: row.readNullable<int>('advance') ?? 0,
+        decline: row.readNullable<int>('decline') ?? 0,
+        unchanged: row.readNullable<int>('unchanged') ?? 0,
+      ));
+    }
+
+    for (final key in byMarket.keys) {
+      final list = byMarket[key]!;
+      if (list.length > days) {
+        byMarket[key] = list.sublist(0, days);
+      }
+    }
+
+    return byMarket;
+  }
+
   /// 取得指定日期的產業表現統計（指定市場）
   ///
   /// 回傳 `List<Map<String, dynamic>>` 依平均漲跌幅降序
