@@ -38,7 +38,7 @@ class MarketDashboard extends StatefulWidget {
 }
 
 /// 市場區段（避免使用 magic string）
-enum MarketSegment {
+enum _MarketSegment {
   // ignore: constant_identifier_names
   TWSE,
   // ignore: constant_identifier_names
@@ -49,7 +49,7 @@ enum MarketSegment {
 }
 
 class _MarketDashboardState extends State<MarketDashboard> {
-  MarketSegment _selectedMarket = MarketSegment.TWSE;
+  _MarketSegment _selectedMarket = _MarketSegment.TWSE;
 
   @override
   Widget build(BuildContext context) {
@@ -151,17 +151,17 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
   /// 建構市場選擇器（SegmentedButton）
   Widget _buildMarketSelector(ThemeData theme) {
-    return SegmentedButton<MarketSegment>(
+    return SegmentedButton<_MarketSegment>(
       segments: [
         ButtonSegment(
-          value: MarketSegment.TWSE,
+          value: _MarketSegment.TWSE,
           label: Text(
             'marketOverview.twse'.tr(),
             style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
           ),
         ),
         ButtonSegment(
-          value: MarketSegment.TPEx,
+          value: _MarketSegment.TPEx,
           label: Text(
             'marketOverview.tpex'.tr(),
             style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
@@ -169,7 +169,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
         ),
       ],
       selected: {_selectedMarket},
-      onSelectionChanged: (Set<MarketSegment> newSelection) {
+      onSelectionChanged: (Set<_MarketSegment> newSelection) {
         setState(() {
           _selectedMarket = newSelection.first;
         });
@@ -254,7 +254,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final sections = <Widget>[];
 
     // Section 1: Hero 加權指數（僅 TWSE）
-    if (_selectedMarket == MarketSegment.TWSE) {
+    if (_selectedMarket == _MarketSegment.TWSE) {
       final taiex = widget.state.indices
           .where((idx) => idx.name == MarketIndexNames.taiex)
           .toList();

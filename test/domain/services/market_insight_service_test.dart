@@ -165,7 +165,6 @@ void main() {
             symbol: '2330',
             stockName: '台積電',
             market: 'TWSE',
-            i18nKey: 'test',
           ),
           ChipAnomaly(
             type: ChipAnomalyType.shortSurge,
@@ -173,7 +172,6 @@ void main() {
             symbol: '2317',
             stockName: '鴻海',
             market: 'TWSE',
-            i18nKey: 'test',
           ),
         ],
         limitUpDown: const LimitUpDown(limitUp: 30, limitDown: 5),
@@ -345,7 +343,6 @@ void main() {
             symbol: '2330',
             stockName: '台積電',
             market: 'TWSE',
-            i18nKey: 'test',
           ),
         ],
         limitUpDown: const LimitUpDown(limitUp: 50, limitDown: 2),

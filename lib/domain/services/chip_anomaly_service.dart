@@ -32,8 +32,6 @@ class ChipAnomaly {
     required this.symbol,
     required this.stockName,
     required this.market,
-    required this.i18nKey,
-    this.i18nArgs = const {},
     this.keyValue,
   });
 
@@ -42,12 +40,6 @@ class ChipAnomaly {
   final String symbol;
   final String stockName;
   final String market;
-
-  /// i18n 描述 key（如 'marketOverview.chipAnomaly.desc.pledgeRatio'）
-  final String i18nKey;
-
-  /// i18n 描述參數
-  final Map<String, String> i18nArgs;
 
   /// 關鍵數值（如質押率、張數等）
   final String? keyValue;
@@ -129,8 +121,6 @@ class ChipAnomalyService {
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          i18nKey: 'marketOverview.chipAnomaly.desc.pledgeRatio',
-          i18nArgs: {'value': ratioStr},
           keyValue: '$ratioStr%',
         );
       }).toList();
@@ -166,7 +156,6 @@ class ChipAnomalyService {
 
       return rows.map((row) {
         final shares = row.read<int>('transfer_shares');
-        final identity = row.read<String>('identity');
         final sharesK = (shares / 1000).toStringAsFixed(0);
         return ChipAnomaly(
           type: ChipAnomalyType.insiderTransfer,
@@ -174,8 +163,6 @@ class ChipAnomalyService {
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          i18nKey: 'marketOverview.chipAnomaly.desc.transfer',
-          i18nArgs: {'identity': identity, 'shares': sharesK},
           keyValue: '$sharesK張',
         );
       }).toList();
@@ -218,11 +205,6 @@ class ChipAnomalyService {
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          i18nKey: 'marketOverview.chipAnomaly.desc.foreignRatio',
-          i18nArgs: {
-            'ratio': ratio.toStringAsFixed(1),
-            'limit': limit.toStringAsFixed(1),
-          },
           keyValue: '$pct%',
         );
       }).toList();
@@ -276,7 +258,6 @@ class ChipAnomalyService {
           .get();
 
       return rows.map((row) {
-        final shortSell = row.read<double>('short_sell');
         final ratio = row.read<double>('ratio');
         return ChipAnomaly(
           type: ChipAnomalyType.shortSurge,
@@ -284,11 +265,6 @@ class ChipAnomalyService {
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          i18nKey: 'marketOverview.chipAnomaly.desc.shortSellRatio',
-          i18nArgs: {
-            'shares': shortSell.toStringAsFixed(0),
-            'ratio': ratio.toStringAsFixed(1),
-          },
           keyValue: '${ratio.toStringAsFixed(1)}x',
         );
       }).toList();
@@ -355,10 +331,6 @@ class ChipAnomalyService {
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          i18nKey: isBuy
-              ? 'marketOverview.chipAnomaly.desc.instBuy'
-              : 'marketOverview.chipAnomaly.desc.instSell',
-          i18nArgs: {'amount': formatted},
           keyValue: '${isBuy ? '+' : '-'}$formatted',
         );
       }).toList();

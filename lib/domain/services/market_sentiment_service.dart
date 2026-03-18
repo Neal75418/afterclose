@@ -28,7 +28,7 @@ class MarketSentiment {
   /// 各子指標分數 (key → 0~100)
   final Map<String, double> subScores;
 
-  static const empty = MarketSentiment(
+  static const _empty = MarketSentiment(
     score: 50,
     level: SentimentLevel.neutral,
     subScores: {},
@@ -117,7 +117,7 @@ class MarketSentimentService {
     }
 
     // 加權計算
-    if (subScores.isEmpty) return MarketSentiment.empty;
+    if (subScores.isEmpty) return MarketSentiment._empty;
 
     const weights = {
       'advanceRatio': 0.25,

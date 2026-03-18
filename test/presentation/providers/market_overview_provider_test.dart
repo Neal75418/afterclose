@@ -118,8 +118,6 @@ void main() {
       expect(state.indices, isEmpty);
       expect(state.indexHistory, isEmpty);
       expect(state.advanceDecline.total, 0);
-      expect(state.institutional.totalNet, 0);
-      expect(state.margin.marginBalance, 0);
       expect(state.isLoading, isFalse);
       expect(state.error, isNull);
       expect(state.dataDate, isNull);
@@ -228,7 +226,7 @@ void main() {
       expect(state.indices[0].name, '發行量加權股價指數');
     });
 
-    test('loadData populates institutional totals from TWSE + TPEX', () async {
+    test('loadData populates institutional totals by market', () async {
       setupEmptyDefaults();
 
       when(
@@ -257,10 +255,12 @@ void main() {
       await notifier.loadData();
 
       final state = container.read(marketOverviewProvider);
-      expect(state.institutional.foreignNet, 1300000); // TWSE + TPEX
-      expect(state.institutional.trustNet, 600000);
-      expect(state.institutional.dealerNet, -250000);
-      expect(state.institutional.totalNet, 1650000);
+      final twse = state.institutionalByMarket['TWSE']!;
+      expect(twse.foreignNet, 1000000);
+      expect(twse.trustNet, 500000);
+      expect(twse.dealerNet, -200000);
+      final tpex = state.institutionalByMarket['TPEx']!;
+      expect(tpex.foreignNet, 300000);
     });
 
     test('loadData populates margin trading totals from DB', () async {
@@ -287,11 +287,12 @@ void main() {
       await notifier.loadData();
 
       final state = container.read(marketOverviewProvider);
-      // TWSE + TPEx 合併
-      expect(state.margin.marginBalance, 50000.0);
-      expect(state.margin.marginChange, 1000.0);
-      expect(state.margin.shortBalance, 3000.0);
-      expect(state.margin.shortChange, -200.0);
+      final twseMargin = state.marginByMarket['TWSE']!;
+      expect(twseMargin.marginBalance, 30000.0);
+      expect(twseMargin.marginChange, 700.0);
+      final tpexMargin = state.marginByMarket['TPEx']!;
+      expect(tpexMargin.shortBalance, 1000.0);
+      expect(tpexMargin.shortChange, -100.0);
     });
 
     test('loadData populates by-market breakdowns', () async {

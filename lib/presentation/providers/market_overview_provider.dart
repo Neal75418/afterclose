@@ -180,8 +180,6 @@ class MarketOverviewState {
     this.indices = const [],
     this.indexHistory = const {},
     this.advanceDecline = const AdvanceDecline(),
-    this.institutional = const InstitutionalTotals(),
-    this.margin = const MarginTradingTotals(),
     // 依市場分組的統計（預設空 Map）
     this.advanceDeclineByMarket = const {},
     this.institutionalByMarket = const {},
@@ -210,8 +208,6 @@ class MarketOverviewState {
   /// 指數名稱 → 近 30 日收盤值列表（供走勢圖使用）
   final Map<String, List<double>> indexHistory;
   final AdvanceDecline advanceDecline;
-  final InstitutionalTotals institutional;
-  final MarginTradingTotals margin;
 
   /// 漲跌家數（依市場分組）
   /// Key: 'TWSE' / 'TPEx'
@@ -278,8 +274,6 @@ class MarketOverviewState {
     List<TwseMarketIndex>? indices,
     Map<String, List<double>>? indexHistory,
     AdvanceDecline? advanceDecline,
-    InstitutionalTotals? institutional,
-    MarginTradingTotals? margin,
     Map<String, AdvanceDecline>? advanceDeclineByMarket,
     Map<String, InstitutionalTotals>? institutionalByMarket,
     Map<String, MarginTradingTotals>? marginByMarket,
@@ -304,8 +298,6 @@ class MarketOverviewState {
       indices: indices ?? this.indices,
       indexHistory: indexHistory ?? this.indexHistory,
       advanceDecline: advanceDecline ?? this.advanceDecline,
-      institutional: institutional ?? this.institutional,
-      margin: margin ?? this.margin,
       advanceDeclineByMarket:
           advanceDeclineByMarket ?? this.advanceDeclineByMarket,
       institutionalByMarket:
@@ -381,48 +373,44 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final allTasks = Future.wait([
         _loadIndices(), // [0] List<TwseMarketIndex>
         _loadAdvanceDecline(dataDate), // [1] AdvanceDecline
-        _loadInstitutionalTotals(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [2] InstitutionalTotals
-        _loadIndexHistory(), // [3] Map<String, List<double>>
+        _loadIndexHistory(), // [2] Map<String, List<double>>
         _loadAdvanceDeclineByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [4] Map<String, AdvanceDecline>
+        ), // [3] Map<String, AdvanceDecline>
         _loadInstitutionalByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [5] Map<String, InstitutionalTotals>
+        ), // [4] Map<String, InstitutionalTotals>
         _loadMarginByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [6] Map<String, MarginTradingTotals>
+        ), // [5] Map<String, MarginTradingTotals>
         _loadTurnoverByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [7] Map<String, TradingTurnover>
+        ), // [6] Map<String, TradingTurnover>
         _loadLimitUpDownByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [8] Map<String, LimitUpDown>
+        ), // [7] Map<String, LimitUpDown>
         _loadTurnoverComparisonByMarket(
           dataDate,
-        ), // [9] Map<String, TurnoverComparison>
-        _loadWarningCountsByMarket(), // [10] Map<String, WarningCounts>
+        ), // [8] Map<String, TurnoverComparison>
+        _loadWarningCountsByMarket(), // [9] Map<String, WarningCounts>
         _loadInstitutionalStreakByMarket(
           dataDate,
-        ), // [11] Map<String, InstitutionalStreak>
+        ), // [10] Map<String, InstitutionalStreak>
         _loadIndustrySummaryByMarket(
           dataDate,
           fallbackDate: fallbackDate,
-        ), // [12] Map<String, List<IndustrySummary>>
-        _loadInstitutionalHistoryByMarket(dataDate), // [13]
-        _loadTurnoverHistoryByMarket(dataDate), // [14]
-        _loadMarginHistoryByMarket(dataDate), // [15]
-        _loadAdvanceDeclineHistoryByMarket(dataDate), // [16]
-        _loadRecommendationPerformance(), // [17]
-        _loadChipAnomalies(dataDate), // [18]
+        ), // [11] Map<String, List<IndustrySummary>>
+        _loadInstitutionalHistoryByMarket(dataDate), // [12]
+        _loadTurnoverHistoryByMarket(dataDate), // [13]
+        _loadMarginHistoryByMarket(dataDate), // [14]
+        _loadAdvanceDeclineHistoryByMarket(dataDate), // [15]
+        _loadRecommendationPerformance(), // [16]
+        _loadChipAnomalies(dataDate), // [17]
       ]);
 
       // 超時機制：最多等 _loadTimeoutSec 秒
@@ -472,7 +460,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 從載入結果建構 state
   MarketOverviewState _buildState(List<Object?> results, DateTime dataDate) {
     final indices = results[0] as List<TwseMarketIndex>;
-    final rawHistory = results[3] as Map<String, List<double>>;
+    final rawHistory = results[2] as Map<String, List<double>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
@@ -490,43 +478,38 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
     }
 
-    final instByMarket = results[5] as Map<String, InstitutionalTotals>;
-    final marginByMarket = results[6] as Map<String, MarginTradingTotals>;
-
-    // 從 byMarket 合併全市場融資融券總額（避免重複查詢）
-    final marginTotal = _mergeMarginTotals(marginByMarket);
+    final instByMarket = results[4] as Map<String, InstitutionalTotals>;
+    final marginByMarket = results[5] as Map<String, MarginTradingTotals>;
 
     // Streak 來自 DB（per-stock 聚合），顯示金額來自 API（市場總計）。
     // 兩者資料來源不同，方向可能矛盾（API 含大宗交易等 per-stock 未涵蓋的項目）。
     // 當 streak 方向與 API 值矛盾時，重置為 ±1（不會顯示 badge，因門檻 ≥ 2）。
-    final rawStreak = results[11] as Map<String, InstitutionalStreak>;
+    final rawStreak = results[10] as Map<String, InstitutionalStreak>;
     final validatedStreak = _validateStreakConsistency(rawStreak, instByMarket);
 
     // 30日歷史趨勢資料
-    final instHistory = results[13] as Map<String, List<double>>;
-    final turnoverHist = results[14] as Map<String, List<double>>;
+    final instHistory = results[12] as Map<String, List<double>>;
+    final turnoverHist = results[13] as Map<String, List<double>>;
     final marginHistory =
-        results[15] as Map<String, ({List<double> margin, List<double> short})>;
-    final advRatioHistory = results[16] as Map<String, List<double>>;
-    final recPerf = results[17] as RecommendationPerformance?;
-    final chipAnomalies = results[18] as Map<String, List<ChipAnomaly>>;
+        results[14] as Map<String, ({List<double> margin, List<double> short})>;
+    final advRatioHistory = results[15] as Map<String, List<double>>;
+    final recPerf = results[16] as RecommendationPerformance?;
+    final chipAnomalies = results[17] as Map<String, List<ChipAnomaly>>;
 
     return MarketOverviewState(
       indices: indices,
       advanceDecline: results[1] as AdvanceDecline,
-      institutional: results[2] as InstitutionalTotals,
-      margin: marginTotal,
       indexHistory: indexHistory,
-      advanceDeclineByMarket: results[4] as Map<String, AdvanceDecline>,
+      advanceDeclineByMarket: results[3] as Map<String, AdvanceDecline>,
       institutionalByMarket: instByMarket,
       marginByMarket: marginByMarket,
-      turnoverByMarket: results[7] as Map<String, TradingTurnover>,
-      limitUpDownByMarket: results[8] as Map<String, LimitUpDown>,
-      turnoverComparisonByMarket: results[9] as Map<String, TurnoverComparison>,
-      warningCountsByMarket: results[10] as Map<String, WarningCounts>,
+      turnoverByMarket: results[6] as Map<String, TradingTurnover>,
+      limitUpDownByMarket: results[7] as Map<String, LimitUpDown>,
+      turnoverComparisonByMarket: results[8] as Map<String, TurnoverComparison>,
+      warningCountsByMarket: results[9] as Map<String, WarningCounts>,
       institutionalStreakByMarket: validatedStreak,
       industrySummaryByMarket:
-          results[12] as Map<String, List<IndustrySummary>>,
+          results[11] as Map<String, List<IndustrySummary>>,
       institutionalTotalNetHistory: instHistory,
       turnoverHistory: turnoverHist,
       marginBalanceHistory: {
@@ -539,21 +522,6 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       recommendationPerformance: recPerf,
       chipAnomaliesByMarket: chipAnomalies,
       dataDate: dataDate,
-    );
-  }
-
-  /// 從分市場融資融券合併為全市場總額
-  static MarginTradingTotals _mergeMarginTotals(
-    Map<String, MarginTradingTotals> byMarket,
-  ) {
-    if (byMarket.isEmpty) return const MarginTradingTotals();
-    double sum(double Function(MarginTradingTotals m) fn) =>
-        byMarket.values.fold(0, (acc, m) => acc + fn(m));
-    return MarginTradingTotals(
-      marginBalance: sum((m) => m.marginBalance),
-      marginChange: sum((m) => m.marginChange),
-      shortBalance: sum((m) => m.shortBalance),
-      shortChange: sum((m) => m.shortChange),
     );
   }
 
@@ -717,59 +685,6 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       AppLogger.warning('MarketOverview', '載入漲跌家數失敗: $e');
       return const AdvanceDecline();
     }
-  }
-
-  /// 載入法人買賣超金額總額（上市+上櫃合計）
-  ///
-  /// 使用 TWSE/TPEX 的法人買賣金額統計 API。
-  /// TWSE 和 TPEX 獨立呼叫，避免一方失敗拖垮另一方。
-  /// 若主要日期的 API 回傳 null，自動用 [fallbackDate] 重試。
-  Future<InstitutionalTotals> _loadInstitutionalTotals(
-    DateTime date, {
-    DateTime? fallbackDate,
-  }) async {
-    // 平行呼叫 TWSE 和 TPEX API，各自獨立 catch 避免互相拖垮
-    final results = await Future.wait([
-      () async {
-        try {
-          var data = await _twse.getInstitutionalAmounts(date: date);
-          if (data == null && fallbackDate != null) {
-            data = await _twse.getInstitutionalAmounts(date: fallbackDate);
-          }
-          return data;
-        } catch (e) {
-          AppLogger.warning('MarketOverview', '載入 TWSE 法人總額失敗: $e');
-          return null;
-        }
-      }(),
-      () async {
-        try {
-          var data = await _tpex.getInstitutionalAmounts(date: date);
-          if (data == null && fallbackDate != null) {
-            data = await _tpex.getInstitutionalAmounts(date: fallbackDate);
-          }
-          return data;
-        } catch (e) {
-          AppLogger.warning('MarketOverview', '載入 TPEx 法人總額失敗: $e');
-          return null;
-        }
-      }(),
-    ]);
-
-    final twseData = results[0] as TwseInstitutionalAmounts?;
-    final tpexData = results[1] as TpexInstitutionalAmounts?;
-
-    final foreignNet =
-        (twseData?.foreignNet ?? 0) + (tpexData?.foreignNet ?? 0);
-    final trustNet = (twseData?.trustNet ?? 0) + (tpexData?.trustNet ?? 0);
-    final dealerNet = (twseData?.dealerNet ?? 0) + (tpexData?.dealerNet ?? 0);
-
-    return InstitutionalTotals(
-      foreignNet: foreignNet,
-      trustNet: trustNet,
-      dealerNet: dealerNet,
-      totalNet: foreignNet + trustNet + dealerNet,
-    );
   }
 
   /// 載入漲跌家數（依市場分組）
