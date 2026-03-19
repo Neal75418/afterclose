@@ -265,7 +265,7 @@ class ChipAnomalyService {
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          keyValue: '${ratio.toStringAsFixed(1)}x',
+          keyValue: '${ratio.toStringAsFixed(1)}倍',
         );
       }).toList();
     } catch (e) {
@@ -324,7 +324,8 @@ class ChipAnomalyService {
       return rows.map((row) {
         final totalNet = row.read<double>('total_net');
         final isBuy = totalNet > 0;
-        final formatted = _formatSheets(totalNet.abs());
+        // DB 以「股」為單位，除以 1000 轉換為「張」後格式化
+        final formatted = _formatSheets(totalNet.abs() / 1000);
         return ChipAnomaly(
           type: ChipAnomalyType.institutionalSurge,
           severity: ChipSeverity.high,

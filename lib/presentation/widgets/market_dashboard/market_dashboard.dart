@@ -1,8 +1,10 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
@@ -414,7 +416,12 @@ class _MarketDashboardState extends State<MarketDashboard> {
     // 籌碼異動
     final chipAnomalies = widget.state.chipAnomaliesByMarket[marketKey];
     if (chipAnomalies != null && chipAnomalies.isNotEmpty) {
-      sections.add(ChipAnomalyRow(anomalies: chipAnomalies));
+      sections.add(
+        ChipAnomalyRow(
+          anomalies: chipAnomalies,
+          onStockTap: (symbol) => context.push(AppRoutes.stockDetail(symbol)),
+        ),
+      );
     }
 
     // 產業表現
@@ -714,7 +721,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
   Widget? _buildChipAnomalySection(String market) {
     final chipAnomalies = widget.state.chipAnomaliesByMarket[market];
     if (chipAnomalies == null || chipAnomalies.isEmpty) return null;
-    return ChipAnomalyRow(anomalies: chipAnomalies);
+    return ChipAnomalyRow(
+      anomalies: chipAnomalies,
+      onStockTap: (symbol) => context.push(AppRoutes.stockDetail(symbol)),
+    );
   }
 
   Widget? _buildIndustrySection(String market) {

@@ -170,18 +170,27 @@
     },
     "chipAnomaly": {
       "title": "籌碼異動",
+      "summary": "今日偵測到 {count} 項異常訊號",
       "highPledge": "高質押",
       "insiderTransfer": "內部人轉讓",
       "foreignNearLimit": "外資逼近上限",
       "shortSurge": "融券暴增",
       "institutionalSurge": "法人集中買賣",
+      "subtitleHighPledge": "董監質押比逾 50%，留意強制賣壓",
+      "subtitleInsiderTransfer": "董監事或大股東申報轉讓股票",
+      "subtitleForeignNearLimit": "外資持股逼近法定上限",
+      "subtitleShortSurge": "融券賣出暴增，注意空頭壓力",
+      "subtitleInstitutionalSurge": "法人單日買賣超越近期均值 5 倍",
+      "moreItems": "還有 {count} 檔未顯示",
       "desc": {
-        "pledgeRatio": "質押率 {value}%",
-        "transfer": "{identity} 轉讓 {shares}張",
-        "foreignRatio": "外資 {ratio}% / 上限 {limit}%",
-        "shortSellRatio": "融券賣 {shares}張 ({ratio}x)",
-        "instBuy": "法人大買 {amount}",
-        "instSell": "法人大賣 {amount}"
+        "highPledge": "董監質押 {value}，若股價下跌有強制賣出風險",
+        "insiderTransferZero": "已申報轉讓意向，尚未實際執行",
+        "insiderTransfer": "申報轉讓 {value}，需追蹤是否陸續出脫",
+        "foreignNearLimit": "外資已達上限的 {value}，後續買盤空間受限",
+        "shortSurge": "融券是近5日均量的 {value}，放空力道異常強勁",
+        "instBuy": "法人大量買入 {value}，籌碼集中跡象",
+        "instSell": "法人大量賣出 {value}，機構出脫跡象",
+        "instMove": "法人大量異動 {value}，籌碼面需留意"
       }
     },
     "recPerformance": {
