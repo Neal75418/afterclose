@@ -66,17 +66,17 @@ void main() {
       expect(find.text('15.00%'), findsOneWidget);
     });
 
-    testWidgets('shows pledge warning when pledge ratio >= 30', (tester) async {
+    testWidgets('shows pledge warning when pledge ratio >= 50', (tester) async {
       widenViewport(tester);
       await pumpSection(
         tester,
-        InsiderSection(history: [createEntry(pledgeRatio: 35.0)]),
+        InsiderSection(history: [createEntry(pledgeRatio: 55.0)]),
       );
 
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
 
-    testWidgets('hides pledge warning when pledge ratio < 30', (tester) async {
+    testWidgets('hides pledge warning when pledge ratio < 50', (tester) async {
       widenViewport(tester);
       await pumpSection(
         tester,

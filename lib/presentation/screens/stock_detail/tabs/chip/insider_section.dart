@@ -1,12 +1,13 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/presentation/widgets/section_header.dart';
-
-import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
+import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/presentation/widgets/section_header.dart';
 
 /// Displays insider holding data: ratios, shares change, and pledge warning.
 class InsiderSection extends StatelessWidget {
@@ -41,7 +42,14 @@ class InsiderSection extends StatelessWidget {
     final insiderRatio = latest.insiderRatio ?? 0;
     final pledgeRatio = latest.pledgeRatio ?? 0;
     final sharesChange = latest.sharesChange ?? 0;
-    final isHighPledge = pledgeRatio >= 30;
+    final isHighPledge =
+        pledgeRatio >= FundamentalParams.highPledgeRatioThreshold;
+
+    // 依時間升冪排列（oldest first）供趨勢圖使用
+    final insiderRatioHistory = sorted.reversed
+        .map((e) => e.insiderRatio)
+        .whereType<double>()
+        .toList();
 
     return Card(
       child: Padding(
@@ -148,6 +156,29 @@ class InsiderSection extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+            ],
+
+            // 董監持股比例趨勢圖（至少 2 筆資料才顯示）
+            if (insiderRatioHistory.length >= 2) ...[
+              const SizedBox(height: 12),
+              Divider(
+                height: 1,
+                color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'chip.insiderRatioTrend'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 4),
+              MiniTrendChart(
+                dataPoints: insiderRatioHistory,
+                height: 56,
+                lineColor: const Color(0xFF3498DB),
+                fillColor: const Color(0xFF3498DB).withValues(alpha: 0.08),
               ),
             ],
           ],

@@ -518,6 +518,6 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
   }
 
   String _formatFullDate(DateTime date) {
-    return '${date.month}/${date.day}';
+    return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 }

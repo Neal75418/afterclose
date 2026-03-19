@@ -106,7 +106,12 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       alpha: 0.7,
                     ),
                     surfaceTintColor: Colors.transparent,
-                    title: Text(widget.symbol),
+                    title: Text(
+                      state.stockName != null
+                          ? '${widget.symbol}  ${state.stockName}'
+                          : widget.symbol,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     actions: [
                       IconButton(
                         icon: const Icon(Icons.share_outlined),
@@ -167,8 +172,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                   children: [
                     TechnicalTab(symbol: widget.symbol),
                     ChipTab(symbol: widget.symbol),
-                    FundamentalsTab(symbol: widget.symbol),
                     InsiderTab(symbol: widget.symbol),
+                    FundamentalsTab(symbol: widget.symbol),
                     AlertsTab(symbol: widget.symbol),
                   ],
                 ),
@@ -283,8 +288,8 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         tabs: [
           Tab(text: 'stockDetail.tabTechnical'.tr()),
           Tab(text: 'stockDetail.tabChip'.tr()),
-          Tab(text: 'stockDetail.tabFundamentals'.tr()),
           Tab(text: 'stockDetail.tabInsider'.tr()),
+          Tab(text: 'stockDetail.tabFundamentals'.tr()),
           Tab(text: 'stockDetail.tabAlerts'.tr()),
         ],
       ),

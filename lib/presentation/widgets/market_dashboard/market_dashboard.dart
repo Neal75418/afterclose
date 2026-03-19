@@ -499,8 +499,27 @@ class _MarketDashboardState extends State<MarketDashboard> {
           const SizedBox(height: 14),
         ],
 
-        // 共用：市場情緒儀表板
+        // 共用：市場情緒儀表板（僅 TWSE，TPEx 資料量不足以穩定計算）
         if (sentiment != null) ...[
+          Row(
+            children: [
+              Text(
+                'marketOverview.twse'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'marketOverview.sentimentLabel'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
           SentimentGaugeSection(
             sentiment: sentiment,
             sentimentHistory: _computeSentimentHistory('TWSE'),
