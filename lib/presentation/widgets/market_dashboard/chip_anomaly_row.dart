@@ -4,7 +4,8 @@ import 'package:flutter/services.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/domain/services/chip_anomaly_service.dart';
+import 'package:afterclose/domain/services/chip_anomaly_service.dart'
+    show ChipAnomaly, ChipAnomalyType, ChipSeverity, kZeroInsiderTransfer;
 
 /// 籌碼異動摘要列
 ///
@@ -357,7 +358,7 @@ String? _buildDescription(ChipAnomaly a) {
       return '$base.highPledge'.tr(namedArgs: {'value': v});
 
     case ChipAnomalyType.insiderTransfer:
-      if (v == '0張') return '$base.insiderTransferZero'.tr();
+      if (v == kZeroInsiderTransfer) return '$base.insiderTransferZero'.tr();
       return '$base.insiderTransfer'.tr(namedArgs: {'value': v});
 
     case ChipAnomalyType.foreignNearLimit:

@@ -156,14 +156,13 @@ class ChipAnomalyService {
 
       return rows.map((row) {
         final shares = row.read<int>('transfer_shares');
-        final sharesK = (shares / 1000).toStringAsFixed(0);
         return ChipAnomaly(
           type: ChipAnomalyType.insiderTransfer,
           severity: ChipSeverity.medium,
           symbol: row.read<String>('symbol'),
           stockName: row.read<String>('name'),
           market: row.read<String>('market'),
-          keyValue: '$sharesK張',
+          keyValue: _formatInsiderShares(shares),
         );
       }).toList();
     } catch (e) {
@@ -350,3 +349,20 @@ String _formatSheets(double value) {
   }
   return '${absVal.toStringAsFixed(0)}張';
 }
+
+/// 格式化內部人轉讓股數（股 → 張）
+///
+/// - shares == 0：申報尚未確定股數，使用 [kZeroInsiderTransfer] 哨兵值
+/// - shares 1–999：不足一張，顯示 `<1張`（避免四捨五入誤判為零）
+/// - shares ≥ 1000：正常換算為張數
+String _formatInsiderShares(int shares) {
+  if (shares == 0) return kZeroInsiderTransfer;
+  if (shares < 1000) return '<1張';
+  final lots = shares ~/ 1000;
+  return '$lots張';
+}
+
+/// 內部人轉讓「股數為零」的哨兵值
+///
+/// 由 service 產生、widget 消費，集中定義避免跨層硬編碼字串比對。
+const kZeroInsiderTransfer = '0張';
