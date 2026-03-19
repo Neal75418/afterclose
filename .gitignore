@@ -50,6 +50,13 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Eclipse/Buildship IDE generated files
+android/.project
+android/.settings/
+
+# Golden test failure artifacts (debug only, not for version control)
+test/**/failures/
+
 # Environment variables
 .env
 .env.*
