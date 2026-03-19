@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:afterclose/domain/services/chip_anomaly_service.dart'
+    show ChipAnomaly, ChipAnomalyType, ChipSeverity, kZeroInsiderTransfer;
+import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
+
+import '../../../helpers/widget_test_helpers.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Test helper
+// ─────────────────────────────────────────────────────────────────────────────
+
+ChipAnomaly _anomaly(
+  String symbol,
+  String name, {
+  ChipAnomalyType type = ChipAnomalyType.highPledge,
+  ChipSeverity severity = ChipSeverity.high,
+  String market = 'TWSE',
+  String? keyValue = '65.5%',
+}) {
+  return ChipAnomaly(
+    type: type,
+    severity: severity,
+    symbol: symbol,
+    stockName: name,
+    market: market,
+    keyValue: keyValue,
+  );
+}
+
+void main() {
+  setUpAll(() async {
+    await setupTestLocalization();
+  });
+
+  void widenViewport(WidgetTester tester) {
+    tester.view.physicalSize = const Size(5000, 4000);
+    addTearDown(() => tester.view.resetPhysicalSize());
+  }
+
+  group('ChipAnomalyRow', () {
+    // ─────────────────────────────────────────────────────────────────────────
+    // 空資料
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('空列表時不渲染任何內容', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(const ChipAnomalyRow(anomalies: [])),
+      );
+
+      expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
+      expect(find.byType(Text), findsNothing);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 摘要橫幅
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('有異動時顯示摘要橫幅 icon', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(ChipAnomalyRow(anomalies: [_anomaly('2330', '台積電')])),
+      );
+
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 個股資料顯示
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('股票代號與名稱顯示在畫面上', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(ChipAnomalyRow(anomalies: [_anomaly('2330', '台積電')])),
+      );
+
+      expect(find.text('2330'), findsOneWidget);
+      expect(find.text('台積電'), findsOneWidget);
+    });
+
+    testWidgets('keyValue 顯示在畫面上', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(
+            anomalies: [_anomaly('2330', '台積電', keyValue: '65.5%')],
+          ),
+        ),
+      );
+
+      expect(find.text('65.5%'), findsOneWidget);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // kZeroInsiderTransfer
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('insiderTransfer with kZeroInsiderTransfer 不崩潰', (
+      tester,
+    ) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(
+            anomalies: [
+              _anomaly(
+                '2330',
+                '台積電',
+                type: ChipAnomalyType.insiderTransfer,
+                severity: ChipSeverity.medium,
+                keyValue: kZeroInsiderTransfer,
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('2330'), findsOneWidget);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 點擊回呼
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('點擊個股觸發 onStockTap 並傳入正確代號', (tester) async {
+      widenViewport(tester);
+      String? tappedSymbol;
+
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(
+            anomalies: [_anomaly('2330', '台積電')],
+            onStockTap: (symbol) => tappedSymbol = symbol,
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('2330'));
+      await tester.pump();
+
+      expect(tappedSymbol, '2330');
+    });
+
+    testWidgets('onStockTap 為 null 時點擊不崩潰', (tester) async {
+      widenViewport(tester);
+      await tester.pumpWidget(
+        buildTestApp(ChipAnomalyRow(anomalies: [_anomaly('2330', '台積電')])),
+      );
+
+      await tester.tap(find.text('2330'));
+      expect(tester.takeException(), isNull);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 類型區塊：徽章與顯示上限
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('totalCount 徽章顯示實際總數，不受顯示上限（3 筆）影響', (tester) async {
+      widenViewport(tester);
+
+      // 5 筆相同類型，widget 最多顯示 3 筆，但徽章應顯示 5
+      final anomalies = List.generate(
+        5,
+        (i) => _anomaly('${2330 + i}', '股票$i'),
+      );
+
+      await tester.pumpWidget(
+        buildTestApp(ChipAnomalyRow(anomalies: anomalies)),
+      );
+
+      // 徽章顯示總數 '5'
+      expect(find.text('5'), findsOneWidget);
+    });
+
+    testWidgets('超過 3 筆時只顯示 3 筆個股', (tester) async {
+      widenViewport(tester);
+
+      final anomalies = List.generate(
+        5,
+        (i) => _anomaly('${2330 + i}', '股票$i'),
+      );
+
+      await tester.pumpWidget(
+        buildTestApp(ChipAnomalyRow(anomalies: anomalies)),
+      );
+
+      // 5 筆只顯示前 3 筆（2330, 2331, 2332）
+      expect(find.text('2330'), findsOneWidget);
+      expect(find.text('2332'), findsOneWidget);
+      expect(find.text('2334'), findsNothing);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 多類型分群
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('不同類型分別渲染各自區塊', (tester) async {
+      widenViewport(tester);
+
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(
+            anomalies: [
+              _anomaly('2330', '台積電', type: ChipAnomalyType.highPledge),
+              _anomaly(
+                '2317',
+                '鴻海',
+                type: ChipAnomalyType.shortSurge,
+                severity: ChipSeverity.medium,
+                keyValue: '4.0倍',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 深色模式
+    // ─────────────────────────────────────────────────────────────────────────
+
+    testWidgets('深色模式正常渲染', (tester) async {
+      widenViewport(tester);
+
+      await tester.pumpWidget(
+        buildTestApp(
+          ChipAnomalyRow(anomalies: [_anomaly('2330', '台積電')]),
+          brightness: Brightness.dark,
+        ),
+      );
+
+      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.text('2330'), findsOneWidget);
+    });
+  });
+}
