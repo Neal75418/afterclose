@@ -373,15 +373,10 @@ void main() {
   // ===========================================================================
 
   group('priceAlertProvider', () {
-    test('provides initial state', () {
+    test('has correct initial state', () {
       final state = container.read(priceAlertProvider);
-      expect(state, isA<PriceAlertState>());
       expect(state.alerts, isEmpty);
-    });
-
-    test('notifier is accessible', () {
-      final notifier = container.read(priceAlertProvider.notifier);
-      expect(notifier, isA<PriceAlertNotifier>());
+      expect(state.isLoading, isFalse);
     });
   });
 
@@ -404,22 +399,19 @@ void main() {
     test('above returns non-empty string', () {
       final alert = createAlert(alertType: 'ABOVE', targetValue: 900.50);
       final desc = getAlertDescription(alert, AlertType.above);
-      expect(desc, isA<String>());
-      expect(desc.isNotEmpty, isTrue);
+      expect(desc, isNotEmpty);
     });
 
     test('below returns non-empty string', () {
       final alert = createAlert(alertType: 'BELOW', targetValue: 700.25);
       final desc = getAlertDescription(alert, AlertType.below);
-      expect(desc, isA<String>());
-      expect(desc.isNotEmpty, isTrue);
+      expect(desc, isNotEmpty);
     });
 
     test('changePct returns non-empty string', () {
       final alert = createAlert(alertType: 'CHANGE_PCT', targetValue: 5.0);
       final desc = getAlertDescription(alert, AlertType.changePct);
-      expect(desc, isA<String>());
-      expect(desc.isNotEmpty, isTrue);
+      expect(desc, isNotEmpty);
     });
   });
 }

@@ -258,15 +258,11 @@ void main() {
   // ===========================================================================
 
   group('backtestProvider', () {
-    test('provides initial state', () {
+    test('has correct initial state', () {
       final state = container.read(backtestProvider);
-      expect(state, isA<BacktestState>());
       expect(state.isExecuting, isFalse);
-    });
-
-    test('notifier is accessible', () {
-      final notifier = container.read(backtestProvider.notifier);
-      expect(notifier, isA<BacktestNotifier>());
+      expect(state.result, isNull);
+      expect(state.error, isNull);
     });
   });
 }

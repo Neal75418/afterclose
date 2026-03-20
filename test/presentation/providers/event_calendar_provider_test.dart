@@ -349,14 +349,12 @@ void main() {
   // ===========================================================================
 
   group('eventCalendarProvider', () {
-    test('provides initial state', () {
+    test('has correct initial state', () {
       final state = container.read(eventCalendarProvider);
-      expect(state, isA<EventCalendarState>());
-    });
-
-    test('notifier is accessible', () {
-      final notifier = container.read(eventCalendarProvider.notifier);
-      expect(notifier, isA<EventCalendarNotifier>());
+      expect(state.events, isEmpty);
+      expect(state.isLoading, isFalse);
+      expect(state.error, isNull);
+      expect(state.filter, CalendarFilter.all);
     });
   });
 }

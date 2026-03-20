@@ -582,15 +582,10 @@ void main() {
   // ===========================================================================
 
   group('watchlistProvider', () {
-    test('provides initial state', () {
+    test('has correct initial state', () {
       final state = container.read(watchlistProvider);
-      expect(state, isA<WatchlistState>());
       expect(state.items, isEmpty);
-    });
-
-    test('notifier is accessible', () {
-      final notifier = container.read(watchlistProvider.notifier);
-      expect(notifier, isA<WatchlistNotifier>());
+      expect(state.isLoading, isFalse);
     });
   });
 }

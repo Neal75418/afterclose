@@ -94,13 +94,6 @@ void main() {
         expect(title, isNotEmpty);
       });
     }
-
-    test('includes symbol in title', () {
-      final title = NotificationNotifier.getAlertTitle('2330', AlertType.above);
-      // .tr() returns the key when no translation found,
-      // but the namedArgs substitution still happens in the key
-      expect(title, isNotEmpty);
-    });
   });
 
   group('NotificationNotifier.getAlertBody', () {
