@@ -218,7 +218,7 @@ class TaiwanCalendar {
     var current = date;
     var count = 0;
     var iterations = 0;
-    final maxIterations = tradingDays * 5; // 安全上限
+    final maxIterations = tradingDays * 5 + 14; // 安全上限（含 14 天連假緩衝）
     while (count < tradingDays && iterations < maxIterations) {
       current = current.add(const Duration(days: 1));
       iterations++;
@@ -236,7 +236,7 @@ class TaiwanCalendar {
     var current = date;
     var count = 0;
     var iterations = 0;
-    final maxIterations = tradingDays * 5; // 安全上限
+    final maxIterations = tradingDays * 5 + 14; // 安全上限（含 14 天連假緩衝）
     while (count < tradingDays && iterations < maxIterations) {
       current = current.subtract(const Duration(days: 1));
       iterations++;
