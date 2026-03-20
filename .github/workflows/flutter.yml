@@ -60,6 +60,7 @@ jobs:
         run: flutter analyze --no-fatal-infos lib/
 
       - name: Run tests
+        if: "!(github.ref == 'refs/heads/main' && github.event_name == 'push')"
         run: flutter test --exclude-tags golden
 
       - name: Run tests with coverage
