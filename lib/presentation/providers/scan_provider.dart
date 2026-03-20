@@ -129,6 +129,7 @@ class ScanNotifier extends Notifier<ScanState> {
     _watchlistSymbols = {};
     _industrySymbols = null;
     _industryFilterSeq = 0;
+    _reloadSeq = 0;
     _dateCtx = null;
     return const ScanState();
   }
@@ -152,6 +153,7 @@ class ScanNotifier extends Notifier<ScanState> {
   Set<String> _watchlistSymbols = {};
   Set<String>? _industrySymbols;
   int _industryFilterSeq = 0;
+  int _reloadSeq = 0;
   DateContext? _dateCtx;
 
   /// Load scan data (first page)
@@ -289,7 +291,7 @@ class ScanNotifier extends Notifier<ScanState> {
 
     // 篩選切換使用 isFiltering（輕量 indicator），不替換為全骨架
     state = state.copyWith(filter: filter, isFiltering: true, stocks: []);
-    _reloadFirstPage();
+    _reloadFirstPage(++_reloadSeq);
   }
 
   /// 設定產業篩選
@@ -317,15 +319,18 @@ class ScanNotifier extends Notifier<ScanState> {
 
     // 重新套用目前的 filter（含產業）
     _applyGlobalFilter(state.filter);
-    _reloadFirstPage();
+    _reloadFirstPage(++_reloadSeq);
   }
 
   /// Helper to reload first page after filter/sort change
-  Future<void> _reloadFirstPage() async {
+  Future<void> _reloadFirstPage(int seq) async {
     try {
       final firstPageItems = await _loadItemsForAnalyses(
         _filteredAnalyses.take(kPageSize).toList(),
       );
+
+      // 防護 race condition：若期間有新的 reload 觸發，丟棄舊結果
+      if (seq != _reloadSeq) return;
 
       state = state.copyWith(
         stocks: firstPageItems,
@@ -335,6 +340,7 @@ class ScanNotifier extends Notifier<ScanState> {
         totalCount: _filteredAnalyses.length,
       );
     } catch (e) {
+      if (seq != _reloadSeq) return;
       state = state.copyWith(
         isLoading: false,
         isFiltering: false,
@@ -377,7 +383,7 @@ class ScanNotifier extends Notifier<ScanState> {
 
     // 排序切換使用 isFiltering（輕量 indicator）
     state = state.copyWith(sort: sort, isFiltering: true, stocks: []);
-    _reloadFirstPage();
+    _reloadFirstPage(++_reloadSeq);
   }
 
   /// 套用全域排序至 _filteredAnalyses

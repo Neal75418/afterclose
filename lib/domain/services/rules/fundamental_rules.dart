@@ -20,7 +20,7 @@ class InstitutionalShiftRule extends StockRule {
   String get name => '法人動向';
 
   @override
-  RuleCategory get category => RuleCategory.technical;
+  RuleCategory get category => RuleCategory.institutional;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -185,7 +185,7 @@ class NewsRule extends StockRule {
   String get name => '新聞熱度';
 
   @override
-  RuleCategory get category => RuleCategory.technical;
+  RuleCategory get category => RuleCategory.market;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -252,17 +252,18 @@ class NewsRule extends StockRule {
   static bool _hasNegationPrefix(String text, String keyword) {
     const negationWords = ['取消', '失去', '下滑', '衰退', '減少', '流失', '不再', '未能'];
     final index = text.indexOf(keyword);
-    if (index <= 0) return false;
+    if (index < 0) return false;
 
-    // 取關鍵字前方最多 4 個字的文本
-    final prefixStart = (index - 4).clamp(0, index);
-    final prefix = text.substring(prefixStart, index);
-
-    for (final neg in negationWords) {
-      if (prefix.contains(neg)) return true;
+    // 取關鍵字前方最多 4 個字的文本（index==0 時跳過前綴檢查）
+    if (index > 0) {
+      final prefixStart = (index - 4).clamp(0, index);
+      final prefix = text.substring(prefixStart, index);
+      for (final neg in negationWords) {
+        if (prefix.contains(neg)) return true;
+      }
     }
 
-    // 也檢查關鍵字後方的否定詞（如「訂單取消」）
+    // 也檢查關鍵字後方的否定詞（如「訂單取消」），不受 index 限制
     final suffixEnd = (index + keyword.length + 4).clamp(0, text.length);
     final suffix = text.substring(index + keyword.length, suffixEnd);
 

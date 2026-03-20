@@ -176,44 +176,23 @@ double? _calculate20DayLow(List<DailyPriceEntry> prices) {
 /// 檢查是否有跌破所需的成交量（空方）
 ///
 /// 今日成交量需達 20 日均量的 1.5 倍（恐慌性下跌通常伴隨放量）
-bool _hasBreakdownVolume(List<DailyPriceEntry> prices) {
-  if (prices.length < 21) return true; // 資料不足則放行
-
-  final todayVolume = prices.last.volume;
-  if (todayVolume == null || todayVolume <= 0) return false;
-
-  // 計算前 20 日平均成交量
-  double sum = 0;
-  int count = 0;
-
-  for (var i = prices.length - 2; i >= prices.length - 21 && i >= 0; i--) {
-    final vol = prices[i].volume;
-    if (vol != null && vol > 0) {
-      sum += vol;
-      count++;
-    }
-  }
-
-  if (count == 0) return true; // 無歷史資料則放行
-
-  final avgVolume = sum / count;
-  return todayVolume >= avgVolume * TrendParams.reversalVolumeConfirm;
-}
+bool _hasBreakdownVolume(List<DailyPriceEntry> prices) =>
+    _hasVolumeConfirmation(prices, TrendParams.reversalVolumeConfirm);
 
 // ==================================================
 // 輔助方法
 // ==================================================
 
-/// 檢查是否有突破所需的成交量（多方）
-///
-/// 今日成交量需達 20 日均量的 1.5 倍
-bool _hasBreakoutVolume(List<DailyPriceEntry> prices) {
+bool _hasBreakoutVolume(List<DailyPriceEntry> prices) =>
+    _hasVolumeConfirmation(prices, TrendParams.reversalVolumeConfirm);
+
+/// 今日成交量是否達到 20 日均量的指定倍數
+bool _hasVolumeConfirmation(List<DailyPriceEntry> prices, double multiplier) {
   if (prices.length < 21) return true; // 資料不足則放行
 
   final todayVolume = prices.last.volume;
   if (todayVolume == null || todayVolume <= 0) return false;
 
-  // 計算前 20 日平均成交量
   double sum = 0;
   int count = 0;
 
@@ -228,5 +207,5 @@ bool _hasBreakoutVolume(List<DailyPriceEntry> prices) {
   if (count == 0) return true; // 無歷史資料則放行
 
   final avgVolume = sum / count;
-  return todayVolume >= avgVolume * TrendParams.reversalVolumeConfirm;
+  return todayVolume >= avgVolume * multiplier;
 }
