@@ -9,8 +9,17 @@ void main() {
         expect(PriceLimit.isLimitUp(10.0), isTrue);
       });
 
-      test('should return true for value within tolerance (+9.85%)', () {
+      test('should return true for value within tolerance (+9.86%)', () {
         expect(PriceLimit.isLimitUp(9.86), isTrue);
+      });
+
+      test('should return true at exact tolerance boundary (9.85%)', () {
+        // threshold = limitPercent - _tolerance = 10.0 - 0.15 = 9.85
+        expect(PriceLimit.isLimitUp(9.85), isTrue);
+      });
+
+      test('should return false just below tolerance boundary (9.84%)', () {
+        expect(PriceLimit.isLimitUp(9.84), isFalse);
       });
 
       test('should return false for +9.5%', () {
@@ -36,8 +45,16 @@ void main() {
         expect(PriceLimit.isLimitDown(-10.0), isTrue);
       });
 
-      test('should return true for value within tolerance (-9.85%)', () {
+      test('should return true for value within tolerance (-9.86%)', () {
         expect(PriceLimit.isLimitDown(-9.86), isTrue);
+      });
+
+      test('should return true at exact tolerance boundary (-9.85%)', () {
+        expect(PriceLimit.isLimitDown(-9.85), isTrue);
+      });
+
+      test('should return false just below tolerance boundary (-9.84%)', () {
+        expect(PriceLimit.isLimitDown(-9.84), isFalse);
       });
 
       test('should return false for -9.5%', () {

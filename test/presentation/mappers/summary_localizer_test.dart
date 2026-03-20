@@ -29,7 +29,8 @@ void main() {
       expect(result.confidence, AnalysisConfidence.high);
       expect(result.hasConflict, isTrue);
       expect(result.confluenceCount, 3);
-      expect(result.overallAssessment, isA<String>());
+      // .tr() returns raw key without i18n context → verify key is present
+      expect(result.overallAssessment, contains('summary.noSignals'));
       expect(result.keySignals, hasLength(1));
       expect(result.riskFactors, hasLength(1));
       expect(result.supportingData, hasLength(1));
@@ -135,7 +136,6 @@ void main() {
       // The nested keys are resolved first, then injected as namedArgs
       // Verifies no crash and proper resolution chain
       expect(result.supportingData, hasLength(1));
-      expect(result.supportingData.first, isA<String>());
       expect(result.supportingData.first, isNotEmpty);
     });
 
@@ -196,7 +196,6 @@ void main() {
       final result = localizer.localize(data);
 
       // Both parts should be present in the joined string
-      expect(result.overallAssessment, isA<String>());
       expect(
         result.overallAssessment.length,
         greaterThan('summary.overallUp'.length),
@@ -230,8 +229,8 @@ void main() {
 
         final result = localizer.localize(data);
 
-        // Three parts joined
-        expect(result.overallAssessment, isA<String>());
+        // Three parts joined → result should be non-empty
+        expect(result.overallAssessment, isNotEmpty);
         expect(result.confidence, AnalysisConfidence.high);
         expect(result.confluenceCount, 2);
       },

@@ -79,6 +79,18 @@ void main() {
       expect(LiquidityChecker.checkCandidateLiquidity(entry), isNull);
     });
 
+    test('fails at 1 share below volume threshold (boundary - 1)', () {
+      // volume = 999,999 < 1,000,000 (minCandidateVolumeShares)
+      final entry = makePrice(
+        close: 100.0,
+        volume: RuleParams.minCandidateVolumeShares - 1,
+      );
+      expect(
+        LiquidityChecker.checkCandidateLiquidity(entry),
+        equals('LOW_VOLUME'),
+      );
+    });
+
     test('passes at exact turnover threshold', () {
       // volume = 1,500,000 (passes)
       // turnover = 20 * 1,500,000 = 30M = minCandidateTurnover
