@@ -220,15 +220,9 @@ mixin UserDaoMixin on $AppDatabase {
     final priceHistoryMap = await _fetchPriceHistoryForAlerts(symbols);
     final indicatorDataMap = await _fetchIndicatorDataForAlerts(symbols);
 
-    // Fetch warning/disposal symbols
-    final warningSymbols = <String>{};
-    final disposalSymbols = <String>{};
-    for (final symbol in symbols) {
-      final warnings = await getActiveWarningsForSymbol(symbol);
-      if (warnings.isNotEmpty) warningSymbols.add(symbol);
-      final disposals = await getDisposalWarningsForSymbol(symbol);
-      if (disposals.isNotEmpty) disposalSymbols.add(symbol);
-    }
+    // 以批次查詢取代逐筆 N+1 模式，避免 N 個 symbol 產生 2N 次 DB 往返
+    final disposalSymbols = await _fetchDisposalSymbolsBatch(symbols);
+    final warningSymbols = await _fetchWarningSymbolsBatch(symbols);
 
     // Delegate evaluation to domain service (prefer injection from caller)
     final service = evaluationService ?? AlertEvaluationService();
@@ -320,6 +314,30 @@ mixin UserDaoMixin on $AppDatabase {
 
     final results = await query.get();
     return BatchQueryHelper.groupBySymbol(results, (entry) => entry.symbol);
+  }
+
+  /// 批次取得處置股代碼（批次查詢，供警示檢查使用）
+  Future<Set<String>> _fetchDisposalSymbolsBatch(List<String> symbols) async {
+    if (symbols.isEmpty) return {};
+    final results =
+        await (select(tradingWarning)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.isActive.equals(true))
+              ..where((t) => t.warningType.equals('DISPOSAL')))
+            .get();
+    return results.map((r) => r.symbol).toSet();
+  }
+
+  /// 批次取得有警示（不含處置）的股票代碼（批次查詢，供警示檢查使用）
+  Future<Set<String>> _fetchWarningSymbolsBatch(List<String> symbols) async {
+    if (symbols.isEmpty) return {};
+    final results =
+        await (select(tradingWarning)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.isActive.equals(true))
+              ..where((t) => t.warningType.isNotValue('DISPOSAL')))
+            .get();
+    return results.map((r) => r.symbol).toSet();
   }
 
   /// 取得指定股票的所有有效警示（不含處置）

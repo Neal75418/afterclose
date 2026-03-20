@@ -194,63 +194,67 @@ mixin PriceDaoMixin on $AppDatabase {
   /// 有效格式：4 位數字（一般股票）或 5-6 位數字開頭為 00（ETF）
   ///
   /// 回傳各表刪除的記錄數
-  Future<Map<String, int>> cleanupInvalidStockCodes() async {
-    final results = <String, int>{};
+  Future<Map<String, int>> cleanupInvalidStockCodes() {
+    // 包裝在 transaction 確保 6 個跨表刪除的原子性；
+    // 中斷時不會留下部分清理的不一致狀態
+    return transaction(() async {
+      final results = <String, int>{};
 
-    // 有效股票代碼：
-    // - 4 位數字（一般股票）
-    // - 00 開頭的 ETF (00xxx, 006xxx)
-    // 無效代碼：6 位數字（權證）、含英文字母的特殊代碼等
-    //
-    // 使用 SQLite GLOB 語法：
-    // - [0-9] 匹配單個數字
-    // - * 匹配任意字符
-    //
-    // 策略：刪除長度為 6 且不是 00 開頭的（權證）
+      // 有效股票代碼：
+      // - 4 位數字（一般股票）
+      // - 00 開頭的 ETF (00xxx, 006xxx)
+      // 無效代碼：6 位數字（權證）、含英文字母的特殊代碼等
+      //
+      // 使用 SQLite GLOB 語法：
+      // - [0-9] 匹配單個數字
+      // - * 匹配任意字符
+      //
+      // 策略：刪除長度為 6 且不是 00 開頭的（權證）
 
-    // 清理 daily_price - 刪除 6 位數字權證
-    results['daily_price'] = await customUpdate(
-      'DELETE FROM daily_price WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
-      variables: [Variable.withString('00%')],
-      updates: {dailyPrice},
-    );
+      // 清理 daily_price - 刪除 6 位數字權證
+      results['daily_price'] = await customUpdate(
+        'DELETE FROM daily_price WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+        variables: [Variable.withString('00%')],
+        updates: {dailyPrice},
+      );
 
-    // 清理 daily_institutional
-    results['daily_institutional'] = await customUpdate(
-      'DELETE FROM daily_institutional WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
-      variables: [Variable.withString('00%')],
-      updates: {dailyInstitutional},
-    );
+      // 清理 daily_institutional
+      results['daily_institutional'] = await customUpdate(
+        'DELETE FROM daily_institutional WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+        variables: [Variable.withString('00%')],
+        updates: {dailyInstitutional},
+      );
 
-    // 清理 day_trading
-    results['day_trading'] = await customUpdate(
-      'DELETE FROM day_trading WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
-      variables: [Variable.withString('00%')],
-      updates: {dayTrading},
-    );
+      // 清理 day_trading
+      results['day_trading'] = await customUpdate(
+        'DELETE FROM day_trading WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+        variables: [Variable.withString('00%')],
+        updates: {dayTrading},
+      );
 
-    // 清理 margin_trading
-    results['margin_trading'] = await customUpdate(
-      'DELETE FROM margin_trading WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
-      variables: [Variable.withString('00%')],
-      updates: {marginTrading},
-    );
+      // 清理 margin_trading
+      results['margin_trading'] = await customUpdate(
+        'DELETE FROM margin_trading WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+        variables: [Variable.withString('00%')],
+        updates: {marginTrading},
+      );
 
-    // 清理 shareholding
-    results['shareholding'] = await customUpdate(
-      'DELETE FROM shareholding WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
-      variables: [Variable.withString('00%')],
-      updates: {shareholding},
-    );
+      // 清理 shareholding
+      results['shareholding'] = await customUpdate(
+        'DELETE FROM shareholding WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+        variables: [Variable.withString('00%')],
+        updates: {shareholding},
+      );
 
-    // 清理 stock_master (主檔)
-    results['stock_master'] = await customUpdate(
-      'DELETE FROM stock_master WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
-      variables: [Variable.withString('00%')],
-      updates: {stockMaster},
-    );
+      // 清理 stock_master (主檔)
+      results['stock_master'] = await customUpdate(
+        'DELETE FROM stock_master WHERE LENGTH(symbol) = 6 AND symbol NOT LIKE ?',
+        variables: [Variable.withString('00%')],
+        updates: {stockMaster},
+      );
 
-    return results;
+      return results;
+    });
   }
 
   /// 取得候選股票歷史資料完成度

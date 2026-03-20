@@ -118,10 +118,13 @@ mixin TradingWarningDaoMixin on $AppDatabase {
   }
 
   /// 批次新增警示資料
+  ///
+  /// 使用 insertOrIgnore：歷史警示資料的 PK 確定後不應異動，
+  /// 若已存在則跳過（保留 isActive = false 的過期狀態，避免重新同步時誤將已過期警示重新激活）。
   Future<void> insertWarningData(List<TradingWarningCompanion> entries) async {
     await batch((b) {
       for (final entry in entries) {
-        b.insert(tradingWarning, entry, mode: InsertMode.insertOrReplace);
+        b.insert(tradingWarning, entry, mode: InsertMode.insertOrIgnore);
       }
     });
   }
