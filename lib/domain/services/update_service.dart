@@ -547,12 +547,11 @@ class UpdateService {
                   .take(remainingSlots),
           }.toList();
           if (targetSymbols.isNotEmpty) {
-            final epsCount = await fundamentalSyncer.syncFinancialStatements(
-              symbols: targetSymbols,
-            );
-            final bsCount = await fundamentalSyncer.syncBalanceSheets(
-              symbols: targetSymbols,
-            );
+            // 損益表與資產負債表無相依性，平行執行以縮短等待時間
+            final (epsCount, bsCount) = await (
+              fundamentalSyncer.syncFinancialStatements(symbols: targetSymbols),
+              fundamentalSyncer.syncBalanceSheets(symbols: targetSymbols),
+            ).wait;
             final bsLabel = bsCount < 0 ? '已快取' : '$bsCount';
             AppLogger.info(
               'UpdateSvc',

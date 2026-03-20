@@ -177,8 +177,19 @@ class FundamentalSyncer {
   ///
   /// 每批 10 檔並行，批間延遲 500ms 避免超過 FinMind 配額。
   /// 每檔股票內部有 90 天新鮮度檢查。
+  /// ETF（代碼以 00 開頭）無財報資料，自動過濾以避免無效 API 呼叫。
   Future<int> syncFinancialStatements({required List<String> symbols}) async {
-    if (symbols.isEmpty) return 0;
+    // 過濾 ETF：00 開頭的代碼（0050、00636、006205 等）沒有財報資料
+    final stockSymbols = symbols.where((s) => !s.startsWith('00')).toList();
+    if (stockSymbols.isEmpty) return 0;
+
+    if (stockSymbols.length < symbols.length) {
+      AppLogger.debug(
+        'FundamentalSyncer',
+        '財報同步: 跳過 ${symbols.length - stockSymbols.length} 檔 ETF，'
+            '實際同步 ${stockSymbols.length} 檔',
+      );
+    }
 
     final now = _clock.now();
     final start = now.subtract(
@@ -188,8 +199,8 @@ class FundamentalSyncer {
     var count = 0;
 
     const chunkSize = ApiConfig.syncerBatchSize;
-    for (var i = 0; i < symbols.length; i += chunkSize) {
-      final chunk = symbols.skip(i).take(chunkSize).toList();
+    for (var i = 0; i < stockSymbols.length; i += chunkSize) {
+      final chunk = stockSymbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(
         chunk.map(
           (s) => _fundamentalRepo.syncFinancialStatements(
@@ -201,7 +212,7 @@ class FundamentalSyncer {
       );
       count += results.fold(0, (sum, n) => sum + n);
 
-      if (i + chunkSize < symbols.length) {
+      if (i + chunkSize < stockSymbols.length) {
         await Future.delayed(
           const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
         );
@@ -211,7 +222,7 @@ class FundamentalSyncer {
     if (count > 0) {
       AppLogger.info(
         'FundamentalSyncer',
-        '財報同步: $count 筆 (${symbols.length} 檔)',
+        '財報同步: $count 筆 (${stockSymbols.length} 檔)',
       );
     }
     return count;
@@ -221,9 +232,20 @@ class FundamentalSyncer {
   ///
   /// 每批 10 檔並行，批間延遲 500ms 避免超過 FinMind 配額。
   /// 需要 MarketDataRepository 才能使用。
+  /// ETF（代碼以 00 開頭）無財報資料，自動過濾以避免無效 API 呼叫。
   Future<int> syncBalanceSheets({required List<String> symbols}) async {
     final marketDataRepo = _marketDataRepo;
-    if (marketDataRepo == null || symbols.isEmpty) return 0;
+    // 過濾 ETF：00 開頭的代碼（0050、00636、006205 等）沒有資產負債表資料
+    final stockSymbols = symbols.where((s) => !s.startsWith('00')).toList();
+    if (marketDataRepo == null || stockSymbols.isEmpty) return 0;
+
+    if (stockSymbols.length < symbols.length) {
+      AppLogger.debug(
+        'FundamentalSyncer',
+        '資產負債表同步: 跳過 ${symbols.length - stockSymbols.length} 檔 ETF，'
+            '實際同步 ${stockSymbols.length} 檔',
+      );
+    }
 
     final now = _clock.now();
     final start = now.subtract(
@@ -233,8 +255,8 @@ class FundamentalSyncer {
     var count = 0;
 
     const chunkSize = ApiConfig.syncerBatchSize;
-    for (var i = 0; i < symbols.length; i += chunkSize) {
-      final chunk = symbols.skip(i).take(chunkSize).toList();
+    for (var i = 0; i < stockSymbols.length; i += chunkSize) {
+      final chunk = stockSymbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(
         chunk.map(
           (s) => marketDataRepo
@@ -249,7 +271,7 @@ class FundamentalSyncer {
       );
       count += results.fold(0, (sum, n) => sum + n);
 
-      if (i + chunkSize < symbols.length) {
+      if (i + chunkSize < stockSymbols.length) {
         await Future.delayed(
           const Duration(milliseconds: ApiConfig.syncerBatchDelayMs),
         );
@@ -259,13 +281,13 @@ class FundamentalSyncer {
     if (count > 0) {
       AppLogger.info(
         'FundamentalSyncer',
-        '資產負債表同步: $count 筆 (${symbols.length} 檔)',
+        '資產負債表同步: $count 筆 (${stockSymbols.length} 檔)',
       );
       return count;
     } else {
       AppLogger.debug(
         'FundamentalSyncer',
-        '資產負債表: ${symbols.length} 檔皆已快取，無需同步',
+        '資產負債表: ${stockSymbols.length} 檔皆已快取，無需同步',
       );
       return -1;
     }
