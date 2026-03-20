@@ -282,6 +282,8 @@ class MarketOverviewState {
   /// 是否有任何有效資料
   bool get hasData => indices.isNotEmpty || advanceDecline.total > 0;
 
+  static const _sentinel = Object();
+
   MarketOverviewState copyWith({
     List<TwseMarketIndex>? indices,
     Map<String, List<double>>? indexHistory,
@@ -299,7 +301,7 @@ class MarketOverviewState {
     RecommendationPerformance? recommendationPerformance,
     Map<String, List<ChipAnomaly>>? chipAnomaliesByMarket,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
     DateTime? dataDate,
   }) {
     return MarketOverviewState(
@@ -327,7 +329,7 @@ class MarketOverviewState {
       chipAnomaliesByMarket:
           chipAnomaliesByMarket ?? this.chipAnomaliesByMarket,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error == _sentinel ? this.error : error as String?,
       dataDate: dataDate ?? this.dataDate,
     );
   }

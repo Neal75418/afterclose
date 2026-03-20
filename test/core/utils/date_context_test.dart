@@ -1,25 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
+import 'package:afterclose/core/utils/taiwan_time.dart';
 
 void main() {
   group('DateContext', () {
     group('factory constructors', () {
       test('DateContext.now() creates context with today at midnight', () {
-        final before = DateTime.now();
+        // 使用台灣時區比對，避免 CI 伺服器（UTC）與台灣（UTC+8）
+        // 在 00:00–08:00 UTC 期間因日期不同而 flaky
+        final beforeTaiwan = TaiwanTime.today();
         final ctx = DateContext.now();
-        final after = DateTime.now();
+        final afterTaiwan = TaiwanTime.today();
 
-        // 驗證 today 落在 [before, after] 同一天（避免 CI 跨午夜 flaky）
-        final matchesBefore =
-            ctx.today.year == before.year &&
-            ctx.today.month == before.month &&
-            ctx.today.day == before.day;
-        final matchesAfter =
-            ctx.today.year == after.year &&
-            ctx.today.month == after.month &&
-            ctx.today.day == after.day;
-        expect(matchesBefore || matchesAfter, isTrue);
+        expect(
+          ctx.today == beforeTaiwan || ctx.today == afterTaiwan,
+          isTrue,
+          reason: 'ctx.today should equal Taiwan today (at midnight)',
+        );
         expect(ctx.today.hour, equals(0));
         expect(ctx.today.minute, equals(0));
         expect(ctx.today.second, equals(0));

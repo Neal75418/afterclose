@@ -41,6 +41,8 @@ class CustomScreeningState {
   final bool hasMore;
   final String? error;
 
+  static const _sentinel = Object();
+
   CustomScreeningState copyWith({
     List<ScreeningCondition>? conditions,
     List<ScreeningStrategy>? savedStrategies,
@@ -51,7 +53,7 @@ class CustomScreeningState {
     bool? isLoadingStrategies,
     bool? isLoadingMore,
     bool? hasMore,
-    String? error,
+    Object? error = _sentinel,
     bool clearError = false,
   }) {
     return CustomScreeningState(
@@ -63,7 +65,9 @@ class CustomScreeningState {
       isLoadingStrategies: isLoadingStrategies ?? this.isLoadingStrategies,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
-      error: clearError ? null : error,
+      error: clearError
+          ? null
+          : (error == _sentinel ? this.error : error as String?),
     );
   }
 }

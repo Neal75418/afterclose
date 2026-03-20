@@ -236,7 +236,14 @@ class TodayNotifier extends Notifier<TodayState> {
   /// 執行每日更新，具備逾時保護機制
   ///
   /// 若更新時間超過 [_updateTimeout] 將拋出 [TimeoutException]
+  /// 若已有更新在進行中，直接返回以避免並發 DB 寫入衝突。
   Future<UpdateResult> runUpdate({bool forceFetch = false}) async {
+    if (state.isUpdating) {
+      return UpdateResult(date: DateTime.now())
+        ..skipped = true
+        ..message = '更新已在進行中，請稍候';
+    }
+
     state = state.copyWith(
       isUpdating: true,
       updateProgress: const UpdateProgress(
