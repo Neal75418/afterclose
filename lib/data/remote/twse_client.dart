@@ -369,6 +369,10 @@ class TwseClient {
             month: targetDate.month,
           );
           results.addAll(monthData);
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
         } catch (e) {
           // 記錄錯誤但繼續處理其他月份
           AppLogger.debug(
@@ -491,10 +495,15 @@ class TwseClient {
           ),
         ),
       );
-      final response = await openDataDio.get(
-        ApiEndpoints.twseValuation,
-        options: Options(responseType: ResponseType.json),
-      );
+      final Response response;
+      try {
+        response = await openDataDio.get(
+          ApiEndpoints.twseValuation,
+          options: Options(responseType: ResponseType.json),
+        );
+      } finally {
+        openDataDio.close();
+      }
 
       if (response.statusCode != 200) {
         throw ApiException(

@@ -178,7 +178,7 @@ class FinMindClient {
     final cacheKey = _cacheKey(params);
     final dataList = data['data'];
     if (dataList is List) {
-      final result = dataList.cast<Map<String, dynamic>>();
+      final result = dataList.whereType<Map<String, dynamic>>().toList();
       _responseCache.put(cacheKey, List.unmodifiable(result));
       AppLogger.debug('FinMind', '$label: ${result.length} 筆');
       return result;

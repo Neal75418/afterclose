@@ -491,6 +491,10 @@ class TpexClient {
       AppLogger.debug(_tag, '當沖資料: ${e.message ?? "網路錯誤"}');
       // 當沖資料非必要，回傳空清單而非拋出例外
       return [];
+    } catch (e) {
+      // ApiException（非 200/302 狀態）等非 Dio 例外：當沖非必要，記錄後回傳空清單
+      AppLogger.debug(_tag, '當沖資料: 非預期錯誤: $e');
+      return [];
     }
   }
 

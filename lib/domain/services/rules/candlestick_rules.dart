@@ -257,8 +257,8 @@ class HangingManRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return null;
-    // 必須處於上漲趨勢
-    if (context.trendState == TrendState.down) return null;
+    // 吊人線為頭部反轉訊號，必須嚴格處於上漲趨勢
+    if (context.trendState != TrendState.up) return null;
 
     final today = data.prices.last;
     // 吊人線與錘子線形狀相同，但出現在頂部

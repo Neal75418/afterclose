@@ -225,7 +225,13 @@ class NewsRule extends StockRule {
 
       for (final kw in RuleParams.newsNegativeKeywords) {
         if (text.contains(kw)) {
-          score--;
+          // 負面關鍵字用更嚴格的否定詞集合（不再、未能、取消）
+          // 避免「衰退」等負面詞被誤認為否定詞（如「公司營收衰退，虧損擴大」）
+          if (_hasNegativeReversal(text, kw)) {
+            score++;
+          } else {
+            score--;
+          }
           matched = true;
         }
       }
@@ -243,6 +249,22 @@ class NewsRule extends StockRule {
     }
 
     return null;
+  }
+
+  /// 負面關鍵字反轉檢測（嚴格版）
+  ///
+  /// 僅使用真正能在語意上反轉負面關鍵字的詞（不再、未能、取消），
+  /// 不包含「衰退」「下滑」等本身就是負面的詞。
+  static bool _hasNegativeReversal(String text, String keyword) {
+    const reversingWords = ['不再', '未能', '取消'];
+    final index = text.indexOf(keyword);
+    if (index < 0) return false;
+    final prefixStart = (index - 4).clamp(0, index);
+    final prefix = text.substring(prefixStart, index);
+    for (final word in reversingWords) {
+      if (prefix.contains(word)) return true;
+    }
+    return false;
   }
 
   /// 否定詞前綴檢測
