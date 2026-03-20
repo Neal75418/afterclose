@@ -92,6 +92,13 @@ void main() {
       );
 
       expect(result, equals(0));
+      verify(
+        () => mockFinMind.getMonthlyRevenue(
+          stockId: any(named: 'stockId'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).called(1);
     });
   });
 

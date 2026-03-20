@@ -114,6 +114,27 @@ void main() {
       expect(result, ['2317']);
     });
 
+    test('should accept stock at exact volume threshold (boundary)', () {
+      // Logic is `< minQuickFilterVolumeShares`, so exactly 100000 should pass
+      final prices = [
+        const _MockPrice(code: '2330', close: 100, change: 5, volume: 100000),
+      ];
+
+      final result = filter(prices);
+
+      expect(result, ['2330']);
+    });
+
+    test('should reject stock just below volume threshold (boundary - 1)', () {
+      final prices = [
+        const _MockPrice(code: '2330', close: 100, change: 5, volume: 99999),
+      ];
+
+      final result = filter(prices);
+
+      expect(result, isEmpty);
+    });
+
     test('should skip stocks with null volume (treated as 0)', () {
       final prices = [
         const _MockPrice(code: '2330', close: 100, change: 5, volume: null),

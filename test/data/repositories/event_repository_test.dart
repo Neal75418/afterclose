@@ -52,7 +52,10 @@ void main() {
       final result = await repository.getEventsInRange(start, end);
 
       expect(result, equals(events));
-      verify(() => mockDb.getEventsInRange(start, end)).called(1);
+      verify(
+        () =>
+            mockDb.getEventsInRange(start, end, symbols: any(named: 'symbols')),
+      ).called(1);
     });
   });
 
