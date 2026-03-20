@@ -698,9 +698,10 @@ class FinMindClient {
     stockId: 'TAIEX',
     startDate:
         startDate ??
-        '${DateTime.now().subtract(const Duration(days: 60)).year}-'
-            '${DateTime.now().subtract(const Duration(days: 60)).month.toString().padLeft(2, '0')}-'
-            '${DateTime.now().subtract(const Duration(days: 60)).day.toString().padLeft(2, '0')}',
+        () {
+          final d = DateTime.now().subtract(const Duration(days: 60));
+          return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+        }(),
     fromJson: FinMindTotalReturnIndex.tryFromJson,
   );
 }

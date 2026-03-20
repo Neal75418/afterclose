@@ -384,7 +384,8 @@ class PriceRepository implements IPriceRepository {
         AppLogger.warning('PriceRepo', '$symbol: 批次價格同步觸發 API 速率限制');
         rethrow;
       } catch (e) {
-        // 記錄錯誤並繼續處理其他股票
+        // NetworkException 不 rethrow：批次模式下個別股票網路失敗不應中斷整批同步，
+        // 錯誤記錄於 errors 列表，全部失敗時由後續邏輯拋出 DatabaseException
         errors.add('$symbol: $e');
       }
     }

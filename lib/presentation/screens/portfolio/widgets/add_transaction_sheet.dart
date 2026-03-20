@@ -366,7 +366,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     );
   }
 
-  void _onSearchChanged(String query) async {
+  void _onSearchChanged(String query) {
     if (query.length < 2) {
       setState(() => _searchResults = []);
       return;
@@ -374,13 +374,19 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
     setState(() => _isSearching = true);
     final stockRepo = ref.read(stockRepositoryProvider);
-    final results = await stockRepo.searchStocks(query);
-    if (mounted) {
-      setState(() {
-        _searchResults = results.take(5).toList();
-        _isSearching = false;
-      });
-    }
+    stockRepo
+        .searchStocks(query)
+        .then((results) {
+          if (mounted) {
+            setState(() {
+              _searchResults = results.take(5).toList();
+              _isSearching = false;
+            });
+          }
+        })
+        .catchError((Object e) {
+          if (mounted) setState(() => _isSearching = false);
+        });
   }
 
   void _autoCalcFees() {

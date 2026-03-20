@@ -171,6 +171,18 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     );
   }
 
+  /// Clear current error state.
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
+  /// Retry loading all current symbols after an error.
+  Future<void> reload() async {
+    if (state.symbols.isEmpty) return;
+    state = state.copyWith(isLoading: true, error: null);
+    await _loadAllData(state.symbols);
+  }
+
   /// Load all comparison data for the given symbols.
   Future<void> _loadAllData(List<String> symbols) async {
     try {

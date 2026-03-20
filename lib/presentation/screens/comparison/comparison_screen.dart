@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/comparison_header.dart';
 import 'package:afterclose/presentation/screens/comparison/widgets/comparison_table.dart';
@@ -145,8 +146,27 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
       ),
       body: state.isLoading && state.symbols.isEmpty
           ? const GenericListShimmer(itemCount: 4)
+          : state.error != null && state.symbols.isEmpty
+          ? EmptyStates.error(
+              message: state.error!,
+              onRetry: () => ref.read(comparisonProvider.notifier).reload(),
+            )
           : Column(
               children: [
+                // 錯誤橫幅（有股票時仍顯示，但不全頁替換）
+                if (state.error != null)
+                  MaterialBanner(
+                    content: Text(state.error!),
+                    leading: const Icon(Icons.error_outline),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(comparisonProvider.notifier).clearError(),
+                        child: Text('common.dismiss'.tr()),
+                      ),
+                    ],
+                  ),
+
                 // 股票標籤列
                 if (state.symbols.isNotEmpty)
                   ComparisonHeader(

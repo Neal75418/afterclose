@@ -106,11 +106,25 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       alpha: 0.7,
                     ),
                     surfaceTintColor: Colors.transparent,
-                    title: Text(
-                      state.stockName != null
-                          ? '${widget.symbol}  ${state.stockName}'
-                          : widget.symbol,
-                      overflow: TextOverflow.ellipsis,
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.symbol,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (state.stockName != null)
+                          Text(
+                            state.stockName!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                      ],
                     ),
                     actions: [
                       IconButton(

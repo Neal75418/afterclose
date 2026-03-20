@@ -85,6 +85,8 @@ class StockRepository implements IStockRepository {
     } on RateLimitException {
       AppLogger.warning('StockRepo', '股票清單同步觸發 API 速率限制');
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync stock list', e);
     }

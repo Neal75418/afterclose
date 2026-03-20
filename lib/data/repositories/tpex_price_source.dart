@@ -62,6 +62,8 @@ class TpexPriceSource {
     } on RateLimitException {
       AppLogger.warning('PriceRepo', '$symbol: 上櫃價格同步觸發 API 速率限制');
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync OTC prices for $symbol', e);
     }

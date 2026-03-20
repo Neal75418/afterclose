@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -90,6 +91,7 @@ class EventCalendarState {
     this.upcomingEvents = const [],
     this.filter = CalendarFilter.all,
     Set<EventType>? selectedEventTypes,
+    this.calendarFormat = CalendarFormat.month,
     this.isLoading = false,
     this.isSyncing = false,
     this.error,
@@ -108,6 +110,8 @@ class EventCalendarState {
   final List<StockEventEntry> upcomingEvents;
 
   /// 篩選模式
+  final CalendarFormat calendarFormat;
+
   final CalendarFilter filter;
 
   /// 選取的事件類型（用於類型篩選）
@@ -144,6 +148,7 @@ class EventCalendarState {
     List<StockEventEntry>? upcomingEvents,
     CalendarFilter? filter,
     Set<EventType>? selectedEventTypes,
+    CalendarFormat? calendarFormat,
     bool? isLoading,
     bool? isSyncing,
     Object? error = sentinel,
@@ -156,6 +161,7 @@ class EventCalendarState {
       upcomingEvents: upcomingEvents ?? this.upcomingEvents,
       filter: filter ?? this.filter,
       selectedEventTypes: selectedEventTypes ?? this.selectedEventTypes,
+      calendarFormat: calendarFormat ?? this.calendarFormat,
       isLoading: isLoading ?? this.isLoading,
       isSyncing: isSyncing ?? this.isSyncing,
       error: error == sentinel ? this.error : error as String?,
@@ -258,6 +264,11 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     if (state.focusedMonth != null) {
       await loadMonthEvents(state.focusedMonth!);
     }
+  }
+
+  /// 儲存日曆格式偏好
+  void setCalendarFormat(CalendarFormat format) {
+    state = state.copyWith(calendarFormat: format);
   }
 
   /// 切換事件類型篩選

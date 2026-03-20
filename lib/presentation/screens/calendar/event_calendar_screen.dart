@@ -29,7 +29,6 @@ class EventCalendarScreen extends ConsumerStatefulWidget {
 class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
   late DateTime _focusedDay;
   DateTime? _selectedDay;
-  CalendarFormat _calendarFormat = CalendarFormat.month;
 
   @override
   void initState() {
@@ -134,7 +133,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             lastDay: DateTime(2100),
             focusedDay: _focusedDay,
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            calendarFormat: _calendarFormat,
+            calendarFormat: state.calendarFormat,
             startingDayOfWeek: StartingDayOfWeek.monday,
             eventLoader: (day) {
               final dateKey = DateContext.normalize(day);
@@ -148,7 +147,9 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
               ref.read(eventCalendarProvider.notifier).selectDate(selectedDay);
             },
             onFormatChanged: (format) {
-              setState(() => _calendarFormat = format);
+              ref
+                  .read(eventCalendarProvider.notifier)
+                  .setCalendarFormat(format);
             },
             onPageChanged: (focusedDay) {
               _focusedDay = focusedDay;

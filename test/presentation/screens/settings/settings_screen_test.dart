@@ -155,7 +155,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('1.0.0'), findsOneWidget);
+      expect(find.text('0.2.0'), findsOneWidget);
     });
 
     testWidgets('shows cache duration setting', (tester) async {

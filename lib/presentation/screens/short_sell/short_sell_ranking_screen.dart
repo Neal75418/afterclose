@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
@@ -82,20 +83,15 @@ class _ShortSellRankingScreenState
   }
 
   Widget _buildEmptyState(ThemeData theme) {
-    return ListView(
-      children: [
-        SizedBox(
-          height: 300,
-          child: Center(
-            child: Text(
-              'shortSell.noData'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-          ),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: 400,
+        child: EmptyState(
+          icon: Icons.show_chart,
+          title: 'shortSell.noData'.tr(),
         ),
-      ],
+      ),
     );
   }
 

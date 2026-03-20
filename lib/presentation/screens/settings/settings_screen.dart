@@ -301,7 +301,7 @@ class SettingsScreen extends ConsumerWidget {
       leading: _buildIconContainer(Colors.blueGrey, Icons.verified_rounded),
       title: Text('settings.version'.tr()),
       trailing: Text(
-        '1.0.0',
+        '0.2.0',
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),

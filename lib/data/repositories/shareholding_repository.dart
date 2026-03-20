@@ -84,6 +84,8 @@ class ShareholdingRepository implements IShareholdingRepository {
     } on RateLimitException {
       AppLogger.warning('ShareholdingRepo', '$symbol: 外資持股同步觸發 API 速率限制');
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync shareholding for $symbol', e);
     }
@@ -160,6 +162,8 @@ class ShareholdingRepository implements IShareholdingRepository {
       return entries.length;
     } on RateLimitException {
       AppLogger.warning('ShareholdingRepo', '$symbol: 股權分散表同步觸發 API 速率限制');
+      rethrow;
+    } on NetworkException {
       rethrow;
     } catch (e) {
       throw DatabaseException(

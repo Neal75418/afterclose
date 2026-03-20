@@ -80,6 +80,8 @@ class InstitutionalRepository implements IInstitutionalRepository {
     } on RateLimitException {
       AppLogger.warning('InstitutionalRepo', '$symbol: 法人資料同步觸發 API 速率限制');
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException(
         'Failed to sync institutional data for $symbol',

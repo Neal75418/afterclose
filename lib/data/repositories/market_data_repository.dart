@@ -186,6 +186,8 @@ class MarketDataRepository implements IMarketDataRepository {
     } on RateLimitException {
       AppLogger.warning('MarketDataRepo', '$symbol: $logLabel同步觸發 API 速率限制');
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync $statementType for $symbol', e);
     }
@@ -260,6 +262,8 @@ class MarketDataRepository implements IMarketDataRepository {
     } on RateLimitException {
       AppLogger.warning('MarketDataRepo', '$symbol: 還原股價同步觸發 API 速率限制');
       rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync adjusted prices for $symbol', e);
     }
@@ -318,6 +322,8 @@ class MarketDataRepository implements IMarketDataRepository {
       return entries.length;
     } on RateLimitException {
       AppLogger.warning('MarketDataRepo', '$symbol: 週K線同步觸發 API 速率限制');
+      rethrow;
+    } on NetworkException {
       rethrow;
     } catch (e) {
       throw DatabaseException('Failed to sync weekly prices for $symbol', e);

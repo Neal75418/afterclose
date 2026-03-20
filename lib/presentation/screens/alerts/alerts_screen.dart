@@ -192,6 +192,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
         ),
         title: Text(
           getAlertDescription(alert, alertType),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w500,
             decoration: wasTriggered ? TextDecoration.lineThrough : null,

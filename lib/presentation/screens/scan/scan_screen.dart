@@ -231,7 +231,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     return Semantics(
       liveRegion: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.responsiveHorizontalPadding,
+          vertical: 4,
+        ),
         child: Row(
           children: [
             Text(

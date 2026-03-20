@@ -1,3 +1,4 @@
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 
 /// 平行執行的錯誤隔離工具
@@ -24,6 +25,10 @@ Future<T> safeAwait<T>(
 }) async {
   try {
     return await future;
+  } on RateLimitException {
+    rethrow;
+  } on NetworkException {
+    rethrow;
   } catch (e) {
     AppLogger.warning(tag, '$description: $e');
     return defaultValue;
