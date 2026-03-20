@@ -17,10 +17,10 @@ on:
       - 'assets/screenshots/**'
 
 jobs:
-  build:
+  # ── Job 1: 格式與靜態分析（與 test shards 並行）────────────────────
+  lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -46,7 +46,6 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .dart_tool/build/
-          # 只在影響 codegen 的檔案改動時才失效（Drift schema / Freezed models / 依賴版本）
           key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'lib/data/database/tables/**', 'lib/domain/models/**') }}
           restore-keys: build-runner-${{ runner.os }}-
 
@@ -59,20 +58,89 @@ jobs:
       - name: Analyze project source
         run: flutter analyze --no-fatal-infos lib/
 
-      - name: Run tests
-        if: "!(github.ref == 'refs/heads/main' && github.event_name == 'push')"
-        run: flutter test --exclude-tags golden
+  # ── Job 2: 測試 shards（3 個並行）──────────────────────────────────
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
-      - name: Run tests with coverage
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.x'
+          channel: 'stable'
+          cache: true
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Cache build_runner outputs
+        uses: actions/cache@v5
+        with:
+          path: .dart_tool/build/
+          key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'lib/data/database/tables/**', 'lib/domain/models/**') }}
+          restore-keys: build-runner-${{ runner.os }}-
+
+      - name: Generate code (Drift, Riverpod, Freezed)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Run tests (PR)
+        if: "!(github.ref == 'refs/heads/main' && github.event_name == 'push')"
+        run: flutter test --exclude-tags golden --total-shards=3 --shard-index=${{ matrix.shard }}
+
+      - name: Run tests with coverage (main)
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: flutter test --coverage --exclude-tags golden
+        run: flutter test --coverage --exclude-tags golden --total-shards=3 --shard-index=${{ matrix.shard }}
+
+      - name: Upload coverage shard
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-shard-${{ matrix.shard }}
+          path: coverage/lcov.info
+
+  # ── Job 3: 合併 coverage 並上傳（main push 限定）──────────────────
+  coverage:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Download coverage shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-shard-*
+          path: coverage-shards/
+
+      - name: Install lcov
+        run: sudo apt-get install -y --no-install-recommends lcov
+
+      - name: Merge coverage files
+        run: |
+          lcov \
+            --add-tracefile coverage-shards/coverage-shard-0/lcov.info \
+            --add-tracefile coverage-shards/coverage-shard-1/lcov.info \
+            --add-tracefile coverage-shards/coverage-shard-2/lcov.info \
+            --output-file merged-lcov.info
 
       - name: Upload coverage to Codecov
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
+          files: ./merged-lcov.info
           fail_ci_if_error: false
           flags: unittests
           name: codecov-afterclose
