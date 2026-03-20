@@ -57,39 +57,6 @@ class TradingRepository implements ITradingRepository {
     return _db.getLatestDayTrading(symbol);
   }
 
-  /// 從 FinMind 同步當沖資料
-  /// 檢查是否為高當沖股（當沖比 > 30%）
-  @override
-  Future<bool> isHighDayTradingStock(String symbol) async {
-    final latest = await getLatestDayTrading(symbol);
-    if (latest == null) return false;
-    return (latest.dayTradingRatio ?? 0) > DataFreshness.dayTradingHighRatio;
-  }
-
-  /// 取得平均當沖比例
-  @override
-  Future<double?> getAverageDayTradingRatio(
-    String symbol, {
-    int days = 5,
-  }) async {
-    final history = await getDayTradingHistory(symbol, days: days + 5);
-    if (history.isEmpty) return null;
-
-    final recent = history.reversed.take(days).toList();
-    if (recent.isEmpty) return null;
-
-    double sum = 0;
-    int count = 0;
-    for (final entry in recent) {
-      if (entry.dayTradingRatio != null) {
-        sum += entry.dayTradingRatio!;
-        count++;
-      }
-    }
-
-    return count > 0 ? sum / count : null;
-  }
-
   /// 從 TWSE 同步全市場當沖資料（免費 API）
   ///
   /// 使用 TWSE 官方 API，無需 Token。
@@ -506,53 +473,4 @@ class TradingRepository implements ITradingRepository {
       );
     }
   }
-
-  /// 計算券資比
-  ///
-  /// 較高的券資比（> 30%）表示潛在軋空機會
-  @override
-  Future<double?> getShortMarginRatio(String symbol) async {
-    final latest = await getLatestMarginTrading(symbol);
-    if (latest == null) return null;
-
-    final marginBalance = latest.marginBalance ?? 0;
-    final shortBalance = latest.shortBalance ?? 0;
-
-    if (marginBalance <= 0) return null;
-    return (shortBalance / marginBalance) * 100;
-  }
-
-  /// 檢查融資餘額是否增加中（散戶追多）
-  @override
-  Future<bool> isMarginIncreasing(String symbol, {int days = 5}) async {
-    final history = await getMarginTradingHistory(symbol, days: days + 5);
-    if (history.length < days) return false;
-
-    final recent = history.reversed.take(days).toList();
-    if (recent.length < 2) return false;
-
-    final first = recent.last.marginBalance ?? 0;
-    final last = recent.first.marginBalance ?? 0;
-
-    return last > first;
-  }
-
-  /// 檢查融券餘額是否增加中（空單增加）
-  @override
-  Future<bool> isShortIncreasing(String symbol, {int days = 5}) async {
-    final history = await getMarginTradingHistory(symbol, days: days + 5);
-    if (history.length < days) return false;
-
-    final recent = history.reversed.take(days).toList();
-    if (recent.length < 2) return false;
-
-    final first = recent.last.shortBalance ?? 0;
-    final last = recent.first.shortBalance ?? 0;
-
-    return last > first;
-  }
-
-  // ==================================================
-  // 內部輔助方法
-  // ==================================================
 }

@@ -467,48 +467,6 @@ class FundamentalRepository implements IFundamentalRepository {
     }
   }
 
-  /// 同步單檔股票的股利歷史
-  ///
-  /// 從 FinMind API 取得近 5 年的股利資料並寫入 DB。
-  /// 回傳同步筆數。
-  @override
-  Future<int> syncDividends({required String symbol}) async {
-    try {
-      // 新鮮度檢查：股利資料通常在次年公佈（如 2025 年股利在 2026 年公佈）
-      // 使用 currentYear - 2 作為基準，確保能抓到最新公佈的資料
-      final latestYear = await _db.getLatestDividendYear(symbol);
-      final currentYear = _clock.now().year;
-      if (latestYear != null && latestYear >= currentYear - 2) {
-        return 0; // 已有近期資料
-      }
-
-      final data = await _finMind.getDividends(stockId: symbol);
-
-      if (data.isEmpty) return 0;
-
-      final entries = data.map((d) {
-        return DividendHistoryCompanion.insert(
-          symbol: symbol,
-          year: d.year,
-          cashDividend: Value(d.cashDividend),
-          stockDividend: Value(d.stockDividend),
-          exDividendDate: Value(d.exDividendDate),
-          exRightsDate: Value(d.exRightsDate),
-        );
-      }).toList();
-
-      await _db.insertDividendData(entries);
-      return entries.length;
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步股利歷史失敗: $symbol', e);
-      return 0;
-    }
-  }
-
   /// 同步單檔股票的損益表資料（含 EPS、營收、毛利等）
   ///
   /// 從 FinMind API 取得近 2 年的季度損益表資料並寫入 DB。
@@ -567,24 +525,5 @@ class FundamentalRepository implements IFundamentalRepository {
       AppLogger.warning('FundamentalRepo', '同步財報失敗: $symbol', e);
       return 0;
     }
-  }
-
-  /// 同步單檔股票的所有基本面資料
-  @override
-  Future<({int revenue, int valuation})> syncAll({
-    required String symbol,
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
-    final results = await Future.wait([
-      syncMonthlyRevenue(
-        symbol: symbol,
-        startDate: startDate,
-        endDate: endDate,
-      ),
-      syncValuationData(symbol: symbol, startDate: startDate, endDate: endDate),
-    ]);
-
-    return (revenue: results[0], valuation: results[1]);
   }
 }

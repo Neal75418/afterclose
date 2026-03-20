@@ -30,12 +30,6 @@ abstract class ITradingRepository {
     bool forceRefresh = false,
   });
 
-  /// 檢查是否為高當沖股
-  Future<bool> isHighDayTradingStock(String symbol);
-
-  /// 取得平均當沖比例
-  Future<double?> getAverageDayTradingRatio(String symbol, {int days = 5});
-
   // ==================================================
   // 融資融券
   // ==================================================
@@ -54,13 +48,4 @@ abstract class ITradingRepository {
     DateTime? date,
     bool forceRefresh = false,
   });
-
-  /// 計算券資比
-  Future<double?> getShortMarginRatio(String symbol);
-
-  /// 檢查融資餘額是否增加中
-  Future<bool> isMarginIncreasing(String symbol, {int days = 5});
-
-  /// 檢查融券餘額是否增加中
-  Future<bool> isShortIncreasing(String symbol, {int days = 5});
 }

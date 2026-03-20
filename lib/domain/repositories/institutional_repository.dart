@@ -24,12 +24,6 @@ abstract class IInstitutionalRepository {
   /// 同步指定日期的全市場法人資料
   Future<int> syncAllMarketInstitutional(DateTime date, {bool force = false});
 
-  /// 檢查法人買賣方向是否反轉
-  Future<bool> hasDirectionReversal(String symbol, {int days = 5});
-
-  /// 取得近期法人淨買賣總額
-  Future<double?> getTotalNetBuying(String symbol, {int days = 5});
-
   /// 清除所有法人資料
   Future<int> clearAllData();
 }

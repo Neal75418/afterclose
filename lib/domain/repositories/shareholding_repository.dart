@@ -21,26 +21,10 @@ abstract class IShareholdingRepository {
     DateTime? endDate,
   });
 
-  /// 檢查外資持股是否增加中
-  Future<bool> isForeignShareholdingIncreasing(String symbol, {int days = 5});
-
   /// 取得最新股權分散表
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(
     String symbol,
   );
-
-  /// 同步股權分散表
-  Future<int> syncHoldingDistribution(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  });
-
-  /// 取得集中度比率
-  Future<double?> getConcentrationRatio(
-    String symbol, {
-    int thresholdLevel = 400,
-  });
 
   /// 批次取得集中度比率
   Future<Map<String, double>> getConcentrationRatioBatch(

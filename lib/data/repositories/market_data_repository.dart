@@ -56,32 +56,6 @@ class MarketDataRepository implements IMarketDataRepository {
   // 財報資料
   // ==================================================
 
-  /// 同步損益表資料
-  @override
-  Future<int> syncIncomeStatement(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) => _syncFinancialStatement(
-    symbol,
-    startDate: startDate,
-    endDate: endDate,
-    statementType: 'INCOME',
-    fetchFn: (id, start, end) => _client.getFinancialStatements(
-      stockId: id,
-      startDate: start,
-      endDate: end,
-    ),
-    extractFields: (item) => (
-      stockId: item.stockId,
-      date: item.date,
-      type: item.type,
-      value: item.value,
-      origin: item.origin,
-    ),
-    logLabel: '損益表',
-  );
-
   /// 同步資產負債表資料
   @override
   Future<int> syncBalanceSheet(
@@ -103,32 +77,6 @@ class MarketDataRepository implements IMarketDataRepository {
       origin: item.origin,
     ),
     logLabel: '資產負債表',
-  );
-
-  /// 同步現金流量表資料
-  @override
-  Future<int> syncCashFlowStatement(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) => _syncFinancialStatement(
-    symbol,
-    startDate: startDate,
-    endDate: endDate,
-    statementType: 'CASHFLOW',
-    fetchFn: (id, start, end) => _client.getCashFlowsStatement(
-      stockId: id,
-      startDate: start,
-      endDate: end,
-    ),
-    extractFields: (item) => (
-      stockId: item.stockId,
-      date: item.date,
-      type: item.type,
-      value: item.value,
-      origin: item.origin,
-    ),
-    logLabel: '現金流量表',
   );
 
   /// 財報同步共用邏輯
@@ -222,53 +170,6 @@ class MarketDataRepository implements IMarketDataRepository {
     return _db.getAdjustedPriceHistory(symbol, startDate: startDate);
   }
 
-  /// 同步還原股價資料
-  ///
-  /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 若已有目標日期資料則跳過。
-  @override
-  Future<int> syncAdjustedPrices(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      final targetDate = endDate ?? _clock.now();
-      final latestDate = await _db.getLatestAdjustedPriceDate(symbol);
-      if (latestDate != null && DateContext.isSameDay(latestDate, targetDate)) {
-        return 0;
-      }
-
-      final data = await _client.getAdjustedPrices(
-        stockId: symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
-      );
-
-      final entries = data.map((item) {
-        return AdjustedPriceCompanion.insert(
-          symbol: item.stockId,
-          date: DateTime.parse(item.date),
-          open: Value(item.open),
-          high: Value(item.high),
-          low: Value(item.low),
-          close: Value(item.close),
-          volume: Value(item.volume),
-        );
-      }).toList();
-
-      await _db.insertAdjustedPrices(entries);
-      return entries.length;
-    } on RateLimitException {
-      AppLogger.warning('MarketDataRepo', '$symbol: 還原股價同步觸發 API 速率限制');
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      throw DatabaseException('Failed to sync adjusted prices for $symbol', e);
-    }
-  }
-
   // ==================================================
   // 週K線
   // ==================================================
@@ -281,53 +182,6 @@ class MarketDataRepository implements IMarketDataRepository {
   }) async {
     final startDate = _clock.now().subtract(Duration(days: weeks * 7 + 30));
     return _db.getWeeklyPriceHistory(symbol, startDate: startDate);
-  }
-
-  /// 同步週K線資料
-  ///
-  /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 若已有本週資料則跳過。
-  @override
-  Future<int> syncWeeklyPrices(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      final latestDate = await _db.getLatestWeeklyPriceDate(symbol);
-      if (latestDate != null &&
-          DateContext.isSameWeek(latestDate, _clock.now())) {
-        return 0;
-      }
-
-      final data = await _client.getWeeklyPrices(
-        stockId: symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
-      );
-
-      final entries = data.map((item) {
-        return WeeklyPriceCompanion.insert(
-          symbol: item.stockId,
-          date: DateTime.parse(item.date),
-          open: Value(item.open),
-          high: Value(item.high),
-          low: Value(item.low),
-          close: Value(item.close),
-          volume: Value(item.volume),
-        );
-      }).toList();
-
-      await _db.insertWeeklyPrices(entries);
-      return entries.length;
-    } on RateLimitException {
-      AppLogger.warning('MarketDataRepo', '$symbol: 週K線同步觸發 API 速率限制');
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      throw DatabaseException('Failed to sync weekly prices for $symbol', e);
-    }
   }
 
   /// 取得 52 週最高/最低價

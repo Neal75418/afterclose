@@ -204,53 +204,6 @@ void main() {
   });
 
   // ==========================================
-  // syncDividends
-  // ==========================================
-  group('syncDividends', () {
-    test('skips when latest data is recent enough', () async {
-      final currentYear = DateTime.now().year;
-      when(
-        () => mockDb.getLatestDividendYear(any()),
-      ).thenAnswer((_) async => currentYear - 1);
-
-      final result = await repo.syncDividends(symbol: '2330');
-
-      expect(result, equals(0));
-      verifyNever(
-        () => mockFinMind.getDividends(stockId: any(named: 'stockId')),
-      );
-    });
-
-    test('fetches when no latest data', () async {
-      when(
-        () => mockDb.getLatestDividendYear(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockFinMind.getDividends(stockId: any(named: 'stockId')),
-      ).thenAnswer((_) async => []);
-
-      final result = await repo.syncDividends(symbol: '2330');
-
-      expect(result, equals(0));
-      verify(() => mockFinMind.getDividends(stockId: '2330')).called(1);
-    });
-
-    test('rethrows RateLimitException', () async {
-      when(
-        () => mockDb.getLatestDividendYear(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockFinMind.getDividends(stockId: any(named: 'stockId')),
-      ).thenThrow(const RateLimitException('Rate limited'));
-
-      expect(
-        () => repo.syncDividends(symbol: '2330'),
-        throwsA(isA<RateLimitException>()),
-      );
-    });
-  });
-
-  // ==========================================
   // syncAllMarketRevenue
   // ==========================================
   group('syncAllMarketRevenue', () {

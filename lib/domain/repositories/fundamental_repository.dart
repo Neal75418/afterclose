@@ -37,18 +37,8 @@ abstract class IFundamentalRepository {
     bool force = false,
   });
 
-  /// 同步股利資料
-  Future<int> syncDividends({required String symbol});
-
   /// 同步財務報表
   Future<int> syncFinancialStatements({
-    required String symbol,
-    required DateTime startDate,
-    required DateTime endDate,
-  });
-
-  /// 同步所有基本面資料
-  Future<({int revenue, int valuation})> syncAll({
     required String symbol,
     required DateTime startDate,
     required DateTime endDate,

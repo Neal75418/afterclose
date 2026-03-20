@@ -91,24 +91,6 @@ class ShareholdingRepository implements IShareholdingRepository {
     }
   }
 
-  /// 檢查外資持股比例是否增加中
-  @override
-  Future<bool> isForeignShareholdingIncreasing(
-    String symbol, {
-    int days = 5,
-  }) async {
-    final history = await getShareholdingHistory(symbol, days: days + 10);
-    if (history.length < days) return false;
-
-    final recent = history.reversed.take(days).toList();
-    if (recent.length < 2) return false;
-
-    final first = recent.last.foreignSharesRatio ?? 0;
-    final last = recent.first.foreignSharesRatio ?? 0;
-
-    return last > first;
-  }
-
   // ==================================================
   // 股權分散表
   // ==================================================
@@ -119,85 +101,6 @@ class ShareholdingRepository implements IShareholdingRepository {
     String symbol,
   ) {
     return _db.getLatestHoldingDistribution(symbol);
-  }
-
-  /// 同步股權分散表資料
-  ///
-  /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 股權分散表每週公布，若已有本週資料則跳過。
-  ///
-  /// 註：此 API 需要 FinMind 付費訂閱。
-  @override
-  Future<int> syncHoldingDistribution(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) async {
-    try {
-      // 新鮮度檢查：若已有本週資料則跳過
-      final latestDate = await _db.getLatestHoldingDistributionDate(symbol);
-      if (latestDate != null &&
-          DateContext.isSameWeek(latestDate, _clock.now())) {
-        return 0;
-      }
-
-      final data = await _client.getHoldingSharesPer(
-        stockId: symbol,
-        startDate: DateContext.formatYmd(startDate),
-        endDate: endDate != null ? DateContext.formatYmd(endDate) : null,
-      );
-
-      final entries = data.map((item) {
-        return HoldingDistributionCompanion.insert(
-          symbol: item.stockId,
-          date: DateTime.parse(item.date),
-          level: item.holdingSharesLevel,
-          shareholders: Value(item.people),
-          percent: Value(item.percent),
-          shares: Value(item.unit),
-        );
-      }).toList();
-
-      await _db.insertHoldingDistribution(entries);
-      return entries.length;
-    } on RateLimitException {
-      AppLogger.warning('ShareholdingRepo', '$symbol: 股權分散表同步觸發 API 速率限制');
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      throw DatabaseException(
-        'Failed to sync holding distribution for $symbol',
-        e,
-      );
-    }
-  }
-
-  /// 計算籌碼集中度（大戶持股比例）
-  ///
-  /// 回傳持股超過 [threshold] 張的股東持股百分比
-  @override
-  Future<double?> getConcentrationRatio(
-    String symbol, {
-    int thresholdLevel = 400, // 400張 = 40萬股
-  }) async {
-    final distribution = await getLatestHoldingDistribution(symbol);
-    if (distribution.isEmpty) return null;
-
-    double largeHolderPercent = 0;
-
-    for (final entry in distribution) {
-      // 解析級距以取得最小持股數
-      // 級距如 "400-600"、"600-800"、"800-1000"、"1000以上"
-      final level = entry.level;
-      final minShares = _parseMinSharesFromLevel(level);
-
-      if (minShares >= thresholdLevel) {
-        largeHolderPercent += entry.percent ?? 0;
-      }
-    }
-
-    return largeHolderPercent;
   }
 
   /// 批次計算多檔股票的籌碼集中度

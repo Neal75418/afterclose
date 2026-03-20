@@ -193,63 +193,6 @@ class InstitutionalRepository implements IInstitutionalRepository {
     }
   }
 
-  /// 檢查法人買賣方向是否反轉
-  ///
-  /// 若近期淨買賣方向與前期相反則回傳 true
-  @override
-  Future<bool> hasDirectionReversal(String symbol, {int days = 5}) async {
-    final history = await getInstitutionalHistory(symbol, days: days + 5);
-    if (history.length < days) return false;
-
-    final recent = history.reversed.take(days).toList();
-    if (recent.length < 2) return false;
-
-    // 計算近期淨買賣總額
-    double recentNet = 0;
-    for (final entry in recent) {
-      recentNet +=
-          (entry.foreignNet ?? 0) +
-          (entry.investmentTrustNet ?? 0) +
-          (entry.dealerNet ?? 0);
-    }
-
-    // 取得前期資料
-    final previous = history.reversed.skip(days).take(days).toList();
-    if (previous.isEmpty) return false;
-
-    double previousNet = 0;
-    for (final entry in previous) {
-      previousNet +=
-          (entry.foreignNet ?? 0) +
-          (entry.investmentTrustNet ?? 0) +
-          (entry.dealerNet ?? 0);
-    }
-
-    // 檢查方向反轉（正負號改變）
-    return (recentNet > 0 && previousNet < 0) ||
-        (recentNet < 0 && previousNet > 0);
-  }
-
-  /// 取得近期法人淨買賣總額
-  @override
-  Future<double?> getTotalNetBuying(String symbol, {int days = 5}) async {
-    final history = await getInstitutionalHistory(symbol, days: days + 5);
-    if (history.isEmpty) return null;
-
-    final recent = history.reversed.take(days).toList();
-    if (recent.isEmpty) return null;
-
-    double totalNet = 0;
-    for (final entry in recent) {
-      totalNet +=
-          (entry.foreignNet ?? 0) +
-          (entry.investmentTrustNet ?? 0) +
-          (entry.dealerNet ?? 0);
-    }
-
-    return totalNet;
-  }
-
   /// 清除所有法人資料
   ///
   /// 用於單位修正後強制重新同步，避免新舊資料單位混用
