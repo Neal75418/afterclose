@@ -110,11 +110,4 @@ class StockRepository implements IStockRepository {
   Future<List<StockMasterEntry>> getStocksByMarket(String market) {
     return _db.getStocksByMarket(market);
   }
-
-  /// 檢查股票是否存在
-  @override
-  Future<bool> stockExists(String symbol) async {
-    final stock = await getStock(symbol);
-    return stock != null;
-  }
 }

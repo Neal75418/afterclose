@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/repositories/settings_repository.dart';
 
 /// Secure Storage Key 常數
@@ -132,89 +131,6 @@ class SettingsRepository implements ISettingsRepository {
   Future<bool> hasFinMindToken() async {
     final token = await getFinMindToken();
     return token != null && token.isNotEmpty;
-  }
-
-  /// 將 Token 從舊儲存位置遷移到當前儲存（一次性遷移）
-  ///
-  /// 遷移來源優先順序：
-  /// 1. Database (最舊)
-  /// 2. SharedPreferences 舊 key (舊版)
-  @override
-  Future<void> migrateTokenToSecureStorage() async {
-    // 檢查是否已有 Token（無論是 SecureStorage 或 fallback）
-    final existingToken = await getFinMindToken();
-    if (existingToken != null && existingToken.isNotEmpty) {
-      // 已遷移，清除舊資料
-      await _db.deleteSetting(SettingsKeys.finmindToken);
-      final prefs = await _sharedPrefs;
-      await prefs.remove('finmind_api_token'); // 舊 key
-      return;
-    }
-
-    // 嘗試從 Database 遷移
-    final dbToken = await _db.getSetting(SettingsKeys.finmindToken);
-    if (dbToken != null && dbToken.isNotEmpty) {
-      await setFinMindToken(dbToken);
-      await _db.deleteSetting(SettingsKeys.finmindToken);
-      return;
-    }
-
-    // 嘗試從 SharedPreferences 舊 key 遷移
-    final prefs = await _sharedPrefs;
-    final prefToken = prefs.getString('finmind_api_token');
-    if (prefToken != null && prefToken.isNotEmpty) {
-      await setFinMindToken(prefToken);
-      await prefs.remove('finmind_api_token');
-    }
-  }
-
-  // ==================================================
-  // 最後更新時間追蹤
-  // ==================================================
-
-  /// 取得最後成功更新的日期
-  @override
-  Future<DateTime?> getLastUpdateDate() async {
-    final value = await _db.getSetting(SettingsKeys.lastUpdateDate);
-    if (value == null) return null;
-    return DateTime.tryParse(value);
-  }
-
-  /// 設定最後成功更新的日期
-  @override
-  Future<void> setLastUpdateDate(DateTime date) {
-    return _db.setSetting(SettingsKeys.lastUpdateDate, date.toIso8601String());
-  }
-
-  // ==================================================
-  // 功能開關
-  // ==================================================
-
-  /// 取得是否同步法人資料
-  @override
-  Future<bool> shouldFetchInstitutional() async {
-    final value = await _db.getSetting(SettingsKeys.fetchInstitutional);
-    return value == 'true';
-  }
-
-  /// 設定是否同步法人資料
-  @override
-  Future<void> setFetchInstitutional(bool enabled) {
-    return _db.setSetting(SettingsKeys.fetchInstitutional, enabled.toString());
-  }
-
-  /// 取得是否同步新聞
-  @override
-  Future<bool> shouldFetchNews() async {
-    final value = await _db.getSetting(SettingsKeys.fetchNews);
-    // 預設為 true
-    return value != 'false';
-  }
-
-  /// 設定是否同步新聞
-  @override
-  Future<void> setFetchNews(bool enabled) {
-    return _db.setSetting(SettingsKeys.fetchNews, enabled.toString());
   }
 
   // ==================================================

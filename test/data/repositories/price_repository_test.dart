@@ -271,19 +271,6 @@ void main() {
       });
     });
 
-    group('syncTodayPrices', () {
-      test('delegates to syncAllPricesForDate', () async {
-        when(
-          () => mockDb.getPriceCountForDate(any()),
-        ).thenAnswer((_) async => 1600);
-        when(() => mockDb.getPricesForDate(any())).thenAnswer((_) async => []);
-
-        final result = await repository.syncTodayPrices();
-
-        expect(result.skipped, isTrue);
-      });
-    });
-
     group('syncStockPrices', () {
       test('skips when all months have sufficient data', () async {
         // Generate sufficient data for 2 months

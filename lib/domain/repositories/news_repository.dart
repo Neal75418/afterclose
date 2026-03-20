@@ -16,25 +16,11 @@ abstract class INewsRepository {
     int offset = 0,
   });
 
-  /// 取得股票相關新聞
-  Future<List<NewsItemEntry>> getNewsForStock(
-    String symbol, {
-    int days = 3,
-    int? limit,
-    int offset = 0,
-  });
-
   /// 批次取得多檔股票的新聞
   Future<Map<String, List<NewsItemEntry>>> getNewsForStocksBatch(
     List<String> symbols, {
     int days = 3,
   });
-
-  /// 檢查股票是否有近期新聞
-  Future<bool> hasRecentNews(String symbol, {int days = 2});
-
-  /// 依 ID 取得新聞
-  Future<NewsItemEntry?> getNewsById(String id);
 
   /// 清除過期新聞
   Future<int> cleanupOldNews({int olderThanDays = 30});

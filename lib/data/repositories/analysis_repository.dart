@@ -44,8 +44,7 @@ class AnalysisRepository implements IAnalysisRepository {
     );
   }
 
-  /// 取得某日期的所有分析結果
-  @override
+  /// 取得某日期的所有分析結果（內部使用）
   Future<List<DailyAnalysisEntry>> getAnalysesForDate(DateTime date) {
     return _db.getAnalysisForDate(DateContext.normalize(date));
   }
@@ -189,13 +188,6 @@ class AnalysisRepository implements IAnalysisRepository {
 
     // 使用原子性取代確保一致性
     await _db.replaceRecommendations(normalizedDate, entries);
-  }
-
-  /// 檢查某日期是否有推薦股
-  @override
-  Future<bool> hasRecommendations(DateTime date) async {
-    final recs = await getRecommendations(date);
-    return recs.isNotEmpty;
   }
 
   // ==================================================

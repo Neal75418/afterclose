@@ -376,33 +376,6 @@ void main() {
         expect(result, isEmpty);
       });
     });
-
-    group('stockExists', () {
-      test('returns true when stock exists', () async {
-        final stock = StockMasterEntry(
-          symbol: '2330',
-          name: '台積電',
-          market: 'TWSE',
-          industry: '半導體',
-          isActive: true,
-          updatedAt: DateTime(2024, 6, 15),
-        );
-
-        when(() => mockDb.getStock('2330')).thenAnswer((_) async => stock);
-
-        final result = await repository.stockExists('2330');
-
-        expect(result, isTrue);
-      });
-
-      test('returns false when stock does not exist', () async {
-        when(() => mockDb.getStock('9999')).thenAnswer((_) async => null);
-
-        final result = await repository.stockExists('9999');
-
-        expect(result, isFalse);
-      });
-    });
   });
 
   group('Stock code validation pattern', () {

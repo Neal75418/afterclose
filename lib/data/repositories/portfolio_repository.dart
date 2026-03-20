@@ -26,14 +26,6 @@ class PortfolioRepository implements IPortfolioRepository {
   Future<List<PortfolioPositionEntry>> getPositions() =>
       _db.getPortfolioPositions();
 
-  @override
-  Future<PortfolioPositionEntry?> getPosition(String symbol) =>
-      _db.getPortfolioPosition(symbol);
-
-  @override
-  Future<List<PortfolioTransactionEntry>> getTransactions(String symbol) =>
-      _db.getTransactionsForSymbol(symbol);
-
   // ==================================================
   // 交易操作
   // ==================================================

@@ -193,14 +193,6 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
-  /// 同步今日所有股票價格（批次模式）
-  ///
-  /// [syncAllPricesForDate] 的別名，使用預設日期
-  @override
-  Future<MarketSyncResult> syncTodayPrices({DateTime? date}) {
-    return syncAllPricesForDate(date ?? _clock.now());
-  }
-
   /// 同步最新交易日的所有價格，並回傳快篩候選股
   ///
   /// 主要來源：TWSE/TPEX Open Data（免費、無限制、全市場）

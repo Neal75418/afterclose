@@ -35,9 +35,6 @@ abstract class IPriceRepository {
     DateTime? endDate,
   });
 
-  /// 批次同步今日所有股票價格
-  Future<MarketSyncResult> syncTodayPrices({DateTime? date});
-
   /// 同步最新交易日所有價格並回傳快速篩選候選股
   Future<MarketSyncResult> syncAllPricesForDate(
     DateTime date, {

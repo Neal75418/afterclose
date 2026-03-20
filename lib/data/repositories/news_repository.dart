@@ -118,44 +118,6 @@ class NewsRepository implements INewsRepository {
     return query.get();
   }
 
-  /// 取得特定股票的新聞（Database 層級過濾）
-  ///
-  /// [symbol] - 股票代碼
-  /// [days] - 回溯天數（預設 3 天）
-  /// [limit] - 回傳上限（預設無限制）
-  /// [offset] - 略過筆數（分頁用，預設 0）
-  @override
-  Future<List<NewsItemEntry>> getNewsForStock(
-    String symbol, {
-    int days = 3,
-    int? limit,
-    int offset = 0,
-  }) async {
-    final cutoff = _clock.now().subtract(Duration(days: days));
-
-    // 取得該股票關聯的新聞 ID
-    final mappings = await (_db.select(
-      _db.newsStockMap,
-    )..where((m) => m.symbol.equals(symbol))).get();
-
-    if (mappings.isEmpty) return [];
-
-    final newsIds = mappings.map((m) => m.newsId).toList();
-
-    // 以 Database 層級過濾日期
-    final query = _db.select(_db.newsItem)
-      ..where((n) => n.id.isIn(newsIds))
-      ..where((n) => n.publishedAt.isBiggerOrEqualValue(cutoff))
-      ..orderBy([(n) => OrderingTerm.desc(n.publishedAt)]);
-
-    // 套用分頁
-    if (limit != null) {
-      query.limit(limit, offset: offset);
-    }
-
-    return query.get();
-  }
-
   /// 批次取得多檔股票的新聞（避免 N+1 問題）
   ///
   /// 回傳 Map：symbol -> 新聞清單
@@ -199,21 +161,6 @@ class NewsRepository implements INewsRepository {
     }
 
     return result;
-  }
-
-  /// 檢查股票是否有近期新聞
-  @override
-  Future<bool> hasRecentNews(String symbol, {int days = 2}) async {
-    final news = await getNewsForStock(symbol, days: days);
-    return news.isNotEmpty;
-  }
-
-  /// 依 ID 取得新聞
-  @override
-  Future<NewsItemEntry?> getNewsById(String id) async {
-    return (_db.select(
-      _db.newsItem,
-    )..where((n) => n.id.equals(id))).getSingleOrNull();
   }
 
   /// 清理舊新聞（超過 N 天）

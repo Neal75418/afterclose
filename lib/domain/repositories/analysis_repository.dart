@@ -11,9 +11,6 @@ abstract class IAnalysisRepository {
   /// 取得特定股票在指定日期的分析結果
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date);
 
-  /// 取得指定日期的所有分析結果
-  Future<List<DailyAnalysisEntry>> getAnalysesForDate(DateTime date);
-
   /// 儲存分析結果
   Future<void> saveAnalysis({
     required String symbol,
@@ -54,9 +51,6 @@ abstract class IAnalysisRepository {
     DateTime date,
     List<RecommendationData> recommendations,
   );
-
-  /// 檢查指定日期是否已有推薦
-  Future<bool> hasRecommendations(DateTime date);
 
   // ==================================================
   // 冷卻期檢查

@@ -396,38 +396,6 @@ void main() {
       });
     });
 
-    group('hasRecommendations', () {
-      test('returns true when recommendations exist', () async {
-        final date = DateTime(2024, 6, 15);
-        final recs = [
-          DailyRecommendationEntry(
-            date: date,
-            rank: 1,
-            symbol: '2330',
-            score: 95.0,
-          ),
-        ];
-
-        when(
-          () => mockDb.getRecommendations(date),
-        ).thenAnswer((_) async => recs);
-
-        final result = await repository.hasRecommendations(date);
-
-        expect(result, isTrue);
-      });
-
-      test('returns false when no recommendations', () async {
-        final date = DateTime(2024, 6, 15);
-
-        when(() => mockDb.getRecommendations(date)).thenAnswer((_) async => []);
-
-        final result = await repository.hasRecommendations(date);
-
-        expect(result, isFalse);
-      });
-    });
-
     group('wasRecentlyRecommended', () {
       test('delegates to database with correct date range', () async {
         when(

@@ -17,9 +17,6 @@ abstract class IStockRepository {
   /// 依市場篩選股票
   Future<List<StockMasterEntry>> getStocksByMarket(String market);
 
-  /// 檢查股票是否存在
-  Future<bool> stockExists(String symbol);
-
   /// 取得產業股票數量統計
   Future<Map<String, int>> getIndustryStockCounts();
 
