@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -69,6 +70,41 @@ void main() {
 
       expect(result, isFalse);
     });
+
+    test(
+      'returns false at exact boundary (ratio == dayTradingHighRatio)',
+      () async {
+        // Logic is `> dayTradingHighRatio`, so exactly 30.0 should NOT qualify
+        when(() => mockDb.getLatestDayTrading(any())).thenAnswer(
+          (_) async => DayTradingEntry(
+            symbol: '2330',
+            date: DateTime(2025, 1, 15),
+            dayTradingRatio: DataFreshness.dayTradingHighRatio,
+          ),
+        );
+
+        final result = await repo.isHighDayTradingStock('2330');
+
+        expect(result, isFalse);
+      },
+    );
+
+    test(
+      'returns true just above boundary (ratio == dayTradingHighRatio + 0.1)',
+      () async {
+        when(() => mockDb.getLatestDayTrading(any())).thenAnswer(
+          (_) async => DayTradingEntry(
+            symbol: '2330',
+            date: DateTime(2025, 1, 15),
+            dayTradingRatio: DataFreshness.dayTradingHighRatio + 0.1,
+          ),
+        );
+
+        final result = await repo.isHighDayTradingStock('2330');
+
+        expect(result, isTrue);
+      },
+    );
   });
 
   // ==========================================
@@ -305,23 +341,25 @@ void main() {
   // Delegation
   // ==========================================
   group('delegation', () {
-    test('getLatestDayTrading delegates to db', () async {
+    test('getLatestDayTrading delegates to db and returns result', () async {
       when(
         () => mockDb.getLatestDayTrading(any()),
       ).thenAnswer((_) async => null);
 
-      await repo.getLatestDayTrading('2330');
+      final result = await repo.getLatestDayTrading('2330');
 
+      expect(result, isNull);
       verify(() => mockDb.getLatestDayTrading('2330')).called(1);
     });
 
-    test('getLatestMarginTrading delegates to db', () async {
+    test('getLatestMarginTrading delegates to db and returns result', () async {
       when(
         () => mockDb.getLatestMarginTrading(any()),
       ).thenAnswer((_) async => null);
 
-      await repo.getLatestMarginTrading('2330');
+      final result = await repo.getLatestMarginTrading('2330');
 
+      expect(result, isNull);
       verify(() => mockDb.getLatestMarginTrading('2330')).called(1);
     });
   });

@@ -323,24 +323,29 @@ void main() {
   // Delegation
   // ==========================================
   group('delegation', () {
-    test('getLatestShareholding delegates to db', () async {
+    test('getLatestShareholding delegates to db and returns result', () async {
       when(
         () => mockDb.getLatestShareholding(any()),
       ).thenAnswer((_) async => null);
 
-      await repo.getLatestShareholding('2330');
+      final result = await repo.getLatestShareholding('2330');
 
+      expect(result, isNull);
       verify(() => mockDb.getLatestShareholding('2330')).called(1);
     });
 
-    test('getLatestHoldingDistribution delegates to db', () async {
-      when(
-        () => mockDb.getLatestHoldingDistribution(any()),
-      ).thenAnswer((_) async => []);
+    test(
+      'getLatestHoldingDistribution delegates to db and returns result',
+      () async {
+        when(
+          () => mockDb.getLatestHoldingDistribution(any()),
+        ).thenAnswer((_) async => []);
 
-      await repo.getLatestHoldingDistribution('2330');
+        final result = await repo.getLatestHoldingDistribution('2330');
 
-      verify(() => mockDb.getLatestHoldingDistribution('2330')).called(1);
-    });
+        expect(result, isEmpty);
+        verify(() => mockDb.getLatestHoldingDistribution('2330')).called(1);
+      },
+    );
   });
 }
