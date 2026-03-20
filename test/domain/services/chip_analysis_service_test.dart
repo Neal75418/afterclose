@@ -99,20 +99,20 @@ void main() {
       expect(result.score, 0);
     });
 
-    test('Multiple positive signals produce high score', () {
-      final instHistory = List<DailyInstitutionalEntry>.generate(
-        5,
+    test('Institutional buy streak == 2 days adds small bonus', () {
+      final history = List<DailyInstitutionalEntry>.generate(
+        2,
         (i) => DailyInstitutionalEntry(
           symbol: '2330',
           date: DateTime(2023, 1, i + 1),
           foreignNet: 1000,
-          investmentTrustNet: 500,
+          investmentTrustNet: 0,
           dealerNet: 0,
         ),
       );
 
       final result = service.compute(
-        institutionalHistory: instHistory,
+        institutionalHistory: history,
         shareholdingHistory: [],
         marginHistory: [],
         dayTradingHistory: [],
@@ -120,9 +120,60 @@ void main() {
         insiderHistory: [],
       );
 
-      // Base 0 + 30 (inst large bonus) = 30
-      expect(result.score, 30);
-      expect(result.rating, ChipRating.neutral);
+      // Base 0 + 15 (Small Bonus) = 15
+      expect(result.score, 15);
+    });
+
+    test('Institutional sell streak == 2 days penalizes score', () {
+      final history = List<DailyInstitutionalEntry>.generate(
+        2,
+        (i) => DailyInstitutionalEntry(
+          symbol: '2330',
+          date: DateTime(2023, 1, i + 1),
+          foreignNet: -1000,
+          investmentTrustNet: 0,
+          dealerNet: 0,
+        ),
+      );
+
+      final result = service.compute(
+        institutionalHistory: history,
+        shareholdingHistory: [],
+        marginHistory: [],
+        dayTradingHistory: [],
+        holdingDistribution: [],
+        insiderHistory: [],
+      );
+
+      // Base 0 - 12 (Small Penalty) = 0 (clamped); 2 sell days → neutral attitude
+      expect(result.score, 0);
+      expect(result.attitude, InstitutionalAttitude.neutral);
+    });
+
+    test('Institutional sell streak >= 4 days adds large penalty', () {
+      final history = List<DailyInstitutionalEntry>.generate(
+        4,
+        (i) => DailyInstitutionalEntry(
+          symbol: '2330',
+          date: DateTime(2023, 1, i + 1),
+          foreignNet: -1000,
+          investmentTrustNet: 0,
+          dealerNet: 0,
+        ),
+      );
+
+      final result = service.compute(
+        institutionalHistory: history,
+        shareholdingHistory: [],
+        marginHistory: [],
+        dayTradingHistory: [],
+        holdingDistribution: [],
+        insiderHistory: [],
+      );
+
+      // Base 0 - 25 (Large Penalty) = 0 (clamped); attitude should be aggressiveSell
+      expect(result.score, 0);
+      expect(result.attitude, InstitutionalAttitude.aggressiveSell);
     });
   });
 }

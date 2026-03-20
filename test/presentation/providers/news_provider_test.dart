@@ -230,20 +230,4 @@ void main() {
       expect(state.selectedSource, NewsSource.yahoo);
     });
   });
-
-  // ===========================================================================
-  // Provider declaration
-  // ===========================================================================
-
-  group('newsProvider', () {
-    test('provides initial state', () {
-      final state = container.read(newsProvider);
-      expect(state, isA<NewsState>());
-    });
-
-    test('notifier is accessible', () {
-      final notifier = container.read(newsProvider.notifier);
-      expect(notifier, isA<NewsNotifier>());
-    });
-  });
 }

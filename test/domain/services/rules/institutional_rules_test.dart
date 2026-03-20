@@ -168,6 +168,20 @@ void main() {
       expect(rule.evaluate(context, data), isNull);
     });
 
+    test('does not trigger at exactly minStreakDays - 1 (boundary)', () {
+      // streakDays must be >= InstitutionalParams.institutionalStreakDays (4)
+      // 3 days = boundary - 1, should NOT trigger
+      final institutional = _generateBuyStreak(days: 3);
+      const context = AnalysisContext(trendState: TrendState.range);
+      final data = StockData(
+        symbol: 'TEST',
+        prices: [],
+        institutional: institutional,
+      );
+
+      expect(rule.evaluate(context, data), isNull);
+    });
+
     test('does not trigger when institutional data is null', () {
       const context = AnalysisContext(trendState: TrendState.range);
       const data = StockData(symbol: 'TEST', prices: []);

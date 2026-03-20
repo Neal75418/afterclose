@@ -16,17 +16,6 @@ class FakeDailyRecommendationCompanion extends Fake
 
 class FakeDailyReasonCompanion extends Fake implements DailyReasonCompanion {}
 
-/// Testable subclass to expose private methods for testing
-class TestableAnalysisRepository extends AnalysisRepository {
-  TestableAnalysisRepository({required super.database});
-
-  DateTime testNormalizeDate(DateTime date) {
-    // Access the private method logic via public method behavior
-    // Since _normalizeDate is private, we test it indirectly through public methods
-    return DateTime(date.year, date.month, date.day);
-  }
-}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeDailyAnalysisCompanion());
@@ -44,31 +33,6 @@ void main() {
   });
 
   group('AnalysisRepository', () {
-    group('_normalizeDate (tested via public methods)', () {
-      test('normalizes date by removing time component', () {
-        final testableRepo = TestableAnalysisRepository(database: mockDb);
-        final dateWithTime = DateTime(2024, 6, 15, 14, 30, 45);
-
-        final normalized = testableRepo.testNormalizeDate(dateWithTime);
-
-        expect(normalized.year, equals(2024));
-        expect(normalized.month, equals(6));
-        expect(normalized.day, equals(15));
-        expect(normalized.hour, equals(0));
-        expect(normalized.minute, equals(0));
-        expect(normalized.second, equals(0));
-      });
-
-      test('already normalized date remains unchanged', () {
-        final testableRepo = TestableAnalysisRepository(database: mockDb);
-        final normalizedDate = DateTime(2024, 6, 15);
-
-        final result = testableRepo.testNormalizeDate(normalizedDate);
-
-        expect(result, equals(normalizedDate));
-      });
-    });
-
     group('getAnalysis', () {
       test('returns analysis for given symbol and date', () async {
         final date = DateTime(2024, 6, 15);

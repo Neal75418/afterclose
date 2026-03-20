@@ -218,20 +218,4 @@ void main() {
       expect(state.isLoading, isFalse);
     });
   });
-
-  // ===========================================================================
-  // Provider declaration
-  // ===========================================================================
-
-  group('comparisonProvider', () {
-    test('is autoDispose', () {
-      final state = container.read(comparisonProvider);
-      expect(state, isA<ComparisonState>());
-    });
-
-    test('notifier is accessible', () {
-      final notifier = container.read(comparisonProvider.notifier);
-      expect(notifier, isA<ComparisonNotifier>());
-    });
-  });
 }

@@ -220,23 +220,38 @@ void main() {
   // Delegation
   // ==========================================
   group('delegation', () {
-    test('getPriceHistoryBatch delegates to db', () async {
+    test('getPriceHistoryBatch delegates to db and returns result', () async {
       final startDate = DateTime(2025, 1, 1);
       final endDate = DateTime(2025, 1, 31);
+      final expected = <String, List<DailyPriceEntry>>{
+        '2330': [
+          DailyPriceEntry(
+            symbol: '2330',
+            date: startDate,
+            open: 100,
+            high: 110,
+            low: 95,
+            close: 105,
+            volume: 5000,
+          ),
+        ],
+      };
       when(
         () => mockDb.getPriceHistoryBatch(
           any(),
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
-      ).thenAnswer((_) async => <String, List<DailyPriceEntry>>{});
+      ).thenAnswer((_) async => expected);
 
-      await repo.getPriceHistoryBatch(
+      final result = await repo.getPriceHistoryBatch(
         ['2330'],
         startDate: startDate,
         endDate: endDate,
       );
 
+      expect(result, equals(expected));
+      expect(result['2330']!.length, equals(1));
       verify(
         () => mockDb.getPriceHistoryBatch(
           ['2330'],
@@ -246,14 +261,28 @@ void main() {
       ).called(1);
     });
 
-    test('getReasonsBatch delegates to db', () async {
+    test('getReasonsBatch delegates to db and returns result', () async {
       final date = DateTime(2025, 1, 15);
+      final expected = <String, List<DailyReasonEntry>>{
+        '2330': [
+          DailyReasonEntry(
+            symbol: '2330',
+            date: date,
+            rank: 1,
+            reasonType: 'TREND_UP',
+            evidenceJson: '{}',
+            ruleScore: 20.0,
+          ),
+        ],
+      };
       when(
         () => mockDb.getReasonsBatch(any(), any()),
-      ).thenAnswer((_) async => <String, List<DailyReasonEntry>>{});
+      ).thenAnswer((_) async => expected);
 
-      await repo.getReasonsBatch(['2330'], date);
+      final result = await repo.getReasonsBatch(['2330'], date);
 
+      expect(result, equals(expected));
+      expect(result['2330']!.length, equals(1));
       verify(() => mockDb.getReasonsBatch(['2330'], date)).called(1);
     });
   });
