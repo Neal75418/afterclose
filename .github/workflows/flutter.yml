@@ -46,7 +46,8 @@ jobs:
         uses: actions/cache@v5
         with:
           path: .dart_tool/build/
-          key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'lib/**/*.dart') }}
+          # 只在影響 codegen 的檔案改動時才失效（Drift schema / Freezed models / 依賴版本）
+          key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'lib/data/database/tables/**', 'lib/domain/models/**') }}
           restore-keys: build-runner-${{ runner.os }}-
 
       - name: Generate code (Drift, Riverpod, Freezed)
@@ -56,12 +57,17 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
       - name: Analyze project source
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --no-fatal-infos lib/
+
+      - name: Run tests
+        run: flutter test --exclude-tags golden
 
       - name: Run tests with coverage
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: flutter test --coverage --exclude-tags golden
 
       - name: Upload coverage to Codecov
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
