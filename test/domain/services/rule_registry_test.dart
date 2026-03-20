@@ -61,15 +61,15 @@ void main() {
     test('expected category distribution', () {
       final counts = RuleRegistry.categoryCounts;
       // 技術面最多（趨勢 + K線 + 指標 + 背離 + 成交量）
-      expect(counts[RuleCategory.technical], 31);
+      expect(counts[RuleCategory.technical], 29);
       // 基本面（營收 + EPS + ROE + 估值 + 股利）
       expect(counts[RuleCategory.fundamental], 15);
       // 風險（注意處置 + 董監持股）
       expect(counts[RuleCategory.risk], 7);
-      // 市場資料（外資持股 + 當沖 + 集中度）
-      expect(counts[RuleCategory.market], 5);
-      // 法人（連續買賣）
-      expect(counts[RuleCategory.institutional], 2);
+      // 市場資料（外資持股 + 當沖 + 集中度 + 新聞）
+      expect(counts[RuleCategory.market], 6);
+      // 法人（連續買賣 + 動向）
+      expect(counts[RuleCategory.institutional], 3);
     });
   });
 }
