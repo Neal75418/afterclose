@@ -58,14 +58,14 @@ jobs:
       - name: Analyze project source
         run: flutter analyze --no-fatal-infos lib/
 
-  # ── Job 2: 測試 shards（3 個並行）──────────────────────────────────
+  # ── Job 2: 測試 shards（5 個並行）──────────────────────────────────
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        shard: [0, 1, 2]
+        shard: [0, 1, 2, 3, 4]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -98,4 +98,4 @@ jobs:
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Run tests
-        run: flutter test --exclude-tags golden --total-shards=3 --shard-index=${{ matrix.shard }}
+        run: flutter test --exclude-tags golden --total-shards=5 --shard-index=${{ matrix.shard }}
