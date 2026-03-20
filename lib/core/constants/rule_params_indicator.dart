@@ -75,6 +75,17 @@ abstract final class IndicatorParams {
   /// 低於此值的股票才會進入歷史資料回補流程。
   static const int historyNearCompleteThreshold = 180;
 
+  /// 篩選服務指標計算回溯天數
+  ///
+  /// ScreeningService 從此天數前開始載入價格歷史，以提供足夠的移動平均線暖機資料。
+  /// 120 個日曆日約涵蓋 85 個交易日，足以計算 MA60 並留有緩衝。
+  static const int screeningIndicatorLookbackDays = 120;
+
+  /// 篩選服務指標計算所需最少價格資料點數
+  ///
+  /// 少於此數量的股票跳過技術指標計算（資料不足無法可靠計算 MA20）。
+  static const int screeningIndicatorMinDataPoints = 20;
+
   /// 接近 52 週新高緩衝百分比
   ///
   /// 收盤價在 52 週最高價的 1% 範圍內觸發。

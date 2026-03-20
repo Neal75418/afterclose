@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -290,6 +291,10 @@ class ScoringService {
     ScoringBatchResult result;
     try {
       result = await evaluateStocksInIsolate(input);
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e, stackTrace) {
       AppLogger.warning('ScoringSvc', 'Isolate 執行失敗，回退至主執行緒', e, stackTrace);
 

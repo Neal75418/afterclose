@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -294,6 +295,10 @@ class RuleAccuracyService {
               } else {
                 skipped++;
               }
+            } on RateLimitException {
+              rethrow;
+            } on NetworkException {
+              rethrow;
             } catch (e, stack) {
               errors++;
               AppLogger.warning(

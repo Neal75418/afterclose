@@ -108,7 +108,9 @@ class ScreeningService {
     Map<String, List<DailyReasonEntry>>? reasonsMap;
 
     if (needsIndicators) {
-      final historyStart = startOfDay.subtract(const Duration(days: 120));
+      final historyStart = startOfDay.subtract(
+        const Duration(days: IndicatorParams.screeningIndicatorLookbackDays),
+      );
       priceHistories = await _repo.getPriceHistoryBatch(
         candidates,
         startDate: historyStart,
@@ -175,9 +177,11 @@ class ScreeningService {
     Set<ScreeningField> neededFields,
     TechnicalIndicatorService indicatorService,
   ) {
-    if (prices.length < 20) return null;
+    if (prices.length < IndicatorParams.screeningIndicatorMinDataPoints)
+      return null;
     final (:closes, :highs, :lows, :volumes) = prices.extractOhlcv();
-    if (closes.length < 20) return null;
+    if (closes.length < IndicatorParams.screeningIndicatorMinDataPoints)
+      return null;
 
     double? rsi, kdK, kdD, ma5, ma10, ma20, ma60, volumeRatioMa20;
 
