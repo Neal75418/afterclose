@@ -3,7 +3,6 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 // ==================================================
 // 第 3 階段：技術訊號規則
@@ -354,12 +353,7 @@ class RSIExtremeOverboughtRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < IndicatorParams.rsiPeriod + 1) return null;
-
-    final rsi = TechnicalIndicatorService.latestRSI(
-      data.prices,
-      period: IndicatorParams.rsiPeriod,
-    );
+    final rsi = context.indicators?.rsi;
     if (rsi == null) return null;
 
     if (rsi >= IndicatorParams.rsiExtremeOverbought) {
@@ -399,12 +393,7 @@ class RSIExtremeOversoldRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    if (data.prices.length < IndicatorParams.rsiPeriod + 1) return null;
-
-    final rsi = TechnicalIndicatorService.latestRSI(
-      data.prices,
-      period: IndicatorParams.rsiPeriod,
-    );
+    final rsi = context.indicators?.rsi;
     if (rsi == null) return null;
 
     if (rsi <= IndicatorParams.rsiExtremeOversold) {

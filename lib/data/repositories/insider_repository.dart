@@ -296,15 +296,19 @@ class InsiderRepository {
         continue;
       }
 
+      // 升冪排序一次，兩個計算共用
+      final sortedAsc = List<InsiderHoldingEntry>.from(history)
+        ..sort((a, b) => a.date.compareTo(b.date));
+
       // 計算連續減持
       final (hasStreak, streakMonths) = _calculateSellingStreak(
-        history,
+        sortedAsc,
         requiredMonths: months,
       );
 
       // 計算顯著增持
       final (hasBuying, buyingChange) = _calculateSignificantBuying(
-        history,
+        sortedAsc,
         threshold: buyingThreshold,
       );
 
@@ -319,21 +323,17 @@ class InsiderRepository {
     return result;
   }
 
-  /// 計算連續減持（內部方法）
+  /// 計算連續減持（內部方法，[sortedAsc] 須已按日期升冪排序）
   (bool, int) _calculateSellingStreak(
-    List<InsiderHoldingEntry> history, {
+    List<InsiderHoldingEntry> sortedAsc, {
     required int requiredMonths,
   }) {
-    if (history.length < requiredMonths) return (false, 0);
-
-    // 依日期升冪排序（最舊在前）
-    final sorted = List<InsiderHoldingEntry>.from(history)
-      ..sort((a, b) => a.date.compareTo(b.date));
+    if (sortedAsc.length < requiredMonths) return (false, 0);
 
     int consecutiveDecreaseCount = 0;
     double? lastValidRatio;
 
-    for (final entry in sorted) {
+    for (final entry in sortedAsc) {
       final currRatio = entry.insiderRatio;
 
       // 跳過 null 或無效值
@@ -356,19 +356,16 @@ class InsiderRepository {
     );
   }
 
-  /// 計算顯著增持（內部方法）
+  /// 計算顯著增持（內部方法，[sortedAsc] 須已按日期升冪排序）
   (bool, double?) _calculateSignificantBuying(
-    List<InsiderHoldingEntry> history, {
+    List<InsiderHoldingEntry> sortedAsc, {
     required double threshold,
   }) {
-    if (history.length < 2) return (false, null);
+    if (sortedAsc.length < 2) return (false, null);
 
-    // 依日期降冪排序（最新在前）
-    final sorted = List<InsiderHoldingEntry>.from(history)
-      ..sort((a, b) => b.date.compareTo(a.date));
-
-    final latestRatio = sorted[0].insiderRatio ?? 0;
-    final previousRatio = sorted[1].insiderRatio ?? 0;
+    // 升冪排序末尾即最新兩筆
+    final latestRatio = sortedAsc.last.insiderRatio ?? 0;
+    final previousRatio = sortedAsc[sortedAsc.length - 2].insiderRatio ?? 0;
 
     if (previousRatio <= 0) return (false, null);
 

@@ -27,6 +27,7 @@ class ScreeningRepository implements IScreeningRepository {
     final cteVars = <Object>[];
     final joinVars = <Object>[];
     final whereVars = <Object>[];
+    final cteParts = <String>[];
     final joins = StringBuffer();
     final wheres = StringBuffer();
 
@@ -49,16 +50,15 @@ class ScreeningRepository implements IScreeningRepository {
           c.field == ScreeningField.revenueMomGrowth,
     );
 
-    // CTE（必須放在最前面）
-    String ctePrefix = '';
+    // 建立 CTE（必須放在最前面）
     if (conditions.any((c) => c.field == ScreeningField.priceChangePercent)) {
       final prevDateMs =
           startOfDay
               .subtract(const Duration(days: 10))
               .millisecondsSinceEpoch ~/
           1000;
-      ctePrefix = '''
-        WITH prev_price AS (
+      cteParts.add('''
+        prev_price AS (
           SELECT dp2.symbol, dp2.close as prev_close
           FROM daily_price dp2
           INNER JOIN (
@@ -68,13 +68,9 @@ class ScreeningRepository implements IScreeningRepository {
             GROUP BY symbol
           ) latest ON dp2.symbol = latest.symbol AND dp2.date = latest.prev_date
           WHERE dp2.date >= ?
-        )
-      ''';
+        )''');
       cteVars.addAll([startOfDay.millisecondsSinceEpoch ~/ 1000, prevDateMs]);
-
-      joins.write('''
-        LEFT JOIN prev_price pp ON pp.symbol = da.symbol
-      ''');
+      joins.write('LEFT JOIN prev_price pp ON pp.symbol = da.symbol\n');
     }
 
     if (needsPrice) {
@@ -91,31 +87,39 @@ class ScreeningRepository implements IScreeningRepository {
 
     if (needsValuation) {
       final valuationStart = startOfDay.subtract(const Duration(days: 7));
-      joins.write('''
-        LEFT JOIN stock_valuation sv
-          ON sv.symbol = da.symbol
-          AND sv.date = (
-            SELECT MAX(sv2.date) FROM stock_valuation sv2
-            WHERE sv2.symbol = da.symbol
-            AND sv2.date >= ? AND sv2.date < ?
-          )
-      ''');
-      joinVars.addAll([
+      cteParts.add('''
+        latest_sv AS (
+          SELECT symbol, MAX(date) AS max_date
+          FROM stock_valuation
+          WHERE date >= ? AND date < ?
+          GROUP BY symbol
+        )''');
+      cteVars.addAll([
         valuationStart.millisecondsSinceEpoch ~/ 1000,
         endOfDay.millisecondsSinceEpoch ~/ 1000,
       ]);
+      joins.write('''
+        LEFT JOIN latest_sv ON latest_sv.symbol = da.symbol
+        LEFT JOIN stock_valuation sv
+          ON sv.symbol = da.symbol AND sv.date = latest_sv.max_date
+      ''');
     }
 
     if (needsRevenue) {
+      cteParts.add('''
+        latest_mr AS (
+          SELECT symbol, MAX(date) AS max_date
+          FROM monthly_revenue
+          GROUP BY symbol
+        )''');
       joins.write('''
+        LEFT JOIN latest_mr ON latest_mr.symbol = da.symbol
         LEFT JOIN monthly_revenue mr
-          ON mr.symbol = da.symbol
-          AND mr.date = (
-            SELECT MAX(mr2.date) FROM monthly_revenue mr2
-            WHERE mr2.symbol = da.symbol
-          )
+          ON mr.symbol = da.symbol AND mr.date = latest_mr.max_date
       ''');
     }
+
+    final ctePrefix = cteParts.isEmpty ? '' : 'WITH ${cteParts.join(',\n')}';
 
     // 建構 WHERE 條件子句
     for (final c in conditions) {

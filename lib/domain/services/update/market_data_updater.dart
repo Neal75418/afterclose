@@ -189,6 +189,10 @@ class MarketDataUpdater {
     var totalErrorCount = 0;
     const maxTotalErrors = 5;
 
+    // 批次預載所有候選的最新持股，避免 chunk 內 N+1 查詢
+    final latestShareholdingMap = await _shareholdingRepo
+        .getLatestShareholdingsBatch(limitedOtcCandidates);
+
     const chunkSize = 5;
     outerLoop:
     for (var i = 0; i < limitedOtcCandidates.length; i += chunkSize) {
@@ -197,8 +201,7 @@ class MarketDataUpdater {
       final futures = chunk.map((symbol) async {
         try {
           // 新鮮度檢查：若已有參考日期的外資持股資料，跳過
-          final latestShareholding = await _shareholdingRepo
-              .getLatestShareholding(symbol);
+          final latestShareholding = latestShareholdingMap[symbol];
           final hasFreshShareholding =
               latestShareholding != null &&
               !latestShareholding.date.isBefore(normalizedFreshnessDate);

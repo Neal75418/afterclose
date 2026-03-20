@@ -26,6 +26,11 @@ abstract class IShareholdingRepository {
     String symbol,
   );
 
+  /// 批次取得多檔股票的最新持股資料
+  Future<Map<String, ShareholdingEntry>> getLatestShareholdingsBatch(
+    List<String> symbols,
+  );
+
   /// 批次取得集中度比率
   Future<Map<String, double>> getConcentrationRatioBatch(
     List<String> symbols, {

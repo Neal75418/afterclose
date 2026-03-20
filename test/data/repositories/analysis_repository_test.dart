@@ -220,11 +220,11 @@ void main() {
         verify(() => mockDb.replaceReasons('2330', date, any())).called(1);
       });
 
-      test('limits reasons to maxReasonsPerStock (50)', () async {
+      test('limits reasons to maxReasonsPerStock (60)', () async {
         final date = DateTime(2024, 6, 15);
-        // Create 60 reasons
+        // Create 70 reasons (exceeds the 60-rule cap)
         final reasons = List.generate(
-          60,
+          70,
           (i) => ReasonData(type: 'REASON_$i', evidenceJson: '{}', score: i),
         );
 
@@ -237,7 +237,7 @@ void main() {
 
         await repository.saveReasons('2330', date, reasons);
 
-        expect(capturedEntries!.length, equals(50)); // Limited to 50
+        expect(capturedEntries!.length, equals(60)); // Limited to 60
       });
     });
 

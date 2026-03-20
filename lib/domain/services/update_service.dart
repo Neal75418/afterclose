@@ -389,7 +389,6 @@ class UpdateService {
   }
 
   Future<void> _syncNews(_UpdateContext ctx) async {
-    ctx.onProgress?.call(5, 10, '取得新聞資料');
     final newsResult = await _newsSyncer.syncAndCleanup();
     ctx.result.newsUpdated = newsResult.itemsAdded;
     ctx.result.errors.addAll(newsResult.errors);
@@ -469,7 +468,6 @@ class UpdateService {
     // 步驟 4.5：籌碼資料
     final marketUpdater = _marketDataUpdater;
     if (marketUpdater != null) {
-      ctx.onProgress?.call(4, 10, '取得籌碼資料');
       try {
         final marketResult = await marketUpdater.syncMarketWideData(
           date: normalizedDate,
@@ -504,7 +502,6 @@ class UpdateService {
     // 步驟 4.6-4.7：基本面資料
     final fundamentalSyncer = _fundamentalSyncer;
     if (fundamentalSyncer != null) {
-      ctx.onProgress?.call(4, 10, '取得基本面資料');
       try {
         final fundResult = await fundamentalSyncer.syncMarketWideFundamentals(
           date: normalizedDate,
@@ -566,7 +563,6 @@ class UpdateService {
 
     // 步驟 4.8：Killer Features 資料（警示、董監持股）
     if (marketUpdater != null) {
-      ctx.onProgress?.call(4, 10, '取得警示資料');
       try {
         final killerResult = await marketUpdater.syncKillerFeaturesData(
           force: ctx.forceFetch,

@@ -160,9 +160,9 @@ abstract final class RuleParams {
   static const double cooldownPenalty = 15;
 
   /// 每檔股票最多理由數（資料庫儲存用，供篩選功能使用）
-  /// 設為 50 確保所有規則都能被儲存（目前共 60 條規則）
+  /// 設為 60 確保所有規則都能被儲存（目前共 60 條規則）
   /// UI 顯示時會用 .take(2) 或 .take(3) 限制
-  static const int maxReasonsPerStock = 50;
+  static const int maxReasonsPerStock = 60;
 
   /// 每日 Top N 推薦數量
   ///

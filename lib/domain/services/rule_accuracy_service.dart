@@ -35,23 +35,29 @@ class RuleAccuracyService {
   /// 各期間獨立執行，單一期間失敗不影響其他期間。
   Future<List<ValidationResult>>
   validatePastRecommendationsMultiPeriod() async {
-    final results = <ValidationResult>[];
-    for (final period in holdingPeriods) {
+    // 讀取與計算並行；寫入統一收攏為一次 batch，避免並行 write lock 競爭
+    final futures = holdingPeriods.map((period) async {
       try {
-        final result = await validatePastRecommendations(
-          daysAgo: period,
-          updateStats: false,
-        );
-        results.add(result);
+        return await _computeValidation(period);
       } catch (e, stack) {
         AppLogger.warning(_logTag, '驗證 ${period}D 失敗，繼續處理其他天數', e, stack);
+        return null;
       }
+    });
+
+    final settled = await Future.wait(futures);
+    final computed = settled.whereType<_ValidationComputed>().toList();
+
+    // 合併所有期間的 inserts，一次寫入
+    final allInserts = [for (final c in computed) ...c.inserts];
+    if (allInserts.isNotEmpty) {
+      await _db.batch((batch) => _applyBatchInserts(batch, allInserts));
     }
 
     // 所有期間驗證完成後，統一更新一次統計
     await _updateRuleAccuracyStats();
 
-    return results;
+    return computed.map((c) => c.result).toList();
   }
 
   /// 每日收盤後執行：回溯驗證 N 個交易日前的推薦
@@ -61,74 +67,178 @@ class RuleAccuracyService {
     int daysAgo = defaultHoldingDays,
     bool updateStats = true,
   }) async {
+    try {
+      final computed = await _computeValidation(daysAgo);
+
+      if (computed.inserts.isNotEmpty) {
+        await _db.batch((batch) => _applyBatchInserts(batch, computed.inserts));
+      }
+
+      if (updateStats) {
+        await _updateRuleAccuracyStats();
+      }
+
+      return computed.result;
+    } catch (e, stack) {
+      AppLogger.error(_logTag, '驗證失敗', e, stack);
+      rethrow;
+    }
+  }
+
+  /// 讀取 + 計算驗證資料，不寫入 DB
+  Future<_ValidationComputed> _computeValidation(int daysAgo) async {
     final today = DateContext.normalize(_clock.now());
     final targetDate = TaiwanCalendar.subtractTradingDays(today, daysAgo);
+    final normalizedDate = DateContext.normalize(targetDate);
 
     AppLogger.info(
       _logTag,
       '開始驗證 ${_formatDate(targetDate)} 的推薦 (持有 $daysAgo 交易日)',
     );
 
-    try {
-      // 1. 取得目標日期的推薦
-      final normalizedDate = DateContext.normalize(targetDate);
-      final recommendations = await (_db.select(
-        _db.dailyRecommendation,
-      )..where((t) => t.date.equals(normalizedDate))).get();
+    // 1. 取得目標日期的推薦
+    final recommendations = await (_db.select(
+      _db.dailyRecommendation,
+    )..where((t) => t.date.equals(normalizedDate))).get();
 
-      if (recommendations.isEmpty) {
-        AppLogger.debug(_logTag, '${_formatDate(targetDate)} 無推薦資料');
-        return ValidationResult(
+    if (recommendations.isEmpty) {
+      AppLogger.debug(_logTag, '${_formatDate(targetDate)} 無推薦資料');
+      return _ValidationComputed(
+        result: ValidationResult(
           date: targetDate,
           holdingDays: daysAgo,
           validated: 0,
           successful: 0,
           avgReturn: 0,
-        );
-      }
-
-      int validated = 0;
-      int successful = 0;
-      double totalReturn = 0;
-
-      // 2. 逐一驗證每個推薦
-      for (final rec in recommendations) {
-        final result = await _validateSingleRecommendation(
-          rec,
-          normalizedDate,
-          daysAgo,
-        );
-
-        if (result != null) {
-          validated++;
-          if (result.isSuccess) successful++;
-          totalReturn += result.returnRate;
-        }
-      }
-
-      // 3. 更新規則準確度統計
-      if (updateStats) {
-        await _updateRuleAccuracyStats();
-      }
-
-      final avgReturn = validated > 0 ? totalReturn / validated : 0.0;
-
-      AppLogger.info(
-        _logTag,
-        '驗證完成 (${daysAgo}D)：$validated 筆，成功 $successful 筆，'
-        '平均報酬 ${avgReturn.toStringAsFixed(2)}%',
+        ),
+        inserts: [],
       );
+    }
 
-      return ValidationResult(
+    final symbols = recommendations.map((r) => r.symbol).toList();
+    final exitDate = TaiwanCalendar.addTradingDays(normalizedDate, daysAgo);
+
+    // 2. 批次預載：3 次查詢取代 3N 次個別查詢
+    final (entryRows, exitRows, reasonRows) = await (
+      (_db.select(_db.dailyPrice)..where(
+            (t) => t.date.equals(normalizedDate) & t.symbol.isIn(symbols),
+          ))
+          .get(),
+      (_db.select(_db.dailyPrice)
+            ..where(
+              (t) =>
+                  t.symbol.isIn(symbols) &
+                  t.date.isBetweenValues(
+                    exitDate.subtract(const Duration(days: 1)),
+                    exitDate.add(const Duration(days: 1)),
+                  ),
+            )
+            ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+          .get(),
+      (_db.select(_db.dailyReason)
+            ..where(
+              (t) => t.date.equals(normalizedDate) & t.symbol.isIn(symbols),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.rank)]))
+          .get(),
+    ).wait;
+
+    // 3. 建立查找表
+    final entryPriceMap = {for (final p in entryRows) p.symbol: p};
+    final exitPriceMap = <String, DailyPriceEntry>{};
+    for (final p in exitRows) {
+      exitPriceMap.putIfAbsent(p.symbol, () => p); // 已按日期降冪，首筆即最新
+    }
+    final primaryRuleMap = <String, String>{};
+    for (final r in reasonRows) {
+      primaryRuleMap.putIfAbsent(
+        r.symbol,
+        () => r.reasonType,
+      ); // 已按 rank 升冪，首筆即主要
+    }
+
+    // 4. 計算結果（無 DB 呼叫）
+    int validated = 0;
+    int successful = 0;
+    double totalReturn = 0;
+    final pendingInserts = <RecommendationValidationCompanion>[];
+
+    for (final rec in recommendations) {
+      final entryPriceRow = entryPriceMap[rec.symbol];
+      if (entryPriceRow?.close == null) continue;
+      final exitPriceRow = exitPriceMap[rec.symbol];
+      if (exitPriceRow?.close == null) continue;
+
+      final entryPrice = entryPriceRow!.close!;
+      final exitPrice = exitPriceRow!.close!;
+      final returnRate = ((exitPrice - entryPrice) / entryPrice) * 100;
+      final isSuccess = returnRate > 0;
+      final primaryRule = primaryRuleMap[rec.symbol] ?? 'unknown';
+
+      validated++;
+      if (isSuccess) successful++;
+      totalReturn += returnRate;
+
+      pendingInserts.add(
+        RecommendationValidationCompanion.insert(
+          recommendationDate: normalizedDate,
+          symbol: rec.symbol,
+          primaryRuleId: primaryRule,
+          entryPrice: entryPrice,
+          exitPrice: Value(exitPrice),
+          returnRate: Value(returnRate),
+          isSuccess: Value(isSuccess),
+          validationDate: Value(exitPriceRow.date),
+          holdingDays: Value(daysAgo),
+        ),
+      );
+    }
+
+    final avgReturn = validated > 0 ? totalReturn / validated : 0.0;
+
+    AppLogger.info(
+      _logTag,
+      '驗證完成 (${daysAgo}D)：$validated 筆，成功 $successful 筆，'
+      '平均報酬 ${avgReturn.toStringAsFixed(2)}%',
+    );
+
+    return _ValidationComputed(
+      result: ValidationResult(
         date: targetDate,
         holdingDays: daysAgo,
         validated: validated,
         successful: successful,
         avgReturn: avgReturn,
+      ),
+      inserts: pendingInserts,
+    );
+  }
+
+  /// 將 companions 套用至 Drift batch（upsert 語義）
+  void _applyBatchInserts(
+    Batch batch,
+    List<RecommendationValidationCompanion> companions,
+  ) {
+    for (final companion in companions) {
+      batch.insert(
+        _db.recommendationValidation,
+        companion,
+        onConflict: DoUpdate(
+          (old) => RecommendationValidationCompanion(
+            primaryRuleId: companion.primaryRuleId,
+            entryPrice: companion.entryPrice,
+            exitPrice: companion.exitPrice,
+            returnRate: companion.returnRate,
+            isSuccess: companion.isSuccess,
+            validationDate: companion.validationDate,
+          ),
+          target: [
+            _db.recommendationValidation.recommendationDate,
+            _db.recommendationValidation.symbol,
+            _db.recommendationValidation.holdingDays,
+          ],
+        ),
       );
-    } catch (e, stack) {
-      AppLogger.error(_logTag, '驗證失敗', e, stack);
-      rethrow;
     }
   }
 
@@ -638,4 +748,12 @@ class _ValidationData {
 
   final double returnRate;
   final bool isSuccess;
+}
+
+/// 驗證計算結果（讀取 + 計算階段產出，尚未寫入 DB）
+class _ValidationComputed {
+  const _ValidationComputed({required this.result, required this.inserts});
+
+  final ValidationResult result;
+  final List<RecommendationValidationCompanion> inserts;
 }

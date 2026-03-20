@@ -120,11 +120,23 @@ class ScreeningService {
       reasonsMap = await _repo.getReasonsBatch(candidates, startOfDay);
     }
 
+    // 判斷哪些指標欄位被用到，只計算需要的指標
+    final neededFields = conditions.map((c) => c.field).toSet();
+
     // 逐檔評估
     final result = <String>[];
 
     for (final symbol in candidates) {
       var passes = true;
+
+      // 預先計算所有指標（每個 symbol 只計算一次）
+      final cache = needsIndicators
+          ? _buildIndicatorCache(
+              priceHistories?[symbol] ?? [],
+              neededFields,
+              indicatorService,
+            )
+          : null;
 
       for (final condition in conditions) {
         if (!passes) break;
@@ -138,11 +150,7 @@ class ScreeningService {
           case ScreeningField.aboveMa20:
           case ScreeningField.aboveMa60:
           case ScreeningField.volumeRatioMa20:
-            passes = _evaluateIndicatorCondition(
-              condition,
-              priceHistories?[symbol] ?? [],
-              indicatorService,
-            );
+            passes = _evaluateIndicatorCondition(condition, cache);
           case ScreeningField.hasSignal:
             passes = _evaluateSignalCondition(
               condition,
@@ -161,77 +169,139 @@ class ScreeningService {
     return result;
   }
 
-  /// 評估技術指標條件
-  bool _evaluateIndicatorCondition(
-    ScreeningCondition condition,
+  /// 每個 symbol 預先計算所有需要的指標，避免每個條件重複計算
+  _IndicatorCache? _buildIndicatorCache(
     List<DailyPriceEntry> prices,
+    Set<ScreeningField> neededFields,
     TechnicalIndicatorService indicatorService,
   ) {
-    if (prices.length < 20) return false;
-
+    if (prices.length < 20) return null;
     final (:closes, :highs, :lows, :volumes) = prices.extractOhlcv();
+    if (closes.length < 20) return null;
 
-    if (closes.length < 20) return false;
+    double? rsi, kdK, kdD, ma5, ma10, ma20, ma60, volumeRatioMa20;
 
-    double? fieldValue;
+    if (neededFields.contains(ScreeningField.rsi14)) {
+      final v = indicatorService.calculateRSI(
+        closes,
+        period: IndicatorParams.rsiPeriod,
+      );
+      rsi = v.isNotEmpty ? v.last : null;
+    }
+
+    if (neededFields.contains(ScreeningField.kValue) ||
+        neededFields.contains(ScreeningField.dValue)) {
+      final kd = indicatorService.calculateKD(
+        highs,
+        lows,
+        closes,
+        kPeriod: IndicatorParams.kdPeriodK,
+        dPeriod: IndicatorParams.kdPeriodD,
+      );
+      kdK = kd.k.isNotEmpty ? kd.k.last : null;
+      kdD = kd.d.isNotEmpty ? kd.d.last : null;
+    }
+
+    if (neededFields.contains(ScreeningField.aboveMa5) && closes.length >= 5) {
+      final v = indicatorService.calculateSMA(closes, 5);
+      ma5 = v.isNotEmpty ? v.last : null;
+    }
+    if (neededFields.contains(ScreeningField.aboveMa10) &&
+        closes.length >= 10) {
+      final v = indicatorService.calculateSMA(closes, 10);
+      ma10 = v.isNotEmpty ? v.last : null;
+    }
+    if (neededFields.contains(ScreeningField.aboveMa20)) {
+      final v = indicatorService.calculateSMA(closes, 20);
+      ma20 = v.isNotEmpty ? v.last : null;
+    }
+    if (neededFields.contains(ScreeningField.aboveMa60) &&
+        closes.length >= 60) {
+      final v = indicatorService.calculateSMA(closes, 60);
+      ma60 = v.isNotEmpty ? v.last : null;
+    }
+
+    if (neededFields.contains(ScreeningField.volumeRatioMa20) &&
+        volumes.length >= 20) {
+      final volSma = indicatorService.calculateSMA(volumes, 20);
+      final latestVolSma = volSma.isNotEmpty ? volSma.last : null;
+      if (latestVolSma != null && latestVolSma > 0) {
+        volumeRatioMa20 = volumes.last / latestVolSma;
+      }
+    }
+
+    return _IndicatorCache(
+      latestClose: closes.isNotEmpty ? closes.last : null,
+      rsi: rsi,
+      kdK: kdK,
+      kdD: kdD,
+      ma5: ma5,
+      ma10: ma10,
+      ma20: ma20,
+      ma60: ma60,
+      volumeRatioMa20: volumeRatioMa20,
+    );
+  }
+
+  /// 評估技術指標條件（使用預計算快取）
+  bool _evaluateIndicatorCondition(
+    ScreeningCondition condition,
+    _IndicatorCache? cache,
+  ) {
+    if (cache == null) return false;
 
     switch (condition.field) {
       case ScreeningField.rsi14:
-        final rsiValues = indicatorService.calculateRSI(
-          closes,
-          period: IndicatorParams.rsiPeriod,
-        );
-        fieldValue = rsiValues.isNotEmpty ? rsiValues.last : null;
+        if (cache.rsi == null) return false;
+        return _compareNumeric(condition.operator, cache.rsi!, condition);
 
       case ScreeningField.kValue:
+        if (cache.kdK == null) return false;
+        return _compareNumeric(condition.operator, cache.kdK!, condition);
+
       case ScreeningField.dValue:
-        final kd = indicatorService.calculateKD(
-          highs,
-          lows,
-          closes,
-          kPeriod: IndicatorParams.kdPeriodK,
-          dPeriod: IndicatorParams.kdPeriodD,
-        );
-        if (condition.field == ScreeningField.kValue) {
-          fieldValue = kd.k.isNotEmpty ? kd.k.last : null;
-        } else {
-          fieldValue = kd.d.isNotEmpty ? kd.d.last : null;
-        }
+        if (cache.kdD == null) return false;
+        return _compareNumeric(condition.operator, cache.kdD!, condition);
 
       case ScreeningField.aboveMa5:
+        if (cache.ma5 == null || cache.latestClose == null) return false;
+        final isAbove = cache.latestClose! > cache.ma5!;
+        return condition.operator == ScreeningOperator.isTrue
+            ? isAbove
+            : !isAbove;
+
       case ScreeningField.aboveMa10:
+        if (cache.ma10 == null || cache.latestClose == null) return false;
+        final isAbove = cache.latestClose! > cache.ma10!;
+        return condition.operator == ScreeningOperator.isTrue
+            ? isAbove
+            : !isAbove;
+
       case ScreeningField.aboveMa20:
+        if (cache.ma20 == null || cache.latestClose == null) return false;
+        final isAbove = cache.latestClose! > cache.ma20!;
+        return condition.operator == ScreeningOperator.isTrue
+            ? isAbove
+            : !isAbove;
+
       case ScreeningField.aboveMa60:
-        final period = switch (condition.field) {
-          ScreeningField.aboveMa5 => 5,
-          ScreeningField.aboveMa10 => 10,
-          ScreeningField.aboveMa20 => 20,
-          ScreeningField.aboveMa60 => 60,
-          _ => 20,
-        };
-        if (closes.length < period) return false;
-        final sma = indicatorService.calculateSMA(closes, period);
-        final latestSma = sma.isNotEmpty ? sma.last : null;
-        final latestClose = closes.last;
-        if (latestSma == null) return false;
-        final isAbove = latestClose > latestSma;
+        if (cache.ma60 == null || cache.latestClose == null) return false;
+        final isAbove = cache.latestClose! > cache.ma60!;
         return condition.operator == ScreeningOperator.isTrue
             ? isAbove
             : !isAbove;
 
       case ScreeningField.volumeRatioMa20:
-        if (volumes.length < 20) return false;
-        final volSma = indicatorService.calculateSMA(volumes, 20);
-        final latestVolSma = volSma.isNotEmpty ? volSma.last : null;
-        if (latestVolSma == null || latestVolSma == 0) return false;
-        fieldValue = volumes.last / latestVolSma;
+        if (cache.volumeRatioMa20 == null) return false;
+        return _compareNumeric(
+          condition.operator,
+          cache.volumeRatioMa20!,
+          condition,
+        );
 
       default:
         return true;
     }
-
-    if (fieldValue == null) return false;
-    return _compareNumeric(condition.operator, fieldValue, condition);
   }
 
   /// 評估訊號條件
@@ -257,4 +327,29 @@ class ScreeningService {
       value >= condition.value! && value <= condition.valueTo!,
     _ => true,
   };
+}
+
+/// 每個 symbol 預計算的技術指標快取
+class _IndicatorCache {
+  const _IndicatorCache({
+    this.latestClose,
+    this.rsi,
+    this.kdK,
+    this.kdD,
+    this.ma5,
+    this.ma10,
+    this.ma20,
+    this.ma60,
+    this.volumeRatioMa20,
+  });
+
+  final double? latestClose;
+  final double? rsi;
+  final double? kdK;
+  final double? kdD;
+  final double? ma5;
+  final double? ma10;
+  final double? ma20;
+  final double? ma60;
+  final double? volumeRatioMa20;
 }

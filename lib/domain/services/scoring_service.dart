@@ -66,14 +66,12 @@ class ScoringService {
           })
         >[];
 
-    // 記錄價格資料統計
-    _logCandidateStats(candidates, batchData.pricesMap);
-
     // 使用預載資料處理每個候選
     var skippedNoData = 0;
     var skippedInsufficientData = 0;
     var skippedLowLiquidity = 0;
     var skippedLowScore = 0;
+    var stocksWithSufficientData = 0;
 
     for (var i = 0; i < candidates.length; i++) {
       final symbol = candidates[i];
@@ -89,6 +87,7 @@ class ScoringService {
         skippedInsufficientData++;
         continue;
       }
+      stocksWithSufficientData++;
 
       // 流動性過濾（使用共用工具）
       final latest = prices.last;
@@ -207,6 +206,11 @@ class ScoringService {
         );
       }
     });
+
+    AppLogger.debug(
+      'ScoringSvc',
+      '候選 ${candidates.length} 檔，資料充足 $stocksWithSufficientData 檔',
+    );
 
     // 記錄分析統計
     _logScoringResults(

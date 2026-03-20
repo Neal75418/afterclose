@@ -123,6 +123,13 @@ class PriceRepository implements IPriceRepository {
           ? existingHistory.first.date
           : null;
 
+      // 預先 group by (year, month)，避免 while 迴圈內每次都掃描全部歷史資料
+      final existingDaysByMonth = <(int, int), int>{};
+      for (final p in existingHistory) {
+        final key = (p.date.year, p.date.month);
+        existingDaysByMonth[key] = (existingDaysByMonth[key] ?? 0) + 1;
+      }
+
       // 計算需要抓取的月份（僅抓取資料不足的月份）
       final monthsToFetch = <DateTime>[];
       var current = DateTime(startDate.year, startDate.month, 1);
@@ -144,12 +151,8 @@ class PriceRepository implements IPriceRepository {
         }
 
         // 僅當該月資料不足時才抓取（少於 10 個交易日）
-        final existingDaysInMonth = existingHistory
-            .where(
-              (p) =>
-                  p.date.year == current.year && p.date.month == current.month,
-            )
-            .length;
+        final existingDaysInMonth =
+            existingDaysByMonth[(current.year, current.month)] ?? 0;
         if (existingDaysInMonth < DataFreshness.minTradingDaysPerMonth) {
           monthsToFetch.add(current);
         }

@@ -77,12 +77,18 @@ void main() {
       ).thenAnswer((_) async => latestDate);
     }
 
-    /// 設定特定 symbol 的 shareholding 新鮮度
-    void setupShareholdingFreshness(String symbol, {bool fresh = false}) {
-      when(() => mockShareholdingRepo.getLatestShareholding(symbol)).thenAnswer(
-        (_) async =>
-            fresh ? ShareholdingEntry(symbol: symbol, date: testDate) : null,
-      );
+    /// 設定所有候選的 shareholding 新鮮度批次查詢
+    void setupShareholdingBatch(
+      List<String> symbols, {
+      Set<String> freshSymbols = const {},
+    }) {
+      final map = <String, ShareholdingEntry>{
+        for (final s in freshSymbols)
+          s: ShareholdingEntry(symbol: s, date: testDate),
+      };
+      when(
+        () => mockShareholdingRepo.getLatestShareholdingsBatch(any()),
+      ).thenAnswer((_) async => map);
     }
 
     /// 設定 syncShareholding 成功
@@ -133,8 +139,8 @@ void main() {
       setupOtcStocks(candidates);
       setupFreshnessCheck();
 
+      setupShareholdingBatch(candidates);
       for (final symbol in candidates) {
-        setupShareholdingFreshness(symbol);
         setupSyncSuccess(symbol);
       }
 
@@ -152,8 +158,7 @@ void main() {
       setupFreshnessCheck(latestDate: testDate);
 
       // 6547 已有新鮮資料，8044 沒有
-      setupShareholdingFreshness('6547', fresh: true);
-      setupShareholdingFreshness('8044');
+      setupShareholdingBatch(candidates, freshSymbols: {'6547'});
       setupSyncSuccess('8044');
 
       final result = await updater.syncOtcCandidatesMarketData(
@@ -182,9 +187,7 @@ void main() {
         setupOtcStocks(candidates);
         setupFreshnessCheck();
 
-        for (final symbol in candidates) {
-          setupShareholdingFreshness(symbol);
-        }
+        setupShareholdingBatch(candidates);
 
         // 6547 拋出一般錯誤（非 RateLimitException）
         setupSyncGenericError('6547');
@@ -212,9 +215,7 @@ void main() {
         setupOtcStocks(candidates);
         setupFreshnessCheck();
 
-        for (final symbol in candidates) {
-          setupShareholdingFreshness(symbol);
-        }
+        setupShareholdingBatch(candidates);
 
         // 第一批 chunk (6500-6504)：前 2 個拋 RateLimitException
         setupSyncRateLimitError('6500');
@@ -260,9 +261,7 @@ void main() {
         setupOtcStocks(candidates);
         setupFreshnessCheck();
 
-        for (final symbol in candidates) {
-          setupShareholdingFreshness(symbol);
-        }
+        setupShareholdingBatch(candidates);
 
         // 6547: 一般錯誤（不該觸發 quotaExhausted）
         setupSyncGenericError('6547');
@@ -298,9 +297,7 @@ void main() {
         setupOtcStocks(candidates);
         setupFreshnessCheck();
 
-        for (final symbol in candidates) {
-          setupShareholdingFreshness(symbol);
-        }
+        setupShareholdingBatch(candidates);
 
         // 第一批 (7000-7004)：全部一般錯誤
         for (var i = 0; i < 5; i++) {

@@ -202,11 +202,13 @@ class ChipAnalysisService {
     return 0;
   }
 
+  static final _levelRegExp = RegExp(r'(\d+)');
+
   bool _isLargeHolder(String level) {
     // 台灣持股分級中的大戶級距：400-600、600-800、800-1,000、1,000以上
     if (level.contains('以上')) return true;
     // 嘗試解析第一個數字
-    final match = RegExp(r'(\d+)').firstMatch(level.replaceAll(',', ''));
+    final match = _levelRegExp.firstMatch(level.replaceAll(',', ''));
     if (match != null) {
       final num = int.tryParse(match.group(1)!) ?? 0;
       return num >= 400;

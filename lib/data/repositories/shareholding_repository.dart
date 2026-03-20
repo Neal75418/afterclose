@@ -95,6 +95,14 @@ class ShareholdingRepository implements IShareholdingRepository {
   // 股權分散表
   // ==================================================
 
+  /// 批次取得多檔股票的最新持股資料
+  @override
+  Future<Map<String, ShareholdingEntry>> getLatestShareholdingsBatch(
+    List<String> symbols,
+  ) {
+    return _db.getLatestShareholdingsBatch(symbols);
+  }
+
   /// 取得最新股權分散表
   @override
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(

@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:afterclose/data/database/app_database.dart';
@@ -150,45 +151,44 @@ class TechnicalIndicatorService {
     }
 
     final length = closes.length;
-    final kValues = <double?>[];
-    final dValues = <double?>[];
+    final kValues = List<double?>.filled(length, null);
+    final dValues = List<double?>.filled(length, null);
 
-    // 計算 %K
+    // 計算 %K：使用單調雙端佇列求滑動視窗最大/最小值，O(n)
+    final maxDeque = Queue<int>(); // 索引，highs 遞減排列
+    final minDeque = Queue<int>(); // 索引，lows 遞增排列
     for (int i = 0; i < length; i++) {
-      if (i < kPeriod - 1) {
-        kValues.add(null);
-      } else {
-        // 找出週期內最高價與最低價
-        double highestHigh = highs[i];
-        double lowestLow = lows[i];
-        for (int j = i - kPeriod + 1; j <= i; j++) {
-          if (highs[j] > highestHigh) highestHigh = highs[j];
-          if (lows[j] < lowestLow) lowestLow = lows[j];
-        }
+      while (maxDeque.isNotEmpty && highs[maxDeque.last] <= highs[i]) {
+        maxDeque.removeLast();
+      }
+      maxDeque.addLast(i);
+      if (maxDeque.first <= i - kPeriod) maxDeque.removeFirst();
 
+      while (minDeque.isNotEmpty && lows[minDeque.last] >= lows[i]) {
+        minDeque.removeLast();
+      }
+      minDeque.addLast(i);
+      if (minDeque.first <= i - kPeriod) minDeque.removeFirst();
+
+      if (i >= kPeriod - 1) {
+        final highestHigh = highs[maxDeque.first];
+        final lowestLow = lows[minDeque.first];
         final range = highestHigh - lowestLow;
-        if (range == 0) {
-          kValues.add(50.0); // 無價格區間時為中性值
-        } else {
-          kValues.add(((closes[i] - lowestLow) / range) * 100);
-        }
+        kValues[i] = range == 0
+            ? 50.0
+            : ((closes[i] - lowestLow) / range) * 100;
       }
     }
 
-    // 計算 %D（%K 的 SMA）
-    for (int i = 0; i < length; i++) {
-      if (i < kPeriod - 1 + dPeriod - 1 || kValues[i] == null) {
-        dValues.add(null);
-      } else {
-        double sum = 0;
-        int count = 0;
-        for (int j = i - dPeriod + 1; j <= i; j++) {
-          if (kValues[j] != null) {
-            sum += kValues[j]!;
-            count++;
-          }
-        }
-        dValues.add(count > 0 ? sum / count : null);
+    // 計算 %D（%K 的 SMA）：滑動視窗累加，O(n)
+    var dSum = 0.0;
+    for (int i = kPeriod - 1; i < length; i++) {
+      dSum += kValues[i]!;
+      if (i >= kPeriod - 1 + dPeriod) {
+        dSum -= kValues[i - dPeriod]!;
+      }
+      if (i >= kPeriod - 1 + dPeriod - 1) {
+        dValues[i] = dSum / dPeriod;
       }
     }
 

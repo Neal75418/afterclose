@@ -1,8 +1,10 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/models/technical_indicators.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/price_data_generators.dart';
@@ -345,7 +347,14 @@ void main() {
         startPrice: 100.0,
         dailyGain: 2.0,
       );
-      const context = AnalysisContext(trendState: TrendState.up);
+      final rsi = TechnicalIndicatorService.latestRSI(
+        prices,
+        period: IndicatorParams.rsiPeriod,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.up,
+        indicators: TechnicalIndicators(rsi: rsi),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -356,7 +365,14 @@ void main() {
 
     test('does not trigger when RSI is neutral', () {
       final prices = generateSwingPrices(days: 30, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final rsi = TechnicalIndicatorService.latestRSI(
+        prices,
+        period: IndicatorParams.rsiPeriod,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: TechnicalIndicators(rsi: rsi),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -383,7 +399,14 @@ void main() {
         startPrice: 200.0,
         dailyLoss: 2.0,
       );
-      const context = AnalysisContext(trendState: TrendState.down);
+      final rsi = TechnicalIndicatorService.latestRSI(
+        prices,
+        period: IndicatorParams.rsiPeriod,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.down,
+        indicators: TechnicalIndicators(rsi: rsi),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -394,7 +417,14 @@ void main() {
 
     test('does not trigger when RSI is neutral', () {
       final prices = generateSwingPrices(days: 30, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final rsi = TechnicalIndicatorService.latestRSI(
+        prices,
+        period: IndicatorParams.rsiPeriod,
+      );
+      final context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: TechnicalIndicators(rsi: rsi),
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
