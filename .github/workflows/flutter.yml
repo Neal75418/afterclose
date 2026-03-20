@@ -1,7 +1,7 @@
 name: Flutter CI
-# trigger
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths-ignore:
