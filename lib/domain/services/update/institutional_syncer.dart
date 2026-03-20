@@ -1,3 +1,4 @@
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
@@ -38,6 +39,10 @@ class InstitutionalSyncer {
     try {
       await _institutionalRepo.syncAllMarketInstitutional(date, force: force);
       syncedDays++;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       errors.add('當日法人資料同步失敗: $e');
       AppLogger.warning('InstitutionalSyncer', '當日法人資料同步失敗: $e');
@@ -56,6 +61,10 @@ class InstitutionalSyncer {
             force: force,
           );
           syncedDays++;
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
         } catch (e) {
           final dateStr = '${backDate.month}/${backDate.day}';
           errors.add('法人資料回補失敗 ($dateStr): $e');
@@ -77,6 +86,10 @@ class InstitutionalSyncer {
     try {
       await _institutionalRepo.syncAllMarketInstitutional(date, force: force);
       return true;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('InstitutionalSyncer', '法人資料同步失敗: $e');
       return false;

@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -8,9 +9,6 @@ import 'package:afterclose/data/repositories/price_repository.dart';
 ///
 /// 負責確保分析所需的歷史價格資料完整
 class HistoricalPriceSyncer {
-  /// 連續全部失敗的批次數上限，超過即視為 API 限流
-  static const _maxConsecutiveFailedBatches = 2;
-
   const HistoricalPriceSyncer({
     required AppDatabase database,
     required PriceRepository priceRepository,
@@ -105,7 +103,7 @@ class HistoricalPriceSyncer {
   ) {
     final result = <String>[];
     const minRequiredDays = IndicatorParams.week52Days;
-    const nearThreshold = 180;
+    const nearThreshold = IndicatorParams.historyNearCompleteThreshold;
 
     for (final symbol in symbols) {
       final prices = priceHistoryBatch[symbol];
@@ -401,7 +399,8 @@ class HistoricalPriceSyncer {
           consecutiveFailedBatches = 0;
         } else {
           consecutiveFailedBatches++;
-          if (consecutiveFailedBatches >= _maxConsecutiveFailedBatches) {
+          if (consecutiveFailedBatches >=
+              ApiConfig.historicalPriceMaxConsecutiveFailedBatches) {
             rateLimited = true;
             AppLogger.warning(
               'HistoricalPriceSyncer',

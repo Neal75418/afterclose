@@ -69,6 +69,12 @@ abstract final class IndicatorParams {
   /// 200 天約涵蓋 10 個月的交易日，可進行大部分技術分析。
   static const int historicalDataMinDays = 200;
 
+  /// 歷史資料接近完整門檻
+  ///
+  /// 已有此天數以上資料的股票跳過回補同步（資料已接近完整，不值得再花 API 配額補齊）。
+  /// 低於此值的股票才會進入歷史資料回補流程。
+  static const int historyNearCompleteThreshold = 180;
+
   /// 接近 52 週新高緩衝百分比
   ///
   /// 收盤價在 52 週最高價的 1% 範圍內觸發。

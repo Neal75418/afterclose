@@ -55,6 +55,11 @@ abstract final class ApiConfig {
   /// Syncer 批次大小（每批並行處理的股票數）
   static const int syncerBatchSize = 10;
 
+  /// 歷史價格同步連續失敗批次上限（斷路器閾值）
+  ///
+  /// 連續失敗達此值時中止同步，避免在網路或 API 異常時持續耗費配額。
+  static const int historicalPriceMaxConsecutiveFailedBatches = 2;
+
   /// 財報同步回溯天數（約 2 年）
   static const int financialSyncLookbackDays = 730;
 

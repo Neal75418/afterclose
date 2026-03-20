@@ -51,12 +51,14 @@ class TdccHoldingSyncer {
       final knownStocks = await _db.getAllActiveStocks();
       final knownSymbols = knownStocks.map((s) => s.symbol).toSet();
 
-      // 篩選：必須存在於 StockMaster + 可選候選過濾
-      final symbolsToSync = allData.keys.where(
-        (s) =>
-            knownSymbols.contains(s) &&
-            (candidateSymbols == null || candidateSymbols.contains(s)),
-      );
+      // 篩選：必須存在於 StockMaster + 可選候選過濾（toList 確保單次遍歷，避免 length 重複求值）
+      final symbolsToSync = allData.keys
+          .where(
+            (s) =>
+                knownSymbols.contains(s) &&
+                (candidateSymbols == null || candidateSymbols.contains(s)),
+          )
+          .toList();
 
       final companions = <HoldingDistributionCompanion>[];
 

@@ -50,6 +50,10 @@ class MarketDataUpdater {
         date: date,
         forceRefresh: forceRefresh,
       );
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '上市當沖資料同步失敗: $e');
     }
@@ -63,6 +67,10 @@ class MarketDataUpdater {
     // 從 TWSE/TPEX 批次同步融資融券資料
     try {
       marginCount = await _tradingRepo.syncAllMarginTradingFromTwse(date: date);
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '融資融券資料同步失敗: $e');
     }
@@ -107,6 +115,10 @@ class MarketDataUpdater {
             endDate: date,
           );
           return true;
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
         } catch (e) {
           AppLogger.debug('MarketDataUpdater', '$symbol 市場資料同步失敗: $e');
           return false;
