@@ -302,7 +302,9 @@ class GapUpRule extends StockRule {
     final today = data.prices.last;
     final prev = data.prices[data.prices.length - 2];
 
-    if (today.low == null || prev.high == null) return null;
+    if (today.low == null || prev.high == null || prev.close == null) {
+      return null;
+    }
 
     final gapSize = today.low! - prev.high!;
     final threshold = prev.close! * PatternParams.gapMinThreshold;
@@ -346,7 +348,9 @@ class GapDownRule extends StockRule {
     final today = data.prices.last;
     final prev = data.prices[data.prices.length - 2];
 
-    if (today.high == null || prev.low == null) return null;
+    if (today.high == null || prev.low == null || prev.close == null) {
+      return null;
+    }
 
     final gapSize = prev.low! - today.high!;
     final threshold = prev.close! * PatternParams.gapMinThreshold;

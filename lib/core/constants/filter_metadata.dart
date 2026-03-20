@@ -122,7 +122,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.priceSpike: FilterMetadata(
     conditionKey: 'filterMeta.priceSpike',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '單日漲跌幅 ≥ 7% + 量 ≥ 1.5 倍均量',
+    thresholdInfo: '單日漲跌幅 ≥ 5% + 量 ≥ 1.5 倍均量',
   ),
 
   // === KD 訊號 ===
@@ -186,7 +186,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.concentrationHigh: FilterMetadata(
     conditionKey: 'filterMeta.concentrationHigh',
     dataRequirements: [DataRequirement.holdingDistribution],
-    thresholdInfo: '大戶持股比例 ≥ 70%',
+    thresholdInfo: '大戶持股比例 ≥ 60%',
   ),
 
   // === 新聞訊號 ===
@@ -327,7 +327,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.peOvervalued: FilterMetadata(
     conditionKey: 'filterMeta.peOvervalued',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '本益比 ≥ 100',
+    thresholdInfo: '本益比 ≥ 60',
   ),
   ScanFilter.pbrUndervalued: FilterMetadata(
     conditionKey: 'filterMeta.pbrUndervalued',

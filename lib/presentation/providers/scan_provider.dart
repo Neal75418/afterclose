@@ -15,6 +15,8 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // Re-export（向後相容）
 export 'package:afterclose/domain/models/scan_models.dart';
 
+const _sentinel = Object();
+
 // ==================================================
 // Scan Screen State
 // ==================================================
@@ -87,7 +89,7 @@ class ScanState {
     bool? hasMore,
     int? totalCount,
     int? totalAnalyzedCount,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return ScanState(
       allStocks: allStocks ?? this.allStocks,
@@ -105,7 +107,7 @@ class ScanState {
       hasMore: hasMore ?? this.hasMore,
       totalCount: totalCount ?? this.totalCount,
       totalAnalyzedCount: totalAnalyzedCount ?? this.totalAnalyzedCount,
-      error: error,
+      error: error == _sentinel ? this.error : error as String?,
     );
   }
 }
