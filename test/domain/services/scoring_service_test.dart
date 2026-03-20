@@ -23,7 +23,10 @@ class MockAnalysisService extends Mock implements AnalysisService {}
 class MockRuleEngine extends Mock implements RuleEngine {}
 
 /// Mock 分析資料庫
-class MockAnalysisRepository extends Mock implements AnalysisRepository {}
+class MockAnalysisRepository extends Mock implements AnalysisRepository {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+}
 
 void main() {
   late ScoringService scoringService;

@@ -169,14 +169,11 @@ class ScanNotifier extends Notifier<ScanState> {
       // 更新 DateContext 以反映實際資料日期
       final dateCtx = DateContext.forDate(targetDate);
       _dateCtx = dateCtx;
-      _allAnalyses = analyses
-          .where((a) => a.score > 0)
-          .toList(); // Pre-fetch all reasons for filtering logic
-      if (_allAnalyses.isNotEmpty) {
-        final allSymbols = _allAnalyses.map((a) => a.symbol).toList();
-        _allReasons = await _db.getReasonsBatch(allSymbols, dateCtx.today);
-      } else {
-        _allReasons = {};
+      _allAnalyses = analyses.where((a) => a.score > 0).toList();
+      _allReasons = {};
+      // Lazy load：只在目前 filter 真正需要時才載入（切換 filter 時按需載入）
+      if (_allAnalyses.isNotEmpty && state.filter != ScanFilter.all) {
+        await _ensureReasonsLoaded();
       }
 
       // 取得實際資料日期供顯示
@@ -283,8 +280,13 @@ class ScanNotifier extends Notifier<ScanState> {
   }
 
   /// Set filter
-  void setFilter(ScanFilter filter) {
+  Future<void> setFilter(ScanFilter filter) async {
     if (filter == state.filter) return;
+
+    // 切換至訊號 filter 時，按需載入 reasons
+    if (filter != ScanFilter.all) {
+      await _ensureReasonsLoaded();
+    }
 
     // 套用全域篩選
     _applyGlobalFilter(filter);
@@ -317,7 +319,10 @@ class ScanNotifier extends Notifier<ScanState> {
       _industrySymbols = null;
     }
 
-    // 重新套用目前的 filter（含產業）
+    // 重新套用目前的 filter（含產業），按需載入 reasons
+    if (state.filter != ScanFilter.all) {
+      await _ensureReasonsLoaded();
+    }
     _applyGlobalFilter(state.filter);
     _reloadFirstPage(++_reloadSeq);
   }
@@ -347,6 +352,15 @@ class ScanNotifier extends Notifier<ScanState> {
         error: ErrorDisplay.message(e),
       );
     }
+  }
+
+  /// 按需載入 reasons（首次切換至非 all filter 時執行）
+  Future<void> _ensureReasonsLoaded() async {
+    if (_allReasons.isNotEmpty || _allAnalyses.isEmpty) return;
+    final dateCtx = _dateCtx;
+    if (dateCtx == null) return;
+    final allSymbols = _allAnalyses.map((a) => a.symbol).toList();
+    _allReasons = await _cachedDb.getReasonsBatch(allSymbols, dateCtx.today);
   }
 
   /// 套用全域篩選（_allAnalyses → _filteredAnalyses）

@@ -11,19 +11,22 @@ class TechnicalIndicatorService {
   /// 回傳與輸入相同長度的列表，資料不足的位置為 null
   List<double?> calculateSMA(List<double> prices, int period) {
     if (prices.isEmpty || period <= 0) return [];
+    if (period > prices.length)
+      return List<double?>.filled(prices.length, null);
 
-    final result = <double?>[];
+    final result = List<double?>.filled(prices.length, null);
 
-    for (int i = 0; i < prices.length; i++) {
-      if (i < period - 1) {
-        result.add(null);
-      } else {
-        double sum = 0;
-        for (int j = i - period + 1; j <= i; j++) {
-          sum += prices[j];
-        }
-        result.add(sum / period);
-      }
+    // 計算初始 window 的加總
+    var sum = 0.0;
+    for (int i = 0; i < period - 1; i++) {
+      sum += prices[i];
+    }
+
+    // Sliding window：每次加入新值、移除最舊值，O(n) 取代 O(n×period)
+    for (int i = period - 1; i < prices.length; i++) {
+      sum += prices[i];
+      result[i] = sum / period;
+      sum -= prices[i - period + 1];
     }
 
     return result;

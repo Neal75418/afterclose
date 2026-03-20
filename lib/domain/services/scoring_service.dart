@@ -52,6 +52,20 @@ class ScoringService {
     final instMap =
         batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
+    // 暫存待寫入的分析結果，於迴圈後以單一 transaction 批次寫入
+    final pendingPersists =
+        <
+          ({
+            String symbol,
+            String trendState,
+            String reversalState,
+            double? supportLevel,
+            double? resistanceLevel,
+            double score,
+            List<ReasonData> reasons,
+          })
+        >[];
+
     // 記錄價格資料統計
     _logCandidateStats(candidates, batchData.pricesMap);
 
@@ -158,16 +172,15 @@ class ScoringService {
           )
           .toList();
 
-      await _persistAnalysisResult(
+      pendingPersists.add((
         symbol: symbol,
-        date: date,
         trendState: analysisResult.trendState.code,
         reversalState: analysisResult.reversalState.code,
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
         score: score.toDouble(),
         reasons: reasonDataList,
-      );
+      ));
 
       scoredStocks.add(
         ScoredStock(
@@ -178,6 +191,22 @@ class ScoringService {
         ),
       );
     }
+
+    // 批次寫入（單一 transaction，與 Isolate 路徑對齊）
+    await _analysisRepo.runInTransaction(() async {
+      for (final p in pendingPersists) {
+        await _persistAnalysisResult(
+          symbol: p.symbol,
+          date: date,
+          trendState: p.trendState,
+          reversalState: p.reversalState,
+          supportLevel: p.supportLevel,
+          resistanceLevel: p.resistanceLevel,
+          score: p.score,
+          reasons: p.reasons,
+        );
+      }
+    });
 
     // 記錄分析統計
     _logScoringResults(

@@ -216,22 +216,21 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
         return;
       }
 
-      // 取得股票名稱和最新價格
+      // 取得股票名稱和最新價格（批次查詢，避免 N+1）
       final symbols = positions.map((p) => p.symbol).toList();
-      final stocks = await Future.wait(symbols.map((s) => _db.getStock(s)));
-      final prices = await Future.wait(
-        symbols.map((s) => _db.getLatestPrice(s)),
-      );
+      final (stocksResult, pricesResult) = await (
+        _db.getStocksBatch(symbols),
+        _db.getLatestPricesBatch(symbols),
+      ).wait;
 
       // 建立 maps 供績效計算
       final stocksMap = <String, StockMasterEntry>{};
       final currentPrices = <String, double>{};
 
       final List<PortfolioPositionData> positionData = [];
-      for (int i = 0; i < positions.length; i++) {
-        final pos = positions[i];
-        final stock = stocks[i];
-        final price = prices[i];
+      for (final pos in positions) {
+        final stock = stocksResult[pos.symbol];
+        final price = pricesResult[pos.symbol];
 
         if (stock != null) {
           stocksMap[pos.symbol] = stock;

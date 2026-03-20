@@ -27,7 +27,7 @@ class FakeScanNotifier extends ScanNotifier {
   Future<void> loadMore() async {}
 
   @override
-  void setFilter(ScanFilter filter) {}
+  Future<void> setFilter(ScanFilter filter) async {}
 
   @override
   void setSort(ScanSort sort) {}

@@ -241,16 +241,14 @@ class UpdateService {
       // 步驟 3-3.5：同步價格（含日期校正）+ 歷史資料
       await _syncPricesAndHistory(ctx);
 
-      // 步驟 3.8-3.9：大盤指數 + TDCC 股權分散表
-      await _syncAuxiliaryData(ctx);
-
-      // 步驟 4-4.7：法人 + 籌碼 + 基本面
-      ctx.reportProgress(4, 10, '取得法人資料');
-      await _syncInstitutionalData(ctx);
-      await _syncMarketAndFundamentalData(ctx, ctx.normalizedDate);
-
-      // 步驟 5：新聞
-      await _syncNews(ctx);
+      // 步驟 3.8-5：大盤指數、TDCC、法人、籌碼、基本面、新聞（互相獨立，並行執行）
+      ctx.reportProgress(4, 10, '取得法人與基本面資料');
+      await (
+        _syncAuxiliaryData(ctx),
+        _syncInstitutionalData(ctx),
+        _syncMarketAndFundamentalData(ctx, ctx.normalizedDate),
+        _syncNews(ctx),
+      ).wait;
 
       // 步驟 6：篩選候選股票 + 補充上櫃資料
       ctx.reportProgress(6, 10, '篩選候選股票');

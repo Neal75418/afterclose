@@ -415,13 +415,13 @@ void main() {
         () => mockDb.getPortfolioPositions(),
       ).thenAnswer((_) async => positions);
 
-      when(
-        () => mockDb.getStock('2330'),
-      ).thenAnswer((_) async => createStock(symbol: '2330', name: '台積電'));
+      when(() => mockDb.getStocksBatch(any())).thenAnswer(
+        (_) async => {'2330': createStock(symbol: '2330', name: '台積電')},
+      );
 
-      when(
-        () => mockDb.getLatestPrice('2330'),
-      ).thenAnswer((_) async => createPrice(symbol: '2330', close: 600));
+      when(() => mockDb.getLatestPricesBatch(any())).thenAnswer(
+        (_) async => {'2330': createPrice(symbol: '2330', close: 600)},
+      );
 
       when(
         () => mockDb.getAllPortfolioTransactions(),
