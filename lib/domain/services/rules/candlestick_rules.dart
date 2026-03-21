@@ -75,11 +75,14 @@ class DojiRule extends StockRule {
       // 需要 RSI 判定位置：無 RSI 時無法區分高低檔，跳過
       final rsi = context.indicators?.rsi;
       if (rsi == null) return null;
-      // 過濾條件：RSI 必須在極端區域（>70 或 <30）
-      if (rsi > 30 && rsi < 70) return null;
+      // 過濾條件：RSI 必須在極端區域
+      if (rsi > IndicatorParams.rsiExtremeOversold &&
+          rsi < IndicatorParams.rsiNeutralHigh) {
+        return null;
+      }
 
       // 根據位置給不同分數：高檔十字線偏空，低檔十字線偏多
-      final isBearish = rsi > 70;
+      final isBearish = rsi > IndicatorParams.rsiNeutralHigh;
       final score = isBearish
           ? RuleScores.patternDojiBearish
           : RuleScores.patternDoji;
@@ -377,7 +380,7 @@ class GapDownRule extends StockRule {
 /// - 晨星：長黑 K + 小實體（靠近底部）+ 長紅 K 收在中點上
 /// - 暮星：長紅 K + 小實體（靠近頂部）+ 長黑 K 收在中點下
 ///
-/// 改為檢查第二根 K 線是否在第一根的極端位置即可
+/// 第二根 K 線（星體）必須小實體，第三根必須收過第一根中點。
 bool isStarPattern(
   DailyPriceEntry c1,
   DailyPriceEntry c2,

@@ -67,7 +67,7 @@ class _IndustryOverviewScreenState
         });
       }
     } catch (e) {
-      AppLogger.error('IndustryOverview', '載入產業資料失敗', e);
+      AppLogger.error('IndustryOverviewScreen', '載入產業資料失敗', e);
       if (mounted) {
         setState(() {
           _state = _IndustryOverviewState(

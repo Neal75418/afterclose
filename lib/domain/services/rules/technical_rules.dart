@@ -132,7 +132,7 @@ class BreakdownRule extends StockRule {
     if (close == null) return null;
 
     double? support = context.supportLevel;
-    if (support == null && data.prices.length >= 20) {
+    if (support == null && data.prices.length >= RuleParams.volMa) {
       support = _calculate20DayLow(data.prices);
     }
 
@@ -159,13 +159,16 @@ class BreakdownRule extends StockRule {
   }
 }
 
-/// 計算 20 日低點（排除今日）
+/// 計算 volMa 日低點（排除今日）
 double? _calculate20DayLow(List<DailyPriceEntry> prices) {
-  if (prices.length < 20) return null;
+  if (prices.length < RuleParams.volMa) return null;
 
   double minLow = double.infinity;
-  // 取過去 20 天的最低價（排除今日）
-  for (var i = prices.length - 2; i >= prices.length - 21 && i >= 0; i--) {
+  for (
+    var i = prices.length - 2;
+    i >= prices.length - (RuleParams.volMa + 1) && i >= 0;
+    i--
+  ) {
     final low = prices[i].low ?? prices[i].close ?? double.infinity;
     if (low > 0 && low < minLow) minLow = low;
   }
@@ -188,7 +191,7 @@ bool _hasBreakoutVolume(List<DailyPriceEntry> prices) =>
 
 /// 今日成交量是否達到 20 日均量的指定倍數
 bool _hasVolumeConfirmation(List<DailyPriceEntry> prices, double multiplier) {
-  if (prices.length < 21) return true; // 資料不足則放行
+  if (prices.length < RuleParams.volMa + 1) return true; // 資料不足則放行
 
   final todayVolume = prices.last.volume;
   if (todayVolume == null || todayVolume <= 0) return false;
@@ -196,7 +199,11 @@ bool _hasVolumeConfirmation(List<DailyPriceEntry> prices, double multiplier) {
   double sum = 0;
   int count = 0;
 
-  for (var i = prices.length - 2; i >= prices.length - 21 && i >= 0; i--) {
+  for (
+    var i = prices.length - 2;
+    i >= prices.length - (RuleParams.volMa + 1) && i >= 0;
+    i--
+  ) {
     final vol = prices[i].volume;
     if (vol != null && vol > 0) {
       sum += vol;

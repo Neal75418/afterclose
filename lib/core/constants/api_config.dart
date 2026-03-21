@@ -133,6 +133,9 @@ abstract final class ApiConfig {
   /// 新聞歷史回溯天數
   static const int newsHistoryLookbackDays = 1;
 
+  /// 新聞內容最大長度（超過截斷以節省儲存空間）
+  static const int newsContentMaxLength = 500;
+
   // ==================================================
   // UI 訊息顯示時間
   // ==================================================

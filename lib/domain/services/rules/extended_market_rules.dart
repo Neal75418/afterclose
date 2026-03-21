@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
@@ -113,7 +114,7 @@ class DayTradingHighRule extends StockRule {
     }
 
     // 診斷日誌：記錄高當沖比例股票
-    if (ratio >= 30) {
+    if (ratio >= DataFreshness.dayTradingHighRatio) {
       AppLogger.debug(
         'DayTradingRule',
         '${data.symbol}: 當沖比例=${ratio.toStringAsFixed(1)}%',

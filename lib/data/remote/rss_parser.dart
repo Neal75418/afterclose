@@ -189,8 +189,8 @@ class RssParser {
     // 移除多餘空白
     text = text.replaceAll(RegExp(r'\s+'), ' ').trim();
     // 限制長度（節省空間）
-    if (text.length > 500) {
-      text = '${text.substring(0, 497)}...';
+    if (text.length > ApiConfig.newsContentMaxLength) {
+      text = '${text.substring(0, ApiConfig.newsContentMaxLength - 3)}...';
     }
     return text;
   }
