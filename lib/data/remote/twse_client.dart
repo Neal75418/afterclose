@@ -27,8 +27,8 @@ class TwseClient {
   static const String _tag = 'TWSE';
   final Dio _dio;
   final LruCache<String, dynamic> _cache = LruCache(
-    maxSize: 20,
-    ttl: const Duration(minutes: 30),
+    maxSize: CacheConfig.marketClientCacheMaxSize,
+    ttl: const Duration(minutes: CacheConfig.marketClientCacheTtlMin),
   );
 
   /// 取得最新交易日所有股票價格

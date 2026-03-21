@@ -264,7 +264,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         isLoading: false,
       );
     } catch (e) {
-      AppLogger.warning('Comparison', '載入比較資料失敗', e);
+      AppLogger.warning('ComparisonNotifier', '載入比較資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }

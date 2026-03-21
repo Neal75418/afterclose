@@ -151,7 +151,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
         );
       }
     } catch (e) {
-      AppLogger.error('CustomScreening', '載入策略失敗', e);
+      AppLogger.error('CustomScreeningNotifier', '載入策略失敗', e);
       if (_active) {
         state = state.copyWith(isLoadingStrategies: false);
       }
@@ -172,7 +172,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
       await loadSavedStrategies();
       return true;
     } catch (e) {
-      AppLogger.error('CustomScreening', '儲存策略失敗', e);
+      AppLogger.error('CustomScreeningNotifier', '儲存策略失敗', e);
       return false;
     }
   }
@@ -184,7 +184,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
       await loadSavedStrategies();
       return true;
     } catch (e) {
-      AppLogger.error('CustomScreening', '刪除策略失敗', e);
+      AppLogger.error('CustomScreeningNotifier', '刪除策略失敗', e);
       return false;
     }
   }
@@ -253,7 +253,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
         );
       }
     } catch (e) {
-      AppLogger.error('CustomScreening', '篩選執行失敗', e);
+      AppLogger.error('CustomScreeningNotifier', '篩選執行失敗', e);
       if (_active) {
         state = state.copyWith(
           isExecuting: false,

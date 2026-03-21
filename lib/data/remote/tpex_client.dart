@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -28,8 +29,8 @@ class TpexClient {
   static const String _tag = 'TPEX';
   final Dio _dio;
   final LruCache<String, dynamic> _cache = LruCache(
-    maxSize: 20,
-    ttl: const Duration(minutes: 30),
+    maxSize: CacheConfig.marketClientCacheMaxSize,
+    ttl: const Duration(minutes: CacheConfig.marketClientCacheTtlMin),
   );
 
   /// 取得最新交易日所有上櫃股票價格

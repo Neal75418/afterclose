@@ -471,9 +471,9 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         startDate: DateTime(now.year - 5, now.month),
         endDate: now,
       );
-      AppLogger.info('Watchlist', '$symbol: 已回填歷史月營收');
+      AppLogger.info('WatchlistNotifier', '$symbol: 已回填歷史月營收');
     } catch (e, stack) {
-      AppLogger.warning('Watchlist', '$symbol: 回填營收失敗 (非關鍵)', e, stack);
+      AppLogger.warning('WatchlistNotifier', '$symbol: 回填營收失敗 (非關鍵)', e, stack);
     }
   }
 

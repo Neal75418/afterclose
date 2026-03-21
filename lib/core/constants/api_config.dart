@@ -181,4 +181,10 @@ abstract final class CacheConfig {
 
   /// FinMind API response 快取最大容量
   static const int finmindResponseCacheMaxSize = 200;
+
+  /// TWSE/TPEX market client response 快取最大容量
+  static const int marketClientCacheMaxSize = 20;
+
+  /// TWSE/TPEX market client 快取 TTL（分鐘）
+  static const int marketClientCacheTtlMin = 30;
 }

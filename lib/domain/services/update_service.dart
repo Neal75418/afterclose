@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -733,7 +734,9 @@ class UpdateService {
         final latestPrices = await _db.getLatestPricesBatch(alertSymbols);
         final priceHistories = await _db.getPriceHistoryBatch(
           alertSymbols,
-          startDate: ctx.normalizedDate.subtract(const Duration(days: 2)),
+          startDate: ctx.normalizedDate.subtract(
+            const Duration(days: DataFreshness.alertPriceHistoryDays),
+          ),
           endDate: ctx.normalizedDate,
         );
 

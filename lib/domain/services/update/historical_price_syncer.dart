@@ -389,6 +389,13 @@ class HistoricalPriceSyncer {
             'HistoricalPriceSyncer',
             '$symbol: API 限流，中止剩餘歷史資料同步',
           );
+        } else if (error is NetworkException) {
+          rateLimited = true;
+          failedSymbols.add(symbol);
+          AppLogger.warning(
+            'HistoricalPriceSyncer',
+            '$symbol: 網路異常，中止剩餘歷史資料同步',
+          );
         } else if (error != null) {
           failedSymbols.add(symbol);
         } else {

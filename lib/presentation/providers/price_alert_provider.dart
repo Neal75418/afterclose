@@ -119,7 +119,7 @@ enum AlertType {
   /// Check if this alert type has implemented trigger logic
   ///
   /// Only implemented types can be created by users in UI.
-  /// Currently only 3 basic price alerts have trigger logic in user_dao.dart.
+  /// Alert types returning true have trigger logic in user_dao.dart.
   bool get isImplemented => switch (this) {
     // Phase 1: Basic price alerts (implemented in user_dao.dart checkAlerts)
     AlertType.above || AlertType.below || AlertType.changePct => true,

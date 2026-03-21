@@ -242,7 +242,7 @@ class ScanNotifier extends Notifier<ScanState> {
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
-      AppLogger.error('ScanProvider', '載入資料失敗', e);
+      AppLogger.error('ScanNotifier', '載入資料失敗', e);
     }
   }
 

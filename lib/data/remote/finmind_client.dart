@@ -442,10 +442,7 @@ class FinMindClient {
           try {
             return FinMindInstitutionalRow.fromJson(json);
           } catch (e) {
-            AppLogger.debug(
-              'FinMindClient',
-              '解析法人資料列失敗: ${json['stock_id']} ($e)',
-            );
+            AppLogger.debug('FinMind', '解析法人資料列失敗: ${json['stock_id']} ($e)');
             return null;
           }
         })
@@ -465,7 +462,7 @@ class FinMindClient {
           try {
             return FinMindInstitutional.aggregate(entry.value);
           } catch (e) {
-            AppLogger.debug('FinMindClient', '彙整法人資料失敗: ${entry.key} ($e)');
+            AppLogger.debug('FinMind', '彙整法人資料失敗: ${entry.key} ($e)');
             return null;
           }
         })

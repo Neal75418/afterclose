@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -94,7 +95,7 @@ class WarningRepository {
         final lastSync = await _db.getLatestWarningSyncTime();
         if (lastSync != null) {
           final hoursSinceLastSync = today.difference(lastSync).inHours;
-          if (hoursSinceLastSync < 6) {
+          if (hoursSinceLastSync < DataFreshness.warningSyncFreshnessHours) {
             final existingCount = await _db.getWarningCountForDate(
               normalizedDate,
             );

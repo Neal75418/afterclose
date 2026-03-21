@@ -61,7 +61,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         final hasPermission = await _service.hasPermission();
         state = state.copyWith(hasPermission: hasPermission);
       } catch (e) {
-        AppLogger.warning('Notification', '權限檢查失敗（非關鍵）', e);
+        AppLogger.warning('NotificationNotifier', '權限檢查失敗（非關鍵）', e);
       }
     } catch (e) {
       state = state.copyWith(error: ErrorDisplay.message(e));

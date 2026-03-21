@@ -174,11 +174,11 @@ class SettingsNotifier extends Notifier<SettingsState> {
       );
 
       AppLogger.debug(
-        'Settings',
+        'SettingsNotifier',
         '設定已載入: 主題=$themeMode, 語言=${locale.displayName}',
       );
     } catch (e) {
-      AppLogger.warning('Settings', '載入設定失敗', e);
+      AppLogger.warning('SettingsNotifier', '載入設定失敗', e);
       state = state.copyWith(isLoaded: true);
     }
   }
@@ -235,7 +235,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       );
       await prefs.setBool(_keyAutoUpdateEnabled, snapshot.autoUpdateEnabled);
     } catch (e) {
-      AppLogger.warning('Settings', '儲存設定失敗', e);
+      AppLogger.warning('SettingsNotifier', '儲存設定失敗', e);
     }
   }
 
@@ -243,7 +243,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
   void setThemeMode(ThemeMode mode) {
     state = state.copyWith(themeMode: mode);
     _saveSettings();
-    AppLogger.debug('Settings', '主題已變更: $mode');
+    AppLogger.debug('SettingsNotifier', '主題已變更: $mode');
   }
 
   /// 切換深色/淺色主題
@@ -260,56 +260,56 @@ class SettingsNotifier extends Notifier<SettingsState> {
   void setLocale(AppLocale locale) {
     state = state.copyWith(locale: locale);
     _saveSettings();
-    AppLogger.debug('Settings', '語言已變更: ${locale.displayName}');
+    AppLogger.debug('SettingsNotifier', '語言已變更: ${locale.displayName}');
   }
 
   /// 設定是否顯示警示標記
   void setShowWarningBadges(bool value) {
     state = state.copyWith(showWarningBadges: value);
     _saveSettings();
-    AppLogger.debug('Settings', '警示標記顯示: $value');
+    AppLogger.debug('SettingsNotifier', '警示標記顯示: $value');
   }
 
   /// 設定董監持股通知
   void setInsiderNotifications(bool value) {
     state = state.copyWith(insiderNotifications: value);
     _saveSettings();
-    AppLogger.debug('Settings', '董監持股通知: $value');
+    AppLogger.debug('SettingsNotifier', '董監持股通知: $value');
   }
 
   /// 設定處置股票緊急警報
   void setDisposalUrgentAlerts(bool value) {
     state = state.copyWith(disposalUrgentAlerts: value);
     _saveSettings();
-    AppLogger.debug('Settings', '處置股票緊急警報: $value');
+    AppLogger.debug('SettingsNotifier', '處置股票緊急警報: $value');
   }
 
   /// 設定漲跌停提示
   void setLimitAlerts(bool value) {
     state = state.copyWith(limitAlerts: value);
     _saveSettings();
-    AppLogger.debug('Settings', '漲跌停提示: $value');
+    AppLogger.debug('SettingsNotifier', '漲跌停提示: $value');
   }
 
   /// 設定民國年顯示
   void setShowROCYear(bool value) {
     state = state.copyWith(showROCYear: value);
     _saveSettings();
-    AppLogger.debug('Settings', '民國年顯示: $value');
+    AppLogger.debug('SettingsNotifier', '民國年顯示: $value');
   }
 
   /// 設定快取時間（分鐘）
   void setCacheDurationMinutes(int minutes) {
     state = state.copyWith(cacheDurationMinutes: minutes);
     _saveSettings();
-    AppLogger.debug('Settings', '快取時間: $minutes 分鐘');
+    AppLogger.debug('SettingsNotifier', '快取時間: $minutes 分鐘');
   }
 
   /// 設定是否啟用自動更新
   void setAutoUpdateEnabled(bool value) {
     state = state.copyWith(autoUpdateEnabled: value);
     _saveSettings();
-    AppLogger.debug('Settings', '自動更新: $value');
+    AppLogger.debug('SettingsNotifier', '自動更新: $value');
   }
 }
 
