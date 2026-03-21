@@ -299,7 +299,6 @@ class PriceRepository implements IPriceRepository {
         count: allPriceEntries.length,
         candidates: allCandidates,
         dataDate: dataDate,
-        tpexDataDate: tpexResult.dataDate,
       );
     } on RateLimitException {
       rethrow;
@@ -309,104 +308,5 @@ class PriceRepository implements IPriceRepository {
       AppLogger.error('PriceRepo', '價格同步失敗', e, stack);
       throw DatabaseException('Failed to sync prices from TWSE/TPEX', e);
     }
-  }
-
-  /// 同步指定股票清單的價格（免費帳號備援方案）
-  ///
-  /// 逐一抓取價格並注意 Rate Limiting。
-  /// 僅抓取 Database 中缺少的資料。
-  ///
-  /// [onProgress] - 進度回呼（current, total, symbol）
-  /// [delayBetweenRequests] - API 呼叫間隔以避免 Rate Limit
-  Future<int> _syncPricesForSymbols(
-    List<String> symbols,
-    DateTime date, {
-    void Function(int current, int total, String symbol)? onProgress,
-    Duration delayBetweenRequests = const Duration(milliseconds: 200),
-  }) async {
-    var totalSynced = 0;
-    final errors = <String>[];
-
-    // 分析用歷史資料範圍（lookback + buffer）
-    final historyStartDate = date.subtract(
-      const Duration(days: RuleParams.historyRequiredDays),
-    );
-
-    for (var i = 0; i < symbols.length; i++) {
-      final symbol = symbols[i];
-      onProgress?.call(i + 1, symbols.length, symbol);
-
-      try {
-        // 檢查既有資料
-        final latestPrice = await _db.getLatestPrice(symbol);
-        final latestDate = latestPrice?.date;
-
-        // 若已有今日資料則跳過
-        if (latestDate != null && DateContext.isSameDay(latestDate, date)) {
-          continue;
-        }
-
-        // 決定抓取範圍
-        DateTime fetchStartDate;
-        if (latestDate == null) {
-          // 完全無資料，抓取完整歷史
-          fetchStartDate = historyStartDate;
-        } else if (latestDate.isBefore(historyStartDate)) {
-          // 資料過舊，抓取完整歷史
-          fetchStartDate = historyStartDate;
-        } else {
-          // 有部分資料，從最新日期後一天開始
-          fetchStartDate = latestDate.add(const Duration(days: 1));
-        }
-
-        // 若抓取起始日超過目標日期則跳過
-        if (fetchStartDate.isAfter(date)) {
-          continue;
-        }
-
-        final count = await syncStockPrices(
-          symbol,
-          startDate: fetchStartDate,
-          endDate: date,
-        );
-        totalSynced += count;
-
-        // API 請求間隔
-        if (i < symbols.length - 1 && delayBetweenRequests.inMilliseconds > 0) {
-          await Future.delayed(delayBetweenRequests);
-        }
-      } on RateLimitException {
-        AppLogger.warning('PriceRepo', '$symbol: 批次價格同步觸發 API 速率限制');
-        rethrow;
-      } catch (e) {
-        // NetworkException 不 rethrow：批次模式下個別股票網路失敗不應中斷整批同步，
-        // 錯誤記錄於 errors 列表，全部失敗時由後續邏輯拋出 DatabaseException
-        errors.add('$symbol: $e');
-      }
-    }
-
-    // 若所有股票都失敗則拋出例外
-    if (totalSynced == 0 && errors.isNotEmpty && symbols.isNotEmpty) {
-      throw DatabaseException(
-        'Failed to sync any prices. Errors: ${errors.take(3).join("; ")}',
-      );
-    }
-
-    return totalSynced;
-  }
-
-  /// 同步多檔指定股票的價格（供 Update Service 使用的公開 API）
-  ///
-  /// 當您有特定股票清單需要更新時使用。
-  /// 僅抓取缺少的資料，已最新的股票會跳過。
-  ///
-  /// [onProgress] - 進度回呼（current, total, symbol）
-  @override
-  Future<int> syncPricesForSymbols(
-    List<String> symbols, {
-    required DateTime targetDate,
-    void Function(int current, int total, String symbol)? onProgress,
-  }) async {
-    return _syncPricesForSymbols(symbols, targetDate, onProgress: onProgress);
   }
 }

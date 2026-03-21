@@ -84,19 +84,6 @@ class LruCache<K, V> {
     _cache.clear();
   }
 
-  /// 移除所有已過期的項目
-  void evictExpired() {
-    final expiredKeys = <K>[];
-    for (final entry in _cache.entries) {
-      if (entry.value.isExpired) {
-        expiredKeys.add(entry.key);
-      }
-    }
-    for (final key in expiredKeys) {
-      _cache.remove(key);
-    }
-  }
-
   /// 取得目前快取項目數量
   int get length => _cache.length;
 

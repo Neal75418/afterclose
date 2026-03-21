@@ -12,9 +12,6 @@ abstract class IEventRepository {
     List<String>? symbols,
   });
 
-  /// 取得股票的所有事件
-  Future<List<StockEventEntry>> getEventsForSymbol(String symbol);
-
   /// 新增自訂事件
   Future<int> addCustomEvent({
     String? symbol,

@@ -29,12 +29,6 @@ class EventRepository implements IEventRepository {
     return _db.getEventsInRange(start, end, symbols: symbols);
   }
 
-  /// 取得指定 symbol 的所有事件
-  @override
-  Future<List<StockEventEntry>> getEventsForSymbol(String symbol) {
-    return _db.getEventsForSymbol(symbol);
-  }
-
   // ==================================================
   // 事件操作
   // ==================================================

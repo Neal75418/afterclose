@@ -110,7 +110,6 @@ class FundamentalSyncer {
     return FundamentalSyncResult(
       valuationCount: valuationCount,
       revenueCount: revenueCount,
-      symbolCount: otcWatchlistSymbols.length,
     );
   }
 
@@ -168,8 +167,6 @@ class FundamentalSyncer {
     return FundamentalSyncResult(
       valuationCount: valuationCount,
       revenueCount: revenueCount,
-      symbolCount: otcCandidates.length,
-      syncedCount: limitedOtcCandidates.length,
     );
   }
 
@@ -299,17 +296,12 @@ class FundamentalSyncResult {
   const FundamentalSyncResult({
     required this.valuationCount,
     required this.revenueCount,
-    this.symbolCount = 0,
-    this.syncedCount = 0,
   });
 
   final int valuationCount;
 
   /// 營收同步筆數。-1 表示已快取（跳過同步）。
   final int revenueCount;
-
-  final int symbolCount;
-  final int syncedCount;
 
   bool get revenueCached => revenueCount < 0;
   int get total => valuationCount + (revenueCount < 0 ? 0 : revenueCount);

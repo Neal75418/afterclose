@@ -17,7 +17,4 @@ class AnalysisResult {
   final double? resistanceLevel;
   final double? rangeTop;
   final double? rangeBottom;
-
-  /// 檢查是否為潛在的反轉候選
-  bool get isReversalCandidate => reversalState != ReversalState.none;
 }

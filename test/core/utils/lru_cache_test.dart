@@ -94,24 +94,6 @@ void main() {
       expect(cache.length, equals(0));
     });
 
-    test('evictExpired removes only expired entries', () async {
-      final cache = LruCache<String, int>(
-        maxSize: 10,
-        ttl: const Duration(milliseconds: 50),
-      );
-      cache.put('old', 1);
-
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      // Add fresh entry after delay
-      cache.put('fresh', 2);
-      cache.evictExpired();
-
-      expect(cache.containsKey('old'), isFalse);
-      expect(cache.get('fresh'), equals(2));
-      expect(cache.length, equals(1));
-    });
-
     test('put overwrites existing key', () {
       final cache = LruCache<String, int>(maxSize: 10);
       cache.put('a', 1);

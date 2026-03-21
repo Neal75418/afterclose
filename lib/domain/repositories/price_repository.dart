@@ -40,13 +40,6 @@ abstract class IPriceRepository {
     DateTime date, {
     bool force = false,
   });
-
-  /// 同步多檔特定股票的價格
-  Future<int> syncPricesForSymbols(
-    List<String> symbols, {
-    required DateTime targetDate,
-    void Function(int current, int total, String symbol)? onProgress,
-  });
 }
 
 /// 全市場價格同步結果
@@ -55,7 +48,6 @@ class MarketSyncResult {
     required this.count,
     required this.candidates,
     this.dataDate,
-    this.tpexDataDate,
     this.skipped = false,
   });
 
@@ -64,12 +56,6 @@ class MarketSyncResult {
 
   /// 主要資料日期（優先 TWSE）
   final DateTime? dataDate;
-
-  /// TPEX（上櫃）資料日期
-  ///
-  /// 用於上櫃股票的新鮮度檢查。
-  /// TPEX 和 TWSE 的資料日期可能不同步。
-  final DateTime? tpexDataDate;
 
   final bool skipped;
 }

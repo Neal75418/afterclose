@@ -59,17 +59,6 @@ void main() {
     });
   });
 
-  group('getEventsForSymbol', () {
-    test('delegates to database', () async {
-      when(() => mockDb.getEventsForSymbol('2330')).thenAnswer((_) async => []);
-
-      final result = await repository.getEventsForSymbol('2330');
-
-      expect(result, isEmpty);
-      verify(() => mockDb.getEventsForSymbol('2330')).called(1);
-    });
-  });
-
   // ==========================================
   // 事件操作
   // ==========================================

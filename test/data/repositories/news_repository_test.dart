@@ -92,7 +92,6 @@ void main() {
       final result = await repo.syncNews();
 
       expect(result.itemsAdded, equals(1));
-      expect(result.isFullySuccessful, isTrue);
     });
 
     test('filters stock codes not in active stocks', () async {
@@ -140,14 +139,6 @@ void main() {
       );
 
       expect(result.hasErrors, isTrue);
-      expect(result.isFullySuccessful, isFalse);
-    });
-
-    test('isFullySuccessful returns true when no errors', () {
-      const result = NewsSyncResult(itemsAdded: 10, errors: []);
-
-      expect(result.hasErrors, isFalse);
-      expect(result.isFullySuccessful, isTrue);
     });
   });
 

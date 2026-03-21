@@ -35,7 +35,4 @@ class NewsSyncResult {
 
   /// 是否有 Feed 解析失敗
   bool get hasErrors => errors.isNotEmpty;
-
-  /// 是否完全成功（無錯誤）
-  bool get isFullySuccessful => errors.isEmpty;
 }

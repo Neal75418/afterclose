@@ -7,7 +7,6 @@ class ChipStrengthResult {
     required this.score,
     required this.rating,
     required this.attitude,
-    this.details = const [],
   });
 
   /// 籌碼強度總分（0-100）
@@ -18,9 +17,6 @@ class ChipStrengthResult {
 
   /// 法人態度摘要
   final InstitutionalAttitude attitude;
-
-  /// 各評分項目的文字說明
-  final List<String> details;
 }
 
 /// 籌碼強度評級

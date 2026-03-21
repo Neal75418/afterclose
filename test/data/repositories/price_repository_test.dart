@@ -388,13 +388,11 @@ void main() {
           count: 100,
           candidates: ['2330'],
           dataDate: dataDate,
-          tpexDataDate: dataDate,
           skipped: true,
         );
 
         expect(result.skipped, isTrue);
         expect(result.dataDate, equals(dataDate));
-        expect(result.tpexDataDate, equals(dataDate));
       });
     });
   });
