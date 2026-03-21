@@ -567,7 +567,7 @@ class AnalysisSummaryService {
       if (decoded is Map<String, dynamic>) return decoded;
     } catch (e) {
       AppLogger.debug(
-        'SummaryService',
+        'AnalysisSummaryService',
         'Evidence JSON parse failed: $json ($e)',
       );
     }
