@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
@@ -167,7 +168,9 @@ class NewsRepository implements INewsRepository {
   ///
   /// 使用 Cascade Delete 自動刪除關聯資料
   @override
-  Future<int> cleanupOldNews({int olderThanDays = 30}) async {
+  Future<int> cleanupOldNews({
+    int olderThanDays = DataFreshness.newsRetentionDays,
+  }) async {
     final cutoff = _clock.now().subtract(Duration(days: olderThanDays));
 
     // 刪除舊新聞，Cascade Delete 會處理關聯

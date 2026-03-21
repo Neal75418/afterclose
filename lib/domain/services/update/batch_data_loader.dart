@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
@@ -67,7 +68,7 @@ class BatchDataLoader {
     final valuationFuture = _db.getLatestValuationsBatch(candidates);
     final revenueHistoryFuture = _db.getRecentMonthlyRevenueBatch(
       candidates,
-      months: 6,
+      months: DataFreshness.revenueDisplayMonths,
     );
     final dayTradingFuture = _db.getDayTradingMapForDate(date);
     final shareholdingFuture = _db.getLatestShareholdingsBatch(candidates);

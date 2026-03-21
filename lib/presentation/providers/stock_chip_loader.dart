@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -43,7 +44,9 @@ class StockChipLoader {
   Future<List<FinMindMarginData>> loadMarginFromApi(String symbol) async {
     try {
       final today = _clock.now();
-      final startDate = today.subtract(const Duration(days: 20));
+      final startDate = today.subtract(
+        const Duration(days: DataFreshness.chipDataLookbackDays),
+      );
 
       return await _finMind.getMarginData(
         stockId: symbol,
@@ -91,8 +94,12 @@ class StockChipLoader {
     List<InsiderHoldingEntry> existingInsider = const [],
   }) async {
     final today = _clock.now();
-    final startDate10d = today.subtract(const Duration(days: 15));
-    final startDate60d = today.subtract(const Duration(days: 90));
+    final startDate10d = today.subtract(
+      const Duration(days: DataFreshness.chipTradingLookbackDays),
+    );
+    final startDate60d = today.subtract(
+      const Duration(days: DataFreshness.chipShareholdingLookbackDays),
+    );
 
     // 使用 Records 平行載入所有資料
     final (
@@ -108,7 +115,10 @@ class StockChipLoader {
       _db.getLatestHoldingDistribution(symbol),
       existingInsider.isNotEmpty
           ? Future.value(existingInsider)
-          : _db.getRecentInsiderHoldings(symbol, months: 6),
+          : _db.getRecentInsiderHoldings(
+              symbol,
+              months: DataFreshness.insiderRecentMonths,
+            ),
     ).wait;
 
     // 計算籌碼強度
@@ -139,7 +149,9 @@ class StockChipLoader {
   fetchInstitutionalFromApi(String symbol) async {
     try {
       final today = _clock.now();
-      final startDate = today.subtract(const Duration(days: 20));
+      final startDate = today.subtract(
+        const Duration(days: DataFreshness.chipDataLookbackDays),
+      );
 
       final data = await _finMind.getInstitutionalData(
         stockId: symbol,

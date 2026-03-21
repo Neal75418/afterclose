@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 
@@ -37,7 +38,9 @@ class NewsSyncer {
   /// 清理過期新聞
   ///
   /// [olderThanDays] 指定保留天數，預設 30 天
-  Future<int> cleanupOldNews({int olderThanDays = 30}) async {
+  Future<int> cleanupOldNews({
+    int olderThanDays = DataFreshness.newsRetentionDays,
+  }) async {
     try {
       final deletedCount = await _newsRepo.cleanupOldNews(
         olderThanDays: olderThanDays,
@@ -57,7 +60,9 @@ class NewsSyncer {
   /// 同步新聞並清理過期資料
   ///
   /// 整合同步和清理操作
-  Future<NewsSyncResult> syncAndCleanup({int olderThanDays = 30}) async {
+  Future<NewsSyncResult> syncAndCleanup({
+    int olderThanDays = DataFreshness.newsRetentionDays,
+  }) async {
     final syncResult = await syncNews();
     final deletedCount = await cleanupOldNews(olderThanDays: olderThanDays);
 

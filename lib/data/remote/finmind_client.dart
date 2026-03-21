@@ -3,6 +3,7 @@ import 'dart:math' show Random;
 import 'package:dio/dio.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
@@ -631,7 +632,9 @@ class FinMindClient {
     startDate:
         startDate ??
         () {
-          final d = DateTime.now().subtract(const Duration(days: 60));
+          final d = DateTime.now().subtract(
+            const Duration(days: DataFreshness.totalReturnIndexLookbackDays),
+          );
           return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
         }(),
     fromJson: FinMindTotalReturnIndex.tryFromJson,

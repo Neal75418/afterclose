@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
@@ -358,7 +359,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 平行執行 API 呼叫與 DB 彙總查詢，任一失敗不影響其他。
   /// 設有總超時機制：超過 [_loadTimeoutSec] 秒後先結束 loading 顯示 DB 資料，
   /// API 資料在背景繼續載入，完成後自動更新 UI。
-  static const _loadTimeoutSec = 20;
+  static const _loadTimeoutSec = ApiConfig.marketOverviewLoadTimeoutSec;
 
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -207,7 +208,10 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         _db.getLatestValuationsBatch(symbols),
         _db.getInstitutionalHistoryBatch(symbols, startDate: instStartDate),
         _db.getEPSHistoryBatch(symbols),
-        _db.getRecentMonthlyRevenueBatch(symbols, months: 6),
+        _db.getRecentMonthlyRevenueBatch(
+          symbols,
+          months: DataFreshness.revenueDisplayMonths,
+        ),
       ).wait;
 
       if (!_active) return;

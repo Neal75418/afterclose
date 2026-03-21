@@ -144,4 +144,55 @@ abstract final class DataFreshness {
   ///
   /// 估值資料更新頻率較低，以 7 天確保能取到最新資料。
   static const int valuationLookbackDays = 7;
+
+  // ==================================================
+  // 籌碼資料載入回溯天數
+  // ==================================================
+
+  /// 籌碼 API 查詢回溯天數（融資融券、法人）
+  static const int chipDataLookbackDays = 20;
+
+  /// 籌碼短期資料回溯天數（當沖、融資融券 DB 查詢）
+  static const int chipTradingLookbackDays = 15;
+
+  /// 籌碼持股比例回溯天數（外資持股 DB 查詢）
+  static const int chipShareholdingLookbackDays = 90;
+
+  // ==================================================
+  // 估值資料查詢回溯天數（詳細頁面）
+  // ==================================================
+
+  /// 個股詳細頁估值 DB 查詢回溯天數
+  static const int valuationDbLookbackDays = 30;
+
+  /// 個股詳細頁估值 API fallback 查詢回溯天數
+  static const int valuationApiLookbackDays = 5;
+
+  // ==================================================
+  // 新聞資料保留天數
+  // ==================================================
+
+  /// 舊新聞清理保留天數
+  static const int newsRetentionDays = 30;
+
+  // ==================================================
+  // 當沖資料查詢回溯天數
+  // ==================================================
+
+  /// 當沖資料回溯查詢天數（無目標日期資料時的 fallback 窗口）
+  static const int dayTradingFallbackDays = 5;
+
+  // ==================================================
+  // 月營收顯示月數
+  // ==================================================
+
+  /// 比較頁面與批次載入的月營收顯示月數
+  static const int revenueDisplayMonths = 6;
+
+  // ==================================================
+  // 總報酬指數查詢回溯天數
+  // ==================================================
+
+  /// FinMind 總報酬指數預設查詢回溯天數
+  static const int totalReturnIndexLookbackDays = 60;
 }

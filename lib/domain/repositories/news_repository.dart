@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 
@@ -23,7 +24,9 @@ abstract class INewsRepository {
   });
 
   /// 清除過期新聞
-  Future<int> cleanupOldNews({int olderThanDays = 30});
+  Future<int> cleanupOldNews({
+    int olderThanDays = DataFreshness.newsRetentionDays,
+  });
 }
 
 /// 新聞同步結果

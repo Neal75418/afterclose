@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
@@ -130,7 +131,9 @@ mixin DayTradingDaoMixin on $AppDatabase {
 
     // 若指定日期沒有資料，取得最近 5 天內最新一天的資料
     if (results.isEmpty) {
-      final lookbackStart = startOfDay.subtract(const Duration(days: 5));
+      final lookbackStart = startOfDay.subtract(
+        const Duration(days: DataFreshness.dayTradingFallbackDays),
+      );
       final latestDateResult = await customSelect(
         '''
       SELECT MAX(date) as latest_date

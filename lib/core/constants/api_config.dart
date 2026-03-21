@@ -144,6 +144,11 @@ abstract final class ApiConfig {
   /// 下拉重新整理超時（秒）
   static const int refreshTimeoutSec = 30;
 
+  /// 大盤總覽載入超時（秒）
+  ///
+  /// 超過此時間後先顯示 DB 快取資料，API 回應後再更新。
+  static const int marketOverviewLoadTimeoutSec = 20;
+
   /// 更新操作超時（分鐘）
   static const int updateTimeoutMin = 60;
 

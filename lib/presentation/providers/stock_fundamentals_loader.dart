@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -77,7 +78,9 @@ class StockFundamentalsLoader {
   /// 若資料庫無資料則回傳 null，後續由 [_loadValuationFromApi] 補充。
   Future<FinMindPER?> _loadValuationData(String symbol, DateTime today) async {
     try {
-      final perStartDate = today.subtract(const Duration(days: 30));
+      final perStartDate = today.subtract(
+        const Duration(days: DataFreshness.valuationDbLookbackDays),
+      );
       final dbValuations = await _db.getValuationHistory(
         symbol,
         startDate: perStartDate,
@@ -265,7 +268,9 @@ class StockFundamentalsLoader {
     DateTime today,
   ) async {
     try {
-      final perApiStart = today.subtract(const Duration(days: 5));
+      final perApiStart = today.subtract(
+        const Duration(days: DataFreshness.valuationApiLookbackDays),
+      );
       final perData = await _finMind.getPERData(
         stockId: symbol,
         startDate: DateContext.formatYmd(perApiStart),

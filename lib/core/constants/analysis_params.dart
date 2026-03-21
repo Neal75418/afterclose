@@ -125,4 +125,11 @@ abstract final class AnalysisParams {
 
   /// 台灣券商最低手續費（元）
   static const double minBrokerageFee = 20;
+
+  // ==================================================
+  // 摘要顯示上限
+  // ==================================================
+
+  /// 分析摘要每類別（訊號/風險）最大顯示條目數
+  static const int summaryMaxItems = 5;
 }

@@ -244,7 +244,7 @@ class AnalysisSummaryService {
     final positive = reasons.where((r) => r.ruleScore > 0).toList()
       ..sort((a, b) => b.ruleScore.compareTo(a.ruleScore));
 
-    const maxItems = 5;
+    const maxItems = AnalysisParams.summaryMaxItems;
     final signals = <LocalizableString>[];
 
     // 漲停板置頂顯示
@@ -282,7 +282,7 @@ class AnalysisSummaryService {
     final negative = reasons.where((r) => r.ruleScore < 0).toList()
       ..sort((a, b) => a.ruleScore.compareTo(b.ruleScore));
 
-    const maxItems = 5;
+    const maxItems = AnalysisParams.summaryMaxItems;
     final risks = <LocalizableString>[];
 
     // 跌停板置頂顯示
