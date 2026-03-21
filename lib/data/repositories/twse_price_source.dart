@@ -48,7 +48,7 @@ class TwsePriceSource {
           consecutiveEmpty++;
           if (consecutiveEmpty >= _maxConsecutiveEmptyMonths) {
             AppLogger.debug(
-              'PriceRepo',
+              'TwsePriceSource',
               '$symbol: 連續 $consecutiveEmpty 個月無資料，推測為上市前，跳過剩餘 $i 個月',
             );
             break;
@@ -58,13 +58,15 @@ class TwsePriceSource {
           allPrices.addAll(monthData);
         }
       } on RateLimitException {
-        AppLogger.warning('PriceRepo', '$symbol: 上市價格同步觸發 API 速率限制');
+        AppLogger.warning('TwsePriceSource', '$symbol: 上市價格同步觸發 API 速率限制');
+        rethrow;
+      } on NetworkException {
         rethrow;
       } catch (e) {
         // 網路錯誤是不確定狀態（該月可能有資料），重置計數器避免誤判
         consecutiveEmpty = 0;
         AppLogger.warning(
-          'PriceRepo',
+          'TwsePriceSource',
           '$symbol: ${month.year}-${month.month} 月份價格取得失敗',
           e,
         );

@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -96,11 +97,13 @@ class MarketDataUpdater {
 
     final marketDataStartDate = date.subtract(
       const Duration(
-        days: InstitutionalParams.foreignShareholdingLookbackDays + 5,
+        days:
+            InstitutionalParams.foreignShareholdingLookbackDays +
+            ApiConfig.foreignShareholdingBufferDays,
       ),
     );
 
-    const chunkSize = 5;
+    const chunkSize = ApiConfig.marketDataBatchSize;
     var syncedCount = 0;
 
     for (var i = 0; i < symbols.length; i += chunkSize) {
@@ -191,7 +194,9 @@ class MarketDataUpdater {
 
     final marketDataStartDate = date.subtract(
       const Duration(
-        days: InstitutionalParams.foreignShareholdingLookbackDays + 5,
+        days:
+            InstitutionalParams.foreignShareholdingLookbackDays +
+            ApiConfig.foreignShareholdingBufferDays,
       ),
     );
 
@@ -199,13 +204,13 @@ class MarketDataUpdater {
     var skippedCount = 0;
     var quotaExhausted = false;
     var totalErrorCount = 0;
-    const maxTotalErrors = 5;
+    const maxTotalErrors = ApiConfig.marketDataMaxTotalErrors;
 
     // 批次預載所有候選的最新持股，避免 chunk 內 N+1 查詢
     final latestShareholdingMap = await _shareholdingRepo
         .getLatestShareholdingsBatch(limitedOtcCandidates);
 
-    const chunkSize = 5;
+    const chunkSize = ApiConfig.marketDataBatchSize;
     outerLoop:
     for (var i = 0; i < limitedOtcCandidates.length; i += chunkSize) {
       final chunk = limitedOtcCandidates.skip(i).take(chunkSize).toList();

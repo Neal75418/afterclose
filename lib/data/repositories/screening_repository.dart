@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
@@ -58,7 +59,9 @@ class ScreeningRepository implements IScreeningRepository {
     if (conditions.any((c) => c.field == ScreeningField.priceChangePercent)) {
       final prevDateMs =
           startOfDay
-              .subtract(const Duration(days: 10))
+              .subtract(
+                const Duration(days: DataFreshness.prevPriceLookbackDays),
+              )
               .millisecondsSinceEpoch ~/
           1000;
       cteParts.add('''
@@ -90,7 +93,9 @@ class ScreeningRepository implements IScreeningRepository {
     }
 
     if (needsValuation) {
-      final valuationStart = startOfDay.subtract(const Duration(days: 7));
+      final valuationStart = startOfDay.subtract(
+        const Duration(days: DataFreshness.valuationLookbackDays),
+      );
       cteParts.add('''
         latest_sv AS (
           SELECT symbol, MAX(date) AS max_date

@@ -84,7 +84,7 @@ class TradingRepository implements ITradingRepository {
       final data = await _twseClient.getAllDayTradingData(date: targetDate);
 
       AppLogger.info(
-        'MarketData',
+        'TradingRepo',
         'TWSE 當沖原始筆數: ${data.length}，日期: $targetDate',
       );
 
@@ -118,7 +118,7 @@ class TradingRepository implements ITradingRepository {
         prices = result.values.expand((list) => list).toList();
       }
 
-      AppLogger.info('MarketData', '用於計算的價格資料: ${prices.length} 筆');
+      AppLogger.info('TradingRepo', '用於計算的價格資料: ${prices.length} 筆');
       final volumeMap = <String, double>{};
       for (final p in prices) {
         if (p.volume != null) {
@@ -187,7 +187,7 @@ class TradingRepository implements ITradingRepository {
       }).length;
 
       AppLogger.info(
-        'MarketData',
+        'TradingRepo',
         '當沖資料寫入 ${entries.length} 筆 (上市, TWSE): '
             '高比例(>=60%)=${highRatioEntries.length}，極高(>=70%)=$extremeRatioCount，零比例=$zeroRatioCount',
       );
@@ -199,7 +199,7 @@ class TradingRepository implements ITradingRepository {
                   '${e.symbol.value}(${e.dayTradingRatio.value?.toStringAsFixed(1)}%)',
             )
             .join(', ');
-        AppLogger.info('MarketData', '高當沖股票: $highSymbols');
+        AppLogger.info('TradingRepo', '高當沖股票: $highSymbols');
       }
       return entries.length;
     } on RateLimitException {
@@ -242,7 +242,7 @@ class TradingRepository implements ITradingRepository {
       final data = await _tpexClient.getAllDayTradingData(date: targetDate);
 
       AppLogger.info(
-        'MarketData',
+        'TradingRepo',
         'TPEX 當沖原始筆數: ${data.length}，日期: $targetDate',
       );
 
@@ -265,7 +265,7 @@ class TradingRepository implements ITradingRepository {
         prices = result.values.expand((list) => list).toList();
       }
 
-      AppLogger.info('MarketData', 'TPEX 用於計算的價格資料: ${prices.length} 筆');
+      AppLogger.info('TradingRepo', 'TPEX 用於計算的價格資料: ${prices.length} 筆');
       final volumeMap = <String, double>{};
       for (final p in prices) {
         if (p.volume != null) {
@@ -312,7 +312,7 @@ class TradingRepository implements ITradingRepository {
       }).length;
 
       AppLogger.info(
-        'MarketData',
+        'TradingRepo',
         '當沖資料寫入 ${entries.length} 筆 (上櫃, TPEX): 高比例(>=60%)=$highRatioCount',
       );
 
@@ -370,7 +370,7 @@ class TradingRepository implements ITradingRepository {
           targetDate,
         );
         if (existingCount > DataFreshness.fullMarketThreshold) {
-          AppLogger.debug('MarketData', '融資融券資料已快取 ($existingCount 筆)，跳過同步');
+          AppLogger.debug('TradingRepo', '融資融券資料已快取 ($existingCount 筆)，跳過同步');
           return -1;
         }
       }
@@ -380,7 +380,7 @@ class TradingRepository implements ITradingRepository {
       final twseFuture = safeAwait(
         _twseClient.getAllMarginTradingData(),
         <TwseMarginTrading>[],
-        tag: 'MarketData',
+        tag: 'TradingRepo',
         description: '上市融資融券取得失敗，繼續處理上櫃',
       );
       // TPEx 融資融券 API 有 T+1 延遲：傳入今日日期會回傳空資料。
@@ -388,7 +388,7 @@ class TradingRepository implements ITradingRepository {
       final tpexFuture = safeAwait(
         _tpexClient.getAllMarginTradingData(),
         <TpexMarginTrading>[],
-        tag: 'MarketData',
+        tag: 'TradingRepo',
         description: '上櫃融資融券取得失敗，繼續處理上市',
       );
 
@@ -457,7 +457,7 @@ class TradingRepository implements ITradingRepository {
       await _db.insertMarginTradingData(allEntries);
 
       AppLogger.info(
-        'MarketData',
+        'TradingRepo',
         '融資融券同步: ${allEntries.length} 筆 (上市 ${twseEntries.length}, 上櫃 ${tpexEntries.length})',
       );
 

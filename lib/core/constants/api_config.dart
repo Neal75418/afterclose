@@ -60,6 +60,15 @@ abstract final class ApiConfig {
   /// Syncer 批次大小（每批並行處理的股票數）
   static const int syncerBatchSize = 10;
 
+  /// 市場籌碼資料更新器批次大小（每批並行處理的股票數）
+  static const int marketDataBatchSize = 5;
+
+  /// 市場籌碼資料更新器最大總錯誤次數（斷路器閾值）
+  static const int marketDataMaxTotalErrors = 5;
+
+  /// 外資持股查詢額外緩衝天數（確保不遺漏邊界資料）
+  static const int foreignShareholdingBufferDays = 5;
+
   /// 歷史價格同步連續失敗批次上限（斷路器閾值）
   ///
   /// 連續失敗達此值時中止同步，避免在網路或 API 異常時持續耗費配額。

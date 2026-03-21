@@ -130,4 +130,18 @@ abstract final class DataFreshness {
 
   /// 財務指標查詢額外緩衝天數（確保跨季邊界不遺漏資料）
   static const int quarterBufferDays = 30;
+
+  // ==================================================
+  // 篩選器查詢回溯天數
+  // ==================================================
+
+  /// 篩選器前日收盤價查詢回溯天數
+  ///
+  /// 確保能找到目標日期前的最近一個交易日收盤價。
+  static const int prevPriceLookbackDays = 10;
+
+  /// 篩選器估值資料查詢回溯天數
+  ///
+  /// 估值資料更新頻率較低，以 7 天確保能取到最新資料。
+  static const int valuationLookbackDays = 7;
 }

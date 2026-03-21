@@ -40,7 +40,7 @@ class TpexPriceSource {
         final date = DateTime.tryParse(price.date);
         if (date == null) {
           AppLogger.warning(
-            'PriceRepo',
+            'TpexPriceSource',
             '上櫃價格日期解析失敗，跳過: $symbol, date=${price.date}',
           );
           continue;
@@ -60,7 +60,7 @@ class TpexPriceSource {
 
       return entries;
     } on RateLimitException {
-      AppLogger.warning('PriceRepo', '$symbol: 上櫃價格同步觸發 API 速率限制');
+      AppLogger.warning('TpexPriceSource', '$symbol: 上櫃價格同步觸發 API 速率限制');
       rethrow;
     } on NetworkException {
       rethrow;
