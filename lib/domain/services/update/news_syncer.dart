@@ -28,7 +28,7 @@ class NewsSyncer {
       }
     } catch (e) {
       errors.add('新聞同步失敗: $e');
-      AppLogger.warning('NewsSyncer', '新聞同步失敗: $e');
+      AppLogger.warning('NewsSyncer', '新聞同步失敗', e);
     }
 
     return NewsSyncResult(itemsAdded: itemsAdded, errors: errors);
@@ -49,7 +49,7 @@ class NewsSyncer {
 
       return deletedCount;
     } catch (e) {
-      AppLogger.warning('NewsSyncer', '清理過期新聞失敗: $e');
+      AppLogger.warning('NewsSyncer', '清理過期新聞失敗', e);
       return 0;
     }
   }

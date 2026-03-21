@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/chip_scoring_params.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
@@ -87,16 +89,17 @@ class ChipAnomalyService {
         });
       }
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測籌碼異動失敗: $e');
+      AppLogger.warning(_logTag, '偵測籌碼異動失敗', e);
     }
 
     return result;
   }
 
-  /// 質押率飆升：最新質押率 > 50%
+  /// 質押率飆升：最新質押率 > [FundamentalParams.highPledgeRatioThreshold]%
   Future<List<ChipAnomaly>> _detectHighPledge() async {
     try {
-      const query = '''
+      const query =
+          '''
         SELECT ih.symbol, ih.pledge_ratio, s.name, s.market
         FROM insider_holding ih
         INNER JOIN (
@@ -105,12 +108,21 @@ class ChipAnomalyService {
           GROUP BY symbol
         ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
         INNER JOIN stock_master s ON ih.symbol = s.symbol
-        WHERE ih.pledge_ratio >= 50
+        WHERE ih.pledge_ratio >= ?
         ORDER BY ih.pledge_ratio DESC
-        LIMIT 5
+        LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
-      final rows = await _db.customSelect(query).get();
+      final rows = await _db
+          .customSelect(
+            query,
+            variables: [
+              const Variable<double>(
+                FundamentalParams.highPledgeRatioThreshold,
+              ),
+            ],
+          )
+          .get();
 
       return rows.map((row) {
         final ratio = row.read<double>('pledge_ratio');
@@ -125,17 +137,20 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測高質押失敗: $e');
+      AppLogger.warning(_logTag, '偵測高質押失敗', e);
       return [];
     }
   }
 
-  /// 內部人轉讓：近 30 天內有申報轉讓記錄
+  /// 內部人轉讓：近 [ChipAnomalyParams.insiderTransferLookbackDays] 天內有申報轉讓記錄
   Future<List<ChipAnomaly>> _detectInsiderTransfers(DateTime date) async {
     try {
-      final since = date.subtract(const Duration(days: 30));
+      final since = date.subtract(
+        const Duration(days: ChipAnomalyParams.insiderTransferLookbackDays),
+      );
 
-      const query = '''
+      const query =
+          '''
         WITH ranked AS (
           SELECT it.symbol, it.identity, it.transfer_shares, it.report_date,
                  s.name, s.market,
@@ -147,7 +162,7 @@ class ChipAnomalyService {
         SELECT symbol, identity, transfer_shares, report_date, name, market
         FROM ranked WHERE rn = 1
         ORDER BY transfer_shares DESC
-        LIMIT 5
+        LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
       final rows = await _db
@@ -166,7 +181,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測內部人轉讓失敗: $e');
+      AppLogger.warning(_logTag, '偵測內部人轉讓失敗', e);
       return [];
     }
   }
@@ -174,7 +189,8 @@ class ChipAnomalyService {
   /// 外資逼近持股上限：持股比 > 上限 × 90%
   Future<List<ChipAnomaly>> _detectForeignNearLimit() async {
     try {
-      const query = '''
+      const query =
+          '''
         SELECT sh.symbol, sh.foreign_shares_ratio, sh.foreign_upper_limit_ratio,
                s.name, s.market
         FROM shareholding sh
@@ -189,7 +205,7 @@ class ChipAnomalyService {
           AND sh.foreign_upper_limit_ratio > 0
           AND sh.foreign_shares_ratio >= sh.foreign_upper_limit_ratio * 0.9
         ORDER BY (sh.foreign_shares_ratio / sh.foreign_upper_limit_ratio) DESC
-        LIMIT 5
+        LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
       final rows = await _db.customSelect(query).get();
@@ -208,17 +224,20 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測外資逼近上限失敗: $e');
+      AppLogger.warning(_logTag, '偵測外資逼近上限失敗', e);
       return [];
     }
   }
 
-  /// 融券暴增：當日融券賣出 > 近 5 日均融券賣出 × 3
+  /// 融券暴增：當日融券賣出 > 近 5 日均融券賣出 × [ChipAnomalyParams.shortSurgeMultiplier]
   Future<List<ChipAnomaly>> _detectShortSurge(DateTime date) async {
     try {
-      final dateLowerBound = date.subtract(const Duration(days: 15));
+      final dateLowerBound = date.subtract(
+        const Duration(days: ChipAnomalyParams.shortSurgeLookbackDays),
+      );
 
-      const query = '''
+      const query =
+          '''
         WITH recent AS (
           SELECT mt.symbol, mt.date, mt.short_sell,
                  s.name, s.market,
@@ -241,9 +260,9 @@ class ChipAnomalyService {
                (t.short_sell / a.avg_short) AS ratio
         FROM today t
         INNER JOIN avg5d a ON t.symbol = a.symbol
-        WHERE t.short_sell > a.avg_short * 3
+        WHERE t.short_sell > a.avg_short * ${ChipAnomalyParams.shortSurgeMultiplier}
         ORDER BY ratio DESC
-        LIMIT 5
+        LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
       final rows = await _db
@@ -268,19 +287,22 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測融券暴增失敗: $e');
+      AppLogger.warning(_logTag, '偵測融券暴增失敗', e);
       return [];
     }
   }
 
-  /// 法人集中大買/賣：單日絕對淨額 > 30日平均絕對淨額 × 5
+  /// 法人集中大買/賣：單日絕對淨額 > 均值 × [ChipAnomalyParams.institutionalSurgeMultiplier]
   ///
   /// 使用倍率門檻替代 Z-score，避免 SQLite 中計算標準差的複雜度。
   Future<List<ChipAnomaly>> _detectInstitutionalSurge(DateTime date) async {
     try {
-      final dateLowerBound = date.subtract(const Duration(days: 60));
+      final dateLowerBound = date.subtract(
+        const Duration(days: ChipAnomalyParams.institutionalSurgeLookbackDays),
+      );
 
-      const query = '''
+      const query =
+          '''
         WITH recent AS (
           SELECT di.symbol, di.date,
                  COALESCE(di.foreign_net, 0) + COALESCE(di.investment_trust_net, 0) + COALESCE(di.dealer_net, 0) AS total_net,
@@ -305,9 +327,9 @@ class ChipAnomalyService {
                (ABS(t.total_net) / a.avg_abs_net) AS surge_ratio
         FROM today t
         INNER JOIN avg30d a ON t.symbol = a.symbol
-        WHERE ABS(t.total_net) > a.avg_abs_net * 5
+        WHERE ABS(t.total_net) > a.avg_abs_net * ${ChipAnomalyParams.institutionalSurgeMultiplier}
         ORDER BY surge_ratio DESC
-        LIMIT 5
+        LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
 
       final rows = await _db
@@ -335,7 +357,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測法人集中買賣失敗: $e');
+      AppLogger.warning(_logTag, '偵測法人集中買賣失敗', e);
       return [];
     }
   }

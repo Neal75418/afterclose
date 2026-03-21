@@ -55,7 +55,7 @@ class MarketDataUpdater {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '上市當沖資料同步失敗: $e');
+      AppLogger.warning('MarketDataUpdater', '上市當沖資料同步失敗', e);
     }
 
     // TPEX 當沖資料：API 端點被 Cloudflare 保護，無法存取
@@ -72,7 +72,7 @@ class MarketDataUpdater {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '融資融券資料同步失敗: $e');
+      AppLogger.warning('MarketDataUpdater', '融資融券資料同步失敗', e);
     }
 
     return MarketDataSyncResult(

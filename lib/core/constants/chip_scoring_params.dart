@@ -88,3 +88,28 @@ class ChipScoringParams {
   /// 內部人減持扣分
   static const int insiderSellPenalty = -12;
 }
+
+/// 籌碼異動偵測參數
+///
+/// 集中管理 [ChipAnomalyService] 使用的篩選門檻與回溯天數。
+class ChipAnomalyParams {
+  ChipAnomalyParams._();
+
+  /// 每種異動類型最多回傳筆數（避免大量結果淹沒 dashboard）
+  static const int maxResultsPerType = 5;
+
+  /// 內部人轉讓：回溯天數
+  static const int insiderTransferLookbackDays = 30;
+
+  /// 融券暴增：回溯天數
+  static const int shortSurgeLookbackDays = 15;
+
+  /// 融券暴增：當日融券賣出超過近期均量的倍率門檻
+  static const double shortSurgeMultiplier = 3.0;
+
+  /// 法人集中大買/賣：回溯天數
+  static const int institutionalSurgeLookbackDays = 60;
+
+  /// 法人集中大買/賣：當日淨額超過近期均值的倍率門檻
+  static const double institutionalSurgeMultiplier = 5.0;
+}

@@ -130,15 +130,23 @@ class WarningRepository {
 
         try {
           twseWarnings = await twseWarningFuture;
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
         } catch (e) {
           failCount++;
-          AppLogger.warning('WarningRepo', '上市注意股票取得失敗: $e');
+          AppLogger.warning('WarningRepo', '上市注意股票取得失敗', e);
         }
         try {
           twseDisposals = await twseDisposalFuture;
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
         } catch (e) {
           failCount++;
-          AppLogger.warning('WarningRepo', '上市處置股票取得失敗: $e');
+          AppLogger.warning('WarningRepo', '上市處置股票取得失敗', e);
         }
       } else {
         AppLogger.debug('WarningRepo', '非交易日，跳過 TWSE 注意/處置股票 API');
@@ -147,15 +155,23 @@ class WarningRepository {
       // TPEX 請求（序列化——TPEX OpenAPI 對併行連線敏感）
       try {
         tpexWarnings = await _tpexClient.getTradingWarnings();
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         failCount++;
-        AppLogger.warning('WarningRepo', '上櫃注意股票取得失敗: $e');
+        AppLogger.warning('WarningRepo', '上櫃注意股票取得失敗', e);
       }
       try {
         tpexDisposals = await _tpexClient.getDisposalInfo();
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         failCount++;
-        AppLogger.warning('WarningRepo', '上櫃處置股票取得失敗: $e');
+        AppLogger.warning('WarningRepo', '上櫃處置股票取得失敗', e);
       }
 
       // 全部可用來源都失敗時拋出例外，讓呼叫端知道非「合法的 0 筆」

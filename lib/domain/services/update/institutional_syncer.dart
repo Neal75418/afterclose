@@ -31,7 +31,7 @@ class InstitutionalSyncer {
         final cleared = await _institutionalRepo.clearAllData();
         AppLogger.info('InstitutionalSyncer', '已清除 $cleared 筆舊法人資料');
       } catch (e) {
-        AppLogger.warning('InstitutionalSyncer', '清除舊法人資料失敗: $e');
+        AppLogger.warning('InstitutionalSyncer', '清除舊法人資料失敗', e);
       }
     }
 
@@ -45,7 +45,7 @@ class InstitutionalSyncer {
       rethrow;
     } catch (e) {
       errors.add('當日法人資料同步失敗: $e');
-      AppLogger.warning('InstitutionalSyncer', '當日法人資料同步失敗: $e');
+      AppLogger.warning('InstitutionalSyncer', '當日法人資料同步失敗', e);
     }
 
     // 2. 回補近期資料（force 模式下也強制重新下載）
@@ -68,7 +68,7 @@ class InstitutionalSyncer {
         } catch (e) {
           final dateStr = '${backDate.month}/${backDate.day}';
           errors.add('法人資料回補失敗 ($dateStr): $e');
-          AppLogger.warning('InstitutionalSyncer', '法人資料回補失敗 ($dateStr): $e');
+          AppLogger.warning('InstitutionalSyncer', '法人資料回補失敗 ($dateStr)', e);
         }
       }
     }
@@ -91,7 +91,7 @@ class InstitutionalSyncer {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('InstitutionalSyncer', '法人資料同步失敗: $e');
+      AppLogger.warning('InstitutionalSyncer', '法人資料同步失敗', e);
       return false;
     }
   }

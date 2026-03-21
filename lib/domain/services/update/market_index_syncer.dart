@@ -70,7 +70,7 @@ class MarketIndexSyncer {
         AppLogger.debug('MarketIndexSyncer', '無 TWSE 指數資料可同步（非交易日或盤中）');
       }
     } catch (e) {
-      AppLogger.warning('MarketIndexSyncer', 'TWSE 指數同步失敗: $e');
+      AppLogger.warning('MarketIndexSyncer', 'TWSE 指數同步失敗', e);
     }
 
     // 同步 TPEx 櫃買指數（OpenAPI 回傳近月歷史，一次寫入）
@@ -89,7 +89,7 @@ class MarketIndexSyncer {
           );
         }
       } catch (e) {
-        AppLogger.warning('MarketIndexSyncer', 'TPEx 指數同步失敗: $e');
+        AppLogger.warning('MarketIndexSyncer', 'TPEx 指數同步失敗', e);
       }
     }
 
@@ -109,7 +109,7 @@ class MarketIndexSyncer {
           }
         }
       } catch (e) {
-        AppLogger.warning('MarketIndexSyncer', '含息報酬指數同步失敗: $e');
+        AppLogger.warning('MarketIndexSyncer', '含息報酬指數同步失敗', e);
       }
     }
 

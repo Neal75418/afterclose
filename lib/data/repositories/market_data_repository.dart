@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -148,7 +149,13 @@ class MarketDataRepository implements IMarketDataRepository {
     required List<String> dataTypes,
     int quarters = 8,
   }) async {
-    final startDate = _clock.now().subtract(Duration(days: quarters * 90 + 30));
+    final startDate = _clock.now().subtract(
+      Duration(
+        days:
+            quarters * DataFreshness.daysPerQuarter +
+            DataFreshness.quarterBufferDays,
+      ),
+    );
     return _db.getFinancialMetrics(
       symbol,
       dataTypes: dataTypes,

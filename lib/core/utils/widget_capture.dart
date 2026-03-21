@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import 'package:afterclose/core/utils/logger.dart';
+
 /// 從 GlobalKey 截圖 Widget 為 PNG bytes
 class WidgetCapture {
   const WidgetCapture();
@@ -23,8 +25,8 @@ class WidgetCapture {
       image.dispose();
 
       return byteData?.buffer.asUint8List();
-    } catch (e, stack) {
-      debugPrint('WidgetCapture error: $e\n$stack');
+    } catch (e) {
+      AppLogger.warning('WidgetCapture', '截圖失敗', e);
       return null;
     }
   }

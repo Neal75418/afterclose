@@ -5,6 +5,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
@@ -340,7 +341,7 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       state = state.copyWith(upcomingEvents: events);
     } catch (e) {
       // 不影響主流程，但記錄以便 debug
-      debugPrint('[EventCalendar] _loadUpcomingEvents error: $e');
+      AppLogger.warning('EventCalendar', '載入近期事件失敗', e);
     }
   }
 

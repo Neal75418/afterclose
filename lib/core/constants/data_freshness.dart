@@ -111,4 +111,14 @@ abstract final class DataFreshness {
 
   /// 有部分歷史資料股票平均所需同步月數
   static const int historicalPartialSyncMonths = 4;
+
+  // ==================================================
+  // 財務資料查詢緩衝
+  // ==================================================
+
+  /// 每季約含的日曆天數（用於由季數推算查詢起始日期）
+  static const int daysPerQuarter = 90;
+
+  /// 財務指標查詢額外緩衝天數（確保跨季邊界不遺漏資料）
+  static const int quarterBufferDays = 30;
 }
