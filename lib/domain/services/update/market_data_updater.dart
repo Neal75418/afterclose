@@ -317,7 +317,7 @@ class MarketDataUpdater {
 
     // 再同步董監持股資料（內部包含 TWSE + TPEX 請求）
     try {
-      insiderCount = await _insiderRepo.syncOtcInsiderHoldings(force: force);
+      insiderCount = await _insiderRepo.syncAllInsiderHoldings(force: force);
       AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $insiderCount 筆');
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗: $e');
