@@ -1,12 +1,12 @@
-# ⬆️ 待完成的依賴升級任務
+# ⬆️ 依賴升級紀錄
 
 > ← [Back to README](../README.md)
 
-本文檔記錄尚未完成的 Major 版本升級，因涉及大量程式碼修改而需要獨立計劃。
+所有計劃中的 Major 版本升級已全部完成。
 
 ---
 
-## 🗺 升級路線圖
+## 升級路線圖
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
@@ -15,102 +15,52 @@ flowchart LR
     S2["第二階段\nUI 套件"]
     S3["第三階段\n其他 Major"]
 
-    S1 -->|解鎖| S2 --> S3
+    S1 -->|✅| S2 -->|✅| S3
 
     style S1 fill:#10B981,stroke:#065F46,color:#fff
-    style S2 fill:#F59E0B,stroke:#92400E,color:#fff
-    style S3 fill:#4B5563,color:#fff,stroke:#374151
+    style S2 fill:#10B981,stroke:#065F46,color:#fff
+    style S3 fill:#10B981,stroke:#065F46,color:#fff
 ```
 
 ---
 
 ## ✅ 第一階段：Riverpod 3.x 生態系統
 
-> 2026-02-13 完成，解鎖後續 UI 套件升級路徑
+> 2026-02-13 完成
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-flowchart LR
-    subgraph Upgraded["升級套件 (10)"]
-        R["flutter_riverpod\n2.6.1 → 3.2.1"]
-        RA["riverpod_annotation\n2.6.1 → 4.0.2"]
-        RG["riverpod_generator\n2.6.4 → 4.0.3"]
-        F["freezed\n2.5.8 → 3.2.5"]
-        D["drift\n2.28.2 → 2.31.0"]
-    end
-
-    subgraph Removed["移除停用套件 (5)"]
-        X1["analyzer_plugin"]
-        X2["build_resolvers"]
-        X3["custom_lint_core"]
-    end
-
-    style Upgraded fill:#059669,color:#fff,stroke:#047857
-    style Removed fill:#DC2626,color:#fff,stroke:#B91C1C
-```
-
-| 項目    | 說明                                                  |
-|:------|:----------------------------------------------------|
-| 程式碼變更 | 14 個 provider 檔案添加 `legacy.dart` import             |
-| 依賴衝突  | `dependency_overrides` 解決（analyzer, dart_style, io） |
-| 測試結果  | 1069/1069 通過                                        |
-| 實際工作量 | ~3 小時                                               |
-
-### Patch & Minor 版本升級 ✅
-
-| 套件               | 版本變更            | 備註                                  |
-|:-----------------|:----------------|:------------------------------------|
-| dio              | 5.9.0 → 5.9.1   |                                     |
-| csv              | 6.0.0 → 7.1.0   | `ListToCsvConverter` → `CsvEncoder` |
-| workmanager      | 0.5.2 → 0.9.0+3 | 移除 `isInDebugMode`、Policy 改名        |
-| flutter_slidable | 3.1.0 → 3.1.2   |                                     |
-| fl_chart         | 0.69.0 → 0.69.2 |                                     |
-| go_router        | 15.1.2 → 15.1.3 |                                     |
+| 套件                    | 版本變更              |
+|:----------------------|:------------------|
+| flutter_riverpod      | 2.6.1 → 3.2.1     |
+| riverpod_annotation   | 2.6.1 → 4.0.2     |
+| riverpod_generator    | 2.6.4 → 4.0.3     |
+| freezed               | 2.5.8 → 3.2.5     |
+| drift                 | 2.28.2 → 2.32.0   |
+| dio                   | 5.9.0 → 5.9.2     |
+| csv                   | 6.0.0 → 7.2.0     |
+| workmanager           | 0.5.2 → 0.9.0+3   |
 
 ---
 
-## 🚧 第二階段：UI 套件升級（P1）
+## ✅ 第二階段：UI 套件升級
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-flowchart LR
-    FL["fl_chart\n0.69.2 → 1.1.1"]
-    GR["go_router\n15.1.3 → 17.1.0"]
-    FS["flutter_slidable\n3.1.2 → 4.0.3"]
-
-    style FL fill:#2563EB,color:#fff,stroke:#1D4ED8
-    style GR fill:#2563EB,color:#fff,stroke:#1D4ED8
-    style FS fill:#2563EB,color:#fff,stroke:#1D4ED8
-```
-
-| 套件               | 目標版本   | 影響範圍                     | 工作量    |
-|:-----------------|:-------|:-------------------------|:-------|
-| fl_chart         | 1.1.1  | 約 5 個圖表元件                | 2-3 小時 |
-| go_router        | 17.1.0 | `app_routes.dart` + 導航呼叫 | 2-3 小時 |
-| flutter_slidable | 4.0.3  | Watchlist 滑動操作           | 1-2 小時 |
+| 套件               | 版本變更            |
+|:-----------------|:----------------|
+| fl_chart         | 0.69.0 → 1.1.1  |
+| go_router        | 15.1.2 → 17.1.0 |
+| flutter_slidable | 3.1.0 → 4.0.3   |
 
 ---
 
-## ⏳ 第三階段：其他 Major 升級（P2）
+## ✅ 第三階段：其他 Major 升級
 
-| 套件                          | 目標版本   | 工作量          |
-|:----------------------------|:-------|:-------------|
-| flutter_local_notifications | 20.1.0 | 1-2 小時       |
-| flutter_secure_storage      | 10.0.0 | 1-2 小時       |
-| share_plus                  | 12.0.1 | 30 分鐘 - 1 小時 |
-
----
-
-## 🔗 參考資源
-
-- [Riverpod 3.0 Migration Guide](https://riverpod.dev/docs/3.0_migration)
-- [Riverpod 3.0 What's New](https://riverpod.dev/docs/whats_new)
-- [Workmanager Changelog](https://pub.dev/packages/workmanager/changelog)
-- [CSV Package Documentation](https://pub.dev/packages/csv)
+| 套件                          | 版本變更            |
+|:----------------------------|:----------------|
+| flutter_local_notifications | 18.x → 21.0.0   |
+| flutter_secure_storage      | 9.x → 10.0.0    |
+| share_plus                  | 10.x → 12.0.1   |
 
 ---
 
 ← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)
 
-**最後更新**: 2026-03-13
-**下次審查**: 第二階段 UI 套件升級時
+**最後更新**: 2026-03-21

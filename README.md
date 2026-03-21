@@ -44,9 +44,10 @@ _See what changed, without noise._
 | **Comparison**                 | 多檔股票並列比較            |
 | **Portfolio**                  | 持倉追蹤與損益計算           |
 | **News**                       | 多源 RSS 新聞彙整         |
-| **Alerts**                     | 15 種價格與技術指標警示       |
+| **Alerts**                     | 23 種價格與技術指標警示       |
 | **Calendar**                   | 事件行事曆               |
 | **Industry**                   | 產業概覽                |
+| **Short Sell Ranking**         | 融券排行                |
 | **Recommendation Performance** | 推薦績效追蹤與回測           |
 | **Settings**                   | 偏好設定                |
 | **Onboarding**                 | 首次使用引導              |
@@ -59,14 +60,14 @@ _See what changed, without noise._
 |:----------------|:-----------------------------------------|:-----------------|
 | Framework       | Flutter + Dart                           | 3.38 / 3.10      |
 | State           | Riverpod                                 | 3.2.1            |
-| Database        | Drift (SQLite)                           | 2.31 (33 tables, 22 DAOs) |
-| Network         | Dio                                      | 5.9.1            |
-| Navigation      | GoRouter                                 | 15.1.3           |
+| Database        | Drift (SQLite)                           | 2.32 (34 tables, 21 DAOs) |
+| Network         | Dio                                      | 5.9.2            |
+| Navigation      | GoRouter                                 | 17.1.0           |
 | Charts          | fl_chart + k_chart_plus + candlesticks   | —                |
 | Code Gen        | Freezed + Riverpod Generator + Drift Dev | —                |
 | Testing         | Flutter Test + Mocktail                  | 2532+ cases      |
 | CI/CD           | GitHub Actions + Codecov                 | —                |
-| Crash Reporting | Sentry                                   | 9.13.0           |
+| Crash Reporting | Sentry                                   | 9.14.0           |
 
 ---
 
@@ -100,7 +101,7 @@ flowchart LR
         Remote["API Clients (6)"]
         Repo["Repositories (18)"]
         TDCC["TDCC"]
-        DB[("SQLite\n33 tables")]
+        DB[("SQLite\n34 tables")]
     end
 
     subgraph Domain["Domain Layer"]
@@ -131,11 +132,11 @@ lib/
 ├── core/
 │   ├── constants/       # 24 files — RuleParams (7 files, 200+ 參數), AnalysisParams, ApiConfig, etc.
 │   ├── exceptions/      # AppException sealed hierarchy
-│   ├── services/        # CacheWarmup, Notification, BackgroundUpdate
+│   ├── services/        # CacheWarmup, Notification, Share
 │   ├── theme/           # AppTheme, DesignTokens, IndicatorColors
 │   └── utils/           # Logger, Result, Calendar, RequestDeduplicator, LruCache
 ├── data/
-│   ├── database/        # Drift SQLite (33 tables, 22 DAOs, BatchQueryHelper)
+│   ├── database/        # Drift SQLite (34 tables, 21 DAOs, BatchQueryHelper)
 │   ├── remote/          # TWSE, TPEX, FinMind, TDCC, RSS clients (6)
 │   ├── repositories/    # 18 files (15 repos + 3 helpers)
 │   └── models/          # DTOs with Freezed + JSON serialization
@@ -169,16 +170,16 @@ lib/
 
 ## 推薦系統
 
-60 條異常偵測規則，涵蓋技術面、籌碼面、基本面。
+62 條異常偵測規則，涵蓋技術面、籌碼面、基本面。
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 60 條規則分佈
-    "技術型態 (19)" : 19
+pie showData title 62 條規則分佈
+    "技術型態 (20)" : 20
     "價量訊號 (12)" : 12
     "基本面 (15)" : 15
     "籌碼面 (7)" : 7
-    "殺手級功能 (7)" : 7
+    "殺手級功能 (8)" : 8
 ```
 
 - 每日掃描上市 + 上櫃約 **1,770 檔**，產出 **Top 20**
@@ -244,8 +245,8 @@ flutter test test/domain/services/ # 測試特定目錄
 | [CLAUDE.md](CLAUDE.md)                                   | AI 開發指引         |
 | [RELEASE.md](RELEASE.md)                                 | 發布建置指南          |
 | [CHANGELOG.md](CHANGELOG.md)                             | 版本變更紀錄          |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)               | 規則引擎定義 (60 條規則) |
-| [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md)     | 待完成依賴升級         |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)               | 規則引擎定義 (62 條規則) |
+| [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md)     | 依賴升級紀錄          |
 | [docs/TEST_COVERAGE_PLAN.md](docs/TEST_COVERAGE_PLAN.md) | 測試覆蓋率計劃         |
 
 ---

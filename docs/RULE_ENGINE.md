@@ -2,7 +2,7 @@
 
 > ← [Back to README](../README.md)
 
-AfterClose 推薦規則引擎 — **60 條異常偵測規則**
+AfterClose 推薦規則引擎 — **62 條異常偵測規則**
 
 ---
 
@@ -25,7 +25,7 @@ flowchart LR
 |:---|:----------------------|
 | 目的 | 異常提示（Attention Alert） |
 | 產出 | 每檔最多 2 個理由            |
-| 分數 | 0 ~ 100（負分歸零）         |
+| 分數 | 0 ~ 80（負分歸零，上限 80）    |
 | 輸出 | 每日 Top 20             |
 
 ---
@@ -34,12 +34,12 @@ flowchart LR
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 60 條規則分佈
-    "技術型態 (19)" : 19
+pie showData title 62 條規則分佈
+    "技術型態 (20)" : 20
     "價量訊號 (12)" : 12
     "基本面 (15)" : 15
     "籌碼面 (7)" : 7
-    "殺手級功能 (7)" : 7
+    "殺手級功能 (8)" : 8
 ```
 
 ---
@@ -55,15 +55,17 @@ pie showData title 60 條規則分佈
 | TECH_BREAKOUT       | +25 | 突破壓力位（3% buffer + MA20 確認） |
 | TECH_BREAKDOWN      | -20 | 跌破支撐位（3% buffer + MA20 確認） |
 | VOLUME_SPIKE        | +22 | 量 >= 4x 均量且價變 >= 1.5%      |
-| PRICE_SPIKE         | +15 | 日漲跌幅 >= 6%                 |
-| INSTITUTIONAL_SHIFT | +18 | 法人買賣轉向                     |
+| PRICE_SPIKE         | +15 | 日漲跌幅 >= 5%                 |
+| INSTITUTIONAL_BUY   | +18 | 法人買超轉向                     |
+| INSTITUTIONAL_SELL  | -12 | 法人賣超轉向                     |
 | NEWS_RELATED        |  +8 | 近期相關新聞                     |
 
 ### K 線型態 (11)
 
 | 規則                           |  分數 | 說明        |
 |:-----------------------------|----:|:----------|
-| PATTERN_DOJI                 | +10 | 十字線（猶豫訊號） |
+| PATTERN_DOJI                 | +10 | 十字線（低檔猶豫） |
+| PATTERN_DOJI_BEARISH         |  -5 | 十字線（高檔警示） |
 | PATTERN_BULLISH_ENGULFING    | +22 | 多頭吞噬      |
 | PATTERN_BEARISH_ENGULFING    | -18 | 空頭吞噬      |
 | PATTERN_HAMMER               | +18 | 錘子線（底部反轉） |
@@ -99,7 +101,7 @@ pie showData title 60 條規則分佈
 | PRICE_VOLUME_BULLISH_DIVERGENCE |  -8 | 價漲量縮（警示） |
 | PRICE_VOLUME_BEARISH_DIVERGENCE | -15 | 價跌量增（恐慌） |
 | HIGH_VOLUME_BREAKOUT            | +22 | 高檔爆量突破   |
-| LOW_VOLUME_ACCUMULATION         | +16 | 低檔吸籌     |
+| LOW_VOLUME_ACCUMULATION         | +12 | 低檔吸籌     |
 
 ---
 
@@ -123,13 +125,13 @@ pie showData title 60 條規則分佈
 
 | 規則                  |  分數 | 條件                      |
 |:--------------------|----:|:------------------------|
-| REVENUE_YOY_SURGE   | +20 | 營收年增 > 50% + 站上 MA60    |
+| REVENUE_YOY_SURGE   | +20 | 營收年增 > 30% + 站上 MA60    |
 | REVENUE_YOY_DECLINE | -10 | 營收年減 > 20%              |
 | REVENUE_MOM_GROWTH  | +15 | 營收月增連續正成長 + 站上 MA20     |
 | REVENUE_NEW_HIGH    | +22 | 營收創歷史新高 + 站上 MA20       |
-| HIGH_DIVIDEND_YIELD | +18 | 殖利率 > 5%                |
+| HIGH_DIVIDEND_YIELD | +18 | 殖利率 > 5.5%              |
 | PE_UNDERVALUED      | +15 | PE < 10（且 > 0）+ 站上 MA20 |
-| PE_OVERVALUED       |  -8 | PE > 100 + RSI > 75     |
+| PE_OVERVALUED       |  -8 | PE > 60 + RSI > 75      |
 | PBR_UNDERVALUED     | +12 | 股價淨值比 < 0.8             |
 
 ### EPS 分析 (4)
@@ -173,7 +175,7 @@ pie showData title 60 條規則分佈
 | 規則                            |  分數 | 條件              |
 |:------------------------------|----:|:----------------|
 | FOREIGN_CONCENTRATION_WARNING |  -8 | 外資持股 >= 60%     |
-| FOREIGN_EXODUS                | -20 | 5 日外資流出 >= 0.5% |
+| FOREIGN_EXODUS                | -20 | 5 日外資流出 >= 2%   |
 
 ---
 
@@ -184,7 +186,7 @@ pie showData title 60 條規則分佈
 flowchart LR
     Rules["Rule Scores"] --> Bonus["加成"]
     Bonus --> Cooldown["冷卻"]
-    Cooldown --> Cap["0 ~ 100"]
+    Cooldown --> Cap["0 ~ 80"]
 
     style Rules fill:#2563EB,color:#fff,stroke:#1D4ED8
     style Bonus fill:#059669,color:#fff,stroke:#047857
@@ -196,7 +198,7 @@ flowchart LR
 |:---|:----------------------------------------------------------------------------------------|
 | 加成 | VOLUME + BREAKOUT → +10、VOLUME + REVERSAL → +10、INSTITUTIONAL + BREAKOUT/REVERSAL → +15 |
 | 冷卻 | 同股票 2 日內已推薦 → -15 分（固定扣分）                                                               |
-| 截斷 | 負分歸零、上限 100                                                                             |
+| 截斷 | 負分歸零、上限 80                                                                              |
 
 ---
 
@@ -215,6 +217,7 @@ flowchart LR
 | highPledgeRatioThreshold    | 50% | 高質押門檻      |
 | foreignConcentrationWarning | 60% | 外資集中警告     |
 | concentrationHighThreshold  | 60% | 籌碼集中度門檻    |
+| peOvervaluedThreshold       | 60  | PE 過高警示門檻   |
 | epsYoYSurgeThreshold        | 50% | EPS 年增暴增門檻 |
 | epsConsecutiveQuarters      |   2 | EPS 連續成長季數 |
 | roeExcellentThreshold       | 15% | ROE 優異門檻   |

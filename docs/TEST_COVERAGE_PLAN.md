@@ -9,9 +9,9 @@
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
 pie showData title 測試進度（2532+ cases）
-    "Domain 層" : 900
-    "Data 層" : 636
-    "Presentation 層" : 960
+    "Domain 層" : 920
+    "Data 層" : 640
+    "Presentation 層" : 972
 ```
 
 | 指標               | 數值    |
