@@ -112,7 +112,7 @@ class TdccClient {
         AppLogger.warning('TDCC', '股權分散表: 連線逾時');
         throw NetworkException('TDCC connection timeout', e);
       }
-      AppLogger.warning('TDCC', '股權分散表: ${e.message ?? "網路錯誤"}');
+      AppLogger.warning('TDCC', '股權分散表: 網路錯誤', e);
       throw NetworkException(e.message ?? 'TDCC network error', e);
     } catch (e, stack) {
       if (e is ApiException || e is NetworkException) rethrow;

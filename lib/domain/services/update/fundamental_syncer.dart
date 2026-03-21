@@ -285,7 +285,7 @@ class FundamentalSyncer {
               .catchError((Object e) {
                 // RateLimitException 需向上傳播以停止批次
                 if (e is RateLimitException) throw e;
-                AppLogger.debug('FundamentalSyncer', '資產負債表同步失敗: $s');
+                AppLogger.warning('FundamentalSyncer', '$s: 資產負債表同步失敗', e);
                 return 0;
               }),
         ),

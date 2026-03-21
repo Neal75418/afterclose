@@ -78,8 +78,8 @@ class InstitutionalRepository implements IInstitutionalRepository {
       await _db.insertInstitutionalData(entries);
 
       return entries.length;
-    } on RateLimitException {
-      AppLogger.warning('InstitutionalRepo', '$symbol: 法人資料同步觸發 API 速率限制');
+    } on RateLimitException catch (e) {
+      AppLogger.warning('InstitutionalRepo', '$symbol: 法人資料同步觸發 API 速率限制', e);
       rethrow;
     } on NetworkException {
       rethrow;
@@ -182,7 +182,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
       await _db.insertInstitutionalData(allEntries);
 
       AppLogger.info(
-        'InstRepo',
+        'InstitutionalRepo',
         '法人同步: ${allEntries.length} 筆 (上市 ${twseEntries.length}, 上櫃 ${tpexEntries.length})',
       );
 

@@ -152,7 +152,7 @@ class StockFundamentalsLoader {
           );
           return data;
         }
-        AppLogger.warning('FundamentalsLoader', '取得營收資料失敗: $symbol', apiError);
+        AppLogger.warning('FundamentalsLoader', '$symbol: 取得營收資料失敗', apiError);
       }
     } catch (e) {
       AppLogger.warning('FundamentalsLoader', '$symbol: 載入營收資料失敗', e);
@@ -216,7 +216,7 @@ class StockFundamentalsLoader {
         return apiData;
       }
     } catch (e) {
-      AppLogger.debug('FundamentalsLoader', '$symbol: 取得股利歷史失敗');
+      AppLogger.warning('FundamentalsLoader', '$symbol: 取得股利歷史失敗', e);
     }
     return [];
   }
@@ -255,7 +255,7 @@ class StockFundamentalsLoader {
         }
       }
     } catch (e) {
-      AppLogger.debug('FundamentalsLoader', '$symbol: 取得 EPS 歷史失敗');
+      AppLogger.warning('FundamentalsLoader', '$symbol: 取得 EPS 歷史失敗', e);
     }
     return (epsData: epsData, quarterMetrics: quarterMetrics);
   }
@@ -287,7 +287,7 @@ class StockFundamentalsLoader {
         return per;
       }
     } catch (e) {
-      AppLogger.warning('FundamentalsLoader', '取得估值資料失敗: $symbol', e);
+      AppLogger.warning('FundamentalsLoader', '$symbol: 取得估值資料失敗', e);
     }
     return null;
   }
