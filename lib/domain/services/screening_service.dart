@@ -177,11 +177,13 @@ class ScreeningService {
     Set<ScreeningField> neededFields,
     TechnicalIndicatorService indicatorService,
   ) {
-    if (prices.length < IndicatorParams.screeningIndicatorMinDataPoints)
+    if (prices.length < IndicatorParams.screeningIndicatorMinDataPoints) {
       return null;
+    }
     final (:closes, :highs, :lows, :volumes) = prices.extractOhlcv();
-    if (closes.length < IndicatorParams.screeningIndicatorMinDataPoints)
+    if (closes.length < IndicatorParams.screeningIndicatorMinDataPoints) {
       return null;
+    }
 
     double? rsi, kdK, kdD, ma5, ma10, ma20, ma60, volumeRatioMa20;
 

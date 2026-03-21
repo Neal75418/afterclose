@@ -12,8 +12,9 @@ class TechnicalIndicatorService {
   /// 回傳與輸入相同長度的列表，資料不足的位置為 null
   List<double?> calculateSMA(List<double> prices, int period) {
     if (prices.isEmpty || period <= 0) return [];
-    if (period > prices.length)
+    if (period > prices.length) {
       return List<double?>.filled(prices.length, null);
+    }
 
     final result = List<double?>.filled(prices.length, null);
 
