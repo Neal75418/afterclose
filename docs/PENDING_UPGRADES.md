@@ -9,7 +9,7 @@
 ## 🗺 升級路線圖
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     S1["第一階段\nRiverpod 3.x\n生態系統"]
     S2["第二階段\nUI 套件"]
@@ -29,7 +29,7 @@ flowchart LR
 > 2026-02-13 完成，解鎖後續 UI 套件升級路徑
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     subgraph Upgraded["升級套件 (10)"]
         R["flutter_riverpod\n2.6.1 → 3.2.1"]
@@ -72,7 +72,7 @@ flowchart LR
 ## 🚧 第二階段：UI 套件升級（P1）
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     FL["fl_chart\n0.69.2 → 1.1.1"]
     GR["go_router\n15.1.3 → 17.1.0"]

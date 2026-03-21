@@ -7,7 +7,7 @@ AfterClose 發布建置指南
 ## 🔄 建置流程
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     Clean["Clean"] --> CodeGen["Code Gen"]
     CodeGen --> Build["Build"]

@@ -9,7 +9,7 @@
 **AfterClose** — 本地優先盤後台股掃描 App。所有運算在裝置端完成，無雲端依賴。
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     subgraph Input["每日輸入"]
         API["公開 API"]
@@ -40,7 +40,7 @@ flowchart LR
 ```bash
 flutter pub get                                                # 安裝依賴
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成 (Drift / Freezed / Riverpod)
-flutter test                                                   # 執行測試 (2526+ cases, ~30s)
+flutter test                                                   # 執行測試 (2532+ cases, ~40s)
 flutter test --coverage                                        # 含覆蓋率報告
 flutter analyze --no-fatal-infos                               # 靜態分析
 dart format .                                                  # 格式化 (pre-commit hook 自動執行)
@@ -53,31 +53,31 @@ dart format .                                                  # 格式化 (pre-
 ### 分層結構
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart TB
     subgraph Core["core/"]
-        Constants["constants/ — 23 files (7 RuleParams + 16 others)"]
+        Constants["constants/ — 24 files (7 RuleParams + 17 others)"]
         Exceptions["exceptions/ — AppException sealed hierarchy"]
         Utils["utils/ — Logger, Result, Calendar, RequestDeduplicator"]
     end
 
     subgraph Data["data/"]
-        Database["database/ — Drift SQLite (33 tables, 20 DAOs)"]
+        Database["database/ — Drift SQLite (33 tables, 22 DAOs)"]
         Remote["remote/ — TWSE, TPEX, FinMind, TDCC, RSS (6 clients)"]
-        Repos["repositories/ — 18 files (15 repos + 3 helpers)"]
+        Repos["repositories/ — 18 files"]
     end
 
     subgraph Domain["domain/"]
-        Models["models/ — 13 files"]
+        Models["models/ — 14 files"]
         RepoIF["repositories/ — 13 interfaces"]
-        Services["services/ — 18 files (Analysis, Scoring, Screening, etc.)"]
-        Update["services/update/ — 12 components (8 syncers + 3 helpers + coordinator)"]
-        Rules["services/rules/ — 60 rules (12 files)"]
+        Services["services/ — 25 files (Analysis, Scoring, Screening, etc.)"]
+        Update["services/update/ — 14 components (9 syncers + 4 helpers + coordinator)"]
+        Rules["services/rules/ — 60 rules (14 files)"]
     end
 
     subgraph Presentation["presentation/"]
-        Providers["providers/ — 21 Riverpod Notifiers"]
-        Screens["screens/ — 14 screens"]
+        Providers["providers/ — 23 Riverpod Notifiers"]
+        Screens["screens/ — 15 screens"]
     end
 
     Core --> Data
@@ -89,7 +89,7 @@ flowchart TB
 ### 資料流
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     API["External APIs"] -->|fetch| Repo["Repository"]
     Repo -->|write| DB[("Drift DB")]
@@ -103,13 +103,13 @@ flowchart LR
 
 | 路徑                                               | 說明                                             |
 |:-------------------------------------------------|:-----------------------------------------------|
-| `lib/core/constants/rule_params.dart`            | 規則參數 barrel (exports 7 param classes, 150+ 閾值) |
+| `lib/core/constants/rule_params.dart`            | 規則參數 barrel (exports 7 param classes, 200+ 閾值) |
 | `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                                  |
 | `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                            |
 | `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制                       |
-| `lib/domain/services/rules/`                     | 60 條規則 (12 檔案)                                 |
+| `lib/domain/services/rules/`                     | 60 條規則 (14 檔案)                                 |
 | `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)                     |
-| `lib/domain/services/update/`                    | 12 個更新元件 (8 syncers + 3 helpers + coordinator) |
+| `lib/domain/services/update/`                    | 14 個更新元件 (9 syncers + 4 helpers + coordinator) |
 | `lib/data/database/tables/`                      | 33 張資料表 (10 檔案)                                |
 | `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)                       |
 | `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                               |
@@ -119,11 +119,11 @@ flowchart LR
 ## Update Services
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 graph TB
     US["UpdateService<br/>(Coordinator)"]
 
-    subgraph Syncers["8 Syncers"]
+    subgraph Syncers["9 Syncers"]
         SLS["StockListSyncer"]
         HPS["HistoricalPriceSyncer"]
         IS["InstitutionalSyncer"]
@@ -132,12 +132,14 @@ graph TB
         NS["NewsSyncer"]
         MIS["MarketIndexSyncer"]
         THS["TdccHoldingSyncer"]
+        DS["DividendSyncer"]
     end
 
-    subgraph Helpers["3 Helpers"]
+    subgraph Helpers["4 Helpers"]
         BDB["BatchDataBuilder"]
         BDL["BatchDataLoader"]
         CS["CandidateSelector"]
+        ITS["InsiderTransferSyncer"]
     end
 
     subgraph PostUpdate["Post-Update"]

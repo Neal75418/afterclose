@@ -9,7 +9,7 @@ AfterClose 推薦規則引擎 — **60 條異常偵測規則**
 ## 🎯 定位
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     Data["市場資料"] --> Engine["Rule Engine\n60 Rules"]
     Engine --> Score["分數合成"]
@@ -33,7 +33,7 @@ flowchart LR
 ## 📊 規則分佈
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 pie showData title 60 條規則分佈
     "技術型態 (19)" : 19
     "價量訊號 (12)" : 12
@@ -180,7 +180,7 @@ pie showData title 60 條規則分佈
 ## 🧮 分數合成
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     Rules["Rule Scores"] --> Bonus["加成"]
     Bonus --> Cooldown["冷卻"]
@@ -202,7 +202,7 @@ flowchart LR
 
 ## ⚙️ 關鍵參數
 
-> 來源：`lib/core/constants/rule_params.dart`（200+ 參數）
+> 來源：`lib/core/constants/rule_params.dart`（7 typed classes, 200+ 參數）
 
 | 參數                          |   值 | 說明         |
 |:----------------------------|----:|:-----------|

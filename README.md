@@ -11,7 +11,7 @@ _See what changed, without noise._
 [![Flutter](https://img.shields.io/badge/Flutter-3.38-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-2526_passing-brightgreen)](https://github.com/Neal75418/afterclose/actions)
+[![Tests](https://img.shields.io/badge/Tests-2532_passing-brightgreen)](https://github.com/Neal75418/afterclose/actions)
 [![CI](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml/badge.svg)](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml)
 [![codecov](https://codecov.io/gh/Neal75418/afterclose/branch/main/graph/badge.svg)](https://codecov.io/gh/Neal75418/afterclose)
 
@@ -59,12 +59,12 @@ _See what changed, without noise._
 |:----------------|:-----------------------------------------|:-----------------|
 | Framework       | Flutter + Dart                           | 3.38 / 3.10      |
 | State           | Riverpod                                 | 3.2.1            |
-| Database        | Drift (SQLite)                           | 2.31 (33 tables) |
+| Database        | Drift (SQLite)                           | 2.31 (33 tables, 22 DAOs) |
 | Network         | Dio                                      | 5.9.1            |
 | Navigation      | GoRouter                                 | 15.1.3           |
 | Charts          | fl_chart + k_chart_plus + candlesticks   | —                |
 | Code Gen        | Freezed + Riverpod Generator + Drift Dev | —                |
-| Testing         | Flutter Test + Mocktail                  | 2526+ cases      |
+| Testing         | Flutter Test + Mocktail                  | 2532+ cases      |
 | CI/CD           | GitHub Actions + Codecov                 | —                |
 | Crash Reporting | Sentry                                   | 9.13.0           |
 
@@ -87,7 +87,7 @@ _See what changed, without noise._
 ### 資料流
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     subgraph External["External APIs"]
         TWSE["TWSE"]
@@ -99,6 +99,7 @@ flowchart LR
     subgraph Data["Data Layer"]
         Remote["API Clients (6)"]
         Repo["Repositories (18)"]
+        TDCC["TDCC"]
         DB[("SQLite\n33 tables")]
     end
 
@@ -106,15 +107,15 @@ flowchart LR
         IF["Interfaces (13)"]
         Services["Analysis / Scoring"]
         Rules["Rule Engine (60)"]
-        Update["Update Services (12)"]
+        Update["Update Services (14)"]
     end
 
     subgraph Presentation["Presentation"]
-        Provider["Riverpod (21)"]
-        UI["14 Screens"]
+        Provider["Riverpod (23)"]
+        UI["15 Screens"]
     end
 
-    TWSE & TPEX & FM & RSS --> Remote
+    TWSE & TPEX & FM & TDCC & RSS --> Remote
     Remote --> Repo --> DB
     IF -.->|abstracts| Repo
     DB --> Services --> Rules
@@ -128,27 +129,27 @@ flowchart LR
 ```
 lib/
 ├── core/
-│   ├── constants/       # 23 files — RuleParams (7 files, 150+ 參數), AnalysisParams, ApiConfig, etc.
+│   ├── constants/       # 24 files — RuleParams (7 files, 200+ 參數), AnalysisParams, ApiConfig, etc.
 │   ├── exceptions/      # AppException sealed hierarchy
 │   ├── services/        # CacheWarmup, Notification, BackgroundUpdate
 │   ├── theme/           # AppTheme, DesignTokens, IndicatorColors
 │   └── utils/           # Logger, Result, Calendar, RequestDeduplicator, LruCache
 ├── data/
-│   ├── database/        # Drift SQLite (33 tables, 20 DAOs, BatchQueryHelper)
+│   ├── database/        # Drift SQLite (33 tables, 22 DAOs, BatchQueryHelper)
 │   ├── remote/          # TWSE, TPEX, FinMind, TDCC, RSS clients (6)
 │   ├── repositories/    # 18 files (15 repos + 3 helpers)
 │   └── models/          # DTOs with Freezed + JSON serialization
 ├── domain/
-│   ├── models/          # 13 domain model files
+│   ├── models/          # 14 domain model files
 │   ├── repositories/    # 13 abstract interfaces
 │   └── services/
-│       ├── rules/       # 60 stock rules (12 files)
-│       ├── update/      # 12 update components (8 syncers + 3 helpers + coordinator)
+│       ├── rules/       # 60 stock rules (14 files)
+│       ├── update/      # 14 update components (9 syncers + 4 helpers + coordinator)
 │       ├── analysis/    # 5 analysis sub-services
-│       └── ...          # 18 service files (Scoring, Screening, RuleAccuracy, etc.)
+│       └── ...          # 25 service files (Scoring, Screening, RuleAccuracy, etc.)
 └── presentation/
-    ├── providers/       # 21 Riverpod Notifiers
-    ├── screens/         # 14 screens
+    ├── providers/       # 23 Riverpod Notifiers
+    ├── screens/         # 15 screens
     ├── controllers/     # Business logic facades
     ├── mappers/         # DTO → UI model conversion
     └── widgets/         # Shared UI components
@@ -171,7 +172,7 @@ lib/
 60 條異常偵測規則，涵蓋技術面、籌碼面、基本面。
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 pie showData title 60 條規則分佈
     "技術型態 (19)" : 19
     "價量訊號 (12)" : 12
@@ -182,7 +183,7 @@ pie showData title 60 條規則分佈
 
 - 每日掃描上市 + 上櫃約 **1,770 檔**，產出 **Top 20**
 - 每檔最多 **2 條理由**，分數上限 **100 分**
-- 150+ 可調參數分散於 7 個 typed param classes
+- 200+ 可調參數分散於 7 個 typed param classes
 
 詳見 [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)
 
@@ -210,7 +211,7 @@ flutter run
 
 ```bash
 flutter pub get                                                # 安裝依賴
-flutter test                                                   # 執行測試 (2526+ cases)
+flutter test                                                   # 執行測試 (2532+ cases)
 flutter analyze                                                # 靜態分析
 dart format .                                                  # 格式化程式碼
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成
@@ -222,8 +223,8 @@ dart run build_runner build --delete-conflicting-outputs        # 程式碼生�
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2526+ |
-| 執行時間             | ~30 秒 |
+| 測試總數             | 2532+ |
+| 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
 | Presentation 覆蓋率 | 70%+  |

@@ -7,8 +7,8 @@
 ## 📊 當前狀況
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
-pie showData title 測試進度（2526+ cases）
+%%{init: {'theme': 'dark'}}%%
+pie showData title 測試進度（2532+ cases）
     "Domain 層" : 900
     "Data 層" : 636
     "Presentation 層" : 960
@@ -16,8 +16,8 @@ pie showData title 測試進度（2526+ cases）
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2526+ |
-| 執行時間             | ~33 秒 |
+| 測試總數             | 2532+ |
+| 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
 | Presentation 覆蓋率 | 70%+  |
@@ -27,7 +27,7 @@ pie showData title 測試進度（2526+ cases）
 ## ✅ 完成進度
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     P1["Phase 1\nProvider 測試"]
     P2["Phase 2\nWidget 測試"]
@@ -46,7 +46,7 @@ flowchart LR
 ## 🚧 待完成：Phase 3 — 大型服務測試
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart TB
     US["UpdateService\n整合測試"]
     AS["AnalysisService\n子服務測試"]
@@ -103,4 +103,4 @@ flowchart TB
 
 ← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)
 
-*最後更新: 2026-03-13*
+*最後更新: 2026-03-21*
