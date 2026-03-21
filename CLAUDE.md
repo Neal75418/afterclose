@@ -72,7 +72,7 @@ flowchart TB
         RepoIF["repositories/ — 13 interfaces"]
         Services["services/ — 25 files (Analysis, Scoring, Screening, etc.)"]
         Update["services/update/ — 14 components (9 syncers + 4 helpers + coordinator)"]
-        Rules["services/rules/ — 62 rules (14 files)"]
+        Rules["services/rules/ — 60 rules (14 files)"]
     end
 
     subgraph Presentation["presentation/"]
@@ -107,7 +107,7 @@ flowchart LR
 | `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                                  |
 | `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                            |
 | `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制                       |
-| `lib/domain/services/rules/`                     | 62 條規則 (14 檔案)                                 |
+| `lib/domain/services/rules/`                     | 60 條規則 (14 檔案)                                 |
 | `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)                     |
 | `lib/domain/services/update/`                    | 14 個更新元件 (9 syncers + 4 helpers + coordinator) |
 | `lib/data/database/tables/`                      | 34 張資料表 (10 檔案)                                |
@@ -237,7 +237,7 @@ void main() {
 
 | 文件                                                   | 說明              |
 |:-----------------------------------------------------|:----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)           | 規則引擎詳解 (62 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)           | 規則引擎詳解 (60 條規則) |
 | [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md) | 依賴升級紀錄            |
 | [RELEASE.md](RELEASE.md)                             | 發布建置指南          |
 | [CHANGELOG.md](CHANGELOG.md)                         | 版本變更紀錄          |

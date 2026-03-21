@@ -170,20 +170,20 @@ lib/
 
 ## 推薦系統
 
-62 條異常偵測規則，涵蓋技術面、籌碼面、基本面。
+60 條異常偵測規則，涵蓋技術面、籌碼面、基本面。
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 62 條規則分佈
-    "技術型態 (20)" : 20
+pie showData title 60 條規則分佈
+    "技術型態 (19)" : 19
     "價量訊號 (12)" : 12
     "基本面 (15)" : 15
     "籌碼面 (7)" : 7
-    "殺手級功能 (8)" : 8
+    "殺手級功能 (7)" : 7
 ```
 
 - 每日掃描上市 + 上櫃約 **1,770 檔**，產出 **Top 20**
-- 每檔最多 **2 條理由**，分數上限 **100 分**
+- 每檔最多 **2 條理由**，分數上限 **80 分**
 - 200+ 可調參數分散於 7 個 typed param classes
 
 詳見 [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)
@@ -245,7 +245,7 @@ flutter test test/domain/services/ # 測試特定目錄
 | [CLAUDE.md](CLAUDE.md)                                   | AI 開發指引         |
 | [RELEASE.md](RELEASE.md)                                 | 發布建置指南          |
 | [CHANGELOG.md](CHANGELOG.md)                             | 版本變更紀錄          |
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)               | 規則引擎定義 (62 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)               | 規則引擎定義 (60 條規則) |
 | [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md)     | 依賴升級紀錄          |
 | [docs/TEST_COVERAGE_PLAN.md](docs/TEST_COVERAGE_PLAN.md) | 測試覆蓋率計劃         |
 
