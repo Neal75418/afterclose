@@ -65,7 +65,7 @@ class TdccClient {
           try {
             data = jsonDecode(data);
           } catch (e) {
-            AppLogger.warning('TDCC', '股權分散表: JSON 解析失敗');
+            AppLogger.warning('TDCC', '股權分散表: JSON 解析失敗', e);
             return {};
           }
         }

@@ -452,7 +452,10 @@ class KDGoldenCrossRule extends StockRule {
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
       // 使用 PriceCalculator 統一計算，排除今日以正確比較
-      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+      if (!PriceCalculator.isVolumeAboveAverage(
+        data.prices,
+        days: TrendParams.priceVolumeLookbackDays,
+      )) {
         return null;
       }
 
@@ -519,7 +522,10 @@ class KDDeathCrossRule extends StockRule {
 
       // 過濾 2：成交量確認（今日 > 5 日均量）
       // 使用 PriceCalculator 統一計算，排除今日以正確比較
-      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+      if (!PriceCalculator.isVolumeAboveAverage(
+        data.prices,
+        days: TrendParams.priceVolumeLookbackDays,
+      )) {
         return null;
       }
 

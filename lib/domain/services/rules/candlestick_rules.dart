@@ -142,7 +142,10 @@ class BullishEngulfingRule extends StockRule {
 
     if (isEngulfing(today, yesterday, bullish: true)) {
       // 過濾條件：成交量須 > 5 日平均量（與空頭吞噬對稱）
-      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+      if (!PriceCalculator.isVolumeAboveAverage(
+        data.prices,
+        days: TrendParams.priceVolumeLookbackDays,
+      )) {
         return null;
       }
 
@@ -187,7 +190,10 @@ class BearishEngulfingRule extends StockRule {
 
     if (isEngulfing(today, yesterday, bullish: false)) {
       // 過濾條件：成交量須 > 5 日平均量
-      if (!PriceCalculator.isVolumeAboveAverage(data.prices, days: 5)) {
+      if (!PriceCalculator.isVolumeAboveAverage(
+        data.prices,
+        days: TrendParams.priceVolumeLookbackDays,
+      )) {
         return null;
       }
 
