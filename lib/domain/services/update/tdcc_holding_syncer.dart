@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -91,6 +92,10 @@ class TdccHoldingSyncer {
         '同步完成: $syncedCount 檔股票 (${companions.length} 筆級距)',
       );
       return syncedCount;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('TdccHoldingSyncer', '同步失敗', e);
       rethrow;

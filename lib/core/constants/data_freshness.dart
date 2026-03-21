@@ -195,4 +195,21 @@ abstract final class DataFreshness {
 
   /// FinMind 總報酬指數預設查詢回溯天數
   static const int totalReturnIndexLookbackDays = 60;
+
+  // ==================================================
+  // 當沖資料刪除視窗（UTC 偏移補償）
+  // ==================================================
+
+  /// 當沖資料刪除視窗前緣（小時）— 涵蓋 UTC 偏移
+  static const int dayTradingDeleteWindowBeforeHours = 12;
+
+  /// 當沖資料刪除視窗後緣（小時）— 涵蓋 UTC 偏移 + 1 日
+  static const int dayTradingDeleteWindowAfterHours = 36;
+
+  // ==================================================
+  // 日曆事件預覽
+  // ==================================================
+
+  /// 日曆頁面「近期事件」預覽天數
+  static const int upcomingEventsDays = 14;
 }

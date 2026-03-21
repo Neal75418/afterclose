@@ -165,12 +165,6 @@ class InsiderRepository {
     }
   }
 
-  /// 同步上櫃股票的董監持股資料（向後相容）
-  @Deprecated('請使用 syncAllInsiderHoldings 取代')
-  Future<int> syncOtcInsiderHoldings({bool force = false}) async {
-    return syncAllInsiderHoldings(force: force);
-  }
-
   /// 檢查董監是否連續減持
   ///
   /// 若近期董監持股比例持續下降則回傳 true（強賣訊號）

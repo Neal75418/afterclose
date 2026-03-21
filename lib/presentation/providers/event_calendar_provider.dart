@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
@@ -331,12 +332,14 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     }
   }
 
-  /// 載入未來 14 天的事件
+  /// 載入近期事件
   Future<void> _loadUpcomingEvents() async {
     try {
       final now = _clock.now();
       final today = DateTime(now.year, now.month, now.day);
-      final end = today.add(const Duration(days: 14));
+      final end = today.add(
+        const Duration(days: DataFreshness.upcomingEventsDays),
+      );
       final events = await _repo.getEventsInRange(today, end);
       state = state.copyWith(upcomingEvents: events);
     } catch (e) {

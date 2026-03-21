@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -20,7 +21,9 @@ class ShareService {
       exportDir.createSync(recursive: true);
     }
     // 清理上次匯出的檔案（只保留最近 5 分鐘內的）
-    final cutoff = DateTime.now().subtract(const Duration(minutes: 5));
+    final cutoff = DateTime.now().subtract(
+      const Duration(minutes: ApiConfig.shareExportRetentionMinutes),
+    );
     for (final entity in exportDir.listSync()) {
       if (entity is File) {
         final modified = entity.lastModifiedSync();

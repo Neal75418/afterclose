@@ -208,7 +208,7 @@ class FinMindClient {
       AppLogger.warning('FinMind', '$label: 402 API 額度耗盡');
       throw const RateLimitException('API 額度已用完，請稍後再試');
     }
-    AppLogger.warning('FinMind', '$label: ${e.message ?? "網路錯誤"}');
+    AppLogger.warning('FinMind', '$label: 網路錯誤', e);
     throw NetworkException(e.message ?? 'Network error', e);
   }
 

@@ -69,6 +69,9 @@ abstract final class ApiConfig {
   /// 市場籌碼資料更新器最大總錯誤次數（斷路器閾值）
   static const int marketDataMaxTotalErrors = 5;
 
+  /// 額度耗盡提前終止最低錯誤次數
+  static const int marketDataQuotaExhaustMinErrors = 2;
+
   /// 外資持股查詢額外緩衝天數（確保不遺漏邊界資料）
   static const int foreignShareholdingBufferDays = 5;
 
@@ -151,6 +154,9 @@ abstract final class ApiConfig {
   ///
   /// 超過此時間後先顯示 DB 快取資料，API 回應後再更新。
   static const int marketOverviewLoadTimeoutSec = 20;
+
+  /// 分享匯出檔案保留時間（分鐘）
+  static const int shareExportRetentionMinutes = 5;
 
   /// 更新操作超時（分鐘）
   static const int updateTimeoutMin = 60;

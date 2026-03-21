@@ -164,8 +164,12 @@ class TradingRepository implements ITradingRepository {
 
       // 刪除舊記錄（可能存在因 UTC/本地時間不一致導致的重複）
       // 刪除範圍：目標日期的前後各 12 小時（涵蓋 UTC 偏移）
-      final deleteStart = targetDate.subtract(const Duration(hours: 12));
-      final deleteEnd = targetDate.add(const Duration(hours: 36));
+      final deleteStart = targetDate.subtract(
+        const Duration(hours: DataFreshness.dayTradingDeleteWindowBeforeHours),
+      );
+      final deleteEnd = targetDate.add(
+        const Duration(hours: DataFreshness.dayTradingDeleteWindowAfterHours),
+      );
       await _db.deleteDayTradingForDateRange(deleteStart, deleteEnd);
 
       await _db.insertDayTradingData(entries);

@@ -261,7 +261,8 @@ class MarketDataUpdater {
       }
 
       // 若偵測到額度耗盡，提前終止
-      if (quotaExhausted && totalErrorCount >= 2) {
+      if (quotaExhausted &&
+          totalErrorCount >= ApiConfig.marketDataQuotaExhaustMinErrors) {
         AppLogger.warning(
           'MarketDataUpdater',
           'FinMind API 額度耗盡，停止上櫃同步 (已處理 ${i + chunkSize}/${limitedOtcCandidates.length} 檔)',

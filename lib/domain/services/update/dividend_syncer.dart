@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:intl/intl.dart';
 
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -81,6 +82,10 @@ class DividendSyncer {
           }
         }
         AppLogger.info('DividendSyncer', 'TWSE 已宣告股利: ${twseData.length} 筆');
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         AppLogger.warning('DividendSyncer', 'TWSE 已宣告股利同步失敗', e);
         errors.add('TWSE 已宣告股利: $e');
@@ -106,6 +111,10 @@ class DividendSyncer {
           );
         }
         AppLogger.info('DividendSyncer', 'TPEX 已宣告股利: ${tpexData.length} 筆');
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         AppLogger.warning('DividendSyncer', 'TPEX 已宣告股利同步失敗', e);
         errors.add('TPEX 已宣告股利: $e');
@@ -148,6 +157,10 @@ class DividendSyncer {
           );
         }
         AppLogger.info('DividendSyncer', 'TPEX 股東會: ${meetings.length} 筆');
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         AppLogger.warning('DividendSyncer', 'TPEX 股東會同步失敗', e);
         errors.add('TPEX 股東會: $e');

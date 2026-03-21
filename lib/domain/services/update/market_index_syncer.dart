@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -203,11 +204,13 @@ class MarketIndexSyncer {
           'API 限流，中止歷史回補 (已完成 $apiCalls 次呼叫)',
         );
         break;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         // 單日失敗不中斷整個回補
         AppLogger.debug(
           'MarketIndexSyncer',
-          '回補 ${date.toString().substring(0, 10)} 失敗: $e',
+          '回補 ${DateContext.formatYmd(date)} 失敗: $e',
         );
       }
     }

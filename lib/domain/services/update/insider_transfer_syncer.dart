@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -68,6 +69,10 @@ class InsiderTransferSyncer {
         '同步完成: ${companions.length} 筆轉讓申報',
       );
       return companions.length;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('InsiderTransferSyncer', '同步失敗', e);
       rethrow;
