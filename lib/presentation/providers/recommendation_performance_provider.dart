@@ -101,7 +101,12 @@ class RecommendationPerformanceNotifier
         );
       }
     } catch (e, stack) {
-      AppLogger.error('RecPerf', '載入績效資料失敗', e, stack);
+      AppLogger.error(
+        'RecommendationPerformanceNotifier',
+        '載入績效資料失敗',
+        e,
+        stack,
+      );
       if (_active) {
         state = state.copyWith(
           isLoading: false,
@@ -157,7 +162,7 @@ class RecommendationPerformanceNotifier
         await loadData();
       }
     } catch (e, stack) {
-      AppLogger.error('RecPerf', '批次回填失敗', e, stack);
+      AppLogger.error('RecommendationPerformanceNotifier', '批次回填失敗', e, stack);
       if (_active) {
         state = state.copyWith(
           isBackfilling: false,

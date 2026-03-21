@@ -55,9 +55,9 @@ class StockChipLoader {
       );
     } catch (e) {
       if (e.toString().contains('402')) {
-        AppLogger.info('ChipLoader', '融資融券 API 不可用 (402)，跳過');
+        AppLogger.info('StockChipLoader', '融資融券 API 不可用 (402)，跳過');
       } else {
-        AppLogger.warning('ChipLoader', '$symbol: 載入融資融券資料失敗', e);
+        AppLogger.warning('StockChipLoader', '$symbol: 載入融資融券資料失敗', e);
       }
       return [];
     }
@@ -78,7 +78,7 @@ class StockChipLoader {
       history.sort((a, b) => b.date.compareTo(a.date));
       return history;
     } catch (e) {
-      AppLogger.warning('ChipLoader', '$symbol: 載入董監持股資料失敗', e);
+      AppLogger.warning('StockChipLoader', '$symbol: 載入董監持股資料失敗', e);
       return [];
     }
   }
@@ -172,7 +172,7 @@ class StockChipLoader {
 
       return (data: entries, hasError: false);
     } catch (e) {
-      AppLogger.warning('ChipLoader', '$symbol: 取得法人資料失敗', e);
+      AppLogger.warning('StockChipLoader', '$symbol: 取得法人資料失敗', e);
       return (data: <DailyInstitutionalEntry>[], hasError: true);
     }
   }

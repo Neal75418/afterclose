@@ -14,8 +14,8 @@ import 'package:afterclose/core/utils/tw_parse_utils.dart';
 /// 提供統一的 Dio 建立方式、JSON 解碼、以及錯誤處理，
 /// 避免兩個 market client 之間的程式碼重複。
 abstract final class MarketClientMixin {
-  static const _maxRetries = 2;
-  static const _baseDelayMs = 1000;
+  static const _maxRetries = ApiConfig.marketClientMaxRetries;
+  static const _baseDelayMs = ApiConfig.retryDelayMs;
   static final _random = Random();
 
   /// 建立市場 API 用的 [Dio] 實例。

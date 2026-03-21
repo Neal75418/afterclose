@@ -42,7 +42,7 @@ class MarketDataUpdater {
     bool forceRefresh = false,
   }) async {
     var twseDayTradingCount = 0;
-    var tpexDayTradingCount = 0;
+    const tpexDayTradingCount = 0;
     var marginCount = 0;
 
     // 從 TWSE 批次同步上市當沖資料
@@ -62,8 +62,6 @@ class MarketDataUpdater {
     // TPEX 當沖資料：API 端點被 Cloudflare 保護，無法存取
     // TPEX OpenAPI 也沒有提供個股當沖成交量的替代端點
     // 當沖資料對規則分析非必要，跳過同步
-    // 若需要當沖資料，可考慮使用 FinMind 逐檔同步（但會消耗 API 配額）
-    tpexDayTradingCount = 0;
 
     // 從 TWSE/TPEX 批次同步融資融券資料
     try {
@@ -86,7 +84,6 @@ class MarketDataUpdater {
   ///
   /// 用於自選清單和熱門股的詳細籌碼追蹤。
   ///
-  /// **v0.1.2:** 移除 syncDayTrading 呼叫。
   /// 當沖資料已由 syncMarketWideData 透過批次 TWSE/TPEX API 同步，
   /// 不再需要逐檔呼叫 FinMind，節省 API 配額。
   Future<int> syncSymbolsMarketData({
@@ -143,9 +140,8 @@ class MarketDataUpdater {
   ///
   /// 此方法現在只同步外資持股資料（仍需 FinMind 逐檔呼叫）。
   ///
-  /// **v0.1.2:** maxSyncCount 從 100 降至 20，避免 API 額度耗盡。
-  /// 外資持股規則（ForeignExodus, ForeignConcentration）為輔助訊號，
-  /// 20 檔足夠涵蓋主要候選股。
+  /// maxSyncCount 預設 20：外資持股規則（ForeignExodus, ForeignConcentration）
+  /// 為輔助訊號，20 檔足夠涵蓋主要候選股，避免 API 額度耗盡。
   Future<OtcMarketDataResult> syncOtcCandidatesMarketData({
     required List<String> candidates,
     required DateTime date,
@@ -316,6 +312,10 @@ class MarketDataUpdater {
     try {
       warningCount = await _warningRepo.syncAllMarketWarnings(force: force);
       AppLogger.info('MarketDataUpdater', '警示資料同步完成: $warningCount 筆');
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '警示資料同步失敗', e);
       warningError = e;
@@ -325,6 +325,10 @@ class MarketDataUpdater {
     try {
       insiderCount = await _insiderRepo.syncAllInsiderHoldings(force: force);
       AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $insiderCount 筆');
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗', e);
       insiderError = e;
@@ -346,6 +350,10 @@ class MarketDataUpdater {
       final count = await _warningRepo.syncAllMarketWarnings(force: force);
       AppLogger.info('MarketDataUpdater', '警示資料同步: $count 筆');
       return count;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '警示資料同步失敗', e);
       return 0;
@@ -360,6 +368,10 @@ class MarketDataUpdater {
       final count = await _insiderRepo.syncAllInsiderHoldings(force: force);
       AppLogger.info('MarketDataUpdater', '董監持股資料同步: $count 筆');
       return count;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗', e);
       return 0;

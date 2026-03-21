@@ -49,6 +49,9 @@ abstract final class ApiConfig {
   /// TWSE 歷史資料逐月請求間延遲（毫秒）
   static const int twseHistoryRequestDelayMs = 300;
 
+  /// TWSE/TPEX 市場 API 最大重試次數
+  static const int marketClientMaxRetries = 2;
+
   /// 重試延遲（毫秒）
   static const int retryDelayMs = 1000;
 
@@ -175,4 +178,7 @@ abstract final class CacheConfig {
 
   /// 批次查詢快取 TTL（秒）
   static const int batchQueryTtlSec = 30;
+
+  /// FinMind API response 快取最大容量
+  static const int finmindResponseCacheMaxSize = 200;
 }

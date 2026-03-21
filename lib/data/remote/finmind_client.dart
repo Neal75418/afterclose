@@ -51,7 +51,10 @@ class FinMindClient {
   /// 盤後資料不常變動，快取可大幅減少 API 呼叫次數。
   /// TTL 由使用者設定決定（預設 30 分鐘）。
   late final LruCache<String, List<Map<String, dynamic>>> _responseCache =
-      LruCache(maxSize: 200, ttl: _cacheTtl);
+      LruCache(
+        maxSize: CacheConfig.finmindResponseCacheMaxSize,
+        ttl: _cacheTtl,
+      );
 
   /// 使用者的 FinMind API token（選用但建議設定）
   String? _token;
@@ -74,9 +77,8 @@ class FinMindClient {
   /// 驗證失敗時拋出 [InvalidTokenException]
   static void _validateToken(String token) {
     if (token.length < _minTokenLength) {
-      // 使用硬編碼值以允許 const 建構式
-      throw const InvalidTokenException(
-        'Token too short (minimum 20 characters)',
+      throw InvalidTokenException(
+        'Token too short (minimum $_minTokenLength characters)',
       );
     }
     if (!_tokenPattern.hasMatch(token)) {

@@ -114,13 +114,13 @@ class InstitutionalRepository implements IInstitutionalRepository {
       final twseFuture = safeAwait(
         _twseClient.getAllInstitutionalData(date: date),
         <TwseInstitutional>[],
-        tag: 'InstRepo',
+        tag: 'InstitutionalRepo',
         description: '上市法人資料取得失敗，繼續處理上櫃',
       );
       final tpexFuture = safeAwait(
         _tpexClient.getAllInstitutionalData(date: date),
         <TpexInstitutional>[],
-        tag: 'InstRepo',
+        tag: 'InstitutionalRepo',
         description: '上櫃法人資料取得失敗，繼續處理上市',
       );
 

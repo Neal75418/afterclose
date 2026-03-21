@@ -118,7 +118,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       final previousPrice = recentPrices.length >= 2 ? recentPrices[1] : null;
 
       AppLogger.debug(
-        'StockDetailProvider',
+        'StockDetailNotifier',
         'recentPrices count=${recentPrices.length}, '
             'latest=${latestPrice?.close} (${latestPrice?.date}), '
             'prev=${previousPrice?.close} (${previousPrice?.date})',
@@ -150,7 +150,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
       if (hasDataMismatch) {
         AppLogger.debug(
-          'StockDetailProvider',
+          'StockDetailNotifier',
           'Data mismatch: using synced price '
               '${displayPrice?.close} (${displayPrice?.date}) '
               'instead of ${latestPrice?.close} (${latestPrice?.date})',
@@ -246,7 +246,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         latestPER: result.latestPER,
       );
     } catch (e) {
-      AppLogger.warning('StockDetailProvider', '載入基本面資料失敗: $_symbol', e);
+      AppLogger.warning('StockDetailNotifier', '載入基本面資料失敗: $_symbol', e);
       state = state.copyWith(isLoadingFundamentals: false);
     }
   }
@@ -293,7 +293,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         isLoadingChip: false,
       );
     } catch (e) {
-      AppLogger.warning('StockDetailProvider', '載入籌碼分析資料失敗: $_symbol', e);
+      AppLogger.warning('StockDetailNotifier', '載入籌碼分析資料失敗: $_symbol', e);
       state = state.copyWith(isLoadingChip: false);
     }
   }

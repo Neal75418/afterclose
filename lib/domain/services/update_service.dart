@@ -160,7 +160,7 @@ class UpdateService {
   }) async {
     // 已有更新在執行中 → 共享結果，避免重複 API 呼叫
     if (_activeUpdate != null) {
-      AppLogger.info('UpdateSvc', '更新已在執行中，等待現有結果');
+      AppLogger.info('UpdateService', '更新已在執行中，等待現有結果');
       return _activeUpdate!.future;
     }
 
@@ -195,7 +195,7 @@ class UpdateService {
     if (forDate == null && !TaiwanCalendar.isTradingDay(targetDate)) {
       final lastTradingDay = TaiwanCalendar.getPreviousTradingDay(targetDate);
       AppLogger.info(
-        'UpdateSvc',
+        'UpdateService',
         '非交易日 ($targetDate)，自動調整至上個交易日: $lastTradingDay',
       );
       targetDate = lastTradingDay;
@@ -303,10 +303,13 @@ class UpdateService {
       final cleanupResult = await _db.cleanupInvalidStockCodes();
       final totalCleaned = cleanupResult.values.fold(0, (a, b) => a + b);
       if (totalCleaned > 0) {
-        AppLogger.info('UpdateSvc', '已清理 $totalCleaned 筆無效資料: $cleanupResult');
+        AppLogger.info(
+          'UpdateService',
+          '已清理 $totalCleaned 筆無效資料: $cleanupResult',
+        );
       }
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '清理無效資料失敗', e);
+      AppLogger.warning('UpdateService', '清理無效資料失敗', e);
     }
   }
 
@@ -333,7 +336,7 @@ class UpdateService {
       await _db.updateRunDate(ctx.runId, correctedDate);
       ctx.result.date = correctedDate;
       AppLogger.info(
-        'UpdateSvc',
+        'UpdateService',
         '日期校正: $originalDate -> $correctedDate，已更新 UpdateRun',
       );
     }
@@ -347,7 +350,7 @@ class UpdateService {
       try {
         await _marketIndexSyncer.sync();
       } catch (e) {
-        AppLogger.warning('UpdateSvc', '大盤指數同步失敗', e);
+        AppLogger.warning('UpdateService', '大盤指數同步失敗', e);
         ctx.result.recordError('大盤指數同步失敗: $e', e);
       }
     }
@@ -356,7 +359,7 @@ class UpdateService {
       try {
         await _tdccHoldingSyncer.sync();
       } catch (e) {
-        AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗', e);
+        AppLogger.warning('UpdateService', 'TDCC 股權分散表同步失敗', e);
       }
     }
 
@@ -366,13 +369,13 @@ class UpdateService {
         if (divResult.dividendsUpserted > 0 ||
             divResult.meetingEventsCreated > 0) {
           AppLogger.info(
-            'UpdateSvc',
+            'UpdateService',
             '股利同步: ${divResult.dividendsUpserted} 筆股利, '
                 '${divResult.meetingEventsCreated} 筆股東會',
           );
         }
       } catch (e) {
-        AppLogger.warning('UpdateSvc', '股利/股東會同步失敗', e);
+        AppLogger.warning('UpdateService', '股利/股東會同步失敗', e);
       }
     }
 
@@ -380,10 +383,10 @@ class UpdateService {
       try {
         final transferCount = await _insiderTransferSyncer.sync();
         if (transferCount > 0) {
-          AppLogger.info('UpdateSvc', '內部人轉讓同步: $transferCount 筆');
+          AppLogger.info('UpdateService', '內部人轉讓同步: $transferCount 筆');
         }
       } catch (e) {
-        AppLogger.warning('UpdateSvc', '內部人轉讓同步失敗', e);
+        AppLogger.warning('UpdateService', '內部人轉讓同步失敗', e);
       }
     }
   }
@@ -417,7 +420,7 @@ class UpdateService {
       ctx.result.pricesUpdated = syncResult.count;
       ctx.marketCandidates = syncResult.candidates;
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '價格同步失敗', e);
+      AppLogger.warning('UpdateService', '價格同步失敗', e);
       ctx.result.recordError('價格資料更新失敗: $e', e);
     }
     return normalizedDate;
@@ -490,7 +493,7 @@ class UpdateService {
             ? '已快取'
             : '${marketResult.marginCount}';
         AppLogger.info(
-          'UpdateSvc',
+          'UpdateService',
           '步驟 4.5: 當沖=${marketResult.dayTradingCount}, '
               '融資=$marginLabel, 持股=$syncedCount',
         );
@@ -514,14 +517,14 @@ class UpdateService {
             date: normalizedDate,
           );
         } catch (e) {
-          AppLogger.warning('UpdateSvc', '上櫃自選基本面補充失敗', e);
+          AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗', e);
         }
 
         final revenueLabel = fundResult.revenueCount < 0
             ? '已快取'
             : '${fundResult.revenueCount}';
         AppLogger.info(
-          'UpdateSvc',
+          'UpdateService',
           '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=$revenueLabel',
         );
 
@@ -549,12 +552,12 @@ class UpdateService {
             ).wait;
             final bsLabel = bsCount < 0 ? '已快取' : '$bsCount';
             AppLogger.info(
-              'UpdateSvc',
+              'UpdateService',
               '步驟 4.7: 損益=$epsCount, 資負=$bsLabel (${targetSymbols.length} 檔)',
             );
           }
         } catch (e) {
-          AppLogger.warning('UpdateSvc', '財報資料同步失敗', e);
+          AppLogger.warning('UpdateService', '財報資料同步失敗', e);
         }
       } catch (e) {
         ctx.result.recordError('基本面資料更新失敗: $e', e);
@@ -569,12 +572,12 @@ class UpdateService {
         );
 
         AppLogger.info(
-          'UpdateSvc',
+          'UpdateService',
           '步驟 4.8: 警示=${killerResult.warningCount}, 董監=${killerResult.insiderCount}',
         );
       } catch (e) {
         // 不加入 errors，因為這是額外功能，不影響主流程
-        AppLogger.warning('UpdateSvc', 'Killer Features 資料更新失敗', e);
+        AppLogger.warning('UpdateService', 'Killer Features 資料更新失敗', e);
       }
     }
   }
@@ -617,7 +620,7 @@ class UpdateService {
       final estimatedApiCalls = fundResult.total + marketResult.total;
       if (estimatedApiCalls > 0) {
         AppLogger.info(
-          'UpdateSvc',
+          'UpdateService',
           '步驟 6.5: 上櫃 (${marketResult.syncedCandidates}/${marketResult.totalCandidates} 檔): '
               '估值=${fundResult.valuationCount}, 營收=${fundResult.revenueCount}, '
               '當沖=${marketResult.dayTradingCount}, 持股=${marketResult.shareholdingCount} '
@@ -625,7 +628,7 @@ class UpdateService {
         );
       }
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '上櫃資料補充失敗', e);
+      AppLogger.warning('UpdateService', '上櫃資料補充失敗', e);
     }
   }
 
@@ -652,7 +655,7 @@ class UpdateService {
       recentlyRecommended: recentlyRecommended,
     );
 
-    AppLogger.info('UpdateSvc', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
+    AppLogger.info('UpdateService', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
     return scoredStocks;
   }
 
@@ -676,13 +679,13 @@ class UpdateService {
           .toList(),
     );
 
-    AppLogger.info('UpdateSvc', '步驟 9: 推薦 ${topN.length} 檔');
+    AppLogger.info('UpdateService', '步驟 9: 推薦 ${topN.length} 檔');
   }
 
   Future<void> _finishUpdate(_UpdateContext ctx, UpdateResult result) async {
     final dateStr = '${ctx.normalizedDate.month}/${ctx.normalizedDate.day}';
     AppLogger.info(
-      'UpdateSvc',
+      'UpdateService',
       '完成 ($dateStr): 價格=${result.pricesUpdated}, 分析=${result.stocksAnalyzed}, '
           '推薦=${result.recommendationsGenerated}',
     );
@@ -710,9 +713,9 @@ class UpdateService {
 
     try {
       await service.validatePastRecommendationsMultiPeriod();
-      AppLogger.info('UpdateSvc', '步驟 10+: 推薦驗證完成');
+      AppLogger.info('UpdateService', '步驟 10+: 推薦驗證完成');
     } catch (e, stack) {
-      AppLogger.error('UpdateSvc', '推薦驗證失敗（非阻塞）', e, stack);
+      AppLogger.error('UpdateService', '推薦驗證失敗（非阻塞）', e, stack);
     }
   }
 
@@ -751,7 +754,7 @@ class UpdateService {
         }
       }
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '警示價格擷取失敗', e);
+      AppLogger.warning('UpdateService', '警示價格擷取失敗', e);
     }
   }
 }

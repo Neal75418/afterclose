@@ -209,7 +209,7 @@ class ScoringService {
     });
 
     AppLogger.debug(
-      'ScoringSvc',
+      'ScoringService',
       '候選 ${candidates.length} 檔，資料充足 $stocksWithSufficientData 檔',
     );
 
@@ -296,7 +296,12 @@ class ScoringService {
     } on NetworkException {
       rethrow;
     } catch (e, stackTrace) {
-      AppLogger.warning('ScoringSvc', 'Isolate 執行失敗，回退至主執行緒', e, stackTrace);
+      AppLogger.warning(
+        'ScoringService',
+        'Isolate 執行失敗，回退至主執行緒',
+        e,
+        stackTrace,
+      );
 
       // 回退：在主執行緒執行評分，並傳入 marketDataBuilder 以確保市場資料一致性
       return await scoreStocks(
@@ -381,7 +386,7 @@ class ScoringService {
       }
     }
     AppLogger.debug(
-      'ScoringSvc',
+      'ScoringService',
       '候選 ${candidates.length} 檔，資料充足 $stocksWithSufficientData 檔$suffix',
     );
   }
@@ -404,7 +409,7 @@ class ScoringService {
         skippedLiquidity +
         skippedLowScore;
     AppLogger.info(
-      'ScoringSvc',
+      'ScoringService',
       '評分完成: ${scored.length} 檔 (最高 $maxScore 分), '
           '跳過 $skippedTotal 檔$suffix',
     );
@@ -421,13 +426,13 @@ class ScoringService {
         ? 0
         : result.outputs.map((o) => o.score).reduce((a, b) => a > b ? a : b);
     AppLogger.info(
-      'ScoringSvc',
+      'ScoringService',
       '評分完成: ${result.outputs.length} 檔 (最高 $maxScore 分), '
           '跳過 $skippedTotal 檔 (Isolate)',
     );
     if (result.skippedDeserialization > 0) {
       AppLogger.warning(
-        'ScoringSvc',
+        'ScoringService',
         'Isolate 反序列化失敗: ${result.skippedDeserialization} 筆 entry 被跳過',
       );
     }

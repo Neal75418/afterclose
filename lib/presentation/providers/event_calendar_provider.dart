@@ -344,7 +344,7 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       state = state.copyWith(upcomingEvents: events);
     } catch (e) {
       // 不影響主流程，但記錄以便 debug
-      AppLogger.warning('EventCalendar', '載入近期事件失敗', e);
+      AppLogger.warning('EventCalendarNotifier', '載入近期事件失敗', e);
     }
   }
 

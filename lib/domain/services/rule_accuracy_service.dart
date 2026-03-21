@@ -21,7 +21,7 @@ class RuleAccuracyService {
   final AppDatabase _db;
   final AppClock _clock;
 
-  static const String _logTag = 'RuleAccuracy';
+  static const String _logTag = 'RuleAccuracyService';
   bool _isBackfilling = false;
 
   /// 預設驗證天數

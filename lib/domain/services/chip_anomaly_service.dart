@@ -55,7 +55,7 @@ class ChipAnomalyService {
   ChipAnomalyService({required AppDatabase database}) : _db = database;
 
   final AppDatabase _db;
-  static const String _logTag = 'ChipAnomaly';
+  static const String _logTag = 'ChipAnomalyService';
 
   /// 偵測當日籌碼異動，依市場分組回傳
   ///
