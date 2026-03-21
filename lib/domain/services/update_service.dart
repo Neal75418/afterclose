@@ -7,9 +7,8 @@ import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
+import 'package:afterclose/domain/repositories/price_repository.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
@@ -114,8 +113,8 @@ class UpdateService {
 
   final AppDatabase _db;
   final AppClock _clock;
-  final PriceRepository _priceRepo;
-  final AnalysisRepository _analysisRepo;
+  final IPriceRepository _priceRepo;
+  final IAnalysisRepository _analysisRepo;
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
   final ScoringService? _scoringService;

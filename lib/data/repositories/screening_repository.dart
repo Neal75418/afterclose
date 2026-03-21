@@ -231,22 +231,29 @@ class ScreeningRepository implements IScreeningRepository {
 
     switch (condition.operator) {
       case ScreeningOperator.greaterThan:
+        if (condition.value == null) return null;
         variables.add(condition.value!);
         return '$column > ?';
       case ScreeningOperator.greaterOrEqual:
+        if (condition.value == null) return null;
         variables.add(condition.value!);
         return '$column >= ?';
       case ScreeningOperator.lessThan:
+        if (condition.value == null) return null;
         variables.add(condition.value!);
         return '$column < ?';
       case ScreeningOperator.lessOrEqual:
+        if (condition.value == null) return null;
         variables.add(condition.value!);
         return '$column <= ?';
       case ScreeningOperator.between:
+        if (condition.value == null || condition.valueTo == null) return null;
         variables.addAll([condition.value!, condition.valueTo!]);
         return '$column BETWEEN ? AND ?';
       case ScreeningOperator.equals:
-        variables.add(condition.value ?? condition.stringValue!);
+        final v = condition.value ?? condition.stringValue;
+        if (v == null) return null;
+        variables.add(v);
         return '$column = ?';
       case ScreeningOperator.isTrue:
       case ScreeningOperator.isFalse:

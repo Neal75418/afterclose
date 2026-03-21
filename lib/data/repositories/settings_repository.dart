@@ -110,7 +110,10 @@ class SettingsRepository implements ISettingsRepository {
     // Fallback: 存入 SharedPreferences（可跨重啟持久化，但未加密）
     final prefs = await _sharedPrefs;
     await prefs.setString(_FallbackKeys.finmindToken, token);
-    AppLogger.info('SettingsRepo', 'Token 已存入 SharedPreferences（非加密）');
+    AppLogger.warning(
+      'SettingsRepo',
+      'Token 已存入 SharedPreferences (非加密 fallback)',
+    );
   }
 
   /// 清除 FinMind Token

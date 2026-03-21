@@ -5,7 +5,6 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
@@ -25,14 +24,14 @@ class ScoringService {
   const ScoringService({
     required AnalysisService analysisService,
     required RuleEngine ruleEngine,
-    required AnalysisRepository analysisRepository,
+    required IAnalysisRepository analysisRepository,
   }) : _analysisService = analysisService,
        _ruleEngine = ruleEngine,
        _analysisRepo = analysisRepository;
 
   final AnalysisService _analysisService;
   final RuleEngine _ruleEngine;
-  final AnalysisRepository _analysisRepo;
+  final IAnalysisRepository _analysisRepo;
 
   /// 對股票候選清單評分
   ///

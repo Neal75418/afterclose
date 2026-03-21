@@ -325,12 +325,19 @@ class ScreeningService {
     double value,
     ScreeningCondition condition,
   ) => switch (op) {
-    ScreeningOperator.greaterThan => value > condition.value!,
-    ScreeningOperator.greaterOrEqual => value >= condition.value!,
-    ScreeningOperator.lessThan => value < condition.value!,
-    ScreeningOperator.lessOrEqual => value <= condition.value!,
+    ScreeningOperator.greaterThan =>
+      condition.value != null && value > condition.value!,
+    ScreeningOperator.greaterOrEqual =>
+      condition.value != null && value >= condition.value!,
+    ScreeningOperator.lessThan =>
+      condition.value != null && value < condition.value!,
+    ScreeningOperator.lessOrEqual =>
+      condition.value != null && value <= condition.value!,
     ScreeningOperator.between =>
-      value >= condition.value! && value <= condition.valueTo!,
+      condition.value != null &&
+          condition.valueTo != null &&
+          value >= condition.value! &&
+          value <= condition.valueTo!,
     _ => true,
   };
 }
