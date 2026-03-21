@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
@@ -417,7 +418,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             label: S.watchlistUndo,
             onPressed: () => notifier.restoreStock(symbol),
           ),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: ApiConfig.longMessageDurationSec),
         );
       }
     } else {
@@ -426,7 +427,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         if (success) HapticFeedback.mediumImpact();
         _showSnackBar(
           success ? S.watchlistAddedToWatchlist(symbol) : S.watchlistAddFailed,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: ApiConfig.shortMessageDurationSec),
           isError: !success,
         );
       }
@@ -437,7 +438,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   void _showSnackBar(
     String message, {
     SnackBarAction? action,
-    Duration duration = const Duration(seconds: 2),
+    Duration duration = const Duration(
+      seconds: ApiConfig.shortMessageDurationSec,
+    ),
     bool isError = false,
   }) {
     // 使用畫面回呼確保 SnackBar 在重建後顯示

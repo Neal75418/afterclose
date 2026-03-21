@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -280,7 +281,7 @@ class _CreatePriceAlertDialogState
         SnackBar(
           content: Text('alert.permissionDenied'.tr()),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: ApiConfig.alertDialogDurationSec),
         ),
       );
     }

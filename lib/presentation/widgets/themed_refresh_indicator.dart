@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 
 /// 重新整理操作的預設逾時時間
-const _defaultTimeout = Duration(seconds: 30);
+const _defaultTimeout = Duration(seconds: ApiConfig.refreshTimeoutSec);
 
 /// 套用主題色與觸覺回饋的 RefreshIndicator
 class ThemedRefreshIndicator extends StatelessWidget {

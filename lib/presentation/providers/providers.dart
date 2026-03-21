@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
@@ -47,7 +48,10 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 /// 批次查詢快取管理器（30 秒 TTL，優化更新週期）
 final batchCacheProvider = Provider<BatchQueryCacheManager>((ref) {
-  return BatchQueryCacheManager(maxSize: 50, ttl: const Duration(seconds: 30));
+  return BatchQueryCacheManager(
+    maxSize: CacheConfig.batchQueryMaxSize,
+    ttl: const Duration(seconds: CacheConfig.batchQueryTtlSec),
+  );
 });
 
 /// 快取資料庫存取器，用於優化批次查詢

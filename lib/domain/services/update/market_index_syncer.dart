@@ -75,6 +75,10 @@ class MarketIndexSyncer {
       } else {
         AppLogger.debug('MarketIndexSyncer', '無 TWSE 指數資料可同步（非交易日或盤中）');
       }
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('MarketIndexSyncer', 'TWSE 指數同步失敗', e);
     }
@@ -94,6 +98,10 @@ class MarketIndexSyncer {
             'TPEx 指數同步完成: ${companions.length} 筆',
           );
         }
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         AppLogger.warning('MarketIndexSyncer', 'TPEx 指數同步失敗', e);
       }
@@ -114,6 +122,10 @@ class MarketIndexSyncer {
             );
           }
         }
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
       } catch (e) {
         AppLogger.warning('MarketIndexSyncer', '含息報酬指數同步失敗', e);
       }

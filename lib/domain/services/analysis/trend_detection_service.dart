@@ -134,11 +134,16 @@ class TrendDetectionService {
   /// 2. 收盤站上 MA20
   /// 3. 近期成交量高於前期平均（量能確認）
   bool _hasHigherLow(List<DailyPriceEntry> prices, {double? ma20}) {
-    if (prices.length < 40) return false;
+    if (prices.length < TrendParams.reversalMinDataPoints) return false;
 
     // 分為近期 (0-19) 與前期 (20-39)
-    final recentPrices = prices.skip(prices.length - 20).toList();
-    final priorPrices = prices.skip(prices.length - 40).take(20).toList();
+    final recentPrices = prices
+        .skip(prices.length - TrendParams.reversalHalfWindow)
+        .toList();
+    final priorPrices = prices
+        .skip(prices.length - TrendParams.reversalMinDataPoints)
+        .take(TrendParams.reversalHalfWindow)
+        .toList();
 
     final recentLow = recentPrices
         .map((p) => p.low ?? double.infinity)
@@ -176,11 +181,16 @@ class TrendDetectionService {
   /// 1. 近期高點低於前期高點 5%
   /// 2. 近期成交量高於前期平均（量能確認）
   bool _hasLowerHigh(List<DailyPriceEntry> prices) {
-    if (prices.length < 40) return false;
+    if (prices.length < TrendParams.reversalMinDataPoints) return false;
 
     // 分為近期 (0-19) 與前期 (20-39)
-    final recentPrices = prices.skip(prices.length - 20).toList();
-    final priorPrices = prices.skip(prices.length - 40).take(20).toList();
+    final recentPrices = prices
+        .skip(prices.length - TrendParams.reversalHalfWindow)
+        .toList();
+    final priorPrices = prices
+        .skip(prices.length - TrendParams.reversalMinDataPoints)
+        .take(TrendParams.reversalHalfWindow)
+        .toList();
 
     final recentHigh = recentPrices
         .map((p) => p.high ?? double.negativeInfinity)

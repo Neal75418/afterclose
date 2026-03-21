@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -144,7 +145,7 @@ class _ReasonTag extends StatelessWidget {
       message: tooltip!,
       preferBelow: true,
       triggerMode: TooltipTriggerMode.tap,
-      showDuration: const Duration(seconds: 3),
+      showDuration: const Duration(seconds: ApiConfig.longMessageDurationSec),
       child: tag,
     );
   }

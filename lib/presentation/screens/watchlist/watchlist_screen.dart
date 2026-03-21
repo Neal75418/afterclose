@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/services/share_service.dart';
@@ -87,7 +88,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         SnackBar(
           content: Text('watchlist.removed'.tr(namedArgs: {'symbol': symbol})),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: ApiConfig.longMessageDurationSec),
           showCloseIcon: true,
           dismissDirection: DismissDirection.horizontal,
           action: SnackBarAction(

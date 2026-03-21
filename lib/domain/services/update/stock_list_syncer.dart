@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 
@@ -21,6 +22,10 @@ class StockListSyncer {
       AppLogger.info('StockListSyncer', '股票清單同步完成: $count 檔');
 
       return StockListSyncResult(stockCount: count, success: true);
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
       AppLogger.warning('StockListSyncer', '股票清單同步失敗', e);
 

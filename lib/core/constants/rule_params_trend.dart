@@ -78,6 +78,12 @@ abstract final class TrendParams {
   /// 當前價格在區間低點 2% 以內視為「接近低點」。
   static const double nearRangeLowBuffer = 1.02;
 
+  /// 反轉訊號分析所需最少資料點數（近期 + 前期各半）
+  static const int reversalMinDataPoints = 40;
+
+  /// 反轉訊號近期/前期分析窗口（各佔一半）
+  static const int reversalHalfWindow = 20;
+
   /// 更高低點確認緩衝（7%）
   ///
   /// 近期低點需高於前期低點 7% 才確認為「更高低點」。
