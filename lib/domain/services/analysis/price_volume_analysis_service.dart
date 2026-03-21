@@ -25,7 +25,7 @@ class PriceVolumeAnalysisService {
     const lookback = TrendParams.priceVolumeLookbackDays;
     final recentPrices = lastN(prices, lookback + 1);
 
-    // 計算價格變化
+    // 計算價格變化（lookback + 1 天窗口涵蓋完整成交量比較區間）
     final todayClose = recentPrices.first.close;
     final startClose = recentPrices.last.close;
     if (todayClose == null || startClose == null || startClose <= 0) {

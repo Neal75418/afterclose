@@ -12,6 +12,9 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 ///
 /// 遍歷 [StockData.dividendHistory]，篩選除息日落在價格資料起始日之後的股利，
 /// 回傳累計現金股利金額。用於調整 52 週新高/新低的歷史價格基準。
+///
+/// 前提：`data.prices` 按日期升冪排列（由 PriceDAO 保證）。
+/// `.first` 為分析視窗起始日，篩選在此之後的除息日。
 double _sumDividendsInPeriod(StockData data) {
   final dividends = data.dividendHistory;
   if (dividends == null || dividends.isEmpty || data.prices.isEmpty) {

@@ -430,7 +430,8 @@ class TwseClient {
       final tables = data['tables'] as List<dynamic>?;
       if (tables == null || tables.length < 2) return [];
 
-      final stockTable = tables[1] as Map<String, dynamic>;
+      final stockTable = tables[1] as Map<String, dynamic>?;
+      if (stockTable == null) return [];
       final List<dynamic> rows = stockTable['data'] ?? [];
 
       final result = MarketClientMixin.parseRows(
