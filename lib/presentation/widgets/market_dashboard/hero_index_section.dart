@@ -175,6 +175,11 @@ class _TotalReturnBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // 避免除以零（資料異常時的防禦）
+    if (taiexHistory.first == 0 || totalReturnHistory.first == 0) {
+      return const SizedBox.shrink();
+    }
+
     // 計算期間報酬率差異（股息貢獻）
     final taiexReturn =
         (taiexHistory.last - taiexHistory.first) / taiexHistory.first * 100;

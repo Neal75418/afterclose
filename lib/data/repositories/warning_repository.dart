@@ -126,8 +126,6 @@ class WarningRepository {
       if (isTradingDay) {
         final twseWarningFuture = _twseClient.getTradingWarnings(date: today);
         final twseDisposalFuture = _twseClient.getDisposalInfo(date: today);
-        twseWarningFuture.ignore();
-        twseDisposalFuture.ignore();
 
         try {
           twseWarnings = await twseWarningFuture;

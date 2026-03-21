@@ -144,11 +144,16 @@ class PortfolioAnalyticsService {
     final monthReturn = daysSinceStart >= 30 ? dailyReturn * 30 : totalReturn;
 
     // 年報酬（年化）
-    // 統一使用複利年化公式：(1 + totalReturn)^(365/days) - 1
-    // 不論持有期間長短，都用此公式計算等效年化報酬
-    final yearReturn =
-        (math.pow(1 + totalReturn / 100, 365 / daysSinceStart) - 1).toDouble() *
-        100;
+    // 持有期間過短時直接用總報酬，避免 math.pow 產生極端值
+    final double yearReturn;
+    if (daysSinceStart < 7) {
+      yearReturn = totalReturn;
+    } else {
+      yearReturn =
+          (math.pow(1 + totalReturn / 100, 365 / daysSinceStart) - 1)
+              .toDouble() *
+          100;
+    }
 
     return PeriodReturns(
       daily: dailyReturn,

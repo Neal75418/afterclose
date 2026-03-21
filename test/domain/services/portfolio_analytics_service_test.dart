@@ -220,8 +220,8 @@ void main() {
         stocksMap: {},
       );
 
-      // Yearly should be clamped to 1000.0 max
-      expect(result.periodReturns.yearly, equals(1000.0));
+      // Short holding period (< 7 days): yearly = totalReturn (not annualized)
+      expect(result.periodReturns.yearly, equals(50.0));
     });
 
     test('returns empty when daysSinceStart is 0 (same day)', () {

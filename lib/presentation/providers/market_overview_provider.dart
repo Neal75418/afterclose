@@ -342,10 +342,12 @@ class MarketOverviewState {
 
 class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   var _active = true;
+  var _loadGeneration = 0;
 
   @override
   MarketOverviewState build() {
     _active = true;
+    _loadGeneration++;
     ref.onDispose(() => _active = false);
     return const MarketOverviewState();
   }
@@ -362,6 +364,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   static const _loadTimeoutSec = ApiConfig.marketOverviewLoadTimeoutSec;
 
   Future<void> loadData() async {
+    final myGen = ++_loadGeneration;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -432,14 +435,16 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           '大盤總覽載入超過 ${_loadTimeoutSec}s，先顯示可用資料',
         );
         // 結束 loading 指示器，讓 UI 可互動
-        if (_active) {
+        if (_active && _loadGeneration == myGen) {
           state = state.copyWith(isLoading: false, dataDate: dataDate);
         }
         // 背景繼續等待 API 回應，完成後靜默更新
         unawaited(
           allTasks
               .then((r) {
-                if (_active) state = _buildState(r, dataDate);
+                if (_active && _loadGeneration == myGen) {
+                  state = _buildState(r, dataDate);
+                }
               })
               .catchError((Object e) {
                 AppLogger.warning(
@@ -452,7 +457,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         return;
       }
 
-      if (!_active) return;
+      if (!_active || _loadGeneration != myGen) return;
 
       state = _buildState(results, dataDate);
     } catch (e) {

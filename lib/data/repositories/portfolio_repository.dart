@@ -58,19 +58,20 @@ class PortfolioRepository implements IPortfolioRepository {
 
     final actualFee = fee ?? calculateFee(quantity, price);
 
-    await _db.insertTransaction(
-      PortfolioTransactionCompanion.insert(
-        symbol: symbol,
-        txType: 'BUY',
-        date: date,
-        quantity: quantity,
-        price: price,
-        fee: Value(actualFee),
-        note: Value(note),
-      ),
-    );
-
-    await _recalculatePosition(symbol);
+    await _db.transaction(() async {
+      await _db.insertTransaction(
+        PortfolioTransactionCompanion.insert(
+          symbol: symbol,
+          txType: 'BUY',
+          date: date,
+          quantity: quantity,
+          price: price,
+          fee: Value(actualFee),
+          note: Value(note),
+        ),
+      );
+      await _recalculatePosition(symbol);
+    });
   }
 
   /// 新增賣出交易
@@ -89,30 +90,31 @@ class PortfolioRepository implements IPortfolioRepository {
     if (quantity <= 0) throw ArgumentError('Quantity must be positive');
     if (price <= 0) throw ArgumentError('Price must be positive');
 
-    // 驗證賣出數量不超過持有量
-    final position = await _db.getPortfolioPosition(symbol);
-    final currentQty = position?.quantity ?? 0;
-    if (quantity > currentQty) {
-      throw StateError('portfolio.sellExceedsHolding');
-    }
-
     final actualFee = fee ?? calculateFee(quantity, price);
     final actualTax = tax ?? calculateTax(quantity, price);
 
-    await _db.insertTransaction(
-      PortfolioTransactionCompanion.insert(
-        symbol: symbol,
-        txType: 'SELL',
-        date: date,
-        quantity: quantity,
-        price: price,
-        fee: Value(actualFee),
-        tax: Value(actualTax),
-        note: Value(note),
-      ),
-    );
+    await _db.transaction(() async {
+      // 驗證賣出數量不超過持有量（在 transaction 內確保原子性）
+      final position = await _db.getPortfolioPosition(symbol);
+      final currentQty = position?.quantity ?? 0;
+      if (quantity > currentQty) {
+        throw StateError('portfolio.sellExceedsHolding');
+      }
 
-    await _recalculatePosition(symbol);
+      await _db.insertTransaction(
+        PortfolioTransactionCompanion.insert(
+          symbol: symbol,
+          txType: 'SELL',
+          date: date,
+          quantity: quantity,
+          price: price,
+          fee: Value(actualFee),
+          tax: Value(actualTax),
+          note: Value(note),
+        ),
+      );
+      await _recalculatePosition(symbol);
+    });
   }
 
   /// 新增股利交易
@@ -126,25 +128,28 @@ class PortfolioRepository implements IPortfolioRepository {
   }) async {
     if (amount <= 0) throw ArgumentError('Amount must be positive');
 
-    await _db.insertTransaction(
-      PortfolioTransactionCompanion.insert(
-        symbol: symbol,
-        txType: isCash ? 'DIVIDEND_CASH' : 'DIVIDEND_STOCK',
-        date: date,
-        quantity: amount, // 股利金額或股數
-        price: 0,
-        note: Value(note),
-      ),
-    );
-
-    await _recalculatePosition(symbol);
+    await _db.transaction(() async {
+      await _db.insertTransaction(
+        PortfolioTransactionCompanion.insert(
+          symbol: symbol,
+          txType: isCash ? 'DIVIDEND_CASH' : 'DIVIDEND_STOCK',
+          date: date,
+          quantity: amount, // 股利金額或股數
+          price: 0,
+          note: Value(note),
+        ),
+      );
+      await _recalculatePosition(symbol);
+    });
   }
 
   /// 刪除交易紀錄並重新計算
   @override
   Future<void> deleteTransaction(int txId, String symbol) async {
-    await _db.deleteTransaction(txId);
-    await _recalculatePosition(symbol);
+    await _db.transaction(() async {
+      await _db.deleteTransaction(txId);
+      await _recalculatePosition(symbol);
+    });
   }
 
   // ==================================================
