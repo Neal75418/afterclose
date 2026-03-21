@@ -77,7 +77,7 @@ class InstitutionalSyncer {
       }
     }
 
-    AppLogger.info('InstitutionalSyncer', '法人資料同步 $syncedDays 天');
+    AppLogger.info('InstitutionalSyncer', '法人資料同步完成: $syncedDays 天');
 
     return InstitutionalSyncResult(syncedDays: syncedDays, errors: errors);
   }

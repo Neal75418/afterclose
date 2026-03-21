@@ -14,7 +14,7 @@ import 'package:afterclose/data/remote/tpex_client.dart';
 /// - 使用 InsertOrReplace 避免重複
 /// - 僅寫入 StockMaster 中存在的股票（FK constraint）
 class InsiderTransferSyncer {
-  InsiderTransferSyncer({
+  const InsiderTransferSyncer({
     required AppDatabase database,
     required TpexClient tpexClient,
   }) : _db = database,

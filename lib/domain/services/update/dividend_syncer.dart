@@ -43,9 +43,9 @@ class DividendSyncer {
     final knownStocks = await _db.getAllActiveStocks();
     final knownSymbols = knownStocks.map((s) => s.symbol).toSet();
 
-    // ============================
+    // ==================================================
     // Phase 1: 取得已宣告股利 → upsert DividendHistory
-    // ============================
+    // ==================================================
     final dividendCompanions = <DividendHistoryCompanion>[];
     final meetingCompanions = <StockEventCompanion>[];
 
@@ -121,9 +121,9 @@ class DividendSyncer {
       }
     }
 
-    // ============================
+    // ==================================================
     // Phase 2: Upsert DividendHistory
-    // ============================
+    // ==================================================
     if (dividendCompanions.isNotEmpty) {
       try {
         await _db.insertDividendData(dividendCompanions);
@@ -135,9 +135,9 @@ class DividendSyncer {
       }
     }
 
-    // ============================
+    // ==================================================
     // Phase 3: 取得股東會日程（TPEX ap41_O）
-    // ============================
+    // ==================================================
     if (_tpex != null) {
       try {
         final meetings = await _tpex.getShareholderMeetings();
@@ -167,9 +167,9 @@ class DividendSyncer {
       }
     }
 
-    // ============================
+    // ==================================================
     // Phase 4: 寫入股東會 StockEvent（去重後）
-    // ============================
+    // ==================================================
     if (meetingCompanions.isNotEmpty) {
       try {
         // 去重：同一 symbol + 同一日期只保留一筆（TWSE 和 TPEX 可能重複）

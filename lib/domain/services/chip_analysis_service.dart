@@ -31,23 +31,23 @@ class ChipAnalysisService {
 
     int score = 0;
 
-    // --- 1. 法人連續買賣超 ---
+    // 1. 法人連續買賣超
     final instAdj = _institutionalAdjustment(sortedInst);
     score += instAdj;
 
-    // --- 2. 外資持股趨勢 ---
+    // 2. 外資持股趨勢
     score += _shareholdingAdjustment(sortedShareholding);
 
-    // --- 3. 融資融券訊號 ---
+    // 3. 融資融券訊號
     score += _marginAdjustment(sortedMargin);
 
-    // --- 4. 當沖比例 ---
+    // 4. 當沖比例
     score += _dayTradingAdjustment(sortedDayTrading);
 
-    // --- 5. 持股集中度 ---
+    // 5. 持股集中度
     score += _concentrationAdjustment(holdingDistribution);
 
-    // --- 6. 內部人持股 ---
+    // 6. 內部人持股
     score += _insiderAdjustment(sortedInsider);
 
     score = score.clamp(0, 100);
@@ -61,7 +61,9 @@ class ChipAnalysisService {
     );
   }
 
-  // ----- 1. 法人進出 -----
+  // ==================================================
+  // 1. 法人進出
+  // ==================================================
 
   /// 傳入的 [history] 須已按日期升冪排序
   int _institutionalAdjustment(List<DailyInstitutionalEntry> history) {
@@ -98,7 +100,9 @@ class ChipAnalysisService {
     return 0;
   }
 
-  // ----- 2. 外資持股 -----
+  // ==================================================
+  // 2. 外資持股
+  // ==================================================
 
   /// 傳入的 [history] 須已按日期升冪排序
   int _shareholdingAdjustment(List<ShareholdingEntry> history) {
@@ -115,7 +119,9 @@ class ChipAnalysisService {
     return 0;
   }
 
-  // ----- 3. 融資融券 -----
+  // ==================================================
+  // 3. 融資融券
+  // ==================================================
 
   /// 傳入的 [history] 須已按日期升冪排序
   int _marginAdjustment(List<MarginTradingEntry> history) {
@@ -165,7 +171,9 @@ class ChipAnalysisService {
     return adj;
   }
 
-  // ----- 4. 當沖 -----
+  // ==================================================
+  // 4. 當沖
+  // ==================================================
 
   /// 傳入的 [history] 須已按日期升冪排序
   int _dayTradingAdjustment(List<DayTradingEntry> history) {
@@ -180,7 +188,9 @@ class ChipAnalysisService {
     return 0;
   }
 
-  // ----- 5. 持股集中度 -----
+  // ==================================================
+  // 5. 持股集中度
+  // ==================================================
 
   int _concentrationAdjustment(List<HoldingDistributionEntry> entries) {
     if (entries.isEmpty) return 0;
@@ -219,7 +229,9 @@ class ChipAnalysisService {
     return false;
   }
 
-  // ----- 6. 內部人持股 -----
+  // ==================================================
+  // 6. 內部人持股
+  // ==================================================
 
   /// 傳入的 [history] 須已按日期升冪排序
   int _insiderAdjustment(List<InsiderHoldingEntry> history) {
@@ -246,7 +258,9 @@ class ChipAnalysisService {
     return adj;
   }
 
-  // ----- 法人態度判定 -----
+  // ==================================================
+  // 法人態度判定
+  // ==================================================
 
   /// 傳入的 [history] 須已按日期升冪排序
   InstitutionalAttitude _deriveAttitude(List<DailyInstitutionalEntry> history) {

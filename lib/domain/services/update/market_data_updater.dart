@@ -345,7 +345,7 @@ class MarketDataUpdater {
   Future<int> syncWarningData({bool force = false}) async {
     try {
       final count = await _warningRepo.syncAllMarketWarnings(force: force);
-      AppLogger.info('MarketDataUpdater', '警示資料同步: $count 筆');
+      AppLogger.info('MarketDataUpdater', '警示資料同步完成: $count 筆');
       return count;
     } on RateLimitException {
       rethrow;
@@ -363,7 +363,7 @@ class MarketDataUpdater {
   Future<int> syncInsiderData({bool force = false}) async {
     try {
       final count = await _insiderRepo.syncAllInsiderHoldings(force: force);
-      AppLogger.info('MarketDataUpdater', '董監持股資料同步: $count 筆');
+      AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $count 筆');
       return count;
     } on RateLimitException {
       rethrow;
