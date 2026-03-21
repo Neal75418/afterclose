@@ -104,7 +104,9 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         _db.getReasons(_symbol, analysisDate),
         _db.getInstitutionalHistory(
           _symbol,
-          startDate: normalizedToday.subtract(const Duration(days: 10)),
+          startDate: normalizedToday.subtract(
+            const Duration(days: InstitutionalParams.institutionalLookbackDays),
+          ),
           endDate: normalizedToday,
         ),
         _db.isInWatchlist(_symbol),

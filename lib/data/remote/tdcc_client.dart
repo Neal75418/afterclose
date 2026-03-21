@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -25,14 +26,18 @@ class TdccClient {
   /// 快取全市場股權分散表（週資料，60 分鐘 TTL 足夠）
   final _cache = LruCache<String, Map<String, List<TdccHoldingLevel>>>(
     maxSize: 1,
-    ttl: const Duration(minutes: 60),
+    ttl: const Duration(minutes: ApiConfig.tdccCacheTtlMin),
   );
 
   static Dio _createDio() {
     return Dio(
       BaseOptions(
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 60),
+        connectTimeout: const Duration(
+          seconds: ApiConfig.twseConnectTimeoutSec,
+        ),
+        receiveTimeout: const Duration(
+          seconds: ApiConfig.twseReceiveTimeoutSec,
+        ),
         headers: {'Accept': 'application/json'},
         responseType: ResponseType.json,
       ),

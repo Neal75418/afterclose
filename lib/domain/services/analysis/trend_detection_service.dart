@@ -96,7 +96,7 @@ class TrendDetectionService {
       final breakdownLevel = support * (1 - TrendParams.breakdownBuffer);
       if (todayClose < breakdownLevel) {
         AppLogger.debug(
-          'S2W',
+          'TrendDetectionService',
           '跌破支撐: close=$todayClose < support=$support * 0.97 = $breakdownLevel',
         );
         return true;
@@ -108,7 +108,7 @@ class TrendDetectionService {
       final breakdownLevel = rangeBottom * (1 - TrendParams.breakdownBuffer);
       if (todayClose < breakdownLevel) {
         AppLogger.debug(
-          'S2W',
+          'TrendDetectionService',
           '跌破區間底部: close=$todayClose < rangeBottom=$rangeBottom * 0.97 = $breakdownLevel',
         );
         return true;

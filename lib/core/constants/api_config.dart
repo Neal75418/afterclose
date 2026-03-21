@@ -24,6 +24,9 @@ abstract final class ApiConfig {
   /// FinMind 接收超時（秒）
   static const int finmindReceiveTimeoutSec = 30;
 
+  /// TDCC 快取 TTL（分鐘）— 週資料，60 分鐘已足夠
+  static const int tdccCacheTtlMin = 60;
+
   // ==================================================
   // 請求延遲設定（避免過度請求）
   // ==================================================

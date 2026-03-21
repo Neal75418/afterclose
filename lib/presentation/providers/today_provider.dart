@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -16,7 +17,7 @@ import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 /// 每日更新作業的最大執行時間
-const _updateTimeout = Duration(minutes: 60);
+const _updateTimeout = Duration(minutes: ApiConfig.updateTimeoutMin);
 
 // ==================================================
 // Today Screen State

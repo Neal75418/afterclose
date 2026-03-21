@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -203,7 +204,9 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
       );
 
       // 2. Additional data in parallel
-      final instStartDate = dateCtx.today.subtract(const Duration(days: 10));
+      final instStartDate = dateCtx.today.subtract(
+        const Duration(days: InstitutionalParams.institutionalLookbackDays),
+      );
       final (valuations, institutional, eps, revenue) = await (
         _db.getLatestValuationsBatch(symbols),
         _db.getInstitutionalHistoryBatch(symbols, startDate: instStartDate),
