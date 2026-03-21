@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -100,10 +101,12 @@ class InstitutionalRepository implements IInstitutionalRepository {
     bool force = false,
   }) async {
     try {
-      // 提高閾值至 1500 以涵蓋上市+上櫃股票
+      // 提高閾值以涵蓋上市+上櫃股票
       if (!force) {
         final existingCount = await _db.getInstitutionalCountForDate(date);
-        if (existingCount > 1500) return existingCount;
+        if (existingCount > DataFreshness.fullMarketThreshold) {
+          return existingCount;
+        }
       }
 
       // 並行取得上市與上櫃法人資料（錯誤隔離，允許部分成功）

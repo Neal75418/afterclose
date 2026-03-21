@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -154,13 +155,15 @@ class HistoricalPriceSyncer {
     final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
 
     // 約 71% 的日曆天是交易日
-    final expectedTradingDays = (daysSinceFirstTrade * 0.71).round().clamp(
-      1,
-      daysSinceFirstTrade,
-    );
+    final expectedTradingDays =
+        (daysSinceFirstTrade * DataFreshness.tradingDayRatio).round().clamp(
+          1,
+          daysSinceFirstTrade,
+        );
 
     // 只要資料達到預期的 50% 就視為足夠
-    final minAcceptableDays = (expectedTradingDays * 0.5).round();
+    final minAcceptableDays =
+        (expectedTradingDays * DataFreshness.minAcceptableDataRatio).round();
     return priceCount >= minAcceptableDays;
   }
 
@@ -211,8 +214,8 @@ class HistoricalPriceSyncer {
     }
 
     // 無資料的需要完整 14 個月；有部分資料的平均需要 4 個月
-    const fullMonths = 14;
-    const partialMonths = 4;
+    const fullMonths = DataFreshness.historicalFullSyncMonths;
+    const partialMonths = DataFreshness.historicalPartialSyncMonths;
     final total = zeroDataCount * fullMonths + partialDataCount * partialMonths;
     return total / symbols.length;
   }
@@ -233,19 +236,19 @@ class HistoricalPriceSyncer {
     // 以月度 API 呼叫預算計算動態上限
     // 正常日（avgMonths ≈ 1）→ 200 檔
     // Fresh DB（avgMonths ≈ 14）→ ~21 檔
-    const maxMonthlyApiCalls = 300;
-    const absoluteMax = 200;
-    const absoluteMin = 15;
-    final maxSyncCount = (maxMonthlyApiCalls / avgMonthsPerSymbol).ceil().clamp(
-      absoluteMin,
-      absoluteMax,
-    );
+    final maxSyncCount =
+        (ApiConfig.historicalPriceMaxMonthlyApiCalls / avgMonthsPerSymbol)
+            .ceil()
+            .clamp(
+              ApiConfig.historicalPriceMinSyncCount,
+              ApiConfig.historicalPriceMaxSyncCount,
+            );
 
     if (avgMonthsPerSymbol > 3) {
       AppLogger.info(
         'HistoricalPriceSyncer',
         '每檔平均需 ${avgMonthsPerSymbol.toStringAsFixed(1)} 個月 API 呼叫，'
-            '動態限制為 $maxSyncCount 檔（API 預算 $maxMonthlyApiCalls）',
+            '動態限制為 $maxSyncCount 檔（API 預算 ${ApiConfig.historicalPriceMaxMonthlyApiCalls}）',
       );
     }
 
@@ -342,7 +345,7 @@ class HistoricalPriceSyncer {
   }) async {
     final total = symbols.length;
     var historySynced = 0;
-    const batchSize = 5;
+    const batchSize = ApiConfig.historicalPriceBatchSize;
     final failedSymbols = <String>[];
 
     var rateLimited = false;

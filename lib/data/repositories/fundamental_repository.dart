@@ -167,9 +167,6 @@ class FundamentalRepository implements IFundamentalRepository {
         return StockValuationCompanion.insert(
           symbol: r.code,
           date: r.date,
-          // TWSE 本益比若為負盈餘則顯示「-」，解析器回傳 null
-          // FinMind 回傳 0 或 null？
-          // 若無資料則儲存 null
           per: Value(r.per),
           pbr: Value(r.pbr),
           dividendYield: Value(r.dividendYield),
@@ -186,7 +183,7 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步全市場估值失敗: $date', e);
+      AppLogger.warning('FundamentalRepo', '同步全市場估值失敗', e);
       return 0;
     }
   }

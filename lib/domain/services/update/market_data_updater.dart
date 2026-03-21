@@ -351,7 +351,7 @@ class MarketDataUpdater {
   /// 月報資料，每月更新一次即可。
   Future<int> syncInsiderData({bool force = false}) async {
     try {
-      final count = await _insiderRepo.syncOtcInsiderHoldings(force: force);
+      final count = await _insiderRepo.syncAllInsiderHoldings(force: force);
       AppLogger.info('MarketDataUpdater', '董監持股資料同步: $count 筆');
       return count;
     } catch (e) {

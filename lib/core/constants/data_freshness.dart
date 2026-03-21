@@ -84,4 +84,31 @@ abstract final class DataFreshness {
 
   /// App 回到前景後，超過此時間（分鐘）視為資料過期，自動重新載入
   static const int appStaleThresholdMinutes = 30;
+
+  /// 股票清單初始化最低股票數
+  ///
+  /// 低於此數量表示股票清單尚未完整初始化，需要從 TWSE/TPEx 同步。
+  static const int minInitialStockCount = 500;
+
+  // ==================================================
+  // 歷史價格資料估算
+  // ==================================================
+
+  /// 交易日佔日曆天的比例（台股約 71%）
+  ///
+  /// 用於由上市天數估算預期應有的交易日筆數。
+  static const double tradingDayRatio = 0.71;
+
+  /// 歷史資料可接受比例
+  ///
+  /// 實際資料達預期交易日的 50% 即視為足夠，不需重複同步。
+  static const double minAcceptableDataRatio = 0.5;
+
+  /// 無歷史資料股票所需完整同步月數
+  ///
+  /// DB 全新時每檔股票平均需要抓取約 14 個月的歷史。
+  static const int historicalFullSyncMonths = 14;
+
+  /// 有部分歷史資料股票平均所需同步月數
+  static const int historicalPartialSyncMonths = 4;
 }

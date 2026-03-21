@@ -417,7 +417,7 @@ class UpdateService {
       ctx.result.pricesUpdated = syncResult.count;
       ctx.marketCandidates = syncResult.candidates;
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '價格同步失敗: $e', e);
+      AppLogger.warning('UpdateSvc', '價格同步失敗', e);
       ctx.result.recordError('價格資料更新失敗: $e', e);
     }
     return normalizedDate;

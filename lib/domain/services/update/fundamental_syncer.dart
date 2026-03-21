@@ -40,14 +40,22 @@ class FundamentalSyncer {
         date,
         force: force,
       );
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '估值資料同步失敗: $e');
+      AppLogger.warning('FundamentalSyncer', '估值資料同步失敗', e);
     }
 
     try {
       revenueCount = await _fundamentalRepo.syncAllMarketRevenue(date);
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '營收資料同步失敗: $e');
+      AppLogger.warning('FundamentalSyncer', '營收資料同步失敗', e);
     }
 
     final revenueLabel = revenueCount < 0 ? '已快取' : '$revenueCount';
@@ -89,8 +97,12 @@ class FundamentalSyncer {
         otcWatchlistSymbols,
         date: date,
       );
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃自選估值同步失敗: $e');
+      AppLogger.warning('FundamentalSyncer', '上櫃自選估值同步失敗', e);
     }
 
     try {
@@ -98,8 +110,12 @@ class FundamentalSyncer {
         otcWatchlistSymbols,
         date: date,
       );
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃自選營收同步失敗: $e');
+      AppLogger.warning('FundamentalSyncer', '上櫃自選營收同步失敗', e);
     }
 
     AppLogger.info(
@@ -151,8 +167,12 @@ class FundamentalSyncer {
         limitedOtcCandidates,
         date: date,
       );
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃候選估值同步失敗: $e');
+      AppLogger.warning('FundamentalSyncer', '上櫃候選估值同步失敗', e);
     }
 
     try {
@@ -160,8 +180,12 @@ class FundamentalSyncer {
         limitedOtcCandidates,
         date: date,
       );
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃候選營收同步失敗: $e');
+      AppLogger.warning('FundamentalSyncer', '上櫃候選營收同步失敗', e);
     }
 
     return FundamentalSyncResult(

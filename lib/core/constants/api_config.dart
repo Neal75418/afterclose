@@ -60,6 +60,24 @@ abstract final class ApiConfig {
   /// 連續失敗達此值時中止同步，避免在網路或 API 異常時持續耗費配額。
   static const int historicalPriceMaxConsecutiveFailedBatches = 2;
 
+  /// 歷史價格同步月度 API 呼叫預算
+  ///
+  /// 用於動態計算單次同步最多可處理的股票數量。
+  static const int historicalPriceMaxMonthlyApiCalls = 300;
+
+  /// 歷史價格同步每批並行處理的股票數
+  static const int historicalPriceBatchSize = 5;
+
+  /// 歷史價格同步動態上限最大值
+  ///
+  /// 正常日（每檔平均 1 個月）約同步 200 檔。
+  static const int historicalPriceMaxSyncCount = 200;
+
+  /// 歷史價格同步動態上限最小值
+  ///
+  /// Fresh DB 場景（每檔平均 14 個月）仍至少同步 15 檔。
+  static const int historicalPriceMinSyncCount = 15;
+
   /// 財報同步回溯天數（約 2 年）
   static const int financialSyncLookbackDays = 730;
 

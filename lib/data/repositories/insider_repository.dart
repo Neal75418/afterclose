@@ -166,8 +166,7 @@ class InsiderRepository {
   }
 
   /// 同步上櫃股票的董監持股資料（向後相容）
-  ///
-  /// @deprecated 請使用 [syncAllInsiderHoldings] 取代
+  @Deprecated('請使用 syncAllInsiderHoldings 取代')
   Future<int> syncOtcInsiderHoldings({bool force = false}) async {
     return syncAllInsiderHoldings(force: force);
   }

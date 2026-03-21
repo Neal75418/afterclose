@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 
@@ -39,10 +40,10 @@ class StockListSyncer {
 
   /// 檢查是否需要初始化股票清單
   ///
-  /// 台股約有 1000+ 檔股票，若過少則需同步
-  Future<bool> needsInitialization({int minStockCount = 500}) async {
+  /// 台股約有 1000+ 檔股票，若低於 [DataFreshness.minInitialStockCount] 則需同步
+  Future<bool> needsInitialization() async {
     final count = await getExistingStockCount();
-    return count < minStockCount;
+    return count < DataFreshness.minInitialStockCount;
   }
 
   /// 檢查是否應更新股票清單（每週一）

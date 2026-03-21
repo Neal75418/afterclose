@@ -11,6 +11,10 @@ class ScreeningRepository implements IScreeningRepository {
 
   final AppDatabase _db;
 
+  /// 執行 SQL 動態篩選，回傳符合條件的股票代號列表與掃描總數
+  ///
+  /// [conditions] 為篩選條件清單，支援價格、估值、營收等欄位。
+  /// [targetDate] 為篩選基準日期。
   @override
   Future<({List<String> symbols, int totalScanned})> executeSqlFilter(
     List<ScreeningCondition> conditions,
@@ -184,6 +188,9 @@ class ScreeningRepository implements IScreeningRepository {
     }
   }
 
+  /// 批次取得多檔股票的價格歷史
+  ///
+  /// [symbols] 為股票代號清單，[startDate] 至 [endDate] 為查詢區間。
   @override
   Future<Map<String, List<DailyPriceEntry>>> getPriceHistoryBatch(
     List<String> symbols, {
@@ -197,6 +204,7 @@ class ScreeningRepository implements IScreeningRepository {
     );
   }
 
+  /// 批次取得多檔股票在指定日期的推薦理由
   @override
   Future<Map<String, List<DailyReasonEntry>>> getReasonsBatch(
     List<String> symbols,

@@ -72,7 +72,7 @@ class CandidateSelector {
       orderedCandidates.add(symbol);
     }
 
-    AppLogger.info('UpdateSvc', '步驟 6: 篩選 ${orderedCandidates.length} 檔');
+    AppLogger.info('CandidateSelector', '篩選 ${orderedCandidates.length} 檔候選股');
     return orderedCandidates.toList();
   }
 }
