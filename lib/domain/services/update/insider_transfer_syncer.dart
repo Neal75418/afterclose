@@ -69,7 +69,7 @@ class InsiderTransferSyncer {
       );
       return companions.length;
     } catch (e) {
-      AppLogger.warning('InsiderTransferSyncer', '同步失敗: $e');
+      AppLogger.warning('InsiderTransferSyncer', '同步失敗', e);
       rethrow;
     }
   }

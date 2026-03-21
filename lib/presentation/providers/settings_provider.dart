@@ -178,7 +178,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
         '設定已載入: 主題=$themeMode, 語言=${locale.displayName}',
       );
     } catch (e) {
-      AppLogger.warning('Settings', '載入設定失敗: $e');
+      AppLogger.warning('Settings', '載入設定失敗', e);
       state = state.copyWith(isLoaded: true);
     }
   }
@@ -235,7 +235,7 @@ class SettingsNotifier extends Notifier<SettingsState> {
       );
       await prefs.setBool(_keyAutoUpdateEnabled, snapshot.autoUpdateEnabled);
     } catch (e) {
-      AppLogger.warning('Settings', '儲存設定失敗: $e');
+      AppLogger.warning('Settings', '儲存設定失敗', e);
     }
   }
 

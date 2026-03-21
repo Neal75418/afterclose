@@ -22,7 +22,7 @@ class StockListSyncer {
 
       return StockListSyncResult(stockCount: count, success: true);
     } catch (e) {
-      AppLogger.warning('StockListSyncer', '股票清單同步失敗: $e');
+      AppLogger.warning('StockListSyncer', '股票清單同步失敗', e);
 
       return StockListSyncResult(
         stockCount: 0,

@@ -92,7 +92,7 @@ class TdccHoldingSyncer {
       );
       return syncedCount;
     } catch (e) {
-      AppLogger.warning('TdccHoldingSyncer', '同步失敗: $e');
+      AppLogger.warning('TdccHoldingSyncer', '同步失敗', e);
       rethrow;
     }
   }

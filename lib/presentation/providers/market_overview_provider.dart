@@ -441,7 +441,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
                 if (_active) state = _buildState(r, dataDate);
               })
               .catchError((Object e) {
-                AppLogger.warning('MarketOverview', '背景載入完成但建構 state 失敗: $e');
+                AppLogger.warning('MarketOverview', '背景載入完成但建構 state 失敗', e);
               }),
         );
         return;
@@ -582,13 +582,13 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       try {
         twseIndices = await _twse.getMarketIndices();
       } catch (e) {
-        AppLogger.warning('MarketOverview', '載入 TWSE 指數失敗: $e');
+        AppLogger.warning('MarketOverview', '載入 TWSE 指數失敗', e);
       }
 
       try {
         tpexIndices = await _tpex.getTpexIndex();
       } catch (e) {
-        AppLogger.warning('MarketOverview', '載入 TPEx 指數失敗: $e');
+        AppLogger.warning('MarketOverview', '載入 TPEx 指數失敗', e);
       }
 
       // API 全部失敗時，從 DB 取最新指數作為備援
@@ -629,7 +629,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       return filtered;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入大盤指數失敗: $e');
+      AppLogger.warning('MarketOverview', '載入大盤指數失敗', e);
       return _loadIndicesFromDb();
     }
   }
@@ -656,7 +656,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入 DB 指數備援失敗: $e');
+      AppLogger.warning('MarketOverview', '載入 DB 指數備援失敗', e);
       return [];
     }
   }
@@ -680,7 +680,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入指數歷史失敗: $e');
+      AppLogger.warning('MarketOverview', '載入指數歷史失敗', e);
       return {};
     }
   }
@@ -694,7 +694,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         unchanged: counts.unchanged,
       );
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入漲跌家數失敗: $e');
+      AppLogger.warning('MarketOverview', '載入漲跌家數失敗', e);
       return const AdvanceDecline();
     }
   }
@@ -728,7 +728,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           ),
       };
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入分市場漲跌家數失敗: $e');
+      AppLogger.warning('MarketOverview', '載入分市場漲跌家數失敗', e);
       return {};
     }
   }
@@ -762,7 +762,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
                 )
               : null;
         } catch (e) {
-          AppLogger.warning('MarketOverview', '載入 TWSE 法人總額失敗: $e');
+          AppLogger.warning('MarketOverview', '載入 TWSE 法人總額失敗', e);
           return null;
         }
       }(),
@@ -784,7 +784,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
                 )
               : null;
         } catch (e) {
-          AppLogger.warning('MarketOverview', '載入 TPEx 法人總額失敗: $e');
+          AppLogger.warning('MarketOverview', '載入 TPEx 法人總額失敗', e);
           return null;
         }
       }(),
@@ -819,7 +819,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           ),
       };
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入分市場融資融券總額失敗: $e');
+      AppLogger.warning('MarketOverview', '載入分市場融資融券總額失敗', e);
       return {};
     }
   }
@@ -847,7 +847,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           entry.key: TradingTurnover(totalTurnover: entry.value.totalTurnover),
       };
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入分市場成交額失敗: $e');
+      AppLogger.warning('MarketOverview', '載入分市場成交額失敗', e);
       return {};
     }
   }
@@ -877,7 +877,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           ),
       };
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入漲停跌停家數失敗: $e');
+      AppLogger.warning('MarketOverview', '載入漲停跌停家數失敗', e);
       return {};
     }
   }
@@ -911,7 +911,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入成交額均量比較失敗: $e');
+      AppLogger.warning('MarketOverview', '載入成交額均量比較失敗', e);
       return {};
     }
   }
@@ -929,7 +929,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           ),
       };
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入注意處置股家數失敗: $e');
+      AppLogger.warning('MarketOverview', '載入注意處置股家數失敗', e);
       return {};
     }
   }
@@ -961,7 +961,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入法人連續買賣超失敗: $e');
+      AppLogger.warning('MarketOverview', '載入法人連續買賣超失敗', e);
       return {};
     }
   }
@@ -1008,7 +1008,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入法人歷史趨勢失敗: $e');
+      AppLogger.warning('MarketOverview', '載入法人歷史趨勢失敗', e);
       return {};
     }
   }
@@ -1031,7 +1031,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入成交額歷史趨勢失敗: $e');
+      AppLogger.warning('MarketOverview', '載入成交額歷史趨勢失敗', e);
       return {};
     }
   }
@@ -1053,7 +1053,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入融資融券歷史趨勢失敗: $e');
+      AppLogger.warning('MarketOverview', '載入融資融券歷史趨勢失敗', e);
       return {};
     }
   }
@@ -1075,7 +1075,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入漲跌比歷史趨勢失敗: $e');
+      AppLogger.warning('MarketOverview', '載入漲跌比歷史趨勢失敗', e);
       return {};
     }
   }
@@ -1128,7 +1128,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         topRules: topRules,
       );
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入推薦績效摘要失敗: $e');
+      AppLogger.warning('MarketOverview', '載入推薦績效摘要失敗', e);
       return null;
     }
   }
@@ -1141,7 +1141,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final service = ChipAnomalyService(database: _db);
       return await service.detectAnomaliesByMarket(date);
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入籌碼異動失敗: $e');
+      AppLogger.warning('MarketOverview', '載入籌碼異動失敗', e);
       return {};
     }
   }
@@ -1168,7 +1168,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
 
       return result;
     } catch (e) {
-      AppLogger.warning('MarketOverview', '載入產業表現失敗: $e');
+      AppLogger.warning('MarketOverview', '載入產業表現失敗', e);
       return {};
     }
   }

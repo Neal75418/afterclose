@@ -311,7 +311,7 @@ class MarketDataUpdater {
       warningCount = await _warningRepo.syncAllMarketWarnings(force: force);
       AppLogger.info('MarketDataUpdater', '警示資料同步完成: $warningCount 筆');
     } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '警示資料同步失敗: $e');
+      AppLogger.warning('MarketDataUpdater', '警示資料同步失敗', e);
       warningError = e;
     }
 
@@ -320,7 +320,7 @@ class MarketDataUpdater {
       insiderCount = await _insiderRepo.syncAllInsiderHoldings(force: force);
       AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $insiderCount 筆');
     } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗: $e');
+      AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗', e);
       insiderError = e;
     }
 
@@ -341,7 +341,7 @@ class MarketDataUpdater {
       AppLogger.info('MarketDataUpdater', '警示資料同步: $count 筆');
       return count;
     } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '警示資料同步失敗: $e');
+      AppLogger.warning('MarketDataUpdater', '警示資料同步失敗', e);
       return 0;
     }
   }
@@ -355,7 +355,7 @@ class MarketDataUpdater {
       AppLogger.info('MarketDataUpdater', '董監持股資料同步: $count 筆');
       return count;
     } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗: $e');
+      AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗', e);
       return 0;
     }
   }

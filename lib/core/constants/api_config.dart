@@ -52,6 +52,11 @@ abstract final class ApiConfig {
   /// 財報同步最大市場候選數（避免 FinMind 免費額度耗盡）
   static const int financialSyncMaxCandidates = 150;
 
+  /// 上櫃候選股基本面同步最大數量
+  ///
+  /// 上櫃候選清單通常較小，以 100 為上限避免 API 額度過度消耗。
+  static const int otcFundamentalsSyncMaxCount = 100;
+
   /// Syncer 批次大小（每批並行處理的股票數）
   static const int syncerBatchSize = 10;
 

@@ -354,7 +354,11 @@ class HistoricalPriceSyncer {
 
     for (var i = 0; i < total; i += batchSize) {
       if (rateLimited) break;
-      if (i > 0) await Future.delayed(const Duration(milliseconds: 200));
+      if (i > 0) {
+        await Future.delayed(
+          const Duration(milliseconds: ApiConfig.priceRequestDelayMs),
+        );
+      }
 
       final batchEnd = (i + batchSize).clamp(0, total);
       final batch = symbols.sublist(i, batchEnd);

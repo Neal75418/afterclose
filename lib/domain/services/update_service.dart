@@ -347,7 +347,7 @@ class UpdateService {
       try {
         await _marketIndexSyncer.sync();
       } catch (e) {
-        AppLogger.warning('UpdateSvc', '大盤指數同步失敗: $e');
+        AppLogger.warning('UpdateSvc', '大盤指數同步失敗', e);
         ctx.result.recordError('大盤指數同步失敗: $e', e);
       }
     }
@@ -356,7 +356,7 @@ class UpdateService {
       try {
         await _tdccHoldingSyncer.sync();
       } catch (e) {
-        AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗: $e');
+        AppLogger.warning('UpdateSvc', 'TDCC 股權分散表同步失敗', e);
       }
     }
 
@@ -372,7 +372,7 @@ class UpdateService {
           );
         }
       } catch (e) {
-        AppLogger.warning('UpdateSvc', '股利/股東會同步失敗: $e');
+        AppLogger.warning('UpdateSvc', '股利/股東會同步失敗', e);
       }
     }
 
@@ -383,7 +383,7 @@ class UpdateService {
           AppLogger.info('UpdateSvc', '內部人轉讓同步: $transferCount 筆');
         }
       } catch (e) {
-        AppLogger.warning('UpdateSvc', '內部人轉讓同步失敗: $e');
+        AppLogger.warning('UpdateSvc', '內部人轉讓同步失敗', e);
       }
     }
   }
@@ -514,7 +514,7 @@ class UpdateService {
             date: normalizedDate,
           );
         } catch (e) {
-          AppLogger.warning('UpdateSvc', '上櫃自選基本面補充失敗: $e');
+          AppLogger.warning('UpdateSvc', '上櫃自選基本面補充失敗', e);
         }
 
         final revenueLabel = fundResult.revenueCount < 0
@@ -554,7 +554,7 @@ class UpdateService {
             );
           }
         } catch (e) {
-          AppLogger.warning('UpdateSvc', '財報資料同步失敗: $e');
+          AppLogger.warning('UpdateSvc', '財報資料同步失敗', e);
         }
       } catch (e) {
         ctx.result.recordError('基本面資料更新失敗: $e', e);
@@ -574,7 +574,7 @@ class UpdateService {
         );
       } catch (e) {
         // 不加入 errors，因為這是額外功能，不影響主流程
-        AppLogger.warning('UpdateSvc', 'Killer Features 資料更新失敗: $e');
+        AppLogger.warning('UpdateSvc', 'Killer Features 資料更新失敗', e);
       }
     }
   }
@@ -625,7 +625,7 @@ class UpdateService {
         );
       }
     } catch (e) {
-      AppLogger.warning('UpdateSvc', '上櫃資料補充失敗: $e');
+      AppLogger.warning('UpdateSvc', '上櫃資料補充失敗', e);
     }
   }
 

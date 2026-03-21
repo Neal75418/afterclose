@@ -1,3 +1,5 @@
+import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -53,7 +55,9 @@ class InstitutionalSyncer {
       final backDate = date.subtract(Duration(days: i));
 
       if (TaiwanCalendar.isTradingDay(backDate)) {
-        await Future.delayed(const Duration(milliseconds: 1000));
+        await Future.delayed(
+          const Duration(milliseconds: ApiConfig.retryDelayMs),
+        );
 
         try {
           await _institutionalRepo.syncAllMarketInstitutional(
@@ -107,8 +111,9 @@ class InstitutionalSyncResult {
   final int syncedDays;
   final List<String> errors;
 
-  /// 估計同步的資料筆數（每天約 1000 檔股票）
-  int get estimatedCount => syncedDays * 1000;
+  /// 估計同步的資料筆數（每天約 [DataFreshness.estimatedDailyInstitutionalRecords] 檔）
+  int get estimatedCount =>
+      syncedDays * DataFreshness.estimatedDailyInstitutionalRecords;
 
   bool get hasErrors => errors.isNotEmpty;
 }

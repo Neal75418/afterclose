@@ -30,7 +30,7 @@ Future<T> safeAwait<T>(
   } on NetworkException {
     rethrow;
   } catch (e) {
-    AppLogger.warning(tag, '$description: $e');
+    AppLogger.warning(tag, description, e);
     return defaultValue;
   }
 }

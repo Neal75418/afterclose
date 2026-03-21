@@ -44,6 +44,12 @@ class MarketIndexSyncer {
   /// 回補天數（日曆天，包含非交易日，確保涵蓋 ~30 個交易日）
   static const _backfillCalendarDays = 45;
 
+  /// 查詢 DB 時額外加入的緩衝天數，確保不遺漏邊界資料
+  static const _queryBufferDays = 10;
+
+  /// 觸發回補判斷時查詢的歷史天數
+  static const _historyCheckDays = 30;
+
   /// API 請求間隔，避免 TWSE rate limit
   static const _requestDelay = Duration(
     milliseconds: ApiConfig.syncerBatchDelayMs,
@@ -131,7 +137,7 @@ class MarketIndexSyncer {
     // 查詢 DB 已有的指數日期，避免重複呼叫 API
     final existingHistory = await _db.getIndexHistoryBatch(
       MarketIndexNames.dashboardIndices,
-      days: _backfillCalendarDays + 10,
+      days: _backfillCalendarDays + _queryBufferDays,
       now: now,
     );
     final existingDates = <String>{};
@@ -205,7 +211,7 @@ class MarketIndexSyncer {
   Future<void> _backfillIfNeeded() async {
     final history = await _db.getIndexHistoryBatch(
       MarketIndexNames.dashboardIndices,
-      days: 30,
+      days: _historyCheckDays,
     );
 
     // 取任一指數的筆數作為判斷依據

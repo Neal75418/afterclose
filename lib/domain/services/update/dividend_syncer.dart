@@ -82,7 +82,7 @@ class DividendSyncer {
         }
         AppLogger.info('DividendSyncer', 'TWSE 已宣告股利: ${twseData.length} 筆');
       } catch (e) {
-        AppLogger.warning('DividendSyncer', 'TWSE 已宣告股利同步失敗: $e');
+        AppLogger.warning('DividendSyncer', 'TWSE 已宣告股利同步失敗', e);
         errors.add('TWSE 已宣告股利: $e');
       }
     }
@@ -107,7 +107,7 @@ class DividendSyncer {
         }
         AppLogger.info('DividendSyncer', 'TPEX 已宣告股利: ${tpexData.length} 筆');
       } catch (e) {
-        AppLogger.warning('DividendSyncer', 'TPEX 已宣告股利同步失敗: $e');
+        AppLogger.warning('DividendSyncer', 'TPEX 已宣告股利同步失敗', e);
         errors.add('TPEX 已宣告股利: $e');
       }
     }
@@ -121,7 +121,7 @@ class DividendSyncer {
         dividendsUpserted = dividendCompanions.length;
         AppLogger.info('DividendSyncer', '股利資料 upsert: $dividendsUpserted 筆');
       } catch (e) {
-        AppLogger.warning('DividendSyncer', '股利資料寫入失敗: $e');
+        AppLogger.warning('DividendSyncer', '股利資料寫入失敗', e);
         errors.add('DB 寫入: $e');
       }
     }
@@ -149,7 +149,7 @@ class DividendSyncer {
         }
         AppLogger.info('DividendSyncer', 'TPEX 股東會: ${meetings.length} 筆');
       } catch (e) {
-        AppLogger.warning('DividendSyncer', 'TPEX 股東會同步失敗: $e');
+        AppLogger.warning('DividendSyncer', 'TPEX 股東會同步失敗', e);
         errors.add('TPEX 股東會: $e');
       }
     }
@@ -174,7 +174,7 @@ class DividendSyncer {
         meetingEventsCreated = uniqueMeetings.length;
         AppLogger.info('DividendSyncer', '股東會事件寫入: $meetingEventsCreated 筆');
       } catch (e) {
-        AppLogger.warning('DividendSyncer', '股東會事件寫入失敗: $e');
+        AppLogger.warning('DividendSyncer', '股東會事件寫入失敗', e);
         errors.add('股東會事件: $e');
       }
     }

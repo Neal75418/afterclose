@@ -135,7 +135,7 @@ class FundamentalSyncer {
   Future<FundamentalSyncResult> syncOtcCandidatesFundamentals({
     required List<String> candidates,
     required DateTime date,
-    int maxSyncCount = 100,
+    int maxSyncCount = ApiConfig.otcFundamentalsSyncMaxCount,
   }) async {
     if (candidates.isEmpty) {
       return const FundamentalSyncResult(valuationCount: 0, revenueCount: 0);

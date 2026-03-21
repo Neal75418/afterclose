@@ -86,13 +86,13 @@ class StockFundamentalsLoader {
       if (dbValuations.isNotEmpty) {
         final per = FinMindModelMapper.toFinMindPER(dbValuations.last)!;
         AppLogger.debug(
-          'StockDetail',
+          'FundamentalsLoader',
           '$symbol: 使用 DB 估值 (殖利率=${per.dividendYield.toStringAsFixed(2)}%)',
         );
         return per;
       }
     } catch (e) {
-      AppLogger.warning('StockDetail', '$symbol: 取得 DB 估值失敗', e);
+      AppLogger.warning('FundamentalsLoader', '$symbol: 取得 DB 估值失敗', e);
     }
     return null;
   }
@@ -117,7 +117,10 @@ class StockFundamentalsLoader {
       const minMonthsForDbUsage = 6;
       if (dbRevenues.length >= minMonthsForDbUsage) {
         final data = FinMindModelMapper.toFinMindRevenues(dbRevenues);
-        AppLogger.debug('StockDetail', '$symbol: 使用 DB 營收 (${data.length} 筆)');
+        AppLogger.debug(
+          'FundamentalsLoader',
+          '$symbol: 使用 DB 營收 (${data.length} 筆)',
+        );
         return data;
       }
 
@@ -132,7 +135,7 @@ class StockFundamentalsLoader {
           revenueData = FinMindRevenue.calculateGrowthRates(revenueData);
         }
         AppLogger.debug(
-          'StockDetail',
+          'FundamentalsLoader',
           '$symbol: 使用 FinMind 營收 (${revenueData.length} 筆，DB 僅 ${dbRevenues.length} 筆)',
         );
         return revenueData;
@@ -141,15 +144,15 @@ class StockFundamentalsLoader {
         if (dbRevenues.isNotEmpty) {
           final data = FinMindModelMapper.toFinMindRevenues(dbRevenues);
           AppLogger.debug(
-            'StockDetail',
+            'FundamentalsLoader',
             '$symbol: FinMind 失敗，fallback 使用 DB 營收 (${data.length} 筆)',
           );
           return data;
         }
-        AppLogger.warning('StockDetail', '取得營收資料失敗: $symbol', apiError);
+        AppLogger.warning('FundamentalsLoader', '取得營收資料失敗: $symbol', apiError);
       }
     } catch (e) {
-      AppLogger.warning('StockDetail', '$symbol: 載入營收資料失敗', e);
+      AppLogger.warning('FundamentalsLoader', '$symbol: 載入營收資料失敗', e);
     }
     return [];
   }
@@ -162,7 +165,7 @@ class StockFundamentalsLoader {
       final dbDividends = await _db.getDividendHistory(symbol);
       if (dbDividends.isNotEmpty) {
         AppLogger.debug(
-          'StockDetail',
+          'FundamentalsLoader',
           '$symbol: 使用 DB 股利歷史 (${dbDividends.length} 筆)',
         );
         return dbDividends
@@ -200,17 +203,17 @@ class StockFundamentalsLoader {
                     .toList(),
               )
               .catchError((e) {
-                AppLogger.warning('StockDetail', '$symbol: 背景寫入股利失敗', e);
+                AppLogger.warning('FundamentalsLoader', '$symbol: 背景寫入股利失敗', e);
               }),
         );
         AppLogger.debug(
-          'StockDetail',
+          'FundamentalsLoader',
           '$symbol: 從 API 取得股利歷史 (${apiData.length} 筆) 並存入 DB',
         );
         return apiData;
       }
     } catch (e) {
-      AppLogger.debug('StockDetail', '$symbol: 取得股利歷史失敗');
+      AppLogger.debug('FundamentalsLoader', '$symbol: 取得股利歷史失敗');
     }
     return [];
   }
@@ -249,7 +252,7 @@ class StockFundamentalsLoader {
         }
       }
     } catch (e) {
-      AppLogger.debug('StockDetail', '$symbol: 取得 EPS 歷史失敗');
+      AppLogger.debug('FundamentalsLoader', '$symbol: 取得 EPS 歷史失敗');
     }
     return (epsData: epsData, quarterMetrics: quarterMetrics);
   }
@@ -273,13 +276,13 @@ class StockFundamentalsLoader {
         perData.sort((a, b) => b.date.compareTo(a.date));
         final per = perData.first;
         AppLogger.debug(
-          'StockDetail',
+          'FundamentalsLoader',
           '$symbol: 使用 FinMind 估值 (殖利率=${per.dividendYield.toStringAsFixed(2)}%)',
         );
         return per;
       }
     } catch (e) {
-      AppLogger.warning('StockDetail', '取得估值資料失敗: $symbol', e);
+      AppLogger.warning('FundamentalsLoader', '取得估值資料失敗: $symbol', e);
     }
     return null;
   }
