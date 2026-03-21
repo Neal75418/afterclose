@@ -570,26 +570,6 @@ class FinMindClient {
     fromJson: FinMindShareholding.tryFromJson,
   );
 
-  /// 取得股權分散表資料
-  ///
-  /// 資料集: TaiwanStockHoldingSharesPer
-  /// 回傳: 依持股比例分布的股東資料
-  ///
-  /// 注意: 此 API 需要付費會員（贊助者）。
-  /// 免費使用者會收到 400 Bad Request 錯誤。
-  Future<List<FinMindHoldingSharesPer>> getHoldingSharesPer({
-    required String stockId,
-    required String startDate,
-    String? endDate,
-  }) => _fetchDateRange(
-    dataset: 'TaiwanStockHoldingSharesPer',
-    stockId: stockId,
-    startDate: startDate,
-    endDate: endDate,
-    fromJson: FinMindHoldingSharesPer.tryFromJson,
-    stockIdKey: 'stock_id', // 此 API 使用 stock_id 而非 data_id
-  );
-
   /// 取得當沖比例資料
   ///
   /// 資料集: TaiwanStockDayTrading
@@ -636,54 +616,6 @@ class FinMindClient {
     startDate: startDate,
     endDate: endDate,
     fromJson: FinMindBalanceSheet.tryFromJson,
-  );
-
-  /// 取得現金流量表資料
-  ///
-  /// 資料集: TaiwanStockCashFlowsStatement
-  /// 回傳: 按季度的現金流量資料
-  Future<List<FinMindCashFlowStatement>> getCashFlowsStatement({
-    required String stockId,
-    required String startDate,
-    String? endDate,
-  }) => _fetchDateRange(
-    dataset: 'TaiwanStockCashFlowsStatement',
-    stockId: stockId,
-    startDate: startDate,
-    endDate: endDate,
-    fromJson: FinMindCashFlowStatement.tryFromJson,
-  );
-
-  /// 取得還原股價資料
-  ///
-  /// 資料集: TaiwanStockPriceAdj
-  /// 回傳: 經除權息調整的股價
-  Future<List<FinMindAdjustedPrice>> getAdjustedPrices({
-    required String stockId,
-    required String startDate,
-    String? endDate,
-  }) => _fetchDateRange(
-    dataset: 'TaiwanStockPriceAdj',
-    stockId: stockId,
-    startDate: startDate,
-    endDate: endDate,
-    fromJson: FinMindAdjustedPrice.tryFromJson,
-  );
-
-  /// 取得週 K 線資料
-  ///
-  /// 資料集: TaiwanStockWeekPrice
-  /// 回傳: 週 OHLCV 資料
-  Future<List<FinMindWeeklyPrice>> getWeeklyPrices({
-    required String stockId,
-    required String startDate,
-    String? endDate,
-  }) => _fetchDateRange(
-    dataset: 'TaiwanStockWeekPrice',
-    stockId: stockId,
-    startDate: startDate,
-    endDate: endDate,
-    fromJson: FinMindWeeklyPrice.tryFromJson,
   );
 
   /// 取得含息報酬指數（加權股價指數含息版本）

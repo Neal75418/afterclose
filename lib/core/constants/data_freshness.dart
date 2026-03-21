@@ -78,9 +78,6 @@ abstract final class DataFreshness {
   /// 當沖比例驗證上限（%）
   static const double dayTradingMaxValidRatio = 100.0;
 
-  /// 融資融券短期回溯天數（預設）
-  static const int marginShortLookbackDays = 5;
-
   // ==================================================
   // App Lifecycle
   // ==================================================

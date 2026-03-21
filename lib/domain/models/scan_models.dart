@@ -2,7 +2,6 @@
 //
 // These live in the domain layer so that both presentation (providers/screens)
 // and domain services can reference them without violating layer boundaries.
-import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/signal_names.dart';
 
@@ -354,9 +353,6 @@ class ScanStockItem {
   late final List<String> reasonTypes = reasons
       .map((r) => r.reasonType)
       .toList();
-
-  /// Get trend icon
-  String get trendIcon => trendState.trendEmoji;
 
   /// Create a copy with modified fields
   ScanStockItem copyWith({bool? isInWatchlist}) {

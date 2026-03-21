@@ -36,12 +36,6 @@ extension ResponsiveHelper on BuildContext {
   /// 螢幕方向
   Orientation get orientation => MediaQuery.orientationOf(this);
 
-  /// 是否為橫向
-  bool get isLandscape => orientation == Orientation.landscape;
-
-  /// 是否為直向
-  bool get isPortrait => orientation == Orientation.portrait;
-
   /// 設備類型
   DeviceType get deviceType {
     final width = screenWidth;
@@ -91,24 +85,6 @@ extension ResponsiveHelper on BuildContext {
     };
   }
 
-  /// 根據佈局類型返回對應值
-  T responsiveLayout<T>({required T singlePane, T? dualPane, T? triplePane}) {
-    return switch (layoutType) {
-      LayoutType.triplePane => triplePane ?? dualPane ?? singlePane,
-      LayoutType.dualPane => dualPane ?? singlePane,
-      LayoutType.singlePane => singlePane,
-    };
-  }
-
-  /// 響應式邊距
-  EdgeInsets get responsivePadding {
-    return responsive(
-      mobile: const EdgeInsets.all(16),
-      tablet: const EdgeInsets.all(24),
-      desktop: const EdgeInsets.all(32),
-    );
-  }
-
   /// 響應式水平邊距
   double get responsiveHorizontalPadding {
     return responsive(mobile: 16.0, tablet: 24.0, desktop: 32.0);
@@ -136,13 +112,5 @@ extension ResponsiveHelper on BuildContext {
 
     // 限制在 1-4 欄之間
     return math.max(1, math.min(maxColumns, 4));
-  }
-
-  /// 響應式列表項目寬度（用於 GridView）
-  double get responsiveListItemWidth {
-    final columns = responsiveGridColumns;
-    final totalPadding = responsiveHorizontalPadding * 2;
-    final totalSpacing = responsiveCardSpacing * (columns - 1);
-    return (screenWidth - totalPadding - totalSpacing) / columns;
   }
 }

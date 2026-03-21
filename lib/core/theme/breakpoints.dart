@@ -12,12 +12,6 @@ abstract final class Breakpoints {
   /// 平板最大寬度（600-1024px 為平板）
   static const double tablet = 1024;
 
-  /// 桌面最小寬度（>= 1024px 為桌面）
-  static const double desktop = 1024;
-
-  /// 大桌面寬度（>= 1440px 為大桌面）
-  static const double largeDesktop = 1440;
-
   /// 導航欄收合斷點（低於此寬度使用 BottomNav）
   static const double navigationRailBreakpoint = 600;
 

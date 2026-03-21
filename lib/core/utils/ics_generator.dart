@@ -24,11 +24,6 @@ abstract final class IcsGenerator {
     return buffer.toString();
   }
 
-  /// 產生單一事件的 VCALENDAR 字串
-  static String generateSingleEvent(StockEventEntry event) {
-    return generateCalendar([event]);
-  }
-
   static void _writeEvent(StringBuffer buffer, StockEventEntry event) {
     final startDate = _formatDate(event.eventDate);
     // RFC 5545: VALUE=DATE 的 DTEND 是 exclusive，全天事件需 +1 天

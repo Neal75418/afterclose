@@ -261,14 +261,6 @@ class BatchQueryCacheManager {
     _reasonsCache.clear();
   }
 
-  /// 清除所有快取中的過期項目
-  void evictExpired() {
-    _latestPricesCache.evictExpired();
-    _priceHistoryCache.evictExpired();
-    _analysesCache.evictExpired();
-    _reasonsCache.evictExpired();
-  }
-
   // ==================================================
   // 快取鍵產生
   // ==================================================
