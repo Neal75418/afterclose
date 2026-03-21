@@ -21,10 +21,4 @@ class TpexMarginTrading {
   final double shortBuy; // 融券買進 (回補)
   final double shortSell; // 融券賣出
   final double shortBalance; // 融券餘額
-
-  /// 融資增減
-  double get marginNet => marginBuy - marginSell;
-
-  /// 融券增減
-  double get shortNet => shortSell - shortBuy;
 }

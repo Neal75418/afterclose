@@ -42,12 +42,4 @@ class FinMindBalanceSheet {
   final String type; // 項目名稱 (e.g., "TotalAssets", "TotalLiabilities")
   final double value; // 金額
   final String origin; // 中文項目名稱
-
-  /// 常用資產負債表項目類型
-  static const String typeTotalAssets = 'TotalAssets';
-  static const String typeTotalLiabilities = 'TotalLiabilities';
-  static const String typeEquity = 'Equity';
-  static const String typeCurrentAssets = 'CurrentAssets';
-  static const String typeCurrentLiabilities = 'CurrentLiabilities';
-  static const String typeCash = 'CashAndCashEquivalents';
 }

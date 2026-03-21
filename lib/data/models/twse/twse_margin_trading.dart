@@ -57,12 +57,6 @@ class TwseMarginTrading {
   final double shortSell; // 融券賣出
   final double shortBalance; // 融券餘額
 
-  /// 融資增減
-  double get marginNet => marginBuy - marginSell;
-
-  /// 融券增減
-  double get shortNet => shortSell - shortBuy;
-
   static double? _parseDouble(dynamic value) {
     if (value == null) return null;
     if (value is num) return value.toDouble();

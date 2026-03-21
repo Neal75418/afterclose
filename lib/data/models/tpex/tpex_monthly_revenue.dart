@@ -19,7 +19,4 @@ class TpexMonthlyRevenue {
   final int revenueMonth; // 營收月份
   final double? momGrowth; // 月增率 (%)
   final double? yoyGrowth; // 年增率 (%)
-
-  /// 營收（億元）
-  double get revenueInBillion => revenue / 100000;
 }

@@ -24,7 +24,4 @@ class TwseMarketIndex {
 
   /// 是否上漲
   bool get isUp => change > 0;
-
-  /// 是否下跌
-  bool get isDown => change < 0;
 }

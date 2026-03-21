@@ -62,8 +62,4 @@ class FinMindShareholding {
   final double numberOfSharesIssued; // 已發行股數
   final String recentlyDeclareDate; // 最近申報日
   final String note; // 備註
-
-  /// 外資可加碼空間 (上限 - 現有持股)
-  double get foreignInvestmentRoom =>
-      foreignInvestmentUpperLimitRatio - foreignInvestmentSharesRatio;
 }

@@ -30,10 +30,4 @@ class TwseDayTrading {
 
   /// 當沖比例 (%) - calculated from daily price volume
   final double ratio;
-
-  /// 是否為高當沖比例 (>= 30%)
-  bool get isHighRatio => ratio >= 30.0;
-
-  /// 是否為極高當沖比例 (>= 50%)
-  bool get isExtremeRatio => ratio >= 50.0;
 }

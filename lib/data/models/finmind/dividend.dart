@@ -42,7 +42,4 @@ class FinMindDividend {
   final double stockDividend; // 股票股利
   final String? exDividendDate; // 除息日
   final String? exRightsDate; // 除權日
-
-  /// 總股利
-  double get totalDividend => cashDividend + stockDividend;
 }

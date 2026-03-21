@@ -372,7 +372,6 @@ class TpexClient {
         per: parsePer(json['PriceEarningRatio']),
         pbr: parsePer(json['PriceBookRatio']),
         dividendYield: parsePer(json['YieldRatio']),
-        dividendPerShare: parsePer(json['DividendPerShare']),
       );
     } catch (e) {
       AppLogger.debug(_tag, '解析估值資料失敗: $e');

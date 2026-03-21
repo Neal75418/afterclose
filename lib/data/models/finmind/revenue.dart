@@ -94,7 +94,4 @@ class FinMindRevenue {
 
   /// 年增率 (YoY %)
   double? yoyGrowth;
-
-  /// 營收 (億元)
-  double get revenueInBillion => revenue / 100000;
 }

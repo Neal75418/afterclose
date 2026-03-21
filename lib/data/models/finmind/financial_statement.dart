@@ -43,11 +43,4 @@ class FinMindFinancialStatement {
   final String type; // 項目名稱 (e.g., "Revenue", "NetIncome")
   final double value; // 金額
   final String origin; // 中文項目名稱
-
-  /// 常用損益表項目類型
-  static const String typeRevenue = 'Revenue';
-  static const String typeGrossProfit = 'GrossProfit';
-  static const String typeOperatingIncome = 'OperatingIncome';
-  static const String typeNetIncome = 'NetIncome';
-  static const String typeEPS = 'EPS';
 }

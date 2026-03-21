@@ -290,7 +290,4 @@ class UpcomingDividend {
 
   /// 預估股利金額
   final double estimatedAmount;
-
-  /// 距離除息日天數
-  int daysUntilFrom(DateTime now) => exDividendDate.difference(now).inDays;
 }

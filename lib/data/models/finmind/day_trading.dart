@@ -56,10 +56,4 @@ class FinMindDayTrading {
   final double dayTradingVolume; // 當沖量 (平均)
   final double dayTradingRatio; // 當沖比例(%)
   final double tradeVolume; // 總成交量
-
-  /// 是否為高當沖比例 (>30%)
-  bool get isHighDayTrading => dayTradingRatio > 30;
-
-  /// 是否為極高當沖比例 (>40%)
-  bool get isExtremelyHighDayTrading => dayTradingRatio > 40;
 }

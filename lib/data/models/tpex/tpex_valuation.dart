@@ -7,7 +7,6 @@ class TpexValuation {
     this.per,
     this.pbr,
     this.dividendYield,
-    this.dividendPerShare,
   });
 
   final DateTime date;
@@ -16,5 +15,4 @@ class TpexValuation {
   final double? per; // 本益比
   final double? pbr; // 股價淨值比
   final double? dividendYield; // 殖利率 (%)
-  final double? dividendPerShare; // 每股配息
 }

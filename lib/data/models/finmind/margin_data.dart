@@ -91,12 +91,6 @@ class FinMindMarginData {
 
   final String note; // 備註
 
-  /// 融資淨買超
-  double get marginNet => marginBuy - marginSell - marginCashRepay;
-
-  /// 融券淨賣超
-  double get shortNet => shortSell - shortBuy - shortCashRepay;
-
   /// 券資比 (融券餘額 / 融資餘額 * 100)
   double get shortMarginRatio =>
       marginBalance > 0 ? (shortBalance / marginBalance) * 100 : 0;
