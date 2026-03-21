@@ -397,6 +397,10 @@ class TradingRepository implements ITradingRepository {
 
       if (twseData.isEmpty && tpexData.isEmpty) return 0;
 
+      // 取得已知股票代碼集合，過濾非 stocks 表中的代碼以避免 FK 違規
+      final activeStocks = await _db.getAllActiveStocks();
+      final validSymbols = activeStocks.map((s) => s.symbol).toSet();
+
       // 建立融資融券 entries（TWSE 和 TPEx 單位皆為張，無需轉換）
       MarginTradingCompanion buildEntry(
         String code,
@@ -421,7 +425,11 @@ class TradingRepository implements ITradingRepository {
       }
 
       final twseEntries = twseData
-          .where((item) => StockPatterns.isValidCode(item.code))
+          .where(
+            (item) =>
+                StockPatterns.isValidCode(item.code) &&
+                validSymbols.contains(item.code),
+          )
           .map(
             (item) => buildEntry(
               item.code,
@@ -437,7 +445,11 @@ class TradingRepository implements ITradingRepository {
           .toList();
 
       final tpexEntries = tpexData
-          .where((item) => StockPatterns.isValidCode(item.code))
+          .where(
+            (item) =>
+                StockPatterns.isValidCode(item.code) &&
+                validSymbols.contains(item.code),
+          )
           .map(
             (item) => buildEntry(
               item.code,
