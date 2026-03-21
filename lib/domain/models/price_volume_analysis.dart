@@ -32,8 +32,4 @@ class PriceVolumeAnalysis {
   final double? priceChangePercent;
   final double? volumeChangePercent;
   final double? pricePosition;
-
-  bool get hasDivergence =>
-      state == PriceVolumeState.bullishDivergence ||
-      state == PriceVolumeState.bearishDivergence;
 }

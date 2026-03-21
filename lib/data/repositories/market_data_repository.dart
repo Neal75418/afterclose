@@ -183,29 +183,4 @@ class MarketDataRepository implements IMarketDataRepository {
     final startDate = _clock.now().subtract(Duration(days: weeks * 7 + 30));
     return _db.getWeeklyPriceHistory(symbol, startDate: startDate);
   }
-
-  /// 取得 52 週最高/最低價
-  @override
-  Future<({double? high, double? low})> get52WeekHighLow(String symbol) async {
-    final history = await getWeeklyPriceHistory(symbol, weeks: 52);
-    if (history.isEmpty) return (high: null, low: null);
-
-    double? maxHigh;
-    double? minLow;
-
-    for (final entry in history) {
-      if (entry.high != null) {
-        maxHigh = maxHigh == null
-            ? entry.high
-            : (entry.high! > maxHigh ? entry.high : maxHigh);
-      }
-      if (entry.low != null) {
-        minLow = minLow == null
-            ? entry.low
-            : (entry.low! < minLow ? entry.low : minLow);
-      }
-    }
-
-    return (high: maxHigh, low: minLow);
-  }
 }

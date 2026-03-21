@@ -30,7 +30,4 @@ abstract class IMarketDataRepository {
     String symbol, {
     int weeks = 52,
   });
-
-  /// 取得 52 週高低點
-  Future<({double? high, double? low})> get52WeekHighLow(String symbol);
 }
