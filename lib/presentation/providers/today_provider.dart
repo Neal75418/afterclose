@@ -238,7 +238,7 @@ class TodayNotifier extends Notifier<TodayState> {
   ///
   /// 若更新時間超過 [_updateTimeout] 將拋出 [TimeoutException]
   /// 若已有更新在進行中，直接返回以避免並發 DB 寫入衝突。
-  Future<UpdateResult> runUpdate({bool forceFetch = false}) async {
+  Future<UpdateResult> runUpdate({bool force = false}) async {
     if (state.isUpdating) {
       return UpdateResult(date: DateTime.now())
         ..skipped = true
@@ -257,7 +257,7 @@ class TodayNotifier extends Notifier<TodayState> {
     try {
       final result = await _updateService
           .runDailyUpdate(
-            forceFetch: forceFetch,
+            force: force,
             onProgress: (current, total, message) {
               state = state.copyWith(
                 updateProgress: UpdateProgress(

@@ -55,7 +55,7 @@ class ChipAnomalyService {
   ChipAnomalyService({required AppDatabase database}) : _db = database;
 
   final AppDatabase _db;
-  static const String _logTag = 'ChipAnomalyService';
+  static const String _tag = 'ChipAnomalyService';
 
   /// 偵測當日籌碼異動，依市場分組回傳
   ///
@@ -89,7 +89,7 @@ class ChipAnomalyService {
         });
       }
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測籌碼異動失敗', e);
+      AppLogger.warning(_tag, '偵測籌碼異動失敗', e);
     }
 
     return result;
@@ -137,7 +137,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測高質押失敗', e);
+      AppLogger.warning(_tag, '偵測高質押失敗', e);
       return [];
     }
   }
@@ -181,7 +181,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測內部人轉讓失敗', e);
+      AppLogger.warning(_tag, '偵測內部人轉讓失敗', e);
       return [];
     }
   }
@@ -224,7 +224,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測外資逼近上限失敗', e);
+      AppLogger.warning(_tag, '偵測外資逼近上限失敗', e);
       return [];
     }
   }
@@ -287,7 +287,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測融券暴增失敗', e);
+      AppLogger.warning(_tag, '偵測融券暴增失敗', e);
       return [];
     }
   }
@@ -357,7 +357,7 @@ class ChipAnomalyService {
         );
       }).toList();
     } catch (e) {
-      AppLogger.warning(_logTag, '偵測法人集中買賣失敗', e);
+      AppLogger.warning(_tag, '偵測法人集中買賣失敗', e);
       return [];
     }
   }

@@ -19,16 +19,10 @@ abstract class ITradingRepository {
   Future<DayTradingEntry?> getLatestDayTrading(String symbol);
 
   /// 從 TWSE 同步全市場當沖資料
-  Future<int> syncAllDayTradingFromTwse({
-    DateTime? date,
-    bool forceRefresh = false,
-  });
+  Future<int> syncAllDayTradingFromTwse({DateTime? date, bool force = false});
 
   /// 從 TPEX 同步全市場上櫃當沖資料
-  Future<int> syncAllDayTradingFromTpex({
-    DateTime? date,
-    bool forceRefresh = false,
-  });
+  Future<int> syncAllDayTradingFromTpex({DateTime? date, bool force = false});
 
   // ==================================================
   // 融資融券
@@ -46,6 +40,6 @@ abstract class ITradingRepository {
   /// 從 TWSE/TPEX 同步全市場融資融券資料
   Future<int> syncAllMarginTradingFromTwse({
     DateTime? date,
-    bool forceRefresh = false,
+    bool force = false,
   });
 }

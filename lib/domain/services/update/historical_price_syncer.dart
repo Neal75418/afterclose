@@ -454,5 +454,5 @@ class HistoricalPriceSyncResult {
   final int totalSymbolsNeeded;
   final List<String> failedSymbols;
 
-  bool get hasFailures => failedSymbols.isNotEmpty;
+  bool get hasErrors => failedSymbols.isNotEmpty;
 }

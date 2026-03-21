@@ -16,7 +16,7 @@ import 'package:afterclose/data/remote/tdcc_client.dart';
 /// - 一次 API 呼叫取得全市場資料，無需逐檔查詢
 /// - 內建新鮮度檢查，同一週不重複同步
 class TdccHoldingSyncer {
-  TdccHoldingSyncer({
+  const TdccHoldingSyncer({
     required AppDatabase database,
     required TdccClient tdccClient,
     AppClock clock = const SystemClock(),

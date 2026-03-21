@@ -156,7 +156,7 @@ class UpdateService {
   /// 若已有更新正在執行，會等待並回傳該更新的結果，不重複執行。
   Future<UpdateResult> runDailyUpdate({
     DateTime? forDate,
-    bool forceFetch = false,
+    bool force = false,
     UpdateProgressCallback? onProgress,
   }) async {
     // 已有更新在執行中 → 共享結果，避免重複 API 呼叫
@@ -171,7 +171,7 @@ class UpdateService {
     try {
       final result = await _executeUpdate(
         forDate: forDate,
-        forceFetch: forceFetch,
+        force: force,
         onProgress: onProgress,
       );
       completer.complete(result);
@@ -187,7 +187,7 @@ class UpdateService {
   /// 實際執行更新邏輯（由 [runDailyUpdate] 的鎖保護）
   Future<UpdateResult> _executeUpdate({
     DateTime? forDate,
-    bool forceFetch = false,
+    bool force = false,
     UpdateProgressCallback? onProgress,
   }) async {
     var targetDate = forDate ?? _clock.now();
@@ -213,14 +213,14 @@ class UpdateService {
       targetDate: normalizedDate,
       runId: runId,
       result: result,
-      forceFetch: forceFetch,
+      force: force,
       onProgress: onProgress,
     );
 
     try {
       // 步驟 1：檢查是否為交易日
       onProgress?.call(1, 10, '檢查交易日');
-      if (!forceFetch && !TaiwanCalendar.isTradingDay(targetDate)) {
+      if (!force && !TaiwanCalendar.isTradingDay(targetDate)) {
         result.skipped = true;
         result.message = '非交易日，跳過更新';
         await _db.finishUpdateRun(
@@ -232,7 +232,7 @@ class UpdateService {
       }
 
       // 步驟 1.5：強制更新時清理無效資料
-      if (forceFetch) {
+      if (force) {
         await _cleanupInvalidData(onProgress);
       }
 
@@ -318,7 +318,7 @@ class UpdateService {
     ctx.onProgress?.call(2, 10, '更新股票清單');
     final stockResult = await _stockListSyncer.smartSync(
       date: targetDate,
-      force: ctx.forceFetch,
+      force: ctx.force,
     );
     ctx.result.stocksUpdated = stockResult.stockCount;
     if (!stockResult.success && stockResult.error != null) {
@@ -405,7 +405,7 @@ class UpdateService {
     try {
       final syncResult = await _priceRepo.syncAllPricesForDate(
         normalizedDate,
-        force: ctx.forceFetch,
+        force: ctx.force,
       );
 
       // 日期校正
@@ -440,7 +440,7 @@ class UpdateService {
       if (historyResult.syncedCount > 0) {
         ctx.result.pricesUpdated += historyResult.syncedCount;
       }
-      if (historyResult.hasFailures) {
+      if (historyResult.hasErrors) {
         ctx.result.errors.add(
           '歷史資料同步失敗 (${historyResult.failedSymbols.length} 檔)',
         );
@@ -457,7 +457,7 @@ class UpdateService {
     try {
       final instResult = await syncer.syncInstitutionalData(
         date: ctx.normalizedDate,
-        force: ctx.forceFetch,
+        force: ctx.force,
       );
       ctx.result.institutionalUpdated = instResult.estimatedCount;
     } catch (e) {
@@ -475,7 +475,7 @@ class UpdateService {
       try {
         final marketResult = await marketUpdater.syncMarketWideData(
           date: normalizedDate,
-          forceRefresh: true,
+          force: true,
         );
 
         // 同步自選清單和熱門股的詳細籌碼
@@ -509,7 +509,7 @@ class UpdateService {
       try {
         final fundResult = await fundamentalSyncer.syncMarketWideFundamentals(
           date: normalizedDate,
-          force: ctx.forceFetch,
+          force: ctx.force,
         );
 
         // 補充上櫃自選股
@@ -569,7 +569,7 @@ class UpdateService {
     if (marketUpdater != null) {
       try {
         final killerResult = await marketUpdater.syncKillerFeaturesData(
-          force: ctx.forceFetch,
+          force: ctx.force,
         );
 
         AppLogger.info(
@@ -772,7 +772,7 @@ class _UpdateContext {
     required this.targetDate,
     required this.runId,
     required this.result,
-    this.forceFetch = false,
+    this.force = false,
     this.onProgress,
   }) : normalizedDate = targetDate;
 
@@ -780,7 +780,7 @@ class _UpdateContext {
   DateTime normalizedDate;
   final int runId;
   final UpdateResult result;
-  final bool forceFetch;
+  final bool force;
   final UpdateProgressCallback? onProgress;
   List<String> marketCandidates = [];
 

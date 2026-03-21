@@ -21,7 +21,7 @@ class RuleAccuracyService {
   final AppDatabase _db;
   final AppClock _clock;
 
-  static const String _logTag = 'RuleAccuracyService';
+  static const String _tag = 'RuleAccuracyService';
   bool _isBackfilling = false;
 
   /// 預設驗證天數
@@ -41,7 +41,7 @@ class RuleAccuracyService {
       try {
         return await _computeValidation(period);
       } catch (e, stack) {
-        AppLogger.warning(_logTag, '驗證 ${period}D 失敗，繼續處理其他天數', e, stack);
+        AppLogger.warning(_tag, '驗證 ${period}D 失敗，繼續處理其他天數', e, stack);
         return null;
       }
     });
@@ -81,7 +81,7 @@ class RuleAccuracyService {
 
       return computed.result;
     } catch (e, stack) {
-      AppLogger.error(_logTag, '驗證失敗', e, stack);
+      AppLogger.error(_tag, '驗證失敗', e, stack);
       rethrow;
     }
   }
@@ -93,7 +93,7 @@ class RuleAccuracyService {
     final normalizedDate = DateContext.normalize(targetDate);
 
     AppLogger.info(
-      _logTag,
+      _tag,
       '開始驗證 ${_formatDate(targetDate)} 的推薦 (持有 $daysAgo 交易日)',
     );
 
@@ -103,7 +103,7 @@ class RuleAccuracyService {
     )..where((t) => t.date.equals(normalizedDate))).get();
 
     if (recommendations.isEmpty) {
-      AppLogger.debug(_logTag, '${_formatDate(targetDate)} 無推薦資料');
+      AppLogger.debug(_tag, '${_formatDate(targetDate)} 無推薦資料');
       return _ValidationComputed(
         result: ValidationResult(
           date: targetDate,
@@ -198,7 +198,7 @@ class RuleAccuracyService {
     final avgReturn = validated > 0 ? totalReturn / validated : 0.0;
 
     AppLogger.info(
-      _logTag,
+      _tag,
       '驗證完成 (${daysAgo}D)：$validated 筆，成功 $successful 筆，'
       '平均報酬 ${avgReturn.toStringAsFixed(2)}%',
     );
@@ -253,12 +253,12 @@ class RuleAccuracyService {
     bool Function()? isCancelled,
   }) async {
     if (_isBackfilling) {
-      AppLogger.warning(_logTag, '回填已在執行中，跳過重複請求');
+      AppLogger.warning(_tag, '回填已在執行中，跳過重複請求');
       return const BackfillResult(validated: 0, skipped: 0, totalDates: 0);
     }
 
     _isBackfilling = true;
-    AppLogger.info(_logTag, '開始批次回填歷史推薦驗證');
+    AppLogger.info(_tag, '開始批次回填歷史推薦驗證');
 
     try {
       // 1. 取得所有不重複的推薦日期
@@ -302,7 +302,7 @@ class RuleAccuracyService {
             } catch (e, stack) {
               errors++;
               AppLogger.warning(
-                _logTag,
+                _tag,
                 '回填驗證 ${rec.symbol} (${_formatDate(date)}, ${period}D) '
                 '失敗 ($errors/50)',
                 e,
@@ -325,10 +325,7 @@ class RuleAccuracyService {
       // 更新所有規則統計
       await _updateRuleAccuracyStats();
 
-      AppLogger.info(
-        _logTag,
-        '批次回填完成：驗證 $validated 筆，跳過 $skipped 筆，錯誤 $errors 筆',
-      );
+      AppLogger.info(_tag, '批次回填完成：驗證 $validated 筆，跳過 $skipped 筆，錯誤 $errors 筆');
       return BackfillResult(
         validated: validated,
         skipped: skipped,
@@ -336,7 +333,7 @@ class RuleAccuracyService {
         errors: errors,
       );
     } catch (e, stack) {
-      AppLogger.error(_logTag, '批次回填失敗', e, stack);
+      AppLogger.error(_tag, '批次回填失敗', e, stack);
       rethrow;
     } finally {
       _isBackfilling = false;
@@ -435,11 +432,11 @@ class RuleAccuracyService {
       return _ValidationData(returnRate: returnRate, isSuccess: isSuccess);
     } on StateError catch (e) {
       // 預期的錯誤：查無資料（getSingleOrNull 回傳結構問題等）
-      AppLogger.debug(_logTag, '驗證 ${rec.symbol} 資料不足: $e');
+      AppLogger.debug(_tag, '驗證 ${rec.symbol} 資料不足: $e');
       return null;
     } catch (e, stack) {
       // 非預期錯誤：DB 異常、序列化失敗等，應傳播
-      AppLogger.error(_logTag, '驗證 ${rec.symbol} 非預期錯誤', e, stack);
+      AppLogger.error(_tag, '驗證 ${rec.symbol} 非預期錯誤', e, stack);
       rethrow;
     }
   }

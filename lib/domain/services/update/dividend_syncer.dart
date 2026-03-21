@@ -261,4 +261,6 @@ class DividendSyncResult {
   final int dividendsUpserted;
   final int meetingEventsCreated;
   final List<String> errors;
+
+  bool get hasErrors => errors.isNotEmpty;
 }

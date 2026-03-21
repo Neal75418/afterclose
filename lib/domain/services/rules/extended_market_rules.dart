@@ -172,7 +172,7 @@ class DayTradingExtremeRule extends StockRule {
       return TriggeredReason(
         type: ReasonType.dayTradingExtreme,
         score: RuleScores.dayTradingExtreme,
-        description: '當沖比例極高 ${ratio.toStringAsFixed(1)}%（警示）',
+        description: '當沖比例極高 ${ratio.toStringAsFixed(1)}%(警示)',
         evidence: {'dayTradingRatio': ratio},
       );
     }

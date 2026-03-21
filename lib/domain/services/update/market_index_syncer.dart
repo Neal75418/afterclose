@@ -21,7 +21,7 @@ import 'package:afterclose/data/remote/twse_client.dart';
 /// - [sync] 同步當日資料，資料不足時自動觸發 [backfill]。
 /// - [backfill] 回補近 45 天歷史，確保走勢圖至少有 ~20 個交易日的資料點。
 class MarketIndexSyncer {
-  MarketIndexSyncer({
+  const MarketIndexSyncer({
     required AppDatabase database,
     required TwseClient twseClient,
     TpexClient? tpexClient,

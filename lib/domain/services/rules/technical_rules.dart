@@ -7,6 +7,9 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 // 反轉規則
 // ==================================================
 
+/// 規則：弱轉強反轉
+///
+/// 當趨勢由下跌轉為上漲（底部型態確立）時觸發。
 class WeakToStrongRule extends StockRule {
   const WeakToStrongRule();
 
@@ -33,6 +36,9 @@ class WeakToStrongRule extends StockRule {
   }
 }
 
+/// 規則：強轉弱反轉
+///
+/// 當趨勢由上漲轉為下跌（頭部型態確立）時觸發。
 class StrongToWeakRule extends StockRule {
   const StrongToWeakRule();
 
@@ -65,6 +71,9 @@ class StrongToWeakRule extends StockRule {
 // 突破/跌破規則
 // ==================================================
 
+/// 規則：向上突破
+///
+/// 當股價突破關鍵壓力位且有量能配合時觸發。
 class BreakoutRule extends StockRule {
   const BreakoutRule();
 
@@ -112,6 +121,9 @@ class BreakoutRule extends StockRule {
   }
 }
 
+/// 規則：向下跌破
+///
+/// 當股價跌破關鍵支撐位且有量能配合時觸發。
 class BreakdownRule extends StockRule {
   const BreakdownRule();
 

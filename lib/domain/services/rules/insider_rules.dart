@@ -8,7 +8,7 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 /// 規則：董監連續減持
 ///
-/// 當董監連續數月減持時觸發（強賣訊號）
+/// 當董監連續數月減持時觸發(強賣訊號)
 class InsiderSellingStreakRule extends StockRule {
   const InsiderSellingStreakRule();
 
@@ -33,7 +33,7 @@ class InsiderSellingStreakRule extends StockRule {
       return TriggeredReason(
         type: ReasonType.insiderSellingStreak,
         score: RuleScores.insiderSellingStreak,
-        description: '董監連續 ${insiderData.sellingStreakMonths} 個月減持（強賣訊號）',
+        description: '董監連續 ${insiderData.sellingStreakMonths} 個月減持(強賣訊號)',
         evidence: {
           'sellingStreakMonths': insiderData.sellingStreakMonths,
           'insiderRatio': insiderData.insiderRatio,
@@ -47,7 +47,7 @@ class InsiderSellingStreakRule extends StockRule {
 
 /// 規則：董監顯著增持
 ///
-/// 當董監大量增持時觸發（買進訊號）
+/// 當董監大量增持時觸發(買進訊號)
 class InsiderSignificantBuyingRule extends StockRule {
   const InsiderSignificantBuyingRule();
 
@@ -74,7 +74,7 @@ class InsiderSignificantBuyingRule extends StockRule {
       return TriggeredReason(
         type: ReasonType.insiderSignificantBuying,
         score: RuleScores.insiderSignificantBuying,
-        description: '董監增持 ${buyingChange.toStringAsFixed(1)}%（買進訊號）',
+        description: '董監增持 ${buyingChange.toStringAsFixed(1)}%(買進訊號)',
         evidence: {
           'buyingChange': buyingChange,
           'insiderRatio': insiderData.insiderRatio,
@@ -88,7 +88,7 @@ class InsiderSignificantBuyingRule extends StockRule {
 
 /// 規則：高質押比例
 ///
-/// 當董監質押比例過高時觸發（風險警示）
+/// 當董監質押比例過高時觸發(風險警示)
 class HighPledgeRatioRule extends StockRule {
   const HighPledgeRatioRule();
 
@@ -114,7 +114,7 @@ class HighPledgeRatioRule extends StockRule {
       return TriggeredReason(
         type: ReasonType.highPledgeRatio,
         score: RuleScores.highPledgeRatio,
-        description: '董監質押比例 ${pledgeRatio.toStringAsFixed(1)}%（風險警示）',
+        description: '董監質押比例 ${pledgeRatio.toStringAsFixed(1)}%(風險警示)',
         evidence: {
           'pledgeRatio': pledgeRatio,
           'insiderRatio': insiderData.insiderRatio,
@@ -128,7 +128,7 @@ class HighPledgeRatioRule extends StockRule {
 
 /// 規則：外資持股高度集中
 ///
-/// 當外資持股超過警示門檻時觸發（風險警示）
+/// 當外資持股超過警示門檻時觸發(風險警示)
 class ForeignConcentrationWarningRule extends StockRule {
   const ForeignConcentrationWarningRule();
 
@@ -155,8 +155,8 @@ class ForeignConcentrationWarningRule extends StockRule {
       final isDanger =
           foreignRatio >= FundamentalParams.foreignConcentrationDangerThreshold;
       final description = isDanger
-          ? '外資持股 ${foreignRatio.toStringAsFixed(1)}%（高度集中風險）'
-          : '外資持股 ${foreignRatio.toStringAsFixed(1)}%（集中度警示）';
+          ? '外資持股 ${foreignRatio.toStringAsFixed(1)}%(高度集中風險)'
+          : '外資持股 ${foreignRatio.toStringAsFixed(1)}%(集中度警示)';
 
       return TriggeredReason(
         type: ReasonType.foreignConcentrationWarning,
@@ -172,7 +172,7 @@ class ForeignConcentrationWarningRule extends StockRule {
 
 /// 規則：外資加速流出
 ///
-/// 當外資連續多日大量賣出時觸發（強賣訊號）
+/// 當外資連續多日大量賣出時觸發(強賣訊號)
 class ForeignExodusRule extends StockRule {
   const ForeignExodusRule();
 
@@ -199,7 +199,7 @@ class ForeignExodusRule extends StockRule {
         type: ReasonType.foreignExodus,
         score: RuleScores.foreignExodus,
         description:
-            '外資 ${FundamentalParams.foreignExodusLookbackDays} 日持股減少 ${change.abs().toStringAsFixed(2)}%（加速流出）',
+            '外資 ${FundamentalParams.foreignExodusLookbackDays} 日持股減少 ${change.abs().toStringAsFixed(2)}%(加速流出)',
         evidence: {
           'foreignSharesRatioChange': change,
           'lookbackDays': FundamentalParams.foreignExodusLookbackDays,

@@ -63,17 +63,17 @@ class TradingRepository implements ITradingRepository {
   /// 比透過 FinMind 逐檔同步快很多。
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  /// 設定 [force] 為 true 可略過新鮮度檢查。
   @override
   Future<int> syncAllDayTradingFromTwse({
     DateTime? date,
-    bool forceRefresh = false,
+    bool force = false,
   }) async {
     try {
       final targetDate = DateContext.normalize(date ?? _clock.now());
 
       // 新鮮度檢查：若已有目標日期資料則跳過
-      if (!forceRefresh) {
+      if (!force) {
         final existingCount = await _db.getDayTradingCountForDate(targetDate);
         if (existingCount > _batchFreshnessThreshold) {
           return 0;
@@ -221,18 +221,18 @@ class TradingRepository implements ITradingRepository {
   /// 比透過 FinMind 逐檔同步快很多，且不消耗 FinMind 配額。
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  /// 設定 [force] 為 true 可略過新鮮度檢查。
   @override
   Future<int> syncAllDayTradingFromTpex({
     DateTime? date,
-    bool forceRefresh = false,
+    bool force = false,
   }) async {
     try {
       final targetDate = DateContext.normalize(date ?? _clock.now());
 
       // 新鮮度檢查：若已有目標日期的上櫃當沖資料則跳過
       // 使用較低閾值（50），因為上櫃股票數量較少
-      if (!forceRefresh) {
+      if (!force) {
         final existingCount = await _db.getDayTradingCountForDateAndMarket(
           targetDate,
           'TPEx',
@@ -358,18 +358,18 @@ class TradingRepository implements ITradingRepository {
   /// 並行取得上市與上櫃融資融券資料。
   ///
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 設定 [forceRefresh] 為 true 可略過新鮮度檢查。
+  /// 設定 [force] 為 true 可略過新鮮度檢查。
   @override
   Future<int> syncAllMarginTradingFromTwse({
     DateTime? date,
-    bool forceRefresh = false,
+    bool force = false,
   }) async {
     try {
       final targetDate = date ?? _clock.now();
 
       // 新鮮度檢查：若已有目標日期資料則跳過
       // 提高閾值至 1500 以涵蓋上市+上櫃股票
-      if (!forceRefresh) {
+      if (!force) {
         final existingCount = await _db.getMarginTradingCountForDate(
           targetDate,
         );

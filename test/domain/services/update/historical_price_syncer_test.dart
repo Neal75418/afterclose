@@ -126,7 +126,7 @@ void main() {
 
         expect(result.syncedCount, 250);
         expect(result.symbolsProcessed, 1);
-        expect(result.hasFailures, isFalse);
+        expect(result.hasErrors, isFalse);
       });
 
       test('skips symbols with near-complete data (>= 180 days)', () async {
@@ -179,7 +179,7 @@ void main() {
 
         expect(result.syncedCount, 250);
         expect(result.symbolsProcessed, 1);
-        expect(result.hasFailures, isTrue);
+        expect(result.hasErrors, isTrue);
         expect(result.failedSymbols, contains('2317'));
       });
 

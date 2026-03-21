@@ -3,6 +3,9 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
+/// 規則：法人動向轉折
+///
+/// 當三大法人由賣轉買或由買轉賣時觸發。
 class InstitutionalShiftRule extends StockRule {
   const InstitutionalShiftRule();
 
@@ -175,6 +178,9 @@ class InstitutionalShiftRule extends StockRule {
   }
 }
 
+/// 規則：新聞相關
+///
+/// 當近期有相關新聞時觸發，作為輔助訊號。
 class NewsRule extends StockRule {
   const NewsRule();
 

@@ -64,7 +64,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
     try {
       final result = await ref
           .read(todayProvider.notifier)
-          .runUpdate(forceFetch: true);
+          .runUpdate(force: true);
 
       if (mounted) {
         final hasRateLimitError = result.errors.any(

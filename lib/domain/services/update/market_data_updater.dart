@@ -1,7 +1,7 @@
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
@@ -39,7 +39,7 @@ class MarketDataUpdater {
   /// 使用官方免費 API，無需 FinMind 配額。
   Future<MarketDataSyncResult> syncMarketWideData({
     required DateTime date,
-    bool forceRefresh = false,
+    bool force = false,
   }) async {
     var twseDayTradingCount = 0;
     const tpexDayTradingCount = 0;
@@ -49,7 +49,7 @@ class MarketDataUpdater {
     try {
       twseDayTradingCount = await _tradingRepo.syncAllDayTradingFromTwse(
         date: date,
-        forceRefresh: forceRefresh,
+        force: force,
       );
     } on RateLimitException {
       rethrow;
