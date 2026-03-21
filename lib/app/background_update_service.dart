@@ -59,12 +59,12 @@ class BackgroundUpdateService {
   /// 在不支援的平台（macOS、Windows、Linux、Web）會直接跳過。
   Future<void> initialize() async {
     if (!isSupported) {
-      AppLogger.debug('BackgroundUpdate', '當前平台不支援背景更新，跳過初始化');
+      AppLogger.debug('BackgroundUpdateService', '當前平台不支援背景更新，跳過初始化');
       return;
     }
 
     await Workmanager().initialize(_callbackDispatcher);
-    AppLogger.debug('BackgroundUpdate', '服務已初始化');
+    AppLogger.debug('BackgroundUpdateService', '服務已初始化');
   }
 
   /// 啟用每日自動更新
@@ -73,7 +73,7 @@ class BackgroundUpdateService {
   /// 在不支援的平台會直接返回。
   Future<void> enableAutoUpdate() async {
     if (!isSupported) {
-      AppLogger.debug('BackgroundUpdate', '當前平台不支援背景更新');
+      AppLogger.debug('BackgroundUpdateService', '當前平台不支援背景更新');
       return;
     }
 
@@ -116,7 +116,7 @@ class BackgroundUpdateService {
     await prefs.setBool(_keyAutoUpdateEnabled, true);
 
     AppLogger.info(
-      'BackgroundUpdate',
+      'BackgroundUpdateService',
       '已啟用自動更新，下次執行: $scheduledTime (${initialDelay.inMinutes} 分鐘後)',
     );
   }
@@ -130,7 +130,7 @@ class BackgroundUpdateService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_keyAutoUpdateEnabled, false);
 
-    AppLogger.info('BackgroundUpdate', '已停用自動更新');
+    AppLogger.info('BackgroundUpdateService', '已停用自動更新');
   }
 
   /// 檢查是否啟用自動更新
@@ -142,7 +142,7 @@ class BackgroundUpdateService {
   /// 立即執行一次背景更新（用於測試）
   Future<void> runOnce() async {
     if (!isSupported) {
-      AppLogger.debug('BackgroundUpdate', '當前平台不支援背景更新');
+      AppLogger.debug('BackgroundUpdateService', '當前平台不支援背景更新');
       return;
     }
 
@@ -151,7 +151,7 @@ class BackgroundUpdateService {
       kBackgroundUpdateTask,
       constraints: Constraints(networkType: NetworkType.connected),
     );
-    AppLogger.info('BackgroundUpdate', '已排程一次性更新');
+    AppLogger.info('BackgroundUpdateService', '已排程一次性更新');
   }
 }
 
@@ -159,24 +159,24 @@ class BackgroundUpdateService {
 @pragma('vm:entry-point')
 void _callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    AppLogger.info('BackgroundUpdate', '開始執行背景更新任務: $task');
+    AppLogger.info('BackgroundUpdateService', '開始執行背景更新任務: $task');
 
     try {
       // 在背景 isolate 中初始化所需服務
       final result = await _executeBackgroundUpdate();
 
-      AppLogger.info('BackgroundUpdate', '背景更新完成: ${result.summary}');
+      AppLogger.info('BackgroundUpdateService', '背景更新完成: ${result.summary}');
 
       // 顯示通知（best-effort，失敗不影響更新結果）
       try {
         await _showUpdateNotification(result);
       } catch (notifError) {
-        AppLogger.warning('BackgroundUpdate', '通知顯示失敗', notifError);
+        AppLogger.warning('BackgroundUpdateService', '通知顯示失敗', notifError);
       }
 
       return true;
     } catch (e) {
-      AppLogger.error('BackgroundUpdate', '背景更新失敗', e);
+      AppLogger.error('BackgroundUpdateService', '背景更新失敗', e);
       return false;
     }
   });
@@ -187,7 +187,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
   // 先檢查是否為交易日，避免在非交易日建立完整服務圖
   final now = DateTime.now();
   if (!TaiwanCalendar.isTradingDay(now)) {
-    AppLogger.info('BackgroundUpdate', '非交易日，跳過更新');
+    AppLogger.info('BackgroundUpdateService', '非交易日，跳過更新');
     return UpdateResult(date: now)
       ..success = true
       ..skipped = true
@@ -211,7 +211,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
         finMindClient.token = token;
       }
     } catch (e) {
-      AppLogger.warning('BackgroundUpdate', '載入 API Token 失敗', e);
+      AppLogger.warning('BackgroundUpdateService', '載入 API Token 失敗', e);
     }
 
     // 初始化 Repositories
@@ -300,7 +300,7 @@ Future<void> _showUpdateNotification(UpdateResult result) async {
   // 檢查權限
   final hasPermission = await NotificationService.instance.hasPermission();
   if (!hasPermission) {
-    AppLogger.warning('BackgroundUpdate', '無通知權限，跳過通知');
+    AppLogger.warning('BackgroundUpdateService', '無通知權限，跳過通知');
     return;
   }
 

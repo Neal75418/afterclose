@@ -43,7 +43,7 @@ class CacheWarmupService {
       final watchlist = await _db.getWatchlist();
       final watchlistSymbols = watchlist.map((e) => e.symbol).toList();
 
-      AppLogger.info('CacheWarmup', '自選股數量: ${watchlistSymbols.length}');
+      AppLogger.info('CacheWarmupService', '自選股數量: ${watchlistSymbols.length}');
 
       // 2. 預載 Top 20 推薦
       final latestDataDate = await _db.getLatestDataDate();
@@ -54,13 +54,13 @@ class CacheWarmupService {
       final recommendations = await _db.getRecommendations(analysisDate);
       final recSymbols = recommendations.take(20).map((e) => e.symbol).toList();
 
-      AppLogger.info('CacheWarmup', '今日推薦數量: ${recSymbols.length}');
+      AppLogger.info('CacheWarmupService', '今日推薦數量: ${recSymbols.length}');
 
       // 3. 合併符號清單（去重）
       final allSymbols = {...watchlistSymbols, ...recSymbols}.toList();
 
       if (allSymbols.isEmpty) {
-        AppLogger.info('CacheWarmup', '無資料需預熱');
+        AppLogger.info('CacheWarmupService', '無資料需預熱');
         stopwatch.stop();
         return;
       }
@@ -74,12 +74,12 @@ class CacheWarmupService {
 
       stopwatch.stop();
       AppLogger.info(
-        'CacheWarmup',
+        'CacheWarmupService',
         '預熱完成: ${allSymbols.length} 檔股票 (${stopwatch.elapsedMilliseconds}ms)',
       );
     } catch (e, stack) {
       stopwatch.stop();
-      AppLogger.error('CacheWarmup', '預熱失敗', e, stack);
+      AppLogger.error('CacheWarmupService', '預熱失敗', e, stack);
     }
   }
 }

@@ -40,4 +40,12 @@ abstract final class PatternParams {
 
   /// 強勢 K 線跌幅門檻（1.0%）
   static const double strongCandleDropThreshold = 0.01;
+
+  /// 晨/暮星第二根跳空容差上界（2%）
+  ///
+  /// 星體中點允許略高於第一根收盤價（不強制完美跳空）。
+  static const double starGapToleranceUpper = 1.02;
+
+  /// 晨/暮星第二根跳空容差下界（2%）
+  static const double starGapToleranceLower = 0.98;
 }

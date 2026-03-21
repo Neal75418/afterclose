@@ -54,7 +54,7 @@ class NotificationService {
 
     _isInitialized = true;
 
-    AppLogger.debug('Notification', '服務已初始化');
+    AppLogger.debug('NotificationService', '服務已初始化');
   }
 
   /// 檢查是否已取得通知權限（不會請求權限）
@@ -243,7 +243,7 @@ class NotificationService {
   ///
   /// payload 包含股票代號，導航由應用程式的導航系統處理。
   void _onNotificationTapped(NotificationResponse response) {
-    AppLogger.debug('Notification', '通知被點擊: ${response.payload}');
+    AppLogger.debug('NotificationService', '通知被點擊: ${response.payload}');
   }
 
   /// 釋放通知服務資源
@@ -257,7 +257,7 @@ class NotificationService {
       await _notifications.cancelAll();
     } finally {
       _isInitialized = false;
-      AppLogger.debug('Notification', '服務已釋放');
+      AppLogger.debug('NotificationService', '服務已釋放');
     }
   }
 

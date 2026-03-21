@@ -67,6 +67,9 @@ abstract final class RuleScores {
   /// 法人連續買超分數（多方）
   static const int institutionalBuyStreak = 20;
 
+  /// 投信主導時的額外加減分（投信為主動型法人，買賣超更具意圖性）
+  static const int institutionalTrustDominantBonus = 5;
+
   // ==================================================
   // 空方訊號（負分）- 扣分以降低推薦機率
   // ==================================================

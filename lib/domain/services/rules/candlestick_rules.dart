@@ -404,7 +404,7 @@ bool isStarPattern(
     if (!c1.isBearish) return false;
 
     // 不強制要求跳空
-    if (c2Mid > c1.close! * 1.02) return false; // 允許 2% 容差
+    if (c2Mid > c1.close! * PatternParams.starGapToleranceUpper) return false;
 
     // 第三根長紅 K，收盤高於第一根中點
     if (!c3.isBullish) return false;
@@ -414,7 +414,7 @@ bool isStarPattern(
     if (!c1.isBullish) return false;
 
     // 不強制要求跳空
-    if (c2Mid < c1.close! * 0.98) return false; // 允許 2% 容差
+    if (c2Mid < c1.close! * PatternParams.starGapToleranceLower) return false;
 
     // 第三根長黑 K，收盤低於第一根中點
     if (!c3.isBearish) return false;

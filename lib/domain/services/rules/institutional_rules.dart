@@ -93,7 +93,8 @@ class InstitutionalBuyStreakRule extends StockRule {
       final isTrustDominant =
           totalTrustNet > 0 && totalTrustNet > totalForeignNet;
       final score = isTrustDominant
-          ? RuleScores.institutionalBuyStreak + 5
+          ? RuleScores.institutionalBuyStreak +
+                RuleScores.institutionalTrustDominantBonus
           : RuleScores.institutionalBuyStreak;
 
       return TriggeredReason(
@@ -209,7 +210,8 @@ class InstitutionalSellStreakRule extends StockRule {
       final isTrustDominant =
           totalTrustNet < 0 && totalTrustNet.abs() > totalForeignNet.abs();
       final score = isTrustDominant
-          ? RuleScores.institutionalSellStreak - 5
+          ? RuleScores.institutionalSellStreak -
+                RuleScores.institutionalTrustDominantBonus
           : RuleScores.institutionalSellStreak;
 
       return TriggeredReason(

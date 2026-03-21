@@ -83,7 +83,7 @@ abstract class _Week52RuleBase extends StockRule {
 
     // 診斷：資料不足時記錄
     if (data.prices.length < IndicatorParams.week52Days) {
-      if (data.prices.length >= 200) {
+      if (data.prices.length >= IndicatorParams.historicalDataMinDays) {
         AppLogger.debug(
           _ruleName,
           '${data.symbol}: 資料不足 (${data.prices.length}/${IndicatorParams.week52Days})',
