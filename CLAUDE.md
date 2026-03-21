@@ -76,7 +76,7 @@ flowchart TB
     end
 
     subgraph Presentation["presentation/"]
-        Providers["providers/ — 23 Riverpod Notifiers"]
+        Providers["providers/ — 23 provider files"]
         Screens["screens/ — 15 screens"]
     end
 

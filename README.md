@@ -112,7 +112,7 @@ flowchart LR
     end
 
     subgraph Presentation["Presentation"]
-        Provider["Riverpod (23)"]
+        Provider["Riverpod Providers"]
         UI["15 Screens"]
     end
 
@@ -149,7 +149,7 @@ lib/
 │       ├── analysis/    # 5 analysis sub-services
 │       └── ...          # 25 service files (Scoring, Screening, RuleAccuracy, etc.)
 └── presentation/
-    ├── providers/       # 23 Riverpod Notifiers
+    ├── providers/       # 23 provider files (Notifiers, Loaders, State)
     ├── screens/         # 15 screens
     ├── controllers/     # Business logic facades
     ├── mappers/         # DTO → UI model conversion
