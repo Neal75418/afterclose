@@ -36,7 +36,7 @@ abstract final class ErrorDisplay {
     }
 
     // 未預期的例外：記錄完整錯誤以便除錯
-    AppLogger.warning('ErrorDisplay', '未分類的例外類型: ${error.runtimeType}', error);
+    AppLogger.warning('ErrorDisplay', '未分類的例外類型', error);
     return '發生未預期的錯誤，請稍後再試';
   }
 }

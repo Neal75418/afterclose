@@ -174,7 +174,9 @@ class ChipAnalysisService {
     final latestRatio = history.last.dayTradingRatio ?? 0;
 
     // 當沖比例過高 = 投機性強 = 偏空
-    if (latestRatio >= 35) return ChipScoringParams.dayTradingHighPenalty;
+    if (latestRatio >= ChipScoringParams.dayTradingHighThresholdPct) {
+      return ChipScoringParams.dayTradingHighPenalty;
+    }
     return 0;
   }
 
@@ -183,7 +185,7 @@ class ChipAnalysisService {
   int _concentrationAdjustment(List<HoldingDistributionEntry> entries) {
     if (entries.isEmpty) return 0;
 
-    // 大戶持股佔比加總（400 張以上視為大戶）
+    // 大戶持股佔比加總
     double largeHolderPercent = 0;
     for (final entry in entries) {
       // 解析級距："1000以上" 或 "800-999" 等
@@ -193,10 +195,11 @@ class ChipAnalysisService {
       }
     }
 
-    if (largeHolderPercent >= 60) {
+    if (largeHolderPercent >= ChipScoringParams.concentrationHighThresholdPct) {
       return ChipScoringParams.concentrationHighBonus;
     }
-    if (largeHolderPercent >= 40) {
+    if (largeHolderPercent >=
+        ChipScoringParams.concentrationMediumThresholdPct) {
       return ChipScoringParams.concentrationMediumBonus;
     }
     return 0;
@@ -211,7 +214,7 @@ class ChipAnalysisService {
     final match = _levelRegExp.firstMatch(level.replaceAll(',', ''));
     if (match != null) {
       final num = int.tryParse(match.group(1)!) ?? 0;
-      return num >= 400;
+      return num >= ChipScoringParams.largeHolderMinLot;
     }
     return false;
   }
@@ -228,7 +231,9 @@ class ChipAnalysisService {
 
     // 質押比警示
     final pledge = latest.pledgeRatio ?? 0;
-    if (pledge >= 30) adj += ChipScoringParams.insiderPledgePenalty;
+    if (pledge >= ChipScoringParams.pledgeHighThresholdPct) {
+      adj += ChipScoringParams.insiderPledgePenalty;
+    }
 
     // 持股變動
     final change = latest.sharesChange ?? 0;

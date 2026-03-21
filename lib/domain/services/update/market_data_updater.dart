@@ -134,11 +134,8 @@ class MarketDataUpdater {
 
   /// 補充上櫃候選股票的外資持股資料
   ///
-  /// **重要變更 (2026-01):**
-  /// 當沖資料現在由 `syncMarketWideData` 透過批次 TPEX API 同步，
-  /// 不再需要逐檔呼叫 FinMind，大幅減少 API 配額消耗。
-  ///
-  /// 此方法現在只同步外資持股資料（仍需 FinMind 逐檔呼叫）。
+  /// 當沖資料由 `syncMarketWideData` 透過批次 TPEX API 同步（非此方法）。
+  /// 此方法只同步外資持股資料（仍需 FinMind 逐檔呼叫）。
   ///
   /// maxSyncCount 預設 20：外資持股規則（ForeignExodus, ForeignConcentration）
   /// 為輔助訊號，20 檔足夠涵蓋主要候選股，避免 API 額度耗盡。

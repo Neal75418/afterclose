@@ -62,24 +62,39 @@ class ChipScoringParams {
   // 4. Day Trading (當沖)
   // ==================================================
 
-  /// 當沖率 >= 35% 扣分 (過熱/投機)
+  /// 當沖率高門檻（%）— 超過此比例視為過熱/投機
+  static const double dayTradingHighThresholdPct = 35.0;
+
+  /// 當沖率 >= dayTradingHighThresholdPct 扣分
   static const int dayTradingHighPenalty = -8;
 
   // ==================================================
   // 5. Holding Concentration (股權分散)
   // ==================================================
 
-  /// 大戶持股比例 >= 60% 加分
+  /// 大戶持股集中度高門檻（%）
+  static const double concentrationHighThresholdPct = 60.0;
+
+  /// 大戶持股集中度中門檻（%）
+  static const double concentrationMediumThresholdPct = 40.0;
+
+  /// 大戶判定最低張數（張）— 400 張以上視為大戶
+  static const int largeHolderMinLot = 400;
+
+  /// 大戶持股比例 >= concentrationHighThresholdPct 加分
   static const int concentrationHighBonus = 20;
 
-  /// 大戶持股比例 >= 40% 加分
+  /// 大戶持股比例 >= concentrationMediumThresholdPct 加分
   static const int concentrationMediumBonus = 8;
 
   // ==================================================
   // 6. Insider Holding (內部人)
   // ==================================================
 
-  /// 質押比 >= 30% 扣分
+  /// 質押比高門檻（%）— 超過此比例視為高質押風險
+  static const double pledgeHighThresholdPct = 30.0;
+
+  /// 質押比 >= pledgeHighThresholdPct 扣分
   static const int insiderPledgePenalty = -15;
 
   /// 內部人增持加分

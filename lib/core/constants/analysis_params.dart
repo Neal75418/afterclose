@@ -132,4 +132,13 @@ abstract final class AnalysisParams {
 
   /// 分析摘要每類別（訊號/風險）最大顯示條目數
   static const int summaryMaxItems = 5;
+
+  // ==================================================
+  // 大盤洞察門檻
+  // ==================================================
+
+  /// 漲停/跌停失衡判定門檻（家數）
+  ///
+  /// 漲停或跌停家數達此值視為市場失衡。
+  static const int limitImbalanceThreshold = 30;
 }

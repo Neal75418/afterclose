@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
@@ -233,7 +234,8 @@ class MarketInsightService {
   ) {
     if (limitUpDown == null) return;
 
-    if (limitUpDown.limitUp >= 30 || limitUpDown.limitDown >= 30) {
+    if (limitUpDown.limitUp >= AnalysisParams.limitImbalanceThreshold ||
+        limitUpDown.limitDown >= AnalysisParams.limitImbalanceThreshold) {
       final isUpDominant = limitUpDown.limitUp >= limitUpDown.limitDown;
       candidates.add(
         MarketInsight(
