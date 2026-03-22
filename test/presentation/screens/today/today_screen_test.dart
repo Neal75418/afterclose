@@ -199,12 +199,13 @@ void main() {
       expect(find.byIcon(Icons.notifications_outlined), findsOneWidget);
     });
 
-    testWidgets('shows settings icon', (tester) async {
+    testWidgets('shows more menu with settings', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+      // Settings is now in the overflow menu
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
     testWidgets('shows empty recommendations state', (tester) async {

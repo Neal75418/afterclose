@@ -261,19 +261,42 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     tooltip: S.todayUpdateData,
                   ),
                 IconButton(
-                  icon: const Icon(Icons.newspaper_outlined),
-                  onPressed: () => context.push(AppRoutes.news),
-                  tooltip: 'nav.news'.tr(),
-                ),
-                IconButton(
                   icon: const Icon(Icons.notifications_outlined),
                   onPressed: () => context.push(AppRoutes.alerts),
                   tooltip: S.todayPriceAlert,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: () => context.push(AppRoutes.settings),
-                  tooltip: S.settings,
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'news':
+                        context.push(AppRoutes.news);
+                      case 'settings':
+                        context.push(AppRoutes.settings);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'news',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.newspaper_outlined, size: 20),
+                          const SizedBox(width: 12),
+                          Text('nav.news'.tr()),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'settings',
+                      child: Row(
+                        children: [
+                          const Icon(Icons.settings_outlined, size: 20),
+                          const SizedBox(width: 12),
+                          Text(S.settings),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );

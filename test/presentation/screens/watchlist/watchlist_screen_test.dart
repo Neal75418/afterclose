@@ -276,7 +276,9 @@ void main() {
       expect(find.byType(EmptyState), findsNothing);
     });
 
-    testWidgets('shows compare button when 2+ stocks', (tester) async {
+    testWidgets('compare is accessible via more menu when 2+ stocks', (
+      tester,
+    ) async {
       widenViewport(tester);
       final items = [createItem(symbol: '2330'), createItem(symbol: '2317')];
       await tester.pumpWidget(
@@ -284,20 +286,9 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byIcon(Icons.compare_arrows), findsOneWidget);
-    });
-
-    testWidgets('hides compare button with fewer than 2 stocks', (
-      tester,
-    ) async {
-      widenViewport(tester);
-      final items = [createItem(symbol: '2330')];
-      await tester.pumpWidget(
-        buildTestWidget(watchlistState: WatchlistState(items: items)),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
+      // Compare is now inside the more_vert menu, not directly visible
       expect(find.byIcon(Icons.compare_arrows), findsNothing);
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
     testWidgets('tapping search shows TextField', (tester) async {

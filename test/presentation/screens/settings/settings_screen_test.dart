@@ -155,8 +155,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      // PackageInfo 在測試環境未初始化，顯示 fallback '...'
-      expect(find.text('...'), findsOneWidget);
+      // PackageInfo 在測試環境未初始化，version tile 存在但 trailing 為空
+      expect(find.text('settings.version'), findsOneWidget);
     });
 
     testWidgets('shows cache duration setting', (tester) async {

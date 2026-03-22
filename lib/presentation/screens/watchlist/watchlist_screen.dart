@@ -193,18 +193,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
         ),
         _buildSortMenu(state),
-        if (state.filteredItems.length >= 2)
-          IconButton(
-            icon: const Icon(Icons.compare_arrows),
-            onPressed: () {
-              final symbols = state.filteredItems
-                  .take(4)
-                  .map((e) => e.symbol)
-                  .toList();
-              context.push(AppRoutes.compare, extra: symbols);
-            },
-            tooltip: 'comparison.compare'.tr(),
-          ),
         IconButton(
           icon: const Icon(Icons.add),
           onPressed: () {
@@ -253,6 +241,13 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       icon: const Icon(Icons.more_vert),
       onSelected: (value) {
         switch (value) {
+          case 'compare':
+            HapticFeedback.selectionClick();
+            final symbols = state.filteredItems
+                .take(4)
+                .map((e) => e.symbol)
+                .toList();
+            context.push(AppRoutes.compare, extra: symbols);
           case 'portfolio':
             HapticFeedback.selectionClick();
             context.push(AppRoutes.portfolio);
@@ -272,6 +267,17 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         }
       },
       itemBuilder: (context) => [
+        if (state.filteredItems.length >= 2)
+          PopupMenuItem(
+            value: 'compare',
+            child: Row(
+              children: [
+                const Icon(Icons.compare_arrows, size: 20),
+                const SizedBox(width: 12),
+                Text('comparison.compare'.tr()),
+              ],
+            ),
+          ),
         PopupMenuItem(
           value: 'portfolio',
           child: Row(

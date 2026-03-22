@@ -304,18 +304,16 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Widget _buildVersionTile(ThemeData theme, WidgetRef ref) {
-    final version =
-        ref
-            .watch(_packageInfoProvider)
-            .whenOrNull(data: (info) => info.version) ??
-        '...';
+    final packageInfo = ref.watch(_packageInfoProvider);
     return ListTile(
       leading: _buildIconContainer(Colors.blueGrey, Icons.verified_rounded),
       title: Text('settings.version'.tr()),
-      trailing: Text(
-        version,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+      trailing: packageInfo.whenOrNull(
+        data: (info) => Text(
+          info.version,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
         ),
       ),
     );
