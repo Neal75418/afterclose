@@ -13,6 +13,9 @@ import 'package:afterclose/presentation/screens/settings/widgets/data_management
 import 'package:afterclose/presentation/widgets/common/radio_selection_dialog.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
+/// App 版本號（單一來源，與 pubspec.yaml 同步）
+const _appVersion = '0.2.0';
+
 /// Supported locales with display names
 const _supportedLocales = [
   (locale: Locale('zh', 'TW'), name: '繁體中文'),
@@ -301,7 +304,7 @@ class SettingsScreen extends ConsumerWidget {
       leading: _buildIconContainer(Colors.blueGrey, Icons.verified_rounded),
       title: Text('settings.version'.tr()),
       trailing: Text(
-        '0.2.0',
+        _appVersion,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -406,11 +409,21 @@ class SettingsScreen extends ConsumerWidget {
         HapticFeedback.selectionClick();
         ref.read(settingsProvider.notifier).setAutoUpdateEnabled(newValue);
 
-        // 啟用或停用背景更新服務
-        if (newValue) {
-          await BackgroundUpdateService.instance.enableAutoUpdate();
-        } else {
-          await BackgroundUpdateService.instance.disableAutoUpdate();
+        // 啟用或停用背景更新服務，失敗時回滾 UI 狀態
+        try {
+          if (newValue) {
+            await BackgroundUpdateService.instance.enableAutoUpdate();
+          } else {
+            await BackgroundUpdateService.instance.disableAutoUpdate();
+          }
+        } catch (e) {
+          // 排程失敗 → 回滾設定，確保 UI 與實際狀態一致
+          ref.read(settingsProvider.notifier).setAutoUpdateEnabled(!newValue);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('settings.autoUpdateFailed'.tr())),
+            );
+          }
         }
       },
     );
@@ -437,7 +450,7 @@ class SettingsScreen extends ConsumerWidget {
     showAboutDialog(
       context: context,
       applicationName: 'app.name'.tr(),
-      applicationVersion: '1.0.0',
+      applicationVersion: _appVersion,
       applicationIcon: Container(
         width: 64,
         height: 64,

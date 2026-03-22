@@ -111,10 +111,6 @@ class BackgroundUpdateService {
       ),
     );
 
-    // 儲存設定
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyAutoUpdateEnabled, true);
-
     AppLogger.info(
       'BackgroundUpdateService',
       '已啟用自動更新，下次執行: $scheduledTime (${initialDelay.inMinutes} 分鐘後)',
@@ -126,9 +122,6 @@ class BackgroundUpdateService {
     if (isSupported) {
       await Workmanager().cancelByUniqueName(kBackgroundUpdateTask);
     }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_keyAutoUpdateEnabled, false);
 
     AppLogger.info('BackgroundUpdateService', '已停用自動更新');
   }
