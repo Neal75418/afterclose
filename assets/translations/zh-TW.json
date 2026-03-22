@@ -1295,6 +1295,7 @@
     "positions": "持倉",
     "positionCount": "共 {count} 檔",
     "noPositions": "尚無持倉",
+    "noTransactions": "尚無交易紀錄",
     "noPositionsHint": "點擊下方按鈕新增第一筆交易",
     "addTransaction": "新增交易",
     "deleteTransaction": "刪除交易",

@@ -1294,6 +1294,7 @@
     "positions": "Positions",
     "positionCount": "{count} positions",
     "noPositions": "No positions",
+    "noTransactions": "No transactions yet",
     "noPositionsHint": "Tap below to add your first transaction",
     "addTransaction": "Add Transaction",
     "deleteTransaction": "Delete Transaction",

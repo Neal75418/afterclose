@@ -193,7 +193,7 @@ class PositionDetailScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
-            'portfolio.noPositions'.tr(),
+            'portfolio.noTransactions'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.outline,
             ),

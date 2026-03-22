@@ -136,6 +136,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                       isDense: true,
                     ),
                     autofocus: true,
+                    onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 8),
                   Row(
