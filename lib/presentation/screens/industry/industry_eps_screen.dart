@@ -70,12 +70,30 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
                     onRetry: () =>
                         ref.read(industryEpsProvider.notifier).loadData(),
                   )
-          : RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(industryEpsProvider.notifier).loadData(),
-              child: state.allData.isEmpty
-                  ? _buildEmptyState(theme)
-                  : _buildContent(theme, state),
+          : Column(
+              children: [
+                if (state.error != null && state.allData.isNotEmpty)
+                  MaterialBanner(
+                    content: Text(state.error!),
+                    leading: const Icon(Icons.error_outline),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(industryEpsProvider.notifier).loadData(),
+                        child: Text('common.retry'.tr()),
+                      ),
+                    ],
+                  ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () =>
+                        ref.read(industryEpsProvider.notifier).loadData(),
+                    child: state.allData.isEmpty
+                        ? _buildEmptyState(theme)
+                        : _buildContent(theme, state),
+                  ),
+                ),
+              ],
             ),
     );
   }

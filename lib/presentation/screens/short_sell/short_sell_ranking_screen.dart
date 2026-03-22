@@ -57,12 +57,31 @@ class _ShortSellRankingScreenState
                     onRetry: () =>
                         ref.read(shortSellRankingProvider.notifier).loadData(),
                   )
-          : RefreshIndicator(
-              onRefresh: () =>
-                  ref.read(shortSellRankingProvider.notifier).loadData(),
-              child: state.rankings.isEmpty
-                  ? _buildEmptyState(theme)
-                  : _buildRankingList(theme, state.rankings),
+          : Column(
+              children: [
+                if (state.error != null && state.rankings.isNotEmpty)
+                  MaterialBanner(
+                    content: Text(state.error!),
+                    leading: const Icon(Icons.error_outline),
+                    actions: [
+                      TextButton(
+                        onPressed: () => ref
+                            .read(shortSellRankingProvider.notifier)
+                            .loadData(),
+                        child: Text('common.retry'.tr()),
+                      ),
+                    ],
+                  ),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () =>
+                        ref.read(shortSellRankingProvider.notifier).loadData(),
+                    child: state.rankings.isEmpty
+                        ? _buildEmptyState(theme)
+                        : _buildRankingList(theme, state.rankings),
+                  ),
+                ),
+              ],
             ),
     );
   }
