@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -132,7 +133,7 @@ final router = GoRouter(
       path: AppRoutes.portfolio,
       name: 'portfolio',
       builder: (context, state) => Scaffold(
-        appBar: AppBar(title: const Text('投資組合')),
+        appBar: AppBar(title: Text('portfolio.title'.tr())),
         body: const PortfolioTab(),
       ),
     ),
