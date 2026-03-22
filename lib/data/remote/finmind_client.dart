@@ -77,8 +77,9 @@ class FinMindClient {
   /// 驗證失敗時拋出 [InvalidTokenException]
   static void _validateToken(String token) {
     if (token.length < _minTokenLength) {
-      throw InvalidTokenException(
-        'Token too short (minimum $_minTokenLength characters)',
+      // _minTokenLength = 20; message uses literal to allow const
+      throw const InvalidTokenException(
+        'Token too short (minimum 20 characters)',
       );
     }
     if (!_tokenPattern.hasMatch(token)) {

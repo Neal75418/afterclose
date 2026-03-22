@@ -37,23 +37,6 @@ void main() {
     );
   });
 
-  /// Helper: create a DailyInstitutionalEntry
-  DailyInstitutionalEntry createInstEntry({
-    required String symbol,
-    required DateTime date,
-    double foreignNet = 100.0,
-    double investmentTrustNet = 50.0,
-    double dealerNet = 30.0,
-  }) {
-    return DailyInstitutionalEntry(
-      symbol: symbol,
-      date: date,
-      foreignNet: foreignNet,
-      investmentTrustNet: investmentTrustNet,
-      dealerNet: dealerNet,
-    );
-  }
-
   // ==========================================
   // syncInstitutionalData
   // ==========================================

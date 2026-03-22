@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import 'package:afterclose/app/background_update_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -13,8 +15,10 @@ import 'package:afterclose/presentation/screens/settings/widgets/data_management
 import 'package:afterclose/presentation/widgets/common/radio_selection_dialog.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// App 版本號（單一來源，與 pubspec.yaml 同步）
-const _appVersion = '0.2.0';
+/// App 版本資訊（從 pubspec.yaml 自動讀取，不需手動維護）
+final _packageInfoProvider = FutureProvider<PackageInfo>(
+  (ref) => PackageInfo.fromPlatform(),
+);
 
 /// Supported locales with display names
 const _supportedLocales = [
@@ -121,8 +125,8 @@ class SettingsScreen extends ConsumerWidget {
 
           // 關於區段
           _buildSettingsSection(context, 'settings.about'.tr(), [
-            _buildAboutTile(context, theme),
-            _buildVersionTile(theme),
+            _buildAboutTile(context, theme, ref),
+            _buildVersionTile(theme, ref),
           ]),
 
           const SizedBox(height: 32),
@@ -283,7 +287,7 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAboutTile(BuildContext context, ThemeData theme) {
+  Widget _buildAboutTile(BuildContext context, ThemeData theme, WidgetRef ref) {
     return ListTile(
       leading: _buildIconContainer(
         Colors.grey[700]!,
@@ -295,16 +299,21 @@ class SettingsScreen extends ConsumerWidget {
         size: 20,
         color: theme.colorScheme.onSurfaceVariant,
       ),
-      onTap: () => _showAboutDialog(context),
+      onTap: () => _showAboutDialog(context, ref),
     );
   }
 
-  Widget _buildVersionTile(ThemeData theme) {
+  Widget _buildVersionTile(ThemeData theme, WidgetRef ref) {
+    final version =
+        ref
+            .watch(_packageInfoProvider)
+            .whenOrNull(data: (info) => info.version) ??
+        '...';
     return ListTile(
       leading: _buildIconContainer(Colors.blueGrey, Icons.verified_rounded),
       title: Text('settings.version'.tr()),
       trailing: Text(
-        _appVersion,
+        version,
         style: theme.textTheme.bodyMedium?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),
@@ -445,12 +454,13 @@ class SettingsScreen extends ConsumerWidget {
     };
   }
 
-  void _showAboutDialog(BuildContext context) {
+  void _showAboutDialog(BuildContext context, WidgetRef ref) {
     HapticFeedback.lightImpact();
+    final version = ref.read(_packageInfoProvider).value?.version ?? '...';
     showAboutDialog(
       context: context,
       applicationName: 'app.name'.tr(),
-      applicationVersion: _appVersion,
+      applicationVersion: version,
       applicationIcon: Container(
         width: 64,
         height: 64,

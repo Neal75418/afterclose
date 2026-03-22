@@ -1,7 +1,6 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/models/technical_indicators.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
