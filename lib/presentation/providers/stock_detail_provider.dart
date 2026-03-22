@@ -262,15 +262,20 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     }
 
     state = state.copyWith(isLoadingInsider: true);
-    final (insiderHistory, transfers) = await (
-      _chipLoader.loadInsiderFromDb(_symbol),
-      _db.getRecentTransfers(_symbol),
-    ).wait;
-    state = state.copyWith(
-      insiderHistory: insiderHistory,
-      insiderTransfers: transfers,
-      isLoadingInsider: false,
-    );
+    try {
+      final (insiderHistory, transfers) = await (
+        _chipLoader.loadInsiderFromDb(_symbol),
+        _db.getRecentTransfers(_symbol),
+      ).wait;
+      state = state.copyWith(
+        insiderHistory: insiderHistory,
+        insiderTransfers: transfers,
+        isLoadingInsider: false,
+      );
+    } catch (e) {
+      AppLogger.warning('StockDetailNotifier', '載入內部人資料失敗: $_symbol', e);
+      state = state.copyWith(isLoadingInsider: false);
+    }
   }
 
   /// 載入完整籌碼分析資料

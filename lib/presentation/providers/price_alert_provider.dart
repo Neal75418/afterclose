@@ -294,6 +294,9 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     }
   }
 
+  /// Clear error state
+  void clearError() => state = state.copyWith(error: null);
+
   /// Load alerts for a specific symbol
   Future<void> loadAlertsForSymbol(String symbol) async {
     state = state.copyWith(isLoading: true, error: null);

@@ -6,6 +6,7 @@
     "loading": "Loading...",
     "retry": "Retry",
     "syncFailed": "Data sync failed, please try again later",
+    "dismiss": "Dismiss",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",

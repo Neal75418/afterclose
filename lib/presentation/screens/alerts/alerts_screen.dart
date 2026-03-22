@@ -68,6 +68,11 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                             ref.read(priceAlertProvider.notifier).loadAlerts(),
                         child: Text('common.retry'.tr()),
                       ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(priceAlertProvider.notifier).clearError(),
+                        child: Text('common.dismiss'.tr()),
+                      ),
                     ],
                   ),
                 Expanded(child: _buildAlertsList(state.alerts, theme)),

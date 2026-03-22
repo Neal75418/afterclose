@@ -6,6 +6,7 @@
     "loading": "載入中...",
     "retry": "重試",
     "syncFailed": "資料同步失敗，請稍後再試",
+    "dismiss": "關閉",
     "cancel": "取消",
     "confirm": "確認",
     "save": "儲存",

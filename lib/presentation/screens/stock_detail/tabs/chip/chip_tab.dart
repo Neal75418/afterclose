@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,9 +63,24 @@ class _ChipTabState extends ConsumerState<ChipTab> {
           if (chipError != null && !isLoadingChip)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Text(
-                chipError,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      chipError,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => ref
+                        .read(stockDetailProvider(widget.symbol).notifier)
+                        .loadChipData(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text('common.retry'.tr()),
+                  ),
+                ],
               ),
             ),
 

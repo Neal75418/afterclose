@@ -79,7 +79,8 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           if (isLoadingFundamentals)
             buildLoadingState(context)
-          else if (fundamentals.revenueHistory.isEmpty)
+          else if (fundamentals.revenueHistory.isEmpty &&
+              fundamentalsError == null)
             buildEmptyState(context, 'stockDetail.revenueComingSoon'.tr())
           else
             RevenueTable(
@@ -98,7 +99,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           if (isLoadingFundamentals)
             buildLoadingState(context)
-          else if (fundamentals.epsHistory.isEmpty)
+          else if (fundamentals.epsHistory.isEmpty && fundamentalsError == null)
             buildEmptyState(context, 'stockDetail.epsComingSoon'.tr())
           else
             EpsTable(
@@ -123,7 +124,8 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           if (isLoadingFundamentals)
             buildLoadingState(context)
-          else if (fundamentals.dividendHistory.isEmpty)
+          else if (fundamentals.dividendHistory.isEmpty &&
+              fundamentalsError == null)
             buildEmptyState(context, 'stockDetail.dividendComingSoon'.tr())
           else
             DividendTable(
