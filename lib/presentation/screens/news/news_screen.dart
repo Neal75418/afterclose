@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -200,10 +201,12 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: SizedBox(
                         height: MediaQuery.of(context).size.height * 0.6,
-                        child: EmptyStates.error(
-                          message: state.error!,
-                          onRetry: _refresh,
-                        ),
+                        child: ErrorDisplay.isNetworkError(state.error!)
+                            ? EmptyStates.networkError(onRetry: _refresh)
+                            : EmptyStates.error(
+                                message: state.error!,
+                                onRetry: _refresh,
+                              ),
                       ),
                     )
                   : state.filteredNews.isEmpty

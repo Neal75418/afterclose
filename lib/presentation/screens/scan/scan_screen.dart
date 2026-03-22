@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/constants/filter_metadata.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -280,11 +281,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       return const Expanded(child: StockListShimmer(itemCount: 8));
     }
     if (state.error != null) {
+      void onRetry() => ref.read(scanProvider.notifier).loadData();
       return Expanded(
-        child: EmptyStates.error(
-          message: state.error!,
-          onRetry: () => ref.read(scanProvider.notifier).loadData(),
-        ),
+        child: ErrorDisplay.isNetworkError(state.error!)
+            ? EmptyStates.networkError(onRetry: onRetry)
+            : EmptyStates.error(message: state.error!, onRetry: onRetry),
       );
     }
 
