@@ -150,10 +150,16 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
       body: state.isLoading && state.symbols.isEmpty
           ? const GenericListShimmer(itemCount: 4)
           : state.error != null && state.symbols.isEmpty
-          ? EmptyStates.error(
-              message: state.error!,
-              onRetry: () => ref.read(comparisonProvider.notifier).reload(),
-            )
+          ? ErrorDisplay.isNetworkError(state.error!)
+                ? EmptyStates.networkError(
+                    onRetry: () =>
+                        ref.read(comparisonProvider.notifier).reload(),
+                  )
+                : EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () =>
+                        ref.read(comparisonProvider.notifier).reload(),
+                  )
           : Column(
               children: [
                 // 錯誤橫幅（有股票時仍顯示，但不全頁替換）

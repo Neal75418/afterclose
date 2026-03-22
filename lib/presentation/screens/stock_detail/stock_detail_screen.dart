@@ -88,14 +88,18 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
             ? const SafeArea(child: StockDetailShimmer())
             : state.error != null
             ? SafeArea(
-                child: EmptyStates.error(
-                  message: state.error!,
-                  onRetry: () {
-                    ref
-                        .read(stockDetailProvider(widget.symbol).notifier)
-                        .loadData();
-                  },
-                ),
+                child: ErrorDisplay.isNetworkError(state.error!)
+                    ? EmptyStates.networkError(
+                        onRetry: () => ref
+                            .read(stockDetailProvider(widget.symbol).notifier)
+                            .loadData(),
+                      )
+                    : EmptyStates.error(
+                        message: state.error!,
+                        onRetry: () => ref
+                            .read(stockDetailProvider(widget.symbol).notifier)
+                            .loadData(),
+                      ),
               )
             : NestedScrollView(
                 headerSliverBuilder: (context, innerBoxScrolled) => [

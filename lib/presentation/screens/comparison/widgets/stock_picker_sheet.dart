@@ -50,16 +50,25 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
     }
 
     setState(() => _isSearching = true);
-    final stockRepo = ref.read(stockRepositoryProvider);
-    final results = await stockRepo.searchStocks(query);
-    if (mounted) {
-      setState(() {
-        _searchResults = results
-            .where((s) => !widget.existingSymbols.contains(s.symbol))
-            .take(20)
-            .toList();
-        _isSearching = false;
-      });
+    try {
+      final stockRepo = ref.read(stockRepositoryProvider);
+      final results = await stockRepo.searchStocks(query);
+      if (mounted) {
+        setState(() {
+          _searchResults = results
+              .where((s) => !widget.existingSymbols.contains(s.symbol))
+              .take(20)
+              .toList();
+          _isSearching = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+      }
     }
   }
 
