@@ -454,7 +454,7 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showAboutDialog(BuildContext context, WidgetRef ref) {
     HapticFeedback.lightImpact();
-    final version = ref.read(_packageInfoProvider).value?.version ?? '...';
+    final version = ref.read(_packageInfoProvider).value?.version;
     showAboutDialog(
       context: context,
       applicationName: 'app.name'.tr(),

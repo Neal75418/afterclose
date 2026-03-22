@@ -5,8 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
+
+/// 共享測試 DB（避免 Drift multiple-database warning）
+final _testDb = AppDatabase.forTesting();
 
 // =============================================================================
 // Test Asset Loader — returns empty map so .tr() returns the key itself
@@ -81,6 +86,7 @@ void main() {
     final s = settingsState ?? const SettingsState();
     return ProviderScope(
       overrides: [
+        databaseProvider.overrideWithValue(_testDb),
         settingsProvider.overrideWith(() {
           final n = FakeSettingsNotifier();
           n.initialState = s;
