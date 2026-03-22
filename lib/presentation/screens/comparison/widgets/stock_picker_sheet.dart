@@ -25,6 +25,7 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
   List<StockMasterEntry> _searchResults = [];
   Timer? _debounce;
   bool _isSearching = false;
+  bool _searchError = false;
 
   @override
   void dispose() {
@@ -49,7 +50,10 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
       return;
     }
 
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _searchError = false;
+    });
     try {
       final stockRepo = ref.read(stockRepositoryProvider);
       final results = await stockRepo.searchStocks(query);
@@ -67,6 +71,7 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
         setState(() {
           _searchResults = [];
           _isSearching = false;
+          _searchError = true;
         });
       }
     }
@@ -137,9 +142,11 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
     if (_searchResults.isEmpty) {
       return Center(
         child: Text(
-          'comparison.noData'.tr(),
+          _searchError ? 'empty.error'.tr() : 'comparison.noData'.tr(),
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+            color: _searchError
+                ? theme.colorScheme.error
+                : theme.colorScheme.onSurfaceVariant,
           ),
         ),
       );

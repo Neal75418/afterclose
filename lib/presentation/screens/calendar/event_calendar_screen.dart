@@ -9,6 +9,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/core/utils/ics_generator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
@@ -194,38 +195,26 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           // 選取日期的事件列表
           Expanded(
             child: state.error != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 48,
-                          color: theme.colorScheme.error.withValues(alpha: 0.7),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          state.error!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.error,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        FilledButton.tonalIcon(
-                          onPressed: () {
+                ? ErrorDisplay.isNetworkError(state.error!)
+                      ? EmptyStates.networkError(
+                          onRetry: () {
                             if (state.focusedMonth != null) {
                               ref
                                   .read(eventCalendarProvider.notifier)
                                   .loadMonthEvents(state.focusedMonth!);
                             }
                           },
-                          icon: const Icon(Icons.refresh),
-                          label: Text('calendar.retry'.tr()),
-                        ),
-                      ],
-                    ),
-                  )
+                        )
+                      : EmptyStates.error(
+                          message: state.error!,
+                          onRetry: () {
+                            if (state.focusedMonth != null) {
+                              ref
+                                  .read(eventCalendarProvider.notifier)
+                                  .loadMonthEvents(state.focusedMonth!);
+                            }
+                          },
+                        )
                 : state.isLoading
                 ? const Center(
                     child: SizedBox(
