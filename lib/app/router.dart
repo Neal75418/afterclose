@@ -11,6 +11,7 @@ import 'package:afterclose/presentation/screens/custom_screening/backtest/backte
 import 'package:afterclose/presentation/screens/custom_screening/custom_screening_screen.dart';
 import 'package:afterclose/presentation/screens/industry/industry_overview_screen.dart';
 import 'package:afterclose/presentation/screens/news/news_screen.dart';
+import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
 import 'package:afterclose/presentation/screens/scan/scan_screen.dart';
 import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 import 'package:afterclose/presentation/screens/comparison/comparison_screen.dart';
@@ -30,7 +31,6 @@ final _scanNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'scan');
 final _watchlistNavigatorKey = GlobalKey<NavigatorState>(
   debugLabel: 'watchlist',
 );
-final _newsNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'news');
 
 /// 快取 onboarding 完成狀態，避免重複 async 讀取
 bool _onboardingComplete = false;
@@ -117,19 +117,24 @@ final router = GoRouter(
             ),
           ],
         ),
-
-        // 新聞分頁
-        StatefulShellBranch(
-          navigatorKey: _newsNavigatorKey,
-          routes: [
-            GoRoute(
-              path: AppRoutes.news,
-              name: 'news',
-              builder: (context, state) => const NewsScreen(),
-            ),
-          ],
-        ),
       ],
+    ),
+
+    // 新聞（全螢幕，Shell 外）
+    GoRoute(
+      path: AppRoutes.news,
+      name: 'news',
+      builder: (context, state) => const NewsScreen(),
+    ),
+
+    // 投資組合（全螢幕，Shell 外）
+    GoRoute(
+      path: AppRoutes.portfolio,
+      name: 'portfolio',
+      builder: (context, state) => Scaffold(
+        appBar: AppBar(title: const Text('投資組合')),
+        body: const PortfolioTab(),
+      ),
     ),
 
     // 個股詳情（全螢幕，Shell 外）

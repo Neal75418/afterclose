@@ -13,6 +13,7 @@ abstract final class AppRoutes {
   static const industry = '/industry';
   static const customScreening = '/scan/custom';
   static const backtest = '/scan/custom/backtest';
+  static const portfolio = '/portfolio';
   static const compare = '/compare';
   static const calendar = '/calendar';
   static const recommendationPerformance = '/recommendation-performance';

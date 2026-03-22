@@ -261,6 +261,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     tooltip: S.todayUpdateData,
                   ),
                 IconButton(
+                  icon: const Icon(Icons.newspaper_outlined),
+                  onPressed: () => context.push(AppRoutes.news),
+                  tooltip: 'nav.news'.tr(),
+                ),
+                IconButton(
                   icon: const Icon(Icons.notifications_outlined),
                   onPressed: () => context.push(AppRoutes.alerts),
                   tooltip: S.todayPriceAlert,

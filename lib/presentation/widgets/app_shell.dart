@@ -135,11 +135,6 @@ class _AppShellState extends ConsumerState<AppShell> {
         selectedIcon: const Icon(Icons.star),
         label: 'nav.watchlist'.tr(),
       ),
-      NavigationDestination(
-        icon: const Icon(Icons.newspaper_outlined),
-        selectedIcon: const Icon(Icons.newspaper),
-        label: 'nav.news'.tr(),
-      ),
     ];
   }
 
@@ -160,11 +155,6 @@ class _AppShellState extends ConsumerState<AppShell> {
         icon: const Icon(Icons.star_outline),
         selectedIcon: const Icon(Icons.star),
         label: Text('nav.watchlist'.tr()),
-      ),
-      NavigationRailDestination(
-        icon: const Icon(Icons.newspaper_outlined),
-        selectedIcon: const Icon(Icons.newspaper),
-        label: Text('nav.news'.tr()),
       ),
     ];
   }

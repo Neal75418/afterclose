@@ -254,17 +254,14 @@ void main() {
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
-    testWidgets('shows watchlist and portfolio tab segments', (tester) async {
+    testWidgets('shows portfolio in more menu', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      // ButtonSegment renders as part of SegmentedButton
-      // Check for segment content: the wallet icon for portfolio tab
-      expect(
-        find.byIcon(Icons.account_balance_wallet_outlined),
-        findsOneWidget,
-      );
+      // Portfolio is no longer a SegmentedButton tab
+      // It's accessible via the more_vert menu
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
     testWidgets('shows stock count when items exist', (tester) async {

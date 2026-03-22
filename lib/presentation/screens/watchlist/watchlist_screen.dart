@@ -16,7 +16,6 @@ import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
-import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
 import 'package:afterclose/presentation/screens/watchlist/add_stock_dialog.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_group_header.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_stock_item.dart';
@@ -34,14 +33,11 @@ class WatchlistScreen extends ConsumerStatefulWidget {
   ConsumerState<WatchlistScreen> createState() => _WatchlistScreenState();
 }
 
-enum _WatchlistTab { watchlist, portfolio }
-
 class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   Timer? _searchDebounce;
   bool _isSearching = false;
-  _WatchlistTab _currentTab = _WatchlistTab.watchlist;
 
   @override
   void initState() {
@@ -164,25 +160,15 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(watchlistProvider);
     final theme = Theme.of(context);
-    final isWatchlistTab = _currentTab == _WatchlistTab.watchlist;
 
     return Scaffold(
-      appBar: _buildAppBar(state, isWatchlistTab),
-      body: Column(
-        children: [
-          _buildTabSelector(theme),
-          Expanded(
-            child: isWatchlistTab
-                ? _buildWatchlistBody(state, theme)
-                : const PortfolioTab(),
-          ),
-        ],
-      ),
+      appBar: _buildAppBar(state),
+      body: _buildWatchlistBody(state, theme),
     );
   }
 
   /// AppBar：搜尋欄 + 排序/比較/新增/更多選單
-  PreferredSizeWidget _buildAppBar(WatchlistState state, bool isWatchlistTab) {
+  PreferredSizeWidget _buildAppBar(WatchlistState state) {
     return AppBar(
       title: _isSearching
           ? TextField(
@@ -201,35 +187,33 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             )
           : Text('watchlist.title'.tr()),
       actions: [
-        if (isWatchlistTab) ...[
+        IconButton(
+          icon: Icon(_isSearching ? Icons.close : Icons.search),
+          onPressed: _toggleSearch,
+          tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
+        ),
+        _buildSortMenu(state),
+        if (state.filteredItems.length >= 2)
           IconButton(
-            icon: Icon(_isSearching ? Icons.close : Icons.search),
-            onPressed: _toggleSearch,
-            tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
-          ),
-          _buildSortMenu(state),
-          if (state.filteredItems.length >= 2)
-            IconButton(
-              icon: const Icon(Icons.compare_arrows),
-              onPressed: () {
-                final symbols = state.filteredItems
-                    .take(4)
-                    .map((e) => e.symbol)
-                    .toList();
-                context.push(AppRoutes.compare, extra: symbols);
-              },
-              tooltip: 'comparison.compare'.tr(),
-            ),
-          IconButton(
-            icon: const Icon(Icons.add),
+            icon: const Icon(Icons.compare_arrows),
             onPressed: () {
-              HapticFeedback.selectionClick();
-              showAddStockDialog(context: context, ref: ref);
+              final symbols = state.filteredItems
+                  .take(4)
+                  .map((e) => e.symbol)
+                  .toList();
+              context.push(AppRoutes.compare, extra: symbols);
             },
-            tooltip: 'watchlist.add'.tr(),
+            tooltip: 'comparison.compare'.tr(),
           ),
-        ],
-        _buildMoreMenu(state, isWatchlistTab),
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            showAddStockDialog(context: context, ref: ref);
+          },
+          tooltip: 'watchlist.add'.tr(),
+        ),
+        _buildMoreMenu(state),
       ],
     );
   }
@@ -264,16 +248,19 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   }
 
   /// 更多選單（行事曆、匯出、分組）
-  Widget _buildMoreMenu(WatchlistState state, bool isWatchlistTab) {
+  Widget _buildMoreMenu(WatchlistState state) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       onSelected: (value) {
         switch (value) {
+          case 'portfolio':
+            HapticFeedback.selectionClick();
+            context.push(AppRoutes.portfolio);
           case 'calendar':
             HapticFeedback.selectionClick();
             context.push(AppRoutes.calendar);
           case 'export':
-            _exportCsv(isWatchlistTab);
+            _exportCsv(true);
           case 'group_none':
             ref.read(watchlistProvider.notifier).setGroup(WatchlistGroup.none);
           case 'group_status':
@@ -285,6 +272,16 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         }
       },
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'portfolio',
+          child: Row(
+            children: [
+              const Icon(Icons.account_balance_wallet_outlined, size: 20),
+              const SizedBox(width: 12),
+              Text('portfolio.title'.tr()),
+            ],
+          ),
+        ),
         PopupMenuItem(
           value: 'calendar',
           child: Row(
@@ -301,67 +298,28 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             children: [
               const Icon(Icons.file_download_outlined, size: 20),
               const SizedBox(width: 12),
-              Text(
-                isWatchlistTab
-                    ? 'export.exportWatchlist'.tr()
-                    : 'export.exportPortfolio'.tr(),
-              ),
+              Text('export.exportWatchlist'.tr()),
             ],
           ),
         ),
-        if (isWatchlistTab) ...[
-          const PopupMenuDivider(),
-          ...WatchlistGroup.values.map((group) {
-            final value = 'group_${group.name}';
-            return PopupMenuItem(
-              value: value,
-              child: Row(
-                children: [
-                  if (state.group == group)
-                    const Icon(Icons.check, size: 18)
-                  else
-                    const SizedBox(width: 18),
-                  const SizedBox(width: 8),
-                  Text(group.label),
-                ],
-              ),
-            );
-          }),
-        ],
+        const PopupMenuDivider(),
+        ...WatchlistGroup.values.map((group) {
+          final value = 'group_${group.name}';
+          return PopupMenuItem(
+            value: value,
+            child: Row(
+              children: [
+                if (state.group == group)
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                Text(group.label),
+              ],
+            ),
+          );
+        }),
       ],
-    );
-  }
-
-  /// 分頁選擇器（自選 / 投資組合）
-  Widget _buildTabSelector(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SegmentedButton<_WatchlistTab>(
-        segments: [
-          ButtonSegment(
-            value: _WatchlistTab.watchlist,
-            label: Text('watchlist.title'.tr()),
-            icon: const Icon(Icons.star_outline, size: 18),
-          ),
-          ButtonSegment(
-            value: _WatchlistTab.portfolio,
-            label: Text('portfolio.title'.tr()),
-            icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
-          ),
-        ],
-        selected: {_currentTab},
-        onSelectionChanged: (selected) {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _currentTab = selected.first;
-            if (_isSearching) {
-              _isSearching = false;
-              _searchController.clear();
-              ref.read(watchlistProvider.notifier).setSearchQuery('');
-            }
-          });
-        },
-      ),
     );
   }
 
