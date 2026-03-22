@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
@@ -58,7 +60,16 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
               ),
             )
           : state.error != null && state.allData.isEmpty
-          ? _buildErrorState(theme, state.error!)
+          ? ErrorDisplay.isNetworkError(state.error!)
+                ? EmptyStates.networkError(
+                    onRetry: () =>
+                        ref.read(industryEpsProvider.notifier).loadData(),
+                  )
+                : EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () =>
+                        ref.read(industryEpsProvider.notifier).loadData(),
+                  )
           : RefreshIndicator(
               onRefresh: () =>
                   ref.read(industryEpsProvider.notifier).loadData(),
@@ -66,30 +77,6 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
                   ? _buildEmptyState(theme)
                   : _buildContent(theme, state),
             ),
-    );
-  }
-
-  Widget _buildErrorState(ThemeData theme, String error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(
-            error,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.tonal(
-            onPressed: () => ref.read(industryEpsProvider.notifier).loadData(),
-            child: Text('common.retry'.tr()),
-          ),
-        ],
-      ),
     );
   }
 

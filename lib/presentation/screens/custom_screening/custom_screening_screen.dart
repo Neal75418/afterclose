@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 
@@ -171,36 +173,16 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
     );
 
     if (state.error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: theme.colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                state.error!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              FilledButton.tonal(
-                onPressed: () => ref
-                    .read(customScreeningProvider.notifier)
-                    .executeScreening(),
-                child: Text('common.retry'.tr()),
-              ),
-            ],
-          ),
-        ),
-      );
+      return ErrorDisplay.isNetworkError(state.error!)
+          ? EmptyStates.networkError(
+              onRetry: () =>
+                  ref.read(customScreeningProvider.notifier).executeScreening(),
+            )
+          : EmptyStates.error(
+              message: state.error!,
+              onRetry: () =>
+                  ref.read(customScreeningProvider.notifier).executeScreening(),
+            );
     }
 
     return Column(

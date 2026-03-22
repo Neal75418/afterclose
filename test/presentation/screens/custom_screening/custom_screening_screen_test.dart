@@ -5,6 +5,7 @@ import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/custom_screening/custom_screening_screen.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
@@ -215,9 +216,10 @@ void main() {
         ),
       );
       await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.textContaining('Network error'), findsOneWidget);
+      // Error state now uses EmptyStates widget (network or generic)
+      expect(find.byType(EmptyState), findsOneWidget);
     });
 
     testWidgets('renders in dark mode', (tester) async {
