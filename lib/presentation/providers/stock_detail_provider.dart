@@ -247,7 +247,10 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       );
     } catch (e) {
       AppLogger.warning('StockDetailNotifier', '載入基本面資料失敗: $_symbol', e);
-      state = state.copyWith(isLoadingFundamentals: false);
+      state = state.copyWith(
+        isLoadingFundamentals: false,
+        fundamentalsError: ErrorDisplay.message(e),
+      );
     }
   }
 
@@ -294,7 +297,10 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       );
     } catch (e) {
       AppLogger.warning('StockDetailNotifier', '載入籌碼分析資料失敗: $_symbol', e);
-      state = state.copyWith(isLoadingChip: false);
+      state = state.copyWith(
+        isLoadingChip: false,
+        chipError: ErrorDisplay.message(e),
+      );
     }
   }
 

@@ -38,6 +38,9 @@ class _ChipTabState extends ConsumerState<ChipTab> {
     final isLoadingChip = ref.watch(
       stockDetailProvider(widget.symbol).select((s) => s.loading.isLoadingChip),
     );
+    final chipError = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.chipError),
+    );
 
     if (isLoadingChip && chip.chipStrength == null) {
       return const Center(
@@ -55,6 +58,16 @@ class _ChipTabState extends ConsumerState<ChipTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 載入失敗提示
+          if (chipError != null && !isLoadingChip)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                chipError,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+
           // 1. Chip strength indicator
           if (chip.chipStrength != null)
             ChipStrengthIndicator(strength: chip.chipStrength!),

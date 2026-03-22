@@ -43,6 +43,9 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
         widget.symbol,
       ).select((s) => s.loading.isLoadingFundamentals),
     );
+    final fundamentalsError = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.fundamentalsError),
+    );
     final showROCYear = ref.watch(
       settingsProvider.select((s) => s.showROCYear),
     );
@@ -53,6 +56,16 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 載入失敗提示
+          if (fundamentalsError != null && !isLoadingFundamentals)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                fundamentalsError,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+
           // 關鍵指標卡片
           _buildMetricsRow(context, fundamentals),
           const SizedBox(height: 24),

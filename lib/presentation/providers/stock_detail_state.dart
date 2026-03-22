@@ -186,6 +186,8 @@ class StockDetailState {
     this.loading = const LoadingState(),
     this.isInWatchlist = false,
     this.error,
+    this.fundamentalsError,
+    this.chipError,
     this.dataDate,
     this.hasDataMismatch = false,
     this.reasons = const [],
@@ -201,6 +203,8 @@ class StockDetailState {
   // 其他直接欄位
   final bool isInWatchlist;
   final String? error;
+  final String? fundamentalsError;
+  final String? chipError;
 
   /// 同步後的資料日期 — 所有顯示資料應來自此日期
   final DateTime? dataDate;
@@ -256,6 +260,8 @@ class StockDetailState {
     // 直接欄位
     bool? isInWatchlist,
     Object? error = sentinel,
+    Object? fundamentalsError = sentinel,
+    Object? chipError = sentinel,
     DateTime? dataDate,
     bool? hasDataMismatch,
     List<DailyReasonEntry>? reasons,
@@ -340,6 +346,10 @@ class StockDetailState {
           : loading,
       isInWatchlist: isInWatchlist ?? this.isInWatchlist,
       error: error == sentinel ? this.error : error as String?,
+      fundamentalsError: fundamentalsError == sentinel
+          ? this.fundamentalsError
+          : fundamentalsError as String?,
+      chipError: chipError == sentinel ? this.chipError : chipError as String?,
       dataDate: dataDate ?? this.dataDate,
       hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
       reasons: reasons ?? this.reasons,
