@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -93,7 +94,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
                   namedArgs: {
                     'error': result.errors.isNotEmpty
                         ? result.errors.first
-                        : 'Unknown error',
+                        : 'empty.error'.tr(),
                   },
                 );
         });
@@ -101,14 +102,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
       }
     } catch (e) {
       if (mounted) {
-        final errorStr = e.toString();
-        final isRateLimit =
-            errorStr.contains('流量') ||
-            errorStr.contains('limit') ||
-            errorStr.contains('quota') ||
-            errorStr.contains('429');
-
-        if (isRateLimit) {
+        if (e.toString().contains('限制') || e.toString().contains('429')) {
           _showRateLimitDialog();
         }
 
@@ -116,7 +110,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
           _isSyncing = false;
           _syncSuccess = false;
           _syncResult = 'settings.forceSyncFailed'.tr(
-            namedArgs: {'error': errorStr},
+            namedArgs: {'error': ErrorDisplay.message(e)},
           );
         });
       }

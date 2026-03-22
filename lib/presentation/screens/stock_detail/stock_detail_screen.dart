@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
@@ -232,7 +233,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
+              'export.shareFailed'.tr(
+                namedArgs: {'error': ErrorDisplay.message(e)},
+              ),
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,

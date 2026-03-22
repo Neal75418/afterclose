@@ -76,13 +76,22 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
       setState(() => _isSearching = true);
-      final stockRepo = widget.ref.read(stockRepositoryProvider);
-      final results = await stockRepo.searchStocks(query);
-      if (mounted) {
-        setState(() {
-          _searchResults = results.take(8).toList();
-          _isSearching = false;
-        });
+      try {
+        final stockRepo = widget.ref.read(stockRepositoryProvider);
+        final results = await stockRepo.searchStocks(query);
+        if (mounted) {
+          setState(() {
+            _searchResults = results.take(8).toList();
+            _isSearching = false;
+          });
+        }
+      } catch (_) {
+        if (mounted) {
+          setState(() {
+            _searchResults = [];
+            _isSearching = false;
+          });
+        }
       }
     });
   }

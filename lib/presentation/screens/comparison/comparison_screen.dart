@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -89,7 +90,9 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
+              'export.shareFailed'.tr(
+                namedArgs: {'error': ErrorDisplay.message(e)},
+              ),
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,

@@ -63,7 +63,7 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
                 namedArgs: {'count': result.stockCount.toString()},
               )
             : 'settings.apiTestFailed'.tr(
-                namedArgs: {'error': result.errorMessage ?? 'Unknown error'},
+                namedArgs: {'error': result.errorMessage ?? 'empty.error'.tr()},
               );
       });
     }
@@ -194,9 +194,25 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
 
   Future<void> _openRegisterUrl() async {
     final url = Uri.parse(ApiEndpoints.finmindWebsite);
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) _showLinkError();
+      }
+    } catch (_) {
+      if (mounted) _showLinkError();
     }
+  }
+
+  void _showLinkError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('empty.error'.tr()),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
   }
 
   @override
