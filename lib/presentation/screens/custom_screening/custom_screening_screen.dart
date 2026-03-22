@@ -80,8 +80,8 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
           // 執行按鈕
           _buildExecuteButton(theme, state),
 
-          // 結果區域
-          if (state.result != null || state.isExecuting)
+          // 結果區域（含錯誤狀態）
+          if (state.result != null || state.isExecuting || state.error != null)
             Expanded(child: _buildResultsSection(theme, state)),
         ],
       ),

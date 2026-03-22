@@ -43,7 +43,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       appBar: AppBar(title: Text('alert.title'.tr())),
       body: state.isLoading && state.alerts.isEmpty
           ? const GenericListShimmer(itemCount: 5)
-          : state.error != null
+          : state.error != null && state.alerts.isEmpty
           ? ErrorDisplay.isNetworkError(state.error!)
                 ? EmptyStates.networkError(
                     onRetry: () =>
@@ -56,7 +56,23 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
                   )
           : state.alerts.isEmpty
           ? _buildEmptyState()
-          : _buildAlertsList(state.alerts, theme),
+          : Column(
+              children: [
+                if (state.error != null)
+                  MaterialBanner(
+                    content: Text(state.error!),
+                    leading: const Icon(Icons.error_outline),
+                    actions: [
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(priceAlertProvider.notifier).loadAlerts(),
+                        child: Text('common.retry'.tr()),
+                      ),
+                    ],
+                  ),
+                Expanded(child: _buildAlertsList(state.alerts, theme)),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddAlertDialog(context),
         tooltip: 'alert.create'.tr(),
