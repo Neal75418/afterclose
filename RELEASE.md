@@ -31,11 +31,11 @@ flutter clean && flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 
 # Android
-flutter build apk --release --obfuscate --split-debug-info=build/debug-info
-flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info
+flutter build apk --release --obfuscate --split-debug-info=build/debug-info --dart-define=SENTRY_DSN=$SENTRY_DSN
+flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info --dart-define=SENTRY_DSN=$SENTRY_DSN
 
 # iOS
-flutter build ipa --release --obfuscate --split-debug-info=build/debug-info
+flutter build ipa --release --obfuscate --split-debug-info=build/debug-info --dart-define=SENTRY_DSN=$SENTRY_DSN
 ```
 
 ---
@@ -97,3 +97,4 @@ version: 1.0.0+1  # major.minor.patch+buildNumber
 |:---------|:----------------------------------------|
 | 金鑰安全     | 勿 commit `key.properties` 或 keystore 檔案 |
 | Crash 解析 | 保留 `build/debug-info` 供 crash 分析        |
+| Sentry DSN | 手動建置需設定 `export SENTRY_DSN=<dsn>`，CI 從 GitHub Secrets 注入 |
