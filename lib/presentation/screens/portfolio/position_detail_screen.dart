@@ -57,11 +57,21 @@ class PositionDetailScreen extends ConsumerWidget {
                       const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text(
-                      ErrorDisplay.message(e),
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          ErrorDisplay.message(e),
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () => ref.invalidate(
+                            positionTransactionsProvider(symbol),
+                          ),
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: Text('common.retry'.tr()),
+                        ),
+                      ],
                     ),
                   ),
                 ),

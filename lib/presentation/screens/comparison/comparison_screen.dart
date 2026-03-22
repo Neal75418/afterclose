@@ -164,6 +164,11 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
                     actions: [
                       TextButton(
                         onPressed: () =>
+                            ref.read(comparisonProvider.notifier).reload(),
+                        child: Text('common.retry'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () =>
                             ref.read(comparisonProvider.notifier).clearError(),
                         child: Text('common.dismiss'.tr()),
                       ),

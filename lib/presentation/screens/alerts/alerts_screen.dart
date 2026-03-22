@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -43,10 +44,16 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       body: state.isLoading
           ? const GenericListShimmer(itemCount: 5)
           : state.error != null
-          ? EmptyStates.error(
-              message: state.error!,
-              onRetry: () => ref.read(priceAlertProvider.notifier).loadAlerts(),
-            )
+          ? ErrorDisplay.isNetworkError(state.error!)
+                ? EmptyStates.networkError(
+                    onRetry: () =>
+                        ref.read(priceAlertProvider.notifier).loadAlerts(),
+                  )
+                : EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () =>
+                        ref.read(priceAlertProvider.notifier).loadAlerts(),
+                  )
           : state.alerts.isEmpty
           ? _buildEmptyState()
           : _buildAlertsList(state.alerts, theme),

@@ -90,6 +90,7 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
               ),
               obscureText: true,
               autocorrect: false,
+              enableSuggestions: false,
             ),
             const SizedBox(height: 16),
             InkWell(

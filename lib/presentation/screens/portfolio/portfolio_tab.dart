@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -44,10 +45,10 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
     }
 
     if (state.error != null && state.positions.isEmpty) {
-      return EmptyStates.error(
-        message: state.error!,
-        onRetry: () => ref.read(portfolioProvider.notifier).loadPositions(),
-      );
+      void onRetry() => ref.read(portfolioProvider.notifier).loadPositions();
+      return ErrorDisplay.isNetworkError(state.error!)
+          ? EmptyStates.networkError(onRetry: onRetry)
+          : EmptyStates.error(message: state.error!, onRetry: onRetry);
     }
 
     if (state.positions.isEmpty) {
