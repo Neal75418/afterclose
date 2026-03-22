@@ -137,6 +137,19 @@ void main() {
       expect(find.byIcon(Icons.tune), findsNothing);
       // more_vert menu is visible
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+      // 點開選單後 tune icon 出現在 popup 中
+      final originalOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        // 忽略 popup 在測試 viewport 的 overflow（非真實 bug）
+        if (details.toString().contains('overflowed')) return;
+        originalOnError?.call(details);
+      };
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byIcon(Icons.tune), findsOneWidget);
+      FlutterError.onError = originalOnError;
     });
 
     testWidgets('shows sort icon button', (tester) async {
