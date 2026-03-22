@@ -57,6 +57,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
   List<StockMasterEntry> _searchResults = [];
   bool _isSearching = false;
   bool _isAdding = false;
+  bool _searchError = false;
   Timer? _debounce;
 
   @override
@@ -75,7 +76,10 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
 
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
-      setState(() => _isSearching = true);
+      setState(() {
+        _isSearching = true;
+        _searchError = false;
+      });
       try {
         final stockRepo = widget.ref.read(stockRepositoryProvider);
         final results = await stockRepo.searchStocks(query);
@@ -90,6 +94,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
           setState(() {
             _searchResults = [];
             _isSearching = false;
+            _searchError = true;
           });
         }
       }
@@ -212,9 +217,13 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Text(
-                  'watchlist.noMatching'.tr(),
+                  _searchError
+                      ? 'empty.error'.tr()
+                      : 'watchlist.noMatching'.tr(),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: _searchError
+                        ? theme.colorScheme.error
+                        : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),

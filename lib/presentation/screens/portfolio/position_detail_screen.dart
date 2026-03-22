@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
@@ -54,7 +55,15 @@ class PositionDetailScreen extends ConsumerWidget {
                       _buildTransactionList(context, ref, theme, txList),
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (e, _) => Text(e.toString()),
+                  error: (e, _) => Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      ErrorDisplay.message(e),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
