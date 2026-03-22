@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -33,6 +35,19 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
+          : state.error != null && state.stockRecords.isEmpty
+          ? ErrorDisplay.isNetworkError(state.error!)
+                ? EmptyStates.networkError(
+                    onRetry: () => ref
+                        .read(recommendationPerformanceProvider.notifier)
+                        .loadData(),
+                  )
+                : EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () => ref
+                        .read(recommendationPerformanceProvider.notifier)
+                        .loadData(),
+                  )
           : RefreshIndicator(
               onRefresh: () => ref
                   .read(recommendationPerformanceProvider.notifier)

@@ -88,15 +88,20 @@ class _IndustryOverviewScreenState
       body: _state.isLoading
           ? const GenericListShimmer(itemCount: 8)
           : _state.error != null
-          ? EmptyStates.error(
-              message: _state.error!,
-              onRetry: () {
-                setState(() {
-                  _state = const _IndustryOverviewState();
-                });
-                _loadData();
-              },
-            )
+          ? ErrorDisplay.isNetworkError(_state.error!)
+                ? EmptyStates.networkError(
+                    onRetry: () {
+                      setState(() => _state = const _IndustryOverviewState());
+                      _loadData();
+                    },
+                  )
+                : EmptyStates.error(
+                    message: _state.error!,
+                    onRetry: () {
+                      setState(() => _state = const _IndustryOverviewState());
+                      _loadData();
+                    },
+                  )
           : _buildIndustryList(theme),
     );
   }

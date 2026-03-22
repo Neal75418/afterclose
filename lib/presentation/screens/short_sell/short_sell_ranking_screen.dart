@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -46,7 +47,16 @@ class _ShortSellRankingScreenState
               ),
             )
           : state.error != null && state.rankings.isEmpty
-          ? _buildErrorState(theme, state.error!)
+          ? ErrorDisplay.isNetworkError(state.error!)
+                ? EmptyStates.networkError(
+                    onRetry: () =>
+                        ref.read(shortSellRankingProvider.notifier).loadData(),
+                  )
+                : EmptyStates.error(
+                    message: state.error!,
+                    onRetry: () =>
+                        ref.read(shortSellRankingProvider.notifier).loadData(),
+                  )
           : RefreshIndicator(
               onRefresh: () =>
                   ref.read(shortSellRankingProvider.notifier).loadData(),
@@ -54,31 +64,6 @@ class _ShortSellRankingScreenState
                   ? _buildEmptyState(theme)
                   : _buildRankingList(theme, state.rankings),
             ),
-    );
-  }
-
-  Widget _buildErrorState(ThemeData theme, String error) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(
-            error,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.outline,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.tonal(
-            onPressed: () =>
-                ref.read(shortSellRankingProvider.notifier).loadData(),
-            child: Text('common.retry'.tr()),
-          ),
-        ],
-      ),
     );
   }
 
