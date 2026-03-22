@@ -41,7 +41,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
 
     return Scaffold(
       appBar: AppBar(title: Text('alert.title'.tr())),
-      body: state.isLoading
+      body: state.isLoading && state.alerts.isEmpty
           ? const GenericListShimmer(itemCount: 5)
           : state.error != null
           ? ErrorDisplay.isNetworkError(state.error!)

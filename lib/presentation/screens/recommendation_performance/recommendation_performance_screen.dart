@@ -55,6 +55,21 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.only(bottom: 32),
                 children: [
+                  // 局部錯誤提示（有舊資料但重新載入/回填失敗）
+                  if (state.error != null && state.stockRecords.isNotEmpty)
+                    MaterialBanner(
+                      content: Text(state.error!),
+                      leading: const Icon(Icons.error_outline),
+                      actions: [
+                        TextButton(
+                          onPressed: () => ref
+                              .read(recommendationPerformanceProvider.notifier)
+                              .loadData(),
+                          child: Text('common.retry'.tr()),
+                        ),
+                      ],
+                    ),
+
                   // 持有天數選擇器
                   _buildPeriodSelector(context, ref, state),
 

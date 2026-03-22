@@ -5,6 +5,7 @@
   "common": {
     "loading": "Loading...",
     "retry": "Retry",
+    "syncFailed": "Data sync failed, please try again later",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "save": "Save",

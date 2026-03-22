@@ -91,7 +91,11 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
                   },
                 )
               : 'settings.forceSyncFailed'.tr(
-                  namedArgs: {'error': 'empty.error'.tr()},
+                  namedArgs: {
+                    'error': result.errors.isNotEmpty
+                        ? result.errors.first
+                        : 'common.syncFailed'.tr(),
+                  },
                 );
         });
         _loadHistoryProgress();
