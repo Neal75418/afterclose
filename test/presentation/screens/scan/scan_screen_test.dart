@@ -128,12 +128,15 @@ void main() {
       expect(find.byType(AppBar), findsOneWidget);
     });
 
-    testWidgets('shows tune icon for custom screening', (tester) async {
+    testWidgets('shows more menu with custom screening option', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.byIcon(Icons.tune), findsOneWidget);
+      // tune icon no longer directly visible in AppBar
+      expect(find.byIcon(Icons.tune), findsNothing);
+      // more_vert menu is visible
+      expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
     testWidgets('shows sort icon button', (tester) async {

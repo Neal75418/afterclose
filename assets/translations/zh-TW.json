@@ -207,6 +207,7 @@
   "scan": {
     "title": "市場掃描",
     "sort": "排序",
+    "more": "更多",
     "stockCount": "共 {count} 檔",
     "stockCountLoaded": "已載入 {loaded}/{total} 檔",
     "view": "查看",

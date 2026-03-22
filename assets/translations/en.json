@@ -207,6 +207,7 @@
   "scan": {
     "title": "Market Scan",
     "sort": "Sort",
+    "more": "More",
     "stockCount": "{count} stocks",
     "stockCountLoaded": "{loaded}/{total} stocks loaded",
     "view": "View",

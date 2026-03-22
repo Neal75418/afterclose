@@ -108,16 +108,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
-  /// AppBar：標題 + 自訂篩選 + 排序選單
+  /// AppBar：標題 + 排序選單 + 更多選單
   PreferredSizeWidget _buildAppBar(BuildContext context, ScanState state) {
     return AppBar(
       title: Text('scan.title'.tr()),
       actions: [
-        IconButton(
-          icon: const Icon(Icons.tune),
-          tooltip: 'customScreening.title'.tr(),
-          onPressed: () => context.push(AppRoutes.customScreening),
-        ),
         PopupMenuButton<ScanSort>(
           icon: const Icon(Icons.sort),
           tooltip: 'scan.sort'.tr(),
@@ -143,6 +138,27 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               );
             }).toList();
           },
+        ),
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert),
+          tooltip: 'scan.more'.tr(),
+          onSelected: (value) {
+            if (value == 'custom_screening') {
+              context.push(AppRoutes.customScreening);
+            }
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'custom_screening',
+              child: Row(
+                children: [
+                  const Icon(Icons.tune, size: 20),
+                  const SizedBox(width: 12),
+                  Text('customScreening.title'.tr()),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );
