@@ -204,13 +204,13 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
     final theme = Theme.of(context);
 
     if (_isLoading) {
-      return const ListTile(
-        leading: SizedBox(
+      return ListTile(
+        leading: const SizedBox(
           width: 24,
           height: 24,
           child: CircularProgressIndicator(strokeWidth: 2),
         ),
-        title: Text('Loading...'),
+        title: Text('common.loading'.tr()),
       );
     }
 

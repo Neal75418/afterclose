@@ -41,18 +41,30 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.tryParse(url);
-    if (uri == null || !{'http', 'https'}.contains(uri.scheme)) return;
+    if (uri == null || !{'http', 'https'}.contains(uri.scheme)) {
+      if (mounted) _showOpenLinkError();
+      return;
+    }
     try {
-      if (await canLaunchUrl(uri)) {
+      final launched = await canLaunchUrl(uri);
+      if (launched) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) _showOpenLinkError();
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(S.newsCannotOpenLink)));
-      }
+      if (mounted) _showOpenLinkError();
     }
+  }
+
+  void _showOpenLinkError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(S.newsCannotOpenLink),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Theme.of(context).colorScheme.error,
+      ),
+    );
   }
 
   void _showNewsPreview(NewsItemEntry item, List<String> relatedStocks) {

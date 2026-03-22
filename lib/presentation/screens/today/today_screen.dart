@@ -528,7 +528,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(S.todayUpdateFailed(e.toString())),
+            content: Text(S.todayUpdateFailed(ErrorDisplay.message(e))),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
           ),

@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -146,7 +147,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'export.shareFailed'.tr(namedArgs: {'error': e.toString()}),
+              'export.shareFailed'.tr(
+                namedArgs: {'error': ErrorDisplay.message(e)},
+              ),
             ),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -336,7 +339,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       child: state.isLoading
           ? const StockListShimmer(itemCount: 5)
           : state.error != null
-          ? EmptyStates.error(message: state.error!, onRetry: _onRefresh)
+          ? ErrorDisplay.isNetworkError(state.error!)
+                ? EmptyStates.networkError(onRetry: _onRefresh)
+                : EmptyStates.error(message: state.error!, onRetry: _onRefresh)
           : state.items.isEmpty
           ? EmptyStates.emptyWatchlist(
               onAdd: () => showAddStockDialog(context: context, ref: ref),
