@@ -239,6 +239,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   Widget _buildMoreMenu(WatchlistState state) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
+      tooltip: 'scan.more'.tr(),
       onSelected: (value) {
         switch (value) {
           case 'compare':

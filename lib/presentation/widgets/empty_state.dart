@@ -188,7 +188,7 @@ class EmptyStates {
       icon: Icons.star_outline_rounded,
       title: S.emptyNoWatchlist,
       subtitle: S.emptyNoWatchlistHint,
-      actionLabel: onAdd != null ? S.emptyGoToScan : null,
+      actionLabel: onAdd != null ? S.emptyAddWatchlist : null,
       onAction: onAdd,
       iconColor: Colors.amber,
     );

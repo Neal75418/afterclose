@@ -211,6 +211,7 @@ class S {
   static String get emptyNoWatchlist => 'empty.noWatchlist'.tr();
   static String get emptyNoWatchlistHint => 'empty.noWatchlistHint'.tr();
   static String get emptyGoToScan => 'empty.goToScan'.tr();
+  static String get emptyAddWatchlist => 'empty.addWatchlist'.tr();
   static String get emptyNoNews => 'empty.noNews'.tr();
   static String get emptyNoNewsHint => 'empty.noNewsHint'.tr();
   static String get emptyError => 'empty.error'.tr();

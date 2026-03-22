@@ -39,4 +39,9 @@ abstract final class ErrorDisplay {
     AppLogger.warning('ErrorDisplay', '未分類的例外類型', error);
     return '發生未預期的錯誤，請稍後再試';
   }
+
+  /// 判斷錯誤訊息是否為網路相關（用於 UI 選擇空狀態樣式）
+  static bool isNetworkError(String errorMessage) {
+    return errorMessage.contains('網路') || errorMessage.contains('連線');
+  }
 }

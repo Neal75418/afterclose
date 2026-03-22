@@ -601,6 +601,7 @@
     "noWatchlist": "Watchlist Empty",
     "noWatchlistHint": "Go to Market Scan and\ntap the star to add stocks",
     "goToScan": "Go to Scan",
+    "addWatchlist": "Add Stock",
     "noNews": "No News",
     "noNewsHint": "No related news at this time",
     "sourceAll": "All",

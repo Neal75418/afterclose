@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -74,10 +75,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   }
 
   Widget _buildError(String error) {
-    return EmptyStates.error(
-      message: error,
-      onRetry: () => ref.read(todayProvider.notifier).loadData(),
-    );
+    void onRetry() => ref.read(todayProvider.notifier).loadData();
+    if (ErrorDisplay.isNetworkError(error)) {
+      return EmptyStates.networkError(onRetry: onRetry);
+    }
+    return EmptyStates.error(message: error, onRetry: onRetry);
   }
 
   /// 響應式推薦清單：手機使用 SliverList，平板/桌面使用 SliverGrid
@@ -267,7 +269,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 ),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.more_vert),
+                  tooltip: 'scan.more'.tr(),
                   onSelected: (value) {
+                    HapticFeedback.selectionClick();
                     switch (value) {
                       case 'news':
                         context.push(AppRoutes.news);

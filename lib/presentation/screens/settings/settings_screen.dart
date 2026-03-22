@@ -310,7 +310,7 @@ class SettingsScreen extends ConsumerWidget {
       title: Text('settings.version'.tr()),
       trailing: packageInfo.whenOrNull(
         data: (info) => Text(
-          info.version,
+          '${info.version} (${info.buildNumber})',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -428,7 +428,11 @@ class SettingsScreen extends ConsumerWidget {
           ref.read(settingsProvider.notifier).setAutoUpdateEnabled(!newValue);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('settings.autoUpdateFailed'.tr())),
+              SnackBar(
+                content: Text('settings.autoUpdateFailed'.tr()),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
             );
           }
         }
@@ -454,7 +458,10 @@ class SettingsScreen extends ConsumerWidget {
 
   void _showAboutDialog(BuildContext context, WidgetRef ref) {
     HapticFeedback.lightImpact();
-    final version = ref.read(_packageInfoProvider).value?.version;
+    final info = ref.read(_packageInfoProvider).value;
+    final version = info != null
+        ? '${info.version} (${info.buildNumber})'
+        : null;
     showAboutDialog(
       context: context,
       applicationName: 'app.name'.tr(),
