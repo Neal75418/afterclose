@@ -232,18 +232,30 @@ class PositionDetailScreen extends ConsumerWidget {
                 ),
               );
               if (confirmed == true) {
-                await ref
-                    .read(portfolioProvider.notifier)
-                    .deleteTransaction(tx.id, symbol);
-                // 刷新交易紀錄
-                ref.invalidate(positionTransactionsProvider(symbol));
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('portfolio.transactionDeleted'.tr()),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+                try {
+                  await ref
+                      .read(portfolioProvider.notifier)
+                      .deleteTransaction(tx.id, symbol);
+                  // 刷新交易紀錄
+                  ref.invalidate(positionTransactionsProvider(symbol));
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('portfolio.transactionDeleted'.tr()),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(ErrorDisplay.message(e)),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    );
+                  }
                 }
               }
             },

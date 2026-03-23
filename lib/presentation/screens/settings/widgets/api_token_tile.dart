@@ -76,62 +76,65 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
     HapticFeedback.lightImpact();
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('settings.apiToken'.tr()),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'settings.apiTokenHint'.tr(),
-                border: const OutlineInputBorder(),
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: Text('settings.apiToken'.tr()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'settings.apiTokenHint'.tr(),
+                  border: const OutlineInputBorder(),
+                ),
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
+                onChanged: (_) => setDialogState(() {}),
               ),
-              obscureText: true,
-              autocorrect: false,
-              enableSuggestions: false,
-            ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: () => _openRegisterUrl(),
-              child: Text(
-                'settings.apiRegister'.tr(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppTheme.primaryColor,
-                  decoration: TextDecoration.underline,
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () => _openRegisterUrl(),
+                child: Text(
+                  'settings.apiRegister'.tr(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTheme.primaryColor,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
+            ],
+          ),
+          actions: [
+            if (_hasToken)
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  await _clearToken();
+                },
+                child: Text(
+                  'common.delete'.tr(),
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text('common.cancel'.tr()),
+            ),
+            FilledButton(
+              onPressed: controller.text.trim().isEmpty
+                  ? null
+                  : () async {
+                      final token = controller.text.trim();
+                      Navigator.pop(dialogContext);
+                      await _saveToken(token);
+                    },
+              child: Text('common.save'.tr()),
             ),
           ],
         ),
-        actions: [
-          if (_hasToken)
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(dialogContext);
-                await _clearToken();
-              },
-              child: Text(
-                'common.delete'.tr(),
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('common.cancel'.tr()),
-          ),
-          FilledButton(
-            onPressed: () async {
-              final token = controller.text.trim();
-              if (token.isNotEmpty) {
-                Navigator.pop(dialogContext);
-                await _saveToken(token);
-              }
-            },
-            child: Text('common.save'.tr()),
-          ),
-        ],
       ),
     ).then((_) {
       controller.dispose();

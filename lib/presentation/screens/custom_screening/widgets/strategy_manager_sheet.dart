@@ -30,6 +30,7 @@ class StrategyManagerSheet extends ConsumerStatefulWidget {
 class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
   final _nameController = TextEditingController();
   bool _showSaveForm = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -148,10 +149,19 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                       ),
                       const SizedBox(width: 8),
                       FilledButton(
-                        onPressed: _nameController.text.trim().isEmpty
+                        onPressed:
+                            _nameController.text.trim().isEmpty || _isSaving
                             ? null
                             : _save,
-                        child: Text('customScreening.save'.tr()),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : Text('customScreening.save'.tr()),
                       ),
                     ],
                   ),
@@ -168,11 +178,13 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
 
   Future<void> _save() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) return;
+    if (name.isEmpty || _isSaving) return;
+    setState(() => _isSaving = true);
     final success = await ref
         .read(customScreeningProvider.notifier)
         .saveStrategy(name);
     if (!mounted) return;
+    setState(() => _isSaving = false);
     if (success) {
       Navigator.of(context).pop();
     } else {

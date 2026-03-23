@@ -72,6 +72,8 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
+          else if (alertState.error != null)
+            _buildErrorState(context, ref, alertState.error!)
           else if (stockAlerts.isEmpty)
             _buildEmptyState(context)
           else
@@ -166,6 +168,42 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
                 color: theme.colorScheme.outline,
               ),
               textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, WidgetRef ref, String error) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+            const SizedBox(height: 12),
+            Text(
+              error,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onErrorContainer,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: () {
+                ref.read(priceAlertProvider.notifier).clearError();
+                ref.read(priceAlertProvider.notifier).loadAlerts();
+              },
+              icon: const Icon(Icons.refresh),
+              label: Text('common.retry'.tr()),
             ),
           ],
         ),

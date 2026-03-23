@@ -35,6 +35,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   String? _selectedStockName;
   List<StockMasterEntry> _searchResults = [];
   bool _isSearching = false;
+  bool _isSubmitting = false;
   bool _feeManuallyEdited = false;
   bool _taxManuallyEdited = false;
 
@@ -353,10 +354,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: _submit,
-                    child: Text(
-                      MaterialLocalizations.of(context).okButtonLabel,
-                    ),
+                    onPressed: _isSubmitting ? null : _submit,
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Text(MaterialLocalizations.of(context).okButtonLabel),
                   ),
                 ),
               ],
@@ -433,6 +438,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
     if (_selectedSymbol == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -443,6 +449,34 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       return;
     }
 
+    // Validate fields before locking the button
+    if (_txType == TransactionType.dividendCash) {
+      final amount = double.tryParse(_quantityController.text);
+      if (amount == null || amount <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('portfolio.invalidInput'.tr()),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    } else {
+      final qty = double.tryParse(_quantityController.text);
+      final price = double.tryParse(_priceController.text);
+      if (qty == null || qty <= 0 || price == null || price <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('portfolio.invalidInput'.tr()),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+    }
+
+    setState(() => _isSubmitting = true);
+
     final notifier = ref.read(portfolioProvider.notifier);
     final symbol = _selectedSymbol!;
     final note = _noteController.text.trim().isNotEmpty
@@ -451,17 +485,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
     try {
       if (_txType == TransactionType.dividendCash) {
-        final amount = double.tryParse(_quantityController.text);
-        if (amount == null || amount <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('portfolio.invalidInput'.tr()),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return;
-        }
-
+        final amount = double.tryParse(_quantityController.text)!;
         await notifier.addDividend(
           symbol: symbol,
           date: _date,
@@ -470,18 +494,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
           note: note,
         );
       } else {
-        final qty = double.tryParse(_quantityController.text);
-        final price = double.tryParse(_priceController.text);
-        if (qty == null || qty <= 0 || price == null || price <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('portfolio.invalidInput'.tr()),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-          return;
-        }
-
+        final qty = double.tryParse(_quantityController.text)!;
+        final price = double.tryParse(_priceController.text)!;
         final fee = double.tryParse(_feeController.text);
         final tax = double.tryParse(_taxController.text);
 
@@ -518,6 +532,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       }
     } catch (e) {
       if (mounted) {
+        setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(ErrorDisplay.message(e)),
