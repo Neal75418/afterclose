@@ -222,10 +222,14 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     }
     _debounce = Timer(const Duration(milliseconds: 300), () async {
       if (!mounted) return;
-      final stockRepo = ref.read(stockRepositoryProvider);
-      final results = await stockRepo.searchStocks(query);
-      if (mounted) {
-        setState(() => _searchResults = results.take(8).toList());
+      try {
+        final stockRepo = ref.read(stockRepositoryProvider);
+        final results = await stockRepo.searchStocks(query);
+        if (mounted && _symbolController.text == query) {
+          setState(() => _searchResults = results.take(8).toList());
+        }
+      } catch (_) {
+        if (mounted) setState(() => _searchResults = []);
       }
     });
   }

@@ -237,6 +237,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                     Padding(
@@ -255,6 +256,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                           border: const OutlineInputBorder(),
                           isDense: true,
                         ),
+                        onChanged: (_) => setState(() {}),
                       ),
                     ),
                   ],
@@ -270,6 +272,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                     border: const OutlineInputBorder(),
                     isDense: true,
                   ),
+                  onChanged: (_) => setState(() {}),
                 ),
       ],
     );
