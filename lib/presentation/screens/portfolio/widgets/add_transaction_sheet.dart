@@ -386,7 +386,19 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
           }
         })
         .catchError((Object e) {
-          if (mounted) setState(() => _isSearching = false);
+          if (mounted) {
+            setState(() {
+              _searchResults = [];
+              _isSearching = false;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(ErrorDisplay.message(e)),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
         });
   }
 

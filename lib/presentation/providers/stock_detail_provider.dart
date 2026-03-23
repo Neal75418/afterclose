@@ -274,7 +274,10 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       );
     } catch (e) {
       AppLogger.warning('StockDetailNotifier', '載入內部人資料失敗: $_symbol', e);
-      state = state.copyWith(isLoadingInsider: false);
+      state = state.copyWith(
+        isLoadingInsider: false,
+        insiderError: ErrorDisplay.message(e),
+      );
     }
   }
 

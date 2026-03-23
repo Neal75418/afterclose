@@ -188,6 +188,7 @@ class StockDetailState {
     this.error,
     this.fundamentalsError,
     this.chipError,
+    this.insiderError,
     this.dataDate,
     this.hasDataMismatch = false,
     this.reasons = const [],
@@ -205,6 +206,7 @@ class StockDetailState {
   final String? error;
   final String? fundamentalsError;
   final String? chipError;
+  final String? insiderError;
 
   /// 同步後的資料日期 — 所有顯示資料應來自此日期
   final DateTime? dataDate;
@@ -262,6 +264,7 @@ class StockDetailState {
     Object? error = sentinel,
     Object? fundamentalsError = sentinel,
     Object? chipError = sentinel,
+    Object? insiderError = sentinel,
     DateTime? dataDate,
     bool? hasDataMismatch,
     List<DailyReasonEntry>? reasons,
@@ -350,6 +353,9 @@ class StockDetailState {
           ? this.fundamentalsError
           : fundamentalsError as String?,
       chipError: chipError == sentinel ? this.chipError : chipError as String?,
+      insiderError: insiderError == sentinel
+          ? this.insiderError
+          : insiderError as String?,
       dataDate: dataDate ?? this.dataDate,
       hasDataMismatch: hasDataMismatch ?? this.hasDataMismatch,
       reasons: reasons ?? this.reasons,

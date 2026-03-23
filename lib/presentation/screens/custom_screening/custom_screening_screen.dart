@@ -166,12 +166,6 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
       );
     }
 
-    final result = state.result;
-    if (result == null) return const SizedBox.shrink();
-    final showLimitMarkers = ref.watch(
-      settingsProvider.select((s) => s.limitAlerts),
-    );
-
     if (state.error != null) {
       return ErrorDisplay.isNetworkError(state.error!)
           ? EmptyStates.networkError(
@@ -184,6 +178,12 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
                   ref.read(customScreeningProvider.notifier).executeScreening(),
             );
     }
+
+    final result = state.result;
+    if (result == null) return const SizedBox.shrink();
+    final showLimitMarkers = ref.watch(
+      settingsProvider.select((s) => s.limitAlerts),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

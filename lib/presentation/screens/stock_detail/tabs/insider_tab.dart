@@ -58,6 +58,9 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
         widget.symbol,
       ).select((s) => s.loading.isLoadingInsider),
     );
+    final insiderError = ref.watch(
+      stockDetailProvider(widget.symbol).select((s) => s.insiderError),
+    );
 
     return SingleChildScrollView(
       primary: false,
@@ -65,6 +68,15 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (insiderError != null && !isLoadingInsider)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                insiderError,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+
           // 關鍵指標卡片
           _buildMetricsRow(context, insiderHistory),
           const SizedBox(height: 24),
@@ -97,7 +109,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
           if (isLoadingInsider)
             _buildLoadingState(context)
-          else if (insiderHistory.isEmpty)
+          else if (insiderHistory.isEmpty && insiderError == null)
             _buildEmptyState(context, 'stockDetail.insiderComingSoon'.tr())
           else
             _buildInsiderTable(context, insiderHistory),

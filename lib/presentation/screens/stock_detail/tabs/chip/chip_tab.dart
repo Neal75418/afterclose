@@ -84,41 +84,46 @@ class _ChipTabState extends ConsumerState<ChipTab> {
               ),
             ),
 
-          // 1. Chip strength indicator
-          if (chip.chipStrength != null)
-            ChipStrengthIndicator(strength: chip.chipStrength!),
+          // 載入失敗且無任何資料時，不顯示空的 section
+          if (chipError != null && chip.chipStrength == null) ...[
+            // 只顯示上方的錯誤提示
+          ] else ...[
+            // 1. Chip strength indicator
+            if (chip.chipStrength != null)
+              ChipStrengthIndicator(strength: chip.chipStrength!),
 
-          if (chip.chipStrength != null) const SizedBox(height: 20),
+            if (chip.chipStrength != null) const SizedBox(height: 20),
 
-          // 2. Institutional flow section
-          InstitutionalSection(history: chip.institutionalHistory),
+            // 2. Institutional flow section
+            InstitutionalSection(history: chip.institutionalHistory),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // 3. Foreign shareholding section
-          ShareholdingSection(history: chip.shareholdingHistory),
+            // 3. Foreign shareholding section
+            ShareholdingSection(history: chip.shareholdingHistory),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // 4. Margin trading section
-          MarginTradingSection(history: chip.marginTradingHistory),
+            // 4. Margin trading section
+            MarginTradingSection(history: chip.marginTradingHistory),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // 5. Day trading section
-          DayTradingSection(history: chip.dayTradingHistory),
+            // 5. Day trading section
+            DayTradingSection(history: chip.dayTradingHistory),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // 6. Holding distribution section
-          DistributionSection(distribution: chip.holdingDistribution),
+            // 6. Holding distribution section
+            DistributionSection(distribution: chip.holdingDistribution),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          // 7. Insider holding section
-          InsiderSection(history: chip.insiderHistory),
+            // 7. Insider holding section
+            InsiderSection(history: chip.insiderHistory),
 
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
         ],
       ),
     );
