@@ -254,6 +254,10 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     }
   }
 
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
   /// 選取日期
   void selectDate(DateTime date) {
     state = state.copyWith(selectedDate: date);

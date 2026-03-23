@@ -192,9 +192,32 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
           // 事件類型篩選
           _buildEventTypeFilterChips(state),
 
+          // Refresh 失敗但有舊資料時顯示 MaterialBanner
+          if (state.error != null && state.events.isNotEmpty)
+            MaterialBanner(
+              content: Text(state.error!),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    if (state.focusedMonth != null) {
+                      ref
+                          .read(eventCalendarProvider.notifier)
+                          .loadMonthEvents(state.focusedMonth!);
+                    }
+                  },
+                  child: Text('common.retry'.tr()),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      ref.read(eventCalendarProvider.notifier).clearError(),
+                  child: Text('common.dismiss'.tr()),
+                ),
+              ],
+            ),
+
           // 選取日期的事件列表
           Expanded(
-            child: state.error != null
+            child: state.error != null && state.events.isEmpty
                 ? ErrorDisplay.isNetworkError(state.error!)
                       ? EmptyStates.networkError(
                           onRetry: () {

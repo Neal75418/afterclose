@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -202,13 +203,28 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                 ref.read(newsProvider.notifier).setSourceFilter(source);
               },
             ),
+          // Refresh 失敗但有舊資料時顯示 MaterialBanner
+          if (state.error != null && state.allNews.isNotEmpty)
+            MaterialBanner(
+              content: Text(state.error!),
+              actions: [
+                TextButton(
+                  onPressed: _refresh,
+                  child: Text('common.retry'.tr()),
+                ),
+                TextButton(
+                  onPressed: () => ref.read(newsProvider.notifier).clearError(),
+                  child: Text('common.dismiss'.tr()),
+                ),
+              ],
+            ),
           // 新聞列表
           Expanded(
             child: ThemedRefreshIndicator(
               onRefresh: _refresh,
               child: state.isLoading
                   ? const NewsListShimmer(itemCount: 8)
-                  : state.error != null
+                  : state.error != null && state.allNews.isEmpty
                   ? SingleChildScrollView(
                       physics: const AlwaysScrollableScrollPhysics(),
                       child: SizedBox(

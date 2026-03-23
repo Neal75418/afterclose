@@ -234,6 +234,10 @@ class TodayNotifier extends Notifier<TodayState> {
     }
   }
 
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
   /// 執行每日更新，具備逾時保護機制
   ///
   /// 若更新時間超過 [_updateTimeout] 將拋出 [TimeoutException]
@@ -300,6 +304,12 @@ class TodayNotifier extends Notifier<TodayState> {
         loadData(),
         ref.read(marketOverviewProvider.notifier).loadData(),
       ]);
+
+      // loadData() 內部 catch 不會 rethrow，但會設定 state.error
+      // 若重新載入失敗，將錯誤帶入 result 讓呼叫端知道
+      if (state.error != null) {
+        result.message = state.error;
+      }
 
       return result;
     } on TimeoutException catch (e) {

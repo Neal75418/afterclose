@@ -55,7 +55,7 @@ class FakeWatchlistNotifier extends WatchlistNotifier {
   Future<bool> addStock(String symbol) async => true;
 
   @override
-  Future<void> removeStock(String symbol) async {}
+  Future<bool> removeStock(String symbol) async => true;
 
   @override
   Future<void> restoreStock(String symbol) async {}

@@ -128,6 +128,10 @@ class NewsNotifier extends Notifier<NewsState> {
     }
   }
 
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
   /// 設定來源篩選
   void setSourceFilter(NewsSource source) {
     state = state.copyWith(selectedSource: source);

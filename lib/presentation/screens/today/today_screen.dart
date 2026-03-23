@@ -52,6 +52,9 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     // 使用 selector 分離 loading/error 狀態，避免 updateProgress 變更時重建整個畫面
     final isLoading = ref.watch(todayProvider.select((s) => s.isLoading));
     final error = ref.watch(todayProvider.select((s) => s.error));
+    final hasRecommendations = ref.watch(
+      todayProvider.select((s) => s.recommendations.isNotEmpty),
+    );
     // 使用 selector 只監聽 watchlist 的 symbols，避免不必要的重建
     final watchlistSymbols = ref.watch(
       watchlistProvider.select((s) => s.items.map((i) => i.symbol).toSet()),
@@ -67,7 +70,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         },
         child: isLoading
             ? const StockListShimmer(itemCount: 5)
-            : error != null
+            : error != null && !hasRecommendations
             ? _buildError(error)
             : _buildContent(watchlistSymbols),
       ),
@@ -381,6 +384,33 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               return MarketDashboard(state: marketState);
             },
           ),
+        ),
+
+        // 部分錯誤橫幅（有推薦資料但重新整理失敗時顯示）
+        Consumer(
+          builder: (context, ref, _) {
+            final error = ref.watch(todayProvider.select((s) => s.error));
+            if (error == null) {
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
+            }
+            return SliverToBoxAdapter(
+              child: MaterialBanner(
+                content: Text(error),
+                actions: [
+                  TextButton(
+                    onPressed: () =>
+                        ref.read(todayProvider.notifier).loadData(),
+                    child: Text('common.retry'.tr()),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        ref.read(todayProvider.notifier).clearError(),
+                    child: Text('common.dismiss'.tr()),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
 
         // Top 10 區塊
