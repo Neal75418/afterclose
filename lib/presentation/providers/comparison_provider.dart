@@ -108,9 +108,15 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
   Future<void> addStock(String symbol) async {
     if (state.symbols.contains(symbol) || !state.canAddMore) return;
 
-    final newSymbols = [...state.symbols, symbol];
+    final previousSymbols = state.symbols;
+    final newSymbols = [...previousSymbols, symbol];
     state = state.copyWith(symbols: newSymbols, isLoading: true);
     await _loadAllData(newSymbols);
+
+    // _loadAllData 失敗時回滾 symbol，避免留下半殘標的
+    if (state.error != null) {
+      state = state.copyWith(symbols: previousSymbols);
+    }
   }
 
   /// Add multiple stocks at once (used for initial load to avoid race conditions).

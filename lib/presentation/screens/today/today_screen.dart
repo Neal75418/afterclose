@@ -481,11 +481,26 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         );
       } else {
         HapticFeedback.mediumImpact();
+        final messenger = ScaffoldMessenger.of(context);
         _showSnackBar(
           S.watchlistRemoved(symbol),
           action: SnackBarAction(
             label: S.watchlistUndo,
-            onPressed: () => notifier.restoreStock(symbol),
+            onPressed: () {
+              notifier.restoreStock(symbol).then((_) {
+                // restoreStock 失敗時會設 watchlistProvider.state.error
+                final error = ref.read(watchlistProvider).error;
+                if (error != null && mounted) {
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(error),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              });
+            },
           ),
           duration: const Duration(seconds: ApiConfig.longMessageDurationSec),
         );

@@ -306,9 +306,9 @@ class TodayNotifier extends Notifier<TodayState> {
       ]);
 
       // loadData() 內部 catch 不會 rethrow，但會設定 state.error
-      // 若重新載入失敗，將錯誤帶入 result 讓呼叫端知道
+      // 若重新載入失敗，加入 errors 讓 summary 顯示警告而非純成功
       if (state.error != null) {
-        result.message = state.error;
+        result.errors.add(state.error!);
       }
 
       return result;

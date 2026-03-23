@@ -132,6 +132,13 @@ class ScanNotifier extends Notifier<ScanState> {
     _industryFilterSeq = 0;
     _reloadSeq = 0;
     _dateCtx = null;
+
+    // 監聽 watchlistProvider 變更，同步自選狀態
+    ref.listen(
+      watchlistProvider.select((s) => s.items.map((i) => i.symbol).toSet()),
+      (prev, next) => _syncWatchlistSymbols(next),
+    );
+
     return const ScanState();
   }
 
@@ -407,6 +414,20 @@ class ScanNotifier extends Notifier<ScanState> {
   /// 套用全域排序至 _filteredAnalyses
   void _applyGlobalSort(ScanSort sort) {
     _service.applySort(_filteredAnalyses, sort);
+  }
+
+  /// 從 watchlistProvider 同步自選清單狀態到 scan 畫面
+  void _syncWatchlistSymbols(Set<String> symbols) {
+    _watchlistSymbols = symbols;
+    if (state.stocks.isEmpty) return;
+
+    final updated = state.stocks.map((s) {
+      final inWatchlist = symbols.contains(s.symbol);
+      if (s.isInWatchlist == inWatchlist) return s;
+      return s.copyWith(isInWatchlist: inWatchlist);
+    }).toList();
+
+    state = state.copyWith(stocks: updated);
   }
 
   /// Toggle watchlist for a stock — 透過 watchlistProvider 同步全域狀態

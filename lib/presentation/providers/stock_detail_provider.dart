@@ -222,13 +222,19 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
   /// 載入基本面資料（營收/股利/本益比/EPS）
   Future<void> loadFundamentals() async {
-    if (state.loading.isLoadingFundamentals ||
-        state.fundamentals.revenueHistory.isNotEmpty ||
-        state.fundamentals.dividendHistory.isNotEmpty) {
-      return;
-    }
+    if (state.loading.isLoadingFundamentals) return;
 
-    state = state.copyWith(isLoadingFundamentals: true);
+    // 只有在完全沒有錯誤且已有資料時才跳過
+    // 若有 fundamentalsError 表示上次部分失敗，允許重試
+    final hasSomeData =
+        state.fundamentals.revenueHistory.isNotEmpty ||
+        state.fundamentals.dividendHistory.isNotEmpty;
+    if (hasSomeData && state.fundamentalsError == null) return;
+
+    state = state.copyWith(
+      isLoadingFundamentals: true,
+      fundamentalsError: null,
+    );
 
     try {
       final result = await _fundamentalsLoader.loadAll(_symbol);
