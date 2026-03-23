@@ -94,9 +94,14 @@ class ComparisonState {
 class ComparisonNotifier extends Notifier<ComparisonState> {
   var _active = true;
 
+  /// Generation token：每次啟動 _loadAllData 遞增，
+  /// 載入完成時若 generation 已過期（有更新的載入），放棄寫入。
+  int _loadGeneration = 0;
+
   @override
   ComparisonState build() {
     _active = true;
+    _loadGeneration = 0;
     ref.onDispose(() => _active = false);
     return const ComparisonState();
   }
@@ -194,7 +199,12 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
   }
 
   /// Load all comparison data for the given symbols.
+  ///
+  /// 使用 generation token 防止舊載入覆蓋新狀態：
+  /// 若載入期間有更新的 _loadAllData 被啟動，本次結果會被丟棄。
   Future<void> _loadAllData(List<String> symbols) async {
+    final generation = ++_loadGeneration;
+
     try {
       final dateCtx = DateContext.now(historyDays: 90);
 
@@ -225,7 +235,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         ),
       ).wait;
 
-      if (!_active) return;
+      if (!_active || _loadGeneration != generation) return;
 
       // 3. Generate AI summaries per stock
       const summaryService = AnalysisSummaryService();
@@ -258,6 +268,9 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         summaries[symbol] = localizer.localize(summaryData);
       }
 
+      // generation 過期：有更新的載入已啟動，丟棄本次結果
+      if (_loadGeneration != generation) return;
+
       state = state.copyWith(
         stocksMap: coreData.stocks,
         latestPricesMap: coreData.latestPrices,
@@ -272,6 +285,8 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         isLoading: false,
       );
     } catch (e) {
+      // generation 過期時不覆蓋新載入的錯誤狀態
+      if (_loadGeneration != generation) return;
       AppLogger.warning('ComparisonNotifier', '載入比較資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
