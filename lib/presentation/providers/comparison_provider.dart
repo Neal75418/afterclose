@@ -110,7 +110,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
 
     final previousSymbols = state.symbols;
     final newSymbols = [...previousSymbols, symbol];
-    state = state.copyWith(symbols: newSymbols, isLoading: true);
+    state = state.copyWith(symbols: newSymbols, isLoading: true, error: null);
     await _loadAllData(newSymbols);
 
     // _loadAllData 失敗時回滾 symbol，避免留下半殘標的

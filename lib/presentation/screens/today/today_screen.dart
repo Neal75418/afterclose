@@ -482,6 +482,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       } else {
         HapticFeedback.mediumImpact();
         final messenger = ScaffoldMessenger.of(context);
+        final errorColor = Theme.of(context).colorScheme.error;
         _showSnackBar(
           S.watchlistRemoved(symbol),
           action: SnackBarAction(
@@ -495,7 +496,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     SnackBar(
                       content: Text(error),
                       behavior: SnackBarBehavior.floating,
-                      backgroundColor: Theme.of(context).colorScheme.error,
+                      backgroundColor: errorColor,
                     ),
                   );
                 }
