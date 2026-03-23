@@ -105,18 +105,14 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
 
   /// Add a stock and reload all comparison data.
+  ///
+  /// 失敗時保留 symbol，使用者可透過 reload() 重試或手動移除。
   Future<void> addStock(String symbol) async {
     if (state.symbols.contains(symbol) || !state.canAddMore) return;
 
-    final previousSymbols = state.symbols;
-    final newSymbols = [...previousSymbols, symbol];
+    final newSymbols = [...state.symbols, symbol];
     state = state.copyWith(symbols: newSymbols, isLoading: true, error: null);
     await _loadAllData(newSymbols);
-
-    // _loadAllData 失敗時回滾 symbol，避免留下半殘標的
-    if (state.error != null) {
-      state = state.copyWith(symbols: previousSymbols);
-    }
   }
 
   /// Add multiple stocks at once (used for initial load to avoid race conditions).
