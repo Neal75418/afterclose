@@ -64,7 +64,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
           ),
           const SizedBox(height: 12),
 
-          if (alertState.isLoading)
+          if (alertState.isLoading && stockAlerts.isEmpty)
             const Center(
               child: SizedBox(
                 width: 24,
@@ -72,12 +72,38 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
-          else if (alertState.error != null)
+          else if (alertState.error != null && stockAlerts.isEmpty)
             _buildErrorState(context, ref, alertState.error!)
           else if (stockAlerts.isEmpty)
             _buildEmptyState(context)
-          else
+          else ...[
+            if (alertState.error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: MaterialBanner(
+                  content: Text(alertState.error!),
+                  leading: Icon(
+                    Icons.error_outline,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        ref.read(priceAlertProvider.notifier).clearError();
+                        ref.read(priceAlertProvider.notifier).loadAlerts();
+                      },
+                      child: Text('common.retry'.tr()),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          ref.read(priceAlertProvider.notifier).clearError(),
+                      child: Text('common.dismiss'.tr()),
+                    ),
+                  ],
+                ),
+              ),
             ...stockAlerts.map((alert) => _buildAlertCard(context, ref, alert)),
+          ],
 
           const SizedBox(height: 16),
 

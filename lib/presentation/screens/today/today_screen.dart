@@ -441,11 +441,14 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     ScaffoldMessenger.of(context).clearSnackBars();
 
     if (currentlyInWatchlist) {
-      await notifier.removeStock(symbol);
+      final success = await notifier.removeStock(symbol);
       if (!mounted) return;
-      final watchlistState = ref.read(watchlistProvider);
-      if (watchlistState.error != null) {
-        _showSnackBar(watchlistState.error!, isError: true);
+      if (!success) {
+        final watchlistState = ref.read(watchlistProvider);
+        _showSnackBar(
+          watchlistState.error ?? 'watchlist.removeFailed'.tr(),
+          isError: true,
+        );
       } else {
         HapticFeedback.mediumImpact();
         _showSnackBar(

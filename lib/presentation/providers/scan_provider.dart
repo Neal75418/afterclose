@@ -11,6 +11,7 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // Re-export（向後相容）
 export 'package:afterclose/domain/models/scan_models.dart';
@@ -408,16 +409,19 @@ class ScanNotifier extends Notifier<ScanState> {
     _service.applySort(_filteredAnalyses, sort);
   }
 
-  /// Toggle watchlist for a stock
+  /// Toggle watchlist for a stock — 透過 watchlistProvider 同步全域狀態
   Future<void> toggleWatchlist(String symbol) async {
     final isInWatchlist = _watchlistSymbols.contains(symbol);
+    final watchlistNotifier = ref.read(watchlistProvider.notifier);
 
     try {
       if (isInWatchlist) {
-        await _db.removeFromWatchlist(symbol);
+        final success = await watchlistNotifier.removeStock(symbol);
+        if (!success) return;
         _watchlistSymbols.remove(symbol);
       } else {
-        await _db.addToWatchlist(symbol);
+        final success = await watchlistNotifier.addStock(symbol);
+        if (!success) return;
         _watchlistSymbols.add(symbol);
       }
 

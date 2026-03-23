@@ -447,7 +447,10 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         addedAt: actualAddedAt,
       );
       final newItems = [...state.items, itemData];
-      state = state.copyWith(items: _sortItems(newItems, state.sort));
+      state = state.copyWith(
+        items: _sortItems(newItems, state.sort),
+        error: null,
+      );
 
       // 背景回填歷史月營收（不阻塞 UI）
       unawaited(_backfillRevenueHistory(symbol));
@@ -484,7 +487,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
   ///
   /// 使用樂觀更新策略：先更新 UI，若資料庫操作失敗則回滾至先前狀態。
   /// 保存完整的狀態快照以確保回滾時排序與分組設定一致。
-  Future<void> removeStock(String symbol) async {
+  Future<bool> removeStock(String symbol) async {
     // 保存完整狀態快照以便回滾（包含排序、分組等設定）
     final previousState = state;
 
@@ -496,9 +499,11 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
     try {
       await _db.removeFromWatchlist(symbol);
+      return true;
     } catch (e) {
       // 回滾至完整的先前狀態，確保排序順序一致
       state = previousState.copyWith(error: ErrorDisplay.message(e));
+      return false;
     }
   }
 
@@ -520,7 +525,10 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         addedAt: actualAddedAt,
       );
       final newItems = [...state.items, itemData];
-      state = state.copyWith(items: _sortItems(newItems, state.sort));
+      state = state.copyWith(
+        items: _sortItems(newItems, state.sort),
+        error: null,
+      );
     } catch (e) {
       state = state.copyWith(error: ErrorDisplay.message(e));
     }

@@ -75,17 +75,17 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
 
   Future<void> _removeFromWatchlist(String symbol) async {
     final notifier = ref.read(watchlistProvider.notifier);
-    await notifier.removeStock(symbol);
+    final success = await notifier.removeStock(symbol);
 
     if (!mounted) return;
-    final watchlistState = ref.read(watchlistProvider);
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
 
-    if (watchlistState.error != null) {
+    if (!success) {
+      final watchlistState = ref.read(watchlistProvider);
       messenger.showSnackBar(
         SnackBar(
-          content: Text(watchlistState.error!),
+          content: Text(watchlistState.error ?? 'watchlist.removeFailed'.tr()),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
