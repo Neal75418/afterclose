@@ -61,6 +61,31 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
           onRefresh: () => ref.read(portfolioProvider.notifier).loadPositions(),
           child: CustomScrollView(
             slivers: [
+              // Refresh 失敗時顯示 MaterialBanner
+              if (state.error != null)
+                SliverToBoxAdapter(
+                  child: MaterialBanner(
+                    content: Text(state.error!),
+                    leading: Icon(
+                      Icons.error_outline,
+                      color: theme.colorScheme.error,
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => ref
+                            .read(portfolioProvider.notifier)
+                            .loadPositions(),
+                        child: Text('common.retry'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(portfolioProvider.notifier).clearError(),
+                        child: Text('common.dismiss'.tr()),
+                      ),
+                    ],
+                  ),
+                ),
+
               // 頂部間距
               const SliverPadding(padding: EdgeInsets.only(top: 16)),
 

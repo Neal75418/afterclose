@@ -361,14 +361,26 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
     );
 
     if (confirmed == true && mounted) {
-      await ref.read(eventCalendarProvider.notifier).deleteEvent(event.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('calendar.eventDeleted'.tr()),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      try {
+        await ref.read(eventCalendarProvider.notifier).deleteEvent(event.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('calendar.eventDeleted'.tr()),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ErrorDisplay.message(e)),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     }
   }

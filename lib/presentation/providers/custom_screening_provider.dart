@@ -29,6 +29,7 @@ class CustomScreeningState {
     this.isLoadingMore = false,
     this.hasMore = false,
     this.error,
+    this.strategiesError,
   });
 
   final List<ScreeningCondition> conditions;
@@ -40,6 +41,7 @@ class CustomScreeningState {
   final bool isLoadingMore;
   final bool hasMore;
   final String? error;
+  final String? strategiesError;
 
   static const _sentinel = Object();
 
@@ -55,6 +57,7 @@ class CustomScreeningState {
     bool? hasMore,
     Object? error = _sentinel,
     bool clearError = false,
+    Object? strategiesError = _sentinel,
   }) {
     return CustomScreeningState(
       conditions: conditions ?? this.conditions,
@@ -68,6 +71,9 @@ class CustomScreeningState {
       error: clearError
           ? null
           : (error == _sentinel ? this.error : error as String?),
+      strategiesError: strategiesError == _sentinel
+          ? this.strategiesError
+          : strategiesError as String?,
     );
   }
 }
@@ -132,7 +138,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   // ==================================================
 
   Future<void> loadSavedStrategies() async {
-    state = state.copyWith(isLoadingStrategies: true);
+    state = state.copyWith(isLoadingStrategies: true, strategiesError: null);
     try {
       final entries = await _db.getAllScreeningStrategies();
       final strategies = entries.map((e) {
@@ -148,12 +154,16 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
         state = state.copyWith(
           savedStrategies: strategies,
           isLoadingStrategies: false,
+          strategiesError: null,
         );
       }
     } catch (e) {
       AppLogger.error('CustomScreeningNotifier', '載入策略失敗', e);
       if (_active) {
-        state = state.copyWith(isLoadingStrategies: false);
+        state = state.copyWith(
+          isLoadingStrategies: false,
+          strategiesError: ErrorDisplay.message(e),
+        );
       }
     }
   }

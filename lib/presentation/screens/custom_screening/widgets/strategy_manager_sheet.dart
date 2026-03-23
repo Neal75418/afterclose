@@ -74,12 +74,43 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
               const SizedBox(height: 12),
 
               // 已儲存策略列表
-              if (state.isLoadingStrategies)
+              if (state.isLoadingStrategies && state.savedStrategies.isEmpty)
                 const Center(
                   child: SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              else if (state.strategiesError != null &&
+                  state.savedStrategies.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          state.strategiesError!,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () => ref
+                              .read(customScreeningProvider.notifier)
+                              .loadSavedStrategies(),
+                          icon: const Icon(Icons.refresh),
+                          label: Text('common.retry'.tr()),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               else if (state.savedStrategies.isEmpty)

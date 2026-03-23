@@ -195,14 +195,28 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
       confirmDismiss: (_) async {
         return await _confirmDelete(alert);
       },
-      onDismissed: (_) {
-        ref.read(priceAlertProvider.notifier).deleteAlert(alert.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('alert.deleted'.tr()),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      onDismissed: (_) async {
+        await ref.read(priceAlertProvider.notifier).deleteAlert(alert.id);
+        final alertState = ref.read(priceAlertProvider);
+        if (alertState.error != null) {
+          ref.read(priceAlertProvider.notifier).clearError();
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(alertState.error!),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('alert.deleted'.tr()),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       },
       child: ListTile(
         leading: Container(

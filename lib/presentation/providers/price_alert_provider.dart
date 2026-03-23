@@ -260,15 +260,17 @@ class PriceAlertState {
   final bool isLoading;
   final String? error;
 
+  static const _sentinel = Object();
+
   PriceAlertState copyWith({
     List<PriceAlertEntry>? alerts,
     bool? isLoading,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return PriceAlertState(
       alerts: alerts ?? this.alerts,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error == _sentinel ? this.error : error as String?,
     );
   }
 }

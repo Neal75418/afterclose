@@ -199,6 +199,9 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
   static const _analyticsService = PortfolioAnalyticsService();
   static const _dividendService = DividendIntelligenceService();
 
+  /// 清除錯誤狀態
+  void clearError() => state = state.copyWith(error: null);
+
   /// 載入所有持倉
   Future<void> loadPositions() async {
     state = state.copyWith(isLoading: true, error: null);
