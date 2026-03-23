@@ -95,15 +95,4 @@ mixin InstitutionalDaoMixin on $AppDatabase {
   Future<int> clearAllInstitutionalData() async {
     return await (delete(dailyInstitutional)).go();
   }
-
-  /// 清除指定市場的法人資料
-  ///
-  /// [market] - 'TWSE' 或 'TPEx'
-  Future<int> clearInstitutionalDataByMarket(String market) async {
-    return await customUpdate(
-      'DELETE FROM daily_institutional WHERE symbol IN (SELECT symbol FROM stock_master WHERE market = ?)',
-      variables: [Variable.withString(market)],
-      updates: {dailyInstitutional, stockMaster},
-    );
-  }
 }

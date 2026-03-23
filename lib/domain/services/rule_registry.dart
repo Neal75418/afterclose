@@ -87,20 +87,4 @@ abstract final class RuleRegistry {
     ForeignConcentrationWarningRule(),
     ForeignExodusRule(),
   ];
-
-  /// 按分類取得規則
-  static List<StockRule> byCategory(RuleCategory category) =>
-      defaultRules.where((r) => r.category == category).toList();
-
-  /// 規則數量統計
-  static Map<RuleCategory, int> get categoryCounts {
-    final counts = <RuleCategory, int>{};
-    for (final rule in defaultRules) {
-      counts[rule.category] = (counts[rule.category] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  /// 所有規則數量
-  static int get totalCount => defaultRules.length;
 }

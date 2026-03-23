@@ -48,12 +48,6 @@ class InstitutionalRepository implements IInstitutionalRepository {
     return _db.getInstitutionalHistory(symbol, startDate: startDate);
   }
 
-  /// 取得股票最新法人資料
-  @override
-  Future<DailyInstitutionalEntry?> getLatestInstitutional(String symbol) {
-    return _db.getLatestInstitutional(symbol);
-  }
-
   /// 同步單檔股票的法人資料
   @override
   Future<int> syncInstitutionalData(

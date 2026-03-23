@@ -75,7 +75,6 @@ void main() {
   StockDetailState createState({
     StockMasterEntry? stock,
     DailyPriceEntry? latestPrice,
-    DailyPriceEntry? previousPrice,
     DailyAnalysisEntry? analysis,
     List<DailyPriceEntry>? priceHistory,
     List<DailyReasonEntry>? reasons,
@@ -83,19 +82,16 @@ void main() {
   }) {
     final s = stock ?? createStock();
     final lp = latestPrice ?? createPrice();
-    final pp =
-        previousPrice ??
-        createPrice(
-          close: 594.0,
-          date: defaultDate.subtract(const Duration(days: 1)),
-        );
+    final pp = createPrice(
+      close: 594.0,
+      date: defaultDate.subtract(const Duration(days: 1)),
+    );
     final ph = priceHistory ?? [pp, lp];
 
     return StockDetailState(
       price: StockPriceState(
         stock: s,
         latestPrice: lp,
-        previousPrice: pp,
         priceHistory: ph,
         analysis: analysis ?? createAnalysis(),
       ),

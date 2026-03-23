@@ -346,21 +346,6 @@ void main() {
         expect(item.trend, equals(WatchlistTrend.sideways));
       });
     });
-
-    group('statusIcon getter', () {
-      test('returns correct icon for each status', () {
-        const signalItem = WatchlistItemData(symbol: '2330', hasSignal: true);
-        const volatileItem = WatchlistItemData(
-          symbol: '2330',
-          priceChange: 5.0,
-        );
-        const quietItem = WatchlistItemData(symbol: '2330');
-
-        expect(signalItem.statusIcon, equals('🔥'));
-        expect(volatileItem.statusIcon, equals('👀'));
-        expect(quietItem.statusIcon, equals('😴'));
-      });
-    });
   });
 
   group('WatchlistSort', () {

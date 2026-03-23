@@ -32,9 +32,6 @@ class FakeBacktestNotifier extends BacktestNotifier {
 
   @override
   Future<void> executeBacktest(List<ScreeningCondition> conditions) async {}
-
-  @override
-  void clearResults() {}
 }
 
 // =============================================================================

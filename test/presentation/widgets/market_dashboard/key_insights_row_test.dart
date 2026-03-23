@@ -26,7 +26,6 @@ void main() {
     ) async {
       const insights = [
         MarketInsight(
-          type: InsightType.sentimentExtreme,
           severity: InsightSeverity.warning,
           priority: 10,
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
@@ -35,7 +34,6 @@ void main() {
           isPositive: false,
         ),
         MarketInsight(
-          type: InsightType.volumeAnomaly,
           severity: InsightSeverity.warning,
           priority: 7,
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
@@ -57,7 +55,6 @@ void main() {
     testWidgets('renders 4 cards for max insights', (tester) async {
       const insights = [
         MarketInsight(
-          type: InsightType.sentimentExtreme,
           severity: InsightSeverity.warning,
           priority: 10,
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
@@ -65,7 +62,6 @@ void main() {
           descArgs: {'score': '90'},
         ),
         MarketInsight(
-          type: InsightType.institutionalStreak,
           severity: InsightSeverity.warning,
           priority: 8,
           titleKey: 'marketOverview.keyInsights.institutionalStreak.title',
@@ -75,7 +71,6 @@ void main() {
           isPositive: true,
         ),
         MarketInsight(
-          type: InsightType.volumeAnomaly,
           severity: InsightSeverity.warning,
           priority: 7,
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
@@ -84,7 +79,6 @@ void main() {
           isPositive: true,
         ),
         MarketInsight(
-          type: InsightType.chipAlert,
           severity: InsightSeverity.warning,
           priority: 6,
           titleKey: 'marketOverview.keyInsights.chipAlert.title',
@@ -105,7 +99,6 @@ void main() {
     testWidgets('cards use left border decoration', (tester) async {
       const insights = [
         MarketInsight(
-          type: InsightType.sentimentExtreme,
           severity: InsightSeverity.warning,
           priority: 10,
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
@@ -114,7 +107,6 @@ void main() {
           isPositive: false,
         ),
         MarketInsight(
-          type: InsightType.volumeAnomaly,
           severity: InsightSeverity.info,
           priority: 7,
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
@@ -136,7 +128,6 @@ void main() {
     testWidgets('renders in dark mode', (tester) async {
       const insights = [
         MarketInsight(
-          type: InsightType.limitImbalance,
           severity: InsightSeverity.warning,
           priority: 5,
           titleKey: 'marketOverview.keyInsights.limitImbalance.title',
@@ -145,7 +136,6 @@ void main() {
           isPositive: true,
         ),
         MarketInsight(
-          type: InsightType.industryConcentration,
           severity: InsightSeverity.info,
           priority: 3,
           titleKey: 'marketOverview.keyInsights.industryConcentration.title',

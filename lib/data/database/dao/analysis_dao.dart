@@ -13,34 +13,6 @@ mixin AnalysisDaoMixin on $AppDatabase {
         .get();
   }
 
-  /// 取得指定日期分數 > 0 的分頁分析結果
-  ///
-  /// 回傳從 [offset] 開始的 [limit] 筆資料，依分數降冪排序。
-  /// 僅回傳正分數的項目（適用於掃描功能）。
-  Future<List<DailyAnalysisEntry>> getAnalysisForDatePaginated(
-    DateTime date, {
-    required int limit,
-    required int offset,
-  }) {
-    return (select(dailyAnalysis)
-          ..where((t) => t.date.equals(date))
-          ..where((t) => t.score.isBiggerThanValue(0))
-          ..orderBy([(t) => OrderingTerm.desc(t.score)])
-          ..limit(limit, offset: offset))
-        .get();
-  }
-
-  /// 取得指定日期分數 > 0 的分析總筆數
-  Future<int> getAnalysisCountForDate(DateTime date) async {
-    final countExpr = dailyAnalysis.symbol.count();
-    final query = selectOnly(dailyAnalysis)
-      ..addColumns([countExpr])
-      ..where(dailyAnalysis.date.equals(date))
-      ..where(dailyAnalysis.score.isBiggerThanValue(0));
-    final result = await query.getSingle();
-    return result.read(countExpr) ?? 0;
-  }
-
   /// 取得股票的分析結果
   Future<DailyAnalysisEntry?> getAnalysis(String symbol, DateTime date) {
     return (select(dailyAnalysis)

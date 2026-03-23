@@ -23,15 +23,6 @@ mixin RevenueDaoMixin on $AppDatabase {
     return query.get();
   }
 
-  /// 取得股票的最新月營收
-  Future<MonthlyRevenueEntry?> getLatestMonthlyRevenue(String symbol) {
-    return (select(monthlyRevenue)
-          ..where((t) => t.symbol.equals(symbol))
-          ..orderBy([(t) => OrderingTerm.desc(t.date)])
-          ..limit(1))
-        .getSingleOrNull();
-  }
-
   /// 批次取得多檔股票的最新月營收（批次查詢）
   Future<Map<String, MonthlyRevenueEntry>> getLatestMonthlyRevenuesBatch(
     List<String> symbols,

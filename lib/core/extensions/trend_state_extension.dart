@@ -69,13 +69,4 @@ extension TrendStateExtension on String? {
       _ => 'sideways',
     };
   }
-
-  /// 檢查是否為上漲趨勢
-  bool get isUpTrend => this == 'UP';
-
-  /// 檢查是否為下跌趨勢
-  bool get isDownTrend => this == 'DOWN';
-
-  /// 檢查是否為盤整趨勢
-  bool get isSidewaysTrend => this != 'UP' && this != 'DOWN';
 }

@@ -124,79 +124,19 @@ void main() {
       });
     });
 
-    group('boolean helpers', () {
-      test('isUpTrend returns true for UP', () {
-        const trend = 'UP';
-        expect(trend.isUpTrend, isTrue);
-      });
-
-      test('isUpTrend returns false for DOWN', () {
-        const trend = 'DOWN';
-        expect(trend.isUpTrend, isFalse);
-      });
-
-      test('isUpTrend returns false for null', () {
-        const String? trend = null;
-        expect(trend.isUpTrend, isFalse);
-      });
-
-      test('isDownTrend returns true for DOWN', () {
-        const trend = 'DOWN';
-        expect(trend.isDownTrend, isTrue);
-      });
-
-      test('isDownTrend returns false for UP', () {
-        const trend = 'UP';
-        expect(trend.isDownTrend, isFalse);
-      });
-
-      test('isDownTrend returns false for null', () {
-        const String? trend = null;
-        expect(trend.isDownTrend, isFalse);
-      });
-
-      test('isSidewaysTrend returns true for SIDEWAYS', () {
-        const trend = 'SIDEWAYS';
-        expect(trend.isSidewaysTrend, isTrue);
-      });
-
-      test('isSidewaysTrend returns true for null', () {
-        const String? trend = null;
-        expect(trend.isSidewaysTrend, isTrue);
-      });
-
-      test('isSidewaysTrend returns true for RANGE', () {
-        const trend = 'RANGE';
-        expect(trend.isSidewaysTrend, isTrue);
-      });
-
-      test('isSidewaysTrend returns false for UP', () {
-        const trend = 'UP';
-        expect(trend.isSidewaysTrend, isFalse);
-      });
-
-      test('isSidewaysTrend returns false for DOWN', () {
-        const trend = 'DOWN';
-        expect(trend.isSidewaysTrend, isFalse);
-      });
-    });
-
     group('case sensitivity', () {
-      test('lowercase up is not recognized as UP', () {
+      test('lowercase up uses default emoji', () {
         const trend = 'up';
-        expect(trend.isUpTrend, isFalse);
-        expect(trend.isSidewaysTrend, isTrue);
+        expect(trend.trendEmoji, equals('➡️'));
       });
 
-      test('lowercase down is not recognized as DOWN', () {
+      test('lowercase down uses default emoji', () {
         const trend = 'down';
-        expect(trend.isDownTrend, isFalse);
-        expect(trend.isSidewaysTrend, isTrue);
+        expect(trend.trendEmoji, equals('➡️'));
       });
 
-      test('mixed case Up is not recognized as UP', () {
+      test('mixed case Up uses default emoji', () {
         const trend = 'Up';
-        expect(trend.isUpTrend, isFalse);
         expect(trend.trendEmoji, equals('➡️'));
       });
     });

@@ -149,44 +149,6 @@ mixin InsiderHoldingDaoMixin on $AppDatabase {
     return result;
   }
 
-  /// 取得高質押比例的股票（風險警示）
-  Future<List<InsiderHoldingEntry>> getHighPledgeRatioStocks({
-    required double threshold,
-  }) async {
-    // 先取得每檔股票的最新資料，再過濾高質押
-    const query = '''
-    SELECT ih.*
-    FROM insider_holding ih
-    INNER JOIN (
-      SELECT symbol, MAX(date) as max_date
-      FROM insider_holding
-      GROUP BY symbol
-    ) latest ON ih.symbol = latest.symbol AND ih.date = latest.max_date
-    WHERE ih.pledge_ratio >= ?
-    ORDER BY ih.pledge_ratio DESC
-  ''';
-
-    final results = await customSelect(
-      query,
-      variables: [Variable.withReal(threshold)],
-      readsFrom: {insiderHolding},
-    ).get();
-
-    return results.map((row) {
-      return InsiderHoldingEntry(
-        symbol: row.read<String>('symbol'),
-        date: row.read<DateTime>('date'),
-        directorShares: row.readNullable<double>('director_shares'),
-        supervisorShares: row.readNullable<double>('supervisor_shares'),
-        managerShares: row.readNullable<double>('manager_shares'),
-        insiderRatio: row.readNullable<double>('insider_ratio'),
-        pledgeRatio: row.readNullable<double>('pledge_ratio'),
-        sharesChange: row.readNullable<double>('shares_change'),
-        sharesIssued: row.readNullable<double>('shares_issued'),
-      );
-    }).toList();
-  }
-
   /// 批次新增董監持股資料
   Future<void> insertInsiderHoldingData(
     List<InsiderHoldingCompanion> entries,

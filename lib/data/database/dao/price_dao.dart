@@ -4,7 +4,6 @@ import 'package:afterclose/core/constants/rule_params_indicator.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/daily_price.drift.dart';
-import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Daily price, adjusted price, and weekly price operations.
 mixin PriceDaoMixin on $AppDatabase {
@@ -388,91 +387,5 @@ mixin PriceDaoMixin on $AppDatabase {
     ).get();
 
     return results.map((row) => row.read<String>('symbol')).toList();
-  }
-
-  // ==================================================
-  // 還原股價操作
-  // ==================================================
-
-  /// 取得股票的還原股價歷史
-  Future<List<AdjustedPriceEntry>> getAdjustedPriceHistory(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) {
-    final query = select(adjustedPrice)
-      ..where((t) => t.symbol.equals(symbol))
-      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
-
-    if (endDate != null) {
-      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
-    }
-
-    query.orderBy([(t) => OrderingTerm.asc(t.date)]);
-    return query.get();
-  }
-
-  /// 批次新增還原股價資料
-  Future<void> insertAdjustedPrices(
-    List<AdjustedPriceCompanion> entries,
-  ) async {
-    await batch((b) {
-      for (final entry in entries) {
-        b.insert(adjustedPrice, entry, mode: InsertMode.insertOrReplace);
-      }
-    });
-  }
-
-  /// 取得股票的最新還原股價日期（新鮮度檢查用）
-  Future<DateTime?> getLatestAdjustedPriceDate(String symbol) async {
-    final result =
-        await (select(adjustedPrice)
-              ..where((t) => t.symbol.equals(symbol))
-              ..orderBy([(t) => OrderingTerm.desc(t.date)])
-              ..limit(1))
-            .getSingleOrNull();
-    return result?.date;
-  }
-
-  // ==================================================
-  // 週K線操作
-  // ==================================================
-
-  /// 取得股票的週K線歷史
-  Future<List<WeeklyPriceEntry>> getWeeklyPriceHistory(
-    String symbol, {
-    required DateTime startDate,
-    DateTime? endDate,
-  }) {
-    final query = select(weeklyPrice)
-      ..where((t) => t.symbol.equals(symbol))
-      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
-
-    if (endDate != null) {
-      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
-    }
-
-    query.orderBy([(t) => OrderingTerm.asc(t.date)]);
-    return query.get();
-  }
-
-  /// 批次新增週K線資料
-  Future<void> insertWeeklyPrices(List<WeeklyPriceCompanion> entries) async {
-    await batch((b) {
-      for (final entry in entries) {
-        b.insert(weeklyPrice, entry, mode: InsertMode.insertOrReplace);
-      }
-    });
-  }
-
-  /// 取得股票的最新週K線日期（新鮮度檢查用）
-  Future<DateTime?> getLatestWeeklyPriceDate(String symbol) async {
-    final result =
-        await (select(weeklyPrice)
-              ..where((t) => t.symbol.equals(symbol))
-              ..orderBy([(t) => OrderingTerm.desc(t.date)])
-              ..limit(1))
-            .getSingleOrNull();
-    return result?.date;
   }
 }

@@ -15,14 +15,12 @@ class StockPriceState {
   const StockPriceState({
     this.stock,
     this.latestPrice,
-    this.previousPrice,
     this.priceHistory = const [],
     this.analysis,
   });
 
   final StockMasterEntry? stock;
   final DailyPriceEntry? latestPrice;
-  final DailyPriceEntry? previousPrice;
   final List<DailyPriceEntry> priceHistory;
   final DailyAnalysisEntry? analysis;
 
@@ -36,14 +34,12 @@ class StockPriceState {
   StockPriceState copyWith({
     StockMasterEntry? stock,
     DailyPriceEntry? latestPrice,
-    DailyPriceEntry? previousPrice,
     List<DailyPriceEntry>? priceHistory,
     DailyAnalysisEntry? analysis,
   }) {
     return StockPriceState(
       stock: stock ?? this.stock,
       latestPrice: latestPrice ?? this.latestPrice,
-      previousPrice: previousPrice ?? this.previousPrice,
       priceHistory: priceHistory ?? this.priceHistory,
       analysis: analysis ?? this.analysis,
     );
@@ -95,7 +91,6 @@ class ChipAnalysisState {
     this.insiderHistory = const [],
     this.insiderTransfers = const [],
     this.chipStrength,
-    this.hasInstitutionalError = false,
   });
 
   final List<DailyInstitutionalEntry> institutionalHistory;
@@ -108,9 +103,6 @@ class ChipAnalysisState {
   final List<InsiderTransferEntry> insiderTransfers;
   final ChipStrengthResult? chipStrength;
 
-  /// 法人資料載入時是否發生錯誤（部分錯誤，不影響主要資料）
-  final bool hasInstitutionalError;
-
   ChipAnalysisState copyWith({
     List<DailyInstitutionalEntry>? institutionalHistory,
     List<FinMindMarginData>? marginHistory,
@@ -121,7 +113,6 @@ class ChipAnalysisState {
     List<InsiderHoldingEntry>? insiderHistory,
     List<InsiderTransferEntry>? insiderTransfers,
     ChipStrengthResult? chipStrength,
-    bool? hasInstitutionalError,
   }) {
     return ChipAnalysisState(
       institutionalHistory: institutionalHistory ?? this.institutionalHistory,
@@ -133,8 +124,6 @@ class ChipAnalysisState {
       insiderHistory: insiderHistory ?? this.insiderHistory,
       insiderTransfers: insiderTransfers ?? this.insiderTransfers,
       chipStrength: chipStrength ?? this.chipStrength,
-      hasInstitutionalError:
-          hasInstitutionalError ?? this.hasInstitutionalError,
     );
   }
 }
@@ -226,14 +215,11 @@ class StockDetailState {
   String? get stockIndustry => price.stock?.industry;
   double? get latestClose => price.latestPrice?.close;
   String get trendLabel => S.getTrendLabel(price.analysis?.trendState);
-  String? get reversalLabel =>
-      S.getReversalLabel(price.analysis?.reversalState);
 
   StockDetailState copyWith({
     // 價格欄位
     StockMasterEntry? stock,
     DailyPriceEntry? latestPrice,
-    DailyPriceEntry? previousPrice,
     List<DailyPriceEntry>? priceHistory,
     DailyAnalysisEntry? analysis,
     // 基本面欄位
@@ -252,7 +238,6 @@ class StockDetailState {
     List<InsiderHoldingEntry>? insiderHistory,
     List<InsiderTransferEntry>? insiderTransfers,
     ChipStrengthResult? chipStrength,
-    bool? hasInstitutionalError,
     // 載入狀態欄位
     bool? isLoading,
     bool? isLoadingMargin,
@@ -275,7 +260,6 @@ class StockDetailState {
     final needsPriceUpdate =
         stock != null ||
         latestPrice != null ||
-        previousPrice != null ||
         priceHistory != null ||
         analysis != null;
 
@@ -295,8 +279,7 @@ class StockDetailState {
         holdingDistribution != null ||
         insiderHistory != null ||
         insiderTransfers != null ||
-        chipStrength != null ||
-        hasInstitutionalError != null;
+        chipStrength != null;
 
     final needsLoadingUpdate =
         isLoading != null ||
@@ -310,7 +293,6 @@ class StockDetailState {
           ? price.copyWith(
               stock: stock,
               latestPrice: latestPrice,
-              previousPrice: previousPrice,
               priceHistory: priceHistory,
               analysis: analysis,
             )
@@ -335,7 +317,6 @@ class StockDetailState {
               insiderHistory: insiderHistory,
               insiderTransfers: insiderTransfers,
               chipStrength: chipStrength,
-              hasInstitutionalError: hasInstitutionalError,
             )
           : chip,
       loading: needsLoadingUpdate

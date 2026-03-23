@@ -66,11 +66,6 @@ void main() {
       expect(state.error, isNull);
     });
 
-    test('stockCount returns correct count', () {
-      const state = ComparisonState(symbols: ['2330', '2317']);
-      expect(state.stockCount, 2);
-    });
-
     test('canAddMore is true when less than 4 stocks', () {
       const state = ComparisonState(symbols: ['2330', '2317', '2454']);
       expect(state.canAddMore, isTrue);

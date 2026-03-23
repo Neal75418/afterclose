@@ -57,12 +57,4 @@ mixin EventDaoMixin on $AppDatabase {
         ))
         .go();
   }
-
-  /// 取得指定 symbol 的所有事件
-  Future<List<StockEventEntry>> getEventsForSymbol(String symbol) {
-    return (select(stockEvent)
-          ..where((t) => t.symbol.equals(symbol))
-          ..orderBy([(t) => OrderingTerm.asc(t.eventDate)]))
-        .get();
-  }
 }

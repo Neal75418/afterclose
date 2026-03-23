@@ -52,46 +52,4 @@ void main() {
       expect(find.byType(ThemedRefreshIndicator), findsOneWidget);
     });
   });
-
-  group('AnimatedRefreshIndicator', () {
-    testWidgets('renders child widget', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          AnimatedRefreshIndicator(
-            onRefresh: () async {},
-            child: ListView(children: const [Text('Animated child')]),
-          ),
-        ),
-      );
-
-      expect(find.text('Animated child'), findsOneWidget);
-    });
-
-    testWidgets('wraps child in RefreshIndicator', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          AnimatedRefreshIndicator(
-            onRefresh: () async {},
-            child: ListView(children: const [Text('content')]),
-          ),
-        ),
-      );
-
-      expect(find.byType(RefreshIndicator), findsOneWidget);
-    });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          AnimatedRefreshIndicator(
-            onRefresh: () async {},
-            child: ListView(children: const [Text('dark')]),
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(AnimatedRefreshIndicator), findsOneWidget);
-    });
-  });
 }

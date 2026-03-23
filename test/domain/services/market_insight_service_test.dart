@@ -69,7 +69,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      expect(result.first.type, InsightType.sentimentExtreme);
+      expect(result.first.priority, 10);
       expect(result.first.severity, InsightSeverity.warning);
       expect(result.first.descArgs['score'], '15');
     });
@@ -88,7 +88,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      expect(result.first.type, InsightType.sentimentExtreme);
+      expect(result.first.priority, 10);
       expect(result.first.descArgs['score'], '90');
     });
 
@@ -102,9 +102,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final streakInsight = result.firstWhere(
-        (i) => i.type == InsightType.institutionalStreak,
-      );
+      final streakInsight = result.firstWhere((i) => i.priority == 8);
       expect(streakInsight.descArgs['days'], '6');
     });
 
@@ -118,9 +116,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final streakInsight = result.firstWhere(
-        (i) => i.type == InsightType.institutionalStreak,
-      );
+      final streakInsight = result.firstWhere((i) => i.priority == 8);
       expect(streakInsight.descArgs['days'], '7');
     });
 
@@ -134,9 +130,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final volumeInsight = result.firstWhere(
-        (i) => i.type == InsightType.volumeAnomaly,
-      );
+      final volumeInsight = result.firstWhere((i) => i.priority == 7);
       expect(volumeInsight.severity, InsightSeverity.warning);
     });
 
@@ -150,9 +144,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final volumeInsight = result.firstWhere(
-        (i) => i.type == InsightType.volumeAnomaly,
-      );
+      final volumeInsight = result.firstWhere((i) => i.priority == 7);
       expect(volumeInsight.severity, InsightSeverity.info);
     });
 
@@ -178,9 +170,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final chipInsight = result.firstWhere(
-        (i) => i.type == InsightType.chipAlert,
-      );
+      final chipInsight = result.firstWhere((i) => i.priority == 6);
       expect(chipInsight.descArgs['count'], '2');
     });
 
@@ -194,9 +184,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final limitInsight = result.firstWhere(
-        (i) => i.type == InsightType.limitImbalance,
-      );
+      final limitInsight = result.firstWhere((i) => i.priority == 5);
       expect(limitInsight.descArgs['up'], '35');
       expect(limitInsight.descArgs['down'], '2');
     });
@@ -211,9 +199,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final limitInsight = result.firstWhere(
-        (i) => i.type == InsightType.limitImbalance,
-      );
+      final limitInsight = result.firstWhere((i) => i.priority == 5);
       expect(limitInsight.descArgs['down'], '40');
     });
 
@@ -232,9 +218,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final marginInsight = result.firstWhere(
-        (i) => i.type == InsightType.marginSurge,
-      );
+      final marginInsight = result.firstWhere((i) => i.priority == 4);
       expect(marginInsight.descArgs['pct'], '4.0');
     });
 
@@ -253,9 +237,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final marginInsight = result.firstWhere(
-        (i) => i.type == InsightType.marginSurge,
-      );
+      final marginInsight = result.firstWhere((i) => i.priority == 4);
       expect(marginInsight.descArgs['pct'], '6.0');
     });
 
@@ -280,9 +262,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final industryInsight = result.firstWhere(
-        (i) => i.type == InsightType.industryConcentration,
-      );
+      final industryInsight = result.firstWhere((i) => i.priority == 3);
       expect(industryInsight.descArgs['pct'], '80');
     });
 
@@ -307,9 +287,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final industryInsight = result.firstWhere(
-        (i) => i.type == InsightType.industryConcentration,
-      );
+      final industryInsight = result.firstWhere((i) => i.priority == 3);
       expect(industryInsight.severity, InsightSeverity.warning);
     });
 
@@ -357,10 +335,10 @@ void main() {
 
       expect(result, hasLength(4));
       // Verify priority ordering: 10, 8, 7, 6
-      expect(result[0].type, InsightType.sentimentExtreme);
-      expect(result[1].type, InsightType.institutionalStreak);
-      expect(result[2].type, InsightType.volumeAnomaly);
-      expect(result[3].type, InsightType.chipAlert);
+      expect(result[0].priority, 10);
+      expect(result[1].priority, 8);
+      expect(result[2].priority, 7);
+      expect(result[3].priority, 6);
     });
 
     test('returns empty list when only 1 rule triggered (below minimum 2)', () {
@@ -403,9 +381,7 @@ void main() {
       );
 
       expect(result, hasLength(2));
-      final streakInsight = result.firstWhere(
-        (i) => i.type == InsightType.institutionalStreak,
-      );
+      final streakInsight = result.firstWhere((i) => i.priority == 8);
       // Should pick foreign (checked first, breaks after first match)
       expect(streakInsight.descArgs['days'], '8');
     });

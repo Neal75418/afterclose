@@ -182,12 +182,7 @@ class ScoringService {
       ));
 
       scoredStocks.add(
-        ScoredStock(
-          symbol: symbol,
-          score: score,
-          turnover: turnover,
-          reasons: topReasons,
-        ),
+        ScoredStock(symbol: symbol, score: score, turnover: turnover),
       );
     }
 
@@ -356,7 +351,6 @@ class ScoringService {
             symbol: o.symbol,
             score: o.score,
             turnover: o.turnover,
-            reasons: [], // Isolate 無法返回完整 TriggeredReason，僅用於排序
           ),
         )
         .toList();
@@ -529,13 +523,11 @@ class ScoredStock {
     required this.symbol,
     required this.score,
     required this.turnover,
-    required this.reasons,
   });
 
   final String symbol;
   final int score;
   final double turnover;
-  final List<TriggeredReason> reasons;
 
   /// 依流動性加權分數排序的比較函數
   ///

@@ -140,35 +140,6 @@ abstract final class DesignTokens {
   static const double barHeight = 12.0;
 
   // ==================================================
-  // Bottom Sheet 尺寸
-  // ==================================================
-
-  /// Bottom Sheet 初始高度比例
-  static const double sheetInitialSize = 0.5;
-
-  /// Bottom Sheet 最小高度比例
-  static const double sheetMinSize = 0.3;
-
-  /// Bottom Sheet 最大高度比例
-  static const double sheetMaxSize = 0.9;
-
-  // ==================================================
-  // 動畫時長
-  // ==================================================
-
-  /// 快速動畫 (200ms)
-  static const Duration animDurationFast = Duration(milliseconds: 200);
-
-  /// 標準動畫 (300ms)
-  static const Duration animDurationNormal = Duration(milliseconds: 300);
-
-  /// 動畫交錯延遲 (30ms/item)
-  static const int animStaggerDelayMs = 30;
-
-  /// 列表動畫最大項目數
-  static const int maxAnimatedItems = 10;
-
-  // ==================================================
   // 陰影系統
   // ==================================================
 

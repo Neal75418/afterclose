@@ -68,44 +68,6 @@ void main() {
   // ScreeningOperator compatibility
   // ==========================================
   group('ScreeningOperator', () {
-    test('numeric operators are compatible with numeric fields', () {
-      const numericOps = [
-        ScreeningOperator.greaterThan,
-        ScreeningOperator.greaterOrEqual,
-        ScreeningOperator.lessThan,
-        ScreeningOperator.lessOrEqual,
-        ScreeningOperator.between,
-      ];
-
-      for (final op in numericOps) {
-        expect(
-          op.isCompatibleWith(ScreeningFieldType.numeric),
-          isTrue,
-          reason: '${op.name} should be compatible with numeric',
-        );
-        expect(
-          op.isCompatibleWith(ScreeningFieldType.boolean),
-          isFalse,
-          reason: '${op.name} should NOT be compatible with boolean',
-        );
-      }
-    });
-
-    test('boolean operators are compatible only with boolean fields', () {
-      expect(
-        ScreeningOperator.isTrue.isCompatibleWith(ScreeningFieldType.boolean),
-        isTrue,
-      );
-      expect(
-        ScreeningOperator.isFalse.isCompatibleWith(ScreeningFieldType.boolean),
-        isTrue,
-      );
-      expect(
-        ScreeningOperator.isTrue.isCompatibleWith(ScreeningFieldType.numeric),
-        isFalse,
-      );
-    });
-
     test('defaultFor returns correct default operator', () {
       expect(
         ScreeningOperator.defaultFor(ScreeningFieldType.numeric),

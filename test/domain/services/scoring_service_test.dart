@@ -881,18 +881,8 @@ void main() {
 
   group('ScoredStock.compareByWeightedScore', () {
     test('should rank higher score first', () {
-      const a = ScoredStock(
-        symbol: '2330',
-        score: 60,
-        turnover: 100000000,
-        reasons: [],
-      );
-      const b = ScoredStock(
-        symbol: '2317',
-        score: 50,
-        turnover: 100000000,
-        reasons: [],
-      );
+      const a = ScoredStock(symbol: '2330', score: 60, turnover: 100000000);
+      const b = ScoredStock(symbol: '2317', score: 50, turnover: 100000000);
 
       // a should rank first (comparator returns negative for descending)
       expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
@@ -905,13 +895,11 @@ void main() {
         symbol: '2330',
         score: 50,
         turnover: 1000000000, // 1B
-        reasons: [],
       );
       const b = ScoredStock(
         symbol: '2317',
         score: 60,
         turnover: 50000000, // 50M
-        reasons: [],
       );
 
       // A (70) should rank before B (61)
@@ -926,13 +914,11 @@ void main() {
         symbol: '2330',
         score: 50,
         turnover: 2000000000, // 2B
-        reasons: [],
       );
       const b = ScoredStock(
         symbol: '2317',
         score: 50,
         turnover: 1000000000, // 1B
-        reasons: [],
       );
 
       // Both total=70, A has higher turnover → A ranks first
@@ -944,13 +930,11 @@ void main() {
         symbol: '2330',
         score: 60,
         turnover: 500000000, // 500M
-        reasons: [],
       );
       const b = ScoredStock(
         symbol: '2317',
         score: 60,
         turnover: 300000000, // 300M
-        reasons: [],
       );
 
       // Same score, A has higher turnover → A ranks first
@@ -958,18 +942,8 @@ void main() {
     });
 
     test('should break final ties by symbol ascending', () {
-      const a = ScoredStock(
-        symbol: '1234',
-        score: 60,
-        turnover: 500000000,
-        reasons: [],
-      );
-      const b = ScoredStock(
-        symbol: '5678',
-        score: 60,
-        turnover: 500000000,
-        reasons: [],
-      );
+      const a = ScoredStock(symbol: '1234', score: 60, turnover: 500000000);
+      const b = ScoredStock(symbol: '5678', score: 60, turnover: 500000000);
 
       // Same score, same turnover → "1234" < "5678" → A ranks first
       expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));

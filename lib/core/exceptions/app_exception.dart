@@ -62,14 +62,3 @@ final class TokenNotConfiguredException extends ConfigException {
 final class InvalidTokenException extends ConfigException {
   const InvalidTokenException([super.message = 'API Token 格式無效']);
 }
-
-/// 分析運算例外
-final class AnalysisException extends AppException {
-  const AnalysisException(super.message, [super.cause]);
-}
-
-/// 分析所需資料不足
-final class InsufficientDataException extends AnalysisException {
-  const InsufficientDataException(String symbol, int required, int actual)
-    : super('$symbol 資料不足：需要 $required 天，僅有 $actual 天');
-}

@@ -21,15 +21,7 @@ enum PriceVolumeState {
 
 /// 價量分析結果
 class PriceVolumeAnalysis {
-  const PriceVolumeAnalysis({
-    required this.state,
-    this.priceChangePercent,
-    this.volumeChangePercent,
-    this.pricePosition,
-  });
+  const PriceVolumeAnalysis({required this.state});
 
   final PriceVolumeState state;
-  final double? priceChangePercent;
-  final double? volumeChangePercent;
-  final double? pricePosition;
 }

@@ -89,67 +89,6 @@ void main() {
       });
     });
 
-    group('getActiveWarnings', () {
-      test('delegates to database correctly', () async {
-        final warnings = [
-          _createWarning(symbol: 'TEST', warningType: 'ATTENTION'),
-        ];
-
-        when(
-          () => mockDb.getActiveWarnings('TEST'),
-        ).thenAnswer((_) async => warnings);
-
-        final result = await repository.getActiveWarnings('TEST');
-
-        expect(result, equals(warnings));
-        verify(() => mockDb.getActiveWarnings('TEST')).called(1);
-      });
-    });
-
-    group('hasActiveWarning', () {
-      test('returns true when symbol has active warning', () async {
-        when(
-          () => mockDb.hasActiveWarning('TEST'),
-        ).thenAnswer((_) async => true);
-
-        final result = await repository.hasActiveWarning('TEST');
-
-        expect(result, isTrue);
-      });
-
-      test('returns false when symbol has no active warning', () async {
-        when(
-          () => mockDb.hasActiveWarning('TEST'),
-        ).thenAnswer((_) async => false);
-
-        final result = await repository.hasActiveWarning('TEST');
-
-        expect(result, isFalse);
-      });
-    });
-
-    group('isDisposalStock', () {
-      test('returns true when symbol is disposal stock', () async {
-        when(
-          () => mockDb.isDisposalStock('TEST'),
-        ).thenAnswer((_) async => true);
-
-        final result = await repository.isDisposalStock('TEST');
-
-        expect(result, isTrue);
-      });
-
-      test('returns false when symbol is not disposal stock', () async {
-        when(
-          () => mockDb.isDisposalStock('TEST'),
-        ).thenAnswer((_) async => false);
-
-        final result = await repository.isDisposalStock('TEST');
-
-        expect(result, isFalse);
-      });
-    });
-
     group('getDisposalStocksBatch', () {
       test('returns set of disposal symbols', () async {
         final disposalSet = {'AAA', 'CCC'};

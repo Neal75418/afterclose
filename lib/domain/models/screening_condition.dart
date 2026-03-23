@@ -77,18 +77,6 @@ enum ScreeningOperator {
   isTrue,
   isFalse;
 
-  /// 此運算子是否適用於指定欄位型別
-  bool isCompatibleWith(ScreeningFieldType type) => switch (type) {
-    ScreeningFieldType.numeric =>
-      this == greaterThan ||
-          this == greaterOrEqual ||
-          this == lessThan ||
-          this == lessOrEqual ||
-          this == between,
-    ScreeningFieldType.boolean => this == isTrue || this == isFalse,
-    ScreeningFieldType.signal => this == equals,
-  };
-
   /// 取得指定欄位型別的預設運算子
   static ScreeningOperator defaultFor(ScreeningFieldType type) =>
       switch (type) {
@@ -99,7 +87,17 @@ enum ScreeningOperator {
 
   /// 取得指定欄位型別可用的運算子列表
   static List<ScreeningOperator> availableFor(ScreeningFieldType type) =>
-      values.where((op) => op.isCompatibleWith(type)).toList();
+      switch (type) {
+        ScreeningFieldType.numeric => [
+          greaterThan,
+          greaterOrEqual,
+          lessThan,
+          lessOrEqual,
+          between,
+        ],
+        ScreeningFieldType.boolean => [isTrue, isFalse],
+        ScreeningFieldType.signal => [equals],
+      };
 }
 
 // ==================================================

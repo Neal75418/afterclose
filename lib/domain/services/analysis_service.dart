@@ -10,7 +10,6 @@ import 'package:afterclose/domain/services/analysis/analysis_coordinator_service
 /// - TrendDetectionService（趨勢檢測）
 /// - ReversalDetectionService（反轉檢測）
 /// - SupportResistanceService（支撐壓力檢測）
-/// - PriceVolumeAnalysisService（價量分析）
 class AnalysisService {
   /// 建立分析服務
   ///
@@ -45,28 +44,5 @@ class AnalysisService {
       marketData: marketData,
       evaluationTime: evaluationTime,
     );
-  }
-
-  /// 從價格歷史計算技術指標
-  ///
-  /// 委託給 [AnalysisCoordinatorService.calculateTechnicalIndicators]
-  TechnicalIndicators? calculateTechnicalIndicators(
-    List<DailyPriceEntry> prices,
-  ) {
-    return _coordinator.calculateTechnicalIndicators(prices);
-  }
-
-  /// 檢查候選條件（分析前的預篩選）
-  ///
-  /// 委託給 [AnalysisCoordinatorService.isCandidate]
-  bool isCandidate(List<DailyPriceEntry> prices) {
-    return _coordinator.isCandidate(prices);
-  }
-
-  /// 分析價量關係以偵測背離
-  ///
-  /// 委託給 [AnalysisCoordinatorService.analyzePriceVolume]
-  PriceVolumeAnalysis analyzePriceVolume(List<DailyPriceEntry> prices) {
-    return _coordinator.analyzePriceVolume(prices);
   }
 }

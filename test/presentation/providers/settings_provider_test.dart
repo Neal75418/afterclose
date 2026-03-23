@@ -27,16 +27,6 @@ void main() {
       expect(locale.countryCode, isNull);
     });
 
-    test('fromLocale finds matching locale', () {
-      final result = AppLocale.fromLocale(const Locale('zh', 'TW'));
-      expect(result, AppLocale.zhTW);
-    });
-
-    test('fromLocale defaults to zhTW for unknown locale', () {
-      final result = AppLocale.fromLocale(const Locale('ja'));
-      expect(result, AppLocale.zhTW);
-    });
-
     test('fromString parses valid names', () {
       expect(AppLocale.fromString('zhTW'), AppLocale.zhTW);
       expect(AppLocale.fromString('en'), AppLocale.en);
@@ -155,38 +145,6 @@ void main() {
     test('setThemeMode changes theme', () async {
       final notifier = container.read(settingsProvider.notifier);
       notifier.setThemeMode(ThemeMode.dark);
-
-      final state = container.read(settingsProvider);
-      expect(state.themeMode, ThemeMode.dark);
-    });
-
-    test('toggleTheme cycles light to dark', () async {
-      final notifier = container.read(settingsProvider.notifier);
-      notifier.setThemeMode(ThemeMode.light);
-      await Future<void>.delayed(Duration.zero);
-      notifier.toggleTheme();
-      await Future<void>.delayed(Duration.zero);
-
-      final state = container.read(settingsProvider);
-      expect(state.themeMode, ThemeMode.dark);
-    });
-
-    test('toggleTheme cycles dark to light', () async {
-      final notifier = container.read(settingsProvider.notifier);
-      notifier.setThemeMode(ThemeMode.dark);
-      await Future<void>.delayed(Duration.zero);
-      notifier.toggleTheme();
-      await Future<void>.delayed(Duration.zero);
-
-      final state = container.read(settingsProvider);
-      expect(state.themeMode, ThemeMode.light);
-    });
-
-    test('toggleTheme cycles system to dark', () async {
-      final notifier = container.read(settingsProvider.notifier);
-      // Default is system
-      notifier.toggleTheme();
-      await Future<void>.delayed(Duration.zero);
 
       final state = container.read(settingsProvider);
       expect(state.themeMode, ThemeMode.dark);
@@ -419,17 +377,6 @@ void main() {
       expect(state.isLoading, isFalse);
       expect(state.testResult, isNull);
       expect(state.testError, isNotNull);
-    });
-
-    test('clearTestResults clears test state', () async {
-      final notifier = container.read(apiTokenProvider.notifier);
-      await notifier.testConnection(() async => 42);
-
-      notifier.clearTestResults();
-
-      final state = container.read(apiTokenProvider);
-      expect(state.testResult, isNull);
-      expect(state.testError, isNull);
     });
   });
 }

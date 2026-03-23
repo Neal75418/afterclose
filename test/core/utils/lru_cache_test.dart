@@ -27,8 +27,8 @@ void main() {
 
       expect(cache.get('a'), isNull);
       expect(cache.get('b'), equals(2));
+      expect(cache.get('c'), equals(3));
       expect(cache.get('d'), equals(4));
-      expect(cache.length, equals(3));
     });
 
     test('accessing a key moves it to most recently used', () {
@@ -59,30 +59,6 @@ void main() {
       expect(cache.get('a'), isNull);
     });
 
-    test('containsKey returns false for expired entry', () async {
-      final cache = LruCache<String, int>(
-        maxSize: 10,
-        ttl: const Duration(milliseconds: 50),
-      );
-      cache.put('a', 1);
-      expect(cache.containsKey('a'), isTrue);
-
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      expect(cache.containsKey('a'), isFalse);
-    });
-
-    test('remove deletes specific key', () {
-      final cache = LruCache<String, int>(maxSize: 10);
-      cache.put('a', 1);
-      cache.put('b', 2);
-      cache.remove('a');
-
-      expect(cache.get('a'), isNull);
-      expect(cache.get('b'), equals(2));
-      expect(cache.length, equals(1));
-    });
-
     test('clear removes all entries', () {
       final cache = LruCache<String, int>(maxSize: 10);
       cache.put('a', 1);
@@ -90,8 +66,8 @@ void main() {
 
       cache.clear();
 
-      expect(cache.isEmpty, isTrue);
-      expect(cache.length, equals(0));
+      expect(cache.get('a'), isNull);
+      expect(cache.get('b'), isNull);
     });
 
     test('put overwrites existing key', () {
@@ -100,7 +76,6 @@ void main() {
       cache.put('a', 99);
 
       expect(cache.get('a'), equals(99));
-      expect(cache.length, equals(1));
     });
   });
 

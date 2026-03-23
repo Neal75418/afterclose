@@ -23,15 +23,6 @@ mixin ValuationDaoMixin on $AppDatabase {
     return query.get();
   }
 
-  /// 取得股票的最新估值
-  Future<StockValuationEntry?> getLatestValuation(String symbol) {
-    return (select(stockValuation)
-          ..where((t) => t.symbol.equals(symbol))
-          ..orderBy([(t) => OrderingTerm.desc(t.date)])
-          ..limit(1))
-        .getSingleOrNull();
-  }
-
   /// 批次取得多檔股票的最新估值（批次查詢）
   Future<Map<String, StockValuationEntry>> getLatestValuationsBatch(
     List<String> symbols,

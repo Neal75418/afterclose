@@ -115,6 +115,4 @@ class WatchlistItemData {
       _ => WatchlistTrend.sideways,
     };
   }
-
-  String get statusIcon => status.icon;
 }

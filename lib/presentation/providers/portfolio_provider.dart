@@ -47,7 +47,6 @@ class PortfolioPositionData {
     required this.realizedPnl,
     required this.totalDividendReceived,
     this.currentPrice,
-    this.note,
   });
 
   final int positionId;
@@ -59,7 +58,6 @@ class PortfolioPositionData {
   final double realizedPnl;
   final double totalDividendReceived;
   final double? currentPrice;
-  final String? note;
 
   /// 市值
   double get marketValue => quantity * (currentPrice ?? avgCost);
@@ -253,7 +251,6 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
             realizedPnl: pos.realizedPnl,
             totalDividendReceived: pos.totalDividendReceived,
             currentPrice: price?.close,
-            note: pos.note,
           ),
         );
       }

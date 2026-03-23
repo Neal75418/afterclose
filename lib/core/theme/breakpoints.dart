@@ -14,12 +14,6 @@ abstract final class Breakpoints {
 
   /// 導航欄收合斷點（低於此寬度使用 BottomNav）
   static const double navigationRailBreakpoint = 600;
-
-  /// 雙欄佈局最小寬度
-  static const double dualPaneMinWidth = 720;
-
-  /// 三欄佈局最小寬度
-  static const double triplePaneMinWidth = 1200;
 }
 
 /// 設備類型枚舉
@@ -32,16 +26,4 @@ enum DeviceType {
 
   /// 桌面（>= 1024px）
   desktop,
-}
-
-/// 佈局類型枚舉
-enum LayoutType {
-  /// 單欄佈局（手機）
-  singlePane,
-
-  /// 雙欄佈局（平板橫向、小桌面）
-  dualPane,
-
-  /// 三欄佈局（大桌面）
-  triplePane,
 }

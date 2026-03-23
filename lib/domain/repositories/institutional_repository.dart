@@ -11,9 +11,6 @@ abstract class IInstitutionalRepository {
     int? days,
   });
 
-  /// 取得股票最新法人資料
-  Future<DailyInstitutionalEntry?> getLatestInstitutional(String symbol);
-
   /// 同步單檔股票的法人資料
   Future<int> syncInstitutionalData(
     String symbol, {

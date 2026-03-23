@@ -103,11 +103,6 @@ class DateContext {
     }
   }
 
-  /// 解析 'YYYY-MM-DD' 格式字串，失敗時回傳預設值
-  static DateTime parseYmdOr(String? dateStr, DateTime defaultValue) {
-    return tryParseYmd(dateStr) ?? defaultValue;
-  }
-
   /// 解析季度日期字串（如 "2024-Q1" → DateTime(2024, 1, 1)）
   ///
   /// 若非季度格式則視為標準日期字串解析。

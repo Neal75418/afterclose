@@ -232,28 +232,6 @@ void main() {
   });
 
   // ===========================================================================
-  // BacktestNotifier clearResults
-  // ===========================================================================
-
-  group('BacktestNotifier clearResults', () {
-    test('clears result and error and resets progress', () {
-      final notifier = container.read(backtestProvider.notifier);
-
-      // Simulate some state changes
-      notifier.updatePeriod(6);
-
-      notifier.clearResults();
-
-      final state = container.read(backtestProvider);
-      expect(state.result, isNull);
-      expect(state.error, isNull);
-      expect(state.progress, 0.0);
-      // Config should be preserved
-      expect(state.config.periodMonths, 6);
-    });
-  });
-
-  // ===========================================================================
   // Provider declaration
   // ===========================================================================
 

@@ -111,42 +111,6 @@ void main() {
       expect(AlertType.crossAboveMa.defaultTargetValue, 20.0);
       expect(AlertType.above.defaultTargetValue, isNull);
     });
-
-    test('category groups types correctly', () {
-      expect(AlertType.above.category, AlertCategory.price);
-      expect(AlertType.volumeSpike.category, AlertCategory.volume);
-      expect(AlertType.rsiOverbought.category, AlertCategory.indicator);
-      expect(AlertType.breakResistance.category, AlertCategory.level);
-      expect(AlertType.week52High.category, AlertCategory.week52);
-      expect(AlertType.crossAboveMa.category, AlertCategory.ma);
-      expect(AlertType.revenueYoySurge.category, AlertCategory.fundamental);
-      expect(AlertType.tradingWarning.category, AlertCategory.warning);
-      expect(AlertType.insiderSelling.category, AlertCategory.insider);
-    });
-  });
-
-  // ===========================================================================
-  // AlertCategory
-  // ===========================================================================
-
-  group('AlertCategory', () {
-    test('alertTypes returns correct types per category', () {
-      final priceTypes = AlertCategory.price.alertTypes;
-      expect(priceTypes, contains(AlertType.above));
-      expect(priceTypes, contains(AlertType.below));
-      expect(priceTypes, contains(AlertType.changePct));
-      expect(priceTypes, hasLength(3));
-    });
-
-    test('alertTypes returns non-empty for all categories', () {
-      for (final category in AlertCategory.values) {
-        expect(
-          category.alertTypes,
-          isNotEmpty,
-          reason: '$category should have alert types',
-        );
-      }
-    });
   });
 
   // ===========================================================================
@@ -208,38 +172,6 @@ void main() {
 
       final state = container.read(priceAlertProvider);
       expect(state.isLoading, isFalse);
-      expect(state.error, isNotNull);
-    });
-  });
-
-  // ===========================================================================
-  // PriceAlertNotifier.loadAlertsForSymbol
-  // ===========================================================================
-
-  group('PriceAlertNotifier.loadAlertsForSymbol', () {
-    test('loads alerts for specific symbol', () async {
-      final alerts = [createAlert(id: 1, symbol: '2330')];
-      when(
-        () => mockDb.getAlertsForSymbol('2330'),
-      ).thenAnswer((_) async => alerts);
-
-      final notifier = container.read(priceAlertProvider.notifier);
-      await notifier.loadAlertsForSymbol('2330');
-
-      final state = container.read(priceAlertProvider);
-      expect(state.alerts, hasLength(1));
-      expect(state.alerts.first.symbol, '2330');
-    });
-
-    test('handles error gracefully', () async {
-      when(
-        () => mockDb.getAlertsForSymbol(any()),
-      ).thenThrow(Exception('DB error'));
-
-      final notifier = container.read(priceAlertProvider.notifier);
-      await notifier.loadAlertsForSymbol('2330');
-
-      final state = container.read(priceAlertProvider);
       expect(state.error, isNotNull);
     });
   });

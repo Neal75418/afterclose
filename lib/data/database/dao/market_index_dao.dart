@@ -25,22 +25,6 @@ mixin MarketIndexDaoMixin on $AppDatabase {
     });
   }
 
-  /// 取得指定指數名稱的近 N 日歷史
-  Future<List<MarketIndexEntry>> getIndexHistory(
-    String indexName, {
-    int days = 30,
-    DateTime? now,
-  }) {
-    final cutoff = (now ?? DateTime.now()).subtract(Duration(days: days + 10));
-    return (select(marketIndex)
-          ..where(
-            (t) => t.name.equals(indexName) & t.date.isBiggerThanValue(cutoff),
-          )
-          ..orderBy([(t) => OrderingTerm.asc(t.date)])
-          ..limit(days))
-        .get();
-  }
-
   /// 取得多個指數的近 N 日歷史（批次）
   Future<Map<String, List<MarketIndexEntry>>> getIndexHistoryBatch(
     List<String> indexNames, {

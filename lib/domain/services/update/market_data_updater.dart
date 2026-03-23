@@ -338,64 +338,6 @@ class MarketDataUpdater {
       insiderError: insiderError,
     );
   }
-
-  /// 同步警示資料
-  ///
-  /// 每日更新，包含注意股票和處置股票。
-  Future<int> syncWarningData({bool force = false}) async {
-    try {
-      final count = await _warningRepo.syncAllMarketWarnings(force: force);
-      AppLogger.info('MarketDataUpdater', '警示資料同步完成: $count 筆');
-      return count;
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '警示資料同步失敗', e);
-      return 0;
-    }
-  }
-
-  /// 同步董監持股資料
-  ///
-  /// 月報資料，每月更新一次即可。
-  Future<int> syncInsiderData({bool force = false}) async {
-    try {
-      final count = await _insiderRepo.syncAllInsiderHoldings(force: force);
-      AppLogger.info('MarketDataUpdater', '董監持股資料同步完成: $count 筆');
-      return count;
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('MarketDataUpdater', '董監持股資料同步失敗', e);
-      return 0;
-    }
-  }
-
-  /// 取得自選股的 Killer Features 資料
-  ///
-  /// 用於在自選股列表顯示警示標記。
-  Future<WatchlistKillerFeaturesData> getWatchlistKillerFeaturesData(
-    List<String> symbols,
-  ) async {
-    if (symbols.isEmpty) {
-      return const WatchlistKillerFeaturesData(
-        warnings: {},
-        highPledgeStocks: {},
-      );
-    }
-
-    final warnings = await _warningRepo.getWatchlistWarnings(symbols);
-    final highPledge = await _insiderRepo.getWatchlistHighPledgeStocks(symbols);
-
-    return WatchlistKillerFeaturesData(
-      warnings: warnings,
-      highPledgeStocks: highPledge,
-    );
-  }
 }
 
 /// 市場籌碼同步結果
@@ -410,7 +352,6 @@ class MarketDataSyncResult {
   /// 融資融券同步筆數。-1 表示已快取（跳過同步）。
   final int marginCount;
 
-  bool get marginCached => marginCount < 0;
   int get total => dayTradingCount + (marginCount < 0 ? 0 : marginCount);
 }
 
@@ -453,28 +394,4 @@ class KillerFeaturesSyncResult {
 
   /// 是否有任何同步錯誤
   bool get hasErrors => warningError != null || insiderError != null;
-
-  /// 是否全部同步成功
-  bool get isFullySuccessful => !hasErrors && total > 0;
-}
-
-/// 自選股 Killer Features 資料
-class WatchlistKillerFeaturesData {
-  const WatchlistKillerFeaturesData({
-    required this.warnings,
-    required this.highPledgeStocks,
-  });
-
-  /// 自選股中的警示股票（symbol -> TradingWarningEntry）
-  final Map<String, TradingWarningEntry> warnings;
-
-  /// 自選股中的高質押股票（symbol -> InsiderHoldingEntry）
-  final Map<String, InsiderHoldingEntry> highPledgeStocks;
-
-  /// 是否有任何警示
-  bool get hasWarnings => warnings.isNotEmpty || highPledgeStocks.isNotEmpty;
-
-  /// 檢查特定股票是否有警示
-  bool hasWarningFor(String symbol) =>
-      warnings.containsKey(symbol) || highPledgeStocks.containsKey(symbol);
 }

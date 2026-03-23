@@ -91,48 +91,4 @@ void main() {
       expect(find.byType(UpdateProgressBanner), findsOneWidget);
     });
   });
-
-  group('UpdateProgressCompact', () {
-    testWidgets('displays step count', (tester) async {
-      const progress = UpdateProgress(
-        currentStep: 3,
-        totalSteps: 7,
-        message: '載入中',
-      );
-      await tester.pumpWidget(
-        buildTestApp(const UpdateProgressCompact(progress: progress)),
-      );
-
-      expect(find.text('3/7'), findsOneWidget);
-    });
-
-    testWidgets('contains CircularProgressIndicator', (tester) async {
-      const progress = UpdateProgress(
-        currentStep: 5,
-        totalSteps: 10,
-        message: '載入中',
-      );
-      await tester.pumpWidget(
-        buildTestApp(const UpdateProgressCompact(progress: progress)),
-      );
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('renders in dark mode', (tester) async {
-      const progress = UpdateProgress(
-        currentStep: 1,
-        totalSteps: 3,
-        message: '暗色',
-      );
-      await tester.pumpWidget(
-        buildTestApp(
-          const UpdateProgressCompact(progress: progress),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(UpdateProgressCompact), findsOneWidget);
-    });
-  });
 }

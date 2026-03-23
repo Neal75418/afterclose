@@ -15,9 +15,6 @@ abstract class ITradingRepository {
     int days = 30,
   });
 
-  /// 取得最新當沖資料
-  Future<DayTradingEntry?> getLatestDayTrading(String symbol);
-
   /// 從 TWSE 同步全市場當沖資料
   Future<int> syncAllDayTradingFromTwse({DateTime? date, bool force = false});
 
@@ -33,9 +30,6 @@ abstract class ITradingRepository {
     String symbol, {
     int days = 30,
   });
-
-  /// 取得最新融資融券資料
-  Future<MarginTradingEntry?> getLatestMarginTrading(String symbol);
 
   /// 從 TWSE/TPEX 同步全市場融資融券資料
   Future<int> syncAllMarginTradingFromTwse({

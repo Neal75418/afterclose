@@ -61,11 +61,6 @@ class FilterMetadata {
 
   /// 門檻資訊（如「4 倍平均成交量」）
   final String? thresholdInfo;
-
-  /// 檢查此篩選器是否僅需基本資料（永遠可用）
-  bool get isBasicDataOnly =>
-      dataRequirements.length == 1 &&
-      dataRequirements.first == DataRequirement.dailyPrice;
 }
 
 /// 取得 ScanFilter 詮釋資料的擴充方法

@@ -182,31 +182,3 @@ class _WarningBadgeState extends State<WarningBadge> {
     };
   }
 }
-
-/// 警示標記覆蓋層
-///
-/// 用於在 Stack 中定位警示標記到右上角。
-class WarningBadgeOverlay extends StatelessWidget {
-  const WarningBadgeOverlay({
-    super.key,
-    required this.type,
-    this.animate = true,
-  });
-
-  final WarningBadgeType type;
-  final bool animate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      right: 0,
-      child: WarningBadge(
-        type: type,
-        animate: animate,
-        compact: true,
-        showIcon: true,
-      ),
-    );
-  }
-}

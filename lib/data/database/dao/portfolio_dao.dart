@@ -17,13 +17,6 @@ mixin PortfolioDaoMixin on $AppDatabase {
         .get();
   }
 
-  /// 取得所有 position（含已清倉）
-  Future<List<PortfolioPositionEntry>> getAllPortfolioPositions() {
-    return (select(
-      portfolioPosition,
-    )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).get();
-  }
-
   /// 取得單一 position by symbol
   Future<PortfolioPositionEntry?> getPortfolioPosition(String symbol) {
     return (select(

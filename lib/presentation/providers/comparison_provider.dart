@@ -50,7 +50,6 @@ class ComparisonState {
   final bool isLoading;
   final String? error;
 
-  int get stockCount => symbols.length;
   bool get canAddMore => symbols.length < 4;
   bool get hasEnoughToCompare => symbols.length >= 2;
 

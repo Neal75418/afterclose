@@ -395,19 +395,6 @@ class AppTheme {
     return neutralColor;
   }
 
-  /// 取得背景漸層
-  static LinearGradient get darkGradient => const LinearGradient(
-    colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
-  static LinearGradient get lightGradient => const LinearGradient(
-    colors: [Color(0xFFF8F9FA), Color(0xFFEEF2F7)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
-
   /// 高分股票的頂級金屬漸層
   static LinearGradient get premiumGradient => LinearGradient(
     colors: [
@@ -465,9 +452,6 @@ extension ThemeExtension on BuildContext {
   /// 根據漲跌幅取得價格顏色（自動適配深淺色主題）
   Color priceColor(double? change) =>
       AppTheme.getPriceColor(change, Theme.of(this).brightness);
-
-  /// 取得評分徽章顏色
-  Color scoreColor(double score) => AppTheme.getScoreColor(score);
 
   /// 檢查目前是否為深色主題
   bool get isDark => Theme.of(this).brightness == Brightness.dark;

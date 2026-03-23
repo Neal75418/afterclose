@@ -59,17 +59,6 @@ class PriceCalculator {
     return ((latestClose - prevClose) / prevClose) * 100;
   }
 
-  /// 直接由兩個價格計算漲跌幅
-  static double? calculatePriceChangeFromPrices(
-    double? currentPrice,
-    double? previousPrice,
-  ) {
-    if (currentPrice == null || previousPrice == null || previousPrice == 0) {
-      return null;
-    }
-    return ((currentPrice - previousPrice) / previousPrice) * 100;
-  }
-
   /// 批次計算多檔股票的漲跌幅
   ///
   /// 輸入股票代號對應的價格歷史與最新價格，

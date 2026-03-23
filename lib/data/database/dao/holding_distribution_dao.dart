@@ -5,17 +5,6 @@ import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Holding distribution (股權分散) operations.
 mixin HoldingDistributionDaoMixin on $AppDatabase {
-  /// 取得股票在指定日期的股權分散資料
-  Future<List<HoldingDistributionEntry>> getHoldingDistribution(
-    String symbol, {
-    required DateTime date,
-  }) {
-    return (select(holdingDistribution)
-          ..where((t) => t.symbol.equals(symbol))
-          ..where((t) => t.date.equals(date)))
-        .get();
-  }
-
   /// 取得股票的最新股權分散資料
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(
     String symbol,

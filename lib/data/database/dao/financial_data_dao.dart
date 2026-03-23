@@ -5,40 +5,6 @@ import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Financial data (財務報表) operations.
 mixin FinancialDataDaoMixin on $AppDatabase {
-  /// 取得股票的財務資料
-  Future<List<FinancialDataEntry>> getFinancialData(
-    String symbol, {
-    required String statementType,
-    required DateTime startDate,
-    DateTime? endDate,
-  }) {
-    final query = select(financialData)
-      ..where((t) => t.symbol.equals(symbol))
-      ..where((t) => t.statementType.equals(statementType))
-      ..where((t) => t.date.isBiggerOrEqualValue(startDate));
-
-    if (endDate != null) {
-      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
-    }
-
-    query.orderBy([(t) => OrderingTerm.asc(t.date)]);
-    return query.get();
-  }
-
-  /// 取得股票的特定財務指標
-  Future<List<FinancialDataEntry>> getFinancialMetrics(
-    String symbol, {
-    required List<String> dataTypes,
-    required DateTime startDate,
-  }) {
-    return (select(financialData)
-          ..where((t) => t.symbol.equals(symbol))
-          ..where((t) => t.dataType.isIn(dataTypes))
-          ..where((t) => t.date.isBiggerOrEqualValue(startDate))
-          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
-        .get();
-  }
-
   /// 批次新增財務資料
   Future<void> insertFinancialData(List<FinancialDataCompanion> entries) async {
     await batch((b) {

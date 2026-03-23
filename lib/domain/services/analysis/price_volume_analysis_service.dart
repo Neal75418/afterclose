@@ -54,12 +54,7 @@ class PriceVolumeAnalysisService {
       pricePosition: pricePosition,
     );
 
-    return PriceVolumeAnalysis(
-      state: state,
-      priceChangePercent: priceChangePercent,
-      volumeChangePercent: volumeChange,
-      pricePosition: pricePosition,
-    );
+    return PriceVolumeAnalysis(state: state);
   }
 
   // ==================================================

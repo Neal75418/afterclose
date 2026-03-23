@@ -63,32 +63,10 @@ class LruCache<K, V> {
     _cache[key] = _CacheEntry(value: value, expiresAt: DateTime.now().add(ttl));
   }
 
-  /// 檢查鍵是否存在且未過期
-  bool containsKey(K key) {
-    final entry = _cache[key];
-    if (entry == null) return false;
-    if (entry.isExpired) {
-      _cache.remove(key);
-      return false;
-    }
-    return true;
-  }
-
-  /// 從快取移除指定鍵
-  void remove(K key) {
-    _cache.remove(key);
-  }
-
   /// 清除所有快取項目
   void clear() {
     _cache.clear();
   }
-
-  /// 取得目前快取項目數量
-  int get length => _cache.length;
-
-  /// 檢查快取是否為空
-  bool get isEmpty => _cache.isEmpty;
 }
 
 /// 快取項目（含過期時間）

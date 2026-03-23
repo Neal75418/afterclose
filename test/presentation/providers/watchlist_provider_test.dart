@@ -517,17 +517,6 @@ void main() {
   // ===========================================================================
 
   group('WatchlistItemData additional', () {
-    test('statusIcon returns emoji from status', () {
-      final signalItem = createItem(symbol: '2330', hasSignal: true);
-      expect(signalItem.statusIcon, '🔥');
-
-      final quietItem = createItem(symbol: '2317', priceChange: 0.5);
-      expect(quietItem.statusIcon, '😴');
-
-      final volatileItem = createItem(symbol: '2454', priceChange: -5.0);
-      expect(volatileItem.statusIcon, '👀');
-    });
-
     test('trend returns sideways for null trendState', () {
       final item = createItem(symbol: '2330');
       expect(item.trend, WatchlistTrend.sideways);

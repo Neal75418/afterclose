@@ -3,24 +3,12 @@ import 'package:afterclose/domain/services/chip_anomaly_service.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 
-/// 智慧摘要洞察類型
-enum InsightType {
-  sentimentExtreme,
-  institutionalStreak,
-  volumeAnomaly,
-  chipAlert,
-  limitImbalance,
-  marginSurge,
-  industryConcentration,
-}
-
 /// 洞察嚴重度
 enum InsightSeverity { warning, info }
 
 /// 單筆市場洞察
 class MarketInsight {
   const MarketInsight({
-    required this.type,
     required this.severity,
     required this.priority,
     required this.titleKey,
@@ -29,7 +17,6 @@ class MarketInsight {
     this.isPositive = true,
   });
 
-  final InsightType type;
   final InsightSeverity severity;
 
   /// 優先級（數字越大越重要）
@@ -110,7 +97,6 @@ class MarketInsightService {
     if (sentiment.level == SentimentLevel.extremeFear) {
       candidates.add(
         MarketInsight(
-          type: InsightType.sentimentExtreme,
           severity: InsightSeverity.warning,
           priority: 10,
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
@@ -122,7 +108,6 @@ class MarketInsightService {
     } else if (sentiment.level == SentimentLevel.extremeGreed) {
       candidates.add(
         MarketInsight(
-          type: InsightType.sentimentExtreme,
           severity: InsightSeverity.warning,
           priority: 10,
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
@@ -154,7 +139,6 @@ class MarketInsightService {
         final direction = isBuy ? 'Buy' : 'Sell';
         candidates.add(
           MarketInsight(
-            type: InsightType.institutionalStreak,
             severity: InsightSeverity.warning,
             priority: 8,
             titleKey: 'marketOverview.keyInsights.institutionalStreak.title',
@@ -180,7 +164,6 @@ class MarketInsightService {
     if (pct > 50) {
       candidates.add(
         MarketInsight(
-          type: InsightType.volumeAnomaly,
           severity: InsightSeverity.warning,
           priority: 7,
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
@@ -192,7 +175,6 @@ class MarketInsightService {
     } else if (pct < -30) {
       candidates.add(
         MarketInsight(
-          type: InsightType.volumeAnomaly,
           severity: InsightSeverity.info,
           priority: 7,
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
@@ -215,7 +197,6 @@ class MarketInsightService {
     if (highCount > 0) {
       candidates.add(
         MarketInsight(
-          type: InsightType.chipAlert,
           severity: InsightSeverity.warning,
           priority: 6,
           titleKey: 'marketOverview.keyInsights.chipAlert.title',
@@ -239,7 +220,6 @@ class MarketInsightService {
       final isUpDominant = limitUpDown.limitUp >= limitUpDown.limitDown;
       candidates.add(
         MarketInsight(
-          type: InsightType.limitImbalance,
           severity: InsightSeverity.warning,
           priority: 5,
           titleKey: 'marketOverview.keyInsights.limitImbalance.title',
@@ -270,7 +250,6 @@ class MarketInsightService {
       if (marginPct > 3) {
         candidates.add(
           MarketInsight(
-            type: InsightType.marginSurge,
             severity: InsightSeverity.info,
             priority: 4,
             titleKey: 'marketOverview.keyInsights.marginSurge.title',
@@ -291,7 +270,6 @@ class MarketInsightService {
       if (shortPct > 5) {
         candidates.add(
           MarketInsight(
-            type: InsightType.marginSurge,
             severity: InsightSeverity.info,
             priority: 4,
             titleKey: 'marketOverview.keyInsights.marginSurge.title',
@@ -323,7 +301,6 @@ class MarketInsightService {
     if (upPct > 70) {
       candidates.add(
         MarketInsight(
-          type: InsightType.industryConcentration,
           severity: InsightSeverity.info,
           priority: 3,
           titleKey: 'marketOverview.keyInsights.industryConcentration.title',
@@ -335,7 +312,6 @@ class MarketInsightService {
     } else if (downPct > 70) {
       candidates.add(
         MarketInsight(
-          type: InsightType.industryConcentration,
           severity: InsightSeverity.warning,
           priority: 3,
           titleKey: 'marketOverview.keyInsights.industryConcentration.title',

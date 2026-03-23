@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -11,7 +10,7 @@ import 'package:afterclose/domain/repositories/market_data_repository.dart';
 
 /// 市場資料 Repository
 ///
-/// 處理：財報、還原股價、週K線
+/// 處理：財報同步
 class MarketDataRepository implements IMarketDataRepository {
   MarketDataRepository({
     required AppDatabase database,
@@ -140,54 +139,5 @@ class MarketDataRepository implements IMarketDataRepository {
     } catch (e) {
       throw DatabaseException('Failed to sync $statementType for $symbol', e);
     }
-  }
-
-  /// 取得特定財務指標
-  @override
-  Future<List<FinancialDataEntry>> getFinancialMetrics(
-    String symbol, {
-    required List<String> dataTypes,
-    int quarters = 8,
-  }) async {
-    final startDate = _clock.now().subtract(
-      Duration(
-        days:
-            quarters * DataFreshness.daysPerQuarter +
-            DataFreshness.quarterBufferDays,
-      ),
-    );
-    return _db.getFinancialMetrics(
-      symbol,
-      dataTypes: dataTypes,
-      startDate: startDate,
-    );
-  }
-
-  // ==================================================
-  // 還原股價
-  // ==================================================
-
-  /// 取得還原股價歷史資料
-  @override
-  Future<List<AdjustedPriceEntry>> getAdjustedPriceHistory(
-    String symbol, {
-    int days = 120,
-  }) async {
-    final startDate = _clock.now().subtract(Duration(days: days + 30));
-    return _db.getAdjustedPriceHistory(symbol, startDate: startDate);
-  }
-
-  // ==================================================
-  // 週K線
-  // ==================================================
-
-  /// 取得週K線歷史資料
-  @override
-  Future<List<WeeklyPriceEntry>> getWeeklyPriceHistory(
-    String symbol, {
-    int weeks = 52,
-  }) async {
-    final startDate = _clock.now().subtract(Duration(days: weeks * 7 + 30));
-    return _db.getWeeklyPriceHistory(symbol, startDate: startDate);
   }
 }

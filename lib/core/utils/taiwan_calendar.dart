@@ -1,5 +1,4 @@
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/core/utils/taiwan_time.dart';
 
 /// 台灣股市交易日曆
 ///
@@ -183,23 +182,6 @@ class TaiwanCalendar {
     }
   }
 
-  /// 檢查日期是否為國定假日（不含週末）
-  static bool isHoliday(DateTime date) {
-    final normalized = DateTime.utc(date.year, date.month, date.day);
-    return _allHolidays.contains(normalized);
-  }
-
-  /// 取得下一個交易日
-  ///
-  /// 若給定日期為交易日則直接回傳，否則回傳下一個交易日。
-  static DateTime getNextTradingDay(DateTime date) {
-    var current = date;
-    while (!isTradingDay(current)) {
-      current = current.add(const Duration(days: 1));
-    }
-    return current;
-  }
-
   /// 取得前一個交易日
   ///
   /// 若給定日期為交易日則直接回傳，否則回傳前一個交易日。
@@ -246,38 +228,4 @@ class TaiwanCalendar {
     }
     return current;
   }
-
-  /// 計算兩日期間的交易日數量（含頭尾）
-  static int getTradingDaysBetween(DateTime start, DateTime end) {
-    if (start.isAfter(end)) {
-      final temp = start;
-      start = end;
-      end = temp;
-    }
-
-    var count = 0;
-    var current = start;
-    while (!current.isAfter(end)) {
-      if (isTradingDay(current)) {
-        count++;
-      }
-      current = current.add(const Duration(days: 1));
-    }
-    return count;
-  }
-
-  /// 檢查指定年度是否有日曆資料
-  static bool hasDataForYear(int year) {
-    return year >= 2024 && year <= _maxYear;
-  }
-
-  /// 檢查日曆資料是否已過期
-  ///
-  /// 若當前年份超出資料範圍則回傳 true
-  static bool isCalendarExpired() {
-    return TaiwanTime.now().year > _maxYear;
-  }
-
-  /// 取得日曆資料涵蓋的最大年份
-  static int get maxYear => _maxYear;
 }

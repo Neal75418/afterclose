@@ -62,16 +62,6 @@ class InsiderRepository {
     return _db.getLatestInsiderHoldingsBatch(symbols);
   }
 
-  /// 取得高質押比例的股票
-  ///
-  /// [threshold] - 質押比例門檻（預設 50%）
-  Future<List<InsiderHoldingEntry>> getHighPledgeRatioStocks({
-    double? threshold,
-  }) {
-    final ratio = threshold ?? FundamentalParams.highPledgeRatioThreshold;
-    return _db.getHighPledgeRatioStocks(threshold: ratio);
-  }
-
   /// 同步全市場董監持股資料（上市 + 上櫃）
   ///
   /// 使用 TWSE/TPEX OpenAPI 取得最新的董監持股資料。

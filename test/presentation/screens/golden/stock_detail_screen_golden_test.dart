@@ -82,9 +82,6 @@ class FakeSettingsNotifier extends SettingsNotifier {
   void setThemeMode(ThemeMode mode) {}
 
   @override
-  void toggleTheme() {}
-
-  @override
   void setLocale(AppLocale locale) {}
 
   @override

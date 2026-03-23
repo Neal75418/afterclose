@@ -61,31 +61,6 @@ class RuleAccuracyService {
     return computed.map((c) => c.result).toList();
   }
 
-  /// 每日收盤後執行：回溯驗證 N 個交易日前的推薦
-  ///
-  /// [daysAgo] 回溯多少個交易日前的推薦（預設 5 個交易日）
-  Future<ValidationResult> validatePastRecommendations({
-    int daysAgo = defaultHoldingDays,
-    bool updateStats = true,
-  }) async {
-    try {
-      final computed = await _computeValidation(daysAgo);
-
-      if (computed.inserts.isNotEmpty) {
-        await _db.batch((batch) => _applyBatchInserts(batch, computed.inserts));
-      }
-
-      if (updateStats) {
-        await _updateRuleAccuracyStats();
-      }
-
-      return computed.result;
-    } catch (e, stack) {
-      AppLogger.error(_tag, '驗證失敗', e, stack);
-      rethrow;
-    }
-  }
-
   /// 讀取 + 計算驗證資料，不寫入 DB
   Future<_ValidationComputed> _computeValidation(int daysAgo) async {
     final today = DateContext.normalize(_clock.now());

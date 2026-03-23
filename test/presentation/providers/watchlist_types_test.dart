@@ -210,14 +210,4 @@ void main() {
       expect(item.trend, WatchlistTrend.sideways);
     });
   });
-
-  group('WatchlistItemData.statusIcon', () {
-    test('delegates to status.icon', () {
-      const signalItem = WatchlistItemData(symbol: '2330', hasSignal: true);
-      expect(signalItem.statusIcon, '🔥');
-
-      const quietItem = WatchlistItemData(symbol: '2330');
-      expect(quietItem.statusIcon, '😴');
-    });
-  });
 }

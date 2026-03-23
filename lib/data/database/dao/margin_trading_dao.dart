@@ -24,26 +24,6 @@ mixin MarginTradingDaoMixin on $AppDatabase {
     return query.get();
   }
 
-  /// 取得股票的最新融資融券資料
-  Future<MarginTradingEntry?> getLatestMarginTrading(String symbol) {
-    return (select(marginTrading)
-          ..where((t) => t.symbol.equals(symbol))
-          ..orderBy([(t) => OrderingTerm.desc(t.date)])
-          ..limit(1))
-        .getSingleOrNull();
-  }
-
-  /// 取得指定日期的所有融資融券資料
-  Future<List<MarginTradingEntry>> getMarginTradingForDate(DateTime date) {
-    // 使用本地時間午夜以匹配資料庫儲存格式
-    final startOfDay = DateContext.normalize(date);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-    return (select(marginTrading)
-          ..where((t) => t.date.isBiggerOrEqualValue(startOfDay))
-          ..where((t) => t.date.isSmallerThanValue(endOfDay)))
-        .get();
-  }
-
   /// 取得指定日期的融資融券資料筆數（新鮮度檢查用）
   Future<int> getMarginTradingCountForDate(DateTime date) async {
     // 使用本地時間午夜以匹配資料庫儲存格式

@@ -224,39 +224,3 @@ class UpdateProgressBanner extends StatelessWidget {
         );
   }
 }
-
-/// 精簡版本，適用於 AppBar 或較小空間
-class UpdateProgressCompact extends StatelessWidget {
-  const UpdateProgressCompact({super.key, required this.progress});
-
-  final UpdateProgress progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            value: progress.progress,
-            strokeWidth: 2.5,
-            backgroundColor: theme.colorScheme.outline.withValues(alpha: 0.2),
-            valueColor: const AlwaysStoppedAnimation(AppTheme.primaryColor),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          '${progress.currentStep}/${progress.totalSteps}',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
-    );
-  }
-}

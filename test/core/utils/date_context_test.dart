@@ -233,30 +233,5 @@ void main() {
         expect(result.day, equals(15));
       });
     });
-
-    group('parseYmdOr', () {
-      test('parses valid string', () {
-        final defaultValue = DateTime(2000, 1, 1);
-        final result = DateContext.parseYmdOr('2024-03-15', defaultValue);
-
-        expect(result.year, equals(2024));
-        expect(result.month, equals(3));
-        expect(result.day, equals(15));
-      });
-
-      test('returns default for invalid string', () {
-        final defaultValue = DateTime(2000, 1, 1);
-        final result = DateContext.parseYmdOr('invalid', defaultValue);
-
-        expect(result, equals(defaultValue));
-      });
-
-      test('returns default for null', () {
-        final defaultValue = DateTime(2000, 1, 1);
-        final result = DateContext.parseYmdOr(null, defaultValue);
-
-        expect(result, equals(defaultValue));
-      });
-    });
   });
 }

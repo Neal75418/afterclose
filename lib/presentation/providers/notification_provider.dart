@@ -286,16 +286,6 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
     return '$baseBody$priceText';
   }
-
-  /// 取消指定通知
-  Future<void> cancelNotification(int id) async {
-    await _service.cancelNotification(id);
-  }
-
-  /// 取消所有通知
-  Future<void> cancelAllNotifications() async {
-    await _service.cancelAllNotifications();
-  }
 }
 
 /// 通知 Provider

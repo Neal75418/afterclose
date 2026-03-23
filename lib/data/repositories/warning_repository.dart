@@ -31,24 +31,6 @@ class WarningRepository {
   final TwseClient _twseClient;
   final AppClock _clock;
 
-  /// 取得股票的警示歷史
-  Future<List<TradingWarningEntry>> getWarningHistory(
-    String symbol, {
-    DateTime? startDate,
-    DateTime? endDate,
-  }) {
-    return _db.getWarningHistory(
-      symbol,
-      startDate: startDate,
-      endDate: endDate,
-    );
-  }
-
-  /// 取得股票目前生效的警示
-  Future<List<TradingWarningEntry>> getActiveWarnings(String symbol) {
-    return _db.getActiveWarnings(symbol);
-  }
-
   /// 取得所有目前生效的警示（全市場）
   Future<List<TradingWarningEntry>> getAllActiveWarnings() {
     return _db.getAllActiveWarnings();
@@ -62,16 +44,6 @@ class WarningRepository {
   /// 取得所有目前生效的處置股票
   Future<List<TradingWarningEntry>> getActiveDisposalStocks() {
     return _db.getActiveWarningsByType('DISPOSAL');
-  }
-
-  /// 檢查股票是否有目前生效的警示
-  Future<bool> hasActiveWarning(String symbol) {
-    return _db.hasActiveWarning(symbol);
-  }
-
-  /// 檢查股票是否為處置股
-  Future<bool> isDisposalStock(String symbol) {
-    return _db.isDisposalStock(symbol);
   }
 
   /// 批次檢查多檔股票是否為處置股

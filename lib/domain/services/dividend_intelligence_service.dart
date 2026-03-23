@@ -149,55 +149,6 @@ class DividendIntelligenceService {
       return DividendTrend.stable;
     }
   }
-
-  /// 找出即將除息的持股
-  ///
-  /// [positions] 持倉列表
-  /// [dividendHistories] symbol -> 股利歷史
-  /// [daysAhead] 往後查詢天數（預設 60 天）
-  List<UpcomingDividend> findUpcomingDividends({
-    required List<PortfolioPositionEntry> positions,
-    required Map<String, List<DividendHistoryEntry>> dividendHistories,
-    int daysAhead = 60,
-  }) {
-    final upcoming = <UpcomingDividend>[];
-    final now = _clock.now();
-    final cutoffDate = now.add(Duration(days: daysAhead));
-
-    for (final pos in positions) {
-      if (pos.quantity <= 0) continue;
-
-      final history = dividendHistories[pos.symbol] ?? [];
-      if (history.isEmpty) continue;
-
-      // 找最近的除息日（可能是今年或去年的資料）
-      for (final entry in history) {
-        if (entry.exDividendDate == null) continue;
-
-        try {
-          final exDate = DateTime.parse(entry.exDividendDate!);
-          if (exDate.isAfter(now) && exDate.isBefore(cutoffDate)) {
-            upcoming.add(
-              UpcomingDividend(
-                symbol: pos.symbol,
-                exDividendDate: exDate,
-                cashDividend: entry.cashDividend,
-                stockDividend: entry.stockDividend,
-                shares: pos.quantity,
-                estimatedAmount: entry.cashDividend * pos.quantity,
-              ),
-            );
-          }
-        } on FormatException {
-          // 忽略無效日期格式
-        }
-      }
-    }
-
-    // 按除息日排序
-    upcoming.sort((a, b) => a.exDividendDate.compareTo(b.exDividendDate));
-    return upcoming;
-  }
 }
 
 /// 股利分析結果
@@ -270,24 +221,3 @@ class StockDividendInfo {
 
 /// 股利趨勢
 enum DividendTrend { increasing, stable, decreasing }
-
-/// 即將到來的除息
-class UpcomingDividend {
-  const UpcomingDividend({
-    required this.symbol,
-    required this.exDividendDate,
-    required this.cashDividend,
-    required this.stockDividend,
-    required this.shares,
-    required this.estimatedAmount,
-  });
-
-  final String symbol;
-  final DateTime exDividendDate;
-  final double cashDividend;
-  final double stockDividend;
-  final double shares;
-
-  /// 預估股利金額
-  final double estimatedAmount;
-}

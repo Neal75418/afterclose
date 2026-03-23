@@ -13,7 +13,6 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 /// ```dart
 /// // 判斷設備類型
 /// if (context.isMobile) { ... }
-/// if (context.isTablet) { ... }
 /// if (context.isDesktop) { ... }
 ///
 /// // 根據設備類型返回不同值
@@ -22,19 +21,10 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 ///   tablet: 24.0,
 ///   desktop: 32.0,
 /// );
-///
-/// // 判斷佈局類型
-/// if (context.layoutType == LayoutType.dualPane) { ... }
 /// ```
 extension ResponsiveHelper on BuildContext {
   /// 螢幕寬度
   double get screenWidth => MediaQuery.sizeOf(this).width;
-
-  /// 螢幕高度
-  double get screenHeight => MediaQuery.sizeOf(this).height;
-
-  /// 螢幕方向
-  Orientation get orientation => MediaQuery.orientationOf(this);
 
   /// 設備類型
   DeviceType get deviceType {
@@ -47,30 +37,12 @@ extension ResponsiveHelper on BuildContext {
   /// 是否為手機
   bool get isMobile => deviceType == DeviceType.mobile;
 
-  /// 是否為平板
-  bool get isTablet => deviceType == DeviceType.tablet;
-
   /// 是否為桌面
   bool get isDesktop => deviceType == DeviceType.desktop;
-
-  /// 佈局類型
-  LayoutType get layoutType {
-    final width = screenWidth;
-    if (width >= Breakpoints.triplePaneMinWidth) return LayoutType.triplePane;
-    if (width >= Breakpoints.dualPaneMinWidth) return LayoutType.dualPane;
-    return LayoutType.singlePane;
-  }
 
   /// 是否應顯示 NavigationRail（側邊導航）
   bool get shouldShowNavigationRail =>
       screenWidth >= Breakpoints.navigationRailBreakpoint;
-
-  /// 是否應顯示雙欄佈局
-  bool get shouldShowDualPane => screenWidth >= Breakpoints.dualPaneMinWidth;
-
-  /// 是否應顯示三欄佈局
-  bool get shouldShowTriplePane =>
-      screenWidth >= Breakpoints.triplePaneMinWidth;
 
   /// 根據設備類型返回對應值
   ///

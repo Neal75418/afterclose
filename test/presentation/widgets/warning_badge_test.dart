@@ -86,24 +86,5 @@ void main() {
 
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
-
-    testWidgets('WarningBadgeOverlay positions correctly', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const Stack(
-            children: [
-              SizedBox(width: 200, height: 200),
-              WarningBadgeOverlay(
-                type: WarningBadgeType.disposal,
-                animate: false,
-              ),
-            ],
-          ),
-        ),
-      );
-
-      expect(find.byType(Positioned), findsOneWidget);
-      expect(find.byType(WarningBadge), findsOneWidget);
-    });
   });
 }

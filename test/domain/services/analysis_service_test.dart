@@ -226,48 +226,6 @@ void main() {
   });
 
   group('AnalysisService', () {
-    group('isCandidate', () {
-      test('should return true for price spike', () {
-        final prices = generatePricesWithPriceSpike(
-          days: 25,
-          basePrice: 100.0,
-          changePercent: 6.0,
-        );
-
-        final result = analysisService.isCandidate(prices);
-
-        expect(result, isTrue);
-      });
-
-      test('should return true for volume spike', () {
-        final prices = generatePricesWithVolumeSpike(
-          days: 25,
-          normalVolume: 1000,
-          spikeVolume: 2500,
-        );
-
-        final result = analysisService.isCandidate(prices);
-
-        expect(result, isTrue);
-      });
-
-      test('should return false for normal conditions', () {
-        final prices = generateFlatPrices(days: 25, basePrice: 100.0);
-
-        final result = analysisService.isCandidate(prices);
-
-        expect(result, isFalse);
-      });
-
-      test('should return false when not enough data', () {
-        final prices = generateFlatPrices(days: 5, basePrice: 100.0);
-
-        final result = analysisService.isCandidate(prices);
-
-        expect(result, isFalse);
-      });
-    });
-
     group('analyzeStock', () {
       test('should return complete analysis result', () {
         final prices = generateSwingPrices(days: 30);

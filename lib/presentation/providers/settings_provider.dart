@@ -35,13 +35,6 @@ enum AppLocale {
 
   Locale toLocale() => Locale(languageCode, countryCode);
 
-  static AppLocale fromLocale(Locale locale) {
-    return AppLocale.values.firstWhere(
-      (l) => l.languageCode == locale.languageCode,
-      orElse: () => AppLocale.zhTW,
-    );
-  }
-
   static AppLocale fromString(String? value) {
     if (value == null) return AppLocale.zhTW;
     return AppLocale.values.firstWhere(
@@ -246,16 +239,6 @@ class SettingsNotifier extends Notifier<SettingsState> {
     AppLogger.debug('SettingsNotifier', '主題已變更: $mode');
   }
 
-  /// 切換深色/淺色主題
-  void toggleTheme() {
-    final newMode = switch (state.themeMode) {
-      ThemeMode.light => ThemeMode.dark,
-      ThemeMode.dark => ThemeMode.light,
-      ThemeMode.system => ThemeMode.dark,
-    };
-    setThemeMode(newMode);
-  }
-
   /// 設定語系
   void setLocale(AppLocale locale) {
     state = state.copyWith(locale: locale);
@@ -427,11 +410,6 @@ class ApiTokenNotifier extends Notifier<ApiTokenState> {
     } catch (e) {
       state = state.copyWith(isLoading: false, testError: e.toString());
     }
-  }
-
-  /// 清除測試結果
-  void clearTestResults() {
-    state = state.copyWith(clearTestResult: true, clearTestError: true);
   }
 }
 

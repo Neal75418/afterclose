@@ -213,45 +213,6 @@ void main() {
       });
     });
 
-    group('calculatePriceChangeFromPrices', () {
-      test('should calculate price change from two prices', () {
-        final result = PriceCalculator.calculatePriceChangeFromPrices(
-          105.0,
-          100.0,
-        );
-
-        expect(result, isNotNull);
-        expect(result, closeTo(5.0, 0.01));
-      });
-
-      test('should return null when current price is null', () {
-        final result = PriceCalculator.calculatePriceChangeFromPrices(
-          null,
-          100.0,
-        );
-
-        expect(result, isNull);
-      });
-
-      test('should return null when previous price is null', () {
-        final result = PriceCalculator.calculatePriceChangeFromPrices(
-          105.0,
-          null,
-        );
-
-        expect(result, isNull);
-      });
-
-      test('should return null when previous price is zero', () {
-        final result = PriceCalculator.calculatePriceChangeFromPrices(
-          105.0,
-          0.0,
-        );
-
-        expect(result, isNull);
-      });
-    });
-
     group('calculatePriceChangesBatch', () {
       test('should calculate price changes for multiple symbols', () {
         final priceHistories = <String, List<DailyPriceEntry>>{

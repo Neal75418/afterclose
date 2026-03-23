@@ -19,14 +19,6 @@ mixin InsiderTransferDaoMixin on $AppDatabase {
         .get();
   }
 
-  /// 取得指定日期之後的轉讓申報記錄（全市場）
-  Future<List<InsiderTransferEntry>> getTransfersSince(DateTime since) {
-    return (select(insiderTransfer)
-          ..where((t) => t.reportDate.isBiggerOrEqualValue(since))
-          ..orderBy([(t) => OrderingTerm.desc(t.reportDate)]))
-        .get();
-  }
-
   /// 批次新增內部人轉讓記錄
   Future<void> insertInsiderTransfers(
     List<InsiderTransferCompanion> entries,

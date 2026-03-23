@@ -51,12 +51,6 @@ class TradingRepository implements ITradingRepository {
     return _db.getDayTradingHistory(symbol, startDate: startDate);
   }
 
-  /// 取得最新當沖資料
-  @override
-  Future<DayTradingEntry?> getLatestDayTrading(String symbol) {
-    return _db.getLatestDayTrading(symbol);
-  }
-
   /// 從 TWSE 同步全市場當沖資料（免費 API）
   ///
   /// 使用 TWSE 官方 API，無需 Token。
@@ -344,12 +338,6 @@ class TradingRepository implements ITradingRepository {
       Duration(days: days + DataFreshness.marginTradingBufferDays),
     );
     return _db.getMarginTradingHistory(symbol, startDate: startDate);
-  }
-
-  /// 取得最新融資融券資料
-  @override
-  Future<MarginTradingEntry?> getLatestMarginTrading(String symbol) {
-    return _db.getLatestMarginTrading(symbol);
   }
 
   /// 從 TWSE/TPEX 同步全市場融資融券資料（免費 API）

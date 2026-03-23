@@ -119,26 +119,6 @@ class AnalysisCoordinatorService {
     );
   }
 
-  /// 檢查候選條件（分析前的預篩選）
-  ///
-  /// 委託給 [SupportResistanceService] 取得價格區間，
-  /// 再交由 [ReversalDetectionService] 判斷是否為候選
-  bool isCandidate(List<DailyPriceEntry> prices) {
-    final (rangeLow, rangeHigh) = srService.findRange(prices);
-    return reversalService.isCandidate(
-      prices,
-      rangeHigh: rangeHigh,
-      rangeLow: rangeLow,
-    );
-  }
-
-  /// 分析價量關係
-  ///
-  /// 委託給 PriceVolumeAnalysisService
-  PriceVolumeAnalysis analyzePriceVolume(List<DailyPriceEntry> prices) {
-    return pvService.analyzePriceVolume(prices);
-  }
-
   /// 從價格歷史計算技術指標
   ///
   /// 回傳最近一日的 RSI、KD、MA 值，

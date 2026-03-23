@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
@@ -115,21 +114,17 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
       // 從最近價格提取最新與前一日（recentPrices 依日期降序排列）
       final latestPrice = recentPrices.isNotEmpty ? recentPrices.first : null;
-      final previousPrice = recentPrices.length >= 2 ? recentPrices[1] : null;
 
       AppLogger.debug(
         'StockDetailNotifier',
         'recentPrices count=${recentPrices.length}, '
-            'latest=${latestPrice?.close} (${latestPrice?.date}), '
-            'prev=${previousPrice?.close} (${previousPrice?.date})',
+            'latest=${latestPrice?.close} (${latestPrice?.date})',
       );
 
       // DB 無法人資料時從 API 取得
-      var hasInstitutionalError = false;
       if (instHistory.isEmpty) {
         final apiResult = await _chipLoader.fetchInstitutionalFromApi(_symbol);
         instHistory = apiResult.data;
-        hasInstitutionalError = apiResult.hasError;
       }
 
       // 同步資料日期 — 找到共同最新日期
@@ -143,10 +138,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
       // 使用同步後的價格確保與 dataDate 一致
       final displayPrice = syncResult.latestPrice ?? latestPrice;
-      final displayPreviousPrice = findPreviousPrice(
-        priceHistory,
-        displayPrice,
-      );
 
       if (hasDataMismatch) {
         AppLogger.debug(
@@ -175,7 +166,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       state = state.copyWith(
         stock: stock,
         latestPrice: displayPrice,
-        previousPrice: displayPreviousPrice,
         priceHistory: priceHistory,
         analysis: analysis,
         reasons: reasons,
@@ -183,7 +173,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         aiSummary: summary,
         isInWatchlist: isInWatchlist,
         isLoading: false,
-        hasInstitutionalError: hasInstitutionalError,
         dataDate: dataDate,
         hasDataMismatch: hasDataMismatch,
       );
@@ -341,22 +330,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         chipError: ErrorDisplay.message(e),
       );
     }
-  }
-
-  /// 從升序價格歷史中找到 [targetPrice] 的前一筆
-  @visibleForTesting
-  static DailyPriceEntry? findPreviousPrice(
-    List<DailyPriceEntry> history,
-    DailyPriceEntry? targetPrice,
-  ) {
-    if (targetPrice == null || history.length < 2) return null;
-    final targetDate = DateContext.normalize(targetPrice.date);
-    for (var i = history.length - 1; i >= 1; i--) {
-      if (DateContext.normalize(history[i].date) == targetDate) {
-        return history[i - 1];
-      }
-    }
-    return null;
   }
 
   /// 重新生成 AI 智慧分析摘要（含營收/估值資料）

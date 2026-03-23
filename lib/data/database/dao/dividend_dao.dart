@@ -24,17 +24,6 @@ mixin DividendDaoMixin on $AppDatabase {
     });
   }
 
-  /// 取得股票最新的股利年度（新鮮度檢查用）
-  Future<int?> getLatestDividendYear(String symbol) async {
-    final result =
-        await (select(dividendHistory)
-              ..where((t) => t.symbol.equals(symbol))
-              ..orderBy([(t) => OrderingTerm.desc(t.year)])
-              ..limit(1))
-            .getSingleOrNull();
-    return result?.year;
-  }
-
   /// 批次取得多檔股票的股利歷史
   Future<Map<String, List<DividendHistoryEntry>>> getDividendHistoryBatch(
     List<String> symbols,

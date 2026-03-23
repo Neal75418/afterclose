@@ -10,51 +10,50 @@ import 'package:afterclose/presentation/providers/providers.dart';
 /// Alert type enum
 enum AlertType {
   // 價格類警示
-  above('ABOVE', AlertCategory.price),
-  below('BELOW', AlertCategory.price),
-  changePct('CHANGE_PCT', AlertCategory.price),
+  above('ABOVE'),
+  below('BELOW'),
+  changePct('CHANGE_PCT'),
 
   // 成交量警示
-  volumeSpike('VOLUME_SPIKE', AlertCategory.volume),
-  volumeAbove('VOLUME_ABOVE', AlertCategory.volume),
+  volumeSpike('VOLUME_SPIKE'),
+  volumeAbove('VOLUME_ABOVE'),
 
   // RSI 警示
-  rsiOverbought('RSI_OVERBOUGHT', AlertCategory.indicator),
-  rsiOversold('RSI_OVERSOLD', AlertCategory.indicator),
+  rsiOverbought('RSI_OVERBOUGHT'),
+  rsiOversold('RSI_OVERSOLD'),
 
   // KD 警示
-  kdGoldenCross('KD_GOLDEN_CROSS', AlertCategory.indicator),
-  kdDeathCross('KD_DEATH_CROSS', AlertCategory.indicator),
+  kdGoldenCross('KD_GOLDEN_CROSS'),
+  kdDeathCross('KD_DEATH_CROSS'),
 
   // 支撐/壓力警示
-  breakResistance('BREAK_RESISTANCE', AlertCategory.level),
-  breakSupport('BREAK_SUPPORT', AlertCategory.level),
+  breakResistance('BREAK_RESISTANCE'),
+  breakSupport('BREAK_SUPPORT'),
 
   // 52-week alerts
-  week52High('WEEK_52_HIGH', AlertCategory.week52),
-  week52Low('WEEK_52_LOW', AlertCategory.week52),
+  week52High('WEEK_52_HIGH'),
+  week52Low('WEEK_52_LOW'),
 
   // 均線警示
-  crossAboveMa('CROSS_ABOVE_MA', AlertCategory.ma),
-  crossBelowMa('CROSS_BELOW_MA', AlertCategory.ma),
+  crossAboveMa('CROSS_ABOVE_MA'),
+  crossBelowMa('CROSS_BELOW_MA'),
 
   // 基本面警示
-  revenueYoySurge('REVENUE_YOY_SURGE', AlertCategory.fundamental),
-  highDividendYield('HIGH_DIVIDEND_YIELD', AlertCategory.fundamental),
-  peUndervalued('PE_UNDERVALUED', AlertCategory.fundamental),
+  revenueYoySurge('REVENUE_YOY_SURGE'),
+  highDividendYield('HIGH_DIVIDEND_YIELD'),
+  peUndervalued('PE_UNDERVALUED'),
 
   // 交易警示
-  tradingWarning('TRADING_WARNING', AlertCategory.warning),
-  tradingDisposal('TRADING_DISPOSAL', AlertCategory.warning),
+  tradingWarning('TRADING_WARNING'),
+  tradingDisposal('TRADING_DISPOSAL'),
 
   // 內部人警示
-  insiderSelling('INSIDER_SELLING', AlertCategory.insider),
-  insiderBuying('INSIDER_BUYING', AlertCategory.insider),
-  highPledgeRatio('HIGH_PLEDGE_RATIO', AlertCategory.insider);
+  insiderSelling('INSIDER_SELLING'),
+  insiderBuying('INSIDER_BUYING'),
+  highPledgeRatio('HIGH_PLEDGE_RATIO');
 
-  const AlertType(this.value, this.category);
+  const AlertType(this.value);
   final String value;
-  final AlertCategory category;
 
   /// 翻譯後的顯示標籤（i18n）
   String get label => 'alert.alertType.$name'.tr();
@@ -167,26 +166,6 @@ enum AlertType {
     }
     return null;
   }
-}
-
-/// Alert category for grouping in UI
-enum AlertCategory {
-  price,
-  volume,
-  indicator,
-  level,
-  week52,
-  ma,
-  fundamental,
-  warning,
-  insider;
-
-  /// 取得翻譯後的分類名稱
-  String get label => 'alert.category.$name'.tr();
-
-  /// Get all alert types in this category
-  List<AlertType> get alertTypes =>
-      AlertType.values.where((a) => a.category == this).toList();
 }
 
 /// 取得 AlertType 的 i18n 描述（用於 UI 顯示）
@@ -302,17 +281,6 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
   /// Clear error state
   void clearError() => state = state.copyWith(error: null);
-
-  /// Load alerts for a specific symbol
-  Future<void> loadAlertsForSymbol(String symbol) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final alerts = await _db.getAlertsForSymbol(symbol);
-      state = state.copyWith(alerts: alerts, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
-    }
-  }
 
   /// Create a new price alert
   Future<bool> createAlert({
@@ -502,10 +470,3 @@ final priceAlertProvider =
     NotifierProvider<PriceAlertNotifier, PriceAlertState>(
       PriceAlertNotifier.new,
     );
-
-/// Get alerts for a specific symbol
-final alertsForSymbolProvider =
-    FutureProvider.family<List<PriceAlertEntry>, String>((ref, symbol) async {
-      final db = ref.watch(databaseProvider);
-      return db.getAlertsForSymbol(symbol);
-    });

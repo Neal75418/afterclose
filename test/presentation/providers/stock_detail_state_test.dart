@@ -16,7 +16,6 @@ void main() {
       const state = StockPriceState();
       expect(state.stock, isNull);
       expect(state.latestPrice, isNull);
-      expect(state.previousPrice, isNull);
       expect(state.priceHistory, isEmpty);
       expect(state.analysis, isNull);
     });
@@ -71,18 +70,6 @@ void main() {
       );
       final updated = state.copyWith(latestPrice: price);
       expect(updated.latestPrice?.close, 600.0);
-    });
-
-    test('copyWith updates previousPrice', () {
-      const state = StockPriceState();
-      final price = DailyPriceEntry(
-        symbol: '2330',
-        date: defaultDate,
-        close: 580.0,
-        volume: 40000,
-      );
-      final updated = state.copyWith(previousPrice: price);
-      expect(updated.previousPrice?.close, 580.0);
     });
 
     test('copyWith updates priceHistory', () {
@@ -190,13 +177,6 @@ void main() {
       expect(state.holdingDistribution, isEmpty);
       expect(state.insiderHistory, isEmpty);
       expect(state.chipStrength, isNull);
-      expect(state.hasInstitutionalError, isFalse);
-    });
-
-    test('copyWith updates hasInstitutionalError', () {
-      const state = ChipAnalysisState();
-      final updated = state.copyWith(hasInstitutionalError: true);
-      expect(updated.hasInstitutionalError, isTrue);
     });
 
     test('copyWith updates insiderHistory', () {
@@ -206,12 +186,10 @@ void main() {
     });
 
     test('copyWith preserves unmodified fields', () {
-      final state = const ChipAnalysisState().copyWith(
-        hasInstitutionalError: true,
-      );
-      final updated = state.copyWith(insiderHistory: []);
-      expect(updated.hasInstitutionalError, isTrue);
+      final state = const ChipAnalysisState().copyWith(insiderHistory: []);
+      final updated = state.copyWith(marginHistory: []);
       expect(updated.insiderHistory, isEmpty);
+      expect(updated.marginHistory, isEmpty);
     });
   });
 
@@ -371,32 +349,6 @@ void main() {
       expect(state.trendLabel, isNotEmpty);
     });
 
-    test('reversalLabel returns null for empty reversalState', () {
-      final analysis = DailyAnalysisEntry(
-        symbol: '2330',
-        date: defaultDate,
-        score: 80.0,
-        trendState: 'UP',
-        reversalState: '',
-        computedAt: defaultDate,
-      );
-      final state = const StockDetailState().copyWith(analysis: analysis);
-      expect(state.reversalLabel, isNull);
-    });
-
-    test('reversalLabel returns label for W2S', () {
-      final analysis = DailyAnalysisEntry(
-        symbol: '2330',
-        date: defaultDate,
-        score: 80.0,
-        trendState: 'UP',
-        reversalState: 'W2S',
-        computedAt: defaultDate,
-      );
-      final state = const StockDetailState().copyWith(analysis: analysis);
-      expect(state.reversalLabel, isNotNull);
-    });
-
     // copyWith — price sub-state
     test('copyWith updates stock through price sub-state', () {
       final stock = StockMasterEntry(
@@ -427,14 +379,6 @@ void main() {
         latestQuarterMetrics: {'ROE': 25.0},
       );
       expect(state.fundamentals.latestQuarterMetrics['ROE'], 25.0);
-    });
-
-    // copyWith — chip sub-state
-    test('copyWith updates hasInstitutionalError', () {
-      final state = const StockDetailState().copyWith(
-        hasInstitutionalError: true,
-      );
-      expect(state.chip.hasInstitutionalError, isTrue);
     });
 
     // copyWith — loading sub-state
@@ -554,9 +498,7 @@ void main() {
     );
 
     test('copyWith skips chip rebuild when no chip fields changed', () {
-      final state = const StockDetailState().copyWith(
-        hasInstitutionalError: true,
-      );
+      final state = const StockDetailState().copyWith(institutionalHistory: []);
       final updated = state.copyWith(isInWatchlist: true);
       expect(identical(state.chip, updated.chip), isTrue);
     });
@@ -579,14 +521,14 @@ void main() {
       final state = const StockDetailState().copyWith(
         stock: stock,
         latestQuarterMetrics: {'ROE': 25.0},
-        hasInstitutionalError: true,
+        institutionalHistory: [],
         isLoading: true,
         isInWatchlist: true,
         error: 'test',
       );
       expect(state.price.stock?.symbol, '2330');
       expect(state.fundamentals.latestQuarterMetrics['ROE'], 25.0);
-      expect(state.chip.hasInstitutionalError, isTrue);
+      expect(state.chip.institutionalHistory, isEmpty);
       expect(state.loading.isLoading, isTrue);
       expect(state.isInWatchlist, isTrue);
       expect(state.error, 'test');

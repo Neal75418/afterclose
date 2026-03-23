@@ -18,13 +18,6 @@ class RuleEngine {
 
   final List<StockRule> _rules = [];
 
-  /// 動態註冊新規則
-  void registerRule(StockRule rule) => _rules.add(rule);
-
-  /// 根據規則 ID 動態移除規則
-  void unregisterRule(String ruleId) =>
-      _rules.removeWhere((r) => r.id == ruleId);
-
   /// 對股票執行所有規則並回傳觸發的原因
   List<TriggeredReason> evaluateStock({
     required List<DailyPriceEntry> priceHistory,

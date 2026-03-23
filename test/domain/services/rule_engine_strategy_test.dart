@@ -68,46 +68,6 @@ void main() {
       // 驗證突破規則有觸發
       expect(reasons.any((r) => r.type == ReasonType.techBreakout), isTrue);
     });
-
-    test('registerRule and unregisterRule should work', () {
-      final engine = RuleEngine(customRules: []);
-      expect(
-        engine.evaluateStock(
-          priceHistory: generateConstantPrices(days: 30, basePrice: 100.0),
-          context: const AnalysisContext(trendState: TrendState.up),
-        ),
-        isEmpty,
-      );
-
-      engine.registerRule(const BreakoutRule());
-
-      // 產生滿足突破條件的價格資料
-      final prices = generatePricesWithBreakout(
-        days: 30,
-        basePrice: 100.0,
-        breakoutPrice: 110.0,
-        normalVolume: 1000,
-        breakoutVolume: 3000,
-      );
-      final reasons = engine.evaluateStock(
-        priceHistory: prices,
-        context: const AnalysisContext(
-          trendState: TrendState.up,
-          resistanceLevel: 100.0,
-        ),
-      );
-      expect(reasons, isNotEmpty);
-
-      engine.unregisterRule('tech_breakout');
-      final afterUnregister = engine.evaluateStock(
-        priceHistory: prices,
-        context: const AnalysisContext(
-          trendState: TrendState.up,
-          resistanceLevel: 100.0,
-        ),
-      );
-      expect(afterUnregister, isEmpty);
-    });
   });
 
   group('calculateScore', () {

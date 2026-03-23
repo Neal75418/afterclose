@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -145,8 +144,3 @@ class NewsNotifier extends Notifier<NewsState> {
 final newsProvider = NotifierProvider<NewsNotifier, NewsState>(
   NewsNotifier.new,
 );
-
-/// RSS 來源清單 Provider（供顯示用）
-final newsSourcesProvider = Provider<List<String>>((ref) {
-  return RssFeedSource.defaultSources.map((s) => s.name).toList();
-});

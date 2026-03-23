@@ -169,10 +169,6 @@ class BacktestNotifier extends Notifier<BacktestState> {
       }
     }
   }
-
-  void clearResults() {
-    state = state.copyWith(clearResult: true, clearError: true, progress: 0.0);
-  }
 }
 
 // ==================================================
