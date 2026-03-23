@@ -239,6 +239,17 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     try {
       final result = await _fundamentalsLoader.loadAll(_symbol);
 
+      // 檢查是否所有資料源都有拿到資料
+      // loadAll() 內部 catch 不會 rethrow，會回傳空資料
+      // 若有缺漏項目則標記 fundamentalsError 讓下次允許重試
+      final missingParts = <String>[
+        if (result.revenueData.isEmpty) '營收',
+        if (result.epsData.isEmpty) '每股盈餘',
+      ];
+      final partialError = missingParts.isNotEmpty
+          ? '部分基本面資料暫無法取得（${missingParts.join("、")}）'
+          : null;
+
       state = state.copyWith(
         revenueHistory: result.revenueData,
         dividendHistory: result.dividendData,
@@ -246,6 +257,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         epsHistory: result.epsData,
         latestQuarterMetrics: result.quarterMetrics,
         isLoadingFundamentals: false,
+        fundamentalsError: partialError,
       );
 
       // 基本面載入後重新生成 AI 摘要（含營收/估值資料）
