@@ -405,6 +405,12 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     }
   }
 
+  /// 已實作的警示類型字串集合（與 evaluator switch 一致，用於偵測需停用的類型）
+  static final _knownAlertTypes = AlertType.values
+      .where((e) => e.isImplemented)
+      .map((e) => e.value)
+      .toSet();
+
   /// Check alerts against current prices
   Future<List<PriceAlertEntry>> checkAndTriggerAlerts(
     Map<String, double> currentPrices,
@@ -425,26 +431,37 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
         triggeredIds.add(alert.id);
       }
 
-      // 增量更新：更新 state 中已觸發的警示
-      if (triggeredIds.isNotEmpty) {
-        state = state.copyWith(
-          alerts: state.alerts.map((a) {
-            if (triggeredIds.contains(a.id)) {
-              return PriceAlertEntry(
-                id: a.id,
-                symbol: a.symbol,
-                alertType: a.alertType,
-                targetValue: a.targetValue,
-                isActive: false,
-                triggeredAt: now,
-                note: a.note,
-                createdAt: a.createdAt,
-              );
-            }
-            return a;
-          }).toList(),
-        );
-      }
+      // 增量更新：同步 triggered 與 DAO 自動停用的舊版 alert 至 state
+      state = state.copyWith(
+        alerts: state.alerts.map((a) {
+          if (triggeredIds.contains(a.id)) {
+            return PriceAlertEntry(
+              id: a.id,
+              symbol: a.symbol,
+              alertType: a.alertType,
+              targetValue: a.targetValue,
+              isActive: false,
+              triggeredAt: now,
+              note: a.note,
+              createdAt: a.createdAt,
+            );
+          }
+          // DAO checkAlerts 已自動停用未實作類型，同步至 state
+          if (a.isActive && !_knownAlertTypes.contains(a.alertType)) {
+            return PriceAlertEntry(
+              id: a.id,
+              symbol: a.symbol,
+              alertType: a.alertType,
+              targetValue: a.targetValue,
+              isActive: false,
+              triggeredAt: a.triggeredAt,
+              note: a.note,
+              createdAt: a.createdAt,
+            );
+          }
+          return a;
+        }).toList(),
+      );
 
       return triggered;
     } catch (e) {

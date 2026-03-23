@@ -425,23 +425,22 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
   /// 新增股票至自選股
   Future<bool> addStock(String symbol) async {
-    // in-flight guard：防止快速連點重複執行
+    // in-flight guard：防止快速連點重複執行（必須在任何 await 之前）
     if (_pendingAdds.contains(symbol)) return true;
-
-    // 檢查股票是否存在
-    final stock = await _db.getStock(symbol);
-    if (stock == null) {
-      return false;
-    }
-
-    // 檢查是否已在自選股中
-    final existingSymbols = state.items.map((i) => i.symbol).toSet();
-    if (existingSymbols.contains(symbol)) {
-      return true;
-    }
-
     _pendingAdds.add(symbol);
+
     try {
+      // 檢查股票是否存在
+      final stock = await _db.getStock(symbol);
+      if (stock == null) {
+        return false;
+      }
+
+      // 檢查是否已在自選股中
+      final existingSymbols = state.items.map((i) => i.symbol).toSet();
+      if (existingSymbols.contains(symbol)) {
+        return true;
+      }
       // 寫入資料庫
       await _db.addToWatchlist(symbol);
 

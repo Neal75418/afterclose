@@ -154,4 +154,59 @@ void main() {
       },
     );
   });
+
+  group('Unimplemented Alert Auto-Disable', () {
+    setUp(() async {
+      await db.upsertStocks([
+        StockMasterCompanion.insert(
+          symbol: '2330',
+          name: '台積電',
+          market: 'TWSE',
+        ),
+      ]);
+    });
+
+    test(
+      'unimplemented alert type is auto-disabled after checkAlerts',
+      () async {
+        // 插入一個未實作的舊版警示類型
+        final alertId = await db.createPriceAlert(
+          symbol: '2330',
+          alertType: 'LEGACY_UNKNOWN_TYPE',
+          targetValue: 0.0,
+        );
+
+        // 確認初始狀態為啟用
+        final before = await db.getAlertById(alertId);
+        expect(before!.isActive, isTrue);
+
+        // checkAlerts 應自動停用未實作類型
+        final triggered = await db.checkAlerts({'2330': 500.0}, {'2330': 0.0});
+        expect(triggered, isEmpty);
+
+        // 驗證已被停用
+        final after = await db.getAlertById(alertId);
+        expect(after!.isActive, isFalse);
+      },
+    );
+
+    test(
+      'unimplemented alert is not evaluated again after being disabled',
+      () async {
+        final alertId = await db.createPriceAlert(
+          symbol: '2330',
+          alertType: 'LEGACY_UNKNOWN_TYPE',
+          targetValue: 0.0,
+        );
+
+        // 第一次 checkAlerts → 停用
+        await db.checkAlerts({'2330': 500.0}, {'2330': 0.0});
+        expect((await db.getAlertById(alertId))!.isActive, isFalse);
+
+        // 第二次 checkAlerts → 不應再出現在 activeAlerts 中
+        final activeAlerts = await db.getActiveAlerts();
+        expect(activeAlerts.map((a) => a.id), isNot(contains(alertId)));
+      },
+    );
+  });
 }

@@ -353,6 +353,9 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   }
 
   /// 載入近期事件
+  ///
+  /// 失敗時寫入 [state.error]，讓呼叫端（如 syncDividendEvents）
+  /// 可據此向 UI 顯示警告。
   Future<void> _loadUpcomingEvents() async {
     try {
       final now = _clock.now();
@@ -363,8 +366,11 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       final events = await _repo.getEventsInRange(today, end);
       state = state.copyWith(upcomingEvents: events);
     } catch (e) {
-      // 不影響主流程，但記錄以便 debug
       AppLogger.warning('EventCalendarNotifier', '載入近期事件失敗', e);
+      // 僅在尚無錯誤時寫入，避免覆蓋 loadMonthEvents 等更重要的錯誤
+      if (state.error == null) {
+        state = state.copyWith(error: ErrorDisplay.message(e));
+      }
     }
   }
 
