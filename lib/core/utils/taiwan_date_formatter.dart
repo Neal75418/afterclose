@@ -13,11 +13,6 @@ class TaiwanDateFormatter {
   /// 例：2024 → 113
   static int toROCYear(int year) => year - _rocOffset;
 
-  /// 將西元年轉為民國年字串，附加「年」後綴
-  ///
-  /// 例：2024 → "113 年"
-  static String formatYear(int year) => '${toROCYear(year)} 年';
-
   /// 格式化年/月（用於營收表格）
   ///
   /// 例：(2024, 1) → "113/01"

@@ -16,12 +16,6 @@ class TradingWarningAttentionRule extends StockRule {
   String get id => 'trading_warning_attention';
 
   @override
-  String get name => '注意股票';
-
-  @override
-  RuleCategory get category => RuleCategory.risk;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final warningData = context.marketData?.warningData;
     if (warningData == null) return null;
@@ -51,12 +45,6 @@ class TradingWarningDisposalRule extends StockRule {
 
   @override
   String get id => 'trading_warning_disposal';
-
-  @override
-  String get name => '處置股票';
-
-  @override
-  RuleCategory get category => RuleCategory.risk;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

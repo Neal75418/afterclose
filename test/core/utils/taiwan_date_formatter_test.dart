@@ -10,10 +10,6 @@ void main() {
       expect(TaiwanDateFormatter.toROCYear(1912), 1);
     });
 
-    test('formatYear adds 年 suffix', () {
-      expect(TaiwanDateFormatter.formatYear(2024), '113 年');
-    });
-
     test('formatYearMonth pads month', () {
       expect(TaiwanDateFormatter.formatYearMonth(2024, 1), '113/01');
       expect(TaiwanDateFormatter.formatYearMonth(2024, 12), '113/12');

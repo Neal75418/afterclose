@@ -17,12 +17,6 @@ class WeakToStrongRule extends StockRule {
   String get id => 'reversal_w2s';
 
   @override
-  String get name => '弱轉強';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (context.reversalState == ReversalState.weakToStrong) {
       return TriggeredReason(
@@ -44,12 +38,6 @@ class StrongToWeakRule extends StockRule {
 
   @override
   String get id => 'reversal_s2w';
-
-  @override
-  String get name => '強轉弱';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -79,12 +67,6 @@ class BreakoutRule extends StockRule {
 
   @override
   String get id => 'tech_breakout';
-
-  @override
-  String get name => '向上突破';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -129,12 +111,6 @@ class BreakdownRule extends StockRule {
 
   @override
   String get id => 'tech_breakdown';
-
-  @override
-  String get name => '向下跌破';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

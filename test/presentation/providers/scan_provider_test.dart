@@ -178,7 +178,6 @@ void main() {
     test('has correct default values', () {
       const state = ScanState();
 
-      expect(state.allStocks, isEmpty);
       expect(state.stocks, isEmpty);
       expect(state.filter, ScanFilter.all);
       expect(state.sort, ScanSort.scoreDesc);

@@ -61,12 +61,6 @@ class DojiRule extends StockRule {
   String get id => 'pattern_doji';
 
   @override
-  String get name => '十字線';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return null;
     final today = data.prices.last;
@@ -125,12 +119,6 @@ class BullishEngulfingRule extends StockRule {
   String get id => 'pattern_bullish_engulfing';
 
   @override
-  String get name => '多頭吞噬';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 2) return null;
 
@@ -171,12 +159,6 @@ class BearishEngulfingRule extends StockRule {
 
   @override
   String get id => 'pattern_bearish_engulfing';
-
-  @override
-  String get name => '空頭吞噬';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -221,12 +203,6 @@ class HammerRule extends StockRule {
   String get id => 'pattern_hammer';
 
   @override
-  String get name => '錘子線';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return null;
     // 必須處於下跌趨勢
@@ -256,12 +232,6 @@ class HangingManRule extends StockRule {
 
   @override
   String get id => 'pattern_hanging_man';
-
-  @override
-  String get name => '吊人線';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -294,12 +264,6 @@ class GapUpRule extends StockRule {
 
   @override
   String get id => 'pattern_gap_up';
-
-  @override
-  String get name => '跳空上漲';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -340,12 +304,6 @@ class GapDownRule extends StockRule {
 
   @override
   String get id => 'pattern_gap_down';
-
-  @override
-  String get name => '跳空下跌';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -438,12 +396,6 @@ class MorningStarRule extends StockRule {
   String get id => 'pattern_morning_star';
 
   @override
-  String get name => '晨星';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 3) return null;
     if (context.trendState == TrendState.up) return null;
@@ -476,12 +428,6 @@ class EveningStarRule extends StockRule {
   String get id => 'pattern_evening_star';
 
   @override
-  String get name => '暮星';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < 3) return null;
     if (context.trendState == TrendState.down) return null;
@@ -512,12 +458,6 @@ class ThreeWhiteSoldiersRule extends StockRule {
 
   @override
   String get id => 'pattern_three_white_soldiers';
-
-  @override
-  String get name => '紅三兵';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -578,12 +518,6 @@ class ThreeBlackCrowsRule extends StockRule {
 
   @override
   String get id => 'pattern_three_black_crows';
-
-  @override
-  String get name => '三黑鴉';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

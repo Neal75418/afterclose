@@ -1,7 +1,5 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
-import 'package:afterclose/domain/services/rules/rule_category.dart';
-export 'package:afterclose/domain/services/rules/rule_category.dart';
 
 /// 規則評估所需的市場資料物件
 class StockData {
@@ -67,12 +65,6 @@ abstract class StockRule {
 
   /// 規則的唯一識別碼
   String get id;
-
-  /// 規則名稱
-  String get name;
-
-  /// 規則分類
-  RuleCategory get category;
 
   /// 對股票資料評估此規則
   ///

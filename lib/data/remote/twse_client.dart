@@ -1002,7 +1002,6 @@ class TwseClient {
         return TwseTradingWarning(
           date: date,
           code: code,
-          name: row[2]?.toString().trim() ?? '',
           reasonDescription: row.length > 4 ? row[4]?.toString().trim() : null,
           warningType: 'ATTENTION',
         );
@@ -1080,7 +1079,6 @@ class TwseClient {
       return TwseTradingWarning(
         date: date,
         code: code,
-        name: row[3]?.toString().trim() ?? '',
         reasonDescription: row.length > 8 ? row[8]?.toString().trim() : null,
         disposalMeasures: row.length > 7 ? row[7]?.toString().trim() : null,
         disposalStartDate: startDate,
@@ -1244,7 +1242,6 @@ class TwseClient {
         TwseInsiderHolding(
           date: agg.date,
           code: agg.code,
-          name: agg.name,
           insiderRatio: insiderRatio,
           pledgeRatio: pledgeRatio,
           sharesIssued: issuedShares,

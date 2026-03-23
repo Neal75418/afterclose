@@ -40,28 +40,4 @@ void main() {
       expect(result.error, equals(ApiTestError.invalidToken));
     });
   });
-
-  // ==========================================
-  // ApiTestResult factories
-  // ==========================================
-  group('ApiTestResult', () {
-    test('success factory creates successful result', () {
-      final result = ApiTestResult.success(stockCount: 42);
-
-      expect(result.success, isTrue);
-      expect(result.stockCount, equals(42));
-      expect(result.error, isNull);
-    });
-
-    test('failure factory creates failed result', () {
-      final result = ApiTestResult.failure(
-        error: ApiTestError.network,
-        message: 'Connection timeout',
-      );
-
-      expect(result.success, isFalse);
-      expect(result.error, equals(ApiTestError.network));
-      expect(result.errorMessage, equals('Connection timeout'));
-    });
-  });
 }

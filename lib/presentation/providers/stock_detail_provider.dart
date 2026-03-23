@@ -14,7 +14,6 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
@@ -360,16 +359,6 @@ final stockDetailProvider = NotifierProvider.autoDispose
     .family<StockDetailNotifier, StockDetailState, String>(
       StockDetailNotifier.new,
     );
-
-/// 規則準確度 Provider（Sprint 10）
-///
-/// 透過 ruleId 查詢該規則的歷史命中率和平均報酬率。
-/// 若該規則觸發次數少於 5 次，返回 null（資料不足）。
-final ruleAccuracyProvider = FutureProvider.family
-    .autoDispose<RuleStats?, String>((ref, ruleId) async {
-      final service = ref.watch(ruleAccuracyServiceProvider);
-      return service.getRuleStats(ruleId);
-    });
 
 /// 主要規則準確度摘要文字 Provider
 ///

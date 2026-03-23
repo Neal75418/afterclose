@@ -90,16 +90,6 @@ class ApiTestResult {
 
   /// 錯誤訊息
   final String? errorMessage;
-
-  /// 建立成功結果
-  factory ApiTestResult.success({required int stockCount}) =>
-      ApiTestResult._(success: true, stockCount: stockCount);
-
-  /// 建立失敗結果
-  factory ApiTestResult.failure({
-    required ApiTestError error,
-    String? message,
-  }) => ApiTestResult._(success: false, error: error, errorMessage: message);
 }
 
 /// API 測試錯誤類型

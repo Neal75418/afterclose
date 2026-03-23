@@ -25,8 +25,6 @@ void main() {
       final summary = BacktestSummary.fromTrades([]);
 
       expect(summary.totalTrades, equals(0));
-      expect(summary.winningTrades, equals(0));
-      expect(summary.losingTrades, equals(0));
       expect(summary.avgReturn, equals(0));
       expect(summary.medianReturn, equals(0));
       expect(summary.maxReturn, equals(0));
@@ -86,8 +84,6 @@ void main() {
 
       final summary = BacktestSummary.fromTrades(trades);
 
-      expect(summary.winningTrades, equals(2));
-      expect(summary.losingTrades, equals(1));
       expect(summary.winRate, equals(0.5)); // 2/4
     });
 

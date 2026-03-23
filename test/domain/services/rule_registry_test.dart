@@ -12,14 +12,9 @@ void main() {
       expect(ids.length, RuleRegistry.defaultRules.length);
     });
 
-    test('all rules have non-empty id and name', () {
+    test('all rules have non-empty id', () {
       for (final rule in RuleRegistry.defaultRules) {
         expect(rule.id, isNotEmpty, reason: '${rule.runtimeType} has empty id');
-        expect(
-          rule.name,
-          isNotEmpty,
-          reason: '${rule.runtimeType} has empty name',
-        );
       }
     });
   });

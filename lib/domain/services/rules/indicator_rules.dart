@@ -66,12 +66,6 @@ abstract class _Week52RuleBase extends StockRule {
   @override
   String get id => _ruleId;
 
-  @override
-  String get name => _ruleName;
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
   /// 子類別可覆寫以加入額外過濾條件（例如 MA 空頭確認）。
   /// 回傳 true 表示應過濾掉（不觸發）。
   bool additionalFilter(
@@ -202,7 +196,7 @@ class Week52LowRule extends _Week52RuleBase {
     if (ma20 != null && ma60 != null) {
       if (close >= ma20 || ma20 >= ma60) {
         AppLogger.debug(
-          name,
+          _ruleName,
           '${data.symbol}: 過濾（未確認空頭趨勢 close=$close, MA20=$ma20, MA60=$ma60）',
         );
         return true;
@@ -220,12 +214,6 @@ class MAAlignmentBullishRule extends StockRule {
 
   @override
   String get id => 'ma_alignment_bullish';
-
-  @override
-  String get name => '多頭排列';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -291,12 +279,6 @@ class MAAlignmentBearishRule extends StockRule {
   String get id => 'ma_alignment_bearish';
 
   @override
-  String get name => '空頭排列';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // 至少需要最大均線週期的資料
     final maxPeriod = IndicatorParams.maAlignmentPeriods.reduce(
@@ -350,12 +332,6 @@ class RSIExtremeOverboughtRule extends StockRule {
   String get id => 'rsi_extreme_overbought';
 
   @override
-  String get name => 'RSI極度超買';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final rsi = context.indicators?.rsi;
     if (rsi == null) return null;
@@ -390,12 +366,6 @@ class RSIExtremeOversoldRule extends StockRule {
   String get id => 'rsi_extreme_oversold';
 
   @override
-  String get name => 'RSI極度超賣';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final rsi = context.indicators?.rsi;
     if (rsi == null) return null;
@@ -425,12 +395,6 @@ class KDGoldenCrossRule extends StockRule {
 
   @override
   String get id => 'kd_golden_cross';
-
-  @override
-  String get name => 'KD 黃金交叉';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
@@ -495,12 +459,6 @@ class KDDeathCrossRule extends StockRule {
 
   @override
   String get id => 'kd_death_cross';
-
-  @override
-  String get name => 'KD 死亡交叉';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

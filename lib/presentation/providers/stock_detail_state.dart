@@ -1,4 +1,3 @@
-import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -214,8 +213,6 @@ class StockDetailState {
   String? get stockMarket => price.stock?.market;
   String? get stockIndustry => price.stock?.industry;
   double? get latestClose => price.latestPrice?.close;
-  String get trendLabel => S.getTrendLabel(price.analysis?.trendState);
-
   StockDetailState copyWith({
     // 價格欄位
     StockMasterEntry? stock,

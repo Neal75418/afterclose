@@ -25,7 +25,6 @@ const _sentinel = Object();
 /// State for scan screen
 class ScanState {
   const ScanState({
-    this.allStocks = const [], // Original unfiltered data
     this.stocks = const [], // Filtered/sorted view
     this.filter = ScanFilter.all,
     this.sort = ScanSort.scoreDesc,
@@ -41,7 +40,6 @@ class ScanState {
     this.error,
   });
 
-  final List<ScanStockItem> allStocks;
   final List<ScanStockItem> stocks;
   final ScanFilter filter;
   final ScanSort sort;
@@ -76,7 +74,6 @@ class ScanState {
   final String? error;
 
   ScanState copyWith({
-    List<ScanStockItem>? allStocks,
     List<ScanStockItem>? stocks,
     ScanFilter? filter,
     ScanSort? sort,
@@ -93,7 +90,6 @@ class ScanState {
     Object? error = _sentinel,
   }) {
     return ScanState(
-      allStocks: allStocks ?? this.allStocks,
       stocks: stocks ?? this.stocks,
       filter: filter ?? this.filter,
       sort: sort ?? this.sort,
@@ -220,7 +216,6 @@ class ScanNotifier extends Notifier<ScanState> {
 
       if (_filteredAnalyses.isEmpty) {
         state = state.copyWith(
-          allStocks: [],
           stocks: [],
           industries: industries,
           dataDate: dataDate,
@@ -242,7 +237,6 @@ class ScanNotifier extends Notifier<ScanState> {
       );
 
       state = state.copyWith(
-        allStocks: [], // No longer used for filtering
         stocks: firstPageItems,
         industries: industries,
         dataDate: dataDate,

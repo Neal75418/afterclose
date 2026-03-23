@@ -62,8 +62,6 @@ class BacktestTrade {
 class BacktestSummary {
   const BacktestSummary({
     required this.totalTrades,
-    required this.winningTrades,
-    required this.losingTrades,
     required this.avgReturn,
     required this.medianReturn,
     required this.maxReturn,
@@ -74,8 +72,6 @@ class BacktestSummary {
   });
 
   final int totalTrades;
-  final int winningTrades;
-  final int losingTrades;
   final double avgReturn;
   final double medianReturn;
   final double maxReturn;
@@ -89,8 +85,6 @@ class BacktestSummary {
     if (trades.isEmpty) {
       return const BacktestSummary(
         totalTrades: 0,
-        winningTrades: 0,
-        losingTrades: 0,
         avgReturn: 0,
         medianReturn: 0,
         maxReturn: 0,
@@ -102,7 +96,6 @@ class BacktestSummary {
 
     final returns = trades.map((t) => t.returnPercent).toList()..sort();
     final winning = trades.where((t) => t.returnPercent > 0).length;
-    final losing = trades.where((t) => t.returnPercent < 0).length;
 
     final avgReturn = returns.reduce((a, b) => a + b) / returns.length;
 
@@ -125,8 +118,6 @@ class BacktestSummary {
 
     return BacktestSummary(
       totalTrades: trades.length,
-      winningTrades: winning,
-      losingTrades: losing,
       avgReturn: avgReturn,
       medianReturn: medianReturn,
       maxReturn: returns.last,

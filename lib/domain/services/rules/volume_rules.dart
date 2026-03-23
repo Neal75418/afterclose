@@ -12,12 +12,6 @@ class VolumeSpikeRule extends StockRule {
   String get id => 'volume_spike';
 
   @override
-  String get name => '放量異常';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     if (data.prices.length < RuleParams.volMa + 1) return null;
 
@@ -86,12 +80,6 @@ class PriceSpikeRule extends StockRule {
 
   @override
   String get id => 'price_spike';
-
-  @override
-  String get name => '價格異動';
-
-  @override
-  RuleCategory get category => RuleCategory.technical;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

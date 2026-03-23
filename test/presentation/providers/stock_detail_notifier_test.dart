@@ -741,45 +741,6 @@ void main() {
   });
 
   // ===========================================================================
-  // ruleAccuracyProvider
-  // ===========================================================================
-
-  group('ruleAccuracyProvider', () {
-    test('returns stats for valid ruleId', () async {
-      const stats = RuleStats(
-        ruleId: 'GOLDEN_CROSS',
-        hitRate: 0.65,
-        avgReturn: 2.3,
-        triggerCount: 50,
-      );
-
-      when(
-        () => mockRuleAccuracy.getRuleStats('GOLDEN_CROSS'),
-      ).thenAnswer((_) async => stats);
-
-      final result = await container.read(
-        ruleAccuracyProvider('GOLDEN_CROSS').future,
-      );
-
-      expect(result, isNotNull);
-      expect(result!.hitRate, equals(0.65));
-      expect(result.avgReturn, equals(2.3));
-    });
-
-    test('returns null for insufficient data', () async {
-      when(
-        () => mockRuleAccuracy.getRuleStats('RARE_RULE'),
-      ).thenAnswer((_) async => null);
-
-      final result = await container.read(
-        ruleAccuracyProvider('RARE_RULE').future,
-      );
-
-      expect(result, isNull);
-    });
-  });
-
-  // ===========================================================================
   // primaryRuleAccuracySummaryProvider
   // ===========================================================================
 

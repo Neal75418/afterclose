@@ -683,7 +683,6 @@ class TpexClient {
       return TpexTradingWarning(
         date: date,
         code: code,
-        name: json['CompanyName']?.toString().trim() ?? '',
         // TPEX OpenAPI 欄位: TradingInformation（交易資訊說明）
         reasonDescription: json['TradingInformation']?.toString().trim(),
         warningType: 'ATTENTION',
@@ -764,7 +763,6 @@ class TpexClient {
       return TpexTradingWarning(
         date: date,
         code: code,
-        name: json['CompanyName']?.toString().trim() ?? '',
         // TPEX OpenAPI 欄位: DispositionReasons（處置原因）
         reasonDescription: json['DispositionReasons']?.toString().trim(),
         // TPEX OpenAPI 欄位: DisposalCondition（處置措施說明）
@@ -889,7 +887,6 @@ class TpexClient {
             TpexInsiderHolding(
               date: agg.date,
               code: agg.code,
-              name: agg.name,
               insiderRatio: insiderRatio,
               pledgeRatio: pledgeRatio,
               sharesIssued: issuedShares,

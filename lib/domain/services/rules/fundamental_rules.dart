@@ -20,12 +20,6 @@ class InstitutionalShiftRule extends StockRule {
   String get id => 'institutional_shift';
 
   @override
-  String get name => '法人動向';
-
-  @override
-  RuleCategory get category => RuleCategory.institutional;
-
-  @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     final history = data.institutional;
     if (history == null || history.isEmpty) {
@@ -186,12 +180,6 @@ class NewsRule extends StockRule {
 
   @override
   String get id => 'news_related';
-
-  @override
-  String get name => '新聞熱度';
-
-  @override
-  RuleCategory get category => RuleCategory.market;
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {

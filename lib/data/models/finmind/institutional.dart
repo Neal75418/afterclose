@@ -1,5 +1,4 @@
 import 'package:afterclose/core/utils/json_parsers.dart';
-import 'package:afterclose/core/utils/logger.dart';
 
 /// FinMind API 原始法人資料列
 /// 註: API 每種法人類型回傳一列，需要彙整
@@ -79,19 +78,6 @@ class FinMindInstitutional {
       dealerBuy: dealerBuy,
       dealerSell: dealerSell,
     );
-  }
-
-  /// 嘗試從 JSON 解析（向後相容用，不建議使用）
-  static FinMindInstitutional? tryFromJson(Map<String, dynamic> json) {
-    // 這是單一列，建立只有一筆的彙整
-    try {
-      final row = FinMindInstitutionalRow.fromJson(json);
-      if (row.stockId.isEmpty || row.date.isEmpty) return null;
-      return FinMindInstitutional.aggregate([row]);
-    } catch (e) {
-      AppLogger.debug('FinMindInstitutional', '解析失敗: ${json['stock_id']} ($e)');
-      return null;
-    }
   }
 
   final String stockId;

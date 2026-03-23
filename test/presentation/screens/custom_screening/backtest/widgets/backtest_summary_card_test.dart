@@ -13,8 +13,6 @@ void main() {
 
   BacktestSummary createSummary({
     int totalTrades = 100,
-    int winningTrades = 60,
-    int losingTrades = 40,
     double avgReturn = 1.5,
     double medianReturn = 1.2,
     double maxReturn = 15.0,
@@ -25,8 +23,6 @@ void main() {
   }) {
     return BacktestSummary(
       totalTrades: totalTrades,
-      winningTrades: winningTrades,
-      losingTrades: losingTrades,
       avgReturn: avgReturn,
       medianReturn: medianReturn,
       maxReturn: maxReturn,

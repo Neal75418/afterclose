@@ -19,7 +19,7 @@ enum LogLevel { debug, info, warning, error }
 /// - `warning()` 加入 Sentry breadcrumb 供後續錯誤追蹤參考
 abstract final class AppLogger {
   /// 最低輸出等級（僅在 debug 模式生效）
-  static LogLevel minLevel = LogLevel.debug;
+  static const LogLevel _minLevel = LogLevel.debug;
 
   /// 記錄 debug 訊息
   static void debug(String tag, String message) {
@@ -83,7 +83,7 @@ abstract final class AppLogger {
     StackTrace? stackTrace,
   ]) {
     // 低於最低等級的日誌不輸出
-    if (level.index < minLevel.index) return;
+    if (level.index < _minLevel.index) return;
 
     // 僅在 debug 模式輸出日誌
     if (!kDebugMode) return;

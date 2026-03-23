@@ -331,24 +331,6 @@ void main() {
       expect(state.latestClose, isNull);
     });
 
-    test('trendLabel returns label for UP', () {
-      final analysis = DailyAnalysisEntry(
-        symbol: '2330',
-        date: defaultDate,
-        score: 80.0,
-        trendState: 'UP',
-        reversalState: '',
-        computedAt: defaultDate,
-      );
-      final state = const StockDetailState().copyWith(analysis: analysis);
-      expect(state.trendLabel, isNotEmpty);
-    });
-
-    test('trendLabel returns sideways for null', () {
-      const state = StockDetailState();
-      expect(state.trendLabel, isNotEmpty);
-    });
-
     // copyWith — price sub-state
     test('copyWith updates stock through price sub-state', () {
       final stock = StockMasterEntry(

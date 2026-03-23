@@ -87,8 +87,6 @@ void main() {
         trades: [],
         summary: BacktestSummary(
           totalTrades: 0,
-          winningTrades: 0,
-          losingTrades: 0,
           avgReturn: 0,
           medianReturn: 0,
           maxReturn: 0,
