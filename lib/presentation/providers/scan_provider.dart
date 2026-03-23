@@ -438,11 +438,17 @@ class ScanNotifier extends Notifier<ScanState> {
     try {
       if (isInWatchlist) {
         final success = await watchlistNotifier.removeStock(symbol);
-        if (!success) return;
+        if (!success) {
+          final msg = ref.read(watchlistProvider).error ?? '移除自選股失敗';
+          throw StateError(msg);
+        }
         _watchlistSymbols.remove(symbol);
       } else {
         final success = await watchlistNotifier.addStock(symbol);
-        if (!success) return;
+        if (!success) {
+          final msg = ref.read(watchlistProvider).error ?? '加入自選股失敗';
+          throw StateError(msg);
+        }
         _watchlistSymbols.add(symbol);
       }
 

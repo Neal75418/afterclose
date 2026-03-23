@@ -70,6 +70,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
     if (!widget.state.hasData) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
+
+    // 有舊資料但最近一次 refresh 失敗時，在 dashboard 頂部顯示提示
+    final refreshError = widget.state.error;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < Breakpoints.mobile;
 
@@ -88,6 +91,32 @@ class _MarketDashboardState extends State<MarketDashboard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // refresh 失敗提示（有舊資料仍顯示，但警告使用者資料可能過時）
+              if (refreshError != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.warning_amber,
+                        size: 14,
+                        color: theme.colorScheme.error,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          refreshError,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // 標題列（包含市場選擇器）
               _buildHeader(theme, isMobile),
 

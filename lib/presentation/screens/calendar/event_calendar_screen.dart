@@ -445,19 +445,21 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
 
   Future<void> _syncDividendEvents() async {
     try {
-      final result = await ref
-          .read(eventCalendarProvider.notifier)
-          .syncDividendEvents();
+      final notifier = ref.read(eventCalendarProvider.notifier);
+      final result = await notifier.syncDividendEvents();
       if (mounted) {
+        // syncDividendEvents 不 throw reload 失敗，但會設定 state.error
+        final reloadError = ref.read(eventCalendarProvider).error;
+        final message = 'calendar.syncDetailComplete'.tr(
+          namedArgs: {
+            'exDividend': '${result.exDividend}',
+            'exRights': '${result.exRights}',
+          },
+        );
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'calendar.syncDetailComplete'.tr(
-                namedArgs: {
-                  'exDividend': '${result.exDividend}',
-                  'exRights': '${result.exRights}',
-                },
-              ),
+              reloadError != null ? '$message（$reloadError）' : message,
             ),
             behavior: SnackBarBehavior.floating,
           ),

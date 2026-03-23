@@ -19,6 +19,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
   bool _isSyncing = false;
   String? _syncResult;
   bool? _syncSuccess;
+  bool _hasWarnings = false;
   ({int completed, int total})? _historyProgress;
 
   @override
@@ -60,6 +61,7 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
       _isSyncing = true;
       _syncResult = null;
       _syncSuccess = null;
+      _hasWarnings = false;
     });
 
     try {
@@ -82,14 +84,12 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
 
         setState(() {
           _isSyncing = false;
+          // hasWarnings = 主更新成功但有後段步驟失敗（如重載大盤/推薦）
           _syncSuccess = result.success;
+          _hasWarnings = result.hasWarnings;
           _syncResult = result.success
-              ? 'settings.forceSyncSuccess'.tr(
-                  namedArgs: {
-                    'prices': result.pricesUpdated.toString(),
-                    'analyzed': result.stocksAnalyzed.toString(),
-                  },
-                )
+              ? result
+                    .summary // summary 已包含警告數量（e.g.「… 3 項警告」）
               : 'settings.forceSyncFailed'.tr(
                   namedArgs: {'error': 'common.syncFailed'.tr()},
                 );
@@ -159,16 +159,28 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
             child: Row(
               children: [
                 Icon(
-                  _syncSuccess == true ? Icons.check_circle : Icons.error,
+                  _syncSuccess != true
+                      ? Icons.error
+                      : _hasWarnings
+                      ? Icons.warning_amber
+                      : Icons.check_circle,
                   size: 16,
-                  color: _syncSuccess == true ? Colors.green : Colors.red,
+                  color: _syncSuccess != true
+                      ? Colors.red
+                      : _hasWarnings
+                      ? Colors.orange
+                      : Colors.green,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _syncResult!,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: _syncSuccess == true ? Colors.green : Colors.red,
+                      color: _syncSuccess != true
+                          ? Colors.red
+                          : _hasWarnings
+                          ? Colors.orange
+                          : Colors.green,
                     ),
                   ),
                 ),
