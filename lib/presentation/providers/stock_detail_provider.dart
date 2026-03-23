@@ -245,6 +245,8 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       final missingParts = <String>[
         if (result.revenueData.isEmpty) '營收',
         if (result.epsData.isEmpty) '每股盈餘',
+        if (result.dividendData.isEmpty) '股利',
+        if (result.latestPER == null) '估值',
       ];
       final partialError = missingParts.isNotEmpty
           ? '部分基本面資料暫無法取得（${missingParts.join("、")}）'
