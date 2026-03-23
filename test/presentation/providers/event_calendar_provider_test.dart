@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -355,6 +357,58 @@ void main() {
       expect(state.isLoading, isFalse);
       expect(state.error, isNull);
       expect(state.filter, CalendarFilter.all);
+    });
+  });
+
+  // ===========================================================================
+  // loadMonthEvents — stale month response discarded
+  // ===========================================================================
+
+  group('loadMonthEvents generation token', () {
+    test('stale month response does not overwrite newer month', () async {
+      final febEvents = [
+        createEvent(id: 1, eventDate: DateTime(2026, 2, 10), title: 'Feb'),
+      ];
+      final marEvents = [
+        createEvent(id: 2, eventDate: DateTime(2026, 3, 5), title: 'Mar'),
+      ];
+
+      // 用 Completer 控制 2 月載入的完成時機
+      final febCompleter = Completer<List<StockEventEntry>>();
+      var callCount = 0;
+      when(
+        () => mockEventRepo.getEventsInRange(
+          any(),
+          any(),
+          symbols: any(named: 'symbols'),
+        ),
+      ).thenAnswer((_) {
+        callCount++;
+        if (callCount == 1) return febCompleter.future; // 2 月：延遲
+        return Future.value(marEvents); // 3 月：立即完成
+      });
+
+      final notifier = container.read(eventCalendarProvider.notifier);
+
+      // 先載入 2 月（不 await），再立刻切到 3 月
+      final febFuture = notifier.loadMonthEvents(DateTime(2026, 2));
+      final marFuture = notifier.loadMonthEvents(DateTime(2026, 3));
+
+      // 3 月先完成
+      await marFuture;
+      expect(
+        container.read(eventCalendarProvider).focusedMonth,
+        DateTime(2026, 3),
+      );
+
+      // 2 月晚回來
+      febCompleter.complete(febEvents);
+      await febFuture;
+
+      // 最終 state 應該是 3 月，不被 2 月覆蓋
+      final state = container.read(eventCalendarProvider);
+      expect(state.focusedMonth, DateTime(2026, 3));
+      expect(state.events.values.expand((e) => e).first.title, 'Mar');
     });
   });
 }

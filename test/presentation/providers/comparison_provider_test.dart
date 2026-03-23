@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -238,5 +240,46 @@ void main() {
       expect(state.symbols, isEmpty);
       expect(state.isLoading, isFalse);
     });
+  });
+
+  // ===========================================================================
+  // _loadAllData generation token
+  // ===========================================================================
+
+  group('_loadAllData generation token', () {
+    test(
+      'stale load result is discarded when newer load completes first',
+      () async {
+        // 用 Completer 控制第一次 getLatestDataDate 的完成時機
+        final firstCompleter = Completer<DateTime?>();
+        var callCount = 0;
+
+        when(() => mockDb.getLatestDataDate()).thenAnswer((_) {
+          callCount++;
+          if (callCount == 1) return firstCompleter.future; // 第一次：延遲
+          throw Exception('second-call-error'); // 第二次：立即失敗
+        });
+
+        final notifier = container.read(comparisonProvider.notifier);
+
+        // 先啟動 addStocks（不 await），再立刻 reload
+        final firstFuture = notifier.addStocks(['2330']);
+        final secondFuture = notifier.reload();
+
+        // 第二次載入先完成（帶 error）
+        await secondFuture;
+        final errorAfterSecond = container.read(comparisonProvider).error;
+        expect(errorAfterSecond, isNotNull);
+
+        // 第一次載入晚回來（也失敗，但 generation 已過期，應被丟棄）
+        firstCompleter.completeError(Exception('first-call-error'));
+        await firstFuture;
+
+        // 最終 error 應仍是第二次的，不被第一次覆蓋
+        // （若 generation token 未生效，error 會被重新設定為不同物件）
+        final finalState = container.read(comparisonProvider);
+        expect(identical(finalState.error, errorAfterSecond), isTrue);
+      },
+    );
   });
 }

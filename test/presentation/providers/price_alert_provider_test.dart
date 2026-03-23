@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -468,6 +470,45 @@ void main() {
       // 正常 alert 不受影響
       final normal = state.alerts.firstWhere((a) => a.id == 1);
       expect(normal.isActive, isTrue);
+    });
+  });
+
+  // ===========================================================================
+  // PriceAlertNotifier.toggleAlert — rapid toggle (last-intent-wins)
+  // ===========================================================================
+
+  group('PriceAlertNotifier.toggleAlert rapid toggle', () {
+    test('last intent wins when toggling same alert twice quickly', () async {
+      final alerts = [createAlert(id: 1, isActive: true)];
+      when(() => mockDb.getAllAlerts()).thenAnswer((_) async => alerts);
+
+      // 第一次 toggle: off → 用 Completer 控制完成時機
+      final firstCompleter = Completer<int>();
+      var callCount = 0;
+      when(() => mockDb.updatePriceAlert(any(), any())).thenAnswer((_) {
+        callCount++;
+        if (callCount == 1) return firstCompleter.future;
+        // 第二次 toggle: on → 立即完成
+        return Future.value(1);
+      });
+
+      final notifier = container.read(priceAlertProvider.notifier);
+      await notifier.loadAlerts();
+
+      // 快速連點：先 off 再 on，不 await 第一次
+      final first = notifier.toggleAlert(1, false);
+      final second = notifier.toggleAlert(1, true);
+
+      // 讓第一次完成
+      firstCompleter.complete(1);
+      await first;
+      await second;
+
+      final state = container.read(priceAlertProvider);
+      // 最後一次意圖是 on → isActive 應為 true
+      expect(state.alerts.first.isActive, isTrue);
+      // DB 應該被呼叫兩次（序列化執行）
+      expect(callCount, 2);
     });
   });
 }
