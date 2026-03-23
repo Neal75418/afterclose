@@ -160,11 +160,11 @@ class _MarketDashboardState extends State<MarketDashboard> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            // 顯示資料日期，非今日時以警示色標示
+            // 顯示近似資料日期：dashboard 各區塊可能來自不同日期
+            // （by-market 回退、融資融券各市場最新值等），以 ≈ 標示
             if (dataDate != null)
               Text(
-                DateFormat('MM/dd').format(dataDate) +
-                    (isLatest ? '' : ' ${'marketOverview.notToday'.tr()}'),
+                '≈ ${DateFormat('MM/dd').format(dataDate)}${isLatest ? '' : ' ${'marketOverview.notToday'.tr()}'}',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: isLatest
                       ? theme.colorScheme.onSurfaceVariant
