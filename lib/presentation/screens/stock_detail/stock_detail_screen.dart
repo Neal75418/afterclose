@@ -152,10 +152,25 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                           state.isInWatchlist ? Icons.star : Icons.star_border,
                           color: state.isInWatchlist ? Colors.amber : null,
                         ),
-                        onPressed: () {
-                          ref
-                              .read(stockDetailProvider(widget.symbol).notifier)
-                              .toggleWatchlist();
+                        onPressed: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          try {
+                            await ref
+                                .read(
+                                  stockDetailProvider(widget.symbol).notifier,
+                                )
+                                .toggleWatchlist();
+                          } catch (e) {
+                            if (!mounted) return;
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  e is StateError ? e.message : '$e',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
                         },
                         tooltip: state.isInWatchlist
                             ? 'stock.removeFromWatchlist'.tr()

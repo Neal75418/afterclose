@@ -305,10 +305,15 @@ class TodayNotifier extends Notifier<TodayState> {
         ref.read(marketOverviewProvider.notifier).loadData(),
       ]);
 
-      // loadData() 內部 catch 不會 rethrow，但會設定 state.error
-      // 若重新載入失敗，加入 errors 讓 summary 顯示警告而非純成功
+      // loadData() / marketOverview.loadData() 內部 catch 不會 rethrow，
+      // 但會設定各自的 state.error。若重新載入失敗，加入 errors 讓
+      // summary 顯示警告而非純成功
       if (state.error != null) {
         result.errors.add(state.error!);
+      }
+      final marketError = ref.read(marketOverviewProvider).error;
+      if (marketError != null) {
+        result.errors.add(marketError);
       }
 
       return result;

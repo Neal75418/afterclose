@@ -288,6 +288,17 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
     }
   }
 
+  /// 重載持倉並檢查是否成功
+  ///
+  /// 寫入操作成功後呼叫此方法重載資料；若重載失敗會拋出例外，
+  /// 讓呼叫端知道資料可能未同步（寫入本身已完成）。
+  Future<void> _reloadOrThrow() async {
+    await loadPositions();
+    if (state.error != null) {
+      throw StateError(state.error!);
+    }
+  }
+
   /// 新增買進交易
   Future<void> addBuy({
     required String symbol,
@@ -305,7 +316,7 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
       fee: fee,
       note: note,
     );
-    await loadPositions();
+    await _reloadOrThrow();
   }
 
   /// 新增賣出交易
@@ -327,7 +338,7 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
       tax: tax,
       note: note,
     );
-    await loadPositions();
+    await _reloadOrThrow();
   }
 
   /// 新增股利紀錄
@@ -345,13 +356,13 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
       isCash: isCash,
       note: note,
     );
-    await loadPositions();
+    await _reloadOrThrow();
   }
 
   /// 刪除交易
   Future<void> deleteTransaction(int txId, String symbol) async {
     await _repo.deleteTransaction(txId, symbol);
-    await loadPositions();
+    await _reloadOrThrow();
   }
 }
 

@@ -193,16 +193,25 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
   }
 
   /// 切換自選股 — 同步更新全域 watchlistProvider
+  ///
+  /// 失敗時拋出例外（而非寫入 [state.error]，因為該欄位會觸發整頁錯誤狀態）。
+  /// 呼叫端應 catch 並以 SnackBar 等輕量方式顯示錯誤。
   Future<void> toggleWatchlist() async {
     final watchlistNotifier = ref.read(watchlistProvider.notifier);
     final wasInWatchlist = state.isInWatchlist;
 
     if (wasInWatchlist) {
       final success = await watchlistNotifier.removeStock(_symbol);
-      if (!success) return;
+      if (!success) {
+        final msg = ref.read(watchlistProvider).error ?? '移除自選股失敗';
+        throw StateError(msg);
+      }
     } else {
       final success = await watchlistNotifier.addStock(_symbol);
-      if (!success) return;
+      if (!success) {
+        final msg = ref.read(watchlistProvider).error ?? '加入自選股失敗';
+        throw StateError(msg);
+      }
     }
 
     // 操作成功才更新本地狀態

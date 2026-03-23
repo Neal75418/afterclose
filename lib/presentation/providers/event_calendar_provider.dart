@@ -293,6 +293,9 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   }
 
   /// 新增自訂事件
+  ///
+  /// 寫入成功後重載當月事件；若重載失敗會拋出例外，
+  /// 讓呼叫端知道資料可能未同步（寫入本身已完成）。
   Future<void> addEvent({
     String? symbol,
     required DateTime eventDate,
@@ -308,18 +311,31 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     // 重新載入當月事件
     if (state.focusedMonth != null) {
       await loadMonthEvents(state.focusedMonth!);
+      // loadMonthEvents 吞掉例外只寫 state.error，
+      // 但呼叫端需要知道重載失敗才能給正確回饋
+      if (state.error != null) {
+        throw StateError(state.error!);
+      }
     }
   }
 
   /// 刪除事件
+  ///
+  /// 寫入成功後重載當月事件；若重載失敗會拋出例外。
   Future<void> deleteEvent(int id) async {
     await _repo.deleteEvent(id);
     if (state.focusedMonth != null) {
       await loadMonthEvents(state.focusedMonth!);
+      if (state.error != null) {
+        throw StateError(state.error!);
+      }
     }
   }
 
   /// 同步除權息事件
+  ///
+  /// 與 [addEvent]/[deleteEvent] 不同，此方法回傳結果 record 供 UI 顯示，
+  /// 重載失敗時 state.error 已被設定，呼叫端可據此顯示警告而不影響 record 結果。
   Future<({int exDividend, int exRights, int total})>
   syncDividendEvents() async {
     if (state.isSyncing) return (exDividend: 0, exRights: 0, total: 0);

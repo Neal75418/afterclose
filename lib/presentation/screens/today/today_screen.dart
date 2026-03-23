@@ -379,6 +379,28 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             builder: (context, ref, _) {
               final marketState = ref.watch(marketOverviewProvider);
               if (!marketState.hasData && !marketState.isLoading) {
+                if (marketState.error != null) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spacing16,
+                    ),
+                    child: Card(
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.error_outline,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        title: Text(marketState.error!),
+                        trailing: TextButton(
+                          onPressed: () => ref
+                              .read(marketOverviewProvider.notifier)
+                              .loadData(),
+                          child: Text('common.retry'.tr()),
+                        ),
+                      ),
+                    ),
+                  );
+                }
                 return const SizedBox.shrink();
               }
               return MarketDashboard(state: marketState);
