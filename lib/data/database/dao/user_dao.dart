@@ -226,7 +226,7 @@ mixin UserDaoMixin on $AppDatabase {
 
     // Delegate evaluation to domain service (prefer injection from caller)
     final service = evaluationService ?? AlertEvaluationService();
-    return service.evaluateAlerts(
+    final result = service.evaluateAlerts(
       activeAlerts,
       AlertEvaluationContext(
         currentPrices: currentPrices,
@@ -238,6 +238,16 @@ mixin UserDaoMixin on $AppDatabase {
         disposalSymbols: disposalSymbols,
       ),
     );
+
+    // 自動停用未實作的警示類型（舊版 DB 殘留資料）
+    for (final id in result.unimplementedIds) {
+      await updatePriceAlert(
+        id,
+        const PriceAlertCompanion(isActive: Value(false)),
+      );
+    }
+
+    return result.triggered;
   }
 
   // ==================================================

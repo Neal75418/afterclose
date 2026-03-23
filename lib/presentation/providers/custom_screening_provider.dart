@@ -171,7 +171,11 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     }
   }
 
-  /// 儲存目前條件為策略，回傳是否成功
+  /// 儲存目前條件為策略，回傳是否寫入成功
+  ///
+  /// 寫入成功後重載列表；若重載失敗仍回傳 true（寫入已完成），
+  /// 避免 UI 報告失敗導致使用者重試而產生重複策略。
+  /// 重載失敗會反映在 [state.strategiesError]。
   Future<bool> saveStrategy(String name) async {
     if (state.conditions.isEmpty) return false;
     try {
@@ -182,24 +186,30 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
           conditionsJson: json,
         ),
       );
-      await loadSavedStrategies();
-      return true;
     } catch (e) {
       AppLogger.error('CustomScreeningNotifier', '儲存策略失敗', e);
       return false;
     }
+    // 寫入已成功，重載失敗不影響回傳值
+    await loadSavedStrategies();
+    return true;
   }
 
-  /// 刪除策略，回傳是否成功
+  /// 刪除策略，回傳是否寫入成功
+  ///
+  /// 刪除成功後重載列表；若重載失敗仍回傳 true（刪除已完成），
+  /// 避免 UI 報告失敗導致使用者誤認為未刪除。
+  /// 重載失敗會反映在 [state.strategiesError]。
   Future<bool> deleteStrategy(int id) async {
     try {
       await _db.deleteScreeningStrategy(id);
-      await loadSavedStrategies();
-      return true;
     } catch (e) {
       AppLogger.error('CustomScreeningNotifier', '刪除策略失敗', e);
       return false;
     }
+    // 刪除已成功，重載失敗不影響回傳值
+    await loadSavedStrategies();
+    return true;
   }
 
   void loadStrategy(ScreeningStrategy strategy) {

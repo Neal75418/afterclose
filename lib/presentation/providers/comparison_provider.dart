@@ -106,13 +106,19 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
 
   /// Add a stock and reload all comparison data.
   ///
-  /// 失敗時保留 symbol，使用者可透過 reload() 重試或手動移除。
+  /// 失敗時回滾新增的 symbol，避免佔用名額且無資料。
   Future<void> addStock(String symbol) async {
     if (state.symbols.contains(symbol) || !state.canAddMore) return;
 
-    final newSymbols = [...state.symbols, symbol];
+    final oldSymbols = state.symbols;
+    final newSymbols = [...oldSymbols, symbol];
     state = state.copyWith(symbols: newSymbols, isLoading: true, error: null);
     await _loadAllData(newSymbols);
+
+    // _loadAllData 失敗時會設定 error，回滾新增的 symbol
+    if (state.error != null) {
+      state = state.copyWith(symbols: oldSymbols);
+    }
   }
 
   /// Add multiple stocks at once (used for initial load to avoid race conditions).

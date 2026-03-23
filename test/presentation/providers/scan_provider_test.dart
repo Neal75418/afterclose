@@ -410,6 +410,25 @@ void main() {
       expect(fakeWatchlistNotifier.lastAddedSymbol, '2330');
     });
 
+    test('toggleWatchlist clears stale error on success', () async {
+      setupLoadDataDefaults(
+        analyses: [createAnalysis(symbol: '2330', score: 85)],
+      );
+
+      final notifier = container.read(scanProvider.notifier);
+      await notifier.loadData();
+
+      // 先製造一次失敗 → state.error 被設定
+      fakeWatchlistNotifier.addStockResult = false;
+      await notifier.toggleWatchlist('2330');
+      expect(container.read(scanProvider).error, isNotNull);
+
+      // 恢復成功 → 舊 error 應被清除
+      fakeWatchlistNotifier.addStockResult = true;
+      await notifier.toggleWatchlist('2330');
+      expect(container.read(scanProvider).error, isNull);
+    });
+
     test('loadMore does nothing when no more data', () async {
       setupLoadDataDefaults(analyses: []);
 

@@ -195,12 +195,18 @@ class WatchlistState {
 
 class WatchlistNotifier extends Notifier<WatchlistState> {
   @override
-  WatchlistState build() => WatchlistState();
+  WatchlistState build() {
+    _pendingAdds = {};
+    return WatchlistState();
+  }
 
   AppDatabase get _db => ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
   WarningRepository get _warningRepo => ref.read(warningRepositoryProvider);
   InsiderRepository get _insiderRepo => ref.read(insiderRepositoryProvider);
+
+  /// 防止同一 symbol 重複 addStock（快速連點防護）
+  Set<String> _pendingAdds = {};
 
   /// 清除錯誤狀態
   void clearError() => state = state.copyWith(error: null);
@@ -419,6 +425,9 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
   /// 新增股票至自選股
   Future<bool> addStock(String symbol) async {
+    // in-flight guard：防止快速連點重複執行
+    if (_pendingAdds.contains(symbol)) return true;
+
     // 檢查股票是否存在
     final stock = await _db.getStock(symbol);
     if (stock == null) {
@@ -431,6 +440,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       return true;
     }
 
+    _pendingAdds.add(symbol);
     try {
       // 寫入資料庫
       await _db.addToWatchlist(symbol);
@@ -459,6 +469,8 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
     } catch (e) {
       state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
+    } finally {
+      _pendingAdds.remove(symbol);
     }
   }
 

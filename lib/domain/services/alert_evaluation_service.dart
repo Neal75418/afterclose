@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
@@ -35,12 +36,15 @@ class AlertEvaluationService {
 
   /// Evaluate all active alerts against current market data
   ///
-  /// Returns list of alerts that should be triggered.
-  List<PriceAlertEntry> evaluateAlerts(
+  /// Returns triggered alerts and IDs of unimplemented alert types
+  /// (legacy DB data) that should be auto-disabled.
+  ({List<PriceAlertEntry> triggered, List<int> unimplementedIds})
+  evaluateAlerts(
     List<PriceAlertEntry> activeAlerts,
     AlertEvaluationContext context,
   ) {
     final triggered = <PriceAlertEntry>[];
+    final unimplementedIds = <int>[];
 
     for (final alert in activeAlerts) {
       final currentPrice = context.currentPrices[alert.symbol];
@@ -128,6 +132,14 @@ class AlertEvaluationService {
           shouldTrigger = context.warningSymbols.contains(alert.symbol);
         case 'TRADING_DISPOSAL':
           shouldTrigger = context.disposalSymbols.contains(alert.symbol);
+        default:
+          // 未實作的警示類型（UI 端 isImplemented 已阻擋建立，
+          // 但 DB 可能存有舊資料）— 收集 ID 讓呼叫端自動停用
+          AppLogger.warning(
+            'AlertEvaluationService',
+            '未實作的警示類型: ${alert.alertType} (symbol=${alert.symbol})，將自動停用',
+          );
+          unimplementedIds.add(alert.id);
       }
 
       if (shouldTrigger) {
@@ -135,7 +147,7 @@ class AlertEvaluationService {
       }
     }
 
-    return triggered;
+    return (triggered: triggered, unimplementedIds: unimplementedIds);
   }
 
   // ==================================================

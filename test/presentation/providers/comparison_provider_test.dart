@@ -131,11 +131,11 @@ void main() {
     });
 
     test('addStock skips duplicate symbol', () async {
-      // First add: symbol gets added even when _loadAllData fails
+      // 用 addStocks 設定初始狀態（不回滾）
       when(() => mockDb.getLatestDataDate()).thenThrow(Exception('DB error'));
 
       final notifier = container.read(comparisonProvider.notifier);
-      await notifier.addStock('2330');
+      await notifier.addStocks(['2330']);
       expect(container.read(comparisonProvider).symbols, ['2330']);
 
       // Second add: same symbol should be skipped (guard: symbols.contains)
@@ -160,11 +160,11 @@ void main() {
     });
 
     test('removeStock removes symbol from state', () async {
-      // Add a stock first (symbol persists even when _loadAllData fails)
+      // 用 addStocks 設定初始狀態（不回滾）
       when(() => mockDb.getLatestDataDate()).thenThrow(Exception('DB error'));
 
       final notifier = container.read(comparisonProvider.notifier);
-      await notifier.addStock('2330');
+      await notifier.addStocks(['2330']);
       expect(container.read(comparisonProvider).symbols, contains('2330'));
 
       // Remove it
@@ -188,8 +188,29 @@ void main() {
       final state = container.read(comparisonProvider);
       expect(state.isLoading, isFalse);
       expect(state.error, isNotNull);
-      expect(state.symbols, contains('2330'));
+      // addStock 失敗時應回滾，避免佔用名額
+      expect(state.symbols, isNot(contains('2330')));
     });
+
+    test(
+      'addStock allows re-adding after previous failure (rollback unblocks)',
+      () async {
+        when(() => mockDb.getLatestDataDate()).thenThrow(Exception('DB error'));
+
+        final notifier = container.read(comparisonProvider.notifier);
+
+        // 第一次失敗 → 回滾
+        await notifier.addStock('2330');
+        expect(container.read(comparisonProvider).symbols, isEmpty);
+
+        // 第二次嘗試不應被 symbols.contains 擋住
+        await notifier.addStock('2330');
+        // 仍然失敗（mock 未變），但重點是沒被跳過：error 被重新設定
+        final state = container.read(comparisonProvider);
+        expect(state.error, isNotNull);
+        expect(state.symbols, isEmpty); // 再次回滾
+      },
+    );
 
     test('addStocks deduplicates and limits to 4', () async {
       when(() => mockDb.getLatestDataDate()).thenThrow(Exception('DB error'));

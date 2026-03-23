@@ -279,9 +279,13 @@ class PriceAlertState {
 class PriceAlertNotifier extends Notifier<PriceAlertState> {
   late final AppDatabase _db;
 
+  /// 防止同一 alert 重複 toggle（快速連點防護）
+  Set<int> _pendingToggles = {};
+
   @override
   PriceAlertState build() {
     _db = ref.watch(databaseProvider);
+    _pendingToggles = {};
     return const PriceAlertState();
   }
 
@@ -360,6 +364,9 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
   /// Toggle alert active status
   Future<void> toggleAlert(int id, bool isActive) async {
+    // in-flight guard：防止快速連點導致並行寫入
+    if (_pendingToggles.contains(id)) return;
+
     // 樂觀更新：立即切換 state，並清除先前錯誤
     final previousAlerts = state.alerts;
     state = state.copyWith(
@@ -381,6 +388,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       }).toList(),
     );
 
+    _pendingToggles.add(id);
     try {
       await _db.updatePriceAlert(
         id,
@@ -392,6 +400,8 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
         alerts: previousAlerts,
         error: ErrorDisplay.message(e),
       );
+    } finally {
+      _pendingToggles.remove(id);
     }
   }
 

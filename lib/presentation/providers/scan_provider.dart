@@ -459,7 +459,7 @@ class ScanNotifier extends Notifier<ScanState> {
         return s;
       }).toList();
 
-      state = state.copyWith(stocks: updatedFiltered);
+      state = state.copyWith(stocks: updatedFiltered, error: null);
     } catch (e) {
       state = state.copyWith(error: ErrorDisplay.message(e));
     }
