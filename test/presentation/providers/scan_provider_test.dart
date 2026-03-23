@@ -10,6 +10,7 @@ import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // =============================================================================
 // Mocks
@@ -23,6 +24,47 @@ class MockCachedDatabaseAccessor extends Mock
 class MockAnalysisRepository extends Mock implements AnalysisRepository {}
 
 class MockDataSyncService extends Mock implements DataSyncService {}
+
+class FakeWatchlistNotifier extends WatchlistNotifier {
+  WatchlistState initialState = WatchlistState();
+  bool addStockResult = true;
+  bool removeStockResult = true;
+  String? lastAddedSymbol;
+  String? lastRemovedSymbol;
+
+  @override
+  WatchlistState build() => initialState;
+
+  @override
+  Future<void> loadData() async {}
+
+  @override
+  Future<void> loadMore() async {}
+
+  @override
+  void setSearchQuery(String query) {}
+
+  @override
+  void setSort(WatchlistSort sort) {}
+
+  @override
+  void setGroup(WatchlistGroup group) {}
+
+  @override
+  Future<bool> addStock(String symbol) async {
+    lastAddedSymbol = symbol;
+    return addStockResult;
+  }
+
+  @override
+  Future<bool> removeStock(String symbol) async {
+    lastRemovedSymbol = symbol;
+    return removeStockResult;
+  }
+
+  @override
+  Future<void> restoreStock(String symbol) async {}
+}
 
 // =============================================================================
 // Test Helpers
@@ -67,6 +109,7 @@ void main() {
   late MockCachedDatabaseAccessor mockCachedDb;
   late MockAnalysisRepository mockAnalysisRepo;
   late MockDataSyncService mockDataSyncService;
+  late FakeWatchlistNotifier fakeWatchlistNotifier;
   late ProviderContainer container;
 
   final testDate = DateTime.utc(2026, 2, 13);
@@ -76,6 +119,7 @@ void main() {
     mockCachedDb = MockCachedDatabaseAccessor();
     mockAnalysisRepo = MockAnalysisRepository();
     mockDataSyncService = MockDataSyncService();
+    fakeWatchlistNotifier = FakeWatchlistNotifier();
 
     container = ProviderContainer(
       overrides: [
@@ -83,6 +127,7 @@ void main() {
         cachedDbProvider.overrideWithValue(mockCachedDb),
         analysisRepositoryProvider.overrideWithValue(mockAnalysisRepo),
         dataSyncServiceProvider.overrideWithValue(mockDataSyncService),
+        watchlistProvider.overrideWith(() => fakeWatchlistNotifier),
       ],
     );
   });
@@ -330,28 +375,29 @@ void main() {
     });
 
     test('toggleWatchlist toggles stock watchlist status', () async {
-      // Setup: stock is in watchlist
-      when(() => mockDb.isInWatchlist('2330')).thenAnswer((_) async => true);
-      when(() => mockDb.removeFromWatchlist('2330')).thenAnswer((_) async => 1);
-
       // Pre-populate state with a stock item
       setupLoadDataDefaults(
         analyses: [createAnalysis(symbol: '2330', score: 85)],
       );
 
+      // Override getWatchlist AFTER setupLoadDataDefaults (which sets it to [])
+      // so _watchlistSymbols contains '2330'
+      when(() => mockDb.getWatchlist()).thenAnswer(
+        (_) async => [
+          WatchlistEntry(symbol: '2330', createdAt: DateTime(2026, 1, 1)),
+        ],
+      );
+
       final notifier = container.read(scanProvider.notifier);
       await notifier.loadData();
 
-      // Now toggle
+      // Now toggle (remove from watchlist)
       await notifier.toggleWatchlist('2330');
 
-      verify(() => mockDb.removeFromWatchlist('2330')).called(1);
+      expect(fakeWatchlistNotifier.lastRemovedSymbol, '2330');
     });
 
     test('toggleWatchlist adds to watchlist when not present', () async {
-      when(() => mockDb.isInWatchlist('2330')).thenAnswer((_) async => false);
-      when(() => mockDb.addToWatchlist('2330')).thenAnswer((_) async => 1);
-
       setupLoadDataDefaults(
         analyses: [createAnalysis(symbol: '2330', score: 85)],
       );
@@ -361,7 +407,7 @@ void main() {
 
       await notifier.toggleWatchlist('2330');
 
-      verify(() => mockDb.addToWatchlist('2330')).called(1);
+      expect(fakeWatchlistNotifier.lastAddedSymbol, '2330');
     });
 
     test('loadMore does nothing when no more data', () async {
