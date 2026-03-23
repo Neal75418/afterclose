@@ -180,11 +180,15 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   late final AppDatabase _db;
   late final AppClock _clock;
 
+  /// Generation token：防止舊月份載入結果覆蓋新月份狀態
+  int _loadGeneration = 0;
+
   @override
   EventCalendarState build() {
     _repo = ref.watch(eventRepositoryProvider);
     _db = ref.watch(databaseProvider);
     _clock = ref.watch(appClockProvider);
+    _loadGeneration = 0;
     return EventCalendarState();
   }
 
@@ -199,7 +203,11 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   }
 
   /// 載入某月的事件
-  Future<void> loadMonthEvents(DateTime month) async {
+  ///
+  /// 使用 generation token 防止舊月份結果覆蓋新月份狀態。
+  /// 回傳 `true` 表示載入完成並已寫入 state，`false` 表示被更新的載入取代。
+  Future<bool> loadMonthEvents(DateTime month) async {
+    final generation = ++_loadGeneration;
     state = state.copyWith(isLoading: true, error: null);
 
     try {
@@ -225,11 +233,15 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
         filterSymbols = positions.map((e) => e.symbol).toList();
       }
 
+      if (_loadGeneration != generation) return false;
+
       final eventList = await _repo.getEventsInRange(
         start,
         end,
         symbols: filterSymbols,
       );
+
+      if (_loadGeneration != generation) return false;
 
       // 按日期分組（table_calendar 需要 normalize 到日期 key）
       final eventMap = <DateTime, List<StockEventEntry>>{};
@@ -249,8 +261,11 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       if (state.selectedDate != null) {
         _updateSelectedDayEvents(state.selectedDate!);
       }
+      return true;
     } catch (e) {
+      if (_loadGeneration != generation) return false;
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
+      return true; // 完成了（雖然是錯誤），error 已寫入 state
     }
   }
 
@@ -310,10 +325,11 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     );
     // 重新載入當月事件
     if (state.focusedMonth != null) {
-      await loadMonthEvents(state.focusedMonth!);
+      final completed = await loadMonthEvents(state.focusedMonth!);
       // loadMonthEvents 吞掉例外只寫 state.error，
-      // 但呼叫端需要知道重載失敗才能給正確回饋
-      if (state.error != null) {
+      // 但呼叫端需要知道重載失敗才能給正確回饋。
+      // 若被更新的載入取代（completed=false），寫入已成功，新載入會處理 UI。
+      if (completed && state.error != null) {
         throw StateError(state.error!);
       }
     }
@@ -322,11 +338,12 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
   /// 刪除事件
   ///
   /// 寫入成功後重載當月事件；若重載失敗會拋出例外。
+  /// 若重載被更新的載入取代，寫入仍成功，不拋例外。
   Future<void> deleteEvent(int id) async {
     await _repo.deleteEvent(id);
     if (state.focusedMonth != null) {
-      await loadMonthEvents(state.focusedMonth!);
-      if (state.error != null) {
+      final completed = await loadMonthEvents(state.focusedMonth!);
+      if (completed && state.error != null) {
         throw StateError(state.error!);
       }
     }

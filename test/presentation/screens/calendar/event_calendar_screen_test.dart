@@ -22,7 +22,7 @@ class FakeEventCalendarNotifier extends EventCalendarNotifier {
   Future<void> init() async {}
 
   @override
-  Future<void> loadMonthEvents(DateTime month) async {}
+  Future<bool> loadMonthEvents(DateTime month) async => true;
 
   @override
   void selectDate(DateTime date) {}

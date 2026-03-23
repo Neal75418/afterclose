@@ -66,9 +66,13 @@ class RecommendationPerformanceNotifier
     extends Notifier<RecommendationPerformanceState> {
   var _active = true;
 
+  /// Generation token：防止舊的 loadData 結果覆蓋新的區間選擇
+  int _loadGeneration = 0;
+
   @override
   RecommendationPerformanceState build() {
     _active = true;
+    _loadGeneration = 0;
     ref.onDispose(() => _active = false);
 
     // 初始載入
@@ -86,6 +90,7 @@ class RecommendationPerformanceNotifier
   void clearError() => state = state.copyWith(clearError: true);
 
   Future<void> loadData() async {
+    final generation = ++_loadGeneration;
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -95,26 +100,22 @@ class RecommendationPerformanceNotifier
         _service.getOverallPerformanceStats(period: period),
       ).wait;
 
-      if (_active) {
-        state = state.copyWith(
-          stockRecords: records,
-          overallStats: stats,
-          isLoading: false,
-        );
-      }
+      if (!_active || _loadGeneration != generation) return;
+
+      state = state.copyWith(
+        stockRecords: records,
+        overallStats: stats,
+        isLoading: false,
+      );
     } catch (e, stack) {
+      if (!_active || _loadGeneration != generation) return;
       AppLogger.error(
         'RecommendationPerformanceNotifier',
         '載入績效資料失敗',
         e,
         stack,
       );
-      if (_active) {
-        state = state.copyWith(
-          isLoading: false,
-          error: ErrorDisplay.message(e),
-        );
-      }
+      state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 
