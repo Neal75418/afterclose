@@ -129,6 +129,9 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     state = state.copyWith(conditions: updated, clearResult: true, stocks: []);
   }
 
+  /// 清除錯誤狀態
+  void clearError() => state = state.copyWith(clearError: true);
+
   void clearConditions() {
     state = state.copyWith(conditions: [], clearResult: true, stocks: []);
   }

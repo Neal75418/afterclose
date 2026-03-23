@@ -166,7 +166,7 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
       );
     }
 
-    if (state.error != null) {
+    if (state.error != null && state.stocks.isEmpty) {
       return ErrorDisplay.isNetworkError(state.error!)
           ? EmptyStates.networkError(
               onRetry: () =>
@@ -188,6 +188,25 @@ class _CustomScreeningScreenState extends ConsumerState<CustomScreeningScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 分頁/重載失敗時顯示 MaterialBanner
+        if (state.error != null)
+          MaterialBanner(
+            content: Text(state.error!),
+            leading: Icon(Icons.error_outline, color: theme.colorScheme.error),
+            actions: [
+              TextButton(
+                onPressed: () => ref
+                    .read(customScreeningProvider.notifier)
+                    .executeScreening(),
+                child: Text('common.retry'.tr()),
+              ),
+              TextButton(
+                onPressed: () =>
+                    ref.read(customScreeningProvider.notifier).clearError(),
+                child: Text('common.dismiss'.tr()),
+              ),
+            ],
+          ),
         // 結果統計
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

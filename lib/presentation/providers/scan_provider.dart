@@ -387,7 +387,7 @@ class ScanNotifier extends Notifier<ScanState> {
       analyses: analyses,
       dateCtx: dateCtx,
       cachedDb: _cachedDb,
-      watchlistSymbols: _watchlistSymbols,
+      watchlistSymbols: Set.unmodifiable(_watchlistSymbols),
     );
   }
 
@@ -410,21 +410,28 @@ class ScanNotifier extends Notifier<ScanState> {
 
   /// Toggle watchlist for a stock
   Future<void> toggleWatchlist(String symbol) async {
-    final isInWatchlist = await _db.isInWatchlist(symbol);
+    final isInWatchlist = _watchlistSymbols.contains(symbol);
 
-    if (isInWatchlist) {
-      await _db.removeFromWatchlist(symbol);
-    } else {
-      await _db.addToWatchlist(symbol);
+    try {
+      if (isInWatchlist) {
+        await _db.removeFromWatchlist(symbol);
+        _watchlistSymbols.remove(symbol);
+      } else {
+        await _db.addToWatchlist(symbol);
+        _watchlistSymbols.add(symbol);
+      }
+
+      final updatedFiltered = state.stocks.map((s) {
+        if (s.symbol == symbol) {
+          return s.copyWith(isInWatchlist: !isInWatchlist);
+        }
+        return s;
+      }).toList();
+
+      state = state.copyWith(stocks: updatedFiltered);
+    } catch (e) {
+      state = state.copyWith(error: ErrorDisplay.message(e));
     }
-
-    // 使用 copyWith 更新股票（allStocks 未使用）
-    final updatedFiltered = state.stocks.map((s) {
-      if (s.symbol == symbol) return s.copyWith(isInWatchlist: !isInWatchlist);
-      return s;
-    }).toList();
-
-    state = state.copyWith(stocks: updatedFiltered);
   }
 }
 

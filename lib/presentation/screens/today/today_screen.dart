@@ -442,7 +442,11 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
     if (currentlyInWatchlist) {
       await notifier.removeStock(symbol);
-      if (mounted) {
+      if (!mounted) return;
+      final watchlistState = ref.read(watchlistProvider);
+      if (watchlistState.error != null) {
+        _showSnackBar(watchlistState.error!, isError: true);
+      } else {
         HapticFeedback.mediumImpact();
         _showSnackBar(
           S.watchlistRemoved(symbol),

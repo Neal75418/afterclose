@@ -199,11 +199,15 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
     if (wasInWatchlist) {
       await watchlistNotifier.removeStock(_symbol);
+      // removeStock 失敗時會回滾並設 error，檢查是否成功
+      final watchlistState = ref.read(watchlistProvider);
+      if (watchlistState.error != null) return;
     } else {
-      await watchlistNotifier.addStock(_symbol);
+      final success = await watchlistNotifier.addStock(_symbol);
+      if (!success) return;
     }
 
-    // 更新本地狀態
+    // 操作成功才更新本地狀態
     state = state.copyWith(isInWatchlist: !wasInWatchlist);
   }
 
