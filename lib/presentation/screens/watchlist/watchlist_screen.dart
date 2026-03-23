@@ -77,10 +77,20 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     final notifier = ref.read(watchlistProvider.notifier);
     await notifier.removeStock(symbol);
 
-    if (mounted) {
-      final messenger = ScaffoldMessenger.of(context);
-      // 清除現有的 SnackBar，避免堆積卡住 UI
-      messenger.clearSnackBars();
+    if (!mounted) return;
+    final watchlistState = ref.read(watchlistProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+
+    if (watchlistState.error != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(watchlistState.error!),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } else {
       messenger.showSnackBar(
         SnackBar(
           content: Text('watchlist.removed'.tr(namedArgs: {'symbol': symbol})),
@@ -336,9 +346,9 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   Widget _buildWatchlistBody(WatchlistState state, ThemeData theme) {
     return ThemedRefreshIndicator(
       onRefresh: _onRefresh,
-      child: state.isLoading
+      child: state.isLoading && state.items.isEmpty
           ? const StockListShimmer(itemCount: 5)
-          : state.error != null
+          : state.error != null && state.items.isEmpty
           ? ErrorDisplay.isNetworkError(state.error!)
                 ? EmptyStates.networkError(onRetry: _onRefresh)
                 : EmptyStates.error(message: state.error!, onRetry: _onRefresh)
@@ -348,6 +358,26 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             )
           : Column(
               children: [
+                // Refresh 失敗時顯示 MaterialBanner
+                if (state.error != null)
+                  MaterialBanner(
+                    content: Text(state.error!),
+                    leading: Icon(
+                      Icons.error_outline,
+                      color: theme.colorScheme.error,
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: _onRefresh,
+                        child: Text('common.retry'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(watchlistProvider.notifier).clearError(),
+                        child: Text('common.dismiss'.tr()),
+                      ),
+                    ],
+                  ),
                 // 股票數量
                 Padding(
                   padding: const EdgeInsets.symmetric(

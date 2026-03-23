@@ -252,13 +252,28 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         );
       },
       onDismissed: (direction) {
-        ref.read(priceAlertProvider.notifier).deleteAlert(alert.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('alert.deleted'.tr()),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        final notifier = ref.read(priceAlertProvider.notifier);
+        notifier.deleteAlert(alert.id).then((_) {
+          if (!context.mounted) return;
+          final alertState = ref.read(priceAlertProvider);
+          if (alertState.error != null) {
+            notifier.clearError();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(alertState.error!),
+                behavior: SnackBarBehavior.floating,
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('alert.deleted'.tr()),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        });
       },
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),

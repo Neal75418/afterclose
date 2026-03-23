@@ -156,6 +156,9 @@ class ScanNotifier extends Notifier<ScanState> {
   int _reloadSeq = 0;
   DateContext? _dateCtx;
 
+  /// 清除錯誤狀態
+  void clearError() => state = state.copyWith(error: null);
+
   /// Load scan data (first page)
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null, hasMore: true);

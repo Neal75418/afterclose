@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -36,6 +38,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   List<StockMasterEntry> _searchResults = [];
   bool _isSearching = false;
   bool _isSubmitting = false;
+  Timer? _searchDebounce;
   bool _feeManuallyEdited = false;
   bool _taxManuallyEdited = false;
 
@@ -59,6 +62,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _symbolController.dispose();
     _quantityController.dispose();
     _priceController.dispose();
@@ -373,38 +377,44 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   }
 
   void _onSearchChanged(String query) {
+    _searchDebounce?.cancel();
+
     if (query.length < 2) {
-      setState(() => _searchResults = []);
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
       return;
     }
 
-    setState(() => _isSearching = true);
-    final stockRepo = ref.read(stockRepositoryProvider);
-    stockRepo
-        .searchStocks(query)
-        .then((results) {
-          if (mounted) {
-            setState(() {
-              _searchResults = results.take(5).toList();
-              _isSearching = false;
-            });
-          }
-        })
-        .catchError((Object e) {
-          if (mounted) {
-            setState(() {
-              _searchResults = [];
-              _isSearching = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(ErrorDisplay.message(e)),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
-        });
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () async {
+      if (!mounted) return;
+      setState(() => _isSearching = true);
+      try {
+        final stockRepo = ref.read(stockRepositoryProvider);
+        final results = await stockRepo.searchStocks(query);
+        if (mounted && _symbolController.text == query) {
+          setState(() {
+            _searchResults = results.take(5).toList();
+            _isSearching = false;
+          });
+        }
+      } catch (e) {
+        if (mounted && _symbolController.text == query) {
+          setState(() {
+            _searchResults = [];
+            _isSearching = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(ErrorDisplay.message(e)),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    });
   }
 
   void _autoCalcFees() {

@@ -340,10 +340,11 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
   /// Delete an alert
   Future<void> deleteAlert(int id) async {
-    // 樂觀更新：立即從 state 移除
+    // 樂觀更新：立即從 state 移除，並清除先前錯誤
     final previousAlerts = state.alerts;
     state = state.copyWith(
       alerts: state.alerts.where((a) => a.id != id).toList(),
+      error: null,
     );
 
     try {
@@ -359,9 +360,10 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
   /// Toggle alert active status
   Future<void> toggleAlert(int id, bool isActive) async {
-    // 樂觀更新：立即切換 state
+    // 樂觀更新：立即切換 state，並清除先前錯誤
     final previousAlerts = state.alerts;
     state = state.copyWith(
+      error: null,
       alerts: state.alerts.map((a) {
         if (a.id == id) {
           return PriceAlertEntry(

@@ -277,10 +277,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
   /// 股票清單：載入中 / 錯誤 / 空狀態 / 列表或網格
   Widget _buildStockList(BuildContext context, ScanState state) {
-    if (state.isLoading) {
+    final theme = Theme.of(context);
+
+    if (state.isLoading && state.stocks.isEmpty) {
       return const Expanded(child: StockListShimmer(itemCount: 8));
     }
-    if (state.error != null) {
+    if (state.error != null && state.stocks.isEmpty) {
       void onRetry() => ref.read(scanProvider.notifier).loadData();
       return Expanded(
         child: ErrorDisplay.isNetworkError(state.error!)
@@ -302,11 +304,39 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final columns = context.responsiveGridColumns;
     final useGrid = columns > 1;
 
-    if (useGrid) {
-      return Expanded(child: _buildStockGrid(context, state, columns));
+    final listWidget = useGrid
+        ? _buildStockGrid(context, state, columns)
+        : _buildStockListView(context, state);
+
+    // 有資料但 refresh/loadMore 失敗時，顯示 MaterialBanner
+    if (state.error != null) {
+      return Expanded(
+        child: Column(
+          children: [
+            MaterialBanner(
+              content: Text(state.error!),
+              leading: Icon(
+                Icons.error_outline,
+                color: theme.colorScheme.error,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => ref.read(scanProvider.notifier).loadData(),
+                  child: Text('common.retry'.tr()),
+                ),
+                TextButton(
+                  onPressed: () => ref.read(scanProvider.notifier).clearError(),
+                  child: Text('common.dismiss'.tr()),
+                ),
+              ],
+            ),
+            Expanded(child: listWidget),
+          ],
+        ),
+      );
     }
 
-    return Expanded(child: _buildStockListView(context, state));
+    return Expanded(child: listWidget);
   }
 
   /// 手機佈局：ListView

@@ -202,6 +202,9 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
   WarningRepository get _warningRepo => ref.read(warningRepositoryProvider);
   InsiderRepository get _insiderRepo => ref.read(insiderRepositoryProvider);
 
+  /// 清除錯誤狀態
+  void clearError() => state = state.copyWith(error: null);
+
   /// 載入自選股資料
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -485,9 +488,10 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
     // 保存完整狀態快照以便回滾（包含排序、分組等設定）
     final previousState = state;
 
-    // 樂觀更新：立即從狀態中移除
+    // 樂觀更新：立即從狀態中移除，並清除先前錯誤
     state = state.copyWith(
       items: state.items.where((item) => item.symbol != symbol).toList(),
+      error: null,
     );
 
     try {
