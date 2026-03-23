@@ -205,8 +205,8 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
   WarningRepository get _warningRepo => ref.read(warningRepositoryProvider);
   InsiderRepository get _insiderRepo => ref.read(insiderRepositoryProvider);
 
-  /// 防止同一 symbol 重複 addStock（快速連點防護）
-  Set<String> _pendingAdds = {};
+  /// 同一 symbol 的 in-flight addStock Future（快速連點共享結果）
+  Map<String, Future<bool>> _pendingAdds = {};
 
   /// 清除錯誤狀態
   void clearError() => state = state.copyWith(error: null);
@@ -425,10 +425,20 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
   /// 新增股票至自選股
   Future<bool> addStock(String symbol) async {
-    // in-flight guard：防止快速連點重複執行（必須在任何 await 之前）
-    if (_pendingAdds.contains(symbol)) return true;
-    _pendingAdds.add(symbol);
+    // 若同一 symbol 已有 in-flight 請求，共享其結果（不另起新請求）
+    final pending = _pendingAdds[symbol];
+    if (pending != null) return pending;
 
+    final future = _doAddStock(symbol);
+    _pendingAdds[symbol] = future;
+    try {
+      return await future;
+    } finally {
+      _pendingAdds.remove(symbol);
+    }
+  }
+
+  Future<bool> _doAddStock(String symbol) async {
     try {
       // 檢查股票是否存在
       final stock = await _db.getStock(symbol);
@@ -468,8 +478,6 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
     } catch (e) {
       state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
-    } finally {
-      _pendingAdds.remove(symbol);
     }
   }
 

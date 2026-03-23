@@ -414,4 +414,60 @@ void main() {
       expect(desc, isNotEmpty);
     });
   });
+
+  // ===========================================================================
+  // checkAndTriggerAlerts — legacy alert auto-disable sync
+  // ===========================================================================
+
+  group('PriceAlertNotifier.checkAndTriggerAlerts', () {
+    test('syncs auto-disabled legacy alerts to in-memory state', () async {
+      // 先載入含有一筆 legacy 未實作類型的 alerts
+      final legacyAlert = createAlert(
+        id: 99,
+        symbol: '2330',
+        alertType: 'LEGACY_UNKNOWN_TYPE',
+        isActive: true,
+      );
+      final normalAlert = createAlert(
+        id: 1,
+        symbol: '2330',
+        alertType: 'ABOVE',
+        targetValue: 600.0,
+        isActive: true,
+      );
+      when(
+        () => mockDb.getAllAlerts(),
+      ).thenAnswer((_) async => [normalAlert, legacyAlert]);
+
+      final notifier = container.read(priceAlertProvider.notifier);
+      await notifier.loadAlerts();
+
+      // 確認初始 state 兩筆都是 isActive
+      expect(container.read(priceAlertProvider).alerts, hasLength(2));
+      expect(
+        container.read(priceAlertProvider).alerts.every((a) => a.isActive),
+        isTrue,
+      );
+
+      // Mock checkAlerts 回傳空（無觸發），DAO 內部已停用 legacy
+      when(
+        () => mockDb.checkAlerts(
+          any(),
+          any(),
+          evaluationService: any(named: 'evaluationService'),
+        ),
+      ).thenAnswer((_) async => <PriceAlertEntry>[]);
+
+      await notifier.checkAndTriggerAlerts({'2330': 500.0}, {'2330': 0.0});
+
+      final state = container.read(priceAlertProvider);
+      // legacy alert 應被同步為 isActive: false
+      final legacy = state.alerts.firstWhere((a) => a.id == 99);
+      expect(legacy.isActive, isFalse);
+
+      // 正常 alert 不受影響
+      final normal = state.alerts.firstWhere((a) => a.id == 1);
+      expect(normal.isActive, isTrue);
+    });
+  });
 }

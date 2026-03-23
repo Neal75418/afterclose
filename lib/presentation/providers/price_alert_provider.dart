@@ -279,8 +279,8 @@ class PriceAlertState {
 class PriceAlertNotifier extends Notifier<PriceAlertState> {
   late final AppDatabase _db;
 
-  /// 防止同一 alert 重複 toggle（快速連點防護）
-  Set<int> _pendingToggles = {};
+  /// 同一 alert 的 in-flight toggle Future（序列化執行，last wins）
+  Map<int, Future<void>> _pendingToggles = {};
 
   @override
   PriceAlertState build() {
@@ -363,10 +363,39 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
   }
 
   /// Toggle alert active status
+  ///
+  /// 序列化同一 alert 的操作：若前一次 toggle 仍在執行，會等它完成後
+  /// 再執行本次操作，確保最後一次使用者意圖落庫（last wins）。
   Future<void> toggleAlert(int id, bool isActive) async {
-    // in-flight guard：防止快速連點導致並行寫入
-    if (_pendingToggles.contains(id)) return;
+    // 捕獲前一次 in-flight Future（若有）
+    final pending = _pendingToggles[id];
 
+    Future<void> doToggle() async {
+      // 等待前一次完成後再執行，確保序列化
+      // try-catch: 前一次的錯誤不應阻擋本次操作
+      if (pending != null) {
+        try {
+          await pending;
+        } catch (_) {
+          // 前一次已自行處理錯誤（rollback + state.error），忽略即可
+        }
+      }
+      await _doToggleAlert(id, isActive);
+    }
+
+    final future = doToggle();
+    _pendingToggles[id] = future;
+    try {
+      await future;
+    } finally {
+      // 僅清除自己的 Future，避免移除後續排隊的操作
+      if (_pendingToggles[id] == future) {
+        _pendingToggles.remove(id);
+      }
+    }
+  }
+
+  Future<void> _doToggleAlert(int id, bool isActive) async {
     // 樂觀更新：立即切換 state，並清除先前錯誤
     final previousAlerts = state.alerts;
     state = state.copyWith(
@@ -388,7 +417,6 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       }).toList(),
     );
 
-    _pendingToggles.add(id);
     try {
       await _db.updatePriceAlert(
         id,
@@ -400,8 +428,6 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
         alerts: previousAlerts,
         error: ErrorDisplay.message(e),
       );
-    } finally {
-      _pendingToggles.remove(id);
     }
   }
 

@@ -34,6 +34,25 @@ class AlertEvaluationService {
 
   final TechnicalIndicatorService _indicatorService;
 
+  /// evaluator switch 中有實作的警示類型字串
+  static const _implementedTypes = {
+    'ABOVE',
+    'BELOW',
+    'CHANGE_PCT',
+    'VOLUME_SPIKE',
+    'VOLUME_ABOVE',
+    'WEEK_52_HIGH',
+    'WEEK_52_LOW',
+    'RSI_OVERBOUGHT',
+    'RSI_OVERSOLD',
+    'KD_GOLDEN_CROSS',
+    'KD_DEATH_CROSS',
+    'CROSS_ABOVE_MA',
+    'CROSS_BELOW_MA',
+    'TRADING_WARNING',
+    'TRADING_DISPOSAL',
+  };
+
   /// Evaluate all active alerts against current market data
   ///
   /// Returns triggered alerts and IDs of unimplemented alert types
@@ -47,6 +66,16 @@ class AlertEvaluationService {
     final unimplementedIds = <int>[];
 
     for (final alert in activeAlerts) {
+      // 未實作的警示類型不依賴 price data，直接收集並跳過
+      if (!_implementedTypes.contains(alert.alertType)) {
+        AppLogger.warning(
+          'AlertEvaluationService',
+          '未實作的警示類型: ${alert.alertType} (symbol=${alert.symbol})，將自動停用',
+        );
+        unimplementedIds.add(alert.id);
+        continue;
+      }
+
       final currentPrice = context.currentPrices[alert.symbol];
       if (currentPrice == null) continue;
 
@@ -133,11 +162,11 @@ class AlertEvaluationService {
         case 'TRADING_DISPOSAL':
           shouldTrigger = context.disposalSymbols.contains(alert.symbol);
         default:
-          // 未實作的警示類型（UI 端 isImplemented 已阻擋建立，
-          // 但 DB 可能存有舊資料）— 收集 ID 讓呼叫端自動停用
+          // 防禦：_implementedTypes 與 switch 不同步時的安全網
+          // 既然 switch 沒有處理邏輯，應視為未實作並自動停用
           AppLogger.warning(
             'AlertEvaluationService',
-            '未實作的警示類型: ${alert.alertType} (symbol=${alert.symbol})，將自動停用',
+            'switch 未處理的警示類型: ${alert.alertType} (symbol=${alert.symbol})，將自動停用',
           );
           unimplementedIds.add(alert.id);
       }
