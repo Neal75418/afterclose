@@ -459,16 +459,25 @@ class _StockSymbolInputDialogState extends State<_StockSymbolInputDialog> {
       _errorText = null;
     });
 
-    final stock = await widget.db.getStock(input);
-    if (!mounted) return;
+    try {
+      final stock = await widget.db.getStock(input);
+      if (!mounted) return;
 
-    if (stock != null) {
-      Navigator.pop(context, input);
-    } else {
-      setState(() {
-        _isSearching = false;
-        _errorText = 'alert.stockNotFound'.tr();
-      });
+      if (stock != null) {
+        Navigator.pop(context, input);
+      } else {
+        setState(() {
+          _isSearching = false;
+          _errorText = 'alert.stockNotFound'.tr();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _errorText = ErrorDisplay.message(e);
+        });
+      }
     }
   }
 

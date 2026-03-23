@@ -83,6 +83,8 @@ class RecommendationPerformanceNotifier
   // 資料載入
   // ==================================================
 
+  void clearError() => state = state.copyWith(clearError: true);
+
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, clearError: true);
 

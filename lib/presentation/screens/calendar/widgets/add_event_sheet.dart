@@ -230,7 +230,10 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
     });
   }
 
+  bool _isSubmitting = false;
+
   Future<void> _submit() async {
+    if (_isSubmitting) return;
     final title = _titleController.text.trim();
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -242,6 +245,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
       return;
     }
 
+    _isSubmitting = true;
     try {
       await ref
           .read(eventCalendarProvider.notifier)
@@ -273,6 +277,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
           ),
         );
       }
+    } finally {
+      _isSubmitting = false;
     }
   }
 }

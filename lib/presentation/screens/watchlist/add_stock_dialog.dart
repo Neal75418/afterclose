@@ -83,7 +83,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
       try {
         final stockRepo = widget.ref.read(stockRepositoryProvider);
         final results = await stockRepo.searchStocks(query);
-        if (mounted) {
+        if (mounted && _controller.text == query) {
           setState(() {
             _searchResults = results.take(8).toList();
             _isSearching = false;

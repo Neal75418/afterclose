@@ -67,6 +67,12 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                               .loadData(),
                           child: Text('common.retry'.tr()),
                         ),
+                        TextButton(
+                          onPressed: () => ref
+                              .read(recommendationPerformanceProvider.notifier)
+                              .clearError(),
+                          child: Text('common.dismiss'.tr()),
+                        ),
                       ],
                     ),
 

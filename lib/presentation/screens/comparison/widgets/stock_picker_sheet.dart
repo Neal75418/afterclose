@@ -57,7 +57,7 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
     try {
       final stockRepo = ref.read(stockRepositoryProvider);
       final results = await stockRepo.searchStocks(query);
-      if (mounted) {
+      if (mounted && _searchController.text == query) {
         setState(() {
           _searchResults = results
               .where((s) => !widget.existingSymbols.contains(s.symbol))
