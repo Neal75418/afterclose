@@ -361,6 +361,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 平行執行 API 呼叫與 DB 彙總查詢，任一失敗不影響其他。
   /// 設有總超時機制：超過 [_loadTimeoutSec] 秒後先結束 loading 顯示 DB 資料，
   /// API 資料在背景繼續載入，完成後自動更新 UI。
+  ///
+  /// **注意：混合日期資料**
+  /// [state.dataDate] 代表 daily_price 表的最新日期，但各區塊實際資料日期
+  /// 可能不同：by-market 指標會回退到 [fallbackDate]，融資融券/警示等抓各市場
+  /// 最新可用資料。UI 標頭以 [dataDate] 為近似值，不代表所有區塊精確日期。
   static const _loadTimeoutSec = ApiConfig.marketOverviewLoadTimeoutSec;
 
   Future<void> loadData() async {

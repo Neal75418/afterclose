@@ -183,7 +183,8 @@ class CachedDatabaseAccessor {
     final effectiveHistoryEnd = historyEnd ?? analysisDate;
 
     // 並行擷取所有資料（含快取），使用 Record unpacking 確保型別安全
-    final (stocks, latestPrices, analyses, reasons, priceHistories) = await (
+    // rawLatestPrices 為 fallback：若 priceHistories 無資料才使用
+    final (stocks, rawLatestPrices, analyses, reasons, priceHistories) = await (
       getStocksBatch(symbols),
       getLatestPricesBatch(symbols),
       getAnalysesBatch(symbols, analysisDate),
@@ -194,6 +195,21 @@ class CachedDatabaseAccessor {
         endDate: effectiveHistoryEnd,
       ),
     ).wait;
+
+    // 確保 latestPrices 與 analysisDate 日期一致：
+    // 優先使用 priceHistories 中的最新一筆（已受 analysisDate 約束），
+    // 避免同步進行中時較新的價格與較舊的分析/理由混搭。
+    // 僅在 priceHistories 無資料時 fallback 到 rawLatestPrices。
+    final latestPrices = <String, DailyPriceEntry>{};
+    for (final symbol in symbols) {
+      final history = priceHistories[symbol];
+      if (history != null && history.isNotEmpty) {
+        latestPrices[symbol] = history.last;
+      } else {
+        final fallback = rawLatestPrices[symbol];
+        if (fallback != null) latestPrices[symbol] = fallback;
+      }
+    }
 
     return (
       stocks: stocks,
@@ -225,7 +241,7 @@ class CachedDatabaseAccessor {
     final effectiveHistoryEnd = historyEnd ?? analysisDate;
 
     // 使用 Record unpacking 確保型別安全
-    final (stocks, latestPrices, reasons, priceHistories) = await (
+    final (stocks, rawLatestPrices, reasons, priceHistories) = await (
       getStocksBatch(symbols),
       getLatestPricesBatch(symbols),
       getReasonsBatch(symbols, analysisDate),
@@ -235,6 +251,18 @@ class CachedDatabaseAccessor {
         endDate: effectiveHistoryEnd,
       ),
     ).wait;
+
+    // 與 loadStockListData 相同邏輯：確保 latestPrices 與 analysisDate 一致
+    final latestPrices = <String, DailyPriceEntry>{};
+    for (final symbol in symbols) {
+      final history = priceHistories[symbol];
+      if (history != null && history.isNotEmpty) {
+        latestPrices[symbol] = history.last;
+      } else {
+        final fallback = rawLatestPrices[symbol];
+        if (fallback != null) latestPrices[symbol] = fallback;
+      }
+    }
 
     return (
       stocks: stocks,
