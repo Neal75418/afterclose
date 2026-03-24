@@ -39,7 +39,10 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
       label: _buildSemanticLabel(summary),
       container: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing16,
+          vertical: DesignTokens.spacing8,
+        ),
         child: Card(
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -95,7 +98,10 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
   Widget _buildLoadingSkeleton(ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: Card(
         elevation: 0,
         shape: RoundedRectangleBorder(
@@ -105,7 +111,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -114,35 +120,47 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
                   const ShimmerContainer(
                     width: 18,
                     height: 18,
-                    borderRadius: 4,
+                    borderRadius: DesignTokens.radiusXs,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: DesignTokens.spacing8),
                   const ShimmerContainer(
                     width: 80,
                     height: 16,
-                    borderRadius: 4,
+                    borderRadius: DesignTokens.radiusXs,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: DesignTokens.spacing8),
                   ShimmerContainer(
                     width: 40,
                     height: 20,
-                    borderRadius: 4,
+                    borderRadius: DesignTokens.radiusXs,
                     semanticLabel: 'summary.title'.tr(),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
               const ShimmerContainer(
                 width: double.infinity,
                 height: 14,
-                borderRadius: 4,
+                borderRadius: DesignTokens.radiusXs,
               ),
-              const SizedBox(height: 6),
-              const ShimmerContainer(width: 240, height: 14, borderRadius: 4),
-              const SizedBox(height: 12),
-              const ShimmerContainer(width: 200, height: 12, borderRadius: 4),
-              const SizedBox(height: 4),
-              const ShimmerContainer(width: 180, height: 12, borderRadius: 4),
+              const SizedBox(height: DesignTokens.spacing6),
+              const ShimmerContainer(
+                width: 240,
+                height: 14,
+                borderRadius: DesignTokens.radiusXs,
+              ),
+              const SizedBox(height: DesignTokens.spacing12),
+              const ShimmerContainer(
+                width: 200,
+                height: 12,
+                borderRadius: DesignTokens.radiusXs,
+              ),
+              const SizedBox(height: DesignTokens.spacing4),
+              const ShimmerContainer(
+                width: 180,
+                height: 12,
+                borderRadius: DesignTokens.radiusXs,
+              ),
             ],
           ),
         ),
@@ -170,7 +188,10 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
       onTap: () => setState(() => _isExpanded = !_isExpanded),
       borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing16,
+          vertical: DesignTokens.spacing12,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -181,16 +202,16 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
                   size: 18,
                   color: theme.colorScheme.primary,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Text(
                   'summary.title'.tr(),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 _Badge(label: sentimentLabel, color: sentimentColor),
-                const SizedBox(width: 6),
+                const SizedBox(width: DesignTokens.spacing6),
                 _Badge(
                   label: _confidenceLabel(summary.confidence),
                   color: _confidenceColor(summary.confidence, theme),
@@ -208,7 +229,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
               ],
             ),
             // 訊號強度條
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             _SignalStrengthBar(summary: summary),
           ],
         ),
@@ -218,7 +239,12 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
   Widget _buildContent(StockSummary summary, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spacing16,
+        0,
+        DesignTokens.spacing16,
+        DesignTokens.spacing12,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -230,14 +256,14 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
           // 關鍵訊號
           if (summary.hasSignals) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             _buildSectionTitle(
               theme,
               Icons.trending_up,
               'summary.keySignals'.tr(),
               AppTheme.upColor,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
             ...summary.keySignals.map(
               (s) => _buildBulletItem(theme, s, AppTheme.upColor),
             ),
@@ -245,14 +271,14 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
           // 風險提示
           if (summary.hasRisks) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             _buildSectionTitle(
               theme,
               Icons.warning_amber_rounded,
               'summary.riskFactors'.tr(),
               AppTheme.warningColor,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
             ...summary.riskFactors.map(
               (s) => _buildBulletItem(theme, s, AppTheme.warningColor),
             ),
@@ -260,14 +286,14 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
           // 輔助數據
           if (summary.hasSupportingData) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             _buildSectionTitle(
               theme,
               Icons.bar_chart,
               'summary.supportingDataTitle'.tr(),
               theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
             ...summary.supportingData.map(
               (s) => _buildBulletItem(
                 theme,
@@ -281,11 +307,11 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
           _RuleAccuracySection(symbol: widget.symbol),
 
           // 快捷操作按鈕
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           _buildActionButtons(theme),
 
           // 免責聲明
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Text(
             'summary.disclaimer'.tr(),
             style: theme.textTheme.labelSmall?.copyWith(
@@ -299,8 +325,8 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
   Widget _buildActionButtons(ThemeData theme) {
     return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+      spacing: DesignTokens.spacing8,
+      runSpacing: DesignTokens.spacing8,
       children: [
         _ActionChip(
           icon: Icons.notifications_outlined,
@@ -325,7 +351,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
     return Row(
       children: [
         Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
+        const SizedBox(width: DesignTokens.spacing4),
         Text(
           title,
           style: theme.textTheme.labelMedium?.copyWith(
@@ -339,7 +365,10 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
 
   Widget _buildBulletItem(ThemeData theme, String text, Color dotColor) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, top: 2),
+      padding: const EdgeInsets.only(
+        left: DesignTokens.spacing4,
+        top: DesignTokens.spacing2,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -354,7 +383,7 @@ class _AiSummaryCardState extends ConsumerState<AiSummaryCard> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Expanded(
             child: Text(
               text,
@@ -394,7 +423,10 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: DesignTokens.spacing2,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
@@ -457,14 +489,14 @@ class _SignalStrengthBar extends StatelessWidget {
           size: 14,
           color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: DesignTokens.spacing6),
         Text(
           'summary.signalStrength'.tr(),
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(2),
@@ -476,7 +508,7 @@ class _SignalStrengthBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Text(
           '${(strength * 100).toInt()}%',
           style: theme.textTheme.labelSmall?.copyWith(
@@ -551,7 +583,7 @@ class _RuleAccuracySection extends ConsumerWidget {
         if (summaryText == null) return const SizedBox.shrink();
 
         return Padding(
-          padding: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.only(top: DesignTokens.spacing12),
           child: Row(
             children: [
               Icon(
@@ -561,7 +593,7 @@ class _RuleAccuracySection extends ConsumerWidget {
                   alpha: 0.7,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: DesignTokens.spacing6),
               Text(
                 'summary.ruleAccuracy'.tr(),
                 style: theme.textTheme.labelSmall?.copyWith(
@@ -570,7 +602,7 @@ class _RuleAccuracySection extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spacing8),
               Expanded(
                 child: Text(
                   summaryText,

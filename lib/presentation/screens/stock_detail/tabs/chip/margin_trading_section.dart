@@ -22,16 +22,16 @@ class MarginTradingSection extends StatelessWidget {
       children: [
         if (history.isNotEmpty) _buildSummary(context),
 
-        if (history.isNotEmpty) const SizedBox(height: 12),
+        if (history.isNotEmpty) const SizedBox(height: DesignTokens.spacing12),
 
         SectionHeader(title: 'chip.sectionMargin'.tr(), icon: Icons.swap_horiz),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
 
         if (history.isEmpty)
           buildEmptyState(context, 'chip.noData'.tr())
         else ...[
           _buildTrendChart(),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           _buildTable(context),
         ],
       ],
@@ -55,7 +55,7 @@ class MarginTradingSection extends StatelessWidget {
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(DesignTokens.spacing12),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -74,7 +74,7 @@ class MarginTradingSection extends StatelessWidget {
                       size: 14,
                       color: AppTheme.upColor,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: DesignTokens.spacing4),
                     Text(
                       'chip.marginBalance'.tr(),
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -83,7 +83,7 @@ class MarginTradingSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: DesignTokens.spacing6),
                 Text(
                   formatBalance(marginBal),
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -94,10 +94,10 @@ class MarginTradingSection extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(DesignTokens.spacing12),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerLow,
               borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -122,7 +122,7 @@ class MarginTradingSection extends StatelessWidget {
                           ? AppTheme.downColor
                           : theme.colorScheme.outline,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: DesignTokens.spacing4),
                     Text(
                       'chip.shortMarginRatio'.tr(),
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -131,7 +131,7 @@ class MarginTradingSection extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: DesignTokens.spacing6),
                 Text(
                   '${shortMarginRatio.toStringAsFixed(1)}%',
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -171,12 +171,15 @@ class MarginTradingSection extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: [
             // 標題
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              padding: const EdgeInsets.symmetric(
+                vertical: DesignTokens.spacing8,
+                horizontal: DesignTokens.spacing4,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -229,7 +232,7 @@ class MarginTradingSection extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final margin = entry.value;
@@ -238,7 +241,10 @@ class MarginTradingSection extends StatelessWidget {
               final ratio = marginBal > 0 ? (shortBal / marginBal * 100) : 0.0;
 
               return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                padding: const EdgeInsets.symmetric(
+                  vertical: DesignTokens.spacing8,
+                  horizontal: DesignTokens.spacing4,
+                ),
                 decoration: BoxDecoration(
                   color: index == 0
                       ? theme.colorScheme.primaryContainer.withValues(
@@ -282,8 +288,8 @@ class MarginTradingSection extends StatelessWidget {
                       flex: 2,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
+                          horizontal: DesignTokens.spacing6,
+                          vertical: DesignTokens.spacing2,
                         ),
                         decoration: BoxDecoration(
                           color: ratio > 10

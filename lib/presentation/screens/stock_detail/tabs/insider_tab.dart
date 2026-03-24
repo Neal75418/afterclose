@@ -64,13 +64,13 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
     return SingleChildScrollView(
       primary: false,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (insiderError != null && !isLoadingInsider)
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: DesignTokens.spacing16),
               child: Text(
                 insiderError,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -79,7 +79,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
           // 關鍵指標卡片
           _buildMetricsRow(context, insiderHistory),
-          const SizedBox(height: 24),
+          const SizedBox(height: DesignTokens.spacing24),
 
           // 近期轉讓申報區段
           if (isLoadingInsider) ...[
@@ -87,17 +87,17 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
               title: 'stockDetail.insiderTransfer'.tr(),
               icon: Icons.swap_horiz,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             _buildLoadingState(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: DesignTokens.spacing24),
           ] else if (insiderTransfers.isNotEmpty) ...[
             SectionHeader(
               title: 'stockDetail.insiderTransfer'.tr(),
               icon: Icons.swap_horiz,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             _buildTransferSection(context, insiderTransfers),
-            const SizedBox(height: 24),
+            const SizedBox(height: DesignTokens.spacing24),
           ],
 
           // 內部人持股歷史區段
@@ -105,7 +105,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
             title: 'stockDetail.insiderHistory'.tr(),
             icon: Icons.history,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           if (isLoadingInsider)
             _buildLoadingState(context)
@@ -122,7 +122,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(DesignTokens.spacing24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -168,7 +168,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
             subtitle: 'stockDetail.insiderRatioLabel'.tr(),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: MetricCard(
             label: 'stockDetail.pledgeRatio'.tr(),
@@ -183,7 +183,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
             isWarning: isHighPledge,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: MetricCard(
             label: 'stockDetail.insiderChange'.tr(),
@@ -230,12 +230,15 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: [
             // 含樣式背景的標題列
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              padding: const EdgeInsets.symmetric(
+                vertical: DesignTokens.spacing8,
+                horizontal: DesignTokens.spacing4,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -288,7 +291,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             // 資料列
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
@@ -308,7 +311,10 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                   FundamentalParams.highPledgeRatioThreshold;
 
               return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                padding: const EdgeInsets.symmetric(
+                  vertical: DesignTokens.spacing8,
+                  horizontal: DesignTokens.spacing4,
+                ),
                 decoration: BoxDecoration(
                   color: index == 0
                       ? theme.colorScheme.primaryContainer.withValues(
@@ -392,7 +398,10 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing6,
+          vertical: DesignTokens.spacing2,
+        ),
         decoration: BoxDecoration(
           color: isSignificant
               ? color.withValues(alpha: 0.1)
@@ -402,7 +411,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
         child: Text(
           '$prefix${change.toStringAsFixed(2)}%',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: DesignTokens.fontSizeSm,
             fontWeight: isSignificant ? FontWeight.bold : FontWeight.w500,
             color: color,
           ),
@@ -419,11 +428,13 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: transfers.map((t) {
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                vertical: DesignTokens.spacing6,
+              ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -448,7 +459,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: DesignTokens.spacing8),
                   // 詳情
                   Expanded(
                     child: Column(
@@ -460,7 +471,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: DesignTokens.spacing2),
                         Text(
                           'stockDetail.transferSharesLabel'.tr(
                             args: [
@@ -476,7 +487,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
                         ),
                         if (t.validPeriodStart != null &&
                             t.validPeriodEnd != null) ...[
-                          const SizedBox(height: 2),
+                          const SizedBox(height: DesignTokens.spacing2),
                           Text(
                             '${'stockDetail.validPeriod'.tr()}: '
                             '${_formatFullDate(t.validPeriodStart!)} ~ '
@@ -509,7 +520,7 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(DesignTokens.spacing24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),

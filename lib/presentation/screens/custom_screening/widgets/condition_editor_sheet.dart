@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
@@ -25,7 +26,9 @@ class ConditionEditorSheet extends StatefulWidget {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(DesignTokens.radiusXl),
+        ),
       ),
       builder: (_) => ConditionEditorSheet(initial: initial),
     );
@@ -77,14 +80,14 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
       padding: EdgeInsets.only(bottom: bottomPadding),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 拖動指示條
               const DragHandle(margin: EdgeInsets.zero),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               // 標題
               Text(
@@ -93,16 +96,16 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                     : 'customScreening.addCondition'.tr(),
                 style: theme.textTheme.titleLarge,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               // Step 1: 選擇分類
               Text(
                 'customScreening.stepCategory'.tr(),
                 style: theme.textTheme.labelLarge,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               Wrap(
-                spacing: 8,
+                spacing: DesignTokens.spacing8,
                 children: ScreeningCategory.values.map((cat) {
                   final selected = _selectedCategory == cat;
                   return ChoiceChip(
@@ -112,7 +115,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               // Step 2: 選擇欄位
               if (_selectedCategory != null) ...[
@@ -120,10 +123,10 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                   'customScreening.stepField'.tr(),
                   style: theme.textTheme.labelLarge,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: DesignTokens.spacing8),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+                  spacing: DesignTokens.spacing8,
+                  runSpacing: DesignTokens.spacing4,
                   children: _fieldsForCategory(_selectedCategory!).map((field) {
                     final selected = _selectedField == field;
                     return ChoiceChip(
@@ -133,7 +136,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: DesignTokens.spacing16),
               ],
 
               // Step 3: 設定運算子與數值
@@ -142,9 +145,9 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                   'customScreening.stepValue'.tr(),
                   style: theme.textTheme.labelLarge,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: DesignTokens.spacing8),
                 _buildValueEditor(theme),
-                const SizedBox(height: 24),
+                const SizedBox(height: DesignTokens.spacing24),
 
                 // 確認按鈕
                 SizedBox(
@@ -160,7 +163,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                 ),
               ],
 
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
             ],
           ),
         ),
@@ -182,7 +185,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
               setState(() => _selectedOperator = ScreeningOperator.isTrue);
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           ChoiceChip(
             label: Text('customScreening.operator.isFalse'.tr()),
             selected: _selectedOperator == ScreeningOperator.isFalse,
@@ -218,7 +221,7 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
             );
           }).toList(),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
 
         // 數值輸入
         if (_selectedOperator != null)
@@ -241,7 +244,9 @@ class _ConditionEditorSheetState extends State<ConditionEditorSheet> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.spacing8,
+                      ),
                       child: Text('~', style: theme.textTheme.titleMedium),
                     ),
                     Expanded(

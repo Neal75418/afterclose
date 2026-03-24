@@ -53,7 +53,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                   .read(recommendationPerformanceProvider.notifier)
                   .loadData(),
               child: ListView(
-                padding: const EdgeInsets.only(bottom: 32),
+                padding: const EdgeInsets.only(bottom: DesignTokens.spacing32),
                 children: [
                   // 局部錯誤提示（有舊資料但重新載入/回填失敗）
                   if (state.error != null && state.stockRecords.isNotEmpty)
@@ -107,14 +107,19 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     RecommendationPerformanceState state,
   ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spacing16,
+        DesignTokens.spacing16,
+        DesignTokens.spacing16,
+        DesignTokens.spacing8,
+      ),
       child: SegmentedButton<String>(
         segments: _periods.map((p) {
           return ButtonSegment<String>(
             value: p,
             label: Text(
               p == 'ALL' ? 'recPerf.periodAll'.tr() : p,
-              style: const TextStyle(fontSize: 12),
+              style: const TextStyle(fontSize: DesignTokens.fontSizeSm),
             ),
           );
         }).toList(),
@@ -140,9 +145,12 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     final totalValidated = stats?.totalCount ?? 0;
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -150,7 +158,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
               'recPerf.overallStats'.tr(),
               style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
             Row(
               children: [
                 Expanded(
@@ -200,7 +208,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: DesignTokens.spacing4),
         Text(
           value,
           style: theme.textTheme.headlineSmall?.copyWith(
@@ -219,24 +227,27 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
     RecommendationPerformanceState state,
   ) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('recPerf.backfill'.tr(), style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             Text(
               'recPerf.backfillDesc'.tr(),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             if (state.isBackfilling) ...[
               LinearProgressIndicator(value: state.backfillProgress),
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               Text(
                 'recPerf.backfillProgress'.tr(
                   namedArgs: {
@@ -279,9 +290,12 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
       ..sort((a, b) => b.compareTo(a));
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -289,7 +303,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
               'recPerf.stockDetails'.tr(),
               style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             ...sortedDates.expand(
               (date) => [
                 _buildDateHeader(theme, date),
@@ -306,7 +320,10 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
 
   Widget _buildDateHeader(ThemeData theme, DateTime date) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 6),
+      padding: const EdgeInsets.only(
+        top: DesignTokens.spacing12,
+        bottom: DesignTokens.spacing6,
+      ),
       child: Row(
         children: [
           Icon(
@@ -314,7 +331,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
             size: 14,
             color: theme.colorScheme.primary,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: DesignTokens.spacing6),
           Text(
             '${date.year}/${date.month}/${date.day}',
             style: theme.textTheme.labelLarge?.copyWith(
@@ -343,7 +360,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
         : Icons.schedule;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: DesignTokens.spacing6),
       child: InkWell(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         onTap: () {
@@ -351,7 +368,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
           context.push(AppRoutes.stockDetail(record.symbol));
         },
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(DesignTokens.spacing12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -370,7 +387,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                     ),
                   ),
                   Icon(statusIcon, size: 16, color: returnColor),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: DesignTokens.spacing4),
                   Text(
                     hasResult
                         ? '$returnSign${returnRate.toStringAsFixed(1)}%'
@@ -382,7 +399,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: DesignTokens.spacing4),
               // 價格區間
               Text(
                 'recPerf.priceRange'.tr(
@@ -396,7 +413,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: DesignTokens.spacing2),
               // 主要規則
               Text(
                 'recPerf.primaryRule'.tr(
@@ -415,7 +432,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
 
   Widget _buildEmptyHint(BuildContext context, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(DesignTokens.spacing32),
       child: Column(
         children: [
           Icon(
@@ -423,7 +440,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
             size: 48,
             color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
           Text(
             'recPerf.noData'.tr(),
             style: theme.textTheme.bodyMedium?.copyWith(
@@ -431,7 +448,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Text(
             'recPerf.noDataHint'.tr(),
             style: theme.textTheme.bodySmall?.copyWith(
@@ -446,9 +463,14 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
 
   Widget _buildDisclaimer(BuildContext context, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spacing16,
+        DesignTokens.spacing16,
+        DesignTokens.spacing16,
+        DesignTokens.spacing8,
+      ),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -461,7 +483,7 @@ class RecommendationPerformanceScreen extends ConsumerWidget {
               size: 16,
               color: theme.colorScheme.outline,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: DesignTokens.spacing8),
             Expanded(
               child: Text(
                 'recPerf.disclaimer'.tr(),

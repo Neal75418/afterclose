@@ -82,7 +82,12 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+        padding: const EdgeInsets.fromLTRB(
+          DesignTokens.spacing24,
+          DesignTokens.spacing16,
+          DesignTokens.spacing24,
+          DesignTokens.spacing24,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +108,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 股票搜尋
             if (_selectedSymbol == null) ...[
@@ -118,7 +123,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               ),
               if (_isSearching)
                 const Padding(
-                  padding: EdgeInsets.all(8),
+                  padding: EdgeInsets.all(DesignTokens.spacing8),
                   child: Center(
                     child: SizedBox(
                       width: 24,
@@ -154,8 +159,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               // 已選股票
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                  horizontal: DesignTokens.spacing12,
+                  vertical: DesignTokens.spacing8,
                 ),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
@@ -184,11 +189,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 ),
               ),
             ],
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 交易類型
             Text('portfolio.txType'.tr(), style: theme.textTheme.labelMedium),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             SegmentedButton<TransactionType>(
               segments: [
                 ButtonSegment(
@@ -207,7 +212,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
               selected: {_txType},
               onSelectionChanged: (set) => setState(() => _txType = set.first),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 日期
             InkWell(
@@ -221,7 +226,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 child: Text(DateFormat('yyyy-MM-dd').format(_date)),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
 
             // 數量 + 價格
             if (_txType == TransactionType.dividendCash) ...[
@@ -260,7 +265,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       onChanged: (_) => _autoCalcFees(),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignTokens.spacing12),
                   Expanded(
                     child: TextField(
                       controller: _priceController,
@@ -282,7 +287,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
 
               // 手續費 + 交易稅
               Row(
@@ -307,7 +312,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       onChanged: (_) => _feeManuallyEdited = true,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignTokens.spacing12),
                   Expanded(
                     child: TextField(
                       controller: _taxController,
@@ -333,7 +338,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 ],
               ),
             ],
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
 
             // 備註
             TextField(
@@ -343,7 +348,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 border: const OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: DesignTokens.spacing24),
 
             // 按鈕
             Row(
@@ -356,7 +361,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: DesignTokens.spacing12),
                 Expanded(
                   child: FilledButton(
                     onPressed: _isSubmitting ? null : _submit,

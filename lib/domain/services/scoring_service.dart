@@ -9,7 +9,6 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
-import 'package:afterclose/domain/services/isolate_map_extensions.dart';
 import 'package:afterclose/domain/services/scoring_isolate.dart';
 
 /// 股票候選評分服務
@@ -239,45 +238,26 @@ class ScoringService {
     // 記錄價格資料統計
     _logCandidateStats(candidates, batchData.pricesMap, suffix: ' (Isolate)');
 
-    // 將資料轉換為可跨 Isolate 傳遞的格式
+    // 直接傳入 typed DTO（序列化由 toMap() 處理）
     final input = ScoringIsolateInput(
       candidates: candidates,
-      pricesMap: _convertListMap(batchData.pricesMap, (e) => e.toIsolateMap()),
-      newsMap: _convertListMap(batchData.newsMap, (e) => e.toIsolateMap()),
-      institutionalMap: _convertListMap(
-        batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{},
-        (e) => e.toIsolateMap(),
-      ),
-      revenueMap: batchData.revenueMap != null
-          ? _convertSingleMap(batchData.revenueMap!, (e) => e.toIsolateMap())
-          : null,
-      valuationMap: batchData.valuationMap != null
-          ? _convertSingleMap(batchData.valuationMap!, (e) => e.toIsolateMap())
-          : null,
-      revenueHistoryMap: batchData.revenueHistoryMap != null
-          ? _convertListMap(
-              batchData.revenueHistoryMap!,
-              (e) => e.toIsolateMap(),
-            )
-          : null,
+      pricesMap: batchData.pricesMap,
+      newsMap: batchData.newsMap,
+      institutionalMap:
+          batchData.institutionalMap ??
+          <String, List<DailyInstitutionalEntry>>{},
+      revenueMap: batchData.revenueMap,
+      valuationMap: batchData.valuationMap,
+      revenueHistoryMap: batchData.revenueHistoryMap,
       recentlyRecommended: recentlyRecommended,
       date: date,
       dayTradingMap: batchData.dayTradingMap,
       shareholdingMap: batchData.shareholdingMap,
       warningMap: batchData.warningMap,
       insiderMap: batchData.insiderMap,
-      epsHistoryMap: batchData.epsHistoryMap != null
-          ? _convertListMap(batchData.epsHistoryMap!, (e) => e.toIsolateMap())
-          : null,
-      roeHistoryMap: batchData.roeHistoryMap != null
-          ? _convertListMap(batchData.roeHistoryMap!, (e) => e.toIsolateMap())
-          : null,
-      dividendHistoryMap: batchData.dividendHistoryMap != null
-          ? _convertListMap(
-              batchData.dividendHistoryMap!,
-              (e) => e.toIsolateMap(),
-            )
-          : null,
+      epsHistoryMap: batchData.epsHistoryMap,
+      roeHistoryMap: batchData.roeHistoryMap,
+      dividendHistoryMap: batchData.dividendHistoryMap,
       maxHistoricalRevenueMap: batchData.maxHistoricalRevenueMap,
     );
 
@@ -494,26 +474,6 @@ class ScoringService {
       warningData: warning,
       insiderData: insider,
     );
-  }
-
-  // ==================================================
-  // 資料轉換輔助方法
-  // ==================================================
-
-  /// 將 `Map<String, List<T>>` 轉換為 isolate 安全的 Map
-  static Map<String, List<Map<String, dynamic>>> _convertListMap<T>(
-    Map<String, List<T>> map,
-    Map<String, dynamic> Function(T) toMap,
-  ) {
-    return map.map((key, value) => MapEntry(key, value.map(toMap).toList()));
-  }
-
-  /// 將 `Map<String, T>` 轉換為 isolate 安全的 Map
-  static Map<String, Map<String, dynamic>> _convertSingleMap<T>(
-    Map<String, T> map,
-    Map<String, dynamic> Function(T) toMap,
-  ) {
-    return map.map((key, value) => MapEntry(key, toMap(value)));
   }
 }
 

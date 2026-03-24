@@ -57,7 +57,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
   Widget build(BuildContext context) {
     if (widget.state.isLoading) {
       return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing16,
+          vertical: DesignTokens.spacing8,
+        ),
         child: Card(
           child: SizedBox(
             height: 120,
@@ -87,14 +90,14 @@ class _MarketDashboardState extends State<MarketDashboard> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // refresh 失敗提示（有舊資料仍顯示，但警告使用者資料可能過時）
               if (refreshError != null)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(bottom: DesignTokens.spacing8),
                   child: Row(
                     children: [
                       Icon(
@@ -102,7 +105,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
                         size: 14,
                         color: theme.colorScheme.error,
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: DesignTokens.spacing4),
                       Expanded(
                         child: Text(
                           refreshError,
@@ -120,7 +123,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
               // 標題列（包含市場選擇器）
               _buildHeader(theme, isMobile),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               // 主內容區域
               if (isMobile)
@@ -150,7 +153,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return Row(
       children: [
         Icon(Icons.show_chart, size: 18, color: theme.colorScheme.primary),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -208,7 +211,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
       style: ButtonStyle(
         visualDensity: VisualDensity.compact,
         padding: WidgetStateProperty.all(
-          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing12,
+            vertical: DesignTokens.spacing6,
+          ),
         ),
       ),
     );
@@ -340,7 +346,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       } else {
         sections.add(
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(DesignTokens.spacing16),
             child: Text(
               'marketOverview.tpexNoIndex'.tr(),
               style: theme.textTheme.bodySmall?.copyWith(
@@ -471,14 +477,14 @@ class _MarketDashboardState extends State<MarketDashboard> {
         for (int i = 0; i < sections.length; i++) ...[
           if (i < 2)
             // Hero + 子指數之間用較小間距，不加分隔線
-            const SizedBox(height: 10)
+            const SizedBox(height: DesignTokens.spacing10)
           else ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: DesignTokens.spacing14),
             Divider(
               height: 1,
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: DesignTokens.spacing14),
           ],
           sections[i],
         ],
@@ -520,12 +526,12 @@ class _MarketDashboardState extends State<MarketDashboard> {
         // 共用：子指數列
         if (subIndicesWidget != null) ...[
           subIndicesWidget,
-          const SizedBox(height: 14),
+          const SizedBox(height: DesignTokens.spacing14),
           Divider(
             height: 1,
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: DesignTokens.spacing14),
         ],
 
         // 共用：市場情緒儀表板（僅 TWSE，TPEx 資料量不足以穩定計算）
@@ -539,7 +545,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: DesignTokens.spacing4),
               Text(
                 'marketOverview.sentimentLabel'.tr(),
                 style: theme.textTheme.labelSmall?.copyWith(
@@ -548,17 +554,17 @@ class _MarketDashboardState extends State<MarketDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.spacing6),
           SentimentGaugeSection(
             sentiment: sentiment,
             sentimentHistory: _computeSentimentHistory('TWSE'),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: DesignTokens.spacing14),
           Divider(
             height: 1,
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: DesignTokens.spacing14),
         ],
 
         // 共用：智慧摘要
@@ -567,12 +573,12 @@ class _MarketDashboardState extends State<MarketDashboard> {
           if (insights.isEmpty) return <Widget>[];
           return <Widget>[
             KeyInsightsRow(insights: insights),
-            const SizedBox(height: 14),
+            const SizedBox(height: DesignTokens.spacing14),
             Divider(
               height: 1,
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: DesignTokens.spacing14),
           ];
         }(),
 
@@ -585,23 +591,23 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
         // 資料 section 配對（每對等高對齊）
         for (final row in pairedRows) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           Divider(
             height: 1,
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           row,
         ],
 
         // 共用：推薦績效看板
         if (widget.state.recommendationPerformance != null) ...[
-          const SizedBox(height: 14),
+          const SizedBox(height: DesignTokens.spacing14),
           Divider(
             height: 1,
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: DesignTokens.spacing14),
           RecommendationPerformanceRow(
             data: widget.state.recommendationPerformance!,
           ),
@@ -682,7 +688,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
         if (heroIdx.isNotEmpty)
           HeroIndexSection(
             index: heroIdx.first,
@@ -696,7 +702,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           )
         else
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(DesignTokens.spacing16),
             child: Text(
               'marketOverview.noData'.tr(),
               style: theme.textTheme.bodySmall?.copyWith(

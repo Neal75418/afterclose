@@ -6,6 +6,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
@@ -277,24 +278,24 @@ class ExportService {
                   pw.Text(
                     _dateFormat.format(DateTime.now()),
                     style: const pw.TextStyle(
-                      fontSize: 10,
+                      fontSize: DesignTokens.fontSizeXs,
                       color: PdfColors.grey600,
                     ),
                   ),
                 ],
               ),
               pw.Divider(),
-              pw.SizedBox(height: 12),
+              pw.SizedBox(height: DesignTokens.spacing12),
 
               // 股票資訊
               pw.Text(
                 '$symbol ${stock?.name ?? ""}',
                 style: pw.TextStyle(
-                  fontSize: 18,
+                  fontSize: DesignTokens.fontSizeXl,
                   fontWeight: pw.FontWeight.bold,
                 ),
               ),
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: DesignTokens.spacing8),
 
               // 價格
               if (price != null) ...[
@@ -303,24 +304,24 @@ class ExportService {
                     pw.Text(
                       'export.csvClose'.tr(),
                       style: const pw.TextStyle(
-                        fontSize: 12,
+                        fontSize: DesignTokens.fontSizeSm,
                         color: PdfColors.grey700,
                       ),
                     ),
-                    pw.SizedBox(width: 8),
+                    pw.SizedBox(width: DesignTokens.spacing8),
                     pw.Text(
                       price.close?.toStringAsFixed(2) ?? '-',
                       style: pw.TextStyle(
-                        fontSize: 16,
+                        fontSize: DesignTokens.fontSizeLg,
                         fontWeight: pw.FontWeight.bold,
                       ),
                     ),
                     if (price.priceChange != null) ...[
-                      pw.SizedBox(width: 12),
+                      pw.SizedBox(width: DesignTokens.spacing12),
                       pw.Text(
                         '${price.priceChange! >= 0 ? "+" : ""}${price.priceChange!.toStringAsFixed(2)}',
                         style: pw.TextStyle(
-                          fontSize: 14,
+                          fontSize: DesignTokens.fontSizeMd,
                           fontWeight: pw.FontWeight.bold,
                           color: price.priceChange! >= 0
                               ? PdfColors.red
@@ -330,22 +331,22 @@ class ExportService {
                     ],
                   ],
                 ),
-                pw.SizedBox(height: 4),
+                pw.SizedBox(height: DesignTokens.spacing4),
                 pw.Text(
                   _dateFormat.format(price.date),
                   style: const pw.TextStyle(
-                    fontSize: 10,
+                    fontSize: DesignTokens.fontSizeXs,
                     color: PdfColors.grey600,
                   ),
                 ),
               ],
 
-              pw.SizedBox(height: 16),
+              pw.SizedBox(height: DesignTokens.spacing16),
 
               // 分析區塊
               if (analysis != null) ...[
                 _pdfSectionTitle('export.csvAnalysis'.tr()),
-                pw.SizedBox(height: 6),
+                pw.SizedBox(height: DesignTokens.spacing6),
                 _pdfKeyValue('export.csvTrend'.tr(), analysis.trendState),
                 if (analysis.reversalState != 'NONE')
                   _pdfKeyValue(
@@ -356,18 +357,18 @@ class ExportService {
                   'export.csvScore'.tr(),
                   analysis.score.toStringAsFixed(0),
                 ),
-                pw.SizedBox(height: 12),
+                pw.SizedBox(height: DesignTokens.spacing12),
               ],
 
               // AI 摘要
               if (state.aiSummary != null) ...[
                 _pdfSectionTitle('export.csvAiSummary'.tr()),
-                pw.SizedBox(height: 6),
+                pw.SizedBox(height: DesignTokens.spacing6),
                 pw.Text(
                   state.aiSummary!.overallAssessment,
                   style: const pw.TextStyle(fontSize: 11),
                 ),
-                pw.SizedBox(height: 8),
+                pw.SizedBox(height: DesignTokens.spacing8),
                 if (state.aiSummary!.keySignals.isNotEmpty) ...[
                   pw.Text(
                     'export.csvSignal'.tr(),
@@ -376,19 +377,24 @@ class ExportService {
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
-                  pw.SizedBox(height: 4),
+                  pw.SizedBox(height: DesignTokens.spacing4),
                   ...state.aiSummary!.keySignals.map(
                     (s) => pw.Padding(
-                      padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
+                      padding: const pw.EdgeInsets.only(
+                        left: DesignTokens.spacing8,
+                        bottom: DesignTokens.spacing2,
+                      ),
                       child: pw.Text(
                         '• $s',
-                        style: const pw.TextStyle(fontSize: 10),
+                        style: const pw.TextStyle(
+                          fontSize: DesignTokens.fontSizeXs,
+                        ),
                       ),
                     ),
                   ),
                 ],
                 if (state.aiSummary!.riskFactors.isNotEmpty) ...[
-                  pw.SizedBox(height: 6),
+                  pw.SizedBox(height: DesignTokens.spacing6),
                   pw.Text(
                     'export.csvRisk'.tr(),
                     style: pw.TextStyle(
@@ -396,24 +402,29 @@ class ExportService {
                       fontWeight: pw.FontWeight.bold,
                     ),
                   ),
-                  pw.SizedBox(height: 4),
+                  pw.SizedBox(height: DesignTokens.spacing4),
                   ...state.aiSummary!.riskFactors.map(
                     (r) => pw.Padding(
-                      padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
+                      padding: const pw.EdgeInsets.only(
+                        left: DesignTokens.spacing8,
+                        bottom: DesignTokens.spacing2,
+                      ),
                       child: pw.Text(
                         '• $r',
-                        style: const pw.TextStyle(fontSize: 10),
+                        style: const pw.TextStyle(
+                          fontSize: DesignTokens.fontSizeXs,
+                        ),
                       ),
                     ),
                   ),
                 ],
-                pw.SizedBox(height: 12),
+                pw.SizedBox(height: DesignTokens.spacing12),
               ],
 
               // 訊號
               if (state.reasons.isNotEmpty) ...[
                 _pdfSectionTitle('export.csvSignals'.tr()),
-                pw.SizedBox(height: 6),
+                pw.SizedBox(height: DesignTokens.spacing6),
                 pw.Table(
                   border: pw.TableBorder.all(color: PdfColors.grey300),
                   columnWidths: {
@@ -427,21 +438,25 @@ class ExportService {
                       ),
                       children: [
                         pw.Padding(
-                          padding: const pw.EdgeInsets.all(6),
+                          padding: const pw.EdgeInsets.all(
+                            DesignTokens.spacing6,
+                          ),
                           child: pw.Text(
                             'export.csvSignal'.tr(),
                             style: pw.TextStyle(
-                              fontSize: 10,
+                              fontSize: DesignTokens.fontSizeXs,
                               fontWeight: pw.FontWeight.bold,
                             ),
                           ),
                         ),
                         pw.Padding(
-                          padding: const pw.EdgeInsets.all(6),
+                          padding: const pw.EdgeInsets.all(
+                            DesignTokens.spacing6,
+                          ),
                           child: pw.Text(
                             'export.csvScore'.tr(),
                             style: pw.TextStyle(
-                              fontSize: 10,
+                              fontSize: DesignTokens.fontSizeXs,
                               fontWeight: pw.FontWeight.bold,
                             ),
                           ),
@@ -452,17 +467,25 @@ class ExportService {
                       (r) => pw.TableRow(
                         children: [
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(
+                              DesignTokens.spacing6,
+                            ),
                             child: pw.Text(
                               r.reasonType,
-                              style: const pw.TextStyle(fontSize: 10),
+                              style: const pw.TextStyle(
+                                fontSize: DesignTokens.fontSizeXs,
+                              ),
                             ),
                           ),
                           pw.Padding(
-                            padding: const pw.EdgeInsets.all(6),
+                            padding: const pw.EdgeInsets.all(
+                              DesignTokens.spacing6,
+                            ),
                             child: pw.Text(
                               r.ruleScore.toStringAsFixed(0),
-                              style: const pw.TextStyle(fontSize: 10),
+                              style: const pw.TextStyle(
+                                fontSize: DesignTokens.fontSizeXs,
+                              ),
                             ),
                           ),
                         ],
@@ -475,7 +498,7 @@ class ExportService {
               // Spacer + Disclaimer
               pw.Spacer(),
               pw.Divider(color: PdfColors.grey300),
-              pw.SizedBox(height: 4),
+              pw.SizedBox(height: DesignTokens.spacing4),
               pw.Text(
                 'export.disclaimer'.tr(),
                 style: const pw.TextStyle(
@@ -494,21 +517,29 @@ class ExportService {
 
   pw.Widget _pdfSectionTitle(String title) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const pw.EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: DesignTokens.spacing4,
+      ),
       decoration: const pw.BoxDecoration(
         color: PdfColors.blueGrey50,
-        borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+        borderRadius: pw.BorderRadius.all(
+          pw.Radius.circular(DesignTokens.radiusXs),
+        ),
       ),
       child: pw.Text(
         title,
-        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+        style: pw.TextStyle(
+          fontSize: DesignTokens.fontSizeSm,
+          fontWeight: pw.FontWeight.bold,
+        ),
       ),
     );
   }
 
   pw.Widget _pdfKeyValue(String key, String value) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 2),
+      padding: const pw.EdgeInsets.symmetric(vertical: DesignTokens.spacing2),
       child: pw.Row(
         children: [
           pw.SizedBox(

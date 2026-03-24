@@ -34,12 +34,12 @@ class ScoringIsolateInput {
   });
 
   final List<String> candidates;
-  final Map<String, List<Map<String, dynamic>>> pricesMap;
-  final Map<String, List<Map<String, dynamic>>> newsMap;
-  final Map<String, List<Map<String, dynamic>>> institutionalMap;
-  final Map<String, Map<String, dynamic>>? revenueMap;
-  final Map<String, Map<String, dynamic>>? valuationMap;
-  final Map<String, List<Map<String, dynamic>>>? revenueHistoryMap;
+  final Map<String, List<DailyPriceEntry>> pricesMap;
+  final Map<String, List<NewsItemEntry>> newsMap;
+  final Map<String, List<DailyInstitutionalEntry>> institutionalMap;
+  final Map<String, MonthlyRevenueEntry>? revenueMap;
+  final Map<String, StockValuationEntry>? valuationMap;
+  final Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap;
   final Set<String>? recentlyRecommended;
 
   /// 評估目標日期（供規則判斷資料新鮮度）
@@ -58,34 +58,48 @@ class ScoringIsolateInput {
   final Map<String, InsiderDataContext>? insiderMap;
 
   /// EPS 歷史資料 Map（symbol -> 最近 8 季 EPS，降序）
-  final Map<String, List<Map<String, dynamic>>>? epsHistoryMap;
+  final Map<String, List<FinancialDataEntry>>? epsHistoryMap;
 
   /// ROE 歷史資料 Map（symbol -> 最近 8 季 ROE，降序）
-  final Map<String, List<Map<String, dynamic>>>? roeHistoryMap;
+  final Map<String, List<FinancialDataEntry>>? roeHistoryMap;
 
   /// 股利歷史資料 Map（symbol -> 歷年股利，降序）
-  final Map<String, List<Map<String, dynamic>>>? dividendHistoryMap;
+  final Map<String, List<DividendHistoryEntry>>? dividendHistoryMap;
 
   /// 歷史最高月營收 Map（symbol -> maxRevenue）
   final Map<String, double>? maxHistoricalRevenueMap;
 
   Map<String, dynamic> toMap() => {
     'candidates': candidates,
-    'pricesMap': pricesMap,
-    'newsMap': newsMap,
-    'institutionalMap': institutionalMap,
-    'revenueMap': revenueMap,
-    'valuationMap': valuationMap,
-    'revenueHistoryMap': revenueHistoryMap,
+    'pricesMap': pricesMap.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
+    'newsMap': newsMap.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
+    'institutionalMap': institutionalMap.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
+    'revenueMap': revenueMap?.map((k, v) => MapEntry(k, v.toIsolateMap())),
+    'valuationMap': valuationMap?.map((k, v) => MapEntry(k, v.toIsolateMap())),
+    'revenueHistoryMap': revenueHistoryMap?.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
     'recentlyRecommended': recentlyRecommended?.toList(),
     'date': date?.millisecondsSinceEpoch,
     'dayTradingMap': dayTradingMap,
     'shareholdingMap': shareholdingMap?.map((k, v) => MapEntry(k, v.toMap())),
     'warningMap': warningMap?.map((k, v) => MapEntry(k, v.toMap())),
     'insiderMap': insiderMap?.map((k, v) => MapEntry(k, v.toMap())),
-    'epsHistoryMap': epsHistoryMap,
-    'roeHistoryMap': roeHistoryMap,
-    'dividendHistoryMap': dividendHistoryMap,
+    'epsHistoryMap': epsHistoryMap?.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
+    'roeHistoryMap': roeHistoryMap?.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
+    'dividendHistoryMap': dividendHistoryMap?.map(
+      (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
+    ),
     'maxHistoricalRevenueMap': maxHistoricalRevenueMap,
   };
 
@@ -93,21 +107,32 @@ class ScoringIsolateInput {
     _resetDeserializationErrors();
     return ScoringIsolateInput(
       candidates: List<String>.from(map['candidates']),
-      pricesMap: _castMapOfLists(map['pricesMap'], 'pricesMap'),
-      newsMap: _castMapOfLists(map['newsMap'], 'newsMap'),
-      institutionalMap: _castMapOfLists(
-        map['institutionalMap'],
-        'institutionalMap',
+      pricesMap: _deserializeListMap(
+        map,
+        'pricesMap',
+        IsolateMappers.dailyPrice,
       ),
-      revenueMap: map['revenueMap'] != null
-          ? Map<String, Map<String, dynamic>>.from(map['revenueMap'])
-          : null,
-      valuationMap: map['valuationMap'] != null
-          ? Map<String, Map<String, dynamic>>.from(map['valuationMap'])
-          : null,
-      revenueHistoryMap: map['revenueHistoryMap'] != null
-          ? _castMapOfLists(map['revenueHistoryMap'], 'revenueHistoryMap')
-          : null,
+      newsMap: _deserializeListMap(map, 'newsMap', IsolateMappers.newsItem),
+      institutionalMap: _deserializeListMap(
+        map,
+        'institutionalMap',
+        IsolateMappers.dailyInstitutional,
+      ),
+      revenueMap: _deserializeSingleMap(
+        map,
+        'revenueMap',
+        IsolateMappers.monthlyRevenue,
+      ),
+      valuationMap: _deserializeSingleMap(
+        map,
+        'valuationMap',
+        IsolateMappers.stockValuation,
+      ),
+      revenueHistoryMap: _deserializeListMap<MonthlyRevenueEntry>(
+        map,
+        'revenueHistoryMap',
+        IsolateMappers.monthlyRevenue,
+      ).ifEmpty(null),
       recentlyRecommended: map['recentlyRecommended'] != null
           ? Set<String>.from(map['recentlyRecommended'])
           : null,
@@ -135,15 +160,21 @@ class ScoringIsolateInput {
               (m) => InsiderDataContext.fromMap(m),
             )
           : null,
-      epsHistoryMap: map['epsHistoryMap'] != null
-          ? _castMapOfLists(map['epsHistoryMap'], 'epsHistoryMap')
-          : null,
-      roeHistoryMap: map['roeHistoryMap'] != null
-          ? _castMapOfLists(map['roeHistoryMap'], 'roeHistoryMap')
-          : null,
-      dividendHistoryMap: map['dividendHistoryMap'] != null
-          ? _castMapOfLists(map['dividendHistoryMap'], 'dividendHistoryMap')
-          : null,
+      epsHistoryMap: _deserializeListMap<FinancialDataEntry>(
+        map,
+        'epsHistoryMap',
+        IsolateMappers.financialData,
+      ).ifEmpty(null),
+      roeHistoryMap: _deserializeListMap<FinancialDataEntry>(
+        map,
+        'roeHistoryMap',
+        IsolateMappers.financialData,
+      ).ifEmpty(null),
+      dividendHistoryMap: _deserializeListMap<DividendHistoryEntry>(
+        map,
+        'dividendHistoryMap',
+        IsolateMappers.dividendHistory,
+      ).ifEmpty(null),
       maxHistoricalRevenueMap: map['maxHistoricalRevenueMap'] != null
           ? Map<String, double>.from(map['maxHistoricalRevenueMap'])
           : null,
@@ -159,21 +190,49 @@ class ScoringIsolateInput {
   /// 重置反序列化錯誤計數器（每次 fromMap 前呼叫）
   static void _resetDeserializationErrors() => _deserializationErrors = 0;
 
-  /// Isolate 邊界型別轉換：symbol → list of maps
+  /// Isolate 邊界反序列化：symbol → typed List
   ///
-  /// Isolate 傳輸會遺失泛型資訊，需逐層手動轉型。
-  /// [fieldName] 用於錯誤日誌識別。
+  /// Isolate 傳輸會遺失泛型資訊，需逐層手動轉型後透過 [mapper] 建立 typed DTO。
   /// 轉型失敗的 entry 會累加至 [_deserializationErrors]。
-  static Map<String, List<Map<String, dynamic>>> _castMapOfLists(
-    dynamic map,
-    String fieldName,
+  /// 若 [map] 中 key 不存在或為 null，回傳空 Map。
+  static Map<String, List<T>> _deserializeListMap<T>(
+    Map<String, dynamic> map,
+    String key,
+    T Function(Map<String, dynamic>) mapper,
   ) {
-    if (map is! Map) return {};
-    final result = <String, List<Map<String, dynamic>>>{};
-    for (final entry in map.entries) {
+    final raw = map[key];
+    if (raw == null) return {};
+    final result = <String, List<T>>{};
+    for (final entry in (raw as Map).entries) {
+      final list = <T>[];
+      for (final item in entry.value as List) {
+        try {
+          list.add(mapper(Map<String, dynamic>.from(item as Map)));
+        } catch (_) {
+          _deserializationErrors++;
+        }
+      }
+      result[entry.key.toString()] = list;
+    }
+    return result;
+  }
+
+  /// Isolate 邊界反序列化：symbol → T
+  ///
+  /// 轉型失敗的 entry 會累加至 [_deserializationErrors]。
+  /// 若 [map] 中 key 不存在或為 null，回傳 null。
+  static Map<String, T>? _deserializeSingleMap<T>(
+    Map<String, dynamic> map,
+    String key,
+    T Function(Map<String, dynamic>) mapper,
+  ) {
+    final raw = map[key];
+    if (raw == null) return null;
+    final result = <String, T>{};
+    for (final entry in (raw as Map).entries) {
       try {
-        result[entry.key as String] = List<Map<String, dynamic>>.from(
-          (entry.value as List).map((e) => Map<String, dynamic>.from(e)),
+        result[entry.key.toString()] = mapper(
+          Map<String, dynamic>.from(entry.value as Map),
         );
       } catch (_) {
         _deserializationErrors++;
@@ -364,13 +423,12 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
   for (final symbol in input.candidates) {
     // 1. 取得並驗證價格資料
-    final pricesMaps = input.pricesMap[symbol];
-    if (pricesMaps == null || pricesMaps.isEmpty) {
+    final prices = input.pricesMap[symbol];
+    if (prices == null || prices.isEmpty) {
       skippedNoData++;
       continue;
     }
 
-    final prices = pricesMaps.map(IsolateMappers.dailyPrice).toList();
     if (prices.length < RuleParams.swingWindow) {
       skippedInsufficientData++;
       continue;
@@ -500,43 +558,35 @@ MarketDataContext? _buildMarketDataContext(
   double? maxHistoricalRevenue,
 })
 _convertBatchData(ScoringIsolateInput input, String symbol) {
-  final instMaps = input.institutionalMap[symbol];
-  final newsMaps = input.newsMap[symbol];
-  final revenueMap = input.revenueMap?[symbol];
-  final valuationMap = input.valuationMap?[symbol];
-  final revenueHistoryMaps = input.revenueHistoryMap?[symbol];
-  final epsHistoryMaps = input.epsHistoryMap?[symbol];
-  final roeHistoryMaps = input.roeHistoryMap?[symbol];
-  final dividendHistoryMaps = input.dividendHistoryMap?[symbol];
+  final institutional = input.institutionalMap[symbol];
+  final news = input.newsMap[symbol];
+  final revenueHistory = input.revenueHistoryMap?[symbol];
+  final epsHistory = input.epsHistoryMap?[symbol];
+  final roeHistory = input.roeHistoryMap?[symbol];
+  final dividendHistory = input.dividendHistoryMap?[symbol];
 
   return (
-    institutionalHistory: instMaps != null && instMaps.isNotEmpty
-        ? instMaps.map(IsolateMappers.dailyInstitutional).toList()
+    institutionalHistory: institutional != null && institutional.isNotEmpty
+        ? institutional
         : null,
-    recentNews: newsMaps != null && newsMaps.isNotEmpty
-        ? newsMaps.map(IsolateMappers.newsItem).toList()
+    recentNews: news != null && news.isNotEmpty ? news : null,
+    latestRevenue: input.revenueMap?[symbol],
+    latestValuation: input.valuationMap?[symbol],
+    revenueHistory: revenueHistory != null && revenueHistory.isNotEmpty
+        ? revenueHistory
         : null,
-    latestRevenue: revenueMap != null
-        ? IsolateMappers.monthlyRevenue(revenueMap)
-        : null,
-    latestValuation: valuationMap != null
-        ? IsolateMappers.stockValuation(valuationMap)
-        : null,
-    revenueHistory: revenueHistoryMaps != null && revenueHistoryMaps.isNotEmpty
-        ? revenueHistoryMaps.map(IsolateMappers.monthlyRevenue).toList()
-        : null,
-    epsHistory: epsHistoryMaps != null && epsHistoryMaps.isNotEmpty
-        ? epsHistoryMaps.map(IsolateMappers.financialData).toList()
-        : null,
-    roeHistory: roeHistoryMaps != null && roeHistoryMaps.isNotEmpty
-        ? roeHistoryMaps.map(IsolateMappers.financialData).toList()
-        : null,
-    dividendHistory:
-        dividendHistoryMaps != null && dividendHistoryMaps.isNotEmpty
-        ? dividendHistoryMaps.map(IsolateMappers.dividendHistory).toList()
+    epsHistory: epsHistory != null && epsHistory.isNotEmpty ? epsHistory : null,
+    roeHistory: roeHistory != null && roeHistory.isNotEmpty ? roeHistory : null,
+    dividendHistory: dividendHistory != null && dividendHistory.isNotEmpty
+        ? dividendHistory
         : null,
     maxHistoricalRevenue: input.maxHistoricalRevenueMap?[symbol],
   );
+}
+
+/// 空 Map → null 轉換，用於 nullable 欄位的反序列化
+extension _MapIfEmpty<K, V> on Map<K, V> {
+  Map<K, V>? ifEmpty(Map<K, V>? fallback) => isEmpty ? fallback : this;
 }
 
 IsolateReasonOutput _reasonToOutput(TriggeredReason reason) {

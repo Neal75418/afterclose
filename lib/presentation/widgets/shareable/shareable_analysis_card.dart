@@ -37,7 +37,7 @@ class ShareableAnalysisCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(DesignTokens.spacing20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +50,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: DesignTokens.spacing6),
                   Text(
                     'AfterClose',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -68,7 +68,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const Divider(height: 24),
+              const Divider(height: DesignTokens.spacing24),
 
               // 股票名稱與價格
               Text(
@@ -77,7 +77,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               if (price != null)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -90,7 +90,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                         color: changeColor,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     if (priceChange != null)
                       Text(
                         '${priceChange >= 0 ? "+" : ""}${priceChange.toStringAsFixed(2)}%',
@@ -101,22 +101,22 @@ class ShareableAnalysisCard extends StatelessWidget {
                       ),
                   ],
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               // 評分與趨勢
               if (analysis != null)
                 Row(
                   children: [
                     _ScoreBadge(score: analysis.score),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: DesignTokens.spacing12),
                     _TrendChip(trend: analysis.trendState),
                     if (analysis.reversalState != 'NONE') ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(width: DesignTokens.spacing8),
                       _ReversalChip(reversal: analysis.reversalState),
                     ],
                   ],
                 ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               // AI 摘要
               if (summary != null) ...[
@@ -126,7 +126,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: DesignTokens.spacing12),
 
                 // 關鍵訊號
                 if (summary.keySignals.isNotEmpty) ...[
@@ -135,13 +135,13 @@ class ShareableAnalysisCard extends StatelessWidget {
                     label: 'summary.keySignals'.tr(),
                     color: AppTheme.upColor,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: DesignTokens.spacing4),
                   ...summary.keySignals
                       .take(3)
                       .map(
                         (s) => _BulletItem(text: s, color: AppTheme.upColor),
                       ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DesignTokens.spacing8),
                 ],
 
                 // 風險提示
@@ -151,11 +151,11 @@ class ShareableAnalysisCard extends StatelessWidget {
                     label: 'summary.riskFactors'.tr(),
                     color: Colors.orange,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: DesignTokens.spacing4),
                   ...summary.riskFactors
                       .take(2)
                       .map((s) => _BulletItem(text: s, color: Colors.orange)),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DesignTokens.spacing8),
                 ],
               ],
 
@@ -166,7 +166,7 @@ class ShareableAnalysisCard extends StatelessWidget {
                   label: 'summary.keySignals'.tr(),
                   color: theme.colorScheme.primary,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: DesignTokens.spacing4),
                 ...state.reasons
                     .take(5)
                     .map(
@@ -175,17 +175,17 @@ class ShareableAnalysisCard extends StatelessWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                const SizedBox(height: 8),
+                const SizedBox(height: DesignTokens.spacing8),
               ],
 
-              const Divider(height: 24),
+              const Divider(height: DesignTokens.spacing24),
 
               // 免責聲明
               Text(
                 'export.disclaimer'.tr(),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
-                  fontSize: 10,
+                  fontSize: DesignTokens.fontSizeXs,
                 ),
               ),
             ],
@@ -204,7 +204,10 @@ class _ScoreBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = AppTheme.getScoreColor(score);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing10,
+        vertical: DesignTokens.spacing4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -214,7 +217,7 @@ class _ScoreBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.bold,
-          fontSize: 14,
+          fontSize: DesignTokens.fontSizeMd,
         ),
       ),
     );
@@ -230,7 +233,10 @@ class _TrendChip extends StatelessWidget {
     final isUp = trend == 'UP';
     final color = isUp ? AppTheme.upColor : AppTheme.downColor;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: DesignTokens.spacing4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -240,7 +246,7 @@ class _TrendChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w600,
-          fontSize: 12,
+          fontSize: DesignTokens.fontSizeSm,
         ),
       ),
     );
@@ -256,7 +262,10 @@ class _ReversalChip extends StatelessWidget {
     final isW2S = reversal == 'W2S';
     final color = isW2S ? AppTheme.upColor : AppTheme.downColor;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: DesignTokens.spacing4,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -267,7 +276,7 @@ class _ReversalChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w600,
-          fontSize: 12,
+          fontSize: DesignTokens.fontSizeSm,
         ),
       ),
     );
@@ -289,7 +298,7 @@ class _SectionHeader extends StatelessWidget {
     return Row(
       children: [
         Icon(icon, size: 16, color: color),
-        const SizedBox(width: 4),
+        const SizedBox(width: DesignTokens.spacing4),
         Text(
           label,
           style: TextStyle(
@@ -311,19 +320,23 @@ class _BulletItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4, top: 2, bottom: 2),
+      padding: const EdgeInsets.only(
+        left: DesignTokens.spacing4,
+        top: DesignTokens.spacing2,
+        bottom: DesignTokens.spacing2,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: DesignTokens.spacing6),
             child: Container(
               width: 5,
               height: 5,
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Expanded(
             child: Text(
               text,

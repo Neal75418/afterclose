@@ -21,6 +21,9 @@ abstract final class DesignTokens {
   /// 8dp - 基礎間距
   static const double spacing8 = 8.0;
 
+  /// 10dp - 小中間距
+  static const double spacing10 = 10.0;
+
   /// 12dp - 中等間距
   static const double spacing12 = 12.0;
 
@@ -29,6 +32,9 @@ abstract final class DesignTokens {
 
   /// 16dp - 標準間距（Section 間距）
   static const double spacing16 = 16.0;
+
+  /// 20dp - 大間距（區段間距）
+  static const double spacing20 = 20.0;
 
   /// 24dp - 大間距（區塊間距）
   static const double spacing24 = 24.0;

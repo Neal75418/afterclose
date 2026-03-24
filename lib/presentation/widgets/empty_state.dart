@@ -77,7 +77,7 @@ class EmptyState extends StatelessWidget {
                     duration: AnimDurations.breathe,
                     curve: AnimCurves.breathe,
                   ),
-              const SizedBox(height: 24),
+              const SizedBox(height: DesignTokens.spacing24),
               // 標題
               Text(
                     title,
@@ -94,7 +94,7 @@ class EmptyState extends StatelessWidget {
                   )
                   .slideY(begin: 0.2, duration: AnimDurations.moderate),
               if (subtitle != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: DesignTokens.spacing8),
                 Text(
                       subtitle!,
                       style: theme.textTheme.bodyMedium?.copyWith(
@@ -110,7 +110,7 @@ class EmptyState extends StatelessWidget {
                     .slideY(begin: 0.2, duration: AnimDurations.moderate),
               ],
               if (actionLabel != null && onAction != null) ...[
-                const SizedBox(height: 24),
+                const SizedBox(height: DesignTokens.spacing24),
                 FilledButton.tonal(
                       onPressed: onAction,
                       child: Text(actionLabel!),
@@ -272,7 +272,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
 
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(DesignTokens.spacing24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -315,7 +315,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                   curve: AnimCurves.breathe,
                 ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: DesignTokens.spacing20),
 
             // 帶有篩選名稱的標題
             Text(
@@ -332,12 +332,12 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
               duration: AnimDurations.normal,
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 條件說明卡片（核心：條件 + 閾值）
             Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(DesignTokens.spacing16),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surfaceContainerHighest.withValues(
                       alpha: 0.5,
@@ -358,7 +358,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                             size: 18,
                             color: theme.colorScheme.primary,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: DesignTokens.spacing8),
                           Text(
                             'filterMeta.labelCondition'.tr(),
                             style: theme.textTheme.labelLarge?.copyWith(
@@ -368,7 +368,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: DesignTokens.spacing8),
                       Text(
                         widget.conditionDescription,
                         style: theme.textTheme.bodyMedium?.copyWith(
@@ -378,11 +378,11 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
 
                       // 閾值資訊（若有）
                       if (widget.thresholdInfo != null) ...[
-                        const SizedBox(height: 8),
+                        const SizedBox(height: DesignTokens.spacing8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
+                            horizontal: DesignTokens.spacing10,
+                            vertical: DesignTokens.spacing6,
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primaryContainer
@@ -412,7 +412,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
 
             // 更多詳情展開按鈕
             if (hasDetails) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               TextButton.icon(
                 onPressed: () => setState(() => _isExpanded = !_isExpanded),
                 icon: AnimatedRotation(
@@ -437,7 +437,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
               duration: AnimDurations.normal,
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
 
             // 提示文字
             Text(
@@ -453,7 +453,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
 
             // 清除篩選按鈕
             if (widget.onClearFilter != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: DesignTokens.spacing20),
               FilledButton.tonal(
                     onPressed: widget.onClearFilter,
                     child: Text('filterMeta.labelClear'.tr()),
@@ -478,8 +478,11 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
         // 診斷資訊（掃描數量與日期）
         if (widget.totalScanned != null || widget.dataDate != null)
           Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            margin: const EdgeInsets.only(bottom: DesignTokens.spacing12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing16,
+              vertical: DesignTokens.spacing8,
+            ),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainer,
               borderRadius: BorderRadius.circular(DesignTokens.radiusXxl),
@@ -496,7 +499,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                     size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: DesignTokens.spacing4),
                   Text(
                     'filterMeta.labelDate'.tr(
                       namedArgs: {
@@ -508,13 +511,13 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                     ),
                   ),
                   if (widget.totalScanned != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Container(
                       width: 1,
-                      height: 12,
+                      height: DesignTokens.spacing12,
                       color: theme.colorScheme.outline.withValues(alpha: 0.3),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                   ],
                 ],
                 if (widget.totalScanned != null) ...[
@@ -523,7 +526,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                     size: 14,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: DesignTokens.spacing4),
                   Text(
                     'filterMeta.labelScanned'.tr(
                       namedArgs: {
@@ -545,8 +548,8 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
         if (widget.dataRequirements.isNotEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(DesignTokens.spacing12),
+            margin: const EdgeInsets.only(bottom: DesignTokens.spacing8),
             decoration: BoxDecoration(
               color: theme.colorScheme.surfaceContainerHighest.withValues(
                 alpha: 0.3,
@@ -566,7 +569,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                       size: 18,
                       color: theme.colorScheme.secondary,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Text(
                       'filterMeta.labelData'.tr(),
                       style: theme.textTheme.labelLarge?.copyWith(
@@ -576,15 +579,15 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: DesignTokens.spacing8),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                  spacing: DesignTokens.spacing6,
+                  runSpacing: DesignTokens.spacing6,
                   children: widget.dataRequirements.map((req) {
                     return Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
+                        horizontal: DesignTokens.spacing10,
+                        vertical: DesignTokens.spacing4,
                       ),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.secondaryContainer.withValues(

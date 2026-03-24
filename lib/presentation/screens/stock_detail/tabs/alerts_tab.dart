@@ -47,14 +47,14 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
 
     return SingleChildScrollView(
       primary: false,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 當前價格顯示
           if (currentPrice != null) ...[
             _buildCurrentPriceCard(context, currentPrice),
-            const SizedBox(height: 24),
+            const SizedBox(height: DesignTokens.spacing24),
           ],
 
           // Alerts list
@@ -62,7 +62,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
             title: 'alert.title'.tr(),
             icon: Icons.notifications_active,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           if (alertState.isLoading && stockAlerts.isEmpty)
             const Center(
@@ -79,7 +79,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
           else ...[
             if (alertState.error != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: DesignTokens.spacing12),
                 child: MaterialBanner(
                   content: Text(alertState.error!),
                   leading: Icon(
@@ -105,7 +105,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
             ...stockAlerts.map((alert) => _buildAlertCard(context, ref, alert)),
           ],
 
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 新增警示按鈕
           SizedBox(
@@ -127,14 +127,14 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
     return Card(
       color: theme.colorScheme.primaryContainer,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Row(
           children: [
             Icon(
               Icons.monetization_on,
               color: theme.colorScheme.onPrimaryContainer,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: DesignTokens.spacing12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,14 +180,14 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
               size: 48,
               color: theme.colorScheme.outline,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             Text(
               'alert.noAlerts'.tr(),
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: theme.colorScheme.outline,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
             Text(
               'alert.noAlertsHint'.tr(),
               style: theme.textTheme.bodySmall?.copyWith(
@@ -208,13 +208,13 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Center(
         child: Column(
           children: [
             Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             Text(
               error,
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -222,7 +222,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             TextButton.icon(
               onPressed: () {
                 ref.read(priceAlertProvider.notifier).clearError();
@@ -253,7 +253,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.only(right: DesignTokens.spacing16),
         color: theme.colorScheme.error,
         child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
@@ -302,7 +302,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
         });
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: DesignTokens.spacing8),
         child: ListTile(
           leading: Container(
             width: 40,
@@ -425,17 +425,23 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
+        left: DesignTokens.spacing16,
+        right: DesignTokens.spacing16,
         top: 0,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom + DesignTokens.spacing16,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Drag handle
-          const DragHandle(margin: EdgeInsets.only(top: 12, bottom: 8)),
+          const DragHandle(
+            margin: EdgeInsets.only(
+              top: DesignTokens.spacing12,
+              bottom: DesignTokens.spacing8,
+            ),
+          ),
           // Header
           Row(
             children: [
@@ -453,12 +459,12 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
 
           // Current price info
           if (widget.currentPrice case final currentPrice?)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(DesignTokens.spacing12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -470,7 +476,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
                     size: 16,
                     color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: DesignTokens.spacing8),
                   Text(
                     'stockDetail.currentPrice'.tr(),
                     style: theme.textTheme.bodySmall,
@@ -485,11 +491,11 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
                 ],
               ),
             ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // Alert type selector
           Text('alert.type'.tr(), style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           SegmentedButton<AlertType>(
             segments: [
               ButtonSegment(
@@ -515,7 +521,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               });
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // Target value input
           Text(
@@ -524,7 +530,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
                 : 'alert.targetPrice'.tr(),
             style: theme.textTheme.labelLarge,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           TextField(
             controller: _valueController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -541,11 +547,11 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               border: const OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // Note input
           Text('alert.note'.tr(), style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           TextField(
             controller: _noteController,
             decoration: InputDecoration(
@@ -554,7 +560,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
             ),
             maxLines: 2,
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: DesignTokens.spacing24),
 
           // Create button
           SizedBox(
