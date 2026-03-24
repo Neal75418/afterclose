@@ -6,7 +6,6 @@ import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/domain/services/analysis/trend_detection_service.dart';
 import 'package:afterclose/domain/services/analysis/reversal_detection_service.dart';
 import 'package:afterclose/domain/services/analysis/support_resistance_service.dart';
-import 'package:afterclose/domain/services/analysis/price_volume_analysis_service.dart';
 
 /// 分析協調服務
 ///
@@ -17,12 +16,10 @@ class AnalysisCoordinatorService {
     TrendDetectionService? trendService,
     ReversalDetectionService? reversalService,
     SupportResistanceService? srService,
-    PriceVolumeAnalysisService? pvService,
     TechnicalIndicatorService? indicatorService,
   }) : trendService = trendService ?? TrendDetectionService(),
        reversalService = reversalService ?? ReversalDetectionService(),
        srService = srService ?? SupportResistanceService(),
-       pvService = pvService ?? PriceVolumeAnalysisService(),
        indicatorService = indicatorService ?? TechnicalIndicatorService();
 
   /// 趨勢檢測服務
@@ -33,9 +30,6 @@ class AnalysisCoordinatorService {
 
   /// 支撐壓力檢測服務
   final SupportResistanceService srService;
-
-  /// 價量分析服務
-  final PriceVolumeAnalysisService pvService;
 
   /// 技術指標服務
   final TechnicalIndicatorService indicatorService;

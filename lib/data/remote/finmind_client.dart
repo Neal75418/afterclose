@@ -548,9 +548,6 @@ class FinMindClient {
   /// 檢查是否已設定 token
   bool get hasToken => _token?.isNotEmpty ?? false;
 
-  /// 檢查 token 是否已設定且有效
-  bool get hasValidToken => hasToken && isValidTokenFormat(_token);
-
   // ==================================================
   // 階段 1: 新增 API 方法（8 個資料集）
   // ==================================================
@@ -569,22 +566,6 @@ class FinMindClient {
     startDate: startDate,
     endDate: endDate,
     fromJson: FinMindShareholding.tryFromJson,
-  );
-
-  /// 取得當沖比例資料
-  ///
-  /// 資料集: TaiwanStockDayTrading
-  /// 回傳: 當沖量及當沖比例
-  Future<List<FinMindDayTrading>> getDayTrading({
-    required String stockId,
-    required String startDate,
-    String? endDate,
-  }) => _fetchDateRange(
-    dataset: 'TaiwanStockDayTrading',
-    stockId: stockId,
-    startDate: startDate,
-    endDate: endDate,
-    fromJson: FinMindDayTrading.tryFromJson,
   );
 
   /// 取得綜合損益表資料

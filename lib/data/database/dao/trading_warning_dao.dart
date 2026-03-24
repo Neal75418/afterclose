@@ -6,34 +6,6 @@ import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
 /// Trading warning (注意股票/處置股票) operations.
 mixin TradingWarningDaoMixin on $AppDatabase {
-  /// 取得股票的警示歷史
-  Future<List<TradingWarningEntry>> getWarningHistory(
-    String symbol, {
-    DateTime? startDate,
-    DateTime? endDate,
-  }) {
-    final query = select(tradingWarning)..where((t) => t.symbol.equals(symbol));
-
-    if (startDate != null) {
-      query.where((t) => t.date.isBiggerOrEqualValue(startDate));
-    }
-    if (endDate != null) {
-      query.where((t) => t.date.isSmallerOrEqualValue(endDate));
-    }
-
-    query.orderBy([(t) => OrderingTerm.desc(t.date)]);
-    return query.get();
-  }
-
-  /// 取得股票目前生效的警示
-  Future<List<TradingWarningEntry>> getActiveWarnings(String symbol) {
-    return (select(tradingWarning)
-          ..where((t) => t.symbol.equals(symbol))
-          ..where((t) => t.isActive.equals(true))
-          ..orderBy([(t) => OrderingTerm.desc(t.date)]))
-        .get();
-  }
-
   /// 取得所有目前生效的警示（全市場）
   Future<List<TradingWarningEntry>> getAllActiveWarnings() {
     return (select(tradingWarning)
@@ -49,29 +21,6 @@ mixin TradingWarningDaoMixin on $AppDatabase {
           ..where((t) => t.warningType.equals(type))
           ..orderBy([(t) => OrderingTerm.desc(t.date)]))
         .get();
-  }
-
-  /// 檢查股票是否有目前生效的警示
-  Future<bool> hasActiveWarning(String symbol) async {
-    final result =
-        await (select(tradingWarning)
-              ..where((t) => t.symbol.equals(symbol))
-              ..where((t) => t.isActive.equals(true))
-              ..limit(1))
-            .getSingleOrNull();
-    return result != null;
-  }
-
-  /// 檢查股票是否為處置股
-  Future<bool> isDisposalStock(String symbol) async {
-    final result =
-        await (select(tradingWarning)
-              ..where((t) => t.symbol.equals(symbol))
-              ..where((t) => t.isActive.equals(true))
-              ..where((t) => t.warningType.equals('DISPOSAL'))
-              ..limit(1))
-            .getSingleOrNull();
-    return result != null;
   }
 
   /// 批次檢查多檔股票是否為處置股（批次查詢）

@@ -61,9 +61,6 @@ class TpexDeclaredDividend {
   final DateTime? exDividendDate; // 除息交易日
   final DateTime? exRightsDate; // 除權交易日
 
-  /// 總股利（現金 + 股票）
-  double get totalDividend => cashDividend + stockDividend;
-
   static double? _parseDouble(dynamic value) {
     if (value == null) return null;
     if (value is num) return value.toDouble();

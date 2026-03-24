@@ -234,11 +234,6 @@ class NotificationService {
     await _notifications.cancel(id: id);
   }
 
-  /// 取消所有通知
-  Future<void> cancelAllNotifications() async {
-    await _notifications.cancelAll();
-  }
-
   /// 處理通知點擊事件
   ///
   /// payload 包含股票代號，導航由應用程式的導航系統處理。
@@ -260,7 +255,4 @@ class NotificationService {
       AppLogger.debug('NotificationService', '服務已釋放');
     }
   }
-
-  /// 檢查服務是否已初始化
-  bool get isInitialized => _isInitialized;
 }

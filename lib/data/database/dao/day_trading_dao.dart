@@ -25,15 +25,6 @@ mixin DayTradingDaoMixin on $AppDatabase {
     return query.get();
   }
 
-  /// 取得股票的最新當沖資料
-  Future<DayTradingEntry?> getLatestDayTrading(String symbol) {
-    return (select(dayTrading)
-          ..where((t) => t.symbol.equals(symbol))
-          ..orderBy([(t) => OrderingTerm.desc(t.date)])
-          ..limit(1))
-        .getSingleOrNull();
-  }
-
   /// 取得指定日期的當沖資料筆數（新鮮度檢查用）
   Future<int> getDayTradingCountForDate(DateTime date) async {
     // 使用本地時間午夜以匹配資料庫儲存格式

@@ -139,11 +139,6 @@ abstract final class TrendParams {
   /// 收盤價序列需達此數量才進行趨勢判斷。
   static const int minTrendDataPoints = 5;
 
-  /// 高檔爆量成交量倍數
-  ///
-  /// 高檔爆量需達成交量變化門檻的此倍數。
-  static const double highVolumeMultiplier = 1.5;
-
   // ==================================================
   // 價量背離
   // ==================================================

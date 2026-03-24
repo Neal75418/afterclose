@@ -23,9 +23,6 @@ abstract final class AnimDurations {
   /// 緩和：較慢的列表與詳情動畫 - 400ms
   static const moderate = Duration(milliseconds: 400);
 
-  /// 極慢：載入動畫 - 1000ms
-  static const loading = Duration(milliseconds: 1000);
-
   /// 呼吸效果：空狀態脈動等循環動畫 - 2000ms
   static const breathe = Duration(milliseconds: 2000);
 }
