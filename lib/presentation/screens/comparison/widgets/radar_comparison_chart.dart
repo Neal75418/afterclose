@@ -9,10 +9,10 @@ import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Radar chart comparing stocks across 6 dimensions.
+/// 雷達圖，跨 6 個維度比較股票。
 ///
-/// Axes: Score, Price Perf, Valuation, Revenue, Institutional, AI Sentiment.
-/// Each axis is normalized to 0-100.
+/// 軸線：分數、價格表現、估值、營收、法人、AI 情緒。
+/// 每個軸線正規化至 0-100。
 class RadarComparisonChart extends StatelessWidget {
   const RadarComparisonChart({super.key, required this.state});
 
@@ -126,7 +126,7 @@ class RadarComparisonChart extends StatelessWidget {
     return datasets;
   }
 
-  /// Compute 6 normalized values (0-100) for a stock.
+  /// 計算股票的 6 個正規化數值（0-100）。
   List<double> _computeRadarValues(String symbol) {
     return [
       _scoreValue(symbol),
@@ -138,13 +138,13 @@ class RadarComparisonChart extends StatelessWidget {
     ];
   }
 
-  /// Score: direct 0-100.
+  /// 分數：直接對應 0-100。
   double _scoreValue(String symbol) {
     return (state.analysesMap[symbol]?.score ?? 0).clamp(0, 100);
   }
 
-  /// Price performance: 1M return mapped to 0-100 (clamped linear).
-  /// -30% or worse = 0, +30% or better = 100, 0% = 50.
+  /// 價格表現：近 1 個月報酬率對應至 0-100（線性截斷）。
+  /// -30% 以下 = 0，+30% 以上 = 100，0% = 50。
   double _pricePerformanceValue(String symbol) {
     final history = state.priceHistoriesMap[symbol];
     if (history == null || history.length < 2) return 50;
@@ -164,8 +164,8 @@ class RadarComparisonChart extends StatelessWidget {
     return ((returnPct + 30) / 60 * 100).clamp(0, 100);
   }
 
-  /// Valuation: composite of P/E (lower = better), dividend yield (higher = better).
-  /// P/E < 10 = 100, P/E > 40 = 0; Yield > 6% = 100, Yield 0% = 0.
+  /// 估值：P/E（越低越好）與殖利率（越高越好）的複合指標。
+  /// P/E < 10 = 100，P/E > 40 = 0；殖利率 > 6% = 100，0% = 0。
   double _valuationValue(String symbol) {
     final valuation = state.valuationsMap[symbol];
     if (valuation == null) return 50;
@@ -190,8 +190,8 @@ class RadarComparisonChart extends StatelessWidget {
     return count > 0 ? score / count : 50;
   }
 
-  /// Revenue: YoY growth mapped to 0-100.
-  /// -50% = 0, +50% = 100, 0% = 50.
+  /// 營收：年增率對應至 0-100。
+  /// -50% = 0，+50% = 100，0% = 50。
   double _revenueValue(String symbol) {
     final revenueList = state.revenueMap[symbol];
     if (revenueList == null || revenueList.isEmpty) return 50;
@@ -202,8 +202,8 @@ class RadarComparisonChart extends StatelessWidget {
     return ((yoy + 50) / 100 * 100).clamp(0, 100);
   }
 
-  /// Institutional: 5-day net buy amount mapped.
-  /// Positive = bullish, negative = bearish.
+  /// 法人：5 日淨買超金額對應。
+  /// 正值 = 偏多，負值 = 偏空。
   double _institutionalValue(String symbol) {
     final instList = state.institutionalMap[symbol];
     if (instList == null || instList.isEmpty) return 50;
@@ -220,7 +220,7 @@ class RadarComparisonChart extends StatelessWidget {
     return normalized.clamp(0, 100);
   }
 
-  /// Sentiment: strongBullish=95, bullish=75, neutral=50, bearish=25, strongBearish=5.
+  /// 情緒：極度看多=95、看多=75、中性=50、看空=25、極度看空=5。
   double _sentimentValue(String symbol) {
     final summary = state.summariesMap[symbol];
     if (summary == null) return 50;

@@ -9,8 +9,7 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Displays a table of the most recent 5 years of dividend data with
-/// a summary row showing the average cash dividend.
+/// 顯示近 5 年股利資料表，並附摘要列顯示平均現金股利。
 class DividendTable extends StatelessWidget {
   const DividendTable({
     super.key,

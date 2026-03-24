@@ -189,9 +189,9 @@ class ComparisonTable extends StatelessWidget {
     );
   }
 
-  // ──────────────────────────────────────────
+  // ==================================================
   // 區段建構
-  // ──────────────────────────────────────────
+  // ==================================================
 
   List<_ComparisonSection> _buildSections() {
     return [
@@ -483,7 +483,7 @@ class ComparisonTable extends StatelessWidget {
     );
   }
 
-  /// Determine the winner of a section by counting which stock wins the most rows.
+  /// 計算區塊的贏家：統計各股票在該區塊贏得最多列數的那一檔。
   String? _sectionWinner(_ComparisonSection section) {
     final wins = <String, int>{};
     for (final symbol in state.symbols) {
@@ -520,9 +520,9 @@ class ComparisonTable extends StatelessWidget {
   }
 }
 
-// ──────────────────────────────────────────
+// ==================================================
 // 資料模型
-// ──────────────────────────────────────────
+// ==================================================
 
 class _ComparisonSection {
   const _ComparisonSection({

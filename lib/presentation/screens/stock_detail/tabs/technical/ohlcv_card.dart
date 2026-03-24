@@ -7,7 +7,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart'
     show formatLots;
 
-/// Displays today's OHLCV (Open, High, Low, Close, Volume) trading data.
+/// 顯示今日 OHLCV（開盤、最高、最低、收盤、成交量）交易資料。
 class OhlcvCard extends StatelessWidget {
   const OhlcvCard({
     super.key,

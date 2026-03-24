@@ -160,8 +160,8 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
           strategiesError: null,
         );
       }
-    } catch (e) {
-      AppLogger.error('CustomScreeningNotifier', '載入策略失敗', e);
+    } catch (e, s) {
+      AppLogger.error('CustomScreeningNotifier', '載入策略失敗', e, s);
       if (_active) {
         state = state.copyWith(
           isLoadingStrategies: false,
@@ -186,8 +186,8 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
           conditionsJson: json,
         ),
       );
-    } catch (e) {
-      AppLogger.error('CustomScreeningNotifier', '儲存策略失敗', e);
+    } catch (e, s) {
+      AppLogger.error('CustomScreeningNotifier', '儲存策略失敗', e, s);
       return false;
     }
     // 寫入已成功，重載失敗不影響回傳值
@@ -203,8 +203,8 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   Future<bool> deleteStrategy(int id) async {
     try {
       await _db.deleteScreeningStrategy(id);
-    } catch (e) {
-      AppLogger.error('CustomScreeningNotifier', '刪除策略失敗', e);
+    } catch (e, s) {
+      AppLogger.error('CustomScreeningNotifier', '刪除策略失敗', e, s);
       return false;
     }
     // 刪除已成功，重載失敗不影響回傳值
@@ -275,8 +275,8 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
           hasMore: _allResultSymbols.length > kPageSize,
         );
       }
-    } catch (e) {
-      AppLogger.error('CustomScreeningNotifier', '篩選執行失敗', e);
+    } catch (e, s) {
+      AppLogger.error('CustomScreeningNotifier', '篩選執行失敗', e, s);
       if (_active) {
         state = state.copyWith(
           isExecuting: false,

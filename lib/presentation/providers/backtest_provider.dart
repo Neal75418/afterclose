@@ -159,8 +159,8 @@ class BacktestNotifier extends Notifier<BacktestState> {
           progress: 1.0,
         );
       }
-    } catch (e) {
-      AppLogger.error('BacktestNotifier', '回測執行失敗', e);
+    } catch (e, s) {
+      AppLogger.error('BacktestNotifier', '回測執行失敗', e, s);
       if (_active) {
         state = state.copyWith(
           isExecuting: false,

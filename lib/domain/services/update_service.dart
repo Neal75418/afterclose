@@ -445,6 +445,7 @@ class UpdateService {
         );
       }
     } catch (e) {
+      AppLogger.warning('UpdateService', '歷史資料更新失敗', e);
       ctx.result.recordError('歷史資料更新失敗: $e', e);
     }
   }
@@ -460,6 +461,7 @@ class UpdateService {
       );
       ctx.result.institutionalUpdated = instResult.estimatedCount;
     } catch (e) {
+      AppLogger.warning('UpdateService', '法人資料更新失敗', e);
       ctx.result.recordError('法人資料更新失敗: $e', e);
     }
   }
@@ -498,6 +500,7 @@ class UpdateService {
               '融資=$marginLabel, 持股=$syncedCount',
         );
       } catch (e) {
+        AppLogger.warning('UpdateService', '籌碼資料更新失敗', e);
         ctx.result.recordError('籌碼資料更新失敗: $e', e);
       }
     }
@@ -560,6 +563,7 @@ class UpdateService {
           AppLogger.warning('UpdateService', '財報資料同步失敗', e);
         }
       } catch (e) {
+        AppLogger.warning('UpdateService', '基本面資料更新失敗', e);
         ctx.result.recordError('基本面資料更新失敗: $e', e);
       }
     }

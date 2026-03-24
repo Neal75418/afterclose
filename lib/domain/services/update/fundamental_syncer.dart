@@ -279,16 +279,20 @@ class FundamentalSyncer {
     for (var i = 0; i < stockSymbols.length; i += chunkSize) {
       final chunk = stockSymbols.skip(i).take(chunkSize).toList();
       final results = await Future.wait(
-        chunk.map(
-          (s) => marketDataRepo
-              .syncBalanceSheet(s, startDate: start, endDate: end)
-              .catchError((Object e) {
-                // RateLimitException 需向上傳播以停止批次
-                if (e is RateLimitException) throw e;
-                AppLogger.warning('FundamentalSyncer', '$s: 資產負債表同步失敗', e);
-                return 0;
-              }),
-        ),
+        chunk.map((s) async {
+          try {
+            return await marketDataRepo.syncBalanceSheet(
+              s,
+              startDate: start,
+              endDate: end,
+            );
+          } on RateLimitException {
+            rethrow;
+          } catch (e) {
+            AppLogger.warning('FundamentalSyncer', '$s: 資產負債表同步失敗', e);
+            return 0;
+          }
+        }),
       );
       count += results.fold(0, (sum, n) => sum + n);
 

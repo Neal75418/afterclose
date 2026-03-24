@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
@@ -247,6 +248,7 @@ class PositionDetailScreen extends ConsumerWidget {
                     );
                   }
                 } catch (e) {
+                  AppLogger.warning('PositionDetailScreen', '刪除交易失敗', e);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

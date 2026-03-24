@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -17,7 +18,7 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Screen for managing price alerts
+/// 價格警示管理畫面
 class AlertsScreen extends ConsumerStatefulWidget {
   const AlertsScreen({super.key});
 
@@ -406,7 +407,7 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
     return result ?? false;
   }
 
-  /// Show dialog to add a new price alert
+  /// 顯示新增價格警示的對話框
   Future<void> _showAddAlertDialog(BuildContext context) async {
     final db = ref.read(databaseProvider);
 
@@ -441,8 +442,8 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
   }
 }
 
-/// Separate StatefulWidget for stock symbol input dialog
-/// This ensures TextEditingController is properly managed with State lifecycle
+/// 股票代號輸入對話框（獨立 StatefulWidget）
+/// 確保 TextEditingController 透過 State 生命週期正確管理
 class _StockSymbolInputDialog extends StatefulWidget {
   const _StockSymbolInputDialog({required this.db});
 
@@ -486,6 +487,7 @@ class _StockSymbolInputDialogState extends State<_StockSymbolInputDialog> {
         });
       }
     } catch (e) {
+      AppLogger.warning('AlertsScreen', '搜尋股票失敗', e);
       if (mounted) {
         setState(() {
           _isSearching = false;

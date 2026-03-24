@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
@@ -400,6 +401,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
           });
         }
       } catch (e) {
+        AppLogger.warning('AddTransactionSheet', '搜尋股票失敗', e);
         if (mounted && _symbolController.text == query) {
           setState(() {
             _searchResults = [];
@@ -541,6 +543,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      AppLogger.warning('AddTransactionSheet', '新增交易失敗: $symbol', e);
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(

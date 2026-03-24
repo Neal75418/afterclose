@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Shared helper widgets used across fundamentals section widgets.
+/// 基本面區塊共用的輔助 Widget。
 
-/// Builds a growth badge showing a percentage with color coding.
+/// 建立成長率標章，以顏色區分漲跌。
 ///
-/// Positive growth is shown in [AppTheme.upColor], negative in [AppTheme.downColor].
-/// Values with absolute magnitude >= 10% get a tinted background and bold text.
+/// 正成長使用 [AppTheme.upColor]，負成長使用 [AppTheme.downColor]。
+/// 絕對值 >= 10% 時加上底色與粗體。
 Widget buildGrowthBadge(BuildContext context, double? growth) {
   final theme = Theme.of(context);
 
@@ -49,7 +49,7 @@ Widget buildGrowthBadge(BuildContext context, double? growth) {
   );
 }
 
-/// Builds a loading placeholder with a centered circular progress indicator.
+/// 建立載入中佔位元件，置中顯示圓形進度指示器。
 Widget buildLoadingState(BuildContext context) {
   final theme = Theme.of(context);
 
@@ -69,7 +69,7 @@ Widget buildLoadingState(BuildContext context) {
   );
 }
 
-/// Builds an empty-state placeholder displaying [message].
+/// 建立空狀態佔位元件，顯示 [message]。
 Widget buildEmptyState(BuildContext context, String message) {
   final theme = Theme.of(context);
 
@@ -90,10 +90,9 @@ Widget buildEmptyState(BuildContext context, String message) {
   );
 }
 
-/// Returns the alternating row background color for data tables.
+/// 回傳資料表的交替列背景色。
 ///
-/// Index 0 gets a highlighted primary container tint; even indices get
-/// [surface]; odd indices are transparent.
+/// Index 0 使用主色容器色調高亮；偶數索引使用 [surface]；奇數索引透明。
 Color? getRowColor(BuildContext context, int index) {
   final theme = Theme.of(context);
 
@@ -110,7 +109,7 @@ Color? getRowColor(BuildContext context, int index) {
 // 表格結構輔助
 // ==================================================
 
-/// Builds a styled header row for data tables.
+/// 建立資料表的樣式化標題列。
 Widget buildTableHeader(BuildContext context, List<Widget> columns) {
   final theme = Theme.of(context);
   return Container(
@@ -123,7 +122,7 @@ Widget buildTableHeader(BuildContext context, List<Widget> columns) {
   );
 }
 
-/// Builds a single header cell with consistent styling.
+/// 建立單一標題欄位，使用一致的樣式。
 Widget buildHeaderCell(
   BuildContext context,
   String label, {
@@ -144,7 +143,7 @@ Widget buildHeaderCell(
   );
 }
 
-/// Builds a data row container with alternating row colors.
+/// 建立資料列容器，使用交替列背景色。
 Widget buildTableDataRow(
   BuildContext context,
   int index,

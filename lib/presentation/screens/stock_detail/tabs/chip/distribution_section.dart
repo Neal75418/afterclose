@@ -6,7 +6,7 @@ import 'package:afterclose/presentation/widgets/section_header.dart';
 
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
 
-/// Displays holding distribution data as horizontal bar charts.
+/// 以水平長條圖顯示持股分佈資料。
 class DistributionSection extends StatelessWidget {
   const DistributionSection({super.key, required this.distribution});
 

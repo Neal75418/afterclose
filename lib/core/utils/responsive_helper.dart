@@ -7,7 +7,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// BuildContext 響應式擴展
 ///
-/// 提供便捷的方法來判斷設備類型和獲取響應式值。
+/// 提供便捷的方法來判斷設備類型和取得響應式值。
 ///
 /// 使用範例：
 /// ```dart

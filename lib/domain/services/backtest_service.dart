@@ -107,8 +107,8 @@ class BacktestService {
             ),
           );
         }
-      } catch (e) {
-        AppLogger.error('BacktestService', '篩選日 $screeningDate 失敗', e);
+      } catch (e, s) {
+        AppLogger.error('BacktestService', '篩選日 $screeningDate 失敗', e, s);
       }
 
       onProgress?.call(i + 1, samplingDays.length);

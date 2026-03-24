@@ -17,7 +17,7 @@ import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
-// Market Overview State
+// 大盤總覽狀態
 // ==================================================
 
 /// 漲跌家數
@@ -337,7 +337,7 @@ class MarketOverviewState {
 }
 
 // ==================================================
-// Market Overview Notifier
+// 大盤總覽 Notifier
 // ==================================================
 
 class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
@@ -465,9 +465,9 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       if (!_active || _loadGeneration != myGen) return;
 
       state = _buildState(results, dataDate);
-    } catch (e) {
+    } catch (e, s) {
       // getLatestDataDate() 可能拋出例外
-      AppLogger.error('MarketOverviewNotifier', '載入大盤總覽失敗', e);
+      AppLogger.warning('MarketOverviewNotifier', '載入大盤總覽失敗', e, s);
       if (_active) {
         state = state.copyWith(
           isLoading: false,

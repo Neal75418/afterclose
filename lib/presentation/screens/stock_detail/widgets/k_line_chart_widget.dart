@@ -8,8 +8,8 @@ import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Professional K-line chart widget using k_chart_plus package
-/// Supports MA, BOLL, RSI, KDJ, MACD, WR, CCI indicators
+/// 使用 k_chart_plus 套件的 K 線圖 Widget，
+/// 支援 MA、BOLL、RSI、KDJ、MACD、WR、CCI 指標。
 class KLineChartWidget extends StatefulWidget {
   const KLineChartWidget({
     super.key,

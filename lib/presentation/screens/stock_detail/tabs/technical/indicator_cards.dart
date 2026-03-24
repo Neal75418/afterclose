@@ -12,8 +12,8 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/card
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/obv_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
 
-/// Displays detailed indicator value cards (RSI, KDJ, MACD, Bollinger)
-/// based on the selected secondary and main indicators.
+/// 根據選擇的副指標與主指標，顯示詳細的技術指標卡片
+/// （RSI、KDJ、MACD、Bollinger）。
 class IndicatorCardsSection extends StatelessWidget {
   const IndicatorCardsSection({
     super.key,

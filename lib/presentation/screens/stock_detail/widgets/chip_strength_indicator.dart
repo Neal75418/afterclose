@@ -5,8 +5,7 @@ import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/domain/models/chip_strength.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Top banner card showing chip strength score (0-100) with progress bar
-/// and institutional attitude label.
+/// 頂部橫幅卡片，顯示籌碼強度分數（0-100）、進度條與法人態度標籤。
 class ChipStrengthIndicator extends StatelessWidget {
   const ChipStrengthIndicator({super.key, required this.strength});
 

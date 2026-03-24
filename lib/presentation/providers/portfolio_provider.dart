@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
@@ -281,6 +282,7 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
         isLoading: false,
       );
     } catch (e) {
+      AppLogger.warning('PortfolioNotifier', '載入持倉資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }

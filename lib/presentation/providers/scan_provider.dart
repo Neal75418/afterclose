@@ -19,10 +19,10 @@ export 'package:afterclose/domain/models/scan_models.dart';
 const _sentinel = Object();
 
 // ==================================================
-// Scan Screen State
+// 掃描狀態
 // ==================================================
 
-/// State for scan screen
+/// 掃描畫面狀態
 class ScanState {
   const ScanState({
     this.stocks = const [], // Filtered/sorted view
@@ -50,7 +50,7 @@ class ScanState {
   /// 所有可選產業列表
   final List<String> industries;
 
-  /// The actual date of the data being displayed
+  /// 目前顯示的資料實際日期
   final DateTime? dataDate;
 
   /// 首次載入或 pull-to-refresh
@@ -59,16 +59,16 @@ class ScanState {
   /// 篩選器/排序切換中（輕量 loading，不顯示全骨架）
   final bool isFiltering;
 
-  /// Whether more items are being loaded (infinite scroll)
+  /// 是否正在載入更多項目（無限捲動）
   final bool isLoadingMore;
 
-  /// Whether there are more items to load
+  /// 是否還有更多項目可載入
   final bool hasMore;
 
-  /// Total count of items matching current filter
+  /// 符合目前篩選條件的項目總數
   final int totalCount;
 
-  /// Total count of items scanned (analyzed) today
+  /// 今日已掃描（分析）的項目總數
   final int totalAnalyzedCount;
 
   final String? error;
@@ -109,10 +109,8 @@ class ScanState {
   }
 }
 
-/// Stock item in scan list
-
 // ==================================================
-// Scan Notifier
+// 掃描 Notifier
 // ==================================================
 
 class ScanNotifier extends Notifier<ScanState> {
@@ -163,7 +161,7 @@ class ScanNotifier extends Notifier<ScanState> {
   /// 清除錯誤狀態
   void clearError() => state = state.copyWith(error: null);
 
-  /// Load scan data (first page)
+  /// 載入掃描資料（第一頁）
   Future<void> loadData() async {
     state = state.copyWith(isLoading: true, error: null, hasMore: true);
 
@@ -245,13 +243,13 @@ class ScanNotifier extends Notifier<ScanState> {
         totalCount: _filteredAnalyses.length,
         totalAnalyzedCount: _allAnalyses.length,
       );
-    } catch (e) {
+    } catch (e, s) {
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
-      AppLogger.error('ScanNotifier', '載入資料失敗', e);
+      AppLogger.error('ScanNotifier', '載入資料失敗', e, s);
     }
   }
 
-  /// Load more items (for infinite scroll)
+  /// 載入更多項目（無限捲動）
   Future<void> loadMore() async {
     if (state.isLoadingMore || !state.hasMore || _dateCtx == null) return;
 
@@ -277,6 +275,7 @@ class ScanNotifier extends Notifier<ScanState> {
         hasMore: (currentLen + newItems.length) < _filteredAnalyses.length,
       );
     } catch (e) {
+      AppLogger.warning('ScanNotifier', '載入更多失敗', e);
       state = state.copyWith(
         isLoadingMore: false,
         error: ErrorDisplay.message(e),
@@ -284,7 +283,7 @@ class ScanNotifier extends Notifier<ScanState> {
     }
   }
 
-  /// Set filter
+  /// 設定篩選條件
   Future<void> setFilter(ScanFilter filter) async {
     if (filter == state.filter) return;
 
@@ -332,7 +331,7 @@ class ScanNotifier extends Notifier<ScanState> {
     _reloadFirstPage(++_reloadSeq);
   }
 
-  /// Helper to reload first page after filter/sort change
+  /// 篩選/排序變更後重新載入第一頁的輔助方法
   Future<void> _reloadFirstPage(int seq) async {
     try {
       final firstPageItems = await _loadItemsForAnalyses(
@@ -351,6 +350,7 @@ class ScanNotifier extends Notifier<ScanState> {
       );
     } catch (e) {
       if (seq != _reloadSeq) return;
+      AppLogger.warning('ScanNotifier', '重新載入第一頁失敗', e);
       state = state.copyWith(
         isLoading: false,
         isFiltering: false,
@@ -378,7 +378,7 @@ class ScanNotifier extends Notifier<ScanState> {
     );
   }
 
-  /// Load detailed stock data for a batch of analyses
+  /// 載入一批分析的詳細股票資料
   Future<List<ScanStockItem>> _loadItemsForAnalyses(
     List<DailyAnalysisEntry> analyses,
   ) async {
@@ -393,7 +393,7 @@ class ScanNotifier extends Notifier<ScanState> {
     );
   }
 
-  /// Set sort
+  /// 設定排序
   void setSort(ScanSort sort) {
     if (sort == state.sort) return;
 
@@ -455,12 +455,13 @@ class ScanNotifier extends Notifier<ScanState> {
 
       state = state.copyWith(stocks: updatedFiltered, error: null);
     } catch (e) {
+      AppLogger.warning('ScanNotifier', '切換自選股失敗: $symbol', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
     }
   }
 }
 
-/// Provider for scan screen state
+/// 掃描畫面狀態 Provider
 final scanProvider = NotifierProvider<ScanNotifier, ScanState>(
   ScanNotifier.new,
 );

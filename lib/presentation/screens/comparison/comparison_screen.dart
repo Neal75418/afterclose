@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -86,6 +87,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
           await shareService.shareCsv(csv, 'comparison.csv');
       }
     } catch (e) {
+      AppLogger.warning('ComparisonScreen', '分享比較資料失敗', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

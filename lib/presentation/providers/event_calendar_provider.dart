@@ -264,6 +264,7 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
       return true;
     } catch (e) {
       if (_loadGeneration != generation) return false;
+      AppLogger.warning('EventCalendarNotifier', '載入月事件失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
       return true; // 完成了（雖然是錯誤），error 已寫入 state
     }

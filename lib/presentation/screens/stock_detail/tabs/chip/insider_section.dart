@@ -9,7 +9,7 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_help
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
-/// Displays insider holding data: ratios, shares change, and pledge warning.
+/// 顯示內部人持股資料：持股比例、持股變動與質押警示。
 class InsiderSection extends StatelessWidget {
   const InsiderSection({super.key, required this.history});
 

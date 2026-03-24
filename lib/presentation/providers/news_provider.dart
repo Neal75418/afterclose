@@ -2,12 +2,13 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
-// News Screen State
+// 新聞狀態
 // ==================================================
 
 /// 可用的新聞來源篩選選項
@@ -88,7 +89,7 @@ class NewsState {
 }
 
 // ==================================================
-// News Notifier
+// 新聞 Notifier
 // ==================================================
 
 class NewsNotifier extends Notifier<NewsState> {
@@ -123,6 +124,7 @@ class NewsNotifier extends Notifier<NewsState> {
         isLoading: false,
       );
     } catch (e) {
+      AppLogger.warning('NewsNotifier', '載入新聞失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e), isLoading: false);
     }
   }

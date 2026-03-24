@@ -9,7 +9,7 @@ import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/chip_helpers.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Displays institutional investor flow data: summary cards, trend chart, and table.
+/// 顯示法人進出資料：摘要卡片、趨勢圖與明細表。
 class InstitutionalSection extends StatelessWidget {
   const InstitutionalSection({super.key, required this.history});
 

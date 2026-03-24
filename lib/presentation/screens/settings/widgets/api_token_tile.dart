@@ -9,7 +9,7 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-/// API Token configuration tile
+/// API Token 設定項目
 class ApiTokenTile extends ConsumerStatefulWidget {
   const ApiTokenTile({super.key});
 

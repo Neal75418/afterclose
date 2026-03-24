@@ -3,7 +3,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
-/// Context data needed for alert evaluation
+/// 警示評估所需的上下文資料
 class AlertEvaluationContext {
   const AlertEvaluationContext({
     required this.currentPrices,
@@ -24,10 +24,10 @@ class AlertEvaluationContext {
   final Set<String> disposalSymbols;
 }
 
-/// Domain service for evaluating price alert conditions
+/// 評估價格警示條件的 Domain 服務
 ///
-/// Extracted from UserDaoMixin to fix layer violation - technical indicator
-/// calculations belong in the domain layer, not in the data access layer.
+/// 從 UserDaoMixin 中抽取，修正分層違規 — 技術指標計算
+/// 應屬於 Domain 層，而非 Data Access 層。
 class AlertEvaluationService {
   AlertEvaluationService({TechnicalIndicatorService? indicatorService})
     : _indicatorService = indicatorService ?? TechnicalIndicatorService();
@@ -53,10 +53,10 @@ class AlertEvaluationService {
     'TRADING_DISPOSAL',
   };
 
-  /// Evaluate all active alerts against current market data
+  /// 根據當前市場資料評估所有啟用中的警示
   ///
-  /// Returns triggered alerts and IDs of unimplemented alert types
-  /// (legacy DB data) that should be auto-disabled.
+  /// 回傳已觸發的警示，以及應自動停用的未實作警示類型 ID
+  /// （舊版 DB 資料）。
   ({List<PriceAlertEntry> triggered, List<int> unimplementedIds})
   evaluateAlerts(
     List<PriceAlertEntry> activeAlerts,

@@ -263,7 +263,7 @@ class ExportService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Header
+              // 標題
               pw.Row(
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
@@ -286,7 +286,7 @@ class ExportService {
               pw.Divider(),
               pw.SizedBox(height: 12),
 
-              // Stock Info
+              // 股票資訊
               pw.Text(
                 '$symbol ${stock?.name ?? ""}',
                 style: pw.TextStyle(
@@ -296,7 +296,7 @@ class ExportService {
               ),
               pw.SizedBox(height: 8),
 
-              // Price
+              // 價格
               if (price != null) ...[
                 pw.Row(
                   children: [
@@ -342,7 +342,7 @@ class ExportService {
 
               pw.SizedBox(height: 16),
 
-              // Analysis section
+              // 分析區塊
               if (analysis != null) ...[
                 _pdfSectionTitle('export.csvAnalysis'.tr()),
                 pw.SizedBox(height: 6),
@@ -359,7 +359,7 @@ class ExportService {
                 pw.SizedBox(height: 12),
               ],
 
-              // AI Summary
+              // AI 摘要
               if (state.aiSummary != null) ...[
                 _pdfSectionTitle('export.csvAiSummary'.tr()),
                 pw.SizedBox(height: 6),
@@ -410,7 +410,7 @@ class ExportService {
                 pw.SizedBox(height: 12),
               ],
 
-              // Signals
+              // 訊號
               if (state.reasons.isNotEmpty) ...[
                 _pdfSectionTitle('export.csvSignals'.tr()),
                 pw.SizedBox(height: 6),

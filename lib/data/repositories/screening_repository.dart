@@ -187,8 +187,8 @@ class ScreeningRepository implements IScreeningRepository {
       final rows = await _db.customSelect(query, variables: driftVars).get();
       final symbols = rows.map((r) => r.read<String>('symbol')).toList();
       return (symbols: symbols, totalScanned: totalScanned);
-    } catch (e) {
-      AppLogger.error('ScreeningRepo', 'SQL 篩選失敗', e);
+    } catch (e, s) {
+      AppLogger.error('ScreeningRepo', 'SQL 篩選失敗', e, s);
       return (symbols: <String>[], totalScanned: totalScanned);
     }
   }

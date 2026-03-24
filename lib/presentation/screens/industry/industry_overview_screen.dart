@@ -66,8 +66,8 @@ class _IndustryOverviewScreenState
           _state = _IndustryOverviewState(industries: items, isLoading: false);
         });
       }
-    } catch (e) {
-      AppLogger.error('IndustryOverviewScreen', '載入產業資料失敗', e);
+    } catch (e, s) {
+      AppLogger.warning('IndustryOverviewScreen', '載入產業資料失敗', e, s);
       if (mounted) {
         setState(() {
           _state = _IndustryOverviewState(

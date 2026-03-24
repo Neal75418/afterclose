@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afterclose/core/utils/logger.dart';
 
 // ==================================================
-// Settings Keys
+// 設定鍵值
 // ==================================================
 
 const _keyThemeMode = 'settings_theme_mode';
@@ -19,7 +19,7 @@ const _keyCacheDurationMinutes = 'settings_cache_duration_minutes';
 const _keyAutoUpdateEnabled = 'settings_auto_update_enabled';
 
 // ==================================================
-// Settings State
+// 設定狀態
 // ==================================================
 
 /// 支援的語系
@@ -112,7 +112,7 @@ class SettingsState {
 }
 
 // ==================================================
-// Settings Notifier
+// 設定 Notifier
 // ==================================================
 
 /// 設定狀態管理器（含持久化）
@@ -408,6 +408,7 @@ class ApiTokenNotifier extends Notifier<ApiTokenState> {
       final count = await testFn();
       state = state.copyWith(isLoading: false, testResult: count);
     } catch (e) {
+      AppLogger.warning('ApiTokenNotifier', '測試連線失敗', e);
       state = state.copyWith(isLoading: false, testError: e.toString());
     }
   }

@@ -3,11 +3,12 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-/// Alert type enum
+/// 警示類型列舉
 enum AlertType {
   // 價格類警示
   above('ABOVE'),
@@ -30,7 +31,7 @@ enum AlertType {
   breakResistance('BREAK_RESISTANCE'),
   breakSupport('BREAK_SUPPORT'),
 
-  // 52-week alerts
+  // 52 週警示
   week52High('WEEK_52_HIGH'),
   week52Low('WEEK_52_LOW'),
 
@@ -58,7 +59,7 @@ enum AlertType {
   /// 翻譯後的顯示標籤（i18n）
   String get label => 'alert.alertType.$name'.tr();
 
-  /// Check if this alert type requires a target value
+  /// 檢查此警示類型是否需要目標值
   bool get requiresTargetValue => switch (this) {
     AlertType.above ||
     AlertType.below ||
@@ -87,7 +88,7 @@ enum AlertType {
     AlertType.highPledgeRatio => false,
   };
 
-  /// Get unit label for target value (i18n)
+  /// 取得目標值的單位標籤（i18n）
   String get targetValueUnit => switch (this) {
     AlertType.above ||
     AlertType.below ||
@@ -103,7 +104,7 @@ enum AlertType {
     _ => '',
   };
 
-  /// Get default target value for this alert type
+  /// 取得此警示類型的預設目標值
   double? get defaultTargetValue => switch (this) {
     AlertType.rsiOverbought => 70.0,
     AlertType.rsiOversold => 30.0,
@@ -115,39 +116,38 @@ enum AlertType {
     _ => null,
   };
 
-  /// Check if this alert type has implemented trigger logic
+  /// 檢查此警示類型是否已實作觸發邏輯
   ///
-  /// Only implemented types can be created by users in UI.
-  /// Alert types returning true have trigger logic in user_dao.dart.
+  /// 僅已實作的類型可供使用者在 UI 中建立。
+  /// 回傳 true 的警示類型在 user_dao.dart 中有觸發邏輯。
+  // 已實作的 AlertType:
+  // - above, below, changePct (基本價格)
+  // - volumeSpike, volumeAbove (成交量)
+  // - week52High, week52Low (52 週)
+  // - rsiOverbought, rsiOversold, kdGoldenCross, kdDeathCross (技術指標)
+  // - crossAboveMa, crossBelowMa, tradingWarning, tradingDisposal (均線/警示)
   bool get isImplemented => switch (this) {
-    // Phase 1: Basic price alerts (implemented in user_dao.dart checkAlerts)
-    AlertType.above || AlertType.below || AlertType.changePct => true,
-
-    // Batch 1: Volume alerts
-    AlertType.volumeSpike || AlertType.volumeAbove => true,
-
-    // Batch 2: 52-week alerts
-    AlertType.week52High || AlertType.week52Low => true,
-
-    // Batch 3: RSI/KD indicator alerts
+    AlertType.above ||
+    AlertType.below ||
+    AlertType.changePct ||
+    AlertType.volumeSpike ||
+    AlertType.volumeAbove ||
+    AlertType.week52High ||
+    AlertType.week52Low ||
     AlertType.rsiOverbought ||
     AlertType.rsiOversold ||
     AlertType.kdGoldenCross ||
-    AlertType.kdDeathCross => true,
-
-    // Batch 4: MA cross + trading warning alerts
+    AlertType.kdDeathCross ||
     AlertType.crossAboveMa ||
     AlertType.crossBelowMa ||
     AlertType.tradingWarning ||
     AlertType.tradingDisposal => true,
-
-    // Remaining 8 types: not yet implemented
     _ => false,
   };
 
-  /// Parse AlertType from string value.
+  /// 從字串值解析 AlertType。
   ///
-  /// Throws [ArgumentError] if the value is not a valid AlertType.
+  /// 若值不是有效的 AlertType，拋出 [ArgumentError]。
   static AlertType fromValue(String value) {
     return tryFromValue(value) ??
         (throw ArgumentError.value(
@@ -157,9 +157,9 @@ enum AlertType {
         ));
   }
 
-  /// Try to parse AlertType from string value.
+  /// 嘗試從字串值解析 AlertType。
   ///
-  /// Returns null if the value is not a valid AlertType.
+  /// 若值不是有效的 AlertType，回傳 null。
   static AlertType? tryFromValue(String value) {
     for (final type in AlertType.values) {
       if (type.value == value) return type;
@@ -227,7 +227,7 @@ String getAlertDescription(PriceAlertEntry alert, AlertType type) {
   };
 }
 
-/// Price alert state
+/// 價格警示狀態
 class PriceAlertState {
   const PriceAlertState({
     this.alerts = const [],
@@ -254,7 +254,7 @@ class PriceAlertState {
   }
 }
 
-/// Price alert notifier
+/// 價格警示 Notifier
 class PriceAlertNotifier extends Notifier<PriceAlertState> {
   late final AppDatabase _db;
 
@@ -268,21 +268,22 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     return const PriceAlertState();
   }
 
-  /// Load all alerts (active and inactive)
+  /// 載入所有警示（啟用與停用）
   Future<void> loadAlerts() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final alerts = await _db.getAllAlerts();
       state = state.copyWith(alerts: alerts, isLoading: false);
     } catch (e) {
+      AppLogger.warning('PriceAlertNotifier', '載入警示失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
 
-  /// Clear error state
+  /// 清除錯誤狀態
   void clearError() => state = state.copyWith(error: null);
 
-  /// Create a new price alert
+  /// 建立新的價格警示
   Future<bool> createAlert({
     required String symbol,
     required AlertType alertType,
@@ -305,12 +306,13 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       }
       return true;
     } catch (e) {
+      AppLogger.warning('PriceAlertNotifier', '建立警示失敗: $symbol', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
     }
   }
 
-  /// Delete an alert
+  /// 刪除警示
   Future<void> deleteAlert(int id) async {
     // 樂觀更新：立即從 state 移除，並清除先前錯誤
     final previousAlerts = state.alerts;
@@ -323,6 +325,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       await _db.deletePriceAlert(id);
     } catch (e) {
       // 錯誤時回滾
+      AppLogger.warning('PriceAlertNotifier', '刪除警示失敗: $id', e);
       state = state.copyWith(
         alerts: previousAlerts,
         error: ErrorDisplay.message(e),
@@ -330,7 +333,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     }
   }
 
-  /// Toggle alert active status
+  /// 切換警示啟用狀態
   ///
   /// 序列化同一 alert 的操作：若前一次 toggle 仍在執行，會等它完成後
   /// 再執行本次操作，確保最後一次使用者意圖落庫（last wins）。
@@ -392,6 +395,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       );
     } catch (e) {
       // 錯誤時回滾
+      AppLogger.warning('PriceAlertNotifier', '切換警示狀態失敗: $id', e);
       state = state.copyWith(
         alerts: previousAlerts,
         error: ErrorDisplay.message(e),
@@ -405,7 +409,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
       .map((e) => e.value)
       .toSet();
 
-  /// Check alerts against current prices
+  /// 根據當前價格檢查警示觸發條件
   Future<List<PriceAlertEntry>> checkAndTriggerAlerts(
     Map<String, double> currentPrices,
     Map<String, double> priceChanges,
@@ -459,13 +463,14 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
       return triggered;
     } catch (e) {
+      AppLogger.warning('PriceAlertNotifier', '檢查警示觸發失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
       return [];
     }
   }
 }
 
-/// Price alert provider
+/// 價格警示 Provider
 final priceAlertProvider =
     NotifierProvider<PriceAlertNotifier, PriceAlertState>(
       PriceAlertNotifier.new,

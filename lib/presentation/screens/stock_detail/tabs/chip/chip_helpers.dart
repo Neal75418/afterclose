@@ -7,7 +7,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 export 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
     show buildEmptyState;
 
-/// Shared helper widgets and formatting utilities used across chip tab sections.
+/// 籌碼 Tab 各區塊共用的輔助 Widget 與格式化工具。
 
 Widget buildSummaryCard(
   BuildContext context,
@@ -126,9 +126,9 @@ Widget buildNetValue(BuildContext context, double value) {
   );
 }
 
-/// Format a lot count (張) with unit escalation (萬張/千張/張)
+/// 格式化張數，依量級自動升階（萬張/千張/張）
 ///
-/// Core helper used by [formatNet], [formatBalance], and volume formatting.
+/// 核心輔助函式，供 [formatNet]、[formatBalance] 及成交量格式化使用。
 String formatLots(double lots) {
   if (lots >= 10000) {
     return '${(lots / 10000).toStringAsFixed(1)}${'stockDetail.unitTenThousand'.tr()}${'stockDetail.unitShares'.tr()}';
@@ -138,7 +138,7 @@ String formatLots(double lots) {
   return '${lots.toStringAsFixed(0)}${'stockDetail.unitShares'.tr()}';
 }
 
-/// Format net value with Chinese units (shares -> 張)
+/// 格式化淨值，自動加正負號並轉換為張數單位
 String formatNet(double value) {
   final prefix = value >= 0 ? '+' : '-';
   final lots = value.abs() / 1000;
@@ -146,10 +146,10 @@ String formatNet(double value) {
   return '$prefix${formatLots(lots)}';
 }
 
-/// Format balance with Chinese units (already in 張)
+/// 格式化餘額（已為張數單位）
 String formatBalance(double value) => formatLots(value);
 
-/// Format shares change (in 千股)
+/// 格式化持股變動（以千股為單位）
 String formatSharesChange(double value) {
   final prefix = value >= 0 ? '+' : '';
   final absValue = value.abs();

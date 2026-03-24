@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
-// Short Sell Ranking State
+// 融券排行狀態
 // ==================================================
 
 /// 融券賣出排行狀態
@@ -34,7 +35,7 @@ class ShortSellRankingState {
 }
 
 // ==================================================
-// Notifier
+// 融券排行 Notifier
 // ==================================================
 
 class ShortSellRankingNotifier extends Notifier<ShortSellRankingState> {
@@ -53,6 +54,7 @@ class ShortSellRankingNotifier extends Notifier<ShortSellRankingState> {
 
       state = state.copyWith(rankings: rankings, isLoading: false);
     } catch (e) {
+      AppLogger.warning('ShortSellRankingNotifier', '載入融券排行失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e), isLoading: false);
     }
   }

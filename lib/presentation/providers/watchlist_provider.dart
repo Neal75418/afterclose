@@ -318,6 +318,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         displayedCount: displayedCount,
       );
     } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '載入自選股資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
@@ -476,6 +477,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
       return true;
     } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '新增自選股失敗: $symbol', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
     }
@@ -502,7 +504,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
     }
   }
 
-  /// Remove stock from watchlist
+  /// 從自選股移除
   ///
   /// 使用樂觀更新策略：先更新 UI，若資料庫操作失敗則回滾至先前狀態。
   /// 保存完整的狀態快照以確保回滾時排序與分組設定一致。
@@ -521,6 +523,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       return true;
     } catch (e) {
       // 回滾至完整的先前狀態，確保排序順序一致
+      AppLogger.warning('WatchlistNotifier', '移除自選股失敗: $symbol', e);
       state = previousState.copyWith(error: ErrorDisplay.message(e));
       return false;
     }
@@ -549,6 +552,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         error: null,
       );
     } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '還原自選股失敗: $symbol', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
     }
   }

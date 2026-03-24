@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -272,6 +273,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
         Navigator.of(context).pop();
       }
     } catch (e) {
+      AppLogger.warning('AddEventSheet', '新增事件失敗', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

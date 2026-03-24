@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Semi-transparent card container used by all indicator cards.
+/// 所有技術指標卡片共用的半透明容器。
 class IndicatorCardContainer extends StatelessWidget {
   const IndicatorCardContainer({super.key, required this.child});
 

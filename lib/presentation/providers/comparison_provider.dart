@@ -16,7 +16,7 @@ import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
-// Comparison State
+// 比較狀態
 // ==================================================
 
 class ComparisonState {
@@ -87,7 +87,7 @@ class ComparisonState {
 }
 
 // ==================================================
-// Comparison Notifier
+// 比較 Notifier
 // ==================================================
 
 class ComparisonNotifier extends Notifier<ComparisonState> {
@@ -108,7 +108,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
   AppDatabase get _db => ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
 
-  /// Add a stock and reload all comparison data.
+  /// 新增股票並重新載入所有比較資料。
   ///
   /// 失敗時回滾新增的 symbol，避免佔用名額且無資料。
   Future<void> addStock(String symbol) async {
@@ -125,7 +125,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     }
   }
 
-  /// Add multiple stocks at once (used for initial load to avoid race conditions).
+  /// 一次新增多檔股票（用於初始載入，避免 race condition）。
   Future<void> addStocks(List<String> symbols) async {
     final unique = <String>[];
     for (final s in symbols) {
@@ -139,7 +139,7 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     await _loadAllData(unique);
   }
 
-  /// Remove a stock and reload data.
+  /// 移除股票並重新載入資料。
   void removeStock(String symbol) {
     final newSymbols = state.symbols.where((s) => s != symbol).toList();
 
@@ -185,19 +185,19 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     );
   }
 
-  /// Clear current error state.
+  /// 清除目前的錯誤狀態。
   void clearError() {
     state = state.copyWith(error: null);
   }
 
-  /// Retry loading all current symbols after an error.
+  /// 錯誤後重新載入目前所有股票的資料。
   Future<void> reload() async {
     if (state.symbols.isEmpty) return;
     state = state.copyWith(isLoading: true, error: null);
     await _loadAllData(state.symbols);
   }
 
-  /// Load all comparison data for the given symbols.
+  /// 載入指定股票的所有比較資料。
   ///
   /// 使用 generation token 防止舊載入覆蓋新狀態：
   /// 若載入期間有更新的 _loadAllData 被啟動，本次結果會被丟棄。

@@ -375,7 +375,7 @@ class TpexClient {
         dividendYield: parsePer(json['YieldRatio']),
       );
     } catch (e) {
-      AppLogger.debug(_tag, '解析估值資料失敗: $e');
+      AppLogger.warning(_tag, '解析估值資料失敗', e);
       return null;
     }
   }

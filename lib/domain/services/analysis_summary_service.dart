@@ -606,7 +606,9 @@ class AnalysisSummaryService {
   // 映射表：ReasonType 代碼 → LocalizableString 建構
   // ==================================================
 
-  // ── 核心訊號 ──
+  // ==================================================
+  // 核心訊號
+  // ==================================================
   static final _coreSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.reversalW2S: (_) =>
@@ -635,7 +637,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.newsRelated'),
       };
 
-  // ── KD 訊號 ──
+  // ==================================================
+  // KD 訊號
+  // ==================================================
   static final _kdSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.kdGoldenCross: (_) =>
@@ -644,7 +648,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.kdDeathCross'),
       };
 
-  // ── 法人連續買賣 ──
+  // ==================================================
+  // 法人連續買賣
+  // ==================================================
   static final _institutionalStreakSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.institutionalBuyStreak: (e) {
@@ -667,7 +673,9 @@ class AnalysisSummaryService {
         },
       };
 
-  // ── K 線型態 ──
+  // ==================================================
+  // K 線型態
+  // ==================================================
   static final _candlestickPatterns =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.patternDoji: (_) =>
@@ -694,7 +702,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.patternThreeBlackCrows'),
       };
 
-  // ── 技術指標訊號 ──
+  // ==================================================
+  // 技術指標訊號
+  // ==================================================
   static final _technicalIndicators =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.week52High: (_) =>
@@ -715,7 +725,9 @@ class AnalysisSummaryService {
         ),
       };
 
-  // ── 延伸市場資料 ──
+  // ==================================================
+  // 延伸市場資料
+  // ==================================================
   static final _extendedMarketData =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.foreignShareholdingIncreasing: (_) =>
@@ -734,7 +746,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.concentrationHigh'),
       };
 
-  // ── 價量背離 ──
+  // ==================================================
+  // 價量背離
+  // ==================================================
   static final _priceVolumeDivergence =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.priceVolumeBullishDivergence: (_) =>
@@ -747,7 +761,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.lowVolumeAccumulation'),
       };
 
-  // ── 基本面 ──
+  // ==================================================
+  // 基本面
+  // ==================================================
   static final _fundamentalSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.revenueYoySurge: (e) => LocalizableString(
@@ -782,7 +798,9 @@ class AnalysisSummaryService {
         ),
       };
 
-  // ── Killer Features ──
+  // ==================================================
+  // Killer Features
+  // ==================================================
   static final _killerFeatures =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.tradingWarningAttention: (_) =>
@@ -803,7 +821,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.foreignExodus'),
       };
 
-  // ── EPS 訊號 ──
+  // ==================================================
+  // EPS 訊號
+  // ==================================================
   static final _epsSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.epsYoySurge: (e) => LocalizableString(
@@ -820,7 +840,9 @@ class AnalysisSummaryService {
             const LocalizableString('summary.epsDecline'),
       };
 
-  // ── ROE 訊號 ──
+  // ==================================================
+  // ROE 訊號
+  // ==================================================
   static final _roeSignals =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.roeExcellent: (e) => LocalizableString(

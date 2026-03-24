@@ -7,7 +7,7 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Data management tile for force sync and historical data progress
+/// 資料管理項目：強制同步與歷史資料進度
 class DataManagementTile extends ConsumerStatefulWidget {
   const DataManagementTile({super.key});
 

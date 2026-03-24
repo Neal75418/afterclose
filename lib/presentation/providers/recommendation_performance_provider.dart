@@ -6,7 +6,7 @@ import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
-// State
+// 推薦績效狀態
 // ==================================================
 
 class RecommendationPerformanceState {
@@ -59,7 +59,7 @@ class RecommendationPerformanceState {
 }
 
 // ==================================================
-// Notifier
+// 推薦績效 Notifier
 // ==================================================
 
 class RecommendationPerformanceNotifier

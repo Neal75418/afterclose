@@ -168,8 +168,8 @@ void _callbackDispatcher() {
       }
 
       return true;
-    } catch (e) {
-      AppLogger.error('BackgroundUpdateService', '背景更新失敗', e);
+    } catch (e, s) {
+      AppLogger.error('BackgroundUpdateService', '背景更新失敗', e, s);
       return false;
     }
   });

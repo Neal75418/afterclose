@@ -176,6 +176,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         hasDataMismatch: hasDataMismatch,
       );
     } catch (e) {
+      AppLogger.warning('StockDetailNotifier', '載入股票詳情失敗: $_symbol', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }

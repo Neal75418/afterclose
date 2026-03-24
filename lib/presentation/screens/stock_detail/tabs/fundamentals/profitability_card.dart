@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 
-/// A data holder for a single profitability metric (label + percentage value).
+/// 單一獲利指標的資料容器（標籤 + 百分比值）。
 class ProfitMetric {
   const ProfitMetric(this.label, this.value);
   final String label;
   final double value;
 }
 
-/// Displays a card with key profitability metrics (gross margin, operating
-/// margin, net margin, ROE) laid out in a horizontal row.
+/// 顯示關鍵獲利指標卡片（毛利率、營業利益率、淨利率、ROE），
+/// 以水平排列呈現。
 class ProfitabilityCard extends StatelessWidget {
   const ProfitabilityCard({super.key, required this.metrics});
 

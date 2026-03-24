@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
-// Industry EPS State
+// 產業 EPS 狀態
 // ==================================================
 
 /// 產業別 EPS 排名狀態
@@ -68,7 +69,7 @@ class IndustryEpsState {
 const _sentinel = Object();
 
 // ==================================================
-// Notifier
+// 產業 EPS Notifier
 // ==================================================
 
 class IndustryEpsNotifier extends Notifier<IndustryEpsState> {
@@ -87,6 +88,7 @@ class IndustryEpsNotifier extends Notifier<IndustryEpsState> {
 
       state = state.copyWith(allData: data, isLoading: false);
     } catch (e) {
+      AppLogger.warning('IndustryEpsNotifier', '載入產業 EPS 失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e), isLoading: false);
     }
   }

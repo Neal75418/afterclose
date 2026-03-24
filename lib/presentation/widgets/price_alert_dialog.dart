@@ -8,7 +8,7 @@ import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Shows a dialog to create a new price alert
+/// 顯示建立新價格警示的對話框
 Future<bool?> showCreatePriceAlertDialog({
   required BuildContext context,
   required String symbol,
@@ -25,7 +25,7 @@ Future<bool?> showCreatePriceAlertDialog({
   );
 }
 
-/// Dialog for creating a price alert
+/// 建立價格警示的對話框
 class CreatePriceAlertDialog extends ConsumerStatefulWidget {
   const CreatePriceAlertDialog({
     super.key,
@@ -120,9 +120,7 @@ class _CreatePriceAlertDialogState
             const SizedBox(height: 8),
             SegmentedButton<AlertType>(
               segments: AlertType.values
-                  .where(
-                    (type) => type.isImplemented,
-                  ) // Only show implemented types
+                  .where((type) => type.isImplemented) // 只顯示已實作的類型
                   .map((type) {
                     return ButtonSegment<AlertType>(
                       value: type,
@@ -213,7 +211,7 @@ class _CreatePriceAlertDialogState
 
   String _getValueLabel() {
     if (!_selectedType.requiresTargetValue) {
-      return ''; // No value needed
+      return ''; // 不需要數值
     }
     return switch (_selectedType) {
       AlertType.above || AlertType.below => 'alert.targetPrice'.tr(),
@@ -230,7 +228,7 @@ class _CreatePriceAlertDialogState
 
   String _getValueHint() {
     if (!_selectedType.requiresTargetValue) {
-      return ''; // No value needed
+      return ''; // 不需要數值
     }
     return switch (_selectedType) {
       AlertType.above || AlertType.below => 'alert.priceHint'.tr(),

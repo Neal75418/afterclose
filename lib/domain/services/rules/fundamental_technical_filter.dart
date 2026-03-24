@@ -2,10 +2,10 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
-/// Mixin providing common MA-based technical filters for fundamental rules.
+/// 提供基本面規則共用的均線技術篩選器 Mixin。
 mixin FundamentalTechnicalFilter on StockRule {
-  /// Check if price is above specified MA with sufficient momentum (changePct > threshold).
-  /// Returns (close, ma, changePct) or null if conditions fail.
+  /// 檢查價格是否在指定均線之上且具備足夠動能（changePct > threshold）。
+  /// 回傳 (close, ma, changePct)，條件不符時回傳 null。
   ({double close, double ma, double changePct})? checkAboveMAWithMomentum({
     required AnalysisContext context,
     required StockData data,

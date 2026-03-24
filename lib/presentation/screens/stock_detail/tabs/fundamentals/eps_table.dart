@@ -6,8 +6,7 @@ import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 
-/// Displays a table of the most recent 8 quarters of EPS data with
-/// quarter-over-quarter growth badges.
+/// 顯示近 8 季 EPS 資料表，附季對季成長率標章。
 class EpsTable extends StatelessWidget {
   const EpsTable({
     super.key,

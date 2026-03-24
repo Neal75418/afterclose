@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:afterclose/app/background_update_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/screens/settings/widgets/api_token_tile.dart';
@@ -20,13 +21,13 @@ final _packageInfoProvider = FutureProvider<PackageInfo>(
   (ref) => PackageInfo.fromPlatform(),
 );
 
-/// Supported locales with display names
+/// 支援的語系與顯示名稱
 const _supportedLocales = [
   (locale: Locale('zh', 'TW'), name: '繁體中文'),
   (locale: Locale('en'), name: 'English'),
 ];
 
-/// Settings screen
+/// 設定畫面
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -425,6 +426,7 @@ class SettingsScreen extends ConsumerWidget {
           }
         } catch (e) {
           // 排程失敗 → 回滾設定，確保 UI 與實際狀態一致
+          AppLogger.warning('SettingsScreen', '背景更新排程失敗', e);
           ref.read(settingsProvider.notifier).setAutoUpdateEnabled(!newValue);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

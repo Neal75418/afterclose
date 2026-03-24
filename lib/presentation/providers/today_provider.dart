@@ -230,6 +230,7 @@ class TodayNotifier extends Notifier<TodayState> {
         isLoading: false,
       );
     } catch (e) {
+      AppLogger.warning('TodayNotifier', '載入今日資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }

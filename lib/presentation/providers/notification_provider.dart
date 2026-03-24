@@ -64,6 +64,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         AppLogger.warning('NotificationNotifier', '權限檢查失敗（非關鍵）', e);
       }
     } catch (e) {
+      AppLogger.warning('NotificationNotifier', '初始化通知服務失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
     }
   }
@@ -83,6 +84,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
       state = state.copyWith(hasPermission: hasPermission);
       return hasPermission;
     } catch (e) {
+      AppLogger.warning('NotificationNotifier', '請求通知權限失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e));
       return false;
     }

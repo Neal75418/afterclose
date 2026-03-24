@@ -709,7 +709,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
-  // ── Section builders ──────────────────────────────────────────────────
+  // ==================================================
+  // Section builders
+  // ==================================================
 
   Widget? _buildAdvanceDeclineSection(String market) {
     final adData = widget.state.advanceDeclineByMarket[market];

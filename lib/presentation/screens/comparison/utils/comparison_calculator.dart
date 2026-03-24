@@ -6,19 +6,19 @@ import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 
-/// Pure calculation utilities for the comparison table.
+/// 比較表的純計算工具。
 ///
-/// All methods are static and have no [BuildContext] dependency.
-/// [Color] values are treated as plain data (sourced from [AppTheme]).
+/// 所有方法皆為 static，不依賴 [BuildContext]。
+/// [Color] 視為純資料（來自 [AppTheme]）。
 abstract final class ComparisonCalculator {
-  // ──────────────────────────────────────────
+  // ==================================================
   // 1) Winner detection
-  // ──────────────────────────────────────────
+  // ==================================================
 
-  /// Given a list of nullable values, return the index of the "best" value.
+  /// 從一組可為 null 的數值中，回傳「最佳」值的索引。
   ///
-  /// When [higherIsBetter] is `true`, the highest non-null value wins;
-  /// otherwise the lowest wins. Returns `null` when every value is `null`.
+  /// 當 [higherIsBetter] 為 `true` 時，最大的非 null 值勝出；
+  /// 反之最小值勝出。當所有值皆為 `null` 時回傳 `null`。
   static int? findWinnerIndex(
     List<double?> values, {
     required bool higherIsBetter,
@@ -36,18 +36,16 @@ abstract final class ComparisonCalculator {
     return bestIdx;
   }
 
-  // ──────────────────────────────────────────
+  // ==================================================
   // 2) Price return calculation
-  // ──────────────────────────────────────────
+  // ==================================================
 
-  /// Calculate the percentage return over a given number of [tradingDays]
-  /// from a price [history].
+  /// 根據價格 [history]，計算指定 [tradingDays] 交易日的報酬率百分比。
   ///
-  /// Returns a record with:
-  /// - `display`: formatted string like `"+12.3%"` or `"-5.1%"`, or `"-"` when
-  ///   data is insufficient.
-  /// - `numeric`: the raw percentage value (for comparison), or `null`.
-  /// - `color`: up/down/null colour based on the sign.
+  /// 回傳 record 包含：
+  /// - `display`：格式化字串如 `"+12.3%"` 或 `"-5.1%"`，資料不足時為 `"-"`。
+  /// - `numeric`：原始百分比值（供比較用），或 `null`。
+  /// - `color`：根據正負號對應的漲跌顏色。
   static ({String display, double? numeric, Color? color}) calculatePriceReturn(
     List<DailyPriceEntry>? history,
     int tradingDays,
@@ -77,13 +75,12 @@ abstract final class ComparisonCalculator {
     return (display: display, numeric: pct, color: color);
   }
 
-  // ──────────────────────────────────────────
+  // ==================================================
   // 3) Institutional net aggregation
-  // ──────────────────────────────────────────
+  // ==================================================
 
-  /// Aggregate the net buy/sell across the first 5 entries using [getNet] as
-  /// the accessor, then return formatted display (in lots, i.e. /1000), the
-  /// raw total, and the corresponding colour.
+  /// 使用 [getNet] 存取器，彙總前 5 筆的法人買賣超，
+  /// 回傳格式化顯示值（以張為單位，即 /1000）、原始合計值及對應顏色。
   static ({String display, double? numeric, Color? color})
   aggregateInstitutionalNet(
     List<DailyInstitutionalEntry>? entries,
@@ -109,13 +106,13 @@ abstract final class ComparisonCalculator {
     return (display: display, numeric: total, color: color);
   }
 
-  // ──────────────────────────────────────────
+  // ==================================================
   // 4) Sentiment conversion
-  // ──────────────────────────────────────────
+  // ==================================================
 
-  /// Map a [SummarySentiment] to a numeric score (0.0 -- 4.0) for comparison.
+  /// 將 [SummarySentiment] 對應為數值分數（0.0 -- 4.0）以供比較。
   ///
-  /// Returns `null` when the input is `null`.
+  /// 輸入為 `null` 時回傳 `null`。
   static double? sentimentToNumeric(SummarySentiment? sentiment) {
     if (sentiment == null) return null;
     return switch (sentiment) {
@@ -127,9 +124,9 @@ abstract final class ComparisonCalculator {
     };
   }
 
-  /// Map a [SummarySentiment] to its corresponding [Color].
+  /// 將 [SummarySentiment] 對應為其對應的 [Color]。
   ///
-  /// Returns `null` when the input is `null`.
+  /// 輸入為 `null` 時回傳 `null`。
   static Color? sentimentToColor(SummarySentiment? sentiment) {
     if (sentiment == null) return null;
     return switch (sentiment) {

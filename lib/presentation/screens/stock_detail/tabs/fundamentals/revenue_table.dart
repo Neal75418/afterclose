@@ -5,8 +5,7 @@ import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
 
-/// Displays a table of the most recent 12 months of revenue data with
-/// month-over-month and year-over-year growth badges.
+/// 顯示近 12 個月營收資料表，附月增率與年增率成長標章。
 class RevenueTable extends StatelessWidget {
   const RevenueTable({
     super.key,
