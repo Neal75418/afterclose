@@ -157,7 +157,7 @@ class PortfolioAnalyticsService {
 
     // NaN/Infinity 防護（totalReturn < -100% 時 math.pow 可能產生 NaN）
     final safeYearReturn = yearReturn.isNaN || yearReturn.isInfinite
-        ? 0.0
+        ? totalReturn.clamp(-100.0, 1000.0)
         : yearReturn;
 
     return PeriodReturns(

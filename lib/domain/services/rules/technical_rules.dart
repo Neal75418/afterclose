@@ -154,7 +154,7 @@ double? _calculate20DayLow(List<DailyPriceEntry> prices) {
   double minLow = double.infinity;
   for (
     var i = prices.length - 2;
-    i >= prices.length - (RuleParams.volMa + 2) && i >= 0;
+    i >= prices.length - (RuleParams.volMa + 1) && i >= 0;
     i--
   ) {
     final low = prices[i].low ?? prices[i].close ?? double.infinity;

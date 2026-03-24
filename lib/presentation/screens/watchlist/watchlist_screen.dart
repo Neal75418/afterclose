@@ -514,7 +514,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     final padding = context.responsiveHorizontalPadding;
     final spacing = context.responsiveCardSpacing;
 
-    final watchlistState = ref.read(watchlistProvider);
+    final state = ref.read(watchlistProvider);
     return GridView.builder(
       controller: _scrollController,
       cacheExtent: 500,
@@ -525,10 +525,10 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
         mainAxisSpacing: spacing,
         mainAxisExtent: DesignTokens.stockCardHeight,
       ),
-      itemCount: items.length + (watchlistState.hasMore ? 1 : 0),
+      itemCount: items.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == items.length) {
-          return _buildLoadingIndicator(watchlistState);
+          return _buildLoadingIndicator(state);
         }
         final item = items[index];
         return RepaintBoundary(

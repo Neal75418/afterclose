@@ -160,95 +160,93 @@ class PortfolioRepository implements IPortfolioRepository {
   ///
   /// 呼叫端已在 transaction 中，此處不再包裝避免巢狀 transaction
   Future<void> _recalculatePosition(String symbol) async {
-    {
-      final transactions = await _db.getTransactionsForSymbol(symbol);
+    final transactions = await _db.getTransactionsForSymbol(symbol);
 
-      if (transactions.isEmpty) {
-        // 如果沒有交易紀錄，刪除 position
-        final existing = await _db.getPortfolioPosition(symbol);
-        if (existing != null) {
-          await _db.deletePortfolioPosition(existing.id);
-        }
-        return;
-      }
-
-      // FIFO lot queue: 買入手續費分攤至每股成本，賣出費用直接扣除
-      final List<_FifoLot> lots = [];
-      double realizedPnl = 0;
-      double totalDividend = 0;
-
-      for (final tx in transactions) {
-        switch (tx.txType) {
-          case 'BUY':
-            // 將買入手續費分攤至每股成本
-            final feePerShare = tx.quantity > 0 ? tx.fee / tx.quantity : 0.0;
-            lots.add(
-              _FifoLot(
-                quantity: tx.quantity,
-                costPerShare: tx.price + feePerShare,
-              ),
-            );
-          case 'SELL':
-            double remainingToSell = tx.quantity;
-            final sellPrice = tx.price;
-
-            while (remainingToSell > 0 && lots.isNotEmpty) {
-              final lot = lots.first;
-
-              if (lot.quantity <= remainingToSell) {
-                // 整批售出
-                realizedPnl += (sellPrice - lot.costPerShare) * lot.quantity;
-                remainingToSell -= lot.quantity;
-                lots.removeAt(0);
-              } else {
-                // 部分售出
-                realizedPnl += (sellPrice - lot.costPerShare) * remainingToSell;
-                lot.quantity -= remainingToSell;
-                remainingToSell = 0;
-              }
-            }
-            // 賣出手續費與交易稅直接從已實現損益扣除
-            realizedPnl -= tx.fee + tx.tax;
-          case 'DIVIDEND_CASH':
-            totalDividend += tx.quantity;
-          case 'DIVIDEND_STOCK':
-            // 股票股利：增加持股，成本為 0
-            if (tx.quantity > 0) {
-              lots.add(_FifoLot(quantity: tx.quantity, costPerShare: 0));
-            }
-        }
-      }
-
-      // 計算剩餘持倉的加權平均成本
-      double totalQuantity = 0;
-      double totalCost = 0;
-      for (final lot in lots) {
-        totalQuantity += lot.quantity;
-        totalCost += lot.quantity * lot.costPerShare;
-      }
-      final avgCost = totalQuantity > 0 ? totalCost / totalQuantity : 0.0;
-
-      // 更新或建立 position
+    if (transactions.isEmpty) {
+      // 如果沒有交易紀錄，刪除 position
       final existing = await _db.getPortfolioPosition(symbol);
       if (existing != null) {
-        await _db.updatePortfolioPosition(
-          id: existing.id,
-          quantity: totalQuantity,
-          avgCost: avgCost,
-          realizedPnl: realizedPnl,
-          totalDividendReceived: totalDividend,
-        );
-      } else {
-        await _db.upsertPortfolioPosition(
-          PortfolioPositionCompanion.insert(
-            symbol: symbol,
-            quantity: Value(totalQuantity),
-            avgCost: Value(avgCost),
-            realizedPnl: Value(realizedPnl),
-            totalDividendReceived: Value(totalDividend),
-          ),
-        );
+        await _db.deletePortfolioPosition(existing.id);
       }
+      return;
+    }
+
+    // FIFO lot queue: 買入手續費分攤至每股成本，賣出費用直接扣除
+    final List<_FifoLot> lots = [];
+    double realizedPnl = 0;
+    double totalDividend = 0;
+
+    for (final tx in transactions) {
+      switch (tx.txType) {
+        case 'BUY':
+          // 將買入手續費分攤至每股成本
+          final feePerShare = tx.quantity > 0 ? tx.fee / tx.quantity : 0.0;
+          lots.add(
+            _FifoLot(
+              quantity: tx.quantity,
+              costPerShare: tx.price + feePerShare,
+            ),
+          );
+        case 'SELL':
+          double remainingToSell = tx.quantity;
+          final sellPrice = tx.price;
+
+          while (remainingToSell > 0 && lots.isNotEmpty) {
+            final lot = lots.first;
+
+            if (lot.quantity <= remainingToSell) {
+              // 整批售出
+              realizedPnl += (sellPrice - lot.costPerShare) * lot.quantity;
+              remainingToSell -= lot.quantity;
+              lots.removeAt(0);
+            } else {
+              // 部分售出
+              realizedPnl += (sellPrice - lot.costPerShare) * remainingToSell;
+              lot.quantity -= remainingToSell;
+              remainingToSell = 0;
+            }
+          }
+          // 賣出手續費與交易稅直接從已實現損益扣除
+          realizedPnl -= tx.fee + tx.tax;
+        case 'DIVIDEND_CASH':
+          totalDividend += tx.quantity;
+        case 'DIVIDEND_STOCK':
+          // 股票股利：增加持股，成本為 0
+          if (tx.quantity > 0) {
+            lots.add(_FifoLot(quantity: tx.quantity, costPerShare: 0));
+          }
+      }
+    }
+
+    // 計算剩餘持倉的加權平均成本
+    double totalQuantity = 0;
+    double totalCost = 0;
+    for (final lot in lots) {
+      totalQuantity += lot.quantity;
+      totalCost += lot.quantity * lot.costPerShare;
+    }
+    final avgCost = totalQuantity > 0 ? totalCost / totalQuantity : 0.0;
+
+    // 更新或建立 position
+    final existing = await _db.getPortfolioPosition(symbol);
+    if (existing != null) {
+      await _db.updatePortfolioPosition(
+        id: existing.id,
+        quantity: totalQuantity,
+        avgCost: avgCost,
+        realizedPnl: realizedPnl,
+        totalDividendReceived: totalDividend,
+      );
+    } else {
+      await _db.upsertPortfolioPosition(
+        PortfolioPositionCompanion.insert(
+          symbol: symbol,
+          quantity: Value(totalQuantity),
+          avgCost: Value(avgCost),
+          realizedPnl: Value(realizedPnl),
+          totalDividendReceived: Value(totalDividend),
+        ),
+      );
     }
   }
 }

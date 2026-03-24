@@ -277,7 +277,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       return;
     }
 
-    state = state.copyWith(isLoadingInsider: true);
+    state = state.copyWith(isLoadingInsider: true, insiderError: null);
     try {
       final (insiderHistory, transfers) = await (
         _chipLoader.loadInsiderFromDb(_symbol),

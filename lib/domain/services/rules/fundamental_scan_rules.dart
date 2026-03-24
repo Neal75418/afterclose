@@ -566,12 +566,11 @@ class EPSDeclineWarningRule extends StockRule {
       final previous = eps[i + 1].value;
       if (current == null || previous == null) break;
 
-      // previous <= 0 時用絕對差額判斷是否持續惡化
+      // previous <= 0 時無法計算百分比衰退率
+      // 仍判斷是否持續惡化，但不加入 declineRates 避免混用單位
       if (previous <= 0) {
         if (current < previous) {
           declineCount++;
-          // 以絕對差額作為近似衰退率
-          declineRates.add((previous - current).abs());
         } else {
           break;
         }
@@ -588,17 +587,20 @@ class EPSDeclineWarningRule extends StockRule {
     }
 
     if (declineCount >= 2) {
-      final avgDecline =
-          declineRates.reduce((a, b) => a + b) / declineRates.length;
+      final avgDecline = declineRates.isNotEmpty
+          ? declineRates.reduce((a, b) => a + b) / declineRates.length
+          : null;
+      final description = avgDecline != null
+          ? 'EPS 連續 $declineCount 季衰退 '
+                '(平均衰退 ${avgDecline.toStringAsFixed(1)}%)'
+          : 'EPS 連續 $declineCount 季衰退';
       return TriggeredReason(
         type: ReasonType.epsDeclineWarning,
         score: RuleScores.epsDeclineWarning,
-        description:
-            'EPS 連續 $declineCount 季衰退 '
-            '(平均衰退 ${avgDecline.toStringAsFixed(1)}%)',
+        description: description,
         evidence: {
           'declineQuarters': declineCount,
-          'avgDecline': avgDecline,
+          if (avgDecline != null) 'avgDecline': avgDecline,
           'latestEps': eps[0].value,
         },
       );
