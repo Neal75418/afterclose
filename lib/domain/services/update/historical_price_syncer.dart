@@ -126,9 +126,18 @@ class HistoricalPriceSyncer {
 
         // Fresh DB 場景：首筆資料是最近 3 天內（可能只從今日同步取得），
         // 且資料量極少 → 仍需補歷史
+        // 例外：若首筆資料日期 > 今天 - 3 天，且最後一筆已是最新，
+        // 且已有 > 1 天的歷史（代表曾同步過），視為新上市而非 fresh DB
         if (daysSinceFirstTrade <= 3 && priceCount < RuleParams.swingWindow) {
-          result.add(symbol);
-          continue;
+          final lastDate = prices.last.date;
+          final isUpToDate = date.difference(lastDate).inDays <= 1;
+          final hasMultipleDays = priceCount > 1;
+          if (isUpToDate && hasMultipleDays && daysSinceFirstTrade > 0) {
+            // 新上市股票：有多天資料且已是最新，走 _hasEnoughDataForAge 判斷
+          } else {
+            result.add(symbol);
+            continue;
+          }
         }
 
         // 其他情況：檢查資料量是否與上市時間相符
@@ -153,6 +162,9 @@ class HistoricalPriceSyncer {
   ) {
     final firstTradeDate = prices.first.date;
     final daysSinceFirstTrade = date.difference(firstTradeDate).inDays;
+
+    // 今天才上市（daysSinceFirstTrade == 0），有任何資料就算足夠
+    if (daysSinceFirstTrade <= 0) return priceCount > 0;
 
     // 約 71% 的日曆天是交易日
     final expectedTradingDays =
