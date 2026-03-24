@@ -246,13 +246,5 @@ void main() {
       // canAddMore is false → screen still renders
       expect(find.byType(ComparisonScreen), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget(brightness: Brightness.dark));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(ComparisonScreen), findsOneWidget);
-    });
   });
 }

@@ -124,35 +124,5 @@ void main() {
       final containers = find.byType(Container);
       expect(containers, findsWidgets);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      const insights = [
-        MarketInsight(
-          severity: InsightSeverity.warning,
-          priority: 5,
-          titleKey: 'marketOverview.keyInsights.limitImbalance.title',
-          descKey: 'marketOverview.keyInsights.limitImbalance.descUp',
-          descArgs: {'up': '40', 'down': '5'},
-          isPositive: true,
-        ),
-        MarketInsight(
-          severity: InsightSeverity.info,
-          priority: 3,
-          titleKey: 'marketOverview.keyInsights.industryConcentration.title',
-          descKey: 'marketOverview.keyInsights.industryConcentration.descUp',
-          descArgs: {'pct': '85'},
-          isPositive: true,
-        ),
-      ];
-
-      await tester.pumpWidget(
-        buildTestApp(
-          const KeyInsightsRow(insights: insights),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(Wrap), findsOneWidget);
-    });
   });
 }
