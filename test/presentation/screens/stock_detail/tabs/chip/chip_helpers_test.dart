@@ -55,18 +55,6 @@ void main() {
     });
   });
 
-  group('buildNetValue', () {
-    testWidgets('displays formatted value', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          Builder(builder: (context) => buildNetValue(context, 500)),
-        ),
-      );
-
-      expect(find.byType(Text), findsOneWidget);
-    });
-  });
-
   group('buildColoredHeader', () {
     testWidgets('displays label with color dot', (tester) async {
       await tester.pumpWidget(

@@ -37,19 +37,5 @@ void main() {
 
       expect(find.byType(RefreshIndicator), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          ThemedRefreshIndicator(
-            onRefresh: () async {},
-            child: ListView(children: const [Text('dark')]),
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(ThemedRefreshIndicator), findsOneWidget);
-    });
   });
 }

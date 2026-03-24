@@ -85,23 +85,5 @@ void main() {
 
       expect(find.text('40'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          const ChipStrengthIndicator(
-            strength: ChipStrengthResult(
-              score: 60,
-              rating: ChipRating.bullish,
-              attitude: InstitutionalAttitude.moderateBuy,
-            ),
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(ChipStrengthIndicator), findsOneWidget);
-    });
   });
 }

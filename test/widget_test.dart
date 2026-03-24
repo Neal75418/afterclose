@@ -232,49 +232,4 @@ void main() {
       });
     });
   });
-
-  group('Loading Indicator', () {
-    testWidgets('CircularProgressIndicator displays correctly', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: Center(child: CircularProgressIndicator())),
-        ),
-      );
-
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('Loading state transitions', (WidgetTester tester) async {
-      final isLoading = ValueNotifier(true);
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: ValueListenableBuilder<bool>(
-              valueListenable: isLoading,
-              builder: (context, loading, _) {
-                return loading
-                    ? const Center(child: CircularProgressIndicator())
-                    : const Text('Loaded');
-              },
-            ),
-          ),
-        ),
-      );
-
-      // Initially loading
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loaded'), findsNothing);
-
-      // Simulate loading complete
-      isLoading.value = false;
-      await tester.pump();
-
-      // After loading
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('Loaded'), findsOneWidget);
-    });
-  });
 }

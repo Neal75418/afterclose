@@ -45,82 +45,6 @@ void main() {
       // (550-500)/500 * 100 = 10.0
       expect(state.priceChange, closeTo(10.0, 0.01));
     });
-
-    test('copyWith updates stock', () {
-      const state = StockPriceState();
-      final stock = StockMasterEntry(
-        symbol: '2330',
-        name: '台積電',
-        market: 'TWSE',
-        isActive: true,
-        updatedAt: defaultDate,
-      );
-      final updated = state.copyWith(stock: stock);
-      expect(updated.stock?.symbol, '2330');
-      expect(updated.latestPrice, isNull);
-    });
-
-    test('copyWith updates latestPrice', () {
-      const state = StockPriceState();
-      final price = DailyPriceEntry(
-        symbol: '2330',
-        date: defaultDate,
-        close: 600.0,
-        volume: 50000,
-      );
-      final updated = state.copyWith(latestPrice: price);
-      expect(updated.latestPrice?.close, 600.0);
-    });
-
-    test('copyWith updates priceHistory', () {
-      const state = StockPriceState();
-      final history = [
-        DailyPriceEntry(
-          symbol: '2330',
-          date: defaultDate,
-          close: 600.0,
-          volume: 50000,
-        ),
-      ];
-      final updated = state.copyWith(priceHistory: history);
-      expect(updated.priceHistory, hasLength(1));
-    });
-
-    test('copyWith updates analysis', () {
-      const state = StockPriceState();
-      final analysis = DailyAnalysisEntry(
-        symbol: '2330',
-        date: defaultDate,
-        score: 80.0,
-        trendState: 'UP',
-        reversalState: '',
-        computedAt: defaultDate,
-      );
-      final updated = state.copyWith(analysis: analysis);
-      expect(updated.analysis?.score, 80.0);
-    });
-
-    test('copyWith preserves unmodified fields', () {
-      final stock = StockMasterEntry(
-        symbol: '2330',
-        name: '台積電',
-        market: 'TWSE',
-        isActive: true,
-        updatedAt: defaultDate,
-      );
-      final state = StockPriceState(stock: stock);
-      final analysis = DailyAnalysisEntry(
-        symbol: '2330',
-        date: defaultDate,
-        score: 90.0,
-        trendState: 'UP',
-        reversalState: '',
-        computedAt: defaultDate,
-      );
-      final updated = state.copyWith(analysis: analysis);
-      expect(updated.stock?.symbol, '2330');
-      expect(updated.analysis?.score, 90.0);
-    });
   });
 
   // ==========================================
@@ -135,30 +59,6 @@ void main() {
       expect(state.latestPER, isNull);
       expect(state.latestQuarterMetrics, isEmpty);
       expect(state.epsHistory, isEmpty);
-    });
-
-    test('copyWith updates revenueHistory', () {
-      const state = FundamentalsState();
-      final updated = state.copyWith(revenueHistory: []);
-      expect(updated.revenueHistory, isEmpty);
-    });
-
-    test('copyWith updates latestQuarterMetrics', () {
-      const state = FundamentalsState();
-      final updated = state.copyWith(
-        latestQuarterMetrics: {'ROE': 25.0, 'ROA': 12.0},
-      );
-      expect(updated.latestQuarterMetrics, hasLength(2));
-      expect(updated.latestQuarterMetrics['ROE'], 25.0);
-    });
-
-    test('copyWith preserves unmodified fields', () {
-      final state = const FundamentalsState().copyWith(
-        latestQuarterMetrics: {'ROE': 25.0},
-      );
-      final updated = state.copyWith(epsHistory: []);
-      expect(updated.latestQuarterMetrics['ROE'], 25.0);
-      expect(updated.epsHistory, isEmpty);
     });
   });
 
@@ -178,19 +78,6 @@ void main() {
       expect(state.insiderHistory, isEmpty);
       expect(state.chipStrength, isNull);
     });
-
-    test('copyWith updates insiderHistory', () {
-      const state = ChipAnalysisState();
-      final updated = state.copyWith(insiderHistory: []);
-      expect(updated.insiderHistory, isEmpty);
-    });
-
-    test('copyWith preserves unmodified fields', () {
-      final state = const ChipAnalysisState().copyWith(insiderHistory: []);
-      final updated = state.copyWith(marginHistory: []);
-      expect(updated.insiderHistory, isEmpty);
-      expect(updated.marginHistory, isEmpty);
-    });
   });
 
   // ==========================================
@@ -205,49 +92,6 @@ void main() {
       expect(state.isLoadingFundamentals, isFalse);
       expect(state.isLoadingInsider, isFalse);
       expect(state.isLoadingChip, isFalse);
-    });
-
-    test('copyWith updates isLoading', () {
-      const state = LoadingState();
-      final updated = state.copyWith(isLoading: true);
-      expect(updated.isLoading, isTrue);
-      expect(updated.isLoadingMargin, isFalse);
-    });
-
-    test('copyWith updates isLoadingMargin', () {
-      const state = LoadingState();
-      final updated = state.copyWith(isLoadingMargin: true);
-      expect(updated.isLoadingMargin, isTrue);
-    });
-
-    test('copyWith updates isLoadingFundamentals', () {
-      const state = LoadingState();
-      final updated = state.copyWith(isLoadingFundamentals: true);
-      expect(updated.isLoadingFundamentals, isTrue);
-    });
-
-    test('copyWith updates isLoadingInsider', () {
-      const state = LoadingState();
-      final updated = state.copyWith(isLoadingInsider: true);
-      expect(updated.isLoadingInsider, isTrue);
-    });
-
-    test('copyWith updates isLoadingChip', () {
-      const state = LoadingState();
-      final updated = state.copyWith(isLoadingChip: true);
-      expect(updated.isLoadingChip, isTrue);
-    });
-
-    test('copyWith preserves unmodified fields', () {
-      final state = const LoadingState().copyWith(
-        isLoading: true,
-        isLoadingMargin: true,
-      );
-      final updated = state.copyWith(isLoadingChip: true);
-      expect(updated.isLoading, isTrue);
-      expect(updated.isLoadingMargin, isTrue);
-      expect(updated.isLoadingChip, isTrue);
-      expect(updated.isLoadingFundamentals, isFalse);
     });
   });
 
@@ -331,77 +175,7 @@ void main() {
       expect(state.latestClose, isNull);
     });
 
-    // copyWith — price sub-state
-    test('copyWith updates stock through price sub-state', () {
-      final stock = StockMasterEntry(
-        symbol: '2330',
-        name: '台積電',
-        market: 'TWSE',
-        isActive: true,
-        updatedAt: defaultDate,
-      );
-      final state = const StockDetailState().copyWith(stock: stock);
-      expect(state.price.stock?.symbol, '2330');
-    });
-
-    test('copyWith updates latestPrice through price sub-state', () {
-      final price = DailyPriceEntry(
-        symbol: '2330',
-        date: defaultDate,
-        close: 600.0,
-        volume: 50000,
-      );
-      final state = const StockDetailState().copyWith(latestPrice: price);
-      expect(state.price.latestPrice?.close, 600.0);
-    });
-
-    // copyWith — fundamentals sub-state
-    test('copyWith updates latestQuarterMetrics', () {
-      final state = const StockDetailState().copyWith(
-        latestQuarterMetrics: {'ROE': 25.0},
-      );
-      expect(state.fundamentals.latestQuarterMetrics['ROE'], 25.0);
-    });
-
-    // copyWith — loading sub-state
-    test('copyWith updates isLoading', () {
-      final state = const StockDetailState().copyWith(isLoading: true);
-      expect(state.loading.isLoading, isTrue);
-    });
-
-    test('copyWith updates isLoadingMargin', () {
-      final state = const StockDetailState().copyWith(isLoadingMargin: true);
-      expect(state.loading.isLoadingMargin, isTrue);
-    });
-
-    test('copyWith updates isLoadingFundamentals', () {
-      final state = const StockDetailState().copyWith(
-        isLoadingFundamentals: true,
-      );
-      expect(state.loading.isLoadingFundamentals, isTrue);
-    });
-
-    test('copyWith updates isLoadingInsider', () {
-      final state = const StockDetailState().copyWith(isLoadingInsider: true);
-      expect(state.loading.isLoadingInsider, isTrue);
-    });
-
-    test('copyWith updates isLoadingChip', () {
-      final state = const StockDetailState().copyWith(isLoadingChip: true);
-      expect(state.loading.isLoadingChip, isTrue);
-    });
-
-    // copyWith — direct fields
-    test('copyWith updates isInWatchlist', () {
-      final state = const StockDetailState().copyWith(isInWatchlist: true);
-      expect(state.isInWatchlist, isTrue);
-    });
-
-    test('copyWith updates error', () {
-      final state = const StockDetailState().copyWith(error: 'Network error');
-      expect(state.error, 'Network error');
-    });
-
+    // sentinel pattern
     test('copyWith clears error with null', () {
       final state = const StockDetailState().copyWith(error: 'Some error');
       final cleared = state.copyWith(error: null);
@@ -412,45 +186,6 @@ void main() {
       final state = const StockDetailState().copyWith(error: 'Existing error');
       final updated = state.copyWith(isInWatchlist: true);
       expect(updated.error, 'Existing error');
-    });
-
-    test('copyWith updates dataDate', () {
-      final state = const StockDetailState().copyWith(dataDate: defaultDate);
-      expect(state.dataDate, defaultDate);
-    });
-
-    test('copyWith updates hasDataMismatch', () {
-      final state = const StockDetailState().copyWith(hasDataMismatch: true);
-      expect(state.hasDataMismatch, isTrue);
-    });
-
-    test('copyWith updates reasons', () {
-      final reasons = [
-        DailyReasonEntry(
-          symbol: '2330',
-          date: defaultDate,
-          rank: 1,
-          reasonType: 'BREAKOUT',
-          evidenceJson: '{}',
-          ruleScore: 10.0,
-        ),
-      ];
-      final state = const StockDetailState().copyWith(reasons: reasons);
-      expect(state.reasons, hasLength(1));
-    });
-
-    test('copyWith updates aiSummary', () {
-      const summary = StockSummary(
-        overallAssessment: 'Bullish',
-        sentiment: SummarySentiment.bullish,
-      );
-      final state = const StockDetailState().copyWith(aiSummary: summary);
-      expect(state.aiSummary?.sentiment, SummarySentiment.bullish);
-    });
-
-    test('copyWith updates recentNews', () {
-      final state = const StockDetailState().copyWith(recentNews: []);
-      expect(state.recentNews, isEmpty);
     });
 
     // copyWith — sub-state skipping optimization

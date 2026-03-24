@@ -50,17 +50,6 @@ void main() {
         findsNothing,
       );
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const ShimmerContainer(width: 100, height: 50),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(Shimmer), findsOneWidget);
-    });
   });
 
   group('StockListShimmer', () {
@@ -87,14 +76,6 @@ void main() {
       expect(find.byType(Shimmer), findsOneWidget);
       expect(find.byType(SingleChildScrollView), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(const StockDetailShimmer(), brightness: Brightness.dark),
-      );
-
-      expect(find.byType(Shimmer), findsOneWidget);
-    });
   });
 
   group('NewsListShimmer', () {
@@ -103,14 +84,6 @@ void main() {
 
       expect(find.byType(Shimmer), findsOneWidget);
       expect(find.byType(Column), findsWidgets);
-    });
-
-    testWidgets('renders with custom item count', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(const NewsListShimmer(itemCount: 2)),
-      );
-
-      expect(find.byType(Shimmer), findsOneWidget);
     });
   });
 

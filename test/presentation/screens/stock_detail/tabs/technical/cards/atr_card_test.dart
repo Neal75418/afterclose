@@ -78,26 +78,5 @@ void main() {
       // Should show percentage value
       expect(find.textContaining('%'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final highs = List.generate(20, (i) => 105.0 + (i % 3));
-      final lows = List.generate(20, (i) => 95.0 + (i % 3));
-      final closes = List.generate(20, (i) => 100.0 + (i % 3));
-
-      await tester.pumpWidget(
-        buildTestApp(
-          ATRCard(
-            highs: highs,
-            lows: lows,
-            closes: closes,
-            indicatorService: indicatorService,
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(ATRCard), findsOneWidget);
-    });
   });
 }

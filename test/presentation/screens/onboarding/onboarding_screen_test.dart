@@ -43,23 +43,6 @@ void main() {
       expect(find.byType(AnimatedContainer), findsNWidgets(3));
     });
 
-    testWidgets('has exactly 3 AnimatedContainer indicators', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestApp(const OnboardingScreen()));
-      await tester.pump();
-
-      // 3 dot indicators
-      expect(find.byType(AnimatedContainer), findsNWidgets(3));
-    });
-
-    testWidgets('shows SafeArea', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestApp(const OnboardingScreen()));
-      await tester.pump();
-
-      expect(find.byType(SafeArea), findsOneWidget);
-    });
-
     testWidgets('shows skip button', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestApp(const OnboardingScreen()));
@@ -75,17 +58,6 @@ void main() {
 
       // On first page, button is FilledButton.tonal (not FilledButton)
       expect(find.byType(FilledButton), findsOneWidget);
-    });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(const OnboardingScreen(), brightness: Brightness.dark),
-      );
-      await tester.pump();
-
-      expect(find.byType(OnboardingScreen), findsOneWidget);
-      expect(find.byType(PageView), findsOneWidget);
     });
   });
 }

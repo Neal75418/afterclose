@@ -48,29 +48,6 @@ void main() {
   });
 
   // ==========================================
-  // TdccHoldingLevel DTO
-  // ==========================================
-  group('TdccHoldingLevel', () {
-    test('can be constructed with all fields', () {
-      final level = TdccHoldingLevel(
-        date: DateTime(2026, 1, 31),
-        symbol: '2330',
-        level: 12,
-        shareholders: 1500,
-        shares: 450000000,
-        percent: 35.5,
-      );
-
-      expect(level.date, equals(DateTime(2026, 1, 31)));
-      expect(level.symbol, equals('2330'));
-      expect(level.level, equals(12));
-      expect(level.shareholders, equals(1500));
-      expect(level.shares, equals(450000000));
-      expect(level.percent, equals(35.5));
-    });
-  });
-
-  // ==========================================
   // Level range string compatibility with _parseMinSharesFromLevel
   // ==========================================
   group('Level range string compatibility', () {

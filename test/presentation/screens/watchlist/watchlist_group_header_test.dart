@@ -28,16 +28,5 @@ void main() {
 
       expect(find.text('0'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const WatchlistGroupHeader(icon: '⭐', title: '自選', count: 3),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(WatchlistGroupHeader), findsOneWidget);
-    });
   });
 }

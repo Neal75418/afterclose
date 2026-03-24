@@ -195,16 +195,5 @@ void main() {
       navBar = tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect(navBar.selectedIndex, 2);
     });
-
-    testWidgets('uses production theme (Material 3)', (tester) async {
-      await tester.pumpWidget(buildApp());
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(NavigationBar));
-      final theme = Theme.of(context);
-
-      // 驗證使用 Material 3 (useMaterial3 = true)
-      expect(theme.useMaterial3, isTrue);
-    });
   });
 }

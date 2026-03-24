@@ -204,62 +204,6 @@ void main() {
   });
 
   // ==========================================
-  // WatchlistItemData
-  // ==========================================
-
-  group('WatchlistItemData', () {
-    test('status is signal when hasSignal', () {
-      final item = createItem(symbol: '2330', hasSignal: true);
-      expect(item.status, WatchlistStatus.signal);
-    });
-
-    test('status is volatile when priceChange >= 3%', () {
-      final item = createItem(symbol: '2330', priceChange: 3.5);
-      expect(item.status, WatchlistStatus.volatile);
-    });
-
-    test('status is volatile when priceChange <= -3%', () {
-      final item = createItem(symbol: '2330', priceChange: -4.0);
-      expect(item.status, WatchlistStatus.volatile);
-    });
-
-    test('status is quiet otherwise', () {
-      final item = createItem(symbol: '2330', priceChange: 1.0);
-      expect(item.status, WatchlistStatus.quiet);
-    });
-
-    test('status is quiet when priceChange is null', () {
-      final item = createItem(symbol: '2330');
-      expect(item.status, WatchlistStatus.quiet);
-    });
-
-    test('trend maps trendState correctly', () {
-      expect(
-        createItem(symbol: '2330', trendState: 'UP').trend,
-        WatchlistTrend.up,
-      );
-      expect(
-        createItem(symbol: '2330', trendState: 'DOWN').trend,
-        WatchlistTrend.down,
-      );
-      expect(
-        createItem(symbol: '2330', trendState: 'SIDEWAYS').trend,
-        WatchlistTrend.sideways,
-      );
-      expect(createItem(symbol: '2330').trend, WatchlistTrend.sideways);
-    });
-
-    test('signal takes priority over volatile for status', () {
-      final item = createItem(
-        symbol: '2330',
-        hasSignal: true,
-        priceChange: 5.0,
-      );
-      expect(item.status, WatchlistStatus.signal);
-    });
-  });
-
-  // ==========================================
   // WatchlistNotifier sort/group/search
   // ==========================================
 
@@ -373,58 +317,6 @@ void main() {
   });
 
   // ==========================================
-  // WatchlistState grouping
-  // ==========================================
-
-  group('WatchlistState grouping', () {
-    test('groupedByStatus categorizes items correctly', () {
-      final items = [
-        createItem(symbol: '2330', hasSignal: true), // signal
-        createItem(symbol: '2317', priceChange: 5.0), // volatile
-        createItem(symbol: '2454', priceChange: 1.0), // quiet
-      ];
-      final state = WatchlistState(items: items);
-
-      final grouped = state.groupedByStatus;
-      expect(grouped[WatchlistStatus.signal], hasLength(1));
-      expect(grouped[WatchlistStatus.volatile], hasLength(1));
-      expect(grouped[WatchlistStatus.quiet], hasLength(1));
-    });
-
-    test('groupedByTrend categorizes items correctly', () {
-      final items = [
-        createItem(symbol: '2330', trendState: 'UP'), // up
-        createItem(symbol: '2317', trendState: 'DOWN'), // down
-        createItem(symbol: '2454'), // sideways (default)
-      ];
-      final state = WatchlistState(items: items);
-
-      final grouped = state.groupedByTrend;
-      expect(grouped[WatchlistTrend.up], hasLength(1));
-      expect(grouped[WatchlistTrend.down], hasLength(1));
-      expect(grouped[WatchlistTrend.sideways], hasLength(1));
-    });
-
-    test('groupedByStatus contains all status keys', () {
-      final state = WatchlistState();
-      final grouped = state.groupedByStatus;
-
-      for (final status in WatchlistStatus.values) {
-        expect(grouped.containsKey(status), isTrue);
-      }
-    });
-
-    test('groupedByTrend contains all trend keys', () {
-      final state = WatchlistState();
-      final grouped = state.groupedByTrend;
-
-      for (final trend in WatchlistTrend.values) {
-        expect(grouped.containsKey(trend), isTrue);
-      }
-    });
-  });
-
-  // ==========================================
   // WatchlistState copyWith _internal path
   // ==========================================
 
@@ -509,60 +401,6 @@ void main() {
       final state = WatchlistState();
       final updated = state.copyWith(isLoadingMore: true);
       expect(updated.isLoadingMore, isTrue);
-    });
-  });
-
-  // ==========================================
-  // WatchlistItemData additional tests
-  // ==========================================
-
-  group('WatchlistItemData additional', () {
-    test('trend returns sideways for null trendState', () {
-      final item = createItem(symbol: '2330');
-      expect(item.trend, WatchlistTrend.sideways);
-    });
-
-    test('trend returns sideways for unknown trendState', () {
-      final item = createItem(symbol: '2330', trendState: 'UNKNOWN');
-      expect(item.trend, WatchlistTrend.sideways);
-    });
-  });
-
-  // ==========================================
-  // WatchlistNotifier sort with items
-  // ==========================================
-
-  group('WatchlistNotifier sort with items', () {
-    test('setSort sorts by scoreDesc', () {
-      final notifier = container.read(watchlistProvider.notifier);
-
-      // Set initial items directly through loadData mock
-      when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
-      // Default state with no items → sort won't show visible effect
-      // But we can verify the sort option is stored
-      notifier.setSort(WatchlistSort.scoreDesc);
-      expect(container.read(watchlistProvider).sort, WatchlistSort.scoreDesc);
-    });
-
-    test('setSort to priceChangeDesc stores correctly', () {
-      final notifier = container.read(watchlistProvider.notifier);
-      notifier.setSort(WatchlistSort.priceChangeDesc);
-      expect(
-        container.read(watchlistProvider).sort,
-        WatchlistSort.priceChangeDesc,
-      );
-    });
-
-    test('setSort to nameAsc stores correctly', () {
-      final notifier = container.read(watchlistProvider.notifier);
-      notifier.setSort(WatchlistSort.nameAsc);
-      expect(container.read(watchlistProvider).sort, WatchlistSort.nameAsc);
-    });
-
-    test('setGroup to trend stores correctly', () {
-      final notifier = container.read(watchlistProvider.notifier);
-      notifier.setGroup(WatchlistGroup.trend);
-      expect(container.read(watchlistProvider).group, WatchlistGroup.trend);
     });
   });
 

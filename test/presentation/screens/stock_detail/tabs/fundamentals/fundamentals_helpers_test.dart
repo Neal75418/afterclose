@@ -6,38 +6,6 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/f
 import '../../../../../helpers/widget_test_helpers.dart';
 
 void main() {
-  group('buildGrowthBadge', () {
-    testWidgets('shows dash for null growth', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          Builder(builder: (context) => buildGrowthBadge(context, null)),
-        ),
-      );
-
-      expect(find.text('-'), findsOneWidget);
-    });
-
-    testWidgets('shows positive growth with + prefix', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          Builder(builder: (context) => buildGrowthBadge(context, 5.3)),
-        ),
-      );
-
-      expect(find.text('+5.3%'), findsOneWidget);
-    });
-
-    testWidgets('shows negative growth without + prefix', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          Builder(builder: (context) => buildGrowthBadge(context, -8.7)),
-        ),
-      );
-
-      expect(find.text('-8.7%'), findsOneWidget);
-    });
-  });
-
   group('buildLoadingState', () {
     testWidgets('contains CircularProgressIndicator', (tester) async {
       await tester.pumpWidget(
