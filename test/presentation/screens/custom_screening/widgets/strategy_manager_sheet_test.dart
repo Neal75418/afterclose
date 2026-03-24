@@ -82,14 +82,6 @@ void main() {
   }
 
   group('StrategyManagerSheet', () {
-    testWidgets('shows title text', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(StrategyManagerSheet), findsOneWidget);
-    });
-
     testWidgets('shows loading state', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(

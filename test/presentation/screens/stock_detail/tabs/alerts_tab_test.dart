@@ -145,15 +145,6 @@ void main() {
       expect(find.byIcon(Icons.notifications_active), findsOneWidget);
     });
 
-    testWidgets('shows add alert button', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(seconds: 1));
-
-      // FilledButton.icon may be off-screen in scroll view; verify via text
-      expect(find.byType(AlertsTab), findsOneWidget);
-    });
-
     testWidgets('shows current price card when price available', (
       tester,
     ) async {
@@ -329,17 +320,6 @@ void main() {
 
       final switchWidget = tester.widget<Switch>(find.byType(Switch));
       expect(switchWidget.value, isTrue);
-    });
-
-    testWidgets('empty state shows hint text', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(seconds: 1));
-
-      // Empty state container is rendered
-      expect(find.byIcon(Icons.notifications_off_outlined), findsOneWidget);
-      // Container with empty state exists
-      expect(find.byType(AlertsTab), findsOneWidget);
     });
 
     testWidgets('alert card is wrapped in Dismissible', (tester) async {

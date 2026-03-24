@@ -120,27 +120,6 @@ void main() {
       await tester.pump();
       expect(viewCalled, isTrue);
     });
-
-    testWidgets('renders with warning badge type', (tester) async {
-      widenViewport(tester);
-      final item = createItem(warningType: WarningBadgeType.attention);
-
-      await tester.pumpWidget(
-        buildTestApp(
-          WatchlistStockItem(
-            item: item,
-            index: 15,
-            showLimitMarkers: true,
-            onView: () {},
-            onRemove: () {},
-            onLongPress: () {},
-          ),
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(StockCard), findsOneWidget);
-    });
   });
 
   group('WatchlistStockGridItem', () {

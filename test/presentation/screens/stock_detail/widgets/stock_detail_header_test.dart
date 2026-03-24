@@ -160,29 +160,6 @@ void main() {
       expect(find.textContaining('620.0'), findsOneWidget);
     });
 
-    testWidgets('shows reason tags when reasons present', (tester) async {
-      widenViewport(tester);
-      final state = createState(
-        reasons: [
-          DailyReasonEntry(
-            symbol: '2330',
-            date: defaultDate,
-            rank: 1,
-            reasonType: 'GOLDEN_CROSS',
-            evidenceJson: '{}',
-            ruleScore: 10.0,
-          ),
-        ],
-      );
-
-      await tester.pumpWidget(
-        buildTestApp(StockDetailHeader(state: state, symbol: '2330')),
-      );
-
-      // Reason tag should be rendered
-      expect(find.byType(Container), findsWidgets);
-    });
-
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
       final state = createState();

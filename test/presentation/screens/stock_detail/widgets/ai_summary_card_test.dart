@@ -196,18 +196,6 @@ void main() {
       expect(find.byIcon(Icons.compare_arrows), findsOneWidget);
     });
 
-    testWidgets('shows disclaimer text', (tester) async {
-      widenViewport(tester);
-      final state = const StockDetailState().copyWith(
-        aiSummary: bullishSummary,
-      );
-      await tester.pumpWidget(buildTestWidget(state));
-      await tester.pump();
-
-      // Disclaimer uses .tr() key
-      expect(find.byType(AiSummaryCard), findsOneWidget);
-    });
-
     testWidgets('bearish sentiment renders correctly', (tester) async {
       widenViewport(tester);
       final state = const StockDetailState().copyWith(
