@@ -33,7 +33,9 @@ class NotificationState {
     return NotificationState(
       isInitialized: isInitialized ?? this.isInitialized,
       hasPermission: hasPermission ?? this.hasPermission,
-      error: identical(error, _sentinel) ? this.error : error as String?,
+      error: identical(error, _sentinel)
+          ? this.error
+          : (error is String? ? error : error.toString()),
     );
   }
 }

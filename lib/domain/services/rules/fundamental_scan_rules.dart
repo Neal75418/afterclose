@@ -3,6 +3,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/fundamental_technical_filter.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 // ==================================================
 // 第 6 階段：基本面分析規則
@@ -312,8 +313,11 @@ class PEOvervaluedRule extends StockRule {
 
     if (pe >= FundamentalParams.peOvervaluedThreshold) {
       // 過濾條件：須處於過熱狀態（RSI > 70）
-      // 使用 context.indicators.rsi（含 Wilder smoothing）以取得一致的 RSI 值
-      final rsi = context.indicators?.rsi;
+      // 優先使用 context.indicators.rsi（含 Wilder smoothing），
+      // 若 indicators 為 null（價格資料 < 60 天）則 fallback 到直接計算
+      final rsi =
+          context.indicators?.rsi ??
+          TechnicalIndicatorService.latestRSI(data.prices);
       if (rsi != null && rsi > FundamentalParams.scanRsiOverboughtThreshold) {
         return TriggeredReason(
           type: ReasonType.peOvervalued,
@@ -518,7 +522,10 @@ class EPSTurnaroundRule extends StockRule {
     // 技術面過濾：站上 MA20 或 RSI > 50
     final ma20 = context.indicators?.ma20;
     final close = data.prices.isNotEmpty ? data.prices.last.close : null;
-    final rsi = context.indicators?.rsi;
+    // 優先使用 context.indicators.rsi，fallback 到直接計算（需 15 vs 60 data points）
+    final rsi =
+        context.indicators?.rsi ??
+        TechnicalIndicatorService.latestRSI(data.prices);
 
     final aboveMA20 = ma20 != null && close != null && close > ma20;
     final rsiPositive =
