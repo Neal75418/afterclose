@@ -68,16 +68,6 @@ abstract final class TrendParams {
   /// 標準化斜率低於此值視為下降趨勢。
   static const double trendDownThreshold = -0.08;
 
-  /// 接近區間高點緩衝（2%）
-  ///
-  /// 當前價格在區間高點 2% 以內視為「接近高點」。
-  static const double nearRangeHighBuffer = 0.98;
-
-  /// 接近區間低點緩衝（2%）
-  ///
-  /// 當前價格在區間低點 2% 以內視為「接近低點」。
-  static const double nearRangeLowBuffer = 1.02;
-
   /// 反轉訊號分析所需最少資料點數（近期 + 前期各半）
   static const int reversalMinDataPoints = 40;
 

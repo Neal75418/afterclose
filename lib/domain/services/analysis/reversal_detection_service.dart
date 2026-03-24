@@ -1,5 +1,4 @@
 import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/list_helper.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/domain/services/analysis/trend_detection_service.dart';
@@ -7,7 +6,6 @@ import 'package:afterclose/domain/services/analysis/trend_detection_service.dart
 /// 反轉檢測服務
 ///
 /// 負責判斷股票的反轉狀態（弱轉強、強轉弱）
-/// 以及檢查候選條件（分析前的預篩選）
 class ReversalDetectionService {
   ReversalDetectionService({TrendDetectionService? trendService})
     : _trendService = trendService ?? TrendDetectionService();
@@ -55,74 +53,5 @@ class ReversalDetectionService {
     }
 
     return ReversalState.none;
-  }
-
-  /// 檢查候選條件（分析前的預篩選）
-  ///
-  /// 符合任一條件即回傳 true：
-  /// - 漲跌幅 >= 5%
-  /// - 成交量 >= 20 日均量 * 2
-  /// - 接近 60 日高/低點
-  ///
-  /// 此函式需要 [findRange] 方法的支援,應由外部傳入 rangeHigh 和 rangeLow
-  bool isCandidate(
-    List<DailyPriceEntry> prices, {
-    required double? rangeHigh,
-    required double? rangeLow,
-  }) {
-    if (prices.length < RuleParams.volMa + 1) return false;
-
-    final today = prices.last;
-    final yesterday = prices[prices.length - 2];
-
-    // 檢查價格異動
-    final todayClose = today.close;
-    final yesterdayClose = yesterday.close;
-
-    if (todayClose != null && yesterdayClose != null && yesterdayClose > 0) {
-      final pctChange =
-          ((todayClose - yesterdayClose) / yesterdayClose).abs() * 100;
-      if (pctChange >= TrendParams.priceSpikePercent) {
-        return true;
-      }
-    }
-
-    // 檢查成交量爆量
-    final todayVolume = today.volume;
-    if (todayVolume != null && todayVolume > 0) {
-      final volumeHistory = lastN(
-        prices,
-        RuleParams.volMa,
-        skip: 1,
-      ).map((p) => p.volume ?? 0).toList();
-
-      if (volumeHistory.isNotEmpty) {
-        final volMa20 =
-            volumeHistory.reduce((a, b) => a + b) / volumeHistory.length;
-        if (volMa20 > 0 &&
-            todayVolume >= volMa20 * TrendParams.volumeSpikeMult) {
-          return true;
-        }
-      }
-    }
-
-    // 檢查是否接近 60 日高/低點
-    if (todayClose != null) {
-      if (rangeHigh != null && rangeHigh > 0) {
-        // 在 60 日高點附近
-        if (todayClose >= rangeHigh * TrendParams.nearRangeHighBuffer) {
-          return true;
-        }
-      }
-
-      if (rangeLow != null && rangeLow > 0) {
-        // 在 60 日低點附近
-        if (todayClose <= rangeLow * TrendParams.nearRangeLowBuffer) {
-          return true;
-        }
-      }
-    }
-
-    return false;
   }
 }
