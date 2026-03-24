@@ -390,7 +390,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
   }
 }
 
-/// Add alert bottom sheet
+/// 新增到價提醒 Bottom Sheet
 class _AddAlertSheet extends ConsumerStatefulWidget {
   const _AddAlertSheet({
     required this.symbol,

@@ -6,7 +6,7 @@ import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Foreign shareholding section with ratio card + trend chart.
+/// 外資持股區塊 - 比率卡片 + 趨勢圖
 class ShareholdingSection extends StatelessWidget {
   const ShareholdingSection({super.key, required this.history});
 

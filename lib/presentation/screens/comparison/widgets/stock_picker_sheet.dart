@@ -10,7 +10,7 @@ import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Bottom sheet for searching and selecting stocks to compare.
+/// 股票搜尋與選擇 Bottom Sheet - 用於比較功能
 class StockPickerSheet extends ConsumerStatefulWidget {
   const StockPickerSheet({super.key, required this.existingSymbols});
 

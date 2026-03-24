@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Overlay price chart that normalizes all stocks to % change from day-0.
+/// 疊合價格走勢圖 - 將所有股票正規化為相對第一天的漲跌幅（%）
 class PriceOverlayChart extends StatelessWidget {
   const PriceOverlayChart({
     super.key,

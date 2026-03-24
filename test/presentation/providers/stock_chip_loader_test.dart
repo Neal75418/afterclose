@@ -18,7 +18,7 @@ class MockFinMindClient extends Mock implements FinMindClient {}
 
 class MockInsiderRepository extends Mock implements InsiderRepository {}
 
-class FakeClock implements AppClock {
+class _FakeClock implements AppClock {
   @override
   DateTime now() => DateTime(2026, 2, 15, 14, 0);
 }
@@ -41,7 +41,7 @@ void main() {
       db: mockDb,
       finMind: mockFinMind,
       insiderRepo: mockInsiderRepo,
-      clock: FakeClock(),
+      clock: _FakeClock(),
     );
   });
 

@@ -12,7 +12,7 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/insider_s
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/institutional_section.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip/margin_trading_section.dart';
 
-/// Comprehensive chip (籌碼) analysis tab with 7 sections.
+/// 籌碼分析分頁 - 含 7 個區塊
 class ChipTab extends ConsumerStatefulWidget {
   const ChipTab({super.key, required this.symbol});
 

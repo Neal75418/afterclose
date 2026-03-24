@@ -288,7 +288,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
   }
 }
 
-/// Tab bar delegate for pinned header
+/// 固定式 Tab bar 的 SliverPersistentHeaderDelegate
 class _TabBarDelegate extends SliverPersistentHeaderDelegate {
   const _TabBarDelegate({required this.tabController, required this.theme});
 

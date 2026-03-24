@@ -7,7 +7,7 @@ import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Day trading section with ratio card + trend chart.
+/// 當沖區塊 - 比率卡片 + 趨勢圖
 class DayTradingSection extends StatelessWidget {
   const DayTradingSection({super.key, required this.history});
 

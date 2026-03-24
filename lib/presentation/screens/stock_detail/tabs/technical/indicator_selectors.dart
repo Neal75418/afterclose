@@ -6,7 +6,7 @@ import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Selector for main chart indicators (MA, BOLL, SAR).
+/// 主圖指標選擇器（MA、BOLL、SAR）
 class MainIndicatorSelector extends StatelessWidget {
   const MainIndicatorSelector({
     super.key,
@@ -74,7 +74,7 @@ class MainIndicatorSelector extends StatelessWidget {
   }
 }
 
-/// Selector for secondary chart indicators (MACD, KDJ, RSI, WR, CCI).
+/// 副圖指標選擇器（MACD、KDJ、RSI、WR、CCI）
 class SecondaryIndicatorSelector extends StatelessWidget {
   const SecondaryIndicatorSelector({
     super.key,

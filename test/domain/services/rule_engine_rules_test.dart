@@ -34,7 +34,7 @@ void main() {
         expect(result!.type, ReasonType.reversalW2S);
       });
 
-      test('NOT trigger when trend is already up', () {
+      test('does not trigger when trend is already up', () {
         final prices = generateUptrendPrices(days: 30);
         const context = AnalysisContext(
           trendState: TrendState.up,
@@ -71,7 +71,7 @@ void main() {
         expect(result!.type, ReasonType.reversalS2W);
       });
 
-      test('NOT trigger when trend is already down', () {
+      test('does not trigger when trend is already down', () {
         final prices = generateDowntrendPrices(days: 30);
         const context = AnalysisContext(
           trendState: TrendState.down,
@@ -110,7 +110,7 @@ void main() {
         expect(result!.type, ReasonType.techBreakout);
       });
 
-      test('NOT trigger when close is below resistance', () {
+      test('does not trigger when close is below resistance', () {
         final prices = generateConstantPrices(
           days: 25,
           basePrice: 99.0,
@@ -153,7 +153,7 @@ void main() {
         expect(result!.type, ReasonType.techBreakdown);
       });
 
-      test('NOT trigger when close is above support', () {
+      test('does not trigger when close is above support', () {
         final prices = generateConstantPrices(
           days: 25,
           basePrice: 101.0,
@@ -189,7 +189,7 @@ void main() {
         expect(result!.type, ReasonType.volumeSpike);
       });
 
-      test('NOT trigger with low volume', () {
+      test('does not trigger with low volume', () {
         final prices = generateUptrendPrices(days: 30);
         const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
@@ -234,7 +234,7 @@ void main() {
         expect(result.evidence?['volumeMultiple'], greaterThanOrEqualTo(1.5));
       });
 
-      test('NOT trigger with small price change', () {
+      test('does not trigger with small price change', () {
         // 4% 漲幅不觸發（門檻 5%）
         final now = DateTime.now();
         final prices = List.generate(21, (i) {
@@ -260,7 +260,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('NOT trigger without volume confirmation', () {
+      test('does not trigger without volume confirmation', () {
         // 價格漲 8%，但成交量不足 1.5 倍
         final now = DateTime.now();
         final prices = List.generate(21, (i) {
@@ -328,7 +328,7 @@ void main() {
         expect(result!.type, ReasonType.institutionalBuy);
       });
 
-      test('NOT trigger with insufficient history', () {
+      test('does not trigger with insufficient history', () {
         final history = generateInstitutionalHistory(
           days: 3,
           prevDirection: -500,
@@ -715,7 +715,7 @@ void main() {
         expect(result.description, contains('利空'));
       });
 
-      test('NOT trigger on old news (>120h / 5 days)', () {
+      test('does not trigger on old news (>120h / 5 days)', () {
         // Rule filters news older than 120 hours (5 days)
         final news = [
           NewsItemEntry(

@@ -25,7 +25,7 @@ const _kSignificantChangeThreshold = 1.0;
 const _kInsiderRatioColor = Color(0xFF3498DB);
 const _kPledgeRatioColor = Color(0xFF9B59B6);
 
-/// Insider Holdings Tab - 董監持股比例、質押比例、持股變化
+/// 董監持股分頁 - 持股比例、質押比例、持股變化
 class InsiderTab extends ConsumerStatefulWidget {
   const InsiderTab({super.key, required this.symbol});
 

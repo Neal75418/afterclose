@@ -18,8 +18,8 @@ class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockEventRepository extends Mock implements EventRepository {}
 
-class FakeClock implements AppClock {
-  FakeClock(this._now);
+class _FakeClock implements AppClock {
+  _FakeClock(this._now);
   final DateTime _now;
 
   @override
@@ -59,7 +59,7 @@ StockEventEntry createEvent({
 void main() {
   late MockAppDatabase mockDb;
   late MockEventRepository mockEventRepo;
-  late FakeClock fakeClock;
+  late _FakeClock fakeClock;
   late ProviderContainer container;
 
   setUpAll(() {
@@ -69,7 +69,7 @@ void main() {
   setUp(() {
     mockDb = MockAppDatabase();
     mockEventRepo = MockEventRepository();
-    fakeClock = FakeClock(DateTime(2026, 2, 15, 10, 30));
+    fakeClock = _FakeClock(DateTime(2026, 2, 15, 10, 30));
 
     container = ProviderContainer(
       overrides: [

@@ -1,10 +1,9 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-/// A compact line chart for showing trends (10-60 data points).
+/// 迷你趨勢折線圖（10-60 筆資料點）
 ///
-/// Used in the chip analysis tab for institutional flow,
-/// shareholding, margin, and day trading trend visualization.
+/// 用於籌碼分頁的法人動向、外資持股、融資融券、當沖趨勢視覺化。
 class MiniTrendChart extends StatelessWidget {
   const MiniTrendChart({
     super.key,

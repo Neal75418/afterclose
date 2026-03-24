@@ -27,7 +27,7 @@ class IndicatorCardContainer extends StatelessWidget {
   }
 }
 
-/// A label + value column used in MACD and Bollinger cards.
+/// MACD 與布林通道卡片中使用的 label + value 欄位
 class LabeledValue extends StatelessWidget {
   const LabeledValue({
     super.key,

@@ -6,7 +6,7 @@ import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import '../../helpers/analysis_data_generators.dart';
 import '../../helpers/price_data_generators.dart';
 
-/// Helper: check if overallParts contain a specific localization key
+// Helper: check if overallParts contain a specific localization key
 bool _overallContainsKey(SummaryData data, String key) =>
     data.overallParts.any((ls) => ls.key == key);
 

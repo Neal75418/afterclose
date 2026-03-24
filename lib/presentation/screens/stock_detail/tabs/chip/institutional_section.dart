@@ -170,7 +170,7 @@ class InstitutionalSection extends StatelessWidget {
     );
   }
 
-  /// Deduplicate and sort institutional data by date.
+  /// 依日期去重並排序法人資料
   List<DailyInstitutionalEntry> _getDeduplicatedData(
     List<DailyInstitutionalEntry> data,
   ) {
