@@ -91,7 +91,7 @@ void main() {
   });
 
   group('ScoringService Liquidity Filters', () {
-    test('should skip stocks with low volume', () async {
+    test('skip stocks with low volume', () async {
       // Arrange
       // Volume = 100K shares (Fail < 200K min)
       final prices = [
@@ -127,7 +127,7 @@ void main() {
       verifyNever(() => mockAnalysisService.analyzeStock(any()));
     });
 
-    test('should skip stocks with low turnover', () async {
+    test('skip stocks with low turnover', () async {
       // Arrange
       // Volume = 500K shares (OK > 200K)
       // Price = 5
@@ -163,7 +163,7 @@ void main() {
       verifyNever(() => mockAnalysisService.analyzeStock(any()));
     });
 
-    test('should process stocks with high volume and turnover', () async {
+    test('process stocks with high volume and turnover', () async {
       // Arrange
       // Volume = 3M shares (OK > 200K)
       // Price = 150
@@ -269,7 +269,7 @@ void main() {
       expect(result.first.score, 80);
     });
 
-    test('should sort candidates by score descending', () async {
+    test('sort candidates by score descending', () async {
       // Arrange
       final pricesMap = {
         'HIGH_SCORE': [
@@ -381,117 +381,110 @@ void main() {
       expect(result.last.symbol, 'LOW_SCORE');
     });
 
-    test(
-      'should apply cooldown penalty for recently recommended stocks',
-      () async {
-        // Arrange
-        final pricesMap = {
-          'COOLDOWN': [
-            ...generatePricesWithVolumeSpike(
-              days: 30,
-              normalVolume: 2000000,
-              spikeVolume: 5000000,
-            ),
-          ],
-        };
-
-        // Mock DB to return true for wasRecommended
-        when(
-          () => mockAnalysisRepository.wasRecentlyRecommended(
-            'COOLDOWN',
-            days: any(
-              named: 'days',
-            ), // Argument is named 'days', not startDate/endDate
+    test('apply cooldown penalty for recently recommended stocks', () async {
+      // Arrange
+      final pricesMap = {
+        'COOLDOWN': [
+          ...generatePricesWithVolumeSpike(
+            days: 30,
+            normalVolume: 2000000,
+            spikeVolume: 5000000,
           ),
-        ).thenAnswer((_) async => true);
+        ],
+      };
 
-        // Mock Analysis Service
-        when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
-          const AnalysisResult(
-            trendState: TrendState.up,
-            reversalState: ReversalState.none,
-            supportLevel: 100,
-            resistanceLevel: 120,
-          ),
-        );
-        when(
-          () => mockAnalysisService.buildContext(
-            any(),
-            priceHistory: any(named: 'priceHistory'),
-            marketData: any(named: 'marketData'),
-            evaluationTime: any(named: 'evaluationTime'),
-          ),
-        ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      // Mock DB to return true for wasRecommended
+      when(
+        () => mockAnalysisRepository.wasRecentlyRecommended(
+          'COOLDOWN',
+          days: any(
+            named: 'days',
+          ), // Argument is named 'days', not startDate/endDate
+        ),
+      ).thenAnswer((_) async => true);
 
-        // Mock Rule Engine
-        when(
-          () => mockRuleEngine.evaluateStock(
-            priceHistory: any(named: 'priceHistory'),
-            context: any(named: 'context'),
-            symbol: 'COOLDOWN',
-            recentNews: null,
-            institutionalHistory: null,
-            latestRevenue: null,
-            latestValuation: null,
-            revenueHistory: null,
-          ),
-        ).thenReturn([
-          const TriggeredReason(
-            type: ReasonType.volumeSpike,
-            score: 10,
-            description: 'Dummy',
-          ),
-        ]);
+      // Mock Analysis Service
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 100,
+          resistanceLevel: 120,
+        ),
+      );
+      when(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
-        when(
-          () => mockRuleEngine.calculateScore(
-            any(),
-            wasRecentlyRecommended: true,
-          ),
-        ).thenReturn(80);
+      // Mock Rule Engine
+      when(
+        () => mockRuleEngine.evaluateStock(
+          priceHistory: any(named: 'priceHistory'),
+          context: any(named: 'context'),
+          symbol: 'COOLDOWN',
+          recentNews: null,
+          institutionalHistory: null,
+          latestRevenue: null,
+          latestValuation: null,
+          revenueHistory: null,
+        ),
+      ).thenReturn([
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 10,
+          description: 'Dummy',
+        ),
+      ]);
 
-        when(
-          () => mockAnalysisRepository.saveAnalysis(
-            symbol: any(named: 'symbol'),
-            date: any(named: 'date'),
-            trendState: any(named: 'trendState'),
-            score: any(named: 'score'),
-            reversalState: any(named: 'reversalState'),
-            supportLevel: any(named: 'supportLevel'),
-            resistanceLevel: any(named: 'resistanceLevel'),
-          ),
-        ).thenAnswer((_) async {});
+      when(
+        () =>
+            mockRuleEngine.calculateScore(any(), wasRecentlyRecommended: true),
+      ).thenReturn(80);
 
-        when(
-          () => mockAnalysisRepository.saveReasons(any(), any(), any()),
-        ).thenAnswer((_) async {});
+      when(
+        () => mockAnalysisRepository.saveAnalysis(
+          symbol: any(named: 'symbol'),
+          date: any(named: 'date'),
+          trendState: any(named: 'trendState'),
+          score: any(named: 'score'),
+          reversalState: any(named: 'reversalState'),
+          supportLevel: any(named: 'supportLevel'),
+          resistanceLevel: any(named: 'resistanceLevel'),
+        ),
+      ).thenAnswer((_) async {});
 
-        // Act
-        await scoringService.scoreStocks(
-          candidates: ['COOLDOWN'],
-          date: DateTime.now(),
-          batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
-          recentlyRecommended: {'COOLDOWN'},
-        );
+      when(
+        () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
-        // Assert
-        // Verify calculateScore was called with wasRecentlyRecommended: true
-        verify(
-          () => mockRuleEngine.calculateScore(
-            any(),
-            wasRecentlyRecommended: true,
-          ),
-        ).called(1);
-      },
-    );
+      // Act
+      await scoringService.scoreStocks(
+        candidates: ['COOLDOWN'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
+        recentlyRecommended: {'COOLDOWN'},
+      );
+
+      // Assert
+      // Verify calculateScore was called with wasRecentlyRecommended: true
+      verify(
+        () =>
+            mockRuleEngine.calculateScore(any(), wasRecentlyRecommended: true),
+      ).called(1);
+    });
   });
 
-  // ==================================================
+  // ==========================================
   // Group 2: 空值與早期回傳
-  // ==================================================
+  // ==========================================
 
   group('ScoringService Empty/Null Input', () {
-    test('should return empty list when candidates list is empty', () async {
+    test('return empty list when candidates list is empty', () async {
       final result = await scoringService.scoreStocks(
         candidates: [],
         date: DateTime.now(),
@@ -502,7 +495,7 @@ void main() {
       verifyNever(() => mockAnalysisService.analyzeStock(any()));
     });
 
-    test('should skip stocks with no price data in pricesMap', () async {
+    test('skip stocks with no price data in pricesMap', () async {
       final result = await scoringService.scoreStocks(
         candidates: ['MISSING'],
         date: DateTime.now(),
@@ -513,7 +506,7 @@ void main() {
       verifyNever(() => mockAnalysisService.analyzeStock(any()));
     });
 
-    test('should skip stocks with insufficient price history', () async {
+    test('skip stocks with insufficient price history', () async {
       final prices = generateConstantPrices(
         days: 5, // < RuleParams.swingWindow (20)
         basePrice: 100.0,
@@ -531,9 +524,9 @@ void main() {
     });
   });
 
-  // ==================================================
+  // ==========================================
   // Group 3: 分析失敗路徑
-  // ==================================================
+  // ==========================================
 
   group('ScoringService Analysis Failure Paths', () {
     /// 建立通過流動性門檻的有效價格資料
@@ -546,7 +539,7 @@ void main() {
       );
     }
 
-    test('should skip stock when analyzeStock returns null', () async {
+    test('skip stock when analyzeStock returns null', () async {
       final prices = validPrices('NULL_ANALYSIS');
 
       when(() => mockAnalysisService.analyzeStock(any())).thenReturn(null);
@@ -576,7 +569,7 @@ void main() {
       );
     });
 
-    test('should skip stock when rule engine returns empty reasons', () async {
+    test('skip stock when rule engine returns empty reasons', () async {
       final prices = validPrices('EMPTY_REASONS');
 
       when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
@@ -628,9 +621,9 @@ void main() {
     });
   });
 
-  // ==================================================
+  // ==========================================
   // Group 4: 分數過濾
-  // ==================================================
+  // ==========================================
 
   group('ScoringService Score Filtering', () {
     /// 設定完整的 mock pipeline 讓候選通過所有檢查直到分數計算
@@ -715,7 +708,7 @@ void main() {
       );
     }
 
-    test('should skip stock when score is below minScoreThreshold', () async {
+    test('skip stock when score is below minScoreThreshold', () async {
       final prices = validPrices('LOW');
       setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1); // 24
 
@@ -728,7 +721,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('should include stock when score equals minScoreThreshold', () async {
+    test('include stock when score equals minScoreThreshold', () async {
       final prices = validPrices('BOUNDARY');
       setupFullPipeline(returnScore: RuleParams.minScoreThreshold); // 25
 
@@ -746,9 +739,9 @@ void main() {
     });
   });
 
-  // ==================================================
+  // ==========================================
   // Group 5: 選用功能
-  // ==================================================
+  // ==========================================
 
   group('ScoringService Optional Features', () {
     List<DailyPriceEntry> validPrices(String symbol) {
@@ -760,7 +753,7 @@ void main() {
       );
     }
 
-    test('should call onProgress callback for each candidate', () async {
+    test('call onProgress callback for each candidate', () async {
       final progressCalls = <(int, int)>[];
       final prices = validPrices('A');
 
@@ -780,107 +773,104 @@ void main() {
       expect(progressCalls, [(1, 3), (2, 3), (3, 3)]);
     });
 
-    test(
-      'should call marketDataBuilder and pass result to buildContext',
-      () async {
-        final prices = validPrices('MKT');
-        const marketData = MarketDataContext(foreignSharesRatio: 30.0);
+    test('call marketDataBuilder and pass result to buildContext', () async {
+      final prices = validPrices('MKT');
+      const marketData = MarketDataContext(foreignSharesRatio: 30.0);
 
-        when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
-          const AnalysisResult(
-            trendState: TrendState.up,
-            reversalState: ReversalState.none,
-            supportLevel: 100,
-            resistanceLevel: 120,
-          ),
-        );
-        when(
-          () => mockAnalysisService.buildContext(
-            any(),
-            priceHistory: any(named: 'priceHistory'),
-            marketData: any(named: 'marketData'),
-            evaluationTime: any(named: 'evaluationTime'),
-          ),
-        ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 100,
+          resistanceLevel: 120,
+        ),
+      );
+      when(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
-        when(
-          () => mockRuleEngine.evaluateStock(
-            priceHistory: any(named: 'priceHistory'),
-            context: any(named: 'context'),
-            symbol: any(named: 'symbol'),
-            recentNews: any(named: 'recentNews'),
-            institutionalHistory: any(named: 'institutionalHistory'),
-            latestRevenue: any(named: 'latestRevenue'),
-            latestValuation: any(named: 'latestValuation'),
-            revenueHistory: any(named: 'revenueHistory'),
-          ),
-        ).thenReturn([
-          const TriggeredReason(
-            type: ReasonType.techBreakout,
-            score: 30,
-            description: 'Test',
-          ),
-        ]);
-        when(
-          () => mockRuleEngine.calculateScore(
-            any(),
-            wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
-          ),
-        ).thenReturn(30);
-        when(() => mockRuleEngine.getTopReasons(any())).thenReturn([
-          const TriggeredReason(
-            type: ReasonType.techBreakout,
-            score: 30,
-            description: 'Test',
-          ),
-        ]);
-        when(
-          () => mockAnalysisRepository.saveAnalysis(
-            symbol: any(named: 'symbol'),
-            date: any(named: 'date'),
-            trendState: any(named: 'trendState'),
-            score: any(named: 'score'),
-            reversalState: any(named: 'reversalState'),
-            supportLevel: any(named: 'supportLevel'),
-            resistanceLevel: any(named: 'resistanceLevel'),
-          ),
-        ).thenAnswer((_) async {});
-        when(
-          () => mockAnalysisRepository.saveReasons(any(), any(), any()),
-        ).thenAnswer((_) async {});
+      when(
+        () => mockRuleEngine.evaluateStock(
+          priceHistory: any(named: 'priceHistory'),
+          context: any(named: 'context'),
+          symbol: any(named: 'symbol'),
+          recentNews: any(named: 'recentNews'),
+          institutionalHistory: any(named: 'institutionalHistory'),
+          latestRevenue: any(named: 'latestRevenue'),
+          latestValuation: any(named: 'latestValuation'),
+          revenueHistory: any(named: 'revenueHistory'),
+        ),
+      ).thenReturn([
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 30,
+          description: 'Test',
+        ),
+      ]);
+      when(
+        () => mockRuleEngine.calculateScore(
+          any(),
+          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+        ),
+      ).thenReturn(30);
+      when(() => mockRuleEngine.getTopReasons(any())).thenReturn([
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 30,
+          description: 'Test',
+        ),
+      ]);
+      when(
+        () => mockAnalysisRepository.saveAnalysis(
+          symbol: any(named: 'symbol'),
+          date: any(named: 'date'),
+          trendState: any(named: 'trendState'),
+          score: any(named: 'score'),
+          reversalState: any(named: 'reversalState'),
+          supportLevel: any(named: 'supportLevel'),
+          resistanceLevel: any(named: 'resistanceLevel'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+      ).thenAnswer((_) async {});
 
-        var builderCalled = false;
-        await scoringService.scoreStocks(
-          candidates: ['MKT'],
-          date: DateTime.now(),
-          batchData: ScoringBatchData(pricesMap: {'MKT': prices}, newsMap: {}),
-          marketDataBuilder: (symbol) async {
-            builderCalled = true;
-            expect(symbol, 'MKT');
-            return marketData;
-          },
-        );
+      var builderCalled = false;
+      await scoringService.scoreStocks(
+        candidates: ['MKT'],
+        date: DateTime.now(),
+        batchData: ScoringBatchData(pricesMap: {'MKT': prices}, newsMap: {}),
+        marketDataBuilder: (symbol) async {
+          builderCalled = true;
+          expect(symbol, 'MKT');
+          return marketData;
+        },
+      );
 
-        expect(builderCalled, isTrue);
-        // Verify buildContext was called with the marketData
-        verify(
-          () => mockAnalysisService.buildContext(
-            any(),
-            priceHistory: any(named: 'priceHistory'),
-            marketData: marketData,
-            evaluationTime: any(named: 'evaluationTime'),
-          ),
-        ).called(1);
-      },
-    );
+      expect(builderCalled, isTrue);
+      // Verify buildContext was called with the marketData
+      verify(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: marketData,
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).called(1);
+    });
   });
 
-  // ==================================================
+  // ==========================================
   // Group 6: ScoredStock.compareByWeightedScore 排序邏輯
-  // ==================================================
+  // ==========================================
 
   group('ScoredStock.compareByWeightedScore', () {
-    test('should rank higher score first', () {
+    test('rank higher score first', () {
       const a = ScoredStock(symbol: '2330', score: 60, turnover: 100000000);
       const b = ScoredStock(symbol: '2317', score: 50, turnover: 100000000);
 
@@ -888,7 +878,7 @@ void main() {
       expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
     });
 
-    test('should add liquidity bonus (2 per 100M, max 20)', () {
+    test('add liquidity bonus (2 per 100M, max 20)', () {
       // A: score=50, turnover=1B → bonus=20, total=70
       // B: score=60, turnover=50M → bonus=1, total=61
       const a = ScoredStock(
@@ -906,7 +896,7 @@ void main() {
       expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
     });
 
-    test('should cap liquidity bonus at 20', () {
+    test('cap liquidity bonus at 20', () {
       // A: score=50, turnover=2B → bonus=min(40,20)=20, total=70
       // B: score=50, turnover=1B → bonus=20, total=70
       // Tied on total → break by turnover (A > B)
@@ -925,7 +915,7 @@ void main() {
       expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
     });
 
-    test('should break ties by turnover descending', () {
+    test('break ties by turnover descending', () {
       const a = ScoredStock(
         symbol: '2330',
         score: 60,
@@ -941,7 +931,7 @@ void main() {
       expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
     });
 
-    test('should break final ties by symbol ascending', () {
+    test('break final ties by symbol ascending', () {
       const a = ScoredStock(symbol: '1234', score: 60, turnover: 500000000);
       const b = ScoredStock(symbol: '5678', score: 60, turnover: 500000000);
 

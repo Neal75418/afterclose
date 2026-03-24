@@ -11,9 +11,9 @@ import 'package:afterclose/presentation/screens/custom_screening/backtest/widget
 import '../../../../helpers/provider_test_helpers.dart';
 import '../../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeBacktestNotifier extends BacktestNotifier {
   BacktestState initialState = const BacktestState();
@@ -34,9 +34,9 @@ class FakeBacktestNotifier extends BacktestNotifier {
   Future<void> executeBacktest(List<ScreeningCondition> conditions) async {}
 }
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 const _testConditions = [
   ScreeningCondition(
@@ -88,9 +88,9 @@ BacktestResult createTestResult({
 final _defaultDate = DateTime(2026, 1, 15);
 final _defaultExitDate = DateTime(2026, 1, 22);
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

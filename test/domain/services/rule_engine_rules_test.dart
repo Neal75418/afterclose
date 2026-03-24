@@ -14,7 +14,7 @@ void main() {
     group('WeakToStrongRule', () {
       const rule = WeakToStrongRule();
 
-      test('should trigger on breakout above range top', () {
+      test('trigger on breakout above range top', () {
         final prices = generateDowntrendPrices(days: 60);
         final pricesWithBreakout = [
           ...prices.take(prices.length - 1),
@@ -34,7 +34,7 @@ void main() {
         expect(result!.type, ReasonType.reversalW2S);
       });
 
-      test('should NOT trigger when trend is already up', () {
+      test('NOT trigger when trend is already up', () {
         final prices = generateUptrendPrices(days: 30);
         const context = AnalysisContext(
           trendState: TrendState.up,
@@ -51,7 +51,7 @@ void main() {
     group('StrongToWeakRule', () {
       const rule = StrongToWeakRule();
 
-      test('should trigger on breakdown below support', () {
+      test('trigger on breakdown below support', () {
         final prices = generateUptrendPrices(days: 30);
         final pricesWithBreakdown = [
           ...prices.take(prices.length - 1),
@@ -71,7 +71,7 @@ void main() {
         expect(result!.type, ReasonType.reversalS2W);
       });
 
-      test('should NOT trigger when trend is already down', () {
+      test('NOT trigger when trend is already down', () {
         final prices = generateDowntrendPrices(days: 30);
         const context = AnalysisContext(
           trendState: TrendState.down,
@@ -88,7 +88,7 @@ void main() {
     group('BreakoutRule', () {
       const rule = BreakoutRule();
 
-      test('should trigger when close exceeds resistance with volume', () {
+      test('trigger when close exceeds resistance with volume', () {
         // 突破規則需要: close > breakoutLevel, close > MA20, volume >= 2x avg
         // breakoutLevel = 100 * 1.03 = 103, 所以需要 close > 103
         final prices = generatePricesWithBreakout(
@@ -110,7 +110,7 @@ void main() {
         expect(result!.type, ReasonType.techBreakout);
       });
 
-      test('should NOT trigger when close is below resistance', () {
+      test('NOT trigger when close is below resistance', () {
         final prices = generateConstantPrices(
           days: 25,
           basePrice: 99.0,
@@ -131,7 +131,7 @@ void main() {
     group('BreakdownRule', () {
       const rule = BreakdownRule();
 
-      test('should trigger when close falls below support with volume', () {
+      test('trigger when close falls below support with volume', () {
         // 跌破規則需要: close < breakdownLevel, close < MA20, volume >= 2x avg
         // breakdownLevel = 100 * (1 - 0.03) = 97, 所以需要 close < 97
         final prices = generatePricesWithBreakdown(
@@ -153,7 +153,7 @@ void main() {
         expect(result!.type, ReasonType.techBreakdown);
       });
 
-      test('should NOT trigger when close is above support', () {
+      test('NOT trigger when close is above support', () {
         final prices = generateConstantPrices(
           days: 25,
           basePrice: 101.0,
@@ -174,7 +174,7 @@ void main() {
     group('VolumeSpikeRule', () {
       const rule = VolumeSpikeRule();
 
-      test('should trigger when volume is 4x average with price move', () {
+      test('trigger when volume is 4x average with price move', () {
         final prices = generatePricesWithVolumeSpike(
           days: 30,
           normalVolume: 1000,
@@ -189,7 +189,7 @@ void main() {
         expect(result!.type, ReasonType.volumeSpike);
       });
 
-      test('should NOT trigger with low volume', () {
+      test('NOT trigger with low volume', () {
         final prices = generateUptrendPrices(days: 30);
         const context = AnalysisContext(trendState: TrendState.range);
         final data = StockData(symbol: 'TEST', prices: prices);
@@ -203,7 +203,7 @@ void main() {
     group('PriceSpikeRule', () {
       const rule = PriceSpikeRule();
 
-      test('should trigger when price moves 5%+ with volume confirmation', () {
+      test('trigger when price moves 5%+ with volume confirmation', () {
         // v0.1.3: 需要 21 天資料計算均量，且成交量需達 1.5 倍
         final now = DateTime.now();
         const baseVolume = 1000.0;
@@ -234,7 +234,7 @@ void main() {
         expect(result.evidence?['volumeMultiple'], greaterThanOrEqualTo(1.5));
       });
 
-      test('should NOT trigger with small price change', () {
+      test('NOT trigger with small price change', () {
         // 4% 漲幅不觸發（門檻 5%）
         final now = DateTime.now();
         final prices = List.generate(21, (i) {
@@ -260,7 +260,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('should NOT trigger without volume confirmation', () {
+      test('NOT trigger without volume confirmation', () {
         // 價格漲 8%，但成交量不足 1.5 倍
         final now = DateTime.now();
         final prices = List.generate(21, (i) {
@@ -290,7 +290,7 @@ void main() {
     group('InstitutionalShiftRule', () {
       const rule = InstitutionalShiftRule();
 
-      test('should trigger when foreign investors switch to buy', () {
+      test('trigger when foreign investors switch to buy', () {
         // Rule Case 5 (Significant Buy) requires:
         // 1. todayVolume >= 1,000,000 shares (1000 sheets * 1000)
         // 2. todayNet > 2,500,000 (2500 sheets * 1000)
@@ -328,7 +328,7 @@ void main() {
         expect(result!.type, ReasonType.institutionalBuy);
       });
 
-      test('should NOT trigger with insufficient history', () {
+      test('NOT trigger with insufficient history', () {
         final history = generateInstitutionalHistory(
           days: 3,
           prevDirection: -500,
@@ -346,9 +346,9 @@ void main() {
         expect(result, isNull);
       });
 
-      // ============================================================
-      // Phase 3a: InstitutionalShiftRule 補測
-      // ============================================================
+      // ==========================================
+      // InstitutionalShiftRule 補測
+      // ==========================================
 
       test('Scenario 1: should trigger sell-to-buy reversal', () {
         // prevAvg < -100K, todayNet > 500K, price up, ratio > 35%
@@ -540,7 +540,7 @@ void main() {
         expect(result.description, contains('顯著賣超'));
       });
 
-      test('should return null when todayNet.abs() < minVolumeShares', () {
+      test('return null when todayNet.abs() < minVolumeShares', () {
         final now = DateTime.now();
         final history = [
           DailyInstitutionalEntry(
@@ -566,7 +566,7 @@ void main() {
         expect(rule.evaluate(context, data), isNull);
       });
 
-      test('should return null when volume < validVolumeShares', () {
+      test('return null when volume < validVolumeShares', () {
         final now = DateTime.now();
         final history = [
           DailyInstitutionalEntry(
@@ -594,7 +594,7 @@ void main() {
         expect(rule.evaluate(context, data), isNull);
       });
 
-      test('should have hasHistory = true when exactly 4 entries', () {
+      test('have hasHistory = true when exactly 4 entries', () {
         // 4 筆法人資料 → hasHistory = true (history.length >= 4)
         final now = DateTime.now();
         final history = List.generate(4, (i) {
@@ -628,7 +628,7 @@ void main() {
         expect(result!.type, ReasonType.institutionalBuy);
       });
 
-      test('should skip history logic when only 3 entries', () {
+      test('skip history logic when only 3 entries', () {
         // 3 筆法人資料 → hasHistory = false, 只用通用邏輯
         final now = DateTime.now();
         final history = List.generate(3, (i) {
@@ -671,7 +671,7 @@ void main() {
     group('NewsRule', () {
       const rule = NewsRule();
 
-      test('should trigger on positive news', () {
+      test('trigger on positive news', () {
         final news = [
           NewsItemEntry(
             id: 'test-1',
@@ -693,7 +693,7 @@ void main() {
         expect(result.description, contains('利多'));
       });
 
-      test('should trigger on negative news', () {
+      test('trigger on negative news', () {
         final news = [
           NewsItemEntry(
             id: 'test-2',
@@ -715,7 +715,7 @@ void main() {
         expect(result.description, contains('利空'));
       });
 
-      test('should NOT trigger on old news (>120h / 5 days)', () {
+      test('NOT trigger on old news (>120h / 5 days)', () {
         // Rule filters news older than 120 hours (5 days)
         final news = [
           NewsItemEntry(

@@ -17,9 +17,9 @@ import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeSettingsNotifier extends SettingsNotifier {
   SettingsState initialState = const SettingsState();
@@ -60,9 +60,9 @@ class _EmptyAssetLoader extends AssetLoader {
   Future<Map<String, dynamic>> load(String path, Locale locale) async => {};
 }
 
-// =============================================================================
+// ==========================================
 // Helpers
-// =============================================================================
+// ==========================================
 
 void widenViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(1080, 2400);
@@ -109,9 +109,9 @@ Widget buildTestWidget({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Golden Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

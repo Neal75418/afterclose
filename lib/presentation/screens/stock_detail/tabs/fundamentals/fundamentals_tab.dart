@@ -14,7 +14,7 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/p
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/revenue_table.dart';
 import 'package:afterclose/presentation/widgets/metric_card.dart';
 
-/// Fundamentals tab - P/E, P/B, Revenue, Dividends
+/// 基本面分頁 - 本益比、股價淨值比、營收、股利
 class FundamentalsTab extends ConsumerStatefulWidget {
   const FundamentalsTab({super.key, required this.symbol});
 

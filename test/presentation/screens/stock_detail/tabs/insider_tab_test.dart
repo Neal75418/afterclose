@@ -10,9 +10,9 @@ import 'package:afterclose/presentation/widgets/section_header.dart';
 import '../../../../helpers/provider_test_helpers.dart';
 import '../../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeStockDetailNotifier extends StockDetailNotifier {
   FakeStockDetailNotifier(super.symbol);
@@ -29,9 +29,9 @@ class FakeStockDetailNotifier extends StockDetailNotifier {
   Future<void> loadData() async {}
 }
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 InsiderHoldingEntry createHolding({
   String symbol = '2330',
@@ -53,9 +53,9 @@ InsiderHoldingEntry createHolding({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

@@ -47,12 +47,12 @@ void main() {
     });
   });
 
-  // ============================================================
-  // Phase 2: getTopReasons / calculateScore / evaluateStock 補測
-  // ============================================================
+  // ==========================================
+  // getTopReasons / calculateScore / evaluateStock
+  // ==========================================
 
   group('getTopReasons', () {
-    test('should return all reasons when descriptions are unique', () {
+    test('return all reasons when descriptions are unique', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.techBreakout,
@@ -75,7 +75,7 @@ void main() {
       expect(result.length, 3);
     });
 
-    test('should dedup reasons with same description', () {
+    test('dedup reasons with same description', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.techBreakout,
@@ -94,12 +94,12 @@ void main() {
       expect(result.first.type, ReasonType.techBreakout);
     });
 
-    test('should return empty list for empty reasons', () {
+    test('return empty list for empty reasons', () {
       final result = ruleEngine.getTopReasons([]);
       expect(result, isEmpty);
     });
 
-    test('should keep first occurrence when duplicates exist', () {
+    test('keep first occurrence when duplicates exist', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.techBreakout,
@@ -128,7 +128,7 @@ void main() {
 
   group('calculateScore Institutional Combo Bonus', () {
     test(
-      'should apply institutional combo bonus for institutional + breakout (+15)',
+      'apply institutional combo bonus for institutional + breakout (+15)',
       () {
         final reasons = [
           const TriggeredReason(
@@ -152,7 +152,7 @@ void main() {
     );
 
     test(
-      'should apply institutional combo bonus for institutional + reversal (+15)',
+      'apply institutional combo bonus for institutional + reversal (+15)',
       () {
         final reasons = [
           const TriggeredReason(
@@ -176,7 +176,7 @@ void main() {
     );
 
     test(
-      'should apply all applicable bonuses simultaneously (capped at maxScore)',
+      'apply all applicable bonuses simultaneously (capped at maxScore)',
       () {
         final reasons = [
           const TriggeredReason(
@@ -206,7 +206,7 @@ void main() {
   });
 
   group('Rule Exception Handling', () {
-    test('should catch and skip rule exceptions without crashing', () {
+    test('catch and skip rule exceptions without crashing', () {
       final engine = RuleEngine(customRules: [const _ThrowingRule()]);
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
       const context = AnalysisContext(trendState: TrendState.range);
@@ -220,7 +220,7 @@ void main() {
       expect(reasons, isEmpty);
     });
 
-    test('should return results from remaining rules when one rule throws', () {
+    test('return results from remaining rules when one rule throws', () {
       final engine = RuleEngine(
         customRules: [const _ThrowingRule(), const VolumeSpikeRule()],
       );
@@ -243,12 +243,12 @@ void main() {
   });
 
   group('calculateScore Edge Cases', () {
-    test('should return 0 for empty reasons list', () {
+    test('return 0 for empty reasons list', () {
       final score = ruleEngine.calculateScore([]);
       expect(score, 0);
     });
 
-    test('should apply cooldown penalty correctly', () {
+    test('apply cooldown penalty correctly', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.reversalW2S,
@@ -267,7 +267,7 @@ void main() {
       expect(score, 20);
     });
 
-    test('should not go below 0 with cooldown penalty', () {
+    test('not go below 0 with cooldown penalty', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.newsRelated,
@@ -286,7 +286,7 @@ void main() {
       expect(score, 0);
     });
 
-    test('should handle mixed positive and negative scores', () {
+    test('handle mixed positive and negative scores', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.techBreakout,
@@ -307,7 +307,7 @@ void main() {
   });
 
   group('evaluateStock Edge Cases', () {
-    test('should return empty list for empty price history', () {
+    test('return empty list for empty price history', () {
       final reasons = ruleEngine.evaluateStock(
         priceHistory: [],
         context: const AnalysisContext(trendState: TrendState.range),
@@ -315,7 +315,7 @@ void main() {
       expect(reasons, isEmpty);
     });
 
-    test('should sort returned reasons by score descending', () {
+    test('sort returned reasons by score descending', () {
       // 使用自訂規則確保產生多個已知分數的結果
       final engine = RuleEngine(
         customRules: [
@@ -352,9 +352,9 @@ void main() {
   });
 }
 
-// ============================================================
+// ==========================================
 // 測試用內聯規則
-// ============================================================
+// ==========================================
 
 /// 永遠拋出例外的規則（用於測試例外處理）
 class _ThrowingRule extends StockRule {

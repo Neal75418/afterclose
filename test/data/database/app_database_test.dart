@@ -30,7 +30,7 @@ void main() {
 
   group('AppDatabase', () {
     group('StockMaster Operations', () {
-      test('should upsert and retrieve stock', () async {
+      test('upsert and retrieve stock', () async {
         await db.upsertStock(
           StockMasterCompanion.insert(
             symbol: '2330',
@@ -47,13 +47,13 @@ void main() {
         expect(stock.market, 'TWSE');
       });
 
-      test('should return null for non-existent stock', () async {
+      test('return null for non-existent stock', () async {
         final stock = await db.getStock('9999');
 
         expect(stock, isNull);
       });
 
-      test('should batch upsert stocks', () async {
+      test('batch upsert stocks', () async {
         await db.upsertStocks([
           StockMasterCompanion.insert(
             symbol: '2330',
@@ -72,7 +72,7 @@ void main() {
         expect(stocks.length, 2);
       });
 
-      test('should get stocks batch', () async {
+      test('get stocks batch', () async {
         await db.upsertStocks([
           StockMasterCompanion.insert(
             symbol: '2330',
@@ -94,7 +94,7 @@ void main() {
         expect(result['9999'], isNull);
       });
 
-      test('should search stocks by symbol or name', () async {
+      test('search stocks by symbol or name', () async {
         await db.upsertStocks([
           StockMasterCompanion.insert(
             symbol: '2330',
@@ -123,7 +123,7 @@ void main() {
         await insertTestStocks();
       });
 
-      test('should insert and retrieve price history', () async {
+      test('insert and retrieve price history', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -152,7 +152,7 @@ void main() {
         expect(history.last.close, 105.0);
       });
 
-      test('should get latest price', () async {
+      test('get latest price', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -175,7 +175,7 @@ void main() {
         expect(latest!.close, 105.0);
       });
 
-      test('should get latest prices batch', () async {
+      test('get latest prices batch', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -199,7 +199,7 @@ void main() {
         expect(result['2317']?.close, 50.0);
       });
 
-      test('should get price history batch', () async {
+      test('get price history batch', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -230,7 +230,7 @@ void main() {
         expect(result['2317']?.length, 1);
       });
 
-      test('should handle price with null close and volume', () async {
+      test('handle price with null close and volume', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -250,7 +250,7 @@ void main() {
         expect(latest.volume, isNull);
       });
 
-      test('should handle empty batch queries', () async {
+      test('handle empty batch queries', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -273,7 +273,7 @@ void main() {
         await insertTestStocks();
       });
 
-      test('should add to watchlist', () async {
+      test('add to watchlist', () async {
         await db.addToWatchlist('2330');
 
         final watchlist = await db.getWatchlist();
@@ -282,7 +282,7 @@ void main() {
         expect(watchlist.first.symbol, '2330');
       });
 
-      test('should remove from watchlist', () async {
+      test('remove from watchlist', () async {
         await db.addToWatchlist('2330');
         await db.removeFromWatchlist('2330');
 
@@ -291,14 +291,14 @@ void main() {
         expect(watchlist, isEmpty);
       });
 
-      test('should check if in watchlist', () async {
+      test('check if in watchlist', () async {
         await db.addToWatchlist('2330');
 
         expect(await db.isInWatchlist('2330'), isTrue);
         expect(await db.isInWatchlist('2317'), isFalse);
       });
 
-      test('should ignore duplicate watchlist entries', () async {
+      test('ignore duplicate watchlist entries', () async {
         await db.addToWatchlist('2330');
         await db.addToWatchlist('2330'); // Duplicate
 
@@ -313,7 +313,7 @@ void main() {
         await insertTestStocks();
       });
 
-      test('should insert and retrieve analysis', () async {
+      test('insert and retrieve analysis', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -333,7 +333,7 @@ void main() {
         expect(analysis.score, 50.0);
       });
 
-      test('should get analyses batch', () async {
+      test('get analyses batch', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -361,7 +361,7 @@ void main() {
         expect(result['2317']?.trendState, 'DOWN');
       });
 
-      test('should get analysis for date', () async {
+      test('get analysis for date', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -396,7 +396,7 @@ void main() {
         await insertTestStocks();
       });
 
-      test('should insert and retrieve reasons', () async {
+      test('insert and retrieve reasons', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -418,7 +418,7 @@ void main() {
         expect(reasons.first.ruleScore, 18.0);
       });
 
-      test('should get reasons batch', () async {
+      test('get reasons batch', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -449,7 +449,7 @@ void main() {
         expect(result['2317']?.first.reasonType, 'PRICE_SPIKE');
       });
 
-      test('should replace reasons atomically', () async {
+      test('replace reasons atomically', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -489,7 +489,7 @@ void main() {
         await insertTestStocks();
       });
 
-      test('should insert and retrieve recommendations', () async {
+      test('insert and retrieve recommendations', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -529,7 +529,7 @@ void main() {
         expect(recommendations.last.symbol, '2317'); // Rank 2
       });
 
-      test('should check if symbol was recommended in range', () async {
+      test('check if symbol was recommended in range', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 
@@ -570,7 +570,7 @@ void main() {
     });
 
     group('Settings Operations', () {
-      test('should set and get setting', () async {
+      test('set and get setting', () async {
         await db.setSetting('test_key', 'test_value');
 
         final value = await db.getSetting('test_key');
@@ -578,13 +578,13 @@ void main() {
         expect(value, 'test_value');
       });
 
-      test('should return null for non-existent setting', () async {
+      test('return null for non-existent setting', () async {
         final value = await db.getSetting('non_existent');
 
         expect(value, isNull);
       });
 
-      test('should delete setting', () async {
+      test('delete setting', () async {
         await db.setSetting('test_key', 'test_value');
         await db.deleteSetting('test_key');
 
@@ -593,7 +593,7 @@ void main() {
         expect(value, isNull);
       });
 
-      test('should update existing setting', () async {
+      test('update existing setting', () async {
         await db.setSetting('test_key', 'old_value');
         await db.setSetting('test_key', 'new_value');
 
@@ -604,7 +604,7 @@ void main() {
     });
 
     group('Update Run Operations', () {
-      test('should create and finish update run', () async {
+      test('create and finish update run', () async {
         final now = DateTime.now();
         final today = DateTime.utc(now.year, now.month, now.day);
 

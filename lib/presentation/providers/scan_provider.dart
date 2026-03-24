@@ -25,7 +25,8 @@ const _sentinel = Object();
 /// 掃描畫面狀態
 class ScanState {
   const ScanState({
-    this.stocks = const [], // Filtered/sorted view
+    /// 篩選/排序後的顯示清單
+    this.stocks = const [],
     this.filter = ScanFilter.all,
     this.sort = ScanSort.scoreDesc,
     this.industryFilter,

@@ -43,7 +43,7 @@ void main() {
       expect(score, greaterThan(0));
     });
 
-    test('should support custom rules via constructor', () {
+    test('support custom rules via constructor', () {
       final customEngine = RuleEngine(customRules: [const BreakoutRule()]);
 
       // 產生有成交量的上升趨勢價格
@@ -71,7 +71,7 @@ void main() {
   });
 
   group('calculateScore', () {
-    test('should apply bonus for Breakout + Volume Spike (+10)', () {
+    test('apply bonus for Breakout + Volume Spike (+10)', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.techBreakout,
@@ -92,7 +92,7 @@ void main() {
       expect(score, 57);
     });
 
-    test('should apply bonus for Reversal + Volume Spike (+10)', () {
+    test('apply bonus for Reversal + Volume Spike (+10)', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.reversalW2S,
@@ -113,7 +113,7 @@ void main() {
       expect(score, 67);
     });
 
-    test('should cap score at maxScore', () {
+    test('cap score at maxScore', () {
       // Simulate reasons that sum > maxScore
       final reasons = List.generate(
         5,
@@ -128,7 +128,7 @@ void main() {
       expect(score, RuleScores.maxScore);
     });
 
-    test('should not reduce score below 0', () {
+    test('not reduce score below 0', () {
       // Simulate negative reasons
       final reasons = [
         const TriggeredReason(

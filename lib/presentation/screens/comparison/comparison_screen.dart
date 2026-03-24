@@ -22,7 +22,7 @@ import 'package:afterclose/core/utils/widget_capture.dart';
 import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/presentation/services/export_service.dart';
 
-/// Main comparison screen that shows side-by-side stock analysis.
+/// 比較畫面 - 並排顯示多檔股票分析
 class ComparisonScreen extends ConsumerStatefulWidget {
   const ComparisonScreen({super.key, this.initialSymbols = const []});
 

@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ScoringIsolateInput date serialization', () {
-    test('should round-trip date through toMap/fromMap', () {
+    test('round-trip date through toMap/fromMap', () {
       final date = DateTime(2025, 1, 15, 12, 30);
       final input = ScoringIsolateInput(
         candidates: ['2330'],
@@ -24,7 +24,7 @@ void main() {
       );
     });
 
-    test('should handle null date', () {
+    test('handle null date', () {
       const input = ScoringIsolateInput(
         candidates: ['2330'],
         pricesMap: {'2330': []},
@@ -38,7 +38,7 @@ void main() {
       expect(restored.date, isNull);
     });
 
-    test('should preserve date alongside other fields', () {
+    test('preserve date alongside other fields', () {
       final date = DateTime(2025, 6, 1);
       final input = ScoringIsolateInput(
         candidates: ['2330', '2317'],

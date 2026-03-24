@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/stock_master.drift.dart';
 
-/// Stock master table operations.
+/// 股票主檔操作
 mixin StockDaoMixin on $AppDatabase {
   /// 取得所有上市中的股票
   Future<List<StockMasterEntry>> getAllActiveStocks() {

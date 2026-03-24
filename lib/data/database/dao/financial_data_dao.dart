@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
-/// Financial data (財務報表) operations.
+/// 財務報表操作
 mixin FinancialDataDaoMixin on $AppDatabase {
   /// 批次新增財務資料
   Future<void> insertFinancialData(List<FinancialDataCompanion> entries) async {

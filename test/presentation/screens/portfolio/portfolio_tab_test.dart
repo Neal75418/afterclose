@@ -10,9 +10,9 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakePortfolioNotifier extends PortfolioNotifier {
   PortfolioState initialState = const PortfolioState();
@@ -57,9 +57,9 @@ class FakePortfolioNotifier extends PortfolioNotifier {
   }) async {}
 }
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 PortfolioPositionData createPosition({
   int positionId = 1,
@@ -83,9 +83,9 @@ PortfolioPositionData createPosition({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

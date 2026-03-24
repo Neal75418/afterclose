@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 
-/// Market overview aggregate query (大盤總覽彙總查詢) operations.
+/// 大盤總覽彙總查詢操作
 mixin MarketOverviewDaoMixin on $AppDatabase {
   /// 取得指定日期的上漲/下跌/平盤家數（依市場分組）
   ///

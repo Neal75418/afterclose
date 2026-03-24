@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
-/// Monthly revenue (月營收) operations.
+/// 月營收操作
 mixin RevenueDaoMixin on $AppDatabase {
   /// 取得股票的月營收歷史
   Future<List<MonthlyRevenueEntry>> getMonthlyRevenueHistory(

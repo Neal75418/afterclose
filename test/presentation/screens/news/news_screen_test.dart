@@ -10,9 +10,9 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeNewsNotifier extends NewsNotifier {
   NewsState initialState = NewsState();
@@ -27,9 +27,9 @@ class FakeNewsNotifier extends NewsNotifier {
   void setSourceFilter(NewsSource source) {}
 }
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 NewsItemEntry createNewsItem({
   String id = 'news_1',
@@ -49,9 +49,9 @@ NewsItemEntry createNewsItem({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

@@ -23,11 +23,11 @@ void main() {
     );
   });
 
-  group('Rule Reproduction Tests', () {
-    test('KDGoldenCrossRule triggers on cross', () async {
-      // Build prices that satisfy:
-      // 1. Today's volume > 5-day MA (last day has spike volume)
-      // 2. Price change >= 1% (last day close > prev close by 2%)
+  group('KDGoldenCrossRule', () {
+    test('triggers on cross', () async {
+      // 建構滿足以下條件的價格資料：
+      // 1. 最後一天成交量 > 5 日均量（volume spike）
+      // 2. 最後一天漲幅 >= 1%（close 102 vs prev 100）
       final prices = List.generate(20, (i) {
         final isLastDay = i == 19;
         const baseClose = 100.0;
@@ -35,16 +35,14 @@ void main() {
           symbol: '2330',
           date: DateTime.now().subtract(Duration(days: 20 - i)),
           open: baseClose,
-          close: isLastDay ? 102.0 : baseClose, // 2% rise on last day
+          close: isLastDay ? 102.0 : baseClose,
           high: isLastDay ? 103.0 : baseClose + 1,
           low: baseClose - 1,
-          volume: isLastDay ? 5000 : 1000, // Volume spike on last day
+          volume: isLastDay ? 5000 : 1000,
         );
       }).toList();
 
-      // Mock indicators
-      // Yesterday: K < D (e.g. 15 < 18)
-      // Today: K > D (e.g. 22 > 20)
+      // 模擬 KD 指標：昨日 K < D（15 < 18），今日 K > D（22 > 20）
       const indicators = TechnicalIndicators(
         kdK: 22,
         kdD: 20,
@@ -66,12 +64,14 @@ void main() {
 
       expect(reasons.any((r) => r.type == ReasonType.kdGoldenCross), isTrue);
     });
+  });
 
-    test('PEUndervaluedRule triggers on low PE', () async {
+  group('PEUndervaluedRule', () {
+    test('triggers on low PE', () async {
       final valuation = StockValuationEntry(
         symbol: '2330',
         date: DateTime.now(),
-        per: 8.5, // Low PE
+        per: 8.5,
         dividendYield: 4.0,
         pbr: 1.2,
       );
@@ -82,16 +82,14 @@ void main() {
         indicators: TechnicalIndicators(ma20: 102.5),
       );
 
-      // Need at least 20 price entries
-      // And close must be > ma20 to pass the filter
-      // Base prices at 100, last price at 110 (above MA20)
+      // 需要至少 20 筆價格資料，且 close > MA20
       final prices = List.generate(25, (i) {
-        final isRecent = i >= 20; // Last 5 days rise
+        final isRecent = i >= 20;
         return DailyPriceEntry(
           symbol: '2330',
           date: DateTime.now().subtract(Duration(days: 25 - i)),
           open: 100.0,
-          close: isRecent ? 110.0 : 100.0, // Last 5 days above MA20
+          close: isRecent ? 110.0 : 100.0,
           high: isRecent ? 112.0 : 102.0,
           low: 98.0,
           volume: 1000000,

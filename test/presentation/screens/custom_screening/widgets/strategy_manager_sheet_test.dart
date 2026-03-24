@@ -8,9 +8,9 @@ import 'package:afterclose/presentation/screens/custom_screening/widgets/strateg
 import '../../../../helpers/provider_test_helpers.dart';
 import '../../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeCustomScreeningNotifier extends CustomScreeningNotifier {
   CustomScreeningState initialState = const CustomScreeningState();
@@ -49,9 +49,9 @@ class FakeCustomScreeningNotifier extends CustomScreeningNotifier {
   Future<void> loadMore() async {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

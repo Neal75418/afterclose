@@ -17,7 +17,7 @@ import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
 
-/// Grouped repository dependencies for [UpdateService]
+/// [UpdateService] 的 Repository 依賴群組
 class UpdateRepositories {
   const UpdateRepositories({
     required this.stock,
@@ -44,7 +44,7 @@ class UpdateRepositories {
   final InsiderRepository? insider;
 }
 
-/// External API client dependencies for [UpdateService]
+/// [UpdateService] 的外部 API Client 依賴
 class UpdateClients {
   const UpdateClients({this.twse, this.tpex, this.tdcc, this.finMind});
 
@@ -54,7 +54,7 @@ class UpdateClients {
   final FinMindClient? finMind;
 }
 
-/// Optional service overrides for [UpdateService]
+/// [UpdateService] 的可選 Service 覆寫
 class UpdateServices {
   const UpdateServices({
     this.analysis,

@@ -8,9 +8,9 @@ import 'package:afterclose/presentation/screens/recommendation_performance/recom
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeRecPerfNotifier extends RecommendationPerformanceNotifier {
   RecommendationPerformanceState initialState =
@@ -29,9 +29,9 @@ class FakeRecPerfNotifier extends RecommendationPerformanceNotifier {
   Future<void> runBackfill() async {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

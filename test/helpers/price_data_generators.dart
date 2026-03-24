@@ -232,7 +232,7 @@ List<DailyPriceEntry> generatePricesWithVolumeSpike({
   return List.generate(days, (i) {
     final isToday = i == days - 1;
     // 最後一天：開盤於基準價，收盤高 3% 以滿足 minPriceChangeForVolume (1.5%)
-    final open = isToday ? basePrice : basePrice;
+    final open = basePrice;
     final close = isToday ? basePrice * 1.03 : basePrice; // +3% on spike day
     return DailyPriceEntry(
       symbol: symbol,
@@ -289,7 +289,7 @@ List<DailyPriceEntry> generatePricesWithBreakout({
     return DailyPriceEntry(
       symbol: symbol,
       date: now.subtract(Duration(days: days - i - 1)),
-      open: isToday ? basePrice : basePrice,
+      open: basePrice,
       high: close * 1.01,
       low: (isToday ? basePrice : close) * 0.99,
       close: close,
@@ -319,7 +319,7 @@ List<DailyPriceEntry> generatePricesWithBreakdown({
     return DailyPriceEntry(
       symbol: symbol,
       date: now.subtract(Duration(days: days - i - 1)),
-      open: isToday ? basePrice : basePrice,
+      open: basePrice,
       high: (isToday ? basePrice : close) * 1.01,
       low: close * 0.99,
       close: close,

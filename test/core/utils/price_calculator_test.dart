@@ -9,7 +9,7 @@ void main() {
   group('PriceCalculator', () {
     group('calculatePriceChange', () {
       test(
-        'should calculate positive price change when history includes latest date',
+        'calculate positive price change when history includes latest date',
         () {
           final now = DateTime.now();
           final history = generatePriceHistoryFromList(
@@ -29,7 +29,7 @@ void main() {
       );
 
       test(
-        'should calculate negative price change when history includes latest date',
+        'calculate negative price change when history includes latest date',
         () {
           final now = DateTime.now();
           final history = generatePriceHistoryFromList(
@@ -49,7 +49,7 @@ void main() {
       );
 
       test(
-        'should calculate price change when history does NOT include latest date',
+        'calculate price change when history does NOT include latest date',
         () {
           final now = DateTime.now();
           final yesterday = now.subtract(const Duration(days: 1));
@@ -72,7 +72,7 @@ void main() {
         },
       );
 
-      test('should return null when latestPrice is null', () {
+      test('return null when latestPrice is null', () {
         final history = generatePriceHistoryFromList(
           prices: [100.0, 100.0, 100.0, 100.0, 100.0],
         );
@@ -83,7 +83,7 @@ void main() {
       });
 
       test(
-        'should return null when history has less than 2 entries and includes latest',
+        'return null when history has less than 2 entries and includes latest',
         () {
           final now = DateTime.now();
           final history = generatePriceHistoryFromList(
@@ -101,28 +101,25 @@ void main() {
         },
       );
 
-      test(
-        'should work with single entry history when latest date is different',
-        () {
-          final now = DateTime.now();
-          final yesterday = now.subtract(const Duration(days: 1));
-          final history = generatePriceHistoryFromList(
-            prices: [100.0],
-            startDate: yesterday,
-          );
-          final latestPrice = createTestPrice(close: 110.0, date: now);
+      test('work with single entry history when latest date is different', () {
+        final now = DateTime.now();
+        final yesterday = now.subtract(const Duration(days: 1));
+        final history = generatePriceHistoryFromList(
+          prices: [100.0],
+          startDate: yesterday,
+        );
+        final latestPrice = createTestPrice(close: 110.0, date: now);
 
-          final result = PriceCalculator.calculatePriceChange(
-            history,
-            latestPrice,
-          );
+        final result = PriceCalculator.calculatePriceChange(
+          history,
+          latestPrice,
+        );
 
-          expect(result, isNotNull);
-          expect(result, closeTo(10.0, 0.01)); // 10% increase
-        },
-      );
+        expect(result, isNotNull);
+        expect(result, closeTo(10.0, 0.01)); // 10% increase
+      });
 
-      test('should return null when previous close is zero', () {
+      test('return null when previous close is zero', () {
         final now = DateTime.now();
         final history = generatePriceHistoryFromList(
           prices: [100.0, 0.0, 100.0],
@@ -138,7 +135,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('should use priceChange field when available', () {
+      test('use priceChange field when available', () {
         final now = DateTime.now();
         // priceChange = 5.0 表示漲 5 元，前一日收盤 = 105 - 5 = 100
         final latestPrice = createTestPrice(
@@ -153,7 +150,7 @@ void main() {
         expect(result, closeTo(5.0, 0.01)); // (5 / 100) * 100 = 5%
       });
 
-      test('should use priceChange even when history has gaps', () {
+      test('use priceChange even when history has gaps', () {
         final now = DateTime.now();
         // 歷史資料有缺口：只有 3 天前和今天，缺少昨天
         final history = [
@@ -180,7 +177,7 @@ void main() {
         expect(result, closeTo(5.0, 0.01));
       });
 
-      test('should fall back to history when priceChange is null', () {
+      test('fall back to history when priceChange is null', () {
         final now = DateTime.now();
         final history = generatePriceHistoryFromList(
           prices: [100.0, 100.0, 100.0, 100.0, 105.0],
@@ -198,7 +195,7 @@ void main() {
         expect(result, closeTo(5.0, 0.01));
       });
 
-      test('should return null when priceChange causes negative prevClose', () {
+      test('return null when priceChange causes negative prevClose', () {
         final now = DateTime.now();
         // close = 5, priceChange = 10 → prevClose = 5 - 10 = -5（不合理）
         final latestPrice = createTestPrice(
@@ -214,7 +211,7 @@ void main() {
     });
 
     group('calculatePriceChangesBatch', () {
-      test('should calculate price changes for multiple symbols', () {
+      test('calculate price changes for multiple symbols', () {
         final priceHistories = <String, List<DailyPriceEntry>>{
           'AAAA': generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0, 105.0],
@@ -248,7 +245,7 @@ void main() {
         expect(result['BBBB'], closeTo(-5.0, 0.01));
       });
 
-      test('should return null for symbols with no history', () {
+      test('return null for symbols with no history', () {
         final priceHistories = <String, List<DailyPriceEntry>>{};
 
         final latestPrices = <String, DailyPriceEntry>{
@@ -267,7 +264,7 @@ void main() {
         expect(result['AAAA'], isNull);
       });
 
-      test('should return null for symbols with empty history', () {
+      test('return null for symbols with empty history', () {
         final priceHistories = <String, List<DailyPriceEntry>>{'AAAA': []};
 
         final latestPrices = <String, DailyPriceEntry>{
@@ -286,7 +283,7 @@ void main() {
         expect(result['AAAA'], isNull);
       });
 
-      test('should use latestPrice.priceChange even when history is null', () {
+      test('use latestPrice.priceChange even when history is null', () {
         final latestPrices = <String, DailyPriceEntry>{
           'AAAA': createTestPrice(
             symbol: 'AAAA',
@@ -308,7 +305,7 @@ void main() {
         expect(result['AAAA'], closeTo(5.0, 0.01));
       });
 
-      test('should use latestPrice.priceChange even when history is empty', () {
+      test('use latestPrice.priceChange even when history is empty', () {
         final latestPrices = <String, DailyPriceEntry>{
           'AAAA': createTestPrice(
             symbol: 'AAAA',
@@ -328,7 +325,7 @@ void main() {
         expect(result['AAAA'], closeTo(5.0, 0.01));
       });
 
-      test('should handle mixed valid and invalid data', () {
+      test('handle mixed valid and invalid data', () {
         final priceHistories = <String, List<DailyPriceEntry>>{
           'AAAA': generatePriceHistoryFromList(
             prices: [100.0, 100.0, 100.0, 100.0, 110.0],

@@ -8,7 +8,7 @@ void main() {
   const detector = SignalConfluenceDetector();
 
   group('SignalConfluence.match', () {
-    test('should match when all groups have at least one hit', () {
+    test('match when all groups have at least one hit', () {
       const pattern = SignalConfluence(
         id: 'test',
         signalGroups: [
@@ -23,7 +23,7 @@ void main() {
       expect(result, containsAll(['A', 'C']));
     });
 
-    test('should return null when a group has no match', () {
+    test('return null when a group has no match', () {
       const pattern = SignalConfluence(
         id: 'test',
         signalGroups: [
@@ -37,7 +37,7 @@ void main() {
       expect(result, isNull);
     });
 
-    test('should return all matched types from multiple groups', () {
+    test('return all matched types from multiple groups', () {
       const pattern = SignalConfluence(
         id: 'test',
         signalGroups: [
@@ -55,7 +55,7 @@ void main() {
   });
 
   group('SignalConfluenceDetector.detect bullish', () {
-    test('should detect volume_price_breakout pattern', () {
+    test('detect volume_price_breakout pattern', () {
       final reasons = [
         createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
         createTestReason(reasonType: 'VOLUME_SPIKE', rank: 2, ruleScore: 15),
@@ -69,7 +69,7 @@ void main() {
       expect(result.summaryKeys, isNotEmpty);
     });
 
-    test('should detect bottom_reversal pattern', () {
+    test('detect bottom_reversal pattern', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_GOLDEN_CROSS', rank: 2, ruleScore: 10),
@@ -82,7 +82,7 @@ void main() {
       expect(result.consumedTypes, contains('KD_GOLDEN_CROSS'));
     });
 
-    test('should detect institutional_confirmation pattern', () {
+    test('detect institutional_confirmation pattern', () {
       final reasons = [
         createTestReason(reasonType: 'INSTITUTIONAL_BUY', ruleScore: 10),
         createTestReason(reasonType: 'TECH_BREAKOUT', rank: 2, ruleScore: 20),
@@ -94,7 +94,7 @@ void main() {
       expect(result.consumedTypes, contains('INSTITUTIONAL_BUY'));
     });
 
-    test('should detect fundamental_technical pattern', () {
+    test('detect fundamental_technical pattern', () {
       final reasons = [
         createTestReason(reasonType: 'REVENUE_YOY_SURGE', ruleScore: 15),
         createTestReason(
@@ -111,7 +111,7 @@ void main() {
       expect(result.consumedTypes, contains('MA_ALIGNMENT_BULLISH'));
     });
 
-    test('should detect value_investment pattern', () {
+    test('detect value_investment pattern', () {
       final reasons = [
         createTestReason(reasonType: 'PE_UNDERVALUED', ruleScore: 10),
         createTestReason(
@@ -129,7 +129,7 @@ void main() {
       expect(result.summaryKeys, contains('summary.confluenceValueInvestment'));
     });
 
-    test('should detect momentum_breakout pattern', () {
+    test('detect momentum_breakout pattern', () {
       final reasons = [
         createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
         createTestReason(
@@ -173,7 +173,7 @@ void main() {
       );
     });
 
-    test('should return empty when no bullish confluence found', () {
+    test('return empty when no bullish confluence found', () {
       final reasons = [
         createTestReason(reasonType: 'VOLUME_SPIKE', ruleScore: 15),
         // 缺少 BREAKOUT 來組成 volume_price_breakout 模式
@@ -186,7 +186,7 @@ void main() {
       expect(result.summaryKeys, isEmpty);
     });
 
-    test('should detect multiple confluences when signals are independent', () {
+    test('detect multiple confluences when signals are independent', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_GOLDEN_CROSS', rank: 2, ruleScore: 10),
@@ -210,7 +210,7 @@ void main() {
       expect(result.matchedCount, greaterThanOrEqualTo(2));
     });
 
-    test('should not double-count consumed signals across patterns', () {
+    test('not double-count consumed signals across patterns', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_GOLDEN_CROSS', rank: 2, ruleScore: 10),
@@ -233,7 +233,7 @@ void main() {
   });
 
   group('SignalConfluenceDetector.detect bearish', () {
-    test('should detect top_reversal pattern', () {
+    test('detect top_reversal pattern', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_S2W', ruleScore: -30),
         createTestReason(reasonType: 'KD_DEATH_CROSS', rank: 2, ruleScore: -10),
@@ -246,7 +246,7 @@ void main() {
       expect(result.consumedTypes, contains('KD_DEATH_CROSS'));
     });
 
-    test('should detect bearish_breakdown pattern', () {
+    test('detect bearish_breakdown pattern', () {
       final reasons = [
         createTestReason(reasonType: 'TECH_BREAKDOWN', ruleScore: -20),
         createTestReason(
@@ -262,7 +262,7 @@ void main() {
       expect(result.consumedTypes, contains('TECH_BREAKDOWN'));
     });
 
-    test('should detect value_trap pattern', () {
+    test('detect value_trap pattern', () {
       final reasons = [
         createTestReason(reasonType: 'PE_UNDERVALUED', ruleScore: 10),
         createTestReason(reasonType: 'REVERSAL_S2W', rank: 2, ruleScore: -30),
@@ -275,7 +275,7 @@ void main() {
       expect(result.consumedTypes, contains('REVERSAL_S2W'));
     });
 
-    test('should detect institutional_exit pattern', () {
+    test('detect institutional_exit pattern', () {
       final reasons = [
         createTestReason(reasonType: 'INSTITUTIONAL_SELL', ruleScore: -10),
         createTestReason(reasonType: 'FOREIGN_EXODUS', rank: 2, ruleScore: -15),
@@ -292,7 +292,7 @@ void main() {
       );
     });
 
-    test('should not match bullish patterns when detecting bearish', () {
+    test('not match bullish patterns when detecting bearish', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_GOLDEN_CROSS', rank: 2, ruleScore: 10),

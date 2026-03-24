@@ -8,15 +8,15 @@ import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/recommendation_performance_provider.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockRuleAccuracyService extends Mock implements RuleAccuracyService {}
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 final _record1 = StockValidationRecord(
   symbol: '2330',
@@ -48,9 +48,9 @@ const _stats5D = OverallPerformanceStats(
   avgReturn: 1.2,
 );
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockRuleAccuracyService mockService;
@@ -80,9 +80,9 @@ void main() {
     container.dispose();
   });
 
-  // ===========================================================================
+  // ==========================================
   // RecommendationPerformanceState
-  // ===========================================================================
+  // ==========================================
 
   group('RecommendationPerformanceState', () {
     test('has correct default values', () {
@@ -118,9 +118,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // RecommendationPerformanceNotifier
-  // ===========================================================================
+  // ==========================================
 
   group('RecommendationPerformanceNotifier', () {
     test('build triggers initial loadData', () async {
@@ -217,9 +217,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // loadData generation token
-  // ===========================================================================
+  // ==========================================
 
   group('loadData generation token', () {
     test('stale selectPeriod result does not overwrite newer period', () async {

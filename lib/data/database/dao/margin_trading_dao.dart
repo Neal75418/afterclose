@@ -4,7 +4,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
-/// Margin trading (融資融券) operations.
+/// 融資融券操作
 mixin MarginTradingDaoMixin on $AppDatabase {
   /// 取得股票的融資融券歷史
   Future<List<MarginTradingEntry>> getMarginTradingHistory(

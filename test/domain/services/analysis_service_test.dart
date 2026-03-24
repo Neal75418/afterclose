@@ -18,7 +18,7 @@ void main() {
   });
 
   group('TrendDetectionService', () {
-    test('should detect uptrend when prices are rising', () {
+    test('detect uptrend when prices are rising', () {
       final prices = generateUptrendPrices(days: 25);
 
       final trend = coordinator.trendService.detectTrendState(prices);
@@ -26,7 +26,7 @@ void main() {
       expect(trend, TrendState.up);
     });
 
-    test('should detect downtrend when prices are falling', () {
+    test('detect downtrend when prices are falling', () {
       final prices = generateDowntrendPrices(days: 25);
 
       final trend = coordinator.trendService.detectTrendState(prices);
@@ -34,7 +34,7 @@ void main() {
       expect(trend, TrendState.down);
     });
 
-    test('should detect range when prices are flat', () {
+    test('detect range when prices are flat', () {
       final prices = generateFlatPrices(days: 25, basePrice: 100.0);
 
       final trend = coordinator.trendService.detectTrendState(prices);
@@ -42,7 +42,7 @@ void main() {
       expect(trend, TrendState.range);
     });
 
-    test('should return range when not enough data', () {
+    test('return range when not enough data', () {
       final prices = generateFlatPrices(days: 3, basePrice: 100.0);
 
       final trend = coordinator.trendService.detectTrendState(prices);
@@ -50,7 +50,7 @@ void main() {
       expect(trend, TrendState.range);
     });
 
-    test('should detect uptrend with explicit price increase', () {
+    test('detect uptrend with explicit price increase', () {
       final now = DateTime.now();
       final prices = List.generate(25, (i) {
         final price = 100.0 + (i * 0.5); // 100 → 112
@@ -65,7 +65,7 @@ void main() {
       expect(trend, TrendState.up);
     });
 
-    test('should detect downtrend with explicit price decrease', () {
+    test('detect downtrend with explicit price decrease', () {
       final now = DateTime.now();
       final prices = List.generate(25, (i) {
         final price = 112.0 - (i * 0.5); // 112 → 100
@@ -80,7 +80,7 @@ void main() {
       expect(trend, TrendState.down);
     });
 
-    test('should return range when price change is minimal', () {
+    test('return range when price change is minimal', () {
       final now = DateTime.now();
       final prices = List.generate(25, (i) {
         final price = 100.0 + (i * 0.02);
@@ -97,7 +97,7 @@ void main() {
   });
 
   group('SupportResistanceService', () {
-    test('should find support and resistance levels', () {
+    test('find support and resistance levels', () {
       final now = DateTime.now();
       final prices = <DailyPriceEntry>[];
 
@@ -149,7 +149,7 @@ void main() {
       expect(resistance! > support!, isTrue);
     });
 
-    test('should return nulls when not enough data', () {
+    test('return nulls when not enough data', () {
       final prices = generateFlatPrices(days: 30, basePrice: 100.0);
 
       final (support, resistance) = coordinator.srService.findSupportResistance(
@@ -160,7 +160,7 @@ void main() {
       expect(resistance, isNull);
     });
 
-    test('should find 60-day high and low', () {
+    test('find 60-day high and low', () {
       final prices = generateSwingPrices(days: 70);
 
       final (rangeLow, rangeHigh) = coordinator.srService.findRange(prices);
@@ -170,7 +170,7 @@ void main() {
       expect(rangeHigh! > rangeLow!, isTrue);
     });
 
-    test('should return nulls when empty', () {
+    test('return nulls when empty', () {
       final (rangeLow, rangeHigh) = coordinator.srService.findRange([]);
 
       expect(rangeLow, isNull);
@@ -179,7 +179,7 @@ void main() {
   });
 
   group('ReversalDetectionService', () {
-    test('should detect weak-to-strong on breakout above range top', () {
+    test('detect weak-to-strong on breakout above range top', () {
       final prices = generateFlatPrices(days: 25, basePrice: 100.0);
 
       final pricesWithBreakout = [
@@ -196,7 +196,7 @@ void main() {
       expect(reversal, ReversalState.weakToStrong);
     });
 
-    test('should detect strong-to-weak on breakdown below support', () {
+    test('detect strong-to-weak on breakdown below support', () {
       final prices = generateFlatPrices(days: 25, basePrice: 100.0);
 
       final pricesWithBreakdown = [
@@ -213,7 +213,7 @@ void main() {
       expect(reversal, ReversalState.strongToWeak);
     });
 
-    test('should return none when no reversal detected', () {
+    test('return none when no reversal detected', () {
       final prices = generateFlatPrices(days: 25, basePrice: 100.0);
 
       final reversal = coordinator.reversalService.detectReversalState(
@@ -227,7 +227,7 @@ void main() {
 
   group('AnalysisService', () {
     group('analyzeStock', () {
-      test('should return complete analysis result', () {
+      test('return complete analysis result', () {
         final prices = generateSwingPrices(days: 30);
 
         final result = analysisService.analyzeStock(prices);
@@ -237,7 +237,7 @@ void main() {
         expect(result.reversalState, isNotNull);
       });
 
-      test('should return null when not enough data', () {
+      test('return null when not enough data', () {
         final prices = generateFlatPrices(days: 3, basePrice: 100.0);
 
         final result = analysisService.analyzeStock(prices);
@@ -247,7 +247,7 @@ void main() {
     });
 
     group('buildContext', () {
-      test('should build context from analysis result', () {
+      test('build context from analysis result', () {
         const result = AnalysisResult(
           trendState: TrendState.up,
           reversalState: ReversalState.none,

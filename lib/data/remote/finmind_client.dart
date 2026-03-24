@@ -77,7 +77,7 @@ class FinMindClient {
   /// 驗證失敗時拋出 [InvalidTokenException]
   static void _validateToken(String token) {
     if (token.length < _minTokenLength) {
-      // _minTokenLength = 20; message uses literal to allow const
+      // 訊息使用字面值以允許 const（不能引用 _minTokenLength）
       throw const InvalidTokenException(
         'Token too short (minimum 20 characters)',
       );

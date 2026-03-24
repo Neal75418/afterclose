@@ -12,9 +12,9 @@ import 'package:afterclose/presentation/widgets/empty_state.dart';
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifiers
-// =============================================================================
+// ==========================================
 
 class FakeTodayNotifier extends TodayNotifier {
   TodayState initialState = const TodayState();
@@ -98,9 +98,9 @@ class FakeSettingsNotifier extends SettingsNotifier {
   void setAutoUpdateEnabled(bool value) {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

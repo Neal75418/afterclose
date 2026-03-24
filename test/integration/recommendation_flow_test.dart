@@ -18,17 +18,17 @@ import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks（僅 mock 無法使用真實實例的依賴）
-// =============================================================================
+// ==========================================
 
 class MockUpdateService extends Mock implements UpdateService {}
 
 class MockAppClock extends Mock implements AppClock {}
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late AppDatabase db;

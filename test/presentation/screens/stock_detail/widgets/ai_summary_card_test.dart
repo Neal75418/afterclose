@@ -8,9 +8,9 @@ import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_
 import '../../../../helpers/provider_test_helpers.dart';
 import '../../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeStockDetailNotifier extends StockDetailNotifier {
   FakeStockDetailNotifier(super.symbol);
@@ -27,9 +27,9 @@ class FakeStockDetailNotifier extends StockDetailNotifier {
   Future<void> loadData() async {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

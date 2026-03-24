@@ -132,27 +132,27 @@ void main() {
       );
       await tester.pump();
 
-      // Should show 15 implemented types (Phase 1 + Phase 3)
-      // Phase 1: Basic price alerts (3)
+      // 驗證 15 種提醒類型
+      // 基本價格提醒 (3)
       expect(find.text('alert.alertType.above'), findsOneWidget);
       expect(find.text('alert.alertType.below'), findsOneWidget);
       expect(find.text('alert.alertType.changePct'), findsOneWidget);
 
-      // Phase 3 Batch 1: Volume alerts (2)
+      // 成交量提醒 (2)
       expect(find.text('alert.alertType.volumeSpike'), findsOneWidget);
       expect(find.text('alert.alertType.volumeAbove'), findsOneWidget);
 
-      // Phase 3 Batch 2: 52-week alerts (2)
+      // 52 週高低提醒 (2)
       expect(find.text('alert.alertType.week52High'), findsOneWidget);
       expect(find.text('alert.alertType.week52Low'), findsOneWidget);
 
-      // Phase 3 Batch 3: RSI/KD indicator alerts (4)
+      // RSI/KD 指標提醒 (4)
       expect(find.text('alert.alertType.rsiOverbought'), findsOneWidget);
       expect(find.text('alert.alertType.rsiOversold'), findsOneWidget);
       expect(find.text('alert.alertType.kdGoldenCross'), findsOneWidget);
       expect(find.text('alert.alertType.kdDeathCross'), findsOneWidget);
 
-      // Phase 3 Batch 4: MA cross + trading warning alerts (4)
+      // MA 交叉 + 注意/處置提醒 (4)
       expect(find.text('alert.alertType.crossAboveMa'), findsOneWidget);
       expect(find.text('alert.alertType.crossBelowMa'), findsOneWidget);
       expect(find.text('alert.alertType.tradingWarning'), findsOneWidget);

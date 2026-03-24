@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
 
-/// Daily analysis, reasons, and recommendations operations.
+/// 每日分析、原因、推薦操作
 mixin AnalysisDaoMixin on $AppDatabase {
   /// 取得指定日期的分析結果
   Future<List<DailyAnalysisEntry>> getAnalysisForDate(DateTime date) {

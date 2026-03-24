@@ -6,9 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/services/share_service.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/utils/widget_capture.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
@@ -17,15 +19,13 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/insider_tab.da
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
-import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
-import 'package:afterclose/presentation/widgets/shareable/shareable_analysis_card.dart';
-import 'package:afterclose/core/utils/widget_capture.dart';
-import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
+import 'package:afterclose/presentation/widgets/shareable/shareable_analysis_card.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
-/// Stock detail screen - shows comprehensive stock information with tabs
+/// 個股詳情畫面 - 以分頁顯示完整股票資訊
 class StockDetailScreen extends ConsumerStatefulWidget {
   const StockDetailScreen({super.key, required this.symbol});
 

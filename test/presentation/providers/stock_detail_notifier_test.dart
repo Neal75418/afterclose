@@ -12,9 +12,9 @@ import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -41,9 +41,9 @@ class MockWatchlistNotifier extends Notifier<WatchlistState>
 
 class MockAppClock extends Mock implements AppClock {}
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 const _testSymbol = '2330';
 final _defaultDate = DateTime(2026, 2, 13);
@@ -148,9 +148,9 @@ FinMindMarginData createMarginData({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockAppDatabase mockDb;
@@ -264,9 +264,9 @@ void main() {
     container.dispose();
   });
 
-  // ===========================================================================
+  // ==========================================
   // StockDetailNotifier.loadData
-  // ===========================================================================
+  // ==========================================
 
   group('StockDetailNotifier.loadData', () {
     test('initial state has correct defaults', () {
@@ -468,9 +468,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // StockDetailNotifier.toggleWatchlist
-  // ===========================================================================
+  // ==========================================
 
   group('StockDetailNotifier.toggleWatchlist', () {
     test('adds to watchlist when not in watchlist', () async {
@@ -500,9 +500,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // StockDetailNotifier.loadFundamentals
-  // ===========================================================================
+  // ==========================================
 
   group('StockDetailNotifier.loadFundamentals', () {
     test('handles error gracefully', () async {
@@ -528,9 +528,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // StockDetailNotifier.loadInsiderData
-  // ===========================================================================
+  // ==========================================
 
   group('StockDetailNotifier.loadInsiderData', () {
     test('loads insider data from DB', () async {
@@ -610,9 +610,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // StockDetailNotifier.loadChipData
-  // ===========================================================================
+  // ==========================================
 
   group('StockDetailNotifier.loadChipData', () {
     test('loads all chip data', () async {
@@ -678,9 +678,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // primaryRuleAccuracySummaryProvider
-  // ===========================================================================
+  // ==========================================
 
   group('primaryRuleAccuracySummaryProvider', () {
     test('returns null when no reasons', () async {

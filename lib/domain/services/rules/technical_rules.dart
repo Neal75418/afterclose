@@ -41,7 +41,7 @@ class StrongToWeakRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
-    // 注意：MA20 過濾已在 detectReversalState._hasLowerHigh() 中處理
+    // 注意：MA20 過濾已在 ReversalDetectionService 中處理
     // 這裡不再重複檢查，避免雙重過濾導致觸發次數過少
     if (context.reversalState == ReversalState.strongToWeak) {
       return TriggeredReason(

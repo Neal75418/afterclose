@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
-/// Holding distribution (股權分散) operations.
+/// 股權分散操作
 mixin HoldingDistributionDaoMixin on $AppDatabase {
   /// 取得股票的最新股權分散資料
   Future<List<HoldingDistributionEntry>> getLatestHoldingDistribution(

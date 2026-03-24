@@ -11,7 +11,7 @@ void main() {
   /// Localization warnings are suppressed by flutter_test_config.dart.
 
   group('SummaryLocalizer.localize', () {
-    test('should map all SummaryData fields to StockSummary', () {
+    test('map all SummaryData fields to StockSummary', () {
       const data = SummaryData(
         overallParts: [LocalizableString('summary.noSignals')],
         keySignals: [LocalizableString('summary.netBuy')],
@@ -36,7 +36,7 @@ void main() {
       expect(result.supportingData, hasLength(1));
     });
 
-    test('should join overallParts into a single string', () {
+    test('join overallParts into a single string', () {
       const data = SummaryData(
         overallParts: [
           LocalizableString('partA'),
@@ -54,7 +54,7 @@ void main() {
       expect(result.overallAssessment, contains('partC'));
     });
 
-    test('should handle empty lists gracefully', () {
+    test('handle empty lists gracefully', () {
       const data = SummaryData(
         overallParts: [LocalizableString('summary.noSignals')],
         keySignals: [],
@@ -73,7 +73,7 @@ void main() {
       expect(result.hasSupportingData, isFalse);
     });
 
-    test('should preserve default values', () {
+    test('preserve default values', () {
       const data = SummaryData(
         overallParts: [LocalizableString('summary.noSignals')],
         sentiment: SummarySentiment.neutral,
@@ -88,7 +88,7 @@ void main() {
   });
 
   group('Recursive _resolve via nestedArgs', () {
-    test('should resolve simple key without args', () {
+    test('resolve simple key without args', () {
       const data = SummaryData(
         overallParts: [LocalizableString('summary.noSignals')],
         keySignals: [LocalizableString('summary.noSignals')],
@@ -101,7 +101,7 @@ void main() {
       expect(result.keySignals.first, isNotEmpty);
     });
 
-    test('should pass namedArgs to tr()', () {
+    test('pass namedArgs to tr()', () {
       const data = SummaryData(
         overallParts: [
           LocalizableString('summary.overallUp', {
@@ -118,7 +118,7 @@ void main() {
       expect(result.overallAssessment, isNotEmpty);
     });
 
-    test('should resolve nestedArgs recursively before parent', () {
+    test('resolve nestedArgs recursively before parent', () {
       // Simulates: institutionalFlow with nested foreign/trust keys
       const nested = LocalizableString('summary.institutionalFlow', {}, {
         'foreign': LocalizableString('summary.netBuy', {'lots': '5,000'}),
@@ -139,7 +139,7 @@ void main() {
       expect(result.supportingData.first, isNotEmpty);
     });
 
-    test('should resolve deeply nested args (confluenceOverall)', () {
+    test('resolve deeply nested args (confluenceOverall)', () {
       // Simulates: confluenceOverall with nested confluence key
       const nested = LocalizableString(
         'summary.confluenceOverall',
@@ -157,7 +157,7 @@ void main() {
       expect(result.overallAssessment, isNotEmpty);
     });
 
-    test('should handle mixed namedArgs and nestedArgs', () {
+    test('handle mixed namedArgs and nestedArgs', () {
       // Parent has both regular namedArgs and nestedArgs
       const nested = LocalizableString(
         'summary.confluenceOverall',
@@ -178,7 +178,7 @@ void main() {
   });
 
   group('Multiple overallParts concatenation', () {
-    test('should concatenate trend + supportResistance parts', () {
+    test('concatenate trend + supportResistance parts', () {
       const data = SummaryData(
         overallParts: [
           LocalizableString('summary.overallUp', {
@@ -202,38 +202,35 @@ void main() {
       );
     });
 
-    test(
-      'should concatenate confluenceOverall + scoreStrong + supportResistance',
-      () {
-        const data = SummaryData(
-          overallParts: [
-            LocalizableString(
-              'summary.confluenceOverall',
-              {'close': '105.0', 'change': '5.0'},
-              {
-                'confluence': LocalizableString(
-                  'summary.confluenceBottomReversal',
-                ),
-              },
-            ),
-            LocalizableString('summary.scoreStrong', {'score': '75'}),
-            LocalizableString('summary.supportResistance', {
-              'support': '100.0',
-              'resistance': '110.0',
-            }),
-          ],
-          sentiment: SummarySentiment.bullish,
-          confidence: AnalysisConfidence.high,
-          confluenceCount: 2,
-        );
+    test('concatenate confluenceOverall + scoreStrong + supportResistance', () {
+      const data = SummaryData(
+        overallParts: [
+          LocalizableString(
+            'summary.confluenceOverall',
+            {'close': '105.0', 'change': '5.0'},
+            {
+              'confluence': LocalizableString(
+                'summary.confluenceBottomReversal',
+              ),
+            },
+          ),
+          LocalizableString('summary.scoreStrong', {'score': '75'}),
+          LocalizableString('summary.supportResistance', {
+            'support': '100.0',
+            'resistance': '110.0',
+          }),
+        ],
+        sentiment: SummarySentiment.bullish,
+        confidence: AnalysisConfidence.high,
+        confluenceCount: 2,
+      );
 
-        final result = localizer.localize(data);
+      final result = localizer.localize(data);
 
-        // Three parts joined → result should be non-empty
-        expect(result.overallAssessment, isNotEmpty);
-        expect(result.confidence, AnalysisConfidence.high);
-        expect(result.confluenceCount, 2);
-      },
-    );
+      // Three parts joined → result should be non-empty
+      expect(result.overallAssessment, isNotEmpty);
+      expect(result.confidence, AnalysisConfidence.high);
+      expect(result.confluenceCount, 2);
+    });
   });
 }

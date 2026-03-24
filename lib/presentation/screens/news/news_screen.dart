@@ -17,7 +17,7 @@ import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// News screen - shows recent market news with filtering and grouping
+/// 新聞畫面 - 顯示近期市場新聞，支援篩選與分類
 class NewsScreen extends ConsumerStatefulWidget {
   const NewsScreen({super.key});
 

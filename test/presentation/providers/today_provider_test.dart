@@ -10,9 +10,9 @@ import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -25,9 +25,9 @@ class MockUpdateService extends Mock implements UpdateService {}
 
 class MockDataSyncService extends Mock implements DataSyncService {}
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 /// 創建測試用的推薦資料
 DailyRecommendationEntry createRecommendation({
@@ -77,9 +77,9 @@ DailyPriceEntry createPrice({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockAppDatabase mockDb;

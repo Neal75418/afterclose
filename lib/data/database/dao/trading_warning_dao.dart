@@ -4,7 +4,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
-/// Trading warning (注意股票/處置股票) operations.
+/// 注意股票 / 處置股票操作
 mixin TradingWarningDaoMixin on $AppDatabase {
   /// 取得所有目前生效的警示（全市場）
   Future<List<TradingWarningEntry>> getAllActiveWarnings() {

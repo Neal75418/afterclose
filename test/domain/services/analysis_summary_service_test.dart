@@ -14,7 +14,7 @@ void main() {
   const service = AnalysisSummaryService();
 
   group('AnalysisSummaryService.generate', () {
-    test('should return neutral when no analysis and no reasons', () {
+    test('return neutral when no analysis and no reasons', () {
       final result = service.generate(
         analysis: null,
         reasons: [],
@@ -33,7 +33,7 @@ void main() {
       expect(result.overallParts.first.key, 'summary.noSignals');
     });
 
-    test('should return strongBullish when ratio ≥ 0.75 and score ≥ 55', () {
+    test('return strongBullish when ratio ≥ 0.75 and score ≥ 55', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'TECH_BREAKOUT', rank: 2, ruleScore: 20),
@@ -60,7 +60,7 @@ void main() {
       expect(result.sentiment, SummarySentiment.strongBullish);
     });
 
-    test('should return bullish when ratio ≥ 0.6 but below strong threshold', () {
+    test('return bullish when ratio ≥ 0.6 but below strong threshold', () {
       final reasons = [
         createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
         createTestReason(
@@ -87,7 +87,7 @@ void main() {
       expect(result.sentiment, SummarySentiment.bullish);
     });
 
-    test('should return bearish when negative signals dominate', () {
+    test('return bearish when negative signals dominate', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_S2W', ruleScore: -30),
         createTestReason(reasonType: 'TECH_BREAKDOWN', rank: 2, ruleScore: -20),
@@ -114,7 +114,7 @@ void main() {
       expect(result.sentiment, SummarySentiment.bearish);
     });
 
-    test('should return strongBearish when ratio ≤ 0.25 and score < 10', () {
+    test('return strongBearish when ratio ≤ 0.25 and score < 10', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_S2W', ruleScore: -30),
         createTestReason(reasonType: 'TECH_BREAKDOWN', rank: 2, ruleScore: -20),
@@ -180,7 +180,7 @@ void main() {
   });
 
   group('Conflict detection', () {
-    test('should detect W2S + KD death cross conflict', () {
+    test('detect W2S + KD death cross conflict', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_DEATH_CROSS', rank: 2, ruleScore: -10),
@@ -201,7 +201,7 @@ void main() {
       expect(result.hasConflict, isTrue);
     });
 
-    test('should detect breakout + bearish alignment conflict', () {
+    test('detect breakout + bearish alignment conflict', () {
       final reasons = [
         createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
         createTestReason(
@@ -226,7 +226,7 @@ void main() {
       expect(result.hasConflict, isTrue);
     });
 
-    test('should not flag conflict when no contradictory pairs', () {
+    test('not flag conflict when no contradictory pairs', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_GOLDEN_CROSS', rank: 2, ruleScore: 10),
@@ -271,7 +271,7 @@ void main() {
   });
 
   group('Confidence calculation', () {
-    test('should return high confidence with many signals and data', () {
+    test('return high confidence with many signals and data', () {
       final reasons = [
         createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 35),
         createTestReason(reasonType: 'KD_GOLDEN_CROSS', rank: 2, ruleScore: 10),
@@ -299,7 +299,7 @@ void main() {
       expect(result.confluenceCount, greaterThan(0));
     });
 
-    test('should return low confidence with few signals and no data', () {
+    test('return low confidence with few signals and no data', () {
       final reasons = [
         createTestReason(reasonType: 'PATTERN_DOJI', ruleScore: 5),
       ];
@@ -319,7 +319,7 @@ void main() {
       expect(result.confluenceCount, 0);
     });
 
-    test('should return medium confidence with moderate data', () {
+    test('return medium confidence with moderate data', () {
       final reasons = [
         createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
         createTestReason(reasonType: 'VOLUME_SPIKE', rank: 2, ruleScore: 15),
@@ -465,7 +465,7 @@ void main() {
   });
 
   group('Supporting data', () {
-    test('should include institutional flow data', () {
+    test('include institutional flow data', () {
       final result = service.generate(
         analysis: createTestAnalysis(),
         reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
@@ -485,7 +485,7 @@ void main() {
       expect(result.supportingData.first.key, 'summary.institutionalFlow');
     });
 
-    test('should use latest entry (last) not oldest (first) for flow data', () {
+    test('use latest entry (last) not oldest (first) for flow data', () {
       final now = DateTime.now();
       final result = service.generate(
         analysis: createTestAnalysis(),
@@ -523,7 +523,7 @@ void main() {
       expect(flowEntry.nestedArgs['foreign']?.key, 'summary.netBuy');
     });
 
-    test('should detect consecutive buy trend when ≥ 3 days', () {
+    test('detect consecutive buy trend when ≥ 3 days', () {
       final now = DateTime.now();
       final result = service.generate(
         analysis: createTestAnalysis(),
@@ -546,7 +546,7 @@ void main() {
       expect(keys, contains('summary.institutionalBuyTrend'));
     });
 
-    test('should include PE and dividend yield in supporting data', () {
+    test('include PE and dividend yield in supporting data', () {
       final result = service.generate(
         analysis: createTestAnalysis(),
         reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
@@ -566,42 +566,37 @@ void main() {
   });
 
   group('latestPrice code path', () {
-    test(
-      'should produce overallParts with trend key when latestPrice provided',
-      () {
-        final now = DateTime.now();
-        final latestPrice = createTestPrice(close: 120.5, date: now);
+    test('produce overallParts with trend key when latestPrice provided', () {
+      final now = DateTime.now();
+      final latestPrice = createTestPrice(close: 120.5, date: now);
 
-        final result = service.generate(
-          analysis: createTestAnalysis(
-            trendState: 'UP',
-            score: 50,
-            supportLevel: 115.0,
-            resistanceLevel: 125.0,
-          ),
-          reasons: [
-            createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20),
-          ],
-          latestPrice: latestPrice,
-          priceChange: 3.5,
-          institutionalHistory: [],
-          revenueHistory: [],
-          latestPER: null,
-        );
+      final result = service.generate(
+        analysis: createTestAnalysis(
+          trendState: 'UP',
+          score: 50,
+          supportLevel: 115.0,
+          resistanceLevel: 125.0,
+        ),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: latestPrice,
+        priceChange: 3.5,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+      );
 
-        // 無匯流 → 使用 overallUp trend key
-        expect(_overallContainsKey(result, 'summary.overallUp'), isTrue);
-        // 有支撐壓力 + close → 使用帶距離版本
-        expect(
-          _overallContainsKey(result, 'summary.supportResistanceWithDist'),
-          isTrue,
-        );
-        // 有風險報酬比
-        expect(_overallContainsKey(result, 'summary.riskReward'), isTrue);
-      },
-    );
+      // 無匯流 → 使用 overallUp trend key
+      expect(_overallContainsKey(result, 'summary.overallUp'), isTrue);
+      // 有支撐壓力 + close → 使用帶距離版本
+      expect(
+        _overallContainsKey(result, 'summary.supportResistanceWithDist'),
+        isTrue,
+      );
+      // 有風險報酬比
+      expect(_overallContainsKey(result, 'summary.riskReward'), isTrue);
+    });
 
-    test('should use confluenceOverall key when confluence exists', () {
+    test('use confluenceOverall key when confluence exists', () {
       final now = DateTime.now();
       final latestPrice = createTestPrice(close: 105.0, date: now);
 
@@ -625,7 +620,7 @@ void main() {
       expect(result.confluenceCount, greaterThan(0));
     });
 
-    test('should include supportResistance in overallParts', () {
+    test('include supportResistance in overallParts', () {
       final now = DateTime.now();
       final latestPrice = createTestPrice(close: 100.0, date: now);
 
@@ -652,7 +647,7 @@ void main() {
       expect(_overallContainsKey(result, 'summary.overallRange'), isTrue);
     });
 
-    test('should handle null close in latestPrice gracefully', () {
+    test('handle null close in latestPrice gracefully', () {
       final now = DateTime.now();
       final latestPrice = createTestPrice(date: now);
 

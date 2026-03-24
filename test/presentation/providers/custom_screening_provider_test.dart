@@ -9,9 +9,9 @@ import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -20,9 +20,9 @@ class MockCachedDatabaseAccessor extends Mock
 
 class MockAnalysisRepository extends Mock implements AnalysisRepository {}
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 const _testCondition = ScreeningCondition(
   field: ScreeningField.close,
@@ -59,9 +59,9 @@ ScreeningStrategyEntry createStrategyEntry({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockAppDatabase mockDb;
@@ -93,9 +93,9 @@ void main() {
     container.dispose();
   });
 
-  // ===========================================================================
+  // ==========================================
   // CustomScreeningState
-  // ===========================================================================
+  // ==========================================
 
   group('CustomScreeningState', () {
     test('has correct default values', () {
@@ -152,9 +152,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // Condition Management
-  // ===========================================================================
+  // ==========================================
 
   group('CustomScreeningNotifier condition management', () {
     test('addCondition appends condition and clears result', () {
@@ -215,9 +215,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // Strategy CRUD
-  // ===========================================================================
+  // ==========================================
 
   group('CustomScreeningNotifier strategy CRUD', () {
     test('loadSavedStrategies sets strategies from DB', () async {
@@ -353,9 +353,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // Execute Screening
-  // ===========================================================================
+  // ==========================================
 
   group('CustomScreeningNotifier executeScreening', () {
     test('returns immediately when conditions are empty', () async {
@@ -397,9 +397,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // Load More
-  // ===========================================================================
+  // ==========================================
 
   group('CustomScreeningNotifier loadMore', () {
     test('returns immediately when already loading more', () async {
@@ -425,9 +425,9 @@ void main() {
     });
   });
 
-  // ===========================================================================
+  // ==========================================
   // Provider declaration
-  // ===========================================================================
+  // ==========================================
 
   group('customScreeningProvider', () {
     test('provides initial state', () {

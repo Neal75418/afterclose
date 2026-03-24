@@ -13,18 +13,18 @@ import 'package:afterclose/presentation/screens/settings/settings_screen.dart';
 /// 共享測試 DB（避免 Drift multiple-database warning）
 final _testDb = AppDatabase.forTesting();
 
-// =============================================================================
+// ==========================================
 // Test Asset Loader — returns empty map so .tr() returns the key itself
-// =============================================================================
+// ==========================================
 
 class _EmptyAssetLoader extends AssetLoader {
   @override
   Future<Map<String, dynamic>> load(String path, Locale locale) async => {};
 }
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeSettingsNotifier extends SettingsNotifier {
   SettingsState initialState = const SettingsState();
@@ -60,9 +60,9 @@ class FakeSettingsNotifier extends SettingsNotifier {
   void setAutoUpdateEnabled(bool value) {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

@@ -24,7 +24,7 @@ void main() {
       );
     }
 
-    test('should return valid stocks sorted by volatility', () {
+    test('return valid stocks sorted by volatility', () {
       final prices = [
         const _MockPrice(code: '2330', close: 600, change: 6, volume: 500000),
         const _MockPrice(code: '2317', close: 100, change: 5, volume: 200000),
@@ -39,7 +39,7 @@ void main() {
       expect(result.last, '2330'); // lowest volatility
     });
 
-    test('should skip stocks with null close', () {
+    test('skip stocks with null close', () {
       final prices = [
         const _MockPrice(code: '2330', close: null, change: 5, volume: 200000),
         const _MockPrice(code: '2317', close: 100, change: 5, volume: 200000),
@@ -50,7 +50,7 @@ void main() {
       expect(result, ['2317']);
     });
 
-    test('should skip stocks with close <= 0', () {
+    test('skip stocks with close <= 0', () {
       final prices = [
         const _MockPrice(code: '2330', close: 0, change: 5, volume: 200000),
         const _MockPrice(code: '2317', close: -10, change: 5, volume: 200000),
@@ -61,7 +61,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('should skip stocks with null change', () {
+    test('skip stocks with null change', () {
       final prices = [
         const _MockPrice(
           code: '2330',
@@ -76,7 +76,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('should skip invalid stock codes (warrants, TDR, etc)', () {
+    test('skip invalid stock codes (warrants, TDR, etc)', () {
       final prices = [
         // Valid: 4-digit or 00xxx
         const _MockPrice(code: '2330', close: 100, change: 5, volume: 200000),
@@ -91,7 +91,7 @@ void main() {
       expect(result, ['2330']);
     });
 
-    test('should skip stocks with prevClose <= 0', () {
+    test('skip stocks with prevClose <= 0', () {
       // prevClose = close - change = 100 - 150 = -50
       final prices = [
         const _MockPrice(code: '2330', close: 100, change: 150, volume: 200000),
@@ -102,7 +102,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('should skip stocks with low volume', () {
+    test('skip stocks with low volume', () {
       // minQuickFilterVolumeShares = 100000
       final prices = [
         const _MockPrice(code: '2330', close: 100, change: 5, volume: 50000),
@@ -114,7 +114,7 @@ void main() {
       expect(result, ['2317']);
     });
 
-    test('should accept stock at exact volume threshold (boundary)', () {
+    test('accept stock at exact volume threshold (boundary)', () {
       // Logic is `< minQuickFilterVolumeShares`, so exactly 100000 should pass
       final prices = [
         const _MockPrice(code: '2330', close: 100, change: 5, volume: 100000),
@@ -125,7 +125,7 @@ void main() {
       expect(result, ['2330']);
     });
 
-    test('should reject stock just below volume threshold (boundary - 1)', () {
+    test('reject stock just below volume threshold (boundary - 1)', () {
       final prices = [
         const _MockPrice(code: '2330', close: 100, change: 5, volume: 99999),
       ];
@@ -135,7 +135,7 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('should skip stocks with null volume (treated as 0)', () {
+    test('skip stocks with null volume (treated as 0)', () {
       final prices = [
         const _MockPrice(code: '2330', close: 100, change: 5, volume: null),
       ];
@@ -145,13 +145,13 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('should return empty list for empty input', () {
+    test('return empty list for empty input', () {
       final result = filter([]);
 
       expect(result, isEmpty);
     });
 
-    test('should handle negative change (declining stocks)', () {
+    test('handle negative change (declining stocks)', () {
       final prices = [
         const _MockPrice(code: '2330', close: 95, change: -5, volume: 200000),
       ];
@@ -162,7 +162,7 @@ void main() {
       expect(result, ['2330']);
     });
 
-    test('should sort by absolute change percent descending', () {
+    test('sort by absolute change percent descending', () {
       final prices = [
         // 1/(100-1) = 1.01%
         const _MockPrice(code: '1001', close: 100, change: 1, volume: 200000),
@@ -177,7 +177,7 @@ void main() {
       expect(result, ['1002', '1003', '1001']);
     });
 
-    test('should accept ETF codes (00xxx)', () {
+    test('accept ETF codes (00xxx)', () {
       final prices = [
         const _MockPrice(code: '0050', close: 150, change: 3, volume: 500000),
         const _MockPrice(

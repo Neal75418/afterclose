@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const service = ScanFilterService();
 
-  /// Helper: create a DailyAnalysisEntry
+  // Helper: create a DailyAnalysisEntry
   DailyAnalysisEntry createAnalysis({
     required String symbol,
     double score = 50.0,
@@ -22,7 +22,7 @@ void main() {
     );
   }
 
-  /// Helper: create a DailyReasonEntry
+  // Helper: create a DailyReasonEntry
   DailyReasonEntry createReason({
     required String symbol,
     required String reasonType,

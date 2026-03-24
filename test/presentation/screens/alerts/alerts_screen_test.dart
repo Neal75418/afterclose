@@ -10,9 +10,9 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakePriceAlertNotifier extends PriceAlertNotifier {
   PriceAlertState initialState = const PriceAlertState();
@@ -38,9 +38,9 @@ class FakePriceAlertNotifier extends PriceAlertNotifier {
   }) async => true;
 }
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 PriceAlertEntry createAlert({
   int id = 1,
@@ -63,9 +63,9 @@ PriceAlertEntry createAlert({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

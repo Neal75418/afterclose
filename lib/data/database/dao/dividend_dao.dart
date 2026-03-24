@@ -3,7 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/market_data_tables.drift.dart';
 
-/// Dividend history (股利歷史) operations.
+/// 股利歷史操作
 mixin DividendDaoMixin on $AppDatabase {
   /// 取得股票的股利歷史（依年度降冪排序）
   Future<List<DividendHistoryEntry>> getDividendHistory(String symbol) {

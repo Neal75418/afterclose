@@ -27,7 +27,7 @@ enum ChartTimeRange {
   final String label;
 }
 
-/// Technical analysis tab - K-line chart + indicators + volume
+/// 技術分析分頁 - K 線圖 + 技術指標 + 成交量
 class TechnicalTab extends ConsumerStatefulWidget {
   const TechnicalTab({super.key, required this.symbol});
 

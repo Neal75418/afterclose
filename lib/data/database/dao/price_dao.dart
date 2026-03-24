@@ -5,7 +5,7 @@ import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/daily_price.drift.dart';
 
-/// Daily price, adjusted price, and weekly price operations.
+/// 日價格、還原價格、週價格操作
 mixin PriceDaoMixin on $AppDatabase {
   /// 取得股票的價格歷史
   Future<List<DailyPriceEntry>> getPriceHistory(

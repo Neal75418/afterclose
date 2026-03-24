@@ -8,9 +8,9 @@ import 'package:afterclose/presentation/screens/comparison/comparison_screen.dar
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeComparisonNotifier extends ComparisonNotifier {
   ComparisonState initialState = const ComparisonState();
@@ -28,9 +28,9 @@ class FakeComparisonNotifier extends ComparisonNotifier {
   void removeStock(String symbol) {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

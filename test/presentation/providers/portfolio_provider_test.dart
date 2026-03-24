@@ -7,17 +7,17 @@ import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockPortfolioRepository extends Mock implements PortfolioRepository {}
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 PortfolioPositionEntry createPosition({
   required int id,
@@ -69,9 +69,9 @@ DailyPriceEntry createPrice({required String symbol, double close = 100}) {
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockAppDatabase mockDb;

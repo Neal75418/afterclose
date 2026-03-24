@@ -15,9 +15,9 @@ import 'package:afterclose/presentation/screens/stock_detail/stock_detail_screen
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifiers
-// =============================================================================
+// ==========================================
 
 class FakeStockDetailNotifier extends StockDetailNotifier {
   FakeStockDetailNotifier(super.symbol);
@@ -103,9 +103,9 @@ class FakeSettingsNotifier extends SettingsNotifier {
   void setAutoUpdateEnabled(bool value) {}
 }
 
-// =============================================================================
+// ==========================================
 // Helpers
-// =============================================================================
+// ==========================================
 
 void widenViewport(WidgetTester tester) {
   tester.view.physicalSize = const Size(1080, 2400);
@@ -145,9 +145,9 @@ Widget buildTestWidget({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Golden Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

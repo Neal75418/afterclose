@@ -8,9 +8,9 @@ import 'package:afterclose/presentation/screens/calendar/event_calendar_screen.d
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifier
-// =============================================================================
+// ==========================================
 
 class FakeEventCalendarNotifier extends EventCalendarNotifier {
   EventCalendarState initialState = EventCalendarState();
@@ -49,9 +49,9 @@ class FakeEventCalendarNotifier extends EventCalendarNotifier {
   void toggleEventType(EventType type) {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

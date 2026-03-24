@@ -26,7 +26,7 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
-/// Watchlist screen - shows user's selected stocks
+/// 自選股畫面 - 顯示使用者收藏的股票清單
 class WatchlistScreen extends ConsumerStatefulWidget {
   const WatchlistScreen({super.key});
 

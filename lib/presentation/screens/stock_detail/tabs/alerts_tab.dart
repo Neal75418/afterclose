@@ -11,7 +11,7 @@ import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// Alerts tab - Price alerts for this stock
+/// 到價提醒分頁 - 個股價格警示設定
 class AlertsTab extends ConsumerStatefulWidget {
   const AlertsTab({super.key, required this.symbol});
 

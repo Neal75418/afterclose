@@ -12,9 +12,9 @@ import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -66,9 +66,9 @@ class FakeWatchlistNotifier extends WatchlistNotifier {
   Future<void> restoreStock(String symbol) async {}
 }
 
-// =============================================================================
+// ==========================================
 // Test Helpers
-// =============================================================================
+// ==========================================
 
 DailyAnalysisEntry createAnalysis({
   required String symbol,
@@ -100,9 +100,9 @@ DailyReasonEntry createReason({
   );
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockAppDatabase mockDb;

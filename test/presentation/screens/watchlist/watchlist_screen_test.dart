@@ -11,9 +11,9 @@ import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
 
-// =============================================================================
+// ==========================================
 // Fake Notifiers
-// =============================================================================
+// ==========================================
 
 class FakeWatchlistNotifier extends WatchlistNotifier {
   WatchlistState initialState = WatchlistState();
@@ -120,9 +120,9 @@ class FakeSettingsNotifier extends SettingsNotifier {
   void setAutoUpdateEnabled(bool value) {}
 }
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   setUpAll(() async {

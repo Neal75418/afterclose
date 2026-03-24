@@ -8,9 +8,9 @@ import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
-// =============================================================================
+// ==========================================
 // Mocks
-// =============================================================================
+// ==========================================
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -18,9 +18,9 @@ class MockTwseClient extends Mock implements TwseClient {}
 
 class MockTpexClient extends Mock implements TpexClient {}
 
-// =============================================================================
+// ==========================================
 // Tests
-// =============================================================================
+// ==========================================
 
 void main() {
   late MockAppDatabase mockDb;
