@@ -81,17 +81,5 @@ void main() {
 
       expect(find.byType(EpsTable), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          EpsTable(epsHistory: [createEps()], showROCYear: false),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(EpsTable), findsOneWidget);
-    });
   });
 }

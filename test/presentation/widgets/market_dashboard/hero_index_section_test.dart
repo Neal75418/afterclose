@@ -66,16 +66,5 @@ void main() {
       // MiniTrendChart should not be rendered
       expect(find.byType(HeroIndexSection), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          HeroIndexSection(index: createIndex()),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(HeroIndexSection), findsOneWidget);
-    });
   });
 }

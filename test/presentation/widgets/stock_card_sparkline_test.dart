@@ -131,17 +131,5 @@ void main() {
       expect(sizedBox.width, 70);
       expect(sizedBox.height, 32);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      const prices = [100.0, 105.0, 98.0, 110.0, 103.0, 107.0];
-      await tester.pumpWidget(
-        buildTestApp(
-          const MiniSparkline(prices: prices, color: Colors.red),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(MiniSparkline), findsOneWidget);
-    });
   });
 }

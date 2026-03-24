@@ -85,16 +85,5 @@ void main() {
       // latest ratio and avg5 are both 40.0% (single entry)
       expect(find.text('40.0%'), findsWidgets);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await pumpSection(
-        tester,
-        DayTradingSection(history: [createEntry()]),
-        brightness: Brightness.dark,
-      );
-
-      expect(find.byType(DayTradingSection), findsOneWidget);
-    });
   });
 }

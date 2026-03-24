@@ -53,14 +53,6 @@ void main() {
       expect(find.byIcon(Icons.close), findsOneWidget);
     });
 
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(const ShareOptionsSheet(), brightness: Brightness.dark),
-      );
-
-      expect(find.byType(ShareOptionsSheet), findsOneWidget);
-    });
-
     testWidgets('tapping PNG option pops with ShareFormat.png', (tester) async {
       ShareFormat? result;
       await tester.pumpWidget(

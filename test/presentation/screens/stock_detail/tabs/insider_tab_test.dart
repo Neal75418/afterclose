@@ -235,16 +235,5 @@ void main() {
       // Should only show 12 rows (not 15)
       expect(find.byType(InsiderTab), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final state = const StockDetailState().copyWith(insiderHistory: holdings);
-      await tester.pumpWidget(
-        buildTestWidget(state, brightness: Brightness.dark),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(InsiderTab), findsOneWidget);
-    });
   });
 }

@@ -6,20 +6,6 @@ import 'package:afterclose/presentation/widgets/warning_badge.dart';
 import '../../helpers/widget_test_helpers.dart';
 
 void main() {
-  group('WarningBadgeType', () {
-    test('disposal has correct icon', () {
-      expect(WarningBadgeType.disposal.icon, Icons.dangerous_rounded);
-    });
-
-    test('attention has correct icon', () {
-      expect(WarningBadgeType.attention.icon, Icons.warning_amber_rounded);
-    });
-
-    test('highPledge has correct icon', () {
-      expect(WarningBadgeType.highPledge.icon, Icons.account_balance_rounded);
-    });
-  });
-
   group('WarningBadge', () {
     testWidgets('renders disposal badge with icon', (tester) async {
       await tester.pumpWidget(

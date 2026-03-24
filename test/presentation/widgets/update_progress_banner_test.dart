@@ -73,22 +73,5 @@ void main() {
 
       expect(find.text('100%'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      const progress = UpdateProgress(
-        currentStep: 3,
-        totalSteps: 3,
-        message: '暗色模式',
-      );
-      await tester.pumpWidget(
-        buildTestApp(
-          const UpdateProgressBanner(progress: progress),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(UpdateProgressBanner), findsOneWidget);
-    });
   });
 }

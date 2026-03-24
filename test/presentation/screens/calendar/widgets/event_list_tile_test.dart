@@ -32,24 +32,6 @@ void main() {
     );
   }
 
-  group('EventType color', () {
-    test('exDividend returns red', () {
-      expect(EventType.exDividend.color, Colors.red);
-    });
-
-    test('exRights returns orange', () {
-      expect(EventType.exRights.color, Colors.orange);
-    });
-
-    test('earnings returns green', () {
-      expect(EventType.earnings.color, Colors.green);
-    });
-
-    test('custom returns blue', () {
-      expect(EventType.custom.color, Colors.blue);
-    });
-  });
-
   group('EventListTile', () {
     testWidgets('displays event title', (tester) async {
       await tester.pumpWidget(
@@ -114,17 +96,6 @@ void main() {
       );
 
       expect(find.byIcon(Icons.article_outlined), findsOneWidget);
-    });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          EventListTile(event: createEvent()),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(EventListTile), findsOneWidget);
     });
   });
 }

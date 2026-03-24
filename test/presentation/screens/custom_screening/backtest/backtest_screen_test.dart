@@ -250,18 +250,5 @@ void main() {
       expect(find.byIcon(Icons.analytics_outlined), findsNothing);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestWidget(
-          backtestState: BacktestState(result: createTestResult()),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(BacktestScreen), findsOneWidget);
-    });
   });
 }

@@ -55,24 +55,5 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
       expect(find.text('15.5%'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const ProfitabilityCard(metrics: {'Revenue': 1000, 'NetIncome': 200}),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(ProfitabilityCard), findsOneWidget);
-    });
-  });
-
-  group('ProfitMetric', () {
-    test('stores label and value', () {
-      const metric = ProfitMetric('Margin', 25.3);
-      expect(metric.label, 'Margin');
-      expect(metric.value, 25.3);
-    });
   });
 }

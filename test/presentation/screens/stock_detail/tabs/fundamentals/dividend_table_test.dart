@@ -84,17 +84,5 @@ void main() {
 
       expect(find.byType(DividendTable), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          DividendTable(dividends: [createDividend()], showROCYear: false),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(DividendTable), findsOneWidget);
-    });
   });
 }

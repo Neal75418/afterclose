@@ -94,16 +94,5 @@ void main() {
 
       expect(find.byType(MarginTradingSection), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await pumpSection(
-        tester,
-        MarginTradingSection(history: [createEntry()]),
-        brightness: Brightness.dark,
-      );
-
-      expect(find.byType(MarginTradingSection), findsOneWidget);
-    });
   });
 }

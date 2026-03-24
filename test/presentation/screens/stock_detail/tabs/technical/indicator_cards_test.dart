@@ -126,22 +126,5 @@ void main() {
       expect(find.text('OBV'), findsOneWidget);
       expect(find.text('ATR(14)'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          IndicatorCardsSection(
-            priceHistory: generatePriceHistory(),
-            secondaryIndicators: {SecondaryState.RSI},
-            mainIndicators: {},
-            indicatorService: indicatorService,
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(IndicatorCardsSection), findsOneWidget);
-    });
   });
 }

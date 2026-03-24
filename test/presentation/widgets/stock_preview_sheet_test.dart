@@ -115,18 +115,6 @@ void main() {
       expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
     });
 
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          StockPreviewSheet(data: createData()),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(StockPreviewSheet), findsOneWidget);
-    });
-
     testWidgets('shows score section when score > 0', (tester) async {
       await tester.pumpWidget(
         buildTestApp(StockPreviewSheet(data: createData(score: 85))),

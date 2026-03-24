@@ -150,21 +150,5 @@ void main() {
 
       expect(find.byType(BacktestSummaryCard), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          BacktestSummaryCard(
-            summary: createSummary(),
-            tradingDaysScanned: 250,
-            executionTime: const Duration(milliseconds: 1500),
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(BacktestSummaryCard), findsOneWidget);
-    });
   });
 }

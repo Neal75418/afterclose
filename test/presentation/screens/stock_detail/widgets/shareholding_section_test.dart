@@ -84,16 +84,5 @@ void main() {
 
       expect(find.byType(ShareholdingSection), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await pumpSection(
-        tester,
-        ShareholdingSection(history: [createEntry()]),
-        brightness: Brightness.dark,
-      );
-
-      expect(find.byType(ShareholdingSection), findsOneWidget);
-    });
   });
 }

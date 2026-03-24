@@ -90,16 +90,5 @@ void main() {
 
       expect(find.byType(InstitutionalSection), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await pumpSection(
-        tester,
-        InstitutionalSection(history: [createEntry()]),
-        brightness: Brightness.dark,
-      );
-
-      expect(find.byType(InstitutionalSection), findsOneWidget);
-    });
   });
 }

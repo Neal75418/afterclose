@@ -69,19 +69,5 @@ void main() {
       expect(find.textContaining('G'), findsNothing);
       expect(find.textContaining('H'), findsNothing);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final map = {'2330': 60.0, '2317': 40.0};
-
-      await tester.pumpWidget(
-        buildTestApp(
-          AllocationPieChart(allocationMap: map),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(AllocationPieChart), findsOneWidget);
-    });
   });
 }

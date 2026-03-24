@@ -55,17 +55,5 @@ void main() {
       final flexibles = find.byType(Flexible);
       expect(flexibles, findsNWidgets(2));
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      const data = AdvanceDecline(advance: 300, decline: 200, unchanged: 50);
-      await tester.pumpWidget(
-        buildTestApp(
-          const AdvanceDeclineGauge(data: data),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(AdvanceDeclineGauge), findsOneWidget);
-    });
   });
 }

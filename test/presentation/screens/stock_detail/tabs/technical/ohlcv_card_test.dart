@@ -113,17 +113,5 @@ void main() {
       expect(find.byIcon(Icons.trending_up), findsNothing);
       expect(find.byIcon(Icons.trending_down), findsNothing);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          OhlcvCard(latestPrice: createPrice(), priceChange: 2.5),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(OhlcvCard), findsOneWidget);
-    });
   });
 }

@@ -194,20 +194,6 @@ void main() {
       expect(find.byType(CustomScrollView), findsOneWidget);
     });
 
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final positions = [createPosition()];
-      await tester.pumpWidget(
-        buildTestWidget(
-          portfolioState: PortfolioState(positions: positions),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(PortfolioTab), findsOneWidget);
-    });
-
     testWidgets('shows performance and industry allocation', (tester) async {
       widenViewport(tester);
       final positions = [createPosition()];

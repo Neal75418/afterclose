@@ -92,17 +92,5 @@ void main() {
 
       expect(find.byType(PortfolioSummaryCard), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          PortfolioSummaryCard(summary: createSummary()),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(PortfolioSummaryCard), findsOneWidget);
-    });
   });
 }

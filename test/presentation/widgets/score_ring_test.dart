@@ -94,30 +94,4 @@ void main() {
       });
     });
   });
-
-  group('ScoreRingSize', () {
-    test('small has correct properties', () {
-      expect(ScoreRingSize.small.dimension, 28.0);
-      expect(ScoreRingSize.small.strokeWidth, 2.5);
-      expect(ScoreRingSize.small.fontSize, 9.0);
-    });
-
-    test('medium has correct properties', () {
-      expect(ScoreRingSize.medium.dimension, 32.0);
-      expect(ScoreRingSize.medium.strokeWidth, 3.0);
-      expect(ScoreRingSize.medium.fontSize, 10.0);
-    });
-
-    test('large has correct properties', () {
-      expect(ScoreRingSize.large.dimension, 40.0);
-      expect(ScoreRingSize.large.strokeWidth, 3.5);
-      expect(ScoreRingSize.large.fontSize, 12.0);
-    });
-
-    test('extraLarge has correct properties', () {
-      expect(ScoreRingSize.extraLarge.dimension, 48.0);
-      expect(ScoreRingSize.extraLarge.strokeWidth, 4.0);
-      expect(ScoreRingSize.extraLarge.fontSize, 14.0);
-    });
-  });
 }

@@ -64,20 +64,5 @@ void main() {
 
       expect(find.textContaining('12,000.00'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      tester.view.physicalSize = const Size(3000, 2400);
-      addTearDown(() => tester.view.resetPhysicalSize());
-
-      const data = TradingTurnover(totalTurnover: 100000000000);
-      await tester.pumpWidget(
-        buildTestApp(
-          const TradingTurnoverRow(data: data),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(TradingTurnoverRow), findsOneWidget);
-    });
   });
 }

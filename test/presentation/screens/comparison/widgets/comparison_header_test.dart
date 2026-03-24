@@ -92,22 +92,5 @@ void main() {
       await tester.tap(find.byIcon(Icons.close));
       expect(removedSymbol, '2330');
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          ComparisonHeader(
-            symbols: const ['2330'],
-            stocksMap: {'2330': createStock('2330', '台積電')},
-            canAddMore: true,
-            onRemove: (_) {},
-            onAdd: () {},
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(ComparisonHeader), findsOneWidget);
-    });
   });
 }

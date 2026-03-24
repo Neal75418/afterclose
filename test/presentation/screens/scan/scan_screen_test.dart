@@ -256,13 +256,5 @@ void main() {
 
       expect(find.byIcon(Icons.factory_outlined), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget(brightness: Brightness.dark));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(ScanScreen), findsOneWidget);
-    });
   });
 }

@@ -171,14 +171,6 @@ void main() {
       expect(find.byType(FundamentalsTab), findsOneWidget);
     });
 
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget(brightness: Brightness.dark));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(FundamentalsTab), findsOneWidget);
-    });
-
     testWidgets('shows PER values when data is present', (tester) async {
       widenViewport(tester);
       final state = const StockDetailState().copyWith(

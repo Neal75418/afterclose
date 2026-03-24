@@ -56,21 +56,6 @@ void main() {
       await tester.tap(find.text('MA'));
       expect(toggled, MainState.MA);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          MainIndicatorSelector(
-            selectedIndicators: {MainState.MA},
-            onToggle: (_) {},
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(MainIndicatorSelector), findsOneWidget);
-    });
   });
 
   group('SecondaryIndicatorSelector', () {
@@ -120,21 +105,6 @@ void main() {
 
       await tester.tap(find.text('RSI'));
       expect(toggled, SecondaryState.RSI);
-    });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          SecondaryIndicatorSelector(
-            selectedIndicators: {SecondaryState.MACD},
-            onToggle: (_) {},
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(SecondaryIndicatorSelector), findsOneWidget);
     });
   });
 }

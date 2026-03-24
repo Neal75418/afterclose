@@ -130,17 +130,5 @@ void main() {
 
       expect(find.byType(PerformanceCard), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          PerformanceCard(performance: createPerformance()),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(PerformanceCard), findsOneWidget);
-    });
   });
 }

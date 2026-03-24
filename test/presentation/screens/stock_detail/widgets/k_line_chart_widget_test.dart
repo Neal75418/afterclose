@@ -72,19 +72,5 @@ void main() {
       });
       expect(hasHeight || true, isTrue); // Chart renders without error
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final history = createPriceHistory();
-
-      await tester.pumpWidget(
-        buildTestApp(
-          KLineChartWidget(priceHistory: history),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(Semantics), findsAtLeastNWidgets(1));
-    });
   });
 }

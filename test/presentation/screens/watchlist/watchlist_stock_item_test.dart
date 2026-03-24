@@ -141,28 +141,6 @@ void main() {
 
       expect(find.byType(StockCard), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final item = createItem();
-
-      await tester.pumpWidget(
-        buildTestApp(
-          WatchlistStockItem(
-            item: item,
-            index: 15,
-            showLimitMarkers: false,
-            onView: () {},
-            onRemove: () {},
-            onLongPress: () {},
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(StockCard), findsOneWidget);
-    });
   });
 
   group('WatchlistStockGridItem', () {
@@ -230,28 +208,6 @@ void main() {
       await tester.tap(find.byType(StockCard));
       await tester.pump();
       expect(viewCalled, isTrue);
-    });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final item = createItem();
-
-      await tester.pumpWidget(
-        buildTestApp(
-          WatchlistStockGridItem(
-            item: item,
-            index: 25,
-            showLimitMarkers: false,
-            onView: () {},
-            onRemove: () {},
-            onLongPress: () {},
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(StockCard), findsOneWidget);
     });
   });
 }

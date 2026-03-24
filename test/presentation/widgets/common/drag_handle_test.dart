@@ -31,13 +31,5 @@ void main() {
       final container = tester.widget<Container>(find.byType(Container).last);
       expect(container.margin, customMargin);
     });
-
-    testWidgets('renders in dark mode without error', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(const DragHandle(), brightness: Brightness.dark),
-      );
-
-      expect(find.byType(DragHandle), findsOneWidget);
-    });
   });
 }

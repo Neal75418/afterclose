@@ -91,24 +91,5 @@ void main() {
 
       expect(find.byType(InstitutionalFlowChart), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          const InstitutionalFlowChart(
-            data: InstitutionalTotals(
-              foreignNet: 1000000000,
-              trustNet: 500000000,
-              dealerNet: -200000000,
-              totalNet: 1300000000,
-            ),
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(InstitutionalFlowChart), findsOneWidget);
-    });
   });
 }

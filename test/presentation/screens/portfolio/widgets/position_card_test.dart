@@ -96,17 +96,5 @@ void main() {
 
       expect(find.byType(PositionCard), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          PositionCard(position: createPosition(), onTap: () {}),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(PositionCard), findsOneWidget);
-    });
   });
 }

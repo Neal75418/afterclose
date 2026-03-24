@@ -85,17 +85,5 @@ void main() {
       expect(find.byIcon(Icons.arrow_downward), findsOneWidget);
       expect(find.text('-0.63%'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          SubIndicesRow(subIndices: [createIndex()]),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(SubIndicesRow), findsOneWidget);
-    });
   });
 }

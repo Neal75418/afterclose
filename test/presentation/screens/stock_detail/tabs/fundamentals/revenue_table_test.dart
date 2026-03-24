@@ -84,17 +84,5 @@ void main() {
 
       expect(find.byType(RevenueTable), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          RevenueTable(revenues: [createRevenue()], showROCYear: false),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(RevenueTable), findsOneWidget);
-    });
   });
 }

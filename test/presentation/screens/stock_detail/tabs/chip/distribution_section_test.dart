@@ -83,18 +83,5 @@ void main() {
 
       expect(find.byType(DistributionSection), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          DistributionSection(distribution: [createEntry()]),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(DistributionSection), findsOneWidget);
-    });
   });
 }

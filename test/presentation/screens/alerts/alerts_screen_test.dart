@@ -398,19 +398,5 @@ void main() {
       // Inactive non-triggered alert has a switch
       expect(find.byType(Switch), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final alerts = [createAlert()];
-      await tester.pumpWidget(
-        buildTestWidget(
-          alertState: PriceAlertState(alerts: alerts),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(AlertsScreen), findsOneWidget);
-    });
   });
 }

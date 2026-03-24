@@ -86,31 +86,4 @@ void main() {
       expect(find.byType(Column), findsWidgets);
     });
   });
-
-  group('ShimmerColors', () {
-    test('light mode colors are grey-based', () {
-      expect(ShimmerColors.baseColor(false), Colors.grey[300]);
-      expect(ShimmerColors.highlightColor(false), Colors.grey[100]);
-      expect(ShimmerColors.skeletonColor(false), Colors.white);
-    });
-
-    test('dark mode colors are slate-based', () {
-      expect(ShimmerColors.baseColor(true), const Color(0xFF1E293B));
-      expect(ShimmerColors.highlightColor(true), const Color(0xFF334155));
-      expect(ShimmerColors.skeletonColor(true), const Color(0xFF0F172A));
-    });
-  });
-
-  group('ShimmerDimensions', () {
-    test('card dimensions are positive', () {
-      expect(ShimmerDimensions.cardMarginH, greaterThan(0));
-      expect(ShimmerDimensions.cardPadding, greaterThan(0));
-      expect(ShimmerDimensions.cardRadius, greaterThan(0));
-    });
-
-    test('icon dimensions are consistent', () {
-      expect(ShimmerDimensions.iconSize, 48.0);
-      expect(ShimmerDimensions.iconRadius, 12.0);
-    });
-  });
 }

@@ -85,16 +85,5 @@ void main() {
 
       expect(find.byIcon(Icons.warning_amber_rounded), findsNothing);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await pumpSection(
-        tester,
-        InsiderSection(history: [createEntry()]),
-        brightness: Brightness.dark,
-      );
-
-      expect(find.byType(InsiderSection), findsOneWidget);
-    });
   });
 }

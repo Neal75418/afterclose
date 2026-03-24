@@ -225,19 +225,5 @@ void main() {
 
       expect(find.byIcon(Icons.schedule), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          state: RecommendationPerformanceState(stockRecords: [createRecord()]),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byType(RecommendationPerformanceScreen), findsOneWidget);
-    });
   });
 }

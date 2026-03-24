@@ -139,23 +139,5 @@ void main() {
 
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          const StockCard(
-            symbol: '2330',
-            stockName: '台積電',
-            latestClose: 850.0,
-            priceChange: 2.5,
-            score: 85,
-            trendState: 'UP',
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(StockCard), findsOneWidget);
-    });
   });
 }

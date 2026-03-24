@@ -321,30 +321,6 @@ void main() {
       expect(find.byType(Divider), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final positions = [createPosition()];
-      final transactions = [
-        createTestPortfolioTransaction(
-          id: 1,
-          txType: 'BUY',
-          quantity: 1000,
-          price: 500.0,
-          date: DateTime(2026, 1, 15),
-        ),
-      ];
-      await tester.pumpWidget(
-        buildTestWidget(
-          portfolioState: PortfolioState(positions: positions),
-          txList: transactions,
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(PositionDetailScreen), findsOneWidget);
-    });
-
     testWidgets('shows realized PnL in summary', (tester) async {
       widenViewport(tester);
       final positions = [

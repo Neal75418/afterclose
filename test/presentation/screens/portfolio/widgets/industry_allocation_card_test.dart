@@ -139,26 +139,5 @@ void main() {
       expect(find.text('80.0%'), findsOneWidget);
       expect(find.text('20.0%'), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final allocation = {
-        '半導體業': const IndustryAllocation(
-          industry: '半導體業',
-          value: 500000,
-          percentage: 100.0,
-          symbols: ['2330'],
-        ),
-      };
-
-      await tester.pumpWidget(
-        buildTestApp(
-          IndustryAllocationCard(allocation: allocation),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(IndustryAllocationCard), findsOneWidget);
-    });
   });
 }

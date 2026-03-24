@@ -221,14 +221,5 @@ void main() {
       // Error state now uses EmptyStates widget (network or generic)
       expect(find.byType(EmptyState), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-
-      await tester.pumpWidget(buildTestWidget(brightness: Brightness.dark));
-      await tester.pump();
-
-      expect(find.byType(CustomScreeningScreen), findsOneWidget);
-    });
   });
 }

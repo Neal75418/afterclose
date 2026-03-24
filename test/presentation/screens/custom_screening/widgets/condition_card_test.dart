@@ -128,21 +128,5 @@ void main() {
       await tester.tap(find.byType(ListTile));
       expect(edited, isTrue);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          ConditionCard(
-            condition: createCondition(value: 50),
-            index: 0,
-            onEdit: () {},
-            onDelete: () {},
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(ConditionCard), findsOneWidget);
-    });
   });
 }

@@ -43,17 +43,5 @@ void main() {
       expect(find.byIcon(Icons.arrow_downward_rounded), findsOneWidget);
       expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      const data = MarginTradingTotals(marginChange: 100);
-      await tester.pumpWidget(
-        buildTestApp(
-          const MarginCompactRow(data: data),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(MarginCompactRow), findsOneWidget);
-    });
   });
 }

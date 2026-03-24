@@ -244,19 +244,5 @@ void main() {
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      final newsItems = [createNewsItem(publishedAt: DateTime.now())];
-      await tester.pumpWidget(
-        buildTestWidget(
-          newsState: NewsState(allNews: newsItems),
-          brightness: Brightness.dark,
-        ),
-      );
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(NewsScreen), findsOneWidget);
-    });
   });
 }

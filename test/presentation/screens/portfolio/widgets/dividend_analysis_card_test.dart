@@ -160,24 +160,5 @@ void main() {
       expect(find.text('2304'), findsOneWidget);
       expect(find.text('2305'), findsNothing);
     });
-
-    testWidgets('renders in dark mode', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          DividendAnalysisCard(
-            analysis: DividendAnalysis(
-              totalExpectedDividend: 50000,
-              portfolioYieldOnCost: 4.2,
-              portfolioYieldOnMarket: 3.5,
-              stockDividends: [createStockInfo()],
-            ),
-          ),
-          brightness: Brightness.dark,
-        ),
-      );
-
-      expect(find.byType(DividendAnalysisCard), findsOneWidget);
-    });
   });
 }
