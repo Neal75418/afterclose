@@ -24,7 +24,7 @@ class ShareholdingSection extends StatelessWidget {
             title: 'chip.sectionShareholding'.tr(),
             icon: Icons.language,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           _buildEmpty(theme),
         ],
       );
@@ -55,11 +55,11 @@ class ShareholdingSection extends StatelessWidget {
           title: 'chip.sectionShareholding'.tr(),
           icon: Icons.language,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
 
         // Summary card
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(DesignTokens.spacing12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -76,7 +76,7 @@ class ShareholdingSection extends StatelessWidget {
                         color: theme.colorScheme.outline,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: DesignTokens.spacing4),
                     Text(
                       '${ratio.toStringAsFixed(2)}%',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -87,7 +87,10 @@ class ShareholdingSection extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.spacing8,
+                  vertical: DesignTokens.spacing4,
+                ),
                 decoration: BoxDecoration(
                   color: _trendColor(trendKey).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -103,7 +106,7 @@ class ShareholdingSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: DesignTokens.spacing8),
 
         // Trend chart
         MiniTrendChart(
@@ -116,7 +119,7 @@ class ShareholdingSection extends StatelessWidget {
 
   Widget _buildEmpty(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(DesignTokens.spacing24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),

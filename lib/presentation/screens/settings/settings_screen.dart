@@ -130,7 +130,7 @@ class SettingsScreen extends ConsumerWidget {
             _buildVersionTile(theme, ref),
           ]),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: DesignTokens.spacing32),
         ],
       ),
     );
@@ -146,7 +146,12 @@ class SettingsScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+          padding: const EdgeInsets.fromLTRB(
+            DesignTokens.spacing20,
+            DesignTokens.spacing24,
+            DesignTokens.spacing20,
+            DesignTokens.spacing8,
+          ),
           child: Text(
             title,
             style: theme.textTheme.titleSmall?.copyWith(
@@ -156,7 +161,9 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing16,
+          ),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
@@ -218,7 +225,7 @@ class SettingsScreen extends ConsumerWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: DesignTokens.spacing4),
           Icon(
             Icons.chevron_right,
             size: 20,
@@ -263,7 +270,7 @@ class SettingsScreen extends ConsumerWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: DesignTokens.spacing4),
           Icon(
             Icons.chevron_right,
             size: 20,
@@ -370,7 +377,7 @@ class SettingsScreen extends ConsumerWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: DesignTokens.spacing4),
           Icon(
             Icons.chevron_right,
             size: 20,
@@ -477,7 +484,9 @@ class SettingsScreen extends ConsumerWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+          borderRadius: BorderRadius.all(
+            Radius.circular(DesignTokens.radiusLg),
+          ),
         ),
         child: const Icon(
           Icons.show_chart_rounded,
@@ -486,9 +495,9 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
       children: [
-        const SizedBox(height: 16),
+        const SizedBox(height: DesignTokens.spacing16),
         Text('settings.aboutDescription'.tr()),
-        const SizedBox(height: 16),
+        const SizedBox(height: DesignTokens.spacing16),
         Text(
           '© ${DateTime.now().year} AfterClose',
           style: Theme.of(context).textTheme.bodySmall,

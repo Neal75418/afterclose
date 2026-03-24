@@ -40,14 +40,14 @@ class DividendTable extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: [
             // 平均值摘要列
             if (displayData.isNotEmpty)
               Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(DesignTokens.spacing12),
+                margin: const EdgeInsets.only(bottom: DesignTokens.spacing12),
                 decoration: BoxDecoration(
                   color: AppTheme.dividendColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -63,7 +63,7 @@ class DividendTable extends StatelessWidget {
                       size: 16,
                       color: AppTheme.dividendColor,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Text(
                       S.dividendYearAverage(displayData.length),
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -98,7 +98,7 @@ class DividendTable extends StatelessWidget {
                 textAlign: TextAlign.end,
               ),
             ]),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final div = entry.value;

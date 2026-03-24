@@ -43,7 +43,7 @@ class MarginCompactRow extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
         Row(
           children: [
             Expanded(
@@ -54,7 +54,7 @@ class MarginCompactRow extends StatelessWidget {
                 history: marginBalanceHistory,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: DesignTokens.spacing12),
             Expanded(
               child: _MarginItem(
                 label: 'marketOverview.shortBalance'.tr(),
@@ -66,7 +66,7 @@ class MarginCompactRow extends StatelessWidget {
           ],
         ),
         if (data.marginBalance > 0 && data.shortBalance > 0) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           _ShortMarginRatioRow(
             ratio: data.shortBalance / data.marginBalance * 100,
           ),
@@ -85,7 +85,10 @@ class _ShortMarginRatioRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing6,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         color: theme.colorScheme.surfaceContainerLowest,
@@ -140,7 +143,10 @@ class _MarginItem extends StatelessWidget {
         : Icons.remove;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing10,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color: theme.colorScheme.surfaceContainerLowest,
@@ -156,7 +162,7 @@ class _MarginItem extends StatelessWidget {
             ),
             child: Icon(icon, size: 14, color: color),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -167,7 +173,7 @@ class _MarginItem extends StatelessWidget {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: DesignTokens.spacing2),
                 Text(
                   _formatSheets(change),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -191,7 +197,7 @@ class _MarginItem extends StatelessWidget {
                 ],
                 // 30日趨勢 sparkline
                 if (history != null && history!.length >= 2) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: DesignTokens.spacing6),
                   MiniTrendChart(
                     dataPoints: history!,
                     height: 28,

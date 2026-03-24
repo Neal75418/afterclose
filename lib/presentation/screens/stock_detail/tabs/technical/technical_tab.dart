@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:k_chart_plus/k_chart_plus.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/indicator_cards.dart';
@@ -123,7 +124,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
               size: 64,
               color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
             Text(
               'stockDetail.noTechnicalData'.tr(),
               style: theme.textTheme.bodyLarge?.copyWith(
@@ -148,7 +149,7 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
     return SingleChildScrollView(
       primary: false,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -157,18 +158,18 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             title: 'stockDetail.klineChart'.tr(),
             icon: Icons.candlestick_chart,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           // 主圖指標選擇（MA、BOLL）
           MainIndicatorSelector(
             selectedIndicators: _mainIndicators,
             onToggle: _toggleMainIndicator,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
 
           // 時間區間選擇
           _buildTimeRangeSelector(theme),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           // 含指標的 K 線圖
           KLineChartWidget(
@@ -178,19 +179,19 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
             height: totalChartHeight,
             maDayList: const [5, 10, 20, 60],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 副圖指標選擇（RSI、KD、MACD）
           SectionHeader(
             title: 'stockDetail.secondaryIndicators'.tr(),
             icon: Icons.show_chart,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           SecondaryIndicatorSelector(
             selectedIndicators: _secondaryIndicators,
             onToggle: _toggleSecondaryIndicator,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // OHLCV 資料卡片
           OhlcvCard(
@@ -200,12 +201,12 @@ class _TechnicalTabState extends ConsumerState<TechnicalTab> {
 
           // 詳細指標數值
           if (_secondaryIndicators.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
             SectionHeader(
               title: 'stockDetail.indicatorValues'.tr(),
               icon: Icons.analytics,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             IndicatorCardsSection(
               priceHistory: priceState.priceHistory,
               secondaryIndicators: _secondaryIndicators,

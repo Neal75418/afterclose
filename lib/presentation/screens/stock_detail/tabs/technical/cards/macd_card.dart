@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
@@ -61,7 +62,7 @@ class MACDCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: DesignTokens.spacing4),
                     Text(
                       macdSignal,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -86,7 +87,7 @@ class MACDCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [

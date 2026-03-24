@@ -61,7 +61,7 @@ class ATRCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -83,7 +83,7 @@ class ATRCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: DesignTokens.spacing4),
                 Row(
                   children: [
                     Text(
@@ -92,7 +92,7 @@ class ATRCard extends StatelessWidget {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: DesignTokens.spacing4),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,

@@ -23,19 +23,19 @@ class InstitutionalSection extends StatelessWidget {
         // 摘要卡片
         if (history.isNotEmpty) _buildSummary(context),
 
-        if (history.isNotEmpty) const SizedBox(height: 12),
+        if (history.isNotEmpty) const SizedBox(height: DesignTokens.spacing12),
 
         SectionHeader(
           title: 'chip.sectionInstitutional'.tr(),
           icon: Icons.business,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
 
         if (history.isEmpty)
           buildEmptyState(context, 'chip.noData'.tr())
         else ...[
           _buildTrendChart(),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           _buildTable(context),
         ],
       ],
@@ -60,7 +60,7 @@ class InstitutionalSection extends StatelessWidget {
             AppTheme.foreignColor,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: buildSummaryCard(
             context,
@@ -70,7 +70,7 @@ class InstitutionalSection extends StatelessWidget {
             AppTheme.investmentTrustColor,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: buildSummaryCard(
             context,
@@ -105,12 +105,15 @@ class InstitutionalSection extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: [
             // 標題列
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              padding: const EdgeInsets.symmetric(
+                vertical: DesignTokens.spacing8,
+                horizontal: DesignTokens.spacing4,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerLow,
                 borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -145,7 +148,7 @@ class InstitutionalSection extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             ..._getDeduplicatedData(history).asMap().entries.map((entry) {
               final index = entry.key;
               final inst = entry.value;

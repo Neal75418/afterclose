@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/connectivity_provider.dart';
 
@@ -94,7 +95,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                 : NavigationRailLabelType.selected,
             leading: isExtended
                 ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: DesignTokens.spacing16,
+                    ),
                     child: Text(
                       'AfterClose',
                       style: theme.textTheme.titleLarge?.copyWith(
@@ -103,7 +106,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                       ),
                     ),
                   )
-                : const SizedBox(height: 16),
+                : const SizedBox(height: DesignTokens.spacing16),
             destinations: _buildRailDestinations(),
           ),
           VerticalDivider(
@@ -171,7 +174,10 @@ class _OfflineBanner extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing16,
+            vertical: DesignTokens.spacing8,
+          ),
           child: Row(
             children: [
               Icon(
@@ -179,7 +185,7 @@ class _OfflineBanner extends StatelessWidget {
                 size: 16,
                 color: theme.colorScheme.onErrorContainer,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spacing8),
               Expanded(
                 child: Text(
                   'common.offline'.tr(),

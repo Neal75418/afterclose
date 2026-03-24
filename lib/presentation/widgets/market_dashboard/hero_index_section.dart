@@ -53,7 +53,7 @@ class HeroIndexSection extends StatelessWidget {
       children: [
         // Hero 卡片（上市/上櫃共用相同結構，確保高度一致）
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
             color: theme.colorScheme.surfaceContainerLowest,
@@ -77,8 +77,8 @@ class HeroIndexSection extends StatelessWidget {
                   // 漲跌幅 badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+                      horizontal: DesignTokens.spacing8,
+                      vertical: DesignTokens.spacing2,
                     ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
@@ -97,7 +97,7 @@ class HeroIndexSection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
 
               // 大數字 + 漲跌
               Row(
@@ -111,7 +111,7 @@ class HeroIndexSection extends StatelessWidget {
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignTokens.spacing12),
                   Text(
                     '$sign${formatter.format(index.change)}',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -125,7 +125,7 @@ class HeroIndexSection extends StatelessWidget {
 
               // Sparkline 走勢圖
               if (historyData.length >= 2) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: DesignTokens.spacing12),
                 MiniTrendChart(
                   dataPoints: historyData,
                   height: 60,
@@ -140,9 +140,11 @@ class HeroIndexSection extends StatelessWidget {
         // 含息報酬指數比較（卡片外部，僅加權指數顯示）
         // 放在 Container 外確保上市/上櫃卡片高度一致
         if (showBadge) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.spacing6),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing4,
+            ),
             child: _TotalReturnBadge(
               taiexHistory: historyData,
               totalReturnHistory: totalReturnHistory,
@@ -150,7 +152,7 @@ class HeroIndexSection extends StatelessWidget {
           ),
         ] else if (reserveBadgeSpace) ...[
           // 並排模式：為 TPEx 側保留與 badge 等高的空間
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.spacing6),
           const SizedBox(height: 16),
         ],
       ],
@@ -201,7 +203,7 @@ class _TotalReturnBadge extends StatelessWidget {
           size: 12,
           color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: DesignTokens.spacing4),
         Text(
           'marketOverview.totalReturnIndex'.tr(),
           style: theme.textTheme.labelSmall?.copyWith(
@@ -209,9 +211,12 @@ class _TotalReturnBadge extends StatelessWidget {
             fontSize: DesignTokens.fontSizeXs,
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: DesignTokens.spacing6),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing6,
+            vertical: 1,
+          ),
           decoration: BoxDecoration(
             color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(DesignTokens.radiusSm),

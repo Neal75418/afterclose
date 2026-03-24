@@ -33,7 +33,7 @@ class StockDetailHeader extends StatelessWidget {
       label: _buildSemanticLabel(),
       container: true,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -51,7 +51,7 @@ class StockDetailHeader extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildNameRow(theme),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: DesignTokens.spacing4),
                       if (state.reasons.isNotEmpty) _buildReasonTags(theme),
                     ],
                   ),
@@ -59,7 +59,7 @@ class StockDetailHeader extends StatelessWidget {
                 _buildPriceColumn(theme, priceChange, isPositive, priceColor),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             _buildTrendRow(theme),
           ],
         ),
@@ -102,9 +102,12 @@ class StockDetailHeader extends StatelessWidget {
           ),
         ),
         if (state.stockMarket == 'TPEx') ...[
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing6,
+              vertical: DesignTokens.spacing2,
+            ),
             decoration: BoxDecoration(
               color: theme.colorScheme.secondaryContainer,
               borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
@@ -119,10 +122,13 @@ class StockDetailHeader extends StatelessWidget {
           ),
         ],
         if (state.stockIndustry != null && state.stockIndustry!.isNotEmpty) ...[
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.spacing6,
+                vertical: DesignTokens.spacing2,
+              ),
               decoration: BoxDecoration(
                 color: theme.colorScheme.tertiaryContainer,
                 borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
@@ -145,11 +151,14 @@ class StockDetailHeader extends StatelessWidget {
 
   Widget _buildReasonTags(ThemeData theme) {
     return Wrap(
-      spacing: 6,
-      runSpacing: 4,
+      spacing: DesignTokens.spacing6,
+      runSpacing: DesignTokens.spacing4,
       children: state.reasons.take(3).map((reason) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing8,
+            vertical: DesignTokens.spacing2,
+          ),
           decoration: BoxDecoration(
             color: theme.colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -195,7 +204,10 @@ class StockDetailHeader extends StatelessWidget {
         ),
         if (priceChange != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing10,
+              vertical: DesignTokens.spacing4,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isPositive
@@ -219,7 +231,7 @@ class StockDetailHeader extends StatelessWidget {
                   size: 14,
                   color: priceColor,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: DesignTokens.spacing4),
                 Text(
                   _formatDetailChangeText(
                     absChange,
@@ -237,13 +249,15 @@ class StockDetailHeader extends StatelessWidget {
           ),
         if (state.dataDate != null)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: DesignTokens.spacing4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (state.hasDataMismatch)
                   Padding(
-                    padding: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.only(
+                      right: DesignTokens.spacing4,
+                    ),
                     child: Icon(
                       Icons.sync_problem,
                       size: 12,
@@ -276,14 +290,14 @@ class StockDetailHeader extends StatelessWidget {
           icon: trendState?.trendIconData ?? Icons.trending_flat,
           color: trendState?.trendColor ?? AppTheme.neutralColor,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         if (analysis?.supportLevel case final supportLevel?)
           _LevelChip(
             label: 'stockDetail.support'.tr(),
             value: supportLevel,
             color: AppTheme.downColor,
           ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         if (analysis?.resistanceLevel case final resistanceLevel?)
           _LevelChip(
             label: 'stockDetail.resistance'.tr(),
@@ -340,7 +354,10 @@ class _InfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing10,
+        vertical: DesignTokens.spacing6,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -350,7 +367,7 @@ class _InfoChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
+          const SizedBox(width: DesignTokens.spacing6),
           Text(
             label,
             style: theme.textTheme.labelMedium?.copyWith(
@@ -379,7 +396,10 @@ class _LevelChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing10,
+        vertical: DesignTokens.spacing6,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -395,7 +415,7 @@ class _LevelChip extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: DesignTokens.spacing6),
           Text(
             '$label ${value.toStringAsFixed(1)}',
             style: theme.textTheme.labelMedium?.copyWith(

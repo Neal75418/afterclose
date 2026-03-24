@@ -19,7 +19,10 @@ class WarningsSummaryRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: Row(
         children: [
           Icon(
@@ -27,7 +30,7 @@ class WarningsSummaryRow extends StatelessWidget {
             size: 16,
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Text(
             'marketOverview.warnings'.tr(),
             style: theme.textTheme.labelMedium?.copyWith(
@@ -43,7 +46,8 @@ class WarningsSummaryRow extends StatelessWidget {
               color: Colors.orange,
             ),
           ],
-          if (data.attention > 0 && data.disposal > 0) const SizedBox(width: 8),
+          if (data.attention > 0 && data.disposal > 0)
+            const SizedBox(width: DesignTokens.spacing8),
           if (data.disposal > 0) ...[
             _WarningBadge(
               label: 'marketOverview.disposalCount'.tr(
@@ -68,7 +72,10 @@ class _WarningBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: 3,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
         color: color.withValues(alpha: 0.1),

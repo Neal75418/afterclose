@@ -30,7 +30,7 @@ class MetricCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(DesignTokens.spacing12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -44,14 +44,14 @@ class MetricCard extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(DesignTokens.spacing8),
             decoration: BoxDecoration(
               color: accentColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 18, color: accentColor),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
@@ -59,7 +59,7 @@ class MetricCard extends StatelessWidget {
               color: isWarning ? AppTheme.errorColor : null,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: DesignTokens.spacing4),
           Text(
             subtitle ?? label,
             style: theme.textTheme.labelSmall?.copyWith(

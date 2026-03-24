@@ -94,12 +94,14 @@ class InstitutionalFlowChart extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
 
         // 三張法人卡片
         ...items.map(
           (item) => Padding(
-            padding: EdgeInsets.only(bottom: item != items.last ? 6 : 0),
+            padding: EdgeInsets.only(
+              bottom: item != items.last ? DesignTokens.spacing6 : 0,
+            ),
             child: _FlowCard(item: item, maxAbs: maxAbs),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 帶有漸層裝飾線的區塊標題
 ///
@@ -34,7 +35,12 @@ class SectionHeader extends StatelessWidget {
     final isDark = context.isDark;
 
     Widget content = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spacing16,
+        DesignTokens.spacing16,
+        DesignTokens.spacing16,
+        DesignTokens.spacing8,
+      ),
       child: Row(
         children: [
           // 漸層裝飾線
@@ -52,12 +58,12 @@ class SectionHeader extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: DesignTokens.spacing12),
 
           // 圖示（若有提供）
           if (icon != null) ...[
             Icon(icon, size: 20, color: theme.colorScheme.primary),
-            const SizedBox(width: 8),
+            const SizedBox(width: DesignTokens.spacing8),
           ],
 
           // 標題與副標題
@@ -74,7 +80,7 @@ class SectionHeader extends StatelessWidget {
                   ),
                 ),
                 if (subtitle != null) ...[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: DesignTokens.spacing2),
                   Text(
                     subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(

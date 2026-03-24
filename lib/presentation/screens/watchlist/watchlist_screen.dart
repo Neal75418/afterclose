@@ -238,7 +238,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                   const Icon(Icons.check, size: 18)
                 else
                   const SizedBox(width: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Text(sort.label),
               ],
             ),
@@ -287,7 +287,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             child: Row(
               children: [
                 const Icon(Icons.compare_arrows, size: 20),
-                const SizedBox(width: 12),
+                const SizedBox(width: DesignTokens.spacing12),
                 Text('comparison.compare'.tr()),
               ],
             ),
@@ -297,7 +297,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           child: Row(
             children: [
               const Icon(Icons.account_balance_wallet_outlined, size: 20),
-              const SizedBox(width: 12),
+              const SizedBox(width: DesignTokens.spacing12),
               Text('portfolio.title'.tr()),
             ],
           ),
@@ -307,7 +307,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           child: Row(
             children: [
               const Icon(Icons.calendar_month_outlined, size: 20),
-              const SizedBox(width: 12),
+              const SizedBox(width: DesignTokens.spacing12),
               Text('calendar.title'.tr()),
             ],
           ),
@@ -317,7 +317,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           child: Row(
             children: [
               const Icon(Icons.file_download_outlined, size: 20),
-              const SizedBox(width: 12),
+              const SizedBox(width: DesignTokens.spacing12),
               Text('export.exportWatchlist'.tr()),
             ],
           ),
@@ -333,7 +333,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                   const Icon(Icons.check, size: 18)
                 else
                   const SizedBox(width: 18),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Text(group.label),
               ],
             ),
@@ -397,11 +397,11 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                         ),
                       ),
                       if (state.searchQuery.isNotEmpty) ...[
-                        const SizedBox(width: 8),
+                        const SizedBox(width: DesignTokens.spacing8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
+                            horizontal: DesignTokens.spacing8,
+                            vertical: DesignTokens.spacing2,
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.secondaryContainer,
@@ -543,7 +543,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
   /// 載入指示器
   Widget _buildLoadingIndicator(WatchlistState state) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Center(
         child: state.isLoadingMore
             ? const SizedBox(

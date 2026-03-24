@@ -29,8 +29,8 @@ class UpcomingEventsSection extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: DesignTokens.spacing16,
+                    vertical: DesignTokens.spacing8,
                   ),
                   child: Text(
                     'calendar.upcomingTitle'.tr(),
@@ -43,7 +43,9 @@ class UpcomingEventsSection extends StatelessWidget {
                   height: 76,
                   child: ListView.builder(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spacing12,
+                    ),
                     itemCount: events.length,
                     itemBuilder: (context, index) {
                       return _UpcomingEventCard(
@@ -53,7 +55,7 @@ class UpcomingEventsSection extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: DesignTokens.spacing4),
               ],
             ),
     );
@@ -77,8 +79,8 @@ class _UpcomingEventCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         width: 140,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(10),
+        margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing4),
+        padding: const EdgeInsets.all(DesignTokens.spacing10),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -96,7 +98,7 @@ class _UpcomingEventCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: DesignTokens.spacing4),
                 Text(
                   DateFormat.E(context.locale.toString()).format(date),
                   style: theme.textTheme.labelSmall?.copyWith(
@@ -105,7 +107,7 @@ class _UpcomingEventCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: DesignTokens.spacing6),
             Expanded(
               child: Text(
                 event.title,

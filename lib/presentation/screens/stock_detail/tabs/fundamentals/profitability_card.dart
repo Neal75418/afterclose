@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 單一獲利指標的資料容器（標籤 + 百分比值）。
 class ProfitMetric {
@@ -61,7 +62,7 @@ class ProfitabilityCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -72,7 +73,7 @@ class ProfitabilityCard extends StatelessWidget {
                 color: theme.colorScheme.outline,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
             Row(
               children: items
                   .map(
@@ -85,7 +86,7 @@ class ProfitabilityCard extends StatelessWidget {
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: DesignTokens.spacing4),
                           Text(
                             '${m.value.toStringAsFixed(1)}%',
                             style: theme.textTheme.bodyMedium?.copyWith(

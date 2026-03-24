@@ -58,7 +58,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
 
         // 水平分段條
         ClipRRect(
@@ -88,7 +88,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
 
         // 數字行
         Row(
@@ -121,7 +121,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
         // 漲停/跌停家數
         if (limitUpDown != null &&
             (limitUpDown!.limitUp > 0 || limitUpDown!.limitDown > 0)) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -130,7 +130,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
                 count: limitUpDown!.limitUp,
                 color: AppTheme.upColor,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: DesignTokens.spacing16),
               _LimitBadge(
                 label: 'marketOverview.limitDown'.tr(),
                 count: limitUpDown!.limitDown,
@@ -143,7 +143,7 @@ class AdvanceDeclineGauge extends StatelessWidget {
         // 30日漲幅比趨勢 sparkline
         if (advanceRatioHistory != null &&
             advanceRatioHistory!.length >= 2) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: DesignTokens.spacing10),
           MiniTrendChart(
             dataPoints: advanceRatioHistory!,
             height: 32,
@@ -173,7 +173,10 @@ class _LimitBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing10,
+        vertical: DesignTokens.spacing4,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
         color: color.withValues(alpha: 0.1),
@@ -189,7 +192,7 @@ class _LimitBadge extends StatelessWidget {
               fontSize: DesignTokens.fontSizeXs,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: DesignTokens.spacing4),
           Text(
             '$count',
             style: theme.textTheme.labelSmall?.copyWith(
@@ -244,7 +247,7 @@ class _StatChip extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: DesignTokens.spacing4),
             Text(
               label,
               style: theme.textTheme.labelSmall?.copyWith(
@@ -254,7 +257,7 @@ class _StatChip extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: DesignTokens.spacing2),
         Text(
           '$value',
           style: theme.textTheme.bodySmall?.copyWith(
@@ -267,7 +270,7 @@ class _StatChip extends StatelessWidget {
           '${percentage.toStringAsFixed(0)}%',
           style: theme.textTheme.labelSmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-            fontSize: 10,
+            fontSize: DesignTokens.fontSizeXs,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),

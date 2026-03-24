@@ -54,10 +54,11 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        left: DesignTokens.spacing16,
+        right: DesignTokens.spacing16,
+        top: DesignTokens.spacing16,
+        bottom:
+            MediaQuery.of(context).viewInsets.bottom + DesignTokens.spacing16,
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -80,7 +81,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 事件標題
             TextField(
@@ -92,7 +93,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
               autofocus: true,
               maxLength: 100,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
 
             // 事件日期
             InkWell(
@@ -106,7 +107,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                 child: Text(DateFormat('yyyy-MM-dd').format(_date)),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
 
             // 關聯股票（選填）
             TextField(
@@ -134,7 +135,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             if (_searchResults.isNotEmpty && _selectedSymbol == null)
               Container(
                 constraints: const BoxConstraints(maxHeight: 150),
-                margin: const EdgeInsets.only(top: 4),
+                margin: const EdgeInsets.only(top: DesignTokens.spacing4),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -161,7 +162,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                 ),
               ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
 
             // 描述
             TextField(
@@ -173,7 +174,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
               maxLines: 3,
               maxLength: 500,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: DesignTokens.spacing24),
 
             // 按鈕
             Row(
@@ -186,7 +187,7 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: DesignTokens.spacing12),
                 Expanded(
                   child: FilledButton(
                     onPressed: _submit,

@@ -40,7 +40,7 @@ class IndustryPerformanceRow extends StatelessWidget {
             ),
             // 桌面模式有截斷時顯示提示
             if (isDesktop && industries.length > _desktopMaxItems) ...[
-              const SizedBox(width: 6),
+              const SizedBox(width: DesignTokens.spacing6),
               Text(
                 'marketOverview.industryTopBottom'.tr(
                   namedArgs: {'count': '${_desktopMaxItems ~/ 2}'},
@@ -55,11 +55,11 @@ class IndustryPerformanceRow extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
         if (isDesktop)
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: DesignTokens.spacing8,
+            runSpacing: DesignTokens.spacing8,
             children: _desktopItems().map((ind) {
               return SizedBox(
                 width: 120,
@@ -74,7 +74,8 @@ class IndustryPerformanceRow extends StatelessWidget {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: industries.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) =>
+                  const SizedBox(width: DesignTokens.spacing8),
               itemBuilder: (context, index) {
                 return SizedBox(
                   width: 120,
@@ -137,7 +138,12 @@ class _IndustryCard extends StatelessWidget {
           // 內容
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 6, 10, 8),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.spacing10,
+                DesignTokens.spacing6,
+                DesignTokens.spacing10,
+                DesignTokens.spacing8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -161,7 +167,7 @@ class _IndustryCard extends StatelessWidget {
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: DesignTokens.spacing4),
                       // 漲/跌家數（帶 ▲▼ 標記）
                       // 用 Expanded + FittedBox 防止大數字溢出
                       Expanded(

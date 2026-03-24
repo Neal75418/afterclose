@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 /// API Token 設定項目
@@ -94,7 +95,7 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
                 enableSuggestions: false,
                 onChanged: (_) => setDialogState(() {}),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
               InkWell(
                 onTap: () => _openRegisterUrl(),
                 child: Text(
@@ -253,7 +254,10 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
           onTap: _showTokenDialog,
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing16,
+            vertical: DesignTokens.spacing8,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -278,7 +282,10 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
         ),
         if (_testResult != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing16,
+              vertical: DesignTokens.spacing4,
+            ),
             child: Row(
               children: [
                 Icon(
@@ -286,7 +293,7 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
                   size: 16,
                   color: _testSuccess == true ? Colors.green : Colors.red,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Expanded(
                   child: Text(
                     _testResult!,
@@ -298,7 +305,7 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
               ],
             ),
           ),
-        const SizedBox(height: 8),
+        const SizedBox(height: DesignTokens.spacing8),
       ],
     );
   }

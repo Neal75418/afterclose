@@ -33,7 +33,10 @@ class SubIndicesRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing16,
+            vertical: DesignTokens.spacing8,
+          ),
           child: Text(
             'marketOverview.industryIndices'.tr(),
             style: theme.textTheme.labelMedium?.copyWith(
@@ -45,10 +48,12 @@ class SubIndicesRow extends StatelessWidget {
         // 桌面版：使用 Wrap 排列；手機版：水平滾動
         if (isDesktop)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing12,
+            ),
             child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: DesignTokens.spacing8,
+              runSpacing: DesignTokens.spacing8,
               children: subIndices.map((idx) {
                 final history = historyMap[idx.name] ?? [];
                 return SizedBox(
@@ -63,7 +68,9 @@ class SubIndicesRow extends StatelessWidget {
             height: 96, // 固定高度
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.spacing12,
+              ),
               itemCount: subIndices.length,
               itemBuilder: (context, index) {
                 final idx = subIndices[index];
@@ -71,7 +78,9 @@ class SubIndicesRow extends StatelessWidget {
 
                 return Container(
                   width: 140, // 固定寬度
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.spacing4,
+                  ),
                   child: _SubIndexCard(index: idx, history: history),
                 );
               },
@@ -107,7 +116,7 @@ class _SubIndexCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(DesignTokens.spacing10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -122,7 +131,7 @@ class _SubIndexCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
 
             // 指數值
             Text(
@@ -132,7 +141,7 @@ class _SubIndexCard extends StatelessWidget {
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
 
             // 漲跌幅
             Row(
@@ -143,7 +152,7 @@ class _SubIndexCard extends StatelessWidget {
                   size: 12,
                   color: color,
                 ),
-                const SizedBox(width: 2),
+                const SizedBox(width: DesignTokens.spacing2),
                 Text(
                   '${isPositive ? '+' : ''}${index.changePercent.toStringAsFixed(2)}%',
                   style: theme.textTheme.labelSmall?.copyWith(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
@@ -194,7 +195,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
                     onAdd: _showStockPicker,
                   ),
 
-                const SizedBox(height: 4),
+                const SizedBox(height: DesignTokens.spacing4),
 
                 // 主要內容
                 Expanded(
@@ -217,21 +218,21 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             size: 64,
             color: theme.colorScheme.outlineVariant,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
           Text(
             'comparison.needMoreStocks'.tr(),
             style: theme.textTheme.bodyLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Text(
             'comparison.addStockHint'.tr(),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: DesignTokens.spacing24),
           FilledButton.icon(
             onPressed: _showStockPicker,
             icon: const Icon(Icons.add),
@@ -266,7 +267,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 雷達圖
           Semantics(
@@ -275,7 +276,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             child: RadarComparisonChart(state: state),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 比較表格
           Semantics(
@@ -284,7 +285,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             child: ComparisonTable(state: state),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: DesignTokens.spacing32),
         ],
       ),
     );

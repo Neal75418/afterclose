@@ -83,11 +83,13 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
         builder: (context, scrollController) => Column(
           children: [
             // 拖曳把手
-            const DragHandle(margin: EdgeInsets.symmetric(vertical: 8)),
+            const DragHandle(
+              margin: EdgeInsets.symmetric(vertical: DesignTokens.spacing8),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 controller: scrollController,
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(DesignTokens.spacing16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -96,8 +98,8 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: DesignTokens.spacing8,
+                            vertical: DesignTokens.spacing4,
                           ),
                           decoration: BoxDecoration(
                             color: theme.colorScheme.secondaryContainer,
@@ -112,7 +114,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: DesignTokens.spacing8),
                         Text(
                           _formatFullTime(item.publishedAt),
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -121,7 +123,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: DesignTokens.spacing16),
                     // 標題
                     Text(
                       item.title,
@@ -131,17 +133,17 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                     ),
                     // 相關股票
                     if (relatedStocks.isNotEmpty) ...[
-                      const SizedBox(height: 16),
+                      const SizedBox(height: DesignTokens.spacing16),
                       Text(
                         S.newsRelatedStocks,
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: DesignTokens.spacing8),
                       Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: DesignTokens.spacing8,
+                        runSpacing: DesignTokens.spacing8,
                         children: relatedStocks.map((symbol) {
                           return ActionChip(
                             label: Text(symbol),
@@ -154,7 +156,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
                         }).toList(),
                       ),
                     ],
-                    const SizedBox(height: 24),
+                    const SizedBox(height: DesignTokens.spacing24),
                     // 在瀏覽器開啟按鈕
                     SizedBox(
                       width: double.infinity,
@@ -284,10 +286,13 @@ class _SourceFilterChips extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+        spacing: DesignTokens.spacing8,
+        runSpacing: DesignTokens.spacing8,
         children: [
           for (final source in NewsSource.values)
             if (source == NewsSource.all || (sourceCounts[source] ?? 0) > 0)
@@ -394,7 +399,10 @@ class _SectionHeader extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       color: theme.colorScheme.surfaceContainerLow,
       child: Row(
         children: [
@@ -405,9 +413,12 @@ class _SectionHeader extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing6,
+              vertical: DesignTokens.spacing2,
+            ),
             decoration: BoxDecoration(
               color: theme.colorScheme.secondaryContainer,
               borderRadius: BorderRadius.circular(10),
@@ -452,7 +463,10 @@ class _NewsListItem extends StatelessWidget {
         onTap(item, relatedStocks);
       },
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing16,
+          vertical: DesignTokens.spacing12,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -465,14 +479,14 @@ class _NewsListItem extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             // 來源與時間
             Row(
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
+                    horizontal: DesignTokens.spacing6,
+                    vertical: DesignTokens.spacing2,
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondaryContainer,
@@ -485,7 +499,7 @@ class _NewsListItem extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Text(
                   _formatTime(item.publishedAt),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -502,10 +516,10 @@ class _NewsListItem extends StatelessWidget {
             ),
             // 相關股票
             if (relatedStocks.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               Wrap(
-                spacing: 4,
-                runSpacing: 4,
+                spacing: DesignTokens.spacing4,
+                runSpacing: DesignTokens.spacing4,
                 children: [
                   ...relatedStocks.take(maxVisibleStocks).map((symbol) {
                     return _StockChip(
@@ -571,7 +585,10 @@ class _StockChip extends StatelessWidget {
         onTap();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing8,
+          vertical: DesignTokens.spacing4,
+        ),
         decoration: BoxDecoration(
           color: isOverflow
               ? theme.colorScheme.tertiaryContainer

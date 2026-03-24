@@ -59,7 +59,7 @@ class OBVCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -81,7 +81,7 @@ class OBVCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: DesignTokens.spacing4),
                 Text(
                   obvTrend,
                   style: theme.textTheme.bodySmall?.copyWith(color: obvColor),

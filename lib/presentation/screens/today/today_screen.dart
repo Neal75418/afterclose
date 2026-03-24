@@ -252,7 +252,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               actions: [
                 if (isUpdating)
                   const Padding(
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.all(DesignTokens.spacing12),
                     child: SizedBox(
                       width: 24,
                       height: 24,
@@ -288,7 +288,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       child: Row(
                         children: [
                           const Icon(Icons.newspaper_outlined, size: 20),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: DesignTokens.spacing12),
                           Text('nav.news'.tr()),
                         ],
                       ),
@@ -298,7 +298,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                       child: Row(
                         children: [
                           const Icon(Icons.settings_outlined, size: 20),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: DesignTokens.spacing12),
                           Text(S.settings),
                         ],
                       ),
@@ -340,10 +340,15 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             }
             return SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                padding: const EdgeInsets.fromLTRB(
+                  DesignTokens.spacing16,
+                  DesignTokens.spacing16,
+                  DesignTokens.spacing16,
+                  DesignTokens.spacing8,
+                ),
                 child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
+                  spacing: DesignTokens.spacing8,
+                  runSpacing: DesignTokens.spacing4,
                   children: [
                     if (lastUpdate != null)
                       Text(
@@ -641,10 +646,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(S.todayWarningItems),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             ...warnings.map(
               (w) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: DesignTokens.spacing4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

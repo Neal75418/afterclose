@@ -38,10 +38,10 @@ class SentimentGaugeSection extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
 
         Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(DesignTokens.spacing14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
             color: theme.colorScheme.surfaceContainerLowest,
@@ -62,10 +62,10 @@ class SentimentGaugeSection extends StatelessWidget {
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: DesignTokens.spacing10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: DesignTokens.spacing8,
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
@@ -84,11 +84,11 @@ class SentimentGaugeSection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
 
               // 漸層 bar + 三角形指標
               _GradientBar(score: sentiment.score),
-              const SizedBox(height: 14),
+              const SizedBox(height: DesignTokens.spacing14),
 
               // 子指標 grid (2×3)
               if (sentiment.subScores.isNotEmpty)
@@ -96,7 +96,7 @@ class SentimentGaugeSection extends StatelessWidget {
 
               // 趨勢 sparkline
               if (sentimentHistory.length >= 5) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: DesignTokens.spacing10),
                 Row(
                   children: [
                     Text(
@@ -108,7 +108,7 @@ class SentimentGaugeSection extends StatelessWidget {
                         fontSize: DesignTokens.fontSizeXs,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Expanded(
                       child: SizedBox(
                         height: 28,
@@ -188,7 +188,7 @@ class _GradientBar extends StatelessWidget {
         ),
         // 漸層條
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
           child: Container(
             height: 8,
             decoration: const BoxDecoration(
@@ -204,7 +204,7 @@ class _GradientBar extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: DesignTokens.spacing4),
         // 標籤行
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,7 +288,7 @@ class _SubScoresGrid extends StatelessWidget {
 
         return Wrap(
           spacing: spacing,
-          runSpacing: 6,
+          runSpacing: DesignTokens.spacing6,
           children: items.map((ind) {
             final score = subScores[ind.$1]!;
             final color = _scoreColor(score);
@@ -305,7 +305,7 @@ class _SubScoresGrid extends StatelessWidget {
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: DesignTokens.spacing4),
                   Flexible(
                     child: Text(
                       ind.$2.tr(),
@@ -318,7 +318,7 @@ class _SubScoresGrid extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: DesignTokens.spacing4),
                   Text(
                     score.toStringAsFixed(0),
                     style: theme.textTheme.labelSmall?.copyWith(

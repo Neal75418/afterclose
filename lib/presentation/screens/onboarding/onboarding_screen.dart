@@ -86,14 +86,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // 頁面指示圓點
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: DesignTokens.spacing16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   _totalPages,
                   (i) => AnimatedContainer(
                     duration: AnimDurations.standard,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spacing4,
+                    ),
                     width: i == _currentPage ? 24 : 8,
                     height: 8,
                     decoration: BoxDecoration(
@@ -111,7 +113,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
             // 操作按鈕
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              padding: const EdgeInsets.fromLTRB(
+                DesignTokens.spacing24,
+                0,
+                DesignTokens.spacing24,
+                DesignTokens.spacing32,
+              ),
               child: SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -156,7 +163,7 @@ class _OnboardingPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
+      padding: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing32),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -169,7 +176,7 @@ class _OnboardingPage extends StatelessWidget {
             ),
             child: Icon(icon, size: 48, color: iconColor),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: DesignTokens.spacing32),
           Text(
             title,
             style: theme.textTheme.headlineSmall?.copyWith(
@@ -177,7 +184,7 @@ class _OnboardingPage extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
           Text(
             description,
             style: theme.textTheme.bodyLarge?.copyWith(

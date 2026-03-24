@@ -27,11 +27,11 @@ class ComparisonHeader extends StatelessWidget {
       height: 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing12),
         children: [
           for (var i = 0; i < symbols.length; i++)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: DesignTokens.spacing8),
               child: _StockChip(
                 symbol: symbols[i],
                 name: stocksMap[symbols[i]]?.name ?? '',
@@ -42,7 +42,7 @@ class ComparisonHeader extends StatelessWidget {
             ),
           if (canAddMore)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.only(right: DesignTokens.spacing8),
               child: ActionChip(
                 avatar: const Icon(Icons.add, size: 16),
                 label: Text('comparison.addStock'.tr()),

@@ -118,7 +118,7 @@ class StockPreviewSheet extends StatelessWidget {
 
             // 內容區
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(DesignTokens.spacing24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -161,7 +161,7 @@ class StockPreviewSheet extends StatelessWidget {
                         duration: AnimDurations.normal,
                         curve: AnimCurves.bounce,
                       ),
-                      const SizedBox(width: 16),
+                      const SizedBox(width: DesignTokens.spacing16),
 
                       // 代號與名稱
                       Expanded(
@@ -198,10 +198,12 @@ class StockPreviewSheet extends StatelessWidget {
                             ),
                           if (data.priceChange != null)
                             Container(
-                              margin: const EdgeInsets.only(top: 4),
+                              margin: const EdgeInsets.only(
+                                top: DesignTokens.spacing4,
+                              ),
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
+                                horizontal: DesignTokens.spacing10,
+                                vertical: DesignTokens.spacing4,
                               ),
                               decoration: BoxDecoration(
                                 color: priceColor.withValues(alpha: 0.15),
@@ -239,18 +241,18 @@ class StockPreviewSheet extends StatelessWidget {
 
                   // 評分區
                   if (data.score != null && data.score! > 0) ...[
-                    const SizedBox(height: 20),
+                    const SizedBox(height: DesignTokens.spacing20),
                     _buildScoreSection(theme),
                   ],
 
                   // 訊號理由區
                   if (data.reasons.isNotEmpty) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: DesignTokens.spacing16),
                     _buildReasonsSection(theme, isDark),
                   ],
 
                   // 操作按鈕
-                  const SizedBox(height: 24),
+                  const SizedBox(height: DesignTokens.spacing24),
                   Row(
                         children: [
                           Expanded(
@@ -273,7 +275,7 @@ class StockPreviewSheet extends StatelessWidget {
                               ),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
+                                  vertical: DesignTokens.spacing14,
                                 ),
                                 side: BorderSide(
                                   color: data.isInWatchlist
@@ -283,7 +285,7 @@ class StockPreviewSheet extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: DesignTokens.spacing12),
                           Expanded(
                             child: FilledButton.icon(
                               onPressed: () {
@@ -295,7 +297,7 @@ class StockPreviewSheet extends StatelessWidget {
                               label: Text(S.stockViewDetails),
                               style: FilledButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
+                                  vertical: DesignTokens.spacing14,
                                 ),
                                 backgroundColor: AppTheme.primaryColor,
                               ),
@@ -311,7 +313,11 @@ class StockPreviewSheet extends StatelessWidget {
                       .slideY(begin: 0.2, duration: AnimDurations.normal),
 
                   // 底部安全區域
-                  SizedBox(height: MediaQuery.of(context).padding.bottom + 8),
+                  SizedBox(
+                    height:
+                        MediaQuery.of(context).padding.bottom +
+                        DesignTokens.spacing8,
+                  ),
                 ],
               ),
             ),
@@ -336,7 +342,7 @@ class StockPreviewSheet extends StatelessWidget {
           duration: AnimDurations.moderate,
           curve: AnimCurves.bounce,
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: DesignTokens.spacing16),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -369,7 +375,7 @@ class StockPreviewSheet extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             ReasonTags(reasons: data.reasons, translateCodes: true),
           ],
         )

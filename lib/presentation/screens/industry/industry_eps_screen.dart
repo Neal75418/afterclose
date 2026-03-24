@@ -39,7 +39,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
         actions: [
           if (state.quarterLabel.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.only(right: DesignTokens.spacing16),
               child: Center(
                 child: Text(
                   state.quarterLabel,
@@ -130,7 +130,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
         // 資料列
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.only(bottom: 32),
+            padding: const EdgeInsets.only(bottom: DesignTokens.spacing32),
             itemCount: filteredData.length,
             itemBuilder: (context, index) {
               return _buildEpsItem(theme, filteredData[index], index);
@@ -148,7 +148,10 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
       height: 44,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing12,
+          vertical: DesignTokens.spacing6,
+        ),
         itemCount: industries.length + 1, // +1 for "全部"
         itemBuilder: (context, index) {
           final isAll = index == 0;
@@ -156,7 +159,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
           final isSelected = state.selectedIndustry == industry;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 6),
+            padding: const EdgeInsets.only(right: DesignTokens.spacing6),
             child: FilterChip(
               label: Text(
                 isAll ? 'industryEps.all'.tr() : industry!,
@@ -178,8 +181,11 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
 
   Widget _buildTableHeader(ThemeData theme) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing16),
+      padding: const EdgeInsets.symmetric(
+        vertical: DesignTokens.spacing8,
+        horizontal: DesignTokens.spacing12,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -233,8 +239,11 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
     return InkWell(
       onTap: () => context.push(AppRoutes.stockDetail(item.symbol)),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing16),
+        padding: const EdgeInsets.symmetric(
+          vertical: DesignTokens.spacing10,
+          horizontal: DesignTokens.spacing12,
+        ),
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
@@ -258,7 +267,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: DesignTokens.spacing6),
                       Flexible(
                         child: Text(
                           item.companyName,

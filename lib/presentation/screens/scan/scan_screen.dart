@@ -132,7 +132,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       const Icon(Icons.check, size: 18)
                     else
                       const SizedBox(width: 18),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Text(sort.labelKey.tr()),
                   ],
                 ),
@@ -154,7 +154,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               child: Row(
                 children: [
                   const Icon(Icons.tune, size: 20),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: DesignTokens.spacing12),
                   Text('customScreening.title'.tr()),
                 ],
               ),
@@ -170,7 +170,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final theme = Theme.of(context);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing8,
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -189,7 +192,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
               },
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: DesignTokens.spacing8),
             // 目前選中的篩選條件（若非「全部」）
             if (state.filter != ScanFilter.all)
               FilterChip(
@@ -205,7 +208,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
                 },
               ),
-            if (state.filter != ScanFilter.all) const SizedBox(width: 8),
+            if (state.filter != ScanFilter.all)
+              const SizedBox(width: DesignTokens.spacing8),
             // 產業篩選
             if (state.industries.isNotEmpty)
               IndustryFilterChip(
@@ -215,7 +219,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   ref.read(scanProvider.notifier).setIndustryFilter(industry);
                 },
               ),
-            if (state.industries.isNotEmpty) const SizedBox(width: 8),
+            if (state.industries.isNotEmpty)
+              const SizedBox(width: DesignTokens.spacing8),
             // 「更多篩選」按鈕 — 使用主色邊框提升視覺辨識度
             ActionChip(
               avatar: Icon(
@@ -403,7 +408,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   /// 載入指示器
   Widget _buildLoadingIndicator(ScanState state) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Center(
         child: state.isLoadingMore
             ? const SizedBox(

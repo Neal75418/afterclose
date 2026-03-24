@@ -24,7 +24,7 @@ class InsiderSection extends StatelessWidget {
           title: 'chip.sectionInsider'.tr(),
           icon: Icons.shield_outlined,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
         if (history.isEmpty)
           buildEmptyState(context, 'chip.noData'.tr())
         else
@@ -53,7 +53,7 @@ class InsiderSection extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -70,7 +70,7 @@ class InsiderSection extends StatelessWidget {
                           color: theme.colorScheme.outline,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: DesignTokens.spacing4),
                       Text(
                         '${insiderRatio.toStringAsFixed(2)}%',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -90,7 +90,7 @@ class InsiderSection extends StatelessWidget {
                           color: theme.colorScheme.outline,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: DesignTokens.spacing4),
                       Text(
                         '${pledgeRatio.toStringAsFixed(2)}%',
                         style: theme.textTheme.titleMedium?.copyWith(
@@ -104,7 +104,7 @@ class InsiderSection extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: DesignTokens.spacing12),
 
             // 持股變動
             Row(
@@ -115,7 +115,7 @@ class InsiderSection extends StatelessWidget {
                     color: theme.colorScheme.outline,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Text(
                   formatSharesChange(sharesChange),
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -132,9 +132,12 @@ class InsiderSection extends StatelessWidget {
 
             // 質押警示
             if (isHighPledge) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: DesignTokens.spacing8,
+                  vertical: DesignTokens.spacing4,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.downColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
@@ -147,7 +150,7 @@ class InsiderSection extends StatelessWidget {
                       size: 14,
                       color: AppTheme.downColor,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: DesignTokens.spacing4),
                     Text(
                       'chip.pledgeWarning'.tr(),
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -161,19 +164,19 @@ class InsiderSection extends StatelessWidget {
 
             // 董監持股比例趨勢圖（至少 2 筆資料才顯示）
             if (insiderRatioHistory.length >= 2) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
               Divider(
                 height: 1,
                 color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               Text(
                 'chip.insiderRatioTrend'.tr(),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.outline,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: DesignTokens.spacing4),
               MiniTrendChart(
                 dataPoints: insiderRatioHistory,
                 height: 56,

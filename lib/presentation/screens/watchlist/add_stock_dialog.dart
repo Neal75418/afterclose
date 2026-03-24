@@ -157,7 +157,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
             ),
             if (_isSearching)
               const Padding(
-                padding: EdgeInsets.only(top: 12),
+                padding: EdgeInsets.only(top: DesignTokens.spacing12),
                 child: SizedBox(
                   height: 24,
                   width: 24,
@@ -165,7 +165,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
                 ),
               ),
             if (_searchResults.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: DesignTokens.spacing8),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxHeight: 240),
                 child: ListView.builder(
@@ -215,7 +215,7 @@ class _AddStockDialogContentState extends State<_AddStockDialogContent> {
                 _searchResults.isEmpty &&
                 _controller.text.length >= 2)
               Padding(
-                padding: const EdgeInsets.only(top: 12),
+                padding: const EdgeInsets.only(top: DesignTokens.spacing12),
                 child: Text(
                   _searchError
                       ? 'empty.error'.tr()

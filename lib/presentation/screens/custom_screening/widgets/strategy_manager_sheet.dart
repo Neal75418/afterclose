@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 策略儲存/載入 Bottom Sheet
 class StrategyManagerSheet extends ConsumerStatefulWidget {
@@ -58,20 +59,20 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 拖動指示條
               const DragHandle(margin: EdgeInsets.zero),
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
 
               Text(
                 'customScreening.savedStrategies'.tr(),
                 style: theme.textTheme.titleLarge,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
 
               // 已儲存策略列表
               if (state.isLoadingStrategies && state.savedStrategies.isEmpty)
@@ -85,7 +86,9 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
               else if (state.strategiesError != null &&
                   state.savedStrategies.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.spacing24,
+                  ),
                   child: Center(
                     child: Column(
                       children: [
@@ -93,7 +96,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                           Icons.error_outline,
                           color: theme.colorScheme.error,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: DesignTokens.spacing8),
                         Text(
                           state.strategiesError!,
                           style: theme.textTheme.bodyMedium?.copyWith(
@@ -101,7 +104,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: DesignTokens.spacing8),
                         TextButton.icon(
                           onPressed: () => ref
                               .read(customScreeningProvider.notifier)
@@ -115,7 +118,9 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                 )
               else if (state.savedStrategies.isEmpty)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: DesignTokens.spacing24,
+                  ),
                   child: Center(
                     child: Text(
                       'customScreening.noSavedStrategies'.tr(),
@@ -170,7 +175,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                     autofocus: true,
                     onChanged: (_) => setState(() {}),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: DesignTokens.spacing8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -178,7 +183,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                         onPressed: () => setState(() => _showSaveForm = false),
                         child: Text('customScreening.cancel'.tr()),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: DesignTokens.spacing8),
                       FilledButton(
                         onPressed:
                             _nameController.text.trim().isEmpty || _isSaving
@@ -199,7 +204,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                 ],
               ],
 
-              const SizedBox(height: 16),
+              const SizedBox(height: DesignTokens.spacing16),
             ],
           ),
         ),

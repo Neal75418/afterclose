@@ -37,7 +37,7 @@ class DividendAnalysisCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
@@ -52,7 +52,7 @@ class DividendAnalysisCard extends StatelessWidget {
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spacing8),
               Text(
                 'portfolio.dividendAnalysis'.tr(),
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -61,7 +61,7 @@ class DividendAnalysisCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 總覽數據
           Row(
@@ -94,7 +94,7 @@ class DividendAnalysisCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 各持股股利資訊（最多顯示 5 筆）
           Text(
@@ -104,7 +104,7 @@ class DividendAnalysisCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
 
           for (var i = 0; i < analysis.stockDividends.length && i < 5; i++)
             _StockDividendRow(
@@ -144,7 +144,7 @@ class _SummaryItem extends StatelessWidget {
             color: theme.colorScheme.outline,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: DesignTokens.spacing2),
         Text(
           value,
           style: theme.textTheme.titleMedium?.copyWith(
@@ -178,7 +178,7 @@ class _StockDividendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: DesignTokens.spacing8),
       decoration: BoxDecoration(
         border: isLast
             ? null
@@ -203,7 +203,7 @@ class _StockDividendRow extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: DesignTokens.spacing4),
                 _TrendIcon(trend: info.trend),
               ],
             ),
@@ -228,7 +228,7 @@ class _StockDividendRow extends StatelessWidget {
                   'portfolio.perShare'.tr(),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.outline,
-                    fontSize: 10,
+                    fontSize: DesignTokens.fontSizeXs,
                   ),
                 ),
               ],
@@ -252,7 +252,7 @@ class _StockDividendRow extends StatelessWidget {
                   'portfolio.expected'.tr(),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.outline,
-                    fontSize: 10,
+                    fontSize: DesignTokens.fontSizeXs,
                   ),
                 ),
               ],
@@ -276,7 +276,7 @@ class _StockDividendRow extends StatelessWidget {
                   'portfolio.yield'.tr(),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.outline,
-                    fontSize: 10,
+                    fontSize: DesignTokens.fontSizeXs,
                   ),
                 ),
               ],

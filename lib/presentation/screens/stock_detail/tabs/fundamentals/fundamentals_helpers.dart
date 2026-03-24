@@ -30,7 +30,10 @@ Widget buildGrowthBadge(BuildContext context, double? growth) {
   return Align(
     alignment: Alignment.centerRight,
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing6,
+        vertical: DesignTokens.spacing2,
+      ),
       decoration: BoxDecoration(
         color: isSignificant
             ? color.withValues(alpha: 0.1)
@@ -40,7 +43,7 @@ Widget buildGrowthBadge(BuildContext context, double? growth) {
       child: Text(
         '$prefix${growth.toStringAsFixed(1)}%',
         style: TextStyle(
-          fontSize: 12,
+          fontSize: DesignTokens.fontSizeSm,
           fontWeight: isSignificant ? FontWeight.bold : FontWeight.w500,
           color: color,
         ),
@@ -113,7 +116,10 @@ Color? getRowColor(BuildContext context, int index) {
 Widget buildTableHeader(BuildContext context, List<Widget> columns) {
   final theme = Theme.of(context);
   return Container(
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    padding: const EdgeInsets.symmetric(
+      vertical: DesignTokens.spacing8,
+      horizontal: DesignTokens.spacing4,
+    ),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -150,7 +156,10 @@ Widget buildTableDataRow(
   List<Widget> columns,
 ) {
   return Container(
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    padding: const EdgeInsets.symmetric(
+      vertical: DesignTokens.spacing8,
+      horizontal: DesignTokens.spacing4,
+    ),
     decoration: BoxDecoration(
       color: getRowColor(context, index),
       borderRadius: BorderRadius.circular(DesignTokens.radiusSm),

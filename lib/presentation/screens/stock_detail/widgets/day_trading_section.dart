@@ -25,7 +25,7 @@ class DayTradingSection extends StatelessWidget {
             title: 'chip.sectionDayTrading'.tr(),
             icon: Icons.flash_on,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
           _buildEmpty(theme),
         ],
       );
@@ -58,11 +58,11 @@ class DayTradingSection extends StatelessWidget {
           title: 'chip.sectionDayTrading'.tr(),
           icon: Icons.flash_on,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
 
         // 摘要卡片
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(DesignTokens.spacing12),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -82,7 +82,7 @@ class DayTradingSection extends StatelessWidget {
                         color: theme.colorScheme.outline,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: DesignTokens.spacing4),
                     Text(
                       '${latestRatio.toStringAsFixed(1)}%',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -103,7 +103,7 @@ class DayTradingSection extends StatelessWidget {
                         color: theme.colorScheme.outline,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: DesignTokens.spacing4),
                     Text(
                       '${avg5.toStringAsFixed(1)}%',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -116,7 +116,7 @@ class DayTradingSection extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: DesignTokens.spacing8),
 
         // 趨勢圖
         MiniTrendChart(
@@ -130,7 +130,7 @@ class DayTradingSection extends StatelessWidget {
 
   Widget _buildEmpty(ThemeData theme) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(DesignTokens.spacing24),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),

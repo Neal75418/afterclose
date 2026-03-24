@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/taiwan_date_formatter.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart';
@@ -24,7 +25,7 @@ class EpsTable extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: [
             buildTableHeader(context, [
@@ -40,7 +41,7 @@ class EpsTable extends StatelessWidget {
                 textAlign: TextAlign.end,
               ),
             ]),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             ...displayData.asMap().entries.map((entry) {
               final index = entry.key;
               final eps = entry.value;

@@ -31,12 +31,12 @@ class RecommendationPerformanceRow extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: DesignTokens.spacing10),
 
         // 勝負走勢 dot strip
         if (data.recentResults.isNotEmpty) ...[
           _DotStrip(results: data.recentResults),
-          const SizedBox(height: 10),
+          const SizedBox(height: DesignTokens.spacing10),
         ],
 
         // 統計摘要列
@@ -48,7 +48,7 @@ class RecommendationPerformanceRow extends StatelessWidget {
 
         // Top 3 規則
         if (data.topRules.isNotEmpty) ...[
-          const SizedBox(height: 10),
+          const SizedBox(height: DesignTokens.spacing10),
           _TopRulesList(rules: data.topRules),
         ],
       ],
@@ -69,7 +69,10 @@ class _DotStrip extends StatelessWidget {
     final ordered = results.reversed.toList();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing8,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         color: theme.colorScheme.surfaceContainerLowest,
@@ -86,7 +89,7 @@ class _DotStrip extends StatelessWidget {
               fontSize: DesignTokens.fontSizeXs,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.spacing6),
           Wrap(
             spacing: 3,
             runSpacing: 3,
@@ -133,7 +136,7 @@ class _StatBadgesRow extends StatelessWidget {
             valueColor: winRate >= 50 ? AppTheme.upColor : AppTheme.downColor,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: _StatBadge(
             label: 'marketOverview.recPerformance.avgReturn'.tr(),
@@ -142,7 +145,7 @@ class _StatBadgesRow extends StatelessWidget {
             valueColor: avgReturn >= 0 ? AppTheme.upColor : AppTheme.downColor,
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: _StatBadge(
             label: 'marketOverview.recPerformance.totalCount'.tr(),
@@ -170,7 +173,10 @@ class _StatBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing10,
+        vertical: DesignTokens.spacing8,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         color: theme.colorScheme.surfaceContainerLowest,
@@ -184,7 +190,7 @@ class _StatBadge extends StatelessWidget {
               fontSize: DesignTokens.fontSizeXs,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: DesignTokens.spacing2),
           Text(
             value,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -209,7 +215,10 @@ class _TopRulesList extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing8,
+      ),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
         color: theme.colorScheme.surfaceContainerLowest,
@@ -224,12 +233,14 @@ class _TopRulesList extends StatelessWidget {
               fontSize: DesignTokens.fontSizeXs,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.spacing6),
           ...rules.asMap().entries.map((entry) {
             final idx = entry.key;
             final rule = entry.value;
             return Padding(
-              padding: EdgeInsets.only(top: idx > 0 ? 4 : 0),
+              padding: EdgeInsets.only(
+                top: idx > 0 ? DesignTokens.spacing4 : 0,
+              ),
               child: _TopRuleItem(rule: rule, rank: idx + 1),
             );
           }),
@@ -275,7 +286,7 @@ class _TopRuleItem extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         // 規則名
         Expanded(
           child: Text(
@@ -293,7 +304,7 @@ class _TopRuleItem extends StatelessWidget {
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         // 平均報酬
         Text(
           '${rule.avgReturn >= 0 ? '+' : ''}${rule.avgReturn.toStringAsFixed(1)}%',

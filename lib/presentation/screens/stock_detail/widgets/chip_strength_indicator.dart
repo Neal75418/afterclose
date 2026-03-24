@@ -17,7 +17,7 @@ class ChipStrengthIndicator extends StatelessWidget {
     final color = _ratingColor(strength.rating);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -30,7 +30,7 @@ class ChipStrengthIndicator extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.battery_charging_full, size: 18, color: color),
-              const SizedBox(width: 6),
+              const SizedBox(width: DesignTokens.spacing6),
               Text(
                 'chip.strength'.tr(),
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -41,8 +41,8 @@ class ChipStrengthIndicator extends StatelessWidget {
               // 評等徽章
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: DesignTokens.spacing10,
+                  vertical: DesignTokens.spacing4,
                 ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
@@ -58,7 +58,7 @@ class ChipStrengthIndicator extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           // 分數＋進度條
           Row(
@@ -76,7 +76,7 @@ class ChipStrengthIndicator extends StatelessWidget {
                   color: theme.colorScheme.outline,
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: DesignTokens.spacing16),
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
@@ -90,7 +90,7 @@ class ChipStrengthIndicator extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
 
           // 法人態度
           Row(
@@ -101,7 +101,7 @@ class ChipStrengthIndicator extends StatelessWidget {
                   color: theme.colorScheme.outline,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spacing8),
               Text(
                 strength.attitude.i18nKey.tr(),
                 style: theme.textTheme.bodySmall?.copyWith(

@@ -95,11 +95,13 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
         return Column(
           children: [
             // 把手
-            const DragHandle(margin: EdgeInsets.only(top: 8)),
+            const DragHandle(
+              margin: EdgeInsets.only(top: DesignTokens.spacing8),
+            ),
 
             // 搜尋欄位
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(DesignTokens.spacing16),
               child: TextField(
                 controller: _searchController,
                 autofocus: true,
@@ -110,8 +112,8 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
                     borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: DesignTokens.spacing16,
+                    vertical: DesignTokens.spacing12,
                   ),
                 ),
                 onChanged: _onSearchChanged,
@@ -194,7 +196,9 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(
+            horizontal: DesignTokens.spacing16,
+          ),
           child: Text(
             'comparison.fromWatchlist'.tr(),
             style: theme.textTheme.titleSmall?.copyWith(
@@ -202,7 +206,7 @@ class _StockPickerSheetState extends ConsumerState<StockPickerSheet> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: DesignTokens.spacing8),
         Expanded(
           child: ListView.builder(
             itemCount: items.length,

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/backtest_provider.dart';
 import 'package:afterclose/presentation/screens/custom_screening/backtest/widgets/backtest_summary_card.dart';
@@ -45,8 +46,8 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
             if (state.result != null)
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                  horizontal: DesignTokens.spacing16,
+                  vertical: DesignTokens.spacing12,
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +57,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
                       size: 16,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: DesignTokens.spacing6),
                     Expanded(
                       child: Text(
                         'backtest.warning'.tr(),
@@ -69,7 +70,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
                 ),
               ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: DesignTokens.spacing32),
           ],
         ),
       ),
@@ -82,13 +83,13 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
 
   Widget _buildConfigSection(ThemeData theme, BacktestState state) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 回測期間
           Text('backtest.period'.tr(), style: theme.textTheme.labelLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           SegmentedButton<int>(
             segments: [
               ButtonSegment(value: 3, label: Text('backtest.period3m'.tr())),
@@ -104,7 +105,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
                         .updatePeriod(values.first);
                   },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 持有天數
           Row(
@@ -124,7 +125,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: DesignTokens.spacing4),
           _HoldingDaysSlider(
             value: state.config.holdingDays,
             enabled: !state.isExecuting,
@@ -132,14 +133,14 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
               ref.read(backtestProvider.notifier).updateHoldingDays(days);
             },
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 採樣間隔
           Text(
             'backtest.samplingInterval'.tr(),
             style: theme.textTheme.labelLarge,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           SegmentedButton<int>(
             segments: [
               ButtonSegment(
@@ -171,7 +172,10 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
 
   Widget _buildExecuteSection(ThemeData theme, BacktestState state) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing16,
+        vertical: DesignTokens.spacing4,
+      ),
       child: Column(
         children: [
           SizedBox(
@@ -202,9 +206,9 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
 
           // 進度條
           if (state.isExecuting) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             LinearProgressIndicator(value: state.progress),
-            const SizedBox(height: 4),
+            const SizedBox(height: DesignTokens.spacing4),
             Text(
               'backtest.progress'.tr(
                 namedArgs: {
@@ -220,13 +224,13 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
 
           // 錯誤訊息
           if (state.error != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(DesignTokens.spacing12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.errorContainer,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
               ),
               child: Row(
                 children: [
@@ -235,7 +239,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
                     size: 18,
                     color: theme.colorScheme.onErrorContainer,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: DesignTokens.spacing8),
                   Expanded(
                     child: Text(
                       state.error!,
@@ -262,7 +266,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
 
     if (result.trades.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(DesignTokens.spacing32),
         child: Center(
           child: Text(
             'backtest.noResults'.tr(),
@@ -276,7 +280,7 @@ class _BacktestScreenState extends ConsumerState<BacktestScreen> {
 
     return Column(
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: DesignTokens.spacing8),
 
         // 統計摘要
         BacktestSummaryCard(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
@@ -129,8 +130,8 @@ class _IndustryOverviewScreenState
 
     return ListView.separated(
       padding: EdgeInsets.only(
-        top: 8,
-        bottom: MediaQuery.of(context).padding.bottom + 16,
+        top: DesignTokens.spacing8,
+        bottom: MediaQuery.of(context).padding.bottom + DesignTokens.spacing16,
       ),
       itemCount: _state.industries.length,
       separatorBuilder: (_, _) => const Divider(height: 1),
@@ -161,7 +162,7 @@ class _IndustryOverviewScreenState
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: DesignTokens.spacing4),
           const Icon(Icons.chevron_right, size: 20),
         ],
       ),

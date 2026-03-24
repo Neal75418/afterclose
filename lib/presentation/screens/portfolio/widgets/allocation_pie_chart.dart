@@ -31,7 +31,7 @@ class AllocationPieChart extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
         SizedBox(
           height: 160,
           child: Row(
@@ -47,7 +47,7 @@ class AllocationPieChart extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: DesignTokens.spacing16),
               // 圖例
               Expanded(
                 flex: 2,
@@ -57,7 +57,9 @@ class AllocationPieChart extends StatelessWidget {
                   children: [
                     for (int i = 0; i < entries.length && i < 6; i++)
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: DesignTokens.spacing2,
+                        ),
                         child: Row(
                           children: [
                             Container(
@@ -68,7 +70,7 @@ class AllocationPieChart extends StatelessWidget {
                                 shape: BoxShape.circle,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: DesignTokens.spacing6),
                             Flexible(
                               child: Text(
                                 '${entries[i].key} ${entries[i].value.toStringAsFixed(0)}%',
@@ -101,7 +103,7 @@ class AllocationPieChart extends StatelessWidget {
           showTitle: entries[i].value >= 10,
           title: '${entries[i].value.toStringAsFixed(0)}%',
           titleStyle: const TextStyle(
-            fontSize: 10,
+            fontSize: DesignTokens.fontSizeXs,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),

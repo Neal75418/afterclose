@@ -13,8 +13,8 @@ class IndicatorCardContainer extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: DesignTokens.spacing12),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(DesignTokens.radiusXl),

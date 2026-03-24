@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
@@ -21,7 +22,7 @@ class DistributionSection extends StatelessWidget {
           title: 'chip.sectionDistribution'.tr(),
           icon: Icons.pie_chart_outline,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: DesignTokens.spacing12),
         if (distribution.isEmpty)
           buildEmptyState(context, 'chip.noData'.tr())
         else
@@ -42,12 +43,14 @@ class DistributionSection extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(DesignTokens.spacing12),
         child: Column(
           children: display.map((entry) {
             final pct = entry.percent ?? 0;
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: const EdgeInsets.symmetric(
+                vertical: DesignTokens.spacing4,
+              ),
               child: Row(
                 children: [
                   SizedBox(
@@ -72,7 +75,7 @@ class DistributionSection extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: DesignTokens.spacing8),
                   SizedBox(
                     width: 50,
                     child: Text(

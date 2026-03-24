@@ -104,7 +104,12 @@ class _ShortSellRankingScreenState
     List<TpexShortSellRanking> rankings,
   ) {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      padding: const EdgeInsets.fromLTRB(
+        DesignTokens.spacing16,
+        DesignTokens.spacing8,
+        DesignTokens.spacing16,
+        DesignTokens.spacing32,
+      ),
       itemCount: rankings.length + 1, // +1 for header
       itemBuilder: (context, index) {
         if (index == 0) return _buildTableHeader(theme);
@@ -115,8 +120,11 @@ class _ShortSellRankingScreenState
 
   Widget _buildTableHeader(ThemeData theme) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      margin: const EdgeInsets.only(bottom: DesignTokens.spacing8),
+      padding: const EdgeInsets.symmetric(
+        vertical: DesignTokens.spacing10,
+        horizontal: DesignTokens.spacing12,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),

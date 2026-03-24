@@ -18,7 +18,7 @@ class PerformanceCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
@@ -33,7 +33,7 @@ class PerformanceCard extends StatelessWidget {
                 size: 20,
                 color: theme.colorScheme.primary,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spacing8),
               Text(
                 'portfolio.performance'.tr(),
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -42,11 +42,11 @@ class PerformanceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 期間報酬
           _buildSectionLabel(theme, 'portfolio.periodReturns'.tr()),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
           Row(
             children: [
               Expanded(
@@ -80,7 +80,7 @@ class PerformanceCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: DesignTokens.spacing16),
 
           // 總報酬與最大回撤
           Row(
@@ -153,7 +153,7 @@ class _ReturnItem extends StatelessWidget {
               ),
             ),
             if (isAnnualized) ...[
-              const SizedBox(width: 2),
+              const SizedBox(width: DesignTokens.spacing2),
               Icon(
                 Icons.info_outline,
                 size: 12,
@@ -162,7 +162,7 @@ class _ReturnItem extends StatelessWidget {
             ],
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: DesignTokens.spacing2),
         Text(
           '${isPositive ? "+" : ""}${value.toStringAsFixed(2)}%',
           style: theme.textTheme.bodySmall?.copyWith(
@@ -207,7 +207,7 @@ class _MetricItem extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(DesignTokens.spacing12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -221,7 +221,7 @@ class _MetricItem extends StatelessWidget {
               color: theme.colorScheme.outline,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: DesignTokens.spacing4),
           Text(
             formatted,
             style: theme.textTheme.titleMedium?.copyWith(

@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
@@ -29,12 +30,15 @@ class ConditionCard extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       background: Container(
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
+        padding: const EdgeInsets.only(right: DesignTokens.spacing16),
         color: theme.colorScheme.error,
         child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
       child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        margin: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing16,
+          vertical: DesignTokens.spacing4,
+        ),
         child: ListTile(
           leading: Icon(
             _categoryIcon(condition.field.category),

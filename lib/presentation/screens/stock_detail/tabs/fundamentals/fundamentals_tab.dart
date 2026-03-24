@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -52,14 +53,14 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
     return SingleChildScrollView(
       primary: false,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 載入失敗提示
           if (fundamentalsError != null && !isLoadingFundamentals)
             Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: DesignTokens.spacing16),
               child: Text(
                 fundamentalsError,
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -68,14 +69,14 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           // 關鍵指標卡片
           _buildMetricsRow(context, fundamentals),
-          const SizedBox(height: 24),
+          const SizedBox(height: DesignTokens.spacing24),
 
           // 月營收區段
           SectionHeader(
             title: 'stockDetail.monthlyRevenue'.tr(),
             icon: Icons.trending_up,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           if (isLoadingFundamentals)
             buildLoadingState(context)
@@ -88,14 +89,14 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
               showROCYear: showROCYear,
             ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: DesignTokens.spacing24),
 
           // EPS 歷史區段
           SectionHeader(
             title: 'stockDetail.epsHistory'.tr(),
             icon: Icons.bar_chart,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           if (isLoadingFundamentals)
             buildLoadingState(context)
@@ -109,18 +110,18 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
 
           // 獲利能力卡片
           if (fundamentals.latestQuarterMetrics.isNotEmpty) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
             ProfitabilityCard(metrics: fundamentals.latestQuarterMetrics),
           ],
 
-          const SizedBox(height: 24),
+          const SizedBox(height: DesignTokens.spacing24),
 
           // 股利區段
           SectionHeader(
             title: 'stockDetail.dividendHistory'.tr(),
             icon: Icons.payments,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           if (isLoadingFundamentals)
             buildLoadingState(context)
@@ -156,7 +157,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
             subtitle: 'stockDetail.perLabel'.tr(),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: MetricCard(
             label: 'P/B',
@@ -168,7 +169,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
             subtitle: 'stockDetail.pbrLabel'.tr(),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Expanded(
           child: MetricCard(
             label: 'stockDetail.yield'.tr(),

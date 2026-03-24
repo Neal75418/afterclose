@@ -79,7 +79,7 @@ class _CreatePriceAlertDialogState
           children: [
             // 股票資訊
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(DesignTokens.spacing12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
@@ -93,7 +93,7 @@ class _CreatePriceAlertDialogState
                     ),
                   ),
                   if (widget.stockName != null) ...[
-                    const SizedBox(width: 8),
+                    const SizedBox(width: DesignTokens.spacing8),
                     Expanded(
                       child: Text(
                         widget.stockName!,
@@ -108,7 +108,7 @@ class _CreatePriceAlertDialogState
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 警示類型選擇
             Text(
@@ -117,7 +117,7 @@ class _CreatePriceAlertDialogState
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: DesignTokens.spacing8),
             SegmentedButton<AlertType>(
               segments: AlertType.values
                   .where((type) => type.isImplemented) // 只顯示已實作的類型
@@ -126,7 +126,9 @@ class _CreatePriceAlertDialogState
                       value: type,
                       label: Text(
                         _getTypeLabel(type),
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(
+                          fontSize: DesignTokens.fontSizeSm,
+                        ),
                       ),
                     );
                   })
@@ -139,7 +141,7 @@ class _CreatePriceAlertDialogState
               },
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 目標值輸入
             TextField(
@@ -160,7 +162,7 @@ class _CreatePriceAlertDialogState
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
 
             // 備註輸入（選填）
             TextField(
@@ -175,7 +177,7 @@ class _CreatePriceAlertDialogState
 
             // 當前價格提示
             if (widget.currentPrice case final price?) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
               Text(
                 'alert.currentPrice'.tr(args: [price.toStringAsFixed(2)]),
                 style: theme.textTheme.bodySmall?.copyWith(

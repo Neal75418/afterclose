@@ -22,7 +22,10 @@ class MainIndicatorSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing8,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -30,7 +33,7 @@ class MainIndicatorSelector extends StatelessWidget {
       child: Row(
         children: [
           Icon(Icons.show_chart, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Text(
             'stockDetail.mainChart'.tr(),
             style: theme.textTheme.labelMedium?.copyWith(
@@ -38,11 +41,11 @@ class MainIndicatorSelector extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: DesignTokens.spacing12),
           Expanded(
             child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: DesignTokens.spacing8,
+              runSpacing: DesignTokens.spacing8,
               children: [
                 _IndicatorChip(
                   label: 'MA',
@@ -87,7 +90,10 @@ class SecondaryIndicatorSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing8,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -99,7 +105,7 @@ class SecondaryIndicatorSelector extends StatelessWidget {
             size: 16,
             color: theme.colorScheme.secondary,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesignTokens.spacing8),
           Text(
             'stockDetail.subChart'.tr(),
             style: theme.textTheme.labelMedium?.copyWith(
@@ -107,11 +113,11 @@ class SecondaryIndicatorSelector extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: DesignTokens.spacing12),
           Expanded(
             child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: DesignTokens.spacing8,
+              runSpacing: DesignTokens.spacing8,
               children: [
                 _IndicatorChip(
                   label: 'MACD',
@@ -174,7 +180,10 @@ class _IndicatorChip extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: AnimDurations.standard,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing12,
+          vertical: DesignTokens.spacing6,
+        ),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withValues(alpha: 0.15)
@@ -198,11 +207,11 @@ class _IndicatorChip extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: DesignTokens.spacing6),
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: DesignTokens.fontSizeSm,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 color: isSelected ? color : theme.colorScheme.onSurface,
               ),

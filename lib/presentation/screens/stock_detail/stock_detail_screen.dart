@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -316,10 +317,13 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
         unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
         indicatorColor: theme.colorScheme.primary,
         indicatorSize: TabBarIndicatorSize.label,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        labelStyle: const TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: DesignTokens.fontSizeMd,
+        ),
         unselectedLabelStyle: const TextStyle(
           fontWeight: FontWeight.normal,
-          fontSize: 14,
+          fontSize: DesignTokens.fontSizeMd,
         ),
         tabs: [
           Tab(text: 'stockDetail.tabTechnical'.tr()),

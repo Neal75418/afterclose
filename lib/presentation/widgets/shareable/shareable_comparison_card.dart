@@ -26,7 +26,7 @@ class ShareableComparisonCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(DesignTokens.spacing20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -39,7 +39,7 @@ class ShareableComparisonCard extends StatelessWidget {
                     color: theme.colorScheme.primary,
                     size: 20,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: DesignTokens.spacing6),
                   Text(
                     'AfterClose',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -64,7 +64,7 @@ class ShareableComparisonCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: DesignTokens.spacing12),
 
               // 股票列表
               ...state.symbols.asMap().entries.map((entry) {
@@ -96,7 +96,7 @@ class ShareableComparisonCard extends StatelessWidget {
                 'export.disclaimer'.tr(),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline,
-                  fontSize: 10,
+                  fontSize: DesignTokens.fontSizeXs,
                 ),
               ),
             ],
@@ -135,8 +135,8 @@ class _StockRow extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: DesignTokens.spacing8),
+      padding: const EdgeInsets.all(DesignTokens.spacing12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(10),
@@ -163,10 +163,10 @@ class _StockRow extends StatelessWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.spacing6),
           Wrap(
-            spacing: 8,
-            runSpacing: 4,
+            spacing: DesignTokens.spacing8,
+            runSpacing: DesignTokens.spacing4,
             children: [
               if (score != null) _Tag('${score!.toStringAsFixed(0)}分', color),
               if (trend != null) _Tag(trend!, _trendColor(trend!)),
@@ -196,7 +196,10 @@ class _Tag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing6,
+        vertical: DesignTokens.spacing2,
+      ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(DesignTokens.radiusXs),

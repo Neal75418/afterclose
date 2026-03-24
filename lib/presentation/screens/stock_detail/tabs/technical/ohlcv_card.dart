@@ -25,12 +25,12 @@ class OhlcvCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(context, theme, isUp),
-            const SizedBox(height: 16),
+            const SizedBox(height: DesignTokens.spacing16),
             // 價格格線
             Row(
               children: [
@@ -89,7 +89,7 @@ class OhlcvCard extends StatelessWidget {
                   size: 16,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesignTokens.spacing8),
                 Text(
                   'stockDetail.volume'.tr(),
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -119,7 +119,7 @@ class OhlcvCard extends StatelessWidget {
           size: 20,
           color: theme.colorScheme.primary,
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: DesignTokens.spacing8),
         Text(
           'stockDetail.todayTrading'.tr(),
           style: theme.textTheme.titleMedium?.copyWith(
@@ -129,7 +129,10 @@ class OhlcvCard extends StatelessWidget {
         const Spacer(),
         if (priceChange != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing8,
+              vertical: DesignTokens.spacing4,
+            ),
             decoration: BoxDecoration(
               color: (isUp ? AppTheme.upColor : AppTheme.downColor).withValues(
                 alpha: 0.1,
@@ -144,11 +147,11 @@ class OhlcvCard extends StatelessWidget {
                   size: 14,
                   color: isUp ? AppTheme.upColor : AppTheme.downColor,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: DesignTokens.spacing4),
                 Text(
                   _formatChangeBadge(isUp),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: DesignTokens.fontSizeSm,
                     fontWeight: FontWeight.bold,
                     color: isUp ? AppTheme.upColor : AppTheme.downColor,
                   ),
@@ -214,7 +217,7 @@ class _PriceCell extends StatelessWidget {
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: DesignTokens.spacing4),
         Text(
           value?.toStringAsFixed(2) ?? '-',
           style: theme.textTheme.titleMedium?.copyWith(

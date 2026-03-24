@@ -21,7 +21,7 @@ Widget buildSummaryCard(
   final valueColor = isPositive ? AppTheme.upColor : AppTheme.downColor;
 
   return Container(
-    padding: const EdgeInsets.all(12),
+    padding: const EdgeInsets.all(DesignTokens.spacing12),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -33,7 +33,7 @@ Widget buildSummaryCard(
         Row(
           children: [
             Icon(icon, size: 14, color: accentColor),
-            const SizedBox(width: 4),
+            const SizedBox(width: DesignTokens.spacing4),
             Expanded(
               child: Text(
                 label,
@@ -45,7 +45,7 @@ Widget buildSummaryCard(
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: DesignTokens.spacing6),
         Text(
           formatNet(value),
           style: theme.textTheme.titleSmall?.copyWith(
@@ -122,7 +122,11 @@ Widget buildNetValue(BuildContext context, double value) {
   return Text(
     formatNet(value),
     textAlign: TextAlign.end,
-    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: color),
+    style: TextStyle(
+      fontSize: DesignTokens.fontSizeSm,
+      fontWeight: FontWeight.w500,
+      color: color,
+    ),
   );
 }
 

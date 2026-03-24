@@ -25,7 +25,10 @@ class PositionCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: DesignTokens.spacing16,
+          vertical: DesignTokens.spacing12,
+        ),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
@@ -45,7 +48,7 @@ class PositionCard extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: DesignTokens.spacing6),
                       Expanded(
                         child: Text(
                           position.stockName ?? '',
@@ -57,7 +60,7 @@ class PositionCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: DesignTokens.spacing4),
                   Text(
                     '${'portfolio.avgCost'.tr()}: ${AppNumberFormat.currency(position.avgCost, decimals: 1)}'
                     '  ${'portfolio.currentPrice'.tr()}: ${AppNumberFormat.currency(position.currentPrice ?? 0, decimals: 1)}',
@@ -79,7 +82,7 @@ class PositionCard extends StatelessWidget {
                     color: theme.colorScheme.outline,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: DesignTokens.spacing2),
                 Text(
                   AppNumberFormat.signedInteger(position.unrealizedPnl),
                   style: theme.textTheme.bodyMedium?.copyWith(
@@ -93,7 +96,7 @@ class PositionCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: DesignTokens.spacing4),
             Icon(
               Icons.chevron_right,
               size: 20,

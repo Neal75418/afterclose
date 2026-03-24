@@ -57,7 +57,7 @@ class ComparisonTable extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
         ],
 
         // 結論橫幅
@@ -68,11 +68,14 @@ class ComparisonTable extends StatelessWidget {
 
   Widget _buildSectionHeader(ThemeData theme, _ComparisonSection section) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8, top: 4),
+      padding: const EdgeInsets.only(
+        bottom: DesignTokens.spacing8,
+        top: DesignTokens.spacing4,
+      ),
       child: Row(
         children: [
           Icon(section.icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 6),
+          const SizedBox(width: DesignTokens.spacing6),
           Text(
             section.title,
             style: theme.textTheme.titleSmall?.copyWith(
@@ -94,7 +97,10 @@ class ComparisonTable extends StatelessWidget {
         : null;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing12,
+        vertical: DesignTokens.spacing6,
+      ),
       child: Row(
         children: [
           // 指標標籤
@@ -111,7 +117,10 @@ class ComparisonTable extends StatelessWidget {
           for (var i = 0; i < row.values.length; i++)
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+                padding: const EdgeInsets.symmetric(
+                  vertical: DesignTokens.spacing4,
+                  horizontal: DesignTokens.spacing6,
+                ),
                 decoration: BoxDecoration(
                   color: i == winnerIndex
                       ? DesignTokens
@@ -166,7 +175,7 @@ class ComparisonTable extends StatelessWidget {
         borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(DesignTokens.spacing16),
         child: Row(
           children: [
             Icon(
@@ -174,7 +183,7 @@ class ComparisonTable extends StatelessWidget {
               size: 24,
               color: theme.colorScheme.primary,
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: DesignTokens.spacing12),
             Expanded(
               child: Text(
                 verdictText,

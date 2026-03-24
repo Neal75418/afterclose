@@ -61,7 +61,9 @@ class StockCardPriceSection extends StatelessWidget {
             ),
           ),
         if (priceChange != null) ...[
-          SizedBox(height: compact ? 2 : 4),
+          SizedBox(
+            height: compact ? DesignTokens.spacing2 : DesignTokens.spacing4,
+          ),
           Container(
             padding: EdgeInsets.symmetric(
               horizontal: compact ? 4 : 8,
