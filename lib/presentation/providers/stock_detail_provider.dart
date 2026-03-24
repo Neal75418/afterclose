@@ -167,6 +167,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         latestPER: state.fundamentals.latestPER,
       );
       final summary = const SummaryLocalizer().localize(summaryData);
+      if (!_active) return;
 
       state = state.copyWith(
         stock: stock,

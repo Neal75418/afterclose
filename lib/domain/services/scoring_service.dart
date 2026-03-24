@@ -99,7 +99,13 @@ class ScoringService {
         }
         continue;
       }
-      final turnover = latest.close! * latest.volume!;
+      final close = latest.close;
+      final volume = latest.volume;
+      if (close == null || volume == null) {
+        skippedNoData++;
+        continue;
+      }
+      final turnover = close * volume;
 
       // 執行分析
       final analysisResult = _analysisService.analyzeStock(prices);

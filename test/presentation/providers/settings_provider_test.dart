@@ -132,7 +132,7 @@ void main() {
       container2.read(settingsProvider);
 
       // Wait for async _loadSettings to complete
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(Duration.zero);
 
       final state = container2.read(settingsProvider);
       expect(state.isLoaded, isTrue);

@@ -273,7 +273,11 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      // 提供 MA20 讓 aboveMA20 條件成立（close=105 > ma20=100）
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: TechnicalIndicators(ma20: 100),
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -299,7 +303,11 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      // 提供 RSI > 50 讓 rsiPositive 條件成立
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: TechnicalIndicators(rsi: 60),
+      );
 
       final result = rule.evaluate(context, data);
 

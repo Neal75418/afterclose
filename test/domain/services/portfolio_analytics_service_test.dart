@@ -220,8 +220,9 @@ void main() {
         stocksMap: {},
       );
 
-      // Short holding period (< 7 days): yearly = totalReturn (not annualized)
-      expect(result.periodReturns.yearly, equals(50.0));
+      // Short holding period (< 30 days): yearly = dailyReturn * 365, clamped to [-100, 1000]
+      // dailyReturn = 50% / 5 = 10%/day, yearReturn = 10 * 365 = 3650, clamped → 1000
+      expect(result.periodReturns.yearly, equals(1000.0));
     });
 
     test('returns empty when daysSinceStart is 0 (same day)', () {

@@ -10,6 +10,9 @@ import 'package:flutter_riverpod/misc.dart';
 ///
 /// 避免每個 testWidgets 都 new 一個 AppDatabase，
 /// 消除 Drift 的 "multiple database" runtime warning。
+///
+/// WARNING: 此 DB 跨所有測試共用 — 每個 widget test 必須 override
+/// 所有可能寫入 DB 的 provider，否則會造成跨測試汙染。
 final _testDb = AppDatabase.forTesting();
 
 /// 建立需要 Riverpod Provider 的測試用 MaterialApp 包裝

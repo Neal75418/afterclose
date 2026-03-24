@@ -57,12 +57,18 @@ void main() {
       expect(updated.error, 'Permission denied');
     });
 
-    test('copyWith clears error when not provided', () {
+    test('copyWith preserves error when not provided', () {
       final state = const NotificationState().copyWith(error: 'Some error');
-      // copyWith without error resets it to null
-      final cleared = state.copyWith(isInitialized: true);
+      // copyWith without error preserves existing error (sentinel pattern)
+      final preserved = state.copyWith(isInitialized: true);
+      expect(preserved.error, 'Some error');
+      expect(preserved.isInitialized, isTrue);
+    });
+
+    test('copyWith clears error when explicitly set to null', () {
+      final state = const NotificationState().copyWith(error: 'Some error');
+      final cleared = state.copyWith(error: null);
       expect(cleared.error, isNull);
-      expect(cleared.isInitialized, isTrue);
     });
 
     test('copyWith preserves other fields', () {

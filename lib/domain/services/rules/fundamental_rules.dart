@@ -236,7 +236,7 @@ class NewsRule extends StockRule {
     if (score.abs() >= 1) {
       return TriggeredReason(
         type: ReasonType.newsRelated,
-        score: RuleScores.newsRelated,
+        score: score > 0 ? RuleScores.newsRelated : -RuleScores.newsRelated,
         description: score > 0 ? '近期利多新聞頻發' : '近期利空新聞影響',
         evidence: {'sentiment': score, 'titles': relevantNews.take(3).toList()},
       );

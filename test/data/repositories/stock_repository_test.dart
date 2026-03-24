@@ -230,7 +230,7 @@ void main() {
           () => mockClient.getStockList(),
         ).thenThrow(const RateLimitException());
 
-        expect(
+        await expectLater(
           () => repository.syncStockList(),
           throwsA(isA<RateLimitException>()),
         );
@@ -239,7 +239,7 @@ void main() {
       test('wraps other exceptions in DatabaseException', () async {
         when(() => mockClient.getStockList()).thenThrow(Exception('API error'));
 
-        expect(
+        await expectLater(
           () => repository.syncStockList(),
           throwsA(isA<DatabaseException>()),
         );
@@ -263,7 +263,7 @@ void main() {
           () => mockDb.deactivateStocksNotIn(any()),
         ).thenAnswer((_) async => 0);
 
-        expect(
+        await expectLater(
           () => repository.syncStockList(),
           throwsA(isA<DatabaseException>()),
         );

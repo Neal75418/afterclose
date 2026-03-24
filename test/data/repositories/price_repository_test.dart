@@ -359,7 +359,7 @@ void main() {
           ),
         ).thenThrow(Exception('DB Error'));
 
-        expect(
+        await expectLater(
           () => repository.syncStockPrices(
             '2330',
             startDate: DateTime(2024, 5, 1),

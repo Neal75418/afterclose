@@ -22,15 +22,18 @@ class NotificationState {
   final bool hasPermission;
   final String? error;
 
+  // Sentinel for distinguishing "not passed" from "passed as null"
+  static const _sentinel = Object();
+
   NotificationState copyWith({
     bool? isInitialized,
     bool? hasPermission,
-    String? error,
+    Object? error = _sentinel,
   }) {
     return NotificationState(
       isInitialized: isInitialized ?? this.isInitialized,
       hasPermission: hasPermission ?? this.hasPermission,
-      error: error,
+      error: identical(error, _sentinel) ? this.error : error as String?,
     );
   }
 }

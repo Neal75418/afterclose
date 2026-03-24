@@ -66,7 +66,7 @@ void main() {
         ),
       ).thenThrow(const RateLimitException('Rate limited'));
 
-      expect(
+      await expectLater(
         () => repo.syncMonthlyRevenue(
           symbol: '2330',
           startDate: DateTime(2025, 1, 1),
@@ -133,7 +133,7 @@ void main() {
         ),
       ).thenThrow(const RateLimitException('Rate limited'));
 
-      expect(
+      await expectLater(
         () => repo.syncValuationData(
           symbol: '2330',
           startDate: DateTime(2025, 1, 1),
@@ -163,7 +163,7 @@ void main() {
         () => mockTwse.getAllStockValuation(date: any(named: 'date')),
       ).thenThrow(const NetworkException('Timeout'));
 
-      expect(
+      await expectLater(
         () => repo.syncAllMarketValuation(DateTime(2025, 1, 15)),
         throwsA(isA<NetworkException>()),
       );
@@ -196,7 +196,7 @@ void main() {
         () => mockTpex.getAllValuation(date: any(named: 'date')),
       ).thenThrow(const NetworkException('Timeout'));
 
-      expect(
+      await expectLater(
         () => repo.syncOtcValuation(['6547'], force: true),
         throwsA(isA<NetworkException>()),
       );
@@ -220,7 +220,7 @@ void main() {
         () => mockTwse.getAllMonthlyRevenue(),
       ).thenThrow(const NetworkException('Timeout'));
 
-      expect(
+      await expectLater(
         () => repo.syncAllMarketRevenue(DateTime(2025, 1, 15)),
         throwsA(isA<NetworkException>()),
       );

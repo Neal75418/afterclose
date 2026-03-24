@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
@@ -237,7 +238,7 @@ void main() {
 
         await repository.saveReasons('2330', date, reasons);
 
-        expect(capturedEntries!.length, equals(60)); // Limited to 60
+        expect(capturedEntries!.length, equals(RuleParams.maxReasonsPerStock));
       });
     });
 
@@ -392,7 +393,7 @@ void main() {
 
         await repository.saveRecommendations(date, recs);
 
-        expect(capturedEntries!.length, equals(20)); // Limited to 20
+        expect(capturedEntries!.length, equals(RuleParams.dailyTopN));
       });
     });
 

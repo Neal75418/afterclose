@@ -85,7 +85,7 @@ void main() {
         ),
       ).thenThrow(const RateLimitException('Rate limited'));
 
-      expect(
+      await expectLater(
         () =>
             repo.syncInstitutionalData('2330', startDate: DateTime(2025, 1, 1)),
         throwsA(isA<RateLimitException>()),
@@ -101,7 +101,7 @@ void main() {
         ),
       ).thenThrow(Exception('unknown error'));
 
-      expect(
+      await expectLater(
         () =>
             repo.syncInstitutionalData('2330', startDate: DateTime(2025, 1, 1)),
         throwsA(isA<DatabaseException>()),

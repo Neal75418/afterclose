@@ -94,7 +94,7 @@ void main() {
         ),
       ).thenThrow(const RateLimitException('Rate limited'));
 
-      expect(
+      await expectLater(
         () => repo.syncShareholding('2330', startDate: DateTime(2025, 1, 1)),
         throwsA(isA<RateLimitException>()),
       );

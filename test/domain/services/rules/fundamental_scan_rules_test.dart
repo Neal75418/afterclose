@@ -348,7 +348,11 @@ void main() {
         prices: prices,
         latestValuation: valuation,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      // 提供 RSI > 75（過熱）讓規則觸發
+      const context = AnalysisContext(
+        trendState: TrendState.range,
+        indicators: TechnicalIndicators(rsi: 80),
+      );
 
       final result = rule.evaluate(context, data);
 

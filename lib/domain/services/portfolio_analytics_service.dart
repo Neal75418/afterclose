@@ -145,9 +145,10 @@ class PortfolioAnalyticsService {
 
     // 年報酬（年化）
     // 持有期間過短時直接用總報酬，避免 math.pow 產生極端值
+    // < 30 天：用線性外推（日報酬 × 365），避免短期複利公式產生極端數字
     final double yearReturn;
-    if (daysSinceStart < 7) {
-      yearReturn = totalReturn;
+    if (daysSinceStart < 30) {
+      yearReturn = dailyReturn * 365;
     } else {
       yearReturn =
           (math.pow(1 + totalReturn / 100, 365 / daysSinceStart) - 1)
