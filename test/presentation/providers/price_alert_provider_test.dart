@@ -421,7 +421,7 @@ void main() {
         callCount++;
         if (callCount == 1) return firstCompleter.future;
         // 第二次 toggle: on → 立即完成
-        return Future.value(1);
+        return Future<void>.value();
       });
 
       final notifier = container.read(priceAlertProvider.notifier);
