@@ -135,8 +135,9 @@ void main() {
         targetDate: targetDate,
       );
 
-      // 'A' should pass (high RSI from uptrend), 'B' likely won't (flat → RSI edge case)
+      // 'A' should pass (high RSI from uptrend), 'B' should not (flat prices → low RSI)
       expect(result.symbols, contains('A'));
+      expect(result.symbols, isNot(contains('B')));
       expect(result.totalScanned, equals(500));
     });
   });

@@ -158,9 +158,9 @@ class PortfolioRepository implements IPortfolioRepository {
 
   /// 從所有交易紀錄重新計算某 symbol 的持倉
   ///
-  /// 包在 DB transaction 中確保讀取交易與寫入 position 的一致性
+  /// 呼叫端已在 transaction 中，此處不再包裝避免巢狀 transaction
   Future<void> _recalculatePosition(String symbol) async {
-    await _db.transaction(() async {
+    {
       final transactions = await _db.getTransactionsForSymbol(symbol);
 
       if (transactions.isEmpty) {
@@ -249,7 +249,7 @@ class PortfolioRepository implements IPortfolioRepository {
           ),
         );
       }
-    });
+    }
   }
 }
 

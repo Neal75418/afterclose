@@ -51,7 +51,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -83,7 +86,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -120,7 +126,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -162,7 +171,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -184,7 +196,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -225,7 +240,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -262,7 +280,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -275,7 +296,10 @@ void main() {
 
       test('returns false when history is empty', () async {
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => []);
 
         final result = await repository.hasConsecutiveSellingStreak(
@@ -317,7 +341,10 @@ void main() {
         ];
 
         when(
-          () => mockDb.getRecentInsiderHoldings('TEST', months: 4),
+          () => mockDb.getRecentInsiderHoldings(
+            'TEST',
+            months: any(named: 'months'),
+          ),
         ).thenAnswer((_) async => history);
 
         final result = await repository.hasConsecutiveSellingStreak(

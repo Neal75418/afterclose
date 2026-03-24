@@ -61,9 +61,24 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
           if (fundamentalsError != null && !isLoadingFundamentals)
             Padding(
               padding: const EdgeInsets.only(bottom: DesignTokens.spacing16),
-              child: Text(
-                fundamentalsError,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      fundamentalsError,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => ref
+                        .read(stockDetailProvider(widget.symbol).notifier)
+                        .loadFundamentals(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text('common.retry'.tr()),
+                  ),
+                ],
               ),
             ),
 

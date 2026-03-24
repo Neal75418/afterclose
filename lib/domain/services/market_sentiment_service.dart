@@ -174,7 +174,7 @@ class MarketSentimentService {
     final scores = <double>[];
 
     for (int i = 4; i < minLen; i++) {
-      final ratio = advanceRatioHistory[i];
+      final ratio = advanceRatioHistory[i].clamp(0.0, 1.0);
       final syntheticAd = AdvanceDecline(
         advance: (ratio * 1000).round(),
         decline: ((1 - ratio) * 1000).round(),

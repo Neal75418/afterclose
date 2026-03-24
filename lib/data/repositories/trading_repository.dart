@@ -164,9 +164,10 @@ class TradingRepository implements ITradingRepository {
       final deleteEnd = targetDate.add(
         const Duration(hours: DataFreshness.dayTradingDeleteWindowAfterHours),
       );
-      await _db.deleteDayTradingForDateRange(deleteStart, deleteEnd);
-
-      await _db.insertDayTradingData(entries);
+      await _db.transaction(() async {
+        await _db.deleteDayTradingForDateRange(deleteStart, deleteEnd);
+        await _db.insertDayTradingData(entries);
+      });
 
       // 統計當沖比例分佈
       final highRatioEntries = entries.where((e) {

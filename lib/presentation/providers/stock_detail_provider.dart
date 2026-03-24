@@ -33,9 +33,12 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
   final String _symbol;
   late final StockFundamentalsLoader _fundamentalsLoader;
   late final StockChipLoader _chipLoader;
+  var _active = true;
 
   @override
   StockDetailState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
     _fundamentalsLoader = StockFundamentalsLoader(
       db: ref.read(databaseProvider),
       finMind: ref.read(finMindClientProvider),
@@ -77,6 +80,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       // 決定分析資料的查詢日期
       // 使用資料庫最新價格日期，確保盤前/非交易日也能顯示上次分析結果
       final latestDataDate = await _db.getLatestDataDate();
+      if (!_active) return;
       final analysisDate = latestDataDate != null
           ? DateContext.normalize(latestDataDate)
           : normalizedToday;
@@ -109,6 +113,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         ),
         _db.isInWatchlist(_symbol),
       ).wait;
+      if (!_active) return;
       var instHistory = dbInstHistory;
 
       // 從最近價格提取最新與前一日（recentPrices 依日期降序排列）
@@ -123,6 +128,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       // DB 無法人資料時從 API 取得
       if (instHistory.isEmpty) {
         final apiResult = await _chipLoader.fetchInstitutionalFromApi(_symbol);
+        if (!_active) return;
         instHistory = apiResult.data;
       }
 
@@ -215,6 +221,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
     state = state.copyWith(isLoadingMargin: true);
     final marginData = await _chipLoader.loadMarginFromApi(_symbol);
+    if (!_active) return;
     state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
   }
 
@@ -236,6 +243,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
     try {
       final result = await _fundamentalsLoader.loadAll(_symbol);
+      if (!_active) return;
 
       // 檢查是否所有資料源都有拿到資料
       // loadAll() 內部 catch 不會 rethrow，會回傳空資料
@@ -287,6 +295,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         _chipLoader.loadInsiderFromDb(_symbol),
         _db.getRecentTransfers(_symbol),
       ).wait;
+      if (!_active) return;
       state = state.copyWith(
         insiderHistory: insiderHistory,
         insiderTransfers: transfers,
@@ -313,6 +322,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         existingInstitutional: state.chip.institutionalHistory,
         existingInsider: state.chip.insiderHistory,
       );
+      if (!_active) return;
 
       state = state.copyWith(
         dayTradingHistory: result.dayTrading,

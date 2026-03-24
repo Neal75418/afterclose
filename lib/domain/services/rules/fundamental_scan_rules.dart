@@ -451,7 +451,9 @@ class EPSConsecutiveGrowthRule extends StockRule
     for (int i = 0; i < eps.length - 1; i++) {
       final current = eps[i].value;
       final previous = eps[i + 1].value;
-      if (current == null || previous == null || previous <= 0) break;
+      if (current == null || previous == null) break;
+      // 前一季 EPS <= 0 時無法計算有意義的成長率，中斷連續序列
+      if (previous <= 0) break;
 
       final growth = (current - previous) / previous * 100;
       if (growth >= FundamentalParams.epsGrowthThreshold) {

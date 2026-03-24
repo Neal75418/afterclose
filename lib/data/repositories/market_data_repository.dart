@@ -48,7 +48,8 @@ class MarketDataRepository implements IMarketDataRepository {
     } else if (month >= 11) {
       return DateTime(now.year, 7, 1);
     } else {
-      return DateTime(now.year - 1, 7, 1);
+      // 1-2 月：Q3（10-12月）已於前年 11 月公布
+      return DateTime(now.year - 1, 10, 1);
     }
   }
 

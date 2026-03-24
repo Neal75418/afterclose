@@ -105,8 +105,8 @@ void main() {
       expect(captured.symbol.value, equals('2330'));
     });
 
-    test('throws ArgumentError for zero quantity', () {
-      expect(
+    test('throws ArgumentError for zero quantity', () async {
+      await expectLater(
         () => repository.addBuyTransaction(
           symbol: '2330',
           date: DateTime(2025, 1, 15),
@@ -117,8 +117,8 @@ void main() {
       );
     });
 
-    test('throws ArgumentError for negative price', () {
-      expect(
+    test('throws ArgumentError for negative price', () async {
+      await expectLater(
         () => repository.addBuyTransaction(
           symbol: '2330',
           date: DateTime(2025, 1, 15),
@@ -148,7 +148,7 @@ void main() {
         ),
       );
 
-      expect(
+      await expectLater(
         () => repository.addSellTransaction(
           symbol: '2330',
           date: DateTime(2025, 1, 15),
@@ -164,7 +164,7 @@ void main() {
         () => mockDb.getPortfolioPosition('2330'),
       ).thenAnswer((_) async => null);
 
-      expect(
+      await expectLater(
         () => repository.addSellTransaction(
           symbol: '2330',
           date: DateTime(2025, 1, 15),
@@ -175,8 +175,8 @@ void main() {
       );
     });
 
-    test('throws ArgumentError for zero quantity', () {
-      expect(
+    test('throws ArgumentError for zero quantity', () async {
+      await expectLater(
         () => repository.addSellTransaction(
           symbol: '2330',
           date: DateTime(2025, 1, 15),
@@ -238,8 +238,8 @@ void main() {
       expect(captured.txType.value, equals('DIVIDEND_STOCK'));
     });
 
-    test('throws ArgumentError for zero amount', () {
-      expect(
+    test('throws ArgumentError for zero amount', () async {
+      await expectLater(
         () => repository.addDividendTransaction(
           symbol: '2330',
           date: DateTime(2025, 7, 15),
