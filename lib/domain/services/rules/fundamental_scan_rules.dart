@@ -564,7 +564,19 @@ class EPSDeclineWarningRule extends StockRule {
     for (int i = 0; i < eps.length - 1 && declineCount < 2; i++) {
       final current = eps[i].value;
       final previous = eps[i + 1].value;
-      if (current == null || previous == null || previous <= 0) break;
+      if (current == null || previous == null) break;
+
+      // previous <= 0 時用絕對差額判斷是否持續惡化
+      if (previous <= 0) {
+        if (current < previous) {
+          declineCount++;
+          // 以絕對差額作為近似衰退率
+          declineRates.add((previous - current).abs());
+        } else {
+          break;
+        }
+        continue;
+      }
 
       final decline = (previous - current) / previous * 100;
       if (decline >= FundamentalParams.epsDeclineThreshold) {

@@ -80,8 +80,8 @@ void main() {
         expect(result, 42);
       });
 
-      test('throws NetworkException for non-retryable DioException', () {
-        expect(
+      test('throws NetworkException for non-retryable DioException', () async {
+        await expectLater(
           () => MarketClientMixin.executeRequest(
             'TEST',
             'test',
@@ -96,12 +96,12 @@ void main() {
 
       test(
         'throws NetworkException for connection timeout (non-retryable path)',
-        () {
+        () async {
           // connectionTimeout is retryable per _isRetryable, but after exhausting retries
           // Actually looking at the code: connectionTimeout IS retryable,
           // but it enters the retry loop. After max retries it throws.
           // For a non-retryable type like badCertificate, it throws immediately.
-          expect(
+          await expectLater(
             () => MarketClientMixin.executeRequest(
               'TEST',
               'test',
@@ -115,8 +115,8 @@ void main() {
         },
       );
 
-      test('rethrows AppException without wrapping', () {
-        expect(
+      test('rethrows AppException without wrapping', () async {
+        await expectLater(
           () => MarketClientMixin.executeRequest(
             'TEST',
             'test',
@@ -126,8 +126,8 @@ void main() {
         );
       });
 
-      test('rethrows non-Dio exceptions', () {
-        expect(
+      test('rethrows non-Dio exceptions', () async {
+        await expectLater(
           () => MarketClientMixin.executeRequest(
             'TEST',
             'test',

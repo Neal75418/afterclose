@@ -189,8 +189,14 @@ class PortfolioState {
 // ==================================================
 
 class PortfolioNotifier extends Notifier<PortfolioState> {
+  var _active = true;
+
   @override
-  PortfolioState build() => const PortfolioState();
+  PortfolioState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+    return const PortfolioState();
+  }
 
   AppDatabase get _db => ref.read(databaseProvider);
   PortfolioRepository get _repo => ref.read(portfolioRepositoryProvider);
@@ -207,6 +213,7 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
 
     try {
       final positions = await _db.getPortfolioPositions();
+      if (!_active) return;
 
       if (positions.isEmpty) {
         state = state.copyWith(
@@ -224,6 +231,7 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
         _db.getStocksBatch(symbols),
         _db.getLatestPricesBatch(symbols),
       ).wait;
+      if (!_active) return;
 
       // 建立 maps 供績效計算
       final stocksMap = <String, StockMasterEntry>{};

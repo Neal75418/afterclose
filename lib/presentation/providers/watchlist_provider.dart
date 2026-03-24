@@ -194,8 +194,12 @@ class WatchlistState {
 // ==================================================
 
 class WatchlistNotifier extends Notifier<WatchlistState> {
+  var _active = true;
+
   @override
   WatchlistState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
     _pendingAdds = {};
     return WatchlistState();
   }
@@ -224,6 +228,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         _db.getWatchlist(),
         analysisRepo.findLatestAnalysisDate(),
       ).wait;
+      if (!_active) return;
 
       if (watchlist.isEmpty) {
         state = state.copyWith(items: [], isLoading: false);
@@ -254,6 +259,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
           threshold: FundamentalParams.highPledgeRatioThreshold,
         ),
       ).wait;
+      if (!_active) return;
 
       // 解構 Record 欄位
       final stocksMap = data.stocks;

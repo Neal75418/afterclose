@@ -86,6 +86,8 @@ class ChipAnalysisService {
       } else if (netTotal < 0) {
         consecutiveSell++;
         if (consecutiveBuy > 0) break;
+      } else {
+        break; // neutral day 中斷連續天數
       }
     }
 

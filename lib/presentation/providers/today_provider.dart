@@ -122,8 +122,14 @@ class UpdateProgress {
 // ==================================================
 
 class TodayNotifier extends Notifier<TodayState> {
+  var _active = true;
+
   @override
-  TodayState build() => const TodayState();
+  TodayState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+    return const TodayState();
+  }
 
   AppDatabase get _db => ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
@@ -144,6 +150,7 @@ class TodayNotifier extends Notifier<TodayState> {
       // 取得今日推薦（使用 repo 的智慧回退機制處理週末）
       final repo = ref.read(analysisRepositoryProvider);
       final recommendations = await repo.getTodayRecommendations();
+      if (!_active) return;
 
       // 取得實際資料日期供顯示用（非查詢用途）
       final latestPriceDate = await _db.getLatestDataDate();
@@ -179,6 +186,7 @@ class TodayNotifier extends Notifier<TodayState> {
         analysisDate: analysisDate,
         historyStart: historyCtx.historyStart,
       );
+      if (!_active) return;
 
       // 解構 Record 欄位，享有編譯期型別安全
       final stocksMap = data.stocks;

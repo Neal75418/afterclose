@@ -301,7 +301,9 @@ class TradingRepository implements ITradingRepository {
         );
       }
 
-      await _db.insertDayTradingData(entries);
+      await _db.transaction(() async {
+        await _db.insertDayTradingData(entries);
+      });
 
       // 統計當沖比例分佈
       final highRatioCount = entries.where((e) {
@@ -457,9 +459,11 @@ class TradingRepository implements ITradingRepository {
           )
           .toList();
 
-      // 合併並寫入
+      // 合併並寫入（transaction 保護避免部分寫入）
       final allEntries = [...twseEntries, ...tpexEntries];
-      await _db.insertMarginTradingData(allEntries);
+      await _db.transaction(() async {
+        await _db.insertMarginTradingData(allEntries);
+      });
 
       AppLogger.info(
         'TradingRepo',

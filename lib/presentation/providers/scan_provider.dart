@@ -114,8 +114,13 @@ class ScanState {
 // ==================================================
 
 class ScanNotifier extends Notifier<ScanState> {
+  var _active = true;
+
   @override
   ScanState build() {
+    _active = true;
+    ref.onDispose(() => _active = false);
+
     // 重設所有可變快取，避免 Riverpod rebuild 時殘留舊資料
     // （_staticCachedIndustries 為 static，跨 instance 保留）
     _allAnalyses = [];
@@ -168,6 +173,7 @@ class ScanNotifier extends Notifier<ScanState> {
     try {
       // 智慧回退：找到最近有資料的日期（統一由 Repository 處理日期正規化）
       final result = await _analysisRepo.findLatestAnalyses();
+      if (!_active) return;
       final targetDate = result.targetDate;
       final analyses = result.analyses;
 
@@ -233,6 +239,7 @@ class ScanNotifier extends Notifier<ScanState> {
       final firstPageItems = await _loadItemsForAnalyses(
         _filteredAnalyses.take(kPageSize).toList(),
       );
+      if (!_active) return;
 
       state = state.copyWith(
         stocks: firstPageItems,

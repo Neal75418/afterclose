@@ -155,11 +155,16 @@ class PortfolioAnalyticsService {
           100;
     }
 
+    // NaN/Infinity 防護（totalReturn < -100% 時 math.pow 可能產生 NaN）
+    final safeYearReturn = yearReturn.isNaN || yearReturn.isInfinite
+        ? 0.0
+        : yearReturn;
+
     return PeriodReturns(
       daily: dailyReturn,
       weekly: weekReturn,
       monthly: monthReturn,
-      yearly: yearReturn.clamp(-100.0, 1000.0), // 限制極端值
+      yearly: safeYearReturn.clamp(-100.0, 1000.0), // 限制極端值
     );
   }
 

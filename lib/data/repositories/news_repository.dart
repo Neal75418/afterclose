@@ -67,6 +67,7 @@ class NewsRepository implements INewsRepository {
     }
 
     // 在單一 Transaction 中批次寫入
+    // 注意：itemsAdded 為嘗試寫入筆數（insertOrIgnore 會跳過重複項）
     await _db.transaction(() async {
       // 批次寫入新聞
       await _db.batch((b) {

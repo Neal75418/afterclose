@@ -501,68 +501,6 @@ void main() {
   });
 
   // ===========================================================================
-  // StockDetailNotifier.loadMarginData
-  // ===========================================================================
-
-  group('StockDetailNotifier.loadMarginData', () {
-    test('loads margin data from API', () async {
-      setupLoadDataMocks();
-
-      when(
-        () => mockFinMind.getMarginData(
-          stockId: any(named: 'stockId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).thenAnswer((_) async => <FinMindMarginData>[]);
-
-      final notifier = container.read(
-        stockDetailProvider(_testSymbol).notifier,
-      );
-      await notifier.loadData();
-      await notifier.loadMarginData();
-
-      final state = container.read(stockDetailProvider(_testSymbol));
-      expect(state.loading.isLoadingMargin, isFalse);
-
-      verify(
-        () => mockFinMind.getMarginData(
-          stockId: any(named: 'stockId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).called(1);
-    });
-
-    test('skips when already loaded', () async {
-      setupLoadDataMocks();
-
-      when(
-        () => mockFinMind.getMarginData(
-          stockId: any(named: 'stockId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).thenAnswer((_) async => [createMarginData()]);
-
-      final notifier = container.read(
-        stockDetailProvider(_testSymbol).notifier,
-      );
-      await notifier.loadData();
-      await notifier.loadMarginData();
-      await notifier.loadMarginData(); // 第二次應跳過（marginHistory 已有資料）
-
-      verify(
-        () => mockFinMind.getMarginData(
-          stockId: any(named: 'stockId'),
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).called(1);
-    });
-  });
-
-  // ===========================================================================
   // StockDetailNotifier.loadFundamentals
   // ===========================================================================
 

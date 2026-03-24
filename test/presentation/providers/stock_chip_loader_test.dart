@@ -5,6 +5,7 @@ import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/presentation/providers/stock_chip_loader.dart';
 
 // =============================================================================
@@ -306,7 +307,10 @@ void main() {
       );
 
       verify(
-        () => mockDb.getRecentInsiderHoldings('2330', months: 6),
+        () => mockDb.getRecentInsiderHoldings(
+          '2330',
+          months: DataFreshness.insiderRecentMonths,
+        ),
       ).called(1);
       expect(result.dayTrading, isEmpty);
       expect(result.shareholding, isEmpty);

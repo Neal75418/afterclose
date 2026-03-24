@@ -14,7 +14,7 @@ List<DailyPriceEntry> _generatePricesAboveMA({
   double lastDayChangePct = 0.05,
 }) {
   final days = maPeriod + 5;
-  final now = DateTime.now();
+  final now = DateTime(2025, 6, 1);
   return List.generate(days, (i) {
     final isLast = i == days - 1;
     final close = isLast ? basePrice * (1 + lastDayChangePct) : basePrice;
@@ -28,7 +28,7 @@ List<DailyPriceEntry> _generatePricesAboveMA({
 
 /// 建構強力上升 RSI > 50 的價格資料
 List<DailyPriceEntry> _generateStrongRsiPrices() {
-  final now = DateTime.now();
+  final now = DateTime(2025, 6, 1);
   return List.generate(30, (i) {
     return createTestPrice(
       date: now.subtract(Duration(days: 29 - i)),
@@ -49,7 +49,7 @@ void main() {
       final prices = _generatePricesAboveMA(maPeriod: 60);
       // Build EPS history: latest quarter EPS=3.0, same quarter last year EPS=1.5
       // yoy growth = (3.0-1.5)/1.5 * 100 = 100% >= 50%
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -94,7 +94,7 @@ void main() {
 
     test('does not trigger when yoy growth is below threshold', () {
       final prices = _generatePricesAboveMA(maPeriod: 60);
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       // yoy growth = (1.2-1.0)/1.0 * 100 = 20% < 50%
       final epsHistory = [
         createTestFinancialData(
@@ -131,7 +131,7 @@ void main() {
 
     test('does not trigger when latest EPS is negative', () {
       final prices = _generatePricesAboveMA(maPeriod: 60);
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -167,7 +167,7 @@ void main() {
 
     test('does not trigger with insufficient EPS history', () {
       final prices = _generatePricesAboveMA(maPeriod: 60);
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -259,7 +259,7 @@ void main() {
 
     test('triggers when previous EPS < 0 and latest >= 0.3 with MA20', () {
       final prices = _generatePricesAboveMA(maPeriod: 20);
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -285,7 +285,7 @@ void main() {
     test('triggers with RSI > 50 even without MA20', () {
       // Use strong RSI prices where close may not be > MA20 but RSI > 50
       final prices = _generateStrongRsiPrices();
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -309,7 +309,7 @@ void main() {
 
     test('does not trigger when previous quarter is not a loss', () {
       final prices = _generatePricesAboveMA(maPeriod: 20);
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -330,7 +330,7 @@ void main() {
 
     test('does not trigger when latest EPS is below turnaround threshold', () {
       final prices = _generatePricesAboveMA(maPeriod: 20);
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),
@@ -357,7 +357,7 @@ void main() {
     const rule = EPSDeclineWarningRule();
 
     test('triggers with 2 consecutive quarters of decline >= 20%', () {
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       // EPS (newest first): 0.5, 1.0, 2.0
       // Decline: (1.0-0.5)/1.0 = 50% >= 20%, (2.0-1.0)/2.0 = 50% >= 20%
       final epsHistory = [
@@ -389,7 +389,7 @@ void main() {
     });
 
     test('does not trigger when decline is less than 20%', () {
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       // Decline: (1.0-0.9)/1.0 = 10% < 20%
       final epsHistory = [
         createTestFinancialData(
@@ -415,7 +415,7 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 1);
       final epsHistory = [
         createTestFinancialData(
           date: DateTime(now.year, now.month, 1),

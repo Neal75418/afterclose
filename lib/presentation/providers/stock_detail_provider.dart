@@ -213,18 +213,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
     state = state.copyWith(isInWatchlist: !wasInWatchlist);
   }
 
-  /// 載入融資融券資料
-  Future<void> loadMarginData() async {
-    if (state.loading.isLoadingMargin || state.chip.marginHistory.isNotEmpty) {
-      return;
-    }
-
-    state = state.copyWith(isLoadingMargin: true);
-    final marginData = await _chipLoader.loadMarginFromApi(_symbol);
-    if (!_active) return;
-    state = state.copyWith(marginHistory: marginData, isLoadingMargin: false);
-  }
-
   /// 載入基本面資料（營收/股利/本益比/EPS）
   Future<void> loadFundamentals() async {
     if (state.loading.isLoadingFundamentals) return;

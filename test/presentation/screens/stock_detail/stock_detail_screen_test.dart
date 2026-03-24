@@ -36,9 +36,6 @@ class FakeStockDetailNotifier extends StockDetailNotifier {
   Future<void> loadChipData() async {}
 
   @override
-  Future<void> loadMarginData() async {}
-
-  @override
   Future<void> toggleWatchlist() async {}
 }
 

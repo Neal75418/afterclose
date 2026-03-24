@@ -71,9 +71,24 @@ class _InsiderTabState extends ConsumerState<InsiderTab> {
           if (insiderError != null && !isLoadingInsider)
             Padding(
               padding: const EdgeInsets.only(bottom: DesignTokens.spacing16),
-              child: Text(
-                insiderError,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      insiderError,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => ref
+                        .read(stockDetailProvider(widget.symbol).notifier)
+                        .loadInsiderData(),
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text('common.retry'.tr()),
+                  ),
+                ],
               ),
             ),
 

@@ -243,7 +243,7 @@ class MAAlignmentBullishRule extends StockRule {
       final today = data.prices.last;
       final close = today.close;
       final vol = today.volume;
-      if (close == null || vol == null) return null;
+      if (close == null || vol == null || vol <= 0) return null;
 
       if (close <= ma5) return null;
       if ((close - ma5) / ma5 >= IndicatorParams.maDeviationThreshold) {
