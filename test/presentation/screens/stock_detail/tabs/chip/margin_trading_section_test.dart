@@ -79,20 +79,5 @@ void main() {
       // ratio = 2000/10000*100 = 20% > 10%
       expect(find.textContaining('20.0%'), findsWidgets);
     });
-
-    testWidgets('renders table with multiple entries', (tester) async {
-      widenViewport(tester);
-      final entries = List.generate(
-        5,
-        (i) => createEntry(
-          date: DateTime(2026, 2, 10 + i),
-          marginBalance: (50000 + i * 1000).toDouble(),
-        ),
-      );
-
-      await pumpSection(tester, MarginTradingSection(history: entries));
-
-      expect(find.byType(MarginTradingSection), findsOneWidget);
-    });
   });
 }

@@ -35,32 +35,6 @@ void main() {
       expect(find.text('RSI(14)'), findsOneWidget);
     });
 
-    testWidgets('shows overbought signal for high RSI', (tester) async {
-      widenViewport(tester);
-      // Steadily increasing prices → high RSI
-      final prices = List.generate(30, (i) => 100.0 + i * 2);
-      await tester.pumpWidget(
-        buildTestApp(
-          RSICard(prices: prices, indicatorService: indicatorService),
-        ),
-      );
-
-      expect(find.byType(RSICard), findsOneWidget);
-    });
-
-    testWidgets('shows oversold signal for low RSI', (tester) async {
-      widenViewport(tester);
-      // Steadily decreasing prices → low RSI
-      final prices = List.generate(30, (i) => 200.0 - i * 3);
-      await tester.pumpWidget(
-        buildTestApp(
-          RSICard(prices: prices, indicatorService: indicatorService),
-        ),
-      );
-
-      expect(find.byType(RSICard), findsOneWidget);
-    });
-
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(

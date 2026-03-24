@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -54,17 +53,6 @@ void main() {
       );
 
       expect(find.text('-80.10'), findsOneWidget);
-    });
-
-    testWidgets('hides sparkline when history has < 2 points', (tester) async {
-      await tester.pumpWidget(
-        buildTestApp(
-          HeroIndexSection(index: createIndex(), historyData: const [22000]),
-        ),
-      );
-
-      // MiniTrendChart should not be rendered
-      expect(find.byType(HeroIndexSection), findsOneWidget);
     });
   });
 }

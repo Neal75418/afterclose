@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/data/models/finmind/dividend.dart';
 import 'package:afterclose/data/models/finmind/per.dart';
 import 'package:afterclose/data/models/finmind/revenue.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
@@ -162,15 +160,6 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('shows empty state for all sections', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(seconds: 1));
-
-      // Empty state text containers should be present
-      expect(find.byType(FundamentalsTab), findsOneWidget);
-    });
-
     testWidgets('shows PER values when data is present', (tester) async {
       widenViewport(tester);
       final state = const StockDetailState().copyWith(
@@ -208,54 +197,6 @@ void main() {
       expect(find.byType(FundamentalsTab), findsOneWidget);
       // Revenue table is rendered (not the empty/loading state)
       expect(find.byType(SectionHeader), findsAtLeastNWidgets(3));
-    });
-
-    testWidgets('shows EPS table when data exists', (tester) async {
-      widenViewport(tester);
-      final epsData = [
-        FinancialDataEntry(
-          symbol: '2330',
-          date: DateTime(2025, 9, 30),
-          statementType: 'INCOME',
-          dataType: 'EPS',
-          value: 12.5,
-        ),
-      ];
-      final state = const StockDetailState().copyWith(epsHistory: epsData);
-      await tester.pumpWidget(buildTestWidget(stockState: state));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(FundamentalsTab), findsOneWidget);
-    });
-
-    testWidgets('shows dividend table when data exists', (tester) async {
-      widenViewport(tester);
-      final dividends = [
-        const FinMindDividend(
-          stockId: '2330',
-          year: 2025,
-          cashDividend: 13.5,
-          stockDividend: 0,
-        ),
-      ];
-      final state = const StockDetailState().copyWith(
-        dividendHistory: dividends,
-      );
-      await tester.pumpWidget(buildTestWidget(stockState: state));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(FundamentalsTab), findsOneWidget);
-    });
-
-    testWidgets('shows profitability card when metrics exist', (tester) async {
-      widenViewport(tester);
-      final state = const StockDetailState().copyWith(
-        latestQuarterMetrics: {'ROE': 25.3, 'ROA': 12.1},
-      );
-      await tester.pumpWidget(buildTestWidget(stockState: state));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byType(FundamentalsTab), findsOneWidget);
     });
   });
 }

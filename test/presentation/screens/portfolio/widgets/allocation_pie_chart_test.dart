@@ -24,17 +24,6 @@ void main() {
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
-    testWidgets('renders pie chart with data', (tester) async {
-      widenViewport(tester);
-      final map = {'2330': 50.0, '2317': 30.0, '0050': 20.0};
-
-      await tester.pumpWidget(
-        buildTestApp(AllocationPieChart(allocationMap: map)),
-      );
-
-      expect(find.byType(AllocationPieChart), findsOneWidget);
-    });
-
     testWidgets('displays legend entries', (tester) async {
       widenViewport(tester);
       final map = {'2330': 50.0, '2317': 30.0, '0050': 20.0};

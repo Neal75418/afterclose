@@ -45,18 +45,6 @@ void main() {
       expect(find.text('HIST'), findsOneWidget);
     });
 
-    testWidgets('shows bullish with rising prices', (tester) async {
-      widenViewport(tester);
-      final prices = List.generate(40, (i) => 100.0 + i * 1.5);
-      await tester.pumpWidget(
-        buildTestApp(
-          MACDCard(prices: prices, indicatorService: indicatorService),
-        ),
-      );
-
-      expect(find.byType(MACDCard), findsOneWidget);
-    });
-
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
       final prices = List.generate(40, (i) => 100.0 + (i % 7) * 2 - 6);

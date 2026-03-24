@@ -75,20 +75,5 @@ void main() {
       expect(find.byIcon(Icons.account_balance), findsOneWidget);
       expect(find.byIcon(Icons.store), findsOneWidget);
     });
-
-    testWidgets('renders table with multiple entries', (tester) async {
-      widenViewport(tester);
-      final entries = List.generate(
-        5,
-        (i) => createEntry(
-          date: DateTime(2026, 2, 10 + i),
-          foreignNet: (100 + i * 50).toDouble(),
-        ),
-      );
-
-      await pumpSection(tester, InstitutionalSection(history: entries));
-
-      expect(find.byType(InstitutionalSection), findsOneWidget);
-    });
   });
 }

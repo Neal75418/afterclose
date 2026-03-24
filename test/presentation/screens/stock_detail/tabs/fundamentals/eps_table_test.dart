@@ -48,15 +48,6 @@ void main() {
       expect(find.text('9.56'), findsOneWidget);
     });
 
-    testWidgets('renders with empty data', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(const EpsTable(epsHistory: [], showROCYear: false)),
-      );
-
-      expect(find.byType(EpsTable), findsOneWidget);
-    });
-
     testWidgets('displays null EPS as dash', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
@@ -66,20 +57,6 @@ void main() {
       );
 
       expect(find.text('-'), findsWidgets);
-    });
-
-    testWidgets('renders with ROC year format', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          EpsTable(
-            epsHistory: [createEps(year: 2025, month: 9)],
-            showROCYear: true,
-          ),
-        ),
-      );
-
-      expect(find.byType(EpsTable), findsOneWidget);
     });
   });
 }

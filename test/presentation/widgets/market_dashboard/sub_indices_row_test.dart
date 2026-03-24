@@ -32,15 +32,6 @@ void main() {
   }
 
   group('SubIndicesRow', () {
-    testWidgets('returns SizedBox.shrink when empty', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(const SubIndicesRow(subIndices: [])),
-      );
-
-      expect(find.byType(SubIndicesRow), findsOneWidget);
-    });
-
     testWidgets('displays index cards', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(

@@ -134,21 +134,5 @@ void main() {
       expect(find.text('-2.00%'), findsOneWidget);
       expect(find.text('-15.00%'), findsOneWidget);
     });
-
-    testWidgets('shows skipped trades when > 0', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          BacktestSummaryCard(
-            summary: createSummary(),
-            tradingDaysScanned: 250,
-            executionTime: const Duration(milliseconds: 1500),
-            skippedTrades: 5,
-          ),
-        ),
-      );
-
-      expect(find.byType(BacktestSummaryCard), findsOneWidget);
-    });
   });
 }

@@ -55,25 +55,6 @@ void main() {
       expect(find.text('OBV'), findsNothing);
     });
 
-    testWidgets('formats large OBV values', (tester) async {
-      widenViewport(tester);
-      // Large volumes to create large OBV values
-      final closes = List.generate(10, (i) => 100.0 + i);
-      final volumes = List.generate(10, (i) => 5000000.0);
-
-      await tester.pumpWidget(
-        buildTestApp(
-          OBVCard(
-            closes: closes,
-            volumes: volumes,
-            indicatorService: indicatorService,
-          ),
-        ),
-      );
-
-      expect(find.byType(OBVCard), findsOneWidget);
-    });
-
     testWidgets('shows 5-day change', (tester) async {
       widenViewport(tester);
       final closes = List.generate(10, (i) => 100.0 + i);

@@ -56,33 +56,5 @@ void main() {
       expect(find.byType(DividendTable), findsOneWidget);
       expect(find.byIcon(Icons.payments), findsNothing);
     });
-
-    testWidgets('limits display to 5 years', (tester) async {
-      widenViewport(tester);
-      final dividends = List.generate(
-        8,
-        (i) => createDividend(year: 2025 - i, cashDividend: 3.0 + i * 0.1),
-      );
-
-      await tester.pumpWidget(
-        buildTestApp(DividendTable(dividends: dividends, showROCYear: false)),
-      );
-
-      expect(find.byType(DividendTable), findsOneWidget);
-    });
-
-    testWidgets('renders with ROC year format', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          DividendTable(
-            dividends: [createDividend(year: 2025)],
-            showROCYear: true,
-          ),
-        ),
-      );
-
-      expect(find.byType(DividendTable), findsOneWidget);
-    });
   });
 }

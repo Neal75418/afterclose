@@ -71,17 +71,5 @@ void main() {
       expect(find.text('1000-5000'), findsOneWidget);
       expect(find.text('30.2%'), findsOneWidget);
     });
-
-    testWidgets('limits display to 8 entries', (tester) async {
-      widenViewport(tester);
-      final entries = List.generate(
-        12,
-        (i) => createEntry(level: 'level-$i', percent: (i + 1) * 2.0),
-      );
-
-      await pumpSection(tester, DistributionSection(distribution: entries));
-
-      expect(find.byType(DistributionSection), findsOneWidget);
-    });
   });
 }

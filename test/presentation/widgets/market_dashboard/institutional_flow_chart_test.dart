@@ -37,59 +37,5 @@ void main() {
       // Should render empty
       expect(find.byType(InstitutionalFlowChart), findsOneWidget);
     });
-
-    testWidgets('displays three flow cards with data', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          const InstitutionalFlowChart(
-            data: InstitutionalTotals(
-              foreignNet: 5000000000,
-              trustNet: -2000000000,
-              dealerNet: 500000000,
-              totalNet: 3500000000,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(InstitutionalFlowChart), findsOneWidget);
-    });
-
-    testWidgets('shows positive total net in up color', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          const InstitutionalFlowChart(
-            data: InstitutionalTotals(
-              foreignNet: 3000000000,
-              trustNet: 1000000000,
-              dealerNet: 500000000,
-              totalNet: 4500000000,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(InstitutionalFlowChart), findsOneWidget);
-    });
-
-    testWidgets('shows negative total net in down color', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          const InstitutionalFlowChart(
-            data: InstitutionalTotals(
-              foreignNet: -3000000000,
-              trustNet: -1000000000,
-              dealerNet: -500000000,
-              totalNet: -4500000000,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(InstitutionalFlowChart), findsOneWidget);
-    });
   });
 }

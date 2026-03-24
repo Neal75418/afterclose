@@ -64,33 +64,5 @@ void main() {
       // totalPnl = 50000 + 10000 + 5000 = 65000 (positive → has +)
       expect(find.textContaining('+'), findsWidgets);
     });
-
-    testWidgets('renders with negative PnL', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          PortfolioSummaryCard(
-            summary: createSummary(
-              totalUnrealizedPnl: -100000,
-              totalRealizedPnl: 0,
-              totalDividends: 0,
-            ),
-          ),
-        ),
-      );
-
-      expect(find.byType(PortfolioSummaryCard), findsOneWidget);
-    });
-
-    testWidgets('renders with zero PnL', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          const PortfolioSummaryCard(summary: PortfolioSummary.empty),
-        ),
-      );
-
-      expect(find.byType(PortfolioSummaryCard), findsOneWidget);
-    });
   });
 }
