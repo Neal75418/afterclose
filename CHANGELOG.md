@@ -4,6 +4,52 @@ All notable changes to AfterClose will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [0.4.0] — 2026-03-25
+
+### ✨ Added
+
+- **Market Dashboard 增強**：情緒分析、籌碼異動偵測、關鍵洞察、產業表現
+- **行事曆功能**：股東會 / 除權息事件追蹤
+- **內部人轉讓**：董監事股權轉讓申報同步與顯示
+- **新上市股智慧跳過**：歷史同步不再每次重複嘗試無資料的新上市 ETF
+
+### 🔧 Fixed — 架構與安全
+
+- **消除循環依賴**：Domain→Presentation import 消除，13 個 data struct 搬至 `domain/models/`
+- **API error 不洩漏**：`e.toString()` 替換為通用錯誤訊息，防止 URL/token 暴露
+- **TextField maxLength**：備註欄位加上 500 字限制
+
+### 🔧 Fixed — 商業邏輯
+
+- **Portfolio 報酬率**：`totalReturn` 分母改用歷史總買入成本（含已平倉），修正獲利 portfolio 顯示 0% 的 bug
+- **Period Returns**：SELL proceeds 不再從分母扣減，修正 `totalInvested ≤ 0` 導致報酬全為空的問題
+- **KD 指標**：Fast Stochastic (SMA) → 台灣標準 Slow Stochastic (EMA 1/3, K₀=D₀=50)
+- **latestRSI**：從完整歷史初始化 Wilder's smoothing，與 `calculateRSI` 結果一致
+- **歷史同步**：新上市股不再每次觸發 TWSE 歷史查詢（009818 修復）
+
+### 🧹 Refactored
+
+- **Dead code 清理**（5 輪）：移除未使用的 services、DAO methods、model classes、rule boilerplate
+- **Type-safe Isolate DTOs**：替換 `Map<String, dynamic>` 為 typed DTOs
+- **DesignTokens**：全面替換 spacing magic numbers
+
+### 🧪 Tests
+
+- **測試品質提升**：清理 217 個低價值測試（2446 → 2229）
+- **Flaky 修復**：`DateTime.now()` 替換為固定日期、race condition 改 Completer 控制、async drain 修正
+- **2229 tests, 0 failures**
+
+### 🎨 Style
+
+- **註解統一**：全面中文 doc comments、import 排序、test description 直接動詞風格
+- **文件同步**：所有 .md 與 codebase 數字同步、Mermaid dark theme
+
+### 📄 Docs
+
+- CLAUDE.md、README.md、RULE_ENGINE.md、TEST_COVERAGE_PLAN.md 全面更新
+
+---
+
 ## [Unreleased]
 
 ### ✨ Added (2026-03-13)
