@@ -152,7 +152,7 @@ class RadarComparisonChart extends StatelessWidget {
     final sorted = List<DailyPriceEntry>.from(history)
       ..sort((a, b) => a.date.compareTo(b.date));
 
-    // Get ~20 trading days ago (approx 1 month)
+    // 取約 20 個交易日前（約 1 個月）
     final startIndex = max(0, sorted.length - 20);
     final startPrice = sorted[startIndex].close ?? 0.0;
     final endPrice = sorted.last.close ?? 0.0;
@@ -160,7 +160,7 @@ class RadarComparisonChart extends StatelessWidget {
     if (startPrice == 0) return 50;
 
     final returnPct = ((endPrice / startPrice) - 1) * 100;
-    // Map [-30, +30] to [0, 100]
+    // 將 [-30, +30] 映射到 [0, 100]
     return ((returnPct + 30) / 60 * 100).clamp(0, 100);
   }
 
@@ -175,14 +175,14 @@ class RadarComparisonChart extends StatelessWidget {
 
     final pe = valuation.per;
     if (pe != null && pe > 0) {
-      // Lower P/E = better: PE 10 → 100, PE 40 → 0
+      // P/E 越低越好：PE 10 → 100, PE 40 → 0
       score += ((40 - pe) / 30 * 100).clamp(0, 100);
       count++;
     }
 
     final yield_ = valuation.dividendYield;
     if (yield_ != null) {
-      // Higher yield = better: 0% → 0, 6% → 100
+      // 殖利率越高越好：0% → 0, 6% → 100
       score += (yield_ / 6 * 100).clamp(0, 100);
       count++;
     }
@@ -208,14 +208,14 @@ class RadarComparisonChart extends StatelessWidget {
     final instList = state.institutionalMap[symbol];
     if (instList == null || instList.isEmpty) return 50;
 
-    // Sum 5-day foreign net
+    // 加總 5 日外資淨買超
     final recent = instList.take(5);
     double totalNet = 0;
     for (final entry in recent) {
       totalNet += entry.foreignNet ?? 0;
     }
 
-    // Normalize: ±50M as full range
+    // 正規化：±5000 萬為滿分範圍
     final normalized = (totalNet / 50000000) * 50 + 50;
     return normalized.clamp(0, 100);
   }

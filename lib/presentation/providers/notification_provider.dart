@@ -22,7 +22,7 @@ class NotificationState {
   final bool hasPermission;
   final String? error;
 
-  // Sentinel for distinguishing "not passed" from "passed as null"
+  // Sentinel：區分「未傳入」與「傳入 null」
   static const _sentinel = Object();
 
   NotificationState copyWith({

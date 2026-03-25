@@ -3,7 +3,9 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -13,10 +15,8 @@ import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/scoring_service.dart';
-import 'package:afterclose/domain/services/update_service_deps.dart';
-import 'package:afterclose/core/exceptions/app_exception.dart';
-import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/domain/services/update/update.dart';
+import 'package:afterclose/domain/services/update_service_deps.dart';
 
 /// 每日市場資料更新協調服務
 ///

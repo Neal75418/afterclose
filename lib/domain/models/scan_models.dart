@@ -5,7 +5,7 @@
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/signal_names.dart';
 
-/// Filter options for scan screen
+/// 掃描畫面篩選選項
 enum ScanFilter {
   // All
   all('scan.filterAll', null, ScanFilterGroup.all),
@@ -269,7 +269,7 @@ enum ScanFilter {
 
   const ScanFilter(this.labelKey, this.reasonCode, this.group);
 
-  /// i18n key for label - use .tr() to get translated string
+  /// 標籤的 i18n key，使用 .tr() 取得翻譯文字
   final String labelKey;
   final String? reasonCode;
   final ScanFilterGroup group;
@@ -294,7 +294,7 @@ enum ScanFilterGroup {
 
   const ScanFilterGroup(this.labelKey);
 
-  /// i18n key for label - use .tr() to get translated string
+  /// 標籤的 i18n key，使用 .tr() 取得翻譯文字
   final String labelKey;
 
   /// Get all filters in this group
@@ -311,11 +311,11 @@ enum ScanSort {
 
   const ScanSort(this.labelKey);
 
-  /// i18n key for label - use .tr() to get translated string
+  /// 標籤的 i18n key，使用 .tr() 取得翻譯文字
   final String labelKey;
 }
 
-/// A single stock item displayed in the scan screen.
+/// 掃描畫面中顯示的單一股票項目
 class ScanStockItem {
   ScanStockItem({
     required this.symbol,

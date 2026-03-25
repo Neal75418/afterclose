@@ -350,7 +350,7 @@ void main() {
       // InstitutionalShiftRule 補測
       // ==========================================
 
-      test('Scenario 1: should trigger sell-to-buy reversal', () {
+      test('Scenario 1: triggers sell-to-buy reversal', () {
         // prevAvg < -100K, todayNet > 500K, price up, ratio > 35%
         final now = DateTime.now();
         final history = List.generate(5, (i) {
@@ -388,7 +388,7 @@ void main() {
         expect(result.description, contains('由賣轉買'));
       });
 
-      test('Scenario 2: should trigger buy-to-sell reversal', () {
+      test('Scenario 2: triggers buy-to-sell reversal', () {
         // prevAvg > 100K, todayNet < -500K, price down, ratio > 35%
         final now = DateTime.now();
         final history = List.generate(5, (i) {
@@ -427,7 +427,7 @@ void main() {
         expect(result.description, contains('由買轉賣'));
       });
 
-      test('Scenario 3: should trigger buy acceleration', () {
+      test('Scenario 3: triggers buy acceleration', () {
         // prevAvg > 100K, todayNet > prevAvg * 2, > 1M, ratio > 50%
         final now = DateTime.now();
         final history = List.generate(5, (i) {
@@ -461,7 +461,7 @@ void main() {
         expect(result.description, contains('買超擴大'));
       });
 
-      test('Scenario 4: should trigger sell acceleration', () {
+      test('Scenario 4: triggers sell acceleration', () {
         // prevAvg < -100K, todayNet < prevAvg * 2, < -1M, ratio > 50%
         final now = DateTime.now();
         final history = List.generate(5, (i) {
@@ -495,7 +495,7 @@ void main() {
         expect(result.description, contains('賣超擴大'));
       });
 
-      test('Scenario 6: should trigger significant sell (generic catch)', () {
+      test('Scenario 6: triggers significant sell (generic catch)', () {
         // todayNet < -5M, ratio > 35%, priceChangePercent < -1%
         final now = DateTime.now();
         final history = [

@@ -158,7 +158,7 @@ class SecondaryIndicatorSelector extends StatelessWidget {
   }
 }
 
-/// A single toggle chip for an indicator.
+/// 單一指標切換 Chip
 class _IndicatorChip extends StatelessWidget {
   const _IndicatorChip({
     required this.label,

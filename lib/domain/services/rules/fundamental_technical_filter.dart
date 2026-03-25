@@ -38,7 +38,7 @@ mixin FundamentalTechnicalFilter on StockRule {
     return null;
   }
 
-  /// Simplified check: price above MA (no changePct requirement).
+  /// 簡化檢查：價格站上均線（不要求漲幅）
   ({double close, double ma})? checkAboveMA({
     required AnalysisContext context,
     required StockData data,

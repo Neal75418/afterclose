@@ -13,7 +13,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
-  /// SharedPreferences key for tracking onboarding completion
+  /// SharedPreferences key，用於追蹤引導頁是否已完成
   static const String completedKey = 'onboarding_complete';
 
   @override

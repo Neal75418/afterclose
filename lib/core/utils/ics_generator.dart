@@ -78,7 +78,7 @@ abstract final class IcsGenerator {
   }
 }
 
-/// StringBuffer extension for CRLF line writes
+/// StringBuffer extension — 以 CRLF 換行寫入
 extension on StringBuffer {
   void _w(String line) {
     write(line);
