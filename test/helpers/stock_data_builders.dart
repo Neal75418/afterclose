@@ -121,7 +121,7 @@ List<FinancialDataEntry> generateEpsHistory({
   String symbol = 'TEST',
   DateTime? anchor,
 }) {
-  final base = anchor ?? DateTime(2025, 6, 15);
+  final base = anchor ?? DateTime(2025, 12, 15);
   return List.generate(quarters, (i) {
     // 最新在前（i=0 = 最近季度），用固定日期避免跨年邊界問題
     final quarterDate = DateTime(base.year, base.month - (i * 3), 1);
@@ -143,7 +143,7 @@ List<FinancialDataEntry> generateRoeHistory({
   String symbol = 'TEST',
   DateTime? anchor,
 }) {
-  final base = anchor ?? DateTime(2025, 6, 15);
+  final base = anchor ?? DateTime(2025, 12, 15);
   return List.generate(quarters, (i) {
     final quarterDate = DateTime(base.year, base.month - (i * 3), 1);
     final roe = baseRoe + (quarterlyChange * (quarters - 1 - i));
@@ -171,7 +171,7 @@ List<MonthlyRevenueEntry> generateRevenueHistory({
   String symbol = 'TEST',
   DateTime? anchor,
 }) {
-  final base = anchor ?? DateTime(2025, 6, 15);
+  final base = anchor ?? DateTime(2025, 12, 15);
   return List.generate(months, (i) {
     final date = DateTime(base.year, base.month - i, 1);
     return createTestMonthlyRevenue(
