@@ -40,6 +40,7 @@ void main() {
           txType: 'BUY',
           quantity: 1500,
           price: 500.0,
+          fee: 0,
           date: DateTime.now().subtract(const Duration(days: 100)),
         ),
         createTestPortfolioTransaction(
@@ -47,6 +48,8 @@ void main() {
           txType: 'SELL',
           quantity: 500,
           price: 510.0,
+          fee: 0,
+          tax: 0,
           date: DateTime.now().subtract(const Duration(days: 50)),
         ),
       ];

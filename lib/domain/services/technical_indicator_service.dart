@@ -183,18 +183,20 @@ class TechnicalIndicatorService {
 
     // 台灣標準 Slow Stochastic：
     // RSV = raw %K（已在 kValues 中計算）
-    // %K = K_prev × 2/3 + RSV × 1/3（EMA smoothing factor = 1/3）
-    // %D = D_prev × 2/3 + K × 1/3
+    // %K = K_prev × (1 - 1/kSmooth) + RSV × (1/kSmooth)
+    // %D = D_prev × (1 - 1/dPeriod) + K × (1/dPeriod)
+    // 預設 kSmooth=3, dPeriod=3 → smoothing factor 皆為 1/3
     // 初始值：K₀ = D₀ = 50
-    const smoothFactor = 1.0 / 3.0;
+    const kSmoothFactor = 1.0 / 3.0; // K 的平滑係數固定為 1/3（台灣標準）
+    final dSmoothFactor = 1.0 / dPeriod; // D 的平滑係數由 dPeriod 決定
     double prevK = 50.0;
     double prevD = 50.0;
 
     // kValues 目前存放 RSV，改為存放 smoothed %K
     for (int i = kPeriod - 1; i < length; i++) {
       final rsv = kValues[i]!;
-      final smoothedK = prevK * (1 - smoothFactor) + rsv * smoothFactor;
-      final smoothedD = prevD * (1 - smoothFactor) + smoothedK * smoothFactor;
+      final smoothedK = prevK * (1 - kSmoothFactor) + rsv * kSmoothFactor;
+      final smoothedD = prevD * (1 - dSmoothFactor) + smoothedK * dSmoothFactor;
 
       kValues[i] = smoothedK;
       dValues[i] = smoothedD;
