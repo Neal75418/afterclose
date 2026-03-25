@@ -2,7 +2,7 @@
 
 > ← [Back to README](../README.md)
 
-AfterClose 推薦規則引擎 — **60 條異常偵測規則**
+AfterClose 推薦規則引擎 — **62 條異常偵測規則**
 
 ---
 
@@ -11,7 +11,7 @@ AfterClose 推薦規則引擎 — **60 條異常偵測規則**
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
 flowchart LR
-    Data["市場資料"] --> Engine["Rule Engine\n60 Rules"]
+    Data["市場資料"] --> Engine["Rule Engine\n62 Rules"]
     Engine --> Score["分數合成"]
     Score --> Top["Top 20"]
 
@@ -34,8 +34,8 @@ flowchart LR
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 60 條規則分佈
-    "技術型態 (19)" : 19
+pie showData title 62 條規則分佈
+    "技術型態 (21)" : 21
     "價量訊號 (12)" : 12
     "基本面 (15)" : 15
     "籌碼面 (7)" : 7
@@ -46,7 +46,7 @@ pie showData title 60 條規則分佈
 
 ## 📈 技術型態
 
-### 基礎規則 (8)
+### 基礎規則 (9)
 
 | 規則                  |  分數 | 條件                         |
 |:--------------------|----:|:---------------------------|
@@ -60,7 +60,7 @@ pie showData title 60 條規則分佈
 | INSTITUTIONAL_SELL  | -12 | 法人賣超轉向                     |
 | NEWS_RELATED        |  +8 | 近期相關新聞                     |
 
-### K 線型態 (11)
+### K 線型態 (12)
 
 | 規則                           |  分數 | 說明        |
 |:-----------------------------|----:|:----------|

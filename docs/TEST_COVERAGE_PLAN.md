@@ -8,15 +8,15 @@
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 測試進度（2532+ cases）
-    "Domain 層" : 920
-    "Data 層" : 640
-    "Presentation 層" : 972
+pie showData title 測試進度（2229 cases）
+    "Domain 層" : 811
+    "Data 層" : 564
+    "Presentation 層" : 854
 ```
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2532+ |
+| 測試總數             | 2229  |
 | 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
@@ -54,8 +54,6 @@ flowchart TB
 
     AS --> TD["TrendDetection"]
     AS --> RD["ReversalDetection"]
-    AS --> CA["CandlestickAnalysis"]
-    AS --> IC["IndicatorCalculation"]
     AS --> CO["Coordinator"]
 
     style US fill:#2563EB,color:#fff,stroke:#1D4ED8
@@ -63,8 +61,6 @@ flowchart TB
     style Edge fill:#2563EB,color:#fff,stroke:#1D4ED8
     style TD fill:#4B5563,color:#fff,stroke:#374151
     style RD fill:#4B5563,color:#fff,stroke:#374151
-    style CA fill:#4B5563,color:#fff,stroke:#374151
-    style IC fill:#4B5563,color:#fff,stroke:#374151
     style CO fill:#4B5563,color:#fff,stroke:#374151
 ```
 
@@ -80,8 +76,8 @@ flowchart TB
 | 項目 | 說明                                                |
 |:---|:--------------------------------------------------|
 | 檔案 | `test/domain/services/analysis_service_test.dart` |
-| 範圍 | 趨勢檢測、反轉檢測、K 線型態、指標計算、邊界條件                         |
-| 備註 | 已拆分為 5 個子服務，可分別測試                                 |
+| 範圍 | 趨勢檢測、反轉檢測、協調器、邊界條件                                |
+| 備註 | 已拆分為 4 個子服務，可分別測試                                 |
 
 ### 邊界情況補充
 

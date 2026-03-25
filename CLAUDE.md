@@ -18,7 +18,7 @@ flowchart LR
 
     subgraph Process["本地處理"]
         Sync["資料同步"]
-        Rules["60 條規則"]
+        Rules["62 條規則"]
         Score["評分引擎"]
     end
 
@@ -40,7 +40,7 @@ flowchart LR
 ```bash
 flutter pub get                                                # 安裝依賴
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成 (Drift / Freezed / Riverpod)
-flutter test                                                   # 執行測試 (2532+ cases, ~40s)
+flutter test                                                   # 執行測試 (2229 cases, ~40s)
 flutter test --coverage                                        # 含覆蓋率報告
 flutter analyze --no-fatal-infos                               # 靜態分析
 dart format .                                                  # 格式化 (pre-commit hook 自動執行)
@@ -62,7 +62,7 @@ flowchart TB
     end
 
     subgraph Data["data/"]
-        Database["database/ — Drift SQLite (34 tables, 21 DAOs)"]
+        Database["database/ — Drift SQLite (34 tables, 22 DAOs)"]
         Remote["remote/ — TWSE, TPEX, FinMind, TDCC, RSS (6 clients)"]
         Repos["repositories/ — 18 files"]
     end
@@ -72,7 +72,7 @@ flowchart TB
         RepoIF["repositories/ — 13 interfaces"]
         Services["services/ — 25 files (Analysis, Scoring, Screening, etc.)"]
         Update["services/update/ — 14 components (9 syncers + 4 helpers + coordinator)"]
-        Rules["services/rules/ — 60 rules (14 files)"]
+        Rules["services/rules/ — 62 rules (13 files)"]
     end
 
     subgraph Presentation["presentation/"]
@@ -107,7 +107,7 @@ flowchart LR
 | `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                                  |
 | `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                            |
 | `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制                       |
-| `lib/domain/services/rules/`                     | 60 條規則 (14 檔案)                                 |
+| `lib/domain/services/rules/`                     | 62 條規則 (13 檔案)                                 |
 | `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)                     |
 | `lib/domain/services/update/`                    | 14 個更新元件 (9 syncers + 4 helpers + coordinator) |
 | `lib/data/database/tables/`                      | 34 張資料表 (10 檔案)                                |
@@ -237,7 +237,7 @@ void main() {
 
 | 文件                                                   | 說明              |
 |:-----------------------------------------------------|:----------------|
-| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)           | 規則引擎詳解 (60 條規則) |
+| [docs/RULE_ENGINE.md](docs/RULE_ENGINE.md)           | 規則引擎詳解 (62 條規則) |
 | [docs/PENDING_UPGRADES.md](docs/PENDING_UPGRADES.md) | 依賴升級紀錄            |
 | [RELEASE.md](RELEASE.md)                             | 發布建置指南          |
 | [CHANGELOG.md](CHANGELOG.md)                         | 版本變更紀錄          |
