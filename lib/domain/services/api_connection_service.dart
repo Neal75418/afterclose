@@ -61,10 +61,10 @@ class ApiConnectionService {
         errorMessage: e.message,
       );
     } catch (e) {
-      return ApiTestResult._(
+      return const ApiTestResult._(
         success: false,
         error: ApiTestError.unknown,
-        errorMessage: e.toString(),
+        errorMessage: '發生未預期的錯誤，請稍後再試',
       );
     }
   }

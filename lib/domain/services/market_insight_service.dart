@@ -1,7 +1,7 @@
 import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/domain/models/market_overview_models.dart';
 
 /// 洞察嚴重度
 enum InsightSeverity { warning, info }

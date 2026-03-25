@@ -246,6 +246,9 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
 
       _dateCtx = DateContext.forDate(targetDate);
 
+      // NOTE: ScreeningService is instantiated inline here for simplicity.
+      // This bypasses DI and could be refactored to accept an injected service
+      // if testing or reuse requires it.
       final service = ScreeningService(
         repository: ScreeningRepository(database: _db),
       );

@@ -225,24 +225,26 @@ void main() {
   // ==========================================
 
   group('calculateKD', () {
-    test('close at high → K = 100', () {
-      final highs = List.filled(12, 110.0);
-      final lows = List.filled(12, 90.0);
-      final closes = List.filled(12, 110.0); // close = high
+    test('close at high → K converges toward 100 (slow stochastic)', () {
+      // 使用更多資料讓 EMA 有足夠時間收斂
+      final highs = List.filled(30, 110.0);
+      final lows = List.filled(30, 90.0);
+      final closes = List.filled(30, 110.0); // close = high → RSV = 100
       final result = service.calculateKD(highs, lows, closes, kPeriod: 9);
 
+      // Slow stochastic 從 K₀=50 開始 EMA 平滑，RSV 持續為 100 時 K 會收斂
       final lastK = result.k.whereType<double>().last;
-      expect(lastK, closeTo(100.0, 0.001));
+      expect(lastK, greaterThan(95.0)); // 充分收斂但不會精確到 100
     });
 
-    test('close at low → K = 0', () {
-      final highs = List.filled(12, 110.0);
-      final lows = List.filled(12, 90.0);
-      final closes = List.filled(12, 90.0); // close = low
+    test('close at low → K converges toward 0 (slow stochastic)', () {
+      final highs = List.filled(30, 110.0);
+      final lows = List.filled(30, 90.0);
+      final closes = List.filled(30, 90.0); // close = low → RSV = 0
       final result = service.calculateKD(highs, lows, closes, kPeriod: 9);
 
       final lastK = result.k.whereType<double>().last;
-      expect(lastK, closeTo(0.0, 0.001));
+      expect(lastK, lessThan(5.0)); // 充分收斂但不會精確到 0
     });
 
     test('range = 0 → K = 50', () {
@@ -253,7 +255,7 @@ void main() {
       expect(lastK, closeTo(50.0, 0.001));
     });
 
-    test('D is SMA of K', () {
+    test('D is EMA-smoothed from K (slow stochastic)', () {
       final highs = List.generate(15, (i) => 100.0 + i * 2.0);
       final lows = List.generate(15, (i) => 90.0 + i * 2.0);
       final closes = List.generate(15, (i) => 95.0 + i * 2.0);
@@ -265,10 +267,16 @@ void main() {
         dPeriod: 3,
       );
 
-      // D should start later than K (needs dPeriod-1 extra K values)
+      // Slow stochastic: K 和 D 同時從 kPeriod-1 開始計算
       final firstKIdx = result.k.indexWhere((v) => v != null);
       final firstDIdx = result.d.indexWhere((v) => v != null);
-      expect(firstDIdx, greaterThan(firstKIdx));
+      expect(firstKIdx, equals(firstDIdx)); // 同時開始
+      // D 是 K 的 EMA，D 應落後於 K（D 較平滑）
+      final lastK = result.k.whereType<double>().last;
+      final lastD = result.d.whereType<double>().last;
+      expect(lastD, isNotNull);
+      // D 不會與 K 完全相同（除非 K 恆定）
+      expect((lastK! - lastD!).abs(), greaterThan(0));
     });
 
     test('returns empty on length mismatch', () {

@@ -181,16 +181,26 @@ class TechnicalIndicatorService {
       }
     }
 
-    // 計算 %D（%K 的 SMA）：滑動視窗累加，O(n)
-    var dSum = 0.0;
+    // 台灣標準 Slow Stochastic：
+    // RSV = raw %K（已在 kValues 中計算）
+    // %K = K_prev × 2/3 + RSV × 1/3（EMA smoothing factor = 1/3）
+    // %D = D_prev × 2/3 + K × 1/3
+    // 初始值：K₀ = D₀ = 50
+    const smoothFactor = 1.0 / 3.0;
+    double prevK = 50.0;
+    double prevD = 50.0;
+
+    // kValues 目前存放 RSV，改為存放 smoothed %K
     for (int i = kPeriod - 1; i < length; i++) {
-      dSum += kValues[i]!;
-      if (i >= kPeriod - 1 + dPeriod) {
-        dSum -= kValues[i - dPeriod]!;
-      }
-      if (i >= kPeriod - 1 + dPeriod - 1) {
-        dValues[i] = dSum / dPeriod;
-      }
+      final rsv = kValues[i]!;
+      final smoothedK = prevK * (1 - smoothFactor) + rsv * smoothFactor;
+      final smoothedD = prevD * (1 - smoothFactor) + smoothedK * smoothFactor;
+
+      kValues[i] = smoothedK;
+      dValues[i] = smoothedD;
+
+      prevK = smoothedK;
+      prevD = smoothedD;
     }
 
     return (k: kValues, d: dValues);
@@ -477,18 +487,18 @@ class TechnicalIndicatorService {
 
   /// 計算最新的 RSI 值（使用 Wilder's 平滑法）
   ///
+  /// 從完整歷史初始化 Wilder's smoothed average，確保與 [calculateRSI] 結果一致。
   /// [prices] 每日收盤價列表
   /// [period] 計算週期，預設 14
   static double? latestRSI(List<DailyPriceEntry> prices, {int period = 14}) {
     if (prices.length < period + 1) return null;
 
-    // 步驟 1：計算初始平均漲跌幅
+    // 步驟 1：從資料起點計算初始平均漲跌幅（前 period 筆變動）
     double initialGains = 0;
     double initialLosses = 0;
     int validCount = 0;
 
-    final startIdx = prices.length - period - 1;
-    for (int i = startIdx + 1; i <= startIdx + period; i++) {
+    for (int i = 1; i <= period; i++) {
       final current = prices[i].close;
       final previous = prices[i - 1].close;
       if (current == null || previous == null) continue;
@@ -507,8 +517,8 @@ class TechnicalIndicatorService {
     double avgGain = initialGains / period;
     double avgLoss = initialLosses / period;
 
-    // 步驟 2：對剩餘資料點套用 Wilder's 平滑
-    for (int i = startIdx + period + 1; i < prices.length; i++) {
+    // 步驟 2：從 period+1 開始，對所有後續資料套用 Wilder's 平滑
+    for (int i = period + 1; i < prices.length; i++) {
       final current = prices[i].close;
       final previous = prices[i - 1].close;
       if (current == null || previous == null) continue;

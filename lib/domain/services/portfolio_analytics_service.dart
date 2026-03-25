@@ -32,7 +32,7 @@ class PortfolioAnalyticsService {
       return PortfolioPerformance.empty;
     }
 
-    // 計算總成本和總市值
+    // 計算持倉成本和市值
     double totalCostBasis = 0;
     double totalMarketValue = 0;
     double totalDividends = 0;
@@ -46,13 +46,25 @@ class PortfolioAnalyticsService {
       totalRealizedPnl += pos.realizedPnl;
     }
 
-    // 總報酬
-    final totalReturn = totalCostBasis > 0
+    // 計算歷史總買入成本（含已平倉），作為 totalReturn 的正確分母
+    // 避免僅用持倉成本（totalCostBasis）導致已實現損益膨脹回報率
+    double totalHistoricalBuyCost = 0;
+    double totalSellProceeds = 0;
+    for (final tx in transactions) {
+      if (tx.txType == 'BUY') {
+        totalHistoricalBuyCost += tx.quantity * tx.price + tx.fee;
+      } else if (tx.txType == 'SELL') {
+        totalSellProceeds += tx.quantity * tx.price - tx.fee - tx.tax;
+      }
+    }
+
+    // 總報酬 = (當前市值 + 已收股利 + 已賣出收入 - 歷史總買入成本) / 歷史總買入成本
+    final totalReturn = totalHistoricalBuyCost > 0
         ? ((totalMarketValue +
                       totalDividends +
-                      totalRealizedPnl -
-                      totalCostBasis) /
-                  totalCostBasis) *
+                      totalSellProceeds -
+                      totalHistoricalBuyCost) /
+                  totalHistoricalBuyCost) *
               100
         : 0.0;
 
@@ -63,8 +75,8 @@ class PortfolioAnalyticsService {
       currentPrices: currentPrices,
     );
 
-    // 最大回撤
-    final maxDrawdown = _calculateMaxDrawdown(
+    // 當前回撤（從成本基準計算，非歷史最大回撤）
+    final maxDrawdown = _calculateCurrentDrawdown(
       transactions: transactions,
       positions: positions,
       currentPrices: currentPrices,
@@ -111,17 +123,19 @@ class PortfolioAnalyticsService {
       currentValue += price * pos.quantity;
     }
 
-    // 簡化計算：使用初始投入成本作為基準
-    double totalInvested = 0;
+    // 計算總買入成本（所有 BUY 的現金流出）作為報酬率分母
+    // 不扣除 SELL proceeds，避免獲利 portfolio 分母變 ≤ 0
+    double totalBuyCost = 0;
+    double totalSellProceeds = 0;
     for (final tx in sortedTx) {
       if (tx.txType == 'BUY') {
-        totalInvested += tx.quantity * tx.price + tx.fee;
+        totalBuyCost += tx.quantity * tx.price + tx.fee;
       } else if (tx.txType == 'SELL') {
-        totalInvested -= tx.quantity * tx.price - tx.fee - tx.tax;
+        totalSellProceeds += tx.quantity * tx.price - tx.fee - tx.tax;
       }
     }
 
-    if (totalInvested <= 0) {
+    if (totalBuyCost <= 0) {
       return PeriodReturns.empty;
     }
 
@@ -131,8 +145,10 @@ class PortfolioAnalyticsService {
       return PeriodReturns.empty;
     }
 
-    // 總報酬率
-    final totalReturn = ((currentValue - totalInvested) / totalInvested) * 100;
+    // 總報酬率 = (當前市值 + 已實現賣出收入 - 總買入成本) / 總買入成本
+    final totalReturn =
+        ((currentValue + totalSellProceeds - totalBuyCost) / totalBuyCost) *
+        100;
 
     // 日報酬（簡化計算）
     final dailyReturn = totalReturn / daysSinceStart;
@@ -169,10 +185,12 @@ class PortfolioAnalyticsService {
     );
   }
 
-  /// 計算最大回撤
+  /// 計算當前回撤（從成本基準 vs 當前市值）
   ///
-  /// 最大回撤 = (峰值 - 谷值) / 峰值 × 100%
-  double _calculateMaxDrawdown({
+  /// 注意：此方法計算的是「當前回撤」而非真正的「最大歷史回撤」。
+  /// 峰值取 max(成本, 市值)，不追蹤歷史淨值曲線。
+  /// 欄位名稱保留 maxDrawdown 以維持 API 相容性。
+  double _calculateCurrentDrawdown({
     required List<PortfolioTransactionEntry> transactions,
     required List<PortfolioPositionEntry> positions,
     required Map<String, double> currentPrices,
@@ -275,7 +293,10 @@ class PortfolioPerformance {
   /// 期間報酬
   final PeriodReturns periodReturns;
 
-  /// 最大回撤（%）
+  /// 回撤（%）
+  ///
+  /// 注意：實際計算為「當前回撤」（成本 vs 市值），並非追蹤歷史淨值曲線的最大回撤。
+  /// 欄位名稱保留 maxDrawdown 以維持序列化與 UI 相容性。
   final double maxDrawdown;
 
   /// 產業配置

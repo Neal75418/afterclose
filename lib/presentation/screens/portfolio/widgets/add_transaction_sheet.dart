@@ -347,6 +347,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                 labelText: 'portfolio.txNote'.tr(),
                 border: const OutlineInputBorder(),
               ),
+              maxLength: 500,
             ),
             const SizedBox(height: DesignTokens.spacing24),
 

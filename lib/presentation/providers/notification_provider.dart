@@ -46,6 +46,11 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   @override
   NotificationState build() {
+    // WARNING: _service is a singleton (NotificationService.instance).
+    // Disposing it here is safe only because this provider is NOT autoDispose,
+    // so it is created once and lives for the app's lifetime. If the provider
+    // were ever changed to autoDispose, recreating it would call dispose() on
+    // the shared singleton, leaving other references in a broken state.
     ref.onDispose(() {
       unawaited(_service.dispose());
     });

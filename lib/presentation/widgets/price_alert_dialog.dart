@@ -173,6 +173,7 @@ class _CreatePriceAlertDialogState
                 border: const OutlineInputBorder(),
               ),
               maxLines: 2,
+              maxLength: 500,
             ),
 
             // 當前價格提示

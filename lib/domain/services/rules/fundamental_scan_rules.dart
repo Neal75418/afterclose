@@ -390,7 +390,10 @@ class EPSYoYSurgeRule extends StockRule with FundamentalTechnicalFilter {
     final latestEps = latest.value;
     if (latestEps == null || latestEps <= 0) return null;
 
-    // 找去年同季（用季度編號比較，避免申報日期月份偏移問題）
+    // 找去年同季（用季度編號比較）
+    // FinancialDataEntry.date 為季度起始日（由 parseQuarterDate 解析 "YYYY-QN" 格式），
+    // 例如 Q1 = 1月, Q2 = 4月, Q3 = 7月, Q4 = 10月，非申報日期。
+    // 因此 (month - 1) ~/ 3 可正確對應季度編號 0~3。
     final latestQuarter = (latest.date.month - 1) ~/ 3;
     double? lastYearEps;
     for (int i = FundamentalParams.epsQuarterOffset; i < eps.length; i++) {

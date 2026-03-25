@@ -559,6 +559,7 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
               border: const OutlineInputBorder(),
             ),
             maxLines: 2,
+            maxLength: 500,
           ),
           const SizedBox(height: DesignTokens.spacing24),
 

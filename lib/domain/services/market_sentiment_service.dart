@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/domain/models/market_overview_models.dart';
 
 /// 市場情緒分數等級
 enum SentimentLevel {

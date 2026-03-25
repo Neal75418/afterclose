@@ -24,6 +24,7 @@ void main() {
     });
 
     test('calculates total return correctly', () {
+      // 場景：買 1500 股 @ 500，賣 500 股 @ 510（實現損益 5000），持有 1000 股
       final positions = [
         createTestPortfolioPosition(
           symbol: '2330',
@@ -37,9 +38,16 @@ void main() {
         createTestPortfolioTransaction(
           symbol: '2330',
           txType: 'BUY',
-          quantity: 1000,
+          quantity: 1500,
           price: 500.0,
           date: DateTime.now().subtract(const Duration(days: 100)),
+        ),
+        createTestPortfolioTransaction(
+          symbol: '2330',
+          txType: 'SELL',
+          quantity: 500,
+          price: 510.0,
+          date: DateTime.now().subtract(const Duration(days: 50)),
         ),
       ];
 
@@ -50,12 +58,14 @@ void main() {
         stocksMap: {},
       );
 
-      // totalCost = 500 * 1000 = 500000
-      // totalMarketValue = 600 * 1000 = 600000
-      // totalReturn = (600000 + 10000 + 5000 - 500000) / 500000 * 100 = 23%
-      expect(result.totalReturn, closeTo(23.0, 0.1));
+      // totalHistoricalBuyCost = 1500 * 500 = 750000
+      // totalSellProceeds = 500 * 510 = 255000
+      // currentMarketValue = 1000 * 600 = 600000
+      // dividends = 10000
+      // totalReturn = (600000 + 10000 + 255000 - 750000) / 750000 * 100 = 15.33%
+      expect(result.totalReturn, closeTo(15.33, 0.1));
       expect(result.totalMarketValue, equals(600000.0));
-      expect(result.totalCostBasis, equals(500000.0));
+      expect(result.totalCostBasis, equals(500000.0)); // 持倉成本不變
     });
 
     test('returns 0 total return when costBasis is 0', () {
@@ -257,7 +267,7 @@ void main() {
   });
 
   // ==========================================
-  // _calculateMaxDrawdown
+  // _calculateCurrentDrawdown（欄位名稱仍為 maxDrawdown）
   // ==========================================
   group('maxDrawdown', () {
     test('returns 0 for no transactions', () {

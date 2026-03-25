@@ -228,6 +228,9 @@ class BacktestService {
         continue;
       }
 
+      // 注意：進場價使用掃描日收盤價而非隔日開盤價（look-ahead bias）。
+      // 實務上訊號在盤後才產生，真實進場為隔日開盤。
+      // 此簡化會略微高估回測報酬率。
       final entryPrice = symbolPrices[_dateKey(pending.entryDate)];
       final exitPrice = symbolPrices[_dateKey(pending.exitDate)];
 
