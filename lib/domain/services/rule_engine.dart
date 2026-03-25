@@ -1,9 +1,9 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_registry.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
-import 'package:afterclose/domain/models/models.dart';
 
 /// 股票分析規則引擎
 ///
