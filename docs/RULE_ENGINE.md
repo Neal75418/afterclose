@@ -217,7 +217,7 @@ flowchart LR
 | highPledgeRatioThreshold    | 50% | 高質押門檻      |
 | foreignConcentrationWarning | 60% | 外資集中警告     |
 | concentrationHighThreshold  | 60% | 籌碼集中度門檻    |
-| peOvervaluedThreshold       | 60  | PE 過高警示門檻   |
+| peOvervaluedThreshold       |  60 | PE 過高警示門檻  |
 | epsYoYSurgeThreshold        | 50% | EPS 年增暴增門檻 |
 | epsConsecutiveQuarters      |   2 | EPS 連續成長季數 |
 | roeExcellentThreshold       | 15% | ROE 優異門檻   |

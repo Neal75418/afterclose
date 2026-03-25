@@ -136,6 +136,7 @@ class BacktestService {
   // ==================================================
 
   /// 找到最新有分析資料的日期
+  /// TODO: 考慮注入 IAnalysisRepository 並使用 findLatestAnalysisDate() 單次查詢
   Future<DateTime?> _findLatestAnalysisDate() async {
     final now = _clock.now();
     for (var daysAgo = 0; daysAgo <= 7; daysAgo++) {

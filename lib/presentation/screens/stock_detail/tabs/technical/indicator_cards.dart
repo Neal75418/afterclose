@@ -12,9 +12,29 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/card
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/obv_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/atr_card.dart';
 
+/// 從 priceHistory 提取的 OHLCV 快取，避免每次 build 重複 filter/map
+class _ExtractedPrices {
+  _ExtractedPrices(List<DailyPriceEntry> history)
+    : prices = history
+          .where((p) => p.close != null)
+          .map((p) => p.close!)
+          .toList(),
+      highs = history.where((p) => p.high != null).map((p) => p.high!).toList(),
+      lows = history.where((p) => p.low != null).map((p) => p.low!).toList(),
+      volumes = history
+          .where((p) => p.volume != null)
+          .map((p) => p.volume!.toDouble())
+          .toList();
+
+  final List<double> prices;
+  final List<double> highs;
+  final List<double> lows;
+  final List<double> volumes;
+}
+
 /// 根據選擇的副指標與主指標，顯示詳細的技術指標卡片
 /// （RSI、KDJ、MACD、Bollinger）。
-class IndicatorCardsSection extends StatelessWidget {
+class IndicatorCardsSection extends StatefulWidget {
   const IndicatorCardsSection({
     super.key,
     required this.priceHistory,
@@ -29,12 +49,26 @@ class IndicatorCardsSection extends StatelessWidget {
   final TechnicalIndicatorService indicatorService;
 
   @override
+  State<IndicatorCardsSection> createState() => _IndicatorCardsSectionState();
+}
+
+class _IndicatorCardsSectionState extends State<IndicatorCardsSection> {
+  _ExtractedPrices? _cached;
+  List<DailyPriceEntry>? _lastHistory;
+
+  _ExtractedPrices _getExtracted() {
+    if (!identical(_lastHistory, widget.priceHistory)) {
+      _lastHistory = widget.priceHistory;
+      _cached = _ExtractedPrices(widget.priceHistory);
+    }
+    return _cached!;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final prices = priceHistory
-        .where((p) => p.close != null)
-        .map((p) => p.close!)
-        .toList();
+    final extracted = _getExtracted();
+    final prices = extracted.prices;
 
     if (prices.length < 14) {
       return Card(
@@ -52,49 +86,43 @@ class IndicatorCardsSection extends StatelessWidget {
       );
     }
 
-    final highs = priceHistory
-        .where((p) => p.high != null)
-        .map((p) => p.high!)
-        .toList();
-    final lows = priceHistory
-        .where((p) => p.low != null)
-        .map((p) => p.low!)
-        .toList();
+    final highs = extracted.highs;
+    final lows = extracted.lows;
 
-    final volumes = priceHistory
-        .where((p) => p.volume != null)
-        .map((p) => p.volume!)
-        .toList();
+    final volumes = extracted.volumes;
 
     return Column(
       children: [
-        if (secondaryIndicators.contains(SecondaryState.RSI))
-          RSICard(prices: prices, indicatorService: indicatorService),
-        if (secondaryIndicators.contains(SecondaryState.KDJ))
+        if (widget.secondaryIndicators.contains(SecondaryState.RSI))
+          RSICard(prices: prices, indicatorService: widget.indicatorService),
+        if (widget.secondaryIndicators.contains(SecondaryState.KDJ))
           KDCard(
             highs: highs,
             lows: lows,
             closes: prices,
-            indicatorService: indicatorService,
+            indicatorService: widget.indicatorService,
           ),
-        if (secondaryIndicators.contains(SecondaryState.MACD))
-          MACDCard(prices: prices, indicatorService: indicatorService),
-        if (mainIndicators.contains(MainState.BOLL))
-          BollingerCard(prices: prices, indicatorService: indicatorService),
+        if (widget.secondaryIndicators.contains(SecondaryState.MACD))
+          MACDCard(prices: prices, indicatorService: widget.indicatorService),
+        if (widget.mainIndicators.contains(MainState.BOLL))
+          BollingerCard(
+            prices: prices,
+            indicatorService: widget.indicatorService,
+          ),
 
         // 進階指標：OBV 與 ATR（總是顯示）
         if (volumes.length >= 2)
           OBVCard(
             closes: prices,
             volumes: volumes,
-            indicatorService: indicatorService,
+            indicatorService: widget.indicatorService,
           ),
         if (highs.length >= 14 && lows.length >= 14 && prices.length >= 14)
           ATRCard(
             highs: highs,
             lows: lows,
             closes: prices,
-            indicatorService: indicatorService,
+            indicatorService: widget.indicatorService,
           ),
       ],
     );

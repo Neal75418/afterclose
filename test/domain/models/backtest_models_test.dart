@@ -96,9 +96,9 @@ void main() {
 
       final summary = BacktestSummary.fromTrades(trades);
 
-      // avg = 20, variance = ((10-20)^2 + (20-20)^2 + (30-20)^2) / 3 = 200/3
-      // stdDev = sqrt(200/3) ≈ 8.165
-      expect(summary.stdDeviation, closeTo(sqrt(200.0 / 3), 0.01));
+      // avg = 20, sample variance = ((10-20)^2 + (20-20)^2 + (30-20)^2) / (3-1) = 200/2 = 100
+      // stdDev = sqrt(100) = 10.0
+      expect(summary.stdDeviation, closeTo(sqrt(200.0 / 2), 0.01));
     });
 
     test('calculates sharpeRatio (risk-free = 0)', () {
@@ -110,9 +110,9 @@ void main() {
 
       final summary = BacktestSummary.fromTrades(trades);
 
-      // sharpe = avgReturn / stdDev = 20 / sqrt(200/3) ≈ 2.449
+      // sharpe = avgReturn / stdDev = 20 / sqrt(200/2) = 20 / 10 = 2.0
       expect(summary.sharpeRatio, isNotNull);
-      expect(summary.sharpeRatio!, closeTo(20.0 / sqrt(200.0 / 3), 0.01));
+      expect(summary.sharpeRatio!, closeTo(20.0 / sqrt(200.0 / 2), 0.01));
     });
 
     test('sharpeRatio is null when stdDev is 0', () {

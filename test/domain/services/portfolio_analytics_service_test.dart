@@ -196,13 +196,15 @@ void main() {
         stocksMap: {},
       );
 
-      // totalInvested = 1000*100 + 143 = 100143
+      // totalBuyCost = 1000*100 + 143 = 100143
       // currentValue = 110 * 1000 = 110000
-      // totalReturn = (110000-100143)/100143 * 100 ≈ 9.84%
-      // dailyReturn = totalReturn / 100 ≈ 0.098
-      expect(result.periodReturns.daily, isNot(equals(0)));
-      expect(result.periodReturns.weekly, isNot(equals(0)));
-      expect(result.periodReturns.monthly, isNot(equals(0)));
+      // totalReturn = (110000+0+0-100143)/100143 * 100 ≈ 9.84%
+      // dailyReturn = 9.84 / 100 ≈ 0.0984
+      // weekReturn = 0.0984 * 7 ≈ 0.689
+      // monthReturn = 0.0984 * 30 ≈ 2.95
+      expect(result.periodReturns.daily, closeTo(0.098, 0.01));
+      expect(result.periodReturns.weekly, closeTo(0.69, 0.05));
+      expect(result.periodReturns.monthly, closeTo(2.95, 0.15));
     });
 
     test('yearly return uses compound formula and is clamped', () {

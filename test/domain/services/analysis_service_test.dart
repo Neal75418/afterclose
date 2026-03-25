@@ -146,7 +146,12 @@ void main() {
 
       expect(support, isNotNull);
       expect(resistance, isNotNull);
-      expect(resistance! > support!, isTrue);
+      // 價格在 95~105 間擺盪，支撐/壓力應在合理範圍內
+      expect(support!, greaterThan(90.0));
+      expect(support, lessThan(105.0));
+      expect(resistance!, greaterThan(95.0));
+      expect(resistance, lessThan(110.0));
+      expect(resistance > support, isTrue);
     });
 
     test('return nulls when not enough data', () {

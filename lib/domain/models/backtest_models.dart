@@ -105,12 +105,13 @@ class BacktestSummary {
         ? returns[mid]
         : (returns[mid - 1] + returns[mid]) / 2;
 
-    // 標準差
+    // 標準差（使用 sample variance: ÷(N-1)，N=1 時退化為 population variance）
+    final n = returns.length;
     final variance =
         returns
             .map((r) => (r - avgReturn) * (r - avgReturn))
             .reduce((a, b) => a + b) /
-        returns.length;
+        (n > 1 ? n - 1 : n);
     final stdDev = sqrt(variance);
 
     // 夏普比率（假設無風險利率 = 0）

@@ -116,11 +116,13 @@ class PortfolioAnalyticsService {
       ..sort((a, b) => a.date.compareTo(b.date));
     final firstTxDate = sortedTx.first.date;
 
-    // 計算目前總市值
+    // 計算目前總市值與已收股利
     double currentValue = 0;
+    double totalDividends = 0;
     for (final pos in positions) {
       final price = currentPrices[pos.symbol] ?? pos.avgCost;
       currentValue += price * pos.quantity;
+      totalDividends += pos.totalDividendReceived;
     }
 
     // 計算總買入成本（所有 BUY 的現金流出）作為報酬率分母
@@ -145,9 +147,10 @@ class PortfolioAnalyticsService {
       return PeriodReturns.empty;
     }
 
-    // 總報酬率 = (當前市值 + 已實現賣出收入 - 總買入成本) / 總買入成本
+    // 總報酬率 = (當前市值 + 已收股利 + 已賣出收入 - 總買入成本) / 總買入成本
     final totalReturn =
-        ((currentValue + totalSellProceeds - totalBuyCost) / totalBuyCost) *
+        ((currentValue + totalDividends + totalSellProceeds - totalBuyCost) /
+            totalBuyCost) *
         100;
 
     // 日報酬（簡化計算）
