@@ -207,6 +207,42 @@ void main() {
       expect(result.periodReturns.monthly, closeTo(2.95, 0.15));
     });
 
+    test('includes dividends in period return calculation', () {
+      // 場景：持平股價，只有股利驅動報酬
+      final buyDate = DateTime.now().subtract(const Duration(days: 100));
+      final transactions = [
+        createTestPortfolioTransaction(
+          symbol: 'A',
+          txType: 'BUY',
+          quantity: 1000,
+          price: 100.0,
+          fee: 0,
+          date: buyDate,
+        ),
+      ];
+      final positions = [
+        createTestPortfolioPosition(
+          symbol: 'A',
+          quantity: 1000,
+          avgCost: 100.0,
+          totalDividendReceived: 5000, // 5 元/股
+        ),
+      ];
+
+      final result = service.calculatePerformance(
+        transactions: transactions,
+        positions: positions,
+        currentPrices: {'A': 100.0}, // 股價持平
+        stocksMap: {},
+      );
+
+      // totalReturn = (100000 + 5000 + 0 - 100000) / 100000 * 100 = 5%
+      // 無 dividend 修復前此值為 0%
+      expect(result.periodReturns.daily, greaterThan(0));
+      // dailyReturn = 5 / 100 = 0.05, monthReturn = 0.05 * 30 = 1.5
+      expect(result.periodReturns.monthly, closeTo(1.5, 0.1));
+    });
+
     test('yearly return uses compound formula and is clamped', () {
       // Very short holding period with large gain → high annualized return
       final buyDate = DateTime.now().subtract(const Duration(days: 5));

@@ -61,7 +61,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   }
 
   /// 建立含有篩選條件元資料的空狀態 Widget
-  Widget _buildEmptyState(ScanFilter filter, WidgetRef ref) {
+  Widget _buildEmptyState(
+    ScanFilter filter, {
+    required int totalScanned,
+    required DateTime? dataDate,
+  }) {
     // 對於「全部」篩選，使用簡單的空狀態
     if (filter == ScanFilter.all) {
       return EmptyStates.noFilterResults(
@@ -82,8 +86,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       conditionDescription: metadata.conditionKey.tr(),
       dataRequirements: dataReqLabels,
       thresholdInfo: metadata.thresholdInfo,
-      totalScanned: ref.read(scanProvider).totalAnalyzedCount,
-      dataDate: ref.read(scanProvider).dataDate,
+      totalScanned: totalScanned,
+      dataDate: dataDate,
       onClearFilter: () {
         ref.read(scanProvider.notifier).setFilter(ScanFilter.all);
       },
@@ -302,7 +306,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     }
 
     if (state.stocks.isEmpty) {
-      return Expanded(child: _buildEmptyState(state.filter, ref));
+      return Expanded(
+        child: _buildEmptyState(
+          state.filter,
+          totalScanned: state.totalAnalyzedCount,
+          dataDate: state.dataDate,
+        ),
+      );
     }
 
     // 響應式佈局：平板/桌面使用 GridView
