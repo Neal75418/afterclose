@@ -12,7 +12,7 @@ List<DailyInstitutionalEntry> _generateBuyStreak({
   double trustNet = 200000,
   String symbol = 'TEST',
 }) {
-  final now = DateTime.now();
+  final now = DateTime(2025, 6, 15);
   return List.generate(days, (i) {
     return DailyInstitutionalEntry(
       symbol: symbol,
@@ -31,7 +31,7 @@ List<DailyInstitutionalEntry> _generateSellStreak({
   double trustNet = -200000,
   String symbol = 'TEST',
 }) {
-  final now = DateTime.now();
+  final now = DateTime(2025, 6, 15);
   return List.generate(days, (i) {
     return DailyInstitutionalEntry(
       symbol: symbol,
@@ -129,7 +129,7 @@ void main() {
     test('does not trigger when significant days are too few', () {
       // 6 days with combined between 50000-150000 (streak continues but not significant)
       // Only last 2 days are significant (combined > 150000)
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 15);
       const context = AnalysisContext(trendState: TrendState.range);
 
       final institutional = List.generate(6, (i) {
@@ -266,7 +266,7 @@ void main() {
     test('streak breaks on non-sell day', () {
       // 5 days of sell, then 1 buy day, then 2 sells at end
       // Streak from end: only 2 days < 4 minimum
-      final now = DateTime.now();
+      final now = DateTime(2025, 6, 15);
       final institutional = List.generate(8, (i) {
         final isBuyDay = i == 5; // Day 5 is a buy (breaks streak)
         return DailyInstitutionalEntry(

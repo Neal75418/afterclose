@@ -1,11 +1,17 @@
+import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/domain/services/dividend_intelligence_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/portfolio_data_builders.dart';
 
+class _FakeClock implements AppClock {
+  @override
+  DateTime now() => DateTime(2025, 6, 15);
+}
+
 void main() {
-  const service = DividendIntelligenceService();
-  final currentYear = DateTime.now().year;
+  final service = DividendIntelligenceService(clock: _FakeClock());
+  final currentYear = 2025;
 
   // ==========================================
   // analyzeDividends

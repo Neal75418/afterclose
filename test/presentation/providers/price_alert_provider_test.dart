@@ -415,7 +415,7 @@ void main() {
       when(() => mockDb.getAllAlerts()).thenAnswer((_) async => alerts);
 
       // 第一次 toggle: off → 用 Completer 控制完成時機
-      final firstCompleter = Completer<int>();
+      final firstCompleter = Completer<void>();
       var callCount = 0;
       when(() => mockDb.updatePriceAlert(any(), any())).thenAnswer((_) {
         callCount++;
@@ -432,7 +432,7 @@ void main() {
       final second = notifier.toggleAlert(1, true);
 
       // 讓第一次完成
-      firstCompleter.complete(1);
+      firstCompleter.complete();
       await first;
       await second;
 

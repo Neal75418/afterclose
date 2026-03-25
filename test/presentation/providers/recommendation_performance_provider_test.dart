@@ -128,7 +128,7 @@ void main() {
       container.read(recommendationPerformanceProvider);
 
       // 等待 microtask 完成
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final state = container.read(recommendationPerformanceProvider);
       expect(state.stockRecords, hasLength(1));
@@ -139,7 +139,7 @@ void main() {
     test('selectPeriod changes period and reloads', () async {
       // 等待初始載入完成
       container.read(recommendationPerformanceProvider);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // 為 5D 設定不同回傳值
       when(
@@ -165,7 +165,7 @@ void main() {
 
     test('selectPeriod skips same period', () async {
       container.read(recommendationPerformanceProvider);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       final notifier = container.read(
         recommendationPerformanceProvider.notifier,
@@ -196,7 +196,7 @@ void main() {
 
     test('loadData handles error', () async {
       container.read(recommendationPerformanceProvider);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // 讓下次 loadData 失敗
       when(
@@ -225,7 +225,7 @@ void main() {
     test('stale selectPeriod result does not overwrite newer period', () async {
       // 等待初始載入完成
       container.read(recommendationPerformanceProvider);
-      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(const Duration(milliseconds: 10));
 
       // 用 Completer 控制第一次 selectPeriod('5D') 的完成時機
       final firstCompleter = Completer<List<StockValidationRecord>>();

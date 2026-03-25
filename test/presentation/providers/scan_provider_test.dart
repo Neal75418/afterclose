@@ -292,6 +292,7 @@ void main() {
       expect(state.isLoading, isFalse);
       expect(state.stocks, isEmpty);
       expect(state.totalCount, 0);
+      expect(state.totalAnalyzedCount, 0);
       expect(state.hasMore, isFalse);
       expect(state.error, isNull);
     });
@@ -491,11 +492,11 @@ void main() {
         analyses: [createAnalysis(symbol: '2330', score: 85)],
       );
 
-      // First call delays, second resolves immediately
-      when(() => mockDb.getSymbolsByIndustry('半導體業')).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        return {'2330'};
-      });
+      // 用 Completer 控制第一次呼叫完成時機，避免依賴 wall-clock timing
+      final slowCompleter = Completer<Set<String>>();
+      when(
+        () => mockDb.getSymbolsByIndustry('半導體業'),
+      ).thenAnswer((_) => slowCompleter.future);
       when(
         () => mockDb.getSymbolsByIndustry('金融業'),
       ).thenAnswer((_) async => {'2882'});
@@ -507,7 +508,9 @@ void main() {
       unawaited(notifier.setIndustryFilter('半導體業'));
       // Immediately override with second (fast) call
       await notifier.setIndustryFilter('金融業');
-      await Future<void>.delayed(const Duration(milliseconds: 100));
+      // 讓第一次完成（generation token 應忽略此結果）
+      slowCompleter.complete({'2330'});
+      await Future<void>.delayed(Duration.zero);
 
       // The latest call should be the winner
       final state = container.read(scanProvider);

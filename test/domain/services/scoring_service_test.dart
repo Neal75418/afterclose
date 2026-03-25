@@ -71,7 +71,7 @@ void main() {
     registerFallbackValue(
       MonthlyRevenueEntry(
         symbol: 'TEST',
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         revenueYear: 2023,
         revenueMonth: 1,
         revenue: 0,
@@ -82,7 +82,7 @@ void main() {
     registerFallbackValue(
       StockValuationEntry(
         symbol: 'TEST',
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         per: 0,
         pbr: 0,
         dividendYield: 0,
@@ -102,7 +102,7 @@ void main() {
         ),
         DailyPriceEntry(
           symbol: 'LOW_VOL',
-          date: DateTime.now(),
+          date: DateTime(2025, 6, 15),
           open: 100,
           high: 105,
           low: 95,
@@ -118,7 +118,7 @@ void main() {
       // Act
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_VOL'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -140,7 +140,7 @@ void main() {
         ),
         DailyPriceEntry(
           symbol: 'LOW_TURN',
-          date: DateTime.now(),
+          date: DateTime(2025, 6, 15),
           open: 5,
           high: 6,
           low: 4,
@@ -154,7 +154,7 @@ void main() {
       // Act
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_TURN'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -176,7 +176,7 @@ void main() {
         ),
         DailyPriceEntry(
           symbol: 'GOOD',
-          date: DateTime.now(),
+          date: DateTime(2025, 6, 15),
           open: 148,
           high: 152,
           low: 149,
@@ -259,7 +259,7 @@ void main() {
       // Act
       final result = await scoringService.scoreStocks(
         candidates: ['GOOD'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -371,7 +371,7 @@ void main() {
       // Pass in reverse order to ensure sorting works
       final result = await scoringService.scoreStocks(
         candidates: ['LOW_SCORE', 'HIGH_SCORE'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
       );
 
@@ -465,7 +465,7 @@ void main() {
       // Act
       await scoringService.scoreStocks(
         candidates: ['COOLDOWN'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
         recentlyRecommended: {'COOLDOWN'},
       );
@@ -487,7 +487,7 @@ void main() {
     test('return empty list when candidates list is empty', () async {
       final result = await scoringService.scoreStocks(
         candidates: [],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: const {}, newsMap: const {}),
       );
 
@@ -498,7 +498,7 @@ void main() {
     test('skip stocks with no price data in pricesMap', () async {
       final result = await scoringService.scoreStocks(
         candidates: ['MISSING'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: const {}, newsMap: const {}),
       );
 
@@ -515,7 +515,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['SHORT'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: {'SHORT': prices}, newsMap: {}),
       );
 
@@ -546,7 +546,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['NULL_ANALYSIS'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(
           pricesMap: {'NULL_ANALYSIS': prices},
           newsMap: {},
@@ -604,7 +604,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['EMPTY_REASONS'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(
           pricesMap: {'EMPTY_REASONS': prices},
           newsMap: {},
@@ -714,7 +714,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['LOW'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: {'LOW': prices}, newsMap: {}),
       );
 
@@ -727,7 +727,7 @@ void main() {
 
       final result = await scoringService.scoreStocks(
         candidates: ['BOUNDARY'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(
           pricesMap: {'BOUNDARY': prices},
           newsMap: {},
@@ -762,7 +762,7 @@ void main() {
 
       await scoringService.scoreStocks(
         candidates: ['A', 'B', 'C'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(
           pricesMap: {'A': prices, 'B': prices, 'C': prices},
           newsMap: {},
@@ -843,7 +843,7 @@ void main() {
       var builderCalled = false;
       await scoringService.scoreStocks(
         candidates: ['MKT'],
-        date: DateTime.now(),
+        date: DateTime(2025, 6, 15),
         batchData: ScoringBatchData(pricesMap: {'MKT': prices}, newsMap: {}),
         marketDataBuilder: (symbol) async {
           builderCalled = true;

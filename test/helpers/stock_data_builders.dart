@@ -119,11 +119,12 @@ List<FinancialDataEntry> generateEpsHistory({
   double baseEps = 1.0,
   double quarterlyGrowth = 0.2,
   String symbol = 'TEST',
+  DateTime? anchor,
 }) {
-  final now = DateTime.now();
+  final base = anchor ?? DateTime(2025, 6, 15);
   return List.generate(quarters, (i) {
-    // 最新在前（i=0 = 最近季度）
-    final quarterDate = DateTime(now.year, now.month - (i * 3), 1);
+    // 最新在前（i=0 = 最近季度），用固定日期避免跨年邊界問題
+    final quarterDate = DateTime(base.year, base.month - (i * 3), 1);
     final eps = baseEps + (quarterlyGrowth * (quarters - 1 - i));
     return createTestFinancialData(
       symbol: symbol,
@@ -140,10 +141,11 @@ List<FinancialDataEntry> generateRoeHistory({
   double baseRoe = 10.0,
   double quarterlyChange = 2.0,
   String symbol = 'TEST',
+  DateTime? anchor,
 }) {
-  final now = DateTime.now();
+  final base = anchor ?? DateTime(2025, 6, 15);
   return List.generate(quarters, (i) {
-    final quarterDate = DateTime(now.year, now.month - (i * 3), 1);
+    final quarterDate = DateTime(base.year, base.month - (i * 3), 1);
     final roe = baseRoe + (quarterlyChange * (quarters - 1 - i));
     return createTestFinancialData(
       symbol: symbol,
@@ -167,10 +169,11 @@ List<MonthlyRevenueEntry> generateRevenueHistory({
   List<double>? momGrowthValues,
   List<double>? yoyGrowthValues,
   String symbol = 'TEST',
+  DateTime? anchor,
 }) {
-  final now = DateTime.now();
+  final base = anchor ?? DateTime(2025, 6, 15);
   return List.generate(months, (i) {
-    final date = DateTime(now.year, now.month - i, 1);
+    final date = DateTime(base.year, base.month - i, 1);
     return createTestMonthlyRevenue(
       symbol: symbol,
       date: date,

@@ -379,7 +379,7 @@ void main() {
         ];
 
         final mockWatchlist = [
-          WatchlistEntry(symbol: '2317', createdAt: DateTime.now()),
+          WatchlistEntry(symbol: '2317', createdAt: DateTime(2026, 2, 13)),
         ];
 
         when(

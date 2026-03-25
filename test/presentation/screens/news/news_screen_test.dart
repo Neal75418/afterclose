@@ -44,8 +44,8 @@ NewsItemEntry createNewsItem({
     source: source,
     url: url,
     category: 'market',
-    publishedAt: publishedAt ?? DateTime.now(),
-    fetchedAt: DateTime.now(),
+    publishedAt: publishedAt ?? DateTime(2026, 2, 13, 10, 0),
+    fetchedAt: DateTime(2026, 2, 13, 10, 0),
   );
 }
 

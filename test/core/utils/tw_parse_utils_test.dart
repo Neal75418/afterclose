@@ -76,19 +76,20 @@ void main() {
       });
 
       test('returns today for invalid length', () {
+        final before = DateTime.now();
         final result = TwParseUtils.parseAdDate('2026');
-        final now = DateTime.now();
+        final after = DateTime.now();
 
-        expect(result.year, now.year);
-        expect(result.month, now.month);
-        expect(result.day, now.day);
+        // 防止午夜跨日：result 應在 before ~ after 的日期範圍內
+        expect(result.year, before.year);
+        expect(result.day == before.day || result.day == after.day, isTrue);
       });
 
       test('returns today for empty string', () {
+        final before = DateTime.now();
         final result = TwParseUtils.parseAdDate('');
-        final now = DateTime.now();
 
-        expect(result.year, now.year);
+        expect(result.year, before.year);
       });
     });
 
