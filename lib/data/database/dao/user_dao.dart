@@ -215,10 +215,13 @@ mixin UserDaoMixin on $AppDatabase {
 
     final symbols = activeAlerts.map((a) => a.symbol).toSet().toList();
 
+    // 統一時間基準，避免各 helper 各自呼叫 DateTime.now()
+    final now = DateTime.now();
+
     // Data fetching stays in DAO (needs DB access)
-    final volumeDataMap = await _fetchVolumeDataForAlerts(symbols);
-    final priceHistoryMap = await _fetchPriceHistoryForAlerts(symbols);
-    final indicatorDataMap = await _fetchIndicatorDataForAlerts(symbols);
+    final volumeDataMap = await _fetchVolumeDataForAlerts(symbols, now);
+    final priceHistoryMap = await _fetchPriceHistoryForAlerts(symbols, now);
+    final indicatorDataMap = await _fetchIndicatorDataForAlerts(symbols, now);
 
     // 以批次查詢取代逐筆 N+1 模式，避免 N 個 symbol 產生 2N 次 DB 往返
     final disposalSymbols = await _fetchDisposalSymbolsBatch(symbols);
@@ -257,10 +260,9 @@ mixin UserDaoMixin on $AppDatabase {
   /// 批次查詢成交量資料（最近 20 天）
   Future<Map<String, List<DailyPriceEntry>>> _fetchVolumeDataForAlerts(
     List<String> symbols,
+    DateTime endDate,
   ) async {
     if (symbols.isEmpty) return {};
-
-    final endDate = DateTime.now();
     final startDate = endDate.subtract(
       const Duration(days: AlertParams.volumeDataLookbackDays),
     );
@@ -281,10 +283,9 @@ mixin UserDaoMixin on $AppDatabase {
   /// 批次查詢 52 週價格歷史
   Future<Map<String, List<DailyPriceEntry>>> _fetchPriceHistoryForAlerts(
     List<String> symbols,
+    DateTime endDate,
   ) async {
     if (symbols.isEmpty) return {};
-
-    final endDate = DateTime.now();
     final startDate = endDate.subtract(
       const Duration(days: AlertParams.week52LookbackDays),
     );
@@ -305,10 +306,9 @@ mixin UserDaoMixin on $AppDatabase {
   /// 批次查詢技術指標資料（最近 30 天，用於計算 RSI 和 KD）
   Future<Map<String, List<DailyPriceEntry>>> _fetchIndicatorDataForAlerts(
     List<String> symbols,
+    DateTime endDate,
   ) async {
     if (symbols.isEmpty) return {};
-
-    final endDate = DateTime.now();
     final startDate = endDate.subtract(
       const Duration(days: AlertParams.indicatorDataLookbackDays),
     );

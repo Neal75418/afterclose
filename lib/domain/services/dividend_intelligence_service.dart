@@ -125,8 +125,16 @@ class DividendIntelligenceService {
   }
 
   /// 分析股利趨勢
+  ///
+  /// [history] 必須為 year DESC 排序（最新年份在前），
+  /// 由 dividend_dao 的 ORDER BY year DESC 保證。
   DividendTrend _analyzeTrend(List<DividendHistoryEntry> history) {
     if (history.length < 2) return DividendTrend.stable;
+
+    // 防禦性排序：確保最新年份在前（正常路徑由 DAO 保證）
+    if (history.first.year < history[1].year) {
+      history = List.of(history)..sort((a, b) => b.year.compareTo(a.year));
+    }
 
     // 比較最近兩年的股利變化
     final recent = history.first;

@@ -498,6 +498,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       if (existing.length >= 12) return;
 
       final fundamentalRepo = ref.read(fundamentalRepositoryProvider);
+      // 使用 wall-clock time 計算回填範圍（非關鍵路徑，不影響測試正確性）
       final now = DateTime.now();
       await fundamentalRepo.syncMonthlyRevenue(
         symbol: symbol,

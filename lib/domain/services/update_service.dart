@@ -470,6 +470,10 @@ class UpdateService {
     _UpdateContext ctx,
     DateTime normalizedDate,
   ) async {
+    // 方法內共享自選清單，避免重複查詢
+    final watchlist = await _db.getWatchlist();
+    final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
+
     // 步驟 4.5：籌碼資料
     final marketUpdater = _marketDataUpdater;
     if (marketUpdater != null) {
@@ -480,9 +484,8 @@ class UpdateService {
         );
 
         // 同步自選清單和熱門股的詳細籌碼
-        final watchlist = await _db.getWatchlist();
         final symbolsForMarketData = <String>{
-          ...watchlist.map((w) => w.symbol),
+          ...watchlistSymbols,
           ..._popularStocks,
         }.toList();
 
@@ -533,11 +536,7 @@ class UpdateService {
 
         // 步驟 4.7：同步候選+自選股+市場候選的財報資料（EPS + 資產負債表）
         try {
-          final watchlist = await _db.getWatchlist();
-          final prioritySymbols = {
-            ...watchlist.map((w) => w.symbol),
-            ..._popularStocks,
-          };
+          final prioritySymbols = {...watchlistSymbols, ..._popularStocks};
           final remainingSlots =
               ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
           final targetSymbols = {
