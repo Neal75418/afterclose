@@ -246,6 +246,9 @@ class RuleAccuracyService {
       var skipped = 0;
       var errors = 0;
 
+      // TODO: 此路徑對每個 (recommendation, period) 進行個別 DB 查詢（N×M×5×4 round-trips），
+      // 與 validatePastRecommendationsMultiPeriod 的批次路徑相比效能差距大。
+      // 考慮重構為按日期批次查詢 entry/exit prices 後再逐筆計算。
       for (var i = 0; i < totalDates; i++) {
         if (isCancelled?.call() == true) break;
 
@@ -315,8 +318,8 @@ class RuleAccuracyService {
     }
   }
 
-  /// 驗證單一推薦
-  Future<_ValidationData?> _validateSingleRecommendation(
+  /// 驗證單一推薦，成功回傳 true，資料不足回傳 null
+  Future<bool?> _validateSingleRecommendation(
     DailyRecommendationEntry rec,
     DateTime recommendationDate,
     int holdingDays,
@@ -404,7 +407,7 @@ class RuleAccuracyService {
             ),
           );
 
-      return _ValidationData(returnRate: returnRate, isSuccess: isSuccess);
+      return isSuccess;
     } on StateError catch (e) {
       // 預期的錯誤：查無資料（getSingleOrNull 回傳結構問題等）
       AppLogger.debug(_tag, '驗證 ${rec.symbol} 資料不足: $e');
@@ -718,13 +721,6 @@ class OverallPerformanceStats {
   final double avgReturn;
 
   double get winRate => totalCount > 0 ? (successCount / totalCount) * 100 : 0;
-}
-
-class _ValidationData {
-  const _ValidationData({required this.returnRate, required this.isSuccess});
-
-  final double returnRate;
-  final bool isSuccess;
 }
 
 /// 驗證計算結果（讀取 + 計算階段產出，尚未寫入 DB）

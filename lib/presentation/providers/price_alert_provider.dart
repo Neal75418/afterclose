@@ -425,7 +425,7 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
 
       // 在資料庫標記已觸發的警示
       for (final alert in triggered) {
-        await _db.triggerAlert(alert.id);
+        await _db.triggerAlert(alert.id, now: now);
         triggeredIds.add(alert.id);
       }
 

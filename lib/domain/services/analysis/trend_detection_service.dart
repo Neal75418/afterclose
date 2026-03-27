@@ -30,7 +30,7 @@ class TrendDetectionService {
     if (closes.length < TrendParams.minTrendDataPoints) return TrendState.range;
 
     // 線性迴歸斜率
-    // 注意：closes 是由 reversed.take() 得來，順序為新到舊，
+    // 注意：closes 是由 lastN() 得來，順序為新到舊（newest-first），
     // 因此需取負值才是時間正向的斜率
     final slope = -_calculateSlope(closes);
 
