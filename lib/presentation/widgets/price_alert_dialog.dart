@@ -5,15 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// 顯示建立新價格警示的對話框
+/// 顯示建立或編輯價格警示的對話框
+///
+/// 傳入 [existingAlert] 時為編輯模式，pre-populate 既有值。
 Future<bool?> showCreatePriceAlertDialog({
   required BuildContext context,
   required String symbol,
   String? stockName,
   double? currentPrice,
+  PriceAlertEntry? existingAlert,
 }) {
   return showDialog<bool>(
     context: context,
@@ -21,6 +25,7 @@ Future<bool?> showCreatePriceAlertDialog({
       symbol: symbol,
       stockName: stockName,
       currentPrice: currentPrice,
+      existingAlert: existingAlert,
     ),
   );
 }
@@ -32,11 +37,15 @@ class CreatePriceAlertDialog extends ConsumerStatefulWidget {
     required this.symbol,
     this.stockName,
     this.currentPrice,
+    this.existingAlert,
   });
 
   final String symbol;
   final String? stockName;
   final double? currentPrice;
+  final PriceAlertEntry? existingAlert;
+
+  bool get isEditing => existingAlert != null;
 
   @override
   ConsumerState<CreatePriceAlertDialog> createState() =>
@@ -45,7 +54,7 @@ class CreatePriceAlertDialog extends ConsumerStatefulWidget {
 
 class _CreatePriceAlertDialogState
     extends ConsumerState<CreatePriceAlertDialog> {
-  AlertType _selectedType = AlertType.above;
+  late AlertType _selectedType;
   final _valueController = TextEditingController();
   final _noteController = TextEditingController();
   bool _isCreating = false;
@@ -53,9 +62,17 @@ class _CreatePriceAlertDialogState
   @override
   void initState() {
     super.initState();
-    // 若有當前價格則預填
-    if (widget.currentPrice case final price?) {
-      _valueController.text = price.toStringAsFixed(2);
+    if (widget.existingAlert case final alert?) {
+      // 編輯模式：pre-populate 既有值
+      _selectedType = AlertType.fromValue(alert.alertType);
+      _valueController.text = alert.targetValue.toStringAsFixed(2);
+      _noteController.text = alert.note ?? '';
+    } else {
+      // 建立模式
+      _selectedType = AlertType.above;
+      if (widget.currentPrice case final price?) {
+        _valueController.text = price.toStringAsFixed(2);
+      }
     }
   }
 
@@ -71,7 +88,7 @@ class _CreatePriceAlertDialogState
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: Text('alert.create'.tr()),
+      title: Text(widget.isEditing ? 'alert.edit'.tr() : 'alert.create'.tr()),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -202,7 +219,9 @@ class _CreatePriceAlertDialogState
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text('alert.create'.tr()),
+              : Text(
+                  widget.isEditing ? 'common.save'.tr() : 'alert.create'.tr(),
+                ),
         ),
       ],
     );
@@ -280,21 +299,34 @@ class _CreatePriceAlertDialogState
       // 權限被拒絕，顯示提示但仍允許建立提醒（只是不會收到通知）
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('alert.permissionDenied'.tr()),
+          content: Text('notification.permissionDenied'.tr()),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: ApiConfig.alertDialogDurationSec),
         ),
       );
     }
 
-    final success = await ref
-        .read(priceAlertProvider.notifier)
-        .createAlert(
-          symbol: widget.symbol,
-          alertType: _selectedType,
-          targetValue: value ?? 0,
-          note: _noteController.text.isEmpty ? null : _noteController.text,
-        );
+    final note = _noteController.text.isEmpty ? null : _noteController.text;
+    final bool success;
+
+    if (widget.isEditing) {
+      success = await ref
+          .read(priceAlertProvider.notifier)
+          .editAlert(
+            id: widget.existingAlert!.id,
+            targetValue: value ?? 0,
+            note: note,
+          );
+    } else {
+      success = await ref
+          .read(priceAlertProvider.notifier)
+          .createAlert(
+            symbol: widget.symbol,
+            alertType: _selectedType,
+            targetValue: value ?? 0,
+            note: note,
+          );
+    }
 
     if (mounted) {
       setState(() => _isCreating = false);
@@ -304,7 +336,11 @@ class _CreatePriceAlertDialogState
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('alert.created'.tr()),
+            content: Text(
+              widget.isEditing
+                  ? 'alert.editSuccess'.tr()
+                  : 'alert.created'.tr(),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );

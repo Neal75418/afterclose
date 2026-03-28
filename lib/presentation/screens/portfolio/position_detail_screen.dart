@@ -212,6 +212,17 @@ class PositionDetailScreen extends ConsumerWidget {
           _TransactionRow(
             tx: tx,
             theme: theme,
+            onEdit: () async {
+              await showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                useSafeArea: true,
+                builder: (_) =>
+                    AddTransactionSheet(initialSymbol: symbol, existingTx: tx),
+              );
+              // 編輯完成後刷新交易紀錄
+              ref.invalidate(positionTransactionsProvider(symbol));
+            },
             onDelete: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
@@ -311,17 +322,18 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
-// TODO: 加入交易編輯功能（onTap → AddTransactionSheet pre-populated with existing tx）
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({
     required this.tx,
     required this.theme,
     required this.onDelete,
+    this.onEdit,
   });
 
   final PortfolioTransactionEntry tx;
   final ThemeData theme;
   final VoidCallback onDelete;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -349,51 +361,54 @@ class _TransactionRow extends StatelessWidget {
         color: theme.colorScheme.error,
         child: Icon(Icons.delete, color: theme.colorScheme.onError),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        child: Row(
-          children: [
-            // 日期
-            SizedBox(
-              width: 80,
-              child: Text(
-                DateFormat('yyyy-MM-dd').format(tx.date),
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-            // 類型
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
-              ),
-              child: Text(
-                txType.i18nKey.tr(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w600,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+          child: Row(
+            children: [
+              // 日期
+              SizedBox(
+                width: 80,
+                child: Text(
+                  DateFormat('yyyy-MM-dd').format(tx.date),
+                  style: theme.textTheme.bodySmall,
                 ),
               ),
-            ),
-            const Spacer(),
-            // 金額
-            if (isDividend)
-              Text(
-                AppNumberFormat.signedCurrency(tx.quantity),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF2196F3),
-                  fontWeight: FontWeight.w600,
+              // 類型
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
                 ),
-              )
-            else
-              Text(
-                '${tx.quantity.toStringAsFixed(0)} @ ${AppNumberFormat.currency(tx.price, decimals: 1)}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
+                child: Text(
+                  txType.i18nKey.tr(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-          ],
+              const Spacer(),
+              // 金額
+              if (isDividend)
+                Text(
+                  AppNumberFormat.signedCurrency(tx.quantity),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF2196F3),
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              else
+                Text(
+                  '${tx.quantity.toStringAsFixed(0)} @ ${AppNumberFormat.currency(tx.price, decimals: 1)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

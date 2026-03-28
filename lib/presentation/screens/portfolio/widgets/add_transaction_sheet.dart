@@ -15,9 +15,12 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 新增交易 BottomSheet
 class AddTransactionSheet extends ConsumerStatefulWidget {
-  const AddTransactionSheet({super.key, this.initialSymbol});
+  const AddTransactionSheet({super.key, this.initialSymbol, this.existingTx});
 
   final String? initialSymbol;
+  final PortfolioTransactionEntry? existingTx;
+
+  bool get isEditing => existingTx != null;
 
   @override
   ConsumerState<AddTransactionSheet> createState() =>
@@ -46,7 +49,19 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   @override
   void initState() {
     super.initState();
-    if (widget.initialSymbol != null) {
+    if (widget.existingTx case final tx?) {
+      // 編輯模式：pre-populate 既有值
+      _selectedSymbol = tx.symbol;
+      _symbolController.text = tx.symbol;
+      _txType = TransactionType.fromValue(tx.txType);
+      _date = tx.date;
+      _quantityController.text = tx.quantity.toString();
+      _priceController.text = tx.price.toString();
+      if (tx.fee > 0) _feeController.text = tx.fee.toString();
+      if (tx.tax > 0) _taxController.text = tx.tax.toString();
+      if (tx.note != null) _noteController.text = tx.note!;
+      _loadStockName(tx.symbol);
+    } else if (widget.initialSymbol != null) {
       _selectedSymbol = widget.initialSymbol;
       _symbolController.text = widget.initialSymbol!;
       _loadStockName(widget.initialSymbol!);
@@ -512,7 +527,24 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         : null;
 
     try {
-      if (_txType == TransactionType.dividendCash ||
+      // 編輯模式：更新既有交易
+      if (widget.isEditing) {
+        final qty = double.tryParse(_quantityController.text)!;
+        final price = double.tryParse(_priceController.text) ?? 0;
+        final fee = double.tryParse(_feeController.text);
+        final tax = double.tryParse(_taxController.text);
+
+        await notifier.updateTransaction(
+          txId: widget.existingTx!.id,
+          symbol: symbol,
+          date: _date,
+          quantity: qty,
+          price: price,
+          fee: fee,
+          tax: tax,
+          note: note,
+        );
+      } else if (_txType == TransactionType.dividendCash ||
           _txType == TransactionType.dividendStock) {
         final amount = double.tryParse(_quantityController.text)!;
         await notifier.addDividend(
@@ -553,7 +585,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('portfolio.transactionAdded'.tr()),
+            content: Text(
+              widget.isEditing
+                  ? 'portfolio.transactionUpdated'.tr()
+                  : 'portfolio.transactionAdded'.tr(),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );

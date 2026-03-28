@@ -8,8 +8,6 @@ import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 策略儲存/載入 Bottom Sheet
-///
-/// TODO: 加入策略重新命名功能（長按或 trailing menu → rename dialog）
 class StrategyManagerSheet extends ConsumerStatefulWidget {
   const StrategyManagerSheet({super.key});
 
@@ -153,6 +151,7 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
                           .loadStrategy(strategy);
                       Navigator.of(context).pop();
                     },
+                    onLongPress: () => _showRenameDialog(context, strategy),
                   );
                 }),
 
@@ -234,6 +233,55 @@ class _StrategyManagerSheetState extends ConsumerState<StrategyManagerSheet> {
         ),
       );
     }
+  }
+
+  Future<void> _showRenameDialog(
+    BuildContext context,
+    ScreeningStrategy strategy,
+  ) async {
+    final renameController = TextEditingController(text: strategy.name);
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('customScreening.renameStrategy'.tr()),
+        content: TextFormField(
+          controller: renameController,
+          decoration: InputDecoration(
+            labelText: 'customScreening.strategyName'.tr(),
+            border: const OutlineInputBorder(),
+          ),
+          autofocus: true,
+          maxLength: 100,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('customScreening.cancel'.tr()),
+          ),
+          FilledButton(
+            onPressed: () async {
+              final newName = renameController.text.trim();
+              if (newName.isEmpty || strategy.id == null) return;
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.of(ctx).pop();
+              final success = await ref
+                  .read(customScreeningProvider.notifier)
+                  .renameStrategy(strategy.id!, newName);
+              if (mounted && success) {
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text('customScreening.renamed'.tr()),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: Text('customScreening.renameStrategy'.tr()),
+          ),
+        ],
+      ),
+    );
+    renameController.dispose();
   }
 
   void _confirmDelete(BuildContext context, ScreeningStrategy strategy) {

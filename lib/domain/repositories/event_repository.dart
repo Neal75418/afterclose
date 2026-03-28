@@ -20,6 +20,15 @@ abstract class IEventRepository {
     String? description,
   });
 
+  /// 更新自訂事件
+  Future<void> updateCustomEvent({
+    required int id,
+    String? symbol,
+    required DateTime eventDate,
+    required String title,
+    String? description,
+  });
+
   /// 刪除事件
   Future<void> deleteEvent(int id);
 

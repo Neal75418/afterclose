@@ -371,6 +371,30 @@ class PortfolioNotifier extends Notifier<PortfolioState> {
     await _repo.deleteTransaction(txId, symbol);
     await _reloadOrThrow();
   }
+
+  /// 編輯交易
+  Future<void> updateTransaction({
+    required int txId,
+    required String symbol,
+    required DateTime date,
+    required double quantity,
+    required double price,
+    double? fee,
+    double? tax,
+    String? note,
+  }) async {
+    await _repo.updateTransaction(
+      txId: txId,
+      symbol: symbol,
+      date: date,
+      quantity: quantity,
+      price: price,
+      fee: fee,
+      tax: tax,
+      note: note,
+    );
+    await _reloadOrThrow();
+  }
 }
 
 // ==================================================

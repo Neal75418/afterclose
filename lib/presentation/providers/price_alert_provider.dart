@@ -316,6 +316,54 @@ class PriceAlertNotifier extends Notifier<PriceAlertState> {
     }
   }
 
+  /// 編輯警示目標值與備註
+  Future<bool> editAlert({
+    required int id,
+    required double targetValue,
+    String? note,
+  }) async {
+    final previousAlerts = state.alerts;
+
+    // 樂觀更新
+    state = state.copyWith(
+      alerts: state.alerts.map((a) {
+        if (a.id == id) {
+          return PriceAlertEntry(
+            id: a.id,
+            symbol: a.symbol,
+            alertType: a.alertType,
+            targetValue: targetValue,
+            isActive: true, // 編輯後自動重新啟用
+            triggeredAt: null, // 清除觸發紀錄
+            note: note,
+            createdAt: a.createdAt,
+          );
+        }
+        return a;
+      }).toList(),
+    );
+
+    try {
+      await _db.updatePriceAlert(
+        id,
+        PriceAlertCompanion(
+          targetValue: Value(targetValue),
+          note: Value(note),
+          isActive: const Value(true),
+          triggeredAt: const Value(null),
+        ),
+      );
+      return true;
+    } catch (e) {
+      AppLogger.warning('PriceAlertNotifier', '編輯警示失敗: $id', e);
+      state = state.copyWith(
+        alerts: previousAlerts,
+        error: ErrorDisplay.message(e),
+      );
+      return false;
+    }
+  }
+
   /// 刪除警示
   Future<void> deleteAlert(int id) async {
     // 樂觀更新：立即從 state 移除，並清除先前錯誤

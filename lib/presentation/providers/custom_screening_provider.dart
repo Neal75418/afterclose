@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
@@ -208,6 +209,24 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
       return false;
     }
     // 刪除已成功，重載失敗不影響回傳值
+    await loadSavedStrategies();
+    return true;
+  }
+
+  /// 重新命名策略，回傳是否成功
+  Future<bool> renameStrategy(int id, String newName) async {
+    try {
+      await _db.updateScreeningStrategy(
+        id,
+        ScreeningStrategyTableCompanion(
+          name: Value(newName),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    } catch (e, s) {
+      AppLogger.error('CustomScreeningNotifier', '重新命名策略失敗', e, s);
+      return false;
+    }
     await loadSavedStrategies();
     return true;
   }

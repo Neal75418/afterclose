@@ -52,6 +52,26 @@ class EventRepository implements IEventRepository {
     );
   }
 
+  /// 更新自訂事件
+  @override
+  Future<void> updateCustomEvent({
+    required int id,
+    String? symbol,
+    required DateTime eventDate,
+    required String title,
+    String? description,
+  }) {
+    return _db.updateStockEvent(
+      id,
+      StockEventCompanion(
+        symbol: Value(symbol),
+        eventDate: Value(eventDate),
+        title: Value(title),
+        description: Value(description),
+      ),
+    );
+  }
+
   /// 刪除事件
   @override
   Future<void> deleteEvent(int id) {

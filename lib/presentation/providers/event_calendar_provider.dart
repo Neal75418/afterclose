@@ -336,6 +336,32 @@ class EventCalendarNotifier extends Notifier<EventCalendarState> {
     }
   }
 
+  /// 更新自訂事件
+  ///
+  /// 寫入成功後重載當月事件；若重載失敗會拋出例外。
+  Future<void> updateEvent({
+    required int id,
+    String? symbol,
+    required DateTime eventDate,
+    required String title,
+    String? description,
+  }) async {
+    await _repo.updateCustomEvent(
+      id: id,
+      symbol: symbol,
+      eventDate: eventDate,
+      title: title,
+      description: description,
+    );
+    // 重新載入當月事件
+    if (state.focusedMonth != null) {
+      final completed = await loadMonthEvents(state.focusedMonth!);
+      if (completed && state.error != null) {
+        throw StateError(state.error!);
+      }
+    }
+  }
+
   /// 刪除事件
   ///
   /// 寫入成功後重載當月事件；若重載失敗會拋出例外。

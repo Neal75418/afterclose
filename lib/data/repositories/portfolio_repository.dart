@@ -152,6 +152,34 @@ class PortfolioRepository implements IPortfolioRepository {
     });
   }
 
+  /// 更新交易紀錄並重新計算 FIFO
+  Future<void> updateTransaction({
+    required int txId,
+    required String symbol,
+    required DateTime date,
+    required double quantity,
+    required double price,
+    double? fee,
+    double? tax,
+    String? note,
+  }) async {
+    await _db.transaction(() async {
+      await (_db.update(
+        _db.portfolioTransaction,
+      )..where((t) => t.id.equals(txId))).write(
+        PortfolioTransactionCompanion(
+          date: Value(date),
+          quantity: Value(quantity),
+          price: Value(price),
+          fee: Value(fee ?? 0),
+          tax: Value(tax ?? 0),
+          note: Value(note),
+        ),
+      );
+      await _recalculatePosition(symbol);
+    });
+  }
+
   // ==================================================
   // FIFO 損益計算
   // ==================================================

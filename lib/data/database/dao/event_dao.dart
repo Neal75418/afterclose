@@ -35,6 +35,11 @@ mixin EventDaoMixin on $AppDatabase {
     return into(stockEvent).insert(entry);
   }
 
+  /// 更新事件
+  Future<void> updateStockEvent(int id, StockEventCompanion entry) {
+    return (update(stockEvent)..where((t) => t.id.equals(id))).write(entry);
+  }
+
   /// 刪除事件
   Future<void> deleteStockEvent(int id) {
     return (delete(stockEvent)..where((t) => t.id.equals(id))).go();

@@ -219,8 +219,12 @@ class _AlertsScreenState extends ConsumerState<AlertsScreen> {
           );
         }
       },
-      // TODO: 加入 onTap 編輯功能（重用 PriceAlertDialog，pre-populate 目標值）
       child: ListTile(
+        onTap: () => showCreatePriceAlertDialog(
+          context: context,
+          symbol: alert.symbol,
+          existingAlert: alert,
+        ),
         leading: Container(
           width: 40,
           height: 40,

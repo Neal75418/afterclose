@@ -11,11 +11,14 @@ import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// 新增事件 BottomSheet
+/// 新增/編輯事件 BottomSheet
 class AddEventSheet extends ConsumerStatefulWidget {
-  const AddEventSheet({super.key, this.initialDate});
+  const AddEventSheet({super.key, this.initialDate, this.existingEvent});
 
   final DateTime? initialDate;
+
+  /// 傳入既有事件時進入編輯模式
+  final StockEventEntry? existingEvent;
 
   @override
   ConsumerState<AddEventSheet> createState() => _AddEventSheetState();
@@ -33,10 +36,23 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
   List<StockMasterEntry> _searchResults = [];
   Timer? _debounce;
 
+  bool get _isEditing => widget.existingEvent != null;
+
   @override
   void initState() {
     super.initState();
-    _date = widget.initialDate ?? DateTime.now();
+    final existing = widget.existingEvent;
+    if (existing != null) {
+      _titleController.text = existing.title;
+      _descriptionController.text = existing.description ?? '';
+      _date = existing.eventDate;
+      _selectedSymbol = existing.symbol;
+      if (existing.symbol != null) {
+        _symbolController.text = existing.symbol!;
+      }
+    } else {
+      _date = widget.initialDate ?? DateTime.now();
+    }
   }
 
   @override
@@ -69,7 +85,8 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
             Row(
               children: [
                 Text(
-                  'calendar.addEvent'.tr(),
+                  (_isEditing ? 'calendar.editEvent' : 'calendar.addEvent')
+                      .tr(),
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -253,28 +270,45 @@ class _AddEventSheetState extends ConsumerState<AddEventSheet> {
 
     _isSubmitting = true;
     try {
-      await ref
-          .read(eventCalendarProvider.notifier)
-          .addEvent(
-            symbol: _selectedSymbol,
-            eventDate: _date,
-            title: title,
-            description: _descriptionController.text.trim().isNotEmpty
-                ? _descriptionController.text.trim()
-                : null,
-          );
+      final description = _descriptionController.text.trim().isNotEmpty
+          ? _descriptionController.text.trim()
+          : null;
+
+      if (_isEditing) {
+        await ref
+            .read(eventCalendarProvider.notifier)
+            .updateEvent(
+              id: widget.existingEvent!.id,
+              symbol: _selectedSymbol,
+              eventDate: _date,
+              title: title,
+              description: description,
+            );
+      } else {
+        await ref
+            .read(eventCalendarProvider.notifier)
+            .addEvent(
+              symbol: _selectedSymbol,
+              eventDate: _date,
+              title: title,
+              description: description,
+            );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('calendar.eventAdded'.tr()),
+            content: Text(
+              (_isEditing ? 'calendar.eventUpdated' : 'calendar.eventAdded')
+                  .tr(),
+            ),
             behavior: SnackBarBehavior.floating,
           ),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
-      AppLogger.warning('AddEventSheet', '新增事件失敗', e);
+      AppLogger.warning('AddEventSheet', _isEditing ? '更新事件失敗' : '新增事件失敗', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
