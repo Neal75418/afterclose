@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -5,7 +6,6 @@ import 'package:flutter/material.dart';
 ///
 /// 用於籌碼分頁的法人動向、外資持股、融資融券、當沖趨勢視覺化。
 ///
-/// TODO: 加入 Semantics wrapper 以支援 VoiceOver/TalkBack
 class MiniTrendChart extends StatelessWidget {
   const MiniTrendChart({
     super.key,
@@ -40,27 +40,31 @@ class MiniTrendChart extends StatelessWidget {
       spots.add(FlSpot(i.toDouble(), dataPoints[i]));
     }
 
-    return SizedBox(
-      height: height,
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineTouchData: const LineTouchData(enabled: false),
-          minY: minY,
-          maxY: maxY,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              curveSmoothness: 0.3,
-              color: color,
-              barWidth: 2,
-              dotData: FlDotData(show: showDots),
-              belowBarData: BarAreaData(show: true, color: fill),
-            ),
-          ],
+    return Semantics(
+      label: 'accessibility.trendChart'.tr(),
+      excludeSemantics: true,
+      child: SizedBox(
+        height: height,
+        child: LineChart(
+          LineChartData(
+            gridData: const FlGridData(show: false),
+            titlesData: const FlTitlesData(show: false),
+            borderData: FlBorderData(show: false),
+            lineTouchData: const LineTouchData(enabled: false),
+            minY: minY,
+            maxY: maxY,
+            lineBarsData: [
+              LineChartBarData(
+                spots: spots,
+                isCurved: true,
+                curveSmoothness: 0.3,
+                color: color,
+                barWidth: 2,
+                dotData: FlDotData(show: showDots),
+                belowBarData: BarAreaData(show: true, color: fill),
+              ),
+            ],
+          ),
         ),
       ),
     );

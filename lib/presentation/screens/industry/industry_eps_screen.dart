@@ -36,7 +36,19 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('industryEps.title'.tr()),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('industryEps.title'.tr()),
+            if (state.fetchedAt != null)
+              Text(
+                DateFormat('MM/dd HH:mm').format(state.fetchedAt!),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
         actions: [
           if (state.quarterLabel.isNotEmpty)
             Padding(
@@ -103,13 +115,11 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
       children: [
         SizedBox(
           height: 300,
-          child: Center(
-            child: Text(
-              'industryEps.noData'.tr(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
+          child: EmptyState(
+            icon: Icons.analytics_outlined,
+            title: 'industryEps.noData'.tr(),
+            actionLabel: 'common.retry'.tr(),
+            onAction: () => ref.read(industryEpsProvider.notifier).loadData(),
           ),
         ),
       ],

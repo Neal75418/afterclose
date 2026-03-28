@@ -392,7 +392,7 @@ class _EmptyStateWithMetaState extends State<_EmptyStateWithMeta> {
                             ),
                           ),
                           child: Text(
-                            widget.thresholdInfo!,
+                            widget.thresholdInfo!.tr(),
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.onPrimaryContainer,
                               fontFamily: 'monospace',

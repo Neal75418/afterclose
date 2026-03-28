@@ -10,20 +10,20 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // ==================================================
 
 /// 產業別 EPS 排名狀態
-///
-/// TODO: 加入 fetchedAt 欄位，讓 UI 顯示資料擷取時間
 class IndustryEpsState {
   const IndustryEpsState({
     this.allData = const [],
     this.isLoading = false,
     this.error,
     this.selectedIndustry,
+    this.fetchedAt,
   });
 
   final List<TpexIndustryEps> allData;
   final bool isLoading;
   final String? error;
   final String? selectedIndustry;
+  final DateTime? fetchedAt;
 
   /// 所有可選的產業列表
   List<String> get industries {
@@ -56,11 +56,13 @@ class IndustryEpsState {
     bool? isLoading,
     String? error,
     Object? selectedIndustry = _sentinel,
+    DateTime? fetchedAt,
   }) {
     return IndustryEpsState(
       allData: allData ?? this.allData,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
       selectedIndustry: selectedIndustry == _sentinel
           ? this.selectedIndustry
           : selectedIndustry as String?,
@@ -88,7 +90,11 @@ class IndustryEpsNotifier extends Notifier<IndustryEpsState> {
       final tpex = ref.read(tpexClientProvider);
       final data = await tpex.getIndustryEps();
 
-      state = state.copyWith(allData: data, isLoading: false);
+      state = state.copyWith(
+        allData: data,
+        isLoading: false,
+        fetchedAt: DateTime.now(),
+      );
     } catch (e) {
       AppLogger.warning('IndustryEpsNotifier', '載入產業 EPS 失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e), isLoading: false);

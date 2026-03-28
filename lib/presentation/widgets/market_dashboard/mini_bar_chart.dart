@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -36,18 +37,22 @@ class MiniBarChart extends StatelessWidget {
     final theme = Theme.of(context);
     final hasNegative = dataPoints.any((v) => v < 0);
 
-    return SizedBox(
-      height: height,
-      child: CustomPaint(
-        size: Size.infinite,
-        painter: _BarChartPainter(
-          values: dataPoints,
-          upColor: hasNegative
-              ? AppTheme.upColor
-              : (positiveOnlyColor ?? theme.colorScheme.primary),
-          downColor: AppTheme.downColor,
-          hasNegative: hasNegative,
-          barRadius: barRadius,
+    return Semantics(
+      label: 'accessibility.barChart'.tr(),
+      excludeSemantics: true,
+      child: SizedBox(
+        height: height,
+        child: CustomPaint(
+          size: Size.infinite,
+          painter: _BarChartPainter(
+            values: dataPoints,
+            upColor: hasNegative
+                ? AppTheme.upColor
+                : (positiveOnlyColor ?? theme.colorScheme.primary),
+            downColor: AppTheme.downColor,
+            hasNegative: hasNegative,
+            barRadius: barRadius,
+          ),
         ),
       ),
     );

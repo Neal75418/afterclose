@@ -10,28 +10,30 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // ==================================================
 
 /// 融券賣出排行狀態
-///
-/// TODO: 加入 fetchedAt 欄位，讓 UI 顯示資料擷取時間
 class ShortSellRankingState {
   const ShortSellRankingState({
     this.rankings = const [],
     this.isLoading = false,
     this.error,
+    this.fetchedAt,
   });
 
   final List<TpexShortSellRanking> rankings;
   final bool isLoading;
   final String? error;
+  final DateTime? fetchedAt;
 
   ShortSellRankingState copyWith({
     List<TpexShortSellRanking>? rankings,
     bool? isLoading,
     String? error,
+    DateTime? fetchedAt,
   }) {
     return ShortSellRankingState(
       rankings: rankings ?? this.rankings,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      fetchedAt: fetchedAt ?? this.fetchedAt,
     );
   }
 }
@@ -54,7 +56,11 @@ class ShortSellRankingNotifier extends Notifier<ShortSellRankingState> {
       final tpex = ref.read(tpexClientProvider);
       final rankings = await tpex.getShortSellRanking();
 
-      state = state.copyWith(rankings: rankings, isLoading: false);
+      state = state.copyWith(
+        rankings: rankings,
+        isLoading: false,
+        fetchedAt: DateTime.now(),
+      );
     } catch (e) {
       AppLogger.warning('ShortSellRankingNotifier', '載入融券排行失敗', e);
       state = state.copyWith(error: ErrorDisplay.message(e), isLoading: false);

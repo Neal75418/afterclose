@@ -25,98 +25,102 @@ class ReturnDistributionChart extends StatelessWidget {
     final theme = Theme.of(context);
     final maxCount = distribution.values.fold(0, (a, b) => a > b ? a : b);
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'backtest.returnDistribution'.tr(),
-              style: theme.textTheme.titleMedium,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: maxCount > 0 ? maxCount.toDouble() * 1.2 : 10,
-                  barTouchData: BarTouchData(
-                    touchTooltipData: BarTouchTooltipData(
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final label = _bucketLabels[group.x];
-                        final count = rod.toY.toInt();
-                        return BarTooltipItem(
-                          '$label\n$count',
-                          theme.textTheme.bodySmall!.copyWith(
-                            color: Colors.white,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  titlesData: FlTitlesData(
-                    show: true,
-                    topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 32,
-                        getTitlesWidget: (value, meta) {
-                          if (value == value.roundToDouble()) {
-                            return Text(
-                              value.toInt().toString(),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 10,
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
-                    ),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 32,
-                        getTitlesWidget: (value, meta) {
-                          final idx = value.toInt();
-                          if (idx < 0 || idx >= _bucketLabels.length) {
-                            return const SizedBox.shrink();
-                          }
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              _bucketLabels[idx],
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                fontSize: 9,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
+    return Semantics(
+      label: 'accessibility.distributionChart'.tr(),
+      excludeSemantics: true,
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'backtest.returnDistribution'.tr(),
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: maxCount > 0 ? maxCount.toDouble() * 1.2 : 10,
+                    barTouchData: BarTouchData(
+                      touchTooltipData: BarTouchTooltipData(
+                        getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                          final label = _bucketLabels[group.x];
+                          final count = rod.toY.toInt();
+                          return BarTooltipItem(
+                            '$label\n$count',
+                            theme.textTheme.bodySmall!.copyWith(
+                              color: Colors.white,
                             ),
                           );
                         },
                       ),
                     ),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      topTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      rightTitles: const AxisTitles(
+                        sideTitles: SideTitles(showTitles: false),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          getTitlesWidget: (value, meta) {
+                            if (value == value.roundToDouble()) {
+                              return Text(
+                                value.toInt().toString(),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 10,
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 32,
+                          getTitlesWidget: (value, meta) {
+                            final idx = value.toInt();
+                            if (idx < 0 || idx >= _bucketLabels.length) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                _bucketLabels[idx],
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontSize: 9,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      horizontalInterval: _gridInterval(maxCount.toDouble()),
+                    ),
+                    barGroups: _buildBarGroups(),
                   ),
-                  borderData: FlBorderData(show: false),
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: false,
-                    horizontalInterval: _gridInterval(maxCount.toDouble()),
-                  ),
-                  barGroups: _buildBarGroups(),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

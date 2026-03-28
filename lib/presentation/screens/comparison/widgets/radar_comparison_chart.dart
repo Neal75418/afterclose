@@ -27,76 +27,80 @@ class RadarComparisonChart extends StatelessWidget {
     final datasets = _buildDatasets();
     if (datasets.isEmpty) return const SizedBox.shrink();
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+    return Semantics(
+      label: 'accessibility.radarChart'.tr(),
+      excludeSemantics: true,
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
+          side: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(DesignTokens.spacing16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'comparison.radarTitle'.tr(),
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: DesignTokens.spacing8),
-            SizedBox(
-              height: 250,
-              child: RadarChart(
-                RadarChartData(
-                  dataSets: datasets,
-                  radarBackgroundColor: Colors.transparent,
-                  borderData: FlBorderData(show: false),
-                  radarBorderData: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
-                  ),
-                  tickBorderData: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-                  gridBorderData: BorderSide(
-                    color: theme.colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
-                    ),
-                  ),
-                  tickCount: 4,
-                  ticksTextStyle: TextStyle(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(
-                      alpha: 0.5,
-                    ),
-                    fontSize: 8,
-                  ),
-                  titlePositionPercentageOffset: 0.2,
-                  titleTextStyle: theme.textTheme.labelSmall!.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  getTitle: (index, angle) {
-                    const labels = [
-                      'comparison.metricScore',
-                      'comparison.sectionPrice',
-                      'comparison.sectionValuation',
-                      'comparison.sectionRevenue',
-                      'comparison.sectionInstitutional',
-                      'comparison.sectionAI',
-                    ];
-                    if (index < labels.length) {
-                      return RadarChartTitle(text: labels[index].tr());
-                    }
-                    return const RadarChartTitle(text: '');
-                  },
+        child: Padding(
+          padding: const EdgeInsets.all(DesignTokens.spacing16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'comparison.radarTitle'.tr(),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: DesignTokens.spacing8),
+              SizedBox(
+                height: 250,
+                child: RadarChart(
+                  RadarChartData(
+                    dataSets: datasets,
+                    radarBackgroundColor: Colors.transparent,
+                    borderData: FlBorderData(show: false),
+                    radarBorderData: BorderSide(
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                    tickBorderData: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
+                    gridBorderData: BorderSide(
+                      color: theme.colorScheme.outlineVariant.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
+                    tickCount: 4,
+                    ticksTextStyle: TextStyle(
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
+                      ),
+                      fontSize: 8,
+                    ),
+                    titlePositionPercentageOffset: 0.2,
+                    titleTextStyle: theme.textTheme.labelSmall!.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    getTitle: (index, angle) {
+                      const labels = [
+                        'comparison.metricScore',
+                        'comparison.sectionPrice',
+                        'comparison.sectionValuation',
+                        'comparison.sectionRevenue',
+                        'comparison.sectionInstitutional',
+                        'comparison.sectionAI',
+                      ];
+                      if (index < labels.length) {
+                        return RadarChartTitle(text: labels[index].tr());
+                      }
+                      return const RadarChartTitle(text: '');
+                    },
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

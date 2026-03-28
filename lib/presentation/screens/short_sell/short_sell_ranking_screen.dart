@@ -38,7 +38,21 @@ class _ShortSellRankingScreenState
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text('shortSell.title'.tr())),
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('shortSell.title'.tr()),
+            if (state.fetchedAt != null)
+              Text(
+                DateFormat('MM/dd HH:mm').format(state.fetchedAt!),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+          ],
+        ),
+      ),
       body: state.isLoading && state.rankings.isEmpty
           ? const GenericListShimmer(itemCount: 8)
           : state.error != null && state.rankings.isEmpty

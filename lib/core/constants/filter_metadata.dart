@@ -59,10 +59,7 @@ class FilterMetadata {
   /// 此篩選器所需的資料類型
   final List<DataRequirement> dataRequirements;
 
-  /// 門檻資訊（如「4 倍平均成交量」）
-  ///
-  /// TODO: 目前為硬編碼中文字串，待 i18n 化為 key-based 翻譯
-  /// 以支援英文 locale 用戶
+  /// 門檻資訊 i18n key（由 UI 端呼叫 `.tr()` 翻譯）
   final String? thresholdInfo;
 }
 
@@ -89,102 +86,102 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.reversalW2S: FilterMetadata(
     conditionKey: 'filterMeta.reversalW2S',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '3-7天連續紅K',
+    thresholdInfo: 'threshold.consecutiveRedK',
   ),
   ScanFilter.reversalS2W: FilterMetadata(
     conditionKey: 'filterMeta.reversalS2W',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '3-7天連續黑K',
+    thresholdInfo: 'threshold.consecutiveBlackK',
   ),
 
   // === 技術突破/跌破 ===
   ScanFilter.breakout: FilterMetadata(
     conditionKey: 'filterMeta.breakout',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '突破20日高點',
+    thresholdInfo: 'threshold.breakout20High',
   ),
   ScanFilter.breakdown: FilterMetadata(
     conditionKey: 'filterMeta.breakdown',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '跌破20日低點',
+    thresholdInfo: 'threshold.breakdown20Low',
   ),
 
   // === 成交量訊號 ===
   ScanFilter.volumeSpike: FilterMetadata(
     conditionKey: 'filterMeta.volumeSpike',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '成交量 ≥ 4倍均量 + 價格變動 ≥ 1.5%',
+    thresholdInfo: 'threshold.volumeSpike',
   ),
 
   // === 價格訊號 ===
   ScanFilter.priceSpike: FilterMetadata(
     conditionKey: 'filterMeta.priceSpike',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '單日漲跌幅 ≥ 5% + 量 ≥ 1.5 倍均量',
+    thresholdInfo: 'threshold.priceSpike',
   ),
 
   // === KD 訊號 ===
   ScanFilter.kdGoldenCross: FilterMetadata(
     conditionKey: 'filterMeta.kdGoldenCross',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'K線向上穿越D線，且K<30',
+    thresholdInfo: 'threshold.kdGoldenCross',
   ),
   ScanFilter.kdDeathCross: FilterMetadata(
     conditionKey: 'filterMeta.kdDeathCross',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'K線向下穿越D線，且K>70',
+    thresholdInfo: 'threshold.kdDeathCross',
   ),
 
   // === RSI 訊號 ===
   ScanFilter.rsiOverbought: FilterMetadata(
     conditionKey: 'filterMeta.rsiOverbought',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'RSI ≥ 85',
+    thresholdInfo: 'threshold.rsiOverbought',
   ),
   ScanFilter.rsiOversold: FilterMetadata(
     conditionKey: 'filterMeta.rsiOversold',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'RSI ≤ 30',
+    thresholdInfo: 'threshold.rsiOversold',
   ),
 
   // === 法人訊號 ===
   ScanFilter.institutionalBuy: FilterMetadata(
     conditionKey: 'filterMeta.institutionalBuy',
     dataRequirements: [DataRequirement.institutional],
-    thresholdInfo: '法人當日買超',
+    thresholdInfo: 'threshold.instBuy',
   ),
   ScanFilter.institutionalSell: FilterMetadata(
     conditionKey: 'filterMeta.institutionalSell',
     dataRequirements: [DataRequirement.institutional],
-    thresholdInfo: '法人當日賣超',
+    thresholdInfo: 'threshold.instSell',
   ),
   ScanFilter.institutionalBuyStreak: FilterMetadata(
     conditionKey: 'filterMeta.institutionalBuyStreak',
     dataRequirements: [DataRequirement.institutional],
-    thresholdInfo: '連續4天以上法人買超',
+    thresholdInfo: 'threshold.instBuyStreak',
   ),
   ScanFilter.institutionalSellStreak: FilterMetadata(
     conditionKey: 'filterMeta.institutionalSellStreak',
     dataRequirements: [DataRequirement.institutional],
-    thresholdInfo: '連續4天以上法人賣超',
+    thresholdInfo: 'threshold.instSellStreak',
   ),
 
   // === 延伸市場資料訊號 ===
   ScanFilter.dayTradingHigh: FilterMetadata(
     conditionKey: 'filterMeta.dayTradingHigh',
     dataRequirements: [DataRequirement.dayTrading],
-    thresholdInfo: '當沖比例 ≥ 50% + 萬張以上',
+    thresholdInfo: 'threshold.dayTradingHigh',
   ),
   ScanFilter.dayTradingExtreme: FilterMetadata(
     conditionKey: 'filterMeta.dayTradingExtreme',
     dataRequirements: [DataRequirement.dayTrading],
-    thresholdInfo: '當沖比例 ≥ 70% + 3萬張以上',
+    thresholdInfo: 'threshold.dayTradingExtreme',
   ),
 
   ScanFilter.concentrationHigh: FilterMetadata(
     conditionKey: 'filterMeta.concentrationHigh',
     dataRequirements: [DataRequirement.holdingDistribution],
-    thresholdInfo: '大戶持股比例 ≥ 60%',
+    thresholdInfo: 'threshold.concentrationHigh',
   ),
 
   // === 新聞訊號 ===
@@ -197,144 +194,144 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.week52High: FilterMetadata(
     conditionKey: 'filterMeta.week52High',
     dataRequirements: [DataRequirement.priceHistory250],
-    thresholdInfo: '創52週新高',
+    thresholdInfo: 'threshold.week52High',
   ),
   ScanFilter.week52Low: FilterMetadata(
     conditionKey: 'filterMeta.week52Low',
     dataRequirements: [DataRequirement.priceHistory250],
-    thresholdInfo: '創52週新低',
+    thresholdInfo: 'threshold.week52Low',
   ),
 
   // === 均線排列訊號 ===
   ScanFilter.maAlignmentBullish: FilterMetadata(
     conditionKey: 'filterMeta.maAlignmentBullish',
     dataRequirements: [DataRequirement.priceHistory60],
-    thresholdInfo: 'MA5 > MA10 > MA20 > MA60',
+    thresholdInfo: 'threshold.maAlignBullish',
   ),
   ScanFilter.maAlignmentBearish: FilterMetadata(
     conditionKey: 'filterMeta.maAlignmentBearish',
     dataRequirements: [DataRequirement.priceHistory60],
-    thresholdInfo: 'MA5 < MA10 < MA20 < MA60',
+    thresholdInfo: 'threshold.maAlignBearish',
   ),
 
   // === K 線型態 ===
   ScanFilter.patternDoji: FilterMetadata(
     conditionKey: 'filterMeta.patternDoji',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '十字線形態',
+    thresholdInfo: 'threshold.doji',
   ),
   ScanFilter.patternBullishEngulfing: FilterMetadata(
     conditionKey: 'filterMeta.patternBullishEngulfing',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '陽線吞噬',
+    thresholdInfo: 'threshold.bullishEngulfing',
   ),
   ScanFilter.patternHammer: FilterMetadata(
     conditionKey: 'filterMeta.patternHammer',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '錘子線',
+    thresholdInfo: 'threshold.hammer',
   ),
   ScanFilter.patternMorningStar: FilterMetadata(
     conditionKey: 'filterMeta.patternMorningStar',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '晨星形態',
+    thresholdInfo: 'threshold.morningStar',
   ),
   ScanFilter.patternThreeWhiteSoldiers: FilterMetadata(
     conditionKey: 'filterMeta.patternThreeWhiteSoldiers',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '三白兵',
+    thresholdInfo: 'threshold.threeWhiteSoldiers',
   ),
   ScanFilter.patternGapUp: FilterMetadata(
     conditionKey: 'filterMeta.patternGapUp',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '跳空缺口向上',
+    thresholdInfo: 'threshold.gapUp',
   ),
   ScanFilter.patternBearishEngulfing: FilterMetadata(
     conditionKey: 'filterMeta.patternBearishEngulfing',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '陰線吞噬',
+    thresholdInfo: 'threshold.bearishEngulfing',
   ),
   ScanFilter.patternHangingMan: FilterMetadata(
     conditionKey: 'filterMeta.patternHangingMan',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '吊人線',
+    thresholdInfo: 'threshold.hangingMan',
   ),
   ScanFilter.patternEveningStar: FilterMetadata(
     conditionKey: 'filterMeta.patternEveningStar',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '夜星形態',
+    thresholdInfo: 'threshold.eveningStar',
   ),
   ScanFilter.patternThreeBlackCrows: FilterMetadata(
     conditionKey: 'filterMeta.patternThreeBlackCrows',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '三黑鴉',
+    thresholdInfo: 'threshold.threeBlackCrows',
   ),
   ScanFilter.patternGapDown: FilterMetadata(
     conditionKey: 'filterMeta.patternGapDown',
     dataRequirements: [DataRequirement.dailyPrice],
-    thresholdInfo: '跳空缺口向下',
+    thresholdInfo: 'threshold.gapDown',
   ),
 
   // === 價量背離訊號 ===
   ScanFilter.priceVolumeBullishDivergence: FilterMetadata(
     conditionKey: 'filterMeta.priceVolumeBullishDivergence',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '價漲 > 5% 且 量縮 > 40%',
+    thresholdInfo: 'threshold.bullishDivergence',
   ),
   ScanFilter.priceVolumeBearishDivergence: FilterMetadata(
     conditionKey: 'filterMeta.priceVolumeBearishDivergence',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '價跌 > 3% 且 量增 > 30%',
+    thresholdInfo: 'threshold.bearishDivergence',
   ),
   ScanFilter.highVolumeBreakout: FilterMetadata(
     conditionKey: 'filterMeta.highVolumeBreakout',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '帶量突破',
+    thresholdInfo: 'threshold.volumeBreakout',
   ),
   ScanFilter.lowVolumeAccumulation: FilterMetadata(
     conditionKey: 'filterMeta.lowVolumeAccumulation',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: '低量整理',
+    thresholdInfo: 'threshold.lowVolumeAccum',
   ),
 
   // === 基本面分析訊號 ===
   ScanFilter.revenueYoySurge: FilterMetadata(
     conditionKey: 'filterMeta.revenueYoySurge',
     dataRequirements: [DataRequirement.monthlyRevenue],
-    thresholdInfo: '營收年增率 ≥ 30%',
+    thresholdInfo: 'threshold.revenueYoySurge',
   ),
   ScanFilter.revenueYoyDecline: FilterMetadata(
     conditionKey: 'filterMeta.revenueYoyDecline',
     dataRequirements: [DataRequirement.monthlyRevenue],
-    thresholdInfo: '營收年增率 ≤ -20%',
+    thresholdInfo: 'threshold.revenueYoyDecline',
   ),
   ScanFilter.revenueMomGrowth: FilterMetadata(
     conditionKey: 'filterMeta.revenueMomGrowth',
     dataRequirements: [DataRequirement.monthlyRevenue],
-    thresholdInfo: '連續2個月營收月增',
+    thresholdInfo: 'threshold.revenueMomGrowth',
   ),
   ScanFilter.revenueNewHigh: FilterMetadata(
     conditionKey: 'filterMeta.revenueNewHigh',
     dataRequirements: [DataRequirement.monthlyRevenue],
-    thresholdInfo: '當月營收創歷史新高',
+    thresholdInfo: 'threshold.revenueNewHigh',
   ),
   ScanFilter.highDividendYield: FilterMetadata(
     conditionKey: 'filterMeta.highDividendYield',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '殖利率 ≥ 5.5%',
+    thresholdInfo: 'threshold.highDividendYield',
   ),
   ScanFilter.peUndervalued: FilterMetadata(
     conditionKey: 'filterMeta.peUndervalued',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '本益比 ≤ 10',
+    thresholdInfo: 'threshold.peUndervalued',
   ),
   ScanFilter.peOvervalued: FilterMetadata(
     conditionKey: 'filterMeta.peOvervalued',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '本益比 ≥ 60',
+    thresholdInfo: 'threshold.peOvervalued',
   ),
   ScanFilter.pbrUndervalued: FilterMetadata(
     conditionKey: 'filterMeta.pbrUndervalued',
     dataRequirements: [DataRequirement.valuation],
-    thresholdInfo: '股價淨值比 ≤ 0.8',
+    thresholdInfo: 'threshold.pbrUndervalued',
   ),
 };

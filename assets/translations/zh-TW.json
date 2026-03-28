@@ -263,7 +263,6 @@
     "filterHighDividendYield": "高殖利率",
     "filterPeUndervalued": "低本益比",
     "filterPeOvervalued": "高本益比",
-
     "filterPbrUndervalued": "低淨值比",
     "filterDayTradingHigh": "高當沖",
     "filterDayTradingExtreme": "極高當沖",
@@ -644,9 +643,13 @@
     "priceChangeDetail": "漲跌 {absText}{pctText}",
     "trend": "趨勢 {trend}",
     "priceComparisonChart": "價格走勢比較圖，比較 {symbols} 的歷史價格",
-    "radarChart": "雷達圖比較 {symbols} 的各維度指標",
+    "radarChart": "雷達圖",
     "comparisonTable": "{symbols} 的詳細數據比較表格",
-    "allocationPieChart": "投資組合配置圓餅圖，共 {count} 檔持股"
+    "allocationPieChart": "投資組合配置圓餅圖，共 {count} 檔持股",
+    "barChart": "長條圖",
+    "priceChart": "價格走勢圖",
+    "trendChart": "趨勢圖",
+    "distributionChart": "報酬分布圖"
   },
   "status": {
     "hasSignal": "有訊號",
@@ -1396,7 +1399,6 @@
     "export": "匯出行事曆",
     "exportEmpty": "本月無事件可匯出"
   },
-
   "warning": {
     "disposal": "處置",
     "attention": "注意",
@@ -1423,7 +1425,6 @@
     "exportPdf": "匯出分析報告",
     "watermark": "由 AfterClose 產生",
     "disclaimer": "以上數據僅供參考，不構成投資建議。",
-
     "csvSymbol": "代碼",
     "csvName": "名稱",
     "csvMarket": "市場",
@@ -1470,5 +1471,51 @@
     "netIncome": "稅後淨利",
     "all": "全部",
     "noData": "暫無產業 EPS 資料"
+  },
+  "threshold": {
+    "consecutiveRedK": "3-7天連續紅K",
+    "consecutiveBlackK": "3-7天連續黑K",
+    "breakout20High": "突破20日高點",
+    "breakdown20Low": "跌破20日低點",
+    "volumeSpike": "成交量 ≥ 4倍均量 + 價格變動 ≥ 1.5%",
+    "priceSpike": "單日漲跌幅 ≥ 5% + 量 ≥ 1.5 倍均量",
+    "kdGoldenCross": "K線向上穿越D線，且K<30",
+    "kdDeathCross": "K線向下穿越D線，且K>70",
+    "rsiOverbought": "RSI ≥ 85",
+    "rsiOversold": "RSI ≤ 30",
+    "instBuy": "法人當日買超",
+    "instSell": "法人當日賣超",
+    "instBuyStreak": "連續4天以上法人買超",
+    "instSellStreak": "連續4天以上法人賣超",
+    "dayTradingHigh": "當沖比例 ≥ 50% + 萬張以上",
+    "dayTradingExtreme": "當沖比例 ≥ 70% + 3萬張以上",
+    "concentrationHigh": "大戶持股比例 ≥ 60%",
+    "week52High": "創52週新高",
+    "week52Low": "創52週新低",
+    "maAlignBullish": "MA5 > MA10 > MA20 > MA60",
+    "maAlignBearish": "MA5 < MA10 < MA20 < MA60",
+    "doji": "十字線形態",
+    "bullishEngulfing": "陽線吞噬",
+    "hammer": "錘子線",
+    "morningStar": "晨星形態",
+    "threeWhiteSoldiers": "三白兵",
+    "gapUp": "跳空缺口向上",
+    "bearishEngulfing": "陰線吞噬",
+    "hangingMan": "吊人線",
+    "eveningStar": "夜星形態",
+    "threeBlackCrows": "三黑鴉",
+    "gapDown": "跳空缺口向下",
+    "bullishDivergence": "價漲 > 5% 且 量縮 > 40%",
+    "bearishDivergence": "價跌 > 3% 且 量增 > 30%",
+    "volumeBreakout": "帶量突破",
+    "lowVolumeAccum": "低量整理",
+    "revenueYoySurge": "營收年增率 ≥ 30%",
+    "revenueYoyDecline": "營收年增率 ≤ -20%",
+    "revenueMomGrowth": "連續2個月營收月增",
+    "revenueNewHigh": "當月營收創歷史新高",
+    "highDividendYield": "殖利率 ≥ 5.5%",
+    "peUndervalued": "本益比 ≤ 10",
+    "peOvervalued": "本益比 ≥ 60",
+    "pbrUndervalued": "股價淨值比 ≤ 0.8"
   }
 }
