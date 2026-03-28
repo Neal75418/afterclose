@@ -134,43 +134,15 @@ class AppDatabase extends $AppDatabase
   /// 測試用 - 建立記憶體內 Database
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
+  /// 產品尚未上線前使用 version 1，所有 table 和 index 在 onCreate 一次建好。
+  /// 正式上線後，每次 schema 變更遞增 version 並在 onUpgrade 加 migration。
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 1;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
-    },
-    onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        // Drop personalization tables (removed as dead code)
-        await m.deleteTable('user_interaction');
-        await m.deleteTable('user_preference');
-      }
-      if (from < 3) {
-        // One-time cleanup: TPEx margin data was synced from wrong endpoint
-        // (margin_sbl = 融券+借券) instead of (margin_balance = 融資+融券).
-        // Delete incorrect historical data; correct data will be re-synced.
-        await customStatement('''
-          DELETE FROM margin_trading
-          WHERE symbol IN (SELECT symbol FROM stock_master WHERE market = 'TPEx')
-        ''');
-      }
-      if (from < 4) {
-        await m.createTable(insiderTransfer);
-      }
-      if (from < 5) {
-        // Add composite indexes for chip anomaly detection SQL performance
-        await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_shareholding_symbol_date '
-          'ON shareholding (symbol, date)',
-        );
-        await customStatement(
-          'CREATE INDEX IF NOT EXISTS idx_margin_trading_symbol_date '
-          'ON margin_trading (symbol, date)',
-        );
-      }
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
