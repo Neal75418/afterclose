@@ -60,6 +60,9 @@ class FilterMetadata {
   final List<DataRequirement> dataRequirements;
 
   /// 門檻資訊（如「4 倍平均成交量」）
+  ///
+  /// TODO: 目前為硬編碼中文字串，待 i18n 化為 key-based 翻譯
+  /// 以支援英文 locale 用戶
   final String? thresholdInfo;
 }
 

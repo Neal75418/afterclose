@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
@@ -56,7 +57,7 @@ class ScoreRing extends StatelessWidget {
     final displayScore = score.toInt();
 
     return Semantics(
-      label: '評分 $displayScore 分',
+      label: 'accessibility.score'.tr(namedArgs: {'score': '$displayScore'}),
       child: SizedBox(
         width: size.dimension,
         height: size.dimension,

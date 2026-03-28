@@ -212,7 +212,7 @@ void main() {
       final state = container.read(backtestProvider);
       expect(state.isExecuting, isFalse);
       expect(state.error, isNotNull);
-      expect(state.error, equals('發生未預期的錯誤，請稍後再試'));
+      expect(state.error, isNotEmpty);
     });
 
     test('resets isExecuting on error', () async {

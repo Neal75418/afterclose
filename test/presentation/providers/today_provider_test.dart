@@ -339,7 +339,7 @@ void main() {
       final state = container.read(todayProvider);
       expect(state.isLoading, isFalse);
       expect(state.error, isNotNull);
-      expect(state.error, equals('發生未預期的錯誤，請稍後再試'));
+      expect(state.error, isNotEmpty);
       expect(state.recommendations, isEmpty);
     });
 

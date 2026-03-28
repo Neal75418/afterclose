@@ -1,8 +1,8 @@
-import 'package:intl/intl.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 /// 統一數字格式化工具
 ///
-/// 提供千分位、中文單位（萬/億）等常用數字格式化方法。
+/// 提供千分位、本地化單位（億/B、萬/K）等常用數字格式化方法。
 class AppNumberFormat {
   AppNumberFormat._();
 
@@ -13,15 +13,15 @@ class AppNumberFormat {
   /// 整數千分位格式（如 1,234,567）
   static String integer(double value) => _intFormat.format(value);
 
-  /// 自動選擇中文單位：億 / 萬 / 千分位
+  /// 自動選擇本地化單位：億/B、萬/K、千分位
   ///
   /// 用於成交量、金額等大數值的友善顯示。
   static String compact(double value) {
     if (value.abs() >= 1e8) {
-      return '${(value / 1e8).toStringAsFixed(1)}億';
+      return '${(value / 1e8).toStringAsFixed(1)}${'unit.billion'.tr()}';
     }
     if (value.abs() >= 1e4) {
-      return '${(value / 1e4).toStringAsFixed(1)}萬';
+      return '${(value / 1e4).toStringAsFixed(1)}${'unit.tenThousand'.tr()}';
     }
     return _intFormat.format(value);
   }

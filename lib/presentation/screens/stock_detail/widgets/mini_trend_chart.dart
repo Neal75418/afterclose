@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 /// 迷你趨勢折線圖（10-60 筆資料點）
 ///
 /// 用於籌碼分頁的法人動向、外資持股、融資融券、當沖趨勢視覺化。
+///
+/// TODO: 加入 Semantics wrapper 以支援 VoiceOver/TalkBack
 class MiniTrendChart extends StatelessWidget {
   const MiniTrendChart({
     super.key,

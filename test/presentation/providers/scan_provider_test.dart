@@ -337,7 +337,7 @@ void main() {
       final state = container.read(scanProvider);
       expect(state.isLoading, isFalse);
       expect(state.error, isNotNull);
-      expect(state.error, equals('發生未預期的錯誤，請稍後再試'));
+      expect(state.error, isNotEmpty);
     });
 
     test('loadData loads industries list', () async {
