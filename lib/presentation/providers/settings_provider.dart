@@ -310,16 +310,6 @@ final themeModeProvider = Provider<ThemeMode>((ref) {
   return ref.watch(settingsProvider).themeMode;
 });
 
-/// 語系 Provider（便捷存取）
-final localeProvider = Provider<Locale>((ref) {
-  return ref.watch(settingsProvider).locale.toLocale();
-});
-
-/// 設定載入完成 Provider
-final settingsLoadedProvider = Provider<bool>((ref) {
-  return ref.watch(settingsProvider).isLoaded;
-});
-
 /// 快取時間 Provider（便捷存取）
 final cacheDurationProvider = Provider<int>((ref) {
   return ref.watch(settingsProvider).cacheDurationMinutes;

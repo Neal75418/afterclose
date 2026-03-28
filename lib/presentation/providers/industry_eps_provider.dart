@@ -10,6 +10,8 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // ==================================================
 
 /// 產業別 EPS 排名狀態
+///
+/// TODO: 加入 fetchedAt 欄位，讓 UI 顯示資料擷取時間
 class IndustryEpsState {
   const IndustryEpsState({
     this.allData = const [],
@@ -97,6 +99,9 @@ class IndustryEpsNotifier extends Notifier<IndustryEpsState> {
   void setIndustryFilter(String? industry) {
     state = state.copyWith(selectedIndustry: industry);
   }
+
+  /// 清除錯誤訊息（用於關閉錯誤 banner）
+  void clearError() => state = state.copyWith(error: null);
 }
 
 // ==================================================

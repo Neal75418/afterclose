@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
@@ -52,13 +53,7 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
         ],
       ),
       body: state.isLoading && state.allData.isEmpty
-          ? const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
+          ? const GenericListShimmer(itemCount: 8)
           : state.error != null && state.allData.isEmpty
           ? ErrorDisplay.isNetworkError(state.error!)
                 ? EmptyStates.networkError(
@@ -81,6 +76,11 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
                         onPressed: () =>
                             ref.read(industryEpsProvider.notifier).loadData(),
                         child: Text('common.retry'.tr()),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(industryEpsProvider.notifier).clearError(),
+                        child: Text('common.dismiss'.tr()),
                       ),
                     ],
                   ),

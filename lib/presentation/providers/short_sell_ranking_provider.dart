@@ -10,6 +10,8 @@ import 'package:afterclose/presentation/providers/providers.dart';
 // ==================================================
 
 /// 融券賣出排行狀態
+///
+/// TODO: 加入 fetchedAt 欄位，讓 UI 顯示資料擷取時間
 class ShortSellRankingState {
   const ShortSellRankingState({
     this.rankings = const [],
@@ -58,6 +60,9 @@ class ShortSellRankingNotifier extends Notifier<ShortSellRankingState> {
       state = state.copyWith(error: ErrorDisplay.message(e), isLoading: false);
     }
   }
+
+  /// 清除錯誤訊息（用於關閉錯誤 banner）
+  void clearError() => state = state.copyWith(error: null);
 }
 
 // ==================================================

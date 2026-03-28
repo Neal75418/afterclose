@@ -229,17 +229,6 @@ void main() {
       expect(themeMode, ThemeMode.system);
     });
 
-    test('localeProvider returns current locale', () {
-      final locale = container.read(localeProvider);
-      expect(locale, const Locale('zh', 'TW'));
-    });
-
-    test('settingsLoadedProvider returns loaded state', () {
-      final isLoaded = container.read(settingsLoadedProvider);
-      // Initially false before async load completes
-      expect(isLoaded, isFalse);
-    });
-
     test('cacheDurationProvider returns cache minutes', () {
       final duration = container.read(cacheDurationProvider);
       expect(duration, 30);

@@ -240,6 +240,8 @@ class PositionDetailScreen extends ConsumerWidget {
                   // 刷新交易紀錄
                   ref.invalidate(positionTransactionsProvider(symbol));
                   if (context.mounted) {
+                    // TODO: 加入 undo SnackBar（需先實作 addTransaction with exact fields
+                    // 來還原 FIFO lot 計算，目前僅用確認 dialog 防誤刪）
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('portfolio.transactionDeleted'.tr()),

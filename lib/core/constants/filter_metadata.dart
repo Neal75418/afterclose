@@ -309,6 +309,11 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
     dataRequirements: [DataRequirement.monthlyRevenue],
     thresholdInfo: '連續2個月營收月增',
   ),
+  ScanFilter.revenueNewHigh: FilterMetadata(
+    conditionKey: 'filterMeta.revenueNewHigh',
+    dataRequirements: [DataRequirement.monthlyRevenue],
+    thresholdInfo: '當月營收創歷史新高',
+  ),
   ScanFilter.highDividendYield: FilterMetadata(
     conditionKey: 'filterMeta.highDividendYield',
     dataRequirements: [DataRequirement.valuation],

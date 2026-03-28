@@ -391,6 +391,23 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             SnackBar(
               content: Text('calendar.eventDeleted'.tr()),
               behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'common.undo'.tr(),
+                onPressed: () async {
+                  try {
+                    await ref
+                        .read(eventCalendarProvider.notifier)
+                        .addEvent(
+                          symbol: event.symbol,
+                          eventDate: event.eventDate,
+                          title: event.title,
+                          description: event.description,
+                        );
+                  } catch (_) {
+                    // 還原失敗靜默處理（事件已刪除，重新建立可能失敗）
+                  }
+                },
+              ),
             ),
           );
         }
