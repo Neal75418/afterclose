@@ -34,7 +34,7 @@ class EmptyState extends StatelessWidget {
 
     return Semantics(
       label:
-          '$title${subtitle != null ? ', $subtitle' : ''}${actionLabel != null ? ', 按鈕: $actionLabel' : ''}',
+          '$title${subtitle != null ? ', $subtitle' : ''}${actionLabel != null ? ', $actionLabel' : ''}',
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(DesignTokens.spacing32),

@@ -111,18 +111,17 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
   }
 
   Widget _buildEmptyState(ThemeData theme) {
-    return ListView(
-      children: [
-        SizedBox(
-          height: 300,
-          child: EmptyState(
-            icon: Icons.analytics_outlined,
-            title: 'industryEps.noData'.tr(),
-            actionLabel: 'common.retry'.tr(),
-            onAction: () => ref.read(industryEpsProvider.notifier).loadData(),
-          ),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: SizedBox(
+        height: 300,
+        child: EmptyState(
+          icon: Icons.analytics_outlined,
+          title: 'industryEps.noData'.tr(),
+          actionLabel: 'common.retry'.tr(),
+          onAction: () => ref.read(industryEpsProvider.notifier).loadData(),
         ),
-      ],
+      ),
     );
   }
 
