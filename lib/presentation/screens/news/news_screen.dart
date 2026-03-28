@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,9 +19,7 @@ import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
-/// 新聞畫面 - 顯示近期市場新聞，支援篩選與分類
-///
-/// TODO: 加入關鍵字搜尋功能（參考 WatchlistScreen 的 search bar 實作）
+/// 新聞畫面 - 顯示近期市場新聞，支援篩選、搜尋與分類
 class NewsScreen extends ConsumerStatefulWidget {
   const NewsScreen({super.key});
 
@@ -28,11 +28,33 @@ class NewsScreen extends ConsumerStatefulWidget {
 }
 
 class _NewsScreenState extends ConsumerState<NewsScreen> {
+  bool _isSearching = false;
+  final _searchController = TextEditingController();
+  Timer? _searchDebounce;
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       ref.read(newsProvider.notifier).loadData();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _toggleSearch() {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchController.clear();
+        ref.read(newsProvider.notifier).setSearchQuery('');
+      }
     });
   }
 
@@ -187,8 +209,31 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(S.newsTitle),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'common.search'.tr(),
+                  border: InputBorder.none,
+                ),
+                onChanged: (value) {
+                  _searchDebounce?.cancel();
+                  _searchDebounce = Timer(
+                    const Duration(milliseconds: 300),
+                    () {
+                      ref.read(newsProvider.notifier).setSearchQuery(value);
+                    },
+                  );
+                },
+              )
+            : Text(S.newsTitle),
         actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: _toggleSearch,
+            tooltip: _isSearching ? 'common.close'.tr() : 'common.search'.tr(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refresh,

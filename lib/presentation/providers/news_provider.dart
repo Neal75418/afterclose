@@ -42,6 +42,7 @@ class NewsState {
     this.isLoading = false,
     this.error,
     this.selectedSource = NewsSource.all,
+    this.searchQuery = '',
   });
 
   final List<NewsItemEntry> allNews;
@@ -49,11 +50,21 @@ class NewsState {
   final bool isLoading;
   final String? error;
   final NewsSource selectedSource;
+  final String searchQuery;
 
-  /// 依選定來源過濾的新聞
+  /// 依選定來源與搜尋關鍵字過濾的新聞
   List<NewsItemEntry> get filteredNews {
-    if (selectedSource == NewsSource.all) return allNews;
-    return allNews.where((n) => selectedSource.matches(n.source)).toList();
+    var result = allNews;
+    if (selectedSource != NewsSource.all) {
+      result = result.where((n) => selectedSource.matches(n.source)).toList();
+    }
+    if (searchQuery.isNotEmpty) {
+      final query = searchQuery.toLowerCase();
+      result = result
+          .where((n) => n.title.toLowerCase().contains(query))
+          .toList();
+    }
+    return result;
   }
 
   /// 各來源的新聞數量（建構時計算一次，避免每次 watch 重新遍歷）
@@ -77,6 +88,7 @@ class NewsState {
     bool? isLoading,
     Object? error = sentinel,
     NewsSource? selectedSource,
+    String? searchQuery,
   }) {
     return NewsState(
       allNews: allNews ?? this.allNews,
@@ -84,6 +96,7 @@ class NewsState {
       isLoading: isLoading ?? this.isLoading,
       error: error == sentinel ? this.error : error as String?,
       selectedSource: selectedSource ?? this.selectedSource,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
@@ -136,6 +149,11 @@ class NewsNotifier extends Notifier<NewsState> {
   /// 設定來源篩選
   void setSourceFilter(NewsSource source) {
     state = state.copyWith(selectedSource: source);
+  }
+
+  /// 設定搜尋關鍵字
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
   }
 }
 

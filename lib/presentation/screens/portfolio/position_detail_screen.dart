@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -244,6 +245,8 @@ class PositionDetailScreen extends ConsumerWidget {
                 ),
               );
               if (confirmed == true) {
+                // 保留交易資料以供 undo
+                final deletedTx = tx;
                 try {
                   await ref
                       .read(portfolioProvider.notifier)
@@ -251,12 +254,92 @@ class PositionDetailScreen extends ConsumerWidget {
                   // 刷新交易紀錄
                   ref.invalidate(positionTransactionsProvider(symbol));
                   if (context.mounted) {
-                    // TODO: 加入 undo SnackBar（需先實作 addTransaction with exact fields
-                    // 來還原 FIFO lot 計算，目前僅用確認 dialog 防誤刪）
+                    ScaffoldMessenger.of(context).clearSnackBars();
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('portfolio.transactionDeleted'.tr()),
                         behavior: SnackBarBehavior.floating,
+                        duration: const Duration(
+                          seconds: ApiConfig.longMessageDurationSec,
+                        ),
+                        showCloseIcon: true,
+                        dismissDirection: DismissDirection.horizontal,
+                        action: SnackBarAction(
+                          label: 'watchlist.undo'.tr(),
+                          onPressed: () async {
+                            try {
+                              final notifier = ref.read(
+                                portfolioProvider.notifier,
+                              );
+                              final txType = TransactionType.fromValue(
+                                deletedTx.txType,
+                              );
+                              switch (txType) {
+                                case TransactionType.buy:
+                                  await notifier.addBuy(
+                                    symbol: deletedTx.symbol,
+                                    date: deletedTx.date,
+                                    quantity: deletedTx.quantity,
+                                    price: deletedTx.price,
+                                    fee: deletedTx.fee > 0
+                                        ? deletedTx.fee
+                                        : null,
+                                    note: deletedTx.note,
+                                  );
+                                case TransactionType.sell:
+                                  await notifier.addSell(
+                                    symbol: deletedTx.symbol,
+                                    date: deletedTx.date,
+                                    quantity: deletedTx.quantity,
+                                    price: deletedTx.price,
+                                    fee: deletedTx.fee > 0
+                                        ? deletedTx.fee
+                                        : null,
+                                    tax: deletedTx.tax > 0
+                                        ? deletedTx.tax
+                                        : null,
+                                    note: deletedTx.note,
+                                  );
+                                case TransactionType.dividendCash:
+                                  await notifier.addDividend(
+                                    symbol: deletedTx.symbol,
+                                    date: deletedTx.date,
+                                    amount: deletedTx.quantity,
+                                    isCash: true,
+                                    note: deletedTx.note,
+                                  );
+                                case TransactionType.dividendStock:
+                                  await notifier.addDividend(
+                                    symbol: deletedTx.symbol,
+                                    date: deletedTx.date,
+                                    amount: deletedTx.quantity,
+                                    isCash: false,
+                                    note: deletedTx.note,
+                                  );
+                              }
+                              ref.invalidate(
+                                positionTransactionsProvider(symbol),
+                              );
+                            } catch (e) {
+                              AppLogger.warning(
+                                'PositionDetailScreen',
+                                '復原交易失敗',
+                                e,
+                              );
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(ErrorDisplay.message(e)),
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.error,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                        ),
                       ),
                     );
                   }

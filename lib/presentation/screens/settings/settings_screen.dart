@@ -63,17 +63,8 @@ class SettingsScreen extends ConsumerWidget {
             _buildLanguageTile(context, theme, currentLocale),
           ]),
 
-          // 進階功能區段
-          _buildSettingsSection(context, 'settings.advancedFeatures'.tr(), [
-            _buildFeatureTile(
-              context,
-              settings.showWarningBadges,
-              Icons.warning_amber_rounded,
-              Colors.orange,
-              'settings.showWarningBadges'.tr(),
-              (v) =>
-                  ref.read(settingsProvider.notifier).setShowWarningBadges(v),
-            ),
+          // 通知設定區段
+          _buildSettingsSection(context, 'notification.title'.tr(), [
             _buildFeatureTile(
               context,
               settings.insiderNotifications,
@@ -93,6 +84,19 @@ class SettingsScreen extends ConsumerWidget {
               (v) => ref
                   .read(settingsProvider.notifier)
                   .setDisposalUrgentAlerts(v),
+            ),
+          ]),
+
+          // 進階功能區段
+          _buildSettingsSection(context, 'settings.advancedFeatures'.tr(), [
+            _buildFeatureTile(
+              context,
+              settings.showWarningBadges,
+              Icons.warning_amber_rounded,
+              Colors.orange,
+              'settings.showWarningBadges'.tr(),
+              (v) =>
+                  ref.read(settingsProvider.notifier).setShowWarningBadges(v),
             ),
             _buildFeatureTile(
               context,

@@ -1,3 +1,4 @@
+import 'package:csv/csv.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
@@ -36,6 +38,8 @@ class TodayScreen extends ConsumerStatefulWidget {
 }
 
 class _TodayScreenState extends ConsumerState<TodayScreen> {
+  bool _isExporting = false;
+
   @override
   void initState() {
     super.initState();
@@ -265,6 +269,20 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                     onPressed: _runUpdate,
                     tooltip: S.todayUpdateData,
                   ),
+                _isExporting
+                    ? const Padding(
+                        padding: EdgeInsets.all(DesignTokens.spacing12),
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(Icons.ios_share),
+                        onPressed: _exportTodayCsv,
+                        tooltip: 'export.exportCsv'.tr(),
+                      ),
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),
                   onPressed: () => context.push(AppRoutes.alerts),
@@ -485,6 +503,59 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
+  }
+
+  Future<void> _exportTodayCsv() async {
+    if (_isExporting) return;
+    final recommendations = ref.read(todayProvider).recommendations;
+    if (recommendations.isEmpty) return;
+
+    setState(() => _isExporting = true);
+    try {
+      final csv = _recommendationsToCsv(recommendations);
+      final date = DateFormat('yyyyMMdd').format(DateTime.now());
+      await const ShareService().shareCsv(csv, 'today_$date.csv');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ErrorDisplay.message(e)),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  String _recommendationsToCsv(List<RecommendationWithDetails> recs) {
+    final headers = [
+      'export.csvSymbol'.tr(),
+      'export.csvName'.tr(),
+      'export.csvMarket'.tr(),
+      'export.csvClose'.tr(),
+      'export.csvChange'.tr(),
+      'export.csvTrend'.tr(),
+      'export.csvScore'.tr(),
+    ];
+
+    final rows = recs.map((r) {
+      return [
+        r.symbol,
+        r.stockName ?? '',
+        r.market ?? '',
+        r.latestClose?.toStringAsFixed(2) ?? '',
+        r.priceChange != null
+            ? '${r.priceChange! >= 0 ? "+" : ""}${r.priceChange!.toStringAsFixed(2)}%'
+            : '',
+        r.trendState ?? '',
+        r.score.toStringAsFixed(0),
+      ];
+    }).toList();
+
+    return const CsvEncoder().convert([headers, ...rows]);
   }
 
   Future<void> _toggleWatchlist(
