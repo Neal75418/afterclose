@@ -134,8 +134,8 @@ dev_dependencies:
 # Dependency overrides to resolve riverpod_generator 4.x + drift_dev 2.31 version conflicts.
 # Can be removed when riverpod stops depending on test package (see: riverpod#4364).
 dependency_overrides:
-  analyzer: ^10.0.0     # Required by dart_style 3.1.5
-  dart_style: ^3.1.5    # Required by build_runner with analyzer 10.x
+  analyzer: '>=10.0.0 <11.0.0'  # Pin to 10.x — dart_style 3.1.8 needs analyzer 11+
+  dart_style: 3.1.5             # Pin exact — 3.1.8 requires BlockEnumBody from analyzer 11+
   io: ^1.0.3            # Required by riverpod_generator 4.x (test dependency chain)
 
 # App Icon Configuration
