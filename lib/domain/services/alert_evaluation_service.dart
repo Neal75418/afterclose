@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/services/analysis/support_resistance_service.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 警示評估所需的上下文資料
@@ -13,6 +14,11 @@ class AlertEvaluationContext {
     required this.indicatorDataMap,
     required this.warningSymbols,
     required this.disposalSymbols,
+    this.revenueYoyMap = const {},
+    this.dividendYieldMap = const {},
+    this.peRatioMap = const {},
+    this.insiderChangeMap = const {},
+    this.pledgeRatioMap = const {},
   });
 
   final Map<String, double> currentPrices;
@@ -22,6 +28,21 @@ class AlertEvaluationContext {
   final Map<String, List<DailyPriceEntry>> indicatorDataMap;
   final Set<String> warningSymbols;
   final Set<String> disposalSymbols;
+
+  /// 營收年增率（%）
+  final Map<String, double> revenueYoyMap;
+
+  /// 現金殖利率（%）
+  final Map<String, double> dividendYieldMap;
+
+  /// 本益比
+  final Map<String, double> peRatioMap;
+
+  /// 董監持股變動（正=增持，負=減持）
+  final Map<String, double> insiderChangeMap;
+
+  /// 質押比例（%）
+  final Map<String, double> pledgeRatioMap;
 }
 
 /// 評估價格警示條件的 Domain 服務
@@ -29,10 +50,14 @@ class AlertEvaluationContext {
 /// 從 UserDaoMixin 中抽取，修正分層違規 — 技術指標計算
 /// 應屬於 Domain 層，而非 Data Access 層。
 class AlertEvaluationService {
-  AlertEvaluationService({TechnicalIndicatorService? indicatorService})
-    : _indicatorService = indicatorService ?? TechnicalIndicatorService();
+  AlertEvaluationService({
+    TechnicalIndicatorService? indicatorService,
+    SupportResistanceService? srService,
+  }) : _indicatorService = indicatorService ?? TechnicalIndicatorService(),
+       _srService = srService ?? SupportResistanceService();
 
   final TechnicalIndicatorService _indicatorService;
+  final SupportResistanceService _srService;
 
   /// evaluator switch 中有實作的警示類型字串
   static const _implementedTypes = {
@@ -51,6 +76,15 @@ class AlertEvaluationService {
     'CROSS_BELOW_MA',
     'TRADING_WARNING',
     'TRADING_DISPOSAL',
+    // Phase 3: 進階警示類型
+    'BREAK_RESISTANCE',
+    'BREAK_SUPPORT',
+    'REVENUE_YOY_SURGE',
+    'HIGH_DIVIDEND_YIELD',
+    'PE_UNDERVALUED',
+    'INSIDER_SELLING',
+    'INSIDER_BUYING',
+    'HIGH_PLEDGE_RATIO',
   };
 
   /// 根據當前市場資料評估所有啟用中的警示
@@ -161,6 +195,61 @@ class AlertEvaluationService {
           shouldTrigger = context.warningSymbols.contains(alert.symbol);
         case 'TRADING_DISPOSAL':
           shouldTrigger = context.disposalSymbols.contains(alert.symbol);
+
+        // Phase 3: 進階警示類型
+        case 'BREAK_RESISTANCE':
+          final priceHistory = context.priceHistoryMap[alert.symbol];
+          if (priceHistory != null &&
+              priceHistory.length >= RuleParams.swingWindow * 2) {
+            final (_, resistance) = _srService.findSupportResistance(
+              priceHistory,
+            );
+            if (resistance != null) {
+              shouldTrigger = currentPrice > resistance;
+            }
+          }
+        case 'BREAK_SUPPORT':
+          final priceHistory = context.priceHistoryMap[alert.symbol];
+          if (priceHistory != null &&
+              priceHistory.length >= RuleParams.swingWindow * 2) {
+            final (support, _) = _srService.findSupportResistance(priceHistory);
+            if (support != null) {
+              shouldTrigger = currentPrice < support;
+            }
+          }
+        case 'REVENUE_YOY_SURGE':
+          final yoy = context.revenueYoyMap[alert.symbol];
+          if (yoy != null) {
+            // targetValue 為門檻百分比（預設 30%）
+            shouldTrigger = yoy >= alert.targetValue;
+          }
+        case 'HIGH_DIVIDEND_YIELD':
+          final yield_ = context.dividendYieldMap[alert.symbol];
+          if (yield_ != null) {
+            shouldTrigger = yield_ >= alert.targetValue;
+          }
+        case 'PE_UNDERVALUED':
+          final pe = context.peRatioMap[alert.symbol];
+          if (pe != null && pe > 0) {
+            shouldTrigger = pe <= alert.targetValue;
+          }
+        case 'INSIDER_SELLING':
+          final change = context.insiderChangeMap[alert.symbol];
+          if (change != null) {
+            shouldTrigger = change < 0;
+          }
+        case 'INSIDER_BUYING':
+          final change = context.insiderChangeMap[alert.symbol];
+          if (change != null) {
+            shouldTrigger = change > 0;
+          }
+        case 'HIGH_PLEDGE_RATIO':
+          final ratio = context.pledgeRatioMap[alert.symbol];
+          if (ratio != null) {
+            shouldTrigger =
+                ratio >= (alert.targetValue > 0 ? alert.targetValue : 30);
+          }
+
         default:
           // 防禦：_implementedTypes 與 switch 不同步時的安全網
           // 既然 switch 沒有處理邏輯，應視為未實作並自動停用

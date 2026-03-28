@@ -141,12 +141,15 @@ enum AlertType {
     AlertType.crossAboveMa ||
     AlertType.crossBelowMa ||
     AlertType.tradingWarning ||
-    AlertType.tradingDisposal => true,
-    // TODO: 以下 8 種類型基礎設施已就緒（i18n、通知文字、enum），
-    // 待實作 AlertEvaluationService 中的評估邏輯：
-    // breakResistance, breakSupport, revenueYoySurge, highDividendYield,
-    // peUndervalued, insiderSelling, insiderBuying, highPledgeRatio
-    _ => false,
+    AlertType.tradingDisposal ||
+    AlertType.breakResistance ||
+    AlertType.breakSupport ||
+    AlertType.revenueYoySurge ||
+    AlertType.highDividendYield ||
+    AlertType.peUndervalued ||
+    AlertType.insiderSelling ||
+    AlertType.insiderBuying ||
+    AlertType.highPledgeRatio => true,
   };
 
   /// 從字串值解析 AlertType。

@@ -125,14 +125,14 @@ void main() {
       expect(find.text('台積電'), findsOneWidget);
     });
 
-    testWidgets('only shows implemented alert types', (tester) async {
+    testWidgets('shows all 23 alert types', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(
         buildProviderTestApp(const CreatePriceAlertDialog(symbol: '2330')),
       );
       await tester.pump();
 
-      // 驗證 15 種提醒類型
+      // 驗證 23 種提醒類型（全部已實作）
       // 基本價格提醒 (3)
       expect(find.text('alert.alertType.above'), findsOneWidget);
       expect(find.text('alert.alertType.below'), findsOneWidget);
@@ -158,15 +158,15 @@ void main() {
       expect(find.text('alert.alertType.tradingWarning'), findsOneWidget);
       expect(find.text('alert.alertType.tradingDisposal'), findsOneWidget);
 
-      // Should NOT show remaining 8 unimplemented types
-      expect(find.text('alert.alertType.breakResistance'), findsNothing);
-      expect(find.text('alert.alertType.breakSupport'), findsNothing);
-      expect(find.text('alert.alertType.revenueYoySurge'), findsNothing);
-      expect(find.text('alert.alertType.highDividendYield'), findsNothing);
-      expect(find.text('alert.alertType.peUndervalued'), findsNothing);
-      expect(find.text('alert.alertType.insiderSelling'), findsNothing);
-      expect(find.text('alert.alertType.insiderBuying'), findsNothing);
-      expect(find.text('alert.alertType.highPledgeRatio'), findsNothing);
+      // Phase 3: 進階警示類型 (8) — 全部已實作
+      expect(find.text('alert.alertType.breakResistance'), findsOneWidget);
+      expect(find.text('alert.alertType.breakSupport'), findsOneWidget);
+      expect(find.text('alert.alertType.revenueYoySurge'), findsOneWidget);
+      expect(find.text('alert.alertType.highDividendYield'), findsOneWidget);
+      expect(find.text('alert.alertType.peUndervalued'), findsOneWidget);
+      expect(find.text('alert.alertType.insiderSelling'), findsOneWidget);
+      expect(find.text('alert.alertType.insiderBuying'), findsOneWidget);
+      expect(find.text('alert.alertType.highPledgeRatio'), findsOneWidget);
     });
   });
 }

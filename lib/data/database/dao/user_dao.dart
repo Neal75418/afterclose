@@ -227,6 +227,45 @@ mixin UserDaoMixin on $AppDatabase {
     final disposalSymbols = await _fetchDisposalSymbolsBatch(symbols);
     final warningSymbols = await _fetchWarningSymbolsBatch(symbols);
 
+    // Phase 3: 按需查詢進階警示所需的基本面/籌碼資料
+    final alertTypes = activeAlerts.map((a) => a.alertType).toSet();
+    final needsFundamental = alertTypes.any(
+      (t) => const {
+        'REVENUE_YOY_SURGE',
+        'HIGH_DIVIDEND_YIELD',
+        'PE_UNDERVALUED',
+      }.contains(t),
+    );
+    final needsInsider = alertTypes.any(
+      (t) => const {
+        'INSIDER_SELLING',
+        'INSIDER_BUYING',
+        'HIGH_PLEDGE_RATIO',
+      }.contains(t),
+    );
+
+    final revenueYoyMap = <String, double>{};
+    final dividendYieldMap = <String, double>{};
+    final peRatioMap = <String, double>{};
+    final insiderChangeMap = <String, double>{};
+    final pledgeRatioMap = <String, double>{};
+
+    if (needsFundamental) {
+      await _fetchFundamentalDataForAlerts(
+        symbols,
+        revenueYoyMap: revenueYoyMap,
+        dividendYieldMap: dividendYieldMap,
+        peRatioMap: peRatioMap,
+      );
+    }
+    if (needsInsider) {
+      await _fetchInsiderDataForAlerts(
+        symbols,
+        insiderChangeMap: insiderChangeMap,
+        pledgeRatioMap: pledgeRatioMap,
+      );
+    }
+
     // Delegate evaluation to domain service (prefer injection from caller)
     final service = evaluationService ?? AlertEvaluationService();
     final result = service.evaluateAlerts(
@@ -239,6 +278,11 @@ mixin UserDaoMixin on $AppDatabase {
         indicatorDataMap: indicatorDataMap,
         warningSymbols: warningSymbols,
         disposalSymbols: disposalSymbols,
+        revenueYoyMap: revenueYoyMap,
+        dividendYieldMap: dividendYieldMap,
+        peRatioMap: peRatioMap,
+        insiderChangeMap: insiderChangeMap,
+        pledgeRatioMap: pledgeRatioMap,
       ),
     );
 
@@ -368,6 +412,99 @@ mixin UserDaoMixin on $AppDatabase {
           ..where((t) => t.symbol.equals(symbol))
           ..where((t) => t.warningType.equals('DISPOSAL')))
         .get();
+  }
+
+  // ==================================================
+  // 進階警示資料查詢（Phase 3）
+  // ==================================================
+
+  /// 批次查詢基本面資料：營收年增率、殖利率、本益比
+  Future<void> _fetchFundamentalDataForAlerts(
+    List<String> symbols, {
+    required Map<String, double> revenueYoyMap,
+    required Map<String, double> dividendYieldMap,
+    required Map<String, double> peRatioMap,
+  }) async {
+    // 營收年增率：取最近 3 個月的營收資料（每 symbol 只用最新一筆）
+    final cutoffDate = DateTime.now().subtract(const Duration(days: 120));
+    final revenues =
+        await (select(monthlyRevenue)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.date.isBiggerOrEqualValue(cutoffDate))
+              ..orderBy([
+                (t) => OrderingTerm.desc(t.revenueYear),
+                (t) => OrderingTerm.desc(t.revenueMonth),
+              ]))
+            .get();
+
+    // 每個 symbol 只取最新一筆
+    final seenRevenue = <String>{};
+    for (final r in revenues) {
+      if (!seenRevenue.contains(r.symbol) && r.yoyGrowth != null) {
+        revenueYoyMap[r.symbol] = r.yoyGrowth!;
+        seenRevenue.add(r.symbol);
+      }
+    }
+
+    // 殖利率和本益比：從 stockValuation 表取最近 30 天資料
+    final valCutoff = DateTime.now().subtract(const Duration(days: 30));
+    final valuations =
+        await (select(stockValuation)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.date.isBiggerOrEqualValue(valCutoff))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+            .get();
+
+    final seenValuation = <String>{};
+    for (final v in valuations) {
+      if (!seenValuation.contains(v.symbol)) {
+        if (v.dividendYield != null && v.dividendYield! > 0) {
+          dividendYieldMap[v.symbol] = v.dividendYield!;
+        }
+        if (v.per != null && v.per! > 0) {
+          peRatioMap[v.symbol] = v.per!;
+        }
+        seenValuation.add(v.symbol);
+      }
+    }
+  }
+
+  /// 批次查詢籌碼資料：董監持股變動、質押比例
+  Future<void> _fetchInsiderDataForAlerts(
+    List<String> symbols, {
+    required Map<String, double> insiderChangeMap,
+    required Map<String, double> pledgeRatioMap,
+  }) async {
+    // 董監持股：取最近 6 個月的資料（只需最新一筆的 sharesChange）
+    final holdingCutoff = DateTime.now().subtract(const Duration(days: 180));
+    final holdings =
+        await (select(insiderHolding)
+              ..where((t) => t.symbol.isIn(symbols))
+              ..where((t) => t.date.isBiggerOrEqualValue(holdingCutoff))
+              ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+            .get();
+
+    // 按 symbol 分組，取最新兩筆算差異
+    final grouped = <String, List<InsiderHoldingEntry>>{};
+    for (final h in holdings) {
+      (grouped[h.symbol] ??= []).add(h);
+    }
+    for (final entry in grouped.entries) {
+      final list = entry.value;
+      if (list.isNotEmpty && list[0].sharesChange != null) {
+        insiderChangeMap[entry.key] = list[0].sharesChange!;
+      }
+    }
+
+    // 質押比例
+    for (final entry in grouped.entries) {
+      if (entry.value.isNotEmpty) {
+        final latest = entry.value.first;
+        if (latest.pledgeRatio != null) {
+          pledgeRatioMap[entry.key] = latest.pledgeRatio!;
+        }
+      }
+    }
   }
 
   // ==================================================
