@@ -50,7 +50,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [Pre-v0.4.0 History]
 
 ### ✨ Added (2026-03-13)
 
@@ -156,7 +156,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### ✨ Added (2026-02-28)
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     subgraph Phase3["Phase 3: 警示系統擴充"]
         P3A["Batch 1\n成交量警示"]
@@ -238,22 +238,16 @@ for (int i = startIndex; i < kd.k.length - 1; i++) {
 - **整合測試**: 與現有 2526+ 測試整合，確保無破壞性變更
 - **測試策略**: 每批次獨立測試群組，易於維護與擴充
 
-#### 剩餘未實作警示類型（8 種）
+#### 警示類型實作狀態
 
-未實作的 8 種警示類型主要為壓力/支撐、基本面、內部人警示：
-
-- `BREAK_RESISTANCE`（突破壓力）、`BREAK_SUPPORT`（跌破支撐）
-- `REVENUE_YOY_SURGE`（營收年增）、`HIGH_DIVIDEND_YIELD`（高股息殖利率）、`PE_UNDERVALUED`（本益比低估）
-- `INSIDER_SELLING`（內部人賣出）、`INSIDER_BUYING`（內部人買入）、`HIGH_PLEDGE_RATIO`（高質押比）
-
-這些類型因數據需求（壓力/支撐計算、董監事資料）或產品策略考量而延後實作。
+全部 23 種 AlertType 已於 Phase 3 完成實作（實作率 100%）。
 
 ---
 
 ### ♻️ Refactored (2026-02-28)
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     subgraph Phase1["Phase 1: 死代碼清理"]
         P1A["移除 IsolatePool\n231 行"]
@@ -305,7 +299,7 @@ flowchart LR
 ### 🔧 Fixed (2026-02-22)
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart LR
     subgraph Fix1["股票卡片修復"]
         A["historyStart\n日期範圍反轉"]
@@ -348,7 +342,7 @@ flowchart LR
 ### ✨ Added (2026-02-13)
 
 ```mermaid
-%%{init: {'theme': 'neutral'}}%%
+%%{init: {'theme': 'dark'}}%%
 flowchart TB
     subgraph Perf["效能優化"]
         P1["Watchlist\n無限滾動分頁"]

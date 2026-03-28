@@ -11,7 +11,7 @@ _See what changed, without noise._
 [![Flutter](https://img.shields.io/badge/Flutter-3.38-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-2229_passing-brightgreen)](https://github.com/Neal75418/afterclose/actions)
+[![Tests](https://img.shields.io/badge/Tests-2241_passing-brightgreen)](https://github.com/Neal75418/afterclose/actions)
 [![CI](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml/badge.svg)](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml)
 [![codecov](https://codecov.io/gh/Neal75418/afterclose/branch/main/graph/badge.svg)](https://codecov.io/gh/Neal75418/afterclose)
 
@@ -60,12 +60,12 @@ _See what changed, without noise._
 |:----------------|:-----------------------------------------|:-----------------|
 | Framework       | Flutter + Dart                           | 3.38 / 3.10      |
 | State           | Riverpod                                 | 3.2.1            |
-| Database        | Drift (SQLite)                           | 2.32 (34 tables, 22 DAOs) |
+| Database        | Drift (SQLite)                           | 2.32 (34 tables, 21 DAOs) |
 | Network         | Dio                                      | 5.9.2            |
 | Navigation      | GoRouter                                 | 17.1.0           |
 | Charts          | fl_chart + k_chart_plus + candlesticks   | —                |
 | Code Gen        | Freezed + Riverpod Generator + Drift Dev | —                |
-| Testing         | Flutter Test + Mocktail                  | 2229 cases      |
+| Testing         | Flutter Test + Mocktail                  | 2241 cases      |
 | CI/CD           | GitHub Actions + Codecov                 | —                |
 | Crash Reporting | Sentry                                   | 9.14.0           |
 
@@ -105,7 +105,7 @@ flowchart LR
     end
 
     subgraph Domain["Domain Layer"]
-        IF["Interfaces (13)"]
+        IF["Interfaces (10)"]
         Services["Analysis / Scoring"]
         Rules["Rule Engine (62)"]
         Update["Update Services (14)"]
@@ -130,19 +130,19 @@ flowchart LR
 ```
 lib/
 ├── core/
-│   ├── constants/       # 24 files — RuleParams (7 files, 200+ 參數), AnalysisParams, ApiConfig, etc.
+│   ├── constants/       # 11 files — RuleParams (7 files, 200+ 參數), AnalysisParams, ApiConfig, etc.
 │   ├── exceptions/      # AppException sealed hierarchy
 │   ├── services/        # CacheWarmup, Notification, Share
 │   ├── theme/           # AppTheme, DesignTokens, IndicatorColors
 │   └── utils/           # Logger, Result, Calendar, RequestDeduplicator, LruCache
 ├── data/
-│   ├── database/        # Drift SQLite (34 tables, 22 DAOs, BatchQueryHelper)
+│   ├── database/        # Drift SQLite (34 tables, 21 DAOs, BatchQueryHelper)
 │   ├── remote/          # TWSE, TPEX, FinMind, TDCC, RSS clients (6)
 │   ├── repositories/    # 18 files (15 repos + 3 helpers)
 │   └── models/          # DTOs with Freezed + JSON serialization
 ├── domain/
-│   ├── models/          # 14 domain model files
-│   ├── repositories/    # 13 abstract interfaces
+│   ├── models/          # 8 domain model files
+│   ├── repositories/    # 10 abstract interfaces
 │   └── services/
 │       ├── rules/       # 62 stock rules (13 files)
 │       ├── update/      # 14 update components (9 syncers + 4 helpers + coordinator)
@@ -212,7 +212,7 @@ flutter run
 
 ```bash
 flutter pub get                                                # 安裝依賴
-flutter test                                                   # 執行測試 (2229 cases)
+flutter test                                                   # 執行測試 (2241 cases)
 flutter analyze                                                # 靜態分析
 dart format .                                                  # 格式化程式碼
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成
@@ -224,7 +224,7 @@ dart run build_runner build --delete-conflicting-outputs        # 程式碼生�
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2229 |
+| 測試總數             | 2241 |
 | 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |

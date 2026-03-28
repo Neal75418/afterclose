@@ -8,15 +8,15 @@
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 測試進度（2229 cases）
-    "Domain 層" : 811
-    "Data 層" : 564
-    "Presentation 層" : 854
+pie showData title 測試進度（2241 cases）
+    "Domain 層" : 815
+    "Data 層" : 567
+    "Presentation 層" : 859
 ```
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2229  |
+| 測試總數             | 2241  |
 | 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
@@ -38,7 +38,7 @@ flowchart LR
 
     style P1 fill:#10B981,stroke:#065F46,color:#fff
     style P2 fill:#10B981,stroke:#065F46,color:#fff
-    style P3 fill:#F59E0B,stroke:#92400E,color:#fff
+    style P3 fill:#10B981,stroke:#065F46,color:#fff
 ```
 
 ---
@@ -99,4 +99,4 @@ flowchart TB
 
 ← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)
 
-*最後更新: 2026-03-21*
+*最後更新: 2026-03-28*

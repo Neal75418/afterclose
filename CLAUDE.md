@@ -40,7 +40,7 @@ flowchart LR
 ```bash
 flutter pub get                                                # 安裝依賴
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成 (Drift / Freezed / Riverpod)
-flutter test                                                   # 執行測試 (2229 cases, ~40s)
+flutter test                                                   # 執行測試 (2241 cases, ~40s)
 flutter test --coverage                                        # 含覆蓋率報告
 flutter analyze --no-fatal-infos                               # 靜態分析
 dart format .                                                  # 格式化 (pre-commit hook 自動執行)
@@ -56,20 +56,20 @@ dart format .                                                  # 格式化 (pre-
 %%{init: {'theme': 'dark'}}%%
 flowchart TB
     subgraph Core["core/"]
-        Constants["constants/ — 24 files (7 RuleParams + 17 others)"]
+        Constants["constants/ — 11 files (7 RuleParams + 4 others)"]
         Exceptions["exceptions/ — AppException sealed hierarchy"]
         Utils["utils/ — Logger, Calendar, RequestDeduplicator, LruCache"]
     end
 
     subgraph Data["data/"]
-        Database["database/ — Drift SQLite (34 tables, 22 DAOs)"]
+        Database["database/ — Drift SQLite (34 tables, 21 DAOs)"]
         Remote["remote/ — TWSE, TPEX, FinMind, TDCC, RSS (6 clients)"]
         Repos["repositories/ — 18 files"]
     end
 
     subgraph Domain["domain/"]
-        Models["models/ — 14 files"]
-        RepoIF["repositories/ — 13 interfaces"]
+        Models["models/ — 8 files"]
+        RepoIF["repositories/ — 10 interfaces"]
         Services["services/ — 25 files (Analysis, Scoring, Screening, etc.)"]
         Update["services/update/ — 14 components (9 syncers + 4 helpers + coordinator)"]
         Rules["services/rules/ — 62 rules (13 files)"]
