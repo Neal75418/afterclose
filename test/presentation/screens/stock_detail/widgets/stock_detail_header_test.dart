@@ -72,29 +72,28 @@ void main() {
     );
   }
 
-  StockDetailState createState({
+  StockHeaderData createHeaderData({
     StockMasterEntry? stock,
     DailyPriceEntry? latestPrice,
     DailyAnalysisEntry? analysis,
-    List<DailyPriceEntry>? priceHistory,
-    List<DailyReasonEntry>? reasons,
+    List<String>? reasons,
     DateTime? dataDate,
   }) {
     final s = stock ?? createStock();
     final lp = latestPrice ?? createPrice();
-    final pp = createPrice(
-      close: 594.0,
-      date: defaultDate.subtract(const Duration(days: 1)),
-    );
-    final ph = priceHistory ?? [pp, lp];
+    final a = analysis ?? createAnalysis();
 
-    return StockDetailState(
-      price: StockPriceState(
-        stock: s,
-        latestPrice: lp,
-        priceHistory: ph,
-        analysis: analysis ?? createAnalysis(),
-      ),
+    return StockHeaderData(
+      stockName: s.name,
+      stockMarket: s.market,
+      stockIndustry: s.industry,
+      latestClose: lp.close,
+      priceChange: lp.close != null
+          ? ((lp.close! - 594.0) / 594.0 * 100) // vs yesterday 594.0
+          : null,
+      trendState: a.trendState,
+      support: a.supportLevel,
+      resistance: a.resistanceLevel,
       reasons: reasons ?? const [],
       dataDate: dataDate ?? defaultDate,
     );
@@ -103,10 +102,10 @@ void main() {
   group('StockDetailHeader', () {
     testWidgets('displays stock name', (tester) async {
       widenViewport(tester);
-      final state = createState();
+      final state = createHeaderData();
 
       await tester.pumpWidget(
-        buildTestApp(StockDetailHeader(state: state, symbol: '2330')),
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
       );
 
       expect(find.text('台積電'), findsOneWidget);
@@ -114,10 +113,10 @@ void main() {
 
     testWidgets('displays close price', (tester) async {
       widenViewport(tester);
-      final state = createState();
+      final state = createHeaderData();
 
       await tester.pumpWidget(
-        buildTestApp(StockDetailHeader(state: state, symbol: '2330')),
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
       );
 
       expect(find.text('600.00'), findsOneWidget);
@@ -125,10 +124,10 @@ void main() {
 
     testWidgets('shows TPEx badge for OTC stocks', (tester) async {
       widenViewport(tester);
-      final state = createState(stock: createStock(market: 'TPEx'));
+      final state = createHeaderData(stock: createStock(market: 'TPEx'));
 
       await tester.pumpWidget(
-        buildTestApp(StockDetailHeader(state: state, symbol: '2330')),
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
       );
 
       // Should find the OTC badge text
@@ -137,10 +136,10 @@ void main() {
 
     testWidgets('shows industry badge', (tester) async {
       widenViewport(tester);
-      final state = createState(stock: createStock(industry: '半導體'));
+      final state = createHeaderData(stock: createStock(industry: '半導體'));
 
       await tester.pumpWidget(
-        buildTestApp(StockDetailHeader(state: state, symbol: '2330')),
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
       );
 
       expect(find.text('半導體'), findsOneWidget);
@@ -148,12 +147,12 @@ void main() {
 
     testWidgets('shows support and resistance levels', (tester) async {
       widenViewport(tester);
-      final state = createState(
+      final state = createHeaderData(
         analysis: createAnalysis(supportLevel: 580.0, resistanceLevel: 620.0),
       );
 
       await tester.pumpWidget(
-        buildTestApp(StockDetailHeader(state: state, symbol: '2330')),
+        buildTestApp(StockDetailHeader(data: state, symbol: '2330')),
       );
 
       expect(find.textContaining('580.0'), findsOneWidget);
@@ -162,11 +161,11 @@ void main() {
 
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
-      final state = createState();
+      final state = createHeaderData();
 
       await tester.pumpWidget(
         buildTestApp(
-          StockDetailHeader(state: state, symbol: '2330'),
+          StockDetailHeader(data: state, symbol: '2330'),
           brightness: Brightness.dark,
         ),
       );

@@ -200,14 +200,14 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                   ),
 
                   // 股票標題
-                  // TODO: StockDetailHeader 目前 watch 全 state，
-                  // 待重構為只接受所需欄位後改用 .select()
                   SliverToBoxAdapter(
                     child: Consumer(
                       builder: (context, ref, _) {
-                        final headerState = ref.watch(provider);
+                        final headerData = ref.watch(
+                          provider.select((s) => StockHeaderData.fromState(s)),
+                        );
                         return StockDetailHeader(
-                          state: headerState,
+                          data: headerData,
                           symbol: widget.symbol,
                         );
                       },

@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
@@ -9,23 +10,94 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
+/// Header 所需的最小資料集，用於 `.select()` 精確 rebuild
+class StockHeaderData {
+  const StockHeaderData({
+    this.stockName,
+    this.stockMarket,
+    this.stockIndustry,
+    this.latestClose,
+    this.priceChange,
+    this.trendState,
+    this.support,
+    this.resistance,
+    this.reasons = const [],
+    this.dataDate,
+    this.hasDataMismatch = false,
+  });
+
+  final String? stockName;
+  final String? stockMarket;
+  final String? stockIndustry;
+  final double? latestClose;
+  final double? priceChange;
+  final String? trendState;
+  final double? support;
+  final double? resistance;
+  final List<String> reasons;
+  final DateTime? dataDate;
+  final bool hasDataMismatch;
+
+  /// 從完整 StockDetailState 投影
+  factory StockHeaderData.fromState(StockDetailState s) => StockHeaderData(
+    stockName: s.stockName,
+    stockMarket: s.stockMarket,
+    stockIndustry: s.stockIndustry,
+    latestClose: s.latestClose,
+    priceChange: s.priceChange,
+    trendState: s.price.analysis?.trendState,
+    support: s.price.analysis?.supportLevel,
+    resistance: s.price.analysis?.resistanceLevel,
+    reasons: s.reasons.map((r) => r.reasonType).toList(),
+    dataDate: s.dataDate,
+    hasDataMismatch: s.hasDataMismatch,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is StockHeaderData &&
+          stockName == other.stockName &&
+          stockMarket == other.stockMarket &&
+          stockIndustry == other.stockIndustry &&
+          latestClose == other.latestClose &&
+          priceChange == other.priceChange &&
+          trendState == other.trendState &&
+          support == other.support &&
+          resistance == other.resistance &&
+          listEquals(reasons, other.reasons) &&
+          dataDate == other.dataDate &&
+          hasDataMismatch == other.hasDataMismatch;
+
+  @override
+  int get hashCode => Object.hash(
+    stockName,
+    stockMarket,
+    latestClose,
+    priceChange,
+    trendState,
+    dataDate,
+    hasDataMismatch,
+  );
+}
+
 /// 股票詳情頁的 Header 區塊
 ///
 /// 顯示股票名稱、價格、漲跌幅、趨勢與支撐壓力等資訊
 class StockDetailHeader extends StatelessWidget {
   const StockDetailHeader({
     super.key,
-    required this.state,
+    required this.data,
     required this.symbol,
   });
 
-  final StockDetailState state;
+  final StockHeaderData data;
   final String symbol;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final priceChange = state.priceChange;
+    final priceChange = data.priceChange;
     final isPositive = (priceChange ?? 0) >= 0;
     final priceColor = AppTheme.getPriceColor(priceChange, theme.brightness);
 
@@ -52,7 +124,7 @@ class StockDetailHeader extends StatelessWidget {
                     children: [
                       _buildNameRow(theme),
                       const SizedBox(height: DesignTokens.spacing4),
-                      if (state.reasons.isNotEmpty) _buildReasonTags(theme),
+                      if (data.reasons.isNotEmpty) _buildReasonTags(theme),
                     ],
                   ),
                 ),
@@ -69,14 +141,14 @@ class StockDetailHeader extends StatelessWidget {
 
   String _buildSemanticLabel() {
     final parts = <String>[];
-    final name = state.stockName;
+    final name = data.stockName;
     if (name != null) parts.add(name);
     parts.add(symbol);
-    final close = state.latestClose;
+    final close = data.latestClose;
     if (close != null) {
       parts.add(S.accessibilityClosePrice(close.toStringAsFixed(2)));
     }
-    final change = state.priceChange;
+    final change = data.priceChange;
     if (change != null) {
       final absChange = _calculateAbsoluteChange(close, change);
       final absText = absChange != null
@@ -85,7 +157,7 @@ class StockDetailHeader extends StatelessWidget {
       final pctText = '${change >= 0 ? "+" : ""}${change.toStringAsFixed(2)}%';
       parts.add(S.accessibilityPriceChangeDetail(absText, pctText));
     }
-    final trend = state.price.analysis?.trendState;
+    final trend = data.trendState;
     if (trend != null) parts.add(S.accessibilityTrend(trend.trendKey));
     return parts.join(', ');
   }
@@ -95,13 +167,13 @@ class StockDetailHeader extends StatelessWidget {
       children: [
         Flexible(
           child: Text(
-            state.stockName ?? symbol,
+            data.stockName ?? symbol,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
-        if (state.stockMarket == 'TPEx') ...[
+        if (data.stockMarket == 'TPEx') ...[
           const SizedBox(width: DesignTokens.spacing8),
           Container(
             padding: const EdgeInsets.symmetric(
@@ -121,7 +193,7 @@ class StockDetailHeader extends StatelessWidget {
             ),
           ),
         ],
-        if (state.stockIndustry != null && state.stockIndustry!.isNotEmpty) ...[
+        if (data.stockIndustry != null && data.stockIndustry!.isNotEmpty) ...[
           const SizedBox(width: DesignTokens.spacing8),
           Flexible(
             child: Container(
@@ -134,7 +206,7 @@ class StockDetailHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(DesignTokens.radiusXs),
               ),
               child: Text(
-                state.stockIndustry!,
+                data.stockIndustry!,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onTertiaryContainer,
                   fontWeight: FontWeight.w500,
@@ -153,7 +225,7 @@ class StockDetailHeader extends StatelessWidget {
     return Wrap(
       spacing: DesignTokens.spacing6,
       runSpacing: DesignTokens.spacing4,
-      children: state.reasons.take(3).map((reason) {
+      children: data.reasons.take(3).map((reason) {
         return Container(
           padding: const EdgeInsets.symmetric(
             horizontal: DesignTokens.spacing8,
@@ -164,7 +236,7 @@ class StockDetailHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
           ),
           child: Text(
-            ReasonTags.translateReasonCode(reason.reasonType),
+            ReasonTags.translateReasonCode(reason),
             style: theme.textTheme.labelSmall?.copyWith(
               color: theme.colorScheme.onPrimaryContainer,
               fontWeight: FontWeight.w500,
@@ -187,14 +259,14 @@ class StockDetailHeader extends StatelessWidget {
     bool isPositive,
     Color priceColor,
   ) {
-    final absChange = _calculateAbsoluteChange(state.latestClose, priceChange);
+    final absChange = _calculateAbsoluteChange(data.latestClose, priceChange);
     final isNeutral = priceChange == null || priceChange == 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
-          state.latestClose?.toStringAsFixed(2) ?? '-',
+          data.latestClose?.toStringAsFixed(2) ?? '-',
           style: theme.textTheme.displaySmall?.copyWith(
             fontWeight: FontWeight.w800,
             fontFamily: 'RobotoMono',
@@ -247,13 +319,13 @@ class StockDetailHeader extends StatelessWidget {
               ],
             ),
           ),
-        if (state.dataDate != null)
+        if (data.dataDate != null)
           Padding(
             padding: const EdgeInsets.only(top: DesignTokens.spacing4),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (state.hasDataMismatch)
+                if (data.hasDataMismatch)
                   Padding(
                     padding: const EdgeInsets.only(
                       right: DesignTokens.spacing4,
@@ -265,9 +337,9 @@ class StockDetailHeader extends StatelessWidget {
                     ),
                   ),
                 Text(
-                  _formatDataDate(state.dataDate!),
+                  _formatDataDate(data.dataDate!),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: state.hasDataMismatch
+                    color: data.hasDataMismatch
                         ? theme.colorScheme.error
                         : theme.colorScheme.onSurfaceVariant,
                   ),
@@ -280,8 +352,7 @@ class StockDetailHeader extends StatelessWidget {
   }
 
   Widget _buildTrendRow(ThemeData theme) {
-    final analysis = state.price.analysis;
-    final trendState = analysis?.trendState;
+    final trendState = data.trendState;
 
     return Row(
       children: [
@@ -291,14 +362,14 @@ class StockDetailHeader extends StatelessWidget {
           color: trendState?.trendColor ?? AppTheme.neutralColor,
         ),
         const SizedBox(width: DesignTokens.spacing8),
-        if (analysis?.supportLevel case final supportLevel?)
+        if (data.support case final supportLevel?)
           _LevelChip(
             label: 'stockDetail.support'.tr(),
             value: supportLevel,
             color: AppTheme.downColor,
           ),
         const SizedBox(width: DesignTokens.spacing8),
-        if (analysis?.resistanceLevel case final resistanceLevel?)
+        if (data.resistance case final resistanceLevel?)
           _LevelChip(
             label: 'stockDetail.resistance'.tr(),
             value: resistanceLevel,
