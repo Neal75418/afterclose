@@ -38,6 +38,7 @@ class StockDetailScreen extends ConsumerStatefulWidget {
 class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _isExporting = false;
 
   @override
   void initState() {
@@ -133,11 +134,22 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       ],
                     ),
                     actions: [
-                      IconButton(
-                        icon: const Icon(Icons.share_outlined),
-                        onPressed: () => _showShareOptions(state),
-                        tooltip: 'export.title'.tr(),
-                      ),
+                      _isExporting
+                          ? const SizedBox(
+                              width: 48,
+                              height: 48,
+                              child: Padding(
+                                padding: EdgeInsets.all(12),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                            )
+                          : IconButton(
+                              icon: const Icon(Icons.share_outlined),
+                              onPressed: () => _showShareOptions(state),
+                              tooltip: 'export.title'.tr(),
+                            ),
                       IconButton(
                         icon: const Icon(Icons.compare_arrows),
                         onPressed: () {
@@ -219,15 +231,15 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
   Future<void> _showShareOptions(StockDetailState state) async {
     final format = await ShareOptionsSheet.show(context);
-    if (format == null || !mounted) return;
+    if (format == null || !mounted || _isExporting) return;
 
     const shareService = ShareService();
     const exportService = ExportService();
 
+    setState(() => _isExporting = true);
     try {
       switch (format) {
         case ShareFormat.png:
-          // 在 Overlay 中渲染分享卡片再截圖
           final imageBytes = await _captureAnalysisCard(state);
           if (imageBytes != null) {
             await shareService.shareImage(
@@ -262,6 +274,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
     }
   }
 

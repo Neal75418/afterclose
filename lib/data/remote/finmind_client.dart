@@ -3,6 +3,7 @@ import 'dart:math' show Random;
 import 'package:dio/dio.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -32,7 +33,7 @@ class FinMindClient {
        _baseDelay = baseDelay,
        _cacheTtl = cacheTtl;
 
-  static const String baseUrl = 'https://api.finmindtrade.com/api/v4/data';
+  static const String baseUrl = ApiEndpoints.finmindBaseUrl;
 
   /// Token 最小有效長度
   static const int _minTokenLength = 20;
