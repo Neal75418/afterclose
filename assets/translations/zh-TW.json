@@ -1333,7 +1333,7 @@
     "monthly": "月",
     "yearly": "年化",
     "totalReturn": "總報酬率",
-    "maxDrawdown": "最大回撤",
+    "maxDrawdown": "當前回撤",
     "industryAllocation": "產業配置",
     "dividendAnalysis": "股利分析",
     "expectedDividend": "預期股利",

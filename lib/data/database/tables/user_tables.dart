@@ -17,6 +17,8 @@ class Watchlist extends Table {
 }
 
 /// 使用者股票筆記 Table
+///
+/// TODO: 尚未實作 DAO / Repository / UI，schema 已保留供未來使用
 @DataClassName('UserNoteEntry')
 class UserNote extends Table {
   /// 自動遞增 ID
@@ -40,6 +42,8 @@ class UserNote extends Table {
 }
 
 /// 交易策略卡 Table
+///
+/// TODO: 尚未實作 DAO / Repository / UI，schema 已保留供未來使用
 @DataClassName('StrategyCardEntry')
 class StrategyCard extends Table {
   /// 自動遞增 ID

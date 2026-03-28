@@ -66,7 +66,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
   }
 
   Future<void> _showShareOptions(ComparisonState state) async {
-    final format = await ShareOptionsSheet.show(context);
+    final format = await ShareOptionsSheet.show(context, showPdf: false);
     if (format == null || !mounted) return;
 
     const shareService = ShareService();
@@ -80,9 +80,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
             await shareService.shareImage(imageBytes, 'comparison.png');
           }
         case ShareFormat.pdf:
-          // 比較頁面暫不支援 PDF，使用 CSV 替代
-          final csv = exportService.comparisonToCsv(state);
-          await shareService.shareCsv(csv, 'comparison.csv');
+          break; // 比較頁面不支援 PDF（已從選單隱藏）
         case ShareFormat.csv:
           final csv = exportService.comparisonToCsv(state);
           await shareService.shareCsv(csv, 'comparison.csv');

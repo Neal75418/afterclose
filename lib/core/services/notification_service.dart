@@ -19,6 +19,9 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  /// 通知點擊回呼 — 由 app 層設定，接收 stock symbol 作為 payload
+  void Function(String symbol)? onTapCallback;
+
   /// 初始化通知服務
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -238,7 +241,11 @@ class NotificationService {
   ///
   /// payload 包含股票代號，導航由應用程式的導航系統處理。
   void _onNotificationTapped(NotificationResponse response) {
-    AppLogger.debug('NotificationService', '通知被點擊: ${response.payload}');
+    final payload = response.payload;
+    AppLogger.debug('NotificationService', '通知被點擊: $payload');
+    if (payload != null && payload.isNotEmpty) {
+      onTapCallback?.call(payload);
+    }
   }
 
   /// 釋放通知服務資源

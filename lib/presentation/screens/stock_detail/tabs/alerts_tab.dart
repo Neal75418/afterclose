@@ -493,7 +493,8 @@ class _AddAlertSheetState extends ConsumerState<_AddAlertSheet> {
             ),
           const SizedBox(height: DesignTokens.spacing16),
 
-          // Alert type selector
+          // Alert type selector（快速建立只提供 3 種常用類型）
+          // 完整 15 種類型可從「警示」分頁的「+」按鈕建立
           Text('alert.type'.tr(), style: theme.textTheme.labelLarge),
           const SizedBox(height: DesignTokens.spacing8),
           SegmentedButton<AlertType>(

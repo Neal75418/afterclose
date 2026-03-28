@@ -13,6 +13,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_types.dart';
 import 'package:afterclose/presentation/widgets/warning_badge.dart';
@@ -274,6 +275,9 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         latestPricesMap,
       );
 
+      // 讀取警示標記顯示設定
+      final showBadges = ref.read(settingsProvider).showWarningBadges;
+
       // 從批次結果建構項目
       final items = watchlist.map((item) {
         final stock = stocksMap[item.symbol];
@@ -288,11 +292,14 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         );
 
         // 判斷警示類型（優先級：處置 > 注意 > 高質押）
-        final warningType = _determineWarningType(
-          symbol: item.symbol,
-          warningsMap: warningsMap,
-          highPledgeMap: highPledgeMap,
-        );
+        // 受 showWarningBadges 設定控制
+        final warningType = showBadges
+            ? _determineWarningType(
+                symbol: item.symbol,
+                warningsMap: warningsMap,
+                highPledgeMap: highPledgeMap,
+              )
+            : null;
 
         return WatchlistItemData(
           symbol: item.symbol,

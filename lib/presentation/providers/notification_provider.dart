@@ -6,6 +6,7 @@ import 'package:easy_localization/easy_localization.dart';
 
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
@@ -101,6 +102,10 @@ class NotificationNotifier extends Notifier<NotificationState> {
   }
 
   /// 顯示價格提醒通知
+  ///
+  /// 根據使用者設定決定是否發送：
+  /// - 處置/注意股票警示受 `disposalUrgentAlerts` 設定控制
+  /// - 董監持股相關警示受 `insiderNotifications` 設定控制
   Future<void> showPriceAlertNotification(
     PriceAlertEntry alert, {
     double? currentPrice,
@@ -108,6 +113,23 @@ class NotificationNotifier extends Notifier<NotificationState> {
     if (!state.isInitialized || !state.hasPermission) return;
 
     final alertType = AlertType.fromValue(alert.alertType);
+    final settings = ref.read(settingsProvider);
+
+    // 尊重使用者設定：處置/注意股票警示
+    if ((alertType == AlertType.tradingDisposal ||
+            alertType == AlertType.tradingWarning) &&
+        !settings.disposalUrgentAlerts) {
+      return;
+    }
+
+    // 尊重使用者設定：董監持股相關警示
+    if ((alertType == AlertType.insiderSelling ||
+            alertType == AlertType.insiderBuying ||
+            alertType == AlertType.highPledgeRatio) &&
+        !settings.insiderNotifications) {
+      return;
+    }
+
     final title = getAlertTitle(alert.symbol, alertType);
     final body = getAlertBody(alert, alertType, currentPrice);
 

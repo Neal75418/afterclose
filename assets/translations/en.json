@@ -1332,7 +1332,7 @@
     "monthly": "Month",
     "yearly": "YTD",
     "totalReturn": "Total Return",
-    "maxDrawdown": "Max Drawdown",
+    "maxDrawdown": "Current Drawdown",
     "industryAllocation": "Industry Allocation",
     "dividendAnalysis": "Dividend Analysis",
     "expectedDividend": "Expected Dividend",

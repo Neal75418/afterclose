@@ -83,7 +83,6 @@ class PerformanceCard extends StatelessWidget {
           const SizedBox(height: DesignTokens.spacing16),
 
           // 總報酬與回撤
-          // TODO: UI 標籤顯示「最大回撤」但實際為當前回撤，待改為真正的最大歷史回撤後再更新標籤
           Row(
             children: [
               Expanded(

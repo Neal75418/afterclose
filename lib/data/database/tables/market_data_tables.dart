@@ -104,6 +104,8 @@ class FinancialData extends Table {
 }
 
 /// 還原股價 Table
+///
+/// TODO: 尚未實作 DAO / sync / UI，schema 已保留供未來使用（backtest 還權計算）
 @DataClassName('AdjustedPriceEntry')
 @TableIndex(name: 'idx_adjusted_price_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_adjusted_price_date', columns: {#date})
@@ -135,6 +137,8 @@ class AdjustedPrice extends Table {
 }
 
 /// 週K線 Table
+///
+/// TODO: 尚未實作 DAO / sync / UI，schema 已保留供未來使用（週線圖表）
 @DataClassName('WeeklyPriceEntry')
 @TableIndex(name: 'idx_weekly_price_symbol', columns: {#symbol})
 @TableIndex(name: 'idx_weekly_price_date', columns: {#date})

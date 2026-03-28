@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:afterclose/app/router.dart';
+import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/app/background_update_service.dart';
 import 'package:afterclose/core/services/notification_service.dart';
@@ -20,6 +21,11 @@ void main() async {
 
   // Initialize notification service (權限請求延遲到使用者啟用通知時)
   await NotificationService.instance.initialize();
+
+  // 設定通知點擊導航 — 點擊後跳轉到個股詳情頁
+  NotificationService.instance.onTapCallback = (symbol) {
+    router.push(AppRoutes.stockDetail(symbol));
+  };
 
   // 初始化背景更新服務
   await BackgroundUpdateService.instance.initialize();
