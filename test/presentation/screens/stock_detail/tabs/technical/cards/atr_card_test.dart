@@ -24,16 +24,10 @@ void main() {
       final highs = List.generate(20, (i) => 105.0 + (i % 3));
       final lows = List.generate(20, (i) => 95.0 + (i % 3));
       final closes = List.generate(20, (i) => 100.0 + (i % 3));
+      final atr = indicatorService.calculateATR(highs, lows, closes);
 
       await tester.pumpWidget(
-        buildTestApp(
-          ATRCard(
-            highs: highs,
-            lows: lows,
-            closes: closes,
-            indicatorService: indicatorService,
-          ),
-        ),
+        buildTestApp(ATRCard(atr: atr, currentPrice: closes.last)),
       );
 
       expect(find.text('ATR(14)'), findsOneWidget);
@@ -42,15 +36,12 @@ void main() {
     testWidgets('returns SizedBox.shrink when ATR is null', (tester) async {
       widenViewport(tester);
       // Too few data points for ATR to compute
+      final atr = indicatorService.calculateATR(const [105], const [95], const [
+        100,
+      ]);
+
       await tester.pumpWidget(
-        buildTestApp(
-          ATRCard(
-            highs: const [105],
-            lows: const [95],
-            closes: const [100],
-            indicatorService: indicatorService,
-          ),
-        ),
+        buildTestApp(ATRCard(atr: atr, currentPrice: 100)),
       );
 
       expect(find.byType(ATRCard), findsOneWidget);
@@ -63,16 +54,10 @@ void main() {
       final highs = List.generate(20, (i) => 105.0 + (i % 3));
       final lows = List.generate(20, (i) => 95.0 + (i % 3));
       final closes = List.generate(20, (i) => 100.0 + (i % 3));
+      final atr = indicatorService.calculateATR(highs, lows, closes);
 
       await tester.pumpWidget(
-        buildTestApp(
-          ATRCard(
-            highs: highs,
-            lows: lows,
-            closes: closes,
-            indicatorService: indicatorService,
-          ),
-        ),
+        buildTestApp(ATRCard(atr: atr, currentPrice: closes.last)),
       );
 
       // Should show percentage value

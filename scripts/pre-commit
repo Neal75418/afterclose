@@ -1,0 +1,29 @@
+#!/bin/bash
+# Pre-commit hook for AfterClose
+# - Only formats staged .dart files (auto-fix + re-stage)
+# - Only analyzes lib/ (skip test/ info-level noise)
+
+set -e
+
+echo "🔍 Running pre-commit CI checks..."
+
+# 1. Auto-format staged .dart files
+STAGED_DART=$(git diff --cached --name-only --diff-filter=ACMR -- '*.dart')
+if [ -n "$STAGED_DART" ]; then
+    echo "📝 Formatting $(echo "$STAGED_DART" | wc -l | tr -d ' ') staged .dart files..."
+    echo "$STAGED_DART" | xargs dart format
+    echo "$STAGED_DART" | xargs git add
+    echo "✅ Format OK (auto-fixed & re-staged)"
+else
+    echo "📝 No staged .dart files to format"
+fi
+
+# 2. Analyze lib/ only
+echo "🔬 Running static analysis..."
+if ! flutter analyze --no-fatal-infos lib/; then
+    echo "❌ Analysis failed. Fix the errors above."
+    exit 1
+fi
+echo "✅ Analysis OK"
+
+echo "🎉 All pre-commit checks passed!"

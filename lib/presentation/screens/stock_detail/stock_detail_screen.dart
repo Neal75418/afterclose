@@ -59,11 +59,17 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(stockDetailProvider(widget.symbol));
+    // 只 watch scaffold 需要的欄位，避免 loading flag 變動觸發全頁 rebuild
+    final provider = stockDetailProvider(widget.symbol);
+    final isLoading = ref.watch(provider.select((s) => s.loading.isLoading));
+    final error = ref.watch(provider.select((s) => s.error));
+    final stockName = ref.watch(provider.select((s) => s.stockName));
+    final isInWatchlist = ref.watch(provider.select((s) => s.isInWatchlist));
+    final priceChangeRaw = ref.watch(provider.select((s) => s.priceChange));
     final theme = Theme.of(context);
 
     // 依漲跌幅動態漸層
-    final priceChange = state.priceChange ?? 0;
+    final priceChange = priceChangeRaw ?? 0;
     final isPositive = priceChange > 0;
     final isNegative = priceChange < 0;
 
@@ -86,18 +92,18 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
-        child: state.loading.isLoading
+        child: isLoading
             ? const SafeArea(child: StockDetailShimmer())
-            : state.error != null
+            : error != null
             ? SafeArea(
-                child: ErrorDisplay.isNetworkError(state.error!)
+                child: ErrorDisplay.isNetworkError(error)
                     ? EmptyStates.networkError(
                         onRetry: () => ref
                             .read(stockDetailProvider(widget.symbol).notifier)
                             .loadData(),
                       )
                     : EmptyStates.error(
-                        message: state.error!,
+                        message: error,
                         onRetry: () => ref
                             .read(stockDetailProvider(widget.symbol).notifier)
                             .loadData(),
@@ -123,9 +129,9 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (state.stockName != null)
+                        if (stockName != null)
                           Text(
-                            state.stockName!,
+                            stockName,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -147,7 +153,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                             )
                           : IconButton(
                               icon: const Icon(Icons.share_outlined),
-                              onPressed: () => _showShareOptions(state),
+                              onPressed: () =>
+                                  _showShareOptions(ref.read(provider)),
                               tooltip: 'export.title'.tr(),
                             ),
                       IconButton(
@@ -162,8 +169,8 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       ),
                       IconButton(
                         icon: Icon(
-                          state.isInWatchlist ? Icons.star : Icons.star_border,
-                          color: state.isInWatchlist ? Colors.amber : null,
+                          isInWatchlist ? Icons.star : Icons.star_border,
+                          color: isInWatchlist ? Colors.amber : null,
                         ),
                         onPressed: () async {
                           final messenger = ScaffoldMessenger.of(context);
@@ -185,7 +192,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                             );
                           }
                         },
-                        tooltip: state.isInWatchlist
+                        tooltip: isInWatchlist
                             ? 'stock.removeFromWatchlist'.tr()
                             : 'stock.addToWatchlist'.tr(),
                       ),
@@ -193,10 +200,17 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                   ),
 
                   // 股票標題
+                  // TODO: StockDetailHeader 目前 watch 全 state，
+                  // 待重構為只接受所需欄位後改用 .select()
                   SliverToBoxAdapter(
-                    child: StockDetailHeader(
-                      state: state,
-                      symbol: widget.symbol,
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final headerState = ref.watch(provider);
+                        return StockDetailHeader(
+                          state: headerState,
+                          symbol: widget.symbol,
+                        );
+                      },
                     ),
                   ),
 

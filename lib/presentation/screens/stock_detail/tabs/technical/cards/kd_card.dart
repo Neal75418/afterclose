@@ -4,27 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class KDCard extends StatelessWidget {
-  const KDCard({
-    super.key,
-    required this.highs,
-    required this.lows,
-    required this.closes,
-    required this.indicatorService,
-  });
+  const KDCard({super.key, required this.kd});
 
-  final List<double> highs;
-  final List<double> lows;
-  final List<double> closes;
-  final TechnicalIndicatorService indicatorService;
+  final ({List<double?> k, List<double?> d}) kd;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final kd = indicatorService.calculateKD(highs, lows, closes);
     final latestK = kd.k.lastWhere((v) => v != null, orElse: () => null);
     final latestD = kd.d.lastWhere((v) => v != null, orElse: () => null);
 

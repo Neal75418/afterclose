@@ -26,20 +26,20 @@ void main() {
   group('RSICard', () {
     testWidgets('displays RSI(14) label', (tester) async {
       widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          RSICard(prices: generatePrices(), indicatorService: indicatorService),
-        ),
-      );
+      final prices = generatePrices();
+      final rsi = indicatorService.calculateRSI(prices);
+      await tester.pumpWidget(buildTestApp(RSICard(rsi: rsi, prices: prices)));
 
       expect(find.text('RSI(14)'), findsOneWidget);
     });
 
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
+      final prices = generatePrices();
+      final rsi = indicatorService.calculateRSI(prices);
       await tester.pumpWidget(
         buildTestApp(
-          RSICard(prices: generatePrices(), indicatorService: indicatorService),
+          RSICard(rsi: rsi, prices: prices),
           brightness: Brightness.dark,
         ),
       );

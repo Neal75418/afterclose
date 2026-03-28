@@ -23,16 +23,9 @@ void main() {
       widenViewport(tester);
       final closes = List.generate(10, (i) => 100.0 + i);
       final volumes = List.generate(10, (i) => 1000000.0 + i * 50000);
+      final obv = indicatorService.calculateOBV(closes, volumes);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          OBVCard(
-            closes: closes,
-            volumes: volumes,
-            indicatorService: indicatorService,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildTestApp(OBVCard(obv: obv)));
 
       expect(find.text('OBV'), findsOneWidget);
     });
@@ -41,15 +34,12 @@ void main() {
       tester,
     ) async {
       widenViewport(tester);
-      await tester.pumpWidget(
-        buildTestApp(
-          OBVCard(
-            closes: const [100, 101],
-            volumes: const [1000, 2000],
-            indicatorService: indicatorService,
-          ),
-        ),
+      final obv = indicatorService.calculateOBV(
+        const [100, 101],
+        const [1000, 2000],
       );
+
+      await tester.pumpWidget(buildTestApp(OBVCard(obv: obv)));
 
       // Should show SizedBox.shrink
       expect(find.text('OBV'), findsNothing);
@@ -59,16 +49,9 @@ void main() {
       widenViewport(tester);
       final closes = List.generate(10, (i) => 100.0 + i);
       final volumes = List.generate(10, (i) => 1000000.0);
+      final obv = indicatorService.calculateOBV(closes, volumes);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          OBVCard(
-            closes: closes,
-            volumes: volumes,
-            indicatorService: indicatorService,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildTestApp(OBVCard(obv: obv)));
 
       expect(find.textContaining('(5d)'), findsOneWidget);
     });
@@ -77,16 +60,10 @@ void main() {
       widenViewport(tester);
       final closes = List.generate(10, (i) => 100.0 + i);
       final volumes = List.generate(10, (i) => 1000000.0);
+      final obv = indicatorService.calculateOBV(closes, volumes);
 
       await tester.pumpWidget(
-        buildTestApp(
-          OBVCard(
-            closes: closes,
-            volumes: volumes,
-            indicatorService: indicatorService,
-          ),
-          brightness: Brightness.dark,
-        ),
+        buildTestApp(OBVCard(obv: obv), brightness: Brightness.dark),
       );
 
       expect(find.text('OBV'), findsOneWidget);

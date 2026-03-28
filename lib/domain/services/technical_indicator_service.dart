@@ -279,18 +279,27 @@ class TechnicalIndicatorService {
     final upper = <double?>[];
     final lower = <double?>[];
 
+    // Sliding window 標準差：O(n) 取代 O(n×period)
+    // 維護 sum 和 sumSq，每次只加入新值、移除舊值
+    double sum = 0;
+    double sumSq = 0;
+
     for (int i = 0; i < prices.length; i++) {
+      sum += prices[i];
+      sumSq += prices[i] * prices[i];
+
+      if (i >= period) {
+        sum -= prices[i - period];
+        sumSq -= prices[i - period] * prices[i - period];
+      }
+
       if (i < period - 1 || middle[i] == null) {
         upper.add(null);
         lower.add(null);
       } else {
-        // 計算標準差
-        double sumSquares = 0;
-        for (int j = i - period + 1; j <= i; j++) {
-          final diff = prices[j] - middle[i]!;
-          sumSquares += diff * diff;
-        }
-        final stdDev = sqrt(sumSquares / period);
+        final mean = sum / period;
+        final variance = (sumSq / period) - (mean * mean);
+        final stdDev = sqrt(variance.abs()); // abs() 防浮點誤差產生微小負數
 
         upper.add(middle[i]! + (stdDevMultiplier * stdDev));
         lower.add(middle[i]! - (stdDevMultiplier * stdDev));

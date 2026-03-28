@@ -3,35 +3,25 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class ATRCard extends StatelessWidget {
-  const ATRCard({
-    super.key,
-    required this.highs,
-    required this.lows,
-    required this.closes,
-    required this.indicatorService,
-  });
+  const ATRCard({super.key, required this.atr, required this.currentPrice});
 
-  final List<double> highs;
-  final List<double> lows;
-  final List<double> closes;
-  final TechnicalIndicatorService indicatorService;
+  final List<double?> atr;
+  final double? currentPrice;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final atr = indicatorService.calculateATR(highs, lows, closes);
     final latestATR = atr.lastWhere((v) => v != null, orElse: () => null);
-    final currentPrice = closes.isNotEmpty ? closes.last : null;
+    final price = currentPrice;
 
-    if (latestATR == null || currentPrice == null || currentPrice == 0) {
+    if (latestATR == null || price == null || price == 0) {
       return const SizedBox.shrink();
     }
 
-    final atrPercent = (latestATR / currentPrice) * 100;
+    final atrPercent = (latestATR / price) * 100;
 
     String volatilityLevel;
     Color volatilityColor;

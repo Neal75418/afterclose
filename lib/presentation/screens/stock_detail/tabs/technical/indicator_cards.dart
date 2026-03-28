@@ -56,10 +56,25 @@ class _IndicatorCardsSectionState extends State<IndicatorCardsSection> {
   _ExtractedPrices? _cached;
   List<DailyPriceEntry>? _lastHistory;
 
+  // 快取指標計算結果，避免每次 build 重新計算 O(n) 序列
+  List<double?>? _rsi;
+  ({List<double?> k, List<double?> d})? _kd;
+  ({List<double?> macd, List<double?> signal, List<double?> histogram})? _macd;
+  ({List<double?> upper, List<double?> middle, List<double?> lower})? _boll;
+  List<double>? _obv;
+  List<double?>? _atr;
+
   _ExtractedPrices _getExtracted() {
     if (!identical(_lastHistory, widget.priceHistory)) {
       _lastHistory = widget.priceHistory;
       _cached = _ExtractedPrices(widget.priceHistory);
+      // 價格變動時清除指標快取
+      _rsi = null;
+      _kd = null;
+      _macd = null;
+      _boll = null;
+      _obv = null;
+      _atr = null;
     }
     return _cached!;
   }
@@ -88,41 +103,32 @@ class _IndicatorCardsSectionState extends State<IndicatorCardsSection> {
 
     final highs = extracted.highs;
     final lows = extracted.lows;
-
     final volumes = extracted.volumes;
+    final svc = widget.indicatorService;
+
+    // 按需計算並快取指標（只在 priceHistory 變動時重新計算）
+    final rsi = _rsi ??= svc.calculateRSI(prices);
+    final kd = _kd ??= svc.calculateKD(highs, lows, prices);
+    final macd = _macd ??= svc.calculateMACD(prices);
+    final boll = _boll ??= svc.calculateBollingerBands(prices);
+    final obv = _obv ??= svc.calculateOBV(prices, volumes);
+    final atr = _atr ??= svc.calculateATR(highs, lows, prices);
 
     return Column(
       children: [
         if (widget.secondaryIndicators.contains(SecondaryState.RSI))
-          RSICard(prices: prices, indicatorService: widget.indicatorService),
+          RSICard(rsi: rsi, prices: prices),
         if (widget.secondaryIndicators.contains(SecondaryState.KDJ))
-          KDCard(
-            highs: highs,
-            lows: lows,
-            closes: prices,
-            indicatorService: widget.indicatorService,
-          ),
+          KDCard(kd: kd),
         if (widget.secondaryIndicators.contains(SecondaryState.MACD))
-          MACDCard(prices: prices, indicatorService: widget.indicatorService),
+          MACDCard(macd: macd),
         if (widget.mainIndicators.contains(MainState.BOLL))
-          BollingerCard(
-            prices: prices,
-            indicatorService: widget.indicatorService,
-          ),
-
-        // 進階指標：OBV 與 ATR（總是顯示）
-        if (volumes.length >= 2)
-          OBVCard(
-            closes: prices,
-            volumes: volumes,
-            indicatorService: widget.indicatorService,
-          ),
+          BollingerCard(boll: boll, prices: prices),
+        if (volumes.length >= 2) OBVCard(obv: obv),
         if (highs.length >= 14 && lows.length >= 14 && prices.length >= 14)
           ATRCard(
-            highs: highs,
-            lows: lows,
-            closes: prices,
-            indicatorService: widget.indicatorService,
+            atr: atr,
+            currentPrice: prices.isNotEmpty ? prices.last : null,
           ),
       ],
     );

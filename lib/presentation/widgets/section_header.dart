@@ -93,7 +93,7 @@ class SectionHeader extends StatelessWidget {
           ),
 
           // 尾端 Widget（若有提供）
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );

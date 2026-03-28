@@ -22,11 +22,8 @@ void main() {
     testWidgets('displays MACD(12,26,9) label', (tester) async {
       widenViewport(tester);
       final prices = List.generate(40, (i) => 100.0 + (i % 7) * 2 - 6);
-      await tester.pumpWidget(
-        buildTestApp(
-          MACDCard(prices: prices, indicatorService: indicatorService),
-        ),
-      );
+      final macd = indicatorService.calculateMACD(prices);
+      await tester.pumpWidget(buildTestApp(MACDCard(macd: macd)));
 
       expect(find.text('MACD(12,26,9)'), findsOneWidget);
     });
@@ -34,11 +31,8 @@ void main() {
     testWidgets('displays DIF DEA HIST labels', (tester) async {
       widenViewport(tester);
       final prices = List.generate(40, (i) => 100.0 + (i % 7) * 2 - 6);
-      await tester.pumpWidget(
-        buildTestApp(
-          MACDCard(prices: prices, indicatorService: indicatorService),
-        ),
-      );
+      final macd = indicatorService.calculateMACD(prices);
+      await tester.pumpWidget(buildTestApp(MACDCard(macd: macd)));
 
       expect(find.text('DIF'), findsOneWidget);
       expect(find.text('DEA'), findsOneWidget);
@@ -48,11 +42,9 @@ void main() {
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
       final prices = List.generate(40, (i) => 100.0 + (i % 7) * 2 - 6);
+      final macd = indicatorService.calculateMACD(prices);
       await tester.pumpWidget(
-        buildTestApp(
-          MACDCard(prices: prices, indicatorService: indicatorService),
-          brightness: Brightness.dark,
-        ),
+        buildTestApp(MACDCard(macd: macd), brightness: Brightness.dark),
       );
 
       expect(find.text('MACD(12,26,9)'), findsOneWidget);

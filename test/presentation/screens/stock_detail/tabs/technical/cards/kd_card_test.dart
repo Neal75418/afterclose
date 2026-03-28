@@ -24,17 +24,9 @@ void main() {
       final highs = List.generate(30, (i) => 110.0 + (i % 5));
       final lows = List.generate(30, (i) => 90.0 + (i % 5));
       final closes = List.generate(30, (i) => 100.0 + (i % 5));
+      final kd = indicatorService.calculateKD(highs, lows, closes);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          KDCard(
-            highs: highs,
-            lows: lows,
-            closes: closes,
-            indicatorService: indicatorService,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildTestApp(KDCard(kd: kd)));
 
       expect(find.text('KDJ(9,3,3)'), findsOneWidget);
     });
@@ -44,17 +36,9 @@ void main() {
       final highs = List.generate(30, (i) => 110.0 + (i % 5));
       final lows = List.generate(30, (i) => 90.0 + (i % 5));
       final closes = List.generate(30, (i) => 100.0 + (i % 5));
+      final kd = indicatorService.calculateKD(highs, lows, closes);
 
-      await tester.pumpWidget(
-        buildTestApp(
-          KDCard(
-            highs: highs,
-            lows: lows,
-            closes: closes,
-            indicatorService: indicatorService,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildTestApp(KDCard(kd: kd)));
 
       // Should display K: and D: prefix values
       expect(find.textContaining('K:'), findsOneWidget);
@@ -66,17 +50,10 @@ void main() {
       final highs = List.generate(30, (i) => 110.0 + (i % 5));
       final lows = List.generate(30, (i) => 90.0 + (i % 5));
       final closes = List.generate(30, (i) => 100.0 + (i % 5));
+      final kd = indicatorService.calculateKD(highs, lows, closes);
 
       await tester.pumpWidget(
-        buildTestApp(
-          KDCard(
-            highs: highs,
-            lows: lows,
-            closes: closes,
-            indicatorService: indicatorService,
-          ),
-          brightness: Brightness.dark,
-        ),
+        buildTestApp(KDCard(kd: kd), brightness: Brightness.dark),
       );
 
       expect(find.text('KDJ(9,3,3)'), findsOneWidget);

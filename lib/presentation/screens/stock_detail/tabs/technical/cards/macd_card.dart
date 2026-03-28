@@ -4,23 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class MACDCard extends StatelessWidget {
-  const MACDCard({
-    super.key,
-    required this.prices,
-    required this.indicatorService,
-  });
+  const MACDCard({super.key, required this.macd});
 
-  final List<double> prices;
-  final TechnicalIndicatorService indicatorService;
+  final ({List<double?> macd, List<double?> signal, List<double?> histogram})
+  macd;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final macd = indicatorService.calculateMACD(prices);
     final latestMACD = macd.macd.lastWhere(
       (v) => v != null,
       orElse: () => null,

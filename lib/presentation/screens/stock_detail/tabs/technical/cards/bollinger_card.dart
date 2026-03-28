@@ -3,23 +3,17 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class BollingerCard extends StatelessWidget {
-  const BollingerCard({
-    super.key,
-    required this.prices,
-    required this.indicatorService,
-  });
+  const BollingerCard({super.key, required this.boll, required this.prices});
 
+  final ({List<double?> upper, List<double?> middle, List<double?> lower}) boll;
   final List<double> prices;
-  final TechnicalIndicatorService indicatorService;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final boll = indicatorService.calculateBollingerBands(prices);
     final latestUpper = boll.upper.lastWhere(
       (v) => v != null,
       orElse: () => null,

@@ -22,10 +22,9 @@ void main() {
     testWidgets('displays BOLL(20,2) label', (tester) async {
       widenViewport(tester);
       final prices = List.generate(30, (i) => 100.0 + (i % 5) * 2 - 4);
+      final boll = indicatorService.calculateBollingerBands(prices);
       await tester.pumpWidget(
-        buildTestApp(
-          BollingerCard(prices: prices, indicatorService: indicatorService),
-        ),
+        buildTestApp(BollingerCard(boll: boll, prices: prices)),
       );
 
       expect(find.text('BOLL(20,2)'), findsOneWidget);
@@ -34,9 +33,10 @@ void main() {
     testWidgets('renders in dark mode', (tester) async {
       widenViewport(tester);
       final prices = List.generate(30, (i) => 100.0 + (i % 5) * 2 - 4);
+      final boll = indicatorService.calculateBollingerBands(prices);
       await tester.pumpWidget(
         buildTestApp(
-          BollingerCard(prices: prices, indicatorService: indicatorService),
+          BollingerCard(boll: boll, prices: prices),
           brightness: Brightness.dark,
         ),
       );

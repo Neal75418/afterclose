@@ -4,32 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/indicator_colors.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical/cards/indicator_card_container.dart';
 
 class OBVCard extends StatelessWidget {
-  const OBVCard({
-    super.key,
-    required this.closes,
-    required this.volumes,
-    required this.indicatorService,
-  });
+  const OBVCard({super.key, required this.obv});
 
-  final List<double> closes;
-  final List<double> volumes;
-  final TechnicalIndicatorService indicatorService;
+  final List<double?> obv;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final obv = indicatorService.calculateOBV(closes, volumes);
 
-    if (obv.length < 5) {
+    final nonNullObv = obv.whereType<double>().toList();
+    if (nonNullObv.length < 5) {
       return const SizedBox.shrink();
     }
 
-    final latestOBV = obv.last;
-    final previousOBV = obv.length >= 5 ? obv[obv.length - 5] : obv.first;
+    final latestOBV = nonNullObv.last;
+    final previousOBV = nonNullObv.length >= 5
+        ? nonNullObv[nonNullObv.length - 5]
+        : nonNullObv.first;
     final obvChange = latestOBV - previousOBV;
     final obvTrend = obvChange > 0
         ? 'stockDetail.obvRising'.tr()
