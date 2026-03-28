@@ -208,6 +208,10 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                   value: TransactionType.dividendCash,
                   label: Text('portfolio.txDividendCash'.tr()),
                 ),
+                ButtonSegment(
+                  value: TransactionType.dividendStock,
+                  label: Text('portfolio.txDividendStock'.tr()),
+                ),
               ],
               selected: {_txType},
               onSelectionChanged: (set) => setState(() => _txType = set.first),
@@ -229,13 +233,18 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
             const SizedBox(height: DesignTokens.spacing12),
 
             // 數量 + 價格
-            if (_txType == TransactionType.dividendCash) ...[
+            if (_txType == TransactionType.dividendCash ||
+                _txType == TransactionType.dividendStock) ...[
               TextField(
                 controller: _quantityController,
                 decoration: InputDecoration(
-                  labelText: 'portfolio.dividendIncome'.tr(),
+                  labelText: _txType == TransactionType.dividendCash
+                      ? 'portfolio.dividendIncome'.tr()
+                      : 'portfolio.txQuantity'.tr(),
                   border: const OutlineInputBorder(),
-                  suffixText: 'TWD',
+                  suffixText: _txType == TransactionType.dividendCash
+                      ? 'TWD'
+                      : null,
                 ),
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
@@ -468,7 +477,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
     }
 
     // Validate fields before locking the button
-    if (_txType == TransactionType.dividendCash) {
+    if (_txType == TransactionType.dividendCash ||
+        _txType == TransactionType.dividendStock) {
       final amount = double.tryParse(_quantityController.text);
       if (amount == null || amount <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -502,13 +512,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         : null;
 
     try {
-      if (_txType == TransactionType.dividendCash) {
+      if (_txType == TransactionType.dividendCash ||
+          _txType == TransactionType.dividendStock) {
         final amount = double.tryParse(_quantityController.text)!;
         await notifier.addDividend(
           symbol: symbol,
           date: _date,
           amount: amount,
-          isCash: true,
+          isCash: _txType == TransactionType.dividendCash,
           note: note,
         );
       } else {

@@ -710,7 +710,8 @@
     "cache60min": "1 小時",
     "backgroundUpdate": "背景更新",
     "autoUpdate": "每日自動更新",
-    "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知"
+    "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知",
+    "autoUpdateFailed": "自動更新排程設定失敗，請稍後再試"
   },
   "recPerf": {
     "title": "推薦績效追蹤",

@@ -309,6 +309,7 @@ class _InfoTile extends StatelessWidget {
   }
 }
 
+// TODO: 加入交易編輯功能（onTap → AddTransactionSheet pre-populated with existing tx）
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({
     required this.tx,

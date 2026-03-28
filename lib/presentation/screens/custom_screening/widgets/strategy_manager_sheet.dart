@@ -8,6 +8,8 @@ import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 策略儲存/載入 Bottom Sheet
+///
+/// TODO: 加入策略重新命名功能（長按或 trailing menu → rename dialog）
 class StrategyManagerSheet extends ConsumerStatefulWidget {
   const StrategyManagerSheet({super.key});
 

@@ -18,6 +18,8 @@ import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 新聞畫面 - 顯示近期市場新聞，支援篩選與分類
+///
+/// TODO: 加入關鍵字搜尋功能（參考 WatchlistScreen 的 search bar 實作）
 class NewsScreen extends ConsumerStatefulWidget {
   const NewsScreen({super.key});
 

@@ -709,7 +709,8 @@
     "cache60min": "1 Hour",
     "backgroundUpdate": "Background Update",
     "autoUpdate": "Daily Auto Update",
-    "autoUpdateDesc": "Automatically update data after market close (15:00) and send notification"
+    "autoUpdateDesc": "Automatically update data after market close (15:00) and send notification",
+    "autoUpdateFailed": "Failed to schedule auto-update. Please try again later."
   },
   "recPerf": {
     "title": "Recommendation Performance",

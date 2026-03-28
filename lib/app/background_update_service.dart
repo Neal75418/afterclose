@@ -300,30 +300,45 @@ Future<void> _showUpdateNotification(UpdateResult result) async {
   String title;
   String body;
 
+  // 背景 isolate 無法使用 EasyLocalization，
+  // 以 platform locale 決定語系（zh → 中文，其餘 → 英文）
+  final isChinese = Platform.localeName.startsWith('zh');
+
   if (result.skipped) {
-    // 非交易日
-    title = '今日無更新';
-    body = result.message ?? '非交易日';
+    title = isChinese ? '今日無更新' : 'No update today';
+    body = result.message ?? (isChinese ? '非交易日' : 'Non-trading day');
   } else if (result.success) {
-    // 更新成功
-    title = '盤後資料已更新';
+    title = isChinese ? '盤後資料已更新' : 'Market data updated';
 
     final parts = <String>[];
     if (result.recommendationsGenerated > 0) {
-      parts.add('Top ${result.recommendationsGenerated} 推薦');
+      parts.add(
+        isChinese
+            ? 'Top ${result.recommendationsGenerated} 推薦'
+            : 'Top ${result.recommendationsGenerated} picks',
+      );
     }
     if (result.stocksAnalyzed > 0) {
-      parts.add('分析 ${result.stocksAnalyzed} 檔');
+      parts.add(
+        isChinese
+            ? '分析 ${result.stocksAnalyzed} 檔'
+            : '${result.stocksAnalyzed} stocks analyzed',
+      );
     }
     if (result.errors.isNotEmpty) {
-      parts.add('${result.errors.length} 個警告');
+      parts.add(
+        isChinese
+            ? '${result.errors.length} 個警告'
+            : '${result.errors.length} warnings',
+      );
     }
 
-    body = parts.isNotEmpty ? parts.join('，') : '更新完成';
+    body = parts.isNotEmpty
+        ? parts.join(isChinese ? '，' : ', ')
+        : (isChinese ? '更新完成' : 'Update complete');
   } else {
-    // 更新失敗
-    title = '更新失敗';
-    body = result.message ?? '請稍後重試';
+    title = isChinese ? '更新失敗' : 'Update failed';
+    body = result.message ?? (isChinese ? '請稍後重試' : 'Please try again later');
   }
 
   await NotificationService.instance.showNotification(
