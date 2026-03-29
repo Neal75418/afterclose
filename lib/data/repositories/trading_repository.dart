@@ -352,7 +352,7 @@ class TradingRepository implements ITradingRepository {
   /// 包含新鮮度檢查以避免不必要的 API 呼叫。
   /// 設定 [force] 為 true 可略過新鮮度檢查。
   @override
-  Future<int> syncAllMarginTradingFromTwse({
+  Future<int?> syncAllMarginTradingFromTwse({
     DateTime? date,
     bool force = false,
   }) async {
@@ -367,7 +367,7 @@ class TradingRepository implements ITradingRepository {
         );
         if (existingCount > DataFreshness.fullMarketThreshold) {
           AppLogger.debug('TradingRepo', '融資融券資料已快取 ($existingCount 筆)，跳過同步');
-          return -1;
+          return null;
         }
       }
 

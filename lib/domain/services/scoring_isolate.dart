@@ -8,6 +8,7 @@ import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/isolate_map_extensions.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
 /// Isolate 評分輸入資料
 ///
@@ -464,12 +465,11 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
     // 6. 轉換批次資料並執行規則引擎
     final batchData = _convertBatchData(input, symbol);
-    final reasons = ruleEngine.evaluateStock(
-      priceHistory: prices,
-      context: context,
-      institutionalHistory: batchData.institutionalHistory,
-      recentNews: batchData.recentNews,
+    final stockData = StockData(
       symbol: symbol,
+      prices: prices,
+      institutional: batchData.institutionalHistory,
+      news: batchData.recentNews,
       latestRevenue: batchData.latestRevenue,
       latestValuation: batchData.latestValuation,
       revenueHistory: batchData.revenueHistory,
@@ -478,6 +478,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       dividendHistory: batchData.dividendHistory,
       maxHistoricalRevenue: batchData.maxHistoricalRevenue,
     );
+    final reasons = ruleEngine.evaluateStock(context, stockData);
 
     if (reasons.isEmpty) continue;
 

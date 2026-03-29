@@ -474,114 +474,142 @@ class UpdateService {
     final watchlist = await _db.getWatchlist();
     final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
-    // 步驟 4.5：籌碼資料
+    await _syncDayTradingAndMarginData(ctx, normalizedDate, watchlistSymbols);
+    await _syncFundamentalValuationAndRevenue(ctx, normalizedDate);
+    await _syncBalanceSheetAndEps(ctx, normalizedDate, watchlistSymbols);
+    await _syncKillerFeatures(ctx);
+  }
+
+  /// 步驟 4.5：籌碼資料（當沖、融資、持股）
+  Future<void> _syncDayTradingAndMarginData(
+    _UpdateContext ctx,
+    DateTime normalizedDate,
+    Set<String> watchlistSymbols,
+  ) async {
     final marketUpdater = _marketDataUpdater;
-    if (marketUpdater != null) {
-      try {
-        final marketResult = await marketUpdater.syncMarketWideData(
-          date: normalizedDate,
-          force: true,
-        );
+    if (marketUpdater == null) return;
 
-        // 同步自選清單和熱門股的詳細籌碼
-        final symbolsForMarketData = <String>{
-          ...watchlistSymbols,
-          ..._popularStocks,
-        }.toList();
+    try {
+      final marketResult = await marketUpdater.syncMarketWideData(
+        date: normalizedDate,
+        force: true,
+      );
 
-        final syncedCount = await marketUpdater.syncSymbolsMarketData(
-          symbols: symbolsForMarketData,
-          date: normalizedDate,
-        );
+      // 同步自選清單和熱門股的詳細籌碼
+      final symbolsForMarketData = <String>{
+        ...watchlistSymbols,
+        ..._popularStocks,
+      }.toList();
 
-        final marginLabel = marketResult.marginCount < 0
-            ? '已快取'
-            : '${marketResult.marginCount}';
-        AppLogger.info(
-          'UpdateService',
-          '步驟 4.5: 當沖=${marketResult.dayTradingCount}, '
-              '融資=$marginLabel, 持股=$syncedCount',
-        );
-      } catch (e) {
-        AppLogger.warning('UpdateService', '籌碼資料更新失敗', e);
-        ctx.result.recordError('籌碼資料更新失敗: $e', e);
-      }
+      final syncedCount = await marketUpdater.syncSymbolsMarketData(
+        symbols: symbolsForMarketData,
+        date: normalizedDate,
+      );
+
+      final marginLabel = marketResult.marginCount == null
+          ? '已快取'
+          : '${marketResult.marginCount}';
+      AppLogger.info(
+        'UpdateService',
+        '步驟 4.5: 當沖=${marketResult.dayTradingCount}, '
+            '融資=$marginLabel, 持股=$syncedCount',
+      );
+    } catch (e) {
+      AppLogger.warning('UpdateService', '籌碼資料更新失敗', e);
+      ctx.result.recordError('籌碼資料更新失敗: $e', e);
     }
+  }
 
-    // 步驟 4.6-4.7：基本面資料
+  /// 步驟 4.6：基本面資料（估值 + 營收 + 上櫃自選補充）
+  Future<void> _syncFundamentalValuationAndRevenue(
+    _UpdateContext ctx,
+    DateTime normalizedDate,
+  ) async {
     final fundamentalSyncer = _fundamentalSyncer;
-    if (fundamentalSyncer != null) {
+    if (fundamentalSyncer == null) return;
+
+    try {
+      final fundResult = await fundamentalSyncer.syncMarketWideFundamentals(
+        date: normalizedDate,
+        force: ctx.force,
+      );
+
+      // 補充上櫃自選股
       try {
-        final fundResult = await fundamentalSyncer.syncMarketWideFundamentals(
+        await fundamentalSyncer.syncOtcWatchlistFundamentals(
           date: normalizedDate,
-          force: ctx.force,
         );
-
-        // 補充上櫃自選股
-        try {
-          await fundamentalSyncer.syncOtcWatchlistFundamentals(
-            date: normalizedDate,
-          );
-        } catch (e) {
-          AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗', e);
-        }
-
-        final revenueLabel = fundResult.revenueCount < 0
-            ? '已快取'
-            : '${fundResult.revenueCount}';
-        AppLogger.info(
-          'UpdateService',
-          '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=$revenueLabel',
-        );
-
-        // 步驟 4.7：同步候選+自選股+市場候選的財報資料（EPS + 資產負債表）
-        try {
-          final prioritySymbols = {...watchlistSymbols, ..._popularStocks};
-          final remainingSlots =
-              ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
-          final targetSymbols = {
-            ...prioritySymbols,
-            if (remainingSlots > 0)
-              ...ctx.marketCandidates
-                  .where((s) => !prioritySymbols.contains(s))
-                  .take(remainingSlots),
-          }.toList();
-          if (targetSymbols.isNotEmpty) {
-            // 損益表與資產負債表無相依性，平行執行以縮短等待時間
-            final (epsCount, bsCount) = await (
-              fundamentalSyncer.syncFinancialStatements(symbols: targetSymbols),
-              fundamentalSyncer.syncBalanceSheets(symbols: targetSymbols),
-            ).wait;
-            final bsLabel = bsCount < 0 ? '已快取' : '$bsCount';
-            AppLogger.info(
-              'UpdateService',
-              '步驟 4.7: 損益=$epsCount, 資負=$bsLabel (${targetSymbols.length} 檔)',
-            );
-          }
-        } catch (e) {
-          AppLogger.warning('UpdateService', '財報資料同步失敗', e);
-        }
       } catch (e) {
-        AppLogger.warning('UpdateService', '基本面資料更新失敗', e);
-        ctx.result.recordError('基本面資料更新失敗: $e', e);
+        AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗', e);
       }
+
+      final revenueLabel = fundResult.revenueCached
+          ? '已快取'
+          : '${fundResult.revenueCount}';
+      AppLogger.info(
+        'UpdateService',
+        '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=$revenueLabel',
+      );
+    } catch (e) {
+      AppLogger.warning('UpdateService', '基本面資料更新失敗', e);
+      ctx.result.recordError('基本面資料更新失敗: $e', e);
     }
+  }
 
-    // 步驟 4.8：Killer Features 資料（警示、董監持股）
-    if (marketUpdater != null) {
-      try {
-        final killerResult = await marketUpdater.syncKillerFeaturesData(
-          force: ctx.force,
-        );
+  /// 步驟 4.7：財報資料（EPS + 資產負債表）
+  Future<void> _syncBalanceSheetAndEps(
+    _UpdateContext ctx,
+    DateTime normalizedDate,
+    Set<String> watchlistSymbols,
+  ) async {
+    final fundamentalSyncer = _fundamentalSyncer;
+    if (fundamentalSyncer == null) return;
 
+    try {
+      final prioritySymbols = {...watchlistSymbols, ..._popularStocks};
+      final remainingSlots =
+          ApiConfig.financialSyncMaxCandidates - prioritySymbols.length;
+      final targetSymbols = {
+        ...prioritySymbols,
+        if (remainingSlots > 0)
+          ...ctx.marketCandidates
+              .where((s) => !prioritySymbols.contains(s))
+              .take(remainingSlots),
+      }.toList();
+      if (targetSymbols.isNotEmpty) {
+        // 損益表與資產負債表無相依性，平行執行以縮短等待時間
+        final (epsCount, bsCount) = await (
+          fundamentalSyncer.syncFinancialStatements(symbols: targetSymbols),
+          fundamentalSyncer.syncBalanceSheets(symbols: targetSymbols),
+        ).wait;
+        final bsLabel = bsCount == null ? '已快取' : '$bsCount';
         AppLogger.info(
           'UpdateService',
-          '步驟 4.8: 警示=${killerResult.warningCount}, 董監=${killerResult.insiderCount}',
+          '步驟 4.7: 損益=$epsCount, 資負=$bsLabel (${targetSymbols.length} 檔)',
         );
-      } catch (e) {
-        // 不加入 errors，因為這是額外功能，不影響主流程
-        AppLogger.warning('UpdateService', 'Killer Features 資料更新失敗', e);
       }
+    } catch (e) {
+      AppLogger.warning('UpdateService', '財報資料同步失敗', e);
+    }
+  }
+
+  /// 步驟 4.8：Killer Features 資料（警示、董監持股）
+  Future<void> _syncKillerFeatures(_UpdateContext ctx) async {
+    final marketUpdater = _marketDataUpdater;
+    if (marketUpdater == null) return;
+
+    try {
+      final killerResult = await marketUpdater.syncKillerFeaturesData(
+        force: ctx.force,
+      );
+
+      AppLogger.info(
+        'UpdateService',
+        '步驟 4.8: 警示=${killerResult.warningCount}, 董監=${killerResult.insiderCount}',
+      );
+    } catch (e) {
+      // 不加入 errors，因為這是額外功能，不影響主流程
+      AppLogger.warning('UpdateService', 'Killer Features 資料更新失敗', e);
     }
   }
 

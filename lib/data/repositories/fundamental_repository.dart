@@ -290,9 +290,9 @@ class FundamentalRepository implements IFundamentalRepository {
   /// API 端點：https://openapi.twse.com.tw/v1/opendata/t187ap05_L
   /// 注意：此方法僅同步上市股票，上櫃股票需使用 [syncOtcRevenue]。
   ///
-  /// 回傳：同步筆數，或 -1 表示跳過（已有資料）
+  /// 回傳：同步筆數，或 null 表示跳過（已有資料）
   @override
-  Future<int> syncAllMarketRevenue(DateTime date, {bool force = false}) async {
+  Future<int?> syncAllMarketRevenue(DateTime date, {bool force = false}) async {
     try {
       // 註：OpenData 僅回傳「最新」月份
       // 無法指定日期。我們只抓取可用的資料
@@ -319,7 +319,7 @@ class FundamentalRepository implements IFundamentalRepository {
             'FundamentalRepo',
             '$dataYear/$dataMonth 營收資料已快取 ($existingCount 筆)，跳過同步',
           );
-          return -1;
+          return null;
         }
       }
 

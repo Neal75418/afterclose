@@ -44,7 +44,7 @@ class MarketDataUpdater {
   }) async {
     var twseDayTradingCount = 0;
     const tpexDayTradingCount = 0;
-    var marginCount = 0;
+    int? marginCount = 0;
 
     // 從 TWSE 批次同步上市當沖資料
     try {
@@ -350,10 +350,10 @@ class MarketDataSyncResult {
 
   final int dayTradingCount;
 
-  /// 融資融券同步筆數。-1 表示已快取（跳過同步）。
-  final int marginCount;
+  /// 融資融券同步筆數。null 表示已快取（跳過同步）。
+  final int? marginCount;
 
-  int get total => dayTradingCount + (marginCount < 0 ? 0 : marginCount);
+  int get total => dayTradingCount + (marginCount ?? 0);
 }
 
 /// 上櫃籌碼同步結果

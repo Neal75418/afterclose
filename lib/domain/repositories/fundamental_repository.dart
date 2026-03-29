@@ -27,8 +27,8 @@ abstract class IFundamentalRepository {
     bool force = false,
   });
 
-  /// 同步全市場月營收
-  Future<int> syncAllMarketRevenue(DateTime date, {bool force = false});
+  /// 同步全市場月營收。回傳同步筆數，null 表示已快取（跳過同步）。
+  Future<int?> syncAllMarketRevenue(DateTime date, {bool force = false});
 
   /// 同步上櫃月營收
   Future<int> syncOtcRevenue(

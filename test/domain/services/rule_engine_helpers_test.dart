@@ -212,8 +212,8 @@ void main() {
       const context = AnalysisContext(trendState: TrendState.range);
 
       final reasons = engine.evaluateStock(
-        priceHistory: prices,
-        context: context,
+        context,
+        StockData(symbol: 'UNKNOWN', prices: prices),
       );
 
       // 拋出例外的規則被跳過，不影響結果
@@ -232,8 +232,8 @@ void main() {
       const context = AnalysisContext(trendState: TrendState.range);
 
       final reasons = engine.evaluateStock(
-        priceHistory: prices,
-        context: context,
+        context,
+        StockData(symbol: 'UNKNOWN', prices: prices),
       );
 
       // _ThrowingRule 拋例外被跳過，VolumeSpikeRule 正常觸發
@@ -309,8 +309,8 @@ void main() {
   group('evaluateStock Edge Cases', () {
     test('return empty list for empty price history', () {
       final reasons = ruleEngine.evaluateStock(
-        priceHistory: [],
-        context: const AnalysisContext(trendState: TrendState.range),
+        const AnalysisContext(trendState: TrendState.range),
+        const StockData(symbol: 'UNKNOWN', prices: []),
       );
       expect(reasons, isEmpty);
     });
@@ -340,8 +340,8 @@ void main() {
       const context = AnalysisContext(trendState: TrendState.range);
 
       final reasons = engine.evaluateStock(
-        priceHistory: prices,
-        context: context,
+        context,
+        StockData(symbol: 'UNKNOWN', prices: prices),
       );
 
       expect(reasons.length, 3);

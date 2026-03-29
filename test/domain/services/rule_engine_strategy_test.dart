@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/rules/technical_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -28,9 +29,8 @@ void main() {
       );
 
       final reasons = ruleEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
-        symbol: 'TEST',
+        context,
+        StockData(symbol: 'TEST', prices: prices),
       );
 
       // 驗證成交量爆增規則有觸發
@@ -61,8 +61,8 @@ void main() {
       );
 
       final reasons = customEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
+        context,
+        StockData(symbol: 'UNKNOWN', prices: prices),
       );
 
       // 驗證突破規則有觸發

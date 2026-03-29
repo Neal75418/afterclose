@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:afterclose/core/constants/analysis_params.dart';
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -151,8 +152,8 @@ class AnalysisSummaryService {
       );
     } else {
       final trendKey = switch (analysis?.trendState) {
-        'UP' => 'summary.overallUp',
-        'DOWN' => 'summary.overallDown',
+        TrendState.upCode => 'summary.overallUp',
+        TrendState.downCode => 'summary.overallDown',
         _ => 'summary.overallRange',
       };
       parts.add(
@@ -165,10 +166,10 @@ class AnalysisSummaryService {
       ...bullishConfluence.consumedTypes,
       ...bearishConfluence.consumedTypes,
     };
-    if (analysis?.reversalState == 'W2S' &&
+    if (analysis?.reversalState == ReversalState.w2sCode &&
         !confluenceConsumed.contains(SignalName.reversalW2S)) {
       parts.add(const LocalizableString('summary.reversalW2S'));
-    } else if (analysis?.reversalState == 'S2W' &&
+    } else if (analysis?.reversalState == ReversalState.s2wCode &&
         !confluenceConsumed.contains(SignalName.reversalS2W)) {
       parts.add(const LocalizableString('summary.reversalS2W'));
     }

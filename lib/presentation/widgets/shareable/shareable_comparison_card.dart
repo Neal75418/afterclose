@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/comparison_provider.dart';
@@ -182,8 +183,8 @@ class _StockRow extends StatelessWidget {
   }
 
   Color _trendColor(String trend) {
-    if (trend == 'UP') return AppTheme.upColor;
-    if (trend == 'DOWN') return AppTheme.downColor;
+    if (trend == TrendState.upCode) return AppTheme.upColor;
+    if (trend == TrendState.downCode) return AppTheme.downColor;
     return AppTheme.neutralColor;
   }
 }

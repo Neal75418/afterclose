@@ -1,6 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
-import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_registry.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
@@ -19,35 +18,8 @@ class RuleEngine {
   final List<StockRule> _rules = [];
 
   /// 對股票執行所有規則並回傳觸發的原因
-  List<TriggeredReason> evaluateStock({
-    required List<DailyPriceEntry> priceHistory,
-    required AnalysisContext context,
-    List<DailyInstitutionalEntry>? institutionalHistory,
-    List<NewsItemEntry>? recentNews,
-    String? symbol,
-    MonthlyRevenueEntry? latestRevenue,
-    StockValuationEntry? latestValuation,
-    List<MonthlyRevenueEntry>? revenueHistory,
-    List<FinancialDataEntry>? epsHistory,
-    List<FinancialDataEntry>? roeHistory,
-    List<DividendHistoryEntry>? dividendHistory,
-    double? maxHistoricalRevenue,
-  }) {
-    if (priceHistory.isEmpty) return [];
-
-    final data = StockData(
-      symbol: symbol ?? 'UNKNOWN',
-      prices: priceHistory,
-      institutional: institutionalHistory,
-      news: recentNews,
-      latestRevenue: latestRevenue,
-      latestValuation: latestValuation,
-      revenueHistory: revenueHistory,
-      epsHistory: epsHistory,
-      roeHistory: roeHistory,
-      dividendHistory: dividendHistory,
-      maxHistoricalRevenue: maxHistoricalRevenue,
-    );
+  List<TriggeredReason> evaluateStock(AnalysisContext context, StockData data) {
+    if (data.prices.isEmpty) return [];
 
     final triggered = <TriggeredReason>[];
 

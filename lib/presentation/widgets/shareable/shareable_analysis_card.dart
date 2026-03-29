@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
@@ -230,7 +231,7 @@ class _TrendChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUp = trend == 'UP';
+    final isUp = trend == TrendState.upCode;
     final color = isUp ? AppTheme.upColor : AppTheme.downColor;
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -259,7 +260,7 @@ class _ReversalChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isW2S = reversal == 'W2S';
+    final isW2S = reversal == ReversalState.w2sCode;
     final color = isW2S ? AppTheme.upColor : AppTheme.downColor;
     return Container(
       padding: const EdgeInsets.symmetric(

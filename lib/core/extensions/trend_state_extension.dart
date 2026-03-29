@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 
 /// 趨勢狀態擴展
@@ -23,8 +24,8 @@ extension TrendStateExtension on String? {
   /// - 其他: ➡️
   String get trendEmoji {
     return switch (this) {
-      'UP' => '📈',
-      'DOWN' => '📉',
+      TrendState.upCode => '📈',
+      TrendState.downCode => '📉',
       _ => '➡️',
     };
   }
@@ -36,8 +37,8 @@ extension TrendStateExtension on String? {
   /// - 其他: trending_flat_rounded
   IconData get trendIconData {
     return switch (this) {
-      'UP' => Icons.trending_up_rounded,
-      'DOWN' => Icons.trending_down_rounded,
+      TrendState.upCode => Icons.trending_up_rounded,
+      TrendState.downCode => Icons.trending_down_rounded,
       _ => Icons.trending_flat_rounded,
     };
   }
@@ -49,8 +50,8 @@ extension TrendStateExtension on String? {
   /// - 其他: AppTheme.neutralColor (灰色)
   Color get trendColor {
     return switch (this) {
-      'UP' => AppTheme.upColor,
-      'DOWN' => AppTheme.downColor,
+      TrendState.upCode => AppTheme.upColor,
+      TrendState.downCode => AppTheme.downColor,
       _ => AppTheme.neutralColor,
     };
   }
@@ -64,8 +65,8 @@ extension TrendStateExtension on String? {
   /// - 其他: 'sideways'
   String get trendKey {
     return switch (this) {
-      'UP' => 'up',
-      'DOWN' => 'down',
+      TrendState.upCode => 'up',
+      TrendState.downCode => 'down',
       _ => 'sideways',
     };
   }

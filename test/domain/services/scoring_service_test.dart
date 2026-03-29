@@ -206,18 +206,7 @@ void main() {
         ),
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
-      when(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          recentNews: any(named: 'recentNews'),
-          symbol: any(named: 'symbol'),
-          institutionalHistory: any(named: 'institutionalHistory'),
-          latestRevenue: any(named: 'latestRevenue'),
-          latestValuation: any(named: 'latestValuation'),
-          revenueHistory: any(named: 'revenueHistory'),
-        ),
-      ).thenReturn([
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(
           type: ReasonType.techBreakout,
           score: 80,
@@ -301,19 +290,11 @@ void main() {
       );
 
       // Unified mock for evaluateStock using thenAnswer to handle dispatch
-      when(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          symbol: any(named: 'symbol'),
-          recentNews: null,
-          institutionalHistory: null,
-          latestRevenue: null,
-          latestValuation: null,
-          revenueHistory: null,
-        ),
-      ).thenAnswer((invocation) {
-        final symbol = invocation.namedArguments[#symbol] as String;
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenAnswer((
+        invocation,
+      ) {
+        final data = invocation.positionalArguments[1] as StockData;
+        final symbol = data.symbol;
         if (symbol == 'HIGH_SCORE') return [highReason];
         if (symbol == 'LOW_SCORE') return [lowReason];
         return [];
@@ -422,18 +403,7 @@ void main() {
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
       // Mock Rule Engine
-      when(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          symbol: 'COOLDOWN',
-          recentNews: null,
-          institutionalHistory: null,
-          latestRevenue: null,
-          latestValuation: null,
-          revenueHistory: null,
-        ),
-      ).thenReturn([
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(
           type: ReasonType.volumeSpike,
           score: 10,
@@ -555,18 +525,7 @@ void main() {
 
       expect(result, isEmpty);
       verify(() => mockAnalysisService.analyzeStock(any())).called(1);
-      verifyNever(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          symbol: any(named: 'symbol'),
-          recentNews: any(named: 'recentNews'),
-          institutionalHistory: any(named: 'institutionalHistory'),
-          latestRevenue: any(named: 'latestRevenue'),
-          latestValuation: any(named: 'latestValuation'),
-          revenueHistory: any(named: 'revenueHistory'),
-        ),
-      );
+      verifyNever(() => mockRuleEngine.evaluateStock(any(), any()));
     });
 
     test('skip stock when rule engine returns empty reasons', () async {
@@ -589,18 +548,7 @@ void main() {
         ),
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
-      when(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          symbol: any(named: 'symbol'),
-          recentNews: null,
-          institutionalHistory: null,
-          latestRevenue: null,
-          latestValuation: null,
-          revenueHistory: null,
-        ),
-      ).thenReturn([]);
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([]);
 
       final result = await scoringService.scoreStocks(
         candidates: ['EMPTY_REASONS'],
@@ -648,18 +596,7 @@ void main() {
         ),
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
-      when(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          symbol: any(named: 'symbol'),
-          recentNews: any(named: 'recentNews'),
-          institutionalHistory: any(named: 'institutionalHistory'),
-          latestRevenue: any(named: 'latestRevenue'),
-          latestValuation: any(named: 'latestValuation'),
-          revenueHistory: any(named: 'revenueHistory'),
-        ),
-      ).thenReturn([
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(
           type: ReasonType.techBreakout,
           score: 20,
@@ -794,18 +731,7 @@ void main() {
         ),
       ).thenReturn(const AnalysisContext(trendState: TrendState.up));
 
-      when(
-        () => mockRuleEngine.evaluateStock(
-          priceHistory: any(named: 'priceHistory'),
-          context: any(named: 'context'),
-          symbol: any(named: 'symbol'),
-          recentNews: any(named: 'recentNews'),
-          institutionalHistory: any(named: 'institutionalHistory'),
-          latestRevenue: any(named: 'latestRevenue'),
-          latestValuation: any(named: 'latestValuation'),
-          revenueHistory: any(named: 'revenueHistory'),
-        ),
-      ).thenReturn([
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(
           type: ReasonType.techBreakout,
           score: 30,

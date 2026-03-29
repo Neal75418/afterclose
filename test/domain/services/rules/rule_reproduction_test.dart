@@ -2,6 +2,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/rules/candlestick_rules.dart';
 import 'package:afterclose/domain/services/rules/indicator_rules.dart';
 import 'package:afterclose/domain/services/rules/technical_rules.dart';
@@ -57,9 +58,8 @@ void main() {
       );
 
       final reasons = ruleEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
-        symbol: '2330',
+        context,
+        StockData(symbol: '2330', prices: prices),
       );
 
       expect(reasons.any((r) => r.type == ReasonType.kdGoldenCross), isTrue);
@@ -97,10 +97,8 @@ void main() {
       });
 
       final reasons = ruleEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
-        symbol: '2330',
-        latestValuation: valuation,
+        context,
+        StockData(symbol: '2330', prices: prices, latestValuation: valuation),
       );
 
       expect(reasons.any((r) => r.type == ReasonType.peUndervalued), isTrue);

@@ -9,6 +9,7 @@ import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rules/stock_rules.dart';
 import 'package:afterclose/domain/services/scoring_isolate.dart';
 
 /// 股票候選評分服務
@@ -130,12 +131,11 @@ class ScoringService {
       final recentNews = batchData.newsMap[symbol];
 
       // 執行規則引擎
-      final reasons = _ruleEngine.evaluateStock(
-        priceHistory: prices,
-        context: context,
-        institutionalHistory: institutionalHistory,
-        recentNews: recentNews,
+      final stockData = StockData(
         symbol: symbol,
+        prices: prices,
+        institutional: institutionalHistory,
+        news: recentNews,
         latestRevenue: batchData.revenueMap?[symbol],
         latestValuation: batchData.valuationMap?[symbol],
         revenueHistory: batchData.revenueHistoryMap?[symbol],
@@ -144,6 +144,7 @@ class ScoringService {
         dividendHistory: batchData.dividendHistoryMap?[symbol],
         maxHistoricalRevenue: batchData.maxHistoricalRevenueMap?[symbol],
       );
+      final reasons = _ruleEngine.evaluateStock(context, stockData);
 
       if (reasons.isEmpty) continue;
 

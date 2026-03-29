@@ -31,8 +31,8 @@ abstract class ITradingRepository {
     int days = 30,
   });
 
-  /// 從 TWSE/TPEX 同步全市場融資融券資料
-  Future<int> syncAllMarginTradingFromTwse({
+  /// 從 TWSE/TPEX 同步全市場融資融券資料。回傳同步筆數，null 表示已快取（跳過同步）。
+  Future<int?> syncAllMarginTradingFromTwse({
     DateTime? date,
     bool force = false,
   });

@@ -34,7 +34,7 @@ class FundamentalSyncer {
     bool force = false,
   }) async {
     var valuationCount = 0;
-    var revenueCount = 0;
+    int? revenueCount = 0;
 
     try {
       valuationCount = await _fundamentalRepo.syncAllMarketValuation(
@@ -59,7 +59,7 @@ class FundamentalSyncer {
       AppLogger.warning('FundamentalSyncer', '營收資料同步失敗', e);
     }
 
-    final revenueLabel = revenueCount < 0 ? '已快取' : '$revenueCount';
+    final revenueLabel = revenueCount == null ? '已快取' : '$revenueCount';
     AppLogger.info(
       'FundamentalSyncer',
       '全市場基本面: 估值=$valuationCount, 營收=$revenueLabel',
@@ -255,7 +255,7 @@ class FundamentalSyncer {
   /// 每批 10 檔並行，批間延遲 500ms 避免超過 FinMind 配額。
   /// 需要 MarketDataRepository 才能使用。
   /// ETF（代碼以 00 開頭）無財報資料，自動過濾以避免無效 API 呼叫。
-  Future<int> syncBalanceSheets({required List<String> symbols}) async {
+  Future<int?> syncBalanceSheets({required List<String> symbols}) async {
     final marketDataRepo = _marketDataRepo;
     // 過濾 ETF：00 開頭的代碼（0050、00636、006205 等）沒有資產負債表資料
     final stockSymbols = symbols.where((s) => !s.startsWith('00')).toList();
@@ -315,7 +315,7 @@ class FundamentalSyncer {
         'FundamentalSyncer',
         '資產負債表: ${stockSymbols.length} 檔皆已快取，無需同步',
       );
-      return -1;
+      return null;
     }
   }
 }
@@ -329,9 +329,9 @@ class FundamentalSyncResult {
 
   final int valuationCount;
 
-  /// 營收同步筆數。-1 表示已快取（跳過同步）。
-  final int revenueCount;
+  /// 營收同步筆數。null 表示已快取（跳過同步）。
+  final int? revenueCount;
 
-  bool get revenueCached => revenueCount < 0;
-  int get total => valuationCount + (revenueCount < 0 ? 0 : revenueCount);
+  bool get revenueCached => revenueCount == null;
+  int get total => valuationCount + (revenueCount ?? 0);
 }

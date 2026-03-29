@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 
+import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/presentation/widgets/warning_badge.dart';
 
 // ==================================================
@@ -110,8 +111,8 @@ class WatchlistItemData {
   /// 取得趨勢分類
   WatchlistTrend get trend {
     return switch (trendState) {
-      'UP' => WatchlistTrend.up,
-      'DOWN' => WatchlistTrend.down,
+      TrendState.upCode => WatchlistTrend.up,
+      TrendState.downCode => WatchlistTrend.down,
       _ => WatchlistTrend.sideways,
     };
   }
