@@ -425,10 +425,13 @@ class _MarketDashboardState extends State<MarketDashboard> {
             instData.trustNet != 0 ||
             instData.dealerNet != 0)) {
       sections.add(
-        InstitutionalFlowChart(
-          data: instData,
-          streak: instStreak,
-          totalNetHistory: instNetHist,
+        _wrapWithDateIndicator(
+          sectionKey: MarketOverviewState.kSectionInstitutional,
+          child: InstitutionalFlowChart(
+            data: instData,
+            streak: instStreak,
+            totalNetHistory: instNetHist,
+          ),
         ),
       );
     }
@@ -436,10 +439,13 @@ class _MarketDashboardState extends State<MarketDashboard> {
     if (marginData != null &&
         (marginData.marginChange != 0 || marginData.shortChange != 0)) {
       sections.add(
-        MarginCompactRow(
-          data: marginData,
-          marginBalanceHistory: marginHist,
-          shortBalanceHistory: shortHist,
+        _wrapWithDateIndicator(
+          sectionKey: MarketOverviewState.kSectionMargin,
+          child: MarginCompactRow(
+            data: marginData,
+            marginBalanceHistory: marginHist,
+            shortBalanceHistory: shortHist,
+          ),
         ),
       );
     }
@@ -717,6 +723,47 @@ class _MarketDashboardState extends State<MarketDashboard> {
   }
 
   // ==================================================
+  // Section date indicator
+  // ==================================================
+
+  /// 若該區塊的實際資料日期比主日期舊，在右上角顯示小日期標籤
+  Widget _wrapWithDateIndicator({
+    required String sectionKey,
+    required Widget child,
+  }) {
+    final sectionDate = widget.state.sectionDates[sectionKey];
+    final mainDate = widget.state.dataDate;
+    if (sectionDate == null || mainDate == null) return child;
+
+    // 只在 section 日期比主日期舊時才顯示
+    final sectionDay = DateTime(
+      sectionDate.year,
+      sectionDate.month,
+      sectionDate.day,
+    );
+    final mainDay = DateTime(mainDate.year, mainDate.month, mainDate.day);
+    if (!sectionDay.isBefore(mainDay)) return child;
+
+    final theme = Theme.of(context);
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          top: 0,
+          right: 0,
+          child: Text(
+            '${sectionDate.month}/${sectionDate.day}',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontSize: 10,
+              color: theme.colorScheme.onSurfaceVariant.withAlpha(153),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================================================
   // Section builders
   // ==================================================
 
@@ -749,10 +796,14 @@ class _MarketDashboardState extends State<MarketDashboard> {
             instData.dealerNet == 0)) {
       return null;
     }
-    return InstitutionalFlowChart(
-      data: instData,
-      streak: widget.state.institutionalStreakByMarket[market],
-      totalNetHistory: widget.state.historyTrends.institutionalTotalNet[market],
+    return _wrapWithDateIndicator(
+      sectionKey: MarketOverviewState.kSectionInstitutional,
+      child: InstitutionalFlowChart(
+        data: instData,
+        streak: widget.state.institutionalStreakByMarket[market],
+        totalNetHistory:
+            widget.state.historyTrends.institutionalTotalNet[market],
+      ),
     );
   }
 
@@ -762,10 +813,13 @@ class _MarketDashboardState extends State<MarketDashboard> {
         (marginData.marginChange == 0 && marginData.shortChange == 0)) {
       return null;
     }
-    return MarginCompactRow(
-      data: marginData,
-      marginBalanceHistory: widget.state.historyTrends.marginBalance[market],
-      shortBalanceHistory: widget.state.historyTrends.shortBalance[market],
+    return _wrapWithDateIndicator(
+      sectionKey: MarketOverviewState.kSectionMargin,
+      child: MarginCompactRow(
+        data: marginData,
+        marginBalanceHistory: widget.state.historyTrends.marginBalance[market],
+        shortBalanceHistory: widget.state.historyTrends.shortBalance[market],
+      ),
     );
   }
 

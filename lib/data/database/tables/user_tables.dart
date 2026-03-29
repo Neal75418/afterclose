@@ -16,68 +16,6 @@ class Watchlist extends Table {
   Set<Column> get primaryKey => {symbol};
 }
 
-/// 使用者股票筆記 Table
-///
-/// TODO: 尚未實作 DAO / Repository / UI，schema 已保留供未來使用
-@DataClassName('UserNoteEntry')
-class UserNote extends Table {
-  /// 自動遞增 ID
-  IntColumn get id => integer().autoIncrement()();
-
-  /// 股票代碼
-  TextColumn get symbol =>
-      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
-
-  /// 筆記對應的日期（可為空）
-  DateTimeColumn get date => dateTime().nullable()();
-
-  /// 筆記內容
-  TextColumn get content => text()();
-
-  /// 建立時間
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-
-  /// 最後更新時間
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
-}
-
-/// 交易策略卡 Table
-///
-/// TODO: 尚未實作 DAO / Repository / UI，schema 已保留供未來使用
-@DataClassName('StrategyCardEntry')
-class StrategyCard extends Table {
-  /// 自動遞增 ID
-  IntColumn get id => integer().autoIncrement()();
-
-  /// 股票代碼
-  TextColumn get symbol =>
-      text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
-
-  /// 策略目標日期
-  DateTimeColumn get forDate => dateTime().nullable()();
-
-  /// 條件 A
-  TextColumn get ifA => text().nullable()();
-
-  /// 條件 A 成立時的操作
-  TextColumn get thenA => text().nullable()();
-
-  /// 條件 B
-  TextColumn get ifB => text().nullable()();
-
-  /// 條件 B 成立時的操作
-  TextColumn get thenB => text().nullable()();
-
-  /// 其他情況的操作
-  TextColumn get elsePlan => text().nullable()();
-
-  /// 建立時間
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-
-  /// 最後更新時間
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
-}
-
 /// 資料更新執行紀錄 Table
 @DataClassName('UpdateRunEntry')
 class UpdateRun extends Table {

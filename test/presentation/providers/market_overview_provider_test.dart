@@ -70,6 +70,7 @@ void main() {
               double marginChange,
               double shortBalance,
               double shortChange,
+              DateTime? dataDate,
             })
           >{},
     );
@@ -291,12 +292,14 @@ void main() {
             marginChange: 700.0,
             shortBalance: 2000.0,
             shortChange: -100.0,
+            dataDate: DateTime(2024, 3, 26),
           ),
           'TPEx': (
             marginBalance: 20000.0,
             marginChange: 300.0,
             shortBalance: 1000.0,
             shortChange: -100.0,
+            dataDate: DateTime(2024, 3, 25),
           ),
         },
       );

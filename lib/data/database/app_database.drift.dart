@@ -36,8 +36,6 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
   late final i5.$RecommendationValidationTable recommendationValidation = i5
       .$RecommendationValidationTable(this);
   late final i6.$WatchlistTable watchlist = i6.$WatchlistTable(this);
-  late final i6.$UserNoteTable userNote = i6.$UserNoteTable(this);
-  late final i6.$StrategyCardTable strategyCard = i6.$StrategyCardTable(this);
   late final i6.$UpdateRunTable updateRun = i6.$UpdateRunTable(this);
   late final i6.$AppSettingsTable appSettings = i6.$AppSettingsTable(this);
   late final i6.$PriceAlertTable priceAlert = i6.$PriceAlertTable(this);
@@ -46,10 +44,6 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
   late final i7.$FinancialDataTable financialData = i7.$FinancialDataTable(
     this,
   );
-  late final i7.$AdjustedPriceTable adjustedPrice = i7.$AdjustedPriceTable(
-    this,
-  );
-  late final i7.$WeeklyPriceTable weeklyPrice = i7.$WeeklyPriceTable(this);
   late final i7.$HoldingDistributionTable holdingDistribution = i7
       .$HoldingDistributionTable(this);
   late final i7.$MonthlyRevenueTable monthlyRevenue = i7.$MonthlyRevenueTable(
@@ -95,16 +89,12 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     ruleAccuracy,
     recommendationValidation,
     watchlist,
-    userNote,
-    strategyCard,
     updateRun,
     appSettings,
     priceAlert,
     shareholding,
     dayTrading,
     financialData,
-    adjustedPrice,
-    weeklyPrice,
     holdingDistribution,
     monthlyRevenue,
     stockValuation,
@@ -148,10 +138,6 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     i7.idxFinancialDataSymbol,
     i7.idxFinancialDataDate,
     i7.idxFinancialDataType,
-    i7.idxAdjustedPriceSymbol,
-    i7.idxAdjustedPriceDate,
-    i7.idxWeeklyPriceSymbol,
-    i7.idxWeeklyPriceDate,
     i7.idxHoldingDistSymbol,
     i7.idxHoldingDistDate,
     i7.idxMonthlyRevenueSymbol,
@@ -248,20 +234,6 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
         'stock_master',
         limitUpdateKind: i0.UpdateKind.delete,
       ),
-      result: [i0.TableUpdate('user_note', kind: i0.UpdateKind.delete)],
-    ),
-    i0.WritePropagation(
-      on: i0.TableUpdateQuery.onTableName(
-        'stock_master',
-        limitUpdateKind: i0.UpdateKind.delete,
-      ),
-      result: [i0.TableUpdate('strategy_card', kind: i0.UpdateKind.delete)],
-    ),
-    i0.WritePropagation(
-      on: i0.TableUpdateQuery.onTableName(
-        'stock_master',
-        limitUpdateKind: i0.UpdateKind.delete,
-      ),
       result: [i0.TableUpdate('price_alert', kind: i0.UpdateKind.delete)],
     ),
     i0.WritePropagation(
@@ -284,20 +256,6 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
         limitUpdateKind: i0.UpdateKind.delete,
       ),
       result: [i0.TableUpdate('financial_data', kind: i0.UpdateKind.delete)],
-    ),
-    i0.WritePropagation(
-      on: i0.TableUpdateQuery.onTableName(
-        'stock_master',
-        limitUpdateKind: i0.UpdateKind.delete,
-      ),
-      result: [i0.TableUpdate('adjusted_price', kind: i0.UpdateKind.delete)],
-    ),
-    i0.WritePropagation(
-      on: i0.TableUpdateQuery.onTableName(
-        'stock_master',
-        limitUpdateKind: i0.UpdateKind.delete,
-      ),
-      result: [i0.TableUpdate('weekly_price', kind: i0.UpdateKind.delete)],
     ),
     i0.WritePropagation(
       on: i0.TableUpdateQuery.onTableName(
@@ -409,10 +367,6 @@ class $AppDatabaseManager {
       );
   i6.$$WatchlistTableTableManager get watchlist =>
       i6.$$WatchlistTableTableManager(_db, _db.watchlist);
-  i6.$$UserNoteTableTableManager get userNote =>
-      i6.$$UserNoteTableTableManager(_db, _db.userNote);
-  i6.$$StrategyCardTableTableManager get strategyCard =>
-      i6.$$StrategyCardTableTableManager(_db, _db.strategyCard);
   i6.$$UpdateRunTableTableManager get updateRun =>
       i6.$$UpdateRunTableTableManager(_db, _db.updateRun);
   i6.$$AppSettingsTableTableManager get appSettings =>
@@ -425,10 +379,6 @@ class $AppDatabaseManager {
       i7.$$DayTradingTableTableManager(_db, _db.dayTrading);
   i7.$$FinancialDataTableTableManager get financialData =>
       i7.$$FinancialDataTableTableManager(_db, _db.financialData);
-  i7.$$AdjustedPriceTableTableManager get adjustedPrice =>
-      i7.$$AdjustedPriceTableTableManager(_db, _db.adjustedPrice);
-  i7.$$WeeklyPriceTableTableManager get weeklyPrice =>
-      i7.$$WeeklyPriceTableTableManager(_db, _db.weeklyPrice);
   i7.$$HoldingDistributionTableTableManager get holdingDistribution =>
       i7.$$HoldingDistributionTableTableManager(_db, _db.holdingDistribution);
   i7.$$MonthlyRevenueTableTableManager get monthlyRevenue =>

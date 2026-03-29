@@ -71,8 +71,6 @@ import 'package:afterclose/data/database/dao/valuation_dao.dart';
     RecommendationValidation,
     // 使用者資料
     Watchlist,
-    UserNote,
-    StrategyCard,
     UpdateRun,
     AppSettings,
     PriceAlert,
@@ -80,8 +78,6 @@ import 'package:afterclose/data/database/dao/valuation_dao.dart';
     Shareholding,
     DayTrading,
     FinancialData,
-    AdjustedPrice,
-    WeeklyPrice,
     HoldingDistribution,
     // 基本面資料（Phase 3）
     MonthlyRevenue,

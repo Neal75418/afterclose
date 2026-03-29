@@ -1,5 +1,4 @@
 import 'package:afterclose/core/constants/analysis_params.dart';
-import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -15,14 +14,11 @@ class BacktestService {
   const BacktestService({
     required AppDatabase database,
     required ScreeningService screeningService,
-    AppClock clock = const SystemClock(),
   }) : _db = database,
-       _screeningService = screeningService,
-       _clock = clock;
+       _screeningService = screeningService;
 
   final AppDatabase _db;
   final ScreeningService _screeningService;
-  final AppClock _clock;
 
   /// 執行回測
   ///
@@ -138,13 +134,10 @@ class BacktestService {
   /// 找到最新有分析資料的日期
   /// TODO: 考慮注入 IAnalysisRepository 並使用 findLatestAnalysisDate() 單次查詢
   Future<DateTime?> _findLatestAnalysisDate() async {
-    final now = _clock.now();
-    for (var daysAgo = 0; daysAgo <= 7; daysAgo++) {
-      final date = DateContext.normalize(now.subtract(Duration(days: daysAgo)));
-      final analyses = await _db.getAnalysisForDate(date);
-      if (analyses.isNotEmpty) return date;
-    }
-    return null;
+    final result = await _db
+        .customSelect('SELECT MAX(date) AS latest FROM daily_analysis')
+        .getSingleOrNull();
+    return result?.read<DateTime?>('latest');
   }
 
   /// 列舉取樣日（每 samplingInterval 個交易日取一次）

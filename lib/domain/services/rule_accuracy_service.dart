@@ -246,9 +246,7 @@ class RuleAccuracyService {
       var skipped = 0;
       var errors = 0;
 
-      // TODO: 此路徑對每個 (recommendation, period) 進行個別 DB 查詢（N×M×5×4 round-trips），
-      // 與 validatePastRecommendationsMultiPeriod 的批次路徑相比效能差距大。
-      // 考慮重構為按日期批次查詢 entry/exit prices 後再逐筆計算。
+      // 按日期批次查詢，避免 N×M×5 round-trips
       for (var i = 0; i < totalDates; i++) {
         if (isCancelled?.call() == true) break;
 
@@ -259,20 +257,49 @@ class RuleAccuracyService {
           _db.dailyRecommendation,
         )..where((t) => t.date.equals(date))).get();
 
-        // 針對每個持有天數驗證
-        for (final period in holdingPeriods) {
-          for (final rec in recommendations) {
+        if (recommendations.isEmpty) {
+          onProgress?.call(i + 1, totalDates);
+          continue;
+        }
+
+        final symbols = recommendations.map((r) => r.symbol).toList();
+
+        try {
+          // 批次取得 entry prices 和 reasons（2 次查詢取代 2N 次）
+          final (entryRows, reasonRows) = await (
+            (_db.select(_db.dailyPrice)
+                  ..where((t) => t.date.equals(date) & t.symbol.isIn(symbols)))
+                .get(),
+            (_db.select(_db.dailyReason)
+                  ..where((t) => t.date.equals(date) & t.symbol.isIn(symbols))
+                  ..orderBy([(t) => OrderingTerm.asc(t.rank)]))
+                .get(),
+          ).wait;
+
+          final entryPriceMap = {for (final p in entryRows) p.symbol: p};
+          final primaryRuleMap = <String, String>{};
+          for (final r in reasonRows) {
+            primaryRuleMap.putIfAbsent(r.symbol, () => r.reasonType);
+          }
+
+          // 針對每個持有天數，批次取得 exit prices（每期 1 次查詢）
+          for (final period in holdingPeriods) {
+            final exitDate = TaiwanCalendar.addTradingDays(date, period);
+
+            List<DailyPriceEntry> exitRows;
             try {
-              final result = await _validateSingleRecommendation(
-                rec,
-                date,
-                period,
-              );
-              if (result != null) {
-                validated++;
-              } else {
-                skipped++;
-              }
+              exitRows =
+                  await (_db.select(_db.dailyPrice)
+                        ..where(
+                          (t) =>
+                              t.symbol.isIn(symbols) &
+                              t.date.isBetweenValues(
+                                exitDate.subtract(const Duration(days: 1)),
+                                exitDate.add(const Duration(days: 1)),
+                              ),
+                        )
+                        ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+                      .get();
             } on RateLimitException {
               rethrow;
             } on NetworkException {
@@ -281,19 +308,107 @@ class RuleAccuracyService {
               errors++;
               AppLogger.warning(
                 _tag,
-                '回填驗證 ${rec.symbol} (${_formatDate(date)}, ${period}D) '
+                '回填批次取得 exit prices (${_formatDate(date)}, ${period}D) '
                 '失敗 ($errors/50)',
                 e,
                 stack,
               );
-              // 單筆驗證失敗不中斷整體回填，但累計過多則放棄
               if (errors > 50) {
                 throw Exception(
                   '批次回填累計錯誤超過 50 筆，中止 '
                   '(已處理 ${i + 1}/$totalDates 日期)',
                 );
               }
+              continue;
             }
+
+            final exitPriceMap = <String, DailyPriceEntry>{};
+            for (final p in exitRows) {
+              exitPriceMap.putIfAbsent(p.symbol, () => p);
+            }
+
+            // 從預載資料計算結果，無額外 DB 查詢
+            final pendingInserts = <RecommendationValidationCompanion>[];
+            for (final rec in recommendations) {
+              try {
+                final entryPriceRow = entryPriceMap[rec.symbol];
+                if (entryPriceRow?.close == null) {
+                  skipped++;
+                  continue;
+                }
+                final exitPriceRow = exitPriceMap[rec.symbol];
+                if (exitPriceRow?.close == null) {
+                  skipped++;
+                  continue;
+                }
+
+                final entryPrice = entryPriceRow!.close!;
+                final exitPrice = exitPriceRow!.close!;
+                final returnRate =
+                    ((exitPrice - entryPrice) / entryPrice) * 100;
+                final isSuccess = returnRate > 0;
+                final primaryRule = primaryRuleMap[rec.symbol] ?? 'unknown';
+
+                pendingInserts.add(
+                  RecommendationValidationCompanion.insert(
+                    recommendationDate: date,
+                    symbol: rec.symbol,
+                    primaryRuleId: primaryRule,
+                    entryPrice: entryPrice,
+                    exitPrice: Value(exitPrice),
+                    returnRate: Value(returnRate),
+                    isSuccess: Value(isSuccess),
+                    validationDate: Value(exitPriceRow.date),
+                    holdingDays: Value(period),
+                  ),
+                );
+                validated++;
+              } catch (e, stack) {
+                errors++;
+                AppLogger.warning(
+                  _tag,
+                  '回填驗證 ${rec.symbol} (${_formatDate(date)}, ${period}D) '
+                  '失敗 ($errors/50)',
+                  e,
+                  stack,
+                );
+                if (errors > 50) {
+                  throw Exception(
+                    '批次回填累計錯誤超過 50 筆，中止 '
+                    '(已處理 ${i + 1}/$totalDates 日期)',
+                  );
+                }
+              }
+            }
+
+            // 批次寫入該期間的驗證結果
+            if (pendingInserts.isNotEmpty) {
+              await _db.batch(
+                (batch) => _applyBatchInserts(batch, pendingInserts),
+              );
+            }
+          }
+        } on RateLimitException {
+          rethrow;
+        } on NetworkException {
+          rethrow;
+        } catch (e) {
+          // 非 rate-limit/network 的頂層異常已在內層處理或需傳播
+          if (e is Exception && e.toString().contains('批次回填累計錯誤超過 50 筆')) {
+            rethrow;
+          }
+          // 其他未預期的頂層錯誤
+          errors++;
+          AppLogger.warning(
+            _tag,
+            '回填日期 ${_formatDate(date)} 非預期錯誤 ($errors/50)',
+            e,
+          );
+          if (errors > 50) {
+            throw Exception(
+              '批次回填累計錯誤超過 50 筆，中止 '
+              '(已處理 ${i + 1}/$totalDates 日期)',
+            );
           }
         }
 
@@ -315,107 +430,6 @@ class RuleAccuracyService {
       rethrow;
     } finally {
       _isBackfilling = false;
-    }
-  }
-
-  /// 驗證單一推薦，成功回傳 true，資料不足回傳 null
-  Future<bool?> _validateSingleRecommendation(
-    DailyRecommendationEntry rec,
-    DateTime recommendationDate,
-    int holdingDays,
-  ) async {
-    try {
-      // 取得推薦日收盤價
-      final entryPriceResult =
-          await (_db.select(_db.dailyPrice)..where(
-                (t) =>
-                    t.symbol.equals(rec.symbol) &
-                    t.date.equals(recommendationDate),
-              ))
-              .getSingleOrNull();
-      if (entryPriceResult?.close == null) return null;
-      final entryPrice = entryPriceResult!.close!;
-
-      // 取得 N 個交易日後收盤價（使用交易日計算）
-      final exitDate = TaiwanCalendar.addTradingDays(
-        recommendationDate,
-        holdingDays,
-      );
-      // 允許 ±1 天的誤差以處理邊界情況
-      final exitPriceResult =
-          await (_db.select(_db.dailyPrice)
-                ..where(
-                  (t) =>
-                      t.symbol.equals(rec.symbol) &
-                      t.date.isBetweenValues(
-                        exitDate.subtract(const Duration(days: 1)),
-                        exitDate.add(const Duration(days: 1)),
-                      ),
-                )
-                ..orderBy([(t) => OrderingTerm.desc(t.date)])
-                ..limit(1))
-              .getSingleOrNull();
-      if (exitPriceResult?.close == null) return null;
-      final exitPrice = exitPriceResult!.close!;
-
-      // 計算報酬率
-      final returnRate = ((exitPrice - entryPrice) / entryPrice) * 100;
-      final isSuccess = returnRate > 0;
-
-      // 取得主要觸發規則
-      final reasonResult =
-          await (_db.select(_db.dailyReason)
-                ..where(
-                  (t) =>
-                      t.symbol.equals(rec.symbol) &
-                      t.date.equals(recommendationDate),
-                )
-                ..orderBy([(t) => OrderingTerm.asc(t.rank)])
-                ..limit(1))
-              .getSingleOrNull();
-      final primaryRule = reasonResult?.reasonType ?? 'unknown';
-
-      // 儲存驗證結果（upsert：同日同檔同持有天數覆寫舊結果）
-      await _db
-          .into(_db.recommendationValidation)
-          .insert(
-            RecommendationValidationCompanion.insert(
-              recommendationDate: recommendationDate,
-              symbol: rec.symbol,
-              primaryRuleId: primaryRule,
-              entryPrice: entryPrice,
-              exitPrice: Value(exitPrice),
-              returnRate: Value(returnRate),
-              isSuccess: Value(isSuccess),
-              validationDate: Value(exitPriceResult.date),
-              holdingDays: Value(holdingDays),
-            ),
-            onConflict: DoUpdate(
-              (old) => RecommendationValidationCompanion(
-                primaryRuleId: Value(primaryRule),
-                entryPrice: Value(entryPrice),
-                exitPrice: Value(exitPrice),
-                returnRate: Value(returnRate),
-                isSuccess: Value(isSuccess),
-                validationDate: Value(exitPriceResult.date),
-              ),
-              target: [
-                _db.recommendationValidation.recommendationDate,
-                _db.recommendationValidation.symbol,
-                _db.recommendationValidation.holdingDays,
-              ],
-            ),
-          );
-
-      return isSuccess;
-    } on StateError catch (e) {
-      // 預期的錯誤：查無資料（getSingleOrNull 回傳結構問題等）
-      AppLogger.debug(_tag, '驗證 ${rec.symbol} 資料不足: $e');
-      return null;
-    } catch (e, stack) {
-      // 非預期錯誤：DB 異常、序列化失敗等，應傳播
-      AppLogger.error(_tag, '驗證 ${rec.symbol} 非預期錯誤', e, stack);
-      rethrow;
     }
   }
 

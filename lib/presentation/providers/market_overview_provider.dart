@@ -45,7 +45,13 @@ class MarketOverviewState {
     this.isLoading = false,
     this.error,
     this.dataDate,
+    this.sectionDates = const {},
   });
+
+  // Section key 常數（供 sectionDates 使用）
+  static const kSectionIndex = 'index';
+  static const kSectionInstitutional = 'institutional';
+  static const kSectionMargin = 'margin';
 
   final List<TwseMarketIndex> indices;
 
@@ -99,6 +105,13 @@ class MarketOverviewState {
   /// 資料日期（用於 UI 顯示「資料更新日期」）
   final DateTime? dataDate;
 
+  /// 各區塊實際資料日期
+  ///
+  /// Key: section 常數（[kSectionIndex]、[kSectionInstitutional]、[kSectionMargin]）
+  /// Value: 該區塊資料的實際日期
+  /// 僅在與 [dataDate] 不同時才有意義，UI 可據此顯示差異標示。
+  final Map<String, DateTime> sectionDates;
+
   /// 是否有任何有效資料
   bool get hasData => indices.isNotEmpty || advanceDecline.total > 0;
 
@@ -123,6 +136,7 @@ class MarketOverviewState {
     bool? isLoading,
     Object? error = _sentinel,
     DateTime? dataDate,
+    Map<String, DateTime>? sectionDates,
   }) {
     return MarketOverviewState(
       indices: indices ?? this.indices,
@@ -151,6 +165,7 @@ class MarketOverviewState {
       isLoading: isLoading ?? this.isLoading,
       error: error == _sentinel ? this.error : error as String?,
       dataDate: dataDate ?? this.dataDate,
+      sectionDates: sectionDates ?? this.sectionDates,
     );
   }
 }
@@ -303,8 +318,14 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final advanceDecline = results[1] as AdvanceDecline;
     final rawHistory = results[2] as Map<String, List<double>>;
     final advDecByMarket = results[3] as Map<String, AdvanceDecline>;
-    final instByMarket = results[4] as Map<String, InstitutionalTotals>;
-    final marginByMarket = results[5] as Map<String, MarginTradingTotals>;
+    final instResult =
+        results[4]
+            as ({Map<String, InstitutionalTotals> data, DateTime dataDate});
+    final instByMarket = instResult.data;
+    final marginResult =
+        results[5]
+            as ({Map<String, MarginTradingTotals> data, DateTime? dataDate});
+    final marginByMarket = marginResult.data;
     final turnoverByMarket = results[6] as Map<String, TradingTurnover>;
     final limitUpDownByMarket = results[7] as Map<String, LimitUpDown>;
     final turnoverCompByMarket = results[8] as Map<String, TurnoverComparison>;
@@ -341,6 +362,29 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     // 當 streak 方向與 API 值矛盾時，重置為 ±1（不會顯示 badge，因門檻 ≥ 2）。
     final validatedStreak = _validateStreakConsistency(rawStreak, instByMarket);
 
+    // 建構各區塊實際資料日期（僅在與 dataDate 不同時加入）
+    final sectionDates = <String, DateTime>{};
+
+    // 指數日期：取首個指數的日期
+    if (indices.isNotEmpty) {
+      final indexDate = indices.first.date;
+      if (_isDifferentDay(indexDate, dataDate)) {
+        sectionDates[MarketOverviewState.kSectionIndex] = indexDate;
+      }
+    }
+
+    // 法人日期
+    if (_isDifferentDay(instResult.dataDate, dataDate)) {
+      sectionDates[MarketOverviewState.kSectionInstitutional] =
+          instResult.dataDate;
+    }
+
+    // 融資融券日期
+    final marginDate = marginResult.dataDate;
+    if (marginDate != null && _isDifferentDay(marginDate, dataDate)) {
+      sectionDates[MarketOverviewState.kSectionMargin] = marginDate;
+    }
+
     return MarketOverviewState(
       indices: indices,
       advanceDecline: advanceDecline,
@@ -368,6 +412,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       recommendationPerformance: recPerf,
       chipAnomaliesByMarket: chipAnomalies,
       dataDate: dataDate,
+      sectionDates: sectionDates,
     );
   }
 
@@ -395,6 +440,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       );
     }
     return result;
+  }
+
+  /// 判斷兩個日期是否為不同日（忽略時分秒）
+  static bool _isDifferentDay(DateTime a, DateTime b) {
+    return a.year != b.year || a.month != b.month || a.day != b.day;
   }
 
   /// 若 streak 方向與 API 值矛盾，重置為 ±1（badge 門檻 ≥ 2，不會顯示）
@@ -572,10 +622,14 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 使用 TWSE/TPEX 的法人買賣金額統計 API，直接取得市場總計金額（元）。
   /// TWSE 和 TPEX 獨立呼叫，避免一方失敗拖垮另一方。
   /// 若主要日期的 API 回傳 null，自動用 [fallbackDate] 重試。
-  Future<Map<String, InstitutionalTotals>> _loadInstitutionalByMarket(
-    DateTime date, {
-    DateTime? fallbackDate,
-  }) async {
+  /// 回傳法人買賣超資料 + 實際使用的日期
+  ///
+  /// 若主日期有資料則 [dataDate] 為 [date]，
+  /// 若任一市場回退到 [fallbackDate]，則以 fallbackDate 為代表日期。
+  Future<({Map<String, InstitutionalTotals> data, DateTime dataDate})>
+  _loadInstitutionalByMarket(DateTime date, {DateTime? fallbackDate}) async {
+    var usedFallback = false;
+
     // 平行呼叫 TWSE 和 TPEX API，各自獨立 catch 避免互相拖垮
     final results = await Future.wait([
       () async {
@@ -583,6 +637,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           var data = await _twse.getInstitutionalAmounts(date: date);
           if (data == null && fallbackDate != null) {
             data = await _twse.getInstitutionalAmounts(date: fallbackDate);
+            if (data != null) usedFallback = true;
           }
           return data != null
               ? MapEntry(
@@ -605,6 +660,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           var data = await _tpex.getInstitutionalAmounts(date: date);
           if (data == null && fallbackDate != null) {
             data = await _tpex.getInstitutionalAmounts(date: fallbackDate);
+            if (data != null) usedFallback = true;
           }
           return data != null
               ? MapEntry(
@@ -624,10 +680,13 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       }(),
     ]);
 
-    return {
-      for (final entry in results)
-        if (entry != null) entry.key: entry.value,
-    };
+    return (
+      data: {
+        for (final entry in results)
+          if (entry != null) entry.key: entry.value,
+      },
+      dataDate: usedFallback && fallbackDate != null ? fallbackDate : date,
+    );
   }
 
   /// 載入融資融券（依市場分組）
@@ -635,26 +694,33 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 融資融券資料日期可能與 daily_price 不同步（TPEx 有 T+1 延遲），
   /// 因此直接使用 [getLatestMarginTradingTotalsByMarket] 取得各市場最新資料，
   /// 不依賴 daily_price 的日期。
-  Future<Map<String, MarginTradingTotals>> _loadMarginByMarket(
-    DateTime date, {
-    DateTime? fallbackDate,
-  }) async {
+  /// 回傳融資融券資料 + 實際資料日期（取各市場最早日期作為代表）
+  Future<({Map<String, MarginTradingTotals> data, DateTime? dataDate})>
+  _loadMarginByMarket(DateTime date, {DateTime? fallbackDate}) async {
     try {
       // 直接查詢各市場最新融資融券資料，避免日期不同步問題
-      final data = await _db.getLatestMarginTradingTotalsByMarket();
+      final raw = await _db.getLatestMarginTradingTotalsByMarket();
 
-      return {
-        for (final entry in data.entries)
-          entry.key: MarginTradingTotals(
-            marginBalance: entry.value.marginBalance,
-            marginChange: entry.value.marginChange,
-            shortBalance: entry.value.shortBalance,
-            shortChange: entry.value.shortChange,
-          ),
-      };
+      DateTime? earliestDate;
+      final result = <String, MarginTradingTotals>{};
+      for (final entry in raw.entries) {
+        result[entry.key] = MarginTradingTotals(
+          marginBalance: entry.value.marginBalance,
+          marginChange: entry.value.marginChange,
+          shortBalance: entry.value.shortBalance,
+          shortChange: entry.value.shortChange,
+        );
+        // 取各市場中最早的日期作為代表（保守顯示）
+        final d = entry.value.dataDate;
+        if (d != null && (earliestDate == null || d.isBefore(earliestDate))) {
+          earliestDate = d;
+        }
+      }
+
+      return (data: result, dataDate: earliestDate);
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入分市場融資融券總額失敗', e);
-      return {};
+      return (data: <String, MarginTradingTotals>{}, dataDate: null);
     }
   }
 

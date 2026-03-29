@@ -83,6 +83,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
         double marginChange,
         double shortBalance,
         double shortChange,
+        DateTime? dataDate,
       })
     >
   >
@@ -90,6 +91,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     const query = '''
     SELECT
       sm.market,
+      latest.max_date as data_date,
       COALESCE(SUM(mt.margin_balance), 0) as margin_balance,
       COALESCE(SUM(mt.margin_buy - mt.margin_sell), 0) as margin_change,
       COALESCE(SUM(mt.short_balance), 0) as short_balance,
@@ -118,17 +120,23 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
             double marginChange,
             double shortBalance,
             double shortChange,
+            DateTime? dataDate,
           })
         >{};
     for (final row in results) {
       final market = row.readNullable<String>('market');
       if (market == null) continue;
 
+      // max_date 存為 ISO-8601 字串（Drift store_date_time_values_as_text）
+      final dateStr = row.readNullable<String>('data_date');
+      final dataDate = dateStr != null ? DateTime.tryParse(dateStr) : null;
+
       byMarket[market] = (
         marginBalance: row.readNullable<double>('margin_balance') ?? 0,
         marginChange: row.readNullable<double>('margin_change') ?? 0,
         shortBalance: row.readNullable<double>('short_balance') ?? 0,
         shortChange: row.readNullable<double>('short_change') ?? 0,
+        dataDate: dataDate,
       );
     }
 
