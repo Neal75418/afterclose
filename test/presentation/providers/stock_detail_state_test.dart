@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 
 void main() {

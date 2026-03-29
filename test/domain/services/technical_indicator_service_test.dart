@@ -276,7 +276,7 @@ void main() {
       final lastD = result.d.whereType<double>().last;
       expect(lastD, isNotNull);
       // D 不會與 K 完全相同（除非 K 恆定）
-      expect((lastK! - lastD!).abs(), greaterThan(0));
+      expect((lastK - lastD).abs(), greaterThan(0));
     });
 
     test('returns empty on length mismatch', () {

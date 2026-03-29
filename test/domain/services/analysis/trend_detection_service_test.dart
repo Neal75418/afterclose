@@ -1,6 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/services/analysis/trend_detection_service.dart';
-import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../helpers/price_data_generators.dart';

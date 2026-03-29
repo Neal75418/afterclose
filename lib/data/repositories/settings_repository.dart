@@ -10,16 +10,11 @@ class _SecureKeys {
   static const finmindToken = 'finmind_api_token';
 }
 
-/// SharedPreferences 舊版遺留 key（僅用於 clearFinMindToken 清除遺留資料）
-class _FallbackKeys {
-  static const finmindToken = 'finmind_token_fallback';
-}
-
 /// 應用程式設定 Repository（包含 Token 管理）
 ///
-/// Token 優先使用 [FlutterSecureStorage] 加密儲存
+/// Token 優先使用 [FlutterSecureStorage] 加密儲存。
 /// 若平台不支援（如 macOS debug build 無 Keychain 權限），
-/// 自動降級為 SharedPreferences（可跨重啟持久化，但未加密）
+/// 降級為記憶體暫存（app 重啟後需重新輸入，不寫入未加密儲存）。
 /// 其他設定使用 SQLite 資料庫
 class SettingsRepository implements ISettingsRepository {
   SettingsRepository({required AppDatabase database, SharedPreferences? prefs})
@@ -31,6 +26,12 @@ class SettingsRepository implements ISettingsRepository {
 
   /// 標記 Secure Storage 是否可用
   bool? _secureStorageAvailable;
+
+  /// 記憶體暫存 Token（Secure Storage 不可用時的 fallback）
+  ///
+  /// 安全取捨：app 重啟後 token 遺失，但不會寫入未加密的 SharedPreferences。
+  /// 僅影響 macOS debug build（無 Keychain 權限）的開發體驗。
+  String? _inMemoryToken;
 
   /// Secure Storage 實例（用於敏感資料如 API Token）
   ///
@@ -80,15 +81,25 @@ class SettingsRepository implements ISettingsRepository {
       } catch (e, stack) {
         AppLogger.warning(
           'SettingsRepo',
-          'SecureStorage 讀取 Token 失敗，改用 SharedPreferences',
+          'SecureStorage 讀取失敗，使用記憶體暫存',
           e,
           stack,
         );
       }
     }
-    // Fallback: 從 SharedPreferences 讀取（可跨重啟持久化）
-    final prefs = await _sharedPrefs;
-    return prefs.getString(_FallbackKeys.finmindToken);
+    // Fallback: 記憶體暫存（app 重啟後遺失）
+    // 同時嘗試遷移 SharedPreferences 遺留 token
+    if (_inMemoryToken == null) {
+      final prefs = await _sharedPrefs;
+      final legacyToken = prefs.getString('finmind_token_fallback');
+      if (legacyToken != null) {
+        _inMemoryToken = legacyToken;
+        // 清除遺留的未加密 token
+        await prefs.remove('finmind_token_fallback');
+        AppLogger.info('SettingsRepo', '已遷移遺留 token 至記憶體暫存');
+      }
+    }
+    return _inMemoryToken;
   }
 
   /// 儲存 FinMind Token
@@ -101,32 +112,29 @@ class SettingsRepository implements ISettingsRepository {
       } catch (e, stack) {
         AppLogger.warning(
           'SettingsRepo',
-          'SecureStorage 寫入 Token 失敗，改用 SharedPreferences',
+          'SecureStorage 寫入失敗，使用記憶體暫存',
           e,
           stack,
         );
       }
     }
-    // Fallback: 存入 SharedPreferences（可跨重啟持久化，但未加密）
-    final prefs = await _sharedPrefs;
-    await prefs.setString(_FallbackKeys.finmindToken, token);
-    AppLogger.warning(
-      'SettingsRepo',
-      'Token 已存入 SharedPreferences (非加密 fallback)',
-    );
+    // Fallback: 記憶體暫存（安全但不持久，app 重啟後需重新輸入）
+    _inMemoryToken = token;
+    AppLogger.warning('SettingsRepo', 'Token 已存入記憶體暫存（重啟後遺失）');
   }
 
-  /// 清除 FinMind Token
+  /// 清除 FinMind Token（所有儲存位置）
   @override
   Future<void> clearFinMindToken() async {
-    // 清除所有儲存位置（SecureStorage + SharedPreferences fallback）
+    _inMemoryToken = null;
     try {
       await _secureStorage.delete(key: _SecureKeys.finmindToken);
     } catch (e) {
       AppLogger.debug('SettingsRepo', '清除 SecureStorage Token 失敗: $e');
     }
+    // 清除可能存在的遺留 SharedPreferences token
     final prefs = await _sharedPrefs;
-    await prefs.remove(_FallbackKeys.finmindToken);
+    await prefs.remove('finmind_token_fallback');
   }
 
   /// 檢查是否已設定 Token

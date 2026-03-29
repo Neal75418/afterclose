@@ -11,7 +11,7 @@ class _FakeClock implements AppClock {
 
 void main() {
   final service = DividendIntelligenceService(clock: _FakeClock());
-  final currentYear = 2025;
+  const currentYear = 2025;
 
   // ==========================================
   // analyzeDividends

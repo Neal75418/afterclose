@@ -604,6 +604,7 @@ class EPSDeclineWarningRule extends StockRule {
         description: description,
         evidence: {
           'declineQuarters': declineCount,
+          // ignore: use_null_aware_elements
           if (avgDecline != null) 'avgDecline': avgDecline,
           'latestEps': eps[0].value,
         },
