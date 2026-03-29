@@ -6,7 +6,7 @@ class PriceLimit {
   PriceLimit._();
 
   /// 漲跌幅限制百分比
-  static const double limitPercent = 10.0;
+  static const double _limitPercent = 10.0;
 
   /// 判斷為漲/跌停的容差（考慮 tick 級距捨入誤差）
   static const double _tolerance = 0.15;
@@ -16,7 +16,7 @@ class PriceLimit {
   /// [changePercent] 漲跌幅百分比（正數為漲）
   static bool isLimitUp(double? changePercent) {
     if (changePercent == null) return false;
-    return changePercent >= limitPercent - _tolerance;
+    return changePercent >= _limitPercent - _tolerance;
   }
 
   /// 判斷是否觸及跌停
@@ -24,6 +24,6 @@ class PriceLimit {
   /// [changePercent] 漲跌幅百分比（負數為跌）
   static bool isLimitDown(double? changePercent) {
     if (changePercent == null) return false;
-    return changePercent <= -(limitPercent - _tolerance);
+    return changePercent <= -(_limitPercent - _tolerance);
   }
 }

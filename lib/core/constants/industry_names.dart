@@ -3,7 +3,7 @@
 /// TPEx 同一產業可能以不同名稱出現（如「其他電子業」vs「其他電子類」）。
 /// 此表將不同變體統一為 canonical 名稱，供 sync 寫入 DB 和查詢時合併使用。
 abstract final class IndustryNames {
-  static const normalizationMap = <String, String>{
+  static const _normalizationMap = <String, String>{
     '其他電子業': '其他電子類',
     '居家生活': '居家生活類',
     '數位雲端': '數位雲端類',
@@ -15,5 +15,5 @@ abstract final class IndustryNames {
   };
 
   /// 正規化產業名稱，若不在對照表中則原值回傳
-  static String normalize(String raw) => normalizationMap[raw] ?? raw;
+  static String normalize(String raw) => _normalizationMap[raw] ?? raw;
 }

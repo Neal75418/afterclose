@@ -23,28 +23,6 @@ abstract final class AlertParams {
   /// KD 計算需要至少 9 個交易日（K 值週期）+ 2 個額外資料點（D 值平滑）。
   static const int kdMinDataPoints = 11;
 
-  /// KD 指標 - K 值計算期數
-  ///
-  /// %K 使用過去 N 個交易日的高低價範圍計算。
-  static const int kdKPeriod = 9;
-
-  /// KD 指標 - D 值計算期數
-  ///
-  /// %D 是 %K 的 N 日簡單移動平均。
-  static const int kdDPeriod = 3;
-
-  /// 均線交叉 - 檢測視窗（最近 N 天內）
-  ///
-  /// 檢查最近 N 天內是否發生過均線交叉（而非只檢查當下是否正在交叉）。
-  /// 使用 2 天視窗避免錯過前一日的交叉訊號。
-  static const int maCrossoverDetectionWindow = 2;
-
-  /// KD 交叉 - 檢測視窗（最近 N 天內）
-  ///
-  /// 檢查最近 N 天內是否發生過 KD 交叉（而非只檢查當下是否正在交叉）。
-  /// 使用 2 天視窗避免錯過前一日的交叉訊號。
-  static const int kdCrossoverDetectionWindow = 2;
-
   /// 指標資料查詢天數（RSI/KD 計算所需）
   ///
   /// 需足夠涵蓋 30 個交易日的指標計算資料（RSI 14 期 + KD 9 期 + 緩衝）。

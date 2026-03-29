@@ -12,17 +12,17 @@ abstract final class StockPatterns {
   /// - 6 位數權證（如 030001）
   /// - TDR（如 911608、912000）
   /// - 其他非標準代碼
-  static final validCode = RegExp(r'^(\d{4}|00\d{3,4})$');
+  static final _validCode = RegExp(r'^(\d{4}|00\d{3,4})$');
 
   /// 上櫃股票代碼模式
   ///
   /// 上櫃市場僅有 4 位數字的股票，不包含 00xxx ETF。
   /// 00xxx ETF 皆在上市市場（TWSE）交易。
-  static final tpexCode = RegExp(r'^\d{4}$');
+  static final _tpexCode = RegExp(r'^\d{4}$');
 
   /// 檢查是否為有效股票代碼
-  static bool isValidCode(String code) => validCode.hasMatch(code);
+  static bool isValidCode(String code) => _validCode.hasMatch(code);
 
   /// 檢查是否為上櫃股票代碼
-  static bool isTpexCode(String code) => tpexCode.hasMatch(code);
+  static bool isTpexCode(String code) => _tpexCode.hasMatch(code);
 }
