@@ -460,25 +460,11 @@ class ScoringService {
     Map<String, WarningDataContext>? warningMap,
     Map<String, InsiderDataContext>? insiderMap,
   }) {
-    final dayTradingRatio = dayTradingMap?[symbol];
-    final shareholding = shareholdingMap?[symbol];
-    final warning = warningMap?[symbol];
-    final insider = insiderMap?[symbol];
-
-    if (dayTradingRatio == null &&
-        shareholding == null &&
-        warning == null &&
-        insider == null) {
-      return null;
-    }
-
-    return MarketDataContext(
-      dayTradingRatio: dayTradingRatio,
-      foreignSharesRatio: shareholding?.foreignSharesRatio,
-      foreignSharesRatioChange: shareholding?.foreignSharesRatioChange,
-      concentrationRatio: shareholding?.concentrationRatio,
-      warningData: warning,
-      insiderData: insider,
+    return MarketDataContext.fromComponents(
+      dayTradingRatio: dayTradingMap?[symbol],
+      shareholding: shareholdingMap?[symbol],
+      warning: warningMap?[symbol],
+      insider: insiderMap?[symbol],
     );
   }
 }

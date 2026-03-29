@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -106,7 +107,7 @@ class TpexPriceSource {
           return StockMasterCompanion.insert(
             symbol: price.code,
             name: price.name,
-            market: 'TPEx',
+            market: MarketCode.tpex,
             isActive: const Value(true),
           );
         })

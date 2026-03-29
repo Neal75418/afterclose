@@ -2,6 +2,34 @@
 ///
 /// Used by: user_dao.dart (Alert checking methods)
 abstract final class AlertParams {
+  // --------------------------------------------------
+  // 警示類型字串常數
+  // 與 presentation/providers/price_alert_provider.dart 的 AlertType.value 同步
+  // --------------------------------------------------
+  static const String typeAbove = 'ABOVE';
+  static const String typeBelow = 'BELOW';
+  static const String typeChangePct = 'CHANGE_PCT';
+  static const String typeVolumeSpike = 'VOLUME_SPIKE';
+  static const String typeVolumeAbove = 'VOLUME_ABOVE';
+  static const String typeWeek52High = 'WEEK_52_HIGH';
+  static const String typeWeek52Low = 'WEEK_52_LOW';
+  static const String typeRsiOverbought = 'RSI_OVERBOUGHT';
+  static const String typeRsiOversold = 'RSI_OVERSOLD';
+  static const String typeKdGoldenCross = 'KD_GOLDEN_CROSS';
+  static const String typeKdDeathCross = 'KD_DEATH_CROSS';
+  static const String typeCrossAboveMa = 'CROSS_ABOVE_MA';
+  static const String typeCrossBelowMa = 'CROSS_BELOW_MA';
+  static const String typeTradingWarning = 'TRADING_WARNING';
+  static const String typeTradingDisposal = 'TRADING_DISPOSAL';
+  static const String typeBreakResistance = 'BREAK_RESISTANCE';
+  static const String typeBreakSupport = 'BREAK_SUPPORT';
+  static const String typeRevenueYoySurge = 'REVENUE_YOY_SURGE';
+  static const String typeHighDividendYield = 'HIGH_DIVIDEND_YIELD';
+  static const String typePeUndervalued = 'PE_UNDERVALUED';
+  static const String typeInsiderSelling = 'INSIDER_SELLING';
+  static const String typeInsiderBuying = 'INSIDER_BUYING';
+  static const String typeHighPledgeRatio = 'HIGH_PLEDGE_RATIO';
+
   /// 成交量警示 - 資料查詢天數（確保有 20 個交易日）
   ///
   /// 需足夠涵蓋 20 個交易日的成交量資料。

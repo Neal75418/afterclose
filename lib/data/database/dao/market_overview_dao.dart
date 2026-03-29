@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 
@@ -61,8 +62,8 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
   ) async {
     final byMarket = await getAdvanceDeclineCountsByMarket(date);
 
-    final twse = byMarket['TWSE'];
-    final tpex = byMarket['TPEx'];
+    final twse = byMarket[MarketCode.twse];
+    final tpex = byMarket[MarketCode.tpex];
     return (
       advance: (twse?.advance ?? 0) + (tpex?.advance ?? 0),
       decline: (twse?.decline ?? 0) + (tpex?.decline ?? 0),

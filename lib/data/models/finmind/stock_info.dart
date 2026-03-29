@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/utils/json_parsers.dart';
 
 /// FinMind 股票資訊
@@ -36,5 +37,6 @@ class FinMindStockInfo {
   final String type; // "twse" 或 "tpex"
 
   /// 將 type 轉換為市場列舉字串
-  String get market => type.toLowerCase() == 'twse' ? 'TWSE' : 'TPEx';
+  String get market =>
+      type.toLowerCase() == 'twse' ? MarketCode.twse : MarketCode.tpex;
 }

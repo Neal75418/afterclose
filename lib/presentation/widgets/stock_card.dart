@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
@@ -325,7 +326,7 @@ class _StockCardState extends State<StockCard> {
   }
 
   Widget _buildStockName(ThemeData theme) {
-    final marketLabel = widget.market == 'TPEx' ? '櫃' : null;
+    final marketLabel = widget.market == MarketCode.tpex ? '櫃' : null;
     final isLimitUp =
         widget.showLimitMarkers && PriceLimit.isLimitUp(widget.priceChange);
     final isLimitDown =

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
@@ -498,7 +499,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
   /// 確保對應 section 水平對齊，避免左右高度差異導致後續 section 錯位。
   Widget _buildParallelView(ThemeData theme) {
     final subIndicesWidget = _buildSharedSubIndices();
-    final sentiment = _computeSentiment('TWSE');
+    final sentiment = _computeSentiment(MarketCode.twse);
 
     // 每個 section builder 返回 Widget?，null 表示該市場無此資料
     final sectionBuilders = <Widget? Function(String)>[
@@ -514,8 +515,8 @@ class _MarketDashboardState extends State<MarketDashboard> {
     // 產生配對的 section rows（跳過兩側皆無資料的 section）
     final pairedRows = <Widget>[];
     for (final builder in sectionBuilders) {
-      final twse = builder('TWSE');
-      final tpex = builder('TPEx');
+      final twse = builder(MarketCode.twse);
+      final tpex = builder(MarketCode.tpex);
       if (twse == null && tpex == null) continue;
       pairedRows.add(_buildPairedRow(theme, twse, tpex));
     }
@@ -557,7 +558,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           const SizedBox(height: DesignTokens.spacing6),
           SentimentGaugeSection(
             sentiment: sentiment,
-            sentimentHistory: _computeSentimentHistory('TWSE'),
+            sentimentHistory: _computeSentimentHistory(MarketCode.twse),
           ),
           const SizedBox(height: DesignTokens.spacing14),
           Divider(
@@ -569,7 +570,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
         // 共用：智慧摘要
         ...() {
-          final insights = _computeInsights('TWSE', sentiment);
+          final insights = _computeInsights(MarketCode.twse, sentiment);
           if (insights.isEmpty) return <Widget>[];
           return <Widget>[
             KeyInsightsRow(insights: insights),
@@ -585,8 +586,8 @@ class _MarketDashboardState extends State<MarketDashboard> {
         // 標題 + Hero 指數配對
         _buildPairedRow(
           theme,
-          _buildMarketHeader(theme, 'TWSE'),
-          _buildMarketHeader(theme, 'TPEx'),
+          _buildMarketHeader(theme, MarketCode.twse),
+          _buildMarketHeader(theme, MarketCode.tpex),
         ),
 
         // 資料 section 配對（每對等高對齊）
@@ -660,7 +661,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
   /// 建構市場標題 + Hero 指數
   Widget _buildMarketHeader(ThemeData theme, String market) {
-    final heroName = market == 'TWSE'
+    final heroName = market == MarketCode.twse
         ? MarketIndexNames.taiex
         : MarketIndexNames.tpexIndex;
     final heroIdx = widget.state.indices
@@ -669,7 +670,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
     // TPEx 側保留與 TWSE badge 等高的空間
     final shouldReserveBadge =
-        market == 'TPEx' &&
+        market == MarketCode.tpex &&
         (widget.state.indexHistory[MarketIndexNames.taiex]?.length ?? 0) >= 2 &&
         (widget.state.indexHistory[MarketIndexNames.totalReturnIndex]?.length ??
                 0) >=
@@ -679,7 +680,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          market == 'TWSE'
+          market == MarketCode.twse
               ? 'marketOverview.twse'.tr()
               : 'marketOverview.tpex'.tr(),
           style: theme.textTheme.titleSmall?.copyWith(
@@ -693,7 +694,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           HeroIndexSection(
             index: heroIdx.first,
             historyData: widget.state.indexHistory[heroName] ?? [],
-            totalReturnHistory: market == 'TWSE'
+            totalReturnHistory: market == MarketCode.twse
                 ? widget.state.indexHistory[MarketIndexNames
                           .totalReturnIndex] ??
                       []

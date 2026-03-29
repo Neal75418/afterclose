@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
@@ -585,7 +586,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           }
           return data != null
               ? MapEntry(
-                  'TWSE',
+                  MarketCode.twse,
                   InstitutionalTotals(
                     foreignNet: data.foreignNet,
                     trustNet: data.trustNet,
@@ -607,7 +608,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           }
           return data != null
               ? MapEntry(
-                  'TPEx',
+                  MarketCode.tpex,
                   InstitutionalTotals(
                     foreignNet: data.foreignNet,
                     trustNet: data.trustNet,
@@ -987,7 +988,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     try {
       final result = <String, List<IndustrySummary>>{};
 
-      for (final market in ['TWSE', 'TPEx']) {
+      for (final market in [MarketCode.twse, MarketCode.tpex]) {
         var data = await _db.getIndustrySummaryByMarket(date, market);
 
         if (data.isEmpty && fallbackDate != null) {

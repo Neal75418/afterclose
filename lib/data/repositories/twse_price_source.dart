@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -132,7 +133,7 @@ class TwsePriceSource {
           return StockMasterCompanion.insert(
             symbol: price.code,
             name: price.name,
-            market: 'TWSE',
+            market: MarketCode.twse,
             isActive: const Value(true),
           );
         })

@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:afterclose/core/constants/transaction_types.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
@@ -51,9 +52,9 @@ class PortfolioAnalyticsService {
     double totalHistoricalBuyCost = 0;
     double totalSellProceeds = 0;
     for (final tx in transactions) {
-      if (tx.txType == 'BUY') {
+      if (tx.txType == TransactionTypes.buy) {
         totalHistoricalBuyCost += tx.quantity * tx.price + tx.fee;
-      } else if (tx.txType == 'SELL') {
+      } else if (tx.txType == TransactionTypes.sell) {
         totalSellProceeds += tx.quantity * tx.price - tx.fee - tx.tax;
       }
     }
@@ -130,9 +131,9 @@ class PortfolioAnalyticsService {
     double totalBuyCost = 0;
     double totalSellProceeds = 0;
     for (final tx in sortedTx) {
-      if (tx.txType == 'BUY') {
+      if (tx.txType == TransactionTypes.buy) {
         totalBuyCost += tx.quantity * tx.price + tx.fee;
-      } else if (tx.txType == 'SELL') {
+      } else if (tx.txType == TransactionTypes.sell) {
         totalSellProceeds += tx.quantity * tx.price - tx.fee - tx.tax;
       }
     }

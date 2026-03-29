@@ -523,25 +523,11 @@ MarketDataContext? _buildMarketDataContext(
   ScoringIsolateInput input,
   String symbol,
 ) {
-  final dayTradingRatio = input.dayTradingMap?[symbol];
-  final shareholding = input.shareholdingMap?[symbol];
-  final warning = input.warningMap?[symbol];
-  final insider = input.insiderMap?[symbol];
-
-  if (dayTradingRatio == null &&
-      shareholding == null &&
-      warning == null &&
-      insider == null) {
-    return null;
-  }
-
-  return MarketDataContext(
-    dayTradingRatio: dayTradingRatio,
-    foreignSharesRatio: shareholding?.foreignSharesRatio,
-    foreignSharesRatioChange: shareholding?.foreignSharesRatioChange,
-    concentrationRatio: shareholding?.concentrationRatio,
-    warningData: warning,
-    insiderData: insider,
+  return MarketDataContext.fromComponents(
+    dayTradingRatio: input.dayTradingMap?[symbol],
+    shareholding: input.shareholdingMap?[symbol],
+    warning: input.warningMap?[symbol],
+    insider: input.insiderMap?[symbol],
   );
 }
 

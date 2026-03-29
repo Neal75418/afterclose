@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/chip_scoring_params.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -63,7 +64,10 @@ class ChipAnomalyService {
   Future<Map<String, List<ChipAnomaly>>> detectAnomaliesByMarket(
     DateTime date,
   ) async {
-    final result = <String, List<ChipAnomaly>>{'TWSE': [], 'TPEx': []};
+    final result = <String, List<ChipAnomaly>>{
+      MarketCode.twse: [],
+      MarketCode.tpex: [],
+    };
 
     try {
       final anomalies = await Future.wait([

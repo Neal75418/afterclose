@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -173,7 +174,7 @@ class StockDetailHeader extends StatelessWidget {
             ),
           ),
         ),
-        if (data.stockMarket == 'TPEx') ...[
+        if (data.stockMarket == MarketCode.tpex) ...[
           const SizedBox(width: DesignTokens.spacing8),
           Container(
             padding: const EdgeInsets.symmetric(

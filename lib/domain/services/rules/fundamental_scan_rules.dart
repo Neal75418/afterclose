@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/fundamental_technical_filter.dart';
@@ -8,6 +9,14 @@ import 'package:afterclose/domain/services/technical_indicator_service.dart';
 // ==================================================
 // 第 6 階段：基本面分析規則
 // ==================================================
+
+/// 檢查估值資料是否已過時（超過 [FundamentalParams.valuationMaxStaleDays] 天）
+bool _isValuationStale(StockValuationEntry valuation, AnalysisContext context) {
+  final dataAge = (context.evaluationTime ?? DateTime.now())
+      .difference(valuation.date)
+      .inDays;
+  return dataAge > FundamentalParams.valuationMaxStaleDays;
+}
 
 /// 規則：營收年增暴增
 ///
@@ -203,10 +212,10 @@ class HighDividendYieldRule extends StockRule {
 
     // 資料新鮮度檢查：確保估值資料在有效期限內
     // TWSE 並非每日更新所有股票，過時資料可能導致誤判
-    final dataAge = (context.evaluationTime ?? DateTime.now())
-        .difference(valuation.date)
-        .inDays;
-    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
+    if (_isValuationStale(valuation, context)) {
+      final dataAge = (context.evaluationTime ?? DateTime.now())
+          .difference(valuation.date)
+          .inDays;
       AppLogger.debug(
         'HighYieldRule',
         '${data.symbol}: 資料過時 ($dataAge 天)，跳過評估',
@@ -262,12 +271,7 @@ class PEUndervaluedRule extends StockRule with FundamentalTechnicalFilter {
     if (valuation == null) return null;
 
     // 資料新鮮度檢查
-    final dataAge = (context.evaluationTime ?? DateTime.now())
-        .difference(valuation.date)
-        .inDays;
-    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
-      return null;
-    }
+    if (_isValuationStale(valuation, context)) return null;
 
     final pe = valuation.per ?? 0;
     if (pe <= 0 || pe > FundamentalParams.peUndervaluedThreshold) return null;
@@ -302,12 +306,7 @@ class PEOvervaluedRule extends StockRule {
     if (valuation == null) return null;
 
     // 資料新鮮度檢查
-    final dataAge = (context.evaluationTime ?? DateTime.now())
-        .difference(valuation.date)
-        .inDays;
-    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
-      return null;
-    }
+    if (_isValuationStale(valuation, context)) return null;
 
     final pe = valuation.per ?? 0;
 
@@ -344,12 +343,7 @@ class PBRUndervaluedRule extends StockRule {
     if (valuation == null) return null;
 
     // 資料新鮮度檢查
-    final dataAge = (context.evaluationTime ?? DateTime.now())
-        .difference(valuation.date)
-        .inDays;
-    if (dataAge > FundamentalParams.valuationMaxStaleDays) {
-      return null;
-    }
+    if (_isValuationStale(valuation, context)) return null;
 
     final pbr = valuation.pbr ?? 0;
 

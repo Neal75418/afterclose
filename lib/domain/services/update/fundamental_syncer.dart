@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -77,7 +78,7 @@ class FundamentalSyncer {
     required DateTime date,
   }) async {
     final watchlist = await _db.getWatchlist();
-    final otcStocks = await _db.getStocksByMarket('TPEx');
+    final otcStocks = await _db.getStocksByMarket(MarketCode.tpex);
     final otcSymbolSet = otcStocks.map((s) => s.symbol).toSet();
 
     final otcWatchlistSymbols = watchlist
@@ -142,7 +143,7 @@ class FundamentalSyncer {
     }
 
     // 取得上櫃股票清單
-    final otcStocks = await _db.getStocksByMarket('TPEx');
+    final otcStocks = await _db.getStocksByMarket(MarketCode.tpex);
     final otcSymbols = otcStocks.map((s) => s.symbol).toSet();
 
     // 篩選出候選清單中的上櫃股票

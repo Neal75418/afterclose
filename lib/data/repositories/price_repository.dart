@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -166,7 +167,7 @@ class PriceRepository implements IPriceRepository {
 
       // 檢查股票市場（上市或上櫃）
       final stock = await _db.getStock(symbol);
-      final isOtc = stock?.market == 'TPEx';
+      final isOtc = stock?.market == MarketCode.tpex;
 
       // 委託給對應的市場資料來源
       final entries = isOtc

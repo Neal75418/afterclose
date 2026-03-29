@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -230,7 +231,7 @@ class TradingRepository implements ITradingRepository {
       if (!force) {
         final existingCount = await _db.getDayTradingCountForDateAndMarket(
           targetDate,
-          'TPEx',
+          MarketCode.tpex,
         );
         if (existingCount > DataFreshness.tpexBatchThreshold) {
           return 0;

@@ -60,31 +60,33 @@ class AlertEvaluationService {
   final SupportResistanceService _srService;
 
   /// evaluator switch 中有實作的警示類型字串
+  ///
+  /// 使用 [AlertParams] 常數，與 presentation 層 AlertType.value 保持同步
   static const _implementedTypes = {
-    'ABOVE',
-    'BELOW',
-    'CHANGE_PCT',
-    'VOLUME_SPIKE',
-    'VOLUME_ABOVE',
-    'WEEK_52_HIGH',
-    'WEEK_52_LOW',
-    'RSI_OVERBOUGHT',
-    'RSI_OVERSOLD',
-    'KD_GOLDEN_CROSS',
-    'KD_DEATH_CROSS',
-    'CROSS_ABOVE_MA',
-    'CROSS_BELOW_MA',
-    'TRADING_WARNING',
-    'TRADING_DISPOSAL',
+    AlertParams.typeAbove,
+    AlertParams.typeBelow,
+    AlertParams.typeChangePct,
+    AlertParams.typeVolumeSpike,
+    AlertParams.typeVolumeAbove,
+    AlertParams.typeWeek52High,
+    AlertParams.typeWeek52Low,
+    AlertParams.typeRsiOverbought,
+    AlertParams.typeRsiOversold,
+    AlertParams.typeKdGoldenCross,
+    AlertParams.typeKdDeathCross,
+    AlertParams.typeCrossAboveMa,
+    AlertParams.typeCrossBelowMa,
+    AlertParams.typeTradingWarning,
+    AlertParams.typeTradingDisposal,
     // Phase 3: 進階警示類型
-    'BREAK_RESISTANCE',
-    'BREAK_SUPPORT',
-    'REVENUE_YOY_SURGE',
-    'HIGH_DIVIDEND_YIELD',
-    'PE_UNDERVALUED',
-    'INSIDER_SELLING',
-    'INSIDER_BUYING',
-    'HIGH_PLEDGE_RATIO',
+    AlertParams.typeBreakResistance,
+    AlertParams.typeBreakSupport,
+    AlertParams.typeRevenueYoySurge,
+    AlertParams.typeHighDividendYield,
+    AlertParams.typePeUndervalued,
+    AlertParams.typeInsiderSelling,
+    AlertParams.typeInsiderBuying,
+    AlertParams.typeHighPledgeRatio,
   };
 
   /// 根據當前市場資料評估所有啟用中的警示
@@ -117,15 +119,15 @@ class AlertEvaluationService {
       bool shouldTrigger = false;
 
       switch (alert.alertType) {
-        case 'ABOVE':
+        case AlertParams.typeAbove:
           shouldTrigger = currentPrice >= alert.targetValue;
-        case 'BELOW':
+        case AlertParams.typeBelow:
           shouldTrigger = currentPrice <= alert.targetValue;
-        case 'CHANGE_PCT':
+        case AlertParams.typeChangePct:
           if (priceChange != null) {
             shouldTrigger = priceChange.abs() >= alert.targetValue;
           }
-        case 'VOLUME_SPIKE':
+        case AlertParams.typeVolumeSpike:
           final volumeData = context.volumeDataMap[alert.symbol];
           if (volumeData != null && volumeData.isNotEmpty) {
             shouldTrigger = _checkVolumeSpike(
@@ -134,7 +136,7 @@ class AlertEvaluationService {
               priceChange,
             );
           }
-        case 'VOLUME_ABOVE':
+        case AlertParams.typeVolumeAbove:
           final volumeData = context.volumeDataMap[alert.symbol];
           if (volumeData != null && volumeData.isNotEmpty) {
             shouldTrigger = _checkVolumeAbove(
@@ -142,17 +144,17 @@ class AlertEvaluationService {
               alert.targetValue,
             );
           }
-        case 'WEEK_52_HIGH':
+        case AlertParams.typeWeek52High:
           final priceHistory = context.priceHistoryMap[alert.symbol];
           if (priceHistory != null && priceHistory.isNotEmpty) {
             shouldTrigger = _checkWeek52High(priceHistory, currentPrice);
           }
-        case 'WEEK_52_LOW':
+        case AlertParams.typeWeek52Low:
           final priceHistory = context.priceHistoryMap[alert.symbol];
           if (priceHistory != null && priceHistory.isNotEmpty) {
             shouldTrigger = _checkWeek52Low(priceHistory, currentPrice);
           }
-        case 'RSI_OVERBOUGHT':
+        case AlertParams.typeRsiOverbought:
           final indicatorData = context.indicatorDataMap[alert.symbol];
           if (indicatorData != null && indicatorData.isNotEmpty) {
             shouldTrigger = _checkRsiOverbought(
@@ -160,22 +162,22 @@ class AlertEvaluationService {
               alert.targetValue,
             );
           }
-        case 'RSI_OVERSOLD':
+        case AlertParams.typeRsiOversold:
           final indicatorData = context.indicatorDataMap[alert.symbol];
           if (indicatorData != null && indicatorData.isNotEmpty) {
             shouldTrigger = _checkRsiOversold(indicatorData, alert.targetValue);
           }
-        case 'KD_GOLDEN_CROSS':
+        case AlertParams.typeKdGoldenCross:
           final indicatorData = context.indicatorDataMap[alert.symbol];
           if (indicatorData != null && indicatorData.isNotEmpty) {
             shouldTrigger = _checkKdGoldenCross(indicatorData);
           }
-        case 'KD_DEATH_CROSS':
+        case AlertParams.typeKdDeathCross:
           final indicatorData = context.indicatorDataMap[alert.symbol];
           if (indicatorData != null && indicatorData.isNotEmpty) {
             shouldTrigger = _checkKdDeathCross(indicatorData);
           }
-        case 'CROSS_ABOVE_MA':
+        case AlertParams.typeCrossAboveMa:
           final indicatorData = context.indicatorDataMap[alert.symbol];
           if (indicatorData != null && indicatorData.isNotEmpty) {
             shouldTrigger = _checkCrossAboveMa(
@@ -183,7 +185,7 @@ class AlertEvaluationService {
               alert.targetValue.toInt(),
             );
           }
-        case 'CROSS_BELOW_MA':
+        case AlertParams.typeCrossBelowMa:
           final indicatorData = context.indicatorDataMap[alert.symbol];
           if (indicatorData != null && indicatorData.isNotEmpty) {
             shouldTrigger = _checkCrossBelowMa(
@@ -191,13 +193,13 @@ class AlertEvaluationService {
               alert.targetValue.toInt(),
             );
           }
-        case 'TRADING_WARNING':
+        case AlertParams.typeTradingWarning:
           shouldTrigger = context.warningSymbols.contains(alert.symbol);
-        case 'TRADING_DISPOSAL':
+        case AlertParams.typeTradingDisposal:
           shouldTrigger = context.disposalSymbols.contains(alert.symbol);
 
         // Phase 3: 進階警示類型
-        case 'BREAK_RESISTANCE':
+        case AlertParams.typeBreakResistance:
           final priceHistory = context.priceHistoryMap[alert.symbol];
           if (priceHistory != null &&
               priceHistory.length >= RuleParams.swingWindow * 2) {
@@ -208,7 +210,7 @@ class AlertEvaluationService {
               shouldTrigger = currentPrice > resistance;
             }
           }
-        case 'BREAK_SUPPORT':
+        case AlertParams.typeBreakSupport:
           final priceHistory = context.priceHistoryMap[alert.symbol];
           if (priceHistory != null &&
               priceHistory.length >= RuleParams.swingWindow * 2) {
@@ -217,33 +219,33 @@ class AlertEvaluationService {
               shouldTrigger = currentPrice < support;
             }
           }
-        case 'REVENUE_YOY_SURGE':
+        case AlertParams.typeRevenueYoySurge:
           final yoy = context.revenueYoyMap[alert.symbol];
           if (yoy != null) {
             // targetValue 為門檻百分比（預設 30%）
             shouldTrigger = yoy >= alert.targetValue;
           }
-        case 'HIGH_DIVIDEND_YIELD':
+        case AlertParams.typeHighDividendYield:
           final yield_ = context.dividendYieldMap[alert.symbol];
           if (yield_ != null) {
             shouldTrigger = yield_ >= alert.targetValue;
           }
-        case 'PE_UNDERVALUED':
+        case AlertParams.typePeUndervalued:
           final pe = context.peRatioMap[alert.symbol];
           if (pe != null && pe > 0) {
             shouldTrigger = pe <= alert.targetValue;
           }
-        case 'INSIDER_SELLING':
+        case AlertParams.typeInsiderSelling:
           final change = context.insiderChangeMap[alert.symbol];
           if (change != null) {
             shouldTrigger = change < 0;
           }
-        case 'INSIDER_BUYING':
+        case AlertParams.typeInsiderBuying:
           final change = context.insiderChangeMap[alert.symbol];
           if (change != null) {
             shouldTrigger = change > 0;
           }
-        case 'HIGH_PLEDGE_RATIO':
+        case AlertParams.typeHighPledgeRatio:
           final ratio = context.pledgeRatioMap[alert.symbol];
           if (ratio != null) {
             shouldTrigger =

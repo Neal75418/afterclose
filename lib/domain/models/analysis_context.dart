@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/domain/models/scoring_batch_data.dart';
 import 'package:afterclose/domain/models/technical_indicators.dart';
 
 /// 傳遞給所有規則的評估上下文
@@ -41,6 +42,29 @@ class MarketDataContext {
     this.warningData,
     this.insiderData,
   });
+
+  /// 從四項市場資料建構，全部為 null 時回傳 null
+  static MarketDataContext? fromComponents({
+    double? dayTradingRatio,
+    ShareholdingData? shareholding,
+    WarningDataContext? warning,
+    InsiderDataContext? insider,
+  }) {
+    if (dayTradingRatio == null &&
+        shareholding == null &&
+        warning == null &&
+        insider == null) {
+      return null;
+    }
+    return MarketDataContext(
+      dayTradingRatio: dayTradingRatio,
+      foreignSharesRatio: shareholding?.foreignSharesRatio,
+      foreignSharesRatioChange: shareholding?.foreignSharesRatioChange,
+      concentrationRatio: shareholding?.concentrationRatio,
+      warningData: warning,
+      insiderData: insider,
+    );
+  }
 
   final double? foreignSharesRatio;
   final double? foreignSharesRatioChange;

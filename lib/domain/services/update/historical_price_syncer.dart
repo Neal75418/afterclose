@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -306,7 +307,7 @@ class HistoricalPriceSyncer {
     final tpexOther = <String>[];
 
     for (final symbol in otherSymbols) {
-      if (stockMap[symbol]?.market == 'TPEx') {
+      if (stockMap[symbol]?.market == MarketCode.tpex) {
         tpexOther.add(symbol);
       } else {
         twseOther.add(symbol);
