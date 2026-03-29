@@ -309,11 +309,6 @@ class TechnicalIndicatorService {
     return (upper: upper, middle: middle, lower: lower);
   }
 
-  /// 計算成交量移動平均線
-  List<double?> calculateVolumeMA(List<double> volumes, int period) {
-    return calculateSMA(volumes, period);
-  }
-
   /// 計算能量潮指標 (OBV - On Balance Volume)
   ///
   /// OBV 是累積成交量指標，用於衡量買賣壓力

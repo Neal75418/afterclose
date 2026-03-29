@@ -77,20 +77,6 @@ class S {
       'news.daysAgo'.tr(namedArgs: {'days': days.toString()});
 
   // ==================================================
-  // 掃描頁面
-  // ==================================================
-  static String get scanTitle => 'scan.title'.tr();
-  static String get scanFilterAll => 'scan.filterAll'.tr();
-  static String get scanFilterReversalW2S => 'scan.filterReversalW2S'.tr();
-  static String get scanFilterReversalS2W => 'scan.filterReversalS2W'.tr();
-  static String get scanFilterBreakout => 'scan.filterBreakout'.tr();
-  static String get scanFilterBreakdown => 'scan.filterBreakdown'.tr();
-  static String get scanFilterVolumeSpike => 'scan.filterVolumeSpike'.tr();
-  static String get scanSortScoreDesc => 'scan.sortScoreDesc'.tr();
-  static String get scanSortScoreAsc => 'scan.sortScoreAsc'.tr();
-  static String get scanSortPriceChangeDesc => 'scan.sortPriceChangeDesc'.tr();
-  static String get scanSortPriceChangeAsc => 'scan.sortPriceChangeAsc'.tr();
-
   // ==================================================
   // 自選股頁面
   // ==================================================
@@ -190,12 +176,6 @@ class S {
   // ==================================================
   static String get reasonReversalW2S => 'reasons.reversalW2S'.tr();
   static String get reasonReversalS2W => 'reasons.reversalS2W'.tr();
-  static String get reasonBreakout => 'reasons.breakout'.tr();
-  static String get reasonBreakdown => 'reasons.breakdown'.tr();
-  static String get reasonVolumeSpike => 'reasons.volumeSpike'.tr();
-  static String get reasonPriceSpike => 'reasons.priceSpike'.tr();
-  static String get reasonInstitutional => 'reasons.institutional'.tr();
-  static String get reasonNews => 'reasons.newsRelated'.tr();
   static String get reasonsLabel => 'reasons.label'.tr();
 
   // ==================================================

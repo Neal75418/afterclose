@@ -34,9 +34,6 @@ extension ResponsiveHelper on BuildContext {
     return DeviceType.desktop;
   }
 
-  /// 是否為手機
-  bool get isMobile => deviceType == DeviceType.mobile;
-
   /// 是否為桌面
   bool get isDesktop => deviceType == DeviceType.desktop;
 
