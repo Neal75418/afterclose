@@ -219,6 +219,9 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     final generation = ++_loadGeneration;
 
     try {
+      // Stage 5c: 在 loop 開始前 snapshot horizon，避免 horizon 在迴圈
+      // 跑到一半時被切換造成同一 batch 內不同 symbol 用不同 horizon。
+      final loadHorizon = ref.read(selectedHorizonProvider);
       final dateCtx = DateContext.now(historyDays: 90);
 
       // 使用資料庫最新價格日期，確保盤前/非交易日也能顯示上次分析結果
@@ -277,13 +280,13 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
           institutionalHistory: institutional[symbol] ?? [],
           revenueHistory: finMindRevenues,
           latestPER: finMindPER,
-          horizon: ref.read(selectedHorizonProvider),
+          horizon: loadHorizon,
         );
         summaries[symbol] = localizer.localize(summaryData);
       }
 
       // generation 過期：有更新的載入已啟動，丟棄本次結果
-      if (_loadGeneration != generation) return;
+      if (!_active || _loadGeneration != generation) return;
 
       state = state.copyWith(
         stocksMap: coreData.stocks,
@@ -298,6 +301,13 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         summariesMap: summaries,
         isLoading: false,
       );
+
+      // Stage 5c: 載入過程中 horizon 可能已被切換，但 listener 在
+      // state.symbols 為空時被擋住。state 寫入後立刻補一次 regen
+      // 確保顯示符合最新 horizon。
+      if (_active && ref.read(selectedHorizonProvider) != loadHorizon) {
+        _regenerateAllSummaries();
+      }
     } catch (e) {
       // generation 過期時不覆蓋新載入的錯誤狀態
       if (_loadGeneration != generation) return;

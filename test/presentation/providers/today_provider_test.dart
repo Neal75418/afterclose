@@ -575,8 +575,9 @@ void main() {
 
         // _reloadForHorizon 是 async fire-and-forget，要等 microtask 與
         // pending future 完成後才能斷言
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        // Drain microtask queue until quiescent so the listener-spawned
+        // _reloadForHorizon Future and all its nested awaits complete.
+        await pumpEventQueue();
 
         state = container.read(todayProvider);
         expect(
@@ -625,8 +626,9 @@ void main() {
 
         // 切換 horizon
         container.read(selectedHorizonProvider.notifier).select(Horizon.long);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        // Drain microtask queue until quiescent so the listener-spawned
+        // _reloadForHorizon Future and all its nested awaits complete.
+        await pumpEventQueue();
 
         final stateAfter = container.read(todayProvider);
         expect(
@@ -661,8 +663,8 @@ void main() {
 
       // 「切換」回 short — 應該不觸發 reload
       container.read(selectedHorizonProvider.notifier).select(Horizon.short);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      // Drain microtask queue (same idiom as above).
+      await pumpEventQueue();
 
       verifyNever(
         () => mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.short),

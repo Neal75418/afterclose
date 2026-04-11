@@ -160,12 +160,16 @@ class TodayNotifier extends Notifier<TodayState> {
       // 取得最後更新執行記錄
       final lastRun = await _db.getLatestUpdateRun();
 
-      final horizon = ref.read(selectedHorizonProvider);
+      final loadHorizon = ref.read(selectedHorizonProvider);
       final loaded = await _loadRecommendationsAndDetails(
-        horizon: horizon,
+        horizon: loadHorizon,
         generation: generation,
       );
       if (loaded == null) return; // generation 過期或 inactive
+
+      // 防禦性 guard：在最後寫入前再次驗證 generation 沒被更新的 reload
+      // 取代。helper 內部的 check 已經涵蓋每個 await 點，這裡只是保險。
+      if (!_active || _loadGeneration != generation) return;
 
       state = state.copyWith(
         recommendations: loaded.recWithDetails,
@@ -173,6 +177,14 @@ class TodayNotifier extends Notifier<TodayState> {
         dataDate: loaded.dataDate,
         isLoading: false,
       );
+
+      // Stage 5c: 在 loadData 進行中若使用者切換 horizon，listener 仍會
+      // 觸發 _reloadForHorizon（不會被擋住，因為 _active 為 true），會
+      // 自然取代上面的寫入。這邊只是 belt-and-braces：載入完成後若發現
+      // horizon 已不一致，補一次 reload。
+      if (_active && ref.read(selectedHorizonProvider) != loadHorizon) {
+        await _reloadForHorizon(ref.read(selectedHorizonProvider));
+      }
     } catch (e) {
       AppLogger.warning('TodayNotifier', '載入今日資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
@@ -192,6 +204,9 @@ class TodayNotifier extends Notifier<TodayState> {
         generation: generation,
       );
       if (loaded == null) return;
+
+      // 防禦性 guard：跟 loadData 對齊
+      if (!_active || _loadGeneration != generation) return;
 
       state = state.copyWith(recommendations: loaded.recWithDetails);
     } catch (e) {
