@@ -126,83 +126,69 @@ void main() {
     });
   });
 
-  group('calculateScore Institutional Combo Bonus', () {
-    test(
-      'apply institutional combo bonus for institutional + breakout (+15)',
-      () {
-        final reasons = [
-          const TriggeredReason(
-            type: ReasonType.institutionalBuy,
-            score: 18,
-            description: 'Inst buy',
-          ),
-          const TriggeredReason(
-            type: ReasonType.techBreakout,
-            score: 25,
-            description: 'Breakout',
-          ),
-        ];
+  group('calculateScore Institutional Combinations', () {
+    test('institutional + breakout 各自計分、不做 combo bonus', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.institutionalBuy,
+          score: 18,
+          description: 'Inst buy',
+        ),
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'Breakout',
+        ),
+      ];
 
-        // Base: 18 + 25 = 43
-        // Bonus: +15 (institutional + breakout)
-        // Total: 58
-        final score = ruleEngine.calculateScore(reasons);
-        expect(score, 58);
-      },
-    );
+      // Base: 18 + 25 = 43（組合加成已於 2026-04 移除）
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 43);
+    });
 
-    test(
-      'apply institutional combo bonus for institutional + reversal (+15)',
-      () {
-        final reasons = [
-          const TriggeredReason(
-            type: ReasonType.institutionalBuy,
-            score: 18,
-            description: 'Inst buy',
-          ),
-          const TriggeredReason(
-            type: ReasonType.reversalW2S,
-            score: 35,
-            description: 'Reversal',
-          ),
-        ];
+    test('institutional + reversal 各自計分、不做 combo bonus', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.institutionalBuy,
+          score: 18,
+          description: 'Inst buy',
+        ),
+        const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'Reversal',
+        ),
+      ];
 
-        // Base: 18 + 35 = 53
-        // Bonus: +15 (institutional + reversal)
-        // Total: 68
-        final score = ruleEngine.calculateScore(reasons);
-        expect(score, 68);
-      },
-    );
+      // Base: 18 + 35 = 53（bonus 已移除）
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 53);
+    });
 
-    test(
-      'apply all applicable bonuses simultaneously (capped at maxScore)',
-      () {
-        final reasons = [
-          const TriggeredReason(
-            type: ReasonType.institutionalBuy,
-            score: 18,
-            description: 'Inst',
-          ),
-          const TriggeredReason(
-            type: ReasonType.reversalW2S,
-            score: 35,
-            description: 'Reversal',
-          ),
-          const TriggeredReason(
-            type: ReasonType.volumeSpike,
-            score: 22,
-            description: 'Volume',
-          ),
-        ];
+    test('institutional + reversal + volume 加總不會因 bonus 膨脹到 cap', () {
+      final reasons = [
+        const TriggeredReason(
+          type: ReasonType.institutionalBuy,
+          score: 18,
+          description: 'Inst',
+        ),
+        const TriggeredReason(
+          type: ReasonType.reversalW2S,
+          score: 35,
+          description: 'Reversal',
+        ),
+        const TriggeredReason(
+          type: ReasonType.volumeSpike,
+          score: 22,
+          description: 'Volume',
+        ),
+      ];
 
-        // Base: 18 + 35 + 22 = 75
-        // Bonuses: +10 (reversal+volume) + 15 (institutional+reversal) = +25
-        // Raw: 100 → capped at maxScore (80)
-        final score = ruleEngine.calculateScore(reasons);
-        expect(score, RuleScores.maxScore);
-      },
-    );
+      // Base: 18 + 35 + 22 = 75
+      // 未觸及 maxScore (80)，移除 bonus 後強訊號不再被無謂 cap
+      final score = ruleEngine.calculateScore(reasons);
+      expect(score, 75);
+    });
   });
 
   group('Rule Exception Handling', () {
@@ -317,6 +303,8 @@ void main() {
 
     test('sort returned reasons by score descending', () {
       // 使用自訂規則確保產生多個已知分數的結果
+      // 注意：3 個 reasonType 必須分屬不同 mutex group（或不屬於任何 group），
+      // 否則會被 momentum_breakout 等 group filter 吃掉
       final engine = RuleEngine(
         customRules: [
           const _FixedScoreRule(
@@ -327,12 +315,12 @@ void main() {
           const _FixedScoreRule(
             ruleId: 'high',
             score: 30,
-            reasonType: ReasonType.techBreakout,
+            reasonType: ReasonType.maAlignmentBullish,
           ),
           const _FixedScoreRule(
             ruleId: 'mid',
             score: 20,
-            reasonType: ReasonType.volumeSpike,
+            reasonType: ReasonType.kdGoldenCross,
           ),
         ],
       );
@@ -348,6 +336,187 @@ void main() {
       expect(reasons[0].score, 30);
       expect(reasons[1].score, 20);
       expect(reasons[2].score, 10);
+    });
+  });
+
+  // ==========================================
+  // Mutex Group 測試（2026-04 引入，解決重疊訊號 double-count）
+  // ==========================================
+
+  group('evaluateStock Mutex Groups', () {
+    test('momentum_breakout: techBreakout 與 volumeSpike 同組，只保留分數較高者', () {
+      final engine = RuleEngine(
+        customRules: [
+          const _FixedScoreRule(
+            ruleId: 'breakout',
+            score: 25,
+            reasonType: ReasonType.techBreakout,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'volume',
+            score: 22,
+            reasonType: ReasonType.volumeSpike,
+          ),
+        ],
+      );
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        context,
+        StockData(symbol: 'TEST', prices: prices),
+      );
+
+      // 兩者同屬 momentum_breakout，只保留 techBreakout (25 > 22)
+      expect(reasons.length, 1);
+      expect(reasons[0].type, ReasonType.techBreakout);
+    });
+
+    test('momentum_breakout: 4 條重疊規則全觸發，只保留最高分那條', () {
+      final engine = RuleEngine(
+        customRules: [
+          const _FixedScoreRule(
+            ruleId: 'priceSpike',
+            score: 15,
+            reasonType: ReasonType.priceSpike,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'volumeSpike',
+            score: 22,
+            reasonType: ReasonType.volumeSpike,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'highVolBreakout',
+            score: 22,
+            reasonType: ReasonType.highVolumeBreakout,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'techBreakout',
+            score: 25,
+            reasonType: ReasonType.techBreakout,
+          ),
+        ],
+      );
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        context,
+        StockData(symbol: 'TEST', prices: prices),
+      );
+
+      expect(reasons.length, 1);
+      expect(reasons[0].type, ReasonType.techBreakout); // 分數最高
+    });
+
+    test('momentum_breakout 贏家與非 group reason 並存時，兩者都保留', () {
+      final engine = RuleEngine(
+        customRules: [
+          const _FixedScoreRule(
+            ruleId: 'volumeSpike',
+            score: 22,
+            reasonType: ReasonType.volumeSpike,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'reversal',
+            score: 35,
+            reasonType: ReasonType.reversalW2S,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'institutional',
+            score: 18,
+            reasonType: ReasonType.institutionalBuy,
+          ),
+        ],
+      );
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        context,
+        StockData(symbol: 'TEST', prices: prices),
+      );
+
+      // volumeSpike 是 momentum_breakout 唯一代表，保留
+      // reversalW2S / institutionalBuy 不屬任何 group，都保留
+      expect(reasons.length, 3);
+      final types = reasons.map((r) => r.type).toSet();
+      expect(types, {
+        ReasonType.reversalW2S,
+        ReasonType.volumeSpike,
+        ReasonType.institutionalBuy,
+      });
+    });
+
+    test('momentum_breakout: 同 group 內 score 相同時，依規則註冊順序 deterministic', () {
+      // 兩條 reason 同屬 momentum_breakout 且 score 相同（22）。
+      // _rules 以註冊順序 iterate，sort 是 stable，
+      // 因此先註冊的 volumeSpike 會出現在 sort 後的較前方位置，成為贏家。
+      final engine = RuleEngine(
+        customRules: [
+          const _FixedScoreRule(
+            ruleId: 'volumeSpike',
+            score: 22,
+            reasonType: ReasonType.volumeSpike,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'highVolBreakout',
+            score: 22,
+            reasonType: ReasonType.highVolumeBreakout,
+          ),
+        ],
+      );
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        context,
+        StockData(symbol: 'TEST', prices: prices),
+      );
+
+      expect(reasons.length, 1);
+      // 同分時，先註冊的 volumeSpike 勝出（stable sort 保留註冊順序）
+      expect(reasons[0].type, ReasonType.volumeSpike);
+    });
+
+    test('calculateScore 套用 mutex 過濾後不會塞爆 cap', () {
+      // 整合測試：evaluateStock → calculateScore 端到端
+      final engine = RuleEngine(
+        customRules: [
+          // 這 4 條以前會合計 84 分 + bonus 直接塞爆 cap
+          const _FixedScoreRule(
+            ruleId: 'breakout',
+            score: 25,
+            reasonType: ReasonType.techBreakout,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'volume',
+            score: 22,
+            reasonType: ReasonType.volumeSpike,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'priceSpike',
+            score: 15,
+            reasonType: ReasonType.priceSpike,
+          ),
+          const _FixedScoreRule(
+            ruleId: 'highVol',
+            score: 22,
+            reasonType: ReasonType.highVolumeBreakout,
+          ),
+        ],
+      );
+      final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+      const context = AnalysisContext(trendState: TrendState.range);
+
+      final reasons = engine.evaluateStock(
+        context,
+        StockData(symbol: 'TEST', prices: prices),
+      );
+      final score = engine.calculateScore(reasons);
+
+      // 4 條規則 → mutex filter 後剩 1 條（techBreakout 25）→ 總分 25
+      expect(score, 25);
     });
   });
 }

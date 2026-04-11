@@ -49,17 +49,10 @@ abstract final class RuleScores {
   /// 新聞相關分數
   static const int newsRelated = 8;
 
-  /// 加分：突破 + 成交量異動
-  static const int breakoutVolumeBonus = 10;
-
-  /// 加分：反轉 + 成交量異動
-  static const int reversalVolumeBonus = 10;
-
-  /// 加分：法人 + 突破/反轉組合
-  static const int institutionalComboBonus = 15;
-
-  /// 加分：K 線型態（吞噬/星線/三兵）+ 成交量異動
-  static const int patternVolumeBonus = 5;
+  // 組合加成（breakoutVolumeBonus / reversalVolumeBonus / institutionalComboBonus /
+  // patternVolumeBonus）已於 2026-04 移除：個別規則本身已要求量能配合（VOLUME_SPIKE
+  // 需 4x 均量、TECH_BREAKOUT 需 MA20 + 量能確認），再加 bonus 等於重複計分，
+  // 且會讓強訊號股票全部黏在 maxScore 80 失去區分度。
 
   /// KD 黃金交叉分數（多方）
   static const int kdGoldenCross = 18;

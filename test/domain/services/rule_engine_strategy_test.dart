@@ -71,7 +71,10 @@ void main() {
   });
 
   group('calculateScore', () {
-    test('apply bonus for Breakout + Volume Spike (+10)', () {
+    // 注意：以下兩個測試是 calculateScore 的「純算術 unit test」。
+    // calculateScore 的契約是「對收到的 reasons 做加總、冷卻、cap」— 即使上游
+    // pipeline 不會產出這種輸入組合，此契約仍須被獨立驗證。
+    test('Breakout + Volume Spike 各自計分、不做 combo bonus', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.techBreakout,
@@ -86,13 +89,12 @@ void main() {
       ];
 
       // Base: 25 + 22 = 47
-      // Bonus: +10 (Breakout + Volume)
-      // Total: 57
+      // 組合加成已於 2026-04 移除（TECH_BREAKOUT 本身已要求量能配合，再加 bonus 是 double-count）
       final score = ruleEngine.calculateScore(reasons);
-      expect(score, 57);
+      expect(score, 47);
     });
 
-    test('apply bonus for Reversal + Volume Spike (+10)', () {
+    test('Reversal + Volume Spike 各自計分、不做 combo bonus', () {
       final reasons = [
         const TriggeredReason(
           type: ReasonType.reversalW2S,
@@ -106,11 +108,9 @@ void main() {
         ),
       ];
 
-      // Base: 35 + 22 = 57
-      // Bonus: +10 (Reversal + Volume)
-      // Total: 67
+      // Base: 35 + 22 = 57（bonus 已於 2026-04 移除）
       final score = ruleEngine.calculateScore(reasons);
-      expect(score, 67);
+      expect(score, 57);
     });
 
     test('cap score at maxScore', () {
