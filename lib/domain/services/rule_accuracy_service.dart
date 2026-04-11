@@ -469,67 +469,145 @@ class RuleAccuracyService {
 
   /// 更新規則準確度統計（per-period + 彙總）
   ///
-  /// 使用 transaction 確保所有期間的統計一致寫入。
+  /// 2026-04 Stage 2 Commit 2：改用 [_computeUnbiasedRuleStats] 從 [daily_reason]
+  /// 直接聚合，取代舊的 `primary_rule_id` from `recommendation_validation` 路徑。
+  ///
+  /// Public contract 保留此 method 名稱，`UpdateService` 的 post-update hook 與
+  /// 其他 caller 不需改動。
   Future<void> _updateRuleAccuracyStats() async {
-    await _db.transaction(() async {
-      // Per-period 統計
-      for (final period in holdingPeriods) {
-        final stats = await _db
-            .customSelect(
-              '''
-          SELECT
-            primary_rule_id AS rule_id,
-            COUNT(*) AS trigger_count,
-            SUM(CASE WHEN is_success = 1 THEN 1 ELSE 0 END) AS success_count,
-            AVG(return_rate) AS avg_return
-          FROM recommendation_validation
-          WHERE return_rate IS NOT NULL AND holding_days = ?
-          GROUP BY primary_rule_id
-        ''',
-              variables: [Variable.withInt(period)],
-            )
-            .get();
+    await _computeUnbiasedRuleStats();
+  }
 
-        for (final row in stats) {
+  /// 從 `daily_reason` + `daily_price` 聚合 unbiased per-rule 統計寫入 `rule_accuracy`。
+  ///
+  /// ## 為什麼這樣做（修 Gap 1 primary_rule_id bias）
+  ///
+  /// 舊實作從 `recommendation_validation` 依 `primary_rule_id` 聚合，只統計每次推薦
+  /// 的「最高分那條規則」。後果：常作為 rank 1 / rank 2 的規則（例如 `VOLUME_SPIKE`
+  /// 一觸發通常被 `REVERSAL_W2S` 的 35 分壓過）**永遠拿不到樣本**，整個 calibration
+  /// 管線變成「強者恆強」的同義複製。
+  ///
+  /// 新實作直接掃 `daily_reason` — 每個觸發事件都計入，不再受 rank 偏見影響。
+  /// 因為 `scoring_service` 會把所有 score ≥ `minScoreThreshold` 股票的 triggered
+  /// reasons 寫進 `daily_reason`，這邊的 universe 是「全部被分析到的股票」而非
+  /// 「Top 20 推薦」，進一步消除 survivor bias。
+  ///
+  /// ## Algorithm
+  ///
+  /// 1. 撈所有 `daily_reason` rows
+  /// 2. 為相關 symbols 建 price lookup map `{symbol: {normalized_date: close}}`
+  /// 3. 對每個 reason × 每個 holding period：
+  ///    - 查 entry close / exit close（exit date 由 [TaiwanCalendar.addTradingDays] 算）
+  ///    - 計算 returnRate + isSuccess（via [_isSuccessFor]）
+  ///    - 累加至 `(ruleId, period)` 的 accumulator
+  /// 4. 同時累加 `ALL` period（跨所有 periods 合併）
+  /// 5. Transaction: 清空舊 `rule_accuracy` 行 → 寫入新統計
+  ///
+  /// ## 已知限制
+  ///
+  /// - Memory footprint：price lookup map 為 `O(symbols × dates)`，2 年 2000+ 檔可達
+  ///   50–100MB。pre-launch 可接受；post-launch 若 syncer 累積歷史資料需評估 batch 化。
+  /// - 嚴格 date match（無 ±1 日容忍）：trading calendar 精確計算，不需 legacy mitigation。
+  Future<void> _computeUnbiasedRuleStats() async {
+    final reasons = await _db.select(_db.dailyReason).get();
+
+    await _db.transaction(() async {
+      // 先清空舊統計，避免舊 biased 資料污染（尤其 post-Stage 2 首次重跑時）
+      await _db.delete(_db.ruleAccuracy).go();
+
+      if (reasons.isEmpty) {
+        AppLogger.debug(_tag, '_computeUnbiasedRuleStats: 無 reason 資料，跳過聚合');
+        return;
+      }
+
+      // 建 price lookup：{symbol: {normalized_date: close}}
+      final allSymbols = reasons.map((r) => r.symbol).toSet().toList();
+      final priceRows = await (_db.select(
+        _db.dailyPrice,
+      )..where((t) => t.symbol.isIn(allSymbols))).get();
+
+      final priceMap = <String, Map<DateTime, double>>{};
+      for (final p in priceRows) {
+        final close = p.close;
+        if (close == null) continue;
+        final normalized = DateContext.normalize(p.date);
+        priceMap.putIfAbsent(p.symbol, () => {})[normalized] = close;
+      }
+
+      // 累加 per-(ruleId, period) 統計
+      final ruleStats = <String, Map<int, _StatsAccumulator>>{};
+
+      for (final reason in reasons) {
+        final symbolPrices = priceMap[reason.symbol];
+        if (symbolPrices == null) continue;
+
+        final entryDate = DateContext.normalize(reason.date);
+        final entryClose = symbolPrices[entryDate];
+        if (entryClose == null) continue;
+
+        for (final period in holdingPeriods) {
+          final exitDate = DateContext.normalize(
+            TaiwanCalendar.addTradingDays(entryDate, period),
+          );
+          final exitClose = symbolPrices[exitDate];
+          if (exitClose == null) continue;
+
+          final returnRate = ((exitClose - entryClose) / entryClose) * 100;
+          final isSuccess = _isSuccessFor(returnRate, period);
+
+          ruleStats
+              .putIfAbsent(reason.reasonType, () => <int, _StatsAccumulator>{})
+              .putIfAbsent(period, _StatsAccumulator.new)
+              .add(returnRate, isSuccess);
+        }
+      }
+
+      // Per-period 寫入
+      for (final ruleEntry in ruleStats.entries) {
+        final ruleId = ruleEntry.key;
+        for (final periodEntry in ruleEntry.value.entries) {
+          final period = periodEntry.key;
+          final acc = periodEntry.value;
           await _db
               .into(_db.ruleAccuracy)
               .insertOnConflictUpdate(
                 RuleAccuracyCompanion.insert(
-                  ruleId: row.read<String>('rule_id'),
+                  ruleId: ruleId,
                   period: '${period}D',
-                  triggerCount: Value(row.read<int>('trigger_count')),
-                  successCount: Value(row.read<int>('success_count')),
-                  avgReturn: Value(row.read<double>('avg_return')),
+                  triggerCount: Value(acc.count),
+                  successCount: Value(acc.successCount),
+                  avgReturn: Value(acc.avgReturnPct),
                 ),
               );
         }
       }
 
-      // 彙總統計 (ALL)
-      final overallStats = await _db.customSelect('''
-        SELECT
-          primary_rule_id AS rule_id,
-          COUNT(*) AS trigger_count,
-          SUM(CASE WHEN is_success = 1 THEN 1 ELSE 0 END) AS success_count,
-          AVG(return_rate) AS avg_return
-        FROM recommendation_validation
-        WHERE return_rate IS NOT NULL
-        GROUP BY primary_rule_id
-      ''').get();
-
-      for (final row in overallStats) {
+      // 彙總 'ALL' period — 跨所有 periods 合併同一 rule 的統計
+      final allStats = <String, _StatsAccumulator>{};
+      for (final ruleEntry in ruleStats.entries) {
+        for (final acc in ruleEntry.value.values) {
+          allStats.putIfAbsent(ruleEntry.key, _StatsAccumulator.new).merge(acc);
+        }
+      }
+      for (final entry in allStats.entries) {
         await _db
             .into(_db.ruleAccuracy)
             .insertOnConflictUpdate(
               RuleAccuracyCompanion.insert(
-                ruleId: row.read<String>('rule_id'),
+                ruleId: entry.key,
                 period: 'ALL',
-                triggerCount: Value(row.read<int>('trigger_count')),
-                successCount: Value(row.read<int>('success_count')),
-                avgReturn: Value(row.read<double>('avg_return')),
+                triggerCount: Value(entry.value.count),
+                successCount: Value(entry.value.successCount),
+                avgReturn: Value(entry.value.avgReturnPct),
               ),
             );
       }
+
+      AppLogger.info(
+        _tag,
+        '_computeUnbiasedRuleStats: ${ruleStats.length} rules × '
+        '${holdingPeriods.length} periods + ALL 聚合自 ${reasons.length} reasons',
+      );
     });
   }
 
@@ -777,4 +855,30 @@ class _ValidationComputed {
 
   final ValidationResult result;
   final List<RecommendationValidationCompanion> inserts;
+}
+
+/// Per-(ruleId, period) 統計累加器
+///
+/// 用於 [RuleAccuracyService._computeUnbiasedRuleStats] 的 in-memory 聚合階段。
+/// 支援兩種合併：
+/// - [add]：單筆 (returnRate, isSuccess) 累加
+/// - [merge]：兩個 accumulator 合併（用於跨 period 彙總至 ALL）
+class _StatsAccumulator {
+  int count = 0;
+  int successCount = 0;
+  double _sumReturn = 0.0;
+
+  void add(double returnRate, bool success) {
+    count++;
+    if (success) successCount++;
+    _sumReturn += returnRate;
+  }
+
+  void merge(_StatsAccumulator other) {
+    count += other.count;
+    successCount += other.successCount;
+    _sumReturn += other._sumReturn;
+  }
+
+  double get avgReturnPct => count > 0 ? _sumReturn / count : 0.0;
 }
