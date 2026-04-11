@@ -289,7 +289,10 @@ void main() {
           () => mockDb.getRecommendations(date, horizon: Horizon.short),
         ).thenAnswer((_) async => recs);
 
-        final result = await repository.getRecommendations(date);
+        final result = await repository.getRecommendations(
+          date,
+          horizon: Horizon.short,
+        );
 
         expect(result, equals(recs));
         expect(result.length, equals(2));
@@ -304,7 +307,10 @@ void main() {
               mockDb.getRecommendations(normalizedDate, horizon: Horizon.short),
         ).thenAnswer((_) async => []);
 
-        await repository.getRecommendations(dateWithTime);
+        await repository.getRecommendations(
+          dateWithTime,
+          horizon: Horizon.short,
+        );
 
         verify(
           () =>
@@ -331,7 +337,9 @@ void main() {
           () => mockDb.getRecommendations(any(), horizon: Horizon.short),
         ).thenAnswer((_) async => recs);
 
-        final result = await repository.getTodayRecommendations();
+        final result = await repository.getTodayRecommendations(
+          horizon: Horizon.short,
+        );
 
         expect(result, equals(recs));
       });
@@ -359,7 +367,9 @@ void main() {
           return recs; // yesterday - has data
         });
 
-        final result = await repository.getTodayRecommendations();
+        final result = await repository.getTodayRecommendations(
+          horizon: Horizon.short,
+        );
 
         expect(result, equals(recs));
       });
@@ -389,7 +399,9 @@ void main() {
           return recs; // day before yesterday - has data
         });
 
-        final result = await repository.getTodayRecommendations();
+        final result = await repository.getTodayRecommendations(
+          horizon: Horizon.short,
+        );
 
         expect(result, equals(recs));
       });
@@ -573,7 +585,10 @@ void main() {
           () => mockDb.getRecommendations(date, horizon: Horizon.short),
         ).thenAnswer((_) async => []);
 
-        final result = await repository.getRecommendationsWithDetails(date);
+        final result = await repository.getRecommendationsWithDetails(
+          date,
+          horizon: Horizon.short,
+        );
 
         expect(result, isEmpty);
       });
@@ -641,7 +656,10 @@ void main() {
           () => mockDb.getReasonsBatch(['2330', '2317'], date),
         ).thenAnswer((_) async => reasonsMap);
 
-        final result = await repository.getRecommendationsWithDetails(date);
+        final result = await repository.getRecommendationsWithDetails(
+          date,
+          horizon: Horizon.short,
+        );
 
         expect(result.length, equals(2));
         expect(result[0].recommendation.symbol, equals('2330'));
@@ -693,7 +711,10 @@ void main() {
           () => mockDb.getReasonsBatch(['2330', 'INVALID'], date),
         ).thenAnswer((_) async => {});
 
-        final result = await repository.getRecommendationsWithDetails(date);
+        final result = await repository.getRecommendationsWithDetails(
+          date,
+          horizon: Horizon.short,
+        );
 
         expect(result.length, equals(1)); // Only 2330 included
         expect(result[0].recommendation.symbol, equals('2330'));

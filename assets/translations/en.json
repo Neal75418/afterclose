@@ -43,6 +43,10 @@
   },
   "today": {
     "top10": "Today's Top 20",
+    "horizon": {
+      "short": "Short",
+      "long": "Long"
+    },
     "watchlistStatus": "Watchlist Status",
     "updateData": "Update Data",
     "startingUpdate": "Starting update...",

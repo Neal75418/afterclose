@@ -2,11 +2,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
+import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -89,6 +91,11 @@ void main() {
   late MockUpdateService mockUpdateService;
   late MockDataSyncService mockDataSyncService;
   late ProviderContainer container;
+
+  setUpAll(() {
+    // Stage 5c: Horizon enum 需要 fallback 才能用 any(named: 'horizon')
+    registerFallbackValue(Horizon.short);
+  });
 
   setUp(() {
     mockDb = MockAppDatabase();
@@ -277,7 +284,9 @@ void main() {
       ];
 
       when(
-        () => mockAnalysisRepo.getTodayRecommendations(),
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
       ).thenAnswer((_) async => mockRecs);
 
       when(
@@ -331,7 +340,9 @@ void main() {
     test('loadData handles error gracefully', () async {
       // Arrange
       when(
-        () => mockAnalysisRepo.getTodayRecommendations(),
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
       ).thenThrow(Exception('Database error'));
 
       // Act
@@ -349,7 +360,9 @@ void main() {
     test('loadData clears previous error on successful load', () async {
       // Arrange - 先設定錯誤狀態
       when(
-        () => mockAnalysisRepo.getTodayRecommendations(),
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
       ).thenThrow(Exception('First error'));
 
       final notifier = container.read(todayProvider.notifier);
@@ -358,7 +371,11 @@ void main() {
       expect(container.read(todayProvider).error, isNotNull);
 
       // Arrange - 設定成功的 mock
-      when(() => mockAnalysisRepo.getTodayRecommendations()).thenAnswer(
+      when(
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
+      ).thenAnswer(
         (_) async => [
           createRecommendation(symbol: '2330', score: 85.0, rank: 1),
         ],
@@ -386,7 +403,9 @@ void main() {
         ];
 
         when(
-          () => mockAnalysisRepo.getTodayRecommendations(),
+          () => mockAnalysisRepo.getTodayRecommendations(
+            horizon: any(named: 'horizon'),
+          ),
         ).thenAnswer((_) async => mockRecs);
 
         when(
@@ -428,7 +447,9 @@ void main() {
     test('handles empty recommendations list', () async {
       // Arrange
       when(
-        () => mockAnalysisRepo.getTodayRecommendations(),
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -453,7 +474,9 @@ void main() {
       ).thenReturn(null);
 
       when(
-        () => mockAnalysisRepo.getTodayRecommendations(),
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -473,7 +496,9 @@ void main() {
       ];
 
       when(
-        () => mockAnalysisRepo.getTodayRecommendations(),
+        () => mockAnalysisRepo.getTodayRecommendations(
+          horizon: any(named: 'horizon'),
+        ),
       ).thenAnswer((_) async => mockRecs);
 
       // 返回空的資料（模擬找不到股票詳情的情況）
@@ -505,6 +530,143 @@ void main() {
       // 詳細資訊可能為 null，但不應導致錯誤
       expect(state.recommendations[0].stockName, isNull);
       expect(state.recommendations[0].latestClose, isNull);
+    });
+  });
+
+  // ==========================================
+  // Stage 5c — horizon switch reload behavior
+  // ==========================================
+
+  group('TodayNotifier horizon switch', () {
+    test(
+      'switching horizon triggers reload with new horizon and swaps recommendations',
+      () async {
+        // 短線推薦：2330 + 2317
+        final shortRecs = [
+          createRecommendation(symbol: '2330', score: 85.0, rank: 1),
+          createRecommendation(symbol: '2317', score: 80.0, rank: 2),
+        ];
+        // 長線推薦：完全不同的兩檔（驗證 list 真的有換）
+        final longRecs = [
+          createRecommendation(symbol: '2454', score: 88.0, rank: 1),
+          createRecommendation(symbol: '2412', score: 75.0, rank: 2),
+        ];
+
+        when(
+          () =>
+              mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.short),
+        ).thenAnswer((_) async => shortRecs);
+        when(
+          () => mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.long),
+        ).thenAnswer((_) async => longRecs);
+
+        // 初始載入（短線）
+        final notifier = container.read(todayProvider.notifier);
+        await notifier.loadData();
+
+        var state = container.read(todayProvider);
+        expect(state.recommendations.map((r) => r.symbol).toList(), [
+          '2330',
+          '2317',
+        ]);
+
+        // 切換到長線 — ref.listen callback 應該觸發 _reloadForHorizon
+        container.read(selectedHorizonProvider.notifier).select(Horizon.long);
+
+        // _reloadForHorizon 是 async fire-and-forget，要等 microtask 與
+        // pending future 完成後才能斷言
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        state = container.read(todayProvider);
+        expect(
+          state.recommendations.map((r) => r.symbol).toList(),
+          ['2454', '2412'],
+          reason: '長線推薦應取代短線清單',
+        );
+      },
+    );
+
+    test(
+      '_reloadForHorizon preserves lastUpdate and dataDate from original loadData',
+      () async {
+        final shortRecs = [
+          createRecommendation(symbol: '2330', score: 85.0, rank: 1),
+        ];
+        final longRecs = [
+          createRecommendation(symbol: '2454', score: 88.0, rank: 1),
+        ];
+        final lastRunFinishedAt = DateTime(2026, 2, 13, 16, 30);
+
+        when(() => mockDb.getLatestUpdateRun()).thenAnswer(
+          (_) async => UpdateRunEntry(
+            id: 1,
+            runDate: DateTime(2026, 2, 13),
+            startedAt: DateTime(2026, 2, 13, 16, 0),
+            finishedAt: lastRunFinishedAt,
+            status: 'success',
+          ),
+        );
+        when(
+          () =>
+              mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.short),
+        ).thenAnswer((_) async => shortRecs);
+        when(
+          () => mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.long),
+        ).thenAnswer((_) async => longRecs);
+
+        final notifier = container.read(todayProvider.notifier);
+        await notifier.loadData();
+
+        final stateBefore = container.read(todayProvider);
+        expect(stateBefore.lastUpdate, equals(lastRunFinishedAt));
+        expect(stateBefore.dataDate, isNotNull);
+        final dataDateBefore = stateBefore.dataDate;
+
+        // 切換 horizon
+        container.read(selectedHorizonProvider.notifier).select(Horizon.long);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final stateAfter = container.read(todayProvider);
+        expect(
+          stateAfter.lastUpdate,
+          equals(lastRunFinishedAt),
+          reason: 'lastUpdate 應保留原值',
+        );
+        expect(
+          stateAfter.dataDate,
+          equals(dataDateBefore),
+          reason: 'dataDate 應保留原值',
+        );
+        // recommendations 已換成長線
+        expect(stateAfter.recommendations.first.symbol, equals('2454'));
+      },
+    );
+
+    test('selecting same horizon is a no-op', () async {
+      final shortRecs = [
+        createRecommendation(symbol: '2330', score: 85.0, rank: 1),
+      ];
+
+      when(
+        () => mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.short),
+      ).thenAnswer((_) async => shortRecs);
+
+      final notifier = container.read(todayProvider.notifier);
+      await notifier.loadData();
+
+      // 重置 verification counter
+      clearInteractions(mockAnalysisRepo);
+
+      // 「切換」回 short — 應該不觸發 reload
+      container.read(selectedHorizonProvider.notifier).select(Horizon.short);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      verifyNever(
+        () => mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.short),
+      );
     });
   });
 }

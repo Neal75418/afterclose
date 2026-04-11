@@ -44,6 +44,8 @@ class S {
   // 今日頁面
   // ==================================================
   static String get todayTop10 => 'today.top10'.tr();
+  static String get todayHorizonShort => 'today.horizon.short'.tr();
+  static String get todayHorizonLong => 'today.horizon.long'.tr();
   static String get todayWatchlistStatus => 'today.watchlistStatus'.tr();
   static String get todayUpdateData => 'today.updateData'.tr();
   static String get todayStartingUpdate => 'today.startingUpdate'.tr();

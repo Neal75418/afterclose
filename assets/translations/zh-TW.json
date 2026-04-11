@@ -43,6 +43,10 @@
   },
   "today": {
     "top10": "今日推薦 Top 20",
+    "horizon": {
+      "short": "短線",
+      "long": "長線"
+    },
     "watchlistStatus": "自選狀態",
     "updateData": "更新資料",
     "startingUpdate": "開始更新...",

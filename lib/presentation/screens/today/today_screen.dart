@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -17,6 +18,7 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
@@ -474,6 +476,38 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   context.push(AppRoutes.recommendationPerformance),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
+            ),
+          ),
+        ),
+
+        // Stage 5c dual-horizon: SegmentedButton 切換短/長線推薦清單
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final horizon = ref.watch(selectedHorizonProvider);
+                return SegmentedButton<Horizon>(
+                  segments: [
+                    ButtonSegment(
+                      value: Horizon.short,
+                      label: Text(S.todayHorizonShort),
+                      icon: const Icon(Icons.flash_on, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: Horizon.long,
+                      label: Text(S.todayHorizonLong),
+                      icon: const Icon(Icons.timeline, size: 18),
+                    ),
+                  ],
+                  selected: {horizon},
+                  onSelectionChanged: (set) {
+                    ref
+                        .read(selectedHorizonProvider.notifier)
+                        .select(set.first);
+                  },
+                );
+              },
             ),
           ),
         ),

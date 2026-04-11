@@ -145,16 +145,20 @@ class AnalysisRepository implements IAnalysisRepository {
   /// - API 日期延遲：TWSE/TPEX 資料日期可能落後
   /// - 日期不同步：不同 API 返回不同日期
   ///
-  /// 使用 Request Deduplication 防止同時多次查詢
+  /// 使用 Request Deduplication 防止同時多次查詢；dedup key 含 horizon
+  /// 避免不同 horizon 的查詢結果互相覆蓋。
   @override
-  Future<List<DailyRecommendationEntry>> getTodayRecommendations() async {
-    return _todayRecommendationsDedup.call('today_recommendations', () async {
+  Future<List<DailyRecommendationEntry>> getTodayRecommendations({
+    required Horizon horizon,
+  }) async {
+    final cacheKey = 'today_recommendations_${horizon.name}';
+    return _todayRecommendationsDedup.call(cacheKey, () async {
       final now = _clock.now();
 
       // 依序嘗試今天、昨天、前天的資料
       for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
         final date = now.subtract(Duration(days: daysAgo));
-        final recs = await getRecommendations(date);
+        final recs = await getRecommendations(date, horizon: horizon);
         if (recs.isNotEmpty) {
           return recs;
         }
@@ -164,19 +168,22 @@ class AnalysisRepository implements IAnalysisRepository {
       final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
         now.subtract(const Duration(days: 3)),
       );
-      return getRecommendations(prevTradingDay);
+      return getRecommendations(prevTradingDay, horizon: horizon);
     });
   }
 
-  /// 取得某日期的推薦股（預設短線 horizon）
+  /// 取得某日期、指定 horizon 的推薦股
   ///
-  /// Stage 5b Commit 2: UI 暫時硬編碼 `Horizon.short` 當 default。
-  /// Stage 5c 會改為 `ref.watch(selectedHorizonProvider)` 讓 tab 可切換。
+  /// Stage 5c dual-horizon: [horizon] 必填，移除了 Stage 5b 的硬編碼
+  /// `Horizon.short` 預設值。
   @override
-  Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date) {
+  Future<List<DailyRecommendationEntry>> getRecommendations(
+    DateTime date, {
+    required Horizon horizon,
+  }) {
     return _db.getRecommendations(
       DateContext.normalize(date),
-      horizon: Horizon.short,
+      horizon: horizon,
     );
   }
 
@@ -318,9 +325,10 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 共 3 次查詢，而非 1 + N*2 次
   @override
   Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
-    DateTime date,
-  ) async {
-    final recs = await getRecommendations(date);
+    DateTime date, {
+    required Horizon horizon,
+  }) async {
+    final recs = await getRecommendations(date, horizon: horizon);
     if (recs.isEmpty) return [];
 
     // 收集所有股票代碼供批次查詢

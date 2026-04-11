@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -15,6 +16,7 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 
 /// 每日更新作業的最大執行時間
 const _updateTimeout = Duration(minutes: ApiConfig.updateTimeoutMin);
@@ -130,6 +132,17 @@ class TodayNotifier extends Notifier<TodayState> {
     _active = true;
     _loadGeneration = 0;
     ref.onDispose(() => _active = false);
+
+    // Stage 5c dual-horizon：切換 horizon 時只重新載入 recommendations 列表
+    // 跟相關 details，保留 lastUpdate / dataDate / updateProgress 等
+    // non-horizon-specific 狀態。Command-based reload 模式優於 ref.watch
+    // 整體 rebuild — 否則 update 進行中的 progress banner 會閃掉。
+    ref.listen<Horizon>(selectedHorizonProvider, (prev, next) {
+      if (prev == next) return;
+      if (!_active) return;
+      _reloadForHorizon(next);
+    });
+
     return const TodayState();
   }
 
@@ -147,103 +160,138 @@ class TodayNotifier extends Notifier<TodayState> {
       // 取得最後更新執行記錄
       final lastRun = await _db.getLatestUpdateRun();
 
-      // 使用今日日期進行查詢（update_service 使用此日期儲存）
-      final dateCtx = DateContext.now();
-
-      // 取得今日推薦（使用 repo 的智慧回退機制處理週末）
-      final repo = ref.read(analysisRepositoryProvider);
-      final recommendations = await repo.getTodayRecommendations();
-      if (!_active || _loadGeneration != generation) return;
-
-      // 取得實際資料日期供顯示用（非查詢用途）
-      final latestPriceDate = await _db.getLatestDataDate();
-      final latestInstDate = await _db.getLatestInstitutionalDate();
-
-      // 計算顯示用的資料日期
-      final dataDate = _dataSyncService.getDisplayDataDate(
-        latestPriceDate,
-        latestInstDate,
+      final horizon = ref.read(selectedHorizonProvider);
+      final loaded = await _loadRecommendationsAndDetails(
+        horizon: horizon,
+        generation: generation,
       );
-
-      // 決定用於分析查詢的實際日期
-      // 若有推薦資料，使用該資料的日期；否則使用最新資料日期
-      final analysisDate = recommendations.isNotEmpty
-          ? DateContext.normalize(recommendations.first.date)
-          : (dataDate ?? dateCtx.today);
-
-      // 取得自選清單
-      final watchlist = await _db.getWatchlist();
-
-      // 收集所有需要載入的股票代碼
-      final recSymbols = recommendations.map((r) => r.symbol).toList();
-      final watchlistSymbols = watchlist.map((w) => w.symbol).toList();
-      final allSymbols = {...recSymbols, ...watchlistSymbols}.toList();
-
-      // 使用 Dart 3 Records 進行型別安全的批次載入（無需手動轉型）
-      // 使用實際資料日期查詢分析資料，確保非交易日也能正確顯示趨勢
-      // historyStart 必須以 analysisDate 為基準（而非今天），
-      // 避免長假/資料過期時 historyStart > analysisDate 導致查詢範圍反轉
-      final historyCtx = DateContext.forDate(analysisDate);
-      final data = await _cachedDb.loadStockListData(
-        symbols: allSymbols,
-        analysisDate: analysisDate,
-        historyStart: historyCtx.historyStart,
-      );
-      if (!_active || _loadGeneration != generation) return;
-
-      // 解構 Record 欄位，享有編譯期型別安全
-      final stocksMap = data.stocks;
-      final latestPricesMap = data.latestPrices;
-      final analysesMap = data.analyses;
-      final reasonsMap = data.reasons;
-      final priceHistoriesMap = data.priceHistories;
-
-      // 使用工具方法計算價格變化
-      final priceChanges = PriceCalculator.calculatePriceChangesBatch(
-        priceHistoriesMap,
-        latestPricesMap,
-      );
-
-      // 建立推薦詳情
-      final recWithDetails = recommendations.map((rec) {
-        final priceHistory = priceHistoriesMap[rec.symbol];
-        // 擷取最近 30 天收盤價供迷你走勢圖使用
-        // priceHistory 按日期升序排列，需取最後 30 筆才是最近的資料
-        List<double>? recentPrices;
-        if (priceHistory != null && priceHistory.isNotEmpty) {
-          final startIdx = priceHistory.length > 30
-              ? priceHistory.length - 30
-              : 0;
-          recentPrices = priceHistory
-              .sublist(startIdx)
-              .map((p) => p.close)
-              .whereType<double>()
-              .toList();
-        }
-        return RecommendationWithDetails(
-          symbol: rec.symbol,
-          score: rec.score,
-          rank: rec.rank,
-          stockName: stocksMap[rec.symbol]?.name,
-          market: stocksMap[rec.symbol]?.market,
-          latestClose: latestPricesMap[rec.symbol]?.close,
-          priceChange: priceChanges[rec.symbol],
-          reasons: reasonsMap[rec.symbol] ?? [],
-          trendState: analysesMap[rec.symbol]?.trendState,
-          recentPrices: recentPrices,
-        );
-      }).toList();
+      if (loaded == null) return; // generation 過期或 inactive
 
       state = state.copyWith(
-        recommendations: recWithDetails,
+        recommendations: loaded.recWithDetails,
         lastUpdate: lastRun?.finishedAt ?? lastRun?.startedAt,
-        dataDate: dataDate,
+        dataDate: loaded.dataDate,
         isLoading: false,
       );
     } catch (e) {
       AppLogger.warning('TodayNotifier', '載入今日資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
+  }
+
+  /// Stage 5c：horizon 切換時的 reload command
+  ///
+  /// 只重查 recommendations + 重建 recWithDetails，保留 [TodayState.lastUpdate]
+  /// / [TodayState.dataDate] / [TodayState.updateProgress] 等狀態不動。
+  /// 跟 [loadData] 共用 [_loadRecommendationsAndDetails] helper。
+  Future<void> _reloadForHorizon(Horizon horizon) async {
+    final generation = ++_loadGeneration;
+    try {
+      final loaded = await _loadRecommendationsAndDetails(
+        horizon: horizon,
+        generation: generation,
+      );
+      if (loaded == null) return;
+
+      state = state.copyWith(recommendations: loaded.recWithDetails);
+    } catch (e) {
+      AppLogger.warning('TodayNotifier', 'horizon 切換重載失敗', e);
+      // 不覆蓋現有 state，僅 log — 切換失敗的 fallback 是繼續顯示舊 list
+    }
+  }
+
+  /// 載入指定 horizon 的 recommendations 並組裝為 [RecommendationWithDetails]
+  ///
+  /// 為 [loadData] 與 [_reloadForHorizon] 共用。回傳 null 代表 generation
+  /// 已過期或 notifier 已 dispose，呼叫端應直接放棄寫入 state。
+  Future<
+    ({List<RecommendationWithDetails> recWithDetails, DateTime? dataDate})?
+  >
+  _loadRecommendationsAndDetails({
+    required Horizon horizon,
+    required int generation,
+  }) async {
+    // 使用今日日期進行查詢（update_service 使用此日期儲存）
+    final dateCtx = DateContext.now();
+
+    // 取得今日推薦（使用 repo 的智慧回退機制處理週末）
+    final repo = ref.read(analysisRepositoryProvider);
+    final recommendations = await repo.getTodayRecommendations(
+      horizon: horizon,
+    );
+    if (!_active || _loadGeneration != generation) return null;
+
+    // 取得實際資料日期供顯示用（非查詢用途）
+    final latestPriceDate = await _db.getLatestDataDate();
+    final latestInstDate = await _db.getLatestInstitutionalDate();
+
+    final dataDate = _dataSyncService.getDisplayDataDate(
+      latestPriceDate,
+      latestInstDate,
+    );
+
+    // 決定用於分析查詢的實際日期
+    final analysisDate = recommendations.isNotEmpty
+        ? DateContext.normalize(recommendations.first.date)
+        : (dataDate ?? dateCtx.today);
+
+    // 取得自選清單
+    final watchlist = await _db.getWatchlist();
+
+    // 收集所有需要載入的股票代碼
+    final recSymbols = recommendations.map((r) => r.symbol).toList();
+    final watchlistSymbols = watchlist.map((w) => w.symbol).toList();
+    final allSymbols = {...recSymbols, ...watchlistSymbols}.toList();
+
+    // historyStart 以 analysisDate 為基準，避免長假時 historyStart > analysisDate
+    final historyCtx = DateContext.forDate(analysisDate);
+    final data = await _cachedDb.loadStockListData(
+      symbols: allSymbols,
+      analysisDate: analysisDate,
+      historyStart: historyCtx.historyStart,
+    );
+    if (!_active || _loadGeneration != generation) return null;
+
+    final stocksMap = data.stocks;
+    final latestPricesMap = data.latestPrices;
+    final analysesMap = data.analyses;
+    final reasonsMap = data.reasons;
+    final priceHistoriesMap = data.priceHistories;
+
+    final priceChanges = PriceCalculator.calculatePriceChangesBatch(
+      priceHistoriesMap,
+      latestPricesMap,
+    );
+
+    final recWithDetails = recommendations.map((rec) {
+      final priceHistory = priceHistoriesMap[rec.symbol];
+      // 擷取最近 30 天收盤價供迷你走勢圖使用
+      List<double>? recentPrices;
+      if (priceHistory != null && priceHistory.isNotEmpty) {
+        final startIdx = priceHistory.length > 30
+            ? priceHistory.length - 30
+            : 0;
+        recentPrices = priceHistory
+            .sublist(startIdx)
+            .map((p) => p.close)
+            .whereType<double>()
+            .toList();
+      }
+      return RecommendationWithDetails(
+        symbol: rec.symbol,
+        score: rec.score,
+        rank: rec.rank,
+        stockName: stocksMap[rec.symbol]?.name,
+        market: stocksMap[rec.symbol]?.market,
+        latestClose: latestPricesMap[rec.symbol]?.close,
+        priceChange: priceChanges[rec.symbol],
+        reasons: reasonsMap[rec.symbol] ?? [],
+        trendState: analysesMap[rec.symbol]?.trendState,
+        recentPrices: recentPrices,
+      );
+    }).toList();
+
+    return (recWithDetails: recWithDetails, dataDate: dataDate);
   }
 
   void clearError() {
