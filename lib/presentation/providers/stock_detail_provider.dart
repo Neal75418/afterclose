@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
@@ -15,6 +16,7 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
@@ -61,6 +63,20 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       }
     });
     ref.onDispose(() => timer.cancel());
+
+    // Stage 5c dual-horizon：切換 horizon 時重新生成 AI 摘要，保留其他資料
+    // 不動。不走 ref.watch 重建 notifier，因為此 notifier 是 command-based
+    // （build 只回空 state，資料由 loadData 等 imperative command 載入）。
+    ref.listen<Horizon>(selectedHorizonProvider, (prev, next) {
+      if (prev == next) return;
+      if (!_active) return;
+      // 只有在資料已載入後才重算，否則 loadData 會用最新 horizon 生成
+      if (state.reasons.isEmpty && state.price.analysis == null) return;
+      _regenerateAiSummary(
+        revenueData: state.fundamentals.revenueHistory,
+        latestPER: state.fundamentals.latestPER,
+      );
+    });
 
     return const StockDetailState();
   }
@@ -153,7 +169,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         );
       }
 
-      // 生成 AI 智慧分析摘要
+      // 生成 AI 智慧分析摘要（Stage 5c：依當前 horizon）
       final summaryData = const AnalysisSummaryService().generate(
         analysis: analysis,
         reasons: reasons,
@@ -165,6 +181,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         institutionalHistory: syncedInstHistory,
         revenueHistory: state.fundamentals.revenueHistory,
         latestPER: state.fundamentals.latestPER,
+        horizon: ref.read(selectedHorizonProvider),
       );
       final summary = const SummaryLocalizer().localize(summaryData);
       if (!_active) return;
@@ -344,6 +361,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       institutionalHistory: state.chip.institutionalHistory,
       revenueHistory: revenueData,
       latestPER: latestPER,
+      horizon: ref.read(selectedHorizonProvider),
     );
     state = state.copyWith(
       aiSummary: const SummaryLocalizer().localize(summaryData),

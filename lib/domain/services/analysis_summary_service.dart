@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:afterclose/core/constants/analysis_params.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_enums.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
@@ -23,6 +24,11 @@ class AnalysisSummaryService {
   static const _confluenceDetector = SignalConfluenceDetector();
 
   /// 從個股分析資料生成 [SummaryData]
+  ///
+  /// Stage 5c dual-horizon: [horizon] 決定 service 讀取 `scoreShort` /
+  /// `scoreLong` 及 `ruleScoreShort` / `ruleScoreLong`。Placeholder JSON
+  /// 為空時兩個 horizon 產生相同結果（invariant：pre-calibration 期間切換
+  /// 不會產生 user-visible 變化）。
   SummaryData generate({
     required DailyAnalysisEntry? analysis,
     required List<DailyReasonEntry> reasons,
@@ -31,6 +37,7 @@ class AnalysisSummaryService {
     required List<DailyInstitutionalEntry> institutionalHistory,
     required List<FinMindRevenue> revenueHistory,
     required FinMindPER? latestPER,
+    required Horizon horizon,
   }) {
     if (analysis == null && reasons.isEmpty) {
       return const SummaryData(
@@ -60,6 +67,7 @@ class AnalysisSummaryService {
       bullishConfluence: bullishConfluence,
       bearishConfluence: bearishConfluence,
       hasConflict: hasConflict,
+      horizon: horizon,
     );
 
     // 匯流整合的關鍵訊號 & 風險因子
@@ -67,11 +75,13 @@ class AnalysisSummaryService {
       reasons,
       bullishConfluence,
       priceChange: priceChange,
+      horizon: horizon,
     );
     final riskFactors = _buildRiskFactors(
       reasons,
       bearishConfluence,
       priceChange: priceChange,
+      horizon: horizon,
     );
 
     final supporting = _buildSupportingData(
@@ -87,6 +97,7 @@ class AnalysisSummaryService {
       hasConflict: hasConflict,
       revenueHistory: revenueHistory,
       latestPER: latestPER,
+      horizon: horizon,
     );
 
     // 信心度
@@ -98,6 +109,7 @@ class AnalysisSummaryService {
       hasConflict: hasConflict,
       confluenceCount:
           bullishConfluence.matchedCount + bearishConfluence.matchedCount,
+      horizon: horizon,
     );
 
     return SummaryData(
@@ -124,6 +136,7 @@ class AnalysisSummaryService {
     required ConfluenceResult bullishConfluence,
     required ConfluenceResult bearishConfluence,
     required bool hasConflict,
+    required Horizon horizon,
   }) {
     final parts = <LocalizableString>[];
 
@@ -212,9 +225,8 @@ class AnalysisSummaryService {
       }
     }
 
-    // 分數評語
-    // Stage 5b: UI 預設讀短線 score；Stage 5c 加 horizon-aware 切換
-    final score = analysis?.scoreShort.toInt() ?? 0;
+    // 分數評語（Stage 5c: 依 horizon 讀對應欄位）
+    final score = _analysisScoreFor(analysis, horizon).toInt();
     final scoreKey = switch (score) {
       >= AnalysisParams.scoreExceptionalThreshold => 'summary.scoreExceptional',
       >= AnalysisParams.scoreStrongThreshold => 'summary.scoreStrong',
@@ -242,9 +254,13 @@ class AnalysisSummaryService {
     List<DailyReasonEntry> reasons,
     ConfluenceResult confluence, {
     double? priceChange,
+    required Horizon horizon,
   }) {
-    final positive = reasons.where((r) => r.ruleScoreShort > 0).toList()
-      ..sort((a, b) => b.ruleScoreShort.compareTo(a.ruleScoreShort));
+    final positive =
+        reasons.where((r) => _ruleScoreFor(r, horizon) > 0).toList()..sort(
+          (a, b) =>
+              _ruleScoreFor(b, horizon).compareTo(_ruleScoreFor(a, horizon)),
+        );
 
     const maxItems = AnalysisParams.summaryMaxItems;
     final signals = <LocalizableString>[];
@@ -280,9 +296,13 @@ class AnalysisSummaryService {
     List<DailyReasonEntry> reasons,
     ConfluenceResult confluence, {
     double? priceChange,
+    required Horizon horizon,
   }) {
-    final negative = reasons.where((r) => r.ruleScoreShort < 0).toList()
-      ..sort((a, b) => a.ruleScoreShort.compareTo(b.ruleScoreShort));
+    final negative =
+        reasons.where((r) => _ruleScoreFor(r, horizon) < 0).toList()..sort(
+          (a, b) =>
+              _ruleScoreFor(a, horizon).compareTo(_ruleScoreFor(b, horizon)),
+        );
 
     const maxItems = AnalysisParams.summaryMaxItems;
     final risks = <LocalizableString>[];
@@ -403,17 +423,18 @@ class AnalysisSummaryService {
     required bool hasConflict,
     required List<FinMindRevenue> revenueHistory,
     required FinMindPER? latestPER,
+    required Horizon horizon,
   }) {
-    // Stage 5b: UI 預設讀短線 score；Stage 5c 加 horizon-aware 切換
-    final score = analysis?.scoreShort.toInt() ?? 0;
+    // Stage 5c: 依 horizon 讀對應的 score + ruleScore
+    final score = _analysisScoreFor(analysis, horizon).toInt();
 
-    // 加權計算
+    // 加權計算（依 horizon 讀 per-rule 分數）
     final positiveWeight = reasons
-        .where((r) => r.ruleScoreShort > 0)
-        .fold<double>(0, (sum, r) => sum + r.ruleScoreShort);
+        .where((r) => _ruleScoreFor(r, horizon) > 0)
+        .fold<double>(0, (sum, r) => sum + _ruleScoreFor(r, horizon));
     final negativeWeight = reasons
-        .where((r) => r.ruleScoreShort < 0)
-        .fold<double>(0, (sum, r) => sum + r.ruleScoreShort.abs());
+        .where((r) => _ruleScoreFor(r, horizon) < 0)
+        .fold<double>(0, (sum, r) => sum + _ruleScoreFor(r, horizon).abs());
 
     // 基本面修正
     var fundamentalBias = 0.0;
@@ -517,6 +538,7 @@ class AnalysisSummaryService {
     required FinMindPER? latestPER,
     required bool hasConflict,
     required int confluenceCount,
+    required Horizon horizon,
   }) {
     var points = 0;
 
@@ -527,11 +549,11 @@ class AnalysisSummaryService {
       points += 1;
     }
 
-    // 高分訊號品質加權：有 2+ 個 |ruleScore| ≥ 15 的訊號
+    // 高分訊號品質加權：有 2+ 個 |ruleScore| ≥ 15 的訊號（依當前 horizon）
     final highScoreSignals = reasons
         .where(
           (r) =>
-              r.ruleScoreShort.abs() >=
+              _ruleScoreFor(r, horizon).abs() >=
               AnalysisParams.highQualitySignalThreshold,
         )
         .length;
@@ -880,5 +902,31 @@ class AnalysisSummaryService {
     if (value == null) return '-';
     if (value is num) return value.toStringAsFixed(fractionDigits);
     return value.toString();
+  }
+
+  // ==================================================
+  // Horizon resolvers (Stage 5c)
+  // ==================================================
+
+  /// 依 [horizon] 讀取 [DailyAnalysisEntry] 對應欄位的 score
+  ///
+  /// 空 analysis → 0，與 Stage 5b 之前的 `analysis?.scoreShort ?? 0` 行為一致。
+  static double _analysisScoreFor(
+    DailyAnalysisEntry? analysis,
+    Horizon horizon,
+  ) {
+    if (analysis == null) return 0;
+    return switch (horizon) {
+      Horizon.short => analysis.scoreShort,
+      Horizon.long => analysis.scoreLong,
+    };
+  }
+
+  /// 依 [horizon] 讀取 [DailyReasonEntry] 對應欄位的 per-rule score
+  static double _ruleScoreFor(DailyReasonEntry reason, Horizon horizon) {
+    return switch (horizon) {
+      Horizon.short => reason.ruleScoreShort,
+      Horizon.long => reason.ruleScoreLong,
+    };
   }
 }

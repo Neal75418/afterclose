@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 
@@ -23,6 +25,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.sentiment, SummarySentiment.neutral);
@@ -54,6 +57,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // bullRatio = 1.0 ≥ 0.75, score = 70 ≥ 55 → strongBullish
@@ -81,6 +85,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // bullRatio = 30/35 ≈ 0.86 ≥ 0.75, but score = 45 < 55 → bullish (not strong)
@@ -109,6 +114,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.sentiment, SummarySentiment.bearish);
@@ -135,6 +141,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // bullRatio = 0.0 ≤ 0.25, score = 5 < 10 → strongBearish
@@ -171,6 +178,7 @@ void main() {
           institutionalHistory: [],
           revenueHistory: [],
           latestPER: null,
+          horizon: Horizon.short,
         );
 
         // 35 positive vs 10 negative → bullRatio = 35/45 = 0.78 → bullish
@@ -196,6 +204,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.hasConflict, isTrue);
@@ -221,6 +230,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.hasConflict, isTrue);
@@ -240,6 +250,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.hasConflict, isFalse);
@@ -262,6 +273,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // bullRatio = 35/45 ≈ 0.78 > 0.65, 但 score = 30 < 35 → neutral
@@ -292,6 +304,7 @@ void main() {
         institutionalHistory: [createTestInstitutional(foreignNet: 5000)],
         revenueHistory: [createTestRevenue(yoyGrowth: 25)],
         latestPER: createTestPER(per: 12),
+        horizon: Horizon.short,
       );
 
       // 5 signals(+2) + confluences(≥1) + no conflict(+1) + 3 data sources(+3) ≥ 5
@@ -312,6 +325,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 1 signal(+0) + 0 confluences + no conflict(+1) + 0 data = 1 → low
@@ -338,6 +352,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 3 signals(+1) + confluence(≥1) + no conflict(+1) + 0 data = 3 → medium
@@ -361,6 +376,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [createTestRevenue(yoyGrowth: 40)],
         latestPER: createTestPER(per: 8, dividendYield: 6.0),
+        horizon: Horizon.short,
       );
 
       expect(resultWith.sentiment, SummarySentiment.bullish);
@@ -380,6 +396,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [createTestRevenue(yoyGrowth: -25)],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // negativeWeight = 20 + 5(fundamental) = 25, positiveWeight = 10
@@ -408,6 +425,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.keySignals, isNotEmpty);
@@ -436,6 +454,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.riskFactors, isNotEmpty);
@@ -456,6 +475,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 匯流消耗了 W2S 和 KD_GOLDEN_CROSS，
@@ -479,6 +499,7 @@ void main() {
         ],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       expect(result.supportingData, isNotEmpty);
@@ -513,6 +534,7 @@ void main() {
         ],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 法人動向應顯示最新一天（買超），不是最舊的（賣超）
@@ -540,6 +562,7 @@ void main() {
         ],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       final keys = result.supportingData.map((ls) => ls.key).toSet();
@@ -555,6 +578,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: createTestPER(per: 10, dividendYield: 5.0),
+        horizon: Horizon.short,
       );
 
       expect(result.supportingData, isNotEmpty);
@@ -583,6 +607,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 無匯流 → 使用 overallUp trend key
@@ -613,6 +638,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 有匯流 → 使用 confluenceOverall 格式而非 overallUp/Down/Range
@@ -637,6 +663,7 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // close=100, support=95, resistance=110 → 使用帶距離版本
@@ -659,11 +686,179 @@ void main() {
         institutionalHistory: [],
         revenueHistory: [],
         latestPER: null,
+        horizon: Horizon.short,
       );
 
       // 即使 close 為 null，仍應產生有效的 overallParts
       expect(result.overallParts, isNotEmpty);
       expect(result.sentiment, isNotNull);
     });
+  });
+
+  // ==========================================
+  // Stage 5c — dual-horizon awareness
+  // ==========================================
+  //
+  // 驗證 `horizon` 參數切換時，service 讀取對應 horizon 的 scoreShort /
+  // scoreLong / ruleScoreShort / ruleScoreLong。當 placeholder JSON 為空
+  // （scoreShort == scoreLong）時兩個 horizon 產生相同結果；分化時
+  // 產生對應 horizon 的判斷。
+  group('AnalysisSummaryService dual-horizon awareness', () {
+    test('long horizon reads analysis.scoreLong for sentiment grading', () {
+      // 短線 score = 10（bearish 等級），長線 score = 70（strongBullish 等級）
+      final analysis = DailyAnalysisEntry(
+        symbol: 'TEST',
+        date: DateTime(2024, 6, 15),
+        trendState: 'UP',
+        reversalState: 'NONE',
+        scoreShort: 10,
+        scoreLong: 70,
+        computedAt: DateTime(2024, 6, 15, 10, 0),
+      );
+      final reasons = [
+        createTestReasonDual(
+          reasonType: 'REVERSAL_W2S',
+          ruleScoreShort: 5,
+          ruleScoreLong: 35,
+        ),
+        createTestReasonDual(
+          reasonType: 'TECH_BREAKOUT',
+          rank: 2,
+          ruleScoreShort: 5,
+          ruleScoreLong: 20,
+        ),
+      ];
+
+      final shortResult = service.generate(
+        analysis: analysis,
+        reasons: reasons,
+        latestPrice: null,
+        priceChange: 1.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+      final longResult = service.generate(
+        analysis: analysis,
+        reasons: reasons,
+        latestPrice: null,
+        priceChange: 1.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.long,
+      );
+
+      // 短線 score=10 + 低 ruleScoreShort → 不該升到 strongBullish
+      expect(shortResult.sentiment, isNot(SummarySentiment.strongBullish));
+      // 長線 score=70 + 高 ruleScoreLong → strongBullish
+      expect(longResult.sentiment, SummarySentiment.strongBullish);
+    });
+
+    test(
+      'long horizon filters key signals by ruleScoreLong (not ruleScoreShort)',
+      () {
+        // 構造一條 rule：短線負值（應被過濾掉）、長線正值（應出現在 keySignals）
+        final reasons = [
+          createTestReasonDual(
+            reasonType: 'TECH_BREAKOUT',
+            ruleScoreShort: -10, // 短線視角下是 risk
+            ruleScoreLong: 25, // 長線視角下是 key signal
+          ),
+        ];
+        final analysis = createTestAnalysis(score: 30);
+
+        final shortResult = service.generate(
+          analysis: analysis,
+          reasons: reasons,
+          latestPrice: null,
+          priceChange: null,
+          institutionalHistory: [],
+          revenueHistory: [],
+          latestPER: null,
+          horizon: Horizon.short,
+        );
+        final longResult = service.generate(
+          analysis: analysis,
+          reasons: reasons,
+          latestPrice: null,
+          priceChange: null,
+          institutionalHistory: [],
+          revenueHistory: [],
+          latestPER: null,
+          horizon: Horizon.long,
+        );
+
+        // 短線視角：TECH_BREAKOUT 是 risk，不該出現在 keySignals
+        expect(
+          shortResult.keySignals.any((s) => s.key == 'summary.breakout'),
+          isFalse,
+        );
+        expect(
+          shortResult.riskFactors.any((s) => s.key == 'summary.breakout'),
+          isTrue,
+        );
+
+        // 長線視角：TECH_BREAKOUT 是 key signal，不該出現在 risks
+        expect(
+          longResult.keySignals.any((s) => s.key == 'summary.breakout'),
+          isTrue,
+        );
+        expect(
+          longResult.riskFactors.any((s) => s.key == 'summary.breakout'),
+          isFalse,
+        );
+      },
+    );
+
+    test(
+      'empty placeholder (scoreShort == scoreLong) produces identical result across horizons',
+      () {
+        // Stage 5c → Stage 4 的關鍵 invariant：當 calibration 是空的時候，
+        // 切換 horizon 對 UI 沒有 user-visible 影響。
+        final analysis = createTestAnalysis(score: 55);
+        final reasons = [
+          createTestReason(reasonType: 'REVERSAL_W2S', ruleScore: 30),
+          createTestReason(
+            reasonType: 'KD_GOLDEN_CROSS',
+            rank: 2,
+            ruleScore: 15,
+          ),
+        ];
+
+        final shortResult = service.generate(
+          analysis: analysis,
+          reasons: reasons,
+          latestPrice: null,
+          priceChange: 1.0,
+          institutionalHistory: [],
+          revenueHistory: [],
+          latestPER: null,
+          horizon: Horizon.short,
+        );
+        final longResult = service.generate(
+          analysis: analysis,
+          reasons: reasons,
+          latestPrice: null,
+          priceChange: 1.0,
+          institutionalHistory: [],
+          revenueHistory: [],
+          latestPER: null,
+          horizon: Horizon.long,
+        );
+
+        expect(shortResult.sentiment, longResult.sentiment);
+        expect(shortResult.confidence, longResult.confidence);
+        expect(
+          shortResult.keySignals.map((s) => s.key).toList(),
+          longResult.keySignals.map((s) => s.key).toList(),
+        );
+        expect(
+          shortResult.riskFactors.map((s) => s.key).toList(),
+          longResult.riskFactors.map((s) => s.key).toList(),
+        );
+      },
+    );
   });
 }
