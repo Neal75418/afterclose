@@ -1,3 +1,5 @@
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 
 /// 推薦理由類型
@@ -329,3 +331,33 @@ final _reasonCodeMap = <String, ReasonType>{
 };
 
 ReasonType? reasonTypeFromCode(String code) => _reasonCodeMap[code];
+
+/// Horizon-aware 分數查詢擴充（Stage 5a Commit 2）
+///
+/// 提供與 [ReasonType.score] getter 平行的新 API：[scoreFor] 會先查詢
+/// [CalibratedScoresRegistry] 取得 calibrated 分數，查無時 fallback 到
+/// hardcoded [RuleScores] 值。
+///
+/// ## 使用限制
+///
+/// **僅供主 isolate 使用**。Scoring isolate 內的評分運算應繼續使用舊的
+/// [ReasonType.score] getter（hardcoded），因為 registry singleton 在
+/// scoring isolate 中未初始化。Stage 5b 才會處理 isolate 傳遞。
+///
+/// ## Fallback 行為
+///
+/// - Registry 未載入（`main()` 尚未呼叫 `loadFromAssets`）→ 回 hardcoded
+/// - Calibrated JSON 為空（pre-launch placeholder 狀態）→ 回 hardcoded
+/// - Calibrated JSON 有此規則 → 回 calibrated int
+///
+/// 因此任何失敗路徑都會回到現有 hardcoded 分數，不會 throw 或產生無效值。
+extension ReasonTypeCalibratedScore on ReasonType {
+  /// 取得此規則在指定 [horizon] 的分數
+  ///
+  /// 若 calibrated JSON 有覆蓋此規則則回傳 calibrated 值，
+  /// 否則 fallback 到 hardcoded [RuleScores]（等同於 [ReasonType.score] getter）。
+  int scoreFor(Horizon horizon) {
+    final calibrated = CalibratedScoresRegistry.instance.lookup(horizon, code);
+    return calibrated ?? score;
+  }
+}

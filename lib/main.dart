@@ -7,8 +7,10 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:afterclose/app/router.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/app/background_update_service.dart';
+import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -40,6 +42,13 @@ void main() async {
 
   // 檢查是否已完成引導流程
   await initOnboardingStatus();
+
+  // Stage 5a: 載入 calibrated scores JSON（pre-launch placeholder 為空，
+  // 所有查詢會 fallback 到 RuleScores hardcoded 值；上線後由 Stage 4
+  // recalibrate 填入真實 calibrated 分數）
+  await CalibratedScoresRegistry.instance.loadFromAssets(
+    knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
+  );
 
   // 快取預熱（非阻塞）
   container

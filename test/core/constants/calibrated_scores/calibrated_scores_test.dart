@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 
 /// Helper: 建 happy-path JSON 字串
@@ -584,6 +585,69 @@ void main() {
 
     test('exactly 2 values (invariant for Stage 5a/5b dual-horizon)', () {
       expect(Horizon.values.length, 2);
+    });
+  });
+
+  group('ReasonType.scoreFor [Layer 3.5: end-to-end]', () {
+    tearDown(() {
+      CalibratedScoresRegistry.instance.resetForTesting();
+    });
+
+    test('28. scoreFor_without_registry_load_uses_hardcoded', () {
+      // Registry is unloaded (tearDown ran). scoreFor should return the
+      // hardcoded RuleScores value via fallback.
+      expect(
+        ReasonType.reversalW2S.scoreFor(Horizon.short),
+        RuleScores.reversalW2S,
+      );
+      expect(
+        ReasonType.techBreakout.scoreFor(Horizon.long),
+        RuleScores.techBreakout,
+      );
+    });
+
+    test('29. scoreFor_with_bindForTesting_uses_calibrated', () {
+      // Inject a fake table for short horizon with overridden scores.
+      CalibratedScoresRegistry.instance.bindForTesting(
+        short: CalibratedScoresTable(
+          horizon: Horizon.short,
+          schemaVersion: 1,
+          generatedAt: null,
+          scores: const {
+            'REVERSAL_W2S': 42, // override hardcoded 35
+            'TECH_BREAKOUT': 18, // override hardcoded 25
+          },
+        ),
+      );
+
+      expect(ReasonType.reversalW2S.scoreFor(Horizon.short), 42);
+      expect(ReasonType.techBreakout.scoreFor(Horizon.short), 18);
+
+      // Long horizon was not bound → fallback to hardcoded
+      expect(
+        ReasonType.reversalW2S.scoreFor(Horizon.long),
+        RuleScores.reversalW2S,
+      );
+    });
+
+    test('30. scoreFor_unknown_rule_in_fake_table_falls_back', () {
+      // Fake table only has REVERSAL_W2S. Querying a rule not in the table
+      // should fall back to hardcoded.
+      CalibratedScoresRegistry.instance.bindForTesting(
+        short: CalibratedScoresTable(
+          horizon: Horizon.short,
+          schemaVersion: 1,
+          generatedAt: null,
+          scores: const {'REVERSAL_W2S': 42},
+        ),
+      );
+
+      expect(ReasonType.reversalW2S.scoreFor(Horizon.short), 42);
+      // TECH_BREAKOUT not in table → fallback
+      expect(
+        ReasonType.techBreakout.scoreFor(Horizon.short),
+        RuleScores.techBreakout,
+      );
     });
   });
 }
