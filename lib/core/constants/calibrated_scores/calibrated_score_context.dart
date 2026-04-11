@@ -1,0 +1,83 @@
+import 'package:flutter/foundation.dart';
+
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+
+/// Scoring isolate 使用的 calibrated scores 查詢 context（Stage 5b）
+///
+/// 封裝兩個 horizon 的 `rule_id → calibrated score` 查找表，
+/// 由主 isolate 從 [CalibratedScoresRegistry.snapshotForIsolate] 抽取後
+/// 透過 [ScoringIsolateInput] 序列化傳入 scoring isolate。
+///
+/// ## 為什麼需要此 DTO
+///
+/// Stage 5a 的 [CalibratedScoresRegistry] 是主 isolate 的 singleton，
+/// 無法被 `Isolate.run()` spawn 的新 isolate 存取（isolate 間記憶體隔離）。
+/// Stage 5b 在 isolate 邊界引入此 typed DTO，讓 scoring isolate 內的
+/// `calculateScore` 能同步查詢兩個 horizon 的 calibrated 分數。
+///
+/// 設計對齊 [`CLAUDE.md`] 的 Isolate 通訊規則：
+/// > 使用 typed DTO (ShareholdingData, WarningDataContext,
+/// > InsiderDataContext)，避免 `Map<String, dynamic>`
+///
+/// ## 查詢語意
+///
+/// - [lookup] 回傳 `int?`：存在即為 calibrated value
+/// - 查無（rule 未 calibrated 或 map 為空）回傳 null
+/// - 呼叫端應 fallback 到 `TriggeredReason.score`（hardcoded embedded）
+///
+/// ## 空 context
+///
+/// 使用 [CalibratedScoreContext.empty] 產生空 context，所有查詢都會回 null，
+/// 等效於「全部走 hardcoded fallback」。Pre-launch 時 placeholder JSON 是
+/// 空的，這是預期的常態行為。
+@immutable
+class CalibratedScoreContext {
+  const CalibratedScoreContext({
+    required this.shortScores,
+    required this.longScores,
+  });
+
+  /// 短線 horizon 的 rule_id → calibrated score 查找表
+  final Map<String, int> shortScores;
+
+  /// 長線 horizon 的 rule_id → calibrated score 查找表
+  final Map<String, int> longScores;
+
+  /// 空 context — 用於 registry 未載入或 placeholder 為空時
+  ///
+  /// 所有 [lookup] 查詢都會回 null，呼叫端自然走 fallback 路徑。
+  factory CalibratedScoreContext.empty() =>
+      const CalibratedScoreContext(shortScores: {}, longScores: {});
+
+  /// Horizon-aware 查詢單一規則的 calibrated score
+  ///
+  /// 若 [ruleId] 不在對應 horizon 的查找表中，回傳 null。呼叫端應 fallback
+  /// 到 `TriggeredReason.score`（hardcoded embedded 值）。
+  int? lookup(Horizon horizon, String ruleId) => switch (horizon) {
+    Horizon.short => shortScores[ruleId],
+    Horizon.long => longScores[ruleId],
+  };
+
+  /// 序列化為 `Map<String, dynamic>` 供 isolate 邊界傳輸
+  ///
+  /// 因為內部只有 `Map<String, int>`（primitive-only），序列化不需要
+  /// 額外的 nested encoding。
+  Map<String, dynamic> toMap() => {
+    'shortScores': shortScores,
+    'longScores': longScores,
+  };
+
+  /// 從 isolate 邊界反序列化 Map
+  ///
+  /// 容錯處理：null 或缺失欄位會 fall back 到空 map，呼叫端的查詢
+  /// 會回 null 進而 fallback 到 hardcoded。不會 throw。
+  factory CalibratedScoreContext.fromMap(Map<String, dynamic> map) =>
+      CalibratedScoreContext(
+        shortScores: Map<String, int>.from(
+          (map['shortScores'] ?? <String, int>{}) as Map,
+        ),
+        longScores: Map<String, int>.from(
+          (map['longScores'] ?? <String, int>{}) as Map,
+        ),
+      );
+}

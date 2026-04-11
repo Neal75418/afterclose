@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -89,6 +90,25 @@ class CalibratedScoresRegistry {
     Horizon.short => _short?.lookup(ruleId),
     Horizon.long => _long?.lookup(ruleId),
   };
+
+  /// 打包兩個 horizon 的 calibrated score maps 為 isolate-safe DTO（Stage 5b）
+  ///
+  /// 主 isolate 在呼叫 scoring isolate 前呼叫此 method，把回傳的
+  /// [CalibratedScoreContext] 塞進 `ScoringIsolateInput.calibratedScores`
+  /// 欄位。Isolate 邊界序列化透過 [CalibratedScoreContext.toMap] 處理。
+  ///
+  /// 若某個 horizon 的 table 未載入（`_short` 或 `_long` 為 null），
+  /// 對應欄位會是空 map — scoring isolate 內的查詢會回 null，進而
+  /// fallback 到 hardcoded。這符合 Stage 5a 的 fallback 語意。
+  ///
+  /// **僅供主 isolate 呼叫**。scoring isolate 內已有 `CalibratedScoreContext`，
+  /// 不需要再次存取 registry。
+  CalibratedScoreContext snapshotForIsolate() {
+    return CalibratedScoreContext(
+      shortScores: _short?.scoresSnapshot() ?? const {},
+      longScores: _long?.scoresSnapshot() ?? const {},
+    );
+  }
 
   /// 測試用：重置 registry 狀態
   ///

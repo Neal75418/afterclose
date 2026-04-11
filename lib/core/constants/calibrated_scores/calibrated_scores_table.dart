@@ -61,6 +61,13 @@ class CalibratedScoresTable {
   /// 已載入的規則數量，供診斷與 smoke test 使用
   int get ruleCount => _scores.length;
 
+  /// 取得 `_scores` 的 unmodifiable view
+  ///
+  /// 用於 Stage 5b 的 [CalibratedScoresRegistry.snapshotForIsolate]：
+  /// 打包 DTO 時需要讀取完整 map 內容而不暴露寫入能力。回傳的 map
+  /// 可以安全跨 isolate 傳輸（Dart 會深拷貝 primitive map）。
+  Map<String, int> scoresSnapshot() => Map.unmodifiable(_scores);
+
   /// 空 table — 作為 malformed JSON / asset 缺失時的 safe fallback
   ///
   /// 所有 [lookup] 查詢都會回 null，呼叫端自然走 fallback 路徑。
