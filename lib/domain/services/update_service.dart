@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -269,10 +270,13 @@ class UpdateService {
 
       // 步驟 9-10：推薦 + 完成
       ctx.onProgress?.call(9, 10, '產生推薦');
-      await _generateRecommendations(scoredStocks, ctx.normalizedDate);
-      result.recommendationsGenerated = scoredStocks
-          .take(RuleParams.dailyTopN)
-          .length;
+      final counts = await _generateRecommendations(
+        scoredStocks,
+        ctx.normalizedDate,
+      );
+      // Stage 5b dual-horizon: 統計回報 short + long 寫入總筆數
+      // （每日最多 2 * dailyTopN 列，兩個 horizon 各自適用 turnover 門檻）。
+      result.recommendationsGenerated = counts.shortCount + counts.longCount;
       ctx.onProgress?.call(10, 10, '完成');
       await _finishUpdate(ctx, result);
 
@@ -690,27 +694,40 @@ class UpdateService {
     return scoredStocks;
   }
 
-  Future<void> _generateRecommendations(
+  /// 產生雙 horizon 推薦列，並回傳各自實際寫入的筆數
+  ///
+  /// Stage 5b dual-horizon：`update_service` 的 `recommendationsGenerated`
+  /// 計數改用這裡回傳的值，避免用 `scoredStocks.take(dailyTopN).length`
+  /// 這種 pre-Commit-3 的近似值（既沒套 turnover 門檻、也只反映單 horizon）。
+  Future<({int shortCount, int longCount})> _generateRecommendations(
     List<ScoredStock> scoredStocks,
     DateTime date,
   ) async {
-    final liquidStocks = scoredStocks
-        .where((s) => s.turnover >= RuleParams.topNMinTurnover)
-        .toList();
-
-    final topN = liquidStocks.take(RuleParams.dailyTopN).toList();
-
-    await _analysisRepo.saveRecommendations(
-      date,
-      topN
-          .map(
-            (s) =>
-                RecommendationData(symbol: s.symbol, score: s.score.toDouble()),
-          )
-          .toList(),
+    // 純函式負責 turnover 過濾 + 雙 sort + Top N cut
+    final (:shortRecs, :longRecs) = splitScoredStocksIntoHorizons(
+      scoredStocks,
+      dailyTopN: RuleParams.dailyTopN,
+      minTurnover: RuleParams.topNMinTurnover,
     );
 
-    AppLogger.info('UpdateService', '步驟 9: 推薦 ${topN.length} 檔');
+    // 寫入兩份獨立的 Top N — 各自原子性取代同 horizon 的舊列
+    await _analysisRepo.saveRecommendations(
+      date,
+      shortRecs,
+      horizon: Horizon.short,
+    );
+    await _analysisRepo.saveRecommendations(
+      date,
+      longRecs,
+      horizon: Horizon.long,
+    );
+
+    AppLogger.info(
+      'UpdateService',
+      '步驟 9: 推薦 short=${shortRecs.length}, long=${longRecs.length}',
+    );
+
+    return (shortCount: shortRecs.length, longCount: longRecs.length);
   }
 
   Future<void> _finishUpdate(_UpdateContext ctx, UpdateResult result) async {

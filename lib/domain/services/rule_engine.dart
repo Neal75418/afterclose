@@ -1,3 +1,5 @@
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
@@ -92,20 +94,37 @@ class RuleEngine {
 
   /// 計算最終分數，含冷卻懲罰與上限
   ///
+  /// ## Dual-horizon (Stage 5b)
+  ///
+  /// 此 method 必須指定 [horizon]。每個 reason 會先嘗試在
+  /// [calibratedScores] 對應 horizon 的查找表中查 calibrated 值，
+  /// 查無則 fallback 到 `TriggeredReason.score`（hardcoded embedded）。
+  /// 呼叫端需為每支股票分別呼叫 `Horizon.short` 與 `Horizon.long` 以得到
+  /// 雙 horizon 分數。
+  ///
+  /// [calibratedScores] 預設為 [CalibratedScoreContext.empty]，代表
+  /// 「所有規則都走 fallback」— 等效 Stage 5a 行為，單元測試可省略此參數。
+  ///
+  /// ## 組合加成已移除
+  ///
   /// 組合加成（breakout+volume、reversal+volume、institutional+combo）已於
   /// 2026-04 移除：個別規則本身已要求量能配合，再加 bonus 是 double-count，
   /// 且會讓多訊號股票全部黏在 maxScore 80 失去區分度。
   int calculateScore(
     List<TriggeredReason> reasons, {
+    required Horizon horizon,
+    CalibratedScoreContext calibratedScores = CalibratedScoreContext.empty,
     bool wasRecentlyRecommended = false,
   }) {
     if (reasons.isEmpty) return 0;
 
     double score = 0.0;
 
-    // 1. 累計各規則的基礎分數（多空訊號透過正負分數自然抵消）
+    // 1. 累計各規則的分數 — 優先用 calibrated 值，查無則 fallback 到
+    //    hardcoded `reason.score`。多空訊號透過正負分數自然抵消。
     for (final reason in reasons) {
-      score += reason.score;
+      final calibrated = calibratedScores.lookup(horizon, reason.type.code);
+      score += calibrated ?? reason.score;
     }
 
     // 2. 冷卻期懲罰：固定扣分而非乘數，避免高分股被不公平腰斬

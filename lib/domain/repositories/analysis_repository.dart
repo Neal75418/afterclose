@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
 /// 分析結果與推薦的資料儲存庫介面
@@ -52,10 +53,15 @@ abstract class IAnalysisRepository {
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date);
 
   /// 儲存每日推薦（原子性取代現有推薦）
+  ///
+  /// Stage 5b dual-horizon: [horizon] 必填，只取代該 horizon 的推薦列，
+  /// 另一個 horizon 的列不受影響。每日最多 2 * [RuleParams.dailyTopN] 列
+  /// （短線 + 長線各一份 Top 20）。
   Future<void> saveRecommendations(
     DateTime date,
-    List<RecommendationData> recommendations,
-  );
+    List<RecommendationData> recommendations, {
+    required Horizon horizon,
+  });
 
   // ==================================================
   // 冷卻期檢查
@@ -116,16 +122,22 @@ abstract class IAnalysisRepository {
 }
 
 /// 儲存推薦原因的資料類別
+///
+/// Stage 5b dual-horizon: [scoreShort] 與 [scoreLong] 分別代表此規則在
+/// 短線 / 長線 horizon 下的 calibrated / fallback 分數。scoring pipeline
+/// 在 isolate 內對每一條 reason 都會查兩個 horizon 的分數後一併放進此 DTO。
 class ReasonData {
   const ReasonData({
     required this.type,
     required this.evidenceJson,
-    required this.score,
+    required this.scoreShort,
+    required this.scoreLong,
   });
 
   final String type;
   final String evidenceJson;
-  final int score;
+  final int scoreShort;
+  final int scoreLong;
 }
 
 /// 儲存推薦的資料類別

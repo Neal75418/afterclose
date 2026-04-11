@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/liquidity_checker.dart';
@@ -52,6 +54,11 @@ class ScoringService {
     final instMap =
         batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
+    // Stage 5b dual-horizon: 從 registry 抓 calibrated context。
+    // Pre-launch placeholder JSON 為空 → 兩 horizon 都走 fallback。
+    final calibratedScores = CalibratedScoresRegistry.instance
+        .snapshotForIsolate();
+
     // 暫存待寫入的分析結果，於迴圈後以單一 transaction 批次寫入
     final pendingPersists =
         <
@@ -61,7 +68,8 @@ class ScoringService {
             String reversalState,
             double? supportLevel,
             double? resistanceLevel,
-            double score,
+            double scoreShort,
+            double scoreLong,
             List<ReasonData> reasons,
           })
         >[];
@@ -148,15 +156,24 @@ class ScoringService {
 
       if (reasons.isEmpty) continue;
 
-      // 計算分數
+      // 計算雙 horizon 分數（Stage 5b）
       final wasRecent = recentSet.contains(symbol);
-      final score = _ruleEngine.calculateScore(
+      final scoreShort = _ruleEngine.calculateScore(
         reasons,
+        horizon: Horizon.short,
+        calibratedScores: calibratedScores,
+        wasRecentlyRecommended: wasRecent,
+      );
+      final scoreLong = _ruleEngine.calculateScore(
+        reasons,
+        horizon: Horizon.long,
+        calibratedScores: calibratedScores,
         wasRecentlyRecommended: wasRecent,
       );
 
-      // 跳過低分股票（僅有弱訊號）
-      if (score < RuleParams.minScoreThreshold) {
+      // 任一 horizon 達標就保留（與 isolate 路徑對齊）
+      if (scoreShort < RuleParams.minScoreThreshold &&
+          scoreLong < RuleParams.minScoreThreshold) {
         skippedLowScore++;
         continue;
       }
@@ -164,18 +181,18 @@ class ScoringService {
       // 取得前幾個原因
       final topReasons = _ruleEngine.getTopReasons(reasons);
 
-      // 轉換為 ReasonData 並儲存
-      final reasonDataList = topReasons
-          .map(
-            (r) => ReasonData(
-              type: r.type.code,
-              evidenceJson: r.evidenceJson != null
-                  ? jsonEncode(r.evidenceJson)
-                  : '{}',
-              score: r.score,
-            ),
-          )
-          .toList();
+      // 轉換為 dual-horizon ReasonData（每條 rule 都查兩個 horizon 的分數）
+      final reasonDataList = topReasons.map((r) {
+        final code = r.type.code;
+        return ReasonData(
+          type: code,
+          evidenceJson: r.evidenceJson != null
+              ? jsonEncode(r.evidenceJson)
+              : '{}',
+          scoreShort: calibratedScores.lookup(Horizon.short, code) ?? r.score,
+          scoreLong: calibratedScores.lookup(Horizon.long, code) ?? r.score,
+        );
+      }).toList();
 
       pendingPersists.add((
         symbol: symbol,
@@ -183,12 +200,18 @@ class ScoringService {
         reversalState: analysisResult.reversalState.code,
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
-        score: score.toDouble(),
+        scoreShort: scoreShort.toDouble(),
+        scoreLong: scoreLong.toDouble(),
         reasons: reasonDataList,
       ));
 
       scoredStocks.add(
-        ScoredStock(symbol: symbol, score: score, turnover: turnover),
+        ScoredStock(
+          symbol: symbol,
+          scoreShort: scoreShort,
+          scoreLong: scoreLong,
+          turnover: turnover,
+        ),
       );
     }
 
@@ -202,7 +225,8 @@ class ScoringService {
           reversalState: p.reversalState,
           supportLevel: p.supportLevel,
           resistanceLevel: p.resistanceLevel,
-          score: p.score,
+          scoreShort: p.scoreShort,
+          scoreLong: p.scoreLong,
           reasons: p.reasons,
         );
       }
@@ -222,8 +246,12 @@ class ScoringService {
       skippedLowScore,
     );
 
-    // 依流動性加權分數排序
-    scoredStocks.sort(ScoredStock.compareByWeightedScore);
+    // 依流動性加權分數（短線 horizon）排序
+    //
+    // Stage 5b：預設回傳 short-sorted 清單給 caller，caller（update_service）
+    // 會自行呼叫 [splitScoredStocksIntoHorizons] 再排 long 版本，所以這邊
+    // 只要提供一個穩定的預設排序即可。
+    scoredStocks.sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
 
     return scoredStocks;
   }
@@ -244,6 +272,11 @@ class ScoringService {
 
     // 記錄價格資料統計
     _logCandidateStats(candidates, batchData.pricesMap, suffix: ' (Isolate)');
+
+    // Stage 5b dual-horizon: 快照 calibrated context 塞進 input，
+    // 讓 scoring isolate 內不需要存取 main-isolate 的 registry singleton。
+    final calibratedScores = CalibratedScoresRegistry.instance
+        .snapshotForIsolate();
 
     // 直接傳入 typed DTO（序列化由 toMap() 處理）
     final input = ScoringIsolateInput(
@@ -266,6 +299,7 @@ class ScoringService {
       roeHistoryMap: batchData.roeHistoryMap,
       dividendHistoryMap: batchData.dividendHistoryMap,
       maxHistoricalRevenueMap: batchData.maxHistoricalRevenueMap,
+      calibratedScores: calibratedScores,
     );
 
     // 在背景 Isolate 執行運算（含回退機制）
@@ -313,7 +347,8 @@ class ScoringService {
               (r) => ReasonData(
                 type: r.type,
                 evidenceJson: r.evidenceJson,
-                score: r.score,
+                scoreShort: r.scoreShort,
+                scoreLong: r.scoreLong,
               ),
             )
             .toList();
@@ -325,25 +360,26 @@ class ScoringService {
           reversalState: output.reversalState,
           supportLevel: output.supportLevel,
           resistanceLevel: output.resistanceLevel,
-          score: output.score.toDouble(),
+          scoreShort: output.scoreShort.toDouble(),
+          scoreLong: output.scoreLong.toDouble(),
           reasons: reasonDataList,
         );
       }
     });
 
-    // 轉換為 ScoredStock 並排序
+    // 轉換為 ScoredStock 並排序（短線 horizon 當預設）
     final scoredStocks = result.outputs
         .map(
           (o) => ScoredStock(
             symbol: o.symbol,
-            score: o.score,
+            scoreShort: o.scoreShort,
+            scoreLong: o.scoreLong,
             turnover: o.turnover,
           ),
         )
         .toList();
 
-    // 依流動性加權分數排序
-    scoredStocks.sort(ScoredStock.compareByWeightedScore);
+    scoredStocks.sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
 
     return scoredStocks;
   }
@@ -372,6 +408,9 @@ class ScoringService {
   }
 
   /// 記錄主執行緒評分結果統計
+  ///
+  /// Stage 5b：log 顯示短線 horizon 最高分當代表值（Stage 5c UI 切換後
+  /// 可改為顯示兩個 horizon 的最高分）。
   void _logScoringResults(
     List<ScoredStock> scored,
     int skippedNoData,
@@ -380,9 +419,9 @@ class ScoringService {
     int skippedLowScore, {
     String suffix = '',
   }) {
-    final maxScore = scored.isEmpty
+    final maxScoreShort = scored.isEmpty
         ? 0
-        : scored.map((s) => s.score).reduce((a, b) => a > b ? a : b);
+        : scored.map((s) => s.scoreShort).reduce((a, b) => a > b ? a : b);
     final skippedTotal =
         skippedNoData +
         skippedInsufficient +
@@ -390,7 +429,7 @@ class ScoringService {
         skippedLowScore;
     AppLogger.info(
       'ScoringService',
-      '評分完成: ${scored.length} 檔 (最高 $maxScore 分), '
+      '評分完成: ${scored.length} 檔 (short max $maxScoreShort 分), '
           '跳過 $skippedTotal 檔$suffix',
     );
   }
@@ -402,12 +441,14 @@ class ScoringService {
         result.skippedInsufficientData +
         result.skippedLowLiquidity +
         result.skippedLowScore;
-    final maxScore = result.outputs.isEmpty
+    final maxShort = result.outputs.isEmpty
         ? 0
-        : result.outputs.map((o) => o.score).reduce((a, b) => a > b ? a : b);
+        : result.outputs
+              .map((o) => o.scoreShort)
+              .reduce((a, b) => a > b ? a : b);
     AppLogger.info(
       'ScoringService',
-      '評分完成: ${result.outputs.length} 檔 (最高 $maxScore 分), '
+      '評分完成: ${result.outputs.length} 檔 (short max $maxShort 分), '
           '跳過 $skippedTotal 檔 (Isolate)',
     );
     if (result.skippedDeserialization > 0) {
@@ -424,7 +465,9 @@ class ScoringService {
 
   /// 儲存股票分析結果與觸發原因
   ///
-  /// 統一 [scoreStocks] 和 [scoreStocksInIsolate] 的儲存邏輯
+  /// 統一 [scoreStocks] 和 [scoreStocksInIsolate] 的儲存邏輯。
+  /// Stage 5b dual-horizon：pipeline 已經產生 `scoreShort` 與 `scoreLong`，
+  /// 這裡直接把兩值寫入 DB。
   Future<void> _persistAnalysisResult({
     required String symbol,
     required DateTime date,
@@ -432,11 +475,10 @@ class ScoringService {
     required String reversalState,
     required double? supportLevel,
     required double? resistanceLevel,
-    required double score,
+    required double scoreShort,
+    required double scoreLong,
     required List<ReasonData> reasons,
   }) async {
-    // Stage 5b Commit 2: scoring pipeline 還是單分數，兩個 horizon 先寫
-    // 相同值。Commit 3 的 pipeline 改動會讓這兩個參數真的分化。
     await _analysisRepo.saveAnalysis(
       symbol: symbol,
       date: date,
@@ -444,8 +486,8 @@ class ScoringService {
       reversalState: reversalState,
       supportLevel: supportLevel,
       resistanceLevel: resistanceLevel,
-      scoreShort: score,
-      scoreLong: score,
+      scoreShort: scoreShort,
+      scoreLong: scoreLong,
     );
     await _analysisRepo.saveReasons(symbol, date, reasons);
   }
@@ -474,42 +516,59 @@ class ScoringService {
 }
 
 /// 已計算分數的股票
+///
+/// Stage 5b dual-horizon: 每支股票同時攜帶短線與長線分數。
+/// 下游（`update_service._generateRecommendations` / [splitScoredStocksIntoHorizons]）
+/// 依 horizon 分別 sort 後寫入兩個獨立 Top N 列表。
 class ScoredStock {
   const ScoredStock({
     required this.symbol,
-    required this.score,
+    required this.scoreShort,
+    required this.scoreLong,
     required this.turnover,
   });
 
   final String symbol;
-  final int score;
+  final int scoreShort;
+  final int scoreLong;
   final double turnover;
 
-  /// 依流動性加權分數排序的比較函數
+  /// 依流動性加權分數排序的比較函數（horizon-aware）
+  ///
+  /// Stage 5b：取代靜態 `compareByWeightedScore`。呼叫端指定要用哪個
+  /// horizon 的分數當主鍵，例如：
+  ///
+  /// ```dart
+  /// stocks.sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
+  /// ```
   ///
   /// 策略：基礎分數 + 流動性加成
   /// 流動性加成：每 1 億成交金額 +2 分（上限 20 分）
   /// 這使高成交量股票（10 億成交、60 分）能與低成交量股票（3000 萬成交、80 分）競爭
   ///
   /// 排序優先順序：
-  /// 1. 主要：總分（由高至低）
-  /// 2. 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
-  /// 3. 第三：股票代碼（由低至高）- 確保平分處理結果一致
-  static int compareByWeightedScore(ScoredStock a, ScoredStock b) {
-    // 全部乘以 100 轉整數比較，完全消除浮點精度問題
-    final totalA = a.score * 100 + _liquidityBonus100(a.turnover);
-    final totalB = b.score * 100 + _liquidityBonus100(b.turnover);
+  /// 1. 主要：所選 horizon 的分數 + 流動性加成（由高至低）
+  /// 2. 次要：成交金額（由高至低）
+  /// 3. 第三：股票代碼（由低至高，確保 deterministic）
+  static int Function(ScoredStock, ScoredStock) compareByWeightedScoreFor(
+    Horizon horizon,
+  ) {
+    return (a, b) {
+      final scoreA = horizon == Horizon.short ? a.scoreShort : a.scoreLong;
+      final scoreB = horizon == Horizon.short ? b.scoreShort : b.scoreLong;
 
-    // 主要：總分（由高至低）
-    final scoreCmp = totalB.compareTo(totalA);
-    if (scoreCmp != 0) return scoreCmp;
+      // 全部乘以 100 轉整數比較，完全消除浮點精度問題
+      final totalA = scoreA * 100 + _liquidityBonus100(a.turnover);
+      final totalB = scoreB * 100 + _liquidityBonus100(b.turnover);
 
-    // 次要：成交金額（由高至低）- 優先選擇流動性較高的股票
-    final turnoverCmp = b.turnover.compareTo(a.turnover);
-    if (turnoverCmp != 0) return turnoverCmp;
+      final scoreCmp = totalB.compareTo(totalA);
+      if (scoreCmp != 0) return scoreCmp;
 
-    // 第三：股票代碼（由低至高）- 確保平分處理結果一致
-    return a.symbol.compareTo(b.symbol);
+      final turnoverCmp = b.turnover.compareTo(a.turnover);
+      if (turnoverCmp != 0) return turnoverCmp;
+
+      return a.symbol.compareTo(b.symbol);
+    };
   }
 
   /// 計算流動性加成（放大 100 倍取整數）
@@ -523,4 +582,53 @@ class ScoredStock {
     final max = (RuleParams.liquidityBonusMax * 100).toInt();
     return raw > max ? max : raw;
   }
+}
+
+/// 把 [ScoredStock] 清單切成 dual-horizon 的 Top N 推薦列表（純函式）
+///
+/// Stage 5b Commit 3：從 `update_service._generateRecommendations` 抽出的
+/// 純邏輯部分。決定 short / long 各自的 Top N 是兩次獨立的 sort + take + map，
+/// 抽出來讓單元測試可以直接驗證 per-horizon 排序 / minTurnover 過濾 /
+/// dailyTopN cap 這幾個行為，而不用把整個 update_service 拉進測試矩陣。
+///
+/// ## 語意
+///
+/// - [minTurnover] 門檻先套用一次，產生 liquid 候選池
+/// - 同一個 liquid 候選池分別用 `compareByWeightedScoreFor(Horizon.short)`
+///   與 `compareByWeightedScoreFor(Horizon.long)` 各 sort 一次
+/// - 每邊各 `.take(dailyTopN)`，產生兩份 [RecommendationData] 列表
+/// - 每份列表的 `score` 欄位用對應 horizon 的分數（不混用）
+({List<RecommendationData> shortRecs, List<RecommendationData> longRecs})
+splitScoredStocksIntoHorizons(
+  List<ScoredStock> scoredStocks, {
+  required int dailyTopN,
+  required double minTurnover,
+}) {
+  final liquid = scoredStocks.where((s) => s.turnover >= minTurnover).toList();
+
+  // 短線 Top N
+  final forShort = List<ScoredStock>.from(liquid)
+    ..sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
+  final shortRecs = forShort
+      .take(dailyTopN)
+      .map(
+        (s) => RecommendationData(
+          symbol: s.symbol,
+          score: s.scoreShort.toDouble(),
+        ),
+      )
+      .toList();
+
+  // 長線 Top N
+  final forLong = List<ScoredStock>.from(liquid)
+    ..sort(ScoredStock.compareByWeightedScoreFor(Horizon.long));
+  final longRecs = forLong
+      .take(dailyTopN)
+      .map(
+        (s) =>
+            RecommendationData(symbol: s.symbol, score: s.scoreLong.toDouble()),
+      )
+      .toList();
+
+  return (shortRecs: shortRecs, longRecs: longRecs);
 }

@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
@@ -142,7 +143,7 @@ void main() {
       ];
 
       // Base: 18 + 25 = 43（組合加成已於 2026-04 移除）
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 43);
     });
 
@@ -161,7 +162,7 @@ void main() {
       ];
 
       // Base: 18 + 35 = 53（bonus 已移除）
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 53);
     });
 
@@ -186,7 +187,7 @@ void main() {
 
       // Base: 18 + 35 + 22 = 75
       // 未觸及 maxScore (80)，移除 bonus 後強訊號不再被無謂 cap
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 75);
     });
   });
@@ -230,7 +231,7 @@ void main() {
 
   group('calculateScore Edge Cases', () {
     test('return 0 for empty reasons list', () {
-      final score = ruleEngine.calculateScore([]);
+      final score = ruleEngine.calculateScore([], horizon: Horizon.short);
       expect(score, 0);
     });
 
@@ -249,6 +250,7 @@ void main() {
       final score = ruleEngine.calculateScore(
         reasons,
         wasRecentlyRecommended: true,
+        horizon: Horizon.short,
       );
       expect(score, 20);
     });
@@ -268,6 +270,7 @@ void main() {
       final score = ruleEngine.calculateScore(
         reasons,
         wasRecentlyRecommended: true,
+        horizon: Horizon.short,
       );
       expect(score, 0);
     });
@@ -287,7 +290,7 @@ void main() {
       ];
 
       // 25 + (-20) = 5
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 5);
     });
   });
@@ -513,7 +516,7 @@ void main() {
         context,
         StockData(symbol: 'TEST', prices: prices),
       );
-      final score = engine.calculateScore(reasons);
+      final score = engine.calculateScore(reasons, horizon: Horizon.short);
 
       // 4 條規則 → mutex filter 後剩 1 條（techBreakout 25）→ 總分 25
       expect(score, 25);

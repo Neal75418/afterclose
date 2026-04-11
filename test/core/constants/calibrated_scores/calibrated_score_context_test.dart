@@ -12,7 +12,7 @@ void main() {
     });
 
     test('1. empty_context_returns_null_for_any_lookup', () {
-      final ctx = CalibratedScoreContext.empty();
+      const ctx = CalibratedScoreContext.empty;
 
       expect(ctx.shortScores, isEmpty);
       expect(ctx.longScores, isEmpty);

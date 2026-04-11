@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
@@ -39,7 +40,7 @@ void main() {
       // 注意：突破規則現在需要 MA20 和 2x 成交量確認，收盤 103 剛好等於 breakoutLevel (100 * 1.03)
       // 需要 close > breakoutLevel 才會觸發，所以這裡不再驗證
 
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, greaterThan(0));
     });
 
@@ -90,7 +91,7 @@ void main() {
 
       // Base: 25 + 22 = 47
       // 組合加成已於 2026-04 移除（TECH_BREAKOUT 本身已要求量能配合，再加 bonus 是 double-count）
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 47);
     });
 
@@ -109,7 +110,7 @@ void main() {
       ];
 
       // Base: 35 + 22 = 57（bonus 已於 2026-04 移除）
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 57);
     });
 
@@ -124,7 +125,7 @@ void main() {
         ),
       );
 
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, RuleScores.maxScore);
     });
 
@@ -138,7 +139,7 @@ void main() {
         ),
       ];
 
-      final score = ruleEngine.calculateScore(reasons);
+      final score = ruleEngine.calculateScore(reasons, horizon: Horizon.short);
       expect(score, 0);
     });
   });

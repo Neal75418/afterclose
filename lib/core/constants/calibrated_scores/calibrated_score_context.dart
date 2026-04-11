@@ -43,11 +43,14 @@ class CalibratedScoreContext {
   /// 長線 horizon 的 rule_id → calibrated score 查找表
   final Map<String, int> longScores;
 
-  /// 空 context — 用於 registry 未載入或 placeholder 為空時
+  /// 空 context — 用於 registry 未載入、placeholder 為空、測試或 default param。
   ///
   /// 所有 [lookup] 查詢都會回 null，呼叫端自然走 fallback 路徑。
-  factory CalibratedScoreContext.empty() =>
-      const CalibratedScoreContext(shortScores: {}, longScores: {});
+  /// 是 const 實例，可在 `const` 建構式或 default param 中直接使用。
+  static const CalibratedScoreContext empty = CalibratedScoreContext(
+    shortScores: <String, int>{},
+    longScores: <String, int>{},
+  );
 
   /// Horizon-aware 查詢單一規則的 calibrated score
   ///

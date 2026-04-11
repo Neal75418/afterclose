@@ -1,3 +1,5 @@
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
@@ -57,6 +59,9 @@ void main() {
       ),
     );
     registerFallbackValue(<TriggeredReason>[]);
+    // Stage 5b dual-horizon：calculateScore 新增 horizon + calibratedScores
+    registerFallbackValue(Horizon.short);
+    registerFallbackValue(CalibratedScoreContext.empty);
     registerFallbackValue(<DailyPriceEntry>[]);
     registerFallbackValue(<NewsItemEntry>[]);
     registerFallbackValue(<DailyInstitutionalEntry>[]);
@@ -218,6 +223,8 @@ void main() {
         () => mockRuleEngine.calculateScore(
           any(),
           wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
         ),
       ).thenReturn(80);
 
@@ -256,7 +263,7 @@ void main() {
       // Assert
       expect(result, isNotEmpty);
       expect(result.first.symbol, 'GOOD');
-      expect(result.first.score, 80);
+      expect(result.first.scoreShort, 80);
     });
 
     test('sort candidates by score descending', () async {
@@ -306,6 +313,8 @@ void main() {
         () => mockRuleEngine.calculateScore(
           any(),
           wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
         ),
       ).thenAnswer((invocation) {
         final reasons =
@@ -414,8 +423,12 @@ void main() {
       ]);
 
       when(
-        () =>
-            mockRuleEngine.calculateScore(any(), wasRecentlyRecommended: true),
+        () => mockRuleEngine.calculateScore(
+          any(),
+          wasRecentlyRecommended: true,
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
+        ),
       ).thenReturn(80);
 
       when(
@@ -444,11 +457,16 @@ void main() {
       );
 
       // Assert
-      // Verify calculateScore was called with wasRecentlyRecommended: true
+      // Stage 5b dual-horizon：calculateScore 每支股票呼叫兩次
+      // （Horizon.short 一次、Horizon.long 一次），兩次都應帶 cooldown 旗標。
       verify(
-        () =>
-            mockRuleEngine.calculateScore(any(), wasRecentlyRecommended: true),
-      ).called(1);
+        () => mockRuleEngine.calculateScore(
+          any(),
+          wasRecentlyRecommended: true,
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
+        ),
+      ).called(2);
     });
   });
 
@@ -567,6 +585,8 @@ void main() {
         () => mockRuleEngine.calculateScore(
           any(),
           wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
         ),
       );
     });
@@ -611,6 +631,8 @@ void main() {
         () => mockRuleEngine.calculateScore(
           any(),
           wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
         ),
       ).thenReturn(returnScore);
 
@@ -676,7 +698,7 @@ void main() {
       );
 
       expect(result, isNotEmpty);
-      expect(result.first.score, RuleParams.minScoreThreshold);
+      expect(result.first.scoreShort, RuleParams.minScoreThreshold);
     });
   });
 
@@ -746,6 +768,8 @@ void main() {
         () => mockRuleEngine.calculateScore(
           any(),
           wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
         ),
       ).thenReturn(30);
       when(() => mockRuleEngine.getTopReasons(any())).thenReturn([
@@ -802,11 +826,24 @@ void main() {
 
   group('ScoredStock.compareByWeightedScore', () {
     test('rank higher score first', () {
-      const a = ScoredStock(symbol: '2330', score: 60, turnover: 100000000);
-      const b = ScoredStock(symbol: '2317', score: 50, turnover: 100000000);
+      const a = ScoredStock(
+        symbol: '2330',
+        scoreShort: 60,
+        scoreLong: 60,
+        turnover: 100000000,
+      );
+      const b = ScoredStock(
+        symbol: '2317',
+        scoreShort: 50,
+        scoreLong: 50,
+        turnover: 100000000,
+      );
 
       // a should rank first (comparator returns negative for descending)
-      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+      expect(
+        ScoredStock.compareByWeightedScoreFor(Horizon.short)(a, b),
+        lessThan(0),
+      );
     });
 
     test('add liquidity bonus (2 per 100M, max 20)', () {
@@ -814,17 +851,22 @@ void main() {
       // B: score=60, turnover=50M → bonus=1, total=61
       const a = ScoredStock(
         symbol: '2330',
-        score: 50,
+        scoreShort: 50,
+        scoreLong: 50,
         turnover: 1000000000, // 1B
       );
       const b = ScoredStock(
         symbol: '2317',
-        score: 60,
+        scoreShort: 60,
+        scoreLong: 60,
         turnover: 50000000, // 50M
       );
 
       // A (70) should rank before B (61)
-      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+      expect(
+        ScoredStock.compareByWeightedScoreFor(Horizon.short)(a, b),
+        lessThan(0),
+      );
     });
 
     test('cap liquidity bonus at 20', () {
@@ -833,41 +875,64 @@ void main() {
       // Tied on total → break by turnover (A > B)
       const a = ScoredStock(
         symbol: '2330',
-        score: 50,
+        scoreShort: 50,
+        scoreLong: 50,
         turnover: 2000000000, // 2B
       );
       const b = ScoredStock(
         symbol: '2317',
-        score: 50,
+        scoreShort: 50,
+        scoreLong: 50,
         turnover: 1000000000, // 1B
       );
 
       // Both total=70, A has higher turnover → A ranks first
-      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+      expect(
+        ScoredStock.compareByWeightedScoreFor(Horizon.short)(a, b),
+        lessThan(0),
+      );
     });
 
     test('break ties by turnover descending', () {
       const a = ScoredStock(
         symbol: '2330',
-        score: 60,
+        scoreShort: 60,
+        scoreLong: 60,
         turnover: 500000000, // 500M
       );
       const b = ScoredStock(
         symbol: '2317',
-        score: 60,
+        scoreShort: 60,
+        scoreLong: 60,
         turnover: 300000000, // 300M
       );
 
       // Same score, A has higher turnover → A ranks first
-      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+      expect(
+        ScoredStock.compareByWeightedScoreFor(Horizon.short)(a, b),
+        lessThan(0),
+      );
     });
 
     test('break final ties by symbol ascending', () {
-      const a = ScoredStock(symbol: '1234', score: 60, turnover: 500000000);
-      const b = ScoredStock(symbol: '5678', score: 60, turnover: 500000000);
+      const a = ScoredStock(
+        symbol: '1234',
+        scoreShort: 60,
+        scoreLong: 60,
+        turnover: 500000000,
+      );
+      const b = ScoredStock(
+        symbol: '5678',
+        scoreShort: 60,
+        scoreLong: 60,
+        turnover: 500000000,
+      );
 
       // Same score, same turnover → "1234" < "5678" → A ranks first
-      expect(ScoredStock.compareByWeightedScore(a, b), lessThan(0));
+      expect(
+        ScoredStock.compareByWeightedScoreFor(Horizon.short)(a, b),
+        lessThan(0),
+      );
     });
   });
 }

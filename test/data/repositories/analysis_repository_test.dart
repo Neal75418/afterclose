@@ -216,8 +216,18 @@ void main() {
       test('saves reasons with rank starting from 1', () async {
         final date = DateTime(2024, 6, 15);
         final reasons = [
-          const ReasonData(type: 'TREND_UP', evidenceJson: '{}', score: 20),
-          const ReasonData(type: 'VOLUME_SPIKE', evidenceJson: '{}', score: 15),
+          const ReasonData(
+            type: 'TREND_UP',
+            evidenceJson: '{}',
+            scoreShort: 20,
+            scoreLong: 20,
+          ),
+          const ReasonData(
+            type: 'VOLUME_SPIKE',
+            evidenceJson: '{}',
+            scoreShort: 15,
+            scoreLong: 15,
+          ),
         ];
 
         when(
@@ -234,7 +244,12 @@ void main() {
         // Create 70 reasons (exceeds the 60-rule cap)
         final reasons = List.generate(
           70,
-          (i) => ReasonData(type: 'REASON_$i', evidenceJson: '{}', score: i),
+          (i) => ReasonData(
+            type: 'REASON_$i',
+            evidenceJson: '{}',
+            scoreShort: i,
+            scoreLong: i,
+          ),
         );
 
         List<dynamic>? capturedEntries;
@@ -392,7 +407,11 @@ void main() {
           () => mockDb.replaceRecommendations(date, Horizon.short, any()),
         ).thenAnswer((_) async {});
 
-        await repository.saveRecommendations(date, recs);
+        await repository.saveRecommendations(
+          date,
+          recs,
+          horizon: Horizon.short,
+        );
 
         verify(
           () => mockDb.replaceRecommendations(date, Horizon.short, any()),
@@ -415,7 +434,11 @@ void main() {
           capturedEntries = invocation.positionalArguments[2] as List<dynamic>;
         });
 
-        await repository.saveRecommendations(date, recs);
+        await repository.saveRecommendations(
+          date,
+          recs,
+          horizon: Horizon.short,
+        );
 
         expect(capturedEntries!.length, equals(RuleParams.dailyTopN));
       });
@@ -683,12 +706,14 @@ void main() {
       const reason = ReasonData(
         type: 'TREND_UP',
         evidenceJson: '{"days": 5}',
-        score: 20,
+        scoreShort: 20,
+        scoreLong: 18,
       );
 
       expect(reason.type, equals('TREND_UP'));
       expect(reason.evidenceJson, equals('{"days": 5}'));
-      expect(reason.score, equals(20));
+      expect(reason.scoreShort, equals(20));
+      expect(reason.scoreLong, equals(18));
     });
   });
 

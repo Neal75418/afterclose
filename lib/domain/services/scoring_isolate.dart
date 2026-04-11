@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:isolate';
 
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -32,6 +34,7 @@ class ScoringIsolateInput {
     this.roeHistoryMap,
     this.dividendHistoryMap,
     this.maxHistoricalRevenueMap,
+    this.calibratedScores = CalibratedScoreContext.empty,
   });
 
   final List<String> candidates;
@@ -70,6 +73,14 @@ class ScoringIsolateInput {
   /// 歷史最高月營收 Map（symbol -> maxRevenue）
   final Map<String, double>? maxHistoricalRevenueMap;
 
+  /// Calibrated scores for both horizons (Stage 5b)
+  ///
+  /// 主 isolate 從 `CalibratedScoresRegistry.instance.snapshotForIsolate()`
+  /// 取出後塞入此欄位，scoring isolate 在 `calculateScore` 中查詢。
+  /// 預設為 [CalibratedScoreContext.empty]，查詢都會回 null，fallback 到
+  /// `TriggeredReason.score`（Stage 5a 等效行為）。
+  final CalibratedScoreContext calibratedScores;
+
   Map<String, dynamic> toMap() => {
     'candidates': candidates,
     'pricesMap': pricesMap.map(
@@ -102,6 +113,7 @@ class ScoringIsolateInput {
       (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
     ),
     'maxHistoricalRevenueMap': maxHistoricalRevenueMap,
+    'calibratedScores': calibratedScores.toMap(),
   };
 
   factory ScoringIsolateInput.fromMap(Map<String, dynamic> map) {
@@ -179,6 +191,11 @@ class ScoringIsolateInput {
       maxHistoricalRevenueMap: map['maxHistoricalRevenueMap'] != null
           ? Map<String, double>.from(map['maxHistoricalRevenueMap'])
           : null,
+      calibratedScores: map['calibratedScores'] != null
+          ? CalibratedScoreContext.fromMap(
+              Map<String, dynamic>.from(map['calibratedScores'] as Map),
+            )
+          : CalibratedScoreContext.empty,
     );
   }
 
@@ -266,23 +283,27 @@ class ScoringIsolateInput {
 
 /// Isolate 通訊邊界的 reason 型別安全封裝
 ///
-/// 替代 `Map<String, dynamic>`，在 isolate 邊界提供編譯期型別檢查
+/// Stage 5b dual-horizon: 攜帶兩個 horizon 的 per-rule 分數，供主 isolate
+/// 寫入 `daily_reason.rule_score_short` / `rule_score_long`。
 class IsolateReasonOutput {
   const IsolateReasonOutput({
     required this.type,
-    required this.score,
+    required this.scoreShort,
+    required this.scoreLong,
     required this.description,
     required this.evidenceJson,
   });
 
   final String type;
-  final int score;
+  final int scoreShort;
+  final int scoreLong;
   final String description;
   final String evidenceJson;
 
   Map<String, dynamic> toMap() => {
     'type': type,
-    'score': score,
+    'scoreShort': scoreShort,
+    'scoreLong': scoreLong,
     'description': description,
     'evidenceJson': evidenceJson,
   };
@@ -290,7 +311,8 @@ class IsolateReasonOutput {
   factory IsolateReasonOutput.fromMap(Map<String, dynamic> map) {
     return IsolateReasonOutput(
       type: map['type'] as String,
-      score: map['score'] as int,
+      scoreShort: map['scoreShort'] as int,
+      scoreLong: map['scoreLong'] as int,
       description: map['description'] as String,
       evidenceJson: map['evidenceJson'] as String,
     );
@@ -298,10 +320,14 @@ class IsolateReasonOutput {
 }
 
 /// Isolate 評分輸出結果
+///
+/// Stage 5b dual-horizon: 每支股票攜帶兩個 horizon 的分數，主 isolate
+/// 依 horizon 分別做 Top N sort 後寫入 `daily_recommendation`。
 class ScoringIsolateOutput {
   const ScoringIsolateOutput({
     required this.symbol,
-    required this.score,
+    required this.scoreShort,
+    required this.scoreLong,
     required this.turnover,
     required this.trendState,
     required this.reversalState,
@@ -311,7 +337,8 @@ class ScoringIsolateOutput {
   });
 
   final String symbol;
-  final int score;
+  final int scoreShort;
+  final int scoreLong;
   final double turnover;
   final String trendState;
   final String reversalState;
@@ -321,7 +348,8 @@ class ScoringIsolateOutput {
 
   Map<String, dynamic> toMap() => {
     'symbol': symbol,
-    'score': score,
+    'scoreShort': scoreShort,
+    'scoreLong': scoreLong,
     'turnover': turnover,
     'trendState': trendState,
     'reversalState': reversalState,
@@ -333,7 +361,8 @@ class ScoringIsolateOutput {
   factory ScoringIsolateOutput.fromMap(Map<String, dynamic> map) {
     return ScoringIsolateOutput(
       symbol: map['symbol'] as String,
-      score: map['score'] as int,
+      scoreShort: map['scoreShort'] as int,
+      scoreLong: map['scoreLong'] as int,
       turnover: map['turnover'] as double,
       trendState: map['trendState'] as String,
       reversalState: map['reversalState'] as String,
@@ -482,14 +511,27 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
     if (reasons.isEmpty) continue;
 
-    // 7. 計算分數並過濾
+    // 7. 計算雙 horizon 分數，任一達到門檻就保留
+    //
+    //    Stage 5b 決議（設計 §9）：`minScoreThreshold` 兩 horizon 共用，
+    //    不做 per-horizon 拆分（YAGNI）。「任一通過」的語意能涵蓋
+    //    短線強勢 + 長線弱勢 或反之的候選。
     final wasRecent = recentSet.contains(symbol);
-    final score = ruleEngine.calculateScore(
+    final scoreShort = ruleEngine.calculateScore(
       reasons,
+      horizon: Horizon.short,
+      calibratedScores: input.calibratedScores,
+      wasRecentlyRecommended: wasRecent,
+    );
+    final scoreLong = ruleEngine.calculateScore(
+      reasons,
+      horizon: Horizon.long,
+      calibratedScores: input.calibratedScores,
       wasRecentlyRecommended: wasRecent,
     );
 
-    if (score < RuleParams.minScoreThreshold) {
+    if (scoreShort < RuleParams.minScoreThreshold &&
+        scoreLong < RuleParams.minScoreThreshold) {
       skippedLowScore++;
       continue;
     }
@@ -498,13 +540,16 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     outputs.add(
       ScoringIsolateOutput(
         symbol: symbol,
-        score: score,
+        scoreShort: scoreShort,
+        scoreLong: scoreLong,
         turnover: turnover,
         trendState: analysisResult.trendState.code,
         reversalState: analysisResult.reversalState.code,
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
-        reasons: topReasons.map(_reasonToOutput).toList(),
+        reasons: topReasons
+            .map((r) => _reasonToOutput(r, input.calibratedScores))
+            .toList(),
       ),
     );
   }
@@ -576,10 +621,19 @@ extension _MapIfEmpty<K, V> on Map<K, V> {
   Map<K, V>? ifEmpty(Map<K, V>? fallback) => isEmpty ? fallback : this;
 }
 
-IsolateReasonOutput _reasonToOutput(TriggeredReason reason) {
+/// 建立 [IsolateReasonOutput]，為兩個 horizon 各自查 calibrated 後 fallback。
+///
+/// 在 isolate 邊界落入 DTO 前就決定 per-rule 分數，這樣主 isolate 寫庫時
+/// 可以直接把 `scoreShort` / `scoreLong` 塞進 `DailyReason` 的雙欄位。
+IsolateReasonOutput _reasonToOutput(
+  TriggeredReason reason,
+  CalibratedScoreContext ctx,
+) {
+  final code = reason.type.code;
   return IsolateReasonOutput(
-    type: reason.type.code,
-    score: reason.score,
+    type: code,
+    scoreShort: ctx.lookup(Horizon.short, code) ?? reason.score,
+    scoreLong: ctx.lookup(Horizon.long, code) ?? reason.score,
     description: reason.description,
     evidenceJson: reason.evidenceJson != null
         ? jsonEncode(reason.evidenceJson)

@@ -119,10 +119,11 @@ class AnalysisRepository implements IAnalysisRepository {
           rank: i + 1,
           reasonType: reason.type,
           evidenceJson: reason.evidenceJson,
-          // Stage 5b Commit 2: scoring pipeline 還是單分數，先把同一個值
-          // 寫入兩個 horizon 欄位。Commit 3 會讓 pipeline 真正產生不同值。
-          ruleScoreShort: Value(reason.score.toDouble()),
-          ruleScoreLong: Value(reason.score.toDouble()),
+          // Stage 5b dual-horizon：ReasonData 攜帶兩個 horizon 的分數，
+          // 直接寫入各自欄位。Stage 5a placeholder JSON 為空時兩值
+          // 相等（都走 fallback），calibration 上線後會分化。
+          ruleScoreShort: Value(reason.scoreShort.toDouble()),
+          ruleScoreLong: Value(reason.scoreLong.toDouble()),
         ),
       );
     }
@@ -179,16 +180,16 @@ class AnalysisRepository implements IAnalysisRepository {
     );
   }
 
-  /// 儲存每日推薦股（原子性取代既有推薦）
+  /// 儲存每日推薦股（原子性取代指定 horizon 的推薦）
   ///
-  /// Stage 5b Commit 2: scoring pipeline 還是單分數，暫時只寫入
-  /// `Horizon.short` 的 rows（跟舊行為一致）。Commit 3 會讓 pipeline
-  /// 同時產生 short + long 兩份 Top 20 並各自寫入。
+  /// Stage 5b dual-horizon: [horizon] 決定寫入哪個 pivot。同一日的
+  /// short 與 long 是兩組獨立資料，各自透過此 method 分別寫入。
   @override
   Future<void> saveRecommendations(
     DateTime date,
-    List<RecommendationData> recommendations,
-  ) async {
+    List<RecommendationData> recommendations, {
+    required Horizon horizon,
+  }) async {
     // 限制為 Top N
     final limited = recommendations.take(RuleParams.dailyTopN).toList();
     final normalizedDate = DateContext.normalize(date);
@@ -199,7 +200,7 @@ class AnalysisRepository implements IAnalysisRepository {
       entries.add(
         DailyRecommendationCompanion.insert(
           date: normalizedDate,
-          horizon: Horizon.short.name,
+          horizon: horizon.name,
           rank: i + 1,
           symbol: rec.symbol,
           score: rec.score,
@@ -207,8 +208,8 @@ class AnalysisRepository implements IAnalysisRepository {
       );
     }
 
-    // 使用原子性取代確保一致性
-    await _db.replaceRecommendations(normalizedDate, Horizon.short, entries);
+    // 使用原子性取代確保一致性（只影響此 horizon 的 rows）
+    await _db.replaceRecommendations(normalizedDate, horizon, entries);
   }
 
   // ==================================================
