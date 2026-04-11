@@ -29,7 +29,8 @@ void main() {
       analysesMap[s] = DailyAnalysisEntry(
         symbol: s,
         date: defaultDate,
-        score: 70.0,
+        scoreShort: 70.0,
+        scoreLong: 70.0,
         trendState: 'BULLISH',
         reversalState: '',
         computedAt: defaultDate,

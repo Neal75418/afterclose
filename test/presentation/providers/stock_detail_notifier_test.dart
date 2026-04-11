@@ -88,7 +88,8 @@ DailyAnalysisEntry createAnalysis({
   return DailyAnalysisEntry(
     symbol: symbol,
     date: date ?? _defaultDate,
-    score: score,
+    scoreShort: score,
+    scoreLong: score,
     trendState: 'BULLISH',
     reversalState: '',
     computedAt: date ?? _defaultDate,
@@ -107,7 +108,8 @@ DailyReasonEntry createReason({
     rank: rank,
     reasonType: reasonType,
     evidenceJson: '{}',
-    ruleScore: 10.0,
+    ruleScoreShort: 10.0,
+    ruleScoreLong: 10.0,
   );
 }
 

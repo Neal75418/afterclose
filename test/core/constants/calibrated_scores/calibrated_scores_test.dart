@@ -554,11 +554,11 @@ void main() {
       // Second and third calls should be no-ops. We verify by checking that
       // bindForTesting state is not overwritten by a subsequent load.
       CalibratedScoresRegistry.instance.bindForTesting(
-        short: CalibratedScoresTable(
+        short: const CalibratedScoresTable(
           horizon: Horizon.short,
           schemaVersion: 1,
           generatedAt: null,
-          scores: const {'FAKE_RULE': 42},
+          scores: {'FAKE_RULE': 42},
         ),
       );
       // bindForTesting sets _loaded = true. Subsequent loadFromAssets should
@@ -586,11 +586,11 @@ void main() {
         final pending = CalibratedScoresRegistry.instance.loadFromAssets();
 
         CalibratedScoresRegistry.instance.bindForTesting(
-          short: CalibratedScoresTable(
+          short: const CalibratedScoresTable(
             horizon: Horizon.short,
             schemaVersion: 1,
             generatedAt: null,
-            scores: const {'FAKE_RACE': 99},
+            scores: {'FAKE_RACE': 99},
           ),
         );
 
@@ -606,11 +606,11 @@ void main() {
 
     test('27. resetForTesting_clears_state', () async {
       CalibratedScoresRegistry.instance.bindForTesting(
-        short: CalibratedScoresTable(
+        short: const CalibratedScoresTable(
           horizon: Horizon.short,
           schemaVersion: 1,
           generatedAt: null,
-          scores: const {'REVERSAL_W2S': 28},
+          scores: {'REVERSAL_W2S': 28},
         ),
       );
       expect(
@@ -669,11 +669,11 @@ void main() {
     test('29. scoreFor_with_bindForTesting_uses_calibrated', () {
       // Inject a fake table for short horizon with overridden scores.
       CalibratedScoresRegistry.instance.bindForTesting(
-        short: CalibratedScoresTable(
+        short: const CalibratedScoresTable(
           horizon: Horizon.short,
           schemaVersion: 1,
           generatedAt: null,
-          scores: const {
+          scores: {
             'REVERSAL_W2S': 42, // override hardcoded 35
             'TECH_BREAKOUT': 18, // override hardcoded 25
           },
@@ -694,11 +694,11 @@ void main() {
       // Fake table only has REVERSAL_W2S. Querying a rule not in the table
       // should fall back to hardcoded.
       CalibratedScoresRegistry.instance.bindForTesting(
-        short: CalibratedScoresTable(
+        short: const CalibratedScoresTable(
           horizon: Horizon.short,
           schemaVersion: 1,
           generatedAt: null,
-          scores: const {'REVERSAL_W2S': 42},
+          scores: {'REVERSAL_W2S': 42},
         ),
       );
 

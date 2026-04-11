@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
   late AppDatabase db;
@@ -86,7 +87,8 @@ void main() {
               symbol: entry.$1,
               date: analysisDate,
               trendState: entry.$3,
-              score: Value(entry.$2),
+              scoreShort: Value(entry.$2),
+              scoreLong: Value(entry.$2),
             ),
           );
         }
@@ -94,7 +96,7 @@ void main() {
         // 驗證分析寫入
         final analysis = await db.getAnalysis('2330', analysisDate);
         expect(analysis, isNotNull);
-        expect(analysis!.score, 85.0);
+        expect(analysis!.scoreShort, 85.0);
         expect(analysis.trendState, 'UP');
 
         // Step 4: 寫入分析原因
@@ -105,7 +107,8 @@ void main() {
             rank: 1,
             reasonType: 'GOLDEN_CROSS',
             evidenceJson: '{"period": 20}',
-            ruleScore: const Value(25.0),
+            ruleScoreShort: const Value(25.0),
+            ruleScoreLong: const Value(25.0),
           ),
           DailyReasonCompanion.insert(
             symbol: '2330',
@@ -113,7 +116,8 @@ void main() {
             rank: 2,
             reasonType: 'VOLUME_SPIKE',
             evidenceJson: '{"ratio": 4.5}',
-            ruleScore: const Value(22.0),
+            ruleScoreShort: const Value(22.0),
+            ruleScoreLong: const Value(22.0),
           ),
         ]);
 
@@ -124,17 +128,22 @@ void main() {
             date: analysisDate,
             score: 85.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
           DailyRecommendationCompanion.insert(
             symbol: '2317',
             date: analysisDate,
             score: 72.0,
             rank: 2,
+            horizon: Horizon.short.name,
           ),
         ]);
 
         // Step 6: 查詢推薦清單
-        final recommendations = await db.getRecommendations(analysisDate);
+        final recommendations = await db.getRecommendations(
+          analysisDate,
+          horizon: Horizon.short,
+        );
         expect(recommendations.length, 2);
         expect(recommendations.first.symbol, '2330');
         expect(recommendations.first.score, 85.0);

@@ -435,6 +435,8 @@ class ScoringService {
     required double score,
     required List<ReasonData> reasons,
   }) async {
+    // Stage 5b Commit 2: scoring pipeline 還是單分數，兩個 horizon 先寫
+    // 相同值。Commit 3 的 pipeline 改動會讓這兩個參數真的分化。
     await _analysisRepo.saveAnalysis(
       symbol: symbol,
       date: date,
@@ -442,7 +444,8 @@ class ScoringService {
       reversalState: reversalState,
       supportLevel: supportLevel,
       resistanceLevel: resistanceLevel,
-      score: score,
+      scoreShort: score,
+      scoreLong: score,
     );
     await _analysisRepo.saveReasons(symbol, date, reasons);
   }

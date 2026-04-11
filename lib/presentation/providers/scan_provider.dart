@@ -181,7 +181,8 @@ class ScanNotifier extends Notifier<ScanState> {
       // 更新 DateContext 以反映實際資料日期
       final dateCtx = DateContext.forDate(targetDate);
       _dateCtx = dateCtx;
-      _allAnalyses = analyses.where((a) => a.score > 0).toList();
+      // Stage 5b: 掃描結果過濾條件用短線分數；Stage 5c 可加 horizon 切換
+      _allAnalyses = analyses.where((a) => a.scoreShort > 0).toList();
       _allReasons = {};
       // Lazy load：只在目前 filter 真正需要時才載入（切換 filter 時按需載入）
       if (_allAnalyses.isNotEmpty && state.filter != ScanFilter.all) {

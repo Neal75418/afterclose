@@ -80,7 +80,8 @@ DailyAnalysisEntry createAnalysis({
     date: date ?? DateTime.utc(2026, 2, 13),
     trendState: 'BULLISH',
     reversalState: 'NONE',
-    score: score,
+    scoreShort: score,
+    scoreLong: score,
     computedAt: DateTime.utc(2026, 2, 13),
   );
 }
@@ -96,7 +97,8 @@ DailyReasonEntry createReason({
     rank: 1,
     reasonType: reasonType,
     evidenceJson: '{}',
-    ruleScore: 10.0,
+    ruleScoreShort: 10.0,
+    ruleScoreLong: 10.0,
   );
 }
 

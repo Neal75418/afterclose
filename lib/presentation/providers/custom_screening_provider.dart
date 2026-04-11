@@ -389,7 +389,8 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
 
       return ScanStockItem(
         symbol: symbol,
-        score: analysis?.score ?? 0,
+        // Stage 5b: 自訂篩選顯示短線分數
+        score: analysis?.scoreShort ?? 0,
         stockName: stocksMap[symbol]?.name,
         market: stocksMap[symbol]?.market,
         industry: stocksMap[symbol]?.industry,

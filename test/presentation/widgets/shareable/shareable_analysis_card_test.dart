@@ -51,7 +51,8 @@ void main() {
         analysis: DailyAnalysisEntry(
           symbol: symbol,
           date: defaultDate,
-          score: score,
+          scoreShort: score,
+          scoreLong: score,
           trendState: trend,
           reversalState: reversal,
           computedAt: defaultDate,
@@ -138,7 +139,8 @@ void main() {
             rank: 1,
             reasonType: 'GOLDEN_CROSS',
             evidenceJson: '{}',
-            ruleScore: 10.0,
+            ruleScoreShort: 10.0,
+            ruleScoreLong: 10.0,
           ),
         ],
       );

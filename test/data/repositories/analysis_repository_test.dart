@@ -5,6 +5,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 class MockAppDatabase extends Mock implements AppDatabase {}
 
@@ -42,7 +43,8 @@ void main() {
           date: date,
           trendState: 'UP',
           reversalState: 'NONE',
-          score: 85.0,
+          scoreShort: 85.0,
+          scoreLong: 85.0,
           computedAt: DateTime(2024, 6, 15, 10, 30),
         );
 
@@ -91,7 +93,8 @@ void main() {
             date: date,
             trendState: 'UP',
             reversalState: 'NONE',
-            score: 85.0,
+            scoreShort: 85.0,
+            scoreLong: 85.0,
             computedAt: DateTime(2024, 6, 15, 10, 30),
           ),
           DailyAnalysisEntry(
@@ -99,7 +102,8 @@ void main() {
             date: date,
             trendState: 'DOWN',
             reversalState: 'W2S',
-            score: 60.0,
+            scoreShort: 60.0,
+            scoreLong: 60.0,
             computedAt: DateTime(2024, 6, 15, 10, 30),
           ),
         ];
@@ -138,7 +142,8 @@ void main() {
           reversalState: 'NONE',
           supportLevel: 100.0,
           resistanceLevel: 120.0,
-          score: 85.0,
+          scoreShort: 85.0,
+          scoreLong: 85.0,
         );
 
         verify(() => mockDb.insertAnalysis(any())).called(1);
@@ -154,7 +159,8 @@ void main() {
           date: date,
           trendState: 'DOWN',
           reversalState: 'S2W',
-          score: 50.0,
+          scoreShort: 50.0,
+          scoreLong: 50.0,
         );
 
         verify(() => mockDb.insertAnalysis(any())).called(1);
@@ -171,7 +177,8 @@ void main() {
             rank: 1,
             reasonType: 'TREND_UP',
             evidenceJson: '{"days": 5}',
-            ruleScore: 20.0,
+            ruleScoreShort: 20.0,
+            ruleScoreLong: 20.0,
           ),
           DailyReasonEntry(
             symbol: '2330',
@@ -179,7 +186,8 @@ void main() {
             rank: 2,
             reasonType: 'VOLUME_SPIKE',
             evidenceJson: '{"ratio": 2.5}',
-            ruleScore: 15.0,
+            ruleScoreShort: 15.0,
+            ruleScoreLong: 15.0,
           ),
         ];
 
@@ -251,17 +259,19 @@ void main() {
             rank: 1,
             symbol: '2330',
             score: 95.0,
+            horizon: 'short',
           ),
           DailyRecommendationEntry(
             date: date,
             rank: 2,
             symbol: '2317',
             score: 85.0,
+            horizon: 'short',
           ),
         ];
 
         when(
-          () => mockDb.getRecommendations(date),
+          () => mockDb.getRecommendations(date, horizon: Horizon.short),
         ).thenAnswer((_) async => recs);
 
         final result = await repository.getRecommendations(date);
@@ -275,12 +285,16 @@ void main() {
         final normalizedDate = DateTime(2024, 6, 15);
 
         when(
-          () => mockDb.getRecommendations(normalizedDate),
+          () =>
+              mockDb.getRecommendations(normalizedDate, horizon: Horizon.short),
         ).thenAnswer((_) async => []);
 
         await repository.getRecommendations(dateWithTime);
 
-        verify(() => mockDb.getRecommendations(normalizedDate)).called(1);
+        verify(
+          () =>
+              mockDb.getRecommendations(normalizedDate, horizon: Horizon.short),
+        ).called(1);
       });
     });
 
@@ -294,11 +308,12 @@ void main() {
             rank: 1,
             symbol: '2330',
             score: 95.0,
+            horizon: 'short',
           ),
         ];
 
         when(
-          () => mockDb.getRecommendations(any()),
+          () => mockDb.getRecommendations(any(), horizon: Horizon.short),
         ).thenAnswer((_) async => recs);
 
         final result = await repository.getTodayRecommendations();
@@ -316,11 +331,14 @@ void main() {
             rank: 1,
             symbol: '2330',
             score: 95.0,
+            horizon: 'short',
           ),
         ];
 
         var callCount = 0;
-        when(() => mockDb.getRecommendations(any())).thenAnswer((_) async {
+        when(
+          () => mockDb.getRecommendations(any(), horizon: Horizon.short),
+        ).thenAnswer((_) async {
           callCount++;
           if (callCount == 1) return []; // today - empty
           return recs; // yesterday - has data
@@ -343,11 +361,14 @@ void main() {
             rank: 1,
             symbol: '2330',
             score: 95.0,
+            horizon: 'short',
           ),
         ];
 
         var callCount = 0;
-        when(() => mockDb.getRecommendations(any())).thenAnswer((_) async {
+        when(
+          () => mockDb.getRecommendations(any(), horizon: Horizon.short),
+        ).thenAnswer((_) async {
           callCount++;
           if (callCount <= 2) return []; // today and yesterday - empty
           return recs; // day before yesterday - has data
@@ -368,12 +389,14 @@ void main() {
         ];
 
         when(
-          () => mockDb.replaceRecommendations(date, any()),
+          () => mockDb.replaceRecommendations(date, Horizon.short, any()),
         ).thenAnswer((_) async {});
 
         await repository.saveRecommendations(date, recs);
 
-        verify(() => mockDb.replaceRecommendations(date, any())).called(1);
+        verify(
+          () => mockDb.replaceRecommendations(date, Horizon.short, any()),
+        ).called(1);
       });
 
       test('limits recommendations to dailyTopN (20)', () async {
@@ -385,10 +408,11 @@ void main() {
         );
 
         List<dynamic>? capturedEntries;
-        when(() => mockDb.replaceRecommendations(date, any())).thenAnswer((
-          invocation,
-        ) async {
-          capturedEntries = invocation.positionalArguments[1] as List<dynamic>;
+        when(
+          () => mockDb.replaceRecommendations(date, Horizon.short, any()),
+        ).thenAnswer((invocation) async {
+          // Stage 5b: replaceRecommendations(date, horizon, entries) — entries is now positional arg [2]
+          capturedEntries = invocation.positionalArguments[2] as List<dynamic>;
         });
 
         await repository.saveRecommendations(date, recs);
@@ -522,7 +546,9 @@ void main() {
       test('returns empty list when no recommendations', () async {
         final date = DateTime(2024, 6, 15);
 
-        when(() => mockDb.getRecommendations(date)).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getRecommendations(date, horizon: Horizon.short),
+        ).thenAnswer((_) async => []);
 
         final result = await repository.getRecommendationsWithDetails(date);
 
@@ -537,12 +563,14 @@ void main() {
             rank: 1,
             symbol: '2330',
             score: 95.0,
+            horizon: 'short',
           ),
           DailyRecommendationEntry(
             date: date,
             rank: 2,
             symbol: '2317',
             score: 85.0,
+            horizon: 'short',
           ),
         ];
 
@@ -573,14 +601,15 @@ void main() {
               rank: 1,
               reasonType: 'TREND_UP',
               evidenceJson: '{}',
-              ruleScore: 20.0,
+              ruleScoreShort: 20.0,
+              ruleScoreLong: 20.0,
             ),
           ],
           '2317': [],
         };
 
         when(
-          () => mockDb.getRecommendations(date),
+          () => mockDb.getRecommendations(date, horizon: Horizon.short),
         ).thenAnswer((_) async => recs);
         when(
           () => mockDb.getStocksBatch(['2330', '2317']),
@@ -608,12 +637,14 @@ void main() {
             rank: 1,
             symbol: '2330',
             score: 95.0,
+            horizon: 'short',
           ),
           DailyRecommendationEntry(
             date: date,
             rank: 2,
             symbol: 'INVALID',
             score: 85.0,
+            horizon: 'short',
           ),
         ];
 
@@ -630,7 +661,7 @@ void main() {
         };
 
         when(
-          () => mockDb.getRecommendations(date),
+          () => mockDb.getRecommendations(date, horizon: Horizon.short),
         ).thenAnswer((_) async => recs);
         when(
           () => mockDb.getStocksBatch(['2330', 'INVALID']),
@@ -678,6 +709,7 @@ void main() {
         rank: 1,
         symbol: '2330',
         score: 95.0,
+        horizon: 'short',
       );
       final stock = StockMasterEntry(
         symbol: '2330',
@@ -694,7 +726,8 @@ void main() {
           rank: 1,
           reasonType: 'TREND_UP',
           evidenceJson: '{}',
-          ruleScore: 20.0,
+          ruleScoreShort: 20.0,
+          ruleScoreLong: 20.0,
         ),
       ];
 

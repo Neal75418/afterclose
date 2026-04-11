@@ -59,11 +59,13 @@ class ScanFilterService {
   ///
   /// 就地排序（in-place），直接修改傳入的 list。
   void applySort(List<DailyAnalysisEntry> analyses, ScanSort sort) {
+    // Stage 5b: 掃描結果暫時依短線分數排序；Stage 5c 會讓 UI 根據當前
+    // 選中的 horizon 決定排序欄位
     if (sort == ScanSort.scoreAsc) {
-      analyses.sort((a, b) => a.score.compareTo(b.score));
+      analyses.sort((a, b) => a.scoreShort.compareTo(b.scoreShort));
     } else {
       // 預設：分數降冪
-      analyses.sort((b, a) => a.score.compareTo(b.score));
+      analyses.sort((b, a) => a.scoreShort.compareTo(b.scoreShort));
     }
   }
 
@@ -122,7 +124,7 @@ class ScanFilterService {
       }
       return ScanStockItem(
         symbol: analysis.symbol,
-        score: analysis.score,
+        score: analysis.scoreShort,
         stockName: stocksMap[analysis.symbol]?.name,
         market: stocksMap[analysis.symbol]?.market,
         industry: stocksMap[analysis.symbol]?.industry,

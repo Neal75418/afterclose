@@ -3,11 +3,23 @@ import 'package:drift/drift.dart';
 import 'package:afterclose/data/database/tables/stock_master.dart';
 
 /// 每日分析結果 Table（每日資料不可變）
+///
+/// Stage 5b dual-horizon: `score` 欄位拆分為 `scoreShort` + `scoreLong`，
+/// 技術分析欄位（trendState / reversalState / support / resistance）
+/// 是 horizon-agnostic 仍維持單欄位。
 @DataClassName('DailyAnalysisEntry')
 @TableIndex(name: 'idx_daily_analysis_date', columns: {#date})
-@TableIndex(name: 'idx_daily_analysis_score', columns: {#score})
+@TableIndex(name: 'idx_daily_analysis_score_short', columns: {#scoreShort})
+@TableIndex(name: 'idx_daily_analysis_score_long', columns: {#scoreLong})
 @TableIndex(name: 'idx_daily_analysis_symbol_date', columns: {#symbol, #date})
-@TableIndex(name: 'idx_daily_analysis_date_score', columns: {#date, #score})
+@TableIndex(
+  name: 'idx_daily_analysis_date_score_short',
+  columns: {#date, #scoreShort},
+)
+@TableIndex(
+  name: 'idx_daily_analysis_date_score_long',
+  columns: {#date, #scoreLong},
+)
 class DailyAnalysis extends Table {
   /// 股票代碼
   TextColumn get symbol =>
@@ -28,8 +40,11 @@ class DailyAnalysis extends Table {
   /// 壓力價位
   RealColumn get resistanceLevel => real().nullable()();
 
-  /// 所有觸發規則的總分數
-  RealColumn get score => real().withDefault(const Constant(0))();
+  /// 短線（5 日）所有觸發規則的總分數
+  RealColumn get scoreShort => real().withDefault(const Constant(0))();
+
+  /// 長線（60 日）所有觸發規則的總分數
+  RealColumn get scoreLong => real().withDefault(const Constant(0))();
 
   /// 分析運算時間
   DateTimeColumn get computedAt => dateTime().withDefault(currentDateAndTime)();
@@ -39,6 +54,10 @@ class DailyAnalysis extends Table {
 }
 
 /// 每日分析觸發原因 Table
+///
+/// Stage 5b dual-horizon: `ruleScore` 欄位拆分為 `ruleScoreShort` +
+/// `ruleScoreLong`，同一條 rule 在兩個 horizon 下的分數貢獻可能不同
+/// （calibrated JSON 為空時兩者相等，走 hardcoded fallback）。
 @DataClassName('DailyReasonEntry')
 @TableIndex(name: 'idx_daily_reason_symbol_date', columns: {#symbol, #date})
 class DailyReason extends Table {
@@ -58,41 +77,55 @@ class DailyReason extends Table {
   /// 證據資料（JSON 格式）
   TextColumn get evidenceJson => text()();
 
-  /// 此規則的分數
-  RealColumn get ruleScore => real().withDefault(const Constant(0))();
+  /// 此規則在短線 horizon 的分數貢獻
+  RealColumn get ruleScoreShort => real().withDefault(const Constant(0))();
+
+  /// 此規則在長線 horizon 的分數貢獻
+  RealColumn get ruleScoreLong => real().withDefault(const Constant(0))();
 
   @override
   Set<Column> get primaryKey => {symbol, date, rank};
 }
 
 /// 每日推薦股票 Table（Top N）
+///
+/// Stage 5b dual-horizon: 加入 `horizon` pivot column，PK 改為
+/// `(date, horizon, rank)`，每天最多 40 rows（20 短 + 20 長）。
+/// 同一檔股票若在兩個 horizon 都上榜會有兩 rows，各自帶 per-horizon
+/// 的 rank 與 score。
 @DataClassName('DailyRecommendationEntry')
-@TableIndex(name: 'idx_daily_recommendation_date', columns: {#date})
+@TableIndex(
+  name: 'idx_daily_recommendation_date_horizon',
+  columns: {#date, #horizon},
+)
 @TableIndex(name: 'idx_daily_recommendation_symbol', columns: {#symbol})
 @TableIndex(
-  name: 'idx_daily_recommendation_date_symbol',
-  columns: {#date, #symbol},
+  name: 'idx_daily_recommendation_date_horizon_symbol',
+  columns: {#date, #horizon, #symbol},
 )
 class DailyRecommendation extends Table {
   /// 推薦日期
   DateTimeColumn get date => dateTime()();
 
-  /// 排名（1-10）
+  /// Horizon pivot：'short' 或 'long'（對應 `Horizon.name`）
+  TextColumn get horizon => text()();
+
+  /// 此 horizon 內的排名（1..dailyTopN）
   IntColumn get rank => integer()();
 
   /// 股票代碼
   TextColumn get symbol =>
       text().references(StockMaster, #symbol, onDelete: KeyAction.cascade)();
 
-  /// 總分數
+  /// 此 horizon 的分數
   RealColumn get score => real()();
 
   @override
-  Set<Column> get primaryKey => {date, rank};
+  Set<Column> get primaryKey => {date, horizon, rank};
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {date, symbol},
+    {date, horizon, symbol},
   ];
 }
 

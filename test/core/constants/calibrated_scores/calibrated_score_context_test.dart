@@ -22,9 +22,9 @@ void main() {
     });
 
     test('2. lookup_short_and_long_independently', () {
-      final ctx = CalibratedScoreContext(
-        shortScores: const {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},
-        longScores: const {'REVERSAL_W2S': 35, 'KD_GOLDEN_CROSS': 18},
+      const ctx = CalibratedScoreContext(
+        shortScores: {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},
+        longScores: {'REVERSAL_W2S': 35, 'KD_GOLDEN_CROSS': 18},
       );
 
       expect(ctx.lookup(Horizon.short, 'REVERSAL_W2S'), 28);
@@ -36,9 +36,9 @@ void main() {
     });
 
     test('3. toMap_fromMap_round_trip_preserves_content', () {
-      final original = CalibratedScoreContext(
-        shortScores: const {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},
-        longScores: const {'REVERSAL_W2S': 35},
+      const original = CalibratedScoreContext(
+        shortScores: {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},
+        longScores: {'REVERSAL_W2S': 35},
       );
 
       final serialized = original.toMap();
@@ -69,17 +69,17 @@ void main() {
     test('5. snapshotForIsolate_from_registry_packages_both_horizons', () {
       // 注入兩個 fake table，驗證 registry 能正確打包成 DTO
       CalibratedScoresRegistry.instance.bindForTesting(
-        short: CalibratedScoresTable(
+        short: const CalibratedScoresTable(
           horizon: Horizon.short,
           schemaVersion: 1,
           generatedAt: null,
-          scores: const {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},
+          scores: {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},
         ),
-        long: CalibratedScoresTable(
+        long: const CalibratedScoresTable(
           horizon: Horizon.long,
           schemaVersion: 1,
           generatedAt: null,
-          scores: const {'REVERSAL_W2S': 35},
+          scores: {'REVERSAL_W2S': 35},
         ),
       );
 

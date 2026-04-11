@@ -16,7 +16,8 @@ typedef $$DailyAnalysisTableCreateCompanionBuilder =
       i0.Value<String> reversalState,
       i0.Value<double?> supportLevel,
       i0.Value<double?> resistanceLevel,
-      i0.Value<double> score,
+      i0.Value<double> scoreShort,
+      i0.Value<double> scoreLong,
       i0.Value<DateTime> computedAt,
       i0.Value<int> rowid,
     });
@@ -28,7 +29,8 @@ typedef $$DailyAnalysisTableUpdateCompanionBuilder =
       i0.Value<String> reversalState,
       i0.Value<double?> supportLevel,
       i0.Value<double?> resistanceLevel,
-      i0.Value<double> score,
+      i0.Value<double> scoreShort,
+      i0.Value<double> scoreLong,
       i0.Value<DateTime> computedAt,
       i0.Value<int> rowid,
     });
@@ -113,8 +115,13 @@ class $$DailyAnalysisTableFilterComposer
     builder: (column) => i0.ColumnFilters(column),
   );
 
-  i0.ColumnFilters<double> get score => $composableBuilder(
-    column: $table.score,
+  i0.ColumnFilters<double> get scoreShort => $composableBuilder(
+    column: $table.scoreShort,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get scoreLong => $composableBuilder(
+    column: $table.scoreLong,
     builder: (column) => i0.ColumnFilters(column),
   );
 
@@ -185,8 +192,13 @@ class $$DailyAnalysisTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
-  i0.ColumnOrderings<double> get score => $composableBuilder(
-    column: $table.score,
+  i0.ColumnOrderings<double> get scoreShort => $composableBuilder(
+    column: $table.scoreShort,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get scoreLong => $composableBuilder(
+    column: $table.scoreLong,
     builder: (column) => i0.ColumnOrderings(column),
   );
 
@@ -255,8 +267,13 @@ class $$DailyAnalysisTableAnnotationComposer
     builder: (column) => column,
   );
 
-  i0.GeneratedColumn<double> get score =>
-      $composableBuilder(column: $table.score, builder: (column) => column);
+  i0.GeneratedColumn<double> get scoreShort => $composableBuilder(
+    column: $table.scoreShort,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<double> get scoreLong =>
+      $composableBuilder(column: $table.scoreLong, builder: (column) => column);
 
   i0.GeneratedColumn<DateTime> get computedAt => $composableBuilder(
     column: $table.computedAt,
@@ -327,7 +344,8 @@ class $$DailyAnalysisTableTableManager
                 i0.Value<String> reversalState = const i0.Value.absent(),
                 i0.Value<double?> supportLevel = const i0.Value.absent(),
                 i0.Value<double?> resistanceLevel = const i0.Value.absent(),
-                i0.Value<double> score = const i0.Value.absent(),
+                i0.Value<double> scoreShort = const i0.Value.absent(),
+                i0.Value<double> scoreLong = const i0.Value.absent(),
                 i0.Value<DateTime> computedAt = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyAnalysisCompanion(
@@ -337,7 +355,8 @@ class $$DailyAnalysisTableTableManager
                 reversalState: reversalState,
                 supportLevel: supportLevel,
                 resistanceLevel: resistanceLevel,
-                score: score,
+                scoreShort: scoreShort,
+                scoreLong: scoreLong,
                 computedAt: computedAt,
                 rowid: rowid,
               ),
@@ -349,7 +368,8 @@ class $$DailyAnalysisTableTableManager
                 i0.Value<String> reversalState = const i0.Value.absent(),
                 i0.Value<double?> supportLevel = const i0.Value.absent(),
                 i0.Value<double?> resistanceLevel = const i0.Value.absent(),
-                i0.Value<double> score = const i0.Value.absent(),
+                i0.Value<double> scoreShort = const i0.Value.absent(),
+                i0.Value<double> scoreLong = const i0.Value.absent(),
                 i0.Value<DateTime> computedAt = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyAnalysisCompanion.insert(
@@ -359,7 +379,8 @@ class $$DailyAnalysisTableTableManager
                 reversalState: reversalState,
                 supportLevel: supportLevel,
                 resistanceLevel: resistanceLevel,
-                score: score,
+                scoreShort: scoreShort,
+                scoreLong: scoreLong,
                 computedAt: computedAt,
                 rowid: rowid,
               ),
@@ -439,7 +460,8 @@ typedef $$DailyReasonTableCreateCompanionBuilder =
       required int rank,
       required String reasonType,
       required String evidenceJson,
-      i0.Value<double> ruleScore,
+      i0.Value<double> ruleScoreShort,
+      i0.Value<double> ruleScoreLong,
       i0.Value<int> rowid,
     });
 typedef $$DailyReasonTableUpdateCompanionBuilder =
@@ -449,7 +471,8 @@ typedef $$DailyReasonTableUpdateCompanionBuilder =
       i0.Value<int> rank,
       i0.Value<String> reasonType,
       i0.Value<String> evidenceJson,
-      i0.Value<double> ruleScore,
+      i0.Value<double> ruleScoreShort,
+      i0.Value<double> ruleScoreLong,
       i0.Value<int> rowid,
     });
 
@@ -524,8 +547,13 @@ class $$DailyReasonTableFilterComposer
     builder: (column) => i0.ColumnFilters(column),
   );
 
-  i0.ColumnFilters<double> get ruleScore => $composableBuilder(
-    column: $table.ruleScore,
+  i0.ColumnFilters<double> get ruleScoreShort => $composableBuilder(
+    column: $table.ruleScoreShort,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<double> get ruleScoreLong => $composableBuilder(
+    column: $table.ruleScoreLong,
     builder: (column) => i0.ColumnFilters(column),
   );
 
@@ -586,8 +614,13 @@ class $$DailyReasonTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
-  i0.ColumnOrderings<double> get ruleScore => $composableBuilder(
-    column: $table.ruleScore,
+  i0.ColumnOrderings<double> get ruleScoreShort => $composableBuilder(
+    column: $table.ruleScoreShort,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<double> get ruleScoreLong => $composableBuilder(
+    column: $table.ruleScoreLong,
     builder: (column) => i0.ColumnOrderings(column),
   );
 
@@ -644,8 +677,15 @@ class $$DailyReasonTableAnnotationComposer
     builder: (column) => column,
   );
 
-  i0.GeneratedColumn<double> get ruleScore =>
-      $composableBuilder(column: $table.ruleScore, builder: (column) => column);
+  i0.GeneratedColumn<double> get ruleScoreShort => $composableBuilder(
+    column: $table.ruleScoreShort,
+    builder: (column) => column,
+  );
+
+  i0.GeneratedColumn<double> get ruleScoreLong => $composableBuilder(
+    column: $table.ruleScoreLong,
+    builder: (column) => column,
+  );
 
   i4.$$StockMasterTableAnnotationComposer get symbol {
     final i4.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
@@ -710,7 +750,8 @@ class $$DailyReasonTableTableManager
                 i0.Value<int> rank = const i0.Value.absent(),
                 i0.Value<String> reasonType = const i0.Value.absent(),
                 i0.Value<String> evidenceJson = const i0.Value.absent(),
-                i0.Value<double> ruleScore = const i0.Value.absent(),
+                i0.Value<double> ruleScoreShort = const i0.Value.absent(),
+                i0.Value<double> ruleScoreLong = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyReasonCompanion(
                 symbol: symbol,
@@ -718,7 +759,8 @@ class $$DailyReasonTableTableManager
                 rank: rank,
                 reasonType: reasonType,
                 evidenceJson: evidenceJson,
-                ruleScore: ruleScore,
+                ruleScoreShort: ruleScoreShort,
+                ruleScoreLong: ruleScoreLong,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -728,7 +770,8 @@ class $$DailyReasonTableTableManager
                 required int rank,
                 required String reasonType,
                 required String evidenceJson,
-                i0.Value<double> ruleScore = const i0.Value.absent(),
+                i0.Value<double> ruleScoreShort = const i0.Value.absent(),
+                i0.Value<double> ruleScoreLong = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyReasonCompanion.insert(
                 symbol: symbol,
@@ -736,7 +779,8 @@ class $$DailyReasonTableTableManager
                 rank: rank,
                 reasonType: reasonType,
                 evidenceJson: evidenceJson,
-                ruleScore: ruleScore,
+                ruleScoreShort: ruleScoreShort,
+                ruleScoreLong: ruleScoreLong,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -810,6 +854,7 @@ typedef $$DailyReasonTableProcessedTableManager =
 typedef $$DailyRecommendationTableCreateCompanionBuilder =
     i1.DailyRecommendationCompanion Function({
       required DateTime date,
+      required String horizon,
       required int rank,
       required String symbol,
       required double score,
@@ -818,6 +863,7 @@ typedef $$DailyRecommendationTableCreateCompanionBuilder =
 typedef $$DailyRecommendationTableUpdateCompanionBuilder =
     i1.DailyRecommendationCompanion Function({
       i0.Value<DateTime> date,
+      i0.Value<String> horizon,
       i0.Value<int> rank,
       i0.Value<String> symbol,
       i0.Value<double> score,
@@ -886,6 +932,11 @@ class $$DailyRecommendationTableFilterComposer
     builder: (column) => i0.ColumnFilters(column),
   );
 
+  i0.ColumnFilters<String> get horizon => $composableBuilder(
+    column: $table.horizon,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
   i0.ColumnFilters<int> get rank => $composableBuilder(
     column: $table.rank,
     builder: (column) => i0.ColumnFilters(column),
@@ -938,6 +989,11 @@ class $$DailyRecommendationTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
+  i0.ColumnOrderings<String> get horizon => $composableBuilder(
+    column: $table.horizon,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
   i0.ColumnOrderings<int> get rank => $composableBuilder(
     column: $table.rank,
     builder: (column) => i0.ColumnOrderings(column),
@@ -987,6 +1043,9 @@ class $$DailyRecommendationTableAnnotationComposer
   });
   i0.GeneratedColumn<DateTime> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
+
+  i0.GeneratedColumn<String> get horizon =>
+      $composableBuilder(column: $table.horizon, builder: (column) => column);
 
   i0.GeneratedColumn<int> get rank =>
       $composableBuilder(column: $table.rank, builder: (column) => column);
@@ -1062,12 +1121,14 @@ class $$DailyRecommendationTableTableManager
           updateCompanionCallback:
               ({
                 i0.Value<DateTime> date = const i0.Value.absent(),
+                i0.Value<String> horizon = const i0.Value.absent(),
                 i0.Value<int> rank = const i0.Value.absent(),
                 i0.Value<String> symbol = const i0.Value.absent(),
                 i0.Value<double> score = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyRecommendationCompanion(
                 date: date,
+                horizon: horizon,
                 rank: rank,
                 symbol: symbol,
                 score: score,
@@ -1076,12 +1137,14 @@ class $$DailyRecommendationTableTableManager
           createCompanionCallback:
               ({
                 required DateTime date,
+                required String horizon,
                 required int rank,
                 required String symbol,
                 required double score,
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyRecommendationCompanion.insert(
                 date: date,
+                horizon: horizon,
                 rank: rank,
                 symbol: symbol,
                 score: score,
@@ -1793,12 +1856,24 @@ class $DailyAnalysisTable extends i2.DailyAnalysis
         type: i0.DriftSqlType.double,
         requiredDuringInsert: false,
       );
-  static const i0.VerificationMeta _scoreMeta = const i0.VerificationMeta(
-    'score',
+  static const i0.VerificationMeta _scoreShortMeta = const i0.VerificationMeta(
+    'scoreShort',
   );
   @override
-  late final i0.GeneratedColumn<double> score = i0.GeneratedColumn<double>(
-    'score',
+  late final i0.GeneratedColumn<double> scoreShort = i0.GeneratedColumn<double>(
+    'score_short',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const i3.Constant(0),
+  );
+  static const i0.VerificationMeta _scoreLongMeta = const i0.VerificationMeta(
+    'scoreLong',
+  );
+  @override
+  late final i0.GeneratedColumn<double> scoreLong = i0.GeneratedColumn<double>(
+    'score_long',
     aliasedName,
     false,
     type: i0.DriftSqlType.double,
@@ -1826,7 +1901,8 @@ class $DailyAnalysisTable extends i2.DailyAnalysis
     reversalState,
     supportLevel,
     resistanceLevel,
-    score,
+    scoreShort,
+    scoreLong,
     computedAt,
   ];
   @override
@@ -1892,10 +1968,16 @@ class $DailyAnalysisTable extends i2.DailyAnalysis
         ),
       );
     }
-    if (data.containsKey('score')) {
+    if (data.containsKey('score_short')) {
       context.handle(
-        _scoreMeta,
-        score.isAcceptableOrUnknown(data['score']!, _scoreMeta),
+        _scoreShortMeta,
+        scoreShort.isAcceptableOrUnknown(data['score_short']!, _scoreShortMeta),
+      );
+    }
+    if (data.containsKey('score_long')) {
+      context.handle(
+        _scoreLongMeta,
+        scoreLong.isAcceptableOrUnknown(data['score_long']!, _scoreLongMeta),
       );
     }
     if (data.containsKey('computed_at')) {
@@ -1937,9 +2019,13 @@ class $DailyAnalysisTable extends i2.DailyAnalysis
         i0.DriftSqlType.double,
         data['${effectivePrefix}resistance_level'],
       ),
-      score: attachedDatabase.typeMapping.read(
+      scoreShort: attachedDatabase.typeMapping.read(
         i0.DriftSqlType.double,
-        data['${effectivePrefix}score'],
+        data['${effectivePrefix}score_short'],
+      )!,
+      scoreLong: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}score_long'],
       )!,
       computedAt: attachedDatabase.typeMapping.read(
         i0.DriftSqlType.dateTime,
@@ -1974,8 +2060,11 @@ class DailyAnalysisEntry extends i0.DataClass
   /// 壓力價位
   final double? resistanceLevel;
 
-  /// 所有觸發規則的總分數
-  final double score;
+  /// 短線（5 日）所有觸發規則的總分數
+  final double scoreShort;
+
+  /// 長線（60 日）所有觸發規則的總分數
+  final double scoreLong;
 
   /// 分析運算時間
   final DateTime computedAt;
@@ -1986,7 +2075,8 @@ class DailyAnalysisEntry extends i0.DataClass
     required this.reversalState,
     this.supportLevel,
     this.resistanceLevel,
-    required this.score,
+    required this.scoreShort,
+    required this.scoreLong,
     required this.computedAt,
   });
   @override
@@ -2002,7 +2092,8 @@ class DailyAnalysisEntry extends i0.DataClass
     if (!nullToAbsent || resistanceLevel != null) {
       map['resistance_level'] = i0.Variable<double>(resistanceLevel);
     }
-    map['score'] = i0.Variable<double>(score);
+    map['score_short'] = i0.Variable<double>(scoreShort);
+    map['score_long'] = i0.Variable<double>(scoreLong);
     map['computed_at'] = i0.Variable<DateTime>(computedAt);
     return map;
   }
@@ -2019,7 +2110,8 @@ class DailyAnalysisEntry extends i0.DataClass
       resistanceLevel: resistanceLevel == null && nullToAbsent
           ? const i0.Value.absent()
           : i0.Value(resistanceLevel),
-      score: i0.Value(score),
+      scoreShort: i0.Value(scoreShort),
+      scoreLong: i0.Value(scoreLong),
       computedAt: i0.Value(computedAt),
     );
   }
@@ -2036,7 +2128,8 @@ class DailyAnalysisEntry extends i0.DataClass
       reversalState: serializer.fromJson<String>(json['reversalState']),
       supportLevel: serializer.fromJson<double?>(json['supportLevel']),
       resistanceLevel: serializer.fromJson<double?>(json['resistanceLevel']),
-      score: serializer.fromJson<double>(json['score']),
+      scoreShort: serializer.fromJson<double>(json['scoreShort']),
+      scoreLong: serializer.fromJson<double>(json['scoreLong']),
       computedAt: serializer.fromJson<DateTime>(json['computedAt']),
     );
   }
@@ -2050,7 +2143,8 @@ class DailyAnalysisEntry extends i0.DataClass
       'reversalState': serializer.toJson<String>(reversalState),
       'supportLevel': serializer.toJson<double?>(supportLevel),
       'resistanceLevel': serializer.toJson<double?>(resistanceLevel),
-      'score': serializer.toJson<double>(score),
+      'scoreShort': serializer.toJson<double>(scoreShort),
+      'scoreLong': serializer.toJson<double>(scoreLong),
       'computedAt': serializer.toJson<DateTime>(computedAt),
     };
   }
@@ -2062,7 +2156,8 @@ class DailyAnalysisEntry extends i0.DataClass
     String? reversalState,
     i0.Value<double?> supportLevel = const i0.Value.absent(),
     i0.Value<double?> resistanceLevel = const i0.Value.absent(),
-    double? score,
+    double? scoreShort,
+    double? scoreLong,
     DateTime? computedAt,
   }) => i1.DailyAnalysisEntry(
     symbol: symbol ?? this.symbol,
@@ -2073,7 +2168,8 @@ class DailyAnalysisEntry extends i0.DataClass
     resistanceLevel: resistanceLevel.present
         ? resistanceLevel.value
         : this.resistanceLevel,
-    score: score ?? this.score,
+    scoreShort: scoreShort ?? this.scoreShort,
+    scoreLong: scoreLong ?? this.scoreLong,
     computedAt: computedAt ?? this.computedAt,
   );
   DailyAnalysisEntry copyWithCompanion(i1.DailyAnalysisCompanion data) {
@@ -2092,7 +2188,10 @@ class DailyAnalysisEntry extends i0.DataClass
       resistanceLevel: data.resistanceLevel.present
           ? data.resistanceLevel.value
           : this.resistanceLevel,
-      score: data.score.present ? data.score.value : this.score,
+      scoreShort: data.scoreShort.present
+          ? data.scoreShort.value
+          : this.scoreShort,
+      scoreLong: data.scoreLong.present ? data.scoreLong.value : this.scoreLong,
       computedAt: data.computedAt.present
           ? data.computedAt.value
           : this.computedAt,
@@ -2108,7 +2207,8 @@ class DailyAnalysisEntry extends i0.DataClass
           ..write('reversalState: $reversalState, ')
           ..write('supportLevel: $supportLevel, ')
           ..write('resistanceLevel: $resistanceLevel, ')
-          ..write('score: $score, ')
+          ..write('scoreShort: $scoreShort, ')
+          ..write('scoreLong: $scoreLong, ')
           ..write('computedAt: $computedAt')
           ..write(')'))
         .toString();
@@ -2122,7 +2222,8 @@ class DailyAnalysisEntry extends i0.DataClass
     reversalState,
     supportLevel,
     resistanceLevel,
-    score,
+    scoreShort,
+    scoreLong,
     computedAt,
   );
   @override
@@ -2135,7 +2236,8 @@ class DailyAnalysisEntry extends i0.DataClass
           other.reversalState == this.reversalState &&
           other.supportLevel == this.supportLevel &&
           other.resistanceLevel == this.resistanceLevel &&
-          other.score == this.score &&
+          other.scoreShort == this.scoreShort &&
+          other.scoreLong == this.scoreLong &&
           other.computedAt == this.computedAt);
 }
 
@@ -2146,7 +2248,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
   final i0.Value<String> reversalState;
   final i0.Value<double?> supportLevel;
   final i0.Value<double?> resistanceLevel;
-  final i0.Value<double> score;
+  final i0.Value<double> scoreShort;
+  final i0.Value<double> scoreLong;
   final i0.Value<DateTime> computedAt;
   final i0.Value<int> rowid;
   const DailyAnalysisCompanion({
@@ -2156,7 +2259,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
     this.reversalState = const i0.Value.absent(),
     this.supportLevel = const i0.Value.absent(),
     this.resistanceLevel = const i0.Value.absent(),
-    this.score = const i0.Value.absent(),
+    this.scoreShort = const i0.Value.absent(),
+    this.scoreLong = const i0.Value.absent(),
     this.computedAt = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   });
@@ -2167,7 +2271,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
     this.reversalState = const i0.Value.absent(),
     this.supportLevel = const i0.Value.absent(),
     this.resistanceLevel = const i0.Value.absent(),
-    this.score = const i0.Value.absent(),
+    this.scoreShort = const i0.Value.absent(),
+    this.scoreLong = const i0.Value.absent(),
     this.computedAt = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   }) : symbol = i0.Value(symbol),
@@ -2180,7 +2285,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
     i0.Expression<String>? reversalState,
     i0.Expression<double>? supportLevel,
     i0.Expression<double>? resistanceLevel,
-    i0.Expression<double>? score,
+    i0.Expression<double>? scoreShort,
+    i0.Expression<double>? scoreLong,
     i0.Expression<DateTime>? computedAt,
     i0.Expression<int>? rowid,
   }) {
@@ -2191,7 +2297,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
       if (reversalState != null) 'reversal_state': reversalState,
       if (supportLevel != null) 'support_level': supportLevel,
       if (resistanceLevel != null) 'resistance_level': resistanceLevel,
-      if (score != null) 'score': score,
+      if (scoreShort != null) 'score_short': scoreShort,
+      if (scoreLong != null) 'score_long': scoreLong,
       if (computedAt != null) 'computed_at': computedAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -2204,7 +2311,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
     i0.Value<String>? reversalState,
     i0.Value<double?>? supportLevel,
     i0.Value<double?>? resistanceLevel,
-    i0.Value<double>? score,
+    i0.Value<double>? scoreShort,
+    i0.Value<double>? scoreLong,
     i0.Value<DateTime>? computedAt,
     i0.Value<int>? rowid,
   }) {
@@ -2215,7 +2323,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
       reversalState: reversalState ?? this.reversalState,
       supportLevel: supportLevel ?? this.supportLevel,
       resistanceLevel: resistanceLevel ?? this.resistanceLevel,
-      score: score ?? this.score,
+      scoreShort: scoreShort ?? this.scoreShort,
+      scoreLong: scoreLong ?? this.scoreLong,
       computedAt: computedAt ?? this.computedAt,
       rowid: rowid ?? this.rowid,
     );
@@ -2242,8 +2351,11 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
     if (resistanceLevel.present) {
       map['resistance_level'] = i0.Variable<double>(resistanceLevel.value);
     }
-    if (score.present) {
-      map['score'] = i0.Variable<double>(score.value);
+    if (scoreShort.present) {
+      map['score_short'] = i0.Variable<double>(scoreShort.value);
+    }
+    if (scoreLong.present) {
+      map['score_long'] = i0.Variable<double>(scoreLong.value);
     }
     if (computedAt.present) {
       map['computed_at'] = i0.Variable<DateTime>(computedAt.value);
@@ -2263,7 +2375,8 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
           ..write('reversalState: $reversalState, ')
           ..write('supportLevel: $supportLevel, ')
           ..write('resistanceLevel: $resistanceLevel, ')
-          ..write('score: $score, ')
+          ..write('scoreShort: $scoreShort, ')
+          ..write('scoreLong: $scoreLong, ')
           ..write('computedAt: $computedAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -2271,17 +2384,25 @@ class DailyAnalysisCompanion extends i0.UpdateCompanion<i1.DailyAnalysisEntry> {
   }
 }
 
-i0.Index get idxDailyAnalysisScore => i0.Index(
-  'idx_daily_analysis_score',
-  'CREATE INDEX idx_daily_analysis_score ON daily_analysis (score)',
+i0.Index get idxDailyAnalysisScoreShort => i0.Index(
+  'idx_daily_analysis_score_short',
+  'CREATE INDEX idx_daily_analysis_score_short ON daily_analysis (score_short)',
+);
+i0.Index get idxDailyAnalysisScoreLong => i0.Index(
+  'idx_daily_analysis_score_long',
+  'CREATE INDEX idx_daily_analysis_score_long ON daily_analysis (score_long)',
 );
 i0.Index get idxDailyAnalysisSymbolDate => i0.Index(
   'idx_daily_analysis_symbol_date',
   'CREATE INDEX idx_daily_analysis_symbol_date ON daily_analysis (symbol, date)',
 );
-i0.Index get idxDailyAnalysisDateScore => i0.Index(
-  'idx_daily_analysis_date_score',
-  'CREATE INDEX idx_daily_analysis_date_score ON daily_analysis (date, score)',
+i0.Index get idxDailyAnalysisDateScoreShort => i0.Index(
+  'idx_daily_analysis_date_score_short',
+  'CREATE INDEX idx_daily_analysis_date_score_short ON daily_analysis (date, score_short)',
+);
+i0.Index get idxDailyAnalysisDateScoreLong => i0.Index(
+  'idx_daily_analysis_date_score_long',
+  'CREATE INDEX idx_daily_analysis_date_score_long ON daily_analysis (date, score_long)',
 );
 i0.Index get idxDailyReasonSymbolDate => i0.Index(
   'idx_daily_reason_symbol_date',
@@ -2352,18 +2473,30 @@ class $DailyReasonTable extends i2.DailyReason
         type: i0.DriftSqlType.string,
         requiredDuringInsert: true,
       );
-  static const i0.VerificationMeta _ruleScoreMeta = const i0.VerificationMeta(
-    'ruleScore',
-  );
+  static const i0.VerificationMeta _ruleScoreShortMeta =
+      const i0.VerificationMeta('ruleScoreShort');
   @override
-  late final i0.GeneratedColumn<double> ruleScore = i0.GeneratedColumn<double>(
-    'rule_score',
-    aliasedName,
-    false,
-    type: i0.DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const i3.Constant(0),
-  );
+  late final i0.GeneratedColumn<double> ruleScoreShort =
+      i0.GeneratedColumn<double>(
+        'rule_score_short',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const i3.Constant(0),
+      );
+  static const i0.VerificationMeta _ruleScoreLongMeta =
+      const i0.VerificationMeta('ruleScoreLong');
+  @override
+  late final i0.GeneratedColumn<double> ruleScoreLong =
+      i0.GeneratedColumn<double>(
+        'rule_score_long',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const i3.Constant(0),
+      );
   @override
   List<i0.GeneratedColumn> get $columns => [
     symbol,
@@ -2371,7 +2504,8 @@ class $DailyReasonTable extends i2.DailyReason
     rank,
     reasonType,
     evidenceJson,
-    ruleScore,
+    ruleScoreShort,
+    ruleScoreLong,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2428,10 +2562,22 @@ class $DailyReasonTable extends i2.DailyReason
     } else if (isInserting) {
       context.missing(_evidenceJsonMeta);
     }
-    if (data.containsKey('rule_score')) {
+    if (data.containsKey('rule_score_short')) {
       context.handle(
-        _ruleScoreMeta,
-        ruleScore.isAcceptableOrUnknown(data['rule_score']!, _ruleScoreMeta),
+        _ruleScoreShortMeta,
+        ruleScoreShort.isAcceptableOrUnknown(
+          data['rule_score_short']!,
+          _ruleScoreShortMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rule_score_long')) {
+      context.handle(
+        _ruleScoreLongMeta,
+        ruleScoreLong.isAcceptableOrUnknown(
+          data['rule_score_long']!,
+          _ruleScoreLongMeta,
+        ),
       );
     }
     return context;
@@ -2463,9 +2609,13 @@ class $DailyReasonTable extends i2.DailyReason
         i0.DriftSqlType.string,
         data['${effectivePrefix}evidence_json'],
       )!,
-      ruleScore: attachedDatabase.typeMapping.read(
+      ruleScoreShort: attachedDatabase.typeMapping.read(
         i0.DriftSqlType.double,
-        data['${effectivePrefix}rule_score'],
+        data['${effectivePrefix}rule_score_short'],
+      )!,
+      ruleScoreLong: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}rule_score_long'],
       )!,
     );
   }
@@ -2493,15 +2643,19 @@ class DailyReasonEntry extends i0.DataClass
   /// 證據資料（JSON 格式）
   final String evidenceJson;
 
-  /// 此規則的分數
-  final double ruleScore;
+  /// 此規則在短線 horizon 的分數貢獻
+  final double ruleScoreShort;
+
+  /// 此規則在長線 horizon 的分數貢獻
+  final double ruleScoreLong;
   const DailyReasonEntry({
     required this.symbol,
     required this.date,
     required this.rank,
     required this.reasonType,
     required this.evidenceJson,
-    required this.ruleScore,
+    required this.ruleScoreShort,
+    required this.ruleScoreLong,
   });
   @override
   Map<String, i0.Expression> toColumns(bool nullToAbsent) {
@@ -2511,7 +2665,8 @@ class DailyReasonEntry extends i0.DataClass
     map['rank'] = i0.Variable<int>(rank);
     map['reason_type'] = i0.Variable<String>(reasonType);
     map['evidence_json'] = i0.Variable<String>(evidenceJson);
-    map['rule_score'] = i0.Variable<double>(ruleScore);
+    map['rule_score_short'] = i0.Variable<double>(ruleScoreShort);
+    map['rule_score_long'] = i0.Variable<double>(ruleScoreLong);
     return map;
   }
 
@@ -2522,7 +2677,8 @@ class DailyReasonEntry extends i0.DataClass
       rank: i0.Value(rank),
       reasonType: i0.Value(reasonType),
       evidenceJson: i0.Value(evidenceJson),
-      ruleScore: i0.Value(ruleScore),
+      ruleScoreShort: i0.Value(ruleScoreShort),
+      ruleScoreLong: i0.Value(ruleScoreLong),
     );
   }
 
@@ -2537,7 +2693,8 @@ class DailyReasonEntry extends i0.DataClass
       rank: serializer.fromJson<int>(json['rank']),
       reasonType: serializer.fromJson<String>(json['reasonType']),
       evidenceJson: serializer.fromJson<String>(json['evidenceJson']),
-      ruleScore: serializer.fromJson<double>(json['ruleScore']),
+      ruleScoreShort: serializer.fromJson<double>(json['ruleScoreShort']),
+      ruleScoreLong: serializer.fromJson<double>(json['ruleScoreLong']),
     );
   }
   @override
@@ -2549,7 +2706,8 @@ class DailyReasonEntry extends i0.DataClass
       'rank': serializer.toJson<int>(rank),
       'reasonType': serializer.toJson<String>(reasonType),
       'evidenceJson': serializer.toJson<String>(evidenceJson),
-      'ruleScore': serializer.toJson<double>(ruleScore),
+      'ruleScoreShort': serializer.toJson<double>(ruleScoreShort),
+      'ruleScoreLong': serializer.toJson<double>(ruleScoreLong),
     };
   }
 
@@ -2559,14 +2717,16 @@ class DailyReasonEntry extends i0.DataClass
     int? rank,
     String? reasonType,
     String? evidenceJson,
-    double? ruleScore,
+    double? ruleScoreShort,
+    double? ruleScoreLong,
   }) => i1.DailyReasonEntry(
     symbol: symbol ?? this.symbol,
     date: date ?? this.date,
     rank: rank ?? this.rank,
     reasonType: reasonType ?? this.reasonType,
     evidenceJson: evidenceJson ?? this.evidenceJson,
-    ruleScore: ruleScore ?? this.ruleScore,
+    ruleScoreShort: ruleScoreShort ?? this.ruleScoreShort,
+    ruleScoreLong: ruleScoreLong ?? this.ruleScoreLong,
   );
   DailyReasonEntry copyWithCompanion(i1.DailyReasonCompanion data) {
     return DailyReasonEntry(
@@ -2579,7 +2739,12 @@ class DailyReasonEntry extends i0.DataClass
       evidenceJson: data.evidenceJson.present
           ? data.evidenceJson.value
           : this.evidenceJson,
-      ruleScore: data.ruleScore.present ? data.ruleScore.value : this.ruleScore,
+      ruleScoreShort: data.ruleScoreShort.present
+          ? data.ruleScoreShort.value
+          : this.ruleScoreShort,
+      ruleScoreLong: data.ruleScoreLong.present
+          ? data.ruleScoreLong.value
+          : this.ruleScoreLong,
     );
   }
 
@@ -2591,14 +2756,22 @@ class DailyReasonEntry extends i0.DataClass
           ..write('rank: $rank, ')
           ..write('reasonType: $reasonType, ')
           ..write('evidenceJson: $evidenceJson, ')
-          ..write('ruleScore: $ruleScore')
+          ..write('ruleScoreShort: $ruleScoreShort, ')
+          ..write('ruleScoreLong: $ruleScoreLong')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(symbol, date, rank, reasonType, evidenceJson, ruleScore);
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    rank,
+    reasonType,
+    evidenceJson,
+    ruleScoreShort,
+    ruleScoreLong,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2608,7 +2781,8 @@ class DailyReasonEntry extends i0.DataClass
           other.rank == this.rank &&
           other.reasonType == this.reasonType &&
           other.evidenceJson == this.evidenceJson &&
-          other.ruleScore == this.ruleScore);
+          other.ruleScoreShort == this.ruleScoreShort &&
+          other.ruleScoreLong == this.ruleScoreLong);
 }
 
 class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
@@ -2617,7 +2791,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
   final i0.Value<int> rank;
   final i0.Value<String> reasonType;
   final i0.Value<String> evidenceJson;
-  final i0.Value<double> ruleScore;
+  final i0.Value<double> ruleScoreShort;
+  final i0.Value<double> ruleScoreLong;
   final i0.Value<int> rowid;
   const DailyReasonCompanion({
     this.symbol = const i0.Value.absent(),
@@ -2625,7 +2800,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
     this.rank = const i0.Value.absent(),
     this.reasonType = const i0.Value.absent(),
     this.evidenceJson = const i0.Value.absent(),
-    this.ruleScore = const i0.Value.absent(),
+    this.ruleScoreShort = const i0.Value.absent(),
+    this.ruleScoreLong = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   });
   DailyReasonCompanion.insert({
@@ -2634,7 +2810,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
     required int rank,
     required String reasonType,
     required String evidenceJson,
-    this.ruleScore = const i0.Value.absent(),
+    this.ruleScoreShort = const i0.Value.absent(),
+    this.ruleScoreLong = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   }) : symbol = i0.Value(symbol),
        date = i0.Value(date),
@@ -2647,7 +2824,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
     i0.Expression<int>? rank,
     i0.Expression<String>? reasonType,
     i0.Expression<String>? evidenceJson,
-    i0.Expression<double>? ruleScore,
+    i0.Expression<double>? ruleScoreShort,
+    i0.Expression<double>? ruleScoreLong,
     i0.Expression<int>? rowid,
   }) {
     return i0.RawValuesInsertable({
@@ -2656,7 +2834,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
       if (rank != null) 'rank': rank,
       if (reasonType != null) 'reason_type': reasonType,
       if (evidenceJson != null) 'evidence_json': evidenceJson,
-      if (ruleScore != null) 'rule_score': ruleScore,
+      if (ruleScoreShort != null) 'rule_score_short': ruleScoreShort,
+      if (ruleScoreLong != null) 'rule_score_long': ruleScoreLong,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2667,7 +2846,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
     i0.Value<int>? rank,
     i0.Value<String>? reasonType,
     i0.Value<String>? evidenceJson,
-    i0.Value<double>? ruleScore,
+    i0.Value<double>? ruleScoreShort,
+    i0.Value<double>? ruleScoreLong,
     i0.Value<int>? rowid,
   }) {
     return i1.DailyReasonCompanion(
@@ -2676,7 +2856,8 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
       rank: rank ?? this.rank,
       reasonType: reasonType ?? this.reasonType,
       evidenceJson: evidenceJson ?? this.evidenceJson,
-      ruleScore: ruleScore ?? this.ruleScore,
+      ruleScoreShort: ruleScoreShort ?? this.ruleScoreShort,
+      ruleScoreLong: ruleScoreLong ?? this.ruleScoreLong,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2699,8 +2880,11 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
     if (evidenceJson.present) {
       map['evidence_json'] = i0.Variable<String>(evidenceJson.value);
     }
-    if (ruleScore.present) {
-      map['rule_score'] = i0.Variable<double>(ruleScore.value);
+    if (ruleScoreShort.present) {
+      map['rule_score_short'] = i0.Variable<double>(ruleScoreShort.value);
+    }
+    if (ruleScoreLong.present) {
+      map['rule_score_long'] = i0.Variable<double>(ruleScoreLong.value);
     }
     if (rowid.present) {
       map['rowid'] = i0.Variable<int>(rowid.value);
@@ -2716,16 +2900,17 @@ class DailyReasonCompanion extends i0.UpdateCompanion<i1.DailyReasonEntry> {
           ..write('rank: $rank, ')
           ..write('reasonType: $reasonType, ')
           ..write('evidenceJson: $evidenceJson, ')
-          ..write('ruleScore: $ruleScore, ')
+          ..write('ruleScoreShort: $ruleScoreShort, ')
+          ..write('ruleScoreLong: $ruleScoreLong, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
 }
 
-i0.Index get idxDailyRecommendationDate => i0.Index(
-  'idx_daily_recommendation_date',
-  'CREATE INDEX idx_daily_recommendation_date ON daily_recommendation (date)',
+i0.Index get idxDailyRecommendationDateHorizon => i0.Index(
+  'idx_daily_recommendation_date_horizon',
+  'CREATE INDEX idx_daily_recommendation_date_horizon ON daily_recommendation (date, horizon)',
 );
 
 class $DailyRecommendationTable extends i2.DailyRecommendation
@@ -2743,6 +2928,17 @@ class $DailyRecommendationTable extends i2.DailyRecommendation
     aliasedName,
     false,
     type: i0.DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _horizonMeta = const i0.VerificationMeta(
+    'horizon',
+  );
+  @override
+  late final i0.GeneratedColumn<String> horizon = i0.GeneratedColumn<String>(
+    'horizon',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.string,
     requiredDuringInsert: true,
   );
   static const i0.VerificationMeta _rankMeta = const i0.VerificationMeta(
@@ -2782,7 +2978,7 @@ class $DailyRecommendationTable extends i2.DailyRecommendation
     requiredDuringInsert: true,
   );
   @override
-  List<i0.GeneratedColumn> get $columns => [date, rank, symbol, score];
+  List<i0.GeneratedColumn> get $columns => [date, horizon, rank, symbol, score];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2802,6 +2998,14 @@ class $DailyRecommendationTable extends i2.DailyRecommendation
       );
     } else if (isInserting) {
       context.missing(_dateMeta);
+    }
+    if (data.containsKey('horizon')) {
+      context.handle(
+        _horizonMeta,
+        horizon.isAcceptableOrUnknown(data['horizon']!, _horizonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_horizonMeta);
     }
     if (data.containsKey('rank')) {
       context.handle(
@@ -2831,10 +3035,10 @@ class $DailyRecommendationTable extends i2.DailyRecommendation
   }
 
   @override
-  Set<i0.GeneratedColumn> get $primaryKey => {date, rank};
+  Set<i0.GeneratedColumn> get $primaryKey => {date, horizon, rank};
   @override
   List<Set<i0.GeneratedColumn>> get uniqueKeys => [
-    {date, symbol},
+    {date, horizon, symbol},
   ];
   @override
   i1.DailyRecommendationEntry map(
@@ -2846,6 +3050,10 @@ class $DailyRecommendationTable extends i2.DailyRecommendation
       date: attachedDatabase.typeMapping.read(
         i0.DriftSqlType.dateTime,
         data['${effectivePrefix}date'],
+      )!,
+      horizon: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}horizon'],
       )!,
       rank: attachedDatabase.typeMapping.read(
         i0.DriftSqlType.int,
@@ -2873,16 +3081,20 @@ class DailyRecommendationEntry extends i0.DataClass
   /// 推薦日期
   final DateTime date;
 
-  /// 排名（1-10）
+  /// Horizon pivot：'short' 或 'long'（對應 `Horizon.name`）
+  final String horizon;
+
+  /// 此 horizon 內的排名（1..dailyTopN）
   final int rank;
 
   /// 股票代碼
   final String symbol;
 
-  /// 總分數
+  /// 此 horizon 的分數
   final double score;
   const DailyRecommendationEntry({
     required this.date,
+    required this.horizon,
     required this.rank,
     required this.symbol,
     required this.score,
@@ -2891,6 +3103,7 @@ class DailyRecommendationEntry extends i0.DataClass
   Map<String, i0.Expression> toColumns(bool nullToAbsent) {
     final map = <String, i0.Expression>{};
     map['date'] = i0.Variable<DateTime>(date);
+    map['horizon'] = i0.Variable<String>(horizon);
     map['rank'] = i0.Variable<int>(rank);
     map['symbol'] = i0.Variable<String>(symbol);
     map['score'] = i0.Variable<double>(score);
@@ -2900,6 +3113,7 @@ class DailyRecommendationEntry extends i0.DataClass
   i1.DailyRecommendationCompanion toCompanion(bool nullToAbsent) {
     return i1.DailyRecommendationCompanion(
       date: i0.Value(date),
+      horizon: i0.Value(horizon),
       rank: i0.Value(rank),
       symbol: i0.Value(symbol),
       score: i0.Value(score),
@@ -2913,6 +3127,7 @@ class DailyRecommendationEntry extends i0.DataClass
     serializer ??= i0.driftRuntimeOptions.defaultSerializer;
     return DailyRecommendationEntry(
       date: serializer.fromJson<DateTime>(json['date']),
+      horizon: serializer.fromJson<String>(json['horizon']),
       rank: serializer.fromJson<int>(json['rank']),
       symbol: serializer.fromJson<String>(json['symbol']),
       score: serializer.fromJson<double>(json['score']),
@@ -2923,6 +3138,7 @@ class DailyRecommendationEntry extends i0.DataClass
     serializer ??= i0.driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'date': serializer.toJson<DateTime>(date),
+      'horizon': serializer.toJson<String>(horizon),
       'rank': serializer.toJson<int>(rank),
       'symbol': serializer.toJson<String>(symbol),
       'score': serializer.toJson<double>(score),
@@ -2931,11 +3147,13 @@ class DailyRecommendationEntry extends i0.DataClass
 
   i1.DailyRecommendationEntry copyWith({
     DateTime? date,
+    String? horizon,
     int? rank,
     String? symbol,
     double? score,
   }) => i1.DailyRecommendationEntry(
     date: date ?? this.date,
+    horizon: horizon ?? this.horizon,
     rank: rank ?? this.rank,
     symbol: symbol ?? this.symbol,
     score: score ?? this.score,
@@ -2945,6 +3163,7 @@ class DailyRecommendationEntry extends i0.DataClass
   ) {
     return DailyRecommendationEntry(
       date: data.date.present ? data.date.value : this.date,
+      horizon: data.horizon.present ? data.horizon.value : this.horizon,
       rank: data.rank.present ? data.rank.value : this.rank,
       symbol: data.symbol.present ? data.symbol.value : this.symbol,
       score: data.score.present ? data.score.value : this.score,
@@ -2955,6 +3174,7 @@ class DailyRecommendationEntry extends i0.DataClass
   String toString() {
     return (StringBuffer('DailyRecommendationEntry(')
           ..write('date: $date, ')
+          ..write('horizon: $horizon, ')
           ..write('rank: $rank, ')
           ..write('symbol: $symbol, ')
           ..write('score: $score')
@@ -2963,12 +3183,13 @@ class DailyRecommendationEntry extends i0.DataClass
   }
 
   @override
-  int get hashCode => Object.hash(date, rank, symbol, score);
+  int get hashCode => Object.hash(date, horizon, rank, symbol, score);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is i1.DailyRecommendationEntry &&
           other.date == this.date &&
+          other.horizon == this.horizon &&
           other.rank == this.rank &&
           other.symbol == this.symbol &&
           other.score == this.score);
@@ -2977,12 +3198,14 @@ class DailyRecommendationEntry extends i0.DataClass
 class DailyRecommendationCompanion
     extends i0.UpdateCompanion<i1.DailyRecommendationEntry> {
   final i0.Value<DateTime> date;
+  final i0.Value<String> horizon;
   final i0.Value<int> rank;
   final i0.Value<String> symbol;
   final i0.Value<double> score;
   final i0.Value<int> rowid;
   const DailyRecommendationCompanion({
     this.date = const i0.Value.absent(),
+    this.horizon = const i0.Value.absent(),
     this.rank = const i0.Value.absent(),
     this.symbol = const i0.Value.absent(),
     this.score = const i0.Value.absent(),
@@ -2990,16 +3213,19 @@ class DailyRecommendationCompanion
   });
   DailyRecommendationCompanion.insert({
     required DateTime date,
+    required String horizon,
     required int rank,
     required String symbol,
     required double score,
     this.rowid = const i0.Value.absent(),
   }) : date = i0.Value(date),
+       horizon = i0.Value(horizon),
        rank = i0.Value(rank),
        symbol = i0.Value(symbol),
        score = i0.Value(score);
   static i0.Insertable<i1.DailyRecommendationEntry> custom({
     i0.Expression<DateTime>? date,
+    i0.Expression<String>? horizon,
     i0.Expression<int>? rank,
     i0.Expression<String>? symbol,
     i0.Expression<double>? score,
@@ -3007,6 +3233,7 @@ class DailyRecommendationCompanion
   }) {
     return i0.RawValuesInsertable({
       if (date != null) 'date': date,
+      if (horizon != null) 'horizon': horizon,
       if (rank != null) 'rank': rank,
       if (symbol != null) 'symbol': symbol,
       if (score != null) 'score': score,
@@ -3016,6 +3243,7 @@ class DailyRecommendationCompanion
 
   i1.DailyRecommendationCompanion copyWith({
     i0.Value<DateTime>? date,
+    i0.Value<String>? horizon,
     i0.Value<int>? rank,
     i0.Value<String>? symbol,
     i0.Value<double>? score,
@@ -3023,6 +3251,7 @@ class DailyRecommendationCompanion
   }) {
     return i1.DailyRecommendationCompanion(
       date: date ?? this.date,
+      horizon: horizon ?? this.horizon,
       rank: rank ?? this.rank,
       symbol: symbol ?? this.symbol,
       score: score ?? this.score,
@@ -3035,6 +3264,9 @@ class DailyRecommendationCompanion
     final map = <String, i0.Expression>{};
     if (date.present) {
       map['date'] = i0.Variable<DateTime>(date.value);
+    }
+    if (horizon.present) {
+      map['horizon'] = i0.Variable<String>(horizon.value);
     }
     if (rank.present) {
       map['rank'] = i0.Variable<int>(rank.value);
@@ -3055,6 +3287,7 @@ class DailyRecommendationCompanion
   String toString() {
     return (StringBuffer('DailyRecommendationCompanion(')
           ..write('date: $date, ')
+          ..write('horizon: $horizon, ')
           ..write('rank: $rank, ')
           ..write('symbol: $symbol, ')
           ..write('score: $score, ')
@@ -3068,9 +3301,9 @@ i0.Index get idxDailyRecommendationSymbol => i0.Index(
   'idx_daily_recommendation_symbol',
   'CREATE INDEX idx_daily_recommendation_symbol ON daily_recommendation (symbol)',
 );
-i0.Index get idxDailyRecommendationDateSymbol => i0.Index(
-  'idx_daily_recommendation_date_symbol',
-  'CREATE INDEX idx_daily_recommendation_date_symbol ON daily_recommendation (date, symbol)',
+i0.Index get idxDailyRecommendationDateHorizonSymbol => i0.Index(
+  'idx_daily_recommendation_date_horizon_symbol',
+  'CREATE INDEX idx_daily_recommendation_date_horizon_symbol ON daily_recommendation (date, horizon, symbol)',
 );
 i0.Index get idxRuleAccuracyRule => i0.Index(
   'idx_rule_accuracy_rule',

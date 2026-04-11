@@ -41,6 +41,7 @@ DailyRecommendationEntry createRecommendation({
     date: date ?? DateTime(2026, 2, 13),
     score: score,
     rank: rank,
+    horizon: 'short',
   );
 }
 
@@ -194,7 +195,8 @@ void main() {
             rank: 1,
             reasonType: 'GOLDEN_CROSS',
             evidenceJson: '{}',
-            ruleScore: 10.0,
+            ruleScoreShort: 10.0,
+            ruleScoreLong: 10.0,
           ),
           DailyReasonEntry(
             symbol: '2330',
@@ -202,7 +204,8 @@ void main() {
             rank: 2,
             reasonType: 'VOLUME_BREAKOUT',
             evidenceJson: '{}',
-            ruleScore: 8.0,
+            ruleScoreShort: 8.0,
+            ruleScoreLong: 8.0,
           ),
         ],
       );

@@ -233,7 +233,8 @@ void main() {
             rank: 1,
             reasonType: 'TREND_UP',
             evidenceJson: '{}',
-            ruleScore: 20.0,
+            ruleScoreShort: 20.0,
+            ruleScoreLong: 20.0,
           ),
         ],
       };

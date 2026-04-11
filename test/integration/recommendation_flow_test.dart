@@ -17,6 +17,7 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 // ==========================================
 // Mocks（僅 mock 無法使用真實實例的依賴）
@@ -71,7 +72,8 @@ void main() {
         symbol: '2330',
         date: testDate,
         trendState: 'UP',
-        score: const Value(85.0),
+        scoreShort: const Value(85.0),
+        scoreLong: const Value(85.0),
       ),
     );
     await db.insertAnalysis(
@@ -79,7 +81,8 @@ void main() {
         symbol: '2317',
         date: testDate,
         trendState: 'UP',
-        score: const Value(72.0),
+        scoreShort: const Value(72.0),
+        scoreLong: const Value(72.0),
       ),
     );
 
@@ -91,7 +94,8 @@ void main() {
         rank: 1,
         reasonType: 'GOLDEN_CROSS',
         evidenceJson: '{}',
-        ruleScore: const Value(25.0),
+        ruleScoreShort: const Value(25.0),
+        ruleScoreLong: const Value(25.0),
       ),
       DailyReasonCompanion.insert(
         symbol: '2317',
@@ -99,7 +103,8 @@ void main() {
         rank: 1,
         reasonType: 'VOLUME_SPIKE',
         evidenceJson: '{}',
-        ruleScore: const Value(22.0),
+        ruleScoreShort: const Value(22.0),
+        ruleScoreLong: const Value(22.0),
       ),
     ]);
 
@@ -110,12 +115,14 @@ void main() {
         date: testDate,
         score: 85.0,
         rank: 1,
+        horizon: Horizon.short.name,
       ),
       DailyRecommendationCompanion.insert(
         symbol: '2317',
         date: testDate,
         score: 72.0,
         rank: 2,
+        horizon: Horizon.short.name,
       ),
     ]);
 

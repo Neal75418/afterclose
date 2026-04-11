@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 /// AppDatabase 單元測試
 ///
@@ -322,7 +323,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(50.0),
+            scoreShort: const Value(50.0),
+            scoreLong: const Value(50.0),
           ),
         );
 
@@ -330,7 +332,7 @@ void main() {
 
         expect(analysis, isNotNull);
         expect(analysis!.trendState, 'UP');
-        expect(analysis.score, 50.0);
+        expect(analysis.scoreShort, 50.0);
       });
 
       test('get analyses batch', () async {
@@ -342,7 +344,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(50.0),
+            scoreShort: const Value(50.0),
+            scoreLong: const Value(50.0),
           ),
         );
         await db.insertAnalysis(
@@ -350,7 +353,8 @@ void main() {
             symbol: '2317',
             date: today,
             trendState: 'DOWN',
-            score: const Value(30.0),
+            scoreShort: const Value(30.0),
+            scoreLong: const Value(30.0),
           ),
         );
 
@@ -370,7 +374,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(50.0),
+            scoreShort: const Value(50.0),
+            scoreLong: const Value(50.0),
           ),
         );
         await db.insertAnalysis(
@@ -378,7 +383,8 @@ void main() {
             symbol: '2317',
             date: today,
             trendState: 'DOWN',
-            score: const Value(30.0),
+            scoreShort: const Value(30.0),
+            scoreLong: const Value(30.0),
           ),
         );
 
@@ -406,7 +412,8 @@ void main() {
             date: today,
             reasonType: 'VOLUME_SPIKE',
             evidenceJson: '{}',
-            ruleScore: const Value(18.0),
+            ruleScoreShort: const Value(18.0),
+            ruleScoreLong: const Value(18.0),
             rank: 1,
           ),
         ]);
@@ -415,7 +422,7 @@ void main() {
 
         expect(reasons.length, 1);
         expect(reasons.first.reasonType, 'VOLUME_SPIKE');
-        expect(reasons.first.ruleScore, 18.0);
+        expect(reasons.first.ruleScoreShort, 18.0);
       });
 
       test('get reasons batch', () async {
@@ -428,7 +435,8 @@ void main() {
             date: today,
             reasonType: 'VOLUME_SPIKE',
             evidenceJson: '{}',
-            ruleScore: const Value(18.0),
+            ruleScoreShort: const Value(18.0),
+            ruleScoreLong: const Value(18.0),
             rank: 1,
           ),
           DailyReasonCompanion.insert(
@@ -436,7 +444,8 @@ void main() {
             date: today,
             reasonType: 'PRICE_SPIKE',
             evidenceJson: '{}',
-            ruleScore: const Value(15.0),
+            ruleScoreShort: const Value(15.0),
+            ruleScoreLong: const Value(15.0),
             rank: 1,
           ),
         ]);
@@ -460,7 +469,8 @@ void main() {
             date: today,
             reasonType: 'OLD_REASON',
             evidenceJson: '{}',
-            ruleScore: const Value(10.0),
+            ruleScoreShort: const Value(10.0),
+            ruleScoreLong: const Value(10.0),
             rank: 1,
           ),
         ]);
@@ -472,7 +482,8 @@ void main() {
             date: today,
             reasonType: 'NEW_REASON',
             evidenceJson: '{}',
-            ruleScore: const Value(20.0),
+            ruleScoreShort: const Value(20.0),
+            ruleScoreLong: const Value(20.0),
             rank: 1,
           ),
         ]);
@@ -513,16 +524,21 @@ void main() {
             symbol: '2330',
             score: 50.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
           DailyRecommendationCompanion.insert(
             date: today,
             symbol: '2317',
             score: 40.0,
             rank: 2,
+            horizon: Horizon.short.name,
           ),
         ]);
 
-        final recommendations = await db.getRecommendations(today);
+        final recommendations = await db.getRecommendations(
+          today,
+          horizon: Horizon.short,
+        );
 
         expect(recommendations.length, 2);
         expect(recommendations.first.symbol, '2330'); // Rank 1
@@ -548,6 +564,7 @@ void main() {
             symbol: '2330',
             score: 50.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
         ]);
 

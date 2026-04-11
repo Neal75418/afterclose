@@ -128,7 +128,12 @@ class ExportService {
       if (analysis.reversalState != 'NONE') {
         rows.add(['', 'export.csvReversal'.tr(), analysis.reversalState]);
       }
-      rows.add(['', 'export.csvScore'.tr(), analysis.score.toStringAsFixed(0)]);
+      // Stage 5b: CSV 匯出預設短線分數；Stage 5c 可加 horizon 選項
+      rows.add([
+        '',
+        'export.csvScore'.tr(),
+        analysis.scoreShort.toStringAsFixed(0),
+      ]);
     }
 
     // AI 摘要
@@ -152,7 +157,7 @@ class ExportService {
       rows.add([
         'export.csvSignals'.tr(),
         reason.reasonType,
-        reason.ruleScore.toStringAsFixed(0),
+        reason.ruleScoreShort.toStringAsFixed(0),
       ]);
     }
 
@@ -195,9 +200,9 @@ class ExportService {
       return state.analysesMap[s]?.trendState ?? '';
     });
 
-    // 分數
+    // 分數（Stage 5b: 預設短線；Stage 5c 可加 horizon 選項）
     _addComparisonRow(rows, 'export.csvScore'.tr(), state.symbols, (s) {
-      return state.analysesMap[s]?.score.toStringAsFixed(0) ?? '';
+      return state.analysesMap[s]?.scoreShort.toStringAsFixed(0) ?? '';
     });
 
     // 本益比
@@ -355,7 +360,8 @@ class ExportService {
                   ),
                 _pdfKeyValue(
                   'export.csvScore'.tr(),
-                  analysis.score.toStringAsFixed(0),
+                  // Stage 5b: PDF 匯出預設短線分數
+                  analysis.scoreShort.toStringAsFixed(0),
                 ),
                 pw.SizedBox(height: DesignTokens.spacing12),
               ],
@@ -482,7 +488,7 @@ class ExportService {
                               DesignTokens.spacing6,
                             ),
                             child: pw.Text(
-                              r.ruleScore.toStringAsFixed(0),
+                              r.ruleScoreShort.toStringAsFixed(0),
                               style: const pw.TextStyle(
                                 fontSize: DesignTokens.fontSizeXs,
                               ),

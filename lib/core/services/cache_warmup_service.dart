@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -51,7 +52,11 @@ class CacheWarmupService {
           ? DateContext.normalize(latestDataDate)
           : dateCtx.today;
 
-      final recommendations = await _db.getRecommendations(analysisDate);
+      // Stage 5b: 暫時硬編碼短線 horizon；Stage 5c 會改為 horizon-aware
+      final recommendations = await _db.getRecommendations(
+        analysisDate,
+        horizon: Horizon.short,
+      );
       final recSymbols = recommendations.take(20).map((e) => e.symbol).toList();
 
       AppLogger.info('CacheWarmupService', '今日推薦數量: ${recSymbols.length}');

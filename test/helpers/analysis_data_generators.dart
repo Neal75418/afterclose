@@ -2,6 +2,10 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 
 /// 建立測試用 DailyReasonEntry
+///
+/// Stage 5b dual-horizon: 保留單一 `ruleScore` 參數為方便書寫，helper
+/// 內部會同時賦值給 `ruleScoreShort` 跟 `ruleScoreLong`。測試若需要
+/// 兩個 horizon 分化的值，使用 [createTestReasonDual]。
 DailyReasonEntry createTestReason({
   String symbol = 'TEST',
   DateTime? date,
@@ -16,11 +20,36 @@ DailyReasonEntry createTestReason({
     rank: rank,
     reasonType: reasonType,
     evidenceJson: evidenceJson,
-    ruleScore: ruleScore,
+    ruleScoreShort: ruleScore,
+    ruleScoreLong: ruleScore,
+  );
+}
+
+/// 建立測試用 DailyReasonEntry with 雙 horizon 分化分數
+DailyReasonEntry createTestReasonDual({
+  String symbol = 'TEST',
+  DateTime? date,
+  int rank = 1,
+  required String reasonType,
+  String evidenceJson = '{}',
+  double ruleScoreShort = 10.0,
+  double ruleScoreLong = 10.0,
+}) {
+  return DailyReasonEntry(
+    symbol: symbol,
+    date: date ?? DateTime(2024, 6, 15),
+    rank: rank,
+    reasonType: reasonType,
+    evidenceJson: evidenceJson,
+    ruleScoreShort: ruleScoreShort,
+    ruleScoreLong: ruleScoreLong,
   );
 }
 
 /// 建立測試用 DailyAnalysisEntry
+///
+/// Stage 5b dual-horizon: 保留單一 `score` 參數為方便書寫，helper
+/// 內部會同時賦值給 `scoreShort` 跟 `scoreLong`。
 DailyAnalysisEntry createTestAnalysis({
   String symbol = 'TEST',
   DateTime? date,
@@ -37,7 +66,8 @@ DailyAnalysisEntry createTestAnalysis({
     reversalState: reversalState,
     supportLevel: supportLevel,
     resistanceLevel: resistanceLevel,
-    score: score,
+    scoreShort: score,
+    scoreLong: score,
     computedAt: DateTime(2024, 6, 15, 10, 0),
   );
 }

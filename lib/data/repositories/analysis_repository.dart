@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -50,6 +51,10 @@ class AnalysisRepository implements IAnalysisRepository {
   }
 
   /// 儲存分析結果
+  ///
+  /// Stage 5b dual-horizon: 接受 [scoreShort] 跟 [scoreLong] 兩個分數。
+  /// 實作 Commit 2（本 commit）時 scoring pipeline 還是單分數，caller
+  /// 暫時傳相同值；Commit 3 的 pipeline 改動會真正產生不同值。
   @override
   Future<void> saveAnalysis({
     required String symbol,
@@ -58,7 +63,8 @@ class AnalysisRepository implements IAnalysisRepository {
     required String reversalState,
     double? supportLevel,
     double? resistanceLevel,
-    required double score,
+    required double scoreShort,
+    required double scoreLong,
   }) {
     return _db.insertAnalysis(
       DailyAnalysisCompanion.insert(
@@ -68,7 +74,8 @@ class AnalysisRepository implements IAnalysisRepository {
         reversalState: Value(reversalState),
         supportLevel: Value(supportLevel),
         resistanceLevel: Value(resistanceLevel),
-        score: Value(score),
+        scoreShort: Value(scoreShort),
+        scoreLong: Value(scoreLong),
       ),
     );
   }
@@ -112,7 +119,10 @@ class AnalysisRepository implements IAnalysisRepository {
           rank: i + 1,
           reasonType: reason.type,
           evidenceJson: reason.evidenceJson,
-          ruleScore: Value(reason.score.toDouble()),
+          // Stage 5b Commit 2: scoring pipeline 還是單分數，先把同一個值
+          // 寫入兩個 horizon 欄位。Commit 3 會讓 pipeline 真正產生不同值。
+          ruleScoreShort: Value(reason.score.toDouble()),
+          ruleScoreLong: Value(reason.score.toDouble()),
         ),
       );
     }
@@ -157,13 +167,23 @@ class AnalysisRepository implements IAnalysisRepository {
     });
   }
 
-  /// 取得某日期的推薦股
+  /// 取得某日期的推薦股（預設短線 horizon）
+  ///
+  /// Stage 5b Commit 2: UI 暫時硬編碼 `Horizon.short` 當 default。
+  /// Stage 5c 會改為 `ref.watch(selectedHorizonProvider)` 讓 tab 可切換。
   @override
   Future<List<DailyRecommendationEntry>> getRecommendations(DateTime date) {
-    return _db.getRecommendations(DateContext.normalize(date));
+    return _db.getRecommendations(
+      DateContext.normalize(date),
+      horizon: Horizon.short,
+    );
   }
 
   /// 儲存每日推薦股（原子性取代既有推薦）
+  ///
+  /// Stage 5b Commit 2: scoring pipeline 還是單分數，暫時只寫入
+  /// `Horizon.short` 的 rows（跟舊行為一致）。Commit 3 會讓 pipeline
+  /// 同時產生 short + long 兩份 Top 20 並各自寫入。
   @override
   Future<void> saveRecommendations(
     DateTime date,
@@ -179,6 +199,7 @@ class AnalysisRepository implements IAnalysisRepository {
       entries.add(
         DailyRecommendationCompanion.insert(
           date: normalizedDate,
+          horizon: Horizon.short.name,
           rank: i + 1,
           symbol: rec.symbol,
           score: rec.score,
@@ -187,7 +208,7 @@ class AnalysisRepository implements IAnalysisRepository {
     }
 
     // 使用原子性取代確保一致性
-    await _db.replaceRecommendations(normalizedDate, entries);
+    await _db.replaceRecommendations(normalizedDate, Horizon.short, entries);
   }
 
   // ==================================================

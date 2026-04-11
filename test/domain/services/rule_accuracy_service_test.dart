@@ -16,6 +16,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
   late AppDatabase db;
@@ -98,7 +99,8 @@ void main() {
           symbol: symbol,
           date: entryDate,
           trendState: 'UP',
-          score: const Value(50.0),
+          scoreShort: const Value(50.0),
+          scoreLong: const Value(50.0),
         ),
       );
 
@@ -108,6 +110,7 @@ void main() {
           date: entryDate,
           rank: 1,
           score: 50.0,
+          horizon: Horizon.short.name,
         ),
       ]);
 
@@ -118,7 +121,8 @@ void main() {
           reasonType: reasonType,
           rank: 0,
           evidenceJson: '{}',
-          ruleScore: const Value(25.0),
+          ruleScoreShort: const Value(25.0),
+          ruleScoreLong: const Value(25.0),
         ),
       ]);
     }
@@ -321,7 +325,8 @@ void main() {
           reasonType: reasonType,
           rank: rank,
           evidenceJson: '{}',
-          ruleScore: const Value(25.0),
+          ruleScoreShort: const Value(25.0),
+          ruleScoreLong: const Value(25.0),
         ),
       ]);
     }

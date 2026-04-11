@@ -108,7 +108,8 @@ class ShareableAnalysisCard extends StatelessWidget {
               if (analysis != null)
                 Row(
                   children: [
-                    _ScoreBadge(score: analysis.score),
+                    // Stage 5b: 分享卡片顯示短線分數
+                    _ScoreBadge(score: analysis.scoreShort),
                     const SizedBox(width: DesignTokens.spacing12),
                     _TrendChip(trend: analysis.trendState),
                     if (analysis.reversalState != 'NONE') ...[

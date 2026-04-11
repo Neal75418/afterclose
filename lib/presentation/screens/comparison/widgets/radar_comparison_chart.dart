@@ -142,9 +142,9 @@ class RadarComparisonChart extends StatelessWidget {
     ];
   }
 
-  /// 分數：直接對應 0-100。
+  /// 分數：直接對應 0-100（Stage 5b: 雷達圖顯示短線分數）
   double _scoreValue(String symbol) {
-    return (state.analysesMap[symbol]?.score ?? 0).clamp(0, 100);
+    return (state.analysesMap[symbol]?.scoreShort ?? 0).clamp(0, 100);
   }
 
   /// 價格表現：近 1 個月報酬率對應至 0-100（線性截斷）。

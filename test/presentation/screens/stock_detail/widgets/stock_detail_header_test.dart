@@ -62,7 +62,8 @@ void main() {
     return DailyAnalysisEntry(
       symbol: symbol,
       date: defaultDate,
-      score: score,
+      scoreShort: score,
+      scoreLong: score,
       trendState: trend,
       reversalState: reversal,
       supportLevel: supportLevel,

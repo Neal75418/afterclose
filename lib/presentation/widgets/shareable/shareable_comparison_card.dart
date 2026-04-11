@@ -82,7 +82,8 @@ class ShareableComparisonCard extends StatelessWidget {
                   symbol: symbol,
                   name: stock?.name ?? '',
                   close: price?.close,
-                  score: analysis?.score,
+                  // Stage 5b: 比較分享卡顯示短線分數
+                  score: analysis?.scoreShort,
                   trend: analysis?.trendState,
                   pe: valuation?.per,
                   dividendYield: valuation?.dividendYield,

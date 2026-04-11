@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
   late AppDatabase db;
@@ -37,7 +38,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(80.0),
+            scoreShort: const Value(80.0),
+            scoreLong: const Value(80.0),
           ),
         );
         await db.insertAnalysis(
@@ -45,7 +47,8 @@ void main() {
             symbol: '2317',
             date: today,
             trendState: 'DOWN',
-            score: const Value(30.0),
+            scoreShort: const Value(30.0),
+            scoreLong: const Value(30.0),
           ),
         );
         await db.insertAnalysis(
@@ -53,7 +56,8 @@ void main() {
             symbol: '2454',
             date: today,
             trendState: 'UP',
-            score: const Value(50.0),
+            scoreShort: const Value(50.0),
+            scoreLong: const Value(50.0),
           ),
         );
 
@@ -79,7 +83,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(80.0),
+            scoreShort: const Value(80.0),
+            scoreLong: const Value(80.0),
           ),
         );
 
@@ -87,7 +92,7 @@ void main() {
 
         expect(analysis, isNotNull);
         expect(analysis!.trendState, 'UP');
-        expect(analysis.score, 80.0);
+        expect(analysis.scoreShort, 80.0);
       });
 
       test('returns null for non-existent entry', () async {
@@ -104,7 +109,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(50.0),
+            scoreShort: const Value(50.0),
+            scoreLong: const Value(50.0),
           ),
         );
         await db.insertAnalysis(
@@ -112,14 +118,15 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'DOWN',
-            score: const Value(30.0),
+            scoreShort: const Value(30.0),
+            scoreLong: const Value(30.0),
           ),
         );
 
         final analysis = await db.getAnalysis('2330', today);
 
         expect(analysis!.trendState, 'DOWN');
-        expect(analysis.score, 30.0);
+        expect(analysis.scoreShort, 30.0);
       });
     });
 
@@ -130,7 +137,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(80.0),
+            scoreShort: const Value(80.0),
+            scoreLong: const Value(80.0),
           ),
         );
         await db.insertAnalysis(
@@ -138,7 +146,8 @@ void main() {
             symbol: '2317',
             date: today,
             trendState: 'DOWN',
-            score: const Value(30.0),
+            scoreShort: const Value(30.0),
+            scoreLong: const Value(30.0),
           ),
         );
 
@@ -161,7 +170,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(80.0),
+            scoreShort: const Value(80.0),
+            scoreLong: const Value(80.0),
           ),
         );
 
@@ -180,7 +190,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(80.0),
+            scoreShort: const Value(80.0),
+            scoreLong: const Value(80.0),
           ),
         );
         await db.insertAnalysis(
@@ -188,7 +199,8 @@ void main() {
             symbol: '2317',
             date: today,
             trendState: 'DOWN',
-            score: const Value(30.0),
+            scoreShort: const Value(30.0),
+            scoreLong: const Value(30.0),
           ),
         );
 
@@ -206,7 +218,8 @@ void main() {
             symbol: '2330',
             date: today,
             trendState: 'UP',
-            score: const Value(80.0),
+            scoreShort: const Value(80.0),
+            scoreLong: const Value(80.0),
           ),
         );
         await db.insertAnalysis(
@@ -214,7 +227,8 @@ void main() {
             symbol: '2330',
             date: yesterday,
             trendState: 'UP',
-            score: const Value(70.0),
+            scoreShort: const Value(70.0),
+            scoreLong: const Value(70.0),
           ),
         );
 
@@ -233,7 +247,8 @@ void main() {
             date: today,
             reasonType: 'VOLUME_SPIKE',
             evidenceJson: '{}',
-            ruleScore: const Value(18.0),
+            ruleScoreShort: const Value(18.0),
+            ruleScoreLong: const Value(18.0),
             rank: 2,
           ),
           DailyReasonCompanion.insert(
@@ -241,7 +256,8 @@ void main() {
             date: today,
             reasonType: 'PRICE_BREAKOUT',
             evidenceJson: '{}',
-            ruleScore: const Value(20.0),
+            ruleScoreShort: const Value(20.0),
+            ruleScoreLong: const Value(20.0),
             rank: 1,
           ),
         ]);
@@ -260,7 +276,8 @@ void main() {
             date: today,
             reasonType: 'VOLUME_SPIKE',
             evidenceJson: '{}',
-            ruleScore: const Value(18.0),
+            ruleScoreShort: const Value(18.0),
+            ruleScoreLong: const Value(18.0),
             rank: 1,
           ),
           DailyReasonCompanion.insert(
@@ -268,7 +285,8 @@ void main() {
             date: today,
             reasonType: 'PRICE_BREAKOUT',
             evidenceJson: '{}',
-            ruleScore: const Value(20.0),
+            ruleScoreShort: const Value(20.0),
+            ruleScoreLong: const Value(20.0),
             rank: 1,
           ),
         ]);
@@ -292,7 +310,8 @@ void main() {
             date: today,
             reasonType: 'OLD_REASON',
             evidenceJson: '{}',
-            ruleScore: const Value(10.0),
+            ruleScoreShort: const Value(10.0),
+            ruleScoreLong: const Value(10.0),
             rank: 1,
           ),
         ]);
@@ -303,7 +322,8 @@ void main() {
             date: today,
             reasonType: 'NEW_REASON_A',
             evidenceJson: '{"key": "value"}',
-            ruleScore: const Value(25.0),
+            ruleScoreShort: const Value(25.0),
+            ruleScoreLong: const Value(25.0),
             rank: 1,
           ),
           DailyReasonCompanion.insert(
@@ -311,7 +331,8 @@ void main() {
             date: today,
             reasonType: 'NEW_REASON_B',
             evidenceJson: '{}',
-            ruleScore: const Value(15.0),
+            ruleScoreShort: const Value(15.0),
+            ruleScoreLong: const Value(15.0),
             rank: 2,
           ),
         ]);
@@ -330,7 +351,8 @@ void main() {
             date: today,
             reasonType: 'SOME_REASON',
             evidenceJson: '{}',
-            ruleScore: const Value(10.0),
+            ruleScoreShort: const Value(10.0),
+            ruleScoreLong: const Value(10.0),
             rank: 1,
           ),
         ]);
@@ -348,7 +370,8 @@ void main() {
             date: today,
             reasonType: 'A',
             evidenceJson: '{}',
-            ruleScore: const Value(10.0),
+            ruleScoreShort: const Value(10.0),
+            ruleScoreLong: const Value(10.0),
             rank: 1,
           ),
           DailyReasonCompanion.insert(
@@ -356,7 +379,8 @@ void main() {
             date: today,
             reasonType: 'B',
             evidenceJson: '{}',
-            ruleScore: const Value(10.0),
+            ruleScoreShort: const Value(10.0),
+            ruleScoreLong: const Value(10.0),
             rank: 1,
           ),
         ]);
@@ -375,16 +399,21 @@ void main() {
             symbol: '2317',
             score: 40.0,
             rank: 2,
+            horizon: Horizon.short.name,
           ),
           DailyRecommendationCompanion.insert(
             date: today,
             symbol: '2330',
             score: 80.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
         ]);
 
-        final recommendations = await db.getRecommendations(today);
+        final recommendations = await db.getRecommendations(
+          today,
+          horizon: Horizon.short,
+        );
 
         expect(recommendations.length, 2);
         expect(recommendations[0].symbol, '2330');
@@ -398,19 +427,24 @@ void main() {
             symbol: '2330',
             score: 80.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
         ]);
 
-        await db.replaceRecommendations(today, [
+        await db.replaceRecommendations(today, Horizon.short, [
           DailyRecommendationCompanion.insert(
             date: today,
             symbol: '2317',
             score: 60.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
         ]);
 
-        final recommendations = await db.getRecommendations(today);
+        final recommendations = await db.getRecommendations(
+          today,
+          horizon: Horizon.short,
+        );
 
         expect(recommendations.length, 1);
         expect(recommendations.first.symbol, '2317');
@@ -423,6 +457,7 @@ void main() {
             symbol: '2330',
             score: 80.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
         ]);
 
@@ -448,12 +483,14 @@ void main() {
             symbol: '2330',
             score: 80.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
           DailyRecommendationCompanion.insert(
             date: today,
             symbol: '2317',
             score: 60.0,
             rank: 1,
+            horizon: Horizon.short.name,
           ),
         ]);
 

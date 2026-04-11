@@ -57,7 +57,8 @@ void main() {
         '2330': DailyAnalysisEntry(
           symbol: '2330',
           date: defaultDate,
-          score: 80.0,
+          scoreShort: 80.0,
+          scoreLong: 80.0,
           trendState: 'UP',
           reversalState: '',
           computedAt: defaultDate,
@@ -65,7 +66,8 @@ void main() {
         '2317': DailyAnalysisEntry(
           symbol: '2317',
           date: defaultDate,
-          score: 55.0,
+          scoreShort: 55.0,
+          scoreLong: 55.0,
           trendState: 'DOWN',
           reversalState: '',
           computedAt: defaultDate,

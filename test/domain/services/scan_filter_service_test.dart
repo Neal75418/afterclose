@@ -17,7 +17,8 @@ void main() {
       date: DateTime(2025, 1, 15),
       trendState: trendState,
       reversalState: 'NONE',
-      score: score,
+      scoreShort: score,
+      scoreLong: score,
       computedAt: DateTime(2025, 1, 15),
     );
   }
@@ -34,7 +35,8 @@ void main() {
       rank: rank,
       reasonType: reasonType,
       evidenceJson: '{}',
-      ruleScore: 10.0,
+      ruleScoreShort: 10.0,
+      ruleScoreLong: 10.0,
     );
   }
 

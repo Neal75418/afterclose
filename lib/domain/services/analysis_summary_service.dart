@@ -213,7 +213,8 @@ class AnalysisSummaryService {
     }
 
     // 分數評語
-    final score = analysis?.score.toInt() ?? 0;
+    // Stage 5b: UI 預設讀短線 score；Stage 5c 加 horizon-aware 切換
+    final score = analysis?.scoreShort.toInt() ?? 0;
     final scoreKey = switch (score) {
       >= AnalysisParams.scoreExceptionalThreshold => 'summary.scoreExceptional',
       >= AnalysisParams.scoreStrongThreshold => 'summary.scoreStrong',
@@ -242,8 +243,8 @@ class AnalysisSummaryService {
     ConfluenceResult confluence, {
     double? priceChange,
   }) {
-    final positive = reasons.where((r) => r.ruleScore > 0).toList()
-      ..sort((a, b) => b.ruleScore.compareTo(a.ruleScore));
+    final positive = reasons.where((r) => r.ruleScoreShort > 0).toList()
+      ..sort((a, b) => b.ruleScoreShort.compareTo(a.ruleScoreShort));
 
     const maxItems = AnalysisParams.summaryMaxItems;
     final signals = <LocalizableString>[];
@@ -280,8 +281,8 @@ class AnalysisSummaryService {
     ConfluenceResult confluence, {
     double? priceChange,
   }) {
-    final negative = reasons.where((r) => r.ruleScore < 0).toList()
-      ..sort((a, b) => a.ruleScore.compareTo(b.ruleScore));
+    final negative = reasons.where((r) => r.ruleScoreShort < 0).toList()
+      ..sort((a, b) => a.ruleScoreShort.compareTo(b.ruleScoreShort));
 
     const maxItems = AnalysisParams.summaryMaxItems;
     final risks = <LocalizableString>[];
@@ -403,15 +404,16 @@ class AnalysisSummaryService {
     required List<FinMindRevenue> revenueHistory,
     required FinMindPER? latestPER,
   }) {
-    final score = analysis?.score.toInt() ?? 0;
+    // Stage 5b: UI 預設讀短線 score；Stage 5c 加 horizon-aware 切換
+    final score = analysis?.scoreShort.toInt() ?? 0;
 
     // 加權計算
     final positiveWeight = reasons
-        .where((r) => r.ruleScore > 0)
-        .fold<double>(0, (sum, r) => sum + r.ruleScore);
+        .where((r) => r.ruleScoreShort > 0)
+        .fold<double>(0, (sum, r) => sum + r.ruleScoreShort);
     final negativeWeight = reasons
-        .where((r) => r.ruleScore < 0)
-        .fold<double>(0, (sum, r) => sum + r.ruleScore.abs());
+        .where((r) => r.ruleScoreShort < 0)
+        .fold<double>(0, (sum, r) => sum + r.ruleScoreShort.abs());
 
     // 基本面修正
     var fundamentalBias = 0.0;
@@ -528,7 +530,9 @@ class AnalysisSummaryService {
     // 高分訊號品質加權：有 2+ 個 |ruleScore| ≥ 15 的訊號
     final highScoreSignals = reasons
         .where(
-          (r) => r.ruleScore.abs() >= AnalysisParams.highQualitySignalThreshold,
+          (r) =>
+              r.ruleScoreShort.abs() >=
+              AnalysisParams.highQualitySignalThreshold,
         )
         .length;
     if (highScoreSignals >= 2) points += 1;
