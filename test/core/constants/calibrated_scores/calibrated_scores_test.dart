@@ -291,6 +291,39 @@ void main() {
       expect(warnings.first, contains('score not numeric'));
     });
 
+    test('14b. rule_score_fractional_rounded_with_warning', () {
+      // JSON `22.7` is parsed as double. Parser should round (not truncate)
+      // to avoid the asymmetric `.toInt()` behavior for negatives.
+      const json =
+          '{"schema_version": 1, "rules": {'
+          '"FRAC_POS": {"score": 22.7},'
+          '"FRAC_NEG": {"score": -22.7},'
+          '"INT_AS_DOUBLE": {"score": 25.0},'
+          '"PURE_INT": {"score": 10}'
+          '}}';
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      // Round-half-away-from-zero: 22.7 → 23, -22.7 → -23 (symmetric)
+      expect(table.lookup('FRAC_POS'), 23);
+      expect(table.lookup('FRAC_NEG'), -23);
+      // 25.0 equals int 25 so no rounding warning
+      expect(table.lookup('INT_AS_DOUBLE'), 25);
+      expect(table.lookup('PURE_INT'), 10);
+
+      // Only two fractional entries should produce warnings
+      expect(warnings.length, 2);
+      expect(warnings.any((w) => w.contains('FRAC_POS')), isTrue);
+      expect(warnings.any((w) => w.contains('FRAC_NEG')), isTrue);
+      expect(
+        warnings.first,
+        anyOf(contains('rounded to 23'), contains('rounded to -23')),
+      );
+    });
+
     test('15. rule_score_above_max_clamped_to_80', () {
       final json = _buildJson(rules: {'REVERSAL_W2S': _rule(999)});
 
@@ -543,6 +576,33 @@ void main() {
         reason: 'idempotent load must not overwrite bound state',
       );
     });
+
+    test(
+      '26b. bindForTesting_during_pending_load_is_not_overwritten',
+      () async {
+        // Race condition regression test:
+        // If bindForTesting runs after loadFromAssets yields but before
+        // it resolves, the fake table must survive the in-flight load.
+        final pending = CalibratedScoresRegistry.instance.loadFromAssets();
+
+        CalibratedScoresRegistry.instance.bindForTesting(
+          short: CalibratedScoresTable(
+            horizon: Horizon.short,
+            schemaVersion: 1,
+            generatedAt: null,
+            scores: const {'FAKE_RACE': 99},
+          ),
+        );
+
+        await pending;
+
+        expect(
+          CalibratedScoresRegistry.instance.lookup(Horizon.short, 'FAKE_RACE'),
+          99,
+          reason: 'bindForTesting must win over a pending loadFromAssets',
+        );
+      },
+    );
 
     test('27. resetForTesting_clears_state', () async {
       CalibratedScoresRegistry.instance.bindForTesting(

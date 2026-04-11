@@ -41,21 +41,41 @@ class CalibratedScoresRegistry {
   CalibratedScoresTable? _short;
   CalibratedScoresTable? _long;
   bool _loaded = false;
+  Future<void>? _loading;
 
   /// 從 assets 載入兩個 horizon 的 calibrated scores
   ///
   /// Idempotent — 重複呼叫會直接 return，不會重新讀檔。若需強制重載
   /// （例如測試），請先呼叫 [resetForTesting]。
   ///
+  /// **Re-entrancy safe**：並行呼叫會共享同一個 in-flight future，避免
+  /// 重複讀 asset bundle；若 [bindForTesting] 在 load 進行中被呼叫，
+  /// load 完成時會檢查 `_loaded` 狀態並尊重測試注入的 fake table。
+  ///
   /// [knownRuleIds] 若提供，會傳入 `parseJson` 做 scenario 7 check
   /// （unknown ReasonType code 會產生 warning）。null 表示跳過此檢查。
   /// 正式啟動流程應由 `main.dart` 傳入
   /// `ReasonType.values.map((r) => r.code).toSet()`（Stage 5a Commit 2 啟用）。
-  Future<void> loadFromAssets({Set<String>? knownRuleIds}) async {
-    if (_loaded) return;
-    _short = await _loadOne(Horizon.short, knownRuleIds);
-    _long = await _loadOne(Horizon.long, knownRuleIds);
-    _loaded = true;
+  Future<void> loadFromAssets({Set<String>? knownRuleIds}) {
+    if (_loaded) return Future.value();
+    return _loading ??= _doLoad(knownRuleIds);
+  }
+
+  Future<void> _doLoad(Set<String>? knownRuleIds) async {
+    try {
+      // 兩個 horizon 平行載入，省一個 frame 的 startup latency
+      final results = await Future.wait([
+        _loadOne(Horizon.short, knownRuleIds),
+        _loadOne(Horizon.long, knownRuleIds),
+      ]);
+      // 若 bindForTesting 在 await 期間被呼叫，尊重測試注入的狀態
+      if (_loaded) return;
+      _short = results[0];
+      _long = results[1];
+      _loaded = true;
+    } finally {
+      _loading = null;
+    }
   }
 
   /// Horizon-aware 的同步 rule 查詢
@@ -78,6 +98,7 @@ class CalibratedScoresRegistry {
     _short = null;
     _long = null;
     _loaded = false;
+    _loading = null;
   }
 
   /// 測試用：直接注入 fake table，跳過 asset bundle
@@ -108,6 +129,9 @@ class CalibratedScoresRegistry {
       _logCappedWarnings(horizon, warnings);
       return table;
     } catch (e, st) {
+      // 故意使用 untyped catch：rootBundle.loadString 在 asset 缺失時 throw
+      // `FlutterError`，它不是 Exception 的 subtype。收斂到 `on Exception` 會
+      // 讓 asset-missing 的錯誤穿透到 Zone error handler，反而丟失診斷訊息。
       AppLogger.error(
         'CalibratedScoresRegistry',
         'Failed to load ${horizon.assetPath}',

@@ -43,13 +43,6 @@ void main() async {
   // 檢查是否已完成引導流程
   await initOnboardingStatus();
 
-  // Stage 5a: 載入 calibrated scores JSON（pre-launch placeholder 為空，
-  // 所有查詢會 fallback 到 RuleScores hardcoded 值；上線後由 Stage 4
-  // recalibrate 填入真實 calibrated 分數）
-  await CalibratedScoresRegistry.instance.loadFromAssets(
-    knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
-  );
-
   // 快取預熱（非阻塞）
   container
       .read(cacheWarmupServiceProvider)
@@ -72,11 +65,18 @@ void main() async {
       options.tracesSampleRate = kDebugMode ? 1.0 : 0.2;
     }, appRunner: () => _runApp(container));
   } else {
-    _runApp(container);
+    await _runApp(container);
   }
 }
 
-void _runApp(ProviderContainer container) {
+Future<void> _runApp(ProviderContainer container) async {
+  // Stage 5a: 載入 calibrated scores JSON（放在 Sentry init 之後，讓 asset
+  // 載入錯誤能被 Sentry 捕獲上報）。Pre-launch placeholder 為空，所有查詢
+  // 走 RuleScores hardcoded fallback；上線後由 Stage 4 recalibrate 填入。
+  await CalibratedScoresRegistry.instance.loadFromAssets(
+    knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
+  );
+
   runApp(
     EasyLocalization(
       supportedLocales: const [Locale('zh', 'TW'), Locale('en')],

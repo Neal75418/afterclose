@@ -177,8 +177,22 @@ class CalibratedScoresTable {
         continue;
       }
 
+      // Scenario 5d: 非整數 score 會被 round 到最近整數並發出 warning
+      //
+      // `tool/recalibrate.dart` 目前使用 `.round()` 輸出整數，但手動編輯
+      // 或 drift 的 producer 可能產生 fractional score。使用 `.round()`
+      // 而非 `.toInt()` 避免 `.toInt()` 對負數的非對稱截斷（例如 -22.7 →
+      // -22 而非 -23）。`22.0`（整數表示的 double）不會觸發 warning，因為
+      // `22.0.round() == 22` 且 `22 == 22.0` 在 Dart 中為 true。
+      final rounded = scoreRaw.round();
+      if (rounded != scoreRaw) {
+        warnings.add(
+          'rule $ruleId: non-integer score $scoreRaw rounded to $rounded',
+        );
+      }
+
       // Scenarios 6a/6b: clamp 到 [minScore, maxScore]
-      var score = scoreRaw.toInt();
+      var score = rounded;
       if (score > RuleScores.maxScore) {
         warnings.add(
           'rule $ruleId: score $score clamped to ${RuleScores.maxScore}',
