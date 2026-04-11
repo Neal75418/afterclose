@@ -24,6 +24,12 @@ abstract final class RuleScores {
   /// 最高分數上限
   static const int maxScore = 80;
 
+  /// 最低分數下限（Stage 5a clamp boundary）
+  ///
+  /// 對應現有最負面規則 `tradingWarningDisposal = -50`（處置股）。
+  /// Calibrated JSON 載入時若出現 `score < -50`，會被 clamp 到 -50。
+  static const int minScore = -50;
+
   // ==================================================
   // 多方訊號（正分）
   // ==================================================

@@ -1,0 +1,589 @@
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/rule_scores.dart';
+
+/// Helper: 建 happy-path JSON 字串
+String _buildJson({
+  int schemaVersion = 1,
+  String? generatedAt = '2026-04-11T00:00:00.000Z',
+  Map<String, Object?>? rules,
+  Map<String, Object?> extraRootFields = const {},
+}) {
+  final buffer = StringBuffer('{');
+  buffer.write('"schema_version": $schemaVersion');
+  if (generatedAt != null) {
+    buffer.write(', "generated_at": "$generatedAt"');
+  }
+  buffer.write(', "rules": ${_jsonEncode(rules ?? {})}');
+  for (final entry in extraRootFields.entries) {
+    buffer.write(', "${entry.key}": ${_jsonEncode(entry.value)}');
+  }
+  buffer.write('}');
+  return buffer.toString();
+}
+
+String _jsonEncode(Object? value) {
+  if (value == null) return 'null';
+  if (value is String) return '"$value"';
+  if (value is num || value is bool) return value.toString();
+  if (value is List) {
+    return '[${value.map(_jsonEncode).join(',')}]';
+  }
+  if (value is Map) {
+    final entries = value.entries
+        .map((e) => '"${e.key}": ${_jsonEncode(e.value)}')
+        .join(', ');
+    return '{$entries}';
+  }
+  throw ArgumentError('unsupported type: ${value.runtimeType}');
+}
+
+Map<String, Object?> _rule(
+  int score, {
+  double hitRate = 0.5,
+  int samples = 100,
+}) {
+  return {'score': score, 'hit_rate': hitRate, 'samples': samples};
+}
+
+void main() {
+  group('CalibratedScoresTable.parseJson [Layer 1: pure parser]', () {
+    // ==================================================
+    // Happy path (6 cases)
+    // ==================================================
+
+    test('1. happy_path_both_horizons_full: 62 rules fully parsed', () {
+      final rules = <String, Object?>{
+        for (var i = 0; i < 62; i++) 'RULE_$i': _rule(10 + i % 30),
+      };
+      final json = _buildJson(rules: rules);
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 62);
+      expect(table.schemaVersion, 1);
+      expect(table.horizon, Horizon.short);
+      expect(warnings, isEmpty);
+      expect(table.lookup('RULE_0'), 10);
+      expect(table.lookup('RULE_30'), 10);
+    });
+
+    test('2. empty_rules_returns_empty_table', () {
+      final json = _buildJson(rules: {});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(table.schemaVersion, 1);
+      expect(warnings, isEmpty);
+      expect(table.lookup('ANY_RULE'), isNull);
+    });
+
+    test('3. partial_rules_returns_partial_table', () {
+      final json = _buildJson(
+        rules: {
+          'REVERSAL_W2S': _rule(28),
+          'TECH_BREAKOUT': _rule(22),
+          'VOLUME_SPIKE': _rule(18),
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.long,
+      );
+
+      expect(table.ruleCount, 3);
+      expect(warnings, isEmpty);
+      expect(table.lookup('REVERSAL_W2S'), 28);
+      expect(table.lookup('TECH_BREAKOUT'), 22);
+      expect(table.lookup('MISSING_RULE'), isNull);
+    });
+
+    test('4. schema_version_1_accepted', () {
+      final json = _buildJson(schemaVersion: 1, rules: {});
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+      expect(table.schemaVersion, 1);
+      expect(warnings, isEmpty);
+    });
+
+    test('5. generatedAt_parsed_correctly', () {
+      final json = _buildJson(
+        generatedAt: '2026-04-11T12:34:56.789Z',
+        rules: {},
+      );
+      final (:table, warnings: _) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+      expect(table.generatedAt, isNotNull);
+      expect(table.generatedAt!.year, 2026);
+      expect(table.generatedAt!.month, 4);
+      expect(table.generatedAt!.day, 11);
+    });
+
+    test('6. extra_unknown_top_level_fields_ignored', () {
+      final json = _buildJson(
+        rules: {'REVERSAL_W2S': _rule(28)},
+        extraRootFields: {
+          '_note': 'This is a placeholder stub',
+          'backtest': {'window_days': 504, 'train_ratio': 0.7},
+          'horizon': '5d',
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), 28);
+      expect(warnings, isEmpty);
+    });
+
+    // ==================================================
+    // Structural errors (5 cases, scenarios 1-2d)
+    // ==================================================
+
+    test('7. malformed_json_returns_empty', () {
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        '{not valid json',
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(table.schemaVersion, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('malformed JSON'));
+    });
+
+    test('8. root_not_object_returns_empty', () {
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        '[1, 2, 3]',
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('root must be object'));
+    });
+
+    test('9. schema_version_missing_returns_empty', () {
+      const json = '{"rules": {}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('schema_version missing'));
+    });
+
+    test('10. schema_version_unsupported_returns_empty', () {
+      final json = _buildJson(schemaVersion: 2, rules: {});
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('unsupported schema_version: 2'));
+    });
+
+    test('11. rules_field_missing_returns_empty', () {
+      const json = '{"schema_version": 1}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('rules field missing'));
+    });
+
+    test('11b. rules_wrong_type_returns_empty', () {
+      const json = '{"schema_version": 1, "rules": "not a map"}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('rules must be object'));
+    });
+
+    // ==================================================
+    // Per-rule content errors (7 cases, scenarios 5a-6b + 7)
+    // ==================================================
+
+    test('12. rule_entry_not_object_skipped', () {
+      final json = _buildJson(
+        rules: {
+          'REVERSAL_W2S': 25, // raw int instead of object
+          'TECH_BREAKOUT': _rule(22),
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), isNull);
+      expect(table.lookup('TECH_BREAKOUT'), 22);
+      expect(warnings.length, 1);
+      expect(warnings.first, contains('REVERSAL_W2S'));
+      expect(warnings.first, contains('entry not object'));
+    });
+
+    test('13. rule_score_missing_skipped', () {
+      final json = _buildJson(
+        rules: {
+          'REVERSAL_W2S': {'hit_rate': 0.5, 'samples': 100},
+          'TECH_BREAKOUT': _rule(22),
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), isNull);
+      expect(table.lookup('TECH_BREAKOUT'), 22);
+      expect(warnings.length, 1);
+      expect(warnings.first, contains('score field missing'));
+    });
+
+    test('14. rule_score_not_numeric_skipped', () {
+      final json = _buildJson(
+        rules: {
+          'REVERSAL_W2S': {'score': 'abc', 'hit_rate': 0.5},
+          'TECH_BREAKOUT': _rule(22),
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), isNull);
+      expect(table.lookup('TECH_BREAKOUT'), 22);
+      expect(warnings.length, 1);
+      expect(warnings.first, contains('score not numeric'));
+    });
+
+    test('15. rule_score_above_max_clamped_to_80', () {
+      final json = _buildJson(rules: {'REVERSAL_W2S': _rule(999)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), RuleScores.maxScore);
+      expect(warnings.length, 1);
+      expect(warnings.first, contains('999'));
+      expect(warnings.first, contains('clamped to 80'));
+    });
+
+    test('16. rule_score_below_min_clamped_to_-50', () {
+      final json = _buildJson(rules: {'TRADING_WARNING_DISPOSAL': _rule(-999)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.long,
+      );
+
+      expect(table.lookup('TRADING_WARNING_DISPOSAL'), RuleScores.minScore);
+      expect(warnings.length, 1);
+      expect(warnings.first, contains('-999'));
+      expect(warnings.first, contains('clamped to -50'));
+    });
+
+    test('17. rule_score_at_boundary_not_clamped', () {
+      final json = _buildJson(
+        rules: {
+          'REVERSAL_W2S': _rule(RuleScores.maxScore), // 80
+          'TRADING_WARNING_DISPOSAL': _rule(RuleScores.minScore), // -50
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), 80);
+      expect(table.lookup('TRADING_WARNING_DISPOSAL'), -50);
+      expect(warnings, isEmpty);
+    });
+
+    test('18. unknown_rule_id_skipped_with_warning_when_whitelist_set', () {
+      final json = _buildJson(
+        rules: {'REVERSAL_W2S': _rule(28), 'FAKE_UNKNOWN_RULE': _rule(25)},
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        knownRuleIds: {'REVERSAL_W2S', 'TECH_BREAKOUT'},
+      );
+
+      expect(table.lookup('REVERSAL_W2S'), 28);
+      expect(table.lookup('FAKE_UNKNOWN_RULE'), isNull);
+      expect(warnings.length, 1);
+      expect(warnings.first, contains('FAKE_UNKNOWN_RULE'));
+      expect(warnings.first, contains('unknown ReasonType code'));
+    });
+
+    test('18b. null_whitelist_accepts_any_rule_id', () {
+      // When knownRuleIds is null (Stage 5a Commit 1 default), scenario 7
+      // check is skipped and any rule_id is accepted.
+      final json = _buildJson(rules: {'TOTALLY_FAKE_RULE': _rule(25)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('TOTALLY_FAKE_RULE'), 25);
+      expect(warnings, isEmpty);
+    });
+
+    // ==================================================
+    // Mixed scenarios (2 cases)
+    // ==================================================
+
+    test('19. mixed_valid_and_invalid_rules', () {
+      final json = _buildJson(
+        rules: {
+          'VALID_1': _rule(20),
+          'VALID_2': _rule(15),
+          'VALID_3': _rule(30),
+          'INVALID_NOT_OBJECT': 99,
+          'INVALID_NO_SCORE': {'hit_rate': 0.5},
+          'INVALID_SCORE_TYPE': {'score': 'xyz'},
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 3);
+      expect(table.lookup('VALID_1'), 20);
+      expect(table.lookup('VALID_2'), 15);
+      expect(table.lookup('VALID_3'), 30);
+      expect(warnings.length, 3);
+    });
+
+    test('20. clamp_coexists_with_skip', () {
+      final json = _buildJson(
+        rules: {
+          'VALID_IN_RANGE': _rule(25),
+          'CLAMPED_HIGH': _rule(500),
+          'CLAMPED_LOW': _rule(-500),
+          'SKIPPED_NO_SCORE': {'hit_rate': 0.5},
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('VALID_IN_RANGE'), 25);
+      expect(table.lookup('CLAMPED_HIGH'), RuleScores.maxScore);
+      expect(table.lookup('CLAMPED_LOW'), RuleScores.minScore);
+      expect(table.lookup('SKIPPED_NO_SCORE'), isNull);
+      expect(warnings.length, 3); // 2 clamp + 1 skip
+    });
+
+    // ==================================================
+    // Warning content assertions (2 cases)
+    // ==================================================
+
+    test('21. warning_messages_include_rule_id', () {
+      final json = _buildJson(
+        rules: {
+          'MY_SPECIAL_RULE_A': {'hit_rate': 0.5}, // score missing
+          'MY_SPECIAL_RULE_B': _rule(999), // clamped
+          'MY_SPECIAL_RULE_C': 42, // not object
+        },
+      );
+
+      final (table: _, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(warnings.length, 3);
+      expect(
+        warnings.where((w) => w.contains('MY_SPECIAL_RULE_A')),
+        hasLength(1),
+      );
+      expect(
+        warnings.where((w) => w.contains('MY_SPECIAL_RULE_B')),
+        hasLength(1),
+      );
+      expect(
+        warnings.where((w) => w.contains('MY_SPECIAL_RULE_C')),
+        hasLength(1),
+      );
+    });
+
+    test('22. warning_count_accumulates_correctly', () {
+      final rules = <String, Object?>{};
+      for (var i = 0; i < 20; i++) {
+        rules['BAD_RULE_$i'] = {'hit_rate': 0.5}; // all missing score
+      }
+      final json = _buildJson(rules: rules);
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings.length, 20); // parser does NOT cap; registry does
+    });
+  });
+
+  group('CalibratedScoresRegistry [Layer 2 + Layer 3]', () {
+    setUpAll(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+    });
+
+    tearDown(() {
+      CalibratedScoresRegistry.instance.resetForTesting();
+    });
+
+    // ==================================================
+    // Layer 2: asset smoke tests (2 cases)
+    // ==================================================
+
+    test('23. loadFromAssets_short_placeholder_succeeds', () async {
+      await CalibratedScoresRegistry.instance.loadFromAssets();
+
+      // Placeholder has rules: {} so any lookup returns null → fallback path.
+      final result = CalibratedScoresRegistry.instance.lookup(
+        Horizon.short,
+        'REVERSAL_W2S',
+      );
+      expect(result, isNull);
+    });
+
+    test('24. loadFromAssets_long_placeholder_succeeds', () async {
+      await CalibratedScoresRegistry.instance.loadFromAssets();
+
+      final result = CalibratedScoresRegistry.instance.lookup(
+        Horizon.long,
+        'REVERSAL_W2S',
+      );
+      expect(result, isNull);
+    });
+
+    // ==================================================
+    // Layer 3: singleton lifecycle (3 cases)
+    // ==================================================
+
+    test('25. lookup_before_load_returns_null', () {
+      // resetForTesting ran in tearDown of previous test, so registry is unloaded.
+      final result = CalibratedScoresRegistry.instance.lookup(
+        Horizon.short,
+        'REVERSAL_W2S',
+      );
+      expect(result, isNull);
+    });
+
+    test('26. loadFromAssets_is_idempotent', () async {
+      await CalibratedScoresRegistry.instance.loadFromAssets();
+      // Second and third calls should be no-ops. We verify by checking that
+      // bindForTesting state is not overwritten by a subsequent load.
+      CalibratedScoresRegistry.instance.bindForTesting(
+        short: CalibratedScoresTable(
+          horizon: Horizon.short,
+          schemaVersion: 1,
+          generatedAt: null,
+          scores: const {'FAKE_RULE': 42},
+        ),
+      );
+      // bindForTesting sets _loaded = true. Subsequent loadFromAssets should
+      // NOT reload from assets (which would wipe the fake table).
+      await CalibratedScoresRegistry.instance.loadFromAssets();
+      await CalibratedScoresRegistry.instance.loadFromAssets();
+
+      final result = CalibratedScoresRegistry.instance.lookup(
+        Horizon.short,
+        'FAKE_RULE',
+      );
+      expect(
+        result,
+        42,
+        reason: 'idempotent load must not overwrite bound state',
+      );
+    });
+
+    test('27. resetForTesting_clears_state', () async {
+      CalibratedScoresRegistry.instance.bindForTesting(
+        short: CalibratedScoresTable(
+          horizon: Horizon.short,
+          schemaVersion: 1,
+          generatedAt: null,
+          scores: const {'REVERSAL_W2S': 28},
+        ),
+      );
+      expect(
+        CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
+        28,
+      );
+
+      CalibratedScoresRegistry.instance.resetForTesting();
+
+      expect(
+        CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
+        isNull,
+      );
+    });
+  });
+
+  group('Horizon enum metadata', () {
+    test('short has 5 trading days and 3% threshold', () {
+      expect(Horizon.short.tradingDays, 5);
+      expect(Horizon.short.successThresholdPct, 3.0);
+      expect(
+        Horizon.short.assetPath,
+        'assets/rule_scores_calibrated_short.json',
+      );
+    });
+
+    test('long has 60 trading days and 12% threshold', () {
+      expect(Horizon.long.tradingDays, 60);
+      expect(Horizon.long.successThresholdPct, 12.0);
+      expect(Horizon.long.assetPath, 'assets/rule_scores_calibrated_long.json');
+    });
+
+    test('exactly 2 values (invariant for Stage 5a/5b dual-horizon)', () {
+      expect(Horizon.values.length, 2);
+    });
+  });
+}
