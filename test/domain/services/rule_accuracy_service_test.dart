@@ -526,6 +526,43 @@ void main() {
       );
     });
 
+    test(
+      'empty daily_reason preserves existing rule_accuracy (empty guard)',
+      () async {
+        // Seed a valid pre-existing rule_accuracy row (as if from prior run)
+        await db
+            .into(db.ruleAccuracy)
+            .insert(
+              RuleAccuracyCompanion.insert(
+                ruleId: 'EXISTING_RULE',
+                period: '5D',
+                triggerCount: const Value(50),
+                successCount: const Value(30),
+                avgReturn: const Value(4.5),
+              ),
+            );
+
+        // Do NOT seed any daily_reason rows → empty state
+        // This simulates "syncer failed / DB partially cleared" scenario
+
+        await service.backfillAllHistoricalRecommendations();
+
+        // Existing row must NOT be wiped by the empty-guard (Stage 2 code
+        // review followup — see _computeUnbiasedRuleStats docstring).
+        final existing = await fetchRuleAccuracy('EXISTING_RULE', period: '5D');
+        expect(
+          existing,
+          isNotNull,
+          reason:
+              'empty daily_reason must preserve valid rule_accuracy; '
+              'clearing it would destroy legitimately accumulated stats.',
+        );
+        expect(existing!.triggerCount, 50);
+        expect(existing.successCount, 30);
+        expect(existing.avgReturn, closeTo(4.5, 0.001));
+      },
+    );
+
     test('stale rule_accuracy rows cleared on recomputation', () async {
       // Manually insert a stale stat as if from old biased computation
       await db

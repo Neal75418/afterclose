@@ -1,0 +1,13 @@
+{
+  "_note": "Placeholder stub for Stage 5 runtime loader. Empty `rules` dict means no calibrated overrides — Stage 5 falls back to hardcoded constants in rule_scores.dart. Replaced by tool/recalibrate.dart after Stage 4 runs with real accumulated data.",
+  "schema_version": 1,
+  "generated_at": "2026-04-11T00:00:00.000Z",
+  "horizon": "5d",
+  "backtest": {
+    "window_days": 504,
+    "train_ratio": 0.7,
+    "success_threshold_pct": 3.0,
+    "formula": "linear_map_v1_placeholder"
+  },
+  "rules": {}
+}

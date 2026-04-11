@@ -495,30 +495,47 @@ class RuleAccuracyService {
   /// ## Algorithm
   ///
   /// 1. 撈所有 `daily_reason` rows
-  /// 2. 為相關 symbols 建 price lookup map `{symbol: {normalized_date: close}}`
-  /// 3. 對每個 reason × 每個 holding period：
+  /// 2. **Empty guard**：若為空 → warning log 後**不動 `rule_accuracy`** 直接 return
+  ///    （防止誤清既有 valid stats — 詳見下方「Empty guard」段落）
+  /// 3. 為相關 symbols 建 price lookup map `{symbol: {normalized_date: close}}`
+  /// 4. 對每個 reason × 每個 holding period：
   ///    - 查 entry close / exit close（exit date 由 [TaiwanCalendar.addTradingDays] 算）
   ///    - 計算 returnRate + isSuccess（via [_isSuccessFor]）
   ///    - 累加至 `(ruleId, period)` 的 accumulator
-  /// 4. 同時累加 `ALL` period（跨所有 periods 合併）
-  /// 5. Transaction: 清空舊 `rule_accuracy` 行 → 寫入新統計
+  /// 5. 同時累加 `ALL` period（跨所有 periods 合併）
+  /// 6. Transaction: 清空舊 `rule_accuracy` 行 → 寫入新統計
+  ///
+  /// ## Empty guard（2026-04 Stage 2 code review followup）
+  ///
+  /// 早期版本無論 `daily_reason` 是否為空都先 `delete rule_accuracy` 再檢查。
+  /// 問題：若 `daily_reason` 因 syncer 異常暫時空了，會把累積過的 valid 統計
+  /// 一併清掉。新版本改為**先 guard 再 delete**，empty 時保留既有 stats 並 log
+  /// warning 以便 ops 觀察到資料流異常。
   ///
   /// ## 已知限制
   ///
   /// - Memory footprint：price lookup map 為 `O(symbols × dates)`，2 年 2000+ 檔可達
   ///   50–100MB。pre-launch 可接受；post-launch 若 syncer 累積歷史資料需評估 batch 化。
+  /// - **Transaction lock hold time**：整個 accumulator loop 都在 `_db.transaction()`
+  ///   內跑，大資料集會延長 SQLite write-lock 時間，可能阻塞 UI 的 read path。
+  ///   Stage 5 batch 化時應將 compute-outside / write-inside 拆開。
   /// - 嚴格 date match（無 ±1 日容忍）：trading calendar 精確計算，不需 legacy mitigation。
   Future<void> _computeUnbiasedRuleStats() async {
     final reasons = await _db.select(_db.dailyReason).get();
 
-    await _db.transaction(() async {
-      // 先清空舊統計，避免舊 biased 資料污染（尤其 post-Stage 2 首次重跑時）
-      await _db.delete(_db.ruleAccuracy).go();
+    // Empty guard: 若沒資料就不動 rule_accuracy，保留既有 valid stats
+    if (reasons.isEmpty) {
+      AppLogger.warning(
+        _tag,
+        '_computeUnbiasedRuleStats: daily_reason 為空，保留既有 rule_accuracy '
+        '（可能原因：syncer 異常、scoring pipeline 未跑、或 DB 被手動清掉）',
+      );
+      return;
+    }
 
-      if (reasons.isEmpty) {
-        AppLogger.debug(_tag, '_computeUnbiasedRuleStats: 無 reason 資料，跳過聚合');
-        return;
-      }
+    await _db.transaction(() async {
+      // daily_reason 有資料才清舊統計並重算
+      await _db.delete(_db.ruleAccuracy).go();
 
       // 建 price lookup：{symbol: {normalized_date: close}}
       final allSymbols = reasons.map((r) => r.symbol).toSet().toList();

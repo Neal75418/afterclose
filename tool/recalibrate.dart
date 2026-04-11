@@ -214,25 +214,31 @@ abstract final class Calibrator {
     return CalibratedRule.activeRule(stats: stats, tStat: tStat, score: score);
   }
 
+  /// 規則是否通過所有 cut thresholds（倖存者判定 predicate）
+  ///
+  /// 2026-04 Stage 2 code review followup：抽出共享 predicate 給 Pass 1 使用，
+  /// 避免 Pass 1（survivor filter）和 Pass 2 （`calibrate()` 內部檢查）hand-inlining
+  /// 邏輯造成 drift。新增 cut 條件時只需改 [calibrate] 的 branch 跟這個 predicate。
+  static bool _passesCuts(RuleStats stats) {
+    if (stats.triggerCount < sampleSizeCutThreshold) return false;
+    if (stats.hitRate < hitRateCutThreshold) return false;
+    final tStat = computeTStat(stats.hitRate, stats.triggerCount);
+    if (tStat < tStatCutThreshold) return false;
+    return true;
+  }
+
   /// Calibrate 整組規則。normalization range 只用**倖存者**（未被 cut 的規則）算
   /// minRaw/maxRaw，避免 cut 規則（通常是 outlier 小樣本）扭曲 active 規則的
   /// 分數分布。
   static Map<String, CalibratedRule> calibrateAll(List<RuleStats> allStats) {
     if (allStats.isEmpty) return {};
 
-    // Pass 1: 找出倖存者
-    final survivors = <RuleStats>[];
-    for (final stats in allStats) {
-      if (stats.triggerCount < sampleSizeCutThreshold) continue;
-      if (stats.hitRate < hitRateCutThreshold) continue;
-      final tStat = computeTStat(stats.hitRate, stats.triggerCount);
-      if (tStat < tStatCutThreshold) continue;
-      survivors.add(stats);
-    }
+    // Pass 1: 找出倖存者（共享 predicate，見 [_passesCuts] 設計註解）
+    final survivors = allStats.where(_passesCuts).toList();
 
     // 計算 normalization range
-    double minRaw = 0.0;
-    double maxRaw = 1.0;
+    var minRaw = 0.0;
+    var maxRaw = 1.0;
     if (survivors.isNotEmpty) {
       final rawWeights = survivors.map(rawWeight).toList();
       minRaw = rawWeights.reduce(min);
