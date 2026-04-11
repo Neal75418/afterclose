@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
+import 'package:afterclose/core/utils/logger.dart';
+
 import 'package:afterclose/data/database/tables/stock_master.dart';
 import 'package:afterclose/data/database/tables/daily_price.dart';
 import 'package:afterclose/data/database/tables/daily_institutional.dart';
@@ -141,10 +143,100 @@ class AppDatabase extends $AppDatabase
       await m.createAll();
     },
     beforeOpen: (details) async {
+      // Pre-launch schema drift auto-reset: 在啟用 FK 前執行，讓 DROP TABLE
+      // 不會因為 CASCADE 連鎖觸發非預期刪除。若偵測到 fingerprint mismatch，
+      // 會把所有 Drift managed table drop 後由 Migrator 重建。
+      await _ensureSchemaFingerprint();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// 檢查 schema fingerprint 是否與當前 code 一致，若不一致則 drop 全部 table 重建
+  ///
+  /// ## 設計動機
+  ///
+  /// Pre-launch 階段我們刻意把 [schemaVersion] 鎖在 1（避免每次改 schema 都
+  /// 要維護 migration ladder）。但 Drift 的 `onUpgrade` 是 version-driven，
+  /// version 沒變就不會觸發 migration。結果：developer 改了 table 定義、
+  /// 跑了 `build_runner` 後，舊的 `.sqlite` 檔案仍保有舊 schema，app 啟動
+  /// 時會炸 `no such column` 之類的錯誤。
+  ///
+  /// 此 method 在 `beforeOpen` 執行，透過一個不受 Drift 管理的 meta table
+  /// 儲存當前 schema 的指紋字串。啟動時比對，不一致就把所有 Drift 管理的
+  /// table drop 後呼叫 `Migrator.createAll` 重建。Pre-launch 所有資料都是
+  /// derived data，清掉後由 syncer 重新下載即可。
+  ///
+  /// ## 何時 bump fingerprint
+  ///
+  /// **任何 schema 改動都要 bump `_schemaFingerprint` 的字串值**：
+  /// - 新增 / 刪除 / 重命名 column
+  /// - 改 primary key / unique key / index
+  /// - 新增 / 刪除 table
+  ///
+  /// 字串值是不透明的，只要跟前一個版本不同就會觸發 reset。建議用
+  /// `<stage>-<feature>-<date>` 格式，方便看 git blame 追歷史。
+  ///
+  /// ## 正式上線後的遷移路徑
+  ///
+  /// 上線之後此機制**必須移除**，改回 Drift 標準的 `schemaVersion` 遞增 +
+  /// `onUpgrade` migration。正式 user 不能接受「升級 app 資料全清空」的
+  /// 體驗。屆時 `_schemaFingerprint` 跟 `_ensureSchemaFingerprint` 都要刪除。
+  Future<void> _ensureSchemaFingerprint() async {
+    // 建立 meta table（不屬於 Drift schema，不會被 allTables 列出來）
+    await customStatement('''
+      CREATE TABLE IF NOT EXISTS _drift_schema_fingerprint (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        value TEXT NOT NULL
+      )
+    ''');
+
+    final result = await customSelect(
+      'SELECT value FROM _drift_schema_fingerprint WHERE id = 1',
+    ).get();
+    final stored = result.isEmpty ? null : result.first.read<String>('value');
+
+    if (stored == _schemaFingerprint) {
+      return; // fingerprint 一致，跳過
+    }
+
+    if (stored != null) {
+      // 偵測到 schema drift — drop 所有 Drift managed table 後重建
+      // 此時 foreign_keys pragma 仍為 OFF（Drift 預設），可以安全 DROP
+      AppLogger.warning(
+        'AppDatabase',
+        'Schema fingerprint mismatch — resetting all tables '
+            '(stored=$stored, expected=$_schemaFingerprint)',
+      );
+      for (final table in allTables.toList().reversed) {
+        await customStatement(
+          'DROP TABLE IF EXISTS "${table.actualTableName}"',
+        );
+      }
+      await Migrator(this).createAll();
+    } else {
+      // 第一次建立 DB — onCreate 已經跑過 createAll，這邊只需記錄 fingerprint
+      AppLogger.info(
+        'AppDatabase',
+        'Initial schema fingerprint: $_schemaFingerprint',
+      );
+    }
+
+    await customStatement(
+      'INSERT OR REPLACE INTO _drift_schema_fingerprint (id, value) VALUES (1, ?)',
+      [_schemaFingerprint],
+    );
+  }
 }
+
+/// Schema fingerprint for pre-launch drift auto-reset
+///
+/// **Bump this string whenever any Drift table definition changes**. See
+/// [AppDatabase._ensureSchemaFingerprint] for the full rationale and the
+/// post-launch migration path.
+///
+/// Format: `<stage>-<feature>-<YYYY-MM-DD>`. Any string change triggers a
+/// reset — the value itself is opaque.
+const String _schemaFingerprint = 'stage5b-dual-horizon-2026-04-11';
 
 QueryExecutor _openConnection() {
   return driftDatabase(name: 'afterclose');
