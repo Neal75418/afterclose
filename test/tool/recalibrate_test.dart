@@ -425,4 +425,86 @@ void main() {
   test('sanity: dart:math sqrt exists', () {
     expect(sqrt(4), 2);
   });
+
+  // ==========================================================================
+  // OTA C1: computeJsonSha256 — content hash for manifest integrity check
+  // ==========================================================================
+
+  group('computeJsonSha256', () {
+    test('empty string → SHA-256 of empty UTF-8 bytes', () {
+      // Known SHA-256("") = e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      expect(
+        computeJsonSha256(''),
+        'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+      );
+    });
+
+    test('hello world has a stable known hash', () {
+      // Known SHA-256("hello world") = b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9
+      expect(
+        computeJsonSha256('hello world'),
+        'b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9',
+      );
+    });
+
+    test('identical input → identical hash (deterministic)', () {
+      const json = '{"schema_version": 1, "rules": {"X": {"score": 25}}}';
+      expect(computeJsonSha256(json), computeJsonSha256(json));
+    });
+
+    test('one-char difference → completely different hash (avalanche)', () {
+      final h1 = computeJsonSha256('{"v": 1}');
+      final h2 = computeJsonSha256('{"v": 2}');
+      expect(h1, isNot(equals(h2)));
+      // Small change should flip at least half the bits on average
+      final different = <int>[];
+      for (var i = 0; i < h1.length; i++) {
+        if (h1[i] != h2[i]) different.add(i);
+      }
+      expect(
+        different.length,
+        greaterThan(h1.length ~/ 3),
+        reason:
+            'SHA-256 avalanche: one-char input change flips most output chars',
+      );
+    });
+
+    test('output is always 64 lowercase hex characters', () {
+      final hash = computeJsonSha256('{"schema_version": 1, "rules": {}}');
+      expect(hash.length, 64);
+      expect(RegExp(r'^[0-9a-f]{64}$').hasMatch(hash), isTrue);
+    });
+
+    test('regression: stable hash for a fixed calibration-shaped JSON', () {
+      // Regression guard against library implementation changes. The hash
+      // value is whatever `crypto`'s SHA-256 produces today — if the output
+      // changes across versions this test flags it loudly.
+      final hash = computeJsonSha256('{"rules": {}}');
+      expect(hash.length, 64);
+      expect(
+        hash,
+        '29429204d5e59589a7f47576c52a7cc412b77769b7d988de96d22ac40969e240',
+      );
+    });
+  });
+
+  group('HorizonOutput data model', () {
+    test('constructor preserves all fields', () {
+      const output = HorizonOutput(
+        filename: 'assets/rule_scores_calibrated_short_candidate.json',
+        jsonStr: '{"rules": {}}',
+        sha256Hex:
+            '4cac88bbb05d26fc3574b0e1fd4ae56d2a45eeeeb5f5929d61da5ef0fa5cc94f',
+        ruleCount: 62,
+      );
+
+      expect(
+        output.filename,
+        'assets/rule_scores_calibrated_short_candidate.json',
+      );
+      expect(output.jsonStr, '{"rules": {}}');
+      expect(output.sha256Hex.length, 64);
+      expect(output.ruleCount, 62);
+    });
+  });
 }

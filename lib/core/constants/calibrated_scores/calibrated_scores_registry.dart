@@ -62,6 +62,75 @@ class CalibratedScoresRegistry {
     return _loading ??= _doLoad(knownRuleIds);
   }
 
+  /// OTA-aware 載入：優先使用傳入的 JSON 字串覆蓋，失敗時 fall through 到
+  /// bundled asset
+  ///
+  /// 呼叫端（`main.dart`）先從 `CalibrationCacheDaoMixin.getCachedCalibration`
+  /// 拿到 cached short/long JSON，再傳進來。若兩個 override 都非 null 且都能
+  /// 成功 parse，registry 會綁定 override 的 table；否則任一失敗即退回
+  /// `loadFromAssets` 走 bundled 資產。
+  ///
+  /// ## Fallback 語意（design doc §3.2）
+  ///
+  /// 1. 兩個 override 皆 null → 直接走 `loadFromAssets`
+  /// 2. 兩個 override 皆非 null 且都 parse 成功 → 綁 DB cache 版
+  /// 3. 任一 override parse 失敗 / table empty → fall through 到
+  ///    `loadFromAssets`（避免 half-loaded state 造成 short 新 / long 舊的
+  ///    不一致）
+  ///
+  /// Idempotent — 與 [loadFromAssets] 共用 `_loaded` flag，重複呼叫 no-op。
+  Future<void> loadWithOverride({
+    String? shortJsonOverride,
+    String? longJsonOverride,
+    Set<String>? knownRuleIds,
+  }) async {
+    if (_loaded) return;
+
+    // 任一 override 缺失就直接走 asset fallback — 避免 DB cache 半成品的
+    // 不一致狀態。CalibrationCacheDaoMixin.writeCalibration 是 atomic，
+    // 正常流程下要有就兩個都有；若遇到 half-state（例如早期 schema 遷移
+    // 的遺跡）視同無 DB cache。
+    if (shortJsonOverride == null || longJsonOverride == null) {
+      return loadFromAssets(knownRuleIds: knownRuleIds);
+    }
+
+    final shortResult = CalibratedScoresTable.parseJson(
+      shortJsonOverride,
+      horizon: Horizon.short,
+      knownRuleIds: knownRuleIds,
+    );
+    final longResult = CalibratedScoresTable.parseJson(
+      longJsonOverride,
+      horizon: Horizon.long,
+      knownRuleIds: knownRuleIds,
+    );
+
+    // parseJson 不 throw，格式錯誤會回空 table + warnings。空 table 代表
+    // override 實質無效 → fall through 到 bundled asset 保底，而不是綁一個
+    // 空的 DB cache 上去。
+    if (shortResult.table.ruleCount == 0 || longResult.table.ruleCount == 0) {
+      AppLogger.warning(
+        'CalibratedScoresRegistry',
+        'DB cache override yielded empty table, falling back to bundled asset. '
+            'short warnings: ${shortResult.warnings.length}, '
+            'long warnings: ${longResult.warnings.length}',
+      );
+      return loadFromAssets(knownRuleIds: knownRuleIds);
+    }
+
+    _logCappedWarnings(Horizon.short, shortResult.warnings);
+    _logCappedWarnings(Horizon.long, longResult.warnings);
+
+    _short = shortResult.table;
+    _long = longResult.table;
+    _loaded = true;
+    AppLogger.info(
+      'CalibratedScoresRegistry',
+      'Loaded calibrated scores from DB cache override '
+          '(short: ${_short!.ruleCount} rules, long: ${_long!.ruleCount} rules)',
+    );
+  }
+
   Future<void> _doLoad(Set<String>? knownRuleIds) async {
     try {
       // 兩個 horizon 平行載入，省一個 frame 的 startup latency

@@ -35,6 +35,7 @@ export 'package:afterclose/data/database/tables/market_index_tables.drift.dart';
 
 // DAO files (standalone)
 import 'package:afterclose/data/database/dao/analysis_dao.dart';
+import 'package:afterclose/data/database/dao/calibration_cache_dao.dart';
 import 'package:afterclose/data/database/dao/day_trading_dao.dart';
 import 'package:afterclose/data/database/dao/dividend_dao.dart';
 import 'package:afterclose/data/database/dao/event_dao.dart';
@@ -128,7 +129,8 @@ class AppDatabase extends $AppDatabase
         TradingWarningDaoMixin,
         InsiderHoldingDaoMixin,
         InsiderTransferDaoMixin,
-        MarketOverviewDaoMixin {
+        MarketOverviewDaoMixin,
+        CalibrationCacheDaoMixin {
   AppDatabase() : super(_openConnection());
 
   /// 測試用 - 建立記憶體內 Database

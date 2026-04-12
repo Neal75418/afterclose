@@ -35,6 +35,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 // ============================================================================
@@ -305,14 +306,40 @@ Future<void> main(List<String> args) async {
   }
 
   final db = sqlite3.open(dbPath, mode: OpenMode.readOnly);
+  final horizonResults = <String, HorizonOutput>{};
   try {
     for (final horizon in _horizonsToProcess(config.horizon)) {
       print('');
       print('═══ Horizon: $horizon ═══');
-      _processHorizon(db, horizon: horizon, dryRun: config.dryRun);
+      final result = _processHorizon(
+        db,
+        horizon: horizon,
+        dryRun: config.dryRun,
+      );
+      if (result != null) {
+        horizonResults[horizon] = result;
+      }
     }
   } finally {
     db.dispose(); // ignore: deprecated_member_use
+  }
+
+  // OTA manifest — 只有在「兩個 horizon 都成功寫出 candidate JSON」時才產生。
+  // 若 --horizon=short 或 --horizon=long 只跑單一 horizon，manifest 缺角會
+  // 讓 OTA client 看到 half-state，寧可不產。
+  final shouldWriteManifest =
+      !config.dryRun &&
+      horizonResults.containsKey(_horizonShort) &&
+      horizonResults.containsKey(_horizonLong);
+
+  if (shouldWriteManifest) {
+    print('');
+    print('═══ OTA manifest ═══');
+    final manifestPath = _writeManifest(
+      short: horizonResults[_horizonShort]!,
+      long: horizonResults[_horizonLong]!,
+    );
+    print('  ✅ Wrote $manifestPath');
   }
 
   print('');
@@ -323,11 +350,36 @@ Future<void> main(List<String> args) async {
     print('   1. git diff assets/rule_scores_calibrated_*_candidate.json');
     print('   2. 判斷分數變動是否合理');
     print('   3. Approve: mv *_candidate.json → production filename');
-    print('   4. Commit + push');
+    print(
+      '      另外別忘了 mv calibration_manifest_candidate.json → calibration_manifest.json',
+    );
+    print('   4. Commit + push（同 commit 內推 manifest + 兩支 JSON）');
   }
 }
 
-void _processHorizon(
+/// 單一 horizon 處理完後的輸出資訊，供 manifest 生成使用
+class HorizonOutput {
+  const HorizonOutput({
+    required this.filename,
+    required this.jsonStr,
+    required this.sha256Hex,
+    required this.ruleCount,
+  });
+
+  /// 相對 repo root 的 candidate 檔名
+  final String filename;
+
+  /// Raw JSON 字串（與檔案內容完全一致）
+  final String jsonStr;
+
+  /// SHA-256 of `utf8.encode(jsonStr)`，hex string
+  final String sha256Hex;
+
+  /// Calibrated rules 數量（cut + active 加總）
+  final int ruleCount;
+}
+
+HorizonOutput? _processHorizon(
   Database db, {
   required String horizon,
   required bool dryRun,
@@ -344,7 +396,7 @@ void _processHorizon(
   if (rows.isEmpty) {
     print('  ⚠️  rule_accuracy 沒有 $period 的統計資料 — skip');
     print('     (可能原因：app 還沒跑過歷史資料驗證，或 daily_reason 沒資料)');
-    return;
+    return null;
   }
 
   final allStats = <RuleStats>[];
@@ -385,11 +437,13 @@ void _processHorizon(
   };
 
   final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
+  final sha256Hex = computeJsonSha256(jsonStr);
 
   if (dryRun) {
     print('  --dry-run: candidate JSON 預覽：');
     print(jsonStr);
-    return;
+    print('  (dry-run SHA-256: $sha256Hex)');
+    return null;
   }
 
   final filename = horizon == _horizonShort
@@ -401,6 +455,110 @@ void _processHorizon(
   tempFile.writeAsStringSync(jsonStr);
   tempFile.renameSync(filename);
   print('  ✅ Wrote $filename (${jsonStr.length} bytes)');
+  print('     SHA-256: $sha256Hex');
+
+  return HorizonOutput(
+    filename: filename,
+    jsonStr: jsonStr,
+    sha256Hex: sha256Hex,
+    ruleCount: calibrated.length,
+  );
+}
+
+/// 計算 JSON 字串的 SHA-256（hex string）
+///
+/// 以 `utf8.encode` 轉 byte 後跑 SHA-256，輸出小寫 hex（64 字元）。
+/// OTA client 會用同樣方式對下載到的 JSON byte 計算 hash 並比對 manifest。
+String computeJsonSha256(String jsonStr) {
+  final digest = sha256.convert(utf8.encode(jsonStr));
+  return digest.toString();
+}
+
+// ============================================================================
+// OTA manifest writer
+// ============================================================================
+
+/// jsDelivr 上的 manifest 基底 URL（repo + branch）
+///
+/// Client 端的 `CalibrationUpdater` 會 fetch `${_manifestBaseUrl}/calibration_manifest.json`。
+/// 這個常數只影響寫進 manifest 的 JSON URL 欄位本身，不影響 manifest 檔案的位置。
+const _manifestBaseUrl =
+    'https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets';
+
+/// Manifest schema version — 若未來 client 新增強制欄位會遞增
+const _manifestSchemaVersion = 1;
+
+/// 目前 app 的最低支援版本
+///
+/// 未來若某次 recalibrate 依賴新 rule 定義（例如 ReasonType 新增），
+/// 手動改大此值讓舊版 app skip fetch。目前 `1.0.0` = 全部吃。
+const _manifestMinimumAppVersion = '1.0.0';
+
+/// 產出 `assets/calibration_manifest_candidate.json`
+///
+/// Shape（同步 design doc §3.3）：
+///
+/// ```json
+/// {
+///   "schema_version": 1,
+///   "version": "YYYY-MM-DD",
+///   "generated_at": "ISO8601 with tz",
+///   "short": { "url": "...", "sha256": "...", "rule_count": N, "filename": "..." },
+///   "long":  { "url": "...", "sha256": "...", "rule_count": N, "filename": "..." },
+///   "minimum_app_version": "1.0.0"
+/// }
+/// ```
+///
+/// - `version` 用當天日期（UTC），純標籤，client 比對走 hash 不走 version
+/// - `generated_at` 含時區的 ISO 8601，給 human debug 用
+/// - `short.url` / `long.url` 是 jsDelivr 絕對 URL，client 不用組
+/// - `short.sha256` / `long.sha256` 是 SHA-256 hex，client 驗證 integrity 用
+/// - `short.filename` / `long.filename` 是 review rename 時要 mv 的目標檔名，
+///   讓 reviewer 不用猜
+///
+/// 回傳 manifest 檔案路徑。
+String _writeManifest({
+  required HorizonOutput short,
+  required HorizonOutput long,
+}) {
+  final now = DateTime.now().toUtc();
+  final versionTag =
+      '${now.year.toString().padLeft(4, '0')}-'
+      '${now.month.toString().padLeft(2, '0')}-'
+      '${now.day.toString().padLeft(2, '0')}';
+
+  // Production filenames 用於 review 後 mv 目標 + jsDelivr URL
+  const shortProdFilename = 'rule_scores_calibrated_short.json';
+  const longProdFilename = 'rule_scores_calibrated_long.json';
+
+  final payload = <String, dynamic>{
+    'schema_version': _manifestSchemaVersion,
+    'version': versionTag,
+    'generated_at': now.toIso8601String(),
+    'short': {
+      'url': '$_manifestBaseUrl/$shortProdFilename',
+      'sha256': short.sha256Hex,
+      'rule_count': short.ruleCount,
+      'filename': shortProdFilename,
+    },
+    'long': {
+      'url': '$_manifestBaseUrl/$longProdFilename',
+      'sha256': long.sha256Hex,
+      'rule_count': long.ruleCount,
+      'filename': longProdFilename,
+    },
+    'minimum_app_version': _manifestMinimumAppVersion,
+  };
+
+  final jsonStr = const JsonEncoder.withIndent('  ').convert(payload);
+  const manifestPath = 'assets/calibration_manifest_candidate.json';
+
+  // Atomic write: temp → rename（跟 horizon JSON 一致）
+  final tempFile = File('$manifestPath.tmp');
+  tempFile.writeAsStringSync(jsonStr);
+  tempFile.renameSync(manifestPath);
+
+  return manifestPath;
 }
 
 class _Config {

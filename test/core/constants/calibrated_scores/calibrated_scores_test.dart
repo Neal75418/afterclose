@@ -625,6 +625,143 @@ void main() {
         isNull,
       );
     });
+
+    // ==================================================
+    // Layer 4: loadWithOverride (OTA C1) — DB cache takes priority
+    // ==================================================
+
+    test(
+      '28. loadWithOverride_happy_path: both JSONs parse successfully',
+      () async {
+        final shortJson = _buildJson(rules: {'REVERSAL_W2S': _rule(28)});
+        final longJson = _buildJson(rules: {'REVERSAL_W2S': _rule(32)});
+
+        await CalibratedScoresRegistry.instance.loadWithOverride(
+          shortJsonOverride: shortJson,
+          longJsonOverride: longJson,
+        );
+
+        // Override values (not hardcoded RuleScores) should be returned
+        expect(
+          CalibratedScoresRegistry.instance.lookup(
+            Horizon.short,
+            'REVERSAL_W2S',
+          ),
+          28,
+        );
+        expect(
+          CalibratedScoresRegistry.instance.lookup(
+            Horizon.long,
+            'REVERSAL_W2S',
+          ),
+          32,
+        );
+      },
+    );
+
+    test('29. loadWithOverride_both_null: falls back to bundled asset', () async {
+      await CalibratedScoresRegistry.instance.loadWithOverride(
+        shortJsonOverride: null,
+        longJsonOverride: null,
+      );
+
+      // Placeholder assets have {} rules → lookup returns null → fallback
+      // path. The key assertion is that no exception was thrown and
+      // _loaded == true (proven by idempotent second call).
+      final firstShort = CalibratedScoresRegistry.instance.lookup(
+        Horizon.short,
+        'REVERSAL_W2S',
+      );
+      expect(firstShort, isNull);
+
+      // Second call should be no-op (idempotent)
+      await CalibratedScoresRegistry.instance.loadWithOverride(
+        shortJsonOverride:
+            '{"schema_version": 1, "rules": {"X": {"score": 99}}}',
+        longJsonOverride:
+            '{"schema_version": 1, "rules": {"X": {"score": 99}}}',
+      );
+      // Should NOT have loaded the new override because _loaded is already true
+      expect(
+        CalibratedScoresRegistry.instance.lookup(Horizon.short, 'X'),
+        isNull,
+        reason: 'idempotent — second loadWithOverride must be no-op',
+      );
+    });
+
+    test(
+      '30. loadWithOverride_one_null: falls back to bundled asset',
+      () async {
+        await CalibratedScoresRegistry.instance.loadWithOverride(
+          shortJsonOverride: _buildJson(rules: {'X': _rule(25)}),
+          longJsonOverride: null,
+        );
+
+        // Because long override was missing, fallback path used assets
+        // (which have empty rules). So X should NOT be found.
+        expect(
+          CalibratedScoresRegistry.instance.lookup(Horizon.short, 'X'),
+          isNull,
+          reason: 'atomic fallback — neither override should apply',
+        );
+      },
+    );
+
+    test(
+      '31. loadWithOverride_malformed_short_json: falls back to assets',
+      () async {
+        await CalibratedScoresRegistry.instance.loadWithOverride(
+          shortJsonOverride: 'not valid json {{{',
+          longJsonOverride: _buildJson(rules: {'X': _rule(25)}),
+        );
+
+        // Short parse failed → empty table → fall through to asset fallback.
+        // Long override was valid but atomic fallback applies to both.
+        expect(
+          CalibratedScoresRegistry.instance.lookup(Horizon.long, 'X'),
+          isNull,
+          reason: 'atomic fallback — partial override must not leak through',
+        );
+      },
+    );
+
+    test('32. loadWithOverride_empty_rules: falls back to assets', () async {
+      // Valid schema but empty rules → ruleCount == 0 → fallback
+      final emptyJson = _buildJson(rules: {});
+
+      await CalibratedScoresRegistry.instance.loadWithOverride(
+        shortJsonOverride: emptyJson,
+        longJsonOverride: emptyJson,
+      );
+
+      // Empty override → fell through to bundled asset (also empty)
+      expect(
+        CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
+        isNull,
+      );
+    });
+
+    test('33. loadWithOverride_idempotent: second call is no-op', () async {
+      final json = _buildJson(rules: {'X': _rule(25)});
+
+      await CalibratedScoresRegistry.instance.loadWithOverride(
+        shortJsonOverride: json,
+        longJsonOverride: json,
+      );
+      expect(CalibratedScoresRegistry.instance.lookup(Horizon.short, 'X'), 25);
+
+      // Second call with different data should NOT overwrite
+      await CalibratedScoresRegistry.instance.loadWithOverride(
+        shortJsonOverride: _buildJson(rules: {'X': _rule(15)}),
+        longJsonOverride: _buildJson(rules: {'X': _rule(15)}),
+      );
+
+      expect(
+        CalibratedScoresRegistry.instance.lookup(Horizon.short, 'X'),
+        25,
+        reason: 'idempotent — second load must not overwrite',
+      );
+    });
   });
 
   group('Horizon enum metadata', () {
