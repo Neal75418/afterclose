@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:drift_flutter/drift_flutter.dart';
@@ -131,6 +133,17 @@ class AppDatabase extends $AppDatabase
 
   /// 測試用 - 建立記憶體內 Database
   AppDatabase.forTesting() : super(NativeDatabase.memory());
+
+  /// Tool/calibration 用 — 開啟指定路徑的 SQLite 檔案作為獨立 DB
+  ///
+  /// Stage 3+4 backfill + calibration 專用（`tool/backfill.dart`、
+  /// `tool/replay_calibrator.dart`、`tool/recalibrate.dart`）。**不用於
+  /// runtime app** — 開發者手動指定如 `tool/calibration.db` 的路徑以
+  /// 避免污染正式 dev DB，並讓 calibration 產物可以獨立 .gitignore。
+  ///
+  /// 若 [path] 不存在會自動建立，schema 透過既有的 `onCreate` +
+  /// fingerprint 機制建好。
+  AppDatabase.forToolFile(String path) : super(NativeDatabase(File(path)));
 
   /// 產品尚未上線前使用 version 1，所有 table 和 index 在 onCreate 一次建好。
   /// 正式上線後，每次 schema 變更遞增 version 並在 onUpgrade 加 migration。
