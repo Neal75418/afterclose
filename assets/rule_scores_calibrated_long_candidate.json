@@ -1,0 +1,335 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-12T04:37:15.983687Z",
+  "horizon": "60d",
+  "backtest": {
+    "window_days": 504,
+    "train_ratio": 0.7,
+    "success_threshold_pct": 12.0,
+    "formula": "linear_map_v1"
+  },
+  "rules": {
+    "INSTITUTIONAL_BUY_STREAK": {
+      "score": 0,
+      "hit_rate": 0.4688,
+      "avg_return": 10.8465,
+      "samples": 128,
+      "t_stat": -0.7085,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_THREE_BLACK_CROWS": {
+      "score": 0,
+      "hit_rate": 0.0,
+      "avg_return": 0.6359,
+      "samples": 8,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_GAP_UP": {
+      "score": 0,
+      "hit_rate": 0.5,
+      "avg_return": 9.3872,
+      "samples": 40,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_EVENING_STAR": {
+      "score": 0,
+      "hit_rate": 0.3684,
+      "avg_return": 8.6698,
+      "samples": 19,
+      "t_stat": -1.189,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "INSTITUTIONAL_SELL_STREAK": {
+      "score": 0,
+      "hit_rate": 0.2749,
+      "avg_return": 3.2128,
+      "samples": 171,
+      "t_stat": -6.5948,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PRICE_VOLUME_BEARISH_DIVERGENCE": {
+      "score": 0,
+      "hit_rate": 0.3613,
+      "avg_return": 7.5427,
+      "samples": 155,
+      "t_stat": -3.5949,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PRICE_VOLUME_BULLISH_DIVERGENCE": {
+      "score": 0,
+      "hit_rate": 0.3745,
+      "avg_return": 5.0097,
+      "samples": 251,
+      "t_stat": -4.108,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "INSTITUTIONAL_BUY": {
+      "score": 0,
+      "hit_rate": 0.4808,
+      "avg_return": 9.6633,
+      "samples": 52,
+      "t_stat": -0.2776,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PRICE_SPIKE": {
+      "score": 0,
+      "hit_rate": 0.4643,
+      "avg_return": 6.5936,
+      "samples": 28,
+      "t_stat": -0.3789,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "INSTITUTIONAL_SELL": {
+      "score": 0,
+      "hit_rate": 0.3333,
+      "avg_return": 5.295,
+      "samples": 57,
+      "t_stat": -2.6693,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "KD_DEATH_CROSS": {
+      "score": 0,
+      "hit_rate": 0.3333,
+      "avg_return": 2.0244,
+      "samples": 12,
+      "t_stat": -1.2247,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "TECH_BREAKDOWN": {
+      "score": 0,
+      "hit_rate": 0.5455,
+      "avg_return": 15.4709,
+      "samples": 11,
+      "t_stat": 0.3028,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_GAP_DOWN": {
+      "score": 0,
+      "hit_rate": 0.5278,
+      "avg_return": 14.4659,
+      "samples": 36,
+      "t_stat": 0.3338,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "LOW_VOLUME_ACCUMULATION": {
+      "score": 0,
+      "hit_rate": 0.3333,
+      "avg_return": 3.0448,
+      "samples": 24,
+      "t_stat": -1.7321,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "MA_ALIGNMENT_BEARISH": {
+      "score": 0,
+      "hit_rate": 0.3906,
+      "avg_return": 8.4983,
+      "samples": 64,
+      "t_stat": -1.7934,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_MORNING_STAR": {
+      "score": 0,
+      "hit_rate": 0.3333,
+      "avg_return": 8.947,
+      "samples": 21,
+      "t_stat": -1.6202,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "REVENUE_MOM_GROWTH": {
+      "score": 0,
+      "hit_rate": 0.5636,
+      "avg_return": 11.0448,
+      "samples": 55,
+      "t_stat": 0.9516,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_THREE_WHITE_SOLDIERS": {
+      "score": 0,
+      "hit_rate": 0.0,
+      "avg_return": -1.844,
+      "samples": 2,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_HANGING_MAN": {
+      "score": 0,
+      "hit_rate": 0.2857,
+      "avg_return": 1.8958,
+      "samples": 21,
+      "t_stat": -2.1737,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "MA_ALIGNMENT_BULLISH": {
+      "score": 0,
+      "hit_rate": 0.5,
+      "avg_return": 10.7934,
+      "samples": 24,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "KD_GOLDEN_CROSS": {
+      "score": 0,
+      "hit_rate": 0.5,
+      "avg_return": 5.5951,
+      "samples": 4,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "RSI_EXTREME_OVERSOLD": {
+      "score": 0,
+      "hit_rate": 0.7,
+      "avg_return": 19.287,
+      "samples": 20,
+      "t_stat": 1.9518,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_DOJI": {
+      "score": 0,
+      "hit_rate": 0.6,
+      "avg_return": 11.1333,
+      "samples": 5,
+      "t_stat": 0.4564,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "REVERSAL_S2W": {
+      "score": 0,
+      "hit_rate": 0.75,
+      "avg_return": 18.7533,
+      "samples": 16,
+      "t_stat": 2.3094,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "VOLUME_SPIKE": {
+      "score": 0,
+      "hit_rate": 1.0,
+      "avg_return": 37.1556,
+      "samples": 2,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "REVERSAL_W2S": {
+      "score": 0,
+      "hit_rate": 0.3333,
+      "avg_return": 15.4216,
+      "samples": 3,
+      "t_stat": -0.6124,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "TECH_BREAKOUT": {
+      "score": 0,
+      "hit_rate": 0.4,
+      "avg_return": 7.0921,
+      "samples": 5,
+      "t_stat": -0.4564,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_DOJI_BEARISH": {
+      "score": 0,
+      "hit_rate": 0.7143,
+      "avg_return": 17.6655,
+      "samples": 7,
+      "t_stat": 1.255,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_BEARISH_ENGULFING": {
+      "score": 0,
+      "hit_rate": 0.5,
+      "avg_return": 12.832,
+      "samples": 6,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "WEEK_52_HIGH": {
+      "score": 35,
+      "hit_rate": 0.7436,
+      "avg_return": 15.2599,
+      "samples": 39,
+      "t_stat": 3.4838,
+      "active": true
+    },
+    "PATTERN_HAMMER": {
+      "score": 0,
+      "hit_rate": 0.5455,
+      "avg_return": 10.901,
+      "samples": 11,
+      "t_stat": 0.3028,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "EPS_CONSECUTIVE_GROWTH": {
+      "score": 10,
+      "hit_rate": 0.6833,
+      "avg_return": 7.9412,
+      "samples": 60,
+      "t_stat": 3.0528,
+      "active": true
+    },
+    "REVENUE_YOY_SURGE": {
+      "score": 0,
+      "hit_rate": 0.7692,
+      "avg_return": 18.2563,
+      "samples": 13,
+      "t_stat": 2.304,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "EPS_YOY_SURGE": {
+      "score": 0,
+      "hit_rate": 0.8,
+      "avg_return": 19.7533,
+      "samples": 15,
+      "t_stat": 2.9047,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "HIGH_DIVIDEND_YIELD": {
+      "score": 0,
+      "hit_rate": 1.0,
+      "avg_return": 30.6761,
+      "samples": 1,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "PATTERN_BULLISH_ENGULFING": {
+      "score": 0,
+      "hit_rate": 1.0,
+      "avg_return": 29.0179,
+      "samples": 1,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    }
+  }
+}

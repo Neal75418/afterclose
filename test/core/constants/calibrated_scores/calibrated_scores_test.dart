@@ -515,25 +515,28 @@ void main() {
     // Layer 2: asset smoke tests (2 cases)
     // ==================================================
 
-    test('23. loadFromAssets_short_placeholder_succeeds', () async {
+    test('23. loadFromAssets_short_succeeds_and_loads_rules', () async {
       await CalibratedScoresRegistry.instance.loadFromAssets();
 
-      // Placeholder has rules: {} so any lookup returns null → fallback path.
+      // Bundled asset has calibrated rules. REVERSAL_W2S is a cut rule
+      // (score 0), but lookup still returns an int (0), not null — because
+      // the rule IS in the JSON with score: 0. A rule NOT in the JSON
+      // would return null.
       final result = CalibratedScoresRegistry.instance.lookup(
         Horizon.short,
         'REVERSAL_W2S',
       );
-      expect(result, isNull);
+      expect(result, isA<int>());
     });
 
-    test('24. loadFromAssets_long_placeholder_succeeds', () async {
+    test('24. loadFromAssets_long_succeeds_and_loads_rules', () async {
       await CalibratedScoresRegistry.instance.loadFromAssets();
 
       final result = CalibratedScoresRegistry.instance.lookup(
         Horizon.long,
         'REVERSAL_W2S',
       );
-      expect(result, isNull);
+      expect(result, isA<int>());
     });
 
     // ==================================================
@@ -665,14 +668,15 @@ void main() {
         longJsonOverride: null,
       );
 
-      // Placeholder assets have {} rules → lookup returns null → fallback
-      // path. The key assertion is that no exception was thrown and
-      // _loaded == true (proven by idempotent second call).
+      // Bundled assets now have real calibrated rules. The key assertion
+      // is that no exception was thrown, _loaded == true, and lookup
+      // returns an actual value (not null) for a rule that exists in the
+      // bundled JSON.
       final firstShort = CalibratedScoresRegistry.instance.lookup(
         Horizon.short,
         'REVERSAL_W2S',
       );
-      expect(firstShort, isNull);
+      expect(firstShort, isA<int>());
 
       // Second call should be no-op (idempotent)
       await CalibratedScoresRegistry.instance.loadWithOverride(
@@ -734,10 +738,10 @@ void main() {
         longJsonOverride: emptyJson,
       );
 
-      // Empty override → fell through to bundled asset (also empty)
+      // Empty override → fell through to bundled asset (now has real rules)
       expect(
         CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
-        isNull,
+        isA<int>(),
       );
     });
 

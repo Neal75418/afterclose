@@ -168,10 +168,10 @@ void main() {
       expect(stats.long.hitRate, 1.0);
     });
 
-    test('successCount uses short=3% / long=12% thresholds', () async {
-      // Construct prices such that exactly 50% of short samples hit 3%
-      // Use slower growth: 0.5%/day (close=100 + 0.5*i) → 5D return ≈ 2.5/(100+0.5i) ≈ 2.4%
-      // → none hit 3% threshold
+    test('successCount uses short=1.5% / long=8% thresholds', () async {
+      // Construct prices with slow growth: 0.5%/day (close=100 + 0.5*i)
+      // 5D return ≈ 2.5/(100+0.5i) ≈ 2.4% → mostly > 1.5% threshold
+      // Use even slower growth to stay below 1.5%
       await seedStock('SLOW', priceDays: 150, growthPerDay: 0.5);
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
         TriggeredReason(
@@ -191,9 +191,10 @@ void main() {
       final result = await calibrator.run();
 
       final stats = result.ruleStats[ReasonType.volumeSpike.code]!;
-      // Slow growth: 5D return always < 3% → hit rate ≈ 0
-      expect(stats.short.hitRate, lessThan(0.1));
-      // 60D return: 30/(100+0.5i) ≈ 20%..30% → mostly > 12% → high hit rate
+      // Slow growth 0.5/day: 5D return ≈ 2.5/(100+i) ≈ 2.4% → mostly > 1.5%
+      // so short hit rate should be high with the lowered threshold
+      expect(stats.short.hitRate, greaterThan(0.5));
+      // 60D return: 30/(100+0.5i) ≈ 20%..30% → mostly > 8% → high hit rate
       expect(stats.long.hitRate, greaterThan(0.9));
     });
   });

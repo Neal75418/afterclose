@@ -140,8 +140,8 @@ class CalibratedRule {
 /// 3. 倖存者的 raw weight = `hit_rate × avg_return × sqrt(n)`
 /// 4. Min-max normalize 到 [10, 35] 分數區間
 abstract final class Calibrator {
-  static const double tStatCutThreshold = 1.5;
-  static const double hitRateCutThreshold = 0.55;
+  static const double tStatCutThreshold = 1.0;
+  static const double hitRateCutThreshold = 0.50;
   static const int sampleSizeCutThreshold = 30;
   static const int minScore = 10;
   static const int maxScore = 35;
@@ -267,8 +267,8 @@ const _periodShort = '5D';
 const _periodLong = '60D';
 
 // 對齊 rule_accuracy_service.dart 的 _successThresholds
-const _thresholdShort = 3.0;
-const _thresholdLong = 12.0;
+const _thresholdShort = 1.5;
+const _thresholdLong = 8.0;
 
 const _windowDays = 504; // 2 trading years
 const _trainRatio = 0.7;

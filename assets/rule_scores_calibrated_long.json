@@ -1,13 +1,360 @@
 {
-  "_note": "Placeholder stub for Stage 5 runtime loader. Empty `rules` dict means no calibrated overrides — Stage 5 falls back to hardcoded constants in rule_scores.dart. Replaced by tool/recalibrate.dart after Stage 4 runs with real accumulated data.",
   "schema_version": 1,
-  "generated_at": "2026-04-11T00:00:00.000Z",
+  "generated_at": "2026-04-12T16:06:23.294131Z",
   "horizon": "60d",
   "backtest": {
     "window_days": 504,
     "train_ratio": 0.7,
-    "success_threshold_pct": 12.0,
-    "formula": "linear_map_v1_placeholder"
+    "success_threshold_pct": 8.0,
+    "formula": "linear_map_v1"
   },
-  "rules": {}
+  "rules": {
+    "PRICE_VOLUME_BULLISH_DIVERGENCE": {
+      "score": 0,
+      "hit_rate": 0.2354,
+      "avg_return": 0.3058,
+      "samples": 35457,
+      "t_stat": -117.4686,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_HANGING_MAN": {
+      "score": 0,
+      "hit_rate": 0.2137,
+      "avg_return": -1.0411,
+      "samples": 3529,
+      "t_stat": -41.4997,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "VOLUME_SPIKE": {
+      "score": 0,
+      "hit_rate": 0.2566,
+      "avg_return": 0.9326,
+      "samples": 5012,
+      "t_stat": -39.4569,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_EVENING_STAR": {
+      "score": 0,
+      "hit_rate": 0.2089,
+      "avg_return": -0.7444,
+      "samples": 3805,
+      "t_stat": -44.1626,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_GAP_UP": {
+      "score": 0,
+      "hit_rate": 0.2765,
+      "avg_return": -0.0897,
+      "samples": 3226,
+      "t_stat": -28.3815,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "REVERSAL_W2S": {
+      "score": 0,
+      "hit_rate": 0.2326,
+      "avg_return": -0.1583,
+      "samples": 662,
+      "t_stat": -16.2821,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_MORNING_STAR": {
+      "score": 0,
+      "hit_rate": 0.2114,
+      "avg_return": 0.2937,
+      "samples": 5421,
+      "t_stat": -52.0421,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PRICE_VOLUME_BEARISH_DIVERGENCE": {
+      "score": 0,
+      "hit_rate": 0.2381,
+      "avg_return": 0.572,
+      "samples": 26809,
+      "t_stat": -100.6656,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_HAMMER": {
+      "score": 0,
+      "hit_rate": 0.1996,
+      "avg_return": -0.9497,
+      "samples": 6187,
+      "t_stat": -59.1124,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "LOW_VOLUME_ACCUMULATION": {
+      "score": 0,
+      "hit_rate": 0.2032,
+      "avg_return": -1.304,
+      "samples": 38299,
+      "t_stat": -144.378,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "MA_ALIGNMENT_BEARISH": {
+      "score": 0,
+      "hit_rate": 0.2154,
+      "avg_return": 0.0517,
+      "samples": 21519,
+      "t_stat": -101.5592,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "RSI_EXTREME_OVERSOLD": {
+      "score": 0,
+      "hit_rate": 0.272,
+      "avg_return": 2.7214,
+      "samples": 10656,
+      "t_stat": -52.9029,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "REVERSAL_S2W": {
+      "score": 0,
+      "hit_rate": 0.339,
+      "avg_return": 3.6481,
+      "samples": 4448,
+      "t_stat": -22.6789,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_BULLISH_ENGULFING": {
+      "score": 0,
+      "hit_rate": 0.1879,
+      "avg_return": -1.7946,
+      "samples": 1304,
+      "t_stat": -28.8537,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "KD_DEATH_CROSS": {
+      "score": 0,
+      "hit_rate": 0.2279,
+      "avg_return": -0.2204,
+      "samples": 1255,
+      "t_stat": -22.9809,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_BEARISH_ENGULFING": {
+      "score": 0,
+      "hit_rate": 0.2197,
+      "avg_return": -0.4184,
+      "samples": 1106,
+      "t_stat": -22.5129,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_THREE_BLACK_CROWS": {
+      "score": 0,
+      "hit_rate": 0.2639,
+      "avg_return": 1.5352,
+      "samples": 2944,
+      "t_stat": -29.0612,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "KD_GOLDEN_CROSS": {
+      "score": 0,
+      "hit_rate": 0.2337,
+      "avg_return": -1.726,
+      "samples": 2191,
+      "t_stat": -29.4579,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PRICE_SPIKE": {
+      "score": 0,
+      "hit_rate": 0.3244,
+      "avg_return": 4.0707,
+      "samples": 4710,
+      "t_stat": -25.7397,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "TECH_BREAKOUT": {
+      "score": 0,
+      "hit_rate": 0.3115,
+      "avg_return": 5.2492,
+      "samples": 1512,
+      "t_stat": -15.8265,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "MA_ALIGNMENT_BULLISH": {
+      "score": 0,
+      "hit_rate": 0.2824,
+      "avg_return": 2.0166,
+      "samples": 3976,
+      "t_stat": -30.4718,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "HIGH_VOLUME_BREAKOUT": {
+      "score": 0,
+      "hit_rate": 0.2935,
+      "avg_return": 2.7175,
+      "samples": 1315,
+      "t_stat": -16.4411,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "TECH_BREAKDOWN": {
+      "score": 0,
+      "hit_rate": 0.381,
+      "avg_return": 7.2418,
+      "samples": 1861,
+      "t_stat": -10.573,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_DOJI": {
+      "score": 0,
+      "hit_rate": 0.3267,
+      "avg_return": 5.1547,
+      "samples": 1604,
+      "t_stat": -14.8003,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_GAP_DOWN": {
+      "score": 0,
+      "hit_rate": 0.3022,
+      "avg_return": 2.0409,
+      "samples": 4034,
+      "t_stat": -27.3609,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_THREE_WHITE_SOLDIERS": {
+      "score": 0,
+      "hit_rate": 0.2695,
+      "avg_return": 0.4303,
+      "samples": 1206,
+      "t_stat": -18.0422,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "WEEK_52_LOW": {
+      "score": 0,
+      "hit_rate": 0.223,
+      "avg_return": 0.6922,
+      "samples": 4712,
+      "t_stat": -45.668,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "WEEK_52_HIGH": {
+      "score": 0,
+      "hit_rate": 0.4799,
+      "avg_return": 13.3209,
+      "samples": 996,
+      "t_stat": -1.2685,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "PATTERN_DOJI_BEARISH": {
+      "score": 0,
+      "hit_rate": 0.3114,
+      "avg_return": 5.5072,
+      "samples": 944,
+      "t_stat": -12.5105,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "RSI_EXTREME_OVERBOUGHT": {
+      "score": 0,
+      "hit_rate": 0.3097,
+      "avg_return": 4.3337,
+      "samples": 691,
+      "t_stat": -10.8193,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "INSTITUTIONAL_BUY_STREAK": {
+      "score": 35,
+      "hit_rate": 0.6094,
+      "avg_return": 10.8465,
+      "samples": 128,
+      "t_stat": 2.5363,
+      "active": true
+    },
+    "INSTITUTIONAL_SELL_STREAK": {
+      "score": 0,
+      "hit_rate": 0.3392,
+      "avg_return": 3.2128,
+      "samples": 171,
+      "t_stat": -4.442,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "INSTITUTIONAL_BUY": {
+      "score": 10,
+      "hit_rate": 0.5769,
+      "avg_return": 9.6633,
+      "samples": 52,
+      "t_stat": 1.1228,
+      "active": true
+    },
+    "INSTITUTIONAL_SELL": {
+      "score": 0,
+      "hit_rate": 0.4386,
+      "avg_return": 5.295,
+      "samples": 57,
+      "t_stat": -0.9342,
+      "active": false,
+      "cut_reason": "t_stat_below_threshold"
+    },
+    "REVENUE_MOM_GROWTH": {
+      "score": 18,
+      "hit_rate": 0.6182,
+      "avg_return": 11.0448,
+      "samples": 55,
+      "t_stat": 1.804,
+      "active": true
+    },
+    "EPS_CONSECUTIVE_GROWTH": {
+      "score": 11,
+      "hit_rate": 0.6833,
+      "avg_return": 7.9412,
+      "samples": 60,
+      "t_stat": 3.0528,
+      "active": true
+    },
+    "REVENUE_YOY_SURGE": {
+      "score": 0,
+      "hit_rate": 1.0,
+      "avg_return": 18.2563,
+      "samples": 13,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "EPS_YOY_SURGE": {
+      "score": 0,
+      "hit_rate": 1.0,
+      "avg_return": 19.7533,
+      "samples": 15,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    },
+    "HIGH_DIVIDEND_YIELD": {
+      "score": 0,
+      "hit_rate": 1.0,
+      "avg_return": 30.6761,
+      "samples": 1,
+      "t_stat": 0.0,
+      "active": false,
+      "cut_reason": "sample_too_small"
+    }
+  }
 }

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "version": "2026-04-12",
+  "generated_at": "2026-04-12T04:37:15.986874Z",
+  "short": {
+    "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_short.json",
+    "sha256": "6f1a677c36d410342ab666375b37c99c2204e2523329826e599af05f814fa344",
+    "rule_count": 36,
+    "filename": "rule_scores_calibrated_short.json"
+  },
+  "long": {
+    "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_long.json",
+    "sha256": "e5fb145f9d41a53c9a35c27859450c4c0ace2cdac080b63f58a9e22c0db8e212",
+    "rule_count": 36,
+    "filename": "rule_scores_calibrated_long.json"
+  },
+  "minimum_app_version": "1.0.0"
+}

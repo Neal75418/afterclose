@@ -268,8 +268,8 @@ class ReplayCalibrator {
 
     const shortDays = 5;
     const longDays = 60;
-    const shortThreshold = 3.0; // %
-    const longThreshold = 12.0; // %
+    const shortThreshold = 1.5; // %
+    const longThreshold = 8.0; // %
 
     var daysEvaluated = 0;
     var firingsRecorded = 0;

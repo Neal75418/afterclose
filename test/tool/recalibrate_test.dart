@@ -169,21 +169,21 @@ void main() {
       expect(result.tStat, lessThan(Calibrator.tStatCutThreshold));
     });
 
-    test(
-      'cut: hit_rate_below_threshold (t-stat passes but hit_rate < 0.55)',
-      () {
-        // hit_rate 0.54, n=500 → z ≈ 1.79 > 1.5 but hit_rate < 0.55
-        final result = Calibrator.calibrate(
-          stats(hitRate: 0.54, avgReturn: 2.0, triggerCount: 500),
-          minRaw: minRaw,
-          maxRaw: maxRaw,
-        );
+    test('cut: hit_rate at 0.49 caught by t_stat (negative z when < 0.50)', () {
+      // hit_rate 0.49 @ n=500 → z-stat negative → t_stat_below_threshold.
+      // With hitRateCutThreshold = 0.50, any hit_rate < 0.50 has negative
+      // t-stat, so t_stat check always fires first. hit_rate_below_threshold
+      // is a defensive fallback that only triggers if t_stat threshold is 0
+      // or negative (which we never do in practice).
+      final result = Calibrator.calibrate(
+        stats(hitRate: 0.49, avgReturn: 2.0, triggerCount: 500),
+        minRaw: minRaw,
+        maxRaw: maxRaw,
+      );
 
-        expect(result.active, isFalse);
-        expect(result.cutReason, 'hit_rate_below_threshold');
-        expect(result.tStat, greaterThan(Calibrator.tStatCutThreshold));
-      },
-    );
+      expect(result.active, isFalse);
+      expect(result.cutReason, 't_stat_below_threshold');
+    });
 
     test('cut order: sample_size checked first', () {
       // All 3 thresholds fail, but sample_size reported first
@@ -219,16 +219,12 @@ void main() {
     });
 
     test('all-cut input → all results marked inactive', () {
-      // weak_edge: hit_rate 0.54 @ n=500 → z-test ≈ 1.79 passes, but
-      //            hit_rate < 0.55 → cut as hit_rate_below_threshold.
-      //            (hit_rate < 0.5 would give NEGATIVE z-stat, triggering
-      //             t_stat_below_threshold cut first — not what we test here.)
+      // weak_edge: hit_rate 0.49 @ n=500 → negative t-stat → cut
       // tiny: hit_rate 0.70 but samples < 30 → cut as sample_too_small
-      //       regardless of other metrics.
       final allStats = [
         const RuleStats(
           ruleId: 'weak_edge',
-          hitRate: 0.54,
+          hitRate: 0.49,
           avgReturn: 1.0,
           triggerCount: 500,
         ),
@@ -246,7 +242,7 @@ void main() {
         expect(rule.active, isFalse);
         expect(rule.score, 0);
       }
-      expect(result['weak_edge']!.cutReason, 'hit_rate_below_threshold');
+      expect(result['weak_edge']!.cutReason, 't_stat_below_threshold');
       expect(result['tiny']!.cutReason, 'sample_too_small');
     });
 
@@ -254,7 +250,7 @@ void main() {
       'mixed active + cut: normalization uses survivors only, cut rules reported',
       () {
         // cut_hitrate uses hit_rate 0.54 @ n=500 so z-test passes (~1.79)
-        // but hit_rate < 0.55 still triggers hit_rate_below_threshold cut.
+        // but hit_rate < 0.50 gives negative t-stat → t_stat_below_threshold.
         // avg_return is intentionally huge (50) to verify the survivor-only
         // normalization ignores this rule's raw weight even though it would
         // otherwise dominate the max.
@@ -273,10 +269,10 @@ void main() {
             avgReturn: 3.0,
             triggerCount: 100,
           ),
-          // Cut (hit_rate in weak edge zone 0.5 < h < 0.55)
+          // Cut (hit_rate 0.49 → negative t-stat → t_stat_below_threshold)
           const RuleStats(
             ruleId: 'cut_hitrate',
-            hitRate: 0.54,
+            hitRate: 0.49,
             avgReturn: 50.0,
             triggerCount: 500,
           ),
@@ -287,7 +283,7 @@ void main() {
         expect(result['strong']!.active, isTrue);
         expect(result['medium']!.active, isTrue);
         expect(result['cut_hitrate']!.active, isFalse);
-        expect(result['cut_hitrate']!.cutReason, 'hit_rate_below_threshold');
+        expect(result['cut_hitrate']!.cutReason, 't_stat_below_threshold');
 
         // 'strong' should have higher score than 'medium' within normalized range
         expect(result['strong']!.score, greaterThan(result['medium']!.score));
