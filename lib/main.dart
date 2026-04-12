@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -70,10 +72,21 @@ void main() async {
 }
 
 Future<void> _runApp(ProviderContainer container) async {
-  // Stage 5a: 載入 calibrated scores JSON（放在 Sentry init 之後，讓 asset
-  // 載入錯誤能被 Sentry 捕獲上報）。Pre-launch placeholder 為空，所有查詢
-  // 走 RuleScores hardcoded fallback；上線後由 Stage 4 recalibrate 填入。
-  await CalibratedScoresRegistry.instance.loadFromAssets(
+  // Stage 5a + OTA: 載入 calibrated scores JSON（放在 Sentry init 之後，
+  // 讓 asset 載入錯誤能被 Sentry 捕獲上報）。
+  //
+  // 載入優先順序（design doc §3.2 fallback chain）：
+  //   1. AppSettings DB cache（last successful OTA fetch）
+  //   2. Bundled asset（最後一次 release 時 commit 進 repo 的 JSON）
+  //   3. Empty table → hardcoded RuleScores
+  //
+  // loadWithOverride 會在 DB cache 有效時直接使用，否則自動 fall through
+  // 到 loadFromAssets（原 Stage 5a 路徑）。
+  final db = container.read(databaseProvider);
+  final cached = await db.getCachedCalibration();
+  await CalibratedScoresRegistry.instance.loadWithOverride(
+    shortJsonOverride: cached.shortJson,
+    longJsonOverride: cached.longJson,
     knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
   );
 
@@ -87,6 +100,33 @@ Future<void> _runApp(ProviderContainer container) async {
         child: const AfterCloseApp(),
       ),
     ),
+  );
+
+  // OTA calibration check — fire-and-forget（design doc §2 Q7 = A）
+  //
+  // 在 runApp 之後呼叫，不阻塞 UI。24h gate 在 CalibrationUpdater 內部
+  // 處理，大部分 cold start 不會實際打網路。新 JSON 寫入 AppSettings
+  // 但不 invalidate provider（Q5 = B, deferred swap），下次 cold start
+  // 才會走 Tier 1 DB cache 路徑讀到新版本。
+  unawaited(
+    container
+        .read(calibrationUpdaterProvider)
+        .checkAndUpdate()
+        .then((result) {
+          AppLogger.info(
+            'CalibrationUpdater',
+            'OTA check: ${result.describe()}',
+          );
+        })
+        .catchError((Object error) {
+          // CalibrationUpdater.checkAndUpdate 內部已全 try/catch，這裡
+          // 是最外層保底，理論上不會觸發。
+          AppLogger.warning(
+            'CalibrationUpdater',
+            'OTA check outer error',
+            error,
+          );
+        }),
   );
 }
 
