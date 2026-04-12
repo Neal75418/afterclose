@@ -598,17 +598,31 @@ class _PerSymbolResult {
 // CLI entry
 // ============================================================================
 
+/// Dart CLI main — [runReplayCalibratorCli] 的 thin wrapper。見
+/// [runBackfillCli] 同樣的設計動機。
 Future<void> main(List<String> args) async {
+  final code = await runReplayCalibratorCli(args);
+  exit(code);
+}
+
+/// 不呼叫 [exit] 的 replay calibrator 入口函式。供 test wrapper 使用。
+///
+/// 返回 exit code：
+///   0 — 成功
+///   1 — 無效 CLI 參數
+///   2 — DB 檔案不存在（未 backfill）
+///   3 — 沒有任何 rule firing（資料太少）
+Future<int> runReplayCalibratorCli(List<String> args) async {
   final config = _parseArgs(args);
   if (config == null) {
     _printUsage(stderr);
-    exit(1);
+    return 1;
   }
 
   if (!File(config.dbPath).existsSync()) {
     stderr.writeln('❌ DB 檔案不存在: ${config.dbPath}');
-    stderr.writeln('💡 先跑 `dart run tool/backfill.dart --db ${config.dbPath}`');
-    exit(2);
+    stderr.writeln('💡 先跑 backfill（見 scripts/calibrate.sh）');
+    return 2;
   }
 
   print('📦 開啟 calibration DB: ${config.dbPath}');
@@ -619,8 +633,9 @@ Future<void> main(List<String> args) async {
     final result = await calibrator.run();
     if (result.rulesObserved == 0 && !config.dryRun) {
       stderr.writeln('⚠️  沒有 rule firing — 檢查 backfill 資料是否完整');
-      exit(3);
+      return 3;
     }
+    return 0;
   } finally {
     await db.close();
   }

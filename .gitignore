@@ -62,6 +62,14 @@ test/**/failures/
 .env.*
 !.env.example
 
+# Stage 3+4 calibration artifacts (local dev machine only, never committed)
+tool/calibration.db
+tool/calibration.db-*
+backfill.log
+replay.log
+backfill.pid
+failed_symbols.txt
+
 # Flutter plugins file
 .flutter-plugins
 

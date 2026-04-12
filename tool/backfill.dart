@@ -425,11 +425,31 @@ class Backfiller {
 // CLI entry point
 // ============================================================================
 
+/// Dart CLI main — 只是 [runBackfillCli] 的 thin wrapper，負責把 int
+/// exit code 送回 shell。
+///
+/// 可以透過兩種方式執行：
+/// - `dart run tool/backfill.dart ...` — 純 Dart runtime，會因
+///   `drift_flutter` import `dart:ui` 而 compile 失敗
+/// - `flutter test test/tool/run_backfill.dart` — 推薦；見 scripts/calibrate.sh
 Future<void> main(List<String> args) async {
+  final code = await runBackfillCli(args);
+  exit(code);
+}
+
+/// 不呼叫 [exit] 的 backfill 入口函式。供 test wrapper 使用。
+///
+/// 返回 exit code：
+///   0 — 成功
+///   1 — 無效 CLI 參數
+///   3 — 完成但有 symbol 失敗（partial success）
+///   4 — rate limit 觸發
+///   5 — network error
+Future<int> runBackfillCli(List<String> args) async {
   final config = _parseArgs(args);
   if (config == null) {
     _printUsage(stderr);
-    exit(1);
+    return 1;
   }
 
   // 若 --years 過大提醒使用者
@@ -493,18 +513,19 @@ Future<void> main(List<String> args) async {
     if (result.hasFailures) {
       print('');
       print('⚠️  Backfill 完成但有 symbol 失敗，請檢查上方 log');
-      exit(3);
+      return 3;
     }
+    return 0;
   } on RateLimitException catch (e) {
     stderr.writeln('');
     stderr.writeln('❌ API rate limit exceeded: $e');
     stderr.writeln('💡 請等一段時間後再重跑 — resumability 會自動跳過已完成的部分');
-    exit(4);
+    return 4;
   } on NetworkException catch (e) {
     stderr.writeln('');
     stderr.writeln('❌ Network error: $e');
     stderr.writeln('💡 檢查網路連線後重跑');
-    exit(5);
+    return 5;
   } finally {
     await db.close();
   }
