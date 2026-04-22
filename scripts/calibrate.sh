@@ -76,6 +76,29 @@ if [ ! -f "pubspec.yaml" ]; then
 fi
 
 # ============================================================================
+# Concurrency guard — 防止同時兩個 calibrate 污染 tool/calibration.db
+#
+# replay_calibrator.dart 會 `delete(ruleAccuracy).go()` 再全量重寫，兩個 process
+# 並跑會產生刪除/插入交疊的資料，下游 recalibrate 吃到混合結果。
+#
+# 用 mkdir 做 atomic lock（macOS 沒 flock）。PID 寫進 lock dir 方便診斷殘檔。
+# ============================================================================
+
+LOCKDIR="$REPO_ROOT/tool/.calibrate.lock"
+if ! mkdir "$LOCKDIR" 2>/dev/null; then
+  STALE_PID="unknown"
+  if [ -f "$LOCKDIR/pid" ]; then
+    STALE_PID="$(cat "$LOCKDIR/pid")"
+  fi
+  echo "❌ calibrate 已在執行中（lockdir: $LOCKDIR, pid: $STALE_PID）" >&2
+  echo "   若該 process 已死（\`ps -p $STALE_PID\` 查不到），手動清掉：" >&2
+  echo "     rm -rf \"$LOCKDIR\"" >&2
+  exit 1
+fi
+echo "$$" > "$LOCKDIR/pid"
+trap 'rm -rf "$LOCKDIR"' EXIT INT TERM
+
+# ============================================================================
 # Config defaults
 # ============================================================================
 
