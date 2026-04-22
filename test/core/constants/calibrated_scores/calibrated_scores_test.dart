@@ -500,6 +500,117 @@ void main() {
       expect(table.ruleCount, 0);
       expect(warnings.length, 20); // parser does NOT cap; registry does
     });
+
+    // ==================================================
+    // Scenario 8: sign-flip warnings (L1)
+    // ==================================================
+
+    test('22a. sign_flip_bearish_rule_calibrated_positive_warns', () {
+      // Real-world case: TECH_BREAKDOWN hardcoded -20, calibrated +22
+      final json = _buildJson(rules: {'TECH_BREAKDOWN': _rule(22)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'TECH_BREAKDOWN': -20},
+      );
+
+      expect(
+        table.lookup('TECH_BREAKDOWN'),
+        22,
+        reason: 'score should still be loaded (warning is advisory only)',
+      );
+      expect(warnings, hasLength(1));
+      expect(warnings.first, contains('TECH_BREAKDOWN'));
+      expect(warnings.first, contains('sign flip'));
+      expect(warnings.first, contains('-20'));
+      expect(warnings.first, contains('22'));
+    });
+
+    test('22b. sign_flip_bullish_rule_calibrated_negative_warns', () {
+      final json = _buildJson(rules: {'PATTERN_HAMMER': _rule(-5)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'PATTERN_HAMMER': 18},
+      );
+
+      expect(table.lookup('PATTERN_HAMMER'), -5);
+      expect(warnings, hasLength(1));
+      expect(warnings.first, contains('sign flip'));
+    });
+
+    test('22c. same_sign_no_warning', () {
+      final json = _buildJson(
+        rules: {
+          'TECH_BREAKOUT': _rule(28), // hardcoded +25, calibrated +28
+          'TECH_BREAKDOWN': _rule(-15), // hardcoded -20, calibrated -15
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'TECH_BREAKOUT': 25, 'TECH_BREAKDOWN': -20},
+      );
+
+      expect(table.lookup('TECH_BREAKOUT'), 28);
+      expect(table.lookup('TECH_BREAKDOWN'), -15);
+      expect(warnings, isEmpty);
+    });
+
+    test('22d. zero_score_never_flagged', () {
+      // Zero is neutral; flagging "0 vs -20" as sign flip produces false
+      // positives for rules that recalibrate.dart explicitly sets to 0 when
+      // cut (active=false). Both hardcoded=0 and calibrated=0 skip the check.
+      final json = _buildJson(
+        rules: {
+          'CUT_RULE': _rule(0), // calibrated 0 — typical cut rule
+          'NEUTRAL_RULE': _rule(15),
+        },
+      );
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'CUT_RULE': -20, 'NEUTRAL_RULE': 0},
+      );
+
+      expect(warnings, isEmpty);
+      expect(table.lookup('CUT_RULE'), 0);
+      expect(table.lookup('NEUTRAL_RULE'), 15);
+    });
+
+    test('22e. hardcoded_scores_null_skips_check', () {
+      // Backwards compat: callers that don't pass hardcodedScores never
+      // trigger sign-flip warnings, even on obvious flips.
+      final json = _buildJson(rules: {'TECH_BREAKDOWN': _rule(22)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.lookup('TECH_BREAKDOWN'), 22);
+      expect(warnings, isEmpty);
+    });
+
+    test('22f. unknown_rule_in_hardcoded_map_not_flagged', () {
+      // A rule present in JSON but absent from hardcodedScores map skips
+      // the check — avoids false positives for newly added calibrated rules
+      // that haven't been registered in RuleScores yet.
+      final json = _buildJson(rules: {'NEW_RULE': _rule(25)});
+
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+        hardcodedScores: const {'OTHER_RULE': -10},
+      );
+
+      expect(table.lookup('NEW_RULE'), 25);
+      expect(warnings, isEmpty);
+    });
   });
 
   group('CalibratedScoresRegistry [Layer 2 + Layer 3]', () {

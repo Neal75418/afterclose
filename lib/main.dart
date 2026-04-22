@@ -88,6 +88,7 @@ Future<void> _runApp(ProviderContainer container) async {
     shortJsonOverride: cached.shortJson,
     longJsonOverride: cached.longJson,
     knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
+    hardcodedScores: {for (final r in ReasonType.values) r.code: r.score},
   );
 
   runApp(

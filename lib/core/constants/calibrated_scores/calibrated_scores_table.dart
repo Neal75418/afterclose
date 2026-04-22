@@ -105,10 +105,23 @@ class CalibratedScoresTable {
   /// rule_id 照單全收。分離此參數是為避免 `calibrated_scores/` 反向依賴
   /// `ReasonType`，維持乾淨的依賴 DAG — caller（registry 或 main.dart）
   /// 負責從外部注入 whitelist。
+  ///
+  /// ## [hardcodedScores] 的用途（Scenario 8：sign-flip 警示）
+  ///
+  /// 若提供 rule_id → hardcoded score 的對照表，parser 會對每條 calibrated
+  /// 分數做 sign-flip 檢查：當 hardcoded 非零且與 calibrated 異號（空方規則
+  /// 被算出正分、或多方規則被算出負分），加 warning。這個情境**不是 bug**
+  /// — calibration 允許 backtest 翻轉 rule 的 design semantic — 但會造成
+  /// UX 矛盾（reason chip 顯示「跌破支撐」卻對 Top 20 推薦分數有正貢獻），
+  /// 值得在 calibration candidate review 時被看見。
+  ///
+  /// Parser 不修改分數，只產生 warning。依賴 DAG 的拆解方式與
+  /// [knownRuleIds] 一致：caller 從 `ReasonType` 構造 map 傳入。
   static CalibratedScoresParseResult parseJson(
     String jsonStr, {
     required Horizon horizon,
     Set<String>? knownRuleIds,
+    Map<String, int>? hardcodedScores,
   }) {
     final warnings = <String>[];
 
@@ -210,6 +223,23 @@ class CalibratedScoresTable {
           'rule $ruleId: score $score clamped to ${RuleScores.minScore}',
         );
         score = RuleScores.minScore;
+      }
+
+      // Scenario 8: sign flip vs hardcoded design intent（非零 hardcoded
+      // 且異號時 warn）。不修改 score，calibration 翻轉符號是合法 pipeline
+      // 輸出，只是值得 review 時被看見。
+      if (hardcodedScores != null) {
+        final hardcoded = hardcodedScores[ruleId];
+        if (hardcoded != null && hardcoded != 0 && score != 0) {
+          final hardcodedPositive = hardcoded > 0;
+          final calibratedPositive = score > 0;
+          if (hardcodedPositive != calibratedPositive) {
+            warnings.add(
+              'rule $ruleId: sign flip — hardcoded $hardcoded vs calibrated '
+              '$score (rule design semantics disagrees with backtest)',
+            );
+          }
+        }
       }
 
       scores[ruleId] = score;

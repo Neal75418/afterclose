@@ -57,9 +57,16 @@ class CalibratedScoresRegistry {
   /// （unknown ReasonType code 會產生 warning）。null 表示跳過此檢查。
   /// 正式啟動流程應由 `main.dart` 傳入
   /// `ReasonType.values.map((r) => r.code).toSet()`（Stage 5a Commit 2 啟用）。
-  Future<void> loadFromAssets({Set<String>? knownRuleIds}) {
+  ///
+  /// [hardcodedScores] 若提供，會傳入 `parseJson` 做 scenario 8 sign-flip
+  /// 檢查（空方 rule 被 calibrated 成正分、或反之）。正式啟動由 `main.dart`
+  /// 從 `ReasonType.values` 構造 map。
+  Future<void> loadFromAssets({
+    Set<String>? knownRuleIds,
+    Map<String, int>? hardcodedScores,
+  }) {
     if (_loaded) return Future.value();
-    return _loading ??= _doLoad(knownRuleIds);
+    return _loading ??= _doLoad(knownRuleIds, hardcodedScores);
   }
 
   /// OTA-aware 載入：優先使用傳入的 JSON 字串覆蓋，失敗時 fall through 到
@@ -83,6 +90,7 @@ class CalibratedScoresRegistry {
     String? shortJsonOverride,
     String? longJsonOverride,
     Set<String>? knownRuleIds,
+    Map<String, int>? hardcodedScores,
   }) async {
     if (_loaded) return;
 
@@ -91,18 +99,23 @@ class CalibratedScoresRegistry {
     // 正常流程下要有就兩個都有；若遇到 half-state（例如早期 schema 遷移
     // 的遺跡）視同無 DB cache。
     if (shortJsonOverride == null || longJsonOverride == null) {
-      return loadFromAssets(knownRuleIds: knownRuleIds);
+      return loadFromAssets(
+        knownRuleIds: knownRuleIds,
+        hardcodedScores: hardcodedScores,
+      );
     }
 
     final shortResult = CalibratedScoresTable.parseJson(
       shortJsonOverride,
       horizon: Horizon.short,
       knownRuleIds: knownRuleIds,
+      hardcodedScores: hardcodedScores,
     );
     final longResult = CalibratedScoresTable.parseJson(
       longJsonOverride,
       horizon: Horizon.long,
       knownRuleIds: knownRuleIds,
+      hardcodedScores: hardcodedScores,
     );
 
     // parseJson 不 throw，格式錯誤會回空 table + warnings。空 table 代表
@@ -115,7 +128,10 @@ class CalibratedScoresRegistry {
             'short warnings: ${shortResult.warnings.length}, '
             'long warnings: ${longResult.warnings.length}',
       );
-      return loadFromAssets(knownRuleIds: knownRuleIds);
+      return loadFromAssets(
+        knownRuleIds: knownRuleIds,
+        hardcodedScores: hardcodedScores,
+      );
     }
 
     _logCappedWarnings(Horizon.short, shortResult.warnings);
@@ -131,12 +147,15 @@ class CalibratedScoresRegistry {
     );
   }
 
-  Future<void> _doLoad(Set<String>? knownRuleIds) async {
+  Future<void> _doLoad(
+    Set<String>? knownRuleIds,
+    Map<String, int>? hardcodedScores,
+  ) async {
     try {
       // 兩個 horizon 平行載入，省一個 frame 的 startup latency
       final results = await Future.wait([
-        _loadOne(Horizon.short, knownRuleIds),
-        _loadOne(Horizon.long, knownRuleIds),
+        _loadOne(Horizon.short, knownRuleIds, hardcodedScores),
+        _loadOne(Horizon.long, knownRuleIds, hardcodedScores),
       ]);
       // 若 bindForTesting 在 await 期間被呼叫，尊重測試注入的狀態
       if (_loaded) return;
@@ -207,6 +226,7 @@ class CalibratedScoresRegistry {
   Future<CalibratedScoresTable> _loadOne(
     Horizon horizon,
     Set<String>? knownRuleIds,
+    Map<String, int>? hardcodedScores,
   ) async {
     try {
       final jsonStr = await rootBundle.loadString(horizon.assetPath);
@@ -214,6 +234,7 @@ class CalibratedScoresRegistry {
         jsonStr,
         horizon: horizon,
         knownRuleIds: knownRuleIds,
+        hardcodedScores: hardcodedScores,
       );
       _logCappedWarnings(horizon, warnings);
       return table;
