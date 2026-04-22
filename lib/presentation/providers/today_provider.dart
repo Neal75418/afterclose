@@ -196,6 +196,11 @@ class TodayNotifier extends Notifier<TodayState> {
   /// 只重查 recommendations + 重建 recWithDetails，保留 [TodayState.lastUpdate]
   /// / [TodayState.dataDate] / [TodayState.updateProgress] 等狀態不動。
   /// 跟 [loadData] 共用 [_loadRecommendationsAndDetails] helper。
+  ///
+  /// 在成功 / catch / 早退路徑都確保 `isLoading` 被清除 — 若 [loadData]
+  /// 中途被本 reload supersede，它的 `isLoading: true` 會卡住 shimmer，
+  /// 必須由最後倖存的 reload 負責清掉。透過 `_loadGeneration == generation`
+  /// 確保只有最新的一次 reload 寫入 state，避免被更新的 reload 蓋寫。
   Future<void> _reloadForHorizon(Horizon horizon) async {
     final generation = ++_loadGeneration;
     try {
@@ -208,10 +213,17 @@ class TodayNotifier extends Notifier<TodayState> {
       // 防禦性 guard：跟 loadData 對齊
       if (!_active || _loadGeneration != generation) return;
 
-      state = state.copyWith(recommendations: loaded.recWithDetails);
+      state = state.copyWith(
+        recommendations: loaded.recWithDetails,
+        isLoading: false,
+      );
     } catch (e) {
       AppLogger.warning('TodayNotifier', 'horizon 切換重載失敗', e);
-      // 不覆蓋現有 state，僅 log — 切換失敗的 fallback 是繼續顯示舊 list
+      // 不覆蓋現有 recommendations，僅清 isLoading — 切換失敗的 fallback
+      // 是繼續顯示舊 list，但不能卡在 shimmer。
+      if (_active && _loadGeneration == generation) {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
@@ -643,6 +645,54 @@ void main() {
         );
         // recommendations 已換成長線
         expect(stateAfter.recommendations.first.symbol, equals('2454'));
+      },
+    );
+
+    test(
+      'horizon switch mid-loadData does not strand isLoading=true (H1 regression)',
+      () async {
+        final shortCompleter = Completer<List<DailyRecommendationEntry>>();
+        final longRecs = [
+          createRecommendation(symbol: '2454', score: 88.0, rank: 1),
+        ];
+
+        when(
+          () =>
+              mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.short),
+        ).thenAnswer((_) => shortCompleter.future);
+        when(
+          () => mockAnalysisRepo.getTodayRecommendations(horizon: Horizon.long),
+        ).thenAnswer((_) async => longRecs);
+
+        final notifier = container.read(todayProvider.notifier);
+
+        // loadData 開始但 short 查詢尚未完成，isLoading 應為 true
+        final loadFuture = notifier.loadData();
+        await Future<void>.delayed(Duration.zero);
+        expect(container.read(todayProvider).isLoading, isTrue);
+
+        // 載入中切換 horizon → listener 觸發 _reloadForHorizon(long)
+        container.read(selectedHorizonProvider.notifier).select(Horizon.long);
+        await pumpEventQueue();
+
+        // 讓原本卡住的 short 查詢完成（模擬 DB 真的回來了）
+        shortCompleter.complete([
+          createRecommendation(symbol: '2330', score: 85.0, rank: 1),
+        ]);
+        await loadFuture;
+        await pumpEventQueue();
+
+        final state = container.read(todayProvider);
+        expect(
+          state.isLoading,
+          isFalse,
+          reason: 'horizon 切換後最終 state 不應卡在 loading',
+        );
+        expect(
+          state.recommendations.map((r) => r.symbol).toList(),
+          ['2454'],
+          reason: '應顯示切換後 horizon 的推薦',
+        );
       },
     );
 
