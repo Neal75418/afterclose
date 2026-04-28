@@ -866,9 +866,7 @@ class _ValidationComputed {
 /// Per-(ruleId, period) 統計累加器
 ///
 /// 用於 [RuleAccuracyService._computeUnbiasedRuleStats] 的 in-memory 聚合階段。
-/// 支援兩種合併：
-/// - [add]：單筆 (returnRate, isSuccess) 累加
-/// - [merge]：兩個 accumulator 合併（用於跨 period 彙總至 ALL）
+/// [add] 單筆 (returnRate, isSuccess) 累加。
 class _StatsAccumulator {
   int count = 0;
   int successCount = 0;
@@ -878,12 +876,6 @@ class _StatsAccumulator {
     count++;
     if (success) successCount++;
     _sumReturn += returnRate;
-  }
-
-  void merge(_StatsAccumulator other) {
-    count += other.count;
-    successCount += other.successCount;
-    _sumReturn += other._sumReturn;
   }
 
   double get avgReturnPct => count > 0 ? _sumReturn / count : 0.0;
