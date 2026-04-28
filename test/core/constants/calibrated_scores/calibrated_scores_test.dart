@@ -505,8 +505,11 @@ void main() {
     // Scenario 8: sign-flip warnings (L1)
     // ==================================================
 
-    test('22a. sign_flip_bearish_rule_calibrated_positive_warns', () {
+    test('22a. sign_flip_bearish_rule_calibrated_positive_clamps_to_zero', () {
       // Real-world case: TECH_BREAKDOWN hardcoded -20, calibrated +22
+      // → clamp to 0 (treat as cut). Avoids the UX contradiction where
+      // "跌破支撐" reason chip would otherwise contribute positively to a
+      // buy recommendation.
       final json = _buildJson(rules: {'TECH_BREAKDOWN': _rule(22)});
 
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
@@ -517,17 +520,20 @@ void main() {
 
       expect(
         table.lookup('TECH_BREAKDOWN'),
-        22,
-        reason: 'score should still be loaded (warning is advisory only)',
+        0,
+        reason: 'sign-flipped score must be clamped to 0',
       );
       expect(warnings, hasLength(1));
       expect(warnings.first, contains('TECH_BREAKDOWN'));
       expect(warnings.first, contains('sign flip'));
+      expect(warnings.first, contains('clamped to 0'));
       expect(warnings.first, contains('-20'));
       expect(warnings.first, contains('22'));
     });
 
-    test('22b. sign_flip_bullish_rule_calibrated_negative_warns', () {
+    test('22b. sign_flip_bullish_rule_calibrated_negative_clamps_to_zero', () {
+      // Symmetric clamp: bullish rule (hardcoded +18) calibrated -5
+      // → 0. Prevents a bullish reason chip from subtracting score.
       final json = _buildJson(rules: {'PATTERN_HAMMER': _rule(-5)});
 
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
@@ -536,9 +542,10 @@ void main() {
         hardcodedScores: const {'PATTERN_HAMMER': 18},
       );
 
-      expect(table.lookup('PATTERN_HAMMER'), -5);
+      expect(table.lookup('PATTERN_HAMMER'), 0);
       expect(warnings, hasLength(1));
       expect(warnings.first, contains('sign flip'));
+      expect(warnings.first, contains('clamped to 0'));
     });
 
     test('22c. same_sign_no_warning', () {

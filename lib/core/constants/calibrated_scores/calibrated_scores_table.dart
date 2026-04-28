@@ -225,9 +225,18 @@ class CalibratedScoresTable {
         score = RuleScores.minScore;
       }
 
-      // Scenario 8: sign flip vs hardcoded design intent（非零 hardcoded
-      // 且異號時 warn）。不修改 score，calibration 翻轉符號是合法 pipeline
-      // 輸出，只是值得 review 時被看見。
+      // Scenario 8: sign flip vs hardcoded design intent — clamp to 0
+      //
+      // 例：TECH_BREAKDOWN（跌破支撐）hardcoded -20，calibrated +22。Backtest
+      // 統計上 hit_rate 0.547 / t-stat 4.07 是合法 pipeline 輸出，但 UX 上
+      // 使用者看到 Top 20 推薦顯示 reason chip「跌破支撐」對分數有正貢獻
+      // 會直接質疑 App 的可信度。
+      //
+      // Pre-launch decision: 翻轉符號的 rule 一律 clamp 到 0（等同 cut，
+      // 不貢獻分數），但保留 metadata 在 table 中供 review。等 Stage 4 累積
+      // 真實 forward data（不只是 backtest）驗證 sign-flip pattern 仍穩定後
+      // 再考慮解鎖。對稱處理 bearish→positive 與 bullish→negative：兩個方向
+      // 都代表 calibration 與 design semantics 不一致，採同一個保守 fallback。
       if (hardcodedScores != null) {
         final hardcoded = hardcodedScores[ruleId];
         if (hardcoded != null && hardcoded != 0 && score != 0) {
@@ -236,8 +245,9 @@ class CalibratedScoresTable {
           if (hardcodedPositive != calibratedPositive) {
             warnings.add(
               'rule $ruleId: sign flip — hardcoded $hardcoded vs calibrated '
-              '$score (rule design semantics disagrees with backtest)',
+              '$score, clamped to 0 (rule treated as cut for safety)',
             );
+            score = 0;
           }
         }
       }
