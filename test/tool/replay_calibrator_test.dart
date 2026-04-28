@@ -6,7 +6,7 @@
 // - Forward return 計算正確（5D + 60D）
 // - Hit rate / avg return 聚合正確
 // - Unbiased sampling：不因 rule 觸發頻率低就被濾掉（因為沒有 Top 20 filter）
-// - rule_accuracy table 寫入三個 period row: '5D', '60D', 'ALL'
+// - rule_accuracy table 寫入兩個 period row: '5D', '60D'（'ALL' 已於 2026-04 移除）
 // - min-history cutoff 正確
 // - forward-window cutoff 正確（不評估無法計算 60D forward return 的日子）
 import 'package:drift/drift.dart' show Value;
@@ -290,7 +290,7 @@ void main() {
   });
 
   group('ReplayCalibrator — rule_accuracy writes', () {
-    test('writes 5D + 60D + ALL rows per rule', () async {
+    test('writes 5D + 60D rows per rule (ALL removed 2026-04)', () async {
       await seedStock('WRITE_TEST', priceDays: 150);
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
         TriggeredReason(
@@ -310,15 +310,10 @@ void main() {
       await calibrator.run();
 
       final rows = await db.select(db.ruleAccuracy).get();
-      // 1 rule × 3 periods = 3 rows
-      expect(rows.length, 3);
-      expect(rows.map((r) => r.period).toSet(), {'5D', '60D', 'ALL'});
-
-      // ALL row should have combined trigger count (5D + 60D)
-      final shortRow = rows.firstWhere((r) => r.period == '5D');
-      final longRow = rows.firstWhere((r) => r.period == '60D');
-      final allRow = rows.firstWhere((r) => r.period == 'ALL');
-      expect(allRow.triggerCount, shortRow.triggerCount + longRow.triggerCount);
+      // 1 rule × 2 periods = 2 rows. 'ALL' was removed 2026-04 (mixing
+      // 1D / 60D thresholds produced a meaningless aggregate hit_rate).
+      expect(rows.length, 2);
+      expect(rows.map((r) => r.period).toSet(), {'5D', '60D'});
     });
 
     test('second run replaces previous rule_accuracy rows', () async {
@@ -353,7 +348,7 @@ void main() {
       final secondRows = await db.select(db.ruleAccuracy).get();
 
       // Second run should have purged first run's rows and written new ones
-      expect(secondRows.length, firstCount); // still 3 rows (new rule)
+      expect(secondRows.length, firstCount); // still 2 rows (new rule)
       expect(secondRows.map((r) => r.ruleId).toSet(), {
         ReasonType.volumeSpike.code,
       });

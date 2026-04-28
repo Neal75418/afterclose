@@ -425,10 +425,13 @@ void main() {
       expect(stat.avgReturn, closeTo(5.0, 0.01));
     });
 
-    test('ALL period aggregates across all holding periods', () async {
+    test('ALL period is no longer written (removed 2026-04)', () async {
+      // ALL period aggregation across holdingPeriods was removed because
+      // 1D (threshold 0%) and 60D (threshold 12%) success_counts share a
+      // denominator, producing a hit_rate that's mechanically inflated by
+      // low-threshold samples and has no actionable interpretation.
       final entry = DateTime.utc(2026, 1, 5);
 
-      // Single reason with valid exit prices for both 5D and 60D
       await db.upsertStocks([
         StockMasterCompanion.insert(
           symbol: '2330',
@@ -445,12 +448,12 @@ void main() {
         DailyPriceCompanion.insert(
           symbol: '2330',
           date: TaiwanCalendar.addTradingDays(entry, 5),
-          close: const Value(104.0), // 4% @ 5D → success
+          close: const Value(104.0),
         ),
         DailyPriceCompanion.insert(
           symbol: '2330',
           date: TaiwanCalendar.addTradingDays(entry, 60),
-          close: const Value(115.0), // 15% @ 60D → success
+          close: const Value(115.0),
         ),
       ]);
       await db.insertReasons([
@@ -470,22 +473,8 @@ void main() {
       final all = await fetchRuleAccuracy('TECH_BREAKOUT', period: 'ALL');
 
       expect(fiveD, isNotNull);
-      expect(fiveD!.triggerCount, 1);
-      expect(fiveD.successCount, 1);
-
       expect(sixtyD, isNotNull);
-      expect(sixtyD!.triggerCount, 1);
-      expect(sixtyD.successCount, 1);
-
-      expect(all, isNotNull);
-      expect(
-        all!.triggerCount,
-        2,
-        reason: 'ALL aggregates 5D (1) + 60D (1) = 2 triggers',
-      );
-      expect(all.successCount, 2);
-      // Average return across 5D (4%) + 60D (15%) = 9.5%
-      expect(all.avgReturn, closeTo(9.5, 0.01));
+      expect(all, isNull, reason: 'ALL period must not be written');
     });
 
     test('reason with no matching exit price does not corrupt stats', () async {

@@ -35,7 +35,7 @@
 //        for each reason:
 //          compute 5d + 60d forward return from prices[i+5] and prices[i+60]
 //          accumulate into per-rule stats
-//   3. Upsert rule_accuracy rows: '5D' / '60D' / 'ALL' for each rule
+//   3. Upsert rule_accuracy rows: '5D' / '60D' for each rule
 //
 // ## Output
 //
@@ -103,15 +103,6 @@ class RuleStats {
 
   final RuleHorizonStats short = RuleHorizonStats();
   final RuleHorizonStats long = RuleHorizonStats();
-
-  /// 'ALL' period — 短+長合併（跟 rule_accuracy_service 的聚合邏輯對齊）
-  RuleHorizonStats get all {
-    final merged = RuleHorizonStats()
-      ..triggerCount = short.triggerCount + long.triggerCount
-      ..successCount = short.successCount + long.successCount
-      ..sumReturn = short.sumReturn + long.sumReturn;
-    return merged;
-  }
 }
 
 /// Replay 執行結果（summary 用）
@@ -456,9 +447,9 @@ class ReplayCalibrator {
 
   /// Upsert rule_accuracy rows
   ///
-  /// 每條 rule 寫入三行：period = '5D'、'60D'、'ALL'。這跟 rule_accuracy_service
-  /// 的行為一致，`tool/recalibrate.dart` 會讀 '5D' / '60D' 做 per-horizon
-  /// calibration，忽略 'ALL'（只是方便 debug 的 aggregate）。
+  /// 每條 rule 寫入兩行：period = '5D' / '60D'，對齊 rule_accuracy_service
+  /// 的 dual-horizon 行為。`tool/recalibrate.dart` 也只讀這兩個 period。
+  /// 'ALL' period 已於 2026-04 移除（混 threshold 算 hit_rate 數學上沒意義）。
   Future<void> _writeRuleAccuracy(Map<String, RuleStats> ruleStats) async {
     await db.transaction(() async {
       // 先清空既有的 rule_accuracy（replay 每次跑完全覆寫，不增量）
@@ -491,20 +482,6 @@ class ReplayCalibrator {
                 triggerCount: Value(stats.long.triggerCount),
                 successCount: Value(stats.long.successCount),
                 avgReturn: Value(stats.long.avgReturn),
-              ),
-            );
-
-        // ALL
-        final all = stats.all;
-        await db
-            .into(db.ruleAccuracy)
-            .insertOnConflictUpdate(
-              RuleAccuracyCompanion.insert(
-                ruleId: ruleId,
-                period: 'ALL',
-                triggerCount: Value(all.triggerCount),
-                successCount: Value(all.successCount),
-                avgReturn: Value(all.avgReturn),
               ),
             );
       }
@@ -545,11 +522,13 @@ class ReplayCalibrator {
     _log('Rules observed:    ${result.rulesObserved}');
     _log('Duration:          ${_formatDuration(result.duration)}');
     _log('');
-    _log('Top 10 rules by trigger count:');
+    _log('Top 10 rules by trigger count (short + long):');
     final sorted = result.ruleStats.entries.toList()
-      ..sort(
-        (a, b) => b.value.all.triggerCount.compareTo(a.value.all.triggerCount),
-      );
+      ..sort((a, b) {
+        final aTotal = a.value.short.triggerCount + a.value.long.triggerCount;
+        final bTotal = b.value.short.triggerCount + b.value.long.triggerCount;
+        return bTotal.compareTo(aTotal);
+      });
     for (final e in sorted.take(10)) {
       final s = e.value.short;
       final l = e.value.long;

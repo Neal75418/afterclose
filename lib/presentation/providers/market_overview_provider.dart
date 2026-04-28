@@ -988,11 +988,14 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     try {
       final service = RuleAccuracyService(database: _db);
 
-      // 平行載入三組資料
+      // 平行載入三組資料。
+      // getAllRuleStats 顯式傳 '5D' — 預設已從 'ALL' 改成 '5D'（'ALL'
+      // 已於 2026-04 移除，混 threshold 算 hit_rate 沒意義），但為了
+      // 文件清晰直接寫死短線。要展示長線 Top 規則時改 '60D'。
       final (stats, records, allRules) = await (
         service.getOverallPerformanceStats(),
         service.getStockValidationRecords(limit: 30),
-        service.getAllRuleStats(),
+        service.getAllRuleStats(period: '5D'),
       ).wait;
 
       // 門檻：至少 5 筆驗證資料

@@ -599,42 +599,26 @@ class RuleAccuracyService {
         }
       }
 
-      // 彙總 'ALL' period — 跨所有 periods 合併同一 rule 的統計
-      final allStats = <String, _StatsAccumulator>{};
-      for (final ruleEntry in ruleStats.entries) {
-        for (final acc in ruleEntry.value.values) {
-          allStats.putIfAbsent(ruleEntry.key, _StatsAccumulator.new).merge(acc);
-        }
-      }
-      for (final entry in allStats.entries) {
-        await _db
-            .into(_db.ruleAccuracy)
-            .insertOnConflictUpdate(
-              RuleAccuracyCompanion.insert(
-                ruleId: entry.key,
-                period: 'ALL',
-                triggerCount: Value(entry.value.count),
-                successCount: Value(entry.value.successCount),
-                avgReturn: Value(entry.value.avgReturnPct),
-              ),
-            );
-      }
-
+      // 'ALL' period 已於 2026-04 移除：跨 holdingPeriods 合併會把 1D（門檻
+      // 0%）與 60D（門檻 12%）的 success_count 加總後除以總 trigger_count，
+      // 得到一個沒有可解釋意義的 hit_rate（被低門檻樣本拉高）。dual-horizon
+      // UI 已 ship，使用者直接查 5D / 60D 兩個 horizon 的命中率即可。
       AppLogger.info(
         _tag,
         '_computeUnbiasedRuleStats: ${ruleStats.length} rules × '
-        '${holdingPeriods.length} periods + ALL 聚合自 ${reasons.length} reasons',
+        '${holdingPeriods.length} periods 聚合自 ${reasons.length} reasons',
       );
     });
   }
 
   /// 取得規則命中率
   ///
-  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）
+  /// [period] 持有天數週期，如 '5D'、'60D'（預設 '5D' — 對齊 short horizon 預設）。
+  /// 'ALL' 已於 2026-04 移除（混 threshold 算 hit_rate 數學上沒意義）。
   Future<RuleStats?> getRuleStats(String ruleId, {String? period}) async {
     final result =
         await (_db.select(_db.ruleAccuracy)..where(
-              (t) => t.ruleId.equals(ruleId) & t.period.equals(period ?? 'ALL'),
+              (t) => t.ruleId.equals(ruleId) & t.period.equals(period ?? '5D'),
             ))
             .getSingleOrNull();
 
@@ -654,11 +638,11 @@ class RuleAccuracyService {
 
   /// 取得所有規則的準確度統計
   ///
-  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）
+  /// [period] 持有天數週期，如 '5D'、'60D'（預設 '5D'）。'ALL' 已移除。
   Future<List<RuleStats>> getAllRuleStats({String? period}) async {
     final results = await (_db.select(
       _db.ruleAccuracy,
-    )..where((t) => t.period.equals(period ?? 'ALL'))).get();
+    )..where((t) => t.period.equals(period ?? '5D'))).get();
 
     return results.map((r) {
       final hitRate = r.triggerCount > 0
@@ -693,7 +677,10 @@ class RuleAccuracyService {
 
   /// 取得個股驗證記錄（用於 stock-centric UI）
   ///
-  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）
+  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）。
+  /// 此處的 'ALL' 走 [recommendation_validation] 表的 holdingDays 過濾
+  /// （單一 threshold，不混算），與 rule_accuracy 表已移除的 'ALL' 是
+  /// 不同 concept，保留有效。
   /// [limit] 最多回傳筆數（預設 200）
   Future<List<StockValidationRecord>> getStockValidationRecords({
     String? period,
@@ -736,7 +723,9 @@ class RuleAccuracyService {
 
   /// 取得整體績效統計（聚合查詢）
   ///
-  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）
+  /// [period] 持有天數週期，如 '5D'、'ALL'（預設 'ALL'）。
+  /// 此處的 'ALL' 對 recommendation_validation 表全 holdingDays 聚合，
+  /// 跟 rule_accuracy 表已移除的 'ALL' 是不同 concept。
   Future<OverallPerformanceStats> getOverallPerformanceStats({
     String? period,
   }) async {
