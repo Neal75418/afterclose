@@ -25,13 +25,17 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await EasyLocalization.ensureInitialized();
 
-  // Initialize notification service (權限請求延遲到使用者啟用通知時)
-  await NotificationService.instance.initialize();
-
-  // 設定通知點擊導航 — 點擊後跳轉到個股詳情頁
+  // 設定通知點擊導航 — 必須在 initialize() 之前，避免 init 期間若 plugin
+  // dispatch 到 _onNotificationTapped，callback 還是 null 而 silently 丟掉
+  // payload。callback 是 plugin singleton 上的 property，在 init 前先 assign
+  // 不影響 init 流程；init 內部註冊 onDidReceiveNotificationResponse 時
+  // 屬性已就位。
   NotificationService.instance.onTapCallback = (symbol) {
     router.push(AppRoutes.stockDetail(symbol));
   };
+
+  // Initialize notification service (權限請求延遲到使用者啟用通知時)
+  await NotificationService.instance.initialize();
 
   // 初始化背景更新服務
   await BackgroundUpdateService.instance.initialize();
