@@ -32,16 +32,20 @@ class NotificationService {
       '@mipmap/ic_launcher',
     );
 
+    // iOS / macOS: 三個 request*Permission flag 設 true 會在 initialize()
+    // 立即觸發 OS 權限 prompt。我們希望首次 prompt 由 user 主動啟用 alert 時
+    // 才觸發（經 NotificationNotifier.ensurePermission → requestPermissions），
+    // 所以 init 階段全部 false，只跑 channel / timezone / handler 註冊。
     const iosSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const macOSSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const initSettings = InitializationSettings(
