@@ -234,6 +234,13 @@ class PortfolioRepository implements IPortfolioRepository {
               remainingToSell = 0;
             }
           }
+          // FIFO 一致性守衛：lots 已耗盡但仍有未配對 SELL 數量代表持倉與交易
+          // 紀錄不一致。addSellTransaction 已在寫入前驗證，但 updateTransaction
+          // 路徑（編輯既有 BUY 把數量改小）不會走那條檢查，必須在這裡 throw
+          // 讓 transaction rollback，否則 realizedPnl 會少算掉未配對部份的成本。
+          if (remainingToSell > 1e-9) {
+            throw StateError('portfolio.sellExceedsHolding');
+          }
           // 賣出手續費與交易稅直接從已實現損益扣除
           realizedPnl -= tx.fee + tx.tax;
         case 'DIVIDEND_CASH':

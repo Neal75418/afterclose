@@ -667,4 +667,73 @@ void main() {
       verify(() => mockDb.deleteTransaction(1)).called(1);
     });
   });
+
+  // ==================================================
+  // I5 regression: FIFO 一致性守衛
+  // ==================================================
+  //
+  // updateTransaction 不像 addSellTransaction 會在寫入前驗證持倉，因此編輯
+  // 既有 BUY 把數量改小到不足以 cover 之前 SELL 的話，FIFO 迴圈會耗盡 lots
+  // 但 remainingToSell 仍 > 0 → 之前是 silently 結束，realizedPnl 少算掉
+  // 未配對的成本。修法是在 _recalculatePosition 的 SELL 迴圈後 throw，
+  // transaction 同步 rollback。
+  group(
+    'I5 regression: FIFO sellExceedsHolding guard in _recalculatePosition',
+    () {
+      test(
+        'updateTransaction shrinking BUY below SELL throws StateError',
+        () async {
+          // 場景：原本 BUY 1000 → SELL 500（合法）；現在編輯 BUY 改成 300
+          // → 重算時 lots 只剩 300、SELL 500 多出 200 沒有 cost basis 配對
+          final transactions = [
+            PortfolioTransactionEntry(
+              id: 1,
+              symbol: '2330',
+              txType: 'BUY',
+              date: DateTime(2025, 1, 10),
+              quantity: 300,
+              price: 400,
+              fee: 0,
+              tax: 0,
+              createdAt: DateTime(2025, 1, 10),
+            ),
+            PortfolioTransactionEntry(
+              id: 2,
+              symbol: '2330',
+              txType: 'SELL',
+              date: DateTime(2025, 1, 15),
+              quantity: 500,
+              price: 500,
+              fee: 0,
+              tax: 0,
+              createdAt: DateTime(2025, 1, 15),
+            ),
+          ];
+
+          when(
+            () => mockDb.getTransactionsForSymbol('2330'),
+          ).thenAnswer((_) async => transactions);
+          when(
+            () => mockDb.getPortfolioPosition('2330'),
+          ).thenAnswer((_) async => null);
+
+          // 用 deleteTransaction 觸發 _recalculatePosition 路徑（FIFO 守衛位置
+          // 是共用 helper，updateTransaction 與 deleteTransaction 都會走到）。
+          // 避開 update().write() chain 在 mocktail 內無法 stub 的限制。
+          when(() => mockDb.deleteTransaction(99)).thenAnswer((_) async {});
+
+          expect(
+            () => repository.deleteTransaction(99, '2330'),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('sellExceedsHolding'),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }
