@@ -602,4 +602,96 @@ void main() {
       expect(fresh!.triggerCount, 1);
     });
   });
+
+  // ==================================================
+  // H1 regression: dual-horizon dailyRecommendation must filter to short
+  // ==================================================
+  //
+  // Stage 5b 之後 daily_recommendation 每天可有 short + long 兩 rows（相同
+  // symbol 也可能在兩個 horizon 都上榜）。_computeValidation 與
+  // backfillAllHistoricalRecommendations 必須只取 short horizon — 否則
+  // recommendation_validation 表 PK (date, symbol, holdingDays) 會被 long
+  // row 覆蓋，UI 顯示的 primaryRuleId / returnRate 變成 last-write-wins
+  // 不確定行為。
+  group('H1 regression: short-only horizon filter on daily_recommendation', () {
+    test(
+      'long horizon recommendations are NOT validated even if same date',
+      () async {
+        final entry = DateTime.utc(2026, 1, 5);
+        const entryPrice = 100.0;
+        final exitDate = TaiwanCalendar.addTradingDays(entry, 5);
+
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: '2330',
+            name: 'TSMC',
+            market: 'TWSE',
+          ),
+          StockMasterCompanion.insert(
+            symbol: '2454',
+            name: 'MediaTek',
+            market: 'TWSE',
+          ),
+        ]);
+
+        await db.insertPrices([
+          // 2330 entry/exit
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: entry,
+            close: const Value(entryPrice),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: exitDate,
+            close: const Value(105.0), // +5% (above 5D 3% threshold → success)
+          ),
+          // 2454 entry/exit (long-only — should NOT show up in validation)
+          DailyPriceCompanion.insert(
+            symbol: '2454',
+            date: entry,
+            close: const Value(entryPrice),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2454',
+            date: exitDate,
+            close: const Value(110.0),
+          ),
+        ]);
+
+        // 2330 上 short Top 20、2454 上 long Top 20 — 不同股票、同日。
+        await db.insertRecommendations([
+          DailyRecommendationCompanion.insert(
+            symbol: '2330',
+            date: entry,
+            rank: 1,
+            score: 80.0,
+            horizon: Horizon.short.name,
+          ),
+          DailyRecommendationCompanion.insert(
+            symbol: '2454',
+            date: entry,
+            rank: 1,
+            score: 80.0,
+            horizon: Horizon.long.name,
+          ),
+        ]);
+
+        await service.backfillAllHistoricalRecommendations();
+
+        // recommendation_validation 應該只看到 2330（short），2454（long）
+        // 必須被 horizon filter 排除。
+        final rows = await (db.select(
+          db.recommendationValidation,
+        )..where((t) => t.holdingDays.equals(5))).get();
+        final symbols = rows.map((r) => r.symbol).toSet();
+        expect(symbols, equals({'2330'}));
+        expect(
+          symbols.contains('2454'),
+          isFalse,
+          reason: 'long-horizon rec must not leak into validation table',
+        );
+      },
+    );
+  });
 }

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -107,9 +108,20 @@ class RuleAccuracyService {
     );
 
     // 1. 取得目標日期的推薦
-    final recommendations = await (_db.select(
-      _db.dailyRecommendation,
-    )..where((t) => t.date.equals(normalizedDate))).get();
+    //
+    // Stage 5b 後 daily_recommendation 每天有 short + long 兩組（最多 40
+    // rows），同 symbol 同日同 horizon 是 PK；recommendation_validation 表
+    // PK 為 (date, symbol, holdingDays) 不含 horizon，若兩組都進來會 PK
+    // 衝突 upsert 互蓋。recommendation_performance_screen 的 _periods 也
+    // 只列 1D~20D（短線視角），長線推薦的績效另有 UI 規畫，目前不該混入。
+    // 因此只取 short horizon 推薦做 validation。
+    final recommendations =
+        await (_db.select(_db.dailyRecommendation)..where(
+              (t) =>
+                  t.date.equals(normalizedDate) &
+                  t.horizon.equals(Horizon.short.name),
+            ))
+            .get();
 
     if (recommendations.isEmpty) {
       AppLogger.debug(_tag, '${_formatDate(targetDate)} 無推薦資料');
@@ -286,10 +298,15 @@ class RuleAccuracyService {
 
         final date = dates[i].read<DateTime>('date');
 
-        // 取得該日推薦
-        final recommendations = await (_db.select(
-          _db.dailyRecommendation,
-        )..where((t) => t.date.equals(date))).get();
+        // 取得該日推薦（同 _computeValidation：只看 short horizon，避免 PK
+        // 衝突 + 對齊 recommendation_performance_screen 的短線視角）
+        final recommendations =
+            await (_db.select(_db.dailyRecommendation)..where(
+                  (t) =>
+                      t.date.equals(date) &
+                      t.horizon.equals(Horizon.short.name),
+                ))
+                .get();
 
         if (recommendations.isEmpty) {
           onProgress?.call(i + 1, totalDates);
