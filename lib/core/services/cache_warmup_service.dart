@@ -52,7 +52,10 @@ class CacheWarmupService {
           ? DateContext.normalize(latestDataDate)
           : dateCtx.today;
 
-      // Stage 5b: 暫時硬編碼短線 horizon；Stage 5c 會改為 horizon-aware
+      // Cold start 一律預熱 short：selectedHorizonProvider 預設 short 且
+      // 非持久化（每次 cold start 重置），warmup 在 main.dart bootstrap 階段
+      // 跑時 user-selected horizon 必然是 short。若未來加 horizon 持久化，
+      // 改為從 ProviderContainer 讀 selectedHorizonProvider 注入。
       final recommendations = await _db.getRecommendations(
         analysisDate,
         horizon: Horizon.short,
