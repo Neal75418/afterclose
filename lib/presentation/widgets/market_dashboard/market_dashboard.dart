@@ -565,6 +565,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           SentimentGaugeSection(
             sentiment: sentiment,
             sentimentHistory: _computeSentimentHistory(MarketCode.twse),
+            showInternalTitle: false, // 外層 Row 已渲染「上市 市場情緒」，避免重複
           ),
           const SizedBox(height: DesignTokens.spacing14),
           Divider(

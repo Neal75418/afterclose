@@ -989,11 +989,14 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final service = RuleAccuracyService(database: _db);
 
       // 平行載入三組資料。
-      // getAllRuleStats 顯式傳 '5D' — 預設已從 'ALL' 改成 '5D'（'ALL'
-      // 已於 2026-04 移除，混 threshold 算 hit_rate 沒意義），但為了
-      // 文件清晰直接寫死短線。要展示長線 Top 規則時改 '60D'。
+      // 兩個 stats 查詢都顯式傳 '5D'：
+      // - getAllRuleStats('5D')：per-rule 統計
+      // - getOverallPerformanceStats('5D')：dashboard summary
+      // 不傳 period 會混所有 holding_days，1D/3D 預設 threshold=0% 拉高 winRate
+      // 但 returnRate 微小，造成「100% wins + 0.00% avgReturn」的怪現象。
+      // 統一在 5D 才能讓 winRate / avgReturn 對應同一語意。
       final (stats, records, allRules) = await (
-        service.getOverallPerformanceStats(),
+        service.getOverallPerformanceStats(period: '5D'),
         service.getStockValidationRecords(limit: 30),
         service.getAllRuleStats(period: '5D'),
       ).wait;

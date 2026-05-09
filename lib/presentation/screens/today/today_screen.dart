@@ -246,7 +246,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               pinned: true,
               floating: true,
               expandedHeight: 0, // Standard height
-              backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.7),
+              // 不用半透明（無 BackdropFilter 時會看到下方「資料日期」文字穿透
+              // 到 title 後方，視覺像 bleed-through）。要做 frosted glass 風格
+              // 需另接 BackdropFilter blur。
+              backgroundColor: theme.colorScheme.surface,
               surfaceTintColor: Colors.transparent,
               title: Text(
                 S.appName,

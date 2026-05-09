@@ -14,12 +14,17 @@ class SentimentGaugeSection extends StatelessWidget {
     super.key,
     required this.sentiment,
     this.sentimentHistory = const [],
+    this.showInternalTitle = true,
   });
 
   final MarketSentiment sentiment;
 
   /// 歷史情緒分數（oldest→newest），用於趨勢 sparkline
   final List<double> sentimentHistory;
+
+  /// 是否顯示內建「市場情緒」標題列。桌面版的 dashboard 在外層已渲染
+  /// 「上市 市場情緒」標頭，傳 false 避免重複顯示。手機版維持 true。
+  final bool showInternalTitle;
 
   @override
   Widget build(BuildContext context) {
@@ -30,15 +35,17 @@ class SentimentGaugeSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 標題行
-        Text(
-          'marketOverview.sentiment.title'.tr(),
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
+        // 標題行（可由桌面版 dashboard 隱藏避免重複）
+        if (showInternalTitle) ...[
+          Text(
+            'marketOverview.sentiment.title'.tr(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-        ),
-        const SizedBox(height: DesignTokens.spacing10),
+          const SizedBox(height: DesignTokens.spacing10),
+        ],
 
         Container(
           padding: const EdgeInsets.all(DesignTokens.spacing14),
