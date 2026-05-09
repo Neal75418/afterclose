@@ -341,11 +341,13 @@ Future<void> _showUpdateNotification(UpdateResult result) async {
     body = result.message ?? (isChinese ? '請稍後重試' : 'Please try again later');
   }
 
+  // payload 故意留 null：背景更新通知非單一股票，沒有可導航目的地。
+  // _onNotificationTapped 對 null / empty payload 會跳過 onTapCallback，
+  // 避免導航到 /stock/background_update 這種不存在的 route。
   await NotificationService.instance.showNotification(
     id: _generateNotificationId(),
     title: title,
     body: body,
-    payload: 'background_update',
   );
 }
 
