@@ -582,13 +582,15 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
     String? market, {
     DateTime? addedAt,
   }) async {
-    final dateCtx = DateContext.now();
-
     // 取得實際資料日期，確保非交易日也能正確顯示趨勢
     final latestDataDate = await _db.getLatestDataDate();
     final analysisDate = latestDataDate != null
         ? DateContext.normalize(latestDataDate)
-        : dateCtx.today;
+        : DateContext.now().today;
+
+    // 用 analysisDate 對齊 loadData 的歷史視窗計算（line 250 同 pattern）—
+    // 避免增量加股的 sparkline 用 wall-clock 範圍，跟清單其他項日期偏差。
+    final historyCtx = DateContext.forDate(analysisDate);
 
     // 平行載入此股票的所有資料（含警示）
     final (
@@ -604,8 +606,8 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       _db.getReasons(symbol, analysisDate),
       _db.getPriceHistory(
         symbol,
-        startDate: dateCtx.historyStart,
-        endDate: dateCtx.today,
+        startDate: historyCtx.historyStart,
+        endDate: analysisDate,
       ),
       _warningRepo.getWatchlistWarnings([symbol]),
       _insiderRepo.getWatchlistHighPledgeStocks([
