@@ -37,12 +37,12 @@ void main() {
     // ─────────────────────────────────────────────────────────────────────────
 
     group('高質押率偵測', () {
-      test('pledge_ratio >= 50 應被偵測', () async {
+      test('pledge_ratio >= 70 應被偵測', () async {
         await db.insertInsiderHoldingData([
           InsiderHoldingCompanion.insert(
             symbol: '2330',
             date: today,
-            pledgeRatio: const Value(65.5),
+            pledgeRatio: const Value(75.5),
           ),
         ]);
 
@@ -56,7 +56,7 @@ void main() {
         );
       });
 
-      test('pledge_ratio < 50 不應被偵測', () async {
+      test('pledge_ratio < 70 不應被偵測', () async {
         await db.insertInsiderHoldingData([
           InsiderHoldingCompanion.insert(
             symbol: '2330',
@@ -78,7 +78,7 @@ void main() {
           InsiderHoldingCompanion.insert(
             symbol: '2330',
             date: today,
-            pledgeRatio: const Value(65.5),
+            pledgeRatio: const Value(75.5),
           ),
         ]);
 
@@ -87,7 +87,7 @@ void main() {
           (a) => a.type == ChipAnomalyType.highPledge,
         );
 
-        expect(anomaly.keyValue, '65.5%');
+        expect(anomaly.keyValue, '75.5%');
         expect(anomaly.severity, ChipSeverity.high);
       });
 
@@ -102,7 +102,7 @@ void main() {
           InsiderHoldingCompanion.insert(
             symbol: '2330',
             date: today,
-            pledgeRatio: const Value(60.0),
+            pledgeRatio: const Value(80.0),
           ),
         ]);
 
@@ -488,7 +488,7 @@ void main() {
           InsiderHoldingCompanion.insert(
             symbol: '2330', // TWSE
             date: today,
-            pledgeRatio: const Value(65.0),
+            pledgeRatio: const Value(80.0),
           ),
           InsiderHoldingCompanion.insert(
             symbol: '6488', // TPEx

@@ -144,12 +144,12 @@ void main() {
     group('HighPledgeRatioRule', () {
       const rule = HighPledgeRatioRule();
 
-      test('triggers when pledge ratio >= 50%', () {
+      test('triggers when pledge ratio >= 70%', () {
         const context = AnalysisContext(
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
-              pledgeRatio: 55.0,
+              pledgeRatio: 75.0,
               insiderRatio: 20.0,
             ),
           ),
@@ -165,7 +165,7 @@ void main() {
         expect(result.score, equals(RuleScores.highPledgeRatio));
       });
 
-      test('does not trigger when pledge ratio < 50%', () {
+      test('does not trigger when pledge ratio < 70%', () {
         const context = AnalysisContext(
           trendState: TrendState.range,
           marketData: MarketDataContext(

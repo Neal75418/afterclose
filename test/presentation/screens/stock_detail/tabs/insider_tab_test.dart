@@ -207,14 +207,14 @@ void main() {
           createHolding(
             date: DateTime(2026, 2),
             insiderRatio: 15.0,
-            pledgeRatio: 55.0, // > 50.0 threshold
+            pledgeRatio: 75.0, // > 70.0 threshold
           ),
         ],
       );
       await tester.pumpWidget(buildTestWidget(state));
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('55.0%'), findsAtLeastNWidgets(1));
+      expect(find.text('75.0%'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('limits display to 12 months', (tester) async {

@@ -603,7 +603,7 @@ void main() {
         final holding = _createInsiderHolding(
           symbol: 'TEST',
           date: DateTime(2026, 1, 15),
-          pledgeRatio: 55.0,
+          pledgeRatio: 75.0,
         );
 
         when(
@@ -678,7 +678,7 @@ void main() {
         final holding = _createInsiderHolding(
           symbol: 'TEST',
           date: DateTime(2026, 1, 15),
-          pledgeRatio: FundamentalParams.highPledgeRatioThreshold, // 50.0
+          pledgeRatio: FundamentalParams.highPledgeRatioThreshold, // 70.0
         );
 
         when(
@@ -719,7 +719,7 @@ void main() {
           'HIGH1': _createInsiderHolding(
             symbol: 'HIGH1',
             date: DateTime(2026, 1, 15),
-            pledgeRatio: 55.0,
+            pledgeRatio: 75.0,
           ),
           'LOW1': _createInsiderHolding(
             symbol: 'LOW1',
@@ -764,7 +764,7 @@ void main() {
           'HIGH1': _createInsiderHolding(
             symbol: 'HIGH1',
             date: DateTime(2026, 1, 15),
-            pledgeRatio: 55.0,
+            pledgeRatio: 75.0,
           ),
           'NULL1': _createInsiderHolding(
             symbol: 'NULL1',

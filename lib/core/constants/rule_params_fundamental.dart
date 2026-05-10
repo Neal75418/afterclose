@@ -70,8 +70,14 @@ abstract final class FundamentalParams {
 
   /// 高質押比例門檻（%）
   ///
-  /// 質押比例超過 50% 視為風險警示。
-  static const double highPledgeRatioThreshold = 50.0;
+  /// 70% 是經驗法則的高風險邊界（家族企業常態高質押多在 30-50%、地雷股
+  /// 事發時質押比通常 80%+）。50% 是 TWSE 法規分界（質押比 ≥ 1/2 不計入
+  /// 董事改選選舉權），不是統計顯著的轉折點，誤觸發太多。
+  ///
+  /// 等 calibration 累積真實 forward data 後，會根據 backtest 決定門檻
+  /// （或砍掉這條 rule）。在那之前用 70 降低 false positive，避免
+  /// 富邦金、國泰金等家族長期高質押被當風險訊號扣分。
+  static const double highPledgeRatioThreshold = 70.0;
 
   /// 處置股結束日期寬限天數
   ///
