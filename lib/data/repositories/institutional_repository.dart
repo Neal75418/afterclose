@@ -190,6 +190,98 @@ class InstitutionalRepository implements IInstitutionalRepository {
     }
   }
 
+  /// 用 TWSE + TPEx batch endpoint 回補單一交易日**指定股票**的法人資料
+  ///
+  /// 詳細語意見 [IInstitutionalRepository.backfillInstitutionalByDate]。
+  ///
+  /// 實作走 [TwseClient.getAllInstitutionalData] + [TpexClient.getAllInstitutionalData]
+  /// （兩個都是該市場官方免費 daily batch endpoint），用 [safeAwait] 隔離
+  /// 兩個 source 的失敗，再依 [targetSymbols] 過濾後 batch insert。
+  @override
+  Future<int> backfillInstitutionalByDate({
+    required DateTime date,
+    required Set<String> targetSymbols,
+  }) async {
+    try {
+      // 並行抓 TWSE + TPEx 法人資料。任一失敗回空 list 不阻斷另一個。
+      final twseFuture = safeAwait(
+        _twseClient.getAllInstitutionalData(date: date),
+        <TwseInstitutional>[],
+        tag: 'InstitutionalRepo',
+        description: '上市法人 backfill 失敗 (${DateContext.formatYmd(date)})，繼續處理上櫃',
+      );
+      final tpexFuture = safeAwait(
+        _tpexClient.getAllInstitutionalData(date: date),
+        <TpexInstitutional>[],
+        tag: 'InstitutionalRepo',
+        description: '上櫃法人 backfill 失敗 (${DateContext.formatYmd(date)})，繼續處理上市',
+      );
+
+      final twseData = await twseFuture;
+      final tpexData = await tpexFuture;
+
+      if (twseData.isEmpty && tpexData.isEmpty) return 0;
+
+      // 用 targetSymbols 過濾 + 跳過全 0 行（與 syncAllMarketInstitutional
+      // 同邏輯：節省 DB 空間，0 0 0 對 rule engine 沒有訊號）
+      final validTwseData = twseData
+          .where(
+            (item) =>
+                targetSymbols.contains(item.code) &&
+                (item.totalNet != 0 ||
+                    item.foreignNet != 0 ||
+                    item.investmentTrustNet != 0),
+          )
+          .toList();
+
+      final validTpexData = tpexData
+          .where(
+            (item) =>
+                targetSymbols.contains(item.code) &&
+                (item.totalNet != 0 ||
+                    item.foreignNet != 0 ||
+                    item.investmentTrustNet != 0),
+          )
+          .toList();
+
+      final twseEntries = _toInstitutionalEntries(
+        validTwseData,
+        (i) => (
+          code: i.code,
+          date: i.date,
+          foreignNet: i.foreignNet.toDouble(),
+          investmentTrustNet: i.investmentTrustNet.toDouble(),
+          dealerNet: i.dealerNet.toDouble(),
+        ),
+      );
+      final tpexEntries = _toInstitutionalEntries(
+        validTpexData,
+        (i) => (
+          code: i.code,
+          date: i.date,
+          foreignNet: i.foreignNet.toDouble(),
+          investmentTrustNet: i.investmentTrustNet.toDouble(),
+          dealerNet: i.dealerNet.toDouble(),
+        ),
+      );
+
+      final allEntries = [...twseEntries, ...tpexEntries];
+      if (allEntries.isEmpty) return 0;
+
+      await _db.insertInstitutionalData(allEntries);
+      return allEntries.length;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
+    } catch (e) {
+      throw DatabaseException(
+        'Failed to backfill institutional for ${DateContext.formatYmd(date)}',
+        e,
+      );
+    }
+  }
+
   /// 清除所有法人資料
   ///
   /// 用於單位修正後強制重新同步，避免新舊資料單位混用

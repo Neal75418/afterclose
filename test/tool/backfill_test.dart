@@ -110,6 +110,13 @@ void main() {
         targetSymbols: any(named: 'targetSymbols'),
       ),
     ).thenAnswer((_) async => 0);
+    // Default: institutional batch backfill 預設 no-op（每天 0 rows）。
+    when(
+      () => institutionalRepo.backfillInstitutionalByDate(
+        date: any(named: 'date'),
+        targetSymbols: any(named: 'targetSymbols'),
+      ),
+    ).thenAnswer((_) async => 0);
   });
 
   BackfillConfig makeConfig({
@@ -175,10 +182,16 @@ void main() {
       final backfiller = makeBackfiller(makeConfig());
       final result = await backfiller.run();
 
-      // Per-symbol: 100 (prices) + 100 (inst) + 24 (rev) + 8 (fin) + 500 (val)
-      //           = 732
-      // 3 symbols: 732 * 3 = 2196
-      expect(result.totalRows, 732 * 3);
+      // Per-symbol phases × 3 symbols：
+      //   prices:twse  100/symbol × 3 = 300
+      //   revenue       24/symbol × 3 = 72
+      //   financial      8/symbol × 3 = 24
+      //   valuation    500/symbol × 3 = 1500
+      // Per-day batch phases (預設 stub 回 0 rows):
+      //   prices:tpex   0 (no TPEx symbols)
+      //   institutional 0 (default stub)
+      // Total: 300 + 72 + 24 + 1500 = 1896
+      expect(result.totalRows, 1896);
       expect(result.hasFailures, isFalse);
     });
 
@@ -497,6 +510,89 @@ void main() {
           () => priceRepo.backfillTpexPricesByDate(
             date: any(named: 'date'),
             targetSymbols: any(named: 'targetSymbols'),
+          ),
+        );
+      },
+    );
+
+    test('institutional phase goes to backfillInstitutionalByDate '
+        '(not syncInstitutionalData)', () async {
+      // 每天回傳 5 筆，確認 batch path 是真實被呼叫且 result.totalRows 來自它
+      when(
+        () => institutionalRepo.backfillInstitutionalByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      ).thenAnswer((_) async => 5);
+
+      final backfiller = makeBackfiller(makeConfig(symbols: const ['2330']));
+      final result = await backfiller.run();
+
+      // 確認 institutional phase 出現且來自 batch path
+      final instPhase = result.phases.firstWhere(
+        (p) => p.phase == 'institutional',
+      );
+      expect(
+        instPhase.rowsInserted,
+        greaterThan(0),
+        reason: 'batch path 真的有寫入',
+      );
+
+      // 核心保證：syncInstitutionalData (per-symbol FinMind path) 不該被呼叫
+      verifyNever(
+        () => institutionalRepo.syncInstitutionalData(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      );
+
+      // targetSymbols 應包含我們指定的 symbol
+      final captured = verify(
+        () => institutionalRepo.backfillInstitutionalByDate(
+          date: any(named: 'date'),
+          targetSymbols: captureAny(named: 'targetSymbols'),
+        ),
+      ).captured;
+      expect(captured, isNotEmpty);
+      final targets = captured.first as Set<String>;
+      expect(targets, contains('2330'));
+    });
+
+    test(
+      'institutional batch RateLimitException aborts backfill (no fundamental phases run)',
+      () async {
+        when(
+          () => institutionalRepo.backfillInstitutionalByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenThrow(const RateLimitException());
+
+        final backfiller = makeBackfiller(makeConfig());
+
+        await expectLater(backfiller.run(), throwsA(isA<RateLimitException>()));
+
+        // institutional 死掉後 revenue / financial / valuation 都不該跑
+        verifyNever(
+          () => fundamentalRepo.syncMonthlyRevenue(
+            symbol: any(named: 'symbol'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+        verifyNever(
+          () => fundamentalRepo.syncFinancialStatements(
+            symbol: any(named: 'symbol'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+        verifyNever(
+          () => fundamentalRepo.syncValuationData(
+            symbol: any(named: 'symbol'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
           ),
         );
       },

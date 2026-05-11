@@ -214,6 +214,205 @@ void main() {
   });
 
   // ==========================================
+  // backfillInstitutionalByDate — Phase 2: TWSE T86 + TPEx batch
+  //
+  // 確保正確性的核心測試：
+  // - 不打 FinMind（Phase 2 的核心優勢）
+  // - 從 TWSE + TPEx batch endpoint 拿資料，按 targetSymbols 過濾後寫 DB
+  // - safeAwait 容錯：任一 source 失敗不阻斷另一個
+  // - RateLimit / Network 必須 rethrow 讓 backfill abort
+  // ==========================================
+  group('backfillInstitutionalByDate', () {
+    test('fetches batch from TWSE+TPEx (no FinMind call), filters to '
+        'targetSymbols, inserts only matching rows', () async {
+      final date = DateTime(2026, 5, 1);
+      when(() => mockTwseClient.getAllInstitutionalData(date: date)).thenAnswer(
+        (_) async => [
+          TwseInstitutional(
+            date: date,
+            code: '2330',
+            name: '台積電',
+            foreignBuy: 0,
+            foreignSell: 0,
+            foreignNet: 1000,
+            investmentTrustBuy: 0,
+            investmentTrustSell: 0,
+            investmentTrustNet: 200,
+            dealerBuy: 0,
+            dealerSell: 0,
+            dealerNet: 0,
+            totalNet: 1200,
+          ),
+          // 1234 不在 targetSymbols 內 → 應被過濾
+          TwseInstitutional(
+            date: date,
+            code: '1234',
+            name: '不關心',
+            foreignBuy: 0,
+            foreignSell: 0,
+            foreignNet: 500,
+            investmentTrustBuy: 0,
+            investmentTrustSell: 0,
+            investmentTrustNet: 0,
+            dealerBuy: 0,
+            dealerSell: 0,
+            dealerNet: 0,
+            totalNet: 500,
+          ),
+        ],
+      );
+      when(() => mockTpexClient.getAllInstitutionalData(date: date)).thenAnswer(
+        (_) async => [
+          TpexInstitutional(
+            date: date,
+            code: '6488',
+            name: '環球晶',
+            foreignBuy: 0,
+            foreignSell: 0,
+            foreignNet: 300,
+            investmentTrustBuy: 0,
+            investmentTrustSell: 0,
+            investmentTrustNet: 0,
+            dealerBuy: 0,
+            dealerSell: 0,
+            dealerNet: 0,
+            totalNet: 300,
+          ),
+        ],
+      );
+      when(
+        () => mockDb.insertInstitutionalData(any()),
+      ).thenAnswer((_) async {});
+
+      final inserted = await repo.backfillInstitutionalByDate(
+        date: date,
+        targetSymbols: {'2330', '6488'},
+      );
+
+      // 沒打 FinMind — 這是這次改動最關鍵的不變式
+      verifyNever(
+        () => mockClient.getInstitutionalData(
+          stockId: any(named: 'stockId'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      );
+
+      // 兩個 batch endpoint 各被呼叫一次
+      verify(
+        () => mockTwseClient.getAllInstitutionalData(date: date),
+      ).called(1);
+      verify(
+        () => mockTpexClient.getAllInstitutionalData(date: date),
+      ).called(1);
+
+      // 確認過濾：插入 2330 + 6488，1234 被排除
+      final captured =
+          verify(
+                () => mockDb.insertInstitutionalData(captureAny()),
+              ).captured.single
+              as List<DailyInstitutionalCompanion>;
+      final symbols = captured.map((e) => e.symbol.value).toSet();
+      expect(symbols, equals({'2330', '6488'}));
+      expect(inserted, equals(2));
+    });
+
+    test('skips rows with all-zero net values (no signal)', () async {
+      final date = DateTime(2026, 5, 1);
+      when(() => mockTwseClient.getAllInstitutionalData(date: date)).thenAnswer(
+        (_) async => [
+          // 2330 全 0 → 視為無訊號，filter 掉
+          TwseInstitutional(
+            date: date,
+            code: '2330',
+            name: '台積電',
+            foreignBuy: 0,
+            foreignSell: 0,
+            foreignNet: 0,
+            investmentTrustBuy: 0,
+            investmentTrustSell: 0,
+            investmentTrustNet: 0,
+            dealerBuy: 0,
+            dealerSell: 0,
+            dealerNet: 0,
+            totalNet: 0,
+          ),
+        ],
+      );
+      when(
+        () => mockTpexClient.getAllInstitutionalData(date: date),
+      ).thenAnswer((_) async => []);
+
+      final inserted = await repo.backfillInstitutionalByDate(
+        date: date,
+        targetSymbols: {'2330'},
+      );
+
+      expect(inserted, equals(0));
+      verifyNever(() => mockDb.insertInstitutionalData(any()));
+    });
+
+    test('TWSE failure does not block TPEx (safeAwait isolation)', () async {
+      final date = DateTime(2026, 5, 1);
+      // 用 thenAnswer + async throw 才會在 Future 內部 throw（safeAwait
+      // 才接得到）。thenThrow 是同步 throw，會直接從 mockClient call site
+      // 拋出來，繞過 safeAwait 的容錯。
+      when(
+        () => mockTwseClient.getAllInstitutionalData(date: date),
+      ).thenAnswer((_) async => throw Exception('TWSE temporarily down'));
+      when(() => mockTpexClient.getAllInstitutionalData(date: date)).thenAnswer(
+        (_) async => [
+          TpexInstitutional(
+            date: date,
+            code: '6488',
+            name: '環球晶',
+            foreignBuy: 0,
+            foreignSell: 0,
+            foreignNet: 300,
+            investmentTrustBuy: 0,
+            investmentTrustSell: 0,
+            investmentTrustNet: 0,
+            dealerBuy: 0,
+            dealerSell: 0,
+            dealerNet: 0,
+            totalNet: 300,
+          ),
+        ],
+      );
+      when(
+        () => mockDb.insertInstitutionalData(any()),
+      ).thenAnswer((_) async {});
+
+      final inserted = await repo.backfillInstitutionalByDate(
+        date: date,
+        targetSymbols: {'6488'},
+      );
+
+      // TPEx 部分仍寫入
+      expect(inserted, equals(1));
+    });
+
+    test('rethrows RateLimitException without wrapping', () async {
+      final date = DateTime(2026, 5, 1);
+      // safeAwait 不攔 RateLimitException → 它會傳到 method 級別的 catch
+      when(
+        () => mockTwseClient.getAllInstitutionalData(date: date),
+      ).thenThrow(const RateLimitException());
+      when(
+        () => mockTpexClient.getAllInstitutionalData(date: date),
+      ).thenAnswer((_) async => []);
+
+      await expectLater(
+        () => repo.backfillInstitutionalByDate(
+          date: date,
+          targetSymbols: {'2330'},
+        ),
+        throwsA(isA<RateLimitException>()),
+      );
+    });
+  });
+
+  // ==========================================
   // clearAllData
   // ==========================================
   group('clearAllData', () {

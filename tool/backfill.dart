@@ -243,15 +243,16 @@ class Backfiller {
         ),
       );
     }
+    // Phase 2: institutional — 改走 TWSE T86 + TPEx daily batch
+    //
+    // 與 prices:tpex 同 pattern：per-day 一次拿全市場兩個 source（TWSE
+    // /rwd/zh/fund/T86 + TPEx OpenAPI），按 targetSymbols 過濾後寫入。
+    // 取代舊的 per-symbol FinMind 路徑（吃 600/day 免費額度）。
     phases.add(
-      await _runPhase(
-        name: 'institutional',
-        symbols: symbols,
-        syncOne: (symbol) => deps.institutionalRepo.syncInstitutionalData(
-          symbol,
-          startDate: startDate,
-          endDate: endDate,
-        ),
+      await _backfillInstitutionalBatch(
+        targetSymbols: symbols,
+        startDate: startDate,
+        endDate: endDate,
       ),
     );
     phases.add(
@@ -408,6 +409,95 @@ class Backfiller {
     return _MarketPartition(twse: twse, tpex: tpex);
   }
 
+  /// 法人資料 batch backfill（TWSE T86 + TPEx OpenAPI 一起）
+  ///
+  /// 對日期範圍內每個交易日呼叫
+  /// [IInstitutionalRepository.backfillInstitutionalByDate]，每天 1 次
+  /// 兩個 source 並行拿全市場資料，過濾後寫入 DB。
+  ///
+  /// 跟 [_runPhase] 同樣的 rate limit / network exception abort 政策；
+  /// 其他例外記入 `failedSymbols`（以日期字串標記）繼續。
+  Future<PhaseResult> _backfillInstitutionalBatch({
+    required List<String> targetSymbols,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    _log('');
+    _log(
+      '▶️  Phase [institutional] — ${targetSymbols.length} symbols × per-day '
+      'TWSE+TPEx batch',
+    );
+    final phaseStart = DateTime.now();
+    final targetSet = targetSymbols.toSet();
+    final failedDays = <String>[];
+    var rowsInserted = 0;
+    var daysProcessed = 0;
+    var daysSucceeded = 0;
+    var lastLogAt = DateTime.now();
+
+    final totalCalendarDays = endDate.difference(startDate).inDays;
+
+    var current = startDate;
+    while (!current.isAfter(endDate)) {
+      if (!TaiwanCalendar.isTradingDay(current)) {
+        current = current.add(const Duration(days: 1));
+        continue;
+      }
+
+      final dayStr = _formatDate(current);
+      try {
+        final count = await deps.institutionalRepo.backfillInstitutionalByDate(
+          date: current,
+          targetSymbols: targetSet,
+        );
+        rowsInserted += count;
+        daysSucceeded++;
+      } on RateLimitException catch (e) {
+        _log('⛔ Phase [institutional] $dayStr 觸發 API rate limit — abort: $e');
+        rethrow;
+      } on NetworkException catch (e) {
+        _log('⛔ Phase [institutional] $dayStr 網路錯誤 — abort: $e');
+        rethrow;
+      } catch (e) {
+        failedDays.add(dayStr);
+        _log('  ⚠️  $dayStr failed: $e');
+      }
+      daysProcessed++;
+
+      final now = DateTime.now();
+      if (now.difference(lastLogAt).inSeconds >= 10 ||
+          current.isAtSameMomentAs(endDate)) {
+        final daysCovered = current.difference(startDate).inDays;
+        final pct = totalCalendarDays == 0
+            ? '0.0'
+            : (daysCovered / totalCalendarDays * 100).toStringAsFixed(1);
+        final elapsed = now.difference(phaseStart);
+        _log(
+          '  📊 [institutional] $daysProcessed trading days '
+          '(through $dayStr, $pct% of calendar), '
+          'elapsed ${_formatDuration(elapsed)}, '
+          'rows=$rowsInserted, failed=${failedDays.length}',
+        );
+        lastLogAt = now;
+      }
+
+      current = current.add(const Duration(days: 1));
+    }
+
+    final duration = DateTime.now().difference(phaseStart);
+    return PhaseResult(
+      phase: 'institutional',
+      // Per-day 模式：用 daysProcessed 填 symbolsProcessed（同
+      // _backfillTpexPricesBatch 慣例）
+      symbolsProcessed: daysProcessed,
+      symbolsSucceeded: daysSucceeded,
+      rowsInserted: rowsInserted,
+      // failedSymbols 此處為失敗的日期字串
+      failedSymbols: failedDays,
+      duration: duration,
+    );
+  }
+
   /// TPEx 上櫃股票價格 batch backfill
   ///
   /// 對日期範圍內每個交易日呼叫 [IPriceRepository.backfillTpexPricesByDate]，
@@ -503,7 +593,7 @@ class Backfiller {
     _log('  Symbols: ${symbols.length}');
     _log(
       '  Phases: prices:twse, prices:tpex (per-day batch), '
-      'institutional, revenue, financial, valuation',
+      'institutional (per-day batch), revenue, financial, valuation',
     );
     _log('  Estimated API calls:');
     _log(
