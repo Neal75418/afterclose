@@ -102,8 +102,14 @@ void main() {
     when(
       () => db.getStocksBatch(any()),
     ).thenAnswer((_) async => <String, StockMasterEntry>{});
-    // Default: TPEx batch backfill 預設 no-op（每天 0 rows）。個別測試
-    // 要驗 TPEx path 時自行 override。
+    // Default: TWSE / TPEx batch backfill 預設 no-op（每天 0 rows）。
+    // 個別測試要驗 batch path 時自行 override。
+    when(
+      () => priceRepo.backfillTwsePricesByDate(
+        date: any(named: 'date'),
+        targetSymbols: any(named: 'targetSymbols'),
+      ),
+    ).thenAnswer((_) async => 0);
     when(
       () => priceRepo.backfillTpexPricesByDate(
         date: any(named: 'date'),
@@ -142,9 +148,8 @@ void main() {
       final backfiller = makeBackfiller(makeConfig());
       final result = await backfiller.run();
 
-      // prices phase 在 Stage 1 TPEx-batch refactor 後拆成 prices:twse 與
-      // prices:tpex 兩條。預設 stockMap 為空 → 所有 symbol 走 TWSE 路徑 →
-      // prices:tpex phase 不會被加（tpex 列表為空），故仍是 5 phases。
+      // Phase 1.5 後 prices:twse 也改 per-day batch（與 prices:tpex 對稱）。
+      // 預設 stockMap 為空 → 全部 symbol 走 TWSE 路徑 → prices:tpex 不發。
       expect(result.phases.length, 5);
       expect(result.phases.map((p) => p.phase).toList(), [
         'prices:twse',
@@ -154,24 +159,21 @@ void main() {
         'valuation',
       ]);
 
-      // 每個 phase 應該對 3 檔 symbol 各呼叫一次
-      verify(
-        () => priceRepo.syncStockPrices(
-          '2330',
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
+      // prices:twse batch 應該以包含全部 3 個 symbol 的 targetSymbols 被呼叫
+      final captured = verify(
+        () => priceRepo.backfillTwsePricesByDate(
+          date: any(named: 'date'),
+          targetSymbols: captureAny(named: 'targetSymbols'),
         ),
-      ).called(1);
+      ).captured;
+      expect(captured, isNotEmpty);
+      final targets = captured.first as Set<String>;
+      expect(targets, containsAll(['2330', '2317', '2454']));
+
+      // 個別 per-symbol phase 仍然每個 symbol 呼叫一次（revenue 範例）
       verify(
-        () => priceRepo.syncStockPrices(
-          '2317',
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).called(1);
-      verify(
-        () => priceRepo.syncStockPrices(
-          '2454',
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: '2330',
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
@@ -183,32 +185,35 @@ void main() {
       final result = await backfiller.run();
 
       // Per-symbol phases × 3 symbols：
-      //   prices:twse  100/symbol × 3 = 300
       //   revenue       24/symbol × 3 = 72
       //   financial      8/symbol × 3 = 24
       //   valuation    500/symbol × 3 = 1500
-      // Per-day batch phases (預設 stub 回 0 rows):
+      // Per-day batch phases (預設 stub 回 0 rows)：
+      //   prices:twse   0 (Phase 1.5 後改 batch)
       //   prices:tpex   0 (no TPEx symbols)
-      //   institutional 0 (default stub)
-      // Total: 300 + 72 + 24 + 1500 = 1896
-      expect(result.totalRows, 1896);
+      //   institutional 0 (Phase 2 改 batch)
+      // Total: 72 + 24 + 1500 = 1596
+      expect(result.totalRows, 1596);
       expect(result.hasFailures, isFalse);
     });
 
     test('passes consistent startDate/endDate across all phases', () async {
+      // 經 Phase 1.5 後 prices 改 per-day batch，不再傳 startDate/endDate
+      // 給 priceRepo。改觀察 fundamental phase（仍 per-symbol）的 startDate/
+      // endDate 區間是否為 2 年。
       DateTime? capturedStart;
       DateTime? capturedEnd;
 
       when(
-        () => priceRepo.syncStockPrices(
-          any(),
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: any(named: 'symbol'),
           startDate: captureAny(named: 'startDate'),
           endDate: captureAny(named: 'endDate'),
         ),
       ).thenAnswer((invocation) async {
         capturedStart = invocation.namedArguments[#startDate] as DateTime;
         capturedEnd = invocation.namedArguments[#endDate] as DateTime;
-        return 100;
+        return 24;
       });
 
       final backfiller = makeBackfiller(makeConfig(symbols: const ['2330']));
@@ -223,42 +228,47 @@ void main() {
   });
 
   group('Backfiller error isolation', () {
-    test('individual symbol failure does not abort the phase', () async {
-      when(
-        () => priceRepo.syncStockPrices(
-          '2317',
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).thenThrow(Exception('API 500'));
+    test(
+      'individual symbol failure does not abort the phase (per-symbol phase)',
+      () async {
+        // Phase 1.5 後 prices 是 batch，per-symbol 錯誤隔離邏輯只剩
+        // fundamental phases (revenue/financial/valuation)。用 revenue 驗。
+        when(
+          () => fundamentalRepo.syncMonthlyRevenue(
+            symbol: '2317',
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).thenThrow(Exception('API 500'));
 
-      final backfiller = makeBackfiller(makeConfig());
-      final result = await backfiller.run();
+        final backfiller = makeBackfiller(makeConfig());
+        final result = await backfiller.run();
 
-      final pricePhase = result.phases.firstWhere(
-        (p) => p.phase == 'prices:twse',
-      );
-      expect(pricePhase.symbolsProcessed, 3);
-      expect(pricePhase.symbolsSucceeded, 2);
-      expect(pricePhase.failedSymbols, ['2317']);
+        final revPhase = result.phases.firstWhere((p) => p.phase == 'revenue');
+        expect(revPhase.symbolsProcessed, 3);
+        expect(revPhase.symbolsSucceeded, 2);
+        expect(revPhase.failedSymbols, ['2317']);
 
-      // 後續 phase 仍然執行
-      expect(result.phases.any((p) => p.phase == 'valuation'), isTrue);
-      verify(
-        () => fundamentalRepo.syncValuationData(
-          symbol: '2330',
-          startDate: any(named: 'startDate'),
-          endDate: any(named: 'endDate'),
-        ),
-      ).called(1);
-    });
+        // 後續 phase 仍然執行
+        expect(result.phases.any((p) => p.phase == 'valuation'), isTrue);
+        verify(
+          () => fundamentalRepo.syncValuationData(
+            symbol: '2330',
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'RateLimitException aborts immediately without running next phase',
       () async {
+        // 用 revenue (per-symbol phase) 模擬 RateLimit。financial / valuation
+        // 不應被執行。
         when(
-          () => priceRepo.syncStockPrices(
-            '2317',
+          () => fundamentalRepo.syncMonthlyRevenue(
+            symbol: '2317',
             startDate: any(named: 'startDate'),
             endDate: any(named: 'endDate'),
           ),
@@ -268,10 +278,9 @@ void main() {
 
         await expectLater(backfiller.run(), throwsA(isA<RateLimitException>()));
 
-        // Institutional phase 不應被呼叫
         verifyNever(
-          () => institutionalRepo.syncInstitutionalData(
-            any(),
+          () => fundamentalRepo.syncFinancialStatements(
+            symbol: any(named: 'symbol'),
             startDate: any(named: 'startDate'),
             endDate: any(named: 'endDate'),
           ),
@@ -281,8 +290,8 @@ void main() {
 
     test('NetworkException aborts immediately', () async {
       when(
-        () => priceRepo.syncStockPrices(
-          any(),
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: any(named: 'symbol'),
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
@@ -292,7 +301,7 @@ void main() {
 
       await expectLater(backfiller.run(), throwsA(isA<NetworkException>()));
       verifyNever(
-        () => fundamentalRepo.syncMonthlyRevenue(
+        () => fundamentalRepo.syncFinancialStatements(
           symbol: any(named: 'symbol'),
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
@@ -339,24 +348,26 @@ void main() {
       );
       await backfiller.run();
 
-      // 只呼叫 whitelist 裡的 symbol
+      // Phase 1.5 後 prices 走 batch，只能透過 per-symbol 的 fundamental
+      // phase 驗證 symbol 範圍。revenue 應該被精準呼叫兩次（2330, 2317），
+      // 不會碰到 2454。
       verify(
-        () => priceRepo.syncStockPrices(
-          '2330',
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: '2330',
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
       ).called(1);
       verify(
-        () => priceRepo.syncStockPrices(
-          '2317',
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: '2317',
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
       ).called(1);
       verifyNever(
-        () => priceRepo.syncStockPrices(
-          '2454',
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: '2454',
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
@@ -384,9 +395,10 @@ void main() {
       await backfiller.run();
 
       verify(() => stockRepo.getAllStocks()).called(1);
+      // 透過 revenue（per-symbol phase）驗證 fallback symbol 真的進到 pipeline
       verify(
-        () => priceRepo.syncStockPrices(
-          '9999',
+        () => fundamentalRepo.syncMonthlyRevenue(
+          symbol: '9999',
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
         ),
@@ -401,6 +413,84 @@ void main() {
   // TPEx 不再呼叫 syncStockPrices（per-symbol FinMind 路徑）。
   // ============================================================
   group('Backfiller TPEx batch path', () {
+    test(
+      'TWSE symbols go to backfillTwsePricesByDate batch (not syncStockPrices)',
+      () async {
+        // Phase 1.5 確保上市股票也走 per-day batch，不再 hit TWSE
+        // per-symbol IP rate limit。
+        when(
+          () => priceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenAnswer((_) async => 7);
+
+        final backfiller = makeBackfiller(makeConfig(symbols: const ['2330']));
+        final result = await backfiller.run();
+
+        final pricePhase = result.phases.firstWhere(
+          (p) => p.phase == 'prices:twse',
+        );
+        expect(
+          pricePhase.rowsInserted,
+          greaterThan(0),
+          reason: 'batch path 真的有寫入',
+        );
+
+        // 核心保證：syncStockPrices 不再被 backfill 呼叫（FinMind / TWSE 月度
+        // 兩條 per-symbol rate-limited 路徑都被繞開）
+        verifyNever(
+          () => priceRepo.syncStockPrices(
+            any(),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+
+        // targetSymbols 包含我們指定的 symbol
+        final captured = verify(
+          () => priceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: captureAny(named: 'targetSymbols'),
+          ),
+        ).captured;
+        expect(captured, isNotEmpty);
+        final targets = captured.first as Set<String>;
+        expect(targets, contains('2330'));
+      },
+    );
+
+    test(
+      'TWSE batch path RateLimitException aborts backfill (no institutional phase runs)',
+      () async {
+        when(
+          () => priceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenThrow(const RateLimitException());
+
+        final backfiller = makeBackfiller(makeConfig(symbols: const ['2330']));
+
+        await expectLater(backfiller.run(), throwsA(isA<RateLimitException>()));
+
+        // institutional / fundamental phases 都不該跑
+        verifyNever(
+          () => institutionalRepo.backfillInstitutionalByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        );
+        verifyNever(
+          () => fundamentalRepo.syncMonthlyRevenue(
+            symbol: any(named: 'symbol'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+      },
+    );
+
     test(
       'TPEx symbols go to backfillTpexPricesByDate (not syncStockPrices)',
       () async {
@@ -443,20 +533,19 @@ void main() {
         expect(phaseNames, contains('prices:twse'));
         expect(phaseNames, contains('prices:tpex'));
 
-        // 2330 走 TWSE per-symbol
+        // Phase 1.5 後 2330 不再走 syncStockPrices，而是 batch 路徑
         verify(
-          () => priceRepo.syncStockPrices(
-            '2330',
-            startDate: any(named: 'startDate'),
-            endDate: any(named: 'endDate'),
+          () => priceRepo.backfillTwsePricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
           ),
-        ).called(1);
+        ).called(greaterThan(0));
 
-        // 4488 不該走 syncStockPrices（這是新路徑的核心保證 — 不再吃
-        // FinMind 額度）
+        // 任何 symbol 都不該走 syncStockPrices — 完全脫離 per-symbol
+        // rate-limited 路徑（FinMind / TWSE 月度兩個都繞開）
         verifyNever(
           () => priceRepo.syncStockPrices(
-            '4488',
+            any(),
             startDate: any(named: 'startDate'),
             endDate: any(named: 'endDate'),
           ),

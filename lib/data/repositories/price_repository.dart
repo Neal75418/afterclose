@@ -197,6 +197,45 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
+  /// 用 TWSE STOCK_DAY_ALL batch endpoint 回補單一交易日**所有**上市股票價格
+  ///
+  /// 詳細語意見 [IPriceRepository.backfillTwsePricesByDate]。
+  ///
+  /// 實作走 [TwsePriceSource.fetchAllDailyPrices]（TWSE STOCK_DAY_ALL，
+  /// 支援歷史 date 參數），接著 [TwsePriceSource.processDailyPrices] 轉成
+  /// DB Companion 並依 [targetSymbols] 過濾，最後一次 batch insert。
+  /// Pattern 與 [backfillTpexPricesByDate] 對稱。
+  @override
+  Future<int> backfillTwsePricesByDate({
+    required DateTime date,
+    required Set<String> targetSymbols,
+  }) async {
+    try {
+      final prices = await _twseSource.fetchAllDailyPrices(date: date);
+      if (prices.isEmpty) return 0;
+
+      final processed = _twseSource.processDailyPrices(prices);
+
+      final filtered = processed.priceEntries
+          .where((entry) => targetSymbols.contains(entry.symbol.value))
+          .toList();
+
+      if (filtered.isEmpty) return 0;
+
+      await _db.insertPrices(filtered);
+      return filtered.length;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
+    } catch (e) {
+      throw DatabaseException(
+        'Failed to backfill TWSE prices for ${DateContext.formatYmd(date)}',
+        e,
+      );
+    }
+  }
+
   /// 用 TPEx OpenAPI batch endpoint 回補單一交易日**所有**上櫃股票價格
   ///
   /// 詳細語意見 [IPriceRepository.backfillTpexPricesByDate]。

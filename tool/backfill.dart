@@ -214,23 +214,23 @@ class Backfiller {
     final startDate = endDate.subtract(Duration(days: config.years * 365));
     _log('📅 Date range: ${_formatDate(startDate)} → ${_formatDate(endDate)}');
 
-    // Phase 1: prices — 拆 TWSE 上市 / TPEx 上櫃兩路
+    // Phase 1: prices — TWSE 上市 / TPEx 上櫃皆走 per-day batch
     //
-    // TWSE 上市股票走既有 per-symbol path（TwsePriceSource 內部用 TWSE 月度
-    // API，免費、無額度限制）。TPEx 上櫃股票改走新的 per-day batch path
-    // （TPEx OpenAPI 一次回該日所有股票），避免舊路徑 per-symbol FinMind
-    // 吃光每日 600 calls 免費額度的問題。
+    // TWSE 上市股票走 STOCK_DAY_ALL?date=...（一次回該日全部上市股票）。
+    // TPEx 上櫃股票走 TPEx OpenAPI（一次回該日全部上櫃股票）。
+    // 避開的問題：
+    //   - 舊 TWSE 月度 per-symbol path 撐 5 分鐘就觸發 TWSE IP-based
+    //     rate limit "Redirect loop detected"（1400 symbols × 24 months
+    //     ≈ 33,000 calls 太集中）
+    //   - 舊 FinMind per-symbol path 吃 600/day 免費額度
+    // batch path 後兩個市場各約 500 calls / 2 年，永久脫離兩種 rate limit。
     final partitioned = await _partitionSymbolsByMarket(symbols);
     if (partitioned.twse.isNotEmpty) {
       phases.add(
-        await _runPhase(
-          name: 'prices:twse',
-          symbols: partitioned.twse,
-          syncOne: (symbol) => deps.priceRepo.syncStockPrices(
-            symbol,
-            startDate: startDate,
-            endDate: endDate,
-          ),
+        await _backfillTwsePricesBatch(
+          twseSymbols: partitioned.twse,
+          startDate: startDate,
+          endDate: endDate,
         ),
       );
     }
@@ -489,6 +489,90 @@ class Backfiller {
       phase: 'institutional',
       // Per-day 模式：用 daysProcessed 填 symbolsProcessed（同
       // _backfillTpexPricesBatch 慣例）
+      symbolsProcessed: daysProcessed,
+      symbolsSucceeded: daysSucceeded,
+      rowsInserted: rowsInserted,
+      // failedSymbols 此處為失敗的日期字串
+      failedSymbols: failedDays,
+      duration: duration,
+    );
+  }
+
+  /// TWSE 上市股票價格 batch backfill
+  ///
+  /// 對日期範圍內每個交易日呼叫 [IPriceRepository.backfillTwsePricesByDate]，
+  /// 每天 1 次 TWSE STOCK_DAY_ALL?date=... 拿全市場上市股票價格，過濾後
+  /// 寫入 DB。Pattern 與 [_backfillTpexPricesBatch] 對稱。
+  Future<PhaseResult> _backfillTwsePricesBatch({
+    required List<String> twseSymbols,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    _log('');
+    _log(
+      '▶️  Phase [prices:twse] — ${twseSymbols.length} symbols × per-day batch',
+    );
+    final phaseStart = DateTime.now();
+    final targetSet = twseSymbols.toSet();
+    final failedDays = <String>[];
+    var rowsInserted = 0;
+    var daysProcessed = 0;
+    var daysSucceeded = 0;
+    var lastLogAt = DateTime.now();
+
+    final totalCalendarDays = endDate.difference(startDate).inDays;
+
+    var current = startDate;
+    while (!current.isAfter(endDate)) {
+      if (!TaiwanCalendar.isTradingDay(current)) {
+        current = current.add(const Duration(days: 1));
+        continue;
+      }
+
+      final dayStr = _formatDate(current);
+      try {
+        final count = await deps.priceRepo.backfillTwsePricesByDate(
+          date: current,
+          targetSymbols: targetSet,
+        );
+        rowsInserted += count;
+        daysSucceeded++;
+      } on RateLimitException catch (e) {
+        _log('⛔ Phase [prices:twse] $dayStr 觸發 API rate limit — abort: $e');
+        rethrow;
+      } on NetworkException catch (e) {
+        _log('⛔ Phase [prices:twse] $dayStr 網路錯誤 — abort: $e');
+        rethrow;
+      } catch (e) {
+        failedDays.add(dayStr);
+        _log('  ⚠️  $dayStr failed: $e');
+      }
+      daysProcessed++;
+
+      final now = DateTime.now();
+      if (now.difference(lastLogAt).inSeconds >= 10 ||
+          current.isAtSameMomentAs(endDate)) {
+        final daysCovered = current.difference(startDate).inDays;
+        final pct = totalCalendarDays == 0
+            ? '0.0'
+            : (daysCovered / totalCalendarDays * 100).toStringAsFixed(1);
+        final elapsed = now.difference(phaseStart);
+        _log(
+          '  📊 [prices:twse] $daysProcessed trading days '
+          '(through $dayStr, $pct% of calendar), '
+          'elapsed ${_formatDuration(elapsed)}, '
+          'rows=$rowsInserted, failed=${failedDays.length}',
+        );
+        lastLogAt = now;
+      }
+
+      current = current.add(const Duration(days: 1));
+    }
+
+    final duration = DateTime.now().difference(phaseStart);
+    return PhaseResult(
+      phase: 'prices:twse',
+      // Per-day 模式：用 daysProcessed 填 symbolsProcessed
       symbolsProcessed: daysProcessed,
       symbolsSucceeded: daysSucceeded,
       rowsInserted: rowsInserted,

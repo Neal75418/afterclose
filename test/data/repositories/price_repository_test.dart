@@ -370,6 +370,179 @@ void main() {
     });
 
     // ============================================================
+    // backfillTwsePricesByDate — TWSE STOCK_DAY_ALL batch backfill
+    //
+    // 確保正確性的關鍵測試（pattern mirrors backfillTpexPricesByDate）：
+    // - TWSE STOCK_DAY_ALL endpoint 被呼叫，且傳入正確的 date 參數
+    // - 按 targetSymbols 過濾後只寫匹配的 row
+    // - RateLimit / Network exception 必須 rethrow（讓 backfill abort）
+    // ============================================================
+    group('backfillTwsePricesByDate', () {
+      test('fetches batch from TwseClient with date param, filters to '
+          'targetSymbols, inserts only matching rows', () async {
+        final testDate = DateTime(2026, 5, 1);
+        final batchResponse = <TwseDailyPrice>[
+          TwseDailyPrice(
+            date: testDate,
+            code: '2330',
+            name: '台積電',
+            open: 500.0,
+            high: 510.0,
+            low: 495.0,
+            close: 505.0,
+            volume: 30000,
+            change: 5.0,
+          ),
+          TwseDailyPrice(
+            date: testDate,
+            code: '2317',
+            name: '鴻海',
+            open: 100.0,
+            high: 102.0,
+            low: 99.0,
+            close: 101.0,
+            volume: 25000,
+            change: 1.0,
+          ),
+          TwseDailyPrice(
+            date: testDate,
+            code: '3296',
+            name: '勝德',
+            open: 30.0,
+            high: 31.0,
+            low: 29.5,
+            close: 30.5,
+            volume: 1000,
+            change: 0.5,
+          ),
+        ];
+
+        when(
+          () => mockTwseClient.getAllDailyPrices(date: testDate),
+        ).thenAnswer((_) async => batchResponse);
+        when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
+
+        final inserted = await repository.backfillTwsePricesByDate(
+          date: testDate,
+          targetSymbols: {'2330', '3296'}, // 2317 should be filtered out
+        );
+
+        // 核心不變式：date 參數真的有傳到 client（不是抓今日預設）
+        verify(
+          () => mockTwseClient.getAllDailyPrices(date: testDate),
+        ).called(1);
+
+        final captured =
+            verify(() => mockDb.insertPrices(captureAny())).captured.single
+                as List<DailyPriceCompanion>;
+        final insertedSymbols = captured.map((e) => e.symbol.value).toSet();
+        expect(insertedSymbols, equals({'2330', '3296'}));
+        expect(insertedSymbols.contains('2317'), isFalse);
+        expect(inserted, equals(2));
+      });
+
+      test('returns 0 when batch response is empty', () async {
+        final testDate = DateTime(2026, 1, 1);
+        when(
+          () => mockTwseClient.getAllDailyPrices(date: testDate),
+        ).thenAnswer((_) async => []);
+
+        final inserted = await repository.backfillTwsePricesByDate(
+          date: testDate,
+          targetSymbols: {'2330'},
+        );
+
+        expect(inserted, equals(0));
+        verifyNever(() => mockDb.insertPrices(any()));
+      });
+
+      test('returns 0 when no batch rows match targetSymbols', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(() => mockTwseClient.getAllDailyPrices(date: testDate)).thenAnswer(
+          (_) async => [
+            TwseDailyPrice(
+              date: testDate,
+              code: '2317',
+              name: '鴻海',
+              open: 100.0,
+              high: 100.0,
+              low: 100.0,
+              close: 100.0,
+              volume: 1.0,
+              change: 0.0,
+            ),
+          ],
+        );
+
+        final inserted = await repository.backfillTwsePricesByDate(
+          date: testDate,
+          targetSymbols: {'9999'},
+        );
+
+        expect(inserted, equals(0));
+        verifyNever(() => mockDb.insertPrices(any()));
+      });
+
+      test('rethrows RateLimitException without wrapping', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(
+          () => mockTwseClient.getAllDailyPrices(date: testDate),
+        ).thenThrow(const RateLimitException());
+
+        await expectLater(
+          () => repository.backfillTwsePricesByDate(
+            date: testDate,
+            targetSymbols: {'2330'},
+          ),
+          throwsA(isA<RateLimitException>()),
+        );
+      });
+
+      test('rethrows NetworkException without wrapping', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(
+          () => mockTwseClient.getAllDailyPrices(date: testDate),
+        ).thenThrow(const NetworkException('connection refused'));
+
+        await expectLater(
+          () => repository.backfillTwsePricesByDate(
+            date: testDate,
+            targetSymbols: {'2330'},
+          ),
+          throwsA(isA<NetworkException>()),
+        );
+      });
+
+      test('wraps generic exception in DatabaseException', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(() => mockTwseClient.getAllDailyPrices(date: testDate)).thenAnswer(
+          (_) async => [
+            TwseDailyPrice(
+              date: testDate,
+              code: '2330',
+              name: 'TSMC',
+              open: 1,
+              high: 1,
+              low: 1,
+              close: 1,
+              volume: 1,
+              change: 0,
+            ),
+          ],
+        );
+        when(() => mockDb.insertPrices(any())).thenThrow(Exception('DB error'));
+
+        await expectLater(
+          () => repository.backfillTwsePricesByDate(
+            date: testDate,
+            targetSymbols: {'2330'},
+          ),
+          throwsA(isA<DatabaseException>()),
+        );
+      });
+    });
+
+    // ============================================================
     // backfillTpexPricesByDate — TPEx OpenAPI batch backfill
     //
     // 確保正確性的關鍵測試：

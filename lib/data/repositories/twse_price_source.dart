@@ -98,9 +98,12 @@ class TwsePriceSource {
         .toList();
   }
 
-  /// 取得全市場上市股票今日價格
-  Future<List<TwseDailyPrice>> fetchAllDailyPrices() {
-    return _client.getAllDailyPrices();
+  /// 取得全市場上市股票價格
+  ///
+  /// [date] 為 null 抓「最新交易日」（TWSE 預設行為）；指定日期則抓該日歷史
+  /// 資料（用於 backfill）。Backward-compat：既有呼叫端不傳 date 行為不變。
+  Future<List<TwseDailyPrice>> fetchAllDailyPrices({DateTime? date}) {
+    return _client.getAllDailyPrices(date: date);
   }
 
   /// 將原始上市股票資料轉換為 DB 格式（價格 + 股票主檔 + 候選股）

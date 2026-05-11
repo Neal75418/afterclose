@@ -37,15 +37,25 @@ class TwseClient {
   /// 使用 TWSE 官方網站 API，更新速度比 Open Data API 快。
   ///
   /// 端點: /rwd/zh/afterTrading/STOCK_DAY_ALL
-  Future<List<TwseDailyPrice>> getAllDailyPrices() {
+  ///
+  /// [date] 為 null 抓「最新交易日」（TWSE 預設行為）；指定日期則加上
+  /// `date=YYYYMMDD` 參數抓該日歷史資料。Cache key 依 date 區分避免互相覆蓋。
+  Future<List<TwseDailyPrice>> getAllDailyPrices({DateTime? date}) {
     return MarketClientMixin.executeRequest(_tag, '全市場價格', () async {
-      const cacheKey = 'dailyPrices';
+      final cacheKey = date != null
+          ? 'dailyPrices:${TwParseUtils.formatDateCompact(date)}'
+          : 'dailyPrices';
       final cached = _cache.get(cacheKey) as List<TwseDailyPrice>?;
       if (cached != null) return cached;
 
+      final queryParams = <String, dynamic>{'response': 'json'};
+      if (date != null) {
+        queryParams['date'] = TwParseUtils.formatDateCompact(date);
+      }
+
       final response = await _dio.get(
         '/rwd/zh/afterTrading/STOCK_DAY_ALL',
-        queryParameters: {'response': 'json'},
+        queryParameters: queryParams,
       );
 
       if (response.statusCode != 200) {
@@ -65,15 +75,17 @@ class TwseClient {
       final rows = MarketClientMixin.validateTwseStat(data, _tag, '全市場價格');
       if (rows == null) return [];
 
+      // 用 response 內標示的日期（可能跟 requested date 不同：例如該日非
+      // 交易日，TWSE 會回最近一個交易日的資料）
       final dateStr = data['date']?.toString() ?? '';
-      final date = TwParseUtils.parseAdDate(dateStr);
+      final responseDate = TwParseUtils.parseAdDate(dateStr);
 
       final result = MarketClientMixin.parseRows(
         rows: rows,
-        parser: (row) => _parseDailyPriceRow(row, date),
+        parser: (row) => _parseDailyPriceRow(row, responseDate),
         tag: _tag,
         operation: '全市場價格',
-        date: date,
+        date: responseDate,
       );
       _cache.put(cacheKey, result);
       return result;

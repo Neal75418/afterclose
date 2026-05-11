@@ -41,6 +41,26 @@ abstract class IPriceRepository {
     bool force = false,
   });
 
+  /// 用 TWSE batch endpoint 回補單一交易日**所有**上市股票價格
+  ///
+  /// 用於 backfill：相較於 [syncStockPrices] 對每檔股票分別呼叫 TWSE 月度
+  /// API（per-symbol × per-month，2 年 backfill 數萬次 calls 會觸發 TWSE
+  /// IP-based rate limit "Redirect loop detected"），本方法走 TWSE
+  /// `STOCK_DAY_ALL` 的 daily batch endpoint，**一次 call 回該日全部上市
+  /// 股票**。完整 2 年 backfill 從約 1400×24 ≈ 33,000 次降到約 500 次，
+  /// 且 TWSE 該 endpoint 也免費沒額度。
+  ///
+  /// 與 [backfillTpexPricesByDate] 採完全對稱 pattern。
+  ///
+  /// 回傳實際寫入的 price row 數。
+  ///
+  /// 例外政策：[RateLimitException] / [NetworkException] rethrow；其他例外
+  /// 包成 [DatabaseException]。
+  Future<int> backfillTwsePricesByDate({
+    required DateTime date,
+    required Set<String> targetSymbols,
+  });
+
   /// 用 TPEx OpenAPI batch endpoint 回補單一交易日**所有**上櫃股票價格
   ///
   /// 用於 backfill：相較於 `syncStockPrices(symbol)` 對每檔股票分別呼叫
