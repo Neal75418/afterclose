@@ -369,6 +369,206 @@ void main() {
       });
     });
 
+    // ============================================================
+    // backfillTpexPricesByDate — TPEx OpenAPI batch backfill
+    //
+    // 確保正確性的關鍵測試：
+    // - 不打 FinMind（會省下大量 API 額度的核心優勢）
+    // - 從 batch endpoint 拿一天所有上櫃股票，按 targetSymbols 過濾後寫 DB
+    // - RateLimit / Network exception 必須 rethrow（讓 backfill abort）
+    // ============================================================
+    group('backfillTpexPricesByDate', () {
+      test('fetches batch from TpexClient (no FinMind call), filters to '
+          'targetSymbols, inserts only matching rows', () async {
+        final testDate = DateTime(2026, 5, 1);
+        final batchResponse = <TpexDailyPrice>[
+          TpexDailyPrice(
+            date: testDate,
+            code: '6488',
+            name: '環球晶',
+            open: 500.0,
+            high: 510.0,
+            low: 495.0,
+            close: 505.0,
+            volume: 12345,
+            change: 5.0,
+            turnover: 0.0,
+          ),
+          TpexDailyPrice(
+            date: testDate,
+            code: '8086',
+            name: '宏捷科',
+            open: 100.0,
+            high: 102.0,
+            low: 99.0,
+            close: 101.0,
+            volume: 6789,
+            change: 1.0,
+            turnover: 0.0,
+          ),
+          TpexDailyPrice(
+            date: testDate,
+            code: '8905',
+            name: '裕國',
+            open: 30.0,
+            high: 31.0,
+            low: 29.5,
+            close: 30.5,
+            volume: 1000,
+            change: 0.5,
+            turnover: 0.0,
+          ),
+        ];
+
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: testDate),
+        ).thenAnswer((_) async => batchResponse);
+        when(() => mockDb.insertPrices(any())).thenAnswer((_) async {});
+
+        final inserted = await repository.backfillTpexPricesByDate(
+          date: testDate,
+          // 只關心 6488 和 8905，8086 應被過濾掉
+          targetSymbols: {'6488', '8905'},
+        );
+
+        // 沒打 FinMind — 這是這次改動最關鍵的不變式
+        verifyNever(
+          () => mockFinMindClient.getDailyPrices(
+            stockId: any(named: 'stockId'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+
+        // batch endpoint 只被呼叫一次
+        verify(
+          () => mockTpexClient.getAllDailyPrices(date: testDate),
+        ).called(1);
+
+        // 確認過濾正確：插入的只有 6488 + 8905
+        final captured =
+            verify(() => mockDb.insertPrices(captureAny())).captured.single
+                as List<DailyPriceCompanion>;
+        final insertedSymbols = captured.map((e) => e.symbol.value).toSet();
+        expect(insertedSymbols, equals({'6488', '8905'}));
+        expect(insertedSymbols.contains('8086'), isFalse);
+        expect(inserted, equals(2));
+      });
+
+      test(
+        'returns 0 when batch response is empty (non-trading day)',
+        () async {
+          final testDate = DateTime(2026, 1, 1); // 假設非交易日
+
+          when(
+            () => mockTpexClient.getAllDailyPrices(date: testDate),
+          ).thenAnswer((_) async => []);
+
+          final inserted = await repository.backfillTpexPricesByDate(
+            date: testDate,
+            targetSymbols: {'6488'},
+          );
+
+          expect(inserted, equals(0));
+          // batch endpoint 仍被呼叫一次（caller 用 TaiwanCalendar 預過濾才是
+          // 最佳實踐，但 repository 不主動 skip non-trading day）
+          verifyNever(() => mockDb.insertPrices(any()));
+        },
+      );
+
+      test(
+        'returns 0 (no insert) when batch has rows but none match targetSymbols',
+        () async {
+          final testDate = DateTime(2026, 5, 1);
+          when(
+            () => mockTpexClient.getAllDailyPrices(date: testDate),
+          ).thenAnswer(
+            (_) async => [
+              TpexDailyPrice(
+                date: testDate,
+                code: '8086',
+                name: '宏捷科',
+                open: 100.0,
+                high: 100.0,
+                low: 100.0,
+                close: 100.0,
+                volume: 1.0,
+                change: 0.0,
+                turnover: 0.0,
+              ),
+            ],
+          );
+
+          final inserted = await repository.backfillTpexPricesByDate(
+            date: testDate,
+            targetSymbols: {'9999'}, // 不在 batch 內
+          );
+
+          expect(inserted, equals(0));
+          verifyNever(() => mockDb.insertPrices(any()));
+        },
+      );
+
+      test('rethrows RateLimitException without wrapping', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: testDate),
+        ).thenThrow(const RateLimitException('API rate limit', null));
+
+        await expectLater(
+          () => repository.backfillTpexPricesByDate(
+            date: testDate,
+            targetSymbols: {'6488'},
+          ),
+          throwsA(isA<RateLimitException>()),
+        );
+      });
+
+      test('rethrows NetworkException without wrapping', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(
+          () => mockTpexClient.getAllDailyPrices(date: testDate),
+        ).thenThrow(const NetworkException('connection timeout', null));
+
+        await expectLater(
+          () => repository.backfillTpexPricesByDate(
+            date: testDate,
+            targetSymbols: {'6488'},
+          ),
+          throwsA(isA<NetworkException>()),
+        );
+      });
+
+      test('wraps generic exception in DatabaseException', () async {
+        final testDate = DateTime(2026, 5, 1);
+        when(() => mockTpexClient.getAllDailyPrices(date: testDate)).thenAnswer(
+          (_) async => [
+            TpexDailyPrice(
+              date: testDate,
+              code: '6488',
+              name: '環球晶',
+              open: 1,
+              high: 1,
+              low: 1,
+              close: 1,
+              volume: 1,
+              change: 0,
+              turnover: 0,
+            ),
+          ],
+        );
+        when(() => mockDb.insertPrices(any())).thenThrow(Exception('DB error'));
+
+        await expectLater(
+          () => repository.backfillTpexPricesByDate(
+            date: testDate,
+            targetSymbols: {'6488'},
+          ),
+          throwsA(isA<DatabaseException>()),
+        );
+      });
+    });
+
     group('MarketSyncResult', () {
       test('creates with default values', () {
         const result = MarketSyncResult(

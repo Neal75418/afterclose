@@ -197,6 +197,47 @@ class PriceRepository implements IPriceRepository {
     }
   }
 
+  /// 用 TPEx OpenAPI batch endpoint 回補單一交易日**所有**上櫃股票價格
+  ///
+  /// 詳細語意見 [IPriceRepository.backfillTpexPricesByDate]。
+  ///
+  /// 實作走 [TpexPriceSource.fetchAllDailyPrices]（TPEx 官方 OpenAPI），
+  /// 接著 [TpexPriceSource.processDailyPrices] 轉成 DB Companion 並依
+  /// [targetSymbols] 過濾，最後一次 batch insert。
+  @override
+  Future<int> backfillTpexPricesByDate({
+    required DateTime date,
+    required Set<String> targetSymbols,
+  }) async {
+    try {
+      final prices = await _tpexSource.fetchAllDailyPrices(date: date);
+      if (prices.isEmpty) return 0;
+
+      // processDailyPrices 已處理 StockPatterns.isValidCode 過濾。
+      final processed = _tpexSource.processDailyPrices(prices);
+
+      final filtered = processed.priceEntries.where((entry) {
+        // DailyPriceCompanion 的 symbol 為 Value<String>；present 後比對
+        final symbol = entry.symbol.value;
+        return targetSymbols.contains(symbol);
+      }).toList();
+
+      if (filtered.isEmpty) return 0;
+
+      await _db.insertPrices(filtered);
+      return filtered.length;
+    } on RateLimitException {
+      rethrow;
+    } on NetworkException {
+      rethrow;
+    } catch (e) {
+      throw DatabaseException(
+        'Failed to backfill TPEx prices for ${DateContext.formatYmd(date)}',
+        e,
+      );
+    }
+  }
+
   /// 同步最新交易日的所有價格，並回傳快篩候選股
   ///
   /// 主要來源：TWSE/TPEX Open Data（免費、無限制、全市場）

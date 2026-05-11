@@ -57,8 +57,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -212,18 +214,35 @@ class Backfiller {
     final startDate = endDate.subtract(Duration(days: config.years * 365));
     _log('📅 Date range: ${_formatDate(startDate)} → ${_formatDate(endDate)}');
 
-    // Phase 1-5: 資料 backfill
-    phases.add(
-      await _runPhase(
-        name: 'prices',
-        symbols: symbols,
-        syncOne: (symbol) => deps.priceRepo.syncStockPrices(
-          symbol,
+    // Phase 1: prices — 拆 TWSE 上市 / TPEx 上櫃兩路
+    //
+    // TWSE 上市股票走既有 per-symbol path（TwsePriceSource 內部用 TWSE 月度
+    // API，免費、無額度限制）。TPEx 上櫃股票改走新的 per-day batch path
+    // （TPEx OpenAPI 一次回該日所有股票），避免舊路徑 per-symbol FinMind
+    // 吃光每日 600 calls 免費額度的問題。
+    final partitioned = await _partitionSymbolsByMarket(symbols);
+    if (partitioned.twse.isNotEmpty) {
+      phases.add(
+        await _runPhase(
+          name: 'prices:twse',
+          symbols: partitioned.twse,
+          syncOne: (symbol) => deps.priceRepo.syncStockPrices(
+            symbol,
+            startDate: startDate,
+            endDate: endDate,
+          ),
+        ),
+      );
+    }
+    if (partitioned.tpex.isNotEmpty) {
+      phases.add(
+        await _backfillTpexPricesBatch(
+          tpexSymbols: partitioned.tpex,
           startDate: startDate,
           endDate: endDate,
         ),
-      ),
-    );
+      );
+    }
     phases.add(
       await _runPhase(
         name: 'institutional',
@@ -367,13 +386,125 @@ class Backfiller {
     return stocks.map((s) => s.symbol).toList();
   }
 
+  /// 依市場別把 symbol 拆成 TWSE 上市 / TPEx 上櫃兩組
+  ///
+  /// stock_master 內找不到的 symbol 預設視為 TWSE（與 `PriceRepository.
+  /// syncStockPrices` 內 `isOtc = stock?.market == MarketCode.tpex` 的
+  /// 行為一致）。
+  Future<_MarketPartition> _partitionSymbolsByMarket(
+    List<String> symbols,
+  ) async {
+    final stockMap = await deps.db.getStocksBatch(symbols);
+    final twse = <String>[];
+    final tpex = <String>[];
+    for (final symbol in symbols) {
+      final market = stockMap[symbol]?.market;
+      if (market == MarketCode.tpex) {
+        tpex.add(symbol);
+      } else {
+        twse.add(symbol);
+      }
+    }
+    return _MarketPartition(twse: twse, tpex: tpex);
+  }
+
+  /// TPEx 上櫃股票價格 batch backfill
+  ///
+  /// 對日期範圍內每個交易日呼叫 [IPriceRepository.backfillTpexPricesByDate]，
+  /// 每天 1 次 API call 拿全市場上櫃股票價格，過濾後寫入 DB。
+  ///
+  /// 跟 [_runPhase] 同樣的 rate limit / network exception abort 政策；
+  /// 其他例外記入 `failedSymbols`（以日期字串標記）繼續。
+  Future<PhaseResult> _backfillTpexPricesBatch({
+    required List<String> tpexSymbols,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    _log('');
+    _log(
+      '▶️  Phase [prices:tpex] — ${tpexSymbols.length} symbols × per-day batch',
+    );
+    final phaseStart = DateTime.now();
+    final targetSet = tpexSymbols.toSet();
+    final failedDays = <String>[];
+    var rowsInserted = 0;
+    var daysProcessed = 0;
+    var daysSucceeded = 0;
+    var lastLogAt = DateTime.now();
+
+    final totalCalendarDays = endDate.difference(startDate).inDays;
+
+    var current = startDate;
+    while (!current.isAfter(endDate)) {
+      if (!TaiwanCalendar.isTradingDay(current)) {
+        current = current.add(const Duration(days: 1));
+        continue;
+      }
+
+      final dayStr = _formatDate(current);
+      try {
+        final count = await deps.priceRepo.backfillTpexPricesByDate(
+          date: current,
+          targetSymbols: targetSet,
+        );
+        rowsInserted += count;
+        daysSucceeded++;
+      } on RateLimitException catch (e) {
+        _log('⛔ Phase [prices:tpex] $dayStr 觸發 API rate limit — abort: $e');
+        rethrow;
+      } on NetworkException catch (e) {
+        _log('⛔ Phase [prices:tpex] $dayStr 網路錯誤 — abort: $e');
+        rethrow;
+      } catch (e) {
+        failedDays.add(dayStr);
+        _log('  ⚠️  $dayStr failed: $e');
+      }
+      daysProcessed++;
+
+      final now = DateTime.now();
+      if (now.difference(lastLogAt).inSeconds >= 10 ||
+          current.isAtSameMomentAs(endDate)) {
+        final daysCovered = current.difference(startDate).inDays;
+        final pct = totalCalendarDays == 0
+            ? '0.0'
+            : (daysCovered / totalCalendarDays * 100).toStringAsFixed(1);
+        final elapsed = now.difference(phaseStart);
+        _log(
+          '  📊 [prices:tpex] $daysProcessed trading days '
+          '(through $dayStr, $pct% of calendar), '
+          'elapsed ${_formatDuration(elapsed)}, '
+          'rows=$rowsInserted, failed=${failedDays.length}',
+        );
+        lastLogAt = now;
+      }
+
+      current = current.add(const Duration(days: 1));
+    }
+
+    final duration = DateTime.now().difference(phaseStart);
+    return PhaseResult(
+      phase: 'prices:tpex',
+      // 這個 phase 是 per-day 模式：用 daysProcessed 填 symbolsProcessed
+      // 讓 toString() 的失敗率計算對應「失敗的天數 / 處理過的天數」。
+      symbolsProcessed: daysProcessed,
+      symbolsSucceeded: daysSucceeded,
+      rowsInserted: rowsInserted,
+      // failedSymbols 此處實為失敗的日期字串 — 讀 log 看上下文容易理解
+      failedSymbols: failedDays,
+      duration: duration,
+    );
+  }
+
   void _logDryRunPlan(List<String> symbols) {
     _log('');
     _log('DRY RUN PLAN:');
     _log('  DB path: ${config.dbPath}');
     _log('  Years: ${config.years}');
     _log('  Symbols: ${symbols.length}');
-    _log('  Phases: prices, institutional, revenue, financial, valuation');
+    _log(
+      '  Phases: prices:twse, prices:tpex (per-day batch), '
+      'institutional, revenue, financial, valuation',
+    );
     _log('  Estimated API calls:');
     _log(
       '    - Prices:        ${symbols.length} × ${config.years * 12} months '
@@ -618,6 +749,13 @@ void _printUsage(IOSink sink) {
   );
   sink.writeln('  --dry-run             Print plan without fetching');
   sink.writeln('  --help, -h            Show this help');
+}
+
+/// 依市場別分組的 symbol 子集
+class _MarketPartition {
+  const _MarketPartition({required this.twse, required this.tpex});
+  final List<String> twse;
+  final List<String> tpex;
 }
 
 // ============================================================================

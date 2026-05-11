@@ -40,6 +40,26 @@ abstract class IPriceRepository {
     DateTime date, {
     bool force = false,
   });
+
+  /// 用 TPEx OpenAPI batch endpoint 回補單一交易日**所有**上櫃股票價格
+  ///
+  /// 用於 backfill：相較於 `syncStockPrices(symbol)` 對每檔股票分別呼叫
+  /// FinMind（per-symbol，2 年 backfill 數千 calls 必然吃光免費額度），
+  /// 本方法走 TPEx OpenAPI 的 `getAllDailyPrices(date:)`，**一次 call 回該日
+  /// 全部上櫃股票**。完整 2 年 backfill 從約 8000×24 ≈ 19 萬次降到約 500 次，
+  /// 且 TPEx OpenAPI 完全免費沒額度限制。
+  ///
+  /// [targetSymbols] 為要寫入 DB 的 symbol 白名單；其他從 API 回來但不在
+  /// 白名單的股票（例如新上市但 stock_master 尚未同步到的）會被忽略。
+  ///
+  /// 回傳實際寫入的 price row 數。
+  ///
+  /// 例外政策：[RateLimitException] / [NetworkException] rethrow（交給呼叫端
+  /// 決定 abort/retry）；其他例外包成 [DatabaseException]。
+  Future<int> backfillTpexPricesByDate({
+    required DateTime date,
+    required Set<String> targetSymbols,
+  });
 }
 
 /// 全市場價格同步結果

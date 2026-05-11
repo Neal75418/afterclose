@@ -96,6 +96,20 @@ void main() {
         endDate: any(named: 'endDate'),
       ),
     ).thenAnswer((_) async => 500);
+
+    // Default: stock_master 沒 cache 任何 symbol → 全部 fallback 為 TWSE。
+    // 個別測試需要 TPEx batch path 時自行 override。
+    when(
+      () => db.getStocksBatch(any()),
+    ).thenAnswer((_) async => <String, StockMasterEntry>{});
+    // Default: TPEx batch backfill 預設 no-op（每天 0 rows）。個別測試
+    // 要驗 TPEx path 時自行 override。
+    when(
+      () => priceRepo.backfillTpexPricesByDate(
+        date: any(named: 'date'),
+        targetSymbols: any(named: 'targetSymbols'),
+      ),
+    ).thenAnswer((_) async => 0);
   });
 
   BackfillConfig makeConfig({
@@ -121,9 +135,12 @@ void main() {
       final backfiller = makeBackfiller(makeConfig());
       final result = await backfiller.run();
 
+      // prices phase 在 Stage 1 TPEx-batch refactor 後拆成 prices:twse 與
+      // prices:tpex 兩條。預設 stockMap 為空 → 所有 symbol 走 TWSE 路徑 →
+      // prices:tpex phase 不會被加（tpex 列表為空），故仍是 5 phases。
       expect(result.phases.length, 5);
       expect(result.phases.map((p) => p.phase).toList(), [
-        'prices',
+        'prices:twse',
         'institutional',
         'revenue',
         'financial',
@@ -205,7 +222,9 @@ void main() {
       final backfiller = makeBackfiller(makeConfig());
       final result = await backfiller.run();
 
-      final pricePhase = result.phases.firstWhere((p) => p.phase == 'prices');
+      final pricePhase = result.phases.firstWhere(
+        (p) => p.phase == 'prices:twse',
+      );
       expect(pricePhase.symbolsProcessed, 3);
       expect(pricePhase.symbolsSucceeded, 2);
       expect(pricePhase.failedSymbols, ['2317']);
@@ -359,6 +378,162 @@ void main() {
           endDate: any(named: 'endDate'),
         ),
       ).called(1);
+    });
+  });
+
+  // ============================================================
+  // Stage 1 TPEx-batch refactor: prices phase 拆 TWSE / TPEx
+  //
+  // 確保正確性的核心測試：依市場分流是否真的走對路徑、
+  // TPEx 不再呼叫 syncStockPrices（per-symbol FinMind 路徑）。
+  // ============================================================
+  group('Backfiller TPEx batch path', () {
+    test(
+      'TPEx symbols go to backfillTpexPricesByDate (not syncStockPrices)',
+      () async {
+        // stock_master 標記 4488 為 TPEx 上櫃，2330 為 TWSE 上市
+        when(() => db.getStocksBatch(any())).thenAnswer(
+          (_) async => {
+            '4488': StockMasterEntry(
+              symbol: '4488',
+              name: 'TPEx Stock',
+              market: 'TPEx',
+              industry: 'Test',
+              isActive: true,
+              updatedAt: DateTime(2026, 1, 1),
+            ),
+            '2330': StockMasterEntry(
+              symbol: '2330',
+              name: 'TSMC',
+              market: 'TWSE',
+              industry: 'Test',
+              isActive: true,
+              updatedAt: DateTime(2026, 1, 1),
+            ),
+          },
+        );
+
+        when(
+          () => priceRepo.backfillTpexPricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        ).thenAnswer((_) async => 1);
+
+        final backfiller = makeBackfiller(
+          makeConfig(symbols: ['2330', '4488']),
+        );
+        final result = await backfiller.run();
+
+        // 應該同時存在 prices:twse 與 prices:tpex 兩個 phase
+        final phaseNames = result.phases.map((p) => p.phase).toList();
+        expect(phaseNames, contains('prices:twse'));
+        expect(phaseNames, contains('prices:tpex'));
+
+        // 2330 走 TWSE per-symbol
+        verify(
+          () => priceRepo.syncStockPrices(
+            '2330',
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).called(1);
+
+        // 4488 不該走 syncStockPrices（這是新路徑的核心保證 — 不再吃
+        // FinMind 額度）
+        verifyNever(
+          () => priceRepo.syncStockPrices(
+            '4488',
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        );
+
+        // TPEx batch 必須在 targetSymbols 中包含 4488
+        final captured = verify(
+          () => priceRepo.backfillTpexPricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: captureAny(named: 'targetSymbols'),
+          ),
+        ).captured;
+        expect(captured, isNotEmpty);
+        final targets = captured.first as Set<String>;
+        expect(targets, contains('4488'));
+        expect(
+          targets.contains('2330'),
+          isFalse,
+          reason: 'TPEx batch 不該包含 TWSE symbol',
+        );
+      },
+    );
+
+    test(
+      'TPEx batch only emits prices:twse phase when no TPEx symbols exist',
+      () async {
+        when(() => db.getStocksBatch(any())).thenAnswer(
+          (_) async => {
+            '2330': StockMasterEntry(
+              symbol: '2330',
+              name: 'TSMC',
+              market: 'TWSE',
+              industry: 'Test',
+              isActive: true,
+              updatedAt: DateTime(2026, 1, 1),
+            ),
+          },
+        );
+
+        final backfiller = makeBackfiller(makeConfig(symbols: ['2330']));
+        final result = await backfiller.run();
+
+        final phaseNames = result.phases.map((p) => p.phase).toList();
+        expect(phaseNames, contains('prices:twse'));
+        expect(
+          phaseNames.contains('prices:tpex'),
+          isFalse,
+          reason: 'no TPEx symbols → no prices:tpex phase',
+        );
+        verifyNever(
+          () => priceRepo.backfillTpexPricesByDate(
+            date: any(named: 'date'),
+            targetSymbols: any(named: 'targetSymbols'),
+          ),
+        );
+      },
+    );
+
+    test('TPEx batch path RateLimitException aborts backfill', () async {
+      when(() => db.getStocksBatch(any())).thenAnswer(
+        (_) async => {
+          '4488': StockMasterEntry(
+            symbol: '4488',
+            name: 'TPEx',
+            market: 'TPEx',
+            industry: 'Test',
+            isActive: true,
+            updatedAt: DateTime(2026, 1, 1),
+          ),
+        },
+      );
+      when(
+        () => priceRepo.backfillTpexPricesByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      ).thenThrow(const RateLimitException());
+
+      final backfiller = makeBackfiller(makeConfig(symbols: ['4488']));
+
+      await expectLater(backfiller.run(), throwsA(isA<RateLimitException>()));
+
+      // 不可進入下一個 phase (institutional)
+      verifyNever(
+        () => institutionalRepo.syncInstitutionalData(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      );
     });
   });
 }
