@@ -65,6 +65,11 @@ test/**/failures/
 # Stage 3+4 calibration artifacts (local dev machine only, never committed)
 tool/calibration.db
 tool/calibration.db-*
+tool/calibrate-*.log
+
+# recalibrate.dart 的 candidate 輸出（人工 review 後 rename 成 production
+# 檔名才提交；candidate 是 stale 中間產物，誤入 commit 會污染 diff）
+assets/*_candidate.json
 backfill.log
 replay.log
 backfill.pid
