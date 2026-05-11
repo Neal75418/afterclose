@@ -136,6 +136,8 @@ void main() {
       symbolsWhitelist: symbols,
       dryRun: dryRun,
       skipStockListSync: true, // 避免 unit test 呼叫 stock master sync
+      // 跳過 inter-day delay：500 trading days × 1.5s 預設會讓單測 timeout
+      interDayDelayMs: 0,
     );
   }
 

@@ -87,6 +87,7 @@ class BackfillConfig {
     this.symbolsWhitelist,
     this.dryRun = false,
     this.skipStockListSync = false,
+    this.interDayDelayMs = 1500,
   });
 
   /// SQLite 檔案路徑
@@ -106,6 +107,16 @@ class BackfillConfig {
 
   /// 跳過 stock list 同步（測試用）
   final bool skipStockListSync;
+
+  /// 每天 batch call 之間的延遲毫秒數
+  ///
+  /// 預設 1500ms（≈ 0.67 req/sec）避開 TWSE IP-based rate limit
+  /// (`Redirect loop detected`)。經驗：500 ms 約 2.5 req/sec 在 70 calls
+  /// 內就被 ban；1500 ms 給 TWSE 充足喘息空間。500 trading days × 1.5s
+  /// ≈ 12.5 分鐘 per market 仍在可接受範圍。
+  ///
+  /// 單元測試傳 0 跳過 delay。
+  final int interDayDelayMs;
 }
 
 /// 單一 phase 的執行結果
@@ -481,6 +492,10 @@ class Backfiller {
         lastLogAt = now;
       }
 
+      // 避開 TWSE IP-based rate limit（同樣端點上次跑 2.5 req/sec 就被 ban）
+      if (config.interDayDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: config.interDayDelayMs));
+      }
       current = current.add(const Duration(days: 1));
     }
 
@@ -566,6 +581,10 @@ class Backfiller {
         lastLogAt = now;
       }
 
+      // 避開 TWSE IP-based rate limit（同樣端點上次跑 2.5 req/sec 就被 ban）
+      if (config.interDayDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: config.interDayDelayMs));
+      }
       current = current.add(const Duration(days: 1));
     }
 
@@ -652,6 +671,11 @@ class Backfiller {
         lastLogAt = now;
       }
 
+      // 跟 prices:twse / institutional 對稱 — 避免任何 batch endpoint 觸發
+      // IP-based rate limit。TPEx OpenAPI 較寬鬆但保持同步驟簡化推理。
+      if (config.interDayDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: config.interDayDelayMs));
+      }
       current = current.add(const Duration(days: 1));
     }
 
