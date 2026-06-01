@@ -342,13 +342,13 @@ class RuleAccuracyService {
               AppLogger.warning(
                 _tag,
                 '回填批次取得 exit prices (${_formatDate(date)}, ${period}D) '
-                '失敗 ($errors/50)',
+                '失敗 ($errors/$_kBackfillErrorLimit)',
                 e,
                 stack,
               );
-              if (errors > 50) {
-                throw Exception(
-                  '批次回填累計錯誤超過 50 筆，中止 '
+              if (errors > _kBackfillErrorLimit) {
+                throw _BackfillAbortException(
+                  '批次回填累計錯誤超過 $_kBackfillErrorLimit 筆，中止 '
                   '(已處理 ${i + 1}/$totalDates 日期)',
                 );
               }
@@ -398,13 +398,13 @@ class RuleAccuracyService {
                 AppLogger.warning(
                   _tag,
                   '回填驗證 ${rec.symbol} (${_formatDate(date)}, ${period}D) '
-                  '失敗 ($errors/50)',
+                  '失敗 ($errors/$_kBackfillErrorLimit)',
                   e,
                   stack,
                 );
-                if (errors > 50) {
-                  throw Exception(
-                    '批次回填累計錯誤超過 50 筆，中止 '
+                if (errors > _kBackfillErrorLimit) {
+                  throw _BackfillAbortException(
+                    '批次回填累計錯誤超過 $_kBackfillErrorLimit 筆，中止 '
                     '(已處理 ${i + 1}/$totalDates 日期)',
                   );
                 }
@@ -422,21 +422,20 @@ class RuleAccuracyService {
           rethrow;
         } on NetworkException {
           rethrow;
+        } on _BackfillAbortException {
+          // inner catch 拋出的 abort sentinel — 直接 rethrow，不要當未預期錯誤計
+          rethrow;
         } catch (e) {
-          // 非 rate-limit/network 的頂層異常已在內層處理或需傳播
-          if (e is Exception && e.toString().contains('批次回填累計錯誤超過 50 筆')) {
-            rethrow;
-          }
           // 其他未預期的頂層錯誤
           errors++;
           AppLogger.warning(
             _tag,
-            '回填日期 ${_formatDate(date)} 非預期錯誤 ($errors/50)',
+            '回填日期 ${_formatDate(date)} 非預期錯誤 ($errors/$_kBackfillErrorLimit)',
             e,
           );
-          if (errors > 50) {
-            throw Exception(
-              '批次回填累計錯誤超過 50 筆，中止 '
+          if (errors > _kBackfillErrorLimit) {
+            throw _BackfillAbortException(
+              '批次回填累計錯誤超過 $_kBackfillErrorLimit 筆，中止 '
               '(已處理 ${i + 1}/$totalDates 日期)',
             );
           }
@@ -510,11 +509,9 @@ class RuleAccuracyService {
   ///
   /// ## 已知限制
   ///
-  /// - Memory footprint：price lookup map 為 `O(symbols × dates)`，2 年 2000+ 檔可達
-  ///   50–100MB。pre-launch 可接受；post-launch 若 syncer 累積歷史資料需評估 batch 化。
-  /// - **Transaction lock hold time**：整個 accumulator loop 都在 `_db.transaction()`
-  ///   內跑，大資料集會延長 SQLite write-lock 時間，可能阻塞 UI 的 read path。
-  ///   Stage 5 batch 化時應將 compute-outside / write-inside 拆開。
+  /// - Memory footprint：price lookup map 為 `O(symbols × window-of-dates)`。
+  ///   window 由 reasons 的 entry-date 範圍 + 最長 holdingPeriod 決定，比早期版本
+  ///   的全表掃緊得多。post-launch 累積數年資料時仍應再評估 chunked aggregation。
   /// - 嚴格 date match（無 ±1 日容忍）：trading calendar 精確計算，不需 legacy mitigation。
   Future<void> _computeUnbiasedRuleStats() async {
     final reasons = await _db.select(_db.dailyReason).get();
@@ -529,53 +526,99 @@ class RuleAccuracyService {
       return;
     }
 
+    // === 在 transaction 之外做讀取與聚合（H3 + M2）===
+    //
+    // 早期版本把整個 read + accumulate loop 包進 `_db.transaction()` 內，會把
+    // 寫鎖時間從毫秒級拉長到秒級，前景 reader 跑大型 query 期間會被 SQLITE_BUSY；
+    // 同時 price 查詢無日期下界，會把 daily_price 全表（2000 symbols × N years）
+    // 整個拉進 in-memory map，一年後就 OOM。
+    //
+    // 改寫策略：
+    // 1. 從 reasons 算出實際需要的 [minEntryDate, maxExitDate] window
+    // 2. 用 date bound 過濾 daily_price — 只撈這次計算實際會用到的行
+    // 3. priceMap + ruleStats 都在 transaction 外完成
+    // 4. transaction 只做 delete + batch insert（純寫入，秒級內結束）
+
+    final normalizedEntryDates = reasons
+        .map((r) => DateContext.normalize(r.date))
+        .toList();
+    var minEntry = normalizedEntryDates.first;
+    var maxEntry = normalizedEntryDates.first;
+    for (final d in normalizedEntryDates) {
+      if (d.isBefore(minEntry)) minEntry = d;
+      if (d.isAfter(maxEntry)) maxEntry = d;
+    }
+    // holdingPeriods 已知 const sorted ascending；最後一個是最長 holding window，
+    // exit-date 邊界由它決定。若未來改成非排序則需 reduce(max)。
+    final maxHoldingPeriod = holdingPeriods.last;
+    // SQL 比較走 epoch seconds。daily_price.date 在不同 syncer / 測試 fixture
+    // 之間可能來自 `DateTime.utc(...)`（UTC 午夜）或 local `DateTime(...)`
+    // （Taipei 午夜），兩者在 epoch 上相差約 8h；`DateContext.normalize`
+    // 固定回 local 午夜，與 stored UTC 午夜的邊界 row 直接比較會差 8h 而被
+    // 誤排除。上下界各加 1 天 buffer 兜底（cover 任意 TZ ±14h 偏移）。
+    // in-memory accumulator 仍走 exact-date lookup，buffer 只是多撈幾行，
+    // 不會引入錯誤命中。
+    const tzBuffer = Duration(days: 1);
+    final queryLowerBound = minEntry.subtract(tzBuffer);
+    final queryUpperBound = DateContext.normalize(
+      TaiwanCalendar.addTradingDays(maxEntry, maxHoldingPeriod),
+    ).add(tzBuffer);
+
+    final allSymbols = reasons.map((r) => r.symbol).toSet().toList();
+    final priceRows =
+        await (_db.select(_db.dailyPrice)..where(
+              (t) =>
+                  t.symbol.isIn(allSymbols) &
+                  t.date.isBiggerOrEqualValue(queryLowerBound) &
+                  t.date.isSmallerOrEqualValue(queryUpperBound),
+            ))
+            .get();
+
+    // 建 price lookup：{symbol: {normalized_date: close}}
+    final priceMap = <String, Map<DateTime, double>>{};
+    for (final p in priceRows) {
+      final close = p.close;
+      if (close == null) continue;
+      final normalized = DateContext.normalize(p.date);
+      priceMap.putIfAbsent(p.symbol, () => {})[normalized] = close;
+    }
+
+    // 累加 per-(ruleId, period) 統計
+    final ruleStats = <String, Map<int, _StatsAccumulator>>{};
+
+    for (final reason in reasons) {
+      final symbolPrices = priceMap[reason.symbol];
+      if (symbolPrices == null) continue;
+
+      final entryDate = DateContext.normalize(reason.date);
+      final entryClose = symbolPrices[entryDate];
+      if (entryClose == null) continue;
+
+      for (final period in holdingPeriods) {
+        final exitDate = DateContext.normalize(
+          TaiwanCalendar.addTradingDays(entryDate, period),
+        );
+        final exitClose = symbolPrices[exitDate];
+        if (exitClose == null) continue;
+
+        final returnRate = ((exitClose - entryClose) / entryClose) * 100;
+        final isSuccess = _isSuccessFor(returnRate, period);
+
+        ruleStats
+            .putIfAbsent(reason.reasonType, () => <int, _StatsAccumulator>{})
+            .putIfAbsent(period, _StatsAccumulator.new)
+            .add(returnRate, isSuccess);
+      }
+    }
+
+    // === Transaction：只做 delete + per-row upsert ===
+    //
+    // 寫入仍走 `insertOnConflictUpdate` loop（如原本 Stage 2 寫法）— drift 的
+    // `_db.batch` 嵌進 `_db.transaction` 後行為不對等（Batch 自己會嘗試開
+    // transaction），會吞掉新行；改用 loop await 維持原語意。資料量小（< 100
+    // rows = ~60 rules × ≤ 6 periods），lock 時間在毫秒級。
     await _db.transaction(() async {
-      // daily_reason 有資料才清舊統計並重算
       await _db.delete(_db.ruleAccuracy).go();
-
-      // 建 price lookup：{symbol: {normalized_date: close}}
-      final allSymbols = reasons.map((r) => r.symbol).toSet().toList();
-      final priceRows = await (_db.select(
-        _db.dailyPrice,
-      )..where((t) => t.symbol.isIn(allSymbols))).get();
-
-      final priceMap = <String, Map<DateTime, double>>{};
-      for (final p in priceRows) {
-        final close = p.close;
-        if (close == null) continue;
-        final normalized = DateContext.normalize(p.date);
-        priceMap.putIfAbsent(p.symbol, () => {})[normalized] = close;
-      }
-
-      // 累加 per-(ruleId, period) 統計
-      final ruleStats = <String, Map<int, _StatsAccumulator>>{};
-
-      for (final reason in reasons) {
-        final symbolPrices = priceMap[reason.symbol];
-        if (symbolPrices == null) continue;
-
-        final entryDate = DateContext.normalize(reason.date);
-        final entryClose = symbolPrices[entryDate];
-        if (entryClose == null) continue;
-
-        for (final period in holdingPeriods) {
-          final exitDate = DateContext.normalize(
-            TaiwanCalendar.addTradingDays(entryDate, period),
-          );
-          final exitClose = symbolPrices[exitDate];
-          if (exitClose == null) continue;
-
-          final returnRate = ((exitClose - entryClose) / entryClose) * 100;
-          final isSuccess = _isSuccessFor(returnRate, period);
-
-          ruleStats
-              .putIfAbsent(reason.reasonType, () => <int, _StatsAccumulator>{})
-              .putIfAbsent(period, _StatsAccumulator.new)
-              .add(returnRate, isSuccess);
-        }
-      }
-
-      // Per-period 寫入
       for (final ruleEntry in ruleStats.entries) {
         final ruleId = ruleEntry.key;
         for (final periodEntry in ruleEntry.value.entries) {
@@ -594,17 +637,18 @@ class RuleAccuracyService {
               );
         }
       }
-
-      // 'ALL' period 已於 2026-04 移除：跨 holdingPeriods 合併會把 1D（門檻
-      // 0%）與 60D（門檻 12%）的 success_count 加總後除以總 trigger_count，
-      // 得到一個沒有可解釋意義的 hit_rate（被低門檻樣本拉高）。dual-horizon
-      // UI 已 ship，使用者直接查 5D / 60D 兩個 horizon 的命中率即可。
-      AppLogger.info(
-        _tag,
-        '_computeUnbiasedRuleStats: ${ruleStats.length} rules × '
-        '${holdingPeriods.length} periods 聚合自 ${reasons.length} reasons',
-      );
     });
+
+    // 'ALL' period 已於 2026-04 移除：跨 holdingPeriods 合併會把 1D（門檻
+    // 0%）與 60D（門檻 12%）的 success_count 加總後除以總 trigger_count，
+    // 得到一個沒有可解釋意義的 hit_rate（被低門檻樣本拉高）。dual-horizon
+    // UI 已 ship，使用者直接查 5D / 60D 兩個 horizon 的命中率即可。
+    AppLogger.info(
+      _tag,
+      '_computeUnbiasedRuleStats: ${ruleStats.length} rules × '
+      '${holdingPeriods.length} periods 聚合自 ${reasons.length} reasons '
+      '(price window: ${_formatDate(queryLowerBound)}~${_formatDate(queryUpperBound)})',
+    );
   }
 
   /// 取得規則命中率
@@ -858,6 +902,24 @@ class _ValidationComputed {
   final ValidationResult result;
   final List<RecommendationValidationCompanion> inserts;
 }
+
+/// 回填累計錯誤超過上限後拋出的內部控制流例外
+///
+/// 用於 [RuleAccuracyService.backfillAllHistoricalRecommendations]：當錯誤累積
+/// 超過 [_kBackfillErrorLimit] 時，inner catch 拋出此例外讓 outer catch 用
+/// `on _BackfillAbortException` 直接 rethrow，不需要靠 `e.toString().contains`
+/// 字串比對識別控制流意圖（脆弱、易與真實錯誤訊息巧合）。
+class _BackfillAbortException implements Exception {
+  const _BackfillAbortException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => '_BackfillAbortException: $message';
+}
+
+/// 回填過程中的累積錯誤上限。超過則中止整個 backfill 操作。
+const int _kBackfillErrorLimit = 50;
 
 /// Per-(ruleId, period) 統計累加器
 ///
