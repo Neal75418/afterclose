@@ -254,5 +254,17 @@ class AppDatabase extends $AppDatabase
 const String _schemaFingerprint = 'stage5b-dual-horizon-2026-04-11';
 
 QueryExecutor _openConnection() {
-  return driftDatabase(name: 'afterclose');
+  return driftDatabase(
+    name: 'afterclose',
+    native: DriftNativeOptions(
+      // 前景 (Riverpod container) 與背景 (WorkManager isolate) 都 `AppDatabase()`，
+      // 不開 shareAcrossIsolates 會各自開原生連線。預設 rollback journal 模式下
+      // 背景 `_db.transaction()` 拿到的寫鎖會讓前景寫 SQLITE_BUSY 失敗（夜間 sync
+      // 期間使用者打開 app 必中）。shareAcrossIsolates 讓 drift 統一管理跨 isolate
+      // 並行存取；setup 啟 WAL 進一步降低 reader 受寫鎖影響的時間。
+      // setup callback 會被跨 isolate 發送；用 no-capture closure 確保可序列化。
+      shareAcrossIsolates: true,
+      setup: (db) => db.execute('PRAGMA journal_mode=WAL;'),
+    ),
+  );
 }
