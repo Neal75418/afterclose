@@ -141,4 +141,18 @@ class MarketDataRepository implements IMarketDataRepository {
       throw DatabaseException('Failed to sync $statementType for $symbol', e);
     }
   }
+
+  // ==================================================
+  // 市場 / 同步狀態查詢
+  // ==================================================
+
+  @override
+  Future<DateTime?> getLatestDataDate() => _db.getLatestDataDate();
+
+  @override
+  Future<DateTime?> getLatestInstitutionalDate() =>
+      _db.getLatestInstitutionalDate();
+
+  @override
+  Future<UpdateRunEntry?> getLatestUpdateRun() => _db.getLatestUpdateRun();
 }

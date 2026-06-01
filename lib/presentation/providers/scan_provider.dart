@@ -7,6 +7,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
+import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
@@ -146,6 +147,8 @@ class ScanNotifier extends Notifier<ScanState> {
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
   DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
   AnalysisRepository get _analysisRepo => ref.read(analysisRepositoryProvider);
+  MarketDataRepository get _marketRepo =>
+      ref.read(marketDataRepositoryProvider);
 
   static const _service = ScanFilterService();
 
@@ -190,8 +193,8 @@ class ScanNotifier extends Notifier<ScanState> {
       }
 
       // 取得實際資料日期供顯示
-      final latestPriceDate = await _db.getLatestDataDate();
-      final latestInstDate = await _db.getLatestInstitutionalDate();
+      final latestPriceDate = await _marketRepo.getLatestDataDate();
+      final latestInstDate = await _marketRepo.getLatestInstitutionalDate();
       final dataDate = _dataSyncService.getDisplayDataDate(
         latestPriceDate,
         latestInstDate,

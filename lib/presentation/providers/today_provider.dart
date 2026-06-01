@@ -10,6 +10,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
+import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
@@ -150,6 +151,8 @@ class TodayNotifier extends Notifier<TodayState> {
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
   UpdateService get _updateService => ref.read(updateServiceProvider);
   DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
+  MarketDataRepository get _marketRepo =>
+      ref.read(marketDataRepositoryProvider);
 
   /// 載入今日資料
   Future<void> loadData() async {
@@ -158,7 +161,7 @@ class TodayNotifier extends Notifier<TodayState> {
 
     try {
       // 取得最後更新執行記錄
-      final lastRun = await _db.getLatestUpdateRun();
+      final lastRun = await _marketRepo.getLatestUpdateRun();
 
       final loadHorizon = ref.read(selectedHorizonProvider);
       final loaded = await _loadRecommendationsAndDetails(
@@ -249,8 +252,8 @@ class TodayNotifier extends Notifier<TodayState> {
     if (!_active || _loadGeneration != generation) return null;
 
     // 取得實際資料日期供顯示用（非查詢用途）
-    final latestPriceDate = await _db.getLatestDataDate();
-    final latestInstDate = await _db.getLatestInstitutionalDate();
+    final latestPriceDate = await _marketRepo.getLatestDataDate();
+    final latestInstDate = await _marketRepo.getLatestInstitutionalDate();
 
     final dataDate = _dataSyncService.getDisplayDataDate(
       latestPriceDate,

@@ -12,6 +12,7 @@ import 'package:afterclose/core/utils/price_calculator.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
@@ -83,6 +84,8 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
   AppDatabase get _db => ref.read(databaseProvider);
   DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
+  MarketDataRepository get _marketRepo =>
+      ref.read(marketDataRepositoryProvider);
 
   /// 載入股票詳情資料
   Future<void> loadData() async {
@@ -95,7 +98,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
 
       // 決定分析資料的查詢日期
       // 使用資料庫最新價格日期，確保盤前/非交易日也能顯示上次分析結果
-      final latestDataDate = await _db.getLatestDataDate();
+      final latestDataDate = await _marketRepo.getLatestDataDate();
       if (!_active) return;
       final analysisDate = latestDataDate != null
           ? DateContext.normalize(latestDataDate)
