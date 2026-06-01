@@ -72,6 +72,14 @@ void main() {
       (invocation) =>
           invocation.positionalArguments[0] as List<TriggeredReason>,
     );
+    // H-1 fix: scoring_service 改成顯式呼 applyMutexGroups 在 calculateScore
+    // 之前。Mock 預設行為：原樣回傳（不過濾 mutex） — 既有測試斷言的 score
+    // 數值對應「不過濾」語意，保持一致。需要驗證 mutex 行為的個別測試自行
+    // override。
+    when(() => mockRuleEngine.applyMutexGroups(any(), any())).thenAnswer(
+      (invocation) =>
+          invocation.positionalArguments[0] as List<TriggeredReason>,
+    );
     // Types that might be nullable in arguments but needed for any()
     registerFallbackValue(
       MonthlyRevenueEntry(

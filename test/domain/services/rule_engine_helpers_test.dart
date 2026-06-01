@@ -346,7 +346,11 @@ void main() {
   // Mutex Group 測試（2026-04 引入，解決重疊訊號 double-count）
   // ==========================================
 
-  group('evaluateStock Mutex Groups', () {
+  group('applyMutexGroups (mutex resolution)', () {
+    // H-1 fix（2026-06）：mutex 從 evaluateStock 內部搬到顯式呼叫，
+    // 讓 scoring 路徑（calculateScore）能用 horizon-aware calibrated 分數
+    // 做 mutex 過濾，UI 路徑可繼續用 hardcoded。下列測試驗證 mutex
+    // 行為本身（與 scoreOf 來源無關）。
     test('momentum_breakout: techBreakout 與 volumeSpike 同組，只保留分數較高者', () {
       final engine = RuleEngine(
         customRules: [
@@ -365,10 +369,13 @@ void main() {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
       const context = AnalysisContext(trendState: TrendState.range);
 
-      final reasons = engine.evaluateStock(
+      final allReasons = engine.evaluateStock(
         context,
         StockData(symbol: 'TEST', prices: prices),
       );
+      // evaluateStock 自身已不過濾 mutex — 兩條 reason 都會出現
+      expect(allReasons.length, 2);
+      final reasons = engine.applyMutexGroups(allReasons, (r) => r.score);
 
       // 兩者同屬 momentum_breakout，只保留 techBreakout (25 > 22)
       expect(reasons.length, 1);
@@ -403,10 +410,11 @@ void main() {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
       const context = AnalysisContext(trendState: TrendState.range);
 
-      final reasons = engine.evaluateStock(
+      final allReasons = engine.evaluateStock(
         context,
         StockData(symbol: 'TEST', prices: prices),
       );
+      final reasons = engine.applyMutexGroups(allReasons, (r) => r.score);
 
       expect(reasons.length, 1);
       expect(reasons[0].type, ReasonType.techBreakout); // 分數最高
@@ -435,10 +443,11 @@ void main() {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
       const context = AnalysisContext(trendState: TrendState.range);
 
-      final reasons = engine.evaluateStock(
+      final allReasons = engine.evaluateStock(
         context,
         StockData(symbol: 'TEST', prices: prices),
       );
+      final reasons = engine.applyMutexGroups(allReasons, (r) => r.score);
 
       // volumeSpike 是 momentum_breakout 唯一代表，保留
       // reversalW2S / institutionalBuy 不屬任何 group，都保留
@@ -451,10 +460,9 @@ void main() {
       });
     });
 
-    test('momentum_breakout: 同 group 內 score 相同時，依規則註冊順序 deterministic', () {
-      // 兩條 reason 同屬 momentum_breakout 且 score 相同（22）。
-      // _rules 以註冊順序 iterate，sort 是 stable，
-      // 因此先註冊的 volumeSpike 會出現在 sort 後的較前方位置，成為贏家。
+    test('mutex: 同 group 內 scoreOf 同分時，依輸入順序 stable 決定贏家', () {
+      // 兩條 reason 同屬 momentum_breakout 且 scoreOf 相同（22）。
+      // applyMutexGroups 用 stable sort，先進列表的勝出。
       final engine = RuleEngine(
         customRules: [
           const _FixedScoreRule(
@@ -472,15 +480,74 @@ void main() {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
       const context = AnalysisContext(trendState: TrendState.range);
 
-      final reasons = engine.evaluateStock(
+      final allReasons = engine.evaluateStock(
         context,
         StockData(symbol: 'TEST', prices: prices),
       );
+      final reasons = engine.applyMutexGroups(allReasons, (r) => r.score);
 
       expect(reasons.length, 1);
-      // 同分時，先註冊的 volumeSpike 勝出（stable sort 保留註冊順序）
+      // 註冊順序 = 輸入順序 → stable sort 保留 volumeSpike 在前
       expect(reasons[0].type, ReasonType.volumeSpike);
     });
+
+    test(
+      'H-1 fix: horizon-aware calibrated scoreOf 可選出與 hardcoded 不同的 mutex 贏家',
+      () {
+        // 過去 mutex 用 hardcoded score 決定，calibration 永遠無法翻轉
+        // ranking。改成 caller 提供 scoreOf 後，scoring 路徑可傳入
+        // horizon-aware calibrated lookup → 同一 mutex group 可在不同
+        // horizon 有不同贏家。
+        final engine = RuleEngine(
+          customRules: [
+            const _FixedScoreRule(
+              ruleId: 'techBreakout',
+              score: 25, // hardcoded：techBreakout 較強
+              reasonType: ReasonType.techBreakout,
+            ),
+            const _FixedScoreRule(
+              ruleId: 'volumeSpike',
+              score: 22, // hardcoded：volumeSpike 較弱
+              reasonType: ReasonType.volumeSpike,
+            ),
+          ],
+        );
+        final prices = generateConstantPrices(days: 5, basePrice: 100.0);
+        const context = AnalysisContext(trendState: TrendState.range);
+
+        final allReasons = engine.evaluateStock(
+          context,
+          StockData(symbol: 'TEST', prices: prices),
+        );
+
+        // hardcoded 路徑：techBreakout 贏（25 > 22）
+        final hardcodedMuted = engine.applyMutexGroups(
+          allReasons,
+          (r) => r.score,
+        );
+        expect(hardcodedMuted.length, 1);
+        expect(hardcodedMuted[0].type, ReasonType.techBreakout);
+
+        // Calibrated 路徑：假設 calibration 認為 volumeSpike 在 short
+        // horizon 較強（30 > 20）→ 應該翻轉贏家。
+        int calibratedScoreOf(TriggeredReason r) {
+          if (r.type == ReasonType.techBreakout) return 20;
+          if (r.type == ReasonType.volumeSpike) return 30;
+          return r.score;
+        }
+
+        final calibratedMuted = engine.applyMutexGroups(
+          allReasons,
+          calibratedScoreOf,
+        );
+        expect(calibratedMuted.length, 1);
+        expect(
+          calibratedMuted[0].type,
+          ReasonType.volumeSpike,
+          reason: 'calibration 應該能翻轉 mutex 贏家；H-1 fix 的核心保證',
+        );
+      },
+    );
 
     test('calculateScore 套用 mutex 過濾後不會塞爆 cap', () {
       // 整合測試：evaluateStock → calculateScore 端到端
@@ -512,11 +579,15 @@ void main() {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
       const context = AnalysisContext(trendState: TrendState.range);
 
-      final reasons = engine.evaluateStock(
+      // H-1 fix 後 pipeline 拆成 3 步：evaluate → mutex → calculateScore
+      // calculateScore 是 pure arithmetic（不做 mutex）；mutex 由 caller 顯式
+      // 呼叫，這樣才能用 horizon-aware calibrated 分數做 mutex 過濾。
+      final allReasons = engine.evaluateStock(
         context,
         StockData(symbol: 'TEST', prices: prices),
       );
-      final score = engine.calculateScore(reasons, horizon: Horizon.short);
+      final muted = engine.applyMutexGroups(allReasons, (r) => r.score);
+      final score = engine.calculateScore(muted, horizon: Horizon.short);
 
       // 4 條規則 → mutex filter 後剩 1 條（techBreakout 25）→ 總分 25
       expect(score, 25);

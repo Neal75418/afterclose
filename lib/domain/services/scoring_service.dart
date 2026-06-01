@@ -157,15 +157,26 @@ class ScoringService {
       if (reasons.isEmpty) continue;
 
       // 計算雙 horizon 分數（Stage 5b）
+      // H-1 fix：mutex 用 horizon-aware calibrated lookup（calculateScore 是
+      // pure arithmetic，不做 mutex；caller 顯式控制）。
       final wasRecent = recentSet.contains(symbol);
-      final scoreShort = _ruleEngine.calculateScore(
+      final mutedShort = _ruleEngine.applyMutexGroups(
         reasons,
+        (r) => calibratedScores.lookup(Horizon.short, r.type.code) ?? r.score,
+      );
+      final mutedLong = _ruleEngine.applyMutexGroups(
+        reasons,
+        (r) => calibratedScores.lookup(Horizon.long, r.type.code) ?? r.score,
+      );
+
+      final scoreShort = _ruleEngine.calculateScore(
+        mutedShort,
         horizon: Horizon.short,
         calibratedScores: calibratedScores,
         wasRecentlyRecommended: wasRecent,
       );
       final scoreLong = _ruleEngine.calculateScore(
-        reasons,
+        mutedLong,
         horizon: Horizon.long,
         calibratedScores: calibratedScores,
         wasRecentlyRecommended: wasRecent,
@@ -178,8 +189,12 @@ class ScoringService {
         continue;
       }
 
-      // 取得前幾個原因
-      final topReasons = _ruleEngine.getTopReasons(reasons);
+      // UI 顯示用 hardcoded 分數做 mutex 過濾（保持「design intent 強度」可讀性，
+      // 與 evaluateStock 過去未拆分 mutex 時等效）。scoring 路徑（mutedShort /
+      // mutedLong）已在上方各自用 horizon-aware calibrated scoreOf 套過 mutex，
+      // 此處互不影響。
+      final mutedForUi = _ruleEngine.applyMutexGroups(reasons, (r) => r.score);
+      final topReasons = _ruleEngine.getTopReasons(mutedForUi);
 
       // 轉換為 dual-horizon ReasonData（每條 rule 都查兩個 horizon 的分數）
       final reasonDataList = topReasons.map((r) {

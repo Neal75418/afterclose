@@ -517,14 +517,30 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     //    不做 per-horizon 拆分（YAGNI）。「任一通過」的語意能涵蓋
     //    短線強勢 + 長線弱勢 或反之的候選。
     final wasRecent = recentSet.contains(symbol);
-    final scoreShort = ruleEngine.calculateScore(
+
+    // H-1 fix：mutex 過濾用 horizon-aware calibrated lookup（caller 顯式
+    // 控制 — calculateScore 是 pure arithmetic contract，不做 mutex）。
+    // calibration 因此能在不同 horizon 翻轉 mutex 贏家。fallback 到
+    // hardcoded 維持 calibration 未載入時的等效行為。
+    final mutedShort = ruleEngine.applyMutexGroups(
       reasons,
+      (r) =>
+          input.calibratedScores.lookup(Horizon.short, r.type.code) ?? r.score,
+    );
+    final mutedLong = ruleEngine.applyMutexGroups(
+      reasons,
+      (r) =>
+          input.calibratedScores.lookup(Horizon.long, r.type.code) ?? r.score,
+    );
+
+    final scoreShort = ruleEngine.calculateScore(
+      mutedShort,
       horizon: Horizon.short,
       calibratedScores: input.calibratedScores,
       wasRecentlyRecommended: wasRecent,
     );
     final scoreLong = ruleEngine.calculateScore(
-      reasons,
+      mutedLong,
       horizon: Horizon.long,
       calibratedScores: input.calibratedScores,
       wasRecentlyRecommended: wasRecent,
@@ -536,7 +552,11 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       continue;
     }
 
-    final topReasons = ruleEngine.getTopReasons(reasons);
+    // UI 顯示用 hardcoded 分數做 mutex 過濾（保持「design intent 強度」可讀性，
+    // 與 evaluateStock 過去未拆分時等效）。scoring 路徑（mutedShort / mutedLong）
+    // 已在上方各自用 horizon-aware calibrated scoreOf 套過 mutex，此處互不影響。
+    final mutedForUi = ruleEngine.applyMutexGroups(reasons, (r) => r.score);
+    final topReasons = ruleEngine.getTopReasons(mutedForUi);
     outputs.add(
       ScoringIsolateOutput(
         symbol: symbol,

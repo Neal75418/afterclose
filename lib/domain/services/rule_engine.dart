@@ -46,7 +46,21 @@ class RuleEngine {
       for (final type in entry.value) type: entry.key,
   };
 
-  /// 對股票執行所有規則並回傳觸發的原因
+  /// 對股票執行所有規則並回傳**所有**觸發的原因（**未經 mutex 過濾**）
+  ///
+  /// Mutex 過濾改成由消費端在進入 [calculateScore] / [getTopReasons] 前
+  /// **顯式**呼叫 [applyMutexGroups]，並自行決定要用哪個 `scoreOf`：
+  /// - scoring 路徑（scoring_isolate / scoring_service）：每個 horizon 各
+  ///   呼一次 applyMutexGroups，`scoreOf` 是 horizon-aware calibrated lookup
+  ///   （Stage 5b 設計：scoring 是 calibration 的 source of truth）
+  /// - UI 路徑（getTopReasons）：呼叫端傳 `(r) => r.score`（hardcoded，
+  ///   對應 design intent — UI 顯示「最強訊號」與舊行為一致）
+  ///
+  /// 過去 evaluateStock 直接套 hardcoded mutex，會把 calibration 永遠鎖在
+  /// hardcoded 排序上 — 即使 calibration 認為 volumeSpike 在某 horizon
+  /// 比 techBreakout 強，也無法贏 mutex。同時 mutex loser 規則永遠拿不到
+  /// calibration sample，因為 replay_calibrator 也吃這份過濾結果。
+  /// 把 mutex 延後到 score-aware 階段同時解這兩個問題。
   List<TriggeredReason> evaluateStock(AnalysisContext context, StockData data) {
     if (data.prices.isEmpty) return [];
 
@@ -64,28 +78,39 @@ class RuleEngine {
       }
     }
 
-    // 依分數由高至低排序（mutex group 過濾依賴此順序決定 group 內贏家）
+    // 依 hardcoded 分數排序（穩定輸出順序，供下游可預期 iteration）
     triggered.sort((a, b) => b.score.compareTo(a.score));
-
-    // Mutex group 過濾：重疊訊號只計最高分那條
-    return _applyMutexGroups(triggered);
+    return triggered;
   }
 
-  /// 同一 mutex group 內只保留分數最高的 reason。
+  /// 同一 mutex group 內只保留 [scoreOf] 回傳值最高的 reason。
   ///
-  /// 前提：輸入已按 [TriggeredReason.score] 由高至低排序。
+  /// 由呼叫端在進 [calculateScore] / [getTopReasons] 之前**顯式**呼叫；
+  /// 這兩個 method 本身都不再做 mutex（pure 算術 / pure dedup）。
+  /// [scoreOf] 由呼叫端提供：
+  /// - scoring 路徑：horizon-aware calibrated lookup（每 horizon 各呼一次）
+  /// - UI 顯示路徑：通常傳 `(r) => r.score`（hardcoded，對應 design
+  ///   intent — UI 顯示「最強訊號」的可讀性比 calibration 結果更重要）
+  ///
+  /// 內部會 stable-sort 輸入再過濾 — 呼叫端不需先排序。
   /// 不屬於任何 group 的 reason 原樣保留。
-  List<TriggeredReason> _applyMutexGroups(List<TriggeredReason> sortedReasons) {
-    if (sortedReasons.isEmpty) return sortedReasons;
+  List<TriggeredReason> applyMutexGroups(
+    List<TriggeredReason> reasons,
+    int Function(TriggeredReason) scoreOf,
+  ) {
+    if (reasons.isEmpty) return reasons;
+
+    final sorted = [...reasons]
+      ..sort((a, b) => scoreOf(b).compareTo(scoreOf(a)));
 
     final seenGroups = <String>{};
     final result = <TriggeredReason>[];
-    for (final reason in sortedReasons) {
+    for (final reason in sorted) {
       final group = _reasonToGroup[reason.type];
       if (group == null) {
         result.add(reason); // 不屬於任何 group
       } else if (seenGroups.add(group)) {
-        result.add(reason); // group 內第一次遇到（分數最高），勝出
+        result.add(reason); // group 內第一次遇到（scoreOf 最高），勝出
       }
       // 其他：已有該 group 贏家，跳過
     }
@@ -122,6 +147,11 @@ class RuleEngine {
 
     // 1. 累計各規則的分數 — 優先用 calibrated 值，查無則 fallback 到
     //    hardcoded `reason.score`。多空訊號透過正負分數自然抵消。
+    //
+    // 注意：本 method 是純算術契約（sum + cooldown + clamp），不做 mutex
+    // 過濾。Mutex 過濾應由呼叫端（scoring_isolate / scoring_service）
+    // 用 horizon-aware scoreOf 呼叫 [applyMutexGroups] 後再傳進來 —
+    // 這樣 calibration 才能影響哪條 rule 贏 mutex group。
     for (final reason in reasons) {
       final calibrated = calibratedScores.lookup(horizon, reason.type.code);
       score += calibrated ?? reason.score;
@@ -147,7 +177,9 @@ class RuleEngine {
   List<TriggeredReason> getTopReasons(List<TriggeredReason> reasons) {
     if (reasons.isEmpty) return [];
 
-    // 依 description 去重複，同一規則不會產生相同描述
+    // 依 description 去重複，同一規則不會產生相同描述。
+    // 注意：本 method 不做 mutex 過濾 — 呼叫端如果需要先過濾 mutex 應該
+    // 顯式呼 [applyMutexGroups]。把職責分開讓單元測試各自獨立。
     final seenDescriptions = <String>{};
     final result = <TriggeredReason>[];
 

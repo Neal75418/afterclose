@@ -42,6 +42,7 @@ void main() {
       );
 
       // 25 + 22 = 47（無 calibrated 時等於 Stage 5a 行為）
+      // calculateScore 是純算術契約，不做 mutex；mutex 由 caller 顯式呼。
       expect(score, 47);
     });
 
@@ -190,6 +191,8 @@ void main() {
       );
 
       // 5 * 25 = 125，遠超 maxScore 80
+      // calculateScore 是純算術，sum + clamp。Mutex 由 caller 顯式呼，不在
+      // 此 contract 內 — 即使 5 條同類 reason 也照 sum。
       final shortScore = engine.calculateScore(
         reasons,
         horizon: Horizon.short,
