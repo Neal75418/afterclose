@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
+import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -191,6 +193,19 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
   final database = AppDatabase();
 
   try {
+    // Stage 5a OTA：seed CalibratedScoresRegistry。WorkManager 在獨立 isolate
+    // 跑，singleton 是 fresh `_loaded=false` 狀態；若不 seed，`scoreStocksInIsolate`
+    // 取到的 `snapshotForIsolate()` 是空 map，所有規則 fallback 到 hardcoded
+    // `RuleScores`，跟前景路徑使用的 calibrated 分數靜默分歧 —— 夜間寫入的
+    // recommendations 跟 user 開 app 看到的不一致。對齊 `main.dart` 的初始化邏輯。
+    final cachedCalibration = await database.getCachedCalibration();
+    await CalibratedScoresRegistry.instance.loadWithOverride(
+      shortJsonOverride: cachedCalibration.shortJson,
+      longJsonOverride: cachedCalibration.longJson,
+      knownRuleIds: ReasonType.values.map((r) => r.code).toSet(),
+      hardcodedScores: {for (final r in ReasonType.values) r.code: r.score},
+    );
+
     // 初始化 API 客戶端
     final finMindClient = FinMindClient();
     final twseClient = TwseClient();
