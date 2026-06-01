@@ -277,4 +277,63 @@ void main() {
       },
     );
   });
+
+  // ==========================================
+  // H1 regression: autoDispose state-after-await race
+  // ==========================================
+  //
+  // `comparisonProvider` 是 autoDispose（無 keepAlive）；user 加股票後立刻
+  // 離開頁面會觸發 dispose。in-flight 的 `_loadAllData` Future 仍會跑到
+  // 結束、回到 addStock 的 `if (state.error != null)` 行 — 在 disposed
+  // notifier 上讀/寫 state 在 Riverpod 2.x 會 throw StateError。
+  //
+  // Fix：addStock 在讀寫 state 前 guard `_active`，_loadAllData 的 catch
+  // 也 guard `_active` 不寫 error state。
+  group('H1 regression: autoDispose race when load completes after dispose', () {
+    test(
+      'addStock does not throw StateError when notifier is disposed mid-await',
+      () async {
+        final completer = Completer<DateTime?>();
+        when(
+          () => mockDb.getLatestDataDate(),
+        ).thenAnswer((_) => completer.future);
+
+        final notifier = container.read(comparisonProvider.notifier);
+        // 不 await — 讓 _loadAllData 卡在 getLatestDataDate
+        final pending = notifier.addStock('2330');
+
+        // 模擬 user 離頁：container dispose → notifier dispose → _active = false
+        container.dispose();
+
+        // 解開 await：以 error 完成，触發 catch path
+        completer.completeError(Exception('post-dispose error'));
+
+        // 不應 throw — _loadAllData 的 catch 與 addStock 的尾段都該 guard
+        // `_active` 跳過 state 寫入。
+        await expectLater(pending, completes);
+      },
+    );
+
+    test(
+      'addStock does not throw when load succeeds after notifier disposed',
+      () async {
+        final completer = Completer<DateTime?>();
+        when(
+          () => mockDb.getLatestDataDate(),
+        ).thenAnswer((_) => completer.future);
+
+        final notifier = container.read(comparisonProvider.notifier);
+        final pending = notifier.addStock('2330');
+
+        container.dispose();
+
+        // 成功 path：getLatestDataDate 回 null，後續 _cachedDb.loadStockListData
+        // 等也會被 disposed 的 mock 設定影響，但只要 `_active` guard 起作用就不
+        // 該 throw StateError。
+        completer.complete(null);
+
+        await expectLater(pending, completes);
+      },
+    );
+  });
 }

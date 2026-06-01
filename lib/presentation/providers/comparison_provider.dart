@@ -133,6 +133,11 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     state = state.copyWith(symbols: newSymbols, isLoading: true, error: null);
     await _loadAllData(newSymbols);
 
+    // autoDispose：user 加股票後立刻離頁，notifier 在 await 期間 dispose，
+    // 此時讀寫 state 會 throw StateError。`_active` 由 `ref.onDispose` 設為
+    // false，必須先 guard 才能讀 state.error / 寫 state。
+    if (!_active) return;
+
     // _loadAllData 失敗時會設定 error，回滾新增的 symbol
     if (state.error != null) {
       state = state.copyWith(symbols: oldSymbols);
@@ -311,6 +316,16 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     } catch (e) {
       // generation 過期時不覆蓋新載入的錯誤狀態
       if (_loadGeneration != generation) return;
+      // autoDispose race：notifier 在 await 期間被 dispose，跳過 state 寫入
+      // 避免 StateError；錯誤已記 log。
+      if (!_active) {
+        AppLogger.warning(
+          'ComparisonNotifier',
+          '載入比較資料失敗（notifier 已 dispose）',
+          e,
+        );
+        return;
+      }
       AppLogger.warning('ComparisonNotifier', '載入比較資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
