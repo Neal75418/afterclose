@@ -62,3 +62,19 @@ final class TokenNotConfiguredException extends ConfigException {
 final class InvalidTokenException extends ConfigException {
   const InvalidTokenException([super.message = 'API Token 格式無效']);
 }
+
+/// 使用者輸入驗證例外
+///
+/// 用於 repository 邊界輸入合法性檢查（e.g. quantity <= 0、賣出超過持有）。
+/// [messageKey] 是 i18n key（如 `portfolio.sellExceedsHolding`）；
+/// [ErrorDisplay] 會用它做 `.tr()`，無翻譯時 easy_localization 回 key 本身。
+///
+/// 過去這類錯誤是 `throw ArgumentError(...)` / `throw StateError(...)`，會被
+/// `ErrorDisplay` 視為未知例外退到 `error.unknown` — 使用者得不到具體訊息。
+final class ValidationException extends AppException {
+  const ValidationException(this.messageKey, [Object? cause])
+    : super(messageKey, cause);
+
+  /// i18n translation key（如 `portfolio.quantityMustBePositive`）
+  final String messageKey;
+}

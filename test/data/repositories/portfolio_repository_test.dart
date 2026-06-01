@@ -1,7 +1,17 @@
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+/// Matcher for ValidationException with a specific messageKey.
+Matcher throwsValidationException(String messageKey) => throwsA(
+  isA<ValidationException>().having(
+    (e) => e.messageKey,
+    'messageKey',
+    messageKey,
+  ),
+);
 
 class MockAppDatabase extends Mock implements AppDatabase {
   @override
@@ -105,7 +115,7 @@ void main() {
       expect(captured.symbol.value, equals('2330'));
     });
 
-    test('throws ArgumentError for zero quantity', () async {
+    test('throws ValidationException for zero quantity', () async {
       await expectLater(
         () => repository.addBuyTransaction(
           symbol: '2330',
@@ -113,11 +123,11 @@ void main() {
           quantity: 0,
           price: 500,
         ),
-        throwsArgumentError,
+        throwsValidationException('portfolio.quantityMustBePositive'),
       );
     });
 
-    test('throws ArgumentError for negative price', () async {
+    test('throws ValidationException for negative price', () async {
       await expectLater(
         () => repository.addBuyTransaction(
           symbol: '2330',
@@ -125,7 +135,7 @@ void main() {
           quantity: 1000,
           price: -1,
         ),
-        throwsArgumentError,
+        throwsValidationException('portfolio.priceMustBePositive'),
       );
     });
   });
@@ -134,48 +144,54 @@ void main() {
   // addSellTransaction
   // ==========================================
   group('addSellTransaction', () {
-    test('throws StateError when selling more than held', () async {
-      when(() => mockDb.getPortfolioPosition('2330')).thenAnswer(
-        (_) async => PortfolioPositionEntry(
-          id: 1,
-          symbol: '2330',
-          quantity: 500,
-          avgCost: 500,
-          realizedPnl: 0,
-          totalDividendReceived: 0,
-          createdAt: DateTime(2025, 1, 1),
-          updatedAt: DateTime(2025, 1, 1),
-        ),
-      );
+    test(
+      'throws ValidationException(sellExceedsHolding) when selling more than held',
+      () async {
+        when(() => mockDb.getPortfolioPosition('2330')).thenAnswer(
+          (_) async => PortfolioPositionEntry(
+            id: 1,
+            symbol: '2330',
+            quantity: 500,
+            avgCost: 500,
+            realizedPnl: 0,
+            totalDividendReceived: 0,
+            createdAt: DateTime(2025, 1, 1),
+            updatedAt: DateTime(2025, 1, 1),
+          ),
+        );
 
-      await expectLater(
-        () => repository.addSellTransaction(
-          symbol: '2330',
-          date: DateTime(2025, 1, 15),
-          quantity: 1000,
-          price: 600,
-        ),
-        throwsStateError,
-      );
-    });
+        await expectLater(
+          () => repository.addSellTransaction(
+            symbol: '2330',
+            date: DateTime(2025, 1, 15),
+            quantity: 1000,
+            price: 600,
+          ),
+          throwsValidationException('portfolio.sellExceedsHolding'),
+        );
+      },
+    );
 
-    test('throws StateError when no position exists', () async {
-      when(
-        () => mockDb.getPortfolioPosition('2330'),
-      ).thenAnswer((_) async => null);
+    test(
+      'throws ValidationException(sellExceedsHolding) when no position exists',
+      () async {
+        when(
+          () => mockDb.getPortfolioPosition('2330'),
+        ).thenAnswer((_) async => null);
 
-      await expectLater(
-        () => repository.addSellTransaction(
-          symbol: '2330',
-          date: DateTime(2025, 1, 15),
-          quantity: 1000,
-          price: 600,
-        ),
-        throwsStateError,
-      );
-    });
+        await expectLater(
+          () => repository.addSellTransaction(
+            symbol: '2330',
+            date: DateTime(2025, 1, 15),
+            quantity: 1000,
+            price: 600,
+          ),
+          throwsValidationException('portfolio.sellExceedsHolding'),
+        );
+      },
+    );
 
-    test('throws ArgumentError for zero quantity', () async {
+    test('throws ValidationException for zero quantity', () async {
       await expectLater(
         () => repository.addSellTransaction(
           symbol: '2330',
@@ -183,7 +199,7 @@ void main() {
           quantity: 0,
           price: 600,
         ),
-        throwsArgumentError,
+        throwsValidationException('portfolio.quantityMustBePositive'),
       );
     });
   });
@@ -238,7 +254,7 @@ void main() {
       expect(captured.txType.value, equals('DIVIDEND_STOCK'));
     });
 
-    test('throws ArgumentError for zero amount', () async {
+    test('throws ValidationException for zero amount', () async {
       await expectLater(
         () => repository.addDividendTransaction(
           symbol: '2330',
@@ -246,7 +262,7 @@ void main() {
           amount: 0,
           isCash: true,
         ),
-        throwsArgumentError,
+        throwsValidationException('portfolio.amountMustBePositive'),
       );
     });
   });
@@ -681,7 +697,7 @@ void main() {
     'I5 regression: FIFO sellExceedsHolding guard in _recalculatePosition',
     () {
       test(
-        'updateTransaction shrinking BUY below SELL throws StateError',
+        'updateTransaction shrinking BUY below SELL throws ValidationException',
         () async {
           // 場景：原本 BUY 1000 → SELL 500（合法）；現在編輯 BUY 改成 300
           // → 重算時 lots 只剩 300、SELL 500 多出 200 沒有 cost basis 配對
@@ -724,13 +740,7 @@ void main() {
 
           expect(
             () => repository.deleteTransaction(99, '2330'),
-            throwsA(
-              isA<StateError>().having(
-                (e) => e.message,
-                'message',
-                contains('sellExceedsHolding'),
-              ),
-            ),
+            throwsValidationException('portfolio.sellExceedsHolding'),
           );
         },
       );

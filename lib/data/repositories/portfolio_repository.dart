@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/analysis_params.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/repositories/portfolio_repository.dart';
 
@@ -53,8 +54,12 @@ class PortfolioRepository implements IPortfolioRepository {
     double? fee,
     String? note,
   }) async {
-    if (quantity <= 0) throw ArgumentError('Quantity must be positive');
-    if (price <= 0) throw ArgumentError('Price must be positive');
+    if (quantity <= 0) {
+      throw const ValidationException('portfolio.quantityMustBePositive');
+    }
+    if (price <= 0) {
+      throw const ValidationException('portfolio.priceMustBePositive');
+    }
 
     final actualFee = fee ?? calculateFee(quantity, price);
 
@@ -76,7 +81,8 @@ class PortfolioRepository implements IPortfolioRepository {
 
   /// 新增賣出交易
   ///
-  /// 若賣出數量超過持有數量，會拋出 [StateError]。
+  /// 若賣出數量超過持有數量，會拋出 [ValidationException]
+  /// (`portfolio.sellExceedsHolding`)。
   @override
   Future<void> addSellTransaction({
     required String symbol,
@@ -87,8 +93,12 @@ class PortfolioRepository implements IPortfolioRepository {
     double? tax,
     String? note,
   }) async {
-    if (quantity <= 0) throw ArgumentError('Quantity must be positive');
-    if (price <= 0) throw ArgumentError('Price must be positive');
+    if (quantity <= 0) {
+      throw const ValidationException('portfolio.quantityMustBePositive');
+    }
+    if (price <= 0) {
+      throw const ValidationException('portfolio.priceMustBePositive');
+    }
 
     final actualFee = fee ?? calculateFee(quantity, price);
     final actualTax = tax ?? calculateTax(quantity, price);
@@ -98,7 +108,7 @@ class PortfolioRepository implements IPortfolioRepository {
       final position = await _db.getPortfolioPosition(symbol);
       final currentQty = position?.quantity ?? 0;
       if (quantity > currentQty) {
-        throw StateError('portfolio.sellExceedsHolding');
+        throw const ValidationException('portfolio.sellExceedsHolding');
       }
 
       await _db.insertTransaction(
@@ -126,7 +136,9 @@ class PortfolioRepository implements IPortfolioRepository {
     required bool isCash,
     String? note,
   }) async {
-    if (amount <= 0) throw ArgumentError('Amount must be positive');
+    if (amount <= 0) {
+      throw const ValidationException('portfolio.amountMustBePositive');
+    }
 
     await _db.transaction(() async {
       await _db.insertTransaction(
@@ -239,7 +251,7 @@ class PortfolioRepository implements IPortfolioRepository {
           // 路徑（編輯既有 BUY 把數量改小）不會走那條檢查，必須在這裡 throw
           // 讓 transaction rollback，否則 realizedPnl 會少算掉未配對部份的成本。
           if (remainingToSell > 1e-9) {
-            throw StateError('portfolio.sellExceedsHolding');
+            throw const ValidationException('portfolio.sellExceedsHolding');
           }
           // 賣出手續費與交易稅直接從已實現損益扣除
           realizedPnl -= tx.fee + tx.tax;

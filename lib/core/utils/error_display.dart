@@ -18,6 +18,12 @@ import 'package:afterclose/core/utils/logger.dart';
 abstract final class ErrorDisplay {
   /// 將例外物件轉換為使用者可讀的本地化訊息
   static String message(Object error) {
+    // ValidationException 走 i18n 翻譯（messageKey 是 translation key）。
+    // 必須在通用 AppException 分支之前，否則會早回傳未翻譯的 key。
+    if (error is ValidationException) {
+      return error.messageKey.tr();
+    }
+
     // AppException 子類別已包含中文訊息
     if (error is AppException) {
       return error.message;
