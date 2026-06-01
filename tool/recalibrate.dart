@@ -38,6 +38,8 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import 'package:afterclose/core/constants/calibration_thresholds.dart';
+
 // ============================================================================
 // Public data models (importable by tests)
 // ============================================================================
@@ -136,13 +138,18 @@ class CalibratedRule {
 ///
 /// 流程：
 /// 1. Compute z-stat 透過 proportion z-test: `(hit_rate - 0.5) / sqrt(p(1-p)/n)`
-/// 2. Cut 過濾：`samples < 30` / `z_stat < 1.5` / `hit_rate < 0.55`
+/// 2. Cut 過濾：`samples < 30` / `|z_stat| < 1.5` / `hit_rate < 0.55`
+///    （門檻來源：[CalibrationThresholds]，與 RuleAccuracyService /
+///    replay_calibrator 共用同一份常數）
 /// 3. 倖存者的 raw weight = `hit_rate × avg_return × sqrt(n)`
 /// 4. Min-max normalize 到 [10, 35] 分數區間
 abstract final class Calibrator {
-  static const double tStatCutThreshold = 1.0;
-  static const double hitRateCutThreshold = 0.50;
-  static const int sampleSizeCutThreshold = 30;
+  static const double tStatCutThreshold =
+      CalibrationThresholds.tStatCutThreshold;
+  static const double hitRateCutThreshold =
+      CalibrationThresholds.hitRateCutThreshold;
+  static const int sampleSizeCutThreshold =
+      CalibrationThresholds.sampleSizeCutThreshold;
   static const int minScore = 10;
   static const int maxScore = 35;
 
@@ -266,9 +273,15 @@ const _horizonBoth = 'both';
 const _periodShort = '5D';
 const _periodLong = '60D';
 
-// 對齊 rule_accuracy_service.dart 的 _successThresholds
-const _thresholdShort = 1.5;
-const _thresholdLong = 8.0;
+// Canonical thresholds — 不要在這邊重新寫死數字。三個 writer
+// （rule_accuracy_service / replay_calibrator / recalibrate）都讀同一份
+// 常數，避免 drift 又寫 rule_accuracy 表造成 calibration 不可重現。
+final _thresholdShort =
+    CalibrationThresholds.successThresholds[5] ??
+    CalibrationThresholds.defaultSuccessThreshold;
+final _thresholdLong =
+    CalibrationThresholds.successThresholds[60] ??
+    CalibrationThresholds.defaultSuccessThreshold;
 
 const _windowDays = 504; // 2 trading years
 const _trainRatio = 0.7;

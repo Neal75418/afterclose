@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -13,8 +14,11 @@ import 'package:afterclose/data/database/app_database.dart';
 /// 負責回溯驗證過去的推薦，計算每條規則的命中率和平均報酬率。
 /// 支援多持有天數 (1, 3, 5, 10, 20, 60 交易日)。
 ///
-/// **成功判定**（2026-04 Stage 2 改動）：per-period threshold 取代寬鬆的 `>0`
-/// 基準，避免「勉強沒虧」被算成命中。Threshold 對照見 [_successThresholds]。
+/// **成功判定**：per-period threshold 取代寬鬆的 `>0` 基準，避免「勉強沒虧」
+/// 被算成命中。Threshold 來源為 [CalibrationThresholds.successThresholds]，
+/// 與 `tool/replay_calibrator.dart` 跟 `tool/recalibrate.dart` 共用同一份
+/// 常數，避免不同 writer 用不同門檻寫 rule_accuracy 表造成 calibration
+/// 不可重現。
 class RuleAccuracyService {
   RuleAccuracyService({
     required AppDatabase database,
@@ -34,34 +38,20 @@ class RuleAccuracyService {
   /// 支援的持有天數（1D/3D 短線 + 5D/10D/20D 中線 + 60D 長線）
   static const List<int> holdingPeriods = [1, 3, 5, 10, 20, 60];
 
-  /// 成功判定門檻（per-period，單位 %）— `returnRate` 必須 **≥** 對應值才算命中。
-  ///
-  /// - **1D / 3D**：無門檻（fallback 至 [_defaultSuccessThreshold]，
-  ///   短線雜訊大、要求再嚴也測不出真訊號）
-  /// - **5D**：3%（短線要吃到肉的最低標準）
-  /// - **10D**：5%（中線合理目標）
-  /// - **20D**：8%（中線強勁目標）
-  /// - **60D**：12%（長線有明顯價值）
-  ///
-  /// 動機：舊版 `isSuccess = returnRate > 0` 會把漲 0.1% 也算命中，製造虛假
-  /// 的高 hit_rate，污染 Stage 2/4 的 calibration 分數。新門檻讓「命中」對應
-  /// 「真的有賺到值得下單的幅度」。
-  static const Map<int, double> _successThresholds = {
-    5: 3.0,
-    10: 5.0,
-    20: 8.0,
-    60: 12.0,
-  };
-
-  /// 未明確設定 threshold 的 period 使用的 fallback（非負即算命中）
-  static const double _defaultSuccessThreshold = 0.0;
+  /// 暴露 canonical thresholds 供 test 對 calibration tool 的常數 drift
+  /// guardrail 驗證（見 `test/core/constants/calibration_thresholds_test.dart`）。
+  /// 不要在 production code 用 — 直接 import [CalibrationThresholds]。
+  static const Map<int, double> successThresholds =
+      CalibrationThresholds.successThresholds;
 
   /// 判定 `returnRate`（%）是否達到 `period` 的命中門檻
   ///
   /// 使用 `>=`（含）而非 `>`（嚴格）— 邊界 case（例如 5D returnRate 剛好 3.0%）
   /// 算命中，對應「門檻就是及格線」的直覺。
   static bool _isSuccessFor(double returnRate, int period) {
-    final threshold = _successThresholds[period] ?? _defaultSuccessThreshold;
+    final threshold =
+        CalibrationThresholds.successThresholds[period] ??
+        CalibrationThresholds.defaultSuccessThreshold;
     return returnRate >= threshold;
   }
 

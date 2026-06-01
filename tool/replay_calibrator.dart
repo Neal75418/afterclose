@@ -46,6 +46,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 
+import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
@@ -259,8 +260,14 @@ class ReplayCalibrator {
 
     const shortDays = 5;
     const longDays = 60;
-    const shortThreshold = 1.5; // %
-    const longThreshold = 8.0; // %
+    // 從 canonical 常數讀出 — 不要在這邊重新寫死值，否則跟
+    // RuleAccuracyService 與 recalibrate 會 drift（過去就是這樣壞掉的）
+    final shortThreshold =
+        CalibrationThresholds.successThresholds[shortDays] ??
+        CalibrationThresholds.defaultSuccessThreshold;
+    final longThreshold =
+        CalibrationThresholds.successThresholds[longDays] ??
+        CalibrationThresholds.defaultSuccessThreshold;
 
     var daysEvaluated = 0;
     var firingsRecorded = 0;

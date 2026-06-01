@@ -32,7 +32,7 @@ enum Horizon {
   /// 交易日數（不含非交易日）
   final int tradingDays;
 
-  /// 成功門檻百分比，對應 `rule_accuracy_service` 的 `_successThresholds`
+  /// 成功門檻百分比，對應 [CalibrationThresholds.successThresholds]
   final double successThresholdPct;
 
   /// JSON asset 路徑，供 `rootBundle.loadString` 讀取

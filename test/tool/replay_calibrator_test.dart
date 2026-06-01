@@ -168,35 +168,40 @@ void main() {
       expect(stats.long.hitRate, 1.0);
     });
 
-    test('successCount uses short=1.5% / long=8% thresholds', () async {
-      // Construct prices with slow growth: 0.5%/day (close=100 + 0.5*i)
-      // 5D return ≈ 2.5/(100+0.5i) ≈ 2.4% → mostly > 1.5% threshold
-      // Use even slower growth to stay below 1.5%
-      await seedStock('SLOW', priceDays: 150, growthPerDay: 0.5);
-      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
-        TriggeredReason(
-          type: ReasonType.volumeSpike,
-          score: 22,
-          description: 'slow firing',
-        ),
-      ]);
+    test(
+      'successCount uses canonical thresholds from CalibrationThresholds',
+      () async {
+        // 用快速成長價格序列確保 5D / 60D return 都明顯**超過**canonical
+        // 門檻（5D=3.0%, 60D=12.0%），驗 replay_calibrator 確實讀到 canonical
+        // 常數做 isSuccess 判定。growthPerDay=5：
+        //   5D return = 25/(100 + 5i) > 3% when 100+5i < 833 (i < 146) ✓ 所有 day
+        //   60D return = 300/(100+5i) > 12% when 100+5i < 2500 (i < 480) ✓ 所有 day
+        await seedStock('FAST', priceDays: 150, growthPerDay: 5.0);
+        when(
+          () => mockRuleEngine.evaluateStock(any(), any()),
+        ).thenReturn(const [
+          TriggeredReason(
+            type: ReasonType.volumeSpike,
+            score: 22,
+            description: 'fast firing',
+          ),
+        ]);
 
-      final calibrator = ReplayCalibrator(
-        db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
-        analysisService: mockAnalysis,
-        ruleEngine: mockRuleEngine,
-        logger: (_) {},
-      );
-      final result = await calibrator.run();
+        final calibrator = ReplayCalibrator(
+          db: db,
+          config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+          analysisService: mockAnalysis,
+          ruleEngine: mockRuleEngine,
+          logger: (_) {},
+        );
+        final result = await calibrator.run();
 
-      final stats = result.ruleStats[ReasonType.volumeSpike.code]!;
-      // Slow growth 0.5/day: 5D return ≈ 2.5/(100+i) ≈ 2.4% → mostly > 1.5%
-      // so short hit rate should be high with the lowered threshold
-      expect(stats.short.hitRate, greaterThan(0.5));
-      // 60D return: 30/(100+0.5i) ≈ 20%..30% → mostly > 8% → high hit rate
-      expect(stats.long.hitRate, greaterThan(0.9));
-    });
+        final stats = result.ruleStats[ReasonType.volumeSpike.code]!;
+        // 兩個 horizon 的 hit rate 都應該幾乎 100%（returns 都遠超門檻）
+        expect(stats.short.hitRate, greaterThan(0.9));
+        expect(stats.long.hitRate, greaterThan(0.9));
+      },
+    );
   });
 
   group('ReplayCalibrator — unbiased sampling', () {
