@@ -694,4 +694,72 @@ void main() {
       },
     );
   });
+
+  // ==================================================
+  // H2 regression: exit price must be exact-date, not ±1d window
+  // ==================================================
+  //
+  // Before fix: backfill / _computeValidation 用 `±1d window + DESC +
+  // putIfAbsent` → `exitDate+1d` 有 row 時必先吃，1D hold 變成 2D 算，
+  // returnRate 系統性灌水。
+  //
+  // After fix: exact-date lookup — `exitDate+1d` 的 row 即使存在也不會
+  // 被用到。
+  group('H2 regression: exit price exact-date lookup', () {
+    test(
+      'backfill ignores price row at exitDate+1d, uses exact exitDate close',
+      () async {
+        final entry = DateTime.utc(2026, 1, 5);
+        final exitDate = TaiwanCalendar.addTradingDays(entry, 5);
+        // exitDate+1d 故意放一個荒謬高的價格，舊代碼會誤抓
+        final wrongExitNextDay = exitDate.add(const Duration(days: 1));
+
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: '2330',
+            name: 'TSMC',
+            market: 'TWSE',
+          ),
+        ]);
+
+        await db.insertPrices([
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: entry,
+            close: const Value(100.0),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: exitDate,
+            close: const Value(103.0), // 真實 +3% (5D 門檻邊緣)
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: wrongExitNextDay,
+            close: const Value(200.0), // 舊代碼會抓這條 → +100%
+          ),
+        ]);
+
+        await db.insertRecommendations([
+          DailyRecommendationCompanion.insert(
+            symbol: '2330',
+            date: entry,
+            rank: 1,
+            score: 80.0,
+            horizon: Horizon.short.name,
+          ),
+        ]);
+
+        await service.backfillAllHistoricalRecommendations();
+
+        final row = await (db.select(
+          db.recommendationValidation,
+        )..where((t) => t.holdingDays.equals(5))).getSingleOrNull();
+        expect(row, isNotNull);
+        // 應該是 exact exitDate (103/100 - 1) * 100 = 3.0；
+        // 若 regress 回 ±1d window 會看到 (200/100 - 1) * 100 = 100.0
+        expect(row!.returnRate, closeTo(3.0, 0.001));
+      },
+    );
+  });
 }

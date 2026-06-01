@@ -131,22 +131,22 @@ class RuleAccuracyService {
     final exitDate = TaiwanCalendar.addTradingDays(normalizedDate, daysAgo);
 
     // 2. 批次預載：3 次查詢取代 3N 次個別查詢
+    //
+    // exit price 用 exact-date 查 — `exitDate` 已是 `addTradingDays` 算出
+    // 的交易日，多數情況有對應 daily_price 列。先前使用 `±1d window + DESC
+    // + putIfAbsent` 會在 `exitDate+1d` 也是交易日時錯抓 T+1 收盤（DESC →
+    // putIfAbsent 必先吃較晚日期），讓 1D hold 在計算上變 2D，整條
+    // validation 路徑系統性灌水 returnRate。
+    // 與 `_computeUnbiasedRuleStats` 的 exact lookup 對齊；exit price 缺資
+    // 料的 recommendation 在 step 4 由 `continue` 跳過。
     final (entryRows, exitRows, reasonRows) = await (
       (_db.select(_db.dailyPrice)..where(
             (t) => t.date.equals(normalizedDate) & t.symbol.isIn(symbols),
           ))
           .get(),
-      (_db.select(_db.dailyPrice)
-            ..where(
-              (t) =>
-                  t.symbol.isIn(symbols) &
-                  t.date.isBetweenValues(
-                    exitDate.subtract(const Duration(days: 1)),
-                    exitDate.add(const Duration(days: 1)),
-                  ),
-            )
-            ..orderBy([(t) => OrderingTerm.desc(t.date)]))
-          .get(),
+      (_db.select(
+        _db.dailyPrice,
+      )..where((t) => t.symbol.isIn(symbols) & t.date.equals(exitDate))).get(),
       (_db.select(_db.dailyReason)
             ..where(
               (t) => t.date.equals(normalizedDate) & t.symbol.isIn(symbols),
@@ -157,10 +157,7 @@ class RuleAccuracyService {
 
     // 3. 建立查找表
     final entryPriceMap = {for (final p in entryRows) p.symbol: p};
-    final exitPriceMap = <String, DailyPriceEntry>{};
-    for (final p in exitRows) {
-      exitPriceMap.putIfAbsent(p.symbol, () => p); // 已按日期降冪，首筆即最新
-    }
+    final exitPriceMap = {for (final p in exitRows) p.symbol: p};
     final primaryRuleMap = <String, String>{};
     for (final r in reasonRows) {
       primaryRuleMap.putIfAbsent(
@@ -329,17 +326,12 @@ class RuleAccuracyService {
 
             List<DailyPriceEntry> exitRows;
             try {
+              // exact-date lookup（與 `_computeValidation` 對齊，見該方法
+              // 的 step 2 註解；先前的 ±1d window 會錯抓 T+1 收盤）
               exitRows =
-                  await (_db.select(_db.dailyPrice)
-                        ..where(
-                          (t) =>
-                              t.symbol.isIn(symbols) &
-                              t.date.isBetweenValues(
-                                exitDate.subtract(const Duration(days: 1)),
-                                exitDate.add(const Duration(days: 1)),
-                              ),
-                        )
-                        ..orderBy([(t) => OrderingTerm.desc(t.date)]))
+                  await (_db.select(_db.dailyPrice)..where(
+                        (t) => t.symbol.isIn(symbols) & t.date.equals(exitDate),
+                      ))
                       .get();
             } on RateLimitException {
               rethrow;
@@ -363,10 +355,7 @@ class RuleAccuracyService {
               continue;
             }
 
-            final exitPriceMap = <String, DailyPriceEntry>{};
-            for (final p in exitRows) {
-              exitPriceMap.putIfAbsent(p.symbol, () => p);
-            }
+            final exitPriceMap = {for (final p in exitRows) p.symbol: p};
 
             // 從預載資料計算結果，無額外 DB 查詢
             final pendingInserts = <RecommendationValidationCompanion>[];
