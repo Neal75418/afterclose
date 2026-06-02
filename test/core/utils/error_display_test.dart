@@ -38,7 +38,7 @@ void main() {
     });
 
     test('SocketException returns network i18n key', () {
-      final error = const SocketException('boom');
+      const error = SocketException('boom');
       // 翻譯檔已有 error.network；只要不是 unknown 即可。
       expect(ErrorDisplay.message(error), isNot('error.unknown'));
     });
