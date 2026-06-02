@@ -87,11 +87,38 @@ class InsiderRepository {
 
       // 序列化取得 TWSE 和 TPEX 董監持股資料
       // TPEX 伺服器對併行連線敏感，序列化避免 Connection reset
-      final twseData = await _twseClient.getInsiderHoldings();
-      final tpexData = await _tpexClient.getInsiderHoldings();
+      //
+      // 各來源獨立 try/catch：TWSE 失敗時 TPEX 仍能寫入（partial success），
+      // 與 `WarningRepository.syncAllMarketWarnings` 對齊。Rate-limit 與
+      // network 例外仍 rethrow 讓 coordinator 統一處理。
+      List<TwseInsiderHolding> twseData = [];
+      List<TpexInsiderHolding> tpexData = [];
+      var failCount = 0;
+
+      try {
+        twseData = await _twseClient.getInsiderHoldings();
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
+      } catch (e) {
+        failCount++;
+        AppLogger.warning('InsiderRepo', '上市董監持股取得失敗', e);
+      }
+
+      try {
+        tpexData = await _tpexClient.getInsiderHoldings();
+      } on RateLimitException {
+        rethrow;
+      } on NetworkException {
+        rethrow;
+      } catch (e) {
+        failCount++;
+        AppLogger.warning('InsiderRepo', '上櫃董監持股取得失敗', e);
+      }
 
       if (twseData.isEmpty && tpexData.isEmpty) {
-        AppLogger.warning('InsiderRepo', '無董監持股資料');
+        AppLogger.warning('InsiderRepo', '無董監持股資料 (失敗 $failCount 個來源)');
         return 0;
       }
 
