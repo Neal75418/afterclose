@@ -165,6 +165,7 @@ class PortfolioRepository implements IPortfolioRepository {
   }
 
   /// 更新交易紀錄並重新計算 FIFO
+  @override
   Future<void> updateTransaction({
     required int txId,
     required String symbol,

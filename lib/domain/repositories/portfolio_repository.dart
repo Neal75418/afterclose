@@ -40,4 +40,16 @@ abstract class IPortfolioRepository {
 
   /// 刪除交易紀錄
   Future<void> deleteTransaction(int txId, String symbol);
+
+  /// 更新交易紀錄並重新計算 FIFO
+  Future<void> updateTransaction({
+    required int txId,
+    required String symbol,
+    required DateTime date,
+    required double quantity,
+    required double price,
+    double? fee,
+    double? tax,
+    String? note,
+  });
 }
