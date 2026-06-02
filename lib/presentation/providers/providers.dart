@@ -27,6 +27,7 @@ import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
+import 'package:afterclose/data/repositories/screening_repository.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/services/cache_warmup_service.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
@@ -67,10 +68,14 @@ final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
 
 /// FinMind API 客戶端（用於取得歷史資料）
 ///
-/// 當使用者變更快取時間設定時，此 provider 會被 invalidate 並重建。
+/// 當使用者變更快取時間設定時，此 provider 會被 invalidate 並重建；
+/// `ref.onDispose` 呼叫 `client.close()` 釋放舊 Dio 連線與 LRU cache，
+/// 避免每次設定變動都洩漏一個底層 socket。
 final finMindClientProvider = Provider<FinMindClient>((ref) {
   final cacheDuration = ref.watch(cacheDurationProvider);
-  return FinMindClient(cacheTtl: Duration(minutes: cacheDuration));
+  final client = FinMindClient(cacheTtl: Duration(minutes: cacheDuration));
+  ref.onDispose(client.close);
+  return client;
 });
 
 /// TWSE 開放資料客戶端（用於取得每日全市場上市價格）
@@ -167,6 +172,11 @@ final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
   );
 });
 
+/// 選股資料 + 策略儲存庫 Provider（SQL 篩選 + 策略 CRUD）
+final screeningRepositoryProvider = Provider<ScreeningRepository>((ref) {
+  return ScreeningRepository(database: ref.watch(databaseProvider));
+});
+
 /// 法人資料儲存庫 Provider
 final institutionalRepositoryProvider = Provider<InstitutionalRepository>((
   ref,
@@ -230,6 +240,7 @@ final warningRepositoryProvider = Provider<WarningRepository>((ref) {
 final insiderRepositoryProvider = Provider<InsiderRepository>((ref) {
   return InsiderRepository(
     database: ref.watch(databaseProvider),
+    twseClient: ref.watch(twseClientProvider),
     tpexClient: ref.watch(tpexClientProvider),
   );
 });

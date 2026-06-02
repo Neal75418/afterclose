@@ -621,4 +621,13 @@ class FinMindClient {
         }(),
     fromJson: FinMindTotalReturnIndex.tryFromJson,
   );
+
+  /// 釋放底層 Dio HTTP 連線資源。
+  ///
+  /// 由 Riverpod provider 的 `ref.onDispose` 呼叫；當 `cacheDurationProvider`
+  /// invalidate 重建 client 時也要呼叫此方法，避免舊 Dio 持續持有 socket。
+  void close() {
+    _dio.close(force: false);
+    _responseCache.clear();
+  }
 }
