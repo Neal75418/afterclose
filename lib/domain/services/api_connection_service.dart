@@ -30,9 +30,10 @@ class ApiConnectionService {
       );
     }
 
+    // 建立臨時客戶端測試連線
+    final client = FinMindClient(token: token);
+
     try {
-      // 建立臨時客戶端測試連線
-      final client = FinMindClient(token: token);
       final stocks = await client.getStockList();
 
       return ApiTestResult._(success: true, stockCount: stocks.length);
@@ -66,6 +67,10 @@ class ApiConnectionService {
         error: ApiTestError.unknown,
         errorMessage: '發生未預期的錯誤，請稍後再試',
       );
+    } finally {
+      // 一次性連線測試，用完即丟；不 close 會洩 Dio keep-alive socket 與
+      // LRU cache 直到 GC（L1/L2 lifecycle contract）。
+      client.close();
     }
   }
 }

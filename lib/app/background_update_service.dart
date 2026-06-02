@@ -206,94 +206,109 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
       hardcodedScores: {for (final r in ReasonType.values) r.code: r.score},
     );
 
-    // 初始化 API 客戶端
+    // 初始化 API 客戶端（hoist 到 try 外讓 finally 可見；inline 構造的
+    // TdccClient 改成有名 reference，否則 isolate 結束前無法 close）
     final finMindClient = FinMindClient();
     final twseClient = TwseClient();
     final tpexClient = TpexClient();
-
-    // 載入 API Token（如有）
-    try {
-      final settingsRepo = SettingsRepository(database: database);
-      final token = await settingsRepo.getFinMindToken();
-      if (token != null && token.isNotEmpty) {
-        finMindClient.token = token;
-      }
-    } catch (e) {
-      AppLogger.warning('BackgroundUpdateService', '載入 API Token 失敗', e);
-    }
-
-    // 初始化 Repositories
-    final stockRepo = StockRepository(
-      database: database,
-      finMindClient: finMindClient,
-    );
-    final priceRepo = PriceRepository(
-      database: database,
-      finMindClient: finMindClient,
-      twseClient: twseClient,
-      tpexClient: tpexClient,
-    );
+    final tdccClient = TdccClient();
     final rssParser = RssParser();
-    final newsRepo = NewsRepository(database: database, rssParser: rssParser);
-    final analysisRepo = AnalysisRepository(database: database);
-    final institutionalRepo = InstitutionalRepository(
-      database: database,
-      finMindClient: finMindClient,
-      twseClient: twseClient,
-      tpexClient: tpexClient,
-    );
-    final marketDataRepo = MarketDataRepository(
-      database: database,
-      finMindClient: finMindClient,
-    );
-    final tradingRepo = TradingRepository(
-      database: database,
-      twseClient: twseClient,
-      tpexClient: tpexClient,
-    );
-    final shareholdingRepo = ShareholdingRepository(
-      database: database,
-      finMindClient: finMindClient,
-    );
-    final fundamentalRepo = FundamentalRepository(
-      db: database,
-      finMind: finMindClient,
-      twse: twseClient,
-      tpex: tpexClient,
-    );
-    final insiderRepo = InsiderRepository(
-      database: database,
-      twseClient: twseClient,
-      tpexClient: tpexClient,
-    );
 
-    // 建立 UpdateService
-    final ruleAccuracyService = RuleAccuracyService(database: database);
-    final updateService = UpdateService(
-      database: database,
-      repositories: UpdateRepositories(
-        stock: stockRepo,
-        price: priceRepo,
-        news: newsRepo,
-        analysis: analysisRepo,
-        institutional: institutionalRepo,
-        marketData: marketDataRepo,
-        trading: tradingRepo,
-        shareholding: shareholdingRepo,
-        fundamental: fundamentalRepo,
-        insider: insiderRepo,
-      ),
-      clients: UpdateClients(
+    try {
+      // 載入 API Token（如有）
+      try {
+        final settingsRepo = SettingsRepository(database: database);
+        final token = await settingsRepo.getFinMindToken();
+        if (token != null && token.isNotEmpty) {
+          finMindClient.token = token;
+        }
+      } catch (e) {
+        AppLogger.warning('BackgroundUpdateService', '載入 API Token 失敗', e);
+      }
+
+      // 初始化 Repositories
+      final stockRepo = StockRepository(
+        database: database,
+        finMindClient: finMindClient,
+      );
+      final priceRepo = PriceRepository(
+        database: database,
+        finMindClient: finMindClient,
+        twseClient: twseClient,
+        tpexClient: tpexClient,
+      );
+      final newsRepo = NewsRepository(database: database, rssParser: rssParser);
+      final analysisRepo = AnalysisRepository(database: database);
+      final institutionalRepo = InstitutionalRepository(
+        database: database,
+        finMindClient: finMindClient,
+        twseClient: twseClient,
+        tpexClient: tpexClient,
+      );
+      final marketDataRepo = MarketDataRepository(
+        database: database,
+        finMindClient: finMindClient,
+      );
+      final tradingRepo = TradingRepository(
+        database: database,
+        twseClient: twseClient,
+        tpexClient: tpexClient,
+      );
+      final shareholdingRepo = ShareholdingRepository(
+        database: database,
+        finMindClient: finMindClient,
+      );
+      final fundamentalRepo = FundamentalRepository(
+        db: database,
+        finMind: finMindClient,
         twse: twseClient,
         tpex: tpexClient,
-        tdcc: TdccClient(),
-        finMind: finMindClient,
-      ),
-      services: UpdateServices(ruleAccuracy: ruleAccuracyService),
-    );
+      );
+      final insiderRepo = InsiderRepository(
+        database: database,
+        twseClient: twseClient,
+        tpexClient: tpexClient,
+      );
 
-    // 執行更新
-    return await updateService.runDailyUpdate();
+      // 建立 UpdateService
+      final ruleAccuracyService = RuleAccuracyService(database: database);
+      final updateService = UpdateService(
+        database: database,
+        repositories: UpdateRepositories(
+          stock: stockRepo,
+          price: priceRepo,
+          news: newsRepo,
+          analysis: analysisRepo,
+          institutional: institutionalRepo,
+          marketData: marketDataRepo,
+          trading: tradingRepo,
+          shareholding: shareholdingRepo,
+          fundamental: fundamentalRepo,
+          insider: insiderRepo,
+        ),
+        clients: UpdateClients(
+          twse: twseClient,
+          tpex: tpexClient,
+          tdcc: tdccClient,
+          finMind: finMindClient,
+        ),
+        services: UpdateServices(ruleAccuracy: ruleAccuracyService),
+      );
+
+      // 執行更新
+      return await updateService.runDailyUpdate();
+    } finally {
+      // 釋放所有 API client 的 Dio 連線。Android WorkManager 每次都會
+      // destroy FlutterEngine 連帶釋放 isolate，所以本質是 hygiene 而非
+      // 累積 leak；顯式 close 仍有價值：iOS BGProcessingTask 時間更緊、
+      // 任務內 keep-alive socket 提前歸還、未來把 runner 搬出 WorkManager
+      // 時不需要再回頭補。
+      finMindClient.close();
+      twseClient.close();
+      tpexClient.close();
+      tdccClient.close();
+      rssParser.close();
+    }
   } finally {
     // 確保資料庫一定會被關閉
     await database.close();

@@ -80,22 +80,30 @@ final finMindClientProvider = Provider<FinMindClient>((ref) {
 
 /// TWSE 開放資料客戶端（用於取得每日全市場上市價格）
 final twseClientProvider = Provider<TwseClient>((ref) {
-  return TwseClient();
+  final client = TwseClient();
+  ref.onDispose(client.close);
+  return client;
 });
 
 /// TPEX 開放資料客戶端（用於取得每日全市場上櫃價格）
 final tpexClientProvider = Provider<TpexClient>((ref) {
-  return TpexClient();
+  final client = TpexClient();
+  ref.onDispose(client.close);
+  return client;
 });
 
 /// TDCC 集保中心 Open Data 客戶端（股權分散表，每週更新）
 final tdccClientProvider = Provider<TdccClient>((ref) {
-  return TdccClient();
+  final client = TdccClient();
+  ref.onDispose(client.close);
+  return client;
 });
 
 /// RSS 解析器
 final rssParserProvider = Provider<RssParser>((ref) {
-  return RssParser();
+  final parser = RssParser();
+  ref.onDispose(parser.close);
+  return parser;
 });
 
 // ==================================================
@@ -125,8 +133,12 @@ final currentAppVersionProvider = Provider<String>((ref) => '1.0.0');
 /// 永遠不會 throw 到 caller。詳見 [CalibrationUpdater] 與
 /// design doc §3.5。
 final calibrationUpdaterProvider = Provider<CalibrationUpdater>((ref) {
+  // Updater 的 Dio 由 provider 擁有；container dispose 時必須 close()
+  // 才能釋放 keep-alive socket（L1 / L2 lifecycle contract）。
+  final dio = Dio();
+  ref.onDispose(() => dio.close(force: false));
   return CalibrationUpdater(
-    dio: Dio(),
+    dio: dio,
     database: ref.watch(databaseProvider),
     clock: ref.watch(appClockProvider),
     appVersion: ref.watch(currentAppVersionProvider),
