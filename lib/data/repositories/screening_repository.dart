@@ -219,6 +219,41 @@ class ScreeningRepository implements IScreeningRepository {
   }
 
   // ==================================================
+  // 自訂選股策略 CRUD（Drift Companion 構造留在此層）
+  // ==================================================
+
+  @override
+  Future<List<ScreeningStrategyEntry>> loadStrategies() =>
+      _db.getAllScreeningStrategies();
+
+  @override
+  Future<int> saveStrategy({
+    required String name,
+    required String conditionsJson,
+  }) {
+    return _db.insertScreeningStrategy(
+      ScreeningStrategyTableCompanion.insert(
+        name: name,
+        conditionsJson: conditionsJson,
+      ),
+    );
+  }
+
+  @override
+  Future<void> renameStrategy(int id, String newName) {
+    return _db.updateScreeningStrategy(
+      id,
+      ScreeningStrategyTableCompanion(
+        name: Value(newName),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  @override
+  Future<void> deleteStrategy(int id) => _db.deleteScreeningStrategy(id);
+
+  // ==================================================
   // SQL 建構輔助方法
   // ==================================================
 

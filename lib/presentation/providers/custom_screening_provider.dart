@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/date_context.dart';
@@ -100,6 +99,8 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   AppDatabase get _db => ref.read(databaseProvider);
   CachedDatabaseAccessor get _cachedDb => ref.read(cachedDbProvider);
   AnalysisRepository get _analysisRepo => ref.read(analysisRepositoryProvider);
+  ScreeningRepository get _screeningRepo =>
+      ref.read(screeningRepositoryProvider);
 
   // 暫存篩選結果（於 build() 中重設）
   List<String> _allResultSymbols = [];
@@ -144,7 +145,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   Future<void> loadSavedStrategies() async {
     state = state.copyWith(isLoadingStrategies: true, strategiesError: null);
     try {
-      final entries = await _db.getAllScreeningStrategies();
+      final entries = await _screeningRepo.loadStrategies();
       final strategies = entries.map((e) {
         return ScreeningStrategy(
           id: e.id,
@@ -181,12 +182,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
     if (state.conditions.isEmpty) return false;
     try {
       final json = ScreeningStrategy.conditionsToJson(state.conditions);
-      await _db.insertScreeningStrategy(
-        ScreeningStrategyTableCompanion.insert(
-          name: name,
-          conditionsJson: json,
-        ),
-      );
+      await _screeningRepo.saveStrategy(name: name, conditionsJson: json);
     } catch (e, s) {
       AppLogger.error('CustomScreeningNotifier', '儲存策略失敗', e, s);
       return false;
@@ -203,7 +199,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   /// 重載失敗會反映在 [state.strategiesError]。
   Future<bool> deleteStrategy(int id) async {
     try {
-      await _db.deleteScreeningStrategy(id);
+      await _screeningRepo.deleteStrategy(id);
     } catch (e, s) {
       AppLogger.error('CustomScreeningNotifier', '刪除策略失敗', e, s);
       return false;
@@ -216,13 +212,7 @@ class CustomScreeningNotifier extends Notifier<CustomScreeningState> {
   /// 重新命名策略，回傳是否成功
   Future<bool> renameStrategy(int id, String newName) async {
     try {
-      await _db.updateScreeningStrategy(
-        id,
-        ScreeningStrategyTableCompanion(
-          name: Value(newName),
-          updatedAt: Value(DateTime.now()),
-        ),
-      );
+      await _screeningRepo.renameStrategy(id, newName);
     } catch (e, s) {
       AppLogger.error('CustomScreeningNotifier', '重新命名策略失敗', e, s);
       return false;

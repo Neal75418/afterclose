@@ -24,4 +24,26 @@ abstract class IScreeningRepository {
     List<String> symbols,
     DateTime date,
   );
+
+  // ==================================================
+  // 自訂選股策略 CRUD
+  //
+  // 介面接受純值（name / conditionsJson / id），Drift Companion 構造留在
+  // data 層實作 — 避免 presentation 直接 import Drift 寫入 primitive。
+  // ==================================================
+
+  /// 取得所有已儲存策略（依 updatedAt DESC）
+  Future<List<ScreeningStrategyEntry>> loadStrategies();
+
+  /// 新增策略，回傳自動產生的 ID
+  Future<int> saveStrategy({
+    required String name,
+    required String conditionsJson,
+  });
+
+  /// 重新命名策略
+  Future<void> renameStrategy(int id, String newName);
+
+  /// 刪除策略
+  Future<void> deleteStrategy(int id);
 }
