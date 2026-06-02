@@ -53,7 +53,7 @@ void main() {
         (_) async => RssParseResult(
           items: [],
           errors: [
-            RssFeedError(
+            NewsFeedError(
               sourceName: 'TestFeed',
               url: 'https://example.com/rss',
               error: 'Connection timeout',
@@ -129,7 +129,7 @@ void main() {
       final result = NewsSyncResult(
         itemsAdded: 5,
         errors: [
-          RssFeedError(
+          NewsFeedError(
             sourceName: 'Feed',
             url: 'https://example.com',
             error: 'Timeout',

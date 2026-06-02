@@ -24,8 +24,8 @@ class NewsRepository implements INewsRepository {
   ///
   /// 回傳 [NewsSyncResult]，包含新增筆數和錯誤資訊
   @override
-  Future<NewsSyncResult> syncNews({List<RssFeedSource>? sources}) async {
-    final feedSources = sources ?? RssFeedSource.defaultSources;
+  Future<NewsSyncResult> syncNews({List<NewsFeedSource>? sources}) async {
+    final feedSources = sources ?? NewsFeedSource.defaultSources;
     final parseResult = await _rssParser.parseAllFeeds(feedSources);
 
     if (parseResult.items.isEmpty) {

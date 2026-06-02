@@ -4,9 +4,14 @@ import 'package:dio/dio.dart';
 import 'package:xml/xml.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/domain/models/news_feed.dart';
+
+// Re-export domain value objects so existing data-layer callers can keep
+// importing them via this file.
+export 'package:afterclose/domain/models/news_feed.dart'
+    show NewsFeedError, NewsFeedSource;
 
 /// 台灣財經新聞 RSS feed 解析器
 class RssParser {
@@ -25,7 +30,7 @@ class RssParser {
   }
 
   /// 從 URL 解析 RSS feed
-  Future<List<RssNewsItem>> parseFeed(RssFeedSource source) async {
+  Future<List<RssNewsItem>> parseFeed(NewsFeedSource source) async {
     try {
       final response = await _dio.get(source.url);
 
@@ -48,9 +53,9 @@ class RssParser {
   /// 並行解析多個 feeds
   ///
   /// 回傳包含解析結果和錯誤的 [RssParseResult]
-  Future<RssParseResult> parseAllFeeds(List<RssFeedSource> sources) async {
+  Future<RssParseResult> parseAllFeeds(List<NewsFeedSource> sources) async {
     final results = <RssNewsItem>[];
-    final errors = <RssFeedError>[];
+    final errors = <NewsFeedError>[];
 
     // 並行擷取 feeds，單一失敗不影響其他
     final futures = sources.map((source) async {
@@ -67,7 +72,7 @@ class RssParser {
       results.addAll(result.items);
       if (result.error != null) {
         errors.add(
-          RssFeedError(
+          NewsFeedError(
             sourceName: result.source.name,
             url: result.source.url,
             error: result.error!,
@@ -83,7 +88,7 @@ class RssParser {
     return RssParseResult(items: results, errors: errors);
   }
 
-  List<RssNewsItem> _parseXml(String xmlString, RssFeedSource source) {
+  List<RssNewsItem> _parseXml(String xmlString, NewsFeedSource source) {
     final document = XmlDocument.parse(xmlString);
     final items = <RssNewsItem>[];
 
@@ -110,7 +115,7 @@ class RssParser {
     return items;
   }
 
-  RssNewsItem? _parseRssItem(XmlElement item, RssFeedSource source) {
+  RssNewsItem? _parseRssItem(XmlElement item, NewsFeedSource source) {
     final title = _getElementText(item, 'title');
     final link = _getElementText(item, 'link');
     final pubDate = _getElementText(item, 'pubDate');
@@ -135,7 +140,7 @@ class RssParser {
     );
   }
 
-  RssNewsItem? _parseAtomEntry(XmlElement entry, RssFeedSource source) {
+  RssNewsItem? _parseAtomEntry(XmlElement entry, NewsFeedSource source) {
     final title = _getElementText(entry, 'title');
     final linkElement = entry.findElements('link').firstOrNull;
     final link = linkElement?.getAttribute('href');
@@ -417,7 +422,7 @@ class RssParseResult {
   const RssParseResult({required this.items, required this.errors});
 
   final List<RssNewsItem> items;
-  final List<RssFeedError> errors;
+  final List<NewsFeedError> errors;
 
   /// 是否有任何 feed 解析失敗
   bool get hasErrors => errors.isNotEmpty;
@@ -429,53 +434,6 @@ class RssParseResult {
   int get errorCount => errors.length;
 }
 
-/// RSS feed 解析失敗的錯誤詳情
-class RssFeedError {
-  const RssFeedError({
-    required this.sourceName,
-    required this.url,
-    required this.error,
-    required this.timestamp,
-  });
-
-  final String sourceName;
-  final String url;
-  final String error;
-  final DateTime timestamp;
-
-  @override
-  String toString() => '[$sourceName] $error ($url)';
-}
-
-/// RSS feed 來源設定
-class RssFeedSource {
-  const RssFeedSource({
-    required this.name,
-    required this.url,
-    required this.category,
-  });
-
-  final String name;
-  final String url;
-  final String category; // 對應 NewsCategory
-
-  /// 預設的台灣財經新聞來源
-  static const List<RssFeedSource> defaultSources = [
-    // MoneyDJ 理財網
-    RssFeedSource(
-      name: 'MoneyDJ',
-      url: ApiEndpoints.rssMoneyDj,
-      category: 'OTHER',
-    ),
-    // Yahoo Taiwan Finance
-    RssFeedSource(
-      name: 'Yahoo財經',
-      url: ApiEndpoints.rssYahooFinance,
-      category: 'OTHER',
-    ),
-    // cnYES 鉅亨網 - 台股新聞
-    RssFeedSource(name: '鉅亨網', url: ApiEndpoints.rssCnyes, category: 'OTHER'),
-    // 中央社 CNA - 財經新聞
-    RssFeedSource(name: '中央社', url: ApiEndpoints.rssCna, category: 'OTHER'),
-  ];
-}
+// `NewsFeedSource` / `NewsFeedError` 已搬至 `domain/models/news_feed.dart`，
+// 由此檔頂部 `export` 再對外供應（避免 domain 層直接 import data 層、
+// 同時保持 data 層既有 import path 可用）。
