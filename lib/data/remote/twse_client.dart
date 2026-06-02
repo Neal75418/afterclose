@@ -1302,4 +1302,14 @@ class TwseClient {
       return results;
     });
   }
+
+  /// 釋放底層 Dio HTTP 連線資源與 LRU 回應快取。
+  ///
+  /// 由 Riverpod provider 的 `ref.onDispose` 呼叫；ad-hoc 流程
+  /// （如 `BackgroundUpdateService`）也應在 `try/finally` 中呼叫，
+  /// 避免在 isolate exit 前持有 keep-alive socket。
+  void close() {
+    _dio.close(force: false);
+    _cache.clear();
+  }
 }

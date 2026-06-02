@@ -385,6 +385,14 @@ class RssParser {
     // 回傳補零的十六進位字串以維持一致長度
     return hash.toRadixString(16).padLeft(8, '0');
   }
+
+  /// 釋放底層 Dio HTTP 連線資源。
+  ///
+  /// RssParser 不持有 cache，僅關閉 Dio。由 Riverpod provider 的
+  /// `ref.onDispose` 呼叫；ad-hoc 流程亦應在 `try/finally` 中呼叫。
+  void close() {
+    _dio.close(force: false);
+  }
 }
 
 /// RSS 新聞項目
