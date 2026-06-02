@@ -64,5 +64,41 @@ void main() {
 
       expect(find.textContaining('12,000.00'), findsOneWidget);
     });
+
+    // Regression — 2026-06 screenshot 顯示左卡片 5日均 badge 右側溢出 1.1px。
+    // 觸發條件：半寬 dashboard 卡片 + 萬億級成交額 + 5 位數百分比。
+    // FittedBox(scaleDown) 修正在此寬度下不應再 throw RenderFlex overflow。
+    testWidgets(
+      'narrow card with huge turnover + 5-digit percent does not overflow',
+      (tester) async {
+        const data = TradingTurnover(totalTurnover: 1.6494e12); // ~16,494 億
+        // changePercent = (today - avg5d) / avg5d * 100 → ~28631%
+        // 模擬 screenshot 的「+287..%」5 位數情境。
+        const comparison = TurnoverComparison(
+          todayTurnover: 1.6494e12,
+          avg5dTurnover: 5.74e9,
+        );
+
+        await tester.pumpWidget(
+          buildTestApp(
+            const Center(
+              child: SizedBox(
+                width: 360, // 半寬 dashboard 卡片實測寬度 (~320-400)
+                child: TradingTurnoverRow(
+                  data: data,
+                  turnoverComparison: comparison,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // 等動畫穩定，allow FittedBox 完成 scaleDown 量測
+        await tester.pumpAndSettle();
+
+        // 沒 RenderFlex overflow assertion 才算通過
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

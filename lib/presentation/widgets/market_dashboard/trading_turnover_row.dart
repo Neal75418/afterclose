@@ -39,42 +39,63 @@ class TradingTurnoverRow extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // 標籤
-              Row(
-                children: [
-                  Icon(
-                    Icons.paid_rounded,
-                    size: 16,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'marketOverview.tradingTurnover'.tr(),
-                    style: theme.textTheme.labelMedium?.copyWith(
+              //
+              // 半寬卡片 + EN 翻譯（"Trading Turnover"）或非預期長 key 時
+              // 也用 Flexible + ellipsis 保護，避免擠掉右側數值的空間。
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.paid_rounded,
+                      size: 16,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'marketOverview.tradingTurnover'.tr(),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
               // 數值 + 均量比較
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _formatTurnover(data.totalTurnover),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+              //
+              // 卡片寬度緊時（半寬 dashboard 排版 + 萬億級成交額 + 5 位數
+              // 百分比），這條 Row 自然寬度會超出父 Row 給的剩餘空間（實測
+              // 1-2 像素 overflow，screenshot 2026-06）。Flexible 提供
+              // 上限，FittedBox(scaleDown) 在臨界時對整組做等比縮放；正常
+              // 寬度不觸發、design intent 保留。
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatTurnover(data.totalTurnover),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      if (turnoverComparison != null &&
+                          turnoverComparison!.avg5dTurnover > 0) ...[
+                        const SizedBox(width: 8),
+                        _Avg5dBadge(
+                          changePercent: turnoverComparison!.changePercent,
+                        ),
+                      ],
+                    ],
                   ),
-                  if (turnoverComparison != null &&
-                      turnoverComparison!.avg5dTurnover > 0) ...[
-                    const SizedBox(width: 8),
-                    _Avg5dBadge(
-                      changePercent: turnoverComparison!.changePercent,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ],
           ),
