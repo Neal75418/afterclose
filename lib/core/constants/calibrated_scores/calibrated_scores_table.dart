@@ -148,6 +148,38 @@ class CalibratedScoresTable {
       return (table: CalibratedScoresTable.empty(horizon), warnings: warnings);
     }
 
+    // Calibration drift guard：拒絕載入 metadata 與 runtime canonical 不一致的 JSON
+    //
+    // 動機：`success_threshold_pct` 是「returnRate 算不算命中」的定義；
+    // 一旦 [CalibrationThresholds.successThresholds] 在 repo 更新但 JSON 沒
+    // 同步重產，所有 hit_rate / t_stat / active 就建立在錯誤門檻上，
+    // 對外稱「校準分數」實際失效。
+    //
+    // 防呆：parser 比對 JSON metadata 與 [Horizon.successThresholdPct]，差距
+    // 超過 0.01 即拒載並 return empty table（呼叫端會走 fallback chain 退到
+    // hardcoded `RuleScores`，與 calibration miss 同路徑）。
+    //
+    // 修：執行 `dart run tool/recalibrate.dart --horizon both` 重產 JSON，
+    // 確認 metadata 後 promote `_candidate.json` 取代 production 檔。
+    final backtest = root['backtest'];
+    if (backtest is Map) {
+      final declared = backtest['success_threshold_pct'];
+      if (declared is num) {
+        final canonical = horizon.successThresholdPct;
+        if ((declared.toDouble() - canonical).abs() > 0.01) {
+          warnings.add(
+            'success_threshold_pct drift: JSON metadata $declared vs '
+            'runtime canonical $canonical (Horizon.${horizon.name}). '
+            'Refusing to load — rerun tool/recalibrate.dart and promote.',
+          );
+          return (
+            table: CalibratedScoresTable.empty(horizon),
+            warnings: warnings,
+          );
+        }
+      }
+    }
+
     final rulesRaw = root['rules'];
     if (rulesRaw == null) {
       warnings.add('rules field missing');

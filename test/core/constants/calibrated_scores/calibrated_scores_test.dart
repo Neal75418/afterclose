@@ -230,6 +230,61 @@ void main() {
     });
 
     // ==================================================
+    // Calibration drift guard (3 cases)
+    //
+    // 比對 backtest.success_threshold_pct 與 runtime canonical
+    // Horizon.successThresholdPct，drift > 0.01 即拒載。
+    // ==================================================
+
+    test('11c. drift_guard_metadata_matches_canonical_accepted', () {
+      // short canonical = 3.0
+      const json =
+          '{"schema_version": 1, '
+          '"backtest": {"success_threshold_pct": 3.0}, '
+          '"rules": {"REVERSAL_W2S": {"score": 25}}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 1);
+      expect(warnings, isEmpty);
+      expect(table.lookup('REVERSAL_W2S'), 25);
+    });
+
+    test('11d. drift_guard_metadata_mismatch_short_rejected', () {
+      // short canonical = 3.0, JSON declares 1.5 → reject
+      const json =
+          '{"schema_version": 1, '
+          '"backtest": {"success_threshold_pct": 1.5}, '
+          '"rules": {"REVERSAL_W2S": {"score": 25}}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('success_threshold_pct drift'));
+      expect(warnings.first, contains('1.5'));
+      expect(warnings.first, contains('3.0'));
+    });
+
+    test('11e. drift_guard_missing_backtest_block_passes', () {
+      // 沒有 backtest block (test fixture / 早期版本)：跳過 drift check
+      const json =
+          '{"schema_version": 1, '
+          '"rules": {"REVERSAL_W2S": {"score": 25}}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 1);
+      expect(warnings, isEmpty);
+    });
+
+    // ==================================================
     // Per-rule content errors (7 cases, scenarios 5a-6b + 7)
     // ==================================================
 
@@ -633,29 +688,45 @@ void main() {
     // Layer 2: asset smoke tests (2 cases)
     // ==================================================
 
-    test('23. loadFromAssets_short_succeeds_and_loads_rules', () async {
-      await CalibratedScoresRegistry.instance.loadFromAssets();
+    test(
+      '23. loadFromAssets_short_with_stale_metadata_drift_rejected',
+      () async {
+        // Bundled `rule_scores_calibrated_short.json` 目前 metadata
+        // success_threshold_pct=1.5（產生時門檻），與 runtime canonical
+        // `Horizon.short.successThresholdPct = 3.0` 不一致。
+        //
+        // drift guard 應拒絕載入 → registry 綁 empty table → lookup 回 null。
+        // 待 `dart run tool/recalibrate.dart` 重產 JSON 並 promote 後，
+        // 此 test 需改回 `isA<int>()`（並更新註解）。
+        await CalibratedScoresRegistry.instance.loadFromAssets();
 
-      // Bundled asset has calibrated rules. REVERSAL_W2S is a cut rule
-      // (score 0), but lookup still returns an int (0), not null — because
-      // the rule IS in the JSON with score: 0. A rule NOT in the JSON
-      // would return null.
-      final result = CalibratedScoresRegistry.instance.lookup(
-        Horizon.short,
-        'REVERSAL_W2S',
-      );
-      expect(result, isA<int>());
-    });
+        final result = CalibratedScoresRegistry.instance.lookup(
+          Horizon.short,
+          'REVERSAL_W2S',
+        );
+        expect(
+          result,
+          isNull,
+          reason:
+              'stale metadata should be rejected by drift guard; '
+              'rerun tool/recalibrate.dart to refresh bundled JSON',
+        );
+      },
+    );
 
-    test('24. loadFromAssets_long_succeeds_and_loads_rules', () async {
-      await CalibratedScoresRegistry.instance.loadFromAssets();
+    test(
+      '24. loadFromAssets_long_with_stale_metadata_drift_rejected',
+      () async {
+        // 同 test 23，長線 JSON metadata 8.0 vs canonical 12.0。
+        await CalibratedScoresRegistry.instance.loadFromAssets();
 
-      final result = CalibratedScoresRegistry.instance.lookup(
-        Horizon.long,
-        'REVERSAL_W2S',
-      );
-      expect(result, isA<int>());
-    });
+        final result = CalibratedScoresRegistry.instance.lookup(
+          Horizon.long,
+          'REVERSAL_W2S',
+        );
+        expect(result, isNull);
+      },
+    );
 
     // ==================================================
     // Layer 3: singleton lifecycle (3 cases)
@@ -786,15 +857,14 @@ void main() {
         longJsonOverride: null,
       );
 
-      // Bundled assets now have real calibrated rules. The key assertion
-      // is that no exception was thrown, _loaded == true, and lookup
-      // returns an actual value (not null) for a rule that exists in the
-      // bundled JSON.
+      // Bundled JSON 目前 metadata stale → drift guard 拒載 → empty table。
+      // 此處驗證 fallback path 正確走到 loadFromAssets（即 _loaded 設成
+      // true、無例外），lookup 因 stale metadata 仍回 null。
       final firstShort = CalibratedScoresRegistry.instance.lookup(
         Horizon.short,
         'REVERSAL_W2S',
       );
-      expect(firstShort, isA<int>());
+      expect(firstShort, isNull);
 
       // Second call should be no-op (idempotent)
       await CalibratedScoresRegistry.instance.loadWithOverride(
@@ -856,10 +926,11 @@ void main() {
         longJsonOverride: emptyJson,
       );
 
-      // Empty override → fell through to bundled asset (now has real rules)
+      // Empty override → fell through to bundled asset。Bundled JSON metadata
+      // stale → drift guard 拒載 → registry 仍 empty。lookup 應回 null。
       expect(
         CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
-        isA<int>(),
+        isNull,
       );
     });
 
