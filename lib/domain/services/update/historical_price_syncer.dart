@@ -59,10 +59,17 @@ class HistoricalPriceSyncer {
       endDate: date,
     );
 
+    // 自選 + 熱門 = priority locked。它們不適用 lenient nearThreshold
+    // 早退門檻（180 天）— 因 52w high/low rule 嚴格要求 250 天，priority
+    // 股需要追到 250 才算「夠」。否則 popular 大型權值股（2330/2317/2454）
+    // 會卡在 220-240 天區間永遠不被同步，52w rule 永久無法觸發。
+    final priorityLocked = <String>{...watchlistSymbols, ...popularStocks};
+
     final symbolsNeedingData = _findSymbolsNeedingData(
       symbolsForHistory,
       priceHistoryBatch,
       date,
+      priorityLocked: priorityLocked,
     );
 
     if (symbolsNeedingData.isEmpty) {
@@ -100,11 +107,17 @@ class HistoricalPriceSyncer {
   }
 
   /// 判斷哪些 symbol 需要補歷史資料
+  ///
+  /// [priorityLocked] 為自選 + 熱門股 union — 它們不適用 [nearThreshold]
+  /// lenient 早退（180 天），必須追到 [minRequiredDays]（250 天）才算夠。
+  /// 與下游 52w high/low rule 的硬性需求對齊；non-priority 股維持 180
+  /// 早退避免無效追打。
   List<String> _findSymbolsNeedingData(
     List<String> symbols,
     Map<String, List<DailyPriceEntry>> priceHistoryBatch,
-    DateTime date,
-  ) {
+    DateTime date, {
+    Set<String> priorityLocked = const {},
+  }) {
     final result = <String>[];
     const minRequiredDays = IndicatorParams.week52Days;
     const nearThreshold = IndicatorParams.historyNearCompleteThreshold;
@@ -114,7 +127,16 @@ class HistoricalPriceSyncer {
       final priceCount = prices?.length ?? 0;
 
       if (priceCount >= minRequiredDays) continue;
-      if (priceCount >= nearThreshold) continue;
+
+      // Priority 股（watchlist + popular）的早退條件**只認嚴格 250 天**。
+      // 對它們 skip nearThreshold + _hasEnoughDataForAge — 因下游 52w
+      // high/low rule 嚴格要求 250 交易日，priority 股若卡在 200-240
+      // 區間會永遠補不到，相關規則永久無法觸發（2026-06 production：
+      // 2330/2317/2454 等 popular 全卡 221/250）。
+      // Non-priority 股維持原本 lenient 早退避免無效追打。
+      final isPriority = priorityLocked.contains(symbol);
+
+      if (!isPriority && priceCount >= nearThreshold) continue;
 
       if (priceCount == 0) {
         result.add(symbol);
@@ -144,7 +166,9 @@ class HistoricalPriceSyncer {
         }
 
         // 其他情況：檢查資料量是否與上市時間相符
-        if (_hasEnoughDataForAge(prices, priceCount, date)) {
+        // Priority 股 skip 此 ratio check — 它們追的是「is 250 enough」
+        // 而非「is data-density acceptable for current age」。
+        if (!isPriority && _hasEnoughDataForAge(prices, priceCount, date)) {
           continue;
         }
       }

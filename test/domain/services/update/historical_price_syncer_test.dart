@@ -129,40 +129,136 @@ void main() {
         expect(result.hasErrors, isFalse);
       });
 
-      test('skips symbols with near-complete data (>= 180 days)', () async {
-        // firstDate > 365 days ago ensures _hasEnoughDataForAge won't skip
-        final oldFirstDate = testDate.subtract(const Duration(days: 400));
+      test(
+        'skips non-priority symbols with near-complete data (>= 180 days)',
+        () async {
+          // firstDate > 365 days ago ensures _hasEnoughDataForAge won't skip
+          final oldFirstDate = testDate.subtract(const Duration(days: 400));
 
-        setupSufficientDataSymbols([]);
-        setupPriceHistoryBatch({
-          '2330': createPrices('2330', 200), // >= 180, should skip
-          '2317': createPrices(
-            '2317',
-            50,
-            firstDate: oldFirstDate,
-          ), // < 180, needs sync
-        });
-        setupSyncSuccess('2317', count: 200);
+          setupSufficientDataSymbols([]);
+          setupPriceHistoryBatch({
+            'A330': createPrices('A330', 200), // >= 180, should skip
+            'A317': createPrices(
+              'A317',
+              50,
+              firstDate: oldFirstDate,
+            ), // < 180, needs sync
+          });
+          setupSyncSuccess('A317', count: 200);
 
-        final result = await syncer.syncHistoricalPrices(
-          date: testDate,
-          watchlistSymbols: ['2330', '2317'],
-          popularStocks: [],
-          marketCandidates: [],
-        );
+          // 注意：兩檔都 NOT in watchlist/popular → 走 lenient 路徑
+          final result = await syncer.syncHistoricalPrices(
+            date: testDate,
+            watchlistSymbols: [],
+            popularStocks: [],
+            marketCandidates: ['A330', 'A317'],
+          );
 
-        expect(result.syncedCount, 200);
-        expect(result.symbolsProcessed, 1);
+          expect(result.syncedCount, 200);
+          expect(result.symbolsProcessed, 1);
 
-        // 2330 should not be synced
-        verifyNever(
-          () => mockPriceRepo.syncStockPrices(
-            '2330',
-            startDate: any(named: 'startDate'),
-            endDate: any(named: 'endDate'),
-          ),
-        );
-      });
+          // A330 should not be synced (non-priority, >= 180 → lenient skip)
+          verifyNever(
+            () => mockPriceRepo.syncStockPrices(
+              'A330',
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+            ),
+          );
+        },
+      );
+
+      // 2026-06 production regression：watchlist/popular 股卡在 200-240 天
+      // 區間時，被 nearThreshold (180) 與 _hasEnoughDataForAge 兩個 lenient
+      // 早退濾掉，永遠補不到 250 → 52w high/low rule 永久無法觸發。
+      // 修正後 priority 股只認嚴格 250 天門檻，會持續 top-up 到 250。
+      test(
+        'priority stock (watchlist) with 221/250 days is NOT skipped — keeps topping up to 250',
+        () async {
+          // 模擬 production：2330 在 watchlist，cache 有 221 天，
+          // firstDate 約 250 天前（成熟股，age ratio check 會說「夠了」）。
+          final oldFirstDate = testDate.subtract(const Duration(days: 250));
+
+          setupSufficientDataSymbols([]);
+          setupPriceHistoryBatch({
+            '2330': createPrices('2330', 221, firstDate: oldFirstDate),
+          });
+          setupSyncSuccess('2330', count: 30);
+
+          final result = await syncer.syncHistoricalPrices(
+            date: testDate,
+            watchlistSymbols: ['2330'],
+            popularStocks: [],
+            marketCandidates: [],
+          );
+
+          // priority 股應該被同步（追到 250）
+          expect(result.symbolsProcessed, 1);
+          verify(
+            () => mockPriceRepo.syncStockPrices(
+              '2330',
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'priority stock (popular) overrides _hasEnoughDataForAge ratio skip',
+        () async {
+          // 2454 in popular，cache 200/250 days，age ratio check 認為夠
+          // (200/250 ≈ 80% > 50% threshold)。修正前會被 ratio 跳過。
+          final oldFirstDate = testDate.subtract(const Duration(days: 250));
+
+          setupSufficientDataSymbols([]);
+          setupPriceHistoryBatch({
+            '2454': createPrices('2454', 200, firstDate: oldFirstDate),
+          });
+          setupSyncSuccess('2454', count: 50);
+
+          final result = await syncer.syncHistoricalPrices(
+            date: testDate,
+            watchlistSymbols: [],
+            popularStocks: ['2454'],
+            marketCandidates: [],
+          );
+
+          expect(result.symbolsProcessed, 1);
+          verify(
+            () => mockPriceRepo.syncStockPrices(
+              '2454',
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'priority stock with >= 250 days IS skipped (truly complete)',
+        () async {
+          // sanity：priority 股若已達 250 仍應跳過，不應無限制呼叫 API
+          setupSufficientDataSymbols([]);
+          setupPriceHistoryBatch({'2330': createPrices('2330', 260)});
+
+          final result = await syncer.syncHistoricalPrices(
+            date: testDate,
+            watchlistSymbols: ['2330'],
+            popularStocks: [],
+            marketCandidates: [],
+          );
+
+          expect(result.symbolsProcessed, 0);
+          verifyNever(
+            () => mockPriceRepo.syncStockPrices(
+              '2330',
+              startDate: any(named: 'startDate'),
+              endDate: any(named: 'endDate'),
+            ),
+          );
+        },
+      );
 
       test('handles partial failures gracefully', () async {
         setupSufficientDataSymbols([]);
