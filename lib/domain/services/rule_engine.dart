@@ -1,3 +1,5 @@
+import 'package:collection/collection.dart';
+
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -26,17 +28,40 @@ class RuleEngine {
   /// 爆 cap，使 Top 20 失去區分度。用 mutex group 語義讓「同一個訊號」只計一次。
   ///
   /// 贏家決定規則：依 [TriggeredReason.score] 由高至低，group 內第一個遇到的即是贏家。
-  /// 分數相同時，依 [_rules] 註冊順序（Dart List.sort 為 stable sort）決定贏家 —
-  /// 此行為 deterministic，由 [RuleRegistry.defaultRules] 順序隱含定義。
+  /// 分數相同時，依 [_rules] 註冊順序（[applyMutexGroups] 用 `package:collection`
+  /// 的 [mergeSort] 確保穩定排序）決定贏家 — 此行為 deterministic，由
+  /// [RuleRegistry.defaultRules] 順序隱含定義。
   ///
   /// **INVARIANT**：每個 [ReasonType] 最多只能出現在**一個** group 中。違反時
-  /// [_reasonToGroup] 會靜默採用「最後寫入者勝出」，Stage 2 新增 group 時要特別注意。
+  /// [_reasonToGroup] 會靜默採用「最後寫入者勝出」，新增 group 時要特別注意。
+  ///
+  /// ## 既有 group 規格
+  ///
+  /// - **momentum_breakout**：放量突破家族，同根 K 棒會同時觸發 4 條規則
+  /// - **bullish_reversal_candle**：底部反轉 K 線族群（Hammer / BullishEngulfing /
+  ///   MorningStar / ThreeWhiteSoldiers），都在描述「最近一根 / 三根 K 棒呈現
+  ///   多方反轉」這個同一現象，加總會 over-weight，3 條同時觸發可堆到 +60
+  ///   直接撞 maxScore=80
+  /// - **bearish_reversal_candle**：頂部反轉 K 線族群（對稱版本），避免空方
+  ///   訊號集中扣分讓篩選失準
   static const Map<String, Set<ReasonType>> _mutexGroups = {
     'momentum_breakout': {
       ReasonType.techBreakout,
       ReasonType.volumeSpike,
       ReasonType.priceSpike,
       ReasonType.highVolumeBreakout,
+    },
+    'bullish_reversal_candle': {
+      ReasonType.patternHammer,
+      ReasonType.patternBullishEngulfing,
+      ReasonType.patternMorningStar,
+      ReasonType.patternThreeWhiteSoldiers,
+    },
+    'bearish_reversal_candle': {
+      ReasonType.patternHangingMan,
+      ReasonType.patternBearishEngulfing,
+      ReasonType.patternEveningStar,
+      ReasonType.patternThreeBlackCrows,
     },
   };
 
@@ -79,7 +104,15 @@ class RuleEngine {
     }
 
     // 依 hardcoded 分數排序（穩定輸出順序，供下游可預期 iteration）
-    triggered.sort((a, b) => b.score.compareTo(a.score));
+    //
+    // `dart:core` 的 `List.sort` 為 dual-pivot Quicksort，**官方文件明文不保證
+    // stable**（即同分時 tie-break 順序不固定）。`package:collection` 的
+    // `mergeSort` 是 stable，分數打平時保留輸入順序 = [_rules] 註冊順序，
+    // 與 [_mutexGroups] 「分數相同依註冊順序」的契約對齊。
+    mergeSort<TriggeredReason>(
+      triggered,
+      compare: (a, b) => b.score.compareTo(a.score),
+    );
     return triggered;
   }
 
@@ -100,8 +133,14 @@ class RuleEngine {
   ) {
     if (reasons.isEmpty) return reasons;
 
-    final sorted = [...reasons]
-      ..sort((a, b) => scoreOf(b).compareTo(scoreOf(a)));
+    // 使用 mergeSort 保證 stable：[scoreOf] 結果相同時保留輸入順序
+    // (= [_rules] 註冊順序)。`dart:core` 的 `List.sort` 不保證穩定 —
+    // calibrated 分數打平時 mutex 贏家可能隨 VM 飄移。
+    final sorted = [...reasons];
+    mergeSort<TriggeredReason>(
+      sorted,
+      compare: (a, b) => scoreOf(b).compareTo(scoreOf(a)),
+    );
 
     final seenGroups = <String>{};
     final result = <TriggeredReason>[];
