@@ -584,22 +584,59 @@ class RuleAccuracyService {
     }
 
     // 累加 per-(ruleId, period) 統計
+    //
+    // ## Known biases（calibration 訓練資料的方法論注意事項）
+    //
+    // **(1) Lookahead bias**：entry 用當日 close，user 實際只能 T+1 open
+    // 進場。TWII 大盤平均 open→close 漂移 ~0.3-0.5%，calibrated hit_rate
+    // 系統性高估約這個量級。修法需 daily_price 加 open 欄位 + sync 改抓
+    // open price（成本大），目前 docstring 揭露為主、待 Stage 4 處理。
+    //
+    // **(2) Survivorship bias**：missing exit close 靜默 continue。下市 /
+    // 長停的股票永遠在 sample 外，winner 永遠有後續價格。下方 `_BiasCounters`
+    // 累計 skippedNoExitPrice 揭露被 silently drop 的比例，calibration
+    // reviewer 可用此判斷 hit_rate 是否被 bias inflated。
+    //
+    // **(3) Co-occurrence inflation**：同 (symbol, date) 多條規則同時觸發
+    // 時，**同一個** forward return 被計入每條規則 → Calibrator 的
+    // hit_rate × avg_return × √n 三項全被膨脹。`coOccurrenceEvents`
+    // 累計多條同時觸發的事件數，metadata `co_occurrence_index =
+    // total_reasons / unique_(symbol,date)` 揭露 entanglement 程度。
     final ruleStats = <String, Map<int, _StatsAccumulator>>{};
+    final biasCounters = _BiasCounters();
+
+    // 為 co-occurrence index 計算所需：去重 (symbol, date) 與總 reason 數
+    final uniqueEntries = <String>{};
+    for (final reason in reasons) {
+      final entryDate = DateContext.normalize(reason.date);
+      uniqueEntries.add('${reason.symbol}@${entryDate.toIso8601String()}');
+    }
+    biasCounters.totalReasons = reasons.length;
+    biasCounters.uniqueEntries = uniqueEntries.length;
 
     for (final reason in reasons) {
       final symbolPrices = priceMap[reason.symbol];
-      if (symbolPrices == null) continue;
+      if (symbolPrices == null) {
+        biasCounters.skippedNoSymbolPrices++;
+        continue;
+      }
 
       final entryDate = DateContext.normalize(reason.date);
       final entryClose = symbolPrices[entryDate];
-      if (entryClose == null) continue;
+      if (entryClose == null) {
+        biasCounters.skippedNoEntryPrice++;
+        continue;
+      }
 
       for (final period in holdingPeriods) {
         final exitDate = DateContext.normalize(
           TaiwanCalendar.addTradingDays(entryDate, period),
         );
         final exitClose = symbolPrices[exitDate];
-        if (exitClose == null) continue;
+        if (exitClose == null) {
+          biasCounters.skippedNoExitPrice++;
+          continue;
+        }
 
         final returnRate = ((exitClose - entryClose) / entryClose) * 100;
         final isSuccess = _isSuccessFor(returnRate, period);
@@ -610,6 +647,23 @@ class RuleAccuracyService {
             .add(returnRate, isSuccess);
       }
     }
+
+    // 一次性 log bias counter 供 reviewer 與 ELK / debug 頁面消費。
+    // Survivorship inflated hit_rate 的程度可用 skippedNoExitPrice 比例反推；
+    // co_occurrence_index > 1 意味同事件多 rule entanglement，calibration
+    // 報告應降權看待單一規則的 hit_rate。
+    final coOccurrenceIndex = uniqueEntries.isEmpty
+        ? 0.0
+        : reasons.length / uniqueEntries.length;
+    AppLogger.info(
+      'RuleAccuracy',
+      'bias_telemetry total_reasons=${biasCounters.totalReasons} '
+          'unique_(symbol,date)=${biasCounters.uniqueEntries} '
+          'co_occurrence_index=${coOccurrenceIndex.toStringAsFixed(2)} '
+          'skipped_no_symbol_prices=${biasCounters.skippedNoSymbolPrices} '
+          'skipped_no_entry_price=${biasCounters.skippedNoEntryPrice} '
+          'skipped_no_exit_price=${biasCounters.skippedNoExitPrice}',
+    );
 
     // === Transaction：只做 delete + per-row upsert ===
     //
@@ -937,4 +991,33 @@ class _StatsAccumulator {
   }
 
   double get avgReturnPct => count > 0 ? _sumReturn / count : 0.0;
+}
+
+/// Calibration bias telemetry — 累計 [RuleAccuracyService] 的 sampling
+/// drop / co-occurrence 指標，供 reviewer 判斷 calibrated 結果的可信度。
+///
+/// 不影響 calibration 計算本身，純粹是 transparency layer：把以前 silently
+/// `continue` 的 sample 漏失與多 rule 共現膨脹數值化出來，避免 hit_rate
+/// 被解讀為「真實命中率」時忽略樣本選擇偏誤。
+class _BiasCounters {
+  /// 樣本來源規則總數（含 co-occurring）
+  int totalReasons = 0;
+
+  /// 去重後 (symbol, date) 數量
+  ///
+  /// `totalReasons / uniqueEntries = co_occurrence_index`，> 1 意味
+  /// 同事件多規則 entanglement，per-rule hit_rate 會 share 同一 return。
+  int uniqueEntries = 0;
+
+  /// symbol 在 priceMap 中完全缺資料的 reason 數（多為極早期 / 下市股）
+  int skippedNoSymbolPrices = 0;
+
+  /// 觸發當日 close 缺資料的 reason 數（多為當日停牌）
+  int skippedNoEntryPrice = 0;
+
+  /// 出場日 close 缺資料的 (reason × period) 數
+  ///
+  /// **Survivorship bias 主要來源**：下市 / 長停股票後續沒價格 → 永遠被
+  /// drop，winner 永遠有 exit price。這個計數揭露被靜默剔除的程度。
+  int skippedNoExitPrice = 0;
 }
