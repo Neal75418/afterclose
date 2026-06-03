@@ -23,14 +23,29 @@ abstract final class AnalysisParams {
   static const int scoreNeutralThreshold = 15;
 
   // ==================================================
-  // 輔助數據判斷門檻
+  // 摘要標籤門檻（label-only，不影響評分）
   // ==================================================
 
-  /// PE 低估判定門檻（低於此值視為低估）
-  static const double peUndervaluedThreshold = 15.0;
+  /// PE 摘要標籤的「低估」上限（寬鬆門檻，僅控制 UI 文字）
+  ///
+  /// **語意**：此值是 [AnalysisSummaryService] 顯示「PE 低估 / 高估」標籤
+  /// 的二分點，與規則加分**無關**。
+  ///
+  /// 規則加分由 [FundamentalParams.peUndervaluedThreshold]（嚴格 10.0）
+  /// 決定；摘要側使用較寬鬆的 15.0 是為了讓「12 倍 PE」仍能顯示「低估」
+  /// 提示，但不會替標的加分。兩個門檻語意不同、刻意分離。
+  ///
+  /// 過去命名為 `peUndervaluedThreshold`，與 [FundamentalParams] 同名易
+  /// 引起「為何兩處不同值」的誤判，已改名為 `peSummaryLowLabelThreshold`
+  /// 凸顯 label-only 性質。
+  static const double peSummaryLowLabelThreshold = 15.0;
 
-  /// 高殖利率判定門檻
-  static const double highDividendYieldThreshold = 4.0;
+  /// 殖利率摘要標籤的「高殖利率」門檻（label-only）
+  ///
+  /// **語意**：[AnalysisSummaryService] 顯示「高殖利率」提示用，與規則
+  /// 加分無關。規則加分使用 [FundamentalParams.highDividendYieldThreshold]
+  /// （嚴格 5.5）。摘要側 4.0 較寬鬆，覆蓋台股平均 4-6% 的合理區間。
+  static const double dividendYieldSummaryLabelThreshold = 4.0;
 
   /// 營收年增率顯著變動門檻（正負皆適用）
   static const double revenueYoySignificantThreshold = 20.0;

@@ -383,14 +383,15 @@ class AnalysisSummaryService {
 
     final pe = latestPER?.per;
     if (pe != null && pe > 0) {
-      final key = pe <= AnalysisParams.peUndervaluedThreshold
+      final key = pe <= AnalysisParams.peSummaryLowLabelThreshold
           ? 'summary.peUndervalued'
           : 'summary.peOvervalued';
       data.add(LocalizableString(key, {'pe': pe.toStringAsFixed(1)}));
     }
 
     final yield_ = latestPER?.dividendYield;
-    if (yield_ != null && yield_ >= AnalysisParams.highDividendYieldThreshold) {
+    if (yield_ != null &&
+        yield_ >= AnalysisParams.dividendYieldSummaryLabelThreshold) {
       data.add(
         LocalizableString('summary.highDividendYield', {
           'yield': yield_.toStringAsFixed(1),
