@@ -86,7 +86,7 @@ class _SummaryBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = hasHigh ? AppTheme.downColor : Colors.orange;
+    final color = hasHigh ? AppTheme.errorColor : AppTheme.warningColor;
     final label = 'marketOverview.chipAnomaly.summary'.tr(
       namedArgs: {'count': count.toString()},
     );
@@ -154,7 +154,7 @@ class _AnomalyTypeSection extends StatelessWidget {
     final theme = Theme.of(context);
     final meta = _typeMeta(type);
     final isHigh = items.any((a) => a.severity == ChipSeverity.high);
-    final accentColor = isHigh ? AppTheme.downColor : Colors.orange;
+    final accentColor = isHigh ? AppTheme.errorColor : AppTheme.warningColor;
     final hiddenCount = totalCount - items.length;
 
     return Material(
@@ -271,8 +271,8 @@ class _AnomalyItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final valueColor = anomaly.severity == ChipSeverity.high
-        ? AppTheme.downColor
-        : Colors.orange;
+        ? AppTheme.errorColor
+        : AppTheme.warningColor;
     final description = _buildDescription(anomaly);
 
     return MergeSemantics(

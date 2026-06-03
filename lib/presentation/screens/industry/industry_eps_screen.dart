@@ -4,11 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
-import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
 import 'package:afterclose/presentation/providers/industry_eps_provider.dart';
 
@@ -239,10 +240,11 @@ class _IndustryEpsScreenState extends ConsumerState<IndustryEpsScreen> {
   }
 
   Widget _buildEpsItem(ThemeData theme, TpexIndustryEps item, int index) {
+    // 台股慣例：紅 = 獲利 / 上漲，綠 = 虧損 / 下跌
     final epsColor = item.eps > 0
-        ? Colors.green.shade700
+        ? AppTheme.upColor
         : item.eps < 0
-        ? Colors.red.shade700
+        ? AppTheme.downColor
         : theme.colorScheme.onSurface;
 
     return InkWell(
