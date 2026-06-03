@@ -40,9 +40,8 @@ class VolumeSpikeRule extends StockRule {
         .where((v) => v > 0) // 過濾停牌日（成交量 = 0）
         .toList();
 
-    // 要求至少 80% 有效交易日（20 日中至少 16 日）
-    // 避免復牌後因基期過低產生假訊號
-    final minValidDays = (RuleParams.volMa * 0.8).floor();
+    final minValidDays = (RuleParams.volMa * RuleParams.volMaMinValidDayRatio)
+        .floor();
     if (recentVolumes.length < minValidDays) return null;
 
     final avgVolume =
@@ -70,11 +69,8 @@ class VolumeSpikeRule extends StockRule {
 
 /// 規則：價格異動
 ///
-/// 當單日價格漲跌幅超過門檻且有成交量配合時觸發。
-///
-/// - 門檻從 6% 提高至 7%
-/// - 新增成交量確認（需達均量 1.5 倍）
-/// - 排除低成交額股票
+/// 當單日價格漲跌幅超過 [TrendParams.priceSpikePercent]（5%）且伴隨
+/// [TrendParams.priceSpikeVolumeMult]（1.5 倍）均量配合時觸發。
 class PriceSpikeRule extends StockRule {
   const PriceSpikeRule();
 
@@ -99,7 +95,6 @@ class PriceSpikeRule extends StockRule {
 
     final pctChange = ((todayClose - yesterdayClose) / yesterdayClose) * 100;
 
-    // 檢查價格門檻（7%）
     if (pctChange.abs() < TrendParams.priceSpikePercent) {
       return null;
     }
@@ -115,8 +110,8 @@ class PriceSpikeRule extends StockRule {
         .where((v) => v > 0) // 過濾停牌日
         .toList();
 
-    // 要求至少 80% 有效交易日
-    final minValidDays = (RuleParams.volMa * 0.8).floor();
+    final minValidDays = (RuleParams.volMa * RuleParams.volMaMinValidDayRatio)
+        .floor();
     if (recentVolumes.length < minValidDays) return null;
 
     final avgVolume =

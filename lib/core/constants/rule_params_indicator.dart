@@ -69,6 +69,16 @@ abstract final class IndicatorParams {
   /// 一年交易日數（約 52 週 * 5 天）
   static const int week52Days = 250;
 
+  /// 52 週極值計算的最低有效 bar 數
+  ///
+  /// 在 [week52Days]（250）窗口內，至少要有此數量的有效價格 bar
+  /// （非 null、>0）才回傳結果。低於此值視為樣本不足，可能因新上市
+  /// 或長期停牌造成統計失真。
+  ///
+  /// 20 對 250-day 窗口為 8% 覆蓋率，僅作為「完全沒資料」的硬下限。
+  /// 真正「資料完整」門檻見 [historicalDataMinDays]（200）。
+  static const int week52MinValidBars = 20;
+
   /// 歷史資料完成度最低天數
   ///
   /// 股票需有此天數以上的價格資料，才視為「歷史資料完整」。

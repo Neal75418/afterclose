@@ -79,9 +79,10 @@ class InstitutionalBuyStreakRule extends StockRule {
       // 過濾條件 3：至少一半的天數有顯著買超（> 150張/日）
       if (significantDays < streakDays / 2) return null;
 
-      // 轉換為張顯示（1張 = 1000股）
-      final foreignSheets = (totalForeignNet / 1000).round();
-      final trustSheets = (totalTrustNet / 1000).round();
+      // 轉換為張顯示（1張 = 1000股，見 RuleParams.sheetToShares）
+      final foreignSheets = (totalForeignNet / RuleParams.sheetToShares)
+          .round();
+      final trustSheets = (totalTrustNet / RuleParams.sheetToShares).round();
 
       // 投信主導加分：投信為主動型法人，買超更具意圖性
       final isTrustDominant =
@@ -190,9 +191,11 @@ class InstitutionalSellStreakRule extends StockRule {
       // 過濾條件 3：至少一半的天數有顯著賣超（< -150張/日）
       if (significantDays < streakDays / 2) return null;
 
-      // 轉換為張顯示（1張 = 1000股）
-      final foreignSheets = (totalForeignNet.abs() / 1000).round();
-      final trustSheets = (totalTrustNet.abs() / 1000).round();
+      // 轉換為張顯示（1張 = 1000股，見 RuleParams.sheetToShares）
+      final foreignSheets = (totalForeignNet.abs() / RuleParams.sheetToShares)
+          .round();
+      final trustSheets = (totalTrustNet.abs() / RuleParams.sheetToShares)
+          .round();
 
       // 投信主導賣超更負面：投信為主動型法人，賣超更具意圖性
       final isTrustDominant =

@@ -53,6 +53,13 @@ abstract final class RuleParams {
   /// 成交量均線天數
   static const int volMa = 20;
 
+  /// 成交量均線最低有效交易日比例
+  ///
+  /// 計算 `volMa` 均量時要求至少此比例的窗口期內有有效成交量
+  /// （`volume > 0`，過濾停牌日），避免復牌後因基期過低產生
+  /// 假訊號。0.8 = 20 日中至少 16 日。
+  static const double volMaMinValidDayRatio = 0.8;
+
   /// 壓力/支撐偵測回溯天數
   static const int rangeLookback = 60;
 

@@ -109,7 +109,9 @@ abstract class _Week52RuleBase extends StockRule {
     final isExtremeInvalid = isHigh
         ? extreme <= 0
         : (extreme == double.infinity || extreme <= 0);
-    if (isExtremeInvalid || validCount < 20) return null;
+    if (isExtremeInvalid || validCount < IndicatorParams.week52MinValidBars) {
+      return null;
+    }
 
     // 除息調整：歷史極值需調降以反映除息影響
     final totalDividend = _sumDividendsInPeriod(data);
