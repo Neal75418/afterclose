@@ -14,7 +14,6 @@ class MarketInsight {
     required this.titleKey,
     required this.descKey,
     this.descArgs = const {},
-    this.isPositive = true,
   });
 
   final InsightSeverity severity;
@@ -30,10 +29,6 @@ class MarketInsight {
 
   /// i18n description named arguments
   final Map<String, String> descArgs;
-
-  /// 方向性：true = 偏多/正面，false = 偏空/負面
-  /// 用於 UI 色條判斷（upColor vs downColor），與 i18n key 命名解耦。
-  final bool isPositive;
 }
 
 /// 智慧摘要偵測服務
@@ -102,7 +97,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
           descKey: 'marketOverview.keyInsights.sentimentExtreme.descFear',
           descArgs: {'score': sentiment.score.toStringAsFixed(0)},
-          isPositive: false,
         ),
       );
     } else if (sentiment.level == SentimentLevel.extremeGreed) {
@@ -113,7 +107,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
           descKey: 'marketOverview.keyInsights.sentimentExtreme.descGreed',
           descArgs: {'score': sentiment.score.toStringAsFixed(0)},
-          isPositive: true,
         ),
       );
     }
@@ -145,7 +138,6 @@ class MarketInsightService {
             descKey:
                 'marketOverview.keyInsights.institutionalStreak.desc$who$direction',
             descArgs: {'days': days.abs().toString()},
-            isPositive: isBuy,
           ),
         );
         break; // 只取最重要的一條
@@ -169,7 +161,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
           descKey: 'marketOverview.keyInsights.volumeAnomaly.descHigh',
           descArgs: {'pct': pct.toStringAsFixed(0)},
-          isPositive: true,
         ),
       );
     } else if (pct < -30) {
@@ -180,7 +171,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
           descKey: 'marketOverview.keyInsights.volumeAnomaly.descLow',
           descArgs: {'pct': pct.abs().toStringAsFixed(0)},
-          isPositive: false,
         ),
       );
     }
@@ -202,7 +192,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.chipAlert.title',
           descKey: 'marketOverview.keyInsights.chipAlert.desc',
           descArgs: {'count': highCount.toString()},
-          isPositive: false,
         ),
       );
     }
@@ -230,7 +219,6 @@ class MarketInsightService {
             'up': limitUpDown.limitUp.toString(),
             'down': limitUpDown.limitDown.toString(),
           },
-          isPositive: isUpDominant,
         ),
       );
     }
@@ -306,7 +294,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.industryConcentration.title',
           descKey: 'marketOverview.keyInsights.industryConcentration.descUp',
           descArgs: {'pct': upPct.toStringAsFixed(0)},
-          isPositive: true,
         ),
       );
     } else if (downPct > 70) {
@@ -317,7 +304,6 @@ class MarketInsightService {
           titleKey: 'marketOverview.keyInsights.industryConcentration.title',
           descKey: 'marketOverview.keyInsights.industryConcentration.descDown',
           descArgs: {'pct': downPct.toStringAsFixed(0)},
-          isPositive: false,
         ),
       );
     }

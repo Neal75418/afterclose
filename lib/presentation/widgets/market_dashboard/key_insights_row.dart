@@ -97,9 +97,13 @@ class _InsightCard extends StatelessWidget {
   }
 
   static Color _borderColor(ThemeData theme, MarketInsight insight) {
-    if (insight.severity == InsightSeverity.warning) {
-      return insight.isPositive ? AppTheme.upColor : AppTheme.downColor;
-    }
-    return theme.colorScheme.primary;
+    // 左色條代表「嚴重程度」而非「漲跌方向」。早期版本用 upColor/downColor
+    // 表 warning（紅 = 正向漲停警示，綠 = 負向跌停警示），但這跟使用者直覺
+    // 衝突：紅綠在台股本來就是價格漲跌，再拿來表 severity 會讓「漲跌停失衡」
+    // 卡片明明是「警示」結果顯示成紅綠交錯，看起來像在報價漲跌。
+    // 改用 importance scale：warning → errorColor（紅，警示）/ info → primary（資訊）。
+    return insight.severity == InsightSeverity.warning
+        ? AppTheme.errorColor
+        : theme.colorScheme.primary;
   }
 }

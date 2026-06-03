@@ -31,7 +31,6 @@ void main() {
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
           descKey: 'marketOverview.keyInsights.sentimentExtreme.descFear',
           descArgs: {'score': '15'},
-          isPositive: false,
         ),
         MarketInsight(
           severity: InsightSeverity.warning,
@@ -39,7 +38,6 @@ void main() {
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
           descKey: 'marketOverview.keyInsights.volumeAnomaly.descHigh',
           descArgs: {'pct': '60'},
-          isPositive: true,
         ),
       ];
 
@@ -68,7 +66,6 @@ void main() {
           descKey:
               'marketOverview.keyInsights.institutionalStreak.descForeignBuy',
           descArgs: {'days': '7'},
-          isPositive: true,
         ),
         MarketInsight(
           severity: InsightSeverity.warning,
@@ -76,7 +73,6 @@ void main() {
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
           descKey: 'marketOverview.keyInsights.volumeAnomaly.descHigh',
           descArgs: {'pct': '55'},
-          isPositive: true,
         ),
         MarketInsight(
           severity: InsightSeverity.warning,
@@ -84,7 +80,6 @@ void main() {
           titleKey: 'marketOverview.keyInsights.chipAlert.title',
           descKey: 'marketOverview.keyInsights.chipAlert.desc',
           descArgs: {'count': '3'},
-          isPositive: false,
         ),
       ];
 
@@ -104,7 +99,6 @@ void main() {
           titleKey: 'marketOverview.keyInsights.sentimentExtreme.title',
           descKey: 'marketOverview.keyInsights.sentimentExtreme.descFear',
           descArgs: {'score': '10'},
-          isPositive: false,
         ),
         MarketInsight(
           severity: InsightSeverity.info,
@@ -112,7 +106,6 @@ void main() {
           titleKey: 'marketOverview.keyInsights.volumeAnomaly.title',
           descKey: 'marketOverview.keyInsights.volumeAnomaly.descLow',
           descArgs: {'pct': '35'},
-          isPositive: false,
         ),
       ];
 
