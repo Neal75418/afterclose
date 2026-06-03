@@ -96,7 +96,7 @@ class InstitutionalSection extends StatelessWidget {
 
     return MiniTrendChart(
       dataPoints: totalNets,
-      lineColor: const Color(0xFF3498DB),
+      lineColor: AppTheme.foreignColor,
     );
   }
 
@@ -133,17 +133,17 @@ class InstitutionalSection extends StatelessWidget {
                   buildColoredHeader(
                     theme,
                     'stockDetail.foreign'.tr(),
-                    const Color(0xFF3498DB),
+                    AppTheme.foreignColor,
                   ),
                   buildColoredHeader(
                     theme,
                     'stockDetail.investment'.tr(),
-                    const Color(0xFF9B59B6),
+                    AppTheme.investmentTrustColor,
                   ),
                   buildColoredHeader(
                     theme,
                     'stockDetail.dealer'.tr(),
-                    const Color(0xFFE67E22),
+                    AppTheme.dealerColor,
                   ),
                 ],
               ),

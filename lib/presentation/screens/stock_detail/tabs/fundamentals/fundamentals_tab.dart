@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
@@ -192,7 +193,7 @@ class _FundamentalsTabState extends ConsumerState<FundamentalsTab> {
                 ? '${per.dividendYield.toStringAsFixed(2)}%'
                 : '-',
             icon: Icons.percent,
-            accentColor: const Color(0xFF27AE60),
+            accentColor: AppTheme.dividendColor,
             subtitle: 'stockDetail.yieldLabel'.tr(),
           ),
         ),

@@ -22,8 +22,10 @@ const _kMaxDisplayMonths = 12;
 const _kSignificantChangeThreshold = 1.0;
 
 /// 顏色常數
-const _kInsiderRatioColor = Color(0xFF3498DB);
-const _kPledgeRatioColor = Color(0xFF9B59B6);
+///
+/// 重用 brand tokens 避免硬寫 hex；視覺意圖是 chart line accent。
+const _kInsiderRatioColor = AppTheme.foreignColor;
+const _kPledgeRatioColor = AppTheme.investmentTrustColor;
 
 /// 董監持股分頁 - 持股比例、質押比例、持股變化
 class InsiderTab extends ConsumerStatefulWidget {

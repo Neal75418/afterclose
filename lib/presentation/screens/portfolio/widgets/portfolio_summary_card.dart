@@ -19,7 +19,7 @@ class PortfolioSummaryCard extends StatelessWidget {
     final pnlColor = isPositive ? AppTheme.upColor : AppTheme.downColor;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.spacing16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
@@ -33,7 +33,7 @@ class PortfolioSummaryCard extends StatelessWidget {
               color: theme.colorScheme.outline,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: DesignTokens.spacing8),
 
           // 總市值
           Text(
@@ -42,7 +42,7 @@ class PortfolioSummaryCard extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: DesignTokens.spacing4),
 
           // 總損益
           Row(
@@ -53,7 +53,7 @@ class PortfolioSummaryCard extends StatelessWidget {
                   color: theme.colorScheme.outline,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: DesignTokens.spacing8),
               Text(
                 '${isPositive ? "+" : ""}NT\$${_formatNumber(summary.totalPnl)}',
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -61,14 +61,14 @@ class PortfolioSummaryCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: DesignTokens.spacing4),
               Text(
                 '(${isPositive ? "+" : ""}${summary.totalPnlPct.toStringAsFixed(1)}%)',
                 style: theme.textTheme.bodySmall?.copyWith(color: pnlColor),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: DesignTokens.spacing12),
 
           // 損益明細
           Row(
@@ -131,7 +131,7 @@ class _PnlItem extends StatelessWidget {
             color: theme.colorScheme.outline,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: DesignTokens.spacing2),
         Text(
           value == 0 ? '0' : AppNumberFormat.signedInteger(value),
           style: theme.textTheme.bodySmall?.copyWith(

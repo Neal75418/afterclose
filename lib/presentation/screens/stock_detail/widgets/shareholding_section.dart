@@ -1,10 +1,11 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
-import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 外資持股區塊 - 比率卡片 + 趨勢圖
 class ShareholdingSection extends StatelessWidget {
@@ -109,10 +110,7 @@ class ShareholdingSection extends StatelessWidget {
         const SizedBox(height: DesignTokens.spacing8),
 
         // Trend chart
-        MiniTrendChart(
-          dataPoints: chartData,
-          lineColor: const Color(0xFF3498DB),
-        ),
+        MiniTrendChart(dataPoints: chartData, lineColor: AppTheme.foreignColor),
       ],
     );
   }

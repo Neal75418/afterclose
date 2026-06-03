@@ -429,7 +429,7 @@ class _TransactionRow extends StatelessWidget {
 
     final color = isBuy
         ? AppTheme.upColor
-        : (isSell ? AppTheme.downColor : const Color(0xFF2196F3));
+        : (isSell ? AppTheme.downColor : AppTheme.primaryColor);
 
     return Dismissible(
       key: ValueKey(tx.id),
@@ -479,7 +479,7 @@ class _TransactionRow extends StatelessWidget {
                 Text(
                   AppNumberFormat.signedCurrency(tx.quantity),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: const Color(0xFF2196F3),
+                    color: AppTheme.primaryColor,
                     fontWeight: FontWeight.w600,
                   ),
                 )

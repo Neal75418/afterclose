@@ -180,8 +180,8 @@ class InsiderSection extends StatelessWidget {
               MiniTrendChart(
                 dataPoints: insiderRatioHistory,
                 height: 56,
-                lineColor: const Color(0xFF3498DB),
-                fillColor: const Color(0xFF3498DB).withValues(alpha: 0.08),
+                lineColor: AppTheme.foreignColor,
+                fillColor: AppTheme.foreignColor.withValues(alpha: 0.08),
               ),
             ],
           ],
