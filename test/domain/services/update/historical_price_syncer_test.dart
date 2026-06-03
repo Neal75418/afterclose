@@ -397,5 +397,155 @@ void main() {
         }
       });
     });
+
+    // 2026-06 production regression：早期 _estimateAvgMonthsNeeded 對所有
+    // 非零 symbol 一律假設 4 月，但 PriceRepository 實際走整個視窗的月份
+    // 迴圈，partial-data symbol 若資料分佈零散會打很多 API。低估 budget
+    // 讓 maxSyncCount 估高，跑到一半被 TWSE 限流（300 預算實打 1125 次）。
+    //
+    // 修正後 estimator 鏡像 price_repository 的「< minTradingDaysPerMonth
+    // 月份算缺」邏輯，每 symbol 真實計算缺月。
+    group('_estimateAvgMonthsNeeded fragmentation regression', () {
+      test(
+        'fragmented partial data caps syncCount to match real API budget',
+        () async {
+          // 200 檔每檔在 3 個非連續月各放 3 天 = 9 天總量 + 9 個月缺資料。
+          //
+          // 視窗 = testDate - historyRequiredDays = 約 250 天 (~12 個月)。
+          // 9 天遠 < nearThreshold(180) → _findSymbolsNeedingData 不會早退。
+          // firstTradeDate 在約 12 個月前 → _hasEnoughDataForAge 期望 ~85 天
+          // (300×0.71×0.5)，9 天遠不足 → 進佇列。
+          //
+          // OLD estimator: 200 檔 × 4 月 = 800 → maxSyncCount = ceil(300/4) = 75
+          //   會嘗試同步 75 檔，但真實 calls = 75 × 9 月 ≈ 675 → 超 budget 2.25 倍
+          // NEW estimator: 200 檔 × 9 月 = 1800 → maxSyncCount = ceil(300/9) = 34
+          //   只同步 ~34 檔，真實 calls ≈ 306 ≈ budget，不超
+
+          final allSymbols = List.generate(
+            200,
+            (i) => 'F${i.toString().padLeft(3, '0')}',
+          );
+
+          // 每 symbol 在 3 個非連續月各放 3 天，oldest-first 排序（DAO 行為）
+          List<DailyPriceEntry> fragmentedPrices(String symbol) {
+            final out = <DailyPriceEntry>[];
+            // 反向：先放最早 → 最新（符合 DAO `OrderingTerm.asc(date)`）
+            for (final monthOffset in [10, 6, 2]) {
+              // testDate.month - 10 = -9 → Dart 自動 normalize 到前一年
+              final monthStart = DateTime(
+                testDate.year,
+                testDate.month - monthOffset,
+                5,
+              );
+              for (var i = 0; i < 3; i++) {
+                out.add(
+                  DailyPriceEntry(
+                    symbol: symbol,
+                    date: monthStart.add(Duration(days: i)),
+                    close: 100.0,
+                  ),
+                );
+              }
+            }
+            return out;
+          }
+
+          setupSufficientDataSymbols([]);
+          setupPriceHistoryBatch({
+            for (final s in allSymbols) s: fragmentedPrices(s),
+          });
+          when(() => mockDb.getStocksBatch(any())).thenAnswer(
+            (_) async => {
+              for (final s in allSymbols)
+                s: StockMasterEntry(
+                  symbol: s,
+                  name: s,
+                  market: 'TWSE',
+                  isActive: true,
+                  updatedAt: testDate,
+                ),
+            },
+          );
+          for (final s in allSymbols) {
+            setupSyncSuccess(s, count: 1);
+          }
+
+          final result = await syncer.syncHistoricalPrices(
+            date: testDate,
+            watchlistSymbols: [],
+            popularStocks: [],
+            marketCandidates: allSymbols,
+          );
+
+          expect(result.totalSymbolsNeeded, 200);
+
+          // 核心斷言：修正後 maxSyncCount 應反映真實 API 成本（~9 月/檔）
+          // 預期 symbolsProcessed ~34（300/9 budget），絕不應 ≥ 75（OLD bug 值）。
+          // 用寬容區間避免月份邊界數字計算與測試環境差異產生 noise。
+          expect(
+            result.symbolsProcessed,
+            lessThanOrEqualTo(45),
+            reason:
+                'maxSyncCount should cap to real API budget (~34), '
+                'NOT old over-optimistic 75 from constant-4 partialMonths',
+          );
+          expect(
+            result.symbolsProcessed,
+            greaterThanOrEqualTo(20),
+            reason:
+                'cap should not be absurdly low — '
+                'budget 300 / max(15) ≥ 20',
+          );
+        },
+      );
+
+      test(
+        'zero-data symbol estimates full window (≈14 months) — not constant fallback',
+        () async {
+          // Fresh DB 場景對照組：完全沒資料的 symbol 應該估算成整個視窗
+          // (~14 個月)，而不是被誤判成「partial」(舊 constant 4)。
+          // 這個 case 在修法前後行為應一致，作為 sanity check。
+          final allSymbols = List.generate(
+            100,
+            (i) => 'Z${i.toString().padLeft(3, '0')}',
+          );
+          setupSufficientDataSymbols([]);
+          setupPriceHistoryBatch({for (final s in allSymbols) s: []});
+          when(() => mockDb.getStocksBatch(any())).thenAnswer(
+            (_) async => {
+              for (final s in allSymbols)
+                s: StockMasterEntry(
+                  symbol: s,
+                  name: s,
+                  market: 'TWSE',
+                  isActive: true,
+                  updatedAt: testDate,
+                ),
+            },
+          );
+          for (final s in allSymbols) {
+            setupSyncSuccess(s, count: 1);
+          }
+
+          final result = await syncer.syncHistoricalPrices(
+            date: testDate,
+            watchlistSymbols: [],
+            popularStocks: [],
+            marketCandidates: allSymbols,
+          );
+
+          // 100 檔 × ~14 月 → maxSyncCount = ceil(300/14) = 22。
+          // 寬容區間：22 ± 2 涵蓋 9 / 10 月視窗的邊界。
+          expect(result.totalSymbolsNeeded, 100);
+          expect(
+            result.symbolsProcessed,
+            inInclusiveRange(18, 28),
+            reason:
+                'fresh DB: 100 stocks × ~14 months = ~1400 calls, '
+                'budget 300 → maxSyncCount around 21-22',
+          );
+        },
+      );
+    });
   });
 }

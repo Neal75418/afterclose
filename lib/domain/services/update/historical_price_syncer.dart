@@ -79,6 +79,8 @@ class HistoricalPriceSyncer {
     final avgMonthsPerSymbol = _estimateAvgMonthsNeeded(
       symbolsNeedingData,
       priceHistoryBatch,
+      historyStartDate: historyStartDate,
+      endDate: date,
     );
 
     final limitedSymbols = await _prioritizeSymbols(
@@ -207,30 +209,74 @@ class HistoricalPriceSyncer {
 
   /// 估算每檔股票平均需要的月度 API 呼叫數
   ///
-  /// DB 無資料的股票需要 ~14 個月（完整歷史），有部分資料的需要較少。
-  /// 用於動態調整 maxSyncCount，避免 Fresh DB 場景一次發出過多請求。
+  /// 鏡像 [PriceRepository.syncStockPrices] 第 134–161 行的月份迭代邏輯：
+  ///   1. 對 `[historyStartDate, endDate]` 視窗內每個月份，
+  ///   2. 跳過上市前的月份（cached ≥ 60 天時才信 firstKnownDate 作上市日代理），
+  ///   3. 凡 cached days < [DataFreshness.minTradingDaysPerMonth] 的月份就計入。
+  ///
+  /// 早期版本對所有非零 symbol 一律假設 4 個月（[historicalPartialSyncMonths]，
+  /// 已移除）。但實際 API 呼叫數取決於 cached 資料如何分佈於月份桶 — 若 222
+  /// 天散落在 9 個月，缺口可能是 6 個月而非 4。低估會讓 maxSyncCount 估高，
+  /// 超出真實 API budget 觸發限流（2026-06 production 案例：估 75 檔 × 4 月
+  /// = 300 calls 預算，實打 75 × ~15 月 = 1125，跑到 16 檔就被擋）。
   double _estimateAvgMonthsNeeded(
     List<String> symbols,
-    Map<String, List<DailyPriceEntry>> priceHistoryBatch,
-  ) {
+    Map<String, List<DailyPriceEntry>> priceHistoryBatch, {
+    required DateTime historyStartDate,
+    required DateTime endDate,
+  }) {
     if (symbols.isEmpty) return 1;
 
-    var zeroDataCount = 0;
-    var partialDataCount = 0;
+    // 預先計算視窗內月份清單（與 PriceRepository 的 while 迴圈邊界一致）
+    final windowMonths = <(int, int)>[];
+    var cur = DateTime(historyStartDate.year, historyStartDate.month, 1);
+    final windowEnd = DateTime(endDate.year, endDate.month, 1);
+    while (!cur.isAfter(windowEnd)) {
+      windowMonths.add((cur.year, cur.month));
+      cur = DateTime(cur.year, cur.month + 1, 1);
+    }
+    final totalWindowMonths = windowMonths.length;
+
+    var totalMonthsNeeded = 0;
     for (final symbol in symbols) {
-      final priceCount = priceHistoryBatch[symbol]?.length ?? 0;
-      if (priceCount == 0) {
-        zeroDataCount++;
-      } else {
-        partialDataCount++;
+      final prices = priceHistoryBatch[symbol];
+      if (prices == null || prices.isEmpty) {
+        // 無資料：整個視窗都需抓取
+        totalMonthsNeeded += totalWindowMonths;
+        continue;
       }
+
+      // group by (year, month) — 與 PriceRepository 第 128–132 行對齊
+      final daysByMonth = <(int, int), int>{};
+      for (final p in prices) {
+        final key = (p.date.year, p.date.month);
+        daysByMonth[key] = (daysByMonth[key] ?? 0) + 1;
+      }
+
+      // 鏡像 firstKnownDate 上市日邏輯（≥ 60 天才信任）
+      // PriceRepository.syncStockPrices line 121–125
+      final firstKnownDate = prices.length >= 60 ? prices.first.date : null;
+      final firstKnownMonth = firstKnownDate != null
+          ? (firstKnownDate.year, firstKnownDate.month)
+          : null;
+
+      var monthsNeeded = 0;
+      for (final month in windowMonths) {
+        // 跳過上市前月份
+        if (firstKnownMonth != null) {
+          final (fy, fm) = firstKnownMonth;
+          final (my, mm) = month;
+          if (my < fy || (my == fy && mm < fm)) continue;
+        }
+        final days = daysByMonth[month] ?? 0;
+        if (days < DataFreshness.minTradingDaysPerMonth) {
+          monthsNeeded++;
+        }
+      }
+      totalMonthsNeeded += monthsNeeded;
     }
 
-    // 無資料的需要完整 14 個月；有部分資料的平均需要 4 個月
-    const fullMonths = DataFreshness.historicalFullSyncMonths;
-    const partialMonths = DataFreshness.historicalPartialSyncMonths;
-    final total = zeroDataCount * fullMonths + partialDataCount * partialMonths;
-    return total / symbols.length;
+    return totalMonthsNeeded / symbols.length;
   }
 
   /// 依重要性排序並限制同步數量

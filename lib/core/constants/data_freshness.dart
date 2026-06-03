@@ -109,8 +109,9 @@ abstract final class DataFreshness {
   /// DB 全新時每檔股票平均需要抓取約 14 個月的歷史。
   static const int historicalFullSyncMonths = 14;
 
-  /// 有部分歷史資料股票平均所需同步月數
-  static const int historicalPartialSyncMonths = 4;
+  // `historicalPartialSyncMonths`（早期固定 4）已於 2026-06 移除：partial 場景
+  // 的 API 呼叫數實際取決於 cached 資料的月份分佈，由 estimator 動態計算，
+  // 而非靠單一常數估算。詳見 `HistoricalPriceSyncer._estimateAvgMonthsNeeded`。
 
   // ==================================================
   // 法人資料估算
