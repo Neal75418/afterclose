@@ -196,7 +196,8 @@
       "subtitleForeignNearLimit": "Foreign holdings approaching regulatory ceiling",
       "subtitleShortSurge": "Short selling surged, watch for downside pressure",
       "subtitleInstitutionalSurge": "Institutional net flow exceeds 5x recent average",
-      "moreItems": "{count} more not shown",
+      "moreItems": "Show all ({count} more)",
+      "collapse": "Collapse",
       "desc": {
         "highPledge": "Pledged {value} — forced sell risk if price drops",
         "insiderTransferZero": "Transfer declared, not yet executed",

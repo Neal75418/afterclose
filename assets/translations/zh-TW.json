@@ -196,7 +196,8 @@
       "subtitleForeignNearLimit": "外資持股逼近法定上限",
       "subtitleShortSurge": "融券賣出暴增，注意空頭壓力",
       "subtitleInstitutionalSurge": "法人單日買賣超越近期均值 5 倍",
-      "moreItems": "還有 {count} 檔未顯示",
+      "moreItems": "展開全部（還有 {count} 檔）",
+      "collapse": "收合",
       "desc": {
         "highPledge": "董監質押 {value}，若股價下跌有強制賣出風險",
         "insiderTransferZero": "已申報轉讓意向，尚未實際執行",

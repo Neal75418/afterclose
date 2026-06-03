@@ -62,9 +62,11 @@ class ChipAnomalyRow extends StatelessWidget {
         for (int i = 0; i < sortedTypes.length; i++) ...[
           if (i > 0) const SizedBox(height: DesignTokens.spacing8),
           _AnomalyTypeSection(
+            // 用 type 當 key，確保 sort 順序變動（如 severity 升級導致重排）時
+            // _isExpanded 狀態仍跟著正確的 type 走，不會誤掛到不同類別。
+            key: ValueKey(sortedTypes[i]),
             type: sortedTypes[i],
-            items: grouped[sortedTypes[i]]!.take(3).toList(),
-            totalCount: grouped[sortedTypes[i]]!.length,
+            items: grouped[sortedTypes[i]]!,
             onStockTap: onStockTap,
           ),
         ],
@@ -131,31 +133,46 @@ class _SummaryBanner extends StatelessWidget {
 // 單一類型區塊
 // ==================================================
 
-class _AnomalyTypeSection extends StatelessWidget {
+class _AnomalyTypeSection extends StatefulWidget {
   const _AnomalyTypeSection({
+    super.key,
     required this.type,
     required this.items,
-    required this.totalCount,
     this.onStockTap,
   });
 
   final ChipAnomalyType type;
 
-  /// 顯示的個股（最多 3 筆）
+  /// 該類型偵測到的所有個股（預設 collapsed 只顯示前 3 筆）
   final List<ChipAnomaly> items;
-
-  /// 實際偵測到的總筆數（偵測上限 5 筆）
-  final int totalCount;
 
   final void Function(String symbol)? onStockTap;
 
   @override
+  State<_AnomalyTypeSection> createState() => _AnomalyTypeSectionState();
+}
+
+/// 預設折疊時顯示的個股數
+const int _kAnomalyCollapsedCount = 3;
+
+class _AnomalyTypeSectionState extends State<_AnomalyTypeSection> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final meta = _typeMeta(type);
-    final isHigh = items.any((a) => a.severity == ChipSeverity.high);
+    final meta = _typeMeta(widget.type);
+    final totalCount = widget.items.length;
+    final visibleItems = _isExpanded
+        ? widget.items
+        : widget.items.take(_kAnomalyCollapsedCount).toList();
+    // severity / accent color 應反映**全部** items 的最高嚴重度，不是 visible
+    // slice — 否則 collapsed 時 items[3+] 含 high 會被誤標成 medium，展開後才
+    // 突然變紅，破壞「header color = section severity」的承諾。
+    final isHigh = widget.items.any((a) => a.severity == ChipSeverity.high);
     final accentColor = isHigh ? AppTheme.errorColor : AppTheme.warningColor;
-    final hiddenCount = totalCount - items.length;
+    final hiddenCount = totalCount - visibleItems.length;
+    final canExpand = totalCount > _kAnomalyCollapsedCount;
 
     return Material(
       color: theme.colorScheme.surfaceContainerLowest,
@@ -233,20 +250,34 @@ class _AnomalyTypeSection extends StatelessWidget {
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.25),
             ),
             const SizedBox(height: DesignTokens.spacing4),
-            for (final item in items)
-              _AnomalyItem(anomaly: item, onTap: onStockTap),
+            for (final item in visibleItems)
+              _AnomalyItem(anomaly: item, onTap: widget.onStockTap),
 
-            // 「還有 N 檔未顯示」提示
-            if (hiddenCount > 0)
+            // 展開 / 收合按鈕（折疊時顯示「還有 N 檔」、展開時顯示「收合」）
+            if (canExpand)
               Padding(
                 padding: const EdgeInsets.only(top: DesignTokens.spacing4),
-                child: Text(
-                  'marketOverview.chipAnomaly.moreItems'.tr(
-                    namedArgs: {'count': hiddenCount.toString()},
+                child: TextButton(
+                  onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spacing8,
+                      vertical: DesignTokens.spacing4,
+                    ),
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: theme.colorScheme.primary,
                   ),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: DesignTokens.fontSizeXs,
+                  child: Text(
+                    _isExpanded
+                        ? 'marketOverview.chipAnomaly.collapse'.tr()
+                        : 'marketOverview.chipAnomaly.moreItems'.tr(
+                            namedArgs: {'count': hiddenCount.toString()},
+                          ),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: DesignTokens.fontSizeXs,
+                    ),
                   ),
                 ),
               ),
