@@ -232,27 +232,46 @@ class _FlowCard extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    // 比例條
+                    // 比例條（center-anchored — 正值從中央向右、負值從中央向左）
+                    //
+                    // 早期版本是 edge-anchored（正→左邊起，負→右邊起），會讓
+                    // 兩張卡並列時方向感反向，不利於跨市場交叉比較（例如
+                    // TWSE 外資 +434 億 vs TPEx 外資 -115 億）。改成中央為 0、
+                    // 兩側等量放，視覺上立刻看出正負與相對量級。
                     ClipRRect(
                       borderRadius: BorderRadius.circular(3),
                       child: SizedBox(
                         height: 4,
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                            final barWidth = constraints.maxWidth * ratio;
+                            final halfWidth = constraints.maxWidth / 2;
+                            final barWidth = halfWidth * ratio;
                             return Stack(
                               children: [
                                 Container(
                                   color: theme.colorScheme.outlineVariant
                                       .withValues(alpha: 0.15),
                                 ),
+                                // 中央 0 軸 tick（1px），低調但提供視覺錨點
+                                Positioned(
+                                  left: halfWidth - 0.5,
+                                  top: 0,
+                                  bottom: 0,
+                                  width: 1,
+                                  child: Container(
+                                    color: theme.colorScheme.outlineVariant
+                                        .withValues(alpha: 0.35),
+                                  ),
+                                ),
                                 if (barWidth > 0)
                                   Positioned(
-                                    left: isPositive ? 0 : null,
-                                    right: isPositive ? null : 0,
+                                    left: isPositive
+                                        ? halfWidth
+                                        : halfWidth - barWidth,
+                                    width: barWidth,
+                                    top: 0,
+                                    bottom: 0,
                                     child: Container(
-                                      width: barWidth,
-                                      height: 4,
                                       color: isPositive
                                           ? item.color
                                           : item.color.withValues(alpha: 0.7),

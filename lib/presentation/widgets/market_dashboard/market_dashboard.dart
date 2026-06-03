@@ -40,6 +40,15 @@ class MarketDashboard extends StatefulWidget {
   State<MarketDashboard> createState() => _MarketDashboardState();
 }
 
+/// 並排雙欄 view 的寬度門檻
+///
+/// `Breakpoints.mobile`（600px）作為「mobile 單欄+Tab」與其他的 binary
+/// 切換太低 — 601-1023px 區間（iPad portrait、split-screen macOS、小 dev
+/// window）會被切到 parallel 雙欄，每欄僅 ~300px 比 phone 還窄但用 desktop
+/// 排版。改在 1024px（與 [Breakpoints.tablet] 對齊）才進入並排，medium
+/// 寬度維持 tabbed 單欄，閱讀體驗一致。
+const double _kParallelViewMinWidth = Breakpoints.tablet;
+
 /// 市場區段（避免使用 magic string）
 enum _MarketSegment {
   // ignore: constant_identifier_names
@@ -78,7 +87,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
     // 有舊資料但最近一次 refresh 失敗時，在 dashboard 頂部顯示提示
     final refreshError = widget.state.error;
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < Breakpoints.mobile;
+    // `isMobile` 涵蓋 phone + medium 螢幕（< 1024px）— 兩者都用 Tab 切換上市/
+    // 上櫃單欄，避免 medium 螢幕被 600px 舊門檻塞進並排雙欄而各欄只有 ~300px。
+    final isMobile = screenWidth < _kParallelViewMinWidth;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
