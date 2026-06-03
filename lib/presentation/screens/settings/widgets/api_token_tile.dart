@@ -95,9 +95,19 @@ class _ApiTokenTileState extends ConsumerState<ApiTokenTile> {
                 enableSuggestions: false,
                 onChanged: (_) => setDialogState(() {}),
               ),
-              const SizedBox(height: DesignTokens.spacing16),
-              InkWell(
-                onTap: () => _openRegisterUrl(),
+              const SizedBox(height: DesignTokens.spacing8),
+              // 用 TextButton 確保命中區 ≥ 44dp（HIG/WCAG），裸 InkWell
+              // 的 line height ~12dp 太小。
+              TextButton(
+                onPressed: _openRegisterUrl,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: DesignTokens.spacing4,
+                    vertical: DesignTokens.spacing8,
+                  ),
+                  minimumSize: const Size(0, 44),
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                ),
                 child: Text(
                   'settings.apiRegister'.tr(),
                   style: theme.textTheme.bodySmall?.copyWith(

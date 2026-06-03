@@ -355,21 +355,24 @@ class StockDetailHeader extends StatelessWidget {
   Widget _buildTrendRow(ThemeData theme) {
     final trendState = data.trendState;
 
-    return Row(
+    // 三個 chip 並排在 EN locale 或字體放大時可能超出窄螢幕寬度
+    // （iPhone SE ≈ 343px 可用寬，三 chip 自然寬約 311px，邊界）。
+    // 改用 Wrap 讓 chip 必要時換行，避免 RenderFlex overflow。
+    return Wrap(
+      spacing: DesignTokens.spacing8,
+      runSpacing: DesignTokens.spacing8,
       children: [
         _InfoChip(
           label: 'trend.${trendState?.trendKey ?? 'sideways'}'.tr(),
           icon: trendState?.trendIconData ?? Icons.trending_flat,
           color: trendState?.trendColor ?? AppTheme.neutralColor,
         ),
-        const SizedBox(width: DesignTokens.spacing8),
         if (data.support case final supportLevel?)
           _LevelChip(
             label: 'stockDetail.support'.tr(),
             value: supportLevel,
             color: AppTheme.downColor,
           ),
-        const SizedBox(width: DesignTokens.spacing8),
         if (data.resistance case final resistanceLevel?)
           _LevelChip(
             label: 'stockDetail.resistance'.tr(),

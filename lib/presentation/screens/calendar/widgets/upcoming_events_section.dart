@@ -75,50 +75,55 @@ class _UpcomingEventCard extends StatelessWidget {
     final color = type.color;
     final date = event.eventDate;
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: event.title,
       onTap: onTap,
-      child: Container(
-        width: 140,
-        margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing4),
-        padding: const EdgeInsets.all(DesignTokens.spacing10),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
-          border: Border(left: BorderSide(color: color, width: 3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  DateFormat('MM/dd', context.locale.toString()).format(date),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 140,
+          margin: const EdgeInsets.symmetric(horizontal: DesignTokens.spacing4),
+          padding: const EdgeInsets.all(DesignTokens.spacing10),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+            border: Border(left: BorderSide(color: color, width: 3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    DateFormat('MM/dd', context.locale.toString()).format(date),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(width: DesignTokens.spacing4),
-                Text(
-                  DateFormat.E(context.locale.toString()).format(date),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.outline,
+                  const SizedBox(width: DesignTokens.spacing4),
+                  Text(
+                    DateFormat.E(context.locale.toString()).format(date),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.outline,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: DesignTokens.spacing6),
-            Expanded(
-              child: Text(
-                event.title,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: DesignTokens.spacing6),
+              Expanded(
+                child: Text(
+                  event.title,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

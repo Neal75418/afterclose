@@ -8,6 +8,7 @@ import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
+import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
 import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
@@ -88,7 +89,7 @@ class _ShortSellRankingScreenState
                     ],
                   ),
                 Expanded(
-                  child: RefreshIndicator(
+                  child: ThemedRefreshIndicator(
                     onRefresh: () =>
                         ref.read(shortSellRankingProvider.notifier).loadData(),
                     child: state.rankings.isEmpty
