@@ -7,9 +7,14 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 // 第 4 階段：法人連續買賣規則
 // ==================================================
 
-/// 規則：法人連買
+/// 規則：法人連買（外資 + 投信）
 ///
-/// 當外資連續 N 日買超時觸發
+/// 當外資 + 投信合計連續 N 日買超時觸發。
+///
+/// **刻意排除自營商**：自營商部位多含 hedge / market-making noise，加入
+/// 後會稀釋訊號品質。此處的「法人」語意 = 「方向型法人」(directional
+/// institutional)，不是三大法人全集合。若要全集合語意請看
+/// [InstitutionalShiftRule]，那邊包含 dealerNet。
 class InstitutionalBuyStreakRule extends StockRule {
   const InstitutionalBuyStreakRule();
 
@@ -96,7 +101,7 @@ class InstitutionalBuyStreakRule extends StockRule {
         type: ReasonType.institutionalBuyStreak,
         score: score,
         description:
-            '法人連續買超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
+            '外資+投信連續買超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
         evidence: {
           'streakDays': streakDays,
           'foreignNet': totalForeignNet,
@@ -112,9 +117,10 @@ class InstitutionalBuyStreakRule extends StockRule {
   }
 }
 
-/// 規則：法人連賣
+/// 規則：法人連賣（外資 + 投信）
 ///
-/// 當外資連續 N 日賣超時觸發
+/// 當外資 + 投信合計連續 N 日賣超時觸發。
+/// 同 [InstitutionalBuyStreakRule] 的法人定義（刻意排除自營商）。
 class InstitutionalSellStreakRule extends StockRule {
   const InstitutionalSellStreakRule();
 
@@ -209,7 +215,7 @@ class InstitutionalSellStreakRule extends StockRule {
         type: ReasonType.institutionalSellStreak,
         score: score,
         description:
-            '法人連續賣超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
+            '外資+投信連續賣超 $streakDays 日 (外資 $foreignSheets 張, 投信 $trustSheets 張)',
         evidence: {
           'streakDays': streakDays,
           'foreignNet': totalForeignNet,

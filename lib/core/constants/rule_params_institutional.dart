@@ -38,11 +38,19 @@ abstract final class InstitutionalParams {
   /// 法人連賣總量門檻（股）
   ///
   /// 連續賣超期間的總淨賣超須達此門檻（負值）。
+  ///
+  /// **不對稱性**：賣超門檻 (-2M / -300k) 比買超門檻 (1.5M / 200k) 嚴。
+  /// 動機：連賣多為市場 noise（外資 hedge / 月底 rebalance），門檻過鬆
+  /// 會讓警示氾濫降低訊號可信度。當買超門檻於 2026-04 由 2M → 1.5M
+  /// 微調以提升觸發率時，賣超門檻刻意保持不動避免 risk path 失真。
+  ///
+  /// 等 Stage 4 calibration 累積 forward data 後丟進 backtest 重新對齊。
   static const int institutionalSellTotalThresholdShares = -2000000;
 
   /// 法人連賣日均門檻（股）
   ///
-  /// 連續賣超期間的日均淨賣超須達此門檻（負值）。
+  /// 連續賣超期間的日均淨賣超須達此門檻（負值）。對等於
+  /// [institutionalSellTotalThresholdShares] 的不對稱設計。
   static const int institutionalSellDailyAvgThresholdShares = -300000;
 
   // ==================================================

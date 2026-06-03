@@ -1,4 +1,5 @@
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
 
@@ -76,9 +77,20 @@ class InsiderSignificantBuyingRule extends StockRule {
 
 /// 規則：高質押比例
 ///
-/// 當董監質押比例過高時觸發(風險警示)
+/// 當董監質押比例過高時觸發(風險警示)。
+///
+/// **TODO (calibration)**：[FundamentalParams.highPledgeRatioThreshold] = 70
+/// 為 placeholder（自承），需等 Stage 4 真實 forward data 累積後 backtest
+/// 重新校準（或刪除此 rule）。Rule 首次觸發時 [_warnOnce] 會 log 一次提醒。
 class HighPledgeRatioRule extends StockRule {
   const HighPledgeRatioRule();
+
+  /// 進程內首次觸發是否已記過 placeholder 警告
+  ///
+  /// 鎖在 class 靜態欄位上（per-process 一次）避免 hot reload 重複洗版。
+  /// `const` constructor 仍可用，因為這只是一個 mutable 靜態旗標，
+  /// 不影響 instance 不可變性。
+  static bool _warnedPlaceholderOnce = false;
 
   @override
   String get id => 'high_pledge_ratio';
@@ -91,8 +103,16 @@ class HighPledgeRatioRule extends StockRule {
     final pledgeRatio = insiderData.pledgeRatio;
     if (pledgeRatio == null) return null;
 
-    // 當質押比例超過門檻時觸發
     if (pledgeRatio >= FundamentalParams.highPledgeRatioThreshold) {
+      if (!_warnedPlaceholderOnce) {
+        _warnedPlaceholderOnce = true;
+        AppLogger.warning(
+          'HighPledgeRatioRule',
+          'threshold ${FundamentalParams.highPledgeRatioThreshold} is a '
+              'placeholder pending calibration (see FundamentalParams.highPledgeRatioThreshold). '
+              'First trigger on ${data.symbol} at $pledgeRatio%.',
+        );
+      }
       return TriggeredReason(
         type: ReasonType.highPledgeRatio,
         score: RuleScores.highPledgeRatio,
