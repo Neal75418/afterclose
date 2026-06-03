@@ -219,6 +219,13 @@
       "accumulating": "推薦績效累積中，需至少 5 筆驗證資料"
     }
   },
+  "stockSearch": {
+    "tooltip": "搜尋股票",
+    "hint": "輸入股票代號或名稱",
+    "emptyHint": "輸入代號（如 2330）或名稱（如 台積電）",
+    "noMatch": "找不到符合「{query}」的股票",
+    "error": "搜尋失敗，請稍後再試"
+  },
   "scan": {
     "title": "市場掃描",
     "sort": "排序",

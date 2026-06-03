@@ -219,6 +219,13 @@
       "accumulating": "Accumulating data, need at least 5 validations"
     }
   },
+  "stockSearch": {
+    "tooltip": "Search stocks",
+    "hint": "Symbol or name",
+    "emptyHint": "Type a symbol (e.g. 2330) or name",
+    "noMatch": "No stocks match \"{query}\"",
+    "error": "Search failed, please try again"
+  },
   "scan": {
     "title": "Market Scan",
     "sort": "Sort",

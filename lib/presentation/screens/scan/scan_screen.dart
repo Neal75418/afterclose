@@ -24,6 +24,7 @@ import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
+import 'package:afterclose/presentation/widgets/stock_search_delegate.dart';
 import 'package:afterclose/presentation/widgets/themed_refresh_indicator.dart';
 
 /// 掃描畫面 - 顯示所有已分析股票與篩選功能
@@ -116,11 +117,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
-  /// AppBar：標題 + 排序選單 + 更多選單
+  /// AppBar：標題 + 搜尋 + 排序選單 + 更多選單
   PreferredSizeWidget _buildAppBar(BuildContext context, ScanState state) {
     return AppBar(
       title: Text('scan.title'.tr()),
       actions: [
+        IconButton(
+          icon: const Icon(Icons.search),
+          tooltip: 'stockSearch.tooltip'.tr(),
+          onPressed: () => _openGlobalSearch(context),
+        ),
         _isExporting
             ? const Padding(
                 padding: EdgeInsets.all(12),
@@ -165,8 +171,15 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           icon: const Icon(Icons.more_vert),
           tooltip: 'scan.more'.tr(),
           onSelected: (value) {
-            if (value == 'custom_screening') {
-              context.push(AppRoutes.customScreening);
+            switch (value) {
+              case 'custom_screening':
+                context.push(AppRoutes.customScreening);
+              case 'short_sell_ranking':
+                context.push(AppRoutes.shortSellRanking);
+              case 'industry_eps':
+                context.push(AppRoutes.industryEps);
+              case 'industry_overview':
+                context.push(AppRoutes.industry);
             }
           },
           itemBuilder: (context) => [
@@ -177,6 +190,37 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   const Icon(Icons.tune, size: 20),
                   const SizedBox(width: DesignTokens.spacing12),
                   Text('customScreening.title'.tr()),
+                ],
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'short_sell_ranking',
+              child: Row(
+                children: [
+                  const Icon(Icons.trending_down, size: 20),
+                  const SizedBox(width: DesignTokens.spacing12),
+                  Text('shortSell.title'.tr()),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'industry_eps',
+              child: Row(
+                children: [
+                  const Icon(Icons.bar_chart, size: 20),
+                  const SizedBox(width: DesignTokens.spacing12),
+                  Text('industryEps.title'.tr()),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'industry_overview',
+              child: Row(
+                children: [
+                  const Icon(Icons.category_outlined, size: 20),
+                  const SizedBox(width: DesignTokens.spacing12),
+                  Text('scan.industry'.tr()),
                 ],
               ),
             ),
@@ -606,6 +650,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       }
     }
     return card;
+  }
+
+  /// 全域股票搜尋入口 — 開啟 [StockSearchDelegate]，選擇後導航到個股詳情。
+  Future<void> _openGlobalSearch(BuildContext context) async {
+    final symbol = await showSearch<String?>(
+      context: context,
+      delegate: StockSearchDelegate(ref),
+    );
+    if (symbol == null || !context.mounted) return;
+    context.push(AppRoutes.stockDetail(symbol));
   }
 
   Future<void> _exportScanCsv(ScanState state) async {
