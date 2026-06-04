@@ -85,9 +85,13 @@ class InsiderSignificantBuyingRule extends StockRule {
 class HighPledgeRatioRule extends StockRule {
   const HighPledgeRatioRule();
 
-  /// 進程內首次觸發是否已記過 placeholder 警告
+  /// 首次觸發是否已記過 placeholder 警告
   ///
-  /// 鎖在 class 靜態欄位上（per-process 一次）避免 hot reload 重複洗版。
+  /// 鎖在 class 靜態欄位上，**per-Isolate 一次**（非 per-process）：
+  /// scoring 跑在 `Isolate.run()` 產生的新 isolate，與主 isolate 記憶體
+  /// 隔離，每次 spawn 此 flag 都從 false 重置。實務上一次 update cycle
+  /// 觸發兩次（主 isolate UI 路徑 + scoring isolate 各一次）是可接受
+  /// 的提醒頻率，hot reload 在同 isolate 內 preserve flag 不洗版。
   /// `const` constructor 仍可用，因為這只是一個 mutable 靜態旗標，
   /// 不影響 instance 不可變性。
   static bool _warnedPlaceholderOnce = false;

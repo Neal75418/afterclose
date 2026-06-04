@@ -161,6 +161,10 @@ class CalibratedScoresTable {
     //
     // 修：執行 `dart run tool/recalibrate.dart --horizon both` 重產 JSON，
     // 確認 metadata 後 promote `_candidate.json` 取代 production 檔。
+    // backtest.success_threshold_pct 存在且不匹配時拒載；缺失 / 非 Map 都
+    // 寬鬆通過（測試 fixture 與早期版本不含此 block，無需強制）。如果
+    // production JSON 含 block 但缺 success_threshold_pct 屬於 producer
+    // 異常但不阻擋 — 後續 CI guard 可額外加 schema 嚴格度。
     final backtest = root['backtest'];
     if (backtest is Map) {
       final declared = backtest['success_threshold_pct'];

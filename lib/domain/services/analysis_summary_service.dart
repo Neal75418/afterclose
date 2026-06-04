@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
+
 import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_enums.dart';
@@ -256,11 +258,16 @@ class AnalysisSummaryService {
     double? priceChange,
     required Horizon horizon,
   }) {
-    final positive =
-        reasons.where((r) => _ruleScoreFor(r, horizon) > 0).toList()..sort(
-          (a, b) =>
-              _ruleScoreFor(b, horizon).compareTo(_ruleScoreFor(a, horizon)),
-        );
+    // mergeSort 保證 stable — 同分時保留輸入順序（= [reasons] 註冊順序），
+    // 避免不同 build 摘要顯示的 chip 順序漂移。
+    final positive = reasons
+        .where((r) => _ruleScoreFor(r, horizon) > 0)
+        .toList();
+    mergeSort<DailyReasonEntry>(
+      positive,
+      compare: (a, b) =>
+          _ruleScoreFor(b, horizon).compareTo(_ruleScoreFor(a, horizon)),
+    );
 
     const maxItems = AnalysisParams.summaryMaxItems;
     final signals = <LocalizableString>[];
@@ -298,11 +305,14 @@ class AnalysisSummaryService {
     double? priceChange,
     required Horizon horizon,
   }) {
-    final negative =
-        reasons.where((r) => _ruleScoreFor(r, horizon) < 0).toList()..sort(
-          (a, b) =>
-              _ruleScoreFor(a, horizon).compareTo(_ruleScoreFor(b, horizon)),
-        );
+    final negative = reasons
+        .where((r) => _ruleScoreFor(r, horizon) < 0)
+        .toList();
+    mergeSort<DailyReasonEntry>(
+      negative,
+      compare: (a, b) =>
+          _ruleScoreFor(a, horizon).compareTo(_ruleScoreFor(b, horizon)),
+    );
 
     const maxItems = AnalysisParams.summaryMaxItems;
     final risks = <LocalizableString>[];

@@ -44,6 +44,17 @@ class RuleEngine {
   ///   直接撞 maxScore=80
   /// - **bearish_reversal_candle**：頂部反轉 K 線族群（對稱版本），避免空方
   ///   訊號集中扣分讓篩選失準
+  ///
+  /// ## 刻意排除（不進 mutex）
+  ///
+  /// - **patternDoji / patternDojiBearish**：indecision 形態，與「明確反轉」
+  ///   語意不同，可與反轉 K 線正當共存（出現後 1-2 日才常見反轉）
+  /// - **patternGapUp / patternGapDown**：跳空缺口主要傳達「open vs prev close」
+  ///   的隔日斷層資訊，與單日 K 棒形狀（Hammer / Engulfing）描述的是不同
+  ///   訊號層，可共存
+  /// - **techBreakout / techBreakdown**：突破/跌破支撐壓力，與 K 線形狀獨立
+  /// - **kdGoldenCross / maAlignmentBullish 等指標訊號**：不同訊號家族（oscillator
+  ///   / 趨勢），與 K 線無語意重疊
   static const Map<String, Set<ReasonType>> _mutexGroups = {
     'momentum_breakout': {
       ReasonType.techBreakout,
