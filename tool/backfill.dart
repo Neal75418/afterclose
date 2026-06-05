@@ -87,7 +87,7 @@ class BackfillConfig {
     this.symbolsWhitelist,
     this.dryRun = false,
     this.skipStockListSync = false,
-    this.interDayDelayMs = 1500,
+    this.interDayDelayMs = 5000,
   });
 
   /// SQLite 檔案路徑
@@ -110,12 +110,15 @@ class BackfillConfig {
 
   /// 每天 batch call 之間的延遲毫秒數
   ///
-  /// 預設 1500ms（≈ 0.67 req/sec）避開 TWSE IP-based rate limit
-  /// (`Redirect loop detected`)。經驗：500 ms 約 2.5 req/sec 在 70 calls
-  /// 內就被 ban；1500 ms 給 TWSE 充足喘息空間。500 trading days × 1.5s
-  /// ≈ 12.5 分鐘 per market 仍在可接受範圍。
+  /// 預設 5000ms（≈ 0.2 req/sec）避開 TWSE IP-based rate limit。
+  /// 歷史經驗（已 stale）：500ms 在 70 calls 內被 ban、1500ms 給「充足
+  /// 喘息」。但 2026-06 實測 1500ms 在 IP 已被部分標記時 6-22 calls 就被
+  /// 擋，TWSE 之後可能收緊限額。5000ms 是經驗保守值，trade off ~3x
+  /// wall-clock 換 retry-loop 失敗率近零。500 trading days × 5s ≈
+  /// 42 分鐘 per market；如果仍被擋可進一步調到 8000-10000ms。
   ///
-  /// 單元測試傳 0 跳過 delay。
+  /// 單元測試傳 0 跳過 delay。可用 env var `BACKFILL_INTER_DAY_DELAY_MS`
+  /// 覆寫不必改 code。
   final int interDayDelayMs;
 }
 
@@ -916,12 +919,19 @@ BackfillConfig? _parseArgs(List<String> args) {
     return null;
   }
 
+  // env var override 讓你在不改 code 下實驗 rate limit 容忍度
+  final delayOverride = Platform.environment['BACKFILL_INTER_DAY_DELAY_MS'];
+  final interDayDelayMs = delayOverride != null
+      ? (int.tryParse(delayOverride) ?? 5000)
+      : 5000;
+
   return BackfillConfig(
     dbPath: dbPath,
     years: years,
     finMindToken: finMindToken,
     symbolsWhitelist: symbolsWhitelist,
     dryRun: dryRun,
+    interDayDelayMs: interDayDelayMs,
   );
 }
 

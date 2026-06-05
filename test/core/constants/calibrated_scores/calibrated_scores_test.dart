@@ -271,7 +271,9 @@ void main() {
     });
 
     test('11e. drift_guard_missing_backtest_block_passes', () {
-      // 沒有 backtest block (test fixture / 早期版本)：跳過 drift check
+      // 沒有 backtest block (test fixture / 早期版本)：silently 跳過 drift
+      // check，因為 fixture 對結構嚴格度要求低；real production JSON 一定
+      // 含 backtest block。Schema 層級的強檢留給未來 CI guard。
       const json =
           '{"schema_version": 1, '
           '"rules": {"REVERSAL_W2S": {"score": 25}}}';
@@ -688,45 +690,30 @@ void main() {
     // Layer 2: asset smoke tests (2 cases)
     // ==================================================
 
-    test(
-      '23. loadFromAssets_short_with_stale_metadata_drift_rejected',
-      () async {
-        // Bundled `rule_scores_calibrated_short.json` 目前 metadata
-        // success_threshold_pct=1.5（產生時門檻），與 runtime canonical
-        // `Horizon.short.successThresholdPct = 3.0` 不一致。
-        //
-        // drift guard 應拒絕載入 → registry 綁 empty table → lookup 回 null。
-        // 待 `dart run tool/recalibrate.dart` 重產 JSON 並 promote 後，
-        // 此 test 需改回 `isA<int>()`（並更新註解）。
-        await CalibratedScoresRegistry.instance.loadFromAssets();
+    test('23. loadFromAssets_short_bundled_metadata_aligned', () async {
+      // Bundled `rule_scores_calibrated_short.json` metadata
+      // success_threshold_pct=3.0 matches canonical
+      // `Horizon.short.successThresholdPct`，drift guard 放行。
+      // Hermetic drift-reject coverage 在 11c/11d/11e (inline fixtures)。
+      await CalibratedScoresRegistry.instance.loadFromAssets();
 
-        final result = CalibratedScoresRegistry.instance.lookup(
-          Horizon.short,
-          'REVERSAL_W2S',
-        );
-        expect(
-          result,
-          isNull,
-          reason:
-              'stale metadata should be rejected by drift guard; '
-              'rerun tool/recalibrate.dart to refresh bundled JSON',
-        );
-      },
-    );
+      final result = CalibratedScoresRegistry.instance.lookup(
+        Horizon.short,
+        'REVERSAL_W2S',
+      );
+      expect(result, isA<int>());
+    });
 
-    test(
-      '24. loadFromAssets_long_with_stale_metadata_drift_rejected',
-      () async {
-        // 同 test 23，長線 JSON metadata 8.0 vs canonical 12.0。
-        await CalibratedScoresRegistry.instance.loadFromAssets();
+    test('24. loadFromAssets_long_bundled_metadata_aligned', () async {
+      // 同 test 23，長線 JSON metadata 12.0 對齊 canonical。
+      await CalibratedScoresRegistry.instance.loadFromAssets();
 
-        final result = CalibratedScoresRegistry.instance.lookup(
-          Horizon.long,
-          'REVERSAL_W2S',
-        );
-        expect(result, isNull);
-      },
-    );
+      final result = CalibratedScoresRegistry.instance.lookup(
+        Horizon.long,
+        'REVERSAL_W2S',
+      );
+      expect(result, isA<int>());
+    });
 
     // ==================================================
     // Layer 3: singleton lifecycle (3 cases)
@@ -857,14 +844,14 @@ void main() {
         longJsonOverride: null,
       );
 
-      // Bundled JSON 目前 metadata stale → drift guard 拒載 → empty table。
-      // 此處驗證 fallback path 正確走到 loadFromAssets（即 _loaded 設成
-      // true、無例外），lookup 因 stale metadata 仍回 null。
+      // Override 都 null → fallback path 走到 loadFromAssets 載入 bundled
+      // JSON（metadata 對齊 canonical → drift guard 放行）。lookup 應拿到
+      // int（cut rule 為 0、active rule 為 score 值）。
       final firstShort = CalibratedScoresRegistry.instance.lookup(
         Horizon.short,
         'REVERSAL_W2S',
       );
-      expect(firstShort, isNull);
+      expect(firstShort, isA<int>());
 
       // Second call should be no-op (idempotent)
       await CalibratedScoresRegistry.instance.loadWithOverride(
@@ -926,11 +913,12 @@ void main() {
         longJsonOverride: emptyJson,
       );
 
-      // Empty override → fell through to bundled asset。Bundled JSON metadata
-      // stale → drift guard 拒載 → registry 仍 empty。lookup 應回 null。
+      // Empty override → fall through to bundled asset。Bundled JSON metadata
+      // 對齊 canonical → drift guard 放行 → registry 載入成功。lookup
+      // 應拿到 int (cut rule = 0, active rule = score)。
       expect(
         CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
-        isNull,
+        isA<int>(),
       );
     });
 
