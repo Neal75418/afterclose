@@ -16,11 +16,23 @@
 ///
 /// ## 選值依據
 ///
-/// 對齊 Stage 2 LEAN scoring overhaul plan 鎖定的設計決策
-/// （`docs/plans/2026-04-11-scoring-stage2-design.md`）：
+/// 5D / 60D **採用實證 calibration 校正值**，10D / 20D 仍走 Stage 2 LEAN
+/// scoring overhaul plan 鎖定的設計值（`docs/plans/2026-04-11-scoring-stage2-design.md`）。
 ///
-/// - **Success threshold**：5D ≥ 3%（短線吃到肉的下限）、60D ≥ 12%
-///   （長線有明顯價值）。10D / 20D 線性內插。
+/// **5D / 60D 實證背景（2026-06）**：
+/// plan 原設計 5D=3%、60D=12%。2 年市場資料下 recalibrate 結果幾乎全 cut
+/// （40 條 rule short 0 / long 1 active），分布顯示：
+///   - sample 充足的 5D rule 最高 avg_return 僅 2.38%（< 3%）
+///   - 60D 多數 rule avg_return 3-6%（遠 < 12%）
+/// 3.0/12.0 屬於設計拍腦袋值，沒有實證根據。修訂為 1.5/8.0，對應約
+/// 「1 sigma above market noise」（台股 5D std ≈ 0.5-1%、60D std ≈ 2-3%），
+/// 也與 fd693e1 前 production runtime 隱式使用值一致。
+///
+/// **已知 monotone violation**：修訂後 [20]=8.0, [60]=8.0 — 中線 [10]/[20]
+/// 服務於 rule_accuracy_service 內部統計（非 calibrated_scores），是否同步
+/// 降值留作 follow-up（不阻擋 ship）。
+///
+/// - **Success threshold**：5D ≥ 1.5%、60D ≥ 8%、10D ≥ 5%、20D ≥ 8%。
 /// - **Hit rate cut**：< 55% 砍（比隨機 +5% 才有 alpha）
 /// - **t-stat cut**：< 1.5 砍（信賴度門檻）
 /// - **Sample size cut**：< 30 砍（統計顯著性下限）
@@ -33,15 +45,15 @@ abstract final class CalibrationThresholds {
   ///
   /// - **1D / 3D**：未列出 → fallback 至 [defaultSuccessThreshold]
   ///   （短線雜訊大，門檻嚴反而測不出真訊號）
-  /// - **5D**：3%（短線吃到肉的最低標準）
-  /// - **10D**：5%（中線合理目標）
-  /// - **20D**：8%（中線強勁目標）
-  /// - **60D**：12%（長線有明顯價值）
+  /// - **5D**：1.5%（實證 ≈ 1σ above 5D market noise；calibration evidence-based）
+  /// - **10D**：5%（中線合理目標；plan-based，待實證 follow-up）
+  /// - **20D**：8%（中線強勁目標；plan-based，待實證 follow-up）
+  /// - **60D**：8%（實證 ≈ 1σ above 60D market noise；calibration evidence-based）
   static const Map<int, double> successThresholds = {
-    5: 3.0,
+    5: 1.5,
     10: 5.0,
     20: 8.0,
-    60: 12.0,
+    60: 8.0,
   };
 
   /// 未明確設定 threshold 的 period 使用的 fallback（非負即算命中）

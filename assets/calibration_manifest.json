@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "version": "2026-06-05",
-  "generated_at": "2026-06-05T22:09:14.909352Z",
+  "version": "2026-06-08",
+  "generated_at": "2026-06-08T15:53:26.272418Z",
   "short": {
     "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_short.json",
-    "sha256": "a658d742902c9cb4999bee45a95a841518dd3b3f262d7deb54712d20d2f8ec52",
+    "sha256": "ce0e6897917dcad40bb9079a47b2bbd53e5c4dd68ceb4664dea85c84b1ad4934",
     "rule_count": 40,
     "filename": "rule_scores_calibrated_short.json"
   },
   "long": {
     "url": "https://cdn.jsdelivr.net/gh/Neal75418/afterclose@main/assets/rule_scores_calibrated_long.json",
-    "sha256": "a3f7f07402e4e1df8e7810669f45966de400c1308088de837cf3d95bba1f4bc8",
+    "sha256": "7302d8c35053314c17279349e3085225d0f491a7cb5ac4b86fbea7e7c87e92f6",
     "rule_count": 40,
     "filename": "rule_scores_calibrated_long.json"
   },

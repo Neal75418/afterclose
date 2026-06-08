@@ -237,10 +237,10 @@ void main() {
     // ==================================================
 
     test('11c. drift_guard_metadata_matches_canonical_accepted', () {
-      // short canonical = 3.0
+      // short canonical = 1.5
       const json =
           '{"schema_version": 1, '
-          '"backtest": {"success_threshold_pct": 3.0}, '
+          '"backtest": {"success_threshold_pct": 1.5}, '
           '"rules": {"REVERSAL_W2S": {"score": 25}}}';
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
         json,
@@ -253,10 +253,10 @@ void main() {
     });
 
     test('11d. drift_guard_metadata_mismatch_short_rejected', () {
-      // short canonical = 3.0, JSON declares 1.5 → reject
+      // short canonical = 1.5, JSON declares 3.0 → reject
       const json =
           '{"schema_version": 1, '
-          '"backtest": {"success_threshold_pct": 1.5}, '
+          '"backtest": {"success_threshold_pct": 3.0}, '
           '"rules": {"REVERSAL_W2S": {"score": 25}}}';
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
         json,
@@ -266,8 +266,8 @@ void main() {
       expect(table.ruleCount, 0);
       expect(warnings, isNotEmpty);
       expect(warnings.first, contains('success_threshold_pct drift'));
-      expect(warnings.first, contains('1.5'));
       expect(warnings.first, contains('3.0'));
+      expect(warnings.first, contains('1.5'));
     });
 
     test('11e. drift_guard_missing_backtest_block_passes', () {
@@ -692,7 +692,7 @@ void main() {
 
     test('23. loadFromAssets_short_bundled_metadata_aligned', () async {
       // Bundled `rule_scores_calibrated_short.json` metadata
-      // success_threshold_pct=3.0 matches canonical
+      // success_threshold_pct=1.5 matches canonical
       // `Horizon.short.successThresholdPct`，drift guard 放行。
       // Hermetic drift-reject coverage 在 11c/11d/11e (inline fixtures)。
       await CalibratedScoresRegistry.instance.loadFromAssets();
@@ -705,7 +705,7 @@ void main() {
     });
 
     test('24. loadFromAssets_long_bundled_metadata_aligned', () async {
-      // 同 test 23，長線 JSON metadata 12.0 對齊 canonical。
+      // 同 test 23，長線 JSON metadata 8.0 對齊 canonical。
       await CalibratedScoresRegistry.instance.loadFromAssets();
 
       final result = CalibratedScoresRegistry.instance.lookup(
@@ -946,18 +946,18 @@ void main() {
   });
 
   group('Horizon enum metadata', () {
-    test('short has 5 trading days and 3% threshold', () {
+    test('short has 5 trading days and 1.5% threshold', () {
       expect(Horizon.short.tradingDays, 5);
-      expect(Horizon.short.successThresholdPct, 3.0);
+      expect(Horizon.short.successThresholdPct, 1.5);
       expect(
         Horizon.short.assetPath,
         'assets/rule_scores_calibrated_short.json',
       );
     });
 
-    test('long has 60 trading days and 12% threshold', () {
+    test('long has 60 trading days and 8% threshold', () {
       expect(Horizon.long.tradingDays, 60);
-      expect(Horizon.long.successThresholdPct, 12.0);
+      expect(Horizon.long.successThresholdPct, 8.0);
       expect(Horizon.long.assetPath, 'assets/rule_scores_calibrated_long.json');
     });
 

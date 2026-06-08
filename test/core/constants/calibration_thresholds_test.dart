@@ -16,13 +16,14 @@ import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 
 void main() {
   group('CalibrationThresholds canonical values', () {
-    test('successThresholds match scoring overhaul plan locked decisions', () {
-      // Stage 2 LEAN design doc：5D ≥ 3%, 60D ≥ 12% 是 locked 決策。
-      // 改動這些值前請先更新 plan 與 docstring。
-      expect(CalibrationThresholds.successThresholds[5], equals(3.0));
+    test('successThresholds match canonical values', () {
+      // 5D / 60D 走實證 calibration 校正值（2 年市場資料下的「1σ-above-noise」)。
+      // 10D / 20D 走 Stage 2 LEAN plan 原設計值，待後續實證 follow-up。
+      // 改動任何值前請先更新 calibration_thresholds.dart docstring。
+      expect(CalibrationThresholds.successThresholds[5], equals(1.5));
       expect(CalibrationThresholds.successThresholds[10], equals(5.0));
       expect(CalibrationThresholds.successThresholds[20], equals(8.0));
-      expect(CalibrationThresholds.successThresholds[60], equals(12.0));
+      expect(CalibrationThresholds.successThresholds[60], equals(8.0));
     });
 
     test('1D and 3D fall back to defaultSuccessThreshold (no entry)', () {

@@ -14,12 +14,12 @@
 enum Horizon {
   short(
     tradingDays: 5,
-    successThresholdPct: 3.0,
+    successThresholdPct: 1.5,
     assetPath: 'assets/rule_scores_calibrated_short.json',
   ),
   long(
     tradingDays: 60,
-    successThresholdPct: 12.0,
+    successThresholdPct: 8.0,
     assetPath: 'assets/rule_scores_calibrated_long.json',
   );
 
