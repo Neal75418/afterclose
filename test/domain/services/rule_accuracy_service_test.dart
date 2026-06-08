@@ -1,7 +1,8 @@
 // Unit tests for [RuleAccuracyService] covering Stage 2 LEAN scope:
 //   Commit 1 (additive):
 //     1. `holdingPeriods` constant includes 60D
-//     2. Per-period success threshold parameterization (5D≥3%, 10D≥5%, 20D≥8%, 60D≥12%)
+//     2. Per-period success threshold parameterization
+//        (5D≥1.5%, 10D≥5%, 20D≥8%, 60D≥8% — 5D/60D 為 evidence-based 校正值)
 //     3. Fallback `returnRate >= 0` for periods without explicit threshold (1D/3D)
 //
 //   Commit 2 (Gap 1 fix — primary_rule_id bias):
