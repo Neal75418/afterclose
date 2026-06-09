@@ -14,7 +14,7 @@ abstract class IAnalysisRepository {
 
   /// 儲存分析結果
   ///
-  /// Stage 5b dual-horizon: [scoreShort] 與 [scoreLong] 取代舊的單一 `score`。
+  /// Dual-horizon: [scoreShort] 與 [scoreLong] 取代舊的單一 `score`。
   /// Commit 2 時 scoring pipeline 仍為單分數，caller 暫時對兩個參數傳
   /// 相同值；Commit 3 的 pipeline 改動會真正產生不同值。
   Future<void> saveAnalysis({
@@ -65,7 +65,7 @@ abstract class IAnalysisRepository {
 
   /// 儲存每日推薦（原子性取代現有推薦）
   ///
-  /// Stage 5b dual-horizon: [horizon] 必填，只取代該 horizon 的推薦列，
+  /// Dual-horizon: [horizon] 必填，只取代該 horizon 的推薦列，
   /// 另一個 horizon 的列不受影響。每日最多 2 * [RuleParams.dailyTopN] 列
   /// （短線 + 長線各一份 Top 20）。
   Future<void> saveRecommendations(
@@ -137,7 +137,7 @@ abstract class IAnalysisRepository {
 
 /// 儲存推薦原因的資料類別
 ///
-/// Stage 5b dual-horizon: [scoreShort] 與 [scoreLong] 分別代表此規則在
+/// Dual-horizon: [scoreShort] 與 [scoreLong] 分別代表此規則在
 /// 短線 / 長線 horizon 下的 calibrated / fallback 分數。scoring pipeline
 /// 在 isolate 內對每一條 reason 都會查兩個 horizon 的分數後一併放進此 DTO。
 class ReasonData {

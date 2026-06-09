@@ -73,7 +73,7 @@ class ScoringIsolateInput {
   /// 歷史最高月營收 Map（symbol -> maxRevenue）
   final Map<String, double>? maxHistoricalRevenueMap;
 
-  /// Calibrated scores for both horizons (Stage 5b)
+  /// Calibrated scores for both horizons
   ///
   /// 主 isolate 從 `CalibratedScoresRegistry.instance.snapshotForIsolate()`
   /// 取出後塞入此欄位，scoring isolate 在 `calculateScore` 中查詢。
@@ -283,7 +283,7 @@ class ScoringIsolateInput {
 
 /// Isolate 通訊邊界的 reason 型別安全封裝
 ///
-/// Stage 5b dual-horizon: 攜帶兩個 horizon 的 per-rule 分數，供主 isolate
+/// Dual-horizon: 攜帶兩個 horizon 的 per-rule 分數，供主 isolate
 /// 寫入 `daily_reason.rule_score_short` / `rule_score_long`。
 class IsolateReasonOutput {
   const IsolateReasonOutput({
@@ -321,7 +321,7 @@ class IsolateReasonOutput {
 
 /// Isolate 評分輸出結果
 ///
-/// Stage 5b dual-horizon: 每支股票攜帶兩個 horizon 的分數，主 isolate
+/// Dual-horizon: 每支股票攜帶兩個 horizon 的分數，主 isolate
 /// 依 horizon 分別做 Top N sort 後寫入 `daily_recommendation`。
 class ScoringIsolateOutput {
   const ScoringIsolateOutput({
@@ -513,7 +513,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
     // 7. 計算雙 horizon 分數，任一達到門檻就保留
     //
-    //    Stage 5b 決議（設計 §9）：`minScoreThreshold` 兩 horizon 共用，
+    //    設計決議（設計 §9）：`minScoreThreshold` 兩 horizon 共用，
     //    不做 per-horizon 拆分（YAGNI）。「任一通過」的語意能涵蓋
     //    短線強勢 + 長線弱勢 或反之的候選。
     final wasRecent = recentSet.contains(symbol);

@@ -274,7 +274,7 @@ class UpdateService {
         scoredStocks,
         ctx.normalizedDate,
       );
-      // Stage 5b dual-horizon: 統計回報 short + long 寫入總筆數
+      // Dual-horizon: 統計回報 short + long 寫入總筆數
       // （每日最多 2 * dailyTopN 列，兩個 horizon 各自適用 turnover 門檻）。
       result.recommendationsGenerated = counts.shortCount + counts.longCount;
       ctx.onProgress?.call(10, 10, '完成');
@@ -769,7 +769,7 @@ class UpdateService {
 
   /// 產生雙 horizon 推薦列，並回傳各自實際寫入的筆數
   ///
-  /// Stage 5b dual-horizon：`update_service` 的 `recommendationsGenerated`
+  /// Dual-horizon：`update_service` 的 `recommendationsGenerated`
   /// 計數改用這裡回傳的值，避免用 `scoredStocks.take(dailyTopN).length`
   /// 這種 pre-Commit-3 的近似值（既沒套 turnover 門檻、也只反映單 horizon）。
   Future<({int shortCount, int longCount})> _generateRecommendations(

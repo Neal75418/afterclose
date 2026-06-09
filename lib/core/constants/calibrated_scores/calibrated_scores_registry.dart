@@ -15,10 +15,10 @@ import 'package:afterclose/core/utils/logger.dart';
 ///
 /// **僅供主 isolate 使用**。Scoring 運算跑在 `Isolate.run()` 產生的新 isolate，
 /// 那邊記憶體與主 isolate 完全隔離，此 singleton 在 scoring isolate 內
-/// 是未初始化狀態。Stage 5b 才會處理 isolate 傳遞。
+/// 是未初始化狀態（透過 [CalibratedScoreContext] snapshot DTO 傳遞）。
 ///
-/// 目前 Stage 5a 的消費者僅為主 isolate 的 UI / debug / rule accuracy 頁面，
-/// 透過 `ReasonType.scoreFor(Horizon)` extension（Commit 2 新增）間接讀取。
+/// 主 isolate 消費者為 UI / debug / rule accuracy 頁面，透過
+/// `ReasonType.scoreFor(Horizon)` extension 間接讀取。
 ///
 /// ## 生命週期
 ///
@@ -179,7 +179,7 @@ class CalibratedScoresRegistry {
     Horizon.long => _long?.lookup(ruleId),
   };
 
-  /// 打包兩個 horizon 的 calibrated score maps 為 isolate-safe DTO（Stage 5b）
+  /// 打包兩個 horizon 的 calibrated score maps 為 isolate-safe DTO
   ///
   /// 主 isolate 在呼叫 scoring isolate 前呼叫此 method，把回傳的
   /// [CalibratedScoreContext] 塞進 `ScoringIsolateInput.calibratedScores`

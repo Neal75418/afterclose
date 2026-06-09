@@ -342,7 +342,7 @@ ReasonType? reasonTypeFromCode(String code) => _reasonCodeMap[code];
 ///
 /// **僅供主 isolate 使用**。Scoring isolate 內的評分運算應繼續使用舊的
 /// [ReasonType.score] getter（hardcoded），因為 registry singleton 在
-/// scoring isolate 中未初始化。Stage 5b 才會處理 isolate 傳遞。
+/// scoring isolate 中未初始化（registry 已透過 snapshot DTO 傳遞至 isolate）。
 ///
 /// ## Fallback 行為
 ///

@@ -4,7 +4,7 @@ import 'package:afterclose/data/database/tables/stock_master.dart';
 
 /// 每日分析結果 Table（每日資料不可變）
 ///
-/// Stage 5b dual-horizon: `score` 欄位拆分為 `scoreShort` + `scoreLong`，
+/// Dual-horizon: `score` 欄位拆分為 `scoreShort` + `scoreLong`，
 /// 技術分析欄位（trendState / reversalState / support / resistance）
 /// 是 horizon-agnostic 仍維持單欄位。
 @DataClassName('DailyAnalysisEntry')
@@ -55,7 +55,7 @@ class DailyAnalysis extends Table {
 
 /// 每日分析觸發原因 Table
 ///
-/// Stage 5b dual-horizon: `ruleScore` 欄位拆分為 `ruleScoreShort` +
+/// Dual-horizon: `ruleScore` 欄位拆分為 `ruleScoreShort` +
 /// `ruleScoreLong`，同一條 rule 在兩個 horizon 下的分數貢獻可能不同
 /// （calibrated JSON 為空時兩者相等，走 hardcoded fallback）。
 @DataClassName('DailyReasonEntry')
@@ -89,7 +89,7 @@ class DailyReason extends Table {
 
 /// 每日推薦股票 Table（Top N）
 ///
-/// Stage 5b dual-horizon: 加入 `horizon` pivot column，PK 改為
+/// Dual-horizon: 加入 `horizon` pivot column，PK 改為
 /// `(date, horizon, rank)`，每天最多 40 rows（20 短 + 20 長）。
 /// 同一檔股票若在兩個 horizon 都上榜會有兩 rows，各自帶 per-horizon
 /// 的 rank 與 score。

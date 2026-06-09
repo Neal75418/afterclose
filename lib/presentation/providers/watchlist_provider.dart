@@ -317,7 +317,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
           latestClose: latestPrice?.close,
           priceChange: priceChanges[item.symbol],
           trendState: analysis?.trendState,
-          // Stage 5b: 自選股顯示短線分數；Stage 5c 加 horizon 切換
+          // 自選股預設顯示短線分數，未來可加 horizon 切換
           score: analysis?.scoreShort,
           hasSignal: reasons.isNotEmpty,
           addedAt: item.createdAt,
@@ -645,7 +645,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       latestClose: latestPrice?.close,
       priceChange: priceChange,
       trendState: analysis?.trendState,
-      // Stage 5b: 自選股顯示短線分數；Stage 5c 加 horizon 切換
+      // 自選股預設顯示短線分數，未來可加 horizon 切換
       score: analysis?.scoreShort,
       hasSignal: reasons.isNotEmpty,
       addedAt: addedAt ?? DateTime.now(),

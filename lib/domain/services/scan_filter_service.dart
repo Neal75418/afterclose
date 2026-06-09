@@ -59,7 +59,7 @@ class ScanFilterService {
   ///
   /// 就地排序（in-place），直接修改傳入的 list。
   void applySort(List<DailyAnalysisEntry> analyses, ScanSort sort) {
-    // Stage 5b: 掃描結果暫時依短線分數排序；Stage 5c 會讓 UI 根據當前
+    // 預設依短線分數排序；UI horizon 切換時應改根據當前
     // 選中的 horizon 決定排序欄位
     if (sort == ScanSort.scoreAsc) {
       analyses.sort((a, b) => a.scoreShort.compareTo(b.scoreShort));

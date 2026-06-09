@@ -921,7 +921,7 @@ class AnalysisSummaryService {
 
   /// 依 [horizon] 讀取 [DailyAnalysisEntry] 對應欄位的 score
   ///
-  /// 空 analysis → 0，與 Stage 5b 之前的 `analysis?.scoreShort ?? 0` 行為一致。
+  /// 空 analysis → 0，與既有的 `analysis?.scoreShort ?? 0` 行為一致。
   static double _analysisScoreFor(
     DailyAnalysisEntry? analysis,
     Horizon horizon,

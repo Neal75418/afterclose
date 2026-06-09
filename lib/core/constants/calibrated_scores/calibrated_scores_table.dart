@@ -25,11 +25,10 @@ typedef CalibratedScoresParseResult = ({
 ///   被 calibrated，呼叫端應 fallback 至 `RuleScores` hardcoded 值。
 /// - 未載入的規則與不存在的規則行為一致（皆回 null），不需額外區分。
 ///
-/// ## 與 Stage 5b 的關係
+/// ## Isolate 邊界
 ///
-/// Stage 5a 只在主 isolate 使用此 table。Stage 5b 會透過
 /// `ScoringIsolateInput` 把 table 的 raw map 傳入 scoring isolate，
-/// 屆時 isolate 端會用 `CalibratedScoresTable` 的 constructor 直接重建
+/// isolate 端用 `CalibratedScoresTable` 的 constructor 直接重建
 /// 而非重新 parseJson。
 @immutable
 class CalibratedScoresTable {
@@ -63,9 +62,9 @@ class CalibratedScoresTable {
 
   /// 取得 `_scores` 的 unmodifiable view
   ///
-  /// 用於 Stage 5b 的 [CalibratedScoresRegistry.snapshotForIsolate]：
-  /// 打包 DTO 時需要讀取完整 map 內容而不暴露寫入能力。回傳的 map
-  /// 可以安全跨 isolate 傳輸（Dart 會深拷貝 primitive map）。
+  /// 用於 [CalibratedScoresRegistry.snapshotForIsolate]：打包 DTO 時需要
+  /// 讀取完整 map 內容而不暴露寫入能力。回傳的 map 可以安全跨 isolate
+  /// 傳輸（Dart 會深拷貝 primitive map）。
   Map<String, int> scoresSnapshot() => Map.unmodifiable(_scores);
 
   /// 空 table — 作為 malformed JSON / asset 缺失時的 safe fallback

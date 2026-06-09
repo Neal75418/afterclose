@@ -99,7 +99,7 @@ class RuleAccuracyService {
 
     // 1. 取得目標日期的推薦
     //
-    // Stage 5b 後 daily_recommendation 每天有 short + long 兩組（最多 40
+    // Dual-horizon daily_recommendation 每天有 short + long 兩組（最多 40
     // rows），同 symbol 同日同 horizon 是 PK；recommendation_validation 表
     // PK 為 (date, symbol, holdingDays) 不含 horizon，若兩組都進來會 PK
     // 衝突 upsert 互蓋。recommendation_performance_screen 的 _periods 也

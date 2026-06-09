@@ -88,7 +88,7 @@ class RuleEngine {
   /// **顯式**呼叫 [applyMutexGroups]，並自行決定要用哪個 `scoreOf`：
   /// - scoring 路徑（scoring_isolate / scoring_service）：每個 horizon 各
   ///   呼一次 applyMutexGroups，`scoreOf` 是 horizon-aware calibrated lookup
-  ///   （Stage 5b 設計：scoring 是 calibration 的 source of truth）
+  ///   （設計：scoring 是 calibration 的 source of truth）
   /// - UI 路徑（getTopReasons）：呼叫端傳 `(r) => r.score`（hardcoded，
   ///   對應 design intent — UI 顯示「最強訊號」與舊行為一致）
   ///
@@ -169,7 +169,7 @@ class RuleEngine {
 
   /// 計算最終分數，含冷卻懲罰與上限
   ///
-  /// ## Dual-horizon (Stage 5b)
+  /// ## Dual-horizon
   ///
   /// 此 method 必須指定 [horizon]。每個 reason 會先嘗試在
   /// [calibratedScores] 對應 horizon 的查找表中查 calibrated 值，

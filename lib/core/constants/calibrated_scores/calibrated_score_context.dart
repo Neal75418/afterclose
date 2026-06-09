@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
-/// Scoring isolate 使用的 calibrated scores 查詢 context（Stage 5b）
+/// Scoring isolate 使用的 calibrated scores 查詢 context
 ///
 /// 封裝兩個 horizon 的 `rule_id → calibrated score` 查找表，
 /// 由主 isolate 從 [CalibratedScoresRegistry.snapshotForIsolate] 抽取後
@@ -10,9 +10,9 @@ import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 ///
 /// ## 為什麼需要此 DTO
 ///
-/// Stage 5a 的 [CalibratedScoresRegistry] 是主 isolate 的 singleton，
-/// 無法被 `Isolate.run()` spawn 的新 isolate 存取（isolate 間記憶體隔離）。
-/// Stage 5b 在 isolate 邊界引入此 typed DTO，讓 scoring isolate 內的
+/// [CalibratedScoresRegistry] 是主 isolate 的 singleton，無法被
+/// `Isolate.run()` spawn 的新 isolate 存取（isolate 間記憶體隔離）。
+/// 在 isolate 邊界引入此 typed DTO，讓 scoring isolate 內的
 /// `calculateScore` 能同步查詢兩個 horizon 的 calibrated 分數。
 ///
 /// 設計對齊 [`CLAUDE.md`] 的 Isolate 通訊規則：

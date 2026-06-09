@@ -54,7 +54,7 @@ class ScoringService {
     final instMap =
         batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
-    // Stage 5b dual-horizon: 從 registry 抓 calibrated context。
+    // Dual-horizon: 從 registry 抓 calibrated context。
     // Pre-launch placeholder JSON 為空 → 兩 horizon 都走 fallback。
     final calibratedScores = CalibratedScoresRegistry.instance
         .snapshotForIsolate();
@@ -156,7 +156,7 @@ class ScoringService {
 
       if (reasons.isEmpty) continue;
 
-      // 計算雙 horizon 分數（Stage 5b）
+      // 計算雙 horizon 分數
       // H-1 fix：mutex 用 horizon-aware calibrated lookup（calculateScore 是
       // pure arithmetic，不做 mutex；caller 顯式控制）。
       final wasRecent = recentSet.contains(symbol);
@@ -263,7 +263,7 @@ class ScoringService {
 
     // 依流動性加權分數（短線 horizon）排序
     //
-    // Stage 5b：預設回傳 short-sorted 清單給 caller，caller（update_service）
+    // 預設回傳 short-sorted 清單給 caller，caller（update_service）
     // 會自行呼叫 [splitScoredStocksIntoHorizons] 再排 long 版本，所以這邊
     // 只要提供一個穩定的預設排序即可。
     scoredStocks.sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
@@ -288,7 +288,7 @@ class ScoringService {
     // 記錄價格資料統計
     _logCandidateStats(candidates, batchData.pricesMap, suffix: ' (Isolate)');
 
-    // Stage 5b dual-horizon: 快照 calibrated context 塞進 input，
+    // Dual-horizon: 快照 calibrated context 塞進 input，
     // 讓 scoring isolate 內不需要存取 main-isolate 的 registry singleton。
     final calibratedScores = CalibratedScoresRegistry.instance
         .snapshotForIsolate();
@@ -424,7 +424,7 @@ class ScoringService {
 
   /// 記錄主執行緒評分結果統計
   ///
-  /// Stage 5b：log 顯示短線 horizon 最高分當代表值（Stage 5c UI 切換後
+  /// log 顯示短線 horizon 最高分當代表值（UI horizon 切換後
   /// 可改為顯示兩個 horizon 的最高分）。
   void _logScoringResults(
     List<ScoredStock> scored,
@@ -481,7 +481,7 @@ class ScoringService {
   /// 儲存股票分析結果與觸發原因
   ///
   /// 統一 [scoreStocks] 和 [scoreStocksInIsolate] 的儲存邏輯。
-  /// Stage 5b dual-horizon：pipeline 已經產生 `scoreShort` 與 `scoreLong`，
+  /// Dual-horizon：pipeline 已經產生 `scoreShort` 與 `scoreLong`，
   /// 這裡直接把兩值寫入 DB。
   Future<void> _persistAnalysisResult({
     required String symbol,
@@ -532,7 +532,7 @@ class ScoringService {
 
 /// 已計算分數的股票
 ///
-/// Stage 5b dual-horizon: 每支股票同時攜帶短線與長線分數。
+/// Dual-horizon: 每支股票同時攜帶短線與長線分數。
 /// 下游（`update_service._generateRecommendations` / [splitScoredStocksIntoHorizons]）
 /// 依 horizon 分別 sort 後寫入兩個獨立 Top N 列表。
 class ScoredStock {
@@ -550,7 +550,7 @@ class ScoredStock {
 
   /// 依流動性加權分數排序的比較函數（horizon-aware）
   ///
-  /// Stage 5b：取代靜態 `compareByWeightedScore`。呼叫端指定要用哪個
+  /// 取代靜態 `compareByWeightedScore`。呼叫端指定要用哪個
   /// horizon 的分數當主鍵，例如：
   ///
   /// ```dart
@@ -601,7 +601,7 @@ class ScoredStock {
 
 /// 把 [ScoredStock] 清單切成 dual-horizon 的 Top N 推薦列表（純函式）
 ///
-/// Stage 5b Commit 3：從 `update_service._generateRecommendations` 抽出的
+/// Commit history：從 `update_service._generateRecommendations` 抽出的
 /// 純邏輯部分。決定 short / long 各自的 Top N 是兩次獨立的 sort + take + map，
 /// 抽出來讓單元測試可以直接驗證 per-horizon 排序 / minTurnover 過濾 /
 /// dailyTopN cap 這幾個行為，而不用把整個 update_service 拉進測試矩陣。

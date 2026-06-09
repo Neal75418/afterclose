@@ -220,7 +220,7 @@ class ComparisonTable extends StatelessWidget {
       rows: [
         _MetricRow(
           label: 'comparison.metricScore'.tr(),
-          // Stage 5b: 股票比較顯示短線分數；Stage 5c 加 horizon 選項
+          // 股票比較預設顯示短線分數
           values: state.symbols.map((s) {
             final score = state.analysesMap[s]?.scoreShort;
             return score != null ? score.toInt().toString() : '-';

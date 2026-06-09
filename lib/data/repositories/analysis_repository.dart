@@ -52,7 +52,7 @@ class AnalysisRepository implements IAnalysisRepository {
 
   /// 儲存分析結果
   ///
-  /// Stage 5b dual-horizon: 接受 [scoreShort] 跟 [scoreLong] 兩個分數。
+  /// Dual-horizon: 接受 [scoreShort] 跟 [scoreLong] 兩個分數。
   /// 實作 Commit 2（本 commit）時 scoring pipeline 還是單分數，caller
   /// 暫時傳相同值；Commit 3 的 pipeline 改動會真正產生不同值。
   @override
@@ -119,7 +119,7 @@ class AnalysisRepository implements IAnalysisRepository {
           rank: i + 1,
           reasonType: reason.type,
           evidenceJson: reason.evidenceJson,
-          // Stage 5b dual-horizon：ReasonData 攜帶兩個 horizon 的分數，
+          // Dual-horizon：ReasonData 攜帶兩個 horizon 的分數，
           // 直接寫入各自欄位。Stage 5a placeholder JSON 為空時兩值
           // 相等（都走 fallback），calibration 上線後會分化。
           ruleScoreShort: Value(reason.scoreShort.toDouble()),
@@ -174,8 +174,7 @@ class AnalysisRepository implements IAnalysisRepository {
 
   /// 取得某日期、指定 horizon 的推薦股
   ///
-  /// Stage 5c dual-horizon: [horizon] 必填，移除了 Stage 5b 的硬編碼
-  /// `Horizon.short` 預設值。
+  /// Dual-horizon: [horizon] 必填，無預設值。
   @override
   Future<List<DailyRecommendationEntry>> getRecommendations(
     DateTime date, {
@@ -189,7 +188,7 @@ class AnalysisRepository implements IAnalysisRepository {
 
   /// 儲存每日推薦股（原子性取代指定 horizon 的推薦）
   ///
-  /// Stage 5b dual-horizon: [horizon] 決定寫入哪個 pivot。同一日的
+  /// Dual-horizon: [horizon] 決定寫入哪個 pivot。同一日的
   /// short 與 long 是兩組獨立資料，各自透過此 method 分別寫入。
   @override
   Future<void> saveRecommendations(

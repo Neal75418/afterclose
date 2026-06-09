@@ -8,8 +8,8 @@ import 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
 mixin AnalysisDaoMixin on $AppDatabase {
   /// 取得指定日期的分析結果
   ///
-  /// Stage 5b dual-horizon: 排序依據 `scoreShort`（Stage 5b UI 預設顯示
-  /// 短線）。Stage 5c 會把預設 horizon 抽為 parameter 讓 UI 可切換。
+  /// Dual-horizon: 排序依據 `scoreShort`（UI 預設顯示短線）。後續 UI
+  /// 切換 horizon 時應抽 `Horizon` 參數讓排序動態切換。
   Future<List<DailyAnalysisEntry>> getAnalysisForDate(DateTime date) {
     return (select(dailyAnalysis)
           ..where((t) => t.date.equals(date))
@@ -142,7 +142,7 @@ mixin AnalysisDaoMixin on $AppDatabase {
 
   /// 取得指定日期與 horizon 的推薦股
   ///
-  /// Stage 5b dual-horizon: [horizon] 參數必填，查詢對應 pivot row。
+  /// Dual-horizon: [horizon] 參數必填，查詢對應 pivot row。
   Future<List<DailyRecommendationEntry>> getRecommendations(
     DateTime date, {
     required Horizon horizon,
@@ -155,8 +155,7 @@ mixin AnalysisDaoMixin on $AppDatabase {
 
   /// 新增推薦股
   ///
-  /// 呼叫端需在 `DailyRecommendationCompanion` 中指定 `horizon` 欄位
-  /// （Stage 5b 之後為必填）。
+  /// 呼叫端需在 `DailyRecommendationCompanion` 中指定 `horizon` 欄位（必填）。
   Future<void> insertRecommendations(
     List<DailyRecommendationCompanion> entries,
   ) async {
@@ -169,7 +168,7 @@ mixin AnalysisDaoMixin on $AppDatabase {
 
   /// 取代指定日期、指定 horizon 的推薦股（原子性操作）
   ///
-  /// Stage 5b dual-horizon: 只刪除並取代同一個 horizon 的 rows，
+  /// Dual-horizon: 只刪除並取代同一個 horizon 的 rows，
   /// 另一個 horizon 的資料不受影響。
   Future<void> replaceRecommendations(
     DateTime date,

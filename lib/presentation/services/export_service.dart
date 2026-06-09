@@ -128,7 +128,7 @@ class ExportService {
       if (analysis.reversalState != 'NONE') {
         rows.add(['', 'export.csvReversal'.tr(), analysis.reversalState]);
       }
-      // Stage 5b: CSV 匯出預設短線分數；Stage 5c 可加 horizon 選項
+      // CSV 匯出預設短線分數
       rows.add([
         '',
         'export.csvScore'.tr(),
@@ -200,7 +200,7 @@ class ExportService {
       return state.analysesMap[s]?.trendState ?? '';
     });
 
-    // 分數（Stage 5b: 預設短線；Stage 5c 可加 horizon 選項）
+    // 分數（預設短線分數）
     _addComparisonRow(rows, 'export.csvScore'.tr(), state.symbols, (s) {
       return state.analysesMap[s]?.scoreShort.toStringAsFixed(0) ?? '';
     });
@@ -360,7 +360,7 @@ class ExportService {
                   ),
                 _pdfKeyValue(
                   'export.csvScore'.tr(),
-                  // Stage 5b: PDF 匯出預設短線分數
+                  // PDF 匯出預設短線分數
                   analysis.scoreShort.toStringAsFixed(0),
                 ),
                 pw.SizedBox(height: DesignTokens.spacing12),
