@@ -13,6 +13,7 @@ import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/providers/notification_provider.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
@@ -394,6 +395,12 @@ class TodayNotifier extends Notifier<TodayState> {
           alertsTriggered: alertsTriggered,
         );
       }
+
+      // 通知其他依賴 daily_* 表的 provider（scan / watchlist / performance
+      // 等）資料已寫入新一輪，讓它們透過 ref.listen(dataUpdateEpochProvider)
+      // 自行 reload。在 await loadData 前 bump 確保 listener 邏輯與 today
+      // 本地 reload 並行。
+      ref.read(dataUpdateEpochProvider.notifier).bump();
 
       // 更新後重新載入資料（含大盤總覽 Dashboard）
       await Future.wait([

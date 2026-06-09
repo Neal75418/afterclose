@@ -13,6 +13,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/warning_repository.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_types.dart';
@@ -202,6 +203,14 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
     _active = true;
     ref.onDispose(() => _active = false);
     _pendingAdds = {};
+
+    // M6 fix：runUpdate 完成後 bump dataUpdateEpoch；自選畫面開著時自動
+    // reload 拿到新分析 / 警示 / 法人，否則使用者切離再回來才會看到。
+    ref.listen(dataUpdateEpochProvider, (_, _) {
+      if (!_active) return;
+      loadData();
+    });
+
     return WatchlistState();
   }
 

@@ -11,6 +11,7 @@ import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
@@ -139,6 +140,14 @@ class ScanNotifier extends Notifier<ScanState> {
       watchlistProvider.select((s) => s.items.map((i) => i.symbol).toSet()),
       (prev, next) => _syncWatchlistSymbols(next),
     );
+
+    // M6 fix：runUpdate 完成後會 bump dataUpdateEpoch；scan 畫面開著時
+    // 自動 reload 拿到新 analysis / reason，否則使用者需要手動關閉再開
+    // 才能看到新資料（背景 BackgroundUpdateService 觸發更新時尤其無感）。
+    ref.listen(dataUpdateEpochProvider, (_, _) {
+      if (!_active) return;
+      loadData();
+    });
 
     return const ScanState();
   }
