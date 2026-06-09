@@ -350,23 +350,34 @@ class UpdateService {
   }
 
   Future<void> _syncAuxiliaryData(_UpdateContext ctx) async {
+    if (ctx.rateLimitedAbort) return;
     if (_marketIndexSyncer != null) {
       try {
         await _marketIndexSyncer.sync();
+      } on RateLimitException catch (e) {
+        ctx.rateLimitedAbort = true;
+        AppLogger.warning('UpdateService', '大盤指數同步失敗 (rate limit)', e);
+        ctx.result.recordError('大盤指數同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', '大盤指數同步失敗', e);
         ctx.result.recordError('大盤指數同步失敗: $e', e);
       }
     }
 
+    if (ctx.rateLimitedAbort) return;
     if (_tdccHoldingSyncer != null) {
       try {
         await _tdccHoldingSyncer.sync();
+      } on RateLimitException catch (e) {
+        ctx.rateLimitedAbort = true;
+        AppLogger.warning('UpdateService', 'TDCC 股權分散表同步失敗 (rate limit)', e);
+        ctx.result.recordError('TDCC 股權分散表同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', 'TDCC 股權分散表同步失敗', e);
       }
     }
 
+    if (ctx.rateLimitedAbort) return;
     if (_dividendSyncer != null) {
       try {
         final divResult = await _dividendSyncer.sync();
@@ -378,17 +389,26 @@ class UpdateService {
                 '${divResult.meetingEventsCreated} 筆股東會',
           );
         }
+      } on RateLimitException catch (e) {
+        ctx.rateLimitedAbort = true;
+        AppLogger.warning('UpdateService', '股利/股東會同步失敗 (rate limit)', e);
+        ctx.result.recordError('股利/股東會同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', '股利/股東會同步失敗', e);
       }
     }
 
+    if (ctx.rateLimitedAbort) return;
     if (_insiderTransferSyncer != null) {
       try {
         final transferCount = await _insiderTransferSyncer.sync();
         if (transferCount > 0) {
           AppLogger.info('UpdateService', '內部人轉讓同步: $transferCount 筆');
         }
+      } on RateLimitException catch (e) {
+        ctx.rateLimitedAbort = true;
+        AppLogger.warning('UpdateService', '內部人轉讓同步失敗 (rate limit)', e);
+        ctx.result.recordError('內部人轉讓同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', '內部人轉讓同步失敗', e);
       }
@@ -423,6 +443,10 @@ class UpdateService {
 
       ctx.result.pricesUpdated = syncResult.count;
       ctx.marketCandidates = syncResult.candidates;
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '價格同步失敗 (rate limit)', e);
+      ctx.result.recordError('價格資料更新失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '價格同步失敗', e);
       ctx.result.recordError('價格資料更新失敗: $e', e);
@@ -431,6 +455,7 @@ class UpdateService {
   }
 
   Future<void> _syncHistoricalData(_UpdateContext ctx) async {
+    if (ctx.rateLimitedAbort) return;
     try {
       final watchlist = await _db.getWatchlist();
       final historyResult = await _historicalPriceSyncer.syncHistoricalPrices(
@@ -448,6 +473,10 @@ class UpdateService {
           '歷史資料同步失敗 (${historyResult.failedSymbols.length} 檔)',
         );
       }
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '歷史資料更新失敗 (rate limit)', e);
+      ctx.result.recordError('歷史資料更新失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '歷史資料更新失敗', e);
       ctx.result.recordError('歷史資料更新失敗: $e', e);
@@ -455,6 +484,7 @@ class UpdateService {
   }
 
   Future<void> _syncInstitutionalData(_UpdateContext ctx) async {
+    if (ctx.rateLimitedAbort) return;
     final syncer = _institutionalSyncer;
     if (syncer == null) return;
 
@@ -464,6 +494,10 @@ class UpdateService {
         force: ctx.force,
       );
       ctx.result.institutionalUpdated = instResult.estimatedCount;
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '法人資料更新失敗 (rate limit)', e);
+      ctx.result.recordError('法人資料更新失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '法人資料更新失敗', e);
       ctx.result.recordError('法人資料更新失敗: $e', e);
@@ -474,13 +508,17 @@ class UpdateService {
     _UpdateContext ctx,
     DateTime normalizedDate,
   ) async {
+    if (ctx.rateLimitedAbort) return;
     // 方法內共享自選清單，避免重複查詢
     final watchlist = await _db.getWatchlist();
     final watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
     await _syncDayTradingAndMarginData(ctx, normalizedDate, watchlistSymbols);
+    if (ctx.rateLimitedAbort) return;
     await _syncFundamentalValuationAndRevenue(ctx, normalizedDate);
+    if (ctx.rateLimitedAbort) return;
     await _syncBalanceSheetAndEps(ctx, normalizedDate, watchlistSymbols);
+    if (ctx.rateLimitedAbort) return;
     await _syncKillerFeatures(ctx);
   }
 
@@ -490,6 +528,7 @@ class UpdateService {
     DateTime normalizedDate,
     Set<String> watchlistSymbols,
   ) async {
+    if (ctx.rateLimitedAbort) return;
     final marketUpdater = _marketDataUpdater;
     if (marketUpdater == null) return;
 
@@ -518,6 +557,10 @@ class UpdateService {
         '步驟 4.5: 當沖=${marketResult.dayTradingCount}, '
             '融資=$marginLabel, 持股=$syncedCount',
       );
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '籌碼資料更新失敗 (rate limit)', e);
+      ctx.result.recordError('籌碼資料更新失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '籌碼資料更新失敗', e);
       ctx.result.recordError('籌碼資料更新失敗: $e', e);
@@ -529,6 +572,7 @@ class UpdateService {
     _UpdateContext ctx,
     DateTime normalizedDate,
   ) async {
+    if (ctx.rateLimitedAbort) return;
     final fundamentalSyncer = _fundamentalSyncer;
     if (fundamentalSyncer == null) return;
 
@@ -539,12 +583,18 @@ class UpdateService {
       );
 
       // 補充上櫃自選股
-      try {
-        await fundamentalSyncer.syncOtcWatchlistFundamentals(
-          date: normalizedDate,
-        );
-      } catch (e) {
-        AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗', e);
+      if (!ctx.rateLimitedAbort) {
+        try {
+          await fundamentalSyncer.syncOtcWatchlistFundamentals(
+            date: normalizedDate,
+          );
+        } on RateLimitException catch (e) {
+          ctx.rateLimitedAbort = true;
+          AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗 (rate limit)', e);
+          ctx.result.recordError('上櫃自選基本面補充失敗 (rate limit): $e', e);
+        } catch (e) {
+          AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗', e);
+        }
       }
 
       final revenueLabel = fundResult.revenueCached
@@ -554,6 +604,10 @@ class UpdateService {
         'UpdateService',
         '步驟 4.6: 估值=${fundResult.valuationCount}, 營收=$revenueLabel',
       );
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '基本面資料更新失敗 (rate limit)', e);
+      ctx.result.recordError('基本面資料更新失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '基本面資料更新失敗', e);
       ctx.result.recordError('基本面資料更新失敗: $e', e);
@@ -566,6 +620,7 @@ class UpdateService {
     DateTime normalizedDate,
     Set<String> watchlistSymbols,
   ) async {
+    if (ctx.rateLimitedAbort) return;
     final fundamentalSyncer = _fundamentalSyncer;
     if (fundamentalSyncer == null) return;
 
@@ -592,6 +647,10 @@ class UpdateService {
           '步驟 4.7: 損益=$epsCount, 資負=$bsLabel (${targetSymbols.length} 檔)',
         );
       }
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '財報資料同步失敗 (rate limit)', e);
+      ctx.result.recordError('財報資料同步失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '財報資料同步失敗', e);
     }
@@ -599,6 +658,7 @@ class UpdateService {
 
   /// 步驟 4.8：Killer Features 資料（警示、董監持股）
   Future<void> _syncKillerFeatures(_UpdateContext ctx) async {
+    if (ctx.rateLimitedAbort) return;
     final marketUpdater = _marketDataUpdater;
     if (marketUpdater == null) return;
 
@@ -611,6 +671,14 @@ class UpdateService {
         'UpdateService',
         '步驟 4.8: 警示=${killerResult.warningCount}, 董監=${killerResult.insiderCount}',
       );
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning(
+        'UpdateService',
+        'Killer Features 資料更新失敗 (rate limit)',
+        e,
+      );
+      ctx.result.recordError('Killer Features (rate limit): $e', e);
     } catch (e) {
       // 不加入 errors，因為這是額外功能，不影響主流程
       AppLogger.warning('UpdateService', 'Killer Features 資料更新失敗', e);
@@ -622,6 +690,7 @@ class UpdateService {
     List<String> candidates,
     DateTime normalizedDate,
   ) async {
+    if (ctx.rateLimitedAbort) return;
     if (candidates.isEmpty) return;
 
     try {
@@ -662,6 +731,10 @@ class UpdateService {
               '(API ~$estimatedApiCalls calls)',
         );
       }
+    } on RateLimitException catch (e) {
+      ctx.rateLimitedAbort = true;
+      AppLogger.warning('UpdateService', '上櫃資料補充失敗 (rate limit)', e);
+      ctx.result.recordError('上櫃資料補充失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '上櫃資料補充失敗', e);
     }
@@ -830,6 +903,12 @@ class _UpdateContext {
   final bool force;
   final UpdateProgressCallback? onProgress;
   List<String> marketCandidates = [];
+
+  /// 任一 syncer 撞到 [RateLimitException] 時翻起，後續 API-heavy 步驟自我
+  /// 跳過。Syncer 本身已守 `on RateLimitException rethrow` 契約，但 coordinator
+  /// 過去用裸 `catch (e)` 把 rethrow 吞成 warning，導致下游 syncer 繼續打同
+  /// 一個被限流的 API（最壞情形 _syncOtcCandidatesData 222 檔×3 vendor）。
+  bool rateLimitedAbort = false;
 
   void reportProgress(int step, int total, String message) {
     onProgress?.call(step, total, message);
