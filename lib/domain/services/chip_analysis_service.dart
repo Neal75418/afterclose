@@ -69,9 +69,10 @@ class ChipAnalysisService {
   int _institutionalAdjustment(List<DailyInstitutionalEntry> history) {
     if (history.isEmpty) return 0;
 
-    // 取最近 5 日
-    final recent = history.length > 5
-        ? history.sublist(history.length - 5)
+    // 取最近 N 日（N = marginLookbackPairs，與融資融券判定窗口共用）
+    const window = ChipScoringParams.marginLookbackPairs;
+    final recent = history.length > window
+        ? history.sublist(history.length - window)
         : history;
 
     int consecutiveBuy = 0;
@@ -91,12 +92,16 @@ class ChipAnalysisService {
       }
     }
 
-    if (consecutiveBuy >= 4) return ChipScoringParams.instBuyStreakLargeBonus;
-    if (consecutiveBuy >= 2) return ChipScoringParams.instBuyStreakSmallBonus;
-    if (consecutiveSell >= 4) {
+    if (consecutiveBuy >= ChipScoringParams.instStreakLargeDays) {
+      return ChipScoringParams.instBuyStreakLargeBonus;
+    }
+    if (consecutiveBuy >= ChipScoringParams.instStreakSmallDays) {
+      return ChipScoringParams.instBuyStreakSmallBonus;
+    }
+    if (consecutiveSell >= ChipScoringParams.instStreakLargeDays) {
       return ChipScoringParams.instSellStreakLargePenalty;
     }
-    if (consecutiveSell >= 2) {
+    if (consecutiveSell >= ChipScoringParams.instStreakSmallDays) {
       return ChipScoringParams.instSellStreakSmallPenalty;
     }
     return 0;
@@ -114,10 +119,18 @@ class ChipAnalysisService {
     final latest = history.last.foreignSharesRatio ?? 0;
     final diff = latest - oldest;
 
-    if (diff >= 0.5) return ChipScoringParams.foreignIncreaseLargeBonus;
-    if (diff >= 0.2) return ChipScoringParams.foreignIncreaseSmallBonus;
-    if (diff <= -0.5) return ChipScoringParams.foreignDecreaseLargePenalty;
-    if (diff <= -0.2) return ChipScoringParams.foreignDecreaseSmallPenalty;
+    if (diff >= ChipScoringParams.foreignDiffLargePct) {
+      return ChipScoringParams.foreignIncreaseLargeBonus;
+    }
+    if (diff >= ChipScoringParams.foreignDiffSmallPct) {
+      return ChipScoringParams.foreignIncreaseSmallBonus;
+    }
+    if (diff <= -ChipScoringParams.foreignDiffLargePct) {
+      return ChipScoringParams.foreignDecreaseLargePenalty;
+    }
+    if (diff <= -ChipScoringParams.foreignDiffSmallPct) {
+      return ChipScoringParams.foreignDecreaseSmallPenalty;
+    }
     return 0;
   }
 
@@ -133,7 +146,10 @@ class ChipAnalysisService {
     int marginIncreasingDays = 0;
     int shortIncreasingDays = 0;
 
-    final pairCount = (history.length - 1).clamp(0, 5);
+    final pairCount = (history.length - 1).clamp(
+      0,
+      ChipScoringParams.marginLookbackPairs,
+    );
     for (int i = 0; i < pairCount; i++) {
       final curr = history[history.length - 1 - i];
       final prev = history[history.length - 2 - i];
@@ -147,12 +163,12 @@ class ChipAnalysisService {
 
     int adj = 0;
     // 融資餘額連續增加 = 散戶追漲 = 偏空訊號
-    if (marginIncreasingDays >= 4) {
+    if (marginIncreasingDays >= ChipScoringParams.marginStreakDays) {
       adj += ChipScoringParams.marginIncreasePenalty;
     }
 
     // 融券方向：依券資比判斷多空意涵
-    if (shortIncreasingDays >= 4) {
+    if (shortIncreasingDays >= ChipScoringParams.marginStreakDays) {
       final latest = history.last;
       final margin = latest.marginBalance ?? 0;
       final short = latest.shortBalance ?? 0;
