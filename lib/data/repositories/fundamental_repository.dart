@@ -67,13 +67,12 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
+      // 之前 return 0 會讓 caller 把「DB/parse 失敗」當成「同步 0 筆」，
+      // FundamentalSyncer 把錯誤降級為 info log 而不上報 ctx.result.errors，
+      // 下游 EPS/ROE/dividend rule 靜默退化。改 throw DatabaseException 讓
+      // upstream catch (e) 仍可優雅降級但保留 cause + 真實 stack。
       final symbolInfo = symbol != null ? ': $symbol' : '';
-      AppLogger.warning(
-        'FundamentalRepo',
-        '同步 $operationName 失敗$symbolInfo',
-        e,
-      );
-      return 0;
+      throw DatabaseException('Failed to sync $operationName$symbolInfo', e);
     }
   }
 
@@ -183,8 +182,7 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步全市場估值失敗', e);
-      return 0;
+      throw DatabaseException('Failed to sync TWSE all-market valuation', e);
     }
   }
 
@@ -279,8 +277,7 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalRepo', '批次同步上櫃估值失敗', e);
-      return 0;
+      throw DatabaseException('Failed to sync TPEX OTC valuation batch', e);
     }
   }
 
@@ -355,8 +352,7 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步全市場營收失敗', e);
-      return 0;
+      throw DatabaseException('Failed to sync TWSE all-market revenue', e);
     }
   }
 
@@ -459,8 +455,7 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步上櫃營收失敗', e);
-      return 0;
+      throw DatabaseException('Failed to sync TPEX OTC revenue batch', e);
     }
   }
 
@@ -519,8 +514,10 @@ class FundamentalRepository implements IFundamentalRepository {
     } on NetworkException {
       rethrow;
     } catch (e) {
-      AppLogger.warning('FundamentalRepo', '同步財報失敗: $symbol', e);
-      return 0;
+      throw DatabaseException(
+        'Failed to sync financial statements: $symbol',
+        e,
+      );
     }
   }
 }

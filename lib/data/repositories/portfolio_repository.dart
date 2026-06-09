@@ -63,7 +63,7 @@ class PortfolioRepository implements IPortfolioRepository {
 
     final actualFee = fee ?? calculateFee(quantity, price);
 
-    await _db.transaction(() async {
+    await _wrapTransaction('addBuy', symbol, () async {
       await _db.insertTransaction(
         PortfolioTransactionCompanion.insert(
           symbol: symbol,
@@ -103,7 +103,7 @@ class PortfolioRepository implements IPortfolioRepository {
     final actualFee = fee ?? calculateFee(quantity, price);
     final actualTax = tax ?? calculateTax(quantity, price);
 
-    await _db.transaction(() async {
+    await _wrapTransaction('addSell', symbol, () async {
       // 驗證賣出數量不超過持有量（在 transaction 內確保原子性）
       final position = await _db.getPortfolioPosition(symbol);
       final currentQty = position?.quantity ?? 0;
@@ -140,7 +140,7 @@ class PortfolioRepository implements IPortfolioRepository {
       throw const ValidationException('portfolio.amountMustBePositive');
     }
 
-    await _db.transaction(() async {
+    await _wrapTransaction('addDividend', symbol, () async {
       await _db.insertTransaction(
         PortfolioTransactionCompanion.insert(
           symbol: symbol,
@@ -158,7 +158,7 @@ class PortfolioRepository implements IPortfolioRepository {
   /// 刪除交易紀錄並重新計算
   @override
   Future<void> deleteTransaction(int txId, String symbol) async {
-    await _db.transaction(() async {
+    await _wrapTransaction('delete', symbol, () async {
       await _db.deleteTransaction(txId);
       await _recalculatePosition(symbol);
     });
@@ -176,7 +176,7 @@ class PortfolioRepository implements IPortfolioRepository {
     double? tax,
     String? note,
   }) async {
-    await _db.transaction(() async {
+    await _wrapTransaction('update', symbol, () async {
       await (_db.update(
         _db.portfolioTransaction,
       )..where((t) => t.id.equals(txId))).write(
@@ -191,6 +191,26 @@ class PortfolioRepository implements IPortfolioRepository {
       );
       await _recalculatePosition(symbol);
     });
+  }
+
+  /// 以 [DatabaseException] 包裝 Drift transaction 失敗。
+  ///
+  /// Drift / SQLite 原生例外（如 `SqliteException`）若直接 leak 到 provider，
+  /// ErrorDisplay 會落到 `error.unknown.tr()`，使用者看不到可辨識訊息。
+  /// 本 helper 統一將寫入路徑失敗包成 `DatabaseException`，並保留
+  /// [ValidationException] 的 rethrow 以維持原契約（賣出量超持有、quantity ≤ 0）。
+  Future<void> _wrapTransaction(
+    String op,
+    String symbol,
+    Future<void> Function() body,
+  ) async {
+    try {
+      await _db.transaction(body);
+    } on ValidationException {
+      rethrow;
+    } catch (e) {
+      throw DatabaseException('Portfolio transaction failed ($op:$symbol)', e);
+    }
   }
 
   // ==================================================

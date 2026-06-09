@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/data_freshness.dart';
+import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
@@ -188,8 +189,11 @@ class ScreeningRepository implements IScreeningRepository {
       final symbols = rows.map((r) => r.read<String>('symbol')).toList();
       return (symbols: symbols, totalScanned: totalScanned);
     } catch (e, s) {
+      // 回空集合會讓 UI 無法區分「真的 0 檔符合」與「篩選 engine 壞了」，
+      // 違反 silent-failure 反條款。包成 DatabaseException 讓
+      // custom_screening_provider 走 ErrorDisplay 顯示明確錯誤。
       AppLogger.error('ScreeningRepo', 'SQL 篩選失敗', e, s);
-      return (symbols: <String>[], totalScanned: totalScanned);
+      throw DatabaseException('Custom screening SQL failed', e);
     }
   }
 

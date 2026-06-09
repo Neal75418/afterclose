@@ -76,7 +76,9 @@ void main() {
       );
     });
 
-    test('returns 0 on other exceptions (does not throw)', () async {
+    test('wraps other exceptions as DatabaseException', () async {
+      // 之前 return 0 屬於 silent failure（caller 看不出來是 0 筆還是壞了）。
+      // 修為包成 DatabaseException 讓 upstream catch (e) 仍可降級但保留 cause。
       when(
         () => mockFinMind.getMonthlyRevenue(
           stockId: any(named: 'stockId'),
@@ -85,13 +87,14 @@ void main() {
         ),
       ).thenThrow(Exception('unknown'));
 
-      final result = await repo.syncMonthlyRevenue(
-        symbol: '2330',
-        startDate: DateTime(2025, 1, 1),
-        endDate: DateTime(2025, 1, 31),
+      await expectLater(
+        repo.syncMonthlyRevenue(
+          symbol: '2330',
+          startDate: DateTime(2025, 1, 1),
+          endDate: DateTime(2025, 1, 31),
+        ),
+        throwsA(isA<DatabaseException>()),
       );
-
-      expect(result, equals(0));
       verify(
         () => mockFinMind.getMonthlyRevenue(
           stockId: any(named: 'stockId'),
@@ -169,14 +172,16 @@ void main() {
       );
     });
 
-    test('returns 0 on other exceptions', () async {
+    test('wraps other exceptions as DatabaseException', () async {
+      // 之前 return 0 屬 silent failure（caller 看不出來是真 0 還是壞了）。
       when(
         () => mockTwse.getAllStockValuation(date: any(named: 'date')),
       ).thenThrow(Exception('unknown'));
 
-      final result = await repo.syncAllMarketValuation(DateTime(2025, 1, 15));
-
-      expect(result, equals(0));
+      await expectLater(
+        repo.syncAllMarketValuation(DateTime(2025, 1, 15)),
+        throwsA(isA<DatabaseException>()),
+      );
     });
   });
 
