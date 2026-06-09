@@ -190,6 +190,12 @@ class TodayNotifier extends Notifier<TodayState> {
       }
     } catch (e) {
       AppLogger.warning('TodayNotifier', '載入今日資料失敗', e);
+      // race fix：runUpdate 完成後 await loadData() 跟使用者 pull-to-refresh
+      // 並發時，舊 loadData 的 catch 路徑過去無 generation guard，會把過時
+      // 的 error 蓋寫到新 loadData 已成功寫入的 state，並讓 runUpdate 把
+      // 此 error fold 進 `result.errors` 顯示「本次更新失敗」。比對 captured
+      // generation 確保只有最後一次 reload 能寫入 error state。
+      if (!_active || _loadGeneration != generation) return;
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
   }
