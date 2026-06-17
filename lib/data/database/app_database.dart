@@ -177,9 +177,10 @@ class AppDatabase extends $AppDatabase
   /// 時會炸 `no such column` 之類的錯誤。
   ///
   /// 此 method 在 `beforeOpen` 執行，透過一個不受 Drift 管理的 meta table
-  /// 儲存當前 schema 的指紋字串。啟動時比對，不一致就把所有 Drift 管理的
-  /// table drop 後呼叫 `Migrator.createAll` 重建。Pre-launch 所有資料都是
-  /// derived data，清掉後由 syncer 重新下載即可。
+  /// 儲存當前 schema 的指紋字串。啟動時比對，不一致就把**非使用者輸入**的
+  /// Drift 表 drop 後呼叫 `Migrator.createAll` 重建。Drift `createTable`
+  /// 本身用 `CREATE TABLE IF NOT EXISTS`，所以 whitelist 內已存在的表會
+  /// 直接 skip、保留資料。
   ///
   /// ## 何時 bump fingerprint
   ///
@@ -191,11 +192,43 @@ class AppDatabase extends $AppDatabase
   /// 字串值是不透明的，只要跟前一個版本不同就會觸發 reset。建議用
   /// `<stage>-<feature>-<date>` 格式，方便看 git blame 追歷史。
   ///
+  /// ## 使用者輸入表 whitelist（不會被 wipe）
+  ///
+  /// [_userInputTableNames] 內列出的表在 reset 時被跳過，避免使用者**手動
+  /// 輸入**的資料（自選股、價格警示、自訂篩選、portfolio、自訂事件、app 偏好）
+  /// 被洗掉。這是 M1 修正範圍。
+  ///
+  /// ## ⚠️ Whitelist 的已知限制
+  ///
+  /// Whitelist 內的表若**schema 改動**（加欄位、改 PK），此機制不會自動
+  /// migrate — `CREATE TABLE IF NOT EXISTS` 看到既存表就放著不動，新 column
+  /// 不會出現、舊 column 也不會被刪。
+  ///
+  /// 解法：若要動 whitelist 表的 schema，必須**同時加一段 ALTER TABLE 路徑**
+  /// 處理現有 DB；或臨時把該表從 whitelist 拿掉接受該次 wipe。長期該換
+  /// Drift `schemaVersion` + `onUpgrade` migration ladder 治本。
+  ///
+  /// ## 不在 whitelist 的表為何安全
+  ///
+  /// 其餘表都是 derived data（每日 syncer 重抓即可）。`update_run` 也不
+  /// 進 whitelist — wipe 後首次啟動會被當成「沒跑過」觸發一次全量同步，
+  /// 沒資料損失。
+  ///
   /// ## 正式上線後的遷移路徑
   ///
-  /// 上線之後此機制**必須移除**，改回 Drift 標準的 `schemaVersion` 遞增 +
-  /// `onUpgrade` migration。正式 user 不能接受「升級 app 資料全清空」的
-  /// 體驗。屆時 `_schemaFingerprint` 跟 `_ensureSchemaFingerprint` 都要刪除。
+  /// 上線之後此機制**仍建議移除**，改回 Drift 標準的 `schemaVersion` 遞增 +
+  /// `onUpgrade` migration。此 whitelist fix 只是**避免 pre-launch 期間自
+  /// 己 dogfooding 時被洗掉資料**的權宜之計。
+  static const Set<String> _userInputTableNames = {
+    'portfolio_position',
+    'portfolio_transaction',
+    'watchlist',
+    'price_alert',
+    'screening_strategy_table',
+    'stock_event',
+    'app_settings',
+  };
+
   Future<void> _ensureSchemaFingerprint() async {
     // 建立 meta table（不屬於 Drift schema，不會被 allTables 列出來）
     await customStatement('''
@@ -215,19 +248,33 @@ class AppDatabase extends $AppDatabase
     }
 
     if (stored != null) {
-      // 偵測到 schema drift — drop 所有 Drift managed table 後重建
-      // 此時 foreign_keys pragma 仍為 OFF（Drift 預設），可以安全 DROP
+      // 偵測到 schema drift — drop 所有非 whitelist 的 Drift managed table
+      // 後重建。foreign_keys pragma 仍為 OFF（Drift 預設），可以安全 DROP。
+      final preserved = <String>[];
+      final dropped = <String>[];
       AppLogger.warning(
         'AppDatabase',
-        'Schema fingerprint mismatch — resetting all tables '
+        'Schema fingerprint mismatch — resetting tables '
             '(stored=$stored, expected=$_schemaFingerprint)',
       );
       for (final table in allTables.toList().reversed) {
-        await customStatement(
-          'DROP TABLE IF EXISTS "${table.actualTableName}"',
-        );
+        final name = table.actualTableName;
+        if (_userInputTableNames.contains(name)) {
+          preserved.add(name);
+          continue;
+        }
+        await customStatement('DROP TABLE IF EXISTS "$name"');
+        dropped.add(name);
       }
+      // createAll 用 CREATE TABLE IF NOT EXISTS（drift 2.x 內建），保留的
+      // user input 表既存資料不會被動到。
       await Migrator(this).createAll();
+      AppLogger.info(
+        'AppDatabase',
+        'Schema reset complete — dropped=${dropped.length} '
+            '(${dropped.join(",")}), preserved=${preserved.length} '
+            '(${preserved.join(",")})',
+      );
     } else {
       // 第一次建立 DB — onCreate 已經跑過 createAll，這邊只需記錄 fingerprint
       AppLogger.info(
