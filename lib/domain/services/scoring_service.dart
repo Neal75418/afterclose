@@ -466,12 +466,8 @@ class ScoringService {
       '評分完成: ${result.outputs.length} 檔 (short max $maxShort 分), '
           '跳過 $skippedTotal 檔 (Isolate)',
     );
-    if (result.skippedDeserialization > 0) {
-      AppLogger.warning(
-        'ScoringService',
-        'Isolate 反序列化失敗: ${result.skippedDeserialization} 筆 entry 被跳過',
-      );
-    }
+    // 反序列化失敗在 M8 fix 後直接 throw FormatException，scoring 整批 abort，
+    // 不再 silent skip — 改在 try/catch 處 surface 給 UI / Sentry。
   }
 
   // ==================================================
