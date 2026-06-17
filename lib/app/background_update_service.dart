@@ -16,21 +16,9 @@ import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/analysis_repository.dart';
-import 'package:afterclose/data/repositories/fundamental_repository.dart';
-import 'package:afterclose/data/repositories/insider_repository.dart';
-import 'package:afterclose/data/repositories/institutional_repository.dart';
-import 'package:afterclose/data/repositories/warning_repository.dart';
-import 'package:afterclose/data/repositories/market_data_repository.dart';
-import 'package:afterclose/data/repositories/news_repository.dart';
-import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/settings_repository.dart';
-import 'package:afterclose/data/repositories/shareholding_repository.dart';
-import 'package:afterclose/data/repositories/stock_repository.dart';
-import 'package:afterclose/data/repositories/trading_repository.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
-import 'package:afterclose/domain/services/update_service_deps.dart';
+import 'package:afterclose/domain/services/update_service_factory.dart';
 
 /// 背景更新任務名稱
 const kBackgroundUpdateTask = 'afterclose_daily_update';
@@ -227,79 +215,15 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
         AppLogger.warning('BackgroundUpdateService', '載入 API Token 失敗', e);
       }
 
-      // 初始化 Repositories
-      final stockRepo = StockRepository(
-        database: database,
-        finMindClient: finMindClient,
-      );
-      final priceRepo = PriceRepository(
+      // M9 fix：透過 UpdateServiceFactory 統一裝配，與 foreground
+      // `updateServiceProvider` 共享同一條 wiring 路徑避免漂移。
+      final updateService = UpdateServiceFactory.build(
         database: database,
         finMindClient: finMindClient,
         twseClient: twseClient,
         tpexClient: tpexClient,
-      );
-      final newsRepo = NewsRepository(database: database, rssParser: rssParser);
-      final analysisRepo = AnalysisRepository(database: database);
-      final institutionalRepo = InstitutionalRepository(
-        database: database,
-        finMindClient: finMindClient,
-        twseClient: twseClient,
-        tpexClient: tpexClient,
-      );
-      final marketDataRepo = MarketDataRepository(
-        database: database,
-        finMindClient: finMindClient,
-      );
-      final tradingRepo = TradingRepository(
-        database: database,
-        twseClient: twseClient,
-        tpexClient: tpexClient,
-      );
-      final shareholdingRepo = ShareholdingRepository(
-        database: database,
-        finMindClient: finMindClient,
-      );
-      final fundamentalRepo = FundamentalRepository(
-        db: database,
-        finMind: finMindClient,
-        twse: twseClient,
-        tpex: tpexClient,
-      );
-      final insiderRepo = InsiderRepository(
-        database: database,
-        twseClient: twseClient,
-        tpexClient: tpexClient,
-      );
-      final warningRepo = WarningRepository(
-        database: database,
-        twseClient: twseClient,
-        tpexClient: tpexClient,
-      );
-
-      // 建立 UpdateService
-      final ruleAccuracyService = RuleAccuracyService(database: database);
-      final updateService = UpdateService(
-        database: database,
-        repositories: UpdateRepositories(
-          stock: stockRepo,
-          price: priceRepo,
-          news: newsRepo,
-          analysis: analysisRepo,
-          institutional: institutionalRepo,
-          marketData: marketDataRepo,
-          trading: tradingRepo,
-          shareholding: shareholdingRepo,
-          fundamental: fundamentalRepo,
-          insider: insiderRepo,
-          warning: warningRepo,
-        ),
-        clients: UpdateClients(
-          twse: twseClient,
-          tpex: tpexClient,
-          tdcc: tdccClient,
-          finMind: finMindClient,
-        ),
-        services: UpdateServices(ruleAccuracy: ruleAccuracyService),
+        tdccClient: tdccClient,
+        rssParser: rssParser,
       );
 
       // 執行更新

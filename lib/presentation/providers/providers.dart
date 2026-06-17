@@ -34,7 +34,7 @@ import 'package:afterclose/domain/services/api_connection_service.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
-import 'package:afterclose/domain/services/update_service_deps.dart';
+import 'package:afterclose/domain/services/update_service_factory.dart';
 
 // ==================================================
 // 核心基礎設施
@@ -284,31 +284,19 @@ final apiConnectionServiceProvider = Provider<ApiConnectionService>((ref) {
 });
 
 /// 更新服務 Provider
+///
+/// 透過 [UpdateServiceFactory] 統一裝配，避免與 BackgroundUpdateService
+/// 兩條路徑漂移（M9 fix）。
 final updateServiceProvider = Provider<UpdateService>((ref) {
-  return UpdateService(
+  return UpdateServiceFactory.build(
     database: ref.watch(databaseProvider),
-    repositories: UpdateRepositories(
-      stock: ref.watch(stockRepositoryProvider),
-      price: ref.watch(priceRepositoryProvider),
-      news: ref.watch(newsRepositoryProvider),
-      analysis: ref.watch(analysisRepositoryProvider),
-      institutional: ref.watch(institutionalRepositoryProvider),
-      marketData: ref.watch(marketDataRepositoryProvider),
-      trading: ref.watch(tradingRepositoryProvider),
-      shareholding: ref.watch(shareholdingRepositoryProvider),
-      fundamental: ref.watch(fundamentalRepositoryProvider),
-      insider: ref.watch(insiderRepositoryProvider),
-      warning: ref.watch(warningRepositoryProvider),
-    ),
-    clients: UpdateClients(
-      twse: ref.watch(twseClientProvider),
-      tpex: ref.watch(tpexClientProvider),
-      tdcc: ref.watch(tdccClientProvider),
-      finMind: ref.watch(finMindClientProvider),
-    ),
-    services: UpdateServices(
-      ruleAccuracy: ref.watch(ruleAccuracyServiceProvider),
-    ),
+    finMindClient: ref.watch(finMindClientProvider),
+    twseClient: ref.watch(twseClientProvider),
+    tpexClient: ref.watch(tpexClientProvider),
+    tdccClient: ref.watch(tdccClientProvider),
+    rssParser: ref.watch(rssParserProvider),
+    clock: ref.watch(appClockProvider),
+    ruleAccuracyService: ref.watch(ruleAccuracyServiceProvider),
   );
 });
 
