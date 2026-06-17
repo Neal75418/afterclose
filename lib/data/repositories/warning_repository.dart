@@ -18,12 +18,12 @@ import 'package:afterclose/data/remote/twse_client.dart';
 class WarningRepository {
   WarningRepository({
     required AppDatabase database,
-    TpexClient? tpexClient,
-    TwseClient? twseClient,
+    required TpexClient tpexClient,
+    required TwseClient twseClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
-       _tpexClient = tpexClient ?? TpexClient(),
-       _twseClient = twseClient ?? TwseClient(),
+       _tpexClient = tpexClient,
+       _twseClient = twseClient,
        _clock = clock;
 
   final AppDatabase _db;

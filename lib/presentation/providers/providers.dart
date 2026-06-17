@@ -236,6 +236,8 @@ final fundamentalRepositoryProvider = Provider<FundamentalRepository>((ref) {
   return FundamentalRepository(
     db: ref.watch(databaseProvider),
     finMind: ref.watch(finMindClientProvider),
+    twse: ref.watch(twseClientProvider),
+    tpex: ref.watch(tpexClientProvider),
   );
 });
 
@@ -296,6 +298,7 @@ final updateServiceProvider = Provider<UpdateService>((ref) {
       shareholding: ref.watch(shareholdingRepositoryProvider),
       fundamental: ref.watch(fundamentalRepositoryProvider),
       insider: ref.watch(insiderRepositoryProvider),
+      warning: ref.watch(warningRepositoryProvider),
     ),
     clients: UpdateClients(
       twse: ref.watch(twseClientProvider),

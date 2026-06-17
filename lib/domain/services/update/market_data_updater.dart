@@ -18,15 +18,13 @@ class MarketDataUpdater {
     required AppDatabase database,
     required TradingRepository tradingRepository,
     required ShareholdingRepository shareholdingRepository,
-    WarningRepository? warningRepository,
-    InsiderRepository? insiderRepository,
+    required WarningRepository warningRepository,
+    required InsiderRepository insiderRepository,
   }) : _db = database,
        _tradingRepo = tradingRepository,
        _shareholdingRepo = shareholdingRepository,
-       _warningRepo =
-           warningRepository ?? WarningRepository(database: database),
-       _insiderRepo =
-           insiderRepository ?? InsiderRepository(database: database);
+       _warningRepo = warningRepository,
+       _insiderRepo = insiderRepository;
 
   final AppDatabase _db;
   final TradingRepository _tradingRepo;

@@ -8,6 +8,7 @@ import 'package:afterclose/data/repositories/price_repository.dart';
 import 'package:afterclose/data/repositories/shareholding_repository.dart';
 import 'package:afterclose/data/repositories/stock_repository.dart';
 import 'package:afterclose/data/repositories/trading_repository.dart';
+import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -30,6 +31,7 @@ class UpdateRepositories {
     this.shareholding,
     this.fundamental,
     this.insider,
+    this.warning,
   });
 
   final StockRepository stock;
@@ -42,6 +44,7 @@ class UpdateRepositories {
   final ShareholdingRepository? shareholding;
   final FundamentalRepository? fundamental;
   final InsiderRepository? insider;
+  final WarningRepository? warning;
 }
 
 /// [UpdateService] 的外部 API Client 依賴

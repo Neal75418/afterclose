@@ -20,6 +20,7 @@ import 'package:afterclose/data/repositories/analysis_repository.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/institutional_repository.dart';
+import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/data/repositories/news_repository.dart';
 import 'package:afterclose/data/repositories/price_repository.dart';
@@ -269,6 +270,11 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
         twseClient: twseClient,
         tpexClient: tpexClient,
       );
+      final warningRepo = WarningRepository(
+        database: database,
+        twseClient: twseClient,
+        tpexClient: tpexClient,
+      );
 
       // 建立 UpdateService
       final ruleAccuracyService = RuleAccuracyService(database: database);
@@ -285,6 +291,7 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
           shareholding: shareholdingRepo,
           fundamental: fundamentalRepo,
           insider: insiderRepo,
+          warning: warningRepo,
         ),
         clients: UpdateClients(
           twse: twseClient,

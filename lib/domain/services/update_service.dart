@@ -73,11 +73,16 @@ class UpdateService {
          priceRepository: repositories.price,
        ),
        _marketDataUpdater =
-           (repositories.trading != null && repositories.shareholding != null)
+           (repositories.trading != null &&
+               repositories.shareholding != null &&
+               repositories.warning != null &&
+               repositories.insider != null)
            ? MarketDataUpdater(
                database: database,
                tradingRepository: repositories.trading!,
                shareholdingRepository: repositories.shareholding!,
+               warningRepository: repositories.warning!,
+               insiderRepository: repositories.insider!,
              )
            : null,
        _fundamentalSyncer = repositories.fundamental != null

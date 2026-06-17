@@ -19,13 +19,13 @@ class InstitutionalRepository implements IInstitutionalRepository {
   InstitutionalRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
-    TwseClient? twseClient,
-    TpexClient? tpexClient,
+    required TwseClient twseClient,
+    required TpexClient tpexClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
        _client = finMindClient,
-       _twseClient = twseClient ?? TwseClient(),
-       _tpexClient = tpexClient ?? TpexClient(),
+       _twseClient = twseClient,
+       _tpexClient = tpexClient,
        _clock = clock;
 
   final AppDatabase _db;

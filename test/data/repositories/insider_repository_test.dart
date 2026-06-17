@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
+import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -9,17 +10,22 @@ class MockAppDatabase extends Mock implements AppDatabase {}
 
 class MockTpexClient extends Mock implements TpexClient {}
 
+class MockTwseClient extends Mock implements TwseClient {}
+
 void main() {
   late MockAppDatabase mockDb;
   late MockTpexClient mockTpexClient;
+  late MockTwseClient mockTwseClient;
   late InsiderRepository repository;
 
   setUp(() {
     mockDb = MockAppDatabase();
     mockTpexClient = MockTpexClient();
+    mockTwseClient = MockTwseClient();
     repository = InsiderRepository(
       database: mockDb,
       tpexClient: mockTpexClient,
+      twseClient: mockTwseClient,
     );
   });
 

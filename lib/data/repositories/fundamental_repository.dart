@@ -16,13 +16,13 @@ class FundamentalRepository implements IFundamentalRepository {
   FundamentalRepository({
     required AppDatabase db,
     required FinMindClient finMind,
-    TwseClient? twse,
-    TpexClient? tpex,
+    required TwseClient twse,
+    required TpexClient tpex,
     AppClock clock = const SystemClock(),
   }) : _db = db,
        _finMind = finMind,
-       _twse = twse ?? TwseClient(),
-       _tpex = tpex ?? TpexClient(),
+       _twse = twse,
+       _tpex = tpex,
        _clock = clock;
 
   final AppDatabase _db;

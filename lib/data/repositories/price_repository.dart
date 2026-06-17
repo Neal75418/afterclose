@@ -27,13 +27,13 @@ class PriceRepository implements IPriceRepository {
   PriceRepository({
     required AppDatabase database,
     required FinMindClient finMindClient,
-    TwseClient? twseClient,
-    TpexClient? tpexClient,
+    required TwseClient twseClient,
+    required TpexClient tpexClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
-       _twseSource = TwsePriceSource(client: twseClient ?? TwseClient()),
+       _twseSource = TwsePriceSource(client: twseClient),
        _tpexSource = TpexPriceSource(
-         client: tpexClient ?? TpexClient(),
+         client: tpexClient,
          finMind: finMindClient,
        ),
        _clock = clock;

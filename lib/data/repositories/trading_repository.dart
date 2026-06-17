@@ -19,12 +19,12 @@ import 'package:afterclose/domain/repositories/trading_repository.dart';
 class TradingRepository implements ITradingRepository {
   TradingRepository({
     required AppDatabase database,
-    TwseClient? twseClient,
-    TpexClient? tpexClient,
+    required TwseClient twseClient,
+    required TpexClient tpexClient,
     AppClock clock = const SystemClock(),
   }) : _db = database,
-       _twseClient = twseClient ?? TwseClient(),
-       _tpexClient = tpexClient ?? TpexClient(),
+       _twseClient = twseClient,
+       _tpexClient = tpexClient,
        _clock = clock;
 
   final AppDatabase _db;
