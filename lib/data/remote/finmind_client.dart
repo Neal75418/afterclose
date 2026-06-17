@@ -9,6 +9,7 @@ import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/models/finmind/models.dart';
+import 'package:afterclose/data/remote/api_budget_tracker.dart';
 export 'package:afterclose/data/models/finmind/models.dart';
 
 /// FinMind API 客戶端（台股市場資料）
@@ -27,11 +28,17 @@ class FinMindClient {
       milliseconds: ApiConfig.finmindBaseDelayMs,
     ),
     Duration cacheTtl = const Duration(minutes: 30),
+    ApiBudgetTracker? budgetTracker,
   }) : _dio = dio ?? _createDio(),
        _token = token,
        _maxRetries = maxRetries,
        _baseDelay = baseDelay,
-       _cacheTtl = cacheTtl;
+       _cacheTtl = cacheTtl,
+       _budgetTracker = budgetTracker;
+
+  /// Process-local 跨 syncer API 預算追蹤；null 代表 caller 沒注入（測試
+  /// 或 ad-hoc 使用），略過 budget check（保留舊行為相容性）。
+  final ApiBudgetTracker? _budgetTracker;
 
   static const String baseUrl = ApiEndpoints.finmindBaseUrl;
 
@@ -205,11 +212,13 @@ class FinMindClient {
     if (e.response?.statusCode == 429) {
       // 以較長退避時間重試流量限制錯誤（有限次數重試）
       AppLogger.warning('FinMind', '$label: 429 流量限制，等待重試');
+      _budgetTracker?.markRateLimited(ApiVendor.finMind);
       throw const RateLimitException();
     }
     if (e.response?.statusCode == 402) {
       // 402 Payment Required = API 額度耗盡，不重試直接拋出
       AppLogger.warning('FinMind', '$label: 402 API 額度耗盡');
+      _budgetTracker?.markRateLimited(ApiVendor.finMind);
       throw const RateLimitException('API 額度已用完，請稍後再試');
     }
     AppLogger.warning('FinMind', '$label: 網路錯誤', e);
@@ -225,11 +234,16 @@ class FinMindClient {
     final cached = _checkCache(params, label);
     if (cached != null) return cached;
 
+    // M3：每次 request 前查跨 syncer 共享的預算 + cooldown；超預算/cooldown
+    // 直接拋 RateLimitException、不發出網路請求。
+    _budgetTracker?.checkBudget(ApiVendor.finMind);
+
     int attempt = 0;
     Object? lastError;
 
     while (attempt <= _maxRetries) {
       try {
+        _budgetTracker?.recordCall(ApiVendor.finMind);
         final response = await _dio.get(
           '',
           queryParameters: _buildParams(params),

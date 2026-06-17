@@ -11,6 +11,7 @@ import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/remote/api_budget_tracker.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
@@ -196,8 +197,11 @@ Future<UpdateResult> _executeBackgroundUpdate() async {
     );
 
     // 初始化 API 客戶端（hoist 到 try 外讓 finally 可見；inline 構造的
-    // TdccClient 改成有名 reference，否則 isolate 結束前無法 close）
-    final finMindClient = FinMindClient();
+    // TdccClient 改成有名 reference，否則 isolate 結束前無法 close）。
+    // M3: 在背景 isolate 裡也建一份 ApiBudgetTracker，行為跟 foreground
+    // 一致（process-local 設計本就不要求跨 isolate 共享）。
+    final budgetTracker = ApiBudgetTracker();
+    final finMindClient = FinMindClient(budgetTracker: budgetTracker);
     final twseClient = TwseClient();
     final tpexClient = TpexClient();
     final tdccClient = TdccClient();

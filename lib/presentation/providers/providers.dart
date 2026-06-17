@@ -7,6 +7,7 @@ import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:dio/dio.dart';
 
 import 'package:afterclose/data/network/calibration_updater.dart';
+import 'package:afterclose/data/remote/api_budget_tracker.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/data/remote/rss_parser.dart';
@@ -66,6 +67,13 @@ final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
   );
 });
 
+/// M3：跨 syncer 共享的 API 預算追蹤器（per-vendor + process-local +
+/// sliding 1hr）。目前僅 FinMindClient 整合（free-tier 600/hr 是實際
+/// bottleneck），其他 vendor 後續視 PR 推進。
+final apiBudgetTrackerProvider = Provider<ApiBudgetTracker>((ref) {
+  return ApiBudgetTracker(clock: ref.watch(appClockProvider));
+});
+
 /// FinMind API 客戶端（用於取得歷史資料）
 ///
 /// 當使用者變更快取時間設定時，此 provider 會被 invalidate 並重建；
@@ -73,7 +81,10 @@ final cachedDbProvider = Provider<CachedDatabaseAccessor>((ref) {
 /// 避免每次設定變動都洩漏一個底層 socket。
 final finMindClientProvider = Provider<FinMindClient>((ref) {
   final cacheDuration = ref.watch(cacheDurationProvider);
-  final client = FinMindClient(cacheTtl: Duration(minutes: cacheDuration));
+  final client = FinMindClient(
+    cacheTtl: Duration(minutes: cacheDuration),
+    budgetTracker: ref.watch(apiBudgetTrackerProvider),
+  );
   ref.onDispose(client.close);
   return client;
 });
