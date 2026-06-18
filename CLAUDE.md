@@ -58,7 +58,7 @@ dart format .                                                  # 格式化 (pre-
 | `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制              |
 | `lib/domain/services/rules/`                     | 60 條規則 (13 檔案)                        |
 | `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)            |
-| `lib/domain/services/update/`                    | 更新元件 (9 syncers + 4 helpers + coordinator) |
+| `lib/domain/services/update/`                    | 更新元件 (10 syncers + 3 helpers + coordinator) |
 | `lib/data/database/tables/`                      | Drift 資料表定義                           |
 | `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)              |
 | `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                      |
@@ -161,4 +161,4 @@ void main() {
 | 規則檔 | 內容 | 載入條件（`paths:` frontmatter） |
 |---|---|---|
 | `architecture.md` | 四層架構 Mermaid 圖、資料流圖 | `lib/core/**`、`lib/data/**`、`lib/domain/**`、`lib/presentation/**` |
-| `update-pipeline.md` | Update Pipeline Mermaid 圖、9 syncers + 4 helpers 詳解 | `lib/domain/services/update/**`、`lib/data/remote/**`、`**/syncer*`、`**/Syncer*`、`**/BatchData*`、`**/rule_accuracy*` |
+| `update-pipeline.md` | Update Pipeline Mermaid 圖、10 syncers + 3 helpers 詳解 | `lib/domain/services/update/**`、`lib/data/remote/**`、`**/syncer*`、`**/Syncer*`、`**/BatchData*`、`**/rule_accuracy*` |

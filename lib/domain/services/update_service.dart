@@ -538,6 +538,11 @@ class UpdateService {
     if (marketUpdater == null) return;
 
     try {
+      // 硬寫 force: true 是刻意：當沖/融資/融券 batch API 每次都重抓全市場
+      // (free TWSE/TPEx Open Data，配額不是 bottleneck)，新鮮度檢查反而
+      // 浪費一次 DB count query。比 `ctx.force` 更積極、與本層 daily
+      // pipeline 設計一致。若未來想跑 dry-run / replay 不刷新，應把這個
+      // 決策移進 `MarketDataUpdater` 內部常數而非從 ctx 傳。
       final marketResult = await marketUpdater.syncMarketWideData(
         date: normalizedDate,
         force: true,
