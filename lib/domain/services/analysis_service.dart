@@ -34,9 +34,9 @@ class AnalysisService {
   /// 委託給 [AnalysisCoordinatorService.buildContext]
   AnalysisContext buildContext(
     AnalysisResult result, {
+    required DateTime evaluationTime,
     List<DailyPriceEntry>? priceHistory,
     MarketDataContext? marketData,
-    DateTime? evaluationTime,
   }) {
     return _coordinator.buildContext(
       result,

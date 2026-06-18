@@ -12,9 +12,7 @@ import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 /// 檢查估值資料是否已過時（超過 [FundamentalParams.valuationMaxStaleDays] 天）
 bool _isValuationStale(StockValuationEntry valuation, AnalysisContext context) {
-  final dataAge = (context.evaluationTime ?? DateTime.now())
-      .difference(valuation.date)
-      .inDays;
+  final dataAge = context.evaluationTime.difference(valuation.date).inDays;
   return dataAge > FundamentalParams.valuationMaxStaleDays;
 }
 
@@ -213,9 +211,7 @@ class HighDividendYieldRule extends StockRule {
     // 資料新鮮度檢查：確保估值資料在有效期限內
     // TWSE 並非每日更新所有股票，過時資料可能導致誤判
     if (_isValuationStale(valuation, context)) {
-      final dataAge = (context.evaluationTime ?? DateTime.now())
-          .difference(valuation.date)
-          .inDays;
+      final dataAge = context.evaluationTime.difference(valuation.date).inDays;
       AppLogger.debug(
         'HighYieldRule',
         '${data.symbol}: 資料過時 ($dataAge 天)，跳過評估',

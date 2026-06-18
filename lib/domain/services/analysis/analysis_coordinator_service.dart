@@ -88,9 +88,9 @@ class AnalysisCoordinatorService {
   /// 整合分析結果和技術指標，供規則引擎使用
   AnalysisContext buildContext(
     AnalysisResult result, {
+    required DateTime evaluationTime,
     List<DailyPriceEntry>? priceHistory,
     MarketDataContext? marketData,
-    DateTime? evaluationTime,
   }) {
     TechnicalIndicators? indicators;
 

@@ -196,7 +196,10 @@ void main() {
     test('catch and skip rule exceptions without crashing', () {
       final engine = RuleEngine(customRules: [const _ThrowingRule()]);
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final reasons = engine.evaluateStock(
         context,
@@ -216,7 +219,10 @@ void main() {
         normalVolume: 1000,
         spikeVolume: 5000,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final reasons = engine.evaluateStock(
         context,
@@ -298,7 +304,10 @@ void main() {
   group('evaluateStock Edge Cases', () {
     test('return empty list for empty price history', () {
       final reasons = ruleEngine.evaluateStock(
-        const AnalysisContext(trendState: TrendState.range),
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        ),
         const StockData(symbol: 'UNKNOWN', prices: []),
       );
       expect(reasons, isEmpty);
@@ -328,7 +337,10 @@ void main() {
         ],
       );
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final reasons = engine.evaluateStock(
         context,
@@ -367,7 +379,10 @@ void main() {
         ],
       );
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final allReasons = engine.evaluateStock(
         context,
@@ -408,7 +423,10 @@ void main() {
         ],
       );
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final allReasons = engine.evaluateStock(
         context,
@@ -441,7 +459,10 @@ void main() {
         ],
       );
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final allReasons = engine.evaluateStock(
         context,
@@ -478,7 +499,10 @@ void main() {
         ],
       );
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final allReasons = engine.evaluateStock(
         context,
@@ -513,7 +537,10 @@ void main() {
           ],
         );
         final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
 
         final allReasons = engine.evaluateStock(
           context,
@@ -577,7 +604,10 @@ void main() {
         ],
       );
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       // H-1 fix 後 pipeline 拆成 3 步：evaluate → mutex → calculateScore
       // calculateScore 是 pure arithmetic（不做 mutex）；mutex 由 caller 顯式

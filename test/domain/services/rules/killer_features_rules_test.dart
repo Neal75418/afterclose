@@ -13,7 +13,8 @@ void main() {
       const rule = InsiderSellingStreakRule();
 
       test('triggers when selling streak >= 3 months', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -35,7 +36,8 @@ void main() {
       });
 
       test('does not trigger when selling streak < 3 months', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -55,7 +57,8 @@ void main() {
       });
 
       test('does not trigger when no selling streak', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -79,7 +82,8 @@ void main() {
       const rule = InsiderSignificantBuyingRule();
 
       test('triggers when buying change >= 5%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -101,7 +105,8 @@ void main() {
       });
 
       test('does not trigger when buying change < 5%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -121,7 +126,8 @@ void main() {
       });
 
       test('does not trigger when buyingChange is null', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -145,7 +151,8 @@ void main() {
       const rule = HighPledgeRatioRule();
 
       test('triggers when pledge ratio >= 70%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -166,7 +173,8 @@ void main() {
       });
 
       test('does not trigger when pledge ratio < 70%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -185,7 +193,8 @@ void main() {
       });
 
       test('does not trigger when pledgeRatio is null', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             insiderData: InsiderDataContext(
@@ -210,7 +219,8 @@ void main() {
       const rule = TradingWarningAttentionRule();
 
       test('triggers when isAttention is true', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -233,7 +243,8 @@ void main() {
 
       test('does not trigger when isDisposal is true', () {
         // DISPOSAL 優先於 ATTENTION
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -257,7 +268,8 @@ void main() {
       const rule = TradingWarningDisposalRule();
 
       test('triggers when isDisposal is true', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -279,7 +291,8 @@ void main() {
       });
 
       test('does not trigger when isDisposal is false', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -302,7 +315,8 @@ void main() {
       // ==========================================
 
       test('description includes disposalMeasures when present', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -322,6 +336,7 @@ void main() {
 
       test('description includes disposalEndDate when present', () {
         final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -342,6 +357,7 @@ void main() {
 
       test('description includes both measures and endDate', () {
         final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(
@@ -362,7 +378,8 @@ void main() {
       });
 
       test('description is basic when both measures and endDate are null', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             warningData: WarningDataContext(isDisposal: true),
@@ -378,7 +395,10 @@ void main() {
       });
 
       test('returns null when warningData is null', () {
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final prices = generateFlatPrices(days: 20, basePrice: 100.0);
         final data = StockData(symbol: 'TEST', prices: prices);
 
@@ -394,7 +414,8 @@ void main() {
       const rule = ForeignConcentrationWarningRule();
 
       test('triggers when foreign ratio >= 60%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(foreignSharesRatio: 65.0),
         );
@@ -409,7 +430,8 @@ void main() {
       });
 
       test('does not trigger when foreign ratio < 60%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(foreignSharesRatio: 50.0),
         );
@@ -427,7 +449,8 @@ void main() {
       const rule = ForeignExodusRule();
 
       test('triggers when foreign ratio change <= -2%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             foreignSharesRatio: 40.0,
@@ -446,7 +469,8 @@ void main() {
       });
 
       test('does not trigger when foreign ratio change > -2%', () {
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           marketData: MarketDataContext(
             foreignSharesRatio: 40.0,

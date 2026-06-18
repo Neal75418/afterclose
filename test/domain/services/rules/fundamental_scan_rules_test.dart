@@ -63,6 +63,7 @@ void main() {
       );
       final data = createTestStockData(prices: prices, latestRevenue: revenue);
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -81,7 +82,10 @@ void main() {
         yoyGrowth: 20.0, // < 30.0
       );
       final data = createTestStockData(prices: prices, latestRevenue: revenue);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -90,7 +94,10 @@ void main() {
       final prices = _generatePricesBelowMA(maPeriod: 60);
       final revenue = createTestMonthlyRevenue(yoyGrowth: 55.0);
       final data = createTestStockData(prices: prices, latestRevenue: revenue);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -98,7 +105,10 @@ void main() {
     test('does not trigger when revenue is null', () {
       final prices = _generatePricesAboveMA(maPeriod: 60);
       final data = createTestStockData(prices: prices);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -113,7 +123,10 @@ void main() {
     test('triggers when yoyGrowth <= -20%', () {
       final revenue = createTestMonthlyRevenue(yoyGrowth: -25.0);
       final data = createTestStockData(latestRevenue: revenue);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -125,14 +138,20 @@ void main() {
     test('does not trigger when decline is insufficient', () {
       final revenue = createTestMonthlyRevenue(yoyGrowth: -10.0);
       final data = createTestStockData(latestRevenue: revenue);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
 
     test('does not trigger when revenue is null', () {
       final data = createTestStockData();
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -156,6 +175,7 @@ void main() {
         revenueHistory: revenueHistory,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -177,7 +197,10 @@ void main() {
         prices: prices,
         revenueHistory: revenueHistory,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -192,7 +215,10 @@ void main() {
         prices: prices,
         revenueHistory: revenueHistory,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -200,7 +226,10 @@ void main() {
     test('does not trigger with insufficient history', () {
       final prices = _generatePricesAboveMA(maPeriod: 20);
       final data = createTestStockData(prices: prices);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -218,7 +247,10 @@ void main() {
         date: DateTime.now(), // fresh data
       );
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -233,7 +265,10 @@ void main() {
         date: DateTime.now(),
       );
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -244,27 +279,37 @@ void main() {
         date: DateTime.now(),
       );
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
 
     test('does not trigger when data is stale', () {
+      final now = DateTime.now();
       final valuation = createTestValuation(
         dividendYield: 7.0,
-        date: DateTime.now().subtract(
+        date: now.subtract(
           const Duration(days: 10),
         ), // > 7 days (valuationMaxStaleDays)
       );
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: now,
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
 
     test('does not trigger when valuation is null', () {
       final data = createTestStockData();
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -287,6 +332,7 @@ void main() {
         latestValuation: valuation,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -305,7 +351,10 @@ void main() {
         prices: prices,
         latestValuation: valuation,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -317,7 +366,10 @@ void main() {
         prices: prices,
         latestValuation: valuation,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -349,7 +401,8 @@ void main() {
         latestValuation: valuation,
       );
       // 提供 RSI > 75（過熱）讓規則觸發
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(rsi: 80),
       );
@@ -375,7 +428,10 @@ void main() {
         prices: prices,
         latestValuation: valuation,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -388,7 +444,10 @@ void main() {
         prices: prices,
         latestValuation: valuation,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -406,7 +465,10 @@ void main() {
         date: DateTime.now(),
       );
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -418,7 +480,10 @@ void main() {
     test('does not trigger when PBR is above threshold', () {
       final valuation = createTestValuation(pbr: 1.5, date: DateTime.now());
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -426,7 +491,10 @@ void main() {
     test('does not trigger when PBR is zero or negative', () {
       final valuation = createTestValuation(pbr: 0.0, date: DateTime.now());
       final data = createTestStockData(latestValuation: valuation);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -452,6 +520,7 @@ void main() {
           maxHistoricalRevenue: 1200000, // historical max: 120 億
         );
         final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           indicators: indicatorsFromPrices(prices),
         );
@@ -476,6 +545,7 @@ void main() {
         maxHistoricalRevenue: 1200000, // max > current
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -492,6 +562,7 @@ void main() {
         maxHistoricalRevenue: 1200000,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -508,6 +579,7 @@ void main() {
         // maxHistoricalRevenue not set → null
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -522,6 +594,7 @@ void main() {
         maxHistoricalRevenue: 1200000,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -538,6 +611,7 @@ void main() {
         maxHistoricalRevenue: 0,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -566,7 +640,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -589,7 +666,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -611,7 +691,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -634,14 +717,20 @@ void main() {
         ),
       ];
       final data = createTestStockData(news: news);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: now,
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
 
     test('does not trigger when news is null', () {
       final data = createTestStockData();
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });

@@ -24,7 +24,8 @@ void main() {
         normalVolume: 1000,
         spikeVolume: 5000,
       );
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         resistanceLevel: 100.0,
       );
@@ -56,7 +57,8 @@ void main() {
         normalVolume: 1000,
         breakoutVolume: 3000, // 3x 均量
       );
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
         resistanceLevel: 100.0,
       );

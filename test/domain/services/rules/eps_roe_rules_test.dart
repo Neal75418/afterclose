@@ -80,6 +80,7 @@ void main() {
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -124,7 +125,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -160,7 +164,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -176,7 +183,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -200,6 +210,7 @@ void main() {
       );
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -220,7 +231,10 @@ void main() {
         quarterlyGrowth: 0.025,
       );
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -234,7 +248,10 @@ void main() {
         quarterlyGrowth: 0.5,
       );
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -243,7 +260,10 @@ void main() {
       final prices = _generatePricesAboveMA(maPeriod: 20);
       final epsHistory = generateEpsHistory(quarters: 2, baseEps: 1.0);
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       // epsConsecutiveQuarters = 2, needs 3 entries (2+1)
       // Only 2 entries → length < 3 → returns null
@@ -274,7 +294,8 @@ void main() {
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
       // 提供 MA20 讓 aboveMA20 條件成立（close=105 > ma20=100）
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(ma20: 100),
       );
@@ -304,7 +325,8 @@ void main() {
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
       // 提供 RSI > 50 讓 rsiPositive 條件成立
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(rsi: 60),
       );
@@ -331,7 +353,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -352,7 +377,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(prices: prices, epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -386,7 +414,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -417,7 +448,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -437,7 +471,10 @@ void main() {
         ),
       ];
       final data = createTestStockData(epsHistory: epsHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       // Needs length >= 3
       expect(rule.evaluate(context, data), isNull);
@@ -459,6 +496,7 @@ void main() {
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -478,7 +516,10 @@ void main() {
         quarterlyChange: 0.0,
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -491,7 +532,10 @@ void main() {
         quarterlyChange: 0.0,
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -499,7 +543,10 @@ void main() {
     test('does not trigger when ROE history is empty', () {
       final prices = _generatePricesAboveMA(maPeriod: 20);
       final data = createTestStockData(prices: prices);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -522,6 +569,7 @@ void main() {
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -542,7 +590,10 @@ void main() {
         quarterlyChange: 2.0,
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -555,7 +606,10 @@ void main() {
         quarterlyChange: 6.0,
       );
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -564,7 +618,10 @@ void main() {
       final prices = _generatePricesAboveMA(maPeriod: 20);
       final roeHistory = generateRoeHistory(quarters: 2, baseRoe: 10.0);
       final data = createTestStockData(prices: prices, roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       // roeMinQuarters = 2, needs length >= 3
       expect(rule.evaluate(context, data), isNull);
@@ -586,7 +643,10 @@ void main() {
         quarterlyChange: -6.0,
       );
       final data = createTestStockData(roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final result = rule.evaluate(context, data);
 
@@ -604,7 +664,10 @@ void main() {
         quarterlyChange: -2.0,
       );
       final data = createTestStockData(roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
@@ -612,14 +675,20 @@ void main() {
     test('does not trigger with insufficient quarters', () {
       final roeHistory = generateRoeHistory(quarters: 2, baseRoe: 20.0);
       final data = createTestStockData(roeHistory: roeHistory);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });
 
     test('does not trigger when ROE history is null', () {
       final data = createTestStockData();
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       expect(rule.evaluate(context, data), isNull);
     });

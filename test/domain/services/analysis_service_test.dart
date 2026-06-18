@@ -262,7 +262,10 @@ void main() {
           rangeBottom: 90.0,
         );
 
-        final context = analysisService.buildContext(result);
+        final context = analysisService.buildContext(
+          result,
+          evaluationTime: DateTime(2025, 6, 1),
+        );
 
         expect(context.trendState, TrendState.up);
         expect(context.supportLevel, 95.0);

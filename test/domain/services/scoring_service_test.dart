@@ -48,7 +48,12 @@ void main() {
     );
 
     // Default mocks
-    registerFallbackValue(const AnalysisContext(trendState: TrendState.range));
+    registerFallbackValue(
+      AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      ),
+    );
     registerFallbackValue(const StockData(symbol: 'TEST', prices: []));
     registerFallbackValue(
       const AnalysisResult(
@@ -217,7 +222,12 @@ void main() {
           marketData: any(named: 'marketData'),
           evaluationTime: any(named: 'evaluationTime'),
         ),
-      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
 
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(
@@ -348,7 +358,12 @@ void main() {
           marketData: any(named: 'marketData'),
           evaluationTime: any(named: 'evaluationTime'),
         ),
-      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
 
       when(
         () => mockAnalysisRepository.saveAnalysis(
@@ -419,7 +434,12 @@ void main() {
           marketData: any(named: 'marketData'),
           evaluationTime: any(named: 'evaluationTime'),
         ),
-      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
 
       // Mock Rule Engine
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
@@ -575,7 +595,12 @@ void main() {
           marketData: any(named: 'marketData'),
           evaluationTime: any(named: 'evaluationTime'),
         ),
-      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
 
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([]);
 
@@ -625,7 +650,12 @@ void main() {
           marketData: any(named: 'marketData'),
           evaluationTime: any(named: 'evaluationTime'),
         ),
-      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
 
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(
@@ -763,7 +793,12 @@ void main() {
           marketData: any(named: 'marketData'),
           evaluationTime: any(named: 'evaluationTime'),
         ),
-      ).thenReturn(const AnalysisContext(trendState: TrendState.up));
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
 
       when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
         const TriggeredReason(

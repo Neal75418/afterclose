@@ -56,7 +56,10 @@ void main() {
       // dailyAvg = 600000 > 200000 (dailyAvgThreshold)
       // significantDays: 600000 > 150000 → all 5 days significant (5 >= 5/2)
       final institutional = _generateBuyStreak(days: 5);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -77,7 +80,10 @@ void main() {
         foreignNet: 200000,
         trustNet: 400000,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -98,7 +104,10 @@ void main() {
         foreignNet: 50000,
         trustNet: 30000,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -116,7 +125,10 @@ void main() {
         foreignNet: 110000,
         trustNet: 70000,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -130,7 +142,10 @@ void main() {
       // 6 days with combined between 50000-150000 (streak continues but not significant)
       // Only last 2 days are significant (combined > 150000)
       final now = DateTime(2025, 6, 15);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
 
       final institutional = List.generate(6, (i) {
         final isSignificant = i >= 4; // Only last 2 are significant
@@ -158,7 +173,10 @@ void main() {
 
     test('does not trigger with insufficient history', () {
       final institutional = _generateBuyStreak(days: 2);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -172,7 +190,10 @@ void main() {
       // streakDays must be >= InstitutionalParams.institutionalStreakDays (4)
       // 3 days = boundary - 1, should NOT trigger
       final institutional = _generateBuyStreak(days: 3);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -183,7 +204,10 @@ void main() {
     });
 
     test('does not trigger when institutional data is null', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       const data = StockData(symbol: 'TEST', prices: []);
 
       expect(rule.evaluate(context, data), isNull);
@@ -202,7 +226,10 @@ void main() {
       // dailyAvg = -600000 < -200000
       // significantDays: |-600000| > 150000 → all 5 significant
       final institutional = _generateSellStreak(days: 5);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -224,7 +251,10 @@ void main() {
           foreignNet: -200000,
           trustNet: -400000,
         );
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: [],
@@ -246,7 +276,10 @@ void main() {
         foreignNet: -50000,
         trustNet: -30000,
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],
@@ -257,7 +290,10 @@ void main() {
     });
 
     test('does not trigger when institutional data is null', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       const data = StockData(symbol: 'TEST', prices: []);
 
       expect(rule.evaluate(context, data), isNull);
@@ -277,7 +313,10 @@ void main() {
           dealerNet: 0,
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [],

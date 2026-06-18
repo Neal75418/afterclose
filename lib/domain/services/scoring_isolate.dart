@@ -486,11 +486,21 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     final marketData = _buildMarketDataContext(input, symbol);
 
     // 5. 建立分析上下文
+    // M13：evaluationTime 在 AnalysisContext 改 required；scoring caller
+    // (scoring_service.scoreStocksInIsolate / scoreStocks) 都帶 required
+    // DateTime 進來，input.date 不該為 null。若為 null 屬於 contract 違反、
+    // fail-loud 比 silent DateTime.now() fallback 更安全。
+    final inputDate = input.date;
+    if (inputDate == null) {
+      throw StateError(
+        'ScoringIsolateInput.date must not be null when evaluating "$symbol"',
+      );
+    }
     final context = analysisService.buildContext(
       analysisResult,
       priceHistory: prices,
       marketData: marketData,
-      evaluationTime: input.date ?? DateTime.now(),
+      evaluationTime: inputDate,
     );
 
     // 6. 轉換批次資料並執行規則引擎

@@ -21,7 +21,8 @@ void main() {
           createTestPrice(date: DateTime.now(), close: 102.0),
         ];
 
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.down,
           reversalState: ReversalState.weakToStrong,
           rangeTop: 100.0,
@@ -36,7 +37,8 @@ void main() {
 
       test('does not trigger when trend is already up', () {
         final prices = generateUptrendPrices(days: 30);
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.up,
           rangeTop: 100.0,
         );
@@ -58,7 +60,8 @@ void main() {
           createTestPrice(date: DateTime.now(), close: 98.0),
         ];
 
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.up,
           reversalState: ReversalState.strongToWeak,
           supportLevel: 100.0,
@@ -73,7 +76,8 @@ void main() {
 
       test('does not trigger when trend is already down', () {
         final prices = generateDowntrendPrices(days: 30);
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.down,
           supportLevel: 100.0,
         );
@@ -98,7 +102,8 @@ void main() {
           normalVolume: 1000,
           breakoutVolume: 3000, // 3x 均量
         );
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           resistanceLevel: 100.0,
         );
@@ -116,7 +121,8 @@ void main() {
           basePrice: 99.0,
           volume: 1000,
         );
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           resistanceLevel: 100.0,
         );
@@ -141,7 +147,8 @@ void main() {
           normalVolume: 1000,
           breakdownVolume: 3000, // 3x 均量
         );
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           supportLevel: 100.0,
         );
@@ -159,7 +166,8 @@ void main() {
           basePrice: 101.0,
           volume: 1000,
         );
-        const context = AnalysisContext(
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
           trendState: TrendState.range,
           supportLevel: 100.0,
         );
@@ -180,7 +188,10 @@ void main() {
           normalVolume: 1000,
           spikeVolume: 5000,
         );
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -191,7 +202,10 @@ void main() {
 
       test('does not trigger with low volume', () {
         final prices = generateUptrendPrices(days: 30);
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -224,7 +238,10 @@ void main() {
             );
           }
         });
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -252,7 +269,10 @@ void main() {
             );
           }
         });
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -278,7 +298,10 @@ void main() {
             );
           }
         });
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: prices);
 
         final result = rule.evaluate(context, data);
@@ -315,7 +338,10 @@ void main() {
             volume: 10000000,
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -334,7 +360,10 @@ void main() {
           prevDirection: -500,
           todayDirection: 500,
         );
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: [],
@@ -374,7 +403,10 @@ void main() {
             volume: 4000000, // >= 2M
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -412,7 +444,10 @@ void main() {
             volume: 4000000,
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -447,7 +482,10 @@ void main() {
           ),
           createTestPrice(date: now, close: 101.0, volume: 5000000),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -481,7 +519,10 @@ void main() {
           ),
           createTestPrice(date: now, close: 99.0, volume: 5000000),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -526,7 +567,10 @@ void main() {
             volume: 10000000,
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -556,7 +600,10 @@ void main() {
           basePrice: 100.0,
           volume: 5000000,
         );
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -584,7 +631,10 @@ void main() {
             volume: 1000000, // < 2,000,000
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -614,7 +664,10 @@ void main() {
           ),
           createTestPrice(date: now, close: 102.0, volume: 4000000),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -652,7 +705,10 @@ void main() {
             volume: 10000000,
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(
           symbol: 'TEST',
           prices: prices,
@@ -683,7 +739,10 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: [], news: news);
 
         final result = rule.evaluate(context, data);
@@ -705,7 +764,10 @@ void main() {
             category: 'EARNINGS',
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: [], news: news);
 
         final result = rule.evaluate(context, data);
@@ -717,18 +779,22 @@ void main() {
 
       test('does not trigger on old news (>120h / 5 days)', () {
         // Rule filters news older than 120 hours (5 days)
+        final now = DateTime.now();
         final news = [
           NewsItemEntry(
             id: 'test-3',
             title: '營收創新高！',
             source: 'MoneyDJ',
             url: 'https://example.com/news/3',
-            publishedAt: DateTime.now().subtract(const Duration(hours: 150)),
-            fetchedAt: DateTime.now().subtract(const Duration(hours: 150)),
+            publishedAt: now.subtract(const Duration(hours: 150)),
+            fetchedAt: now.subtract(const Duration(hours: 150)),
             category: 'EARNINGS',
           ),
         ];
-        const context = AnalysisContext(trendState: TrendState.range);
+        final context = AnalysisContext(
+          evaluationTime: now,
+          trendState: TrendState.range,
+        );
         final data = StockData(symbol: 'TEST', prices: [], news: news);
 
         final result = rule.evaluate(context, data);

@@ -52,7 +52,8 @@ void main() {
         rsi: 50,
       );
 
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicators,
       );
@@ -77,7 +78,8 @@ void main() {
       );
 
       // MA20 = (15×100 + 5×110) / 20 = 102.5; close=110 > 102.5
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(ma20: 102.5),
       );

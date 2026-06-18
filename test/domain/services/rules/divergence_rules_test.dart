@@ -36,7 +36,10 @@ void main() {
       // avgVolume = 10000
       // volumeChange = (8000-10000)/10000 * 100 = -20% <= -10% ✓
 
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -60,7 +63,10 @@ void main() {
           volume: i == 5 ? 8000 : 10000,
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -80,7 +86,10 @@ void main() {
           volume: i == 5 ? 9500 : 10000,
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -88,7 +97,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 3, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -115,7 +127,10 @@ void main() {
           volume: isToday ? 12000 : 10000, // +20%
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -138,7 +153,10 @@ void main() {
           volume: i == 5 ? 12000 : 10000,
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -157,7 +175,10 @@ void main() {
           volume: i == 5 ? 10500 : 10000, // +5% < 10%
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -190,7 +211,10 @@ void main() {
       // position = (102-98)/4 = 1.0 >= 0.85 ✓
       // volume 5000 >= 1000 * 4.0 = 4000 ✓
 
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -216,7 +240,10 @@ void main() {
       });
       // position = (98.5-98)/4 = 0.125 < 0.85
 
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -235,7 +262,10 @@ void main() {
           volume: 1000, // Same volume → no spike
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -243,7 +273,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 30, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -275,7 +308,10 @@ void main() {
       // position = (98.5-98)/4 = 0.125 <= 0.25 ✓
       // volumeRatio = 400/1000 = 0.4 < 0.6 ✓
 
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -301,7 +337,10 @@ void main() {
       });
       // position = (101.5-98)/4 = 0.875 > 0.25
 
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -321,7 +360,10 @@ void main() {
           volume: isLast ? 800 : 1000, // 80% of avg > 60%
         );
       });
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);

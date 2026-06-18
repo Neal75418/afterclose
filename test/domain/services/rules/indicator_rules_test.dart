@@ -75,7 +75,10 @@ void main() {
           volume: 1000,
         ),
       );
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -91,7 +94,10 @@ void main() {
       prices.add(
         createTestPrice(date: DateTime.now(), close: 100.5, volume: 1000),
       );
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -106,7 +112,10 @@ void main() {
       prices.add(
         createTestPrice(date: DateTime.now(), close: 90.0, volume: 1000),
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -114,7 +123,10 @@ void main() {
 
     test('does not trigger with insufficient data (< 250 days)', () {
       final prices = generateConstantPrices(days: 100, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -123,7 +135,10 @@ void main() {
     test('does not trigger when close is null', () {
       final prices = generateConstantPrices(days: 249, basePrice: 100.0);
       prices.add(createTestPrice(date: DateTime.now()));
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -152,7 +167,10 @@ void main() {
         ),
       ];
 
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: prices,
@@ -173,7 +191,10 @@ void main() {
         createTestPrice(date: DateTime.now(), close: 96.0, volume: 1000),
       );
 
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -192,7 +213,10 @@ void main() {
         startPrice: 200.0,
         dailyLoss: 0.3,
       );
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       final result = rule.evaluate(context, data);
@@ -207,7 +231,10 @@ void main() {
       prices.add(
         createTestPrice(date: DateTime.now(), close: 200.0, volume: 1000),
       );
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -217,6 +244,7 @@ void main() {
       // Flat at 100 → close = MA20 ≈ MA60 ≈ 100, close >= MA20 → filtered
       final prices = generateConstantPrices(days: 250, basePrice: 100.0);
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: indicatorsFromPrices(prices),
       );
@@ -227,7 +255,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 100, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -249,6 +280,7 @@ void main() {
         lastVolume: 8000,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
         indicators: indicatorsFromPrices(prices),
       );
@@ -269,7 +301,10 @@ void main() {
         volume: 5000,
         lastVolume: 5000,
       );
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -277,7 +312,10 @@ void main() {
 
     test('does not trigger with flat prices (no MA separation)', () {
       final prices = generateConstantPrices(days: 70, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -285,7 +323,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 30, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -305,6 +346,7 @@ void main() {
         dailyLoss: 1.0,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
         indicators: indicatorsFromPrices(prices),
       );
@@ -319,7 +361,10 @@ void main() {
 
     test('does not trigger with flat prices', () {
       final prices = generateConstantPrices(days: 70, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -327,7 +372,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 30, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -351,6 +399,7 @@ void main() {
         period: IndicatorParams.rsiPeriod,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
         indicators: TechnicalIndicators(rsi: rsi),
       );
@@ -369,6 +418,7 @@ void main() {
         period: IndicatorParams.rsiPeriod,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(rsi: rsi),
       );
@@ -379,7 +429,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -403,6 +456,7 @@ void main() {
         period: IndicatorParams.rsiPeriod,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
         indicators: TechnicalIndicators(rsi: rsi),
       );
@@ -421,6 +475,7 @@ void main() {
         period: IndicatorParams.rsiPeriod,
       );
       final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(rsi: rsi),
       );
@@ -431,7 +486,10 @@ void main() {
 
     test('does not trigger with insufficient data', () {
       final prices = generateConstantPrices(days: 5, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -459,7 +517,8 @@ void main() {
         );
       });
 
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
         indicators: TechnicalIndicators(
           kdK: 35.0,
@@ -492,7 +551,8 @@ void main() {
         );
       });
 
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(
           kdK: 55.0,
@@ -520,7 +580,8 @@ void main() {
         );
       });
 
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
         indicators: TechnicalIndicators(
           kdK: 35.0,
@@ -536,7 +597,10 @@ void main() {
 
     test('does not trigger when indicators are null', () {
       final prices = generateConstantPrices(days: 10, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);
@@ -564,7 +628,8 @@ void main() {
         );
       });
 
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
         indicators: TechnicalIndicators(
           kdK: 65.0,
@@ -596,7 +661,8 @@ void main() {
         );
       });
 
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(
           kdK: 45.0,
@@ -612,7 +678,10 @@ void main() {
 
     test('does not trigger when indicators are null', () {
       final prices = generateConstantPrices(days: 10, basePrice: 100.0);
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(symbol: 'TEST', prices: prices);
 
       expect(rule.evaluate(context, data), isNull);

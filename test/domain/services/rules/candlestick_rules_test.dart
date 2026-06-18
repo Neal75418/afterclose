@@ -16,7 +16,8 @@ void main() {
     const rule = DojiRule();
 
     test('triggers with doji candle when RSI is extreme (< 30)', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.down,
         indicators: TechnicalIndicators(rsi: 25.0),
       );
@@ -32,7 +33,10 @@ void main() {
     });
 
     test('returns null when RSI is null (cannot determine position)', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       final doji = createDojiCandle(date: now, price: 100.0);
       final data = StockData(symbol: 'TEST', prices: [doji]);
@@ -42,7 +46,8 @@ void main() {
     });
 
     test('triggers bearish doji when RSI > 70', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.up,
         indicators: TechnicalIndicators(rsi: 75.0),
       );
@@ -58,7 +63,8 @@ void main() {
     });
 
     test('does not trigger when RSI is in neutral zone (30-70)', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         indicators: TechnicalIndicators(rsi: 50.0),
       );
@@ -71,7 +77,10 @@ void main() {
     });
 
     test('does not trigger with empty prices', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       const data = StockData(symbol: 'TEST', prices: []);
 
       expect(rule.evaluate(context, data), isNull);
@@ -86,7 +95,10 @@ void main() {
     const rule = BullishEngulfingRule();
 
     test('triggers in downtrend with valid bullish engulfing', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final now = DateTime.now();
 
       // Build base prices with normal volume, then append engulfing pair
@@ -111,7 +123,10 @@ void main() {
     });
 
     test('triggers in range trend (not uptrend)', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
 
       final basePrices = generateConstantPrices(
@@ -131,7 +146,10 @@ void main() {
     });
 
     test('does not trigger in uptrend', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final now = DateTime.now();
       final pair = createBullishEngulfingPair(
         prevDate: now.subtract(const Duration(days: 1)),
@@ -143,7 +161,10 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [createTestPrice(date: DateTime.now(), close: 100.0)],
@@ -160,7 +181,10 @@ void main() {
     const rule = BearishEngulfingRule();
 
     test('triggers in uptrend with valid bearish engulfing + volume', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final now = DateTime.now();
 
       // Build base prices with normal volume, then append engulfing pair
@@ -184,7 +208,10 @@ void main() {
     });
 
     test('does not trigger in downtrend', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final now = DateTime.now();
       final basePrices = generateConstantPrices(
         days: 5,
@@ -205,7 +232,10 @@ void main() {
     });
 
     test('does not trigger without sufficient volume', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final now = DateTime.now();
       // Use high base volume so today's volume isn't above average
       final basePrices = generateConstantPrices(
@@ -227,7 +257,10 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [createTestPrice(date: DateTime.now(), close: 100.0)],
@@ -244,7 +277,10 @@ void main() {
     const rule = HammerRule();
 
     test('triggers in downtrend with hammer candle', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final hammer = createHammerCandle(date: DateTime.now(), close: 100.0);
       final data = StockData(symbol: 'TEST', prices: [hammer]);
 
@@ -256,7 +292,10 @@ void main() {
     });
 
     test('does not trigger in uptrend', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final hammer = createHammerCandle(date: DateTime.now(), close: 100.0);
       final data = StockData(symbol: 'TEST', prices: [hammer]);
 
@@ -264,7 +303,10 @@ void main() {
     });
 
     test('does not trigger with non-hammer candle', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       // Normal candle - not a hammer shape
       final normal = createTestPrice(
         date: DateTime.now(),
@@ -280,7 +322,10 @@ void main() {
     });
 
     test('does not trigger with empty prices', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       const data = StockData(symbol: 'TEST', prices: []);
       expect(rule.evaluate(context, data), isNull);
     });
@@ -294,7 +339,10 @@ void main() {
     const rule = HangingManRule();
 
     test('triggers in uptrend with hammer-shaped candle', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final hammer = createHammerCandle(date: DateTime.now(), close: 100.0);
       final data = StockData(symbol: 'TEST', prices: [hammer]);
 
@@ -306,7 +354,10 @@ void main() {
     });
 
     test('does not trigger in downtrend', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final hammer = createHammerCandle(date: DateTime.now(), close: 100.0);
       final data = StockData(symbol: 'TEST', prices: [hammer]);
 
@@ -314,7 +365,10 @@ void main() {
     });
 
     test('does not trigger with non-hammer shape', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final normal = createTestPrice(
         date: DateTime.now(),
         open: 98.0,
@@ -337,7 +391,10 @@ void main() {
     const rule = GapUpRule();
 
     test('triggers when gap exceeds threshold', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       final pair = createGapUpPair(
         prevDate: now.subtract(const Duration(days: 1)),
@@ -354,7 +411,10 @@ void main() {
     });
 
     test('does not trigger when gap is too small', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       final pair = createGapUpPair(
         prevDate: now.subtract(const Duration(days: 1)),
@@ -367,7 +427,10 @@ void main() {
     });
 
     test('does not trigger when no gap (overlap)', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       // Create overlapping candles (no gap)
       final prev = createTestPrice(
@@ -390,7 +453,10 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [createTestPrice(date: DateTime.now(), close: 100.0)],
@@ -407,7 +473,10 @@ void main() {
     const rule = GapDownRule();
 
     test('triggers when gap exceeds threshold', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       final pair = createGapDownPair(
         prevDate: now.subtract(const Duration(days: 1)),
@@ -424,7 +493,10 @@ void main() {
     });
 
     test('does not trigger when gap is too small', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       final pair = createGapDownPair(
         prevDate: now.subtract(const Duration(days: 1)),
@@ -437,7 +509,10 @@ void main() {
     });
 
     test('does not trigger when no gap (overlap)', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final now = DateTime.now();
       final prev = createTestPrice(
         date: now.subtract(const Duration(days: 1)),
@@ -459,7 +534,10 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [createTestPrice(date: DateTime.now(), close: 100.0)],
@@ -476,7 +554,10 @@ void main() {
     const rule = MorningStarRule();
 
     test('triggers in downtrend with valid morning star pattern', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final pattern = createMorningStarPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -490,7 +571,10 @@ void main() {
     });
 
     test('does not trigger in uptrend', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final pattern = createMorningStarPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -500,7 +584,10 @@ void main() {
     });
 
     test('does not trigger with invalid pattern (C2 body too large)', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final now = DateTime.now();
       // C2 has a large body (not a star)
       final c1 = createTestPrice(
@@ -530,7 +617,10 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [
@@ -553,7 +643,10 @@ void main() {
     const rule = EveningStarRule();
 
     test('triggers in uptrend with valid evening star pattern', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final pattern = createEveningStarPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -567,7 +660,10 @@ void main() {
     });
 
     test('does not trigger in downtrend', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final pattern = createEveningStarPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -577,7 +673,10 @@ void main() {
     });
 
     test('does not trigger with invalid pattern', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final now = DateTime.now();
       // C1 is bearish (should be bullish for evening star)
       final c1 = createTestPrice(
@@ -607,7 +706,10 @@ void main() {
     });
 
     test('does not trigger with insufficient data', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final data = StockData(
         symbol: 'TEST',
         prices: [createTestPrice(date: DateTime.now(), close: 100.0)],
@@ -624,7 +726,10 @@ void main() {
     const rule = ThreeWhiteSoldiersRule();
 
     test('triggers with 3 consecutive bullish candles (not in uptrend)', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final pattern = createThreeWhiteSoldiersPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -638,7 +743,10 @@ void main() {
     });
 
     test('does not trigger in uptrend', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final pattern = createThreeWhiteSoldiersPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -648,7 +756,10 @@ void main() {
     });
 
     test('does not trigger with tiny body candles (< 1% body ratio)', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final now = DateTime.now();
       // 三根微小漲幅的 K 線：body/close < 1%
       final c1 = createTestPrice(
@@ -686,7 +797,10 @@ void main() {
     const rule = ThreeBlackCrowsRule();
 
     test('triggers with 3 consecutive bearish candles (not in downtrend)', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final pattern = createThreeBlackCrowsPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -700,7 +814,10 @@ void main() {
     });
 
     test('does not trigger in downtrend', () {
-      const context = AnalysisContext(trendState: TrendState.down);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.down,
+      );
       final pattern = createThreeBlackCrowsPattern(
         startDate: DateTime.now().subtract(const Duration(days: 2)),
       );
@@ -710,7 +827,10 @@ void main() {
     });
 
     test('does not trigger with tiny body candles (< 1% body ratio)', () {
-      const context = AnalysisContext(trendState: TrendState.up);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      );
       final now = DateTime.now();
       // 三根微小跌幅的 K 線：body/close < 1%
       final c1 = createTestPrice(

@@ -6,6 +6,7 @@ import 'package:afterclose/domain/models/technical_indicators.dart';
 class AnalysisContext {
   const AnalysisContext({
     required this.trendState,
+    required this.evaluationTime,
     this.reversalState = ReversalState.none,
     this.supportLevel,
     this.resistanceLevel,
@@ -13,7 +14,6 @@ class AnalysisContext {
     this.rangeBottom,
     this.marketData,
     this.indicators,
-    this.evaluationTime,
   });
 
   final TrendState trendState;
@@ -25,10 +25,13 @@ class AnalysisContext {
   final MarketDataContext? marketData;
   final TechnicalIndicators? indicators;
 
-  /// 評估時間點，供規則判斷資料新鮮度等時間相關邏輯
+  /// 評估時間點，供規則判斷資料新鮮度等時間相關邏輯。
   ///
-  /// 若為 null 則回退至 DateTime.now()（向後相容）
-  final DateTime? evaluationTime;
+  /// M13 fix：required。之前是 nullable + caller 自己 `?? DateTime.now()`
+  /// fallback，違反 [rule engine 純函數契約](CLAUDE.md) — 3 個生產 caller
+  /// (scoring_isolate / scoring_service / replay_calibrator) 都顯式傳值，
+  /// rule 內部 fallback 是 dormant bug 種子，改 required 拔掉。
+  final DateTime evaluationTime;
 }
 
 /// 第四階段訊號所需的額外市場資料

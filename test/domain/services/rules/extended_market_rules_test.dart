@@ -14,7 +14,8 @@ void main() {
     const rule = ForeignShareholdingIncreasingRule();
 
     test('triggers when foreign shareholding increases >= threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           foreignSharesRatio: 30.0,
@@ -31,7 +32,8 @@ void main() {
     });
 
     test('does not trigger when change is below threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           foreignSharesRatio: 30.0,
@@ -44,7 +46,10 @@ void main() {
     });
 
     test('does not trigger when marketData is null', () {
-      const context = AnalysisContext(trendState: TrendState.range);
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.range,
+      );
       const data = StockData(symbol: 'TEST', prices: []);
 
       expect(rule.evaluate(context, data), isNull);
@@ -58,7 +63,8 @@ void main() {
     const rule = ForeignShareholdingDecreasingRule();
 
     test('triggers when foreign shareholding decreases >= threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           foreignSharesRatio: 25.0,
@@ -75,7 +81,8 @@ void main() {
     });
 
     test('does not trigger when decrease is below threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           foreignSharesRatio: 25.0,
@@ -88,7 +95,8 @@ void main() {
     });
 
     test('does not trigger when change is null', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(foreignSharesRatio: 25.0),
       );
@@ -105,7 +113,8 @@ void main() {
     const rule = DayTradingHighRule();
 
     test('triggers when day trading ratio is in high range', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 60.0), // 50-70 range
       );
@@ -128,7 +137,8 @@ void main() {
     });
 
     test('does not trigger when ratio is below high threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 45.0), // < 50
       );
@@ -143,7 +153,8 @@ void main() {
     });
 
     test('does not trigger when ratio is at extreme level', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 75.0), // >= 70
       );
@@ -159,7 +170,8 @@ void main() {
     });
 
     test('does not trigger when volume is too low', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 60.0),
       );
@@ -185,7 +197,8 @@ void main() {
     const rule = DayTradingExtremeRule();
 
     test('triggers when day trading ratio is extreme', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 75.0), // >= 70
       );
@@ -208,7 +221,8 @@ void main() {
     });
 
     test('does not trigger below extreme threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 65.0), // < 70
       );
@@ -223,7 +237,8 @@ void main() {
     });
 
     test('does not trigger when volume is too low', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 75.0), // >= 70
       );
@@ -249,7 +264,8 @@ void main() {
     const rule = ConcentrationHighRule();
 
     test('triggers when concentration ratio >= threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(concentrationRatio: 75.0), // >= 60
       );
@@ -263,7 +279,8 @@ void main() {
     });
 
     test('does not trigger below threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(concentrationRatio: 55.0), // < 60
       );
@@ -273,7 +290,8 @@ void main() {
     });
 
     test('does not trigger when concentration ratio is null', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(),
       );
@@ -283,7 +301,8 @@ void main() {
     });
 
     test('triggers at exact threshold (60%)', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           concentrationRatio:
@@ -307,7 +326,8 @@ void main() {
     const rule = DayTradingHighRule();
 
     test('returns null when dayTradingRatio is null', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: null),
       );
@@ -322,7 +342,8 @@ void main() {
     });
 
     test('returns null when prices are empty', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 60.0),
       );
@@ -332,7 +353,8 @@ void main() {
     });
 
     test('triggers at exact 50% threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           dayTradingRatio: InstitutionalParams.dayTradingHighThreshold, // 50.0
@@ -352,7 +374,8 @@ void main() {
     });
 
     test('returns null when volume is null', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: 60.0),
       );
@@ -371,7 +394,8 @@ void main() {
     const rule = DayTradingExtremeRule();
 
     test('returns null when dayTradingRatio is null', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(dayTradingRatio: null),
       );
@@ -386,7 +410,8 @@ void main() {
     });
 
     test('triggers at exact 70% threshold', () {
-      const context = AnalysisContext(
+      final context = AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
         trendState: TrendState.range,
         marketData: MarketDataContext(
           dayTradingRatio:
