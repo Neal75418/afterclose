@@ -136,17 +136,19 @@ void main() {
           ],
         );
         when(() => mockDb.getPortfolioPositions()).thenAnswer((_) async => []);
-        when(() => mockDb.getDividendHistory('2330')).thenAnswer(
-          (_) async => [
-            const DividendHistoryEntry(
-              symbol: '2330',
-              year: 2024,
-              cashDividend: 3.5,
-              stockDividend: 0.5,
-              exDividendDate: '2024-07-15',
-              exRightsDate: '2024-08-20',
-            ),
-          ],
+        when(() => mockDb.getDividendHistoryBatch(any())).thenAnswer(
+          (_) async => {
+            '2330': [
+              const DividendHistoryEntry(
+                symbol: '2330',
+                year: 2024,
+                cashDividend: 3.5,
+                stockDividend: 0.5,
+                exDividendDate: '2024-07-15',
+                exRightsDate: '2024-08-20',
+              ),
+            ],
+          },
         );
 
         when(
@@ -172,17 +174,19 @@ void main() {
         ],
       );
       when(() => mockDb.getPortfolioPositions()).thenAnswer((_) async => []);
-      when(() => mockDb.getDividendHistory('2330')).thenAnswer(
-        (_) async => [
-          const DividendHistoryEntry(
-            symbol: '2330',
-            year: 2024,
-            cashDividend: 3.5,
-            stockDividend: 0,
-            exDividendDate: null,
-            exRightsDate: '',
-          ),
-        ],
+      when(() => mockDb.getDividendHistoryBatch(any())).thenAnswer(
+        (_) async => {
+          '2330': [
+            const DividendHistoryEntry(
+              symbol: '2330',
+              year: 2024,
+              cashDividend: 3.5,
+              stockDividend: 0,
+              exDividendDate: null,
+              exRightsDate: '',
+            ),
+          ],
+        },
       );
 
       when(
@@ -202,16 +206,18 @@ void main() {
         ],
       );
       when(() => mockDb.getPortfolioPositions()).thenAnswer((_) async => []);
-      when(() => mockDb.getDividendHistory('2330')).thenAnswer(
-        (_) async => [
-          const DividendHistoryEntry(
-            symbol: '2330',
-            year: 2024,
-            cashDividend: 3.5,
-            stockDividend: 0,
-            exDividendDate: 'not-a-date',
-          ),
-        ],
+      when(() => mockDb.getDividendHistoryBatch(any())).thenAnswer(
+        (_) async => {
+          '2330': [
+            const DividendHistoryEntry(
+              symbol: '2330',
+              year: 2024,
+              cashDividend: 3.5,
+              stockDividend: 0,
+              exDividendDate: 'not-a-date',
+            ),
+          ],
+        },
       );
 
       when(
@@ -244,16 +250,18 @@ void main() {
           ),
         ],
       );
-      when(() => mockDb.getDividendHistory('2330')).thenAnswer(
-        (_) async => [
-          const DividendHistoryEntry(
-            symbol: '2330',
-            year: 2024,
-            cashDividend: 3.5,
-            stockDividend: 0,
-            exDividendDate: '2024-07-15',
-          ),
-        ],
+      when(() => mockDb.getDividendHistoryBatch(any())).thenAnswer(
+        (_) async => {
+          '2330': [
+            const DividendHistoryEntry(
+              symbol: '2330',
+              year: 2024,
+              cashDividend: 3.5,
+              stockDividend: 0,
+              exDividendDate: '2024-07-15',
+            ),
+          ],
+        },
       );
 
       when(
@@ -268,7 +276,7 @@ void main() {
       expect(result.exDividend, equals(1));
       expect(result.exRights, equals(0));
       // getDividendHistory called once for '2330', not twice
-      verify(() => mockDb.getDividendHistory('2330')).called(1);
+      verify(() => mockDb.getDividendHistoryBatch(any())).called(1);
     });
   });
 }

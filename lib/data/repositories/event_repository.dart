@@ -102,10 +102,15 @@ class EventRepository implements IEventRepository {
 
     if (symbols.isEmpty) return (exDividend: 0, exRights: 0, total: 0);
 
-    // 2. 收集所有待插入的事件（在交易外讀取）
+    // 2. 收集所有待插入的事件（在交易外讀取）。
+    // 改用 batch DAO 取代 per-symbol N+1（過去 N=watchlist+portfolio 約
+    // 數十次 round-trip，現在 1 次 SELECT WHERE symbol IN (...) 即可）。
+    final dividendsBySymbol = await _db.getDividendHistoryBatch(
+      symbols.toList(),
+    );
     final companions = <StockEventCompanion>[];
     for (final symbol in symbols) {
-      final dividends = await _db.getDividendHistory(symbol);
+      final dividends = dividendsBySymbol[symbol] ?? const [];
 
       for (final div in dividends) {
         // 除息日
