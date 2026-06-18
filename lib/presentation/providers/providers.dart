@@ -123,13 +123,16 @@ final rssParserProvider = Provider<RssParser>((ref) {
 
 /// 當前 app 版本字串（Stage 4 OTA minimum_app_version 比對用）
 ///
-/// 由 [main.dart] 在 startup 用 `package_info_plus` 取得後透過
-/// `ProviderContainer.overrides` 注入。Default 值 `'1.0.0'` 是開發
-/// fallback — 測試與 dev build 不需特別設定。
+/// 由 [main.dart] 在 startup 用 `PackageInfo.fromPlatform()` 取得真實
+/// 版本，透過 `ProviderContainer.overrides` 注入。Default `'0.0.0'`
+/// 是「未注入」signal — `CalibrationUpdater._isAppVersionSufficient` 會
+/// 對任何非空 `minimum_app_version` 判定不足，**安全側偏保守**，避免
+/// 測試或 dev 環境意外接受所有 OTA 推送。Production 不應該 reach
+/// fallback。
 ///
 /// 這個 provider 分開是為了避免 [calibrationUpdaterProvider] 每次
 /// 被 read 都要等 `PackageInfo.fromPlatform()` 的非同步結果。
-final currentAppVersionProvider = Provider<String>((ref) => '1.0.0');
+final currentAppVersionProvider = Provider<String>((ref) => '0.0.0');
 
 /// OTA calibration updater — 讀取 jsDelivr 的 manifest 並把新版
 /// calibration JSON 寫入 app_settings 快取（下次 cold start 生效）。

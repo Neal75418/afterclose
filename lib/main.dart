@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:afterclose/app/router.dart';
@@ -41,7 +42,22 @@ void main() async {
   await BackgroundUpdateService.instance.initialize();
 
   // 建立 Container 以在 runApp 前初始化 Provider
-  final container = ProviderContainer();
+  //
+  // OTA safety gate（review report B2）：必須注入真實 app version 才能讓
+  // `CalibrationUpdater._isAppVersionSufficient` 對 manifest 的
+  // `minimum_app_version` 做有意義比對。若 PackageInfo 取不到（理論不會
+  // 發生）fallback `'0.0.0'`，會讓所有 manifest 的 minimum_app_version
+  // gate 都拒推送，**安全側偏保守**。
+  String appVersion;
+  try {
+    appVersion = (await PackageInfo.fromPlatform()).version;
+  } catch (e) {
+    AppLogger.warning('Main', 'PackageInfo 取得 app version 失敗，OTA 將保守拒推', e);
+    appVersion = '0.0.0';
+  }
+  final container = ProviderContainer(
+    overrides: [currentAppVersionProvider.overrideWithValue(appVersion)],
+  );
 
   // 從安全儲存載入 FinMind API Token
   await _initializeFinMindToken(container);
