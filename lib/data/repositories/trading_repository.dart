@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 
-import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
@@ -215,118 +214,9 @@ class TradingRepository implements ITradingRepository {
   ///
   /// 使用 TPEX 官方 API，無需 Token。
   /// 比透過 FinMind 逐檔同步快很多，且不消耗 FinMind 配額。
-  ///
-  /// 包含新鮮度檢查以避免不必要的 API 呼叫。
-  /// 設定 [force] 為 true 可略過新鮮度檢查。
-  @override
-  Future<int> syncAllDayTradingFromTpex({
-    DateTime? date,
-    bool force = false,
-  }) async {
-    try {
-      final targetDate = DateContext.normalize(date ?? _clock.now());
-
-      // 新鮮度檢查：若已有目標日期的上櫃當沖資料則跳過
-      // 使用較低閾值（50），因為上櫃股票數量較少
-      if (!force) {
-        final existingCount = await _db.getDayTradingCountForDateAndMarket(
-          targetDate,
-          MarketCode.tpex,
-        );
-        if (existingCount > DataFreshness.tpexBatchThreshold) {
-          return 0;
-        }
-      }
-
-      // 取得上櫃當沖資料
-      final data = await _tpexClient.getAllDayTradingData(date: targetDate);
-
-      AppLogger.info(
-        'TradingRepo',
-        'TPEX 當沖原始筆數: ${data.length}，日期: $targetDate',
-      );
-
-      if (data.isEmpty) return 0;
-
-      // 取得同日期的價格資料以計算比例
-      var prices = await _db.getPricesForDate(targetDate);
-
-      // 備援：嘗試範圍查詢
-      if (prices.isEmpty) {
-        final start = targetDate;
-        final end = start
-            .add(const Duration(days: 1))
-            .subtract(const Duration(milliseconds: 1));
-
-        final result = await _db.getAllPricesInRange(
-          startDate: start,
-          endDate: end,
-        );
-        prices = result.values.expand((list) => list).toList();
-      }
-
-      AppLogger.info('TradingRepo', 'TPEX 用於計算的價格資料: ${prices.length} 筆');
-      final volumeMap = <String, double>{};
-      for (final p in prices) {
-        if (p.volume != null) {
-          volumeMap[p.symbol] = p.volume!.toDouble();
-        }
-      }
-
-      final entries = <DayTradingCompanion>[];
-
-      for (final item in data) {
-        double ratio = 0;
-        final totalVolumeFromPrice = volumeMap[item.code] ?? 0;
-
-        // 計算當沖比例
-        if (totalVolumeFromPrice > 0) {
-          ratio = (item.totalVolume / totalVolumeFromPrice) * 100;
-        }
-
-        // 驗證比例
-        if (ratio > DataFreshness.dayTradingMaxValidRatio) {
-          ratio = DataFreshness.dayTradingMaxValidRatio;
-        }
-        if (ratio < 0) ratio = 0;
-
-        entries.add(
-          DayTradingCompanion.insert(
-            symbol: item.code,
-            date: targetDate,
-            buyVolume: Value(item.buyVolume),
-            sellVolume: Value(item.sellVolume),
-            dayTradingRatio: Value(ratio),
-            tradeVolume: Value(item.totalVolume),
-          ),
-        );
-      }
-
-      await _db.transaction(() async {
-        await _db.insertDayTradingData(entries);
-      });
-
-      // 統計當沖比例分佈
-      final highRatioCount = entries.where((e) {
-        final ratio = e.dayTradingRatio.value;
-        return ratio != null &&
-            ratio >= DataFreshness.dayTradingHighDisplayRatio;
-      }).length;
-
-      AppLogger.info(
-        'TradingRepo',
-        '當沖資料寫入 ${entries.length} 筆 (上櫃, TPEX): 高比例(>=60%)=$highRatioCount',
-      );
-
-      return entries.length;
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      throw DatabaseException('Failed to sync day trading from TPEX', e);
-    }
-  }
+  // [REMOVED 2026-06-18 review report A19] syncAllDayTradingFromTpex impl：
+  // 上游 TpexClient.getAllDayTradingData 早被 Cloudflare 擋成 dead chain，
+  // market_data_updater 連呼叫都沒呼叫，整段 ~115 行死透。
 
   // ==================================================
   // 融資融券 - TWSE API

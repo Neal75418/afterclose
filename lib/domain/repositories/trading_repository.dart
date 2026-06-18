@@ -16,10 +16,10 @@ abstract class ITradingRepository {
   });
 
   /// 從 TWSE 同步全市場當沖資料
+  ///
+  /// 註：TPEX 對等 API 端點被 Cloudflare 擋（review report A19 移除 2026-06-18），
+  /// 沒有 `syncAllDayTradingFromTpex`；上櫃當沖資料目前不收。
   Future<int> syncAllDayTradingFromTwse({DateTime? date, bool force = false});
-
-  /// 從 TPEX 同步全市場上櫃當沖資料
-  Future<int> syncAllDayTradingFromTpex({DateTime? date, bool force = false});
 
   // ==================================================
   // 融資融券

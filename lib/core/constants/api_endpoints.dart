@@ -92,11 +92,6 @@ abstract final class ApiEndpoints {
   static const String tpexMarginTrading =
       '/web/stock/margin_trading/margin_balance/margin_bal_result.php';
 
-  /// 上櫃當沖交易統計（回傳 tables[0].data）
-  /// 類似 TWSE 的 TWTB4U，提供全市場上櫃股票當沖資料
-  static const String tpexDayTrading =
-      '/web/stock/aftertrading/daily_trading_info/st43_result.php';
-
   /// TPEX OpenAPI 基礎 URL（免費、無限制）
   static const String tpexOpenApiBaseUrl = 'https://www.tpex.org.tw/openapi';
 

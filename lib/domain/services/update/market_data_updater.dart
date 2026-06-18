@@ -41,10 +41,13 @@ class MarketDataUpdater {
     bool force = false,
   }) async {
     var twseDayTradingCount = 0;
-    const tpexDayTradingCount = 0;
     int? marginCount = 0;
 
     // 從 TWSE 批次同步上市當沖資料
+    //
+    // TPEX 當沖：API 端點被 Cloudflare 保護無法存取、OpenAPI 也無替代，
+    // 整條 syncAllDayTradingFromTpex chain 於 review report A19（2026-06-18）
+    // 移除；上櫃當沖資料目前不收。
     try {
       twseDayTradingCount = await _tradingRepo.syncAllDayTradingFromTwse(
         date: date,
@@ -58,10 +61,6 @@ class MarketDataUpdater {
       AppLogger.warning('MarketDataUpdater', '上市當沖資料同步失敗', e);
     }
 
-    // TPEX 當沖資料：API 端點被 Cloudflare 保護，無法存取
-    // TPEX OpenAPI 也沒有提供個股當沖成交量的替代端點
-    // 當沖資料對規則分析非必要，跳過同步
-
     // 從 TWSE/TPEX 批次同步融資融券資料
     try {
       marginCount = await _tradingRepo.syncAllMarginTradingFromTwse(date: date);
@@ -74,7 +73,7 @@ class MarketDataUpdater {
     }
 
     return MarketDataSyncResult(
-      dayTradingCount: twseDayTradingCount + tpexDayTradingCount,
+      dayTradingCount: twseDayTradingCount,
       marginCount: marginCount,
     );
   }
