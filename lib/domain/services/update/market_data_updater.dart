@@ -43,11 +43,7 @@ class MarketDataUpdater {
     var twseDayTradingCount = 0;
     int? marginCount = 0;
 
-    // 從 TWSE 批次同步上市當沖資料
-    //
-    // TPEX 當沖：API 端點被 Cloudflare 保護無法存取、OpenAPI 也無替代，
-    // 整條 syncAllDayTradingFromTpex chain 於 review report A19（2026-06-18）
-    // 移除；上櫃當沖資料目前不收。
+    // 從 TWSE 批次同步上市當沖資料（無 TPEX 對等：上櫃端點被 Cloudflare 擋）
     try {
       twseDayTradingCount = await _tradingRepo.syncAllDayTradingFromTwse(
         date: date,

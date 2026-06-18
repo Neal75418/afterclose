@@ -39,34 +39,6 @@ mixin DayTradingDaoMixin on $AppDatabase {
     return result.read(countExpr) ?? 0;
   }
 
-  /// 取得指定日期和市場的當沖資料筆數（新鮮度檢查用）
-  ///
-  /// [market] - 市場類型：'TWSE' 或 'TPEx'
-  Future<int> getDayTradingCountForDateAndMarket(
-    DateTime date,
-    String market,
-  ) async {
-    final startOfDay = DateContext.normalize(date);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
-
-    // 使用 JOIN 查詢統計特定市場的當沖資料筆數
-    final countExpr = dayTrading.symbol.count();
-    final query =
-        selectOnly(dayTrading).join([
-            innerJoin(
-              stockMaster,
-              stockMaster.symbol.equalsExp(dayTrading.symbol),
-            ),
-          ])
-          ..addColumns([countExpr])
-          ..where(dayTrading.date.isBiggerOrEqualValue(startOfDay))
-          ..where(dayTrading.date.isSmallerThanValue(endOfDay))
-          ..where(stockMaster.market.equals(market));
-
-    final result = await query.getSingle();
-    return result.read(countExpr) ?? 0;
-  }
-
   /// 批次新增當沖資料
   Future<void> insertDayTradingData(List<DayTradingCompanion> entries) async {
     await batch((b) {

@@ -12,11 +12,6 @@ abstract final class DataFreshness {
   /// 若該日期已有超過此數量的資料，則跳過 API 呼叫。
   static const int twseBatchThreshold = 100;
 
-  /// 上櫃（TPEX）批次資料新鮮度門檻
-  ///
-  /// 上櫃股票數量較少，使用較低閾值。
-  static const int tpexBatchThreshold = 50;
-
   /// 全市場批次資料新鮮度門檻
   ///
   /// 上市 + 上櫃約 1800+ 家，用 1500 作為快取判斷門檻。

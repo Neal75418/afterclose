@@ -210,14 +210,6 @@ class TradingRepository implements ITradingRepository {
     }
   }
 
-  /// 從 TPEX 同步全市場上櫃當沖資料（免費 API）
-  ///
-  /// 使用 TPEX 官方 API，無需 Token。
-  /// 比透過 FinMind 逐檔同步快很多，且不消耗 FinMind 配額。
-  // [REMOVED 2026-06-18 review report A19] syncAllDayTradingFromTpex impl：
-  // 上游 TpexClient.getAllDayTradingData 早被 Cloudflare 擋成 dead chain，
-  // market_data_updater 連呼叫都沒呼叫，整段 ~115 行死透。
-
   // ==================================================
   // 融資融券 - TWSE API
   // ==================================================

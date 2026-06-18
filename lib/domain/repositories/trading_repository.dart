@@ -15,10 +15,9 @@ abstract class ITradingRepository {
     int days = 30,
   });
 
-  /// 從 TWSE 同步全市場當沖資料
+  /// 從 TWSE 同步全市場當沖資料（上市）
   ///
-  /// 註：TPEX 對等 API 端點被 Cloudflare 擋（review report A19 移除 2026-06-18），
-  /// 沒有 `syncAllDayTradingFromTpex`；上櫃當沖資料目前不收。
+  /// 無上櫃對等 method — TPEX 當沖端點被 Cloudflare 擋、OpenAPI 也無替代。
   Future<int> syncAllDayTradingFromTwse({DateTime? date, bool force = false});
 
   // ==================================================

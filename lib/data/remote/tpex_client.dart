@@ -380,12 +380,6 @@ class TpexClient {
     }
   }
 
-  // [REMOVED 2026-06-18 review report A19] getAllDayTradingData /
-  // _parseDayTradingRow / TpexDayTrading model / ApiEndpoints.tpexDayTrading
-  // 整條 chain：TPEX st43_result.php 被 Cloudflare 擋（302 + HTML error
-  // 頁面），OpenAPI 也無替代端點；market_data_updater 早已硬設
-  // tpexDayTradingCount=0 跳過此 syncer。整條死透，無 caller。
-
   /// 取得所有上櫃股票的融資融券資料
   ///
   /// 端點: /web/stock/margin_trading/margin_sbl/margin_sbl_result.php
