@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -74,6 +75,13 @@ class RecommendationPerformanceNotifier
     _active = true;
     _loadGeneration = 0;
     ref.onDispose(() => _active = false);
+
+    // M6 follow-up：runUpdate 完成後 bump dataUpdateEpoch；推薦績效畫面
+    // 開著時自動 reload 拿到最新 rule_accuracy 統計。
+    ref.listen(dataUpdateEpochProvider, (_, _) {
+      if (!_active) return;
+      loadData();
+    });
 
     // 初始載入
     Future.microtask(() => loadData());

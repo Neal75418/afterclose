@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -78,7 +79,14 @@ const _sentinel = Object();
 
 class IndustryEpsNotifier extends Notifier<IndustryEpsState> {
   @override
-  IndustryEpsState build() => const IndustryEpsState();
+  IndustryEpsState build() {
+    // M6 follow-up：runUpdate 完成後 bump dataUpdateEpoch；產業 EPS
+    // 畫面開著時自動 reload，否則只在使用者重新進入頁面才更新。
+    ref.listen(dataUpdateEpochProvider, (_, _) {
+      loadData();
+    });
+    return const IndustryEpsState();
+  }
 
   /// 從 TPEX API 載入產業 EPS 資料
   Future<void> loadData() async {

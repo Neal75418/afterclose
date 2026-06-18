@@ -19,6 +19,7 @@ import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
 import 'package:afterclose/presentation/providers/stock_chip_loader.dart';
@@ -64,6 +65,15 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       }
     });
     ref.onDispose(() => timer.cancel());
+
+    // M6 follow-up：runUpdate 完成後 bump dataUpdateEpoch；同股票頁面
+    // 停留時若背景觸發更新，自動 reload 拿到最新分析。loadData() 內部
+    // 帶 isLoading guard，重複呼叫不會 race。
+    ref.listen(dataUpdateEpochProvider, (_, _) {
+      if (!_active) return;
+      if (state.price.analysis == null && state.reasons.isEmpty) return;
+      loadData();
+    });
 
     // Stage 5c dual-horizon：切換 horizon 時重新生成 AI 摘要，保留其他資料
     // 不動。不走 ref.watch 重建 notifier，因為此 notifier 是 command-based
