@@ -7,6 +7,7 @@ import 'package:afterclose/domain/models/backtest_models.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/backtest_provider.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 // ==========================================
 // Mocks
@@ -34,6 +35,7 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(DateTime(2026));
+    registerFallbackValue(Horizon.short);
   });
 
   setUp(() {
@@ -203,7 +205,7 @@ void main() {
 
     test('handles execution error gracefully', () async {
       when(
-        () => mockDb.getAnalysisForDate(any()),
+        () => mockDb.getAnalysisForDate(any(), horizon: any(named: "horizon")),
       ).thenThrow(Exception('DB failure'));
 
       final notifier = container.read(backtestProvider.notifier);
@@ -217,7 +219,7 @@ void main() {
 
     test('resets isExecuting on error', () async {
       when(
-        () => mockDb.getAnalysisForDate(any()),
+        () => mockDb.getAnalysisForDate(any(), horizon: any(named: "horizon")),
       ).thenThrow(Exception('Query error'));
 
       final notifier = container.read(backtestProvider.notifier);

@@ -76,11 +76,30 @@ class RuleEngine {
     },
   };
 
-  /// Reverse lookup — `ReasonType → group name`，由 [_mutexGroups] 展開建構
-  static final Map<ReasonType, String> _reasonToGroup = {
-    for (final entry in _mutexGroups.entries)
-      for (final type in entry.value) type: entry.key,
-  };
+  /// Reverse lookup — `ReasonType → group name`，由 [_mutexGroups] 展開建構。
+  ///
+  /// 建構時 assert disjointness：若某 [ReasonType] 出現在 >1 group 中，會
+  /// 在首次存取此 static field 時直接拋 [StateError]，防止 silent
+  /// last-writer-wins。對應 docstring INVARIANT 條款。
+  static final Map<ReasonType, String> _reasonToGroup = _buildReasonToGroup();
+
+  static Map<ReasonType, String> _buildReasonToGroup() {
+    final result = <ReasonType, String>{};
+    for (final entry in _mutexGroups.entries) {
+      for (final type in entry.value) {
+        final existing = result[type];
+        if (existing != null && existing != entry.key) {
+          throw StateError(
+            'Mutex group invariant violated: ReasonType.${type.name} '
+            'appears in both "$existing" and "${entry.key}". '
+            'Each ReasonType may belong to at most one mutex group.',
+          );
+        }
+        result[type] = entry.key;
+      }
+    }
+    return result;
+  }
 
   /// 對股票執行所有規則並回傳**所有**觸發的原因（**未經 mutex 過濾**）
   ///

@@ -6,14 +6,25 @@ import 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
 
 /// 每日分析、原因、推薦操作
 mixin AnalysisDaoMixin on $AppDatabase {
-  /// 取得指定日期的分析結果
+  /// 取得指定日期的分析結果。
   ///
-  /// Dual-horizon: 排序依據 `scoreShort`（UI 預設顯示短線）。後續 UI
-  /// 切換 horizon 時應抽 `Horizon` 參數讓排序動態切換。
-  Future<List<DailyAnalysisEntry>> getAnalysisForDate(DateTime date) {
+  /// Dual-horizon: 排序依據由 [horizon] 決定：
+  /// - [Horizon.short] → `scoreShort` DESC
+  /// - [Horizon.long]  → `scoreLong` DESC
+  ///
+  /// 之前硬寫 scoreShort 是 Stage 5b 過渡狀態；改 required 讓所有 caller
+  /// 顯式選擇。
+  Future<List<DailyAnalysisEntry>> getAnalysisForDate(
+    DateTime date, {
+    required Horizon horizon,
+  }) {
     return (select(dailyAnalysis)
           ..where((t) => t.date.equals(date))
-          ..orderBy([(t) => OrderingTerm.desc(t.scoreShort)]))
+          ..orderBy([
+            (t) => OrderingTerm.desc(
+              horizon == Horizon.short ? t.scoreShort : t.scoreLong,
+            ),
+          ]))
         .get();
   }
 

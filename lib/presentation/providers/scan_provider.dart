@@ -14,6 +14,7 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
+import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // Re-export（向後相容）
@@ -201,7 +202,10 @@ class ScanNotifier extends Notifier<ScanState> {
 
     try {
       // 智慧回退：找到最近有資料的日期（統一由 Repository 處理日期正規化）
-      final result = await _analysisRepo.findLatestAnalyses();
+      // scan 預設依 short horizon 排序；UI 切 horizon 時也走同一 reload
+      // path（dataUpdateEpoch listener 或 horizon listener 都會重新呼這條）。
+      final horizon = ref.read(selectedHorizonProvider);
+      final result = await _analysisRepo.findLatestAnalyses(horizon: horizon);
       if (!_active) return;
       final targetDate = result.targetDate;
       final analyses = result.analyses;

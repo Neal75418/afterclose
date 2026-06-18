@@ -109,10 +109,13 @@ void main() {
         ];
 
         when(
-          () => mockDb.getAnalysisForDate(date),
+          () => mockDb.getAnalysisForDate(date, horizon: Horizon.short),
         ).thenAnswer((_) async => analyses);
 
-        final result = await repository.getAnalysesForDate(date);
+        final result = await repository.getAnalysesForDate(
+          date,
+          horizon: Horizon.short,
+        );
 
         expect(result, equals(analyses));
         expect(result.length, equals(2));
@@ -121,9 +124,14 @@ void main() {
       test('returns empty list when no analyses', () async {
         final date = DateTime(2024, 6, 15);
 
-        when(() => mockDb.getAnalysisForDate(date)).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getAnalysisForDate(date, horizon: Horizon.short),
+        ).thenAnswer((_) async => []);
 
-        final result = await repository.getAnalysesForDate(date);
+        final result = await repository.getAnalysesForDate(
+          date,
+          horizon: Horizon.short,
+        );
 
         expect(result, isEmpty);
       });

@@ -388,7 +388,10 @@ void main() {
           ),
         );
 
-        final analyses = await db.getAnalysisForDate(today);
+        final analyses = await db.getAnalysisForDate(
+          today,
+          horizon: Horizon.short,
+        );
 
         expect(analyses.length, 2);
         // Sorted by score descending

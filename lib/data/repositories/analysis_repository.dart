@@ -45,9 +45,18 @@ class AnalysisRepository implements IAnalysisRepository {
     );
   }
 
-  /// 取得某日期的所有分析結果（內部使用）
-  Future<List<DailyAnalysisEntry>> getAnalysesForDate(DateTime date) {
-    return _db.getAnalysisForDate(DateContext.normalize(date));
+  /// 取得某日期的所有分析結果（內部使用）。
+  ///
+  /// Dual-horizon: 排序依據由 [horizon] 決定（short → scoreShort，
+  /// long → scoreLong）。
+  Future<List<DailyAnalysisEntry>> getAnalysesForDate(
+    DateTime date, {
+    required Horizon horizon,
+  }) {
+    return _db.getAnalysisForDate(
+      DateContext.normalize(date),
+      horizon: horizon,
+    );
   }
 
   /// 儲存分析結果
@@ -267,13 +276,13 @@ class AnalysisRepository implements IAnalysisRepository {
   /// 統一的 3 天窗口 + 交易日回退邏輯，所有日期已正規化。
   @override
   Future<({DateTime targetDate, List<DailyAnalysisEntry> analyses})>
-  findLatestAnalyses() async {
+  findLatestAnalyses({required Horizon horizon}) async {
     final now = _clock.now();
 
     // 依序嘗試今天、昨天、前天的資料
     for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
       final date = DateContext.normalize(now.subtract(Duration(days: daysAgo)));
-      final analyses = await getAnalysesForDate(date);
+      final analyses = await getAnalysesForDate(date, horizon: horizon);
       if (analyses.isNotEmpty) {
         return (targetDate: date, analyses: analyses);
       }
@@ -284,14 +293,17 @@ class AnalysisRepository implements IAnalysisRepository {
       DateContext.normalize(now.subtract(const Duration(days: 3))),
     );
     final normalizedDate = DateContext.normalize(prevTradingDay);
-    final analyses = await getAnalysesForDate(normalizedDate);
+    final analyses = await getAnalysesForDate(normalizedDate, horizon: horizon);
     return (targetDate: normalizedDate, analyses: analyses);
   }
 
-  /// 尋找最近有分析資料的日期
+  /// 尋找最近有分析資料的日期。
+  /// 日期判斷與 horizon 無關（兩個 horizon 同日寫入），但 underlying
+  /// `getAnalysesForDate` 仍需指定排序欄位；用 short 是 implementation
+  /// detail，不影響 return 值。
   @override
   Future<DateTime?> findLatestAnalysisDate() async {
-    final result = await findLatestAnalyses();
+    final result = await findLatestAnalyses(horizon: Horizon.short);
     return result.analyses.isNotEmpty ? result.targetDate : null;
   }
 

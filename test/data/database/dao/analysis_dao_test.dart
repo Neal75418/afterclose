@@ -61,7 +61,10 @@ void main() {
           ),
         );
 
-        final analyses = await db.getAnalysisForDate(today);
+        final analyses = await db.getAnalysisForDate(
+          today,
+          horizon: Horizon.short,
+        );
 
         expect(analyses.length, 3);
         expect(analyses[0].symbol, '2330');
@@ -70,7 +73,10 @@ void main() {
       });
 
       test('returns empty list for date with no data', () async {
-        final analyses = await db.getAnalysisForDate(today);
+        final analyses = await db.getAnalysisForDate(
+          today,
+          horizon: Horizon.short,
+        );
 
         expect(analyses, isEmpty);
       });
@@ -208,7 +214,10 @@ void main() {
 
         expect(deleted, 2);
 
-        final remaining = await db.getAnalysisForDate(today);
+        final remaining = await db.getAnalysisForDate(
+          today,
+          horizon: Horizon.short,
+        );
         expect(remaining, isEmpty);
       });
 

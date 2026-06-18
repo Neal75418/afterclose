@@ -623,6 +623,32 @@ void main() {
       expect(score, 25);
     });
   });
+
+  // ==========================================
+  // Mutex Group Invariant — _reasonToGroup 建構 disjoint assert
+  // ==========================================
+
+  group('mutex group disjointness invariant', () {
+    test(
+      '_reasonToGroup builds without throwing (current groups are disjoint)',
+      () {
+        // 觸發 lazy 初始化 — 若任何 ReasonType 出現在 >1 group 會 StateError
+        expect(
+          () {
+            // 構造 engine 並做一次 mutex 過濾，會 trigger _reasonToGroup
+            // static field 的 lazy init。
+            final engine = RuleEngine(customRules: const []);
+            engine.applyMutexGroups(const [], (r) => r.score);
+          },
+          returnsNormally,
+          reason:
+              '若新增 group 或把現有 ReasonType 加進額外 group，請先確認 '
+              'disjoint；違反時建構 _reasonToGroup 會拋 StateError 防 silent '
+              'last-writer-wins。',
+        );
+      },
+    );
+  });
 }
 
 // ==========================================

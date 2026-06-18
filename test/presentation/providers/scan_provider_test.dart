@@ -11,6 +11,7 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/presentation/providers/scan_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 // ==========================================
 // Mocks
@@ -144,7 +145,7 @@ void main() {
     Map<String, List<DailyReasonEntry>>? reasons,
   }) {
     when(
-      () => mockAnalysisRepo.findLatestAnalyses(),
+      () => mockAnalysisRepo.findLatestAnalyses(horizon: Horizon.short),
     ).thenAnswer((_) async => (targetDate: testDate, analyses: analyses));
     when(
       () => mockDb.getReasonsBatch(any(), any()),
@@ -330,7 +331,7 @@ void main() {
 
     test('loadData handles error gracefully', () async {
       when(
-        () => mockAnalysisRepo.findLatestAnalyses(),
+        () => mockAnalysisRepo.findLatestAnalyses(horizon: Horizon.short),
       ).thenThrow(Exception('Database error'));
 
       final notifier = container.read(scanProvider.notifier);

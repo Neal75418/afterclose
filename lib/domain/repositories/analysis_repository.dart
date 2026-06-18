@@ -88,12 +88,15 @@ abstract class IAnalysisRepository {
   // 智慧日期回退
   // ==================================================
 
-  /// 尋找最近有分析資料的日期和結果
+  /// 尋找最近有分析資料的日期和結果。
   ///
   /// 依序嘗試今天、昨天、前天，若 3 天都無資料則回退至前一交易日。
   /// 所有日期已正規化，安全用於資料庫查詢。
+  ///
+  /// Dual-horizon: [horizon] 決定 analyses 排序欄位（short → scoreShort，
+  /// long → scoreLong）。
   Future<({DateTime targetDate, List<DailyAnalysisEntry> analyses})>
-  findLatestAnalyses();
+  findLatestAnalyses({required Horizon horizon});
 
   /// 尋找最近有分析資料的日期
   ///
