@@ -9,10 +9,10 @@ import '../../../helpers/price_data_generators.dart';
 
 void main() {
   // ==========================================
-  // PriceVolumeBullishDivergenceRule (價漲量縮)
+  // PriceVolumeWeakRallyRule (價漲量縮)
   // ==========================================
-  group('PriceVolumeBullishDivergenceRule', () {
-    const rule = PriceVolumeBullishDivergenceRule();
+  group('PriceVolumeWeakRallyRule', () {
+    const rule = PriceVolumeWeakRallyRule();
 
     test('triggers when price rises but volume shrinks', () {
       final now = DateTime.now();
@@ -45,8 +45,8 @@ void main() {
       final result = rule.evaluate(context, data);
 
       expect(result, isNotNull);
-      expect(result!.type, equals(ReasonType.priceVolumeBullishDivergence));
-      expect(result.score, equals(RuleScores.priceVolumeBullishDivergence));
+      expect(result!.type, equals(ReasonType.priceVolumeWeakRally));
+      expect(result.score, equals(RuleScores.priceVolumeWeakRally));
     });
 
     test('does not trigger when price rise is too small', () {

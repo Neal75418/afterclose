@@ -10,8 +10,8 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 /// 規則：價漲量縮
 ///
 /// 價格上漲但成交量萎縮 - 警示訊號
-class PriceVolumeBullishDivergenceRule extends StockRule {
-  const PriceVolumeBullishDivergenceRule();
+class PriceVolumeWeakRallyRule extends StockRule {
+  const PriceVolumeWeakRallyRule();
 
   @override
   String get id => 'price_volume_bullish_divergence';
@@ -61,12 +61,12 @@ class PriceVolumeBullishDivergenceRule extends StockRule {
     if (priceChange >= TrendParams.divergencePriceThreshold &&
         volumeChange <= -TrendParams.divergenceVolumeThreshold) {
       AppLogger.debug(
-        'PriceVolumeBullishDivergence',
+        'PriceVolumeWeakRally',
         '${data.symbol}: 價漲${priceChange.toStringAsFixed(1)}%, 量縮${volumeChange.toStringAsFixed(1)}%',
       );
       return TriggeredReason(
-        type: ReasonType.priceVolumeBullishDivergence,
-        score: RuleScores.priceVolumeBullishDivergence,
+        type: ReasonType.priceVolumeWeakRally,
+        score: RuleScores.priceVolumeWeakRally,
         description:
             '價漲量縮：價格上漲${priceChange.toStringAsFixed(1)}%，成交量萎縮${volumeChange.abs().toStringAsFixed(0)}%',
         evidence: {

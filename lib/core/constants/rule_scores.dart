@@ -173,7 +173,7 @@ abstract final class RuleScores {
   // ==================================================
 
   /// 價漲量縮背離分數（警示訊號，小扣分）
-  static const int priceVolumeBullishDivergence = -8;
+  static const int priceVolumeWeakRally = -8;
 
   /// 價跌量增背離分數（恐慌訊號，扣分）
   static const int priceVolumeBearishDivergence = -15;

@@ -45,7 +45,14 @@ enum ReasonType {
   dayTradingExtreme('DAY_TRADING_EXTREME'),
   concentrationHigh('CONCENTRATION_HIGH'),
   // 第五階段：價量背離訊號
-  priceVolumeBullishDivergence('PRICE_VOLUME_BULLISH_DIVERGENCE'),
+  //
+  // **語意修正 2026-06-18**：`priceVolumeWeakRally`（價漲量縮）原識別子叫
+  // priceVolumeBullishDivergence，但實際是「漲勢無力警示」（hardcoded
+  // score -8）— bullish 命名跟 bearish 行為矛盾，會誤導 future calibration
+  // 設計者。改為語意精確的 priceVolumeWeakRally。DB code 保留舊字串避免
+  // 遷移 daily_reason / rule_accuracy / calibrated JSON 既存資料；新讀者請
+  // 以 Dart 識別子為準。
+  priceVolumeWeakRally('PRICE_VOLUME_BULLISH_DIVERGENCE'),
   priceVolumeBearishDivergence('PRICE_VOLUME_BEARISH_DIVERGENCE'),
   highVolumeBreakout('HIGH_VOLUME_BREAKOUT'),
   lowVolumeAccumulation('LOW_VOLUME_ACCUMULATION'),
@@ -126,8 +133,7 @@ enum ReasonType {
     ReasonType.dayTradingExtreme => RuleScores.dayTradingExtreme,
     ReasonType.concentrationHigh => RuleScores.concentrationHigh,
     // 第五階段訊號
-    ReasonType.priceVolumeBullishDivergence =>
-      RuleScores.priceVolumeBullishDivergence,
+    ReasonType.priceVolumeWeakRally => RuleScores.priceVolumeWeakRally,
     ReasonType.priceVolumeBearishDivergence =>
       RuleScores.priceVolumeBearishDivergence,
     ReasonType.highVolumeBreakout => RuleScores.highVolumeBreakout,
@@ -207,8 +213,7 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.dayTradingExtreme => 'reasons.dayTradingExtreme',
     ReasonType.concentrationHigh => 'reasons.concentrationHigh',
     // 量價背離
-    ReasonType.priceVolumeBullishDivergence =>
-      'reasons.priceVolumeBullishDivergence',
+    ReasonType.priceVolumeWeakRally => 'reasons.priceVolumeWeakRally',
     ReasonType.priceVolumeBearishDivergence =>
       'reasons.priceVolumeBearishDivergence',
     ReasonType.highVolumeBreakout => 'reasons.highVolumeBreakout',
@@ -284,7 +289,7 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.dayTradingExtreme => 'reasonTip.dayTradingHigh',
     ReasonType.concentrationHigh => 'reasonTip.concentrationHigh',
     // 量價背離
-    ReasonType.priceVolumeBullishDivergence => 'reasonTip.bullishDivergence',
+    ReasonType.priceVolumeWeakRally => 'reasonTip.bullishDivergence',
     ReasonType.priceVolumeBearishDivergence => 'reasonTip.bearishDivergence',
     ReasonType.highVolumeBreakout => 'reasonTip.highVolumeBreakout',
     ReasonType.lowVolumeAccumulation => 'reasonTip.lowVolumeAccumulation',

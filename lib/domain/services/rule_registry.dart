@@ -55,7 +55,7 @@ abstract final class RuleRegistry {
     DayTradingExtremeRule(),
     ConcentrationHighRule(),
     // 第 5 階段：價量背離規則
-    PriceVolumeBullishDivergenceRule(),
+    PriceVolumeWeakRallyRule(),
     PriceVolumeBearishDivergenceRule(),
     HighVolumeBreakoutRule(),
     LowVolumeAccumulationRule(),

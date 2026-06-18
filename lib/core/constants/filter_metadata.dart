@@ -272,8 +272,8 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ),
 
   // === 價量背離訊號 ===
-  ScanFilter.priceVolumeBullishDivergence: FilterMetadata(
-    conditionKey: 'filterMeta.priceVolumeBullishDivergence',
+  ScanFilter.priceVolumeWeakRally: FilterMetadata(
+    conditionKey: 'filterMeta.priceVolumeWeakRally',
     dataRequirements: [DataRequirement.priceHistory20],
     thresholdInfo: 'threshold.bullishDivergence',
   ),

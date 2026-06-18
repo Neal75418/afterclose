@@ -204,9 +204,9 @@ enum ScanFilter {
   ),
 
   // Price-volume divergence signals
-  priceVolumeBullishDivergence(
+  priceVolumeWeakRally(
     'scan.filterPriceVolumeBullishDivergence',
-    SignalName.priceVolumeBullishDivergence,
+    SignalName.priceVolumeWeakRally,
     ScanFilterGroup.priceVolume,
   ),
   priceVolumeBearishDivergence(

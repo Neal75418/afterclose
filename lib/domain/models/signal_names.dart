@@ -87,7 +87,7 @@ abstract final class SignalName {
   // ==================================================
   // Price-Volume Divergence
   // ==================================================
-  static const priceVolumeBullishDivergence = 'PRICE_VOLUME_BULLISH_DIVERGENCE';
+  static const priceVolumeWeakRally = 'PRICE_VOLUME_BULLISH_DIVERGENCE';
   static const priceVolumeBearishDivergence = 'PRICE_VOLUME_BEARISH_DIVERGENCE';
   static const highVolumeBreakout = 'HIGH_VOLUME_BREAKOUT';
   static const lowVolumeAccumulation = 'LOW_VOLUME_ACCUMULATION';
