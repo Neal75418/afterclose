@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/pagination.dart';
@@ -161,10 +162,25 @@ class ScanNotifier extends Notifier<ScanState> {
 
   static const _service = ScanFilterService();
 
-  /// 產業列表跨 instance 快取（極少變動，僅 stock_master 更新時改變）
+  /// 產業列表跨 instance 快取（極少變動，僅 stock_master 更新時改變）。
+  ///
+  /// ## 已知限制（架構 review LOW state）
+  ///
+  /// 用 static 跨 ProviderContainer instance 共享，hermetic widget test
+  /// 容易看到上次 test 殘留（test 用獨立 container 但 static 不歸零）。
+  /// 解法：test 在 `setUp` 呼叫 [resetStaticIndustryCacheForTesting]。
+  ///
+  /// 對 production 行為無影響，只在 test 並行/順序敏感時需要注意。
   static List<String>? _staticCachedIndustries;
   static DateTime? _industryCacheTime;
   static const _industryCacheTtl = Duration(minutes: 5);
+
+  /// Test helper：重置跨 instance 的產業列表 cache。
+  @visibleForTesting
+  static void resetStaticIndustryCacheForTesting() {
+    _staticCachedIndustries = null;
+    _industryCacheTime = null;
+  }
 
   // 分頁快取資料（於 build() 中重設）
   List<DailyAnalysisEntry> _allAnalyses = [];
