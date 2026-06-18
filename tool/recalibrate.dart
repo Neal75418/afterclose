@@ -504,8 +504,10 @@ const _manifestSchemaVersion = 1;
 /// 目前 app 的最低支援版本
 ///
 /// 未來若某次 recalibrate 依賴新 rule 定義（例如 ReasonType 新增），
-/// 手動改大此值讓舊版 app skip fetch。目前 `1.0.0` = 全部吃。
-const _manifestMinimumAppVersion = '1.0.0';
+/// 手動改大此值讓舊版 app skip fetch。應 ≤ pubspec.yaml 的 `version`
+/// 值（否則 OTA gate 會把當前 release 自己鎖在外面，blast radius 包含
+/// production CDN）。0.5.x release line：`0.5.0`。
+const _manifestMinimumAppVersion = '0.5.0';
 
 /// 產出 `assets/calibration_manifest_candidate.json`
 ///

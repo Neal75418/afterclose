@@ -14,5 +14,5 @@
     "rule_count": 40,
     "filename": "rule_scores_calibrated_long.json"
   },
-  "minimum_app_version": "1.0.0"
+  "minimum_app_version": "0.5.0"
 }
