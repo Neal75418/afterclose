@@ -20,19 +20,18 @@ void main() {
   // ==========================================================================
 
   group('Calibrator.computeTStat', () {
+    // 2026-06-18 formula 修正：variance 用 H0 baseline 算（`p0*(1-p0)/n`），
+    // 不再用 sample p 算。Backward compat：未提供 baseline 預設 0.5。
     test('happy path: hit_rate 0.65, n=100 → positive significant t-stat', () {
       final tStat = Calibrator.computeTStat(0.65, 100);
-      // Expected: (0.65 - 0.5) / sqrt(0.65 × 0.35 / 100)
-      //         = 0.15 / sqrt(0.002275)
-      //         = 0.15 / 0.0477
-      //         ≈ 3.1449
-      expect(tStat, closeTo(3.1449, 0.01));
+      // (0.65 - 0.5) / sqrt(0.5 × 0.5 / 100) = 0.15 / 0.05 = 3.0
+      expect(tStat, closeTo(3.0, 0.01));
     });
 
     test('hit_rate 0.55, n=30 → t-stat around 0.548 (below 1.5 cut)', () {
       final tStat = Calibrator.computeTStat(0.55, 30);
-      // (0.55 - 0.5) / sqrt(0.55 × 0.45 / 30) = 0.05 / 0.0908 ≈ 0.5505
-      expect(tStat, closeTo(0.5505, 0.01));
+      // (0.55 - 0.5) / sqrt(0.5 × 0.5 / 30) = 0.05 / 0.0913 ≈ 0.5477
+      expect(tStat, closeTo(0.5477, 0.01));
       expect(tStat, lessThan(Calibrator.tStatCutThreshold));
     });
 
@@ -40,12 +39,15 @@ void main() {
       expect(Calibrator.computeTStat(0.5, 100), 0.0);
     });
 
-    test('degenerate: hit_rate 0 → 0 (no variance)', () {
-      expect(Calibrator.computeTStat(0.0, 100), 0.0);
+    test('hit_rate 0 → 強烈負 t-stat（不再是 degenerate=0）', () {
+      // 修正後：variance 是 baseline 算的，hitRate 0 不會壓 variance 到 0。
+      // (0 - 0.5) / sqrt(0.5 × 0.5 / 100) = -0.5 / 0.05 = -10.0
+      expect(Calibrator.computeTStat(0.0, 100), closeTo(-10.0, 0.01));
     });
 
-    test('degenerate: hit_rate 1.0 → 0 (no variance)', () {
-      expect(Calibrator.computeTStat(1.0, 100), 0.0);
+    test('hit_rate 1.0 → 強烈正 t-stat（不再是 degenerate=0）', () {
+      // (1.0 - 0.5) / sqrt(0.5 × 0.5 / 100) = 0.5 / 0.05 = 10.0
+      expect(Calibrator.computeTStat(1.0, 100), closeTo(10.0, 0.01));
     });
 
     test('degenerate: n = 0 → 0', () {
@@ -55,6 +57,29 @@ void main() {
     test('degenerate: n negative → 0', () {
       expect(Calibrator.computeTStat(0.6, -5), 0.0);
     });
+
+    test('baseline=0.3461 (5D台股實證): hit_rate 0.45 → significant lift', () {
+      // 拿 5D 真實 baseline 0.3461，hit_rate 0.45 = +10pp lift
+      // (0.45 - 0.3461) / sqrt(0.3461 × 0.6539 / 100)
+      // = 0.1039 / sqrt(0.002263) = 0.1039 / 0.04757 ≈ 2.184
+      final tStat = Calibrator.computeTStat(0.45, 100, baseline: 0.3461);
+      expect(tStat, closeTo(2.184, 0.01));
+      expect(tStat, greaterThan(Calibrator.tStatCutThreshold));
+    });
+
+    test(
+      'baseline regression: 同樣 hit_rate 0.45 對 0.5 baseline 顯示為 negative',
+      () {
+        // 對比上一個 test：證明 baseline 修正前後 verdict 完全相反。
+        // pre-2026-06-18：hit_rate 0.45 vs 0.5 baseline → -1.0 t-stat
+        //                 → 看似負面 / 沒 alpha
+        // post-2026-06-18：hit_rate 0.45 vs 0.3461 baseline → +2.18 t-stat
+        //                  → 真實有 alpha（撈到 cut 過頭的 rule）
+        final tStat = Calibrator.computeTStat(0.45, 100);
+        expect(tStat, closeTo(-1.0, 0.01));
+        expect(tStat, lessThan(Calibrator.tStatCutThreshold));
+      },
+    );
   });
 
   // ==========================================================================

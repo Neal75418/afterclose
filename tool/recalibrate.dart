@@ -153,17 +153,28 @@ abstract final class Calibrator {
   static const int minScore = 10;
   static const int maxScore = 35;
 
-  /// Proportion z-test: `z = (p - 0.5) / sqrt(p(1-p)/n)`
+  /// Proportion z-test: `z = (p - p_baseline) / sqrt(p_baseline * (1 - p_baseline) / n)`
   ///
-  /// Degenerate case（n=0 或 hit_rate ∈ {0, 1}）回傳 0.0。這些 case 必定
-  /// 被 [calibrate] 內的 cut 檢查擋掉（通常是 sample_too_small）。
-  static double computeTStat(double hitRate, int n) {
+  /// **2026-06-18 修正**：之前 null hypothesis 寫死 `0.5`（隨機 50%），
+  /// 但台股實證 baseline 跟 (horizon, threshold) 強相關 — 例如 5D ≥ 1.5%
+  /// 真實 baseline 是 ~34.6%。用 0.5 算 t-stat 系統性低估 alpha，導致
+  /// calibrated JSON 幾乎全 cut（dev DB 觀察 short horizon 0 active rule
+  /// 就是這個 bug）。改為從 [CalibrationThresholds.successProbabilityBaselines]
+  /// 查表，[baseline] 預設 [CalibrationThresholds.defaultBaselineProbability]
+  /// （0.5）保 backward compat 給未列出的 period。
+  ///
+  /// Variance 公式跟著改：分母用 `baseline * (1 - baseline)` 而非
+  /// `hitRate * (1 - hitRate)`。在 null hypothesis 下兩者差異不大、
+  /// 但理論上應該用 null hypothesis 的 variance。
+  ///
+  /// Degenerate case（n=0 或 baseline ∈ {0, 1}）回傳 0.0。
+  static double computeTStat(double hitRate, int n, {double baseline = 0.5}) {
     if (n <= 0) return 0.0;
-    final variance = hitRate * (1 - hitRate);
+    final variance = baseline * (1 - baseline);
     if (variance <= 0) return 0.0;
     final standardError = sqrt(variance / n);
     if (standardError == 0) return 0.0;
-    return (hitRate - 0.5) / standardError;
+    return (hitRate - baseline) / standardError;
   }
 
   /// Linear map v1 raw weight before normalization
@@ -192,8 +203,13 @@ abstract final class Calibrator {
     RuleStats stats, {
     required double minRaw,
     required double maxRaw,
+    double baseline = 0.5,
   }) {
-    final tStat = computeTStat(stats.hitRate, stats.triggerCount);
+    final tStat = computeTStat(
+      stats.hitRate,
+      stats.triggerCount,
+      baseline: baseline,
+    );
 
     if (stats.triggerCount < sampleSizeCutThreshold) {
       return CalibratedRule.cutRule(
@@ -227,10 +243,14 @@ abstract final class Calibrator {
   /// 2026-04 Stage 2 code review followup：抽出共享 predicate 給 Pass 1 使用，
   /// 避免 Pass 1（survivor filter）和 Pass 2 （`calibrate()` 內部檢查）hand-inlining
   /// 邏輯造成 drift。新增 cut 條件時只需改 [calibrate] 的 branch 跟這個 predicate。
-  static bool _passesCuts(RuleStats stats) {
+  static bool _passesCuts(RuleStats stats, {double baseline = 0.5}) {
     if (stats.triggerCount < sampleSizeCutThreshold) return false;
     if (stats.hitRate < hitRateCutThreshold) return false;
-    final tStat = computeTStat(stats.hitRate, stats.triggerCount);
+    final tStat = computeTStat(
+      stats.hitRate,
+      stats.triggerCount,
+      baseline: baseline,
+    );
     if (tStat < tStatCutThreshold) return false;
     return true;
   }
@@ -238,11 +258,21 @@ abstract final class Calibrator {
   /// Calibrate 整組規則。normalization range 只用**倖存者**（未被 cut 的規則）算
   /// minRaw/maxRaw，避免 cut 規則（通常是 outlier 小樣本）扭曲 active 規則的
   /// 分數分布。
-  static Map<String, CalibratedRule> calibrateAll(List<RuleStats> allStats) {
+  ///
+  /// [baseline] 是 proportion z-test 的 null hypothesis 機率（market baseline
+  /// 命中率）。caller 應從 [CalibrationThresholds.successProbabilityBaselines]
+  /// 查 (period → baseline)；未列出 period fallback 至 0.5（行為等同
+  /// pre-2026-06-18）。
+  static Map<String, CalibratedRule> calibrateAll(
+    List<RuleStats> allStats, {
+    double baseline = 0.5,
+  }) {
     if (allStats.isEmpty) return {};
 
     // Pass 1: 找出倖存者（共享 predicate，見 [_passesCuts] 設計註解）
-    final survivors = allStats.where(_passesCuts).toList();
+    final survivors = allStats
+        .where((s) => _passesCuts(s, baseline: baseline))
+        .toList();
 
     // 計算 normalization range
     var minRaw = 0.0;
@@ -256,7 +286,12 @@ abstract final class Calibrator {
     // Pass 2: Calibrate 每一條（包含被 cut 的，要存 cut_reason 到 JSON）
     final result = <String, CalibratedRule>{};
     for (final stats in allStats) {
-      result[stats.ruleId] = calibrate(stats, minRaw: minRaw, maxRaw: maxRaw);
+      result[stats.ruleId] = calibrate(
+        stats,
+        minRaw: minRaw,
+        maxRaw: maxRaw,
+        baseline: baseline,
+      );
     }
     return result;
   }
@@ -399,6 +434,13 @@ HorizonOutput? _processHorizon(
 }) {
   final period = horizon == _horizonShort ? _periodShort : _periodLong;
   final threshold = horizon == _horizonShort ? _thresholdShort : _thresholdLong;
+  // 2026-06-18：拿掉「t-stat null hypothesis = 0.5」的 systematic bug。
+  // 用 (period, threshold) 查 canonical market baseline 機率，沒列出
+  // 的 period 走 0.5 fallback 保 backward compat。
+  final tradingDays = horizon == _horizonShort ? 5 : 60;
+  final baseline =
+      CalibrationThresholds.successProbabilityBaselines[tradingDays] ??
+      CalibrationThresholds.defaultBaselineProbability;
 
   final rows = db.select(
     'SELECT rule_id, trigger_count, success_count, avg_return '
@@ -428,7 +470,7 @@ HorizonOutput? _processHorizon(
     );
   }
 
-  final calibrated = Calibrator.calibrateAll(allStats);
+  final calibrated = Calibrator.calibrateAll(allStats, baseline: baseline);
 
   final activeCount = calibrated.values.where((r) => r.active).length;
   final cutCount = calibrated.values.where((r) => !r.active).length;

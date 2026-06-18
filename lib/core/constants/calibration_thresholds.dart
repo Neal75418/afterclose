@@ -59,9 +59,48 @@ abstract final class CalibrationThresholds {
   /// 未明確設定 threshold 的 period 使用的 fallback（非負即算命中）
   static const double defaultSuccessThreshold = 0.0;
 
+  /// Proportion z-test 的 null hypothesis — 「隨機任一台股窗口達到 success
+  /// threshold」的 baseline 機率。
+  ///
+  /// **為什麼需要**：之前 `Calibrator.computeTStat` 拿 `0.5`（隨機 50%）
+  /// 當 baseline，但台股實證 baseline 跟 horizon + threshold 強相關：
+  /// 例如 5D ≥1.5% 真實 baseline 是 ~34.6%，不是 50%。用 0.5 算 t-stat
+  /// 會系統性低估 rule 的 alpha，導致幾乎全 cut（你 DB 觀察到「短線
+  /// calibrated JSON 0 active rule」就是這個 bug）。
+  ///
+  /// **資料來源（2026-06-18）**：對個人 dev DB（daily_price ~230K 個
+  /// windows）統計 per-(period, threshold) 命中率：
+  ///   3D ≥ 0.0%  → 0.5547
+  ///   5D ≥ 1.5%  → 0.3461
+  ///   10D ≥ 5.0% → 0.2324
+  ///   20D ≥ 8.0% → 0.2369
+  ///   60D ≥ 8.0% → 0.3965
+  ///
+  /// **TODO**：硬編碼是過渡作法。理想是 `tool/recalibrate.dart` 跑時
+  /// 從當下 daily_price 動態算 baseline（市場結構會變、敏感期的
+  /// baseline 也不穩定）。先寫死避免每次 recalibrate 都重跑 SQL。
+  static const Map<int, double> successProbabilityBaselines = {
+    3: 0.5547,
+    5: 0.3461,
+    10: 0.2324,
+    20: 0.2369,
+    60: 0.3965,
+  };
+
+  /// 未列出 period 的 fallback baseline。0.5 = 對 fallback 走原來
+  /// 「對隨機 50%」的行為（最保守、最不傷害向後相容）。
+  static const double defaultBaselineProbability = 0.5;
+
   /// Calibration cut：hit_rate 必須 ≥ 此值才能保留
   ///
-  /// 比隨機 (0.50) 高 5pp 才視為有 alpha。
+  /// **注意 2026-06-18**：以前語意是「比隨機 (0.50) 高 5pp」，配合
+  /// 假定 baseline=0.5 才合理。實證 baseline 校正後（[successProbabilityBaselines]），
+  /// 此 cut 跟 baseline 解耦 — 邏輯改成「絕對命中率 ≥ 55%」純粹是
+  /// minimum effect size 過濾。已知缺陷：5D baseline 34.6% 下要求
+  /// 55% 絕對命中率仍是「+20pp lift」門檻偏嚴（多數 rule 達不到）。
+  /// 修正方向是改成 baseline-relative lift（`hitRate >= baseline + delta`），
+  /// 但會跟現有 active rule 的 cut/active 判定產生 drift，所以這版只
+  /// 修 t-stat 不動 hit-rate；hit-rate 改造留作 follow-up。
   static const double hitRateCutThreshold = 0.55;
 
   /// Calibration cut：proportion z-test 的 |t_stat| 必須 ≥ 此值才能保留
