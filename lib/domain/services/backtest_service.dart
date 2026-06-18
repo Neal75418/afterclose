@@ -5,6 +5,7 @@ import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/backtest_models.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/domain/repositories/analysis_repository.dart';
 import 'package:afterclose/domain/services/screening_service.dart';
 
 /// 策略回測引擎
@@ -14,11 +15,14 @@ class BacktestService {
   const BacktestService({
     required AppDatabase database,
     required ScreeningService screeningService,
+    required IAnalysisRepository analysisRepository,
   }) : _db = database,
-       _screeningService = screeningService;
+       _screeningService = screeningService,
+       _analysisRepo = analysisRepository;
 
   final AppDatabase _db;
   final ScreeningService _screeningService;
+  final IAnalysisRepository _analysisRepo;
 
   /// 執行回測
   ///
@@ -131,13 +135,13 @@ class BacktestService {
   // 私有輔助
   // ==================================================
 
-  /// 找到最新有分析資料的日期
-  /// TODO: 考慮注入 IAnalysisRepository 並使用 findLatestAnalysisDate() 單次查詢
-  Future<DateTime?> _findLatestAnalysisDate() async {
-    final result = await _db
-        .customSelect('SELECT MAX(date) AS latest FROM daily_analysis')
-        .getSingleOrNull();
-    return result?.read<DateTime?>('latest');
+  /// 找到最新有分析資料的日期。
+  ///
+  /// 之前 TODO 寫死 customSelect raw SQL；改注入 IAnalysisRepository
+  /// 直接用既有的 `findLatestAnalysisDate()` 方法，避免 service 層直接
+  /// 觸碰 Drift / raw SQL。
+  Future<DateTime?> _findLatestAnalysisDate() {
+    return _analysisRepo.findLatestAnalysisDate();
   }
 
   /// 列舉取樣日（每 samplingInterval 個交易日取一次）

@@ -135,6 +135,7 @@ class BacktestNotifier extends Notifier<BacktestState> {
         screeningService: ScreeningService(
           repository: ScreeningRepository(database: _db),
         ),
+        analysisRepository: ref.read(analysisRepositoryProvider),
       );
 
       final result = await service.execute(
