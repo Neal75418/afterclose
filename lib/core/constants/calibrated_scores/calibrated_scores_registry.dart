@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
@@ -127,6 +128,22 @@ class CalibratedScoresRegistry {
         'DB cache override yielded empty table, falling back to bundled asset. '
             'short warnings: ${shortResult.warnings.length}, '
             'long warnings: ${longResult.warnings.length}',
+      );
+      // Sentry breadcrumb：production 環境的 release build 因 kDebugMode
+      // 把 info / warning log 噤聲；OTA 拒載 path 是 silent fallback，
+      // 需要 breadcrumb 才能在 backend 上分辨「沒 OTA」vs「壞 OTA」。
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message: 'OTA calibration override rejected, fell back to bundle',
+          category: 'calibration',
+          level: SentryLevel.warning,
+          data: {
+            'short_rule_count': shortResult.table.ruleCount,
+            'long_rule_count': longResult.table.ruleCount,
+            'short_warnings': shortResult.warnings.length,
+            'long_warnings': longResult.warnings.length,
+          },
+        ),
       );
       return loadFromAssets(
         knownRuleIds: knownRuleIds,

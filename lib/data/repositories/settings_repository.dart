@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
@@ -98,6 +99,18 @@ class SettingsRepository implements ISettingsRepository {
         'SettingsRepo',
         'SecureStorage 無法使用，改用 SharedPreferences',
         e,
+      );
+      // Sentry breadcrumb：FinMind token 降級存 SharedPreferences（明文）的
+      // security degradation 在 release build 看不到 warning log，必須有
+      // breadcrumb 才能在 backend 上看見此 user 的 token 沒被加密保護。
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message:
+              'SecureStorage unavailable, falling back to SharedPreferences',
+          category: 'storage',
+          level: SentryLevel.warning,
+          data: {'error': e.toString()},
+        ),
       );
       _secureStorageAvailable = false;
     }
