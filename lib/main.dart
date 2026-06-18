@@ -47,6 +47,12 @@ void main() async {
     overrides: [currentAppVersionProvider.overrideWithValue(appVersion)],
   );
 
+  // B-lite cold-start auto-update（review 2026-06-18）：macOS dev 機沒有
+  // workmanager 路徑，使用者開 app 時自動跑 update 是最務實的累積 calibration
+  // forward data 方法。預設關閉（給測試），production startup 顯式打開。
+  // 6h gate + 交易日 + isUpdating 三層 short-circuit 在 TodayNotifier 內處理。
+  TodayNotifier.autoColdStartUpdateEnabled = true;
+
   // 從安全儲存載入 FinMind API Token
   await _initializeFinMindToken(container);
 

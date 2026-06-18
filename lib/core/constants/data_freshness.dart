@@ -80,6 +80,20 @@ abstract final class DataFreshness {
   /// App 回到前景後，超過此時間（分鐘）視為資料過期，自動重新載入
   static const int appStaleThresholdMinutes = 30;
 
+  /// 冷啟動自動更新門檻：距上次成功 update_run 超過此時間（小時）才會在
+  /// `TodayNotifier.loadData()` 觸發背景 `runUpdate`
+  ///
+  /// **設計動機（2026-06-18 B-lite）**：macOS 沒有 workmanager 背景任務，
+  /// CLI 走 launchd 又卡 Flutter binding（dart:ui 缺）。妥協做法：使用者
+  /// 開 app 時自動跑 update。`6` 小時對齊「**一個交易日只跑 1 次就夠**」：
+  /// - 同日多次開 app 不重複跑（symbol-level freshness check 也會擋）
+  /// - 隔天首次開 app（≥12h）一定觸發
+  /// - 出國 / 長假後回來，app 一開馬上有最新資料
+  ///
+  /// 非交易日（週末 / 國定假日）即使 stale 也不觸發 — 由 caller 額外用
+  /// `TaiwanCalendar.isTradingDay()` 過濾。
+  static const int coldStartAutoUpdateGateHours = 6;
+
   /// 股票清單初始化最低股票數
   ///
   /// 低於此數量表示股票清單尚未完整初始化，需要從 TWSE/TPEx 同步。

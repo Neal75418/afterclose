@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
+import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
@@ -164,6 +166,12 @@ class TodayNotifier extends Notifier<TodayState> {
       // 取得最後更新執行記錄
       final lastRun = await _marketRepo.getLatestUpdateRun();
 
+      // B-lite cold-start auto-update（2026-06-18）：macOS 無 workmanager、
+      // CLI 卡 Flutter binding，妥協做法是「user 一開 app 就背景跑」。
+      // 6h gate + 交易日 + 不阻塞 UI（fire-and-forget），讓 user 1 週開
+      // 1-2 次就能 cover 大部分交易日，避免 daily_recommendation 永久缺。
+      _maybeTriggerColdStartUpdate(lastRun?.finishedAt ?? lastRun?.startedAt);
+
       final loadHorizon = ref.read(selectedHorizonProvider);
       final loaded = await _loadRecommendationsAndDetails(
         horizon: loadHorizon,
@@ -199,6 +207,58 @@ class TodayNotifier extends Notifier<TodayState> {
       if (!_active || _loadGeneration != generation) return;
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
+  }
+
+  /// B-lite cold-start auto-update 全域開關
+  ///
+  /// **Production**：`main.dart` 在 startup 設為 true（個人 dev 機默認
+  /// 行為，避免漏交易日）。
+  /// **Tests**：預設 false 避免單元測試意外觸發 [runUpdate] → 未 stub
+  /// 的 `_updateService.runDailyUpdate()` 鏈拋型別例外。需要驗證
+  /// cold-start 行為的 test 自己改 true。
+  /// **Workmanager 背景 isolate**：不需要設（路徑不經 TodayNotifier）。
+  static bool autoColdStartUpdateEnabled = false;
+
+  /// B-lite cold-start auto-update（2026-06-18）
+  ///
+  /// 四個 short-circuit（任一不通就 skip）：
+  /// 1. [autoColdStartUpdateEnabled]=false → 整層關閉（主要給測試 / 未來
+  ///    feature flag 用）
+  /// 2. 已有 update 在進行 → [runUpdate] 自己會擋，提前 skip 省 log noise
+  /// 3. 上次 update 距現在 < [DataFreshness.coldStartAutoUpdateGateHours]
+  ///    → fresh enough，跳過避免同日多次重跑 syncer（每個 syncer 內
+  ///    有 freshness check，但繞掉整次省 ~10s 開銷）
+  /// 4. 非交易日（週末 / 國定假日）→ 沒新資料可抓
+  ///
+  /// 通過則 fire-and-forget — UI 用 [TodayState.isUpdating] / updateProgress
+  /// 顯示進度，user 可以繼續操作；完成後 [dataUpdateEpochProvider] 自然
+  /// 觸發各 consumer reload。
+  ///
+  /// **注意**：catch 全部 error 進 log，因為這層是「**幫使用者順手做的**
+  /// 背景行為」，失敗不該影響主要 [loadData] 流程。實際失敗會被 runUpdate
+  /// 內部包成 UpdateResult.errors，後續 UI 會反映。
+  void _maybeTriggerColdStartUpdate(DateTime? lastUpdatedAt) {
+    if (!autoColdStartUpdateEnabled) return;
+    if (state.isUpdating) return;
+    if (!TaiwanCalendar.isTradingDay(DateTime.now())) return;
+    if (lastUpdatedAt != null) {
+      final elapsed = DateTime.now().difference(lastUpdatedAt);
+      if (elapsed.inHours < DataFreshness.coldStartAutoUpdateGateHours) {
+        return;
+      }
+    }
+    AppLogger.info(
+      'TodayNotifier',
+      'B-lite cold-start auto-update：上次 update ${lastUpdatedAt ?? "從未"}，'
+          '距今 ≥${DataFreshness.coldStartAutoUpdateGateHours}h，背景觸發',
+    );
+    // unawaited — 不阻塞 loadData 主流程
+    unawaited(
+      runUpdate().catchError((Object e, StackTrace s) {
+        AppLogger.warning('TodayNotifier', 'cold-start auto-update 失敗', e, s);
+        return UpdateResult(date: DateTime.now())..message = '$e';
+      }),
+    );
   }
 
   /// Stage 5c：horizon 切換時的 reload command
