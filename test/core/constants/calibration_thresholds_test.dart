@@ -1,14 +1,14 @@
 // Drift-prevention guardrail for calibration thresholds.
 //
-// Three writers stamp the rule_accuracy table:
-//   1. RuleAccuracyService (app runtime)
-//   2. replay_calibrator (Stage 4 tool)
-//   3. recalibrate.dart (Stage 4 tool)
+// Three writers stamp the rule_accuracy table (RuleAccuracyService 在 app
+// runtime / replay_calibrator + recalibrate.dart 在 Stage 4 tool）。三處
+// 都直接讀 `CalibrationThresholds` — 這支 test 鎖住 canonical 值，任何人
+// 想偷改某一處會被擋下。
 //
-// 過去這三處各自寫死數字，註解寫「對齊 X」但實際值不同 →
-// rule_accuracy 表內容受最後 writer 影響，calibration JSON 不可重現。
-// 現在三處都讀 CalibrationThresholds — 這支 test 鎖住 canonical 值，
-// 任何人想偷改某一處會被擋下。
+// tool/recalibrate.dart 與 tool/replay_calibrator.dart 的依賴透過
+// `import + 直接讀` 保證；無法在 unit test 內 import 它們做 runtime
+// 驗證（main() entry-point 非 library），但 flutter analyze 會抓
+// 重新定義 const 造成的 unused field warning。
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/calibration_thresholds.dart';
@@ -39,16 +39,4 @@ void main() {
       expect(CalibrationThresholds.sampleSizeCutThreshold, equals(30));
     });
   });
-
-  // C5 review report cleanup：之前 RuleAccuracyService.successThresholds
-  // 是 `static const ... = CalibrationThresholds.successThresholds` 的純
-  // re-export shim，配對的 same() identity 測對 const Map 永遠 trivially
-  // true，不是真 drift 防護。刪除 shim + 此測試後，service 改直接讀
-  // CalibrationThresholds（原本內部就這樣做），test 失去意義。
-  //
-  // 註：tool/replay_calibrator.dart 與 tool/recalibrate.dart 對 canonical
-  // 常數的依賴透過 `import + 直接讀`保證 — 不寫死數字。flutter analyze 會
-  // 在被 import 後仍重新定義 const 時提示 unused field，這是 build-time
-  // guardrail（沒辦法在 unit test 內 import tool/ 檔做 runtime 驗證，
-  // 因為它們是 main() entry-point 而不是 library）。
 }

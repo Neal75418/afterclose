@@ -155,9 +155,10 @@ class CalibratedScoresTable {
     // 同步重產，所有 hit_rate / t_stat / active 就建立在錯誤門檻上，
     // 對外稱「校準分數」實際失效。
     //
-    // 防呆：parser 比對 JSON metadata 與 [Horizon.successThresholdPct]，差距
-    // 超過 0.01 即拒載並 return empty table（呼叫端會走 fallback chain 退到
-    // hardcoded `RuleScores`，與 calibration miss 同路徑）。
+    // 防呆：parser 比對 JSON metadata 與 [CalibrationThresholds.successThresholds]
+    // （以 [Horizon.tradingDays] 當 key），差距超過 0.01 即拒載並 return empty
+    // table（呼叫端會走 fallback chain 退到 hardcoded `RuleScores`，與
+    // calibration miss 同路徑）。
     //
     // 修：執行 `dart run tool/recalibrate.dart --horizon both` 重產 JSON，
     // 確認 metadata 後 promote `_candidate.json` 取代 production 檔。
@@ -169,12 +170,6 @@ class CalibratedScoresTable {
     if (backtest is Map) {
       final declared = backtest['success_threshold_pct'];
       if (declared is num) {
-        // M Calibration-SSOT fix（review report C6）：之前讀
-        // `horizon.successThresholdPct`（Horizon enum 上的 duplicate field），
-        // 跟 canonical `CalibrationThresholds.successThresholds` 分軌存在；
-        // 改 canonical 後 recalibrate.dart 寫新值到 JSON，guard 卻拿 stale
-        // Horizon 比對，會反咬拒載正確 JSON。改讀 canonical map 用
-        // `horizon.tradingDays` 當 key，單一 source of truth。
         final canonical =
             CalibrationThresholds.successThresholds[horizon.tradingDays] ??
             CalibrationThresholds.defaultSuccessThreshold;

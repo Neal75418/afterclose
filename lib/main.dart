@@ -42,19 +42,7 @@ void main() async {
   await BackgroundUpdateService.instance.initialize();
 
   // 建立 Container 以在 runApp 前初始化 Provider
-  //
-  // OTA safety gate（review report B2）：必須注入真實 app version 才能讓
-  // `CalibrationUpdater._isAppVersionSufficient` 對 manifest 的
-  // `minimum_app_version` 做有意義比對。若 PackageInfo 取不到（理論不會
-  // 發生）fallback `'0.0.0'`，會讓所有 manifest 的 minimum_app_version
-  // gate 都拒推送，**安全側偏保守**。
-  String appVersion;
-  try {
-    appVersion = (await PackageInfo.fromPlatform()).version;
-  } catch (e) {
-    AppLogger.warning('Main', 'PackageInfo 取得 app version 失敗，OTA 將保守拒推', e);
-    appVersion = '0.0.0';
-  }
+  final appVersion = await _loadAppVersion();
   final container = ProviderContainer(
     overrides: [currentAppVersionProvider.overrideWithValue(appVersion)],
   );
@@ -149,6 +137,22 @@ Future<void> _runApp(ProviderContainer container) async {
           );
         }),
   );
+}
+
+/// 取得當前 app version 字串，注入 [currentAppVersionProvider]
+///
+/// PackageInfo 取不到時 fallback `'0.0.0-fallback'`：所有 manifest 的
+/// `minimum_app_version` 都會把這個值判定為不足，OTA gate 保守拒推
+/// （與其風險「未知版本下載未知 calibration」相比，這側更安全）。
+/// 用 `-fallback` 後綴讓 ELK / Sentry breadcrumb 能分辨「真版本不足」
+/// vs 「PackageInfo 壞掉」。
+Future<String> _loadAppVersion() async {
+  try {
+    return (await PackageInfo.fromPlatform()).version;
+  } catch (e) {
+    AppLogger.warning('Main', 'PackageInfo 取得 app version 失敗，OTA 將保守拒推', e);
+    return '0.0.0-fallback';
+  }
 }
 
 /// 從安全儲存載入 FinMind API Token 並設定至 Client

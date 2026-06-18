@@ -282,17 +282,21 @@ class CalibrationUpdater {
 
   /// Compare current [_appVersion] against manifest's minimum.
   ///
-  /// Expected format: `"MAJOR.MINOR.PATCH"` (semver-ish, leading digits).
+  /// Expected format: `"MAJOR.MINOR.PATCH"` (semver-ish, leading digits;
+  /// `+build` / `-prerelease` suffix is stripped before parsing).
   /// Comparison is numeric-per-segment. Returns `true` if current >=
   /// required, `false` otherwise (i.e., skip the update).
   ///
-  /// Malformed inputs (either side) default to `true` (permissive) —
-  /// rather than blocking updates on format noise, trust the server
-  /// operator to publish correct manifests.
+  /// **Fail-closed on malformed input**: if EITHER side fails to parse
+  /// (e.g. manifest writes `"v9.9.9"` / `"tomorrow"` / `""`), returns
+  /// `false` and skips the update. Permissive parsing previously allowed
+  /// typos / `v`-prefixed strings to bypass the gate; the safer default
+  /// is to refuse rather than ship calibration to a client whose version
+  /// constraint we can't evaluate.
   bool _isAppVersionSufficient(String requiredVersion) {
     final currentSegments = _parseVersionSegments(_appVersion);
     final requiredSegments = _parseVersionSegments(requiredVersion);
-    if (currentSegments == null || requiredSegments == null) return true;
+    if (currentSegments == null || requiredSegments == null) return false;
 
     final len = currentSegments.length > requiredSegments.length
         ? currentSegments.length

@@ -125,10 +125,11 @@ final rssParserProvider = Provider<RssParser>((ref) {
 ///
 /// 由 [main.dart] 在 startup 用 `PackageInfo.fromPlatform()` 取得真實
 /// 版本，透過 `ProviderContainer.overrides` 注入。Default `'0.0.0'`
-/// 是「未注入」signal — `CalibrationUpdater._isAppVersionSufficient` 會
-/// 對任何非空 `minimum_app_version` 判定不足，**安全側偏保守**，避免
-/// 測試或 dev 環境意外接受所有 OTA 推送。Production 不應該 reach
-/// fallback。
+/// 是「未注入」signal — `CalibrationUpdater._isAppVersionSufficient` 對
+/// 任何非空 `minimum_app_version` 判定不足，**安全側偏保守**，避免測試
+/// 或 dev 環境意外接受所有 OTA 推送。Production 不應該 reach default；
+/// main.dart 的 `_loadAppVersion()` fallback 路徑用 `'0.0.0-fallback'`
+/// 讓 ELK 能區分「未注入」vs「PackageInfo 壞掉」。
 ///
 /// 這個 provider 分開是為了避免 [calibrationUpdaterProvider] 每次
 /// 被 read 都要等 `PackageInfo.fromPlatform()` 的非同步結果。

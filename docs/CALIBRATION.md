@@ -199,7 +199,7 @@ score = 10 + (raw_weight - minRaw) / (maxRaw - minRaw) × 25
   "backtest": {
     "window_days": 504,
     "train_ratio": 0.7,
-    "success_threshold_pct": 3.0,
+    "success_threshold_pct": 1.5,
     "formula": "linear_map_v1"
   },
   "rules": {
@@ -233,7 +233,7 @@ score = 10 + (raw_weight - minRaw) / (maxRaw - minRaw) × 25
 | `horizon` | `"5d"` \| `"60d"` | 此檔對應的時間尺度 |
 | `backtest.window_days` | int | 回測天數（目前 504 = 2 trading years） |
 | `backtest.train_ratio` | float | Train/test split ratio（目前 0.7，但 Stage 2 LEAN 未實作 out-of-sample validation） |
-| `backtest.success_threshold_pct` | float | 對應 horizon 的 success 判定門檻（5D=3, 60D=12） |
+| `backtest.success_threshold_pct` | float | 對應 horizon 的 success 判定門檻。canonical 值由 [`CalibrationThresholds.successThresholds`](../lib/core/constants/calibration_thresholds.dart) 提供（5D=1.5%、60D=8.0%；drift guard 會把 JSON 對比 canonical 拒載失準版本）。 |
 | `backtest.formula` | string | 公式版本識別子，目前 `linear_map_v1` |
 | `rules.*.score` | int | 校準後分數（cut 為 0，active 為 [10, 35]） |
 | `rules.*.hit_rate` | float (4 dp) | 命中率 |

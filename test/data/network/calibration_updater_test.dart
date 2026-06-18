@@ -541,6 +541,37 @@ void main() {
         expect(result, isA<CalibrationFetchSuccess>());
       },
     );
+
+    test(
+      'manifest minimum_app_version malformed (e.g. "v9.9.9") → fail-closed skip',
+      () async {
+        // Pre-2026-06-18 行為：permissive parse 讓 "v9.9.9" 直接 bypass gate；
+        // 現在 fail-closed 拒推。Manifest 是我方產出，typo 比惡意更可能，
+        // 但「無法評估」就該保守 skip 而非裸跑。
+        _stubGet(
+          dio,
+          _manifestUrl,
+          _ok(_buildManifestJson(minimumAppVersion: 'v9.9.9'), _manifestUrl),
+        );
+
+        final updater = _buildUpdater(
+          dio: dio,
+          database: db,
+          clock: clock,
+          appVersion: '1.0.0',
+        );
+        final result = await updater.checkAndUpdate();
+
+        expect(result, isA<CalibrationFetchUpToDate>());
+        expect(
+          (result as CalibrationFetchUpToDate).reason,
+          contains('min_version_skip'),
+        );
+        verifyNever(
+          () => dio.get<String>(_shortUrl, options: any(named: 'options')),
+        );
+      },
+    );
   });
 
   // ==========================================================================

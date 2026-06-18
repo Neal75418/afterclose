@@ -234,7 +234,8 @@ void main() {
     // Calibration drift guard (3 cases)
     //
     // 比對 backtest.success_threshold_pct 與 runtime canonical
-    // Horizon.successThresholdPct，drift > 0.01 即拒載。
+    // CalibrationThresholds.successThresholds[Horizon.tradingDays]，
+    // drift > 0.01 即拒載。
     // ==================================================
 
     test('11c. drift_guard_metadata_matches_canonical_accepted', () {
@@ -694,8 +695,9 @@ void main() {
     test('23. loadFromAssets_short_bundled_metadata_aligned', () async {
       // Bundled `rule_scores_calibrated_short.json` metadata
       // success_threshold_pct=1.5 matches canonical
-      // `Horizon.short.successThresholdPct`，drift guard 放行。
-      // Hermetic drift-reject coverage 在 11c/11d/11e (inline fixtures)。
+      // `CalibrationThresholds.successThresholds[Horizon.short.tradingDays]`，
+      // drift guard 放行。Hermetic drift-reject coverage 在 11c/11d/11e
+      // (inline fixtures)。
       await CalibratedScoresRegistry.instance.loadFromAssets();
 
       final result = CalibratedScoresRegistry.instance.lookup(
@@ -950,8 +952,12 @@ void main() {
     test('short has 5 trading days and 1.5% canonical threshold', () {
       expect(Horizon.short.tradingDays, 5);
       // Success threshold 已搬到 CalibrationThresholds（單一 SSOT），透過
-      // tradingDays 當 key 查詢。
-      expect(CalibrationThresholds.successThresholds[5], 1.5);
+      // tradingDays 當 key 查詢；用 enum 取代 hardcoded key 對齊本 commit
+      // 立的 SSOT 慣例。
+      expect(
+        CalibrationThresholds.successThresholds[Horizon.short.tradingDays],
+        1.5,
+      );
       expect(
         Horizon.short.assetPath,
         'assets/rule_scores_calibrated_short.json',
@@ -960,7 +966,10 @@ void main() {
 
     test('long has 60 trading days and 8% canonical threshold', () {
       expect(Horizon.long.tradingDays, 60);
-      expect(CalibrationThresholds.successThresholds[60], 8.0);
+      expect(
+        CalibrationThresholds.successThresholds[Horizon.long.tradingDays],
+        8.0,
+      );
       expect(Horizon.long.assetPath, 'assets/rule_scores_calibrated_long.json');
     });
 
