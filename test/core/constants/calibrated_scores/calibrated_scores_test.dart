@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 
@@ -946,18 +947,20 @@ void main() {
   });
 
   group('Horizon enum metadata', () {
-    test('short has 5 trading days and 1.5% threshold', () {
+    test('short has 5 trading days and 1.5% canonical threshold', () {
       expect(Horizon.short.tradingDays, 5);
-      expect(Horizon.short.successThresholdPct, 1.5);
+      // Success threshold 已搬到 CalibrationThresholds（單一 SSOT），透過
+      // tradingDays 當 key 查詢。
+      expect(CalibrationThresholds.successThresholds[5], 1.5);
       expect(
         Horizon.short.assetPath,
         'assets/rule_scores_calibrated_short.json',
       );
     });
 
-    test('long has 60 trading days and 8% threshold', () {
+    test('long has 60 trading days and 8% canonical threshold', () {
       expect(Horizon.long.tradingDays, 60);
-      expect(Horizon.long.successThresholdPct, 8.0);
+      expect(CalibrationThresholds.successThresholds[60], 8.0);
       expect(Horizon.long.assetPath, 'assets/rule_scores_calibrated_long.json');
     });
 

@@ -38,12 +38,6 @@ class RuleAccuracyService {
   /// 支援的持有天數（1D/3D 短線 + 5D/10D/20D 中線 + 60D 長線）
   static const List<int> holdingPeriods = [1, 3, 5, 10, 20, 60];
 
-  /// 暴露 canonical thresholds 供 test 對 calibration tool 的常數 drift
-  /// guardrail 驗證（見 `test/core/constants/calibration_thresholds_test.dart`）。
-  /// 不要在 production code 用 — 直接 import [CalibrationThresholds]。
-  static const Map<int, double> successThresholds =
-      CalibrationThresholds.successThresholds;
-
   /// 判定 `returnRate`（%）是否達到 `period` 的命中門檻
   ///
   /// 使用 `>=`（含）而非 `>`（嚴格）— 邊界 case（例如 5D returnRate 剛好 3.0%）

@@ -12,7 +12,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/calibration_thresholds.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 
 void main() {
   group('CalibrationThresholds canonical values', () {
@@ -41,24 +40,15 @@ void main() {
     });
   });
 
-  group('Drift prevention — writers share canonical thresholds', () {
-    test(
-      'RuleAccuracyService.successThresholds === CalibrationThresholds.successThresholds',
-      () {
-        // 確保 RuleAccuracyService 沒有重新 hardcode 自己一份。
-        // 任何人偷改 service 內 const 都會在這支 test 失敗。
-        expect(
-          RuleAccuracyService.successThresholds,
-          same(CalibrationThresholds.successThresholds),
-          reason: 'RuleAccuracyService 必須 import canonical 常數，不可重新定義',
-        );
-      },
-    );
-
-    // 註：tool/replay_calibrator.dart 與 tool/recalibrate.dart 對 canonical
-    // 常數的依賴透過 `import + 直接讀`保證 — 不寫死數字。flutter analyze 會
-    // 在被 import 後仍重新定義 const 時提示 unused field，這是 build-time
-    // guardrail（沒辦法在 unit test 內 import tool/ 檔做 runtime 驗證，
-    // 因為它們是 main() entry-point 而不是 library）。
-  });
+  // C5 review report cleanup：之前 RuleAccuracyService.successThresholds
+  // 是 `static const ... = CalibrationThresholds.successThresholds` 的純
+  // re-export shim，配對的 same() identity 測對 const Map 永遠 trivially
+  // true，不是真 drift 防護。刪除 shim + 此測試後，service 改直接讀
+  // CalibrationThresholds（原本內部就這樣做），test 失去意義。
+  //
+  // 註：tool/replay_calibrator.dart 與 tool/recalibrate.dart 對 canonical
+  // 常數的依賴透過 `import + 直接讀`保證 — 不寫死數字。flutter analyze 會
+  // 在被 import 後仍重新定義 const 時提示 unused field，這是 build-time
+  // guardrail（沒辦法在 unit test 內 import tool/ 檔做 runtime 驗證，
+  // 因為它們是 main() entry-point 而不是 library）。
 }

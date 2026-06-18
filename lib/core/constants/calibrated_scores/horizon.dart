@@ -12,28 +12,16 @@
 /// Dual-horizon scoring 的語意就是每檔股票必須同時計算兩個 horizon
 /// 的分數，不會存在「模糊的 horizon」選擇。
 enum Horizon {
-  short(
-    tradingDays: 5,
-    successThresholdPct: 1.5,
-    assetPath: 'assets/rule_scores_calibrated_short.json',
-  ),
-  long(
-    tradingDays: 60,
-    successThresholdPct: 8.0,
-    assetPath: 'assets/rule_scores_calibrated_long.json',
-  );
+  short(tradingDays: 5, assetPath: 'assets/rule_scores_calibrated_short.json'),
+  long(tradingDays: 60, assetPath: 'assets/rule_scores_calibrated_long.json');
 
-  const Horizon({
-    required this.tradingDays,
-    required this.successThresholdPct,
-    required this.assetPath,
-  });
+  const Horizon({required this.tradingDays, required this.assetPath});
 
-  /// 交易日數（不含非交易日）
+  /// 交易日數（不含非交易日）。也是查詢
+  /// [CalibrationThresholds.successThresholds] 的 key — 例如 `Horizon.short`
+  /// 的 `tradingDays=5` 對應 5D threshold（review report C6 SSOT 修正後的
+  /// 唯一查詢路徑）。
   final int tradingDays;
-
-  /// 成功門檻百分比，對應 [CalibrationThresholds.successThresholds]
-  final double successThresholdPct;
 
   /// JSON asset 路徑，供 `rootBundle.loadString` 讀取
   final String assetPath;

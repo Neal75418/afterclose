@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 
 /// `parseJson` 的回傳結構：table + 解析過程中產生的 warning 列表
@@ -168,7 +169,15 @@ class CalibratedScoresTable {
     if (backtest is Map) {
       final declared = backtest['success_threshold_pct'];
       if (declared is num) {
-        final canonical = horizon.successThresholdPct;
+        // M Calibration-SSOT fix（review report C6）：之前讀
+        // `horizon.successThresholdPct`（Horizon enum 上的 duplicate field），
+        // 跟 canonical `CalibrationThresholds.successThresholds` 分軌存在；
+        // 改 canonical 後 recalibrate.dart 寫新值到 JSON，guard 卻拿 stale
+        // Horizon 比對，會反咬拒載正確 JSON。改讀 canonical map 用
+        // `horizon.tradingDays` 當 key，單一 source of truth。
+        final canonical =
+            CalibrationThresholds.successThresholds[horizon.tradingDays] ??
+            CalibrationThresholds.defaultSuccessThreshold;
         if ((declared.toDouble() - canonical).abs() > 0.01) {
           warnings.add(
             'success_threshold_pct drift: JSON metadata $declared vs '
