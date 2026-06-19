@@ -178,9 +178,21 @@ abstract final class RuleParams {
 
   /// 最低評分門檻
   ///
-  /// 過濾僅有弱訊號或單一訊號的股票。
-  /// 25 分代表至少一個強訊號（如反轉 35 分）或兩個中等訊號（如法人 18 + KD 18）。
-  static const int minScoreThreshold = 25;
+  /// 過濾掉完全沒有真實 signal rule 的股票（如僅命中 CONCENTRATION_HIGH /
+  /// REVENUE_NEW_HIGH 等 demote 為 0 分的 noise filter rule）。
+  ///
+  /// **2026-06-19 從 25 降至 12**（搭配 audit demote）：
+  /// 之前 25 預期至少 1 個強訊號 (~22) 或 2 個中等訊號 (16+18=34)。但 audit
+  /// 把 CONCENTRATION_HIGH 16 + REVENUE_NEW_HIGH 22 兩條最常觸發的 rule
+  /// 降至 0，原本靠 16+22=38 過閾值的 ~17 檔股票全部被 skip 寫進
+  /// daily_reason，導致 user 看到 top 20 只剩 2-3 檔。
+  ///
+  /// 新值 12 = 任 1 條真實 signal rule（PBR_UNDERVALUED 12 / PE_UNDERVALUED 15
+  /// / EPS_TURNAROUND 15 / DAY_TRADING_HIGH 12 / 反轉類更高）通過。
+  /// 12 是當前 hardcoded scores 中「最弱但仍 actionable」的單條訊號值。
+  /// 只命中 noise rule（CONCENTRATION_HIGH / REVENUE_NEW_HIGH 等 0 分項）
+  /// 的股票仍被正確過濾掉。
+  static const int minScoreThreshold = 12;
 
   // ==================================================
   // 流動性加權排序

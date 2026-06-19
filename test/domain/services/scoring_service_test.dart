@@ -711,7 +711,7 @@ void main() {
 
     test('skip stock when score is below minScoreThreshold', () async {
       final prices = validPrices('LOW');
-      setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1); // 24
+      setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1);
 
       final result = await scoringService.scoreStocks(
         candidates: ['LOW'],
@@ -724,7 +724,7 @@ void main() {
 
     test('include stock when score equals minScoreThreshold', () async {
       final prices = validPrices('BOUNDARY');
-      setupFullPipeline(returnScore: RuleParams.minScoreThreshold); // 25
+      setupFullPipeline(returnScore: RuleParams.minScoreThreshold);
 
       final result = await scoringService.scoreStocks(
         candidates: ['BOUNDARY'],
