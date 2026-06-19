@@ -165,8 +165,18 @@ abstract final class RuleScores {
   /// 極高當沖比例分數（投機警示，小扣分）
   static const int dayTradingExtreme = -5;
 
-  /// 高籌碼集中度分數（多方）
-  static const int concentrationHigh = 16;
+  /// 高籌碼集中度分數
+  ///
+  /// **2026-06-19 demote 至 0**（rule audit workflow wf_3db81e3c）：
+  /// - rule_accuracy 5D 統計：n=94, hit=33% < baseline 35.85%, avg_ret=-1.04%
+  /// - 觸發頻率異常高（今天 41 檔、占 top 20 的 95%）→ 純 noise filter
+  /// - threshold 60% 剛好坐在市場中位數 P50=60.59% 上 → 等同隨機
+  /// - 規則仍 fire、evidence chip 仍顯示（Mode B 籌碼觀察用），但不影響
+  ///   ranking score，避免 17 檔 38 分平手 cliff
+  ///
+  /// 不從 rule_registry 移除 — 等待 [tool/recalibrate.dart] 改 threshold
+  /// 到 P75（~75%）再考慮是否恢復分數。
+  static const int concentrationHigh = 0;
 
   // ==================================================
   // 第五階段：價量背離分數
@@ -197,8 +207,18 @@ abstract final class RuleScores {
   /// 營收月增持續成長分數（多方）
   static const int revenueMomGrowth = 15;
 
-  /// 營收創歷史新高分數（強基本面）
-  static const int revenueNewHigh = 22;
+  /// 營收創新高分數
+  ///
+  /// **2026-06-19 demote 至 0**（rule audit workflow wf_3db81e3c）：
+  /// - rule_accuracy 5D 統計：n=99, hit=31.3% < baseline 35.85%, avg_ret=**-2.14%**
+  /// - 觸發後 5 天平均跌 2.14% — 是反向訊號
+  /// - 觸發頻率高（今天 37 檔），跟 CONCENTRATION_HIGH 共同造成 38 分 cliff
+  /// - DB 月營收只 4 個月歷史「創新高」語意已誇大（i18n 已改「創近期新高」）
+  ///
+  /// 規則仍 fire、evidence chip 仍顯示給 user（基本面參考），但不影響
+  /// ranking score。等 monthly_revenue 累積 ≥24 個月 + rule_accuracy 累積
+  /// 更多樣本後再 re-evaluate。
+  static const int revenueNewHigh = 0;
 
   /// 高殖利率分數（多方）
   static const int highDividendYield = 18;
