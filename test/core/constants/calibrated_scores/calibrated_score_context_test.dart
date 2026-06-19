@@ -21,6 +21,27 @@ void main() {
       expect(ctx.lookup(Horizon.short, 'ANY_RULE'), isNull);
     });
 
+    test(
+      '1b. lookup_returns_null_for_calibrated_zero (2026-06-19 contract)',
+      () {
+        // 跟 CalibratedScoresTable.lookup 對齊：calibrated 0 視為「沒可信 value」、
+        // 讓 caller 的 ?? hardcoded fallback 觸發。原本直接 map access 讓 0 蓋過
+        // hardcoded 正分，38 條被 calibrated 砍到 0 的 rule 在 scoring isolate
+        // 寫進 daily_reason 時全部變 0、整個 Mode aggregator 失去 ranking 訊號。
+        const ctx = CalibratedScoreContext(
+          shortScores: {'CUT_RULE': 0, 'ACTIVE_RULE': 15},
+          longScores: {'CUT_RULE': 0, 'ACTIVE_LONG': 22},
+        );
+
+        // calibrated 0 → null fallback
+        expect(ctx.lookup(Horizon.short, 'CUT_RULE'), isNull);
+        expect(ctx.lookup(Horizon.long, 'CUT_RULE'), isNull);
+        // 真實 calibrated value → 回傳該值
+        expect(ctx.lookup(Horizon.short, 'ACTIVE_RULE'), 15);
+        expect(ctx.lookup(Horizon.long, 'ACTIVE_LONG'), 22);
+      },
+    );
+
     test('2. lookup_short_and_long_independently', () {
       const ctx = CalibratedScoreContext(
         shortScores: {'REVERSAL_W2S': 28, 'TECH_BREAKOUT': 22},

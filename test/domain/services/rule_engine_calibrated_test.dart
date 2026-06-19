@@ -233,8 +233,10 @@ void main() {
       expect(score, 0);
     });
 
-    test('calibrated value of 0 overrides reason.score (not fallback)', () {
-      // 邊界案例：明確校正為 0 的 rule 應被當成 0 採納，不是 null/missing
+    test('calibrated value of 0 falls back to reason.score (2026-06-19)', () {
+      // **Contract change**：calibrated 0 視為「沒可信 value」、fallback 到
+      // hardcoded。原本 0 蓋過 25 讓 38 條被砍 rule 在 daily_reason 寫 0、
+      // Mode aggregator 失去 ranking 訊號（3-tab tab 大量 0/0）。
       const reasons = [
         TriggeredReason(
           type: ReasonType.techBreakout,
@@ -254,7 +256,7 @@ void main() {
         calibratedScores: ctx,
       );
 
-      expect(score, 0); // 不 fallback 到 25
+      expect(score, 25, reason: 'calibrated 0 should fallback to hardcoded 25');
     });
 
     test('empty reasons list returns 0 regardless of horizon', () {

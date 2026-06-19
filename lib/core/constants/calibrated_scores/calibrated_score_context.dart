@@ -54,12 +54,25 @@ class CalibratedScoreContext {
 
   /// Horizon-aware 查詢單一規則的 calibrated score
   ///
-  /// 若 [ruleId] 不在對應 horizon 的查找表中，回傳 null。呼叫端應 fallback
-  /// 到 `TriggeredReason.score`（hardcoded embedded 值）。
-  int? lookup(Horizon horizon, String ruleId) => switch (horizon) {
-    Horizon.short => shortScores[ruleId],
-    Horizon.long => longScores[ruleId],
-  };
+  /// 若 [ruleId] 不在對應 horizon 的查找表中**或被 calibrated 砍到 0**，
+  /// 回傳 null。呼叫端應 fallback 到 `TriggeredReason.score`（hardcoded
+  /// embedded 值）。
+  ///
+  /// **2026-06-19**：跟 [CalibratedScoresTable.lookup] 對齊 — 0 視為 null
+  /// fallback。原本 `Map<String, int>` 直接查 → score=0 回 0、把 caller 的
+  /// `lookup() ?? hardcoded` fallback 永遠不會觸發；38 條被 calibrated 砍到
+  /// 0 的 rule 在 scoring isolate 寫進 daily_reason 時拿 0 而非 hardcoded
+  /// 正分，整個 Mode aggregator 失去 ranking 訊號。
+  ///
+  /// 這個 context 跟 [CalibratedScoresTable] 是兩個獨立 class（前者是 isolate
+  /// DTO、後者是主 isolate 的 lookup table），fallback 邏輯必須兩邊同時修。
+  int? lookup(Horizon horizon, String ruleId) {
+    final v = switch (horizon) {
+      Horizon.short => shortScores[ruleId],
+      Horizon.long => longScores[ruleId],
+    };
+    return (v == null || v == 0) ? null : v;
+  }
 
   /// 序列化為 `Map<String, dynamic>` 供 isolate 邊界傳輸
   ///
