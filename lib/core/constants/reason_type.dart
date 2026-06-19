@@ -289,7 +289,7 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.dayTradingExtreme => 'reasonTip.dayTradingHigh',
     ReasonType.concentrationHigh => 'reasonTip.concentrationHigh',
     // 量價背離
-    ReasonType.priceVolumeWeakRally => 'reasonTip.bullishDivergence',
+    ReasonType.priceVolumeWeakRally => 'reasonTip.priceVolumeWeakRally',
     ReasonType.priceVolumeBearishDivergence => 'reasonTip.bearishDivergence',
     ReasonType.highVolumeBreakout => 'reasonTip.highVolumeBreakout',
     ReasonType.lowVolumeAccumulation => 'reasonTip.lowVolumeAccumulation',

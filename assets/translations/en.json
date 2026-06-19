@@ -264,7 +264,6 @@
     "filterPatternThreeBlackCrows": "3 Crows",
     "filterPatternGapUp": "Gap Up",
     "filterPatternGapDown": "Gap Down",
-    "filterPriceVolumeBullishDivergence": "Price↑Vol↓",
     "filterPriceVolumeBearishDivergence": "Price↓Vol↑",
     "filterHighVolumeBreakout": "High Vol Peak",
     "filterLowVolumeAccumulation": "Low Accum.",
@@ -304,7 +303,8 @@
     "selectIndustry": "Select Industry",
     "clearIndustry": "Clear",
     "allIndustries": "All Industries",
-    "industryStockCount": "{count} stocks"
+    "industryStockCount": "{count} stocks",
+    "filterPriceVolumeWeakRally": "Weak Rally"
   },
   "watchlist": {
     "title": "Watchlist",
@@ -535,7 +535,6 @@
     "dayTradingHigh": "High Day Trade",
     "dayTradingExtreme": "Extreme DT",
     "concentrationHigh": "High Conc.",
-    "priceVolumeBullishDivergence": "Price↑Vol↓",
     "priceVolumeBearishDivergence": "Price↓Vol↑",
     "highVolumeBreakout": "High Vol Peak",
     "lowVolumeAccumulation": "Low Accum.",
@@ -560,7 +559,8 @@
     "insiderSignificantBuying": "Insider Buying",
     "highPledgeRatio": "High Pledge",
     "foreignConcentrationWarning": "Foreign Conc.",
-    "foreignExodus": "Foreign Exodus"
+    "foreignExodus": "Foreign Exodus",
+    "priceVolumeWeakRally": "Weak Rally Warning"
   },
   "reasonTip": {
     "volumeSpike": "Trading volume significantly increased, indicating major capital flow.",
@@ -572,7 +572,7 @@
     "revenueYoySurge": "Revenue YoY growth surged significantly, strong fundamentals.",
     "revenueYoyDecline": "Revenue YoY growth declined significantly, weakening fundamentals.",
     "revenueMomGrowth": "Revenue growing month-over-month consecutively.",
-    "revenueNewHigh": "Revenue hit all-time high, entering high-growth phase.",
+    "revenueNewHigh": "Revenue hit recent high, entering high-growth phase.",
     "highDividendYield": "High cash dividend yield, defensive value.",
     "peUndervalued": "Low P/E ratio, potentially undervalued.",
     "peOvervalued": "High P/E ratio, potentially overvalued.",
@@ -588,13 +588,13 @@
     "foreignDecreasing": "Foreign investor holdings decreasing, turning cautious.",
     "dayTradingHigh": "High day-trading ratio, strong speculative activity.",
     "concentrationHigh": "High shareholding concentration among large holders.",
-    "bullishDivergence": "Price rising on declining volume, divergence signal to watch.",
     "bearishDivergence": "Bearish divergence with price falling on increased volume.",
     "highVolumeBreakout": "High-volume breakout confirms bullish momentum.",
     "lowVolumeAccumulation": "Low-volume consolidation, possible accumulation phase.",
     "pbrUndervalued": "Low price-to-book ratio, potentially undervalued.",
     "foreignConcentration": "High foreign investor concentration, concentration risk.",
-    "foreignExodus": "Foreign capital accelerating outflow, selling pressure increasing."
+    "foreignExodus": "Foreign capital accelerating outflow, selling pressure increasing.",
+    "priceVolumeWeakRally": "Price rising on declining volume — weak rally warning, possible reversal ahead."
   },
   "onboarding": {
     "skip": "Skip",
@@ -970,14 +970,13 @@
     "patternEveningStar": "Candlestick: Evening Star",
     "patternThreeBlackCrows": "Candlestick: Three Black Crows",
     "patternGapDown": "Candlestick: Gap Down",
-    "priceVolumeBullishDivergence": "Price Up, Volume Down (weak rally warning)",
     "priceVolumeBearishDivergence": "Price Down, Volume Up (panic selling)",
     "highVolumeBreakout": "High Volume Breakout",
     "lowVolumeAccumulation": "Low Volume Accumulation",
     "revenueYoySurge": "Revenue YoY Growth ≧ 30%",
     "revenueYoyDecline": "Revenue YoY Growth ≦ -20%",
     "revenueMomGrowth": "Revenue MoM Growth (Consecutive 2 months)",
-    "revenueNewHigh": "Monthly Revenue Hit All-Time High",
+    "revenueNewHigh": "Monthly Revenue at Recent High",
     "highDividendYield": "Dividend Yield ≧ 5.5%",
     "peUndervalued": "PE Ratio ≦ 10",
     "peOvervalued": "PE Ratio ≧ 60",
@@ -996,7 +995,8 @@
     "labelClear": "Clear Filter",
     "labelScanned": "Scanned {count}",
     "labelDate": "Data Date {date}",
-    "moreDetails": "More Details"
+    "moreDetails": "More Details",
+    "priceVolumeWeakRally": "Price Up, Volume Down (Weak Rally Warning)"
   },
   "customScreening": {
     "title": "Custom Screening",
@@ -1146,7 +1146,7 @@
     "revenueYoySurge": "Revenue YoY growth of {growth}%, strong fundamentals.",
     "revenueYoyDecline": "Revenue YoY decline of {growth}%, weakening fundamentals.",
     "revenueMomGrowth": "Revenue growing MoM for {months} consecutive months.",
-    "revenueNewHigh": "Revenue hit all-time high, surpassing previous high by {surpassPct}%.",
+    "revenueNewHigh": "Revenue hit recent high, surpassing previous high by {surpassPct}%.",
     "highDividendYield": "Dividend yield at {yield}%, defensive value.",
     "peUndervalued": "P/E ratio at {pe}x, relatively undervalued.",
     "peOvervalued": "P/E ratio at {pe}x, relatively overvalued.",
@@ -1181,7 +1181,6 @@
     "concentrationHigh": "High large-holder concentration, stable ownership structure.",
     "highVolumeBreakout": "High-volume breakout, confirmed bullish advance.",
     "lowVolumeAccumulation": "Low-volume consolidation, potential accumulation phase.",
-    "bullishDivergence": "Price-volume bullish divergence, caution advised.",
     "bearishDivergence": "Price-volume bearish divergence signal.",
     "newsRelated": "Recent related news, stay informed.",
     "netBuy": "net buy {lots} lots",
@@ -1214,7 +1213,8 @@
     "confidenceMedium": "Medium",
     "confidenceLow": "Low",
     "signalStrength": "Signal Strength",
-    "ruleAccuracy": "Rule Accuracy"
+    "ruleAccuracy": "Rule Accuracy",
+    "priceVolumeWeakRally": "Weak rally signal: price up with declining volume."
   },
   "comparison": {
     "title": "Stock Comparison",
@@ -1522,18 +1522,18 @@
     "eveningStar": "Evening star",
     "threeBlackCrows": "Three black crows",
     "gapDown": "Gap down",
-    "bullishDivergence": "Price up > 5%, volume down > 40%",
     "bearishDivergence": "Price down > 3%, volume up > 30%",
     "volumeBreakout": "High-volume breakout",
     "lowVolumeAccum": "Low-volume accumulation",
     "revenueYoySurge": "Revenue YoY ≥ 30%",
     "revenueYoyDecline": "Revenue YoY ≤ -20%",
     "revenueMomGrowth": "2+ months consecutive MoM growth",
-    "revenueNewHigh": "Monthly revenue all-time high",
+    "revenueNewHigh": "Monthly revenue recent high",
     "highDividendYield": "Dividend yield ≥ 5.5%",
     "peUndervalued": "PE ratio ≤ 10",
     "peOvervalued": "PE ratio ≥ 60",
-    "pbrUndervalued": "PBR ≤ 0.8"
+    "pbrUndervalued": "PBR ≤ 0.8",
+    "priceVolumeWeakRally": "Price up > 5%, volume down > 40%"
   },
   "updateHistory": {
     "title": "Update History",

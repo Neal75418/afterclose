@@ -264,7 +264,6 @@
     "filterPatternThreeBlackCrows": "三黑鴉",
     "filterPatternGapUp": "跳空上漲",
     "filterPatternGapDown": "跳空下跌",
-    "filterPriceVolumeBullishDivergence": "價漲量縮",
     "filterPriceVolumeBearishDivergence": "價跌量增",
     "filterHighVolumeBreakout": "高檔爆量",
     "filterLowVolumeAccumulation": "低檔吸籌",
@@ -304,7 +303,8 @@
     "selectIndustry": "選擇產業",
     "clearIndustry": "清除",
     "allIndustries": "全部產業",
-    "industryStockCount": "{count} 檔"
+    "industryStockCount": "{count} 檔",
+    "filterPriceVolumeWeakRally": "價漲量縮"
   },
   "watchlist": {
     "title": "自選股票",
@@ -535,7 +535,6 @@
     "dayTradingHigh": "高當沖",
     "dayTradingExtreme": "極高當沖",
     "concentrationHigh": "籌碼集中",
-    "priceVolumeBullishDivergence": "價漲量縮",
     "priceVolumeBearishDivergence": "價跌量增",
     "highVolumeBreakout": "高檔爆量",
     "lowVolumeAccumulation": "低檔吸籌",
@@ -560,7 +559,8 @@
     "insiderSignificantBuying": "董監大量增持",
     "highPledgeRatio": "高質押比例",
     "foreignConcentrationWarning": "外資高度集中",
-    "foreignExodus": "外資加速流出"
+    "foreignExodus": "外資加速流出",
+    "priceVolumeWeakRally": "價漲量縮警示"
   },
   "reasonTip": {
     "volumeSpike": "成交量顯著放大，可能有重要資金進出。",
@@ -572,7 +572,7 @@
     "revenueYoySurge": "營收年增率大幅成長，基本面強勁。",
     "revenueYoyDecline": "營收年增率大幅衰退，基本面轉弱。",
     "revenueMomGrowth": "營收連續月增成長，成長動能持續。",
-    "revenueNewHigh": "營收創歷史新高，基本面進入高成長階段。",
+    "revenueNewHigh": "營收創近期新高，基本面進入高成長階段。",
     "highDividendYield": "現金殖利率偏高，具防禦價值。",
     "peUndervalued": "本益比偏低，估值可能被低估。",
     "peOvervalued": "本益比偏高，估值可能過高。",
@@ -588,13 +588,13 @@
     "foreignDecreasing": "外資持股比例持續減少，態度轉保守。",
     "dayTradingHigh": "當沖比例偏高，短線投機氣氛濃厚。",
     "concentrationHigh": "大戶籌碼集中度高，籌碼面偏多。",
-    "bullishDivergence": "價漲量縮的背離訊號，需留意後續走勢。",
     "bearishDivergence": "價跌量增的空頭背離訊號，賣壓加重。",
     "highVolumeBreakout": "高檔帶量突破，多頭攻勢確立。",
     "lowVolumeAccumulation": "低檔量縮整理，可能進入吸籌階段。",
     "pbrUndervalued": "股價淨值比偏低，估值可能被低估。",
     "foreignConcentration": "外資持股高度集中，籌碼集中風險較高。",
-    "foreignExodus": "外資加速流出，賣壓較大。"
+    "foreignExodus": "外資加速流出，賣壓較大。",
+    "priceVolumeWeakRally": "價格上漲但成交量萎縮，漲勢無力警示，後續可能反轉。"
   },
   "onboarding": {
     "skip": "略過",
@@ -970,14 +970,13 @@
     "patternEveningStar": "K線形態：夜星",
     "patternThreeBlackCrows": "K線形態：黑三鴉",
     "patternGapDown": "K線形態：向下跳空",
-    "priceVolumeBullishDivergence": "價漲量縮 (漲勢無力警示)",
     "priceVolumeBearishDivergence": "價跌量增 (恐慌賣壓)",
     "highVolumeBreakout": "帶量突破",
     "lowVolumeAccumulation": "低量整理",
     "revenueYoySurge": "營收年增率 ≧ 30%",
     "revenueYoyDecline": "營收年增率 ≦ -20%",
     "revenueMomGrowth": "營收月增率連續2個月成長",
-    "revenueNewHigh": "當月營收創歷史新高",
+    "revenueNewHigh": "當月營收創近期新高",
     "highDividendYield": "現金殖利率 ≧ 5.5%",
     "peUndervalued": "本益比 ≦ 10倍",
     "peOvervalued": "本益比 ≧ 60倍",
@@ -996,7 +995,8 @@
     "labelClear": "清除篩選",
     "labelScanned": "已掃描 {count} 檔",
     "labelDate": "資料日期 {date}",
-    "moreDetails": "更多詳情"
+    "moreDetails": "更多詳情",
+    "priceVolumeWeakRally": "價漲量縮（漲勢無力警示）"
   },
   "customScreening": {
     "title": "自訂選股",
@@ -1146,7 +1146,7 @@
     "revenueYoySurge": "營收年增率達 {growth}%，基本面強勁。",
     "revenueYoyDecline": "營收年增率為 {growth}%，基本面轉弱。",
     "revenueMomGrowth": "營收連續 {months} 個月月增成長，成長動能持續。",
-    "revenueNewHigh": "營收創歷史新高，超越前高 {surpassPct}%。",
+    "revenueNewHigh": "營收創近期新高，超越前高 {surpassPct}%。",
     "highDividendYield": "現金殖利率達 {yield}%，具防禦價值。",
     "peUndervalued": "本益比僅 {pe} 倍，估值偏低。",
     "peOvervalued": "本益比高達 {pe} 倍，估值偏高。",
@@ -1181,7 +1181,6 @@
     "concentrationHigh": "大戶籌碼集中度偏高，籌碼面穩定。",
     "highVolumeBreakout": "高檔帶量突破，多頭攻勢確立。",
     "lowVolumeAccumulation": "低檔量縮整理，可能進入吸籌階段。",
-    "bullishDivergence": "出現價漲量縮的背離訊號，需留意。",
     "bearishDivergence": "出現價跌量增的空頭背離訊號。",
     "newsRelated": "近期有相關新聞，建議留意。",
     "netBuy": "買超 {lots} 張",
@@ -1214,7 +1213,8 @@
     "confidenceMedium": "中信心",
     "confidenceLow": "低信心",
     "signalStrength": "訊號強度",
-    "ruleAccuracy": "規則準確度"
+    "ruleAccuracy": "規則準確度",
+    "priceVolumeWeakRally": "出現價漲量縮警示，漲勢可能無力。"
   },
   "comparison": {
     "title": "個股比較",
@@ -1522,18 +1522,18 @@
     "eveningStar": "夜星形態",
     "threeBlackCrows": "三黑鴉",
     "gapDown": "跳空缺口向下",
-    "bullishDivergence": "價漲 > 5% 且 量縮 > 40%",
     "bearishDivergence": "價跌 > 3% 且 量增 > 30%",
     "volumeBreakout": "帶量突破",
     "lowVolumeAccum": "低量整理",
     "revenueYoySurge": "營收年增率 ≥ 30%",
     "revenueYoyDecline": "營收年增率 ≤ -20%",
     "revenueMomGrowth": "連續2個月營收月增",
-    "revenueNewHigh": "當月營收創歷史新高",
+    "revenueNewHigh": "當月營收創近期新高",
     "highDividendYield": "殖利率 ≥ 5.5%",
     "peUndervalued": "本益比 ≤ 10",
     "peOvervalued": "本益比 ≥ 60",
-    "pbrUndervalued": "股價淨值比 ≤ 0.8"
+    "pbrUndervalued": "股價淨值比 ≤ 0.8",
+    "priceVolumeWeakRally": "價漲 > 5% 且 量縮 > 40%"
   },
   "updateHistory": {
     "title": "更新紀錄",

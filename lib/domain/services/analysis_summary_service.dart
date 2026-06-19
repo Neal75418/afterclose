@@ -790,7 +790,7 @@ class AnalysisSummaryService {
   static final _priceVolumeDivergence =
       <String, LocalizableString Function(Map<String, dynamic>)>{
         SignalName.priceVolumeWeakRally: (_) =>
-            const LocalizableString('summary.bullishDivergence'),
+            const LocalizableString('summary.priceVolumeWeakRally'),
         SignalName.priceVolumeBearishDivergence: (_) =>
             const LocalizableString('summary.bearishDivergence'),
         SignalName.highVolumeBreakout: (_) =>

@@ -275,7 +275,7 @@ const Map<ScanFilter, FilterMetadata> _filterMetadataMap = {
   ScanFilter.priceVolumeWeakRally: FilterMetadata(
     conditionKey: 'filterMeta.priceVolumeWeakRally',
     dataRequirements: [DataRequirement.priceHistory20],
-    thresholdInfo: 'threshold.bullishDivergence',
+    thresholdInfo: 'threshold.priceVolumeWeakRally',
   ),
   ScanFilter.priceVolumeBearishDivergence: FilterMetadata(
     conditionKey: 'filterMeta.priceVolumeBearishDivergence',
