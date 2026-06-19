@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:drift_flutter/drift_flutter.dart';
 
 import 'package:afterclose/core/utils/logger.dart';
 
@@ -131,20 +130,39 @@ class AppDatabase extends $AppDatabase
         InsiderTransferDaoMixin,
         MarketOverviewDaoMixin,
         CalibrationCacheDaoMixin {
-  AppDatabase() : super(_openConnection());
+  /// 純 Dart constructor — caller 注入 [QueryExecutor]
+  ///
+  /// **C 方案 refactor 2026-06-19**：移除原本 `AppDatabase() : super(_openConnection())`
+  /// 把 `drift_flutter` 鏈拉進整個檔的 default 構造。`drift_flutter` →
+  /// `path_provider` → `package:flutter/foundation.dart` → `dart:ui`，
+  /// 連鎖讓所有 import AppDatabase 的純 Dart CLI 無法 `dart run`
+  /// （包括 `tool/backfill.dart`、`tool/replay_calibrator.dart`）。
+  ///
+  /// Flutter 路徑（runtime app / WorkManager isolate）改顯式呼叫
+  /// `openDriftFlutterConnection()` from `app_database_flutter.dart`：
+  ///
+  /// ```dart
+  /// final db = AppDatabase(openDriftFlutterConnection());
+  /// ```
+  ///
+  /// 純 Dart 路徑改用 [AppDatabase.forToolFile] / [AppDatabase.forTesting]。
+  AppDatabase(super.executor);
 
   /// 測試用 - 建立記憶體內 Database
   AppDatabase.forTesting() : super(NativeDatabase.memory());
 
-  /// Tool/calibration 用 — 開啟指定路徑的 SQLite 檔案作為獨立 DB
+  /// Tool / CLI 用 — 開啟指定路徑的 SQLite 檔案作為獨立 DB
   ///
-  /// Stage 3+4 backfill + calibration 專用（`tool/backfill.dart`、
-  /// `tool/replay_calibrator.dart`、`tool/recalibrate.dart`）。**不用於
-  /// runtime app** — 開發者手動指定如 `tool/calibration.db` 的路徑以
-  /// 避免污染正式 dev DB，並讓 calibration 產物可以獨立 .gitignore。
+  /// 用途：
+  /// - macOS launchd CLI（`tool/daily_update.dart`）直接讀寫 GUI app sandbox
+  ///   的 DB
+  /// - Stage 3+4 backfill + calibration（`tool/backfill.dart`、
+  ///   `tool/replay_calibrator.dart`、`tool/recalibrate.dart`）走獨立
+  ///   `tool/calibration.db` 路徑避免污染正式 dev DB
   ///
   /// 若 [path] 不存在會自動建立，schema 透過既有的 `onCreate` +
-  /// fingerprint 機制建好。
+  /// fingerprint 機制建好。**純 Dart**：不經 `drift_flutter`，可在
+  /// `dart run` 環境正常運作。
   AppDatabase.forToolFile(String path) : super(NativeDatabase(File(path)));
 
   /// 產品尚未上線前使用 version 1，所有 table 和 index 在 onCreate 一次建好。
@@ -300,18 +318,6 @@ class AppDatabase extends $AppDatabase
 /// reset — the value itself is opaque.
 const String _schemaFingerprint = 'stage5b-dual-horizon-2026-04-11';
 
-QueryExecutor _openConnection() {
-  return driftDatabase(
-    name: 'afterclose',
-    native: DriftNativeOptions(
-      // 前景 (Riverpod container) 與背景 (WorkManager isolate) 都 `AppDatabase()`，
-      // 不開 shareAcrossIsolates 會各自開原生連線。預設 rollback journal 模式下
-      // 背景 `_db.transaction()` 拿到的寫鎖會讓前景寫 SQLITE_BUSY 失敗（夜間 sync
-      // 期間使用者打開 app 必中）。shareAcrossIsolates 讓 drift 統一管理跨 isolate
-      // 並行存取；setup 啟 WAL 進一步降低 reader 受寫鎖影響的時間。
-      // setup callback 會被跨 isolate 發送；用 no-capture closure 確保可序列化。
-      shareAcrossIsolates: true,
-      setup: (db) => db.execute('PRAGMA journal_mode=WAL;'),
-    ),
-  );
-}
+// 原 `QueryExecutor _openConnection()` 已搬到 `app_database_flutter.dart`
+// 並改為 public `openDriftFlutterConnection()`，避免 `drift_flutter` import
+// 把 `dart:ui` 拉進整個 type graph，讓 `tool/` 的純 Dart CLI 可以跑。

@@ -1,13 +1,18 @@
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'package:afterclose/app/headless_update_runner.dart';
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/app_database_flutter.dart';
+import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 
 /// 背景更新任務名稱
@@ -138,7 +143,37 @@ void _callbackDispatcher() {
     try {
       // 在背景 isolate 中初始化所需服務
       // 共用 [runHeadlessUpdate]，與 macOS launchd CLI 同條 wiring。
-      final result = await runHeadlessUpdate();
+      //
+      // C 方案 refactor 2026-06-19：
+      // - CalibratedScoresRegistry 已純 Dart 化，跨 isolate 不會繼承 main
+      //   isolate 的 assetLoaderOverride，本 isolate 自己注入
+      //   `rootBundle.loadString`（workmanager isolate 也有 Flutter binding）。
+      // - AppDatabase 走 Flutter-flavoured executor `openDriftFlutterConnection()`
+      //   讓 drift 跨 isolate share 連線（避免 SQLITE_BUSY 衝突）。CLI
+      //   路徑用 `AppDatabase.forToolFile(path)` 不經此 callback。
+      CalibratedScoresRegistry.instance.assetLoaderOverride =
+          rootBundle.loadString;
+      final database = AppDatabase(openDriftFlutterConnection());
+
+      // C 方案 refactor 2026-06-19：runHeadlessUpdate 已不直接吃
+      // SettingsRepository（拆掉 flutter_secure_storage 的依賴）。本層
+      // 在 Flutter binding context 下用 SettingsRepository 走完整 fallback
+      // chain（SecureStorage → env var → memory），再把結果傳進 runner。
+      String? finMindToken;
+      try {
+        final settingsRepo = SettingsRepository(database: database);
+        finMindToken = await settingsRepo.getFinMindToken();
+      } catch (e) {
+        AppLogger.warning(
+          'BackgroundUpdateService',
+          'FinMind token 載入失敗，將以無 token 模式跑 update',
+          e,
+        );
+      }
+      final result = await runHeadlessUpdate(
+        database: database,
+        finMindToken: finMindToken,
+      );
 
       AppLogger.info('BackgroundUpdateService', '背景更新完成: ${result.summary}');
 

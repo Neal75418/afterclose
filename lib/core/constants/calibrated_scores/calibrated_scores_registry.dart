@@ -1,11 +1,22 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:meta/meta.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_table.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/utils/logger.dart';
+
+/// Asset 載入 delegate — 不直接依賴 `package:flutter/services.dart` 讓
+/// registry 維持純 Dart（C 方案 refactor 2026-06-19）。
+///
+/// - Flutter app（main.dart / WorkManager isolate）在 startup 透過
+///   [CalibratedScoresRegistry.assetLoaderOverride] 注入呼叫 `rootBundle.loadString`
+///   的 closure
+/// - 純 Dart CLI（macOS launchd）注入 `File('assets/$path').readAsString()`
+/// - 測試環境也透過 setUp 注入 — flutter_test 已有 rootBundle binding
+///
+/// 沒設 override 時 [CalibratedScoresRegistry.loadFromAssets] 會拋
+/// [StateError]，避免靜默拿到空 table 後 fallback 到 hardcoded 而不知。
+typedef CalibrationAssetLoader = Future<String> Function(String assetPath);
 
 /// 主 isolate 的 calibrated scores 單例登錄表
 ///
@@ -44,6 +55,18 @@ class CalibratedScoresRegistry {
   CalibratedScoresTable? _long;
   bool _loaded = false;
   Future<void>? _loading;
+
+  /// 注入 asset 載入 delegate — 必須在第一次呼叫 [loadFromAssets] 前設好
+  ///
+  /// 約定：
+  /// - Flutter app：`main.dart` startup 設為呼叫 `rootBundle.loadString` 的 closure
+  /// - macOS launchd CLI：設為 `File('assets/$path').readAsString()` 的 closure
+  /// - flutter_test 環境：setUp 設為呼叫 `rootBundle.loadString`
+  /// - 未設就呼叫 [loadFromAssets] 會拋 [StateError]，避免靜默 fallback
+  ///
+  /// 跨 horizon 共用同一 delegate；instance-scoped 而非 static 避免測試
+  /// 隔離問題。
+  CalibrationAssetLoader? assetLoaderOverride;
 
   /// 從 assets 載入兩個 horizon 的 calibrated scores
   ///
@@ -123,27 +146,18 @@ class CalibratedScoresRegistry {
     // override 實質無效 → fall through 到 bundled asset 保底，而不是綁一個
     // 空的 DB cache 上去。
     if (shortResult.table.ruleCount == 0 || longResult.table.ruleCount == 0) {
+      // AppLogger.warning 已透過 setSentryDelegates 注入的 closure 把
+      // breadcrumb 送進 Sentry，不需要再直接呼叫 sentry_flutter API
+      // （C 方案 refactor 2026-06-19）。OTA 拒載 path 仍會在 Sentry
+      // backend 上留下 'calibration' category 的 breadcrumb 供分辨
+      // 「沒 OTA」vs「壞 OTA」。
       AppLogger.warning(
         'CalibratedScoresRegistry',
         'DB cache override yielded empty table, falling back to bundled asset. '
             'short warnings: ${shortResult.warnings.length}, '
-            'long warnings: ${longResult.warnings.length}',
-      );
-      // Sentry breadcrumb：production 環境的 release build 因 kDebugMode
-      // 把 info / warning log 噤聲；OTA 拒載 path 是 silent fallback，
-      // 需要 breadcrumb 才能在 backend 上分辨「沒 OTA」vs「壞 OTA」。
-      Sentry.addBreadcrumb(
-        Breadcrumb(
-          message: 'OTA calibration override rejected, fell back to bundle',
-          category: 'calibration',
-          level: SentryLevel.warning,
-          data: {
-            'short_rule_count': shortResult.table.ruleCount,
-            'long_rule_count': longResult.table.ruleCount,
-            'short_warnings': shortResult.warnings.length,
-            'long_warnings': longResult.warnings.length,
-          },
-        ),
+            'long warnings: ${longResult.warnings.length}, '
+            'short rule count: ${shortResult.table.ruleCount}, '
+            'long rule count: ${longResult.table.ruleCount}',
       );
       return loadFromAssets(
         knownRuleIds: knownRuleIds,
@@ -245,8 +259,17 @@ class CalibratedScoresRegistry {
     Set<String>? knownRuleIds,
     Map<String, int>? hardcodedScores,
   ) async {
+    final loader = assetLoaderOverride;
+    if (loader == null) {
+      throw StateError(
+        'CalibratedScoresRegistry.assetLoaderOverride 未設定 — '
+        'Flutter app 應在 main.dart startup 注入 rootBundle.loadString '
+        'closure，CLI 注入 File.readAsString，test 環境 setUp 注入 '
+        'rootBundle.loadString。',
+      );
+    }
     try {
-      final jsonStr = await rootBundle.loadString(horizon.assetPath);
+      final jsonStr = await loader(horizon.assetPath);
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
         jsonStr,
         horizon: horizon,

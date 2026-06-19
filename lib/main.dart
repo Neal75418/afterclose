@@ -26,6 +26,11 @@ void main() async {
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await EasyLocalization.ensureInitialized();
 
+  // C 方案 refactor 2026-06-19：CalibratedScoresRegistry 已純 Dart 化，
+  // 不直接 import flutter/services。Flutter app startup 注入
+  // rootBundle.loadString 當 asset loader；CLI 走 File.readAsString。
+  CalibratedScoresRegistry.instance.assetLoaderOverride = rootBundle.loadString;
+
   // 設定通知點擊導航 — 必須在 initialize() 之前，避免 init 期間若 plugin
   // dispatch 到 _onNotificationTapped，callback 還是 null 而 silently 丟掉
   // payload。callback 是 plugin singleton 上的 property，在 init 前先 assign
@@ -83,6 +88,38 @@ void main() async {
   } else {
     await _runApp(container);
   }
+
+  // C 方案 refactor 2026-06-19：logger.dart 已純 Dart 化，不再直接 import
+  // sentry_flutter。Flutter app startup 注入 Sentry bridging closures；
+  // CLI 路徑（tool/）不注入，Sentry 段成 no-op。
+  AppLogger.setSentryDelegates(
+    breadcrumb: (message, category, level, data) {
+      Sentry.addBreadcrumb(
+        Breadcrumb(
+          message: message,
+          category: category,
+          level: switch (level) {
+            'debug' => SentryLevel.debug,
+            'info' => SentryLevel.info,
+            'warning' => SentryLevel.warning,
+            'error' => SentryLevel.error,
+            _ => SentryLevel.info,
+          },
+          data: data,
+        ),
+      );
+    },
+    capture: (error, stackTrace, tag, message) {
+      Sentry.captureException(
+        error,
+        stackTrace: stackTrace,
+        withScope: (scope) {
+          scope.setTag('logger.tag', tag);
+          scope.setContexts('logger', {'message': message, 'tag': tag});
+        },
+      );
+    },
+  );
 }
 
 Future<void> _runApp(ProviderContainer container) async {

@@ -1,8 +1,26 @@
-import 'package:flutter/foundation.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
-
 /// 日誌等級，用於過濾輸出
 enum LogLevel { debug, info, warning, error }
+
+/// Sentry breadcrumb 投遞函式 — 不直接依賴 sentry_flutter 型別讓 logger.dart
+/// 維持純 Dart。Flutter app 在 startup 透過 [AppLogger.setSentryDelegates]
+/// 注入 closure，內部把參數轉成 `Breadcrumb` + `SentryLevel`。CLI 路徑不
+/// 注入，所有 Sentry 呼叫成為 null-safe no-op。
+typedef SentryBreadcrumbFn =
+    void Function(
+      String message,
+      String? category,
+      String level, // 'debug' | 'info' | 'warning' | 'error'
+      Map<String, dynamic>? data,
+    );
+
+/// Sentry exception 上報函式 — 跟 [SentryBreadcrumbFn] 同樣的去耦設計。
+typedef SentryCaptureFn =
+    void Function(
+      Object error,
+      StackTrace? stackTrace,
+      String tag,
+      String message,
+    );
 
 /// 結構化日誌工具，確保應用程式日誌格式一致
 ///
@@ -14,12 +32,31 @@ enum LogLevel { debug, info, warning, error }
 /// AppLogger.error('Network', 'API 請求失敗', e, stackTrace);
 /// ```
 ///
-/// 整合 Sentry：
-/// - `error()` 自動上報至 Sentry（`Sentry.captureException`）
-/// - `warning()` 加入 Sentry breadcrumb 供後續錯誤追蹤參考
+/// Sentry 整合（C 方案 refactor 2026-06-19）：
+/// - Flutter app 在 `main.dart` 透過 [setSentryDelegates] 注入 closures，
+///   把 logger 呼叫橋接到 `Sentry.addBreadcrumb` / `Sentry.captureException`
+/// - CLI 路徑（`tool/`）不注入，logger 呼叫 Sentry 段變成 no-op
+/// - 過去 logger 直接 `import 'package:sentry_flutter'` 把 dart:ui 拉進整套
+///   type graph，導致純 Dart CLI 無法 dart run
 abstract final class AppLogger {
-  /// 最低輸出等級（僅在 debug 模式生效）
+  /// 最低輸出等級
   static const LogLevel _minLevel = LogLevel.debug;
+
+  /// Sentry breadcrumb delegate — 由 main.dart 注入；CLI 不注入時為 null
+  static SentryBreadcrumbFn? _sentryBreadcrumb;
+
+  /// Sentry capture delegate — 由 main.dart 注入；CLI 不注入時為 null
+  static SentryCaptureFn? _sentryCapture;
+
+  /// 由 Flutter app 在 startup 呼叫一次，注入 Sentry bridging closures。
+  /// CLI 環境不需呼叫；所有 Sentry 段自動 no-op。
+  static void setSentryDelegates({
+    SentryBreadcrumbFn? breadcrumb,
+    SentryCaptureFn? capture,
+  }) {
+    _sentryBreadcrumb = breadcrumb;
+    _sentryCapture = capture;
+  }
 
   /// 記錄 debug 訊息
   static void debug(String tag, String message) {
@@ -33,7 +70,7 @@ abstract final class AppLogger {
 
   /// 記錄 warning 訊息，可附帶例外與堆疊追蹤
   ///
-  /// 同時加入 Sentry breadcrumb，供後續錯誤上報時提供上下文。
+  /// 同時加入 Sentry breadcrumb（若已注入 delegate）。
   static void warning(
     String tag,
     String message, [
@@ -42,19 +79,17 @@ abstract final class AppLogger {
   ]) {
     _log(LogLevel.warning, tag, message, error, stackTrace);
 
-    Sentry.addBreadcrumb(
-      Breadcrumb(
-        message: '[$tag] $message',
-        category: tag,
-        level: SentryLevel.warning,
-        data: error != null ? {'error': error.toString()} : null,
-      ),
+    _sentryBreadcrumb?.call(
+      '[$tag] $message',
+      tag,
+      'warning',
+      error != null ? {'error': error.toString()} : null,
     );
   }
 
   /// 記錄 error 訊息，可附帶例外與堆疊追蹤
   ///
-  /// 同時上報至 Sentry（若已初始化）。
+  /// 同時上報至 Sentry（若已注入 delegate）。
   static void error(
     String tag,
     String message, [
@@ -64,14 +99,7 @@ abstract final class AppLogger {
     _log(LogLevel.error, tag, message, error, stackTrace);
 
     if (error != null) {
-      Sentry.captureException(
-        error,
-        stackTrace: stackTrace,
-        withScope: (scope) {
-          scope.setTag('logger.tag', tag);
-          scope.setContexts('logger', {'message': message, 'tag': tag});
-        },
-      );
+      _sentryCapture?.call(error, stackTrace, tag, message);
     }
   }
 
@@ -85,8 +113,13 @@ abstract final class AppLogger {
     // 低於最低等級的日誌不輸出
     if (level.index < _minLevel.index) return;
 
-    // 僅在 debug 模式輸出日誌
-    if (!kDebugMode) return;
+    // 僅在 debug 模式輸出日誌（release build assert 不執行 → 留 release=false）
+    var isDebug = false;
+    assert(() {
+      isDebug = true;
+      return true;
+    }());
+    if (!isDebug) return;
 
     final prefix = switch (level) {
       LogLevel.debug => '[D]',
@@ -103,14 +136,19 @@ abstract final class AppLogger {
         '${now.millisecond.toString().padLeft(3, '0')}';
     final logMessage = '$timestamp $prefix [$tag] $message';
 
-    debugPrint(logMessage);
+    // 純 Dart `print` — debug build 行為等同 `debugPrint`（不 throttle 但
+    // 順序保證）。CLI 寫進 launchd stdout file。
+    // ignore: avoid_print
+    print(logMessage);
 
     if (error != null) {
-      debugPrint('$timestamp $prefix [$tag] Error: $error');
+      // ignore: avoid_print
+      print('$timestamp $prefix [$tag] Error: $error');
     }
 
     if (stackTrace != null) {
-      debugPrint('$timestamp $prefix [$tag] StackTrace:\n$stackTrace');
+      // ignore: avoid_print
+      print('$timestamp $prefix [$tag] StackTrace:\n$stackTrace');
     }
   }
 }

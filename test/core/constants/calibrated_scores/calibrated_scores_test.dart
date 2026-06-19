@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
@@ -682,6 +683,10 @@ void main() {
   group('CalibratedScoresRegistry [Layer 2 + Layer 3]', () {
     setUpAll(() {
       TestWidgetsFlutterBinding.ensureInitialized();
+      // C 方案 refactor 2026-06-19：registry 不再直接 import rootBundle，
+      // test 顯式注入 loader。
+      CalibratedScoresRegistry.instance.assetLoaderOverride =
+          rootBundle.loadString;
     });
 
     tearDown(() {

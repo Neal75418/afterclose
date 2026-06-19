@@ -5,11 +5,16 @@
 //
 // 每日跑一次 UpdateService 累積 forward calibration 資料。給 macOS
 // launchd 用（workmanager 在 macOS 不支援，導致 forward data 累積
-// 完全靠 user 手動開 app — 過去 2 個月實測有兩段 3 週空白）。
+// 完全靠 user 手動開 app）。
+//
+// **C 方案 refactor 2026-06-19 啟用**：runHeadlessUpdate 已純 Dart 化，
+// AppDatabase 接收外部注入 executor，CalibratedScoresRegistry 接受
+// asset loader override。本 CLI 在 startup 把這兩條路徑接成 dart:io
+// 友善版本即可全鏈跑通。
 //
 // ## 使用方式
 //
-//   # 一次性手動跑：
+//   # 一次性手動跑（從 repo root 執行讓 assets/ 找得到）：
 //   dart run tool/daily_update.dart
 //
 //   # launchd 自動排程（com.neo.afterclose.daily.plist）每天 15:30
@@ -17,38 +22,69 @@
 //
 // ## 環境變數
 //
-//   FINMIND_TOKEN  必填（沒設只能跑 TWSE 免費資料，新聞 / EPS / 月營收
+//   FINMIND_TOKEN  必填（沒設只能跑免費 TWSE 資料、新聞 / EPS / 月營收
 //                  / 股利等會 skip）。launchd 不讀 ~/.zshrc — plist 用
-//                  zsh wrapper source rc 拿 token。
+//                  zsh -lc wrapper source rc 拿 token。
+//
+// ## DB 路徑
+//
+// 直接讀寫 macOS Flutter app sandbox 的 DB：
+//   ~/Library/Containers/com.neo.afterclose/Data/Documents/afterclose.sqlite
+//
+// 確保 GUI app 跟 CLI 共用同一份資料，calibration 累積無分裂。
 //
 // ## 退出碼
 //
 //   0   更新成功 / 非交易日 skip
 //   1   更新失敗（API error / DB write fail / 非預期 exception）
-//
-// ## 與既有路徑的關係
-//
-//   - `lib/app/background_update_service.dart`（iOS / Android workmanager）
-//   - `tool/daily_update.dart`（macOS launchd） ← this file
-//   - 都呼叫 `lib/app/headless_update_runner.dart::runHeadlessUpdate()`
-//     單一 source of truth，避免 wiring 漂移。
-//
-// ## 與 tool/backfill.dart 的差別
-//
-//   backfill：抓 2 年歷史 → 寫獨立 calibration DB，跑數小時，一次性。
-//   daily_update：抓今天 → 寫主 DB，跑數分鐘，每天。
 
 import 'dart:io';
 
 import 'package:afterclose/app/headless_update_runner.dart';
+import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/data/database/app_database.dart';
 
 Future<void> main(List<String> args) async {
   final start = DateTime.now();
   print('[daily_update] started at ${start.toIso8601String()}');
 
+  // CLI 跑在純 Dart context — 沒有 Flutter binding，rootBundle 不可用。
+  // 用 dart:io 直接讀 assets 目錄（CLI 從 repo root 跑時 assets/ 就是
+  // pubspec.yaml 旁邊那個目錄）。
+  CalibratedScoresRegistry.instance.assetLoaderOverride = (path) async {
+    final file = File(path);
+    if (!file.existsSync()) {
+      throw FileSystemException(
+        'Asset not found at $path. '
+        'Run from repo root so `assets/*.json` is resolvable.',
+        path,
+      );
+    }
+    return file.readAsString();
+  };
+
+  // 直接讀寫 GUI app sandbox 的 DB — 跟 GUI 共用資料、calibration 不分裂。
+  final dbPath =
+      '${Platform.environment['HOME']}'
+      '/Library/Containers/com.neo.afterclose/Data/Documents/afterclose.sqlite';
+  print('[daily_update] DB: $dbPath (exists=${File(dbPath).existsSync()})');
+
+  // FinMind token：直接讀 env var（與 SettingsRepository 的 fallback chain
+  // priority 2 一致）。launchd plist 用 `zsh -lc` source ~/.zshrc 拿到。
+  final finMindToken = Platform.environment['FINMIND_TOKEN'];
+  print(
+    '[daily_update] FINMIND_TOKEN '
+    '${(finMindToken == null || finMindToken.isEmpty) ? "未設" : "已設 (${finMindToken.length} chars)"}',
+  );
+
+  AppDatabase? database;
   try {
-    final result = await runHeadlessUpdate();
+    database = AppDatabase.forToolFile(dbPath);
+    final result = await runHeadlessUpdate(
+      database: database,
+      finMindToken: finMindToken,
+    );
     final elapsed = DateTime.now().difference(start);
     print(
       '[daily_update] finished in ${elapsed.inSeconds}s — '
@@ -62,5 +98,7 @@ Future<void> main(List<String> args) async {
     print('[daily_update] FAILED: $e');
     print(s);
     exit(1);
+  } finally {
+    await database?.close();
   }
 }

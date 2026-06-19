@@ -39,6 +39,10 @@ dependencies:
   flutter_riverpod: ^3.2.1
   riverpod_annotation: ^4.0.2
 
+  # Annotations (給純 Dart code 用 @visibleForTesting / @immutable，
+  # 避免 import package:flutter/foundation.dart 把 dart:ui 拉進 CLI graph)
+  meta: ^1.16.0
+
   # Database
   drift: ^2.32.0
   drift_flutter: ^0.3.0

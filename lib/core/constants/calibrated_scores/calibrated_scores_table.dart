@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/calibration_thresholds.dart';

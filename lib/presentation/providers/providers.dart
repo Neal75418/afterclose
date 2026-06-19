@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/app_database_flutter.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:dio/dio.dart';
 
@@ -46,7 +47,10 @@ final appClockProvider = Provider<AppClock>((ref) => const SystemClock());
 
 /// 應用程式資料庫單例
 final databaseProvider = Provider<AppDatabase>((ref) {
-  final db = AppDatabase();
+  // C 方案 refactor：AppDatabase 已移除 drift_flutter 依賴，Flutter runtime
+  // 路徑改顯式注入 `openDriftFlutterConnection()`（純 Dart CLI 用
+  // `AppDatabase.forToolFile`）。
+  final db = AppDatabase(openDriftFlutterConnection());
   ref.onDispose(() => db.close());
   return db;
 });

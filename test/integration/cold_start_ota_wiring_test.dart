@@ -13,6 +13,7 @@
 //   - DB cache 半成品（only short）→ loadWithOverride 走 asset 路徑（empty）
 //   - DB cache 完整但是空 table → loadWithOverride 走 asset 路徑（empty）
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
@@ -45,6 +46,14 @@ const _longJsonOta = '''
 
 void main() {
   late AppDatabase db;
+
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    // C 方案 refactor 2026-06-19：registry 不再直接 import rootBundle，
+    // test 顯式注入 loader（half-state fallback test 會 hit loader）。
+    CalibratedScoresRegistry.instance.assetLoaderOverride =
+        rootBundle.loadString;
+  });
 
   setUp(() {
     db = AppDatabase.forTesting();
@@ -117,8 +126,16 @@ void main() {
       'half-state cache (only short present) does NOT override; lookup is null',
       () async {
         // 模擬髒資料：DB 有 short 但 long 缺。`loadWithOverride` 應該直接走
-        // asset fallback（在 test 環境 asset bundle 不可用，等同 empty
-        // registry），lookup 一律 null。
+        // asset fallback。本 test 顯式把 assetLoaderOverride 換成「always
+        // 拋 FileSystemException」stub 模擬「test 環境沒 bundled asset」
+        // 的狀態 — registry 會回 empty table，lookup 一律 null。
+        //
+        // C 方案 refactor 2026-06-19 後 setUpAll 注入了真 rootBundle，會
+        // 成功載到 bundled JSON，本 test 必須個別 override。
+        CalibratedScoresRegistry.instance.assetLoaderOverride = (path) async {
+          throw StateError('test stub: no assets available');
+        };
+
         final cached = CachedCalibration(
           version: '2026-06-01',
           shortJson: _shortJsonOta,

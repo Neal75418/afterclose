@@ -9,7 +9,6 @@ import 'package:afterclose/data/remote/rss_parser.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
-import 'package:afterclose/data/repositories/settings_repository.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/domain/services/update_service_factory.dart';
 
@@ -27,7 +26,28 @@ const _tag = 'HeadlessUpdateRunner';
 /// **Token 來源**：透過 [SettingsRepository] 走預設 fallback chain
 /// （SecureStorage → `FINMIND_TOKEN` env var → in-memory）。launchd
 /// 跑 CLI 時要靠 env var 路徑（launchd 不讀 shell rc）。
-Future<UpdateResult> runHeadlessUpdate() async {
+///
+/// **[database] 參數（C 方案 refactor 2026-06-19）**：caller 注入已建好的
+/// [AppDatabase] 控制連線方式：
+/// - WorkManager isolate / Flutter app：`AppDatabase(openDriftFlutterConnection())`
+/// - macOS launchd CLI：`AppDatabase.forToolFile(sandboxDbPath)`
+///
+/// caller 也要負責**之前**設好 [CalibratedScoresRegistry.assetLoaderOverride]
+/// （rootBundle 或 File-based loader）。
+///
+/// runner 自己管 DB 生命週期，**會在 finally 呼叫 `db.close()`**。
+///
+/// [finMindToken] 顯式注入 — 取代以前 [SettingsRepository.getFinMindToken]
+/// 的 fallback chain（依賴 flutter_secure_storage 是 Flutter-only plugin）。
+/// caller 規則：
+/// - WorkManager isolate：caller 自己用 SettingsRepository 取 token 再傳進來
+/// - macOS launchd CLI：直接讀 `FINMIND_TOKEN` env var 傳進來
+/// - null 或空字串 → finMind client 沒 token，免費資料能跑、需 token 的
+///   syncer 會在內部 skip
+Future<UpdateResult> runHeadlessUpdate({
+  required AppDatabase database,
+  String? finMindToken,
+}) async {
   final now = DateTime.now();
   if (!TaiwanCalendar.isTradingDay(now)) {
     AppLogger.info(_tag, '非交易日，跳過更新');
@@ -36,8 +56,6 @@ Future<UpdateResult> runHeadlessUpdate() async {
       ..skipped = true
       ..message = '非交易日';
   }
-
-  final database = AppDatabase();
 
   try {
     // Stage 5a OTA：seed CalibratedScoresRegistry。background isolate
@@ -64,15 +82,12 @@ Future<UpdateResult> runHeadlessUpdate() async {
     final rssParser = RssParser();
 
     try {
-      // 載入 API Token（fallback chain：SecureStorage → env var → in-memory）
-      try {
-        final settingsRepo = SettingsRepository(database: database);
-        final token = await settingsRepo.getFinMindToken();
-        if (token != null && token.isNotEmpty) {
-          finMindClient.token = token;
-        }
-      } catch (e) {
-        AppLogger.warning(_tag, '載入 API Token 失敗', e);
+      // 由 caller 顯式注入 token，避免在此處 import flutter_secure_storage
+      // 把 dart:ui 拉進整個 type graph（C 方案 refactor 2026-06-19）。
+      if (finMindToken != null && finMindToken.isNotEmpty) {
+        finMindClient.token = finMindToken;
+      } else {
+        AppLogger.info(_tag, 'FinMind token 未注入，需 token 的 syncer 將 skip');
       }
 
       // M9 fix：透過 UpdateServiceFactory 統一裝配，與 foreground
