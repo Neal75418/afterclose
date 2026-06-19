@@ -41,6 +41,12 @@
     "watchlist": "自選",
     "news": "新聞"
   },
+  "scoringMode": {
+    "momentumEntry": "起漲候選",
+    "strengthObserve": "強勢觀察",
+    "weaknessObserve": "弱勢觀察",
+    "neutral": "中性"
+  },
   "today": {
     "top10": "今日推薦 Top 20",
     "horizon": {

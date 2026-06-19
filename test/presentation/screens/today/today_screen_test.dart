@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
@@ -146,6 +148,12 @@ void main() {
           n.initialState = settings;
           return n;
         }),
+        // 2026-06-19：3-tab Mode UI 加上。Today 篩選器改 FutureProvider.family，
+        // 用 SynchronousFuture 同步 resolve、跳過 loading state、避開
+        // CircularProgressIndicator 的 ticker 留下 pending timer 的 test infra bug。
+        modeRecommendationsProvider.overrideWith(
+          (ref, mode) => SynchronousFuture(const []),
+        ),
       ],
       brightness: brightness,
     );

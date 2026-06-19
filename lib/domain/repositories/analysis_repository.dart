@@ -1,5 +1,6 @@
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/dao/analysis_dao.dart';
 
 /// 分析結果與推薦的資料儲存庫介面
 ///
@@ -129,6 +130,16 @@ abstract class IAnalysisRepository {
     DateTime date, {
     required Horizon horizon,
   });
+
+  /// Mode-based 股票分數加總
+  ///
+  /// 用於 Today screen 3-tab Mode UI。caller 傳入該 mode 內的所有 reason
+  /// type code 列表（從 [ScoringMode] 分類取得），DAO 內 SQL aggregate
+  /// 加總每檔股票的 mode-internal score。
+  Future<List<ModeStockScore>> getModeStockScores(
+    DateTime date,
+    List<String> reasonTypeCodes,
+  );
 
   // ==================================================
   // 交易控制

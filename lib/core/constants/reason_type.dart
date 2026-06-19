@@ -1,6 +1,7 @@
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_registry.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
+import 'package:afterclose/core/constants/scoring_mode.dart';
 
 /// 推薦理由類型
 enum ReasonType {
@@ -164,6 +165,94 @@ enum ReasonType {
     ReasonType.roeExcellent => RuleScores.roeExcellent,
     ReasonType.roeImproving => RuleScores.roeImproving,
     ReasonType.roeDeclining => RuleScores.roeDeclining,
+  };
+}
+
+/// ScoringMode 分類擴充：將 ReasonType 對應到 user-facing scoring mode
+///
+/// 用 switch (compiler 強制 exhaustive) 確保每條新增 ReasonType 都要顯式
+/// 給定 mode，避免 silent miss 進 neutral 而被無視。
+extension ReasonTypeScoringMode on ReasonType {
+  /// 該 rule 屬於哪個 mode
+  ///
+  /// **Rule 分類原則**（依使用者「找股目的」而非「rule 類型」）：
+  /// - momentumEntry: 反轉 / 突破 / 底部訊號 — 你想找還沒漲、即將起漲的股票
+  /// - strengthObserve: 大漲 / 籌碼集中度高 / 法人連買 — 你想追蹤強勢股、等回檔
+  /// - weaknessObserve: 警示 / 看空 K 線 / 估值過高 — 你想避開或反向操作
+  /// - neutral: 觸發頻繁但無 alpha 的 noise filter rule、value rule 跟 momentum
+  ///   無關 — 仍寫進 daily_reason 顯示 evidence chip，但不影響任何 mode 排名
+  ScoringMode get scoringMode => switch (this) {
+    // ============ Mode A: 起漲候選（14 條）============
+    ReasonType.reversalW2S => ScoringMode.momentumEntry,
+    ReasonType.techBreakout => ScoringMode.momentumEntry,
+    ReasonType.patternBullishEngulfing => ScoringMode.momentumEntry,
+    ReasonType.patternHammer => ScoringMode.momentumEntry,
+    ReasonType.patternMorningStar => ScoringMode.momentumEntry,
+    ReasonType.patternThreeWhiteSoldiers => ScoringMode.momentumEntry,
+    ReasonType.lowVolumeAccumulation => ScoringMode.momentumEntry,
+    ReasonType.maAlignmentBullish => ScoringMode.momentumEntry,
+    ReasonType.highVolumeBreakout => ScoringMode.momentumEntry,
+    ReasonType.epsTurnaround => ScoringMode.momentumEntry,
+    ReasonType.revenueMomGrowth => ScoringMode.momentumEntry,
+    ReasonType.roeImproving => ScoringMode.momentumEntry,
+    ReasonType.insiderSignificantBuying => ScoringMode.momentumEntry,
+    ReasonType.pbrUndervalued =>
+      ScoringMode.momentumEntry, // 唯一 backtest 正 alpha
+    // ============ Mode B: 強勢觀察（13 條）============
+    ReasonType.priceSpike => ScoringMode.strengthObserve,
+    ReasonType.patternGapUp => ScoringMode.strengthObserve,
+    ReasonType.week52High => ScoringMode.strengthObserve,
+    ReasonType.institutionalBuyStreak => ScoringMode.strengthObserve,
+    ReasonType.foreignShareholdingIncreasing => ScoringMode.strengthObserve,
+    ReasonType.dayTradingHigh => ScoringMode.strengthObserve,
+    ReasonType.dayTradingExtreme => ScoringMode.strengthObserve,
+    ReasonType.institutionalBuy => ScoringMode.strengthObserve,
+    ReasonType.kdGoldenCross => ScoringMode.strengthObserve,
+    ReasonType.volumeSpike => ScoringMode.strengthObserve,
+    ReasonType.rsiExtremeOverbought => ScoringMode.strengthObserve,
+    ReasonType.newsRelated => ScoringMode.strengthObserve,
+    ReasonType.roeExcellent => ScoringMode.strengthObserve,
+
+    // ============ Mode C: 弱勢觀察（28 條）============
+    ReasonType.reversalS2W => ScoringMode.weaknessObserve,
+    ReasonType.techBreakdown => ScoringMode.weaknessObserve,
+    ReasonType.priceVolumeWeakRally => ScoringMode.weaknessObserve,
+    ReasonType.priceVolumeBearishDivergence => ScoringMode.weaknessObserve,
+    ReasonType.patternBearishEngulfing => ScoringMode.weaknessObserve,
+    ReasonType.patternHangingMan => ScoringMode.weaknessObserve,
+    ReasonType.patternDoji => ScoringMode.weaknessObserve,
+    ReasonType.patternDojiBearish => ScoringMode.weaknessObserve,
+    ReasonType.patternGapDown => ScoringMode.weaknessObserve,
+    ReasonType.patternEveningStar => ScoringMode.weaknessObserve,
+    ReasonType.patternThreeBlackCrows => ScoringMode.weaknessObserve,
+    ReasonType.week52Low => ScoringMode.weaknessObserve,
+    ReasonType.maAlignmentBearish => ScoringMode.weaknessObserve,
+    ReasonType.rsiExtremeOversold => ScoringMode.weaknessObserve,
+    ReasonType.foreignShareholdingDecreasing => ScoringMode.weaknessObserve,
+    ReasonType.institutionalSell => ScoringMode.weaknessObserve,
+    ReasonType.institutionalSellStreak => ScoringMode.weaknessObserve,
+    ReasonType.kdDeathCross => ScoringMode.weaknessObserve,
+    ReasonType.tradingWarningAttention => ScoringMode.weaknessObserve,
+    ReasonType.tradingWarningDisposal => ScoringMode.weaknessObserve,
+    ReasonType.insiderSellingStreak => ScoringMode.weaknessObserve,
+    ReasonType.highPledgeRatio => ScoringMode.weaknessObserve,
+    ReasonType.foreignConcentrationWarning => ScoringMode.weaknessObserve,
+    ReasonType.foreignExodus => ScoringMode.weaknessObserve,
+    ReasonType.peOvervalued => ScoringMode.weaknessObserve,
+    ReasonType.revenueYoyDecline => ScoringMode.weaknessObserve,
+    ReasonType.epsDeclineWarning => ScoringMode.weaknessObserve,
+    ReasonType.roeDeclining => ScoringMode.weaknessObserve,
+
+    // ============ Neutral: 背景 filter / value rule（7 條）============
+    ReasonType.concentrationHigh =>
+      ScoringMode.neutral, // demote 至 0、noise filter
+    ReasonType.revenueNewHigh => ScoringMode.neutral, // demote 至 0、語意誇大
+    ReasonType.revenueYoySurge => ScoringMode.neutral, // calibrated cut
+    ReasonType.highDividendYield => ScoringMode.neutral, // value 非 momentum
+    ReasonType.peUndervalued => ScoringMode.neutral, // 跟 PBR redundant
+    ReasonType.epsConsecutiveGrowth =>
+      ScoringMode.neutral, // calibrated cut on 5D
+    ReasonType.epsYoYSurge => ScoringMode.neutral, // calibrated cut
   };
 }
 

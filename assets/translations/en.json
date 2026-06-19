@@ -41,6 +41,12 @@
     "watchlist": "Watchlist",
     "news": "News"
   },
+  "scoringMode": {
+    "momentumEntry": "Entry",
+    "strengthObserve": "Strong",
+    "weaknessObserve": "Weak",
+    "neutral": "Neutral"
+  },
   "today": {
     "top10": "Today's Top 20",
     "horizon": {

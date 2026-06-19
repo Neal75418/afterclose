@@ -4,6 +4,21 @@ import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 import 'package:afterclose/data/database/tables/analysis_tables.drift.dart';
 
+/// Mode-aggregated stock score (per [ScoringMode], summed across mode rules)
+class ModeStockScore {
+  const ModeStockScore({
+    required this.symbol,
+    required this.modeScoreShort,
+    required this.modeScoreLong,
+    required this.reasonCount,
+  });
+
+  final String symbol;
+  final double modeScoreShort;
+  final double modeScoreLong;
+  final int reasonCount;
+}
+
 /// 每日分析、原因、推薦操作
 mixin AnalysisDaoMixin on $AppDatabase {
   /// 取得指定日期的分析結果。
@@ -77,6 +92,50 @@ mixin AnalysisDaoMixin on $AppDatabase {
           ..where((t) => t.date.equals(date))
           ..orderBy([(t) => OrderingTerm.asc(t.rank)]))
         .get();
+  }
+
+  /// Mode-based 股票分數加總（每檔股票該 mode 內所有 rule 的 score 加總）
+  ///
+  /// 用於 Today screen 的 3-tab Mode UI — 起漲 / 強勢 / 弱勢 各自獨立排序。
+  /// 跟原本 `daily_recommendation` 的 horizon-based 推薦並存，不影響既有
+  /// horizon 系統。
+  ///
+  /// [reasonTypeCodes] 該 mode 內 ReasonType code 列表（UPPER_SNAKE_CASE）
+  /// [date] 查詢日期
+  ///
+  /// 回傳每檔股票的 short / long score 加總（filter 在 mode 內的 rule），
+  /// 含 reasonCount 用於 UI debug / tiebreak。caller 自己決定排序（通常按
+  /// score abs DESC，因為 Mode C 是負分）。
+  Future<List<ModeStockScore>> getModeStockScores(
+    DateTime date,
+    List<String> reasonTypeCodes,
+  ) async {
+    if (reasonTypeCodes.isEmpty) return [];
+
+    // Drift 不直接支援 SELECT symbol, SUM, SUM, COUNT GROUP BY 的型別
+    // 安全 mapping，用 selectOnly + addColumns。
+    final symbolCol = dailyReason.symbol;
+    final shortSum = dailyReason.ruleScoreShort.sum();
+    final longSum = dailyReason.ruleScoreLong.sum();
+    final reasonCount = dailyReason.reasonType.count();
+
+    final query = selectOnly(dailyReason)
+      ..addColumns([symbolCol, shortSum, longSum, reasonCount])
+      ..where(dailyReason.date.equals(date))
+      ..where(dailyReason.reasonType.isIn(reasonTypeCodes))
+      ..groupBy([symbolCol]);
+
+    final rows = await query.get();
+    return rows
+        .map(
+          (row) => ModeStockScore(
+            symbol: row.read(symbolCol)!,
+            modeScoreShort: row.read(shortSum) ?? 0,
+            modeScoreLong: row.read(longSum) ?? 0,
+            reasonCount: row.read(reasonCount) ?? 0,
+          ),
+        )
+        .toList();
   }
 
   /// 批次取得多檔股票在指定日期的觸發原因（批次查詢）

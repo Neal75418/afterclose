@@ -6,6 +6,7 @@ import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/request_deduplicator.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/database/dao/analysis_dao.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
 
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -368,6 +369,14 @@ class AnalysisRepository implements IAnalysisRepository {
     }
 
     return output;
+  }
+
+  @override
+  Future<List<ModeStockScore>> getModeStockScores(
+    DateTime date,
+    List<String> reasonTypeCodes,
+  ) {
+    return _db.getModeStockScores(DateContext.normalize(date), reasonTypeCodes);
   }
 
   @override

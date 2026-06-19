@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
@@ -18,7 +18,8 @@ import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
-import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
+import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
+import 'package:afterclose/presentation/providers/selected_mode_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/update_history_provider.dart';
@@ -96,7 +97,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   /// 響應式推薦清單：手機使用 SliverList，平板/桌面使用 SliverGrid
   Widget _buildRecommendationsList(
     BuildContext context,
-    List<RecommendationWithDetails> recommendations,
+    List<ModeRecommendation> recommendations,
     Set<String> watchlistSymbols,
     bool showLimitMarkers,
   ) {
@@ -142,7 +143,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
   /// 建立推薦卡片
   Widget _buildRecommendationCard(
     BuildContext context,
-    List<RecommendationWithDetails> recommendations,
+    List<ModeRecommendation> recommendations,
     Set<String> watchlistSymbols,
     int index,
     bool showLimitMarkers,
@@ -159,7 +160,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         market: rec.market,
         latestClose: rec.latestClose,
         priceChange: rec.priceChange,
-        score: rec.score,
+        // primary score 給 fallback / preview sheet 用（StockCard 內 dualScore
+        // 不為 null 時會優先顯示雙 column）
+        score: rec.modeScoreShort,
+        dualScore: (rec.modeScoreShort, rec.modeScoreLong),
         reasons: rec.reasonTypes,
         trendState: rec.trendState,
         recentPrices: rec.recentPrices,
@@ -177,7 +181,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               stockName: rec.stockName,
               latestClose: rec.latestClose,
               priceChange: rec.priceChange,
-              score: rec.score,
+              score: rec.modeScoreShort,
               trendState: rec.trendState,
               reasons: rec.reasonTypes,
               isInWatchlist: isInWatchlist,
@@ -546,31 +550,42 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
         ),
 
-        // Stage 5c dual-horizon: SegmentedButton 切換短/長線推薦清單
+        // 2026-06-19：3-tab Mode UI 取代 dual-horizon SegmentedButton
+        //
+        // 動機：短線/長線兩 tab 在現階段 calibration 不夠成熟、95%+ 內容相同、
+        // user 看不出真實差異；改成 mode-based 3 tab（起漲/強勢/弱勢）對應
+        // user 真實的 3 種觀察心智。5D 跟 60D 雙 score 改在 StockCard 內並排
+        // 顯示，user 一眼看到兩個 timeframe 強弱對比。
+        //
+        // selectedHorizonProvider 保留給 stock detail / scan / comparison 用
+        // （hybrid Option B）。Today 內 sort 預設按 5D abs(score) DESC。
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Consumer(
               builder: (context, ref, _) {
-                final horizon = ref.watch(selectedHorizonProvider);
-                return SegmentedButton<Horizon>(
+                final mode = ref.watch(selectedModeProvider);
+                return SegmentedButton<ScoringMode>(
                   segments: [
                     ButtonSegment(
-                      value: Horizon.short,
-                      label: Text(S.todayHorizonShort),
-                      icon: const Icon(Icons.flash_on, size: 18),
+                      value: ScoringMode.momentumEntry,
+                      label: Text('scoringMode.momentumEntry'.tr()),
+                      icon: const Icon(Icons.trending_up, size: 18),
                     ),
                     ButtonSegment(
-                      value: Horizon.long,
-                      label: Text(S.todayHorizonLong),
-                      icon: const Icon(Icons.timeline, size: 18),
+                      value: ScoringMode.strengthObserve,
+                      label: Text('scoringMode.strengthObserve'.tr()),
+                      icon: const Icon(Icons.bolt, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: ScoringMode.weaknessObserve,
+                      label: Text('scoringMode.weaknessObserve'.tr()),
+                      icon: const Icon(Icons.warning_amber, size: 18),
                     ),
                   ],
-                  selected: {horizon},
+                  selected: {mode},
                   onSelectionChanged: (set) {
-                    ref
-                        .read(selectedHorizonProvider.notifier)
-                        .select(set.first);
+                    ref.read(selectedModeProvider.notifier).select(set.first);
                   },
                 );
               },
@@ -578,23 +593,34 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           ),
         ),
 
-        // 推薦清單（Consumer 隔離推薦資料，避免 updateProgress 觸發昂貴的清單重建）
+        // 推薦清單 — async（FutureProvider.family）
         Consumer(
           builder: (context, ref, _) {
-            final recommendations = ref.watch(
-              todayProvider.select((s) => s.recommendations),
-            );
-            if (recommendations.isEmpty) {
-              return SliverFillRemaining(
+            final mode = ref.watch(selectedModeProvider);
+            final asyncRecs = ref.watch(modeRecommendationsProvider(mode));
+            return asyncRecs.when(
+              data: (recommendations) {
+                if (recommendations.isEmpty) {
+                  return SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
+                  );
+                }
+                return _buildRecommendationsList(
+                  context,
+                  recommendations,
+                  watchlistSymbols,
+                  showLimitMarkers,
+                );
+              },
+              loading: () => const SliverFillRemaining(
                 hasScrollBody: false,
-                child: EmptyStates.noRecommendations(onRefresh: _runUpdate),
-              );
-            }
-            return _buildRecommendationsList(
-              context,
-              recommendations,
-              watchlistSymbols,
-              showLimitMarkers,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(child: Text('Error: $e')),
+              ),
             );
           },
         ),
@@ -607,14 +633,17 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
   Future<void> _exportTodayCsv() async {
     if (_isExporting) return;
-    final recommendations = ref.read(todayProvider).recommendations;
+    // 用當前 mode 的推薦清單匯出（user 看到什麼就匯出什麼）
+    final mode = ref.read(selectedModeProvider);
+    final asyncRecs = ref.read(modeRecommendationsProvider(mode));
+    final recommendations = asyncRecs.value ?? const [];
     if (recommendations.isEmpty) return;
 
     setState(() => _isExporting = true);
     try {
       final csv = _recommendationsToCsv(recommendations);
       final date = DateFormat('yyyyMMdd').format(DateTime.now());
-      await const ShareService().shareCsv(csv, 'today_$date.csv');
+      await const ShareService().shareCsv(csv, 'today_${mode.name}_$date.csv');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -630,7 +659,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     }
   }
 
-  String _recommendationsToCsv(List<RecommendationWithDetails> recs) {
+  String _recommendationsToCsv(List<ModeRecommendation> recs) {
     final headers = [
       'export.csvSymbol'.tr(),
       'export.csvName'.tr(),
@@ -638,7 +667,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
       'export.csvClose'.tr(),
       'export.csvChange'.tr(),
       'export.csvTrend'.tr(),
-      'export.csvScore'.tr(),
+      'Score 5D',
+      'Score 60D',
     ];
 
     final rows = recs.map((r) {
@@ -651,7 +681,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             ? '${r.priceChange! >= 0 ? "+" : ""}${r.priceChange!.toStringAsFixed(2)}%'
             : '',
         r.trendState ?? '',
-        r.score.toStringAsFixed(0),
+        r.modeScoreShort.toStringAsFixed(0),
+        r.modeScoreLong.toStringAsFixed(0),
       ];
     }).toList();
 

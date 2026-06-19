@@ -33,6 +33,7 @@ class StockCard extends StatefulWidget {
     this.latestClose,
     this.priceChange,
     this.score,
+    this.dualScore,
     this.reasons = const [],
     this.trendState,
     this.isInWatchlist = false,
@@ -51,7 +52,16 @@ class StockCard extends StatefulWidget {
   final String? market;
   final double? latestClose;
   final double? priceChange;
+
+  /// 單一 score（fallback）— 當 [dualScore] 為 null 時使用 ScoreRing
   final double? score;
+
+  /// 雙 horizon score (5D, 60D) — 給 Today screen Mode tab 用
+  ///
+  /// 不為 null 時，卡片右上角改顯示雙小 ring 並排（5D / 60D），不用大
+  /// ScoreRing。其他 caller（watchlist / scan / stock detail）不傳此參
+  /// 數就維持原本的單 ScoreRing 行為。
+  final (double, double)? dualScore;
   final List<String> reasons;
   final String? trendState;
   final bool isInWatchlist;
@@ -317,7 +327,13 @@ class _StockCardState extends State<StockCard> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (widget.score != null && widget.score! > 0) ...[
+        if (widget.dualScore != null) ...[
+          const SizedBox(width: 6),
+          _DualScoreChip(
+            shortScore: widget.dualScore!.$1,
+            longScore: widget.dualScore!.$2,
+          ),
+        ] else if (widget.score != null && widget.score! > 0) ...[
           const SizedBox(width: 6),
           ScoreRing(score: widget.score!, size: ScoreRingSize.small),
         ],
@@ -428,6 +444,72 @@ class _StockCardState extends State<StockCard> {
           padding: compact ? EdgeInsets.zero : null,
           splashRadius: compact ? 18 : 20,
         ),
+      ),
+    );
+  }
+}
+
+/// 雙 horizon score 顯示 — 5D 跟 60D 並排
+///
+/// 為 Today screen Mode tab 設計：user 一眼看到該檔在兩個 timeframe 強度
+/// 對比。color coding：正分綠、負分紅、0 灰。abs(score) 越大字體越粗。
+class _DualScoreChip extends StatelessWidget {
+  const _DualScoreChip({required this.shortScore, required this.longScore});
+
+  final double shortScore;
+  final double longScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _scoreBox(context, '5D', shortScore),
+        const SizedBox(width: 4),
+        _scoreBox(context, '60D', longScore),
+      ],
+    );
+  }
+
+  Widget _scoreBox(BuildContext context, String label, double score) {
+    final theme = Theme.of(context);
+    final Color color;
+    if (score > 0) {
+      color = Colors.green.shade600;
+    } else if (score < 0) {
+      color = Colors.red.shade600;
+    } else {
+      color = theme.colorScheme.onSurfaceVariant;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color.withValues(alpha: 0.8),
+              fontSize: 9,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 1),
+          Text(
+            score.toStringAsFixed(0),
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              height: 1,
+            ),
+          ),
+        ],
       ),
     );
   }

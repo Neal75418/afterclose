@@ -8,9 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:afterclose/presentation/screens/today/today_screen.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
@@ -111,39 +113,47 @@ class FakeSettingsNotifier extends SettingsNotifier {
 
 final _testDate = DateTime(2026, 3, 10);
 
-final _testRecommendations = [
-  RecommendationWithDetails(
+// 2026-06-19：Today screen 改 Mode-based、推薦來自 modeRecommendationsProvider
+// （非 todayProvider.recommendations），fixtures 改成 ModeRecommendation。
+final _testModeRecommendations = [
+  ModeRecommendation(
     symbol: '2330',
-    score: 85.0,
     rank: 1,
+    modeScoreShort: 45.0,
+    modeScoreLong: 38.0,
+    reasons: const [],
     stockName: '台積電',
     market: 'TWSE',
     latestClose: 950.0,
     priceChange: 2.5,
     trendState: 'UP',
-    recentPrices: [920, 925, 930, 940, 945, 950],
+    recentPrices: const [920, 925, 930, 940, 945, 950],
   ),
-  RecommendationWithDetails(
+  ModeRecommendation(
     symbol: '2317',
-    score: 72.0,
     rank: 2,
+    modeScoreShort: 32.0,
+    modeScoreLong: 28.0,
+    reasons: const [],
     stockName: '鴻海',
     market: 'TWSE',
     latestClose: 185.0,
     priceChange: -1.2,
     trendState: 'DOWN',
-    recentPrices: [190, 188, 186, 185],
+    recentPrices: const [190, 188, 186, 185],
   ),
-  RecommendationWithDetails(
+  ModeRecommendation(
     symbol: '2454',
-    score: 68.0,
     rank: 3,
+    modeScoreShort: 28.0,
+    modeScoreLong: 22.0,
+    reasons: const [],
     stockName: '聯發科',
     market: 'TWSE',
     latestClose: 1250.0,
     priceChange: 0.8,
     trendState: 'UP',
-    recentPrices: [1230, 1240, 1245, 1250],
+    recentPrices: const [1230, 1240, 1245, 1250],
   ),
 ];
 
@@ -167,7 +177,8 @@ Widget buildTestWidget({
   final today =
       todayState ??
       TodayState(
-        recommendations: _testRecommendations,
+        // recommendations 已搬到 modeRecommendationsProvider override（下方）；
+        // 這裡只保留 lastUpdate / dataDate 給 header banner 用。
         lastUpdate: _testDate,
         dataDate: _testDate,
       );
@@ -191,6 +202,9 @@ Widget buildTestWidget({
         final n = FakeSettingsNotifier();
         return n;
       }),
+      modeRecommendationsProvider.overrideWith(
+        (ref, mode) => SynchronousFuture(_testModeRecommendations),
+      ),
     ],
     brightness: brightness,
   );
