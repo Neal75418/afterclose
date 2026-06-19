@@ -182,7 +182,8 @@ extension ReasonTypeScoringMode on ReasonType {
   /// - neutral: 觸發頻繁但無 alpha 的 noise filter rule、value rule 跟 momentum
   ///   無關 — 仍寫進 daily_reason 顯示 evidence chip，但不影響任何 mode 排名
   ScoringMode get scoringMode => switch (this) {
-    // ============ Mode A: 起漲候選（14 條）============
+    // ============ Mode A: 起漲候選（17 條 — 2026-06-19 audit 後）============
+    // 反轉 / 突破 / 底部 / 逆勢買進訊號 — user mental model「找還沒漲、即將起漲」。
     ReasonType.reversalW2S => ScoringMode.momentumEntry,
     ReasonType.techBreakout => ScoringMode.momentumEntry,
     ReasonType.patternBullishEngulfing => ScoringMode.momentumEntry,
@@ -198,36 +199,43 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.insiderSignificantBuying => ScoringMode.momentumEntry,
     ReasonType.pbrUndervalued =>
       ScoringMode.momentumEntry, // 唯一 backtest 正 alpha
-    // ============ Mode B: 強勢觀察（13 條）============
+    // **2026-06-19 audit 移入 Mode A**：hardcoded 正分、原本歸 Mode C 不合理：
+    ReasonType.patternDoji => ScoringMode.momentumEntry, // +10 低檔十字線反轉
+    ReasonType.week52Low => ScoringMode.momentumEntry, // +8 逆勢買點
+    ReasonType.rsiExtremeOversold => ScoringMode.momentumEntry, // +10 RSI 超賣反彈
+    // ============ Mode B: 強勢觀察（11 條 — 2026-06-19 audit 後）============
+    // 已漲 / 籌碼面強 — user mental model「追蹤強勢、等回檔」。
+    // **2026-06-19 audit 移出**：rsiExtremeOverbought (-8) + dayTradingExtreme (-5)
+    // 兩條 hardcoded 負分警示放強勢 tab 是自打嘴巴，改入 Mode C。
     ReasonType.priceSpike => ScoringMode.strengthObserve,
     ReasonType.patternGapUp => ScoringMode.strengthObserve,
     ReasonType.week52High => ScoringMode.strengthObserve,
     ReasonType.institutionalBuyStreak => ScoringMode.strengthObserve,
     ReasonType.foreignShareholdingIncreasing => ScoringMode.strengthObserve,
     ReasonType.dayTradingHigh => ScoringMode.strengthObserve,
-    ReasonType.dayTradingExtreme => ScoringMode.strengthObserve,
     ReasonType.institutionalBuy => ScoringMode.strengthObserve,
     ReasonType.kdGoldenCross => ScoringMode.strengthObserve,
     ReasonType.volumeSpike => ScoringMode.strengthObserve,
-    ReasonType.rsiExtremeOverbought => ScoringMode.strengthObserve,
     ReasonType.newsRelated => ScoringMode.strengthObserve,
     ReasonType.roeExcellent => ScoringMode.strengthObserve,
 
-    // ============ Mode C: 弱勢觀察（28 條）============
+    // ============ Mode C: 弱勢觀察（27 條 — 2026-06-19 audit 後）============
+    // 警示 / 看空訊號 — user mental model「確認真崩 / 避開」。
+    // **2026-06-19 audit 移出**：
+    //   - patternDoji / week52Low / rsiExtremeOversold（hardcoded 正分、屬 Mode A）
+    //   - priceVolumeWeakRally（觸發條件就是「價漲量縮」、11/12 picks 唯一靠它
+    //     導致 8/12 picks 是漲的，改 neutral）
+    // **移入**：rsiExtremeOverbought / dayTradingExtreme（hardcoded 負分警示）
     ReasonType.reversalS2W => ScoringMode.weaknessObserve,
     ReasonType.techBreakdown => ScoringMode.weaknessObserve,
-    ReasonType.priceVolumeWeakRally => ScoringMode.weaknessObserve,
     ReasonType.priceVolumeBearishDivergence => ScoringMode.weaknessObserve,
     ReasonType.patternBearishEngulfing => ScoringMode.weaknessObserve,
     ReasonType.patternHangingMan => ScoringMode.weaknessObserve,
-    ReasonType.patternDoji => ScoringMode.weaknessObserve,
     ReasonType.patternDojiBearish => ScoringMode.weaknessObserve,
     ReasonType.patternGapDown => ScoringMode.weaknessObserve,
     ReasonType.patternEveningStar => ScoringMode.weaknessObserve,
     ReasonType.patternThreeBlackCrows => ScoringMode.weaknessObserve,
-    ReasonType.week52Low => ScoringMode.weaknessObserve,
     ReasonType.maAlignmentBearish => ScoringMode.weaknessObserve,
-    ReasonType.rsiExtremeOversold => ScoringMode.weaknessObserve,
     ReasonType.foreignShareholdingDecreasing => ScoringMode.weaknessObserve,
     ReasonType.institutionalSell => ScoringMode.weaknessObserve,
     ReasonType.institutionalSellStreak => ScoringMode.weaknessObserve,
@@ -242,8 +250,10 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.revenueYoyDecline => ScoringMode.weaknessObserve,
     ReasonType.epsDeclineWarning => ScoringMode.weaknessObserve,
     ReasonType.roeDeclining => ScoringMode.weaknessObserve,
-
-    // ============ Neutral: 背景 filter / value rule（7 條）============
+    // **2026-06-19 audit 移入 Mode C**：負分警示應歸 Mode C：
+    ReasonType.rsiExtremeOverbought => ScoringMode.weaknessObserve, // -8 警示
+    ReasonType.dayTradingExtreme => ScoringMode.weaknessObserve, // -5 投機警示
+    // ============ Neutral: 背景 filter / value rule（8 條 — audit 後 +1）============
     ReasonType.concentrationHigh =>
       ScoringMode.neutral, // demote 至 0、noise filter
     ReasonType.revenueNewHigh => ScoringMode.neutral, // demote 至 0、語意誇大
@@ -253,6 +263,9 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.epsConsecutiveGrowth =>
       ScoringMode.neutral, // calibrated cut on 5D
     ReasonType.epsYoYSurge => ScoringMode.neutral, // calibrated cut
+    // **2026-06-19 audit 移入**：觸發條件「價漲量縮」與 Mode C 弱勢矛盾、
+    // hardcoded -8 微弱、佔據 Mode C 主訊號位導致 11/12 picks 是漲的。
+    ReasonType.priceVolumeWeakRally => ScoringMode.neutral,
   };
 }
 

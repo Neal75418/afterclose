@@ -565,11 +565,12 @@ void main() {
     // Scenario 8: sign-flip warnings (L1)
     // ==================================================
 
-    test('22a. sign_flip_bearish_rule_calibrated_positive_clamps_to_zero', () {
-      // Real-world case: TECH_BREAKDOWN hardcoded -20, calibrated +22
-      // → clamp to 0 (treat as cut). Avoids the UX contradiction where
-      // "跌破支撐" reason chip would otherwise contribute positively to a
-      // buy recommendation.
+    test('22a. sign_flip_bearish_rule_calibrated_positive_skipped', () {
+      // **2026-06-19 contract change**：sign-flip 從「clamp to 0」改成「skip
+      // 不寫入 table」，讓 lookup 找不到 → caller 回到 hardcoded fallback。
+      // 原本 clamp 到 0 配合 lookup 把 0 視為「有值」會讓 hardcoded 永遠
+      // fallback 不了；改成 skip 後 TECH_BREAKDOWN 從 0 → -20（hardcoded），
+      // Mode C 跌破支撐重新拿到 -20。
       final json = _buildJson(rules: {'TECH_BREAKDOWN': _rule(22)});
 
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
@@ -580,20 +581,19 @@ void main() {
 
       expect(
         table.lookup('TECH_BREAKDOWN'),
-        0,
-        reason: 'sign-flipped score must be clamped to 0',
+        isNull,
+        reason: 'sign-flipped rule must be skipped (lookup → null → fallback)',
       );
       expect(warnings, hasLength(1));
       expect(warnings.first, contains('TECH_BREAKDOWN'));
       expect(warnings.first, contains('sign flip'));
-      expect(warnings.first, contains('clamped to 0'));
+      expect(warnings.first, contains('skipped'));
       expect(warnings.first, contains('-20'));
       expect(warnings.first, contains('22'));
     });
 
-    test('22b. sign_flip_bullish_rule_calibrated_negative_clamps_to_zero', () {
-      // Symmetric clamp: bullish rule (hardcoded +18) calibrated -5
-      // → 0. Prevents a bullish reason chip from subtracting score.
+    test('22b. sign_flip_bullish_rule_calibrated_negative_skipped', () {
+      // 對稱 skip：bullish rule (hardcoded +18) calibrated -5 → skip 不寫入。
       final json = _buildJson(rules: {'PATTERN_HAMMER': _rule(-5)});
 
       final (:table, :warnings) = CalibratedScoresTable.parseJson(
@@ -602,10 +602,10 @@ void main() {
         hardcodedScores: const {'PATTERN_HAMMER': 18},
       );
 
-      expect(table.lookup('PATTERN_HAMMER'), 0);
+      expect(table.lookup('PATTERN_HAMMER'), isNull);
       expect(warnings, hasLength(1));
       expect(warnings.first, contains('sign flip'));
-      expect(warnings.first, contains('clamped to 0'));
+      expect(warnings.first, contains('skipped'));
     });
 
     test('22c. same_sign_no_warning', () {
@@ -627,10 +627,15 @@ void main() {
       expect(warnings, isEmpty);
     });
 
-    test('22d. zero_score_never_flagged', () {
-      // Zero is neutral; flagging "0 vs -20" as sign flip produces false
-      // positives for rules that recalibrate.dart explicitly sets to 0 when
-      // cut (active=false). Both hardcoded=0 and calibrated=0 skip the check.
+    test('22d. zero_score_never_flagged_and_returns_null', () {
+      // Zero is neutral — 不 flag sign flip。
+      //
+      // **2026-06-19 contract change**：lookup 對 score=0 也回 null（讓
+      // caller fallback 到 hardcoded）。原本 calibrated 0 跟「沒校準」共用
+      // 同一個訊號表達會讓 fallback 失效，導致 38 條 cut rule 把 hardcoded
+      // 正分全覆蓋成 0。
+      //
+      // 寫入 table 的內容仍然是 0（schema 不變），但 lookup 把 0 視為 null。
       final json = _buildJson(
         rules: {
           'CUT_RULE': _rule(0), // calibrated 0 — typical cut rule
@@ -645,8 +650,11 @@ void main() {
       );
 
       expect(warnings, isEmpty);
-      expect(table.lookup('CUT_RULE'), 0);
+      // lookup 對 0 回 null（fallback signal）— 即使 _scores 內部存的是 0。
+      expect(table.lookup('CUT_RULE'), isNull);
       expect(table.lookup('NEUTRAL_RULE'), 15);
+      // 確認 ruleCount 仍計入 0 entry（schema 沒變）。
+      expect(table.ruleCount, 2);
     });
 
     test('22e. hardcoded_scores_null_skips_check', () {
@@ -703,24 +711,33 @@ void main() {
       // `CalibrationThresholds.successThresholds[Horizon.short.tradingDays]`，
       // drift guard 放行。Hermetic drift-reject coverage 在 11c/11d/11e
       // (inline fixtures)。
+      //
+      // **2026-06-19 contract change**：lookup 對 calibrated 0 回 null（fallback）；
+      // 短線 JSON 40 條 rule 裡 39 條 score=0、唯一 +22 的 TECH_BREAKDOWN 是
+      // sign-flip 也被 skip。所以 lookup REVERSAL_W2S 預期 null（fallback 到
+      // hardcoded +35）。Smoke test 改驗「load 沒爆」+「至少寫入 1 entry」。
       await CalibratedScoresRegistry.instance.loadFromAssets();
 
+      // load 成功 → registry 內部已有 table（rule entries 包含 0 entry 仍計入）。
       final result = CalibratedScoresRegistry.instance.lookup(
         Horizon.short,
         'REVERSAL_W2S',
       );
-      expect(result, isA<int>());
+      expect(result, isNull, reason: 'short JSON 整批 calibrated 0 → fallback');
     });
 
     test('24. loadFromAssets_long_bundled_metadata_aligned', () async {
       // 同 test 23，長線 JSON metadata 8.0 對齊 canonical。
+      //
+      // 長線 JSON 唯一 active 的 rule 是 EPS_CONSECUTIVE_GROWTH +22 — 用它
+      // 驗證 lookup 正確回 calibrated 值。
       await CalibratedScoresRegistry.instance.loadFromAssets();
 
       final result = CalibratedScoresRegistry.instance.lookup(
         Horizon.long,
-        'REVERSAL_W2S',
+        'EPS_CONSECUTIVE_GROWTH',
       );
-      expect(result, isA<int>());
+      expect(result, 22, reason: '長線唯一 active calibrated rule');
     });
 
     // ==================================================
@@ -852,14 +869,16 @@ void main() {
         longJsonOverride: null,
       );
 
-      // Override 都 null → fallback path 走到 loadFromAssets 載入 bundled
-      // JSON（metadata 對齊 canonical → drift guard 放行）。lookup 應拿到
-      // int（cut rule 為 0、active rule 為 score 值）。
-      final firstShort = CalibratedScoresRegistry.instance.lookup(
-        Horizon.short,
-        'REVERSAL_W2S',
+      // Override 都 null → fallback 路徑走到 loadFromAssets 載入 bundled JSON。
+      // **2026-06-19 contract change**：lookup 對 calibrated 0 回 null（fallback
+      // signal）。短線 JSON 39/40 條 score=0、唯一 +22 的 TECH_BREAKDOWN 是
+      // sign-flip 被 skip → REVERSAL_W2S 預期 null。改用長線 active rule
+      // (EPS_CONSECUTIVE_GROWTH +22) 驗證 fallback 成功。
+      final activeLong = CalibratedScoresRegistry.instance.lookup(
+        Horizon.long,
+        'EPS_CONSECUTIVE_GROWTH',
       );
-      expect(firstShort, isA<int>());
+      expect(activeLong, 22, reason: '長線唯一 active rule 應從 bundled asset 載入');
 
       // Second call should be no-op (idempotent)
       await CalibratedScoresRegistry.instance.loadWithOverride(
@@ -921,12 +940,15 @@ void main() {
         longJsonOverride: emptyJson,
       );
 
-      // Empty override → fall through to bundled asset。Bundled JSON metadata
-      // 對齊 canonical → drift guard 放行 → registry 載入成功。lookup
-      // 應拿到 int (cut rule = 0, active rule = score)。
+      // Empty override → fall through to bundled asset。**2026-06-19**：
+      // 短線 bundled 整批 calibrated 0 → 用長線 EPS_CONSECUTIVE_GROWTH +22
+      // 驗證 fallback 成功（短線 REVERSAL_W2S 在新 contract 下回 null）。
       expect(
-        CalibratedScoresRegistry.instance.lookup(Horizon.short, 'REVERSAL_W2S'),
-        isA<int>(),
+        CalibratedScoresRegistry.instance.lookup(
+          Horizon.long,
+          'EPS_CONSECUTIVE_GROWTH',
+        ),
+        22,
       );
     });
 

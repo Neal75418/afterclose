@@ -54,9 +54,26 @@ class CalibratedScoresTable {
 
   /// 查詢單一規則的 calibrated score
   ///
-  /// 若 [ruleId] 不在 table 中，回傳 null。呼叫端應 fallback 到
-  /// `RuleScores` hardcoded 值。
-  int? lookup(String ruleId) => _scores[ruleId];
+  /// 若 [ruleId] 不在 table 中**或被 calibrated 砍到 0**，回傳 null。呼叫端
+  /// 應 fallback 到 `RuleScores` hardcoded 值。
+  ///
+  /// **2026-06-19：0 視為 null（fallback 到 hardcoded）**
+  ///
+  /// 原本 `_scores[ruleId]` 對 score=0 視為「有值」，導致 calibrated 把規則
+  /// cut 到 0 後 `scoreFor()` 的 `calibrated ?? hardcoded` fallback 失效、
+  /// 把 hardcoded +22 一路覆蓋成 0。實質結果：38 條規則在 daily_reason 寫
+  /// score=0，3-tab Mode UI 大部分 stocks 顯示 0/0、aggregator 無法排序。
+  ///
+  /// 修法：把 0 視為「沒有可信 calibrated 值」、fallback 到 hardcoded。
+  /// 0 跟「未校準」用同一個訊號表達是設計失誤；對 schema 升級之前先這樣補。
+  ///
+  /// 副作用：被 calibration 砍到 0 的 rule（5D backtest avg_return 確實負）
+  /// 會重新貢獻 hardcoded 分數 — pre-launch 階段「3 tab 名實相符」比
+  /// 「calibration 精確但 0 訊號」對 user 體感更好。
+  int? lookup(String ruleId) {
+    final v = _scores[ruleId];
+    return (v == null || v == 0) ? null : v;
+  }
 
   /// 已載入的規則數量，供診斷與 smoke test 使用
   int get ruleCount => _scores.length;
@@ -264,18 +281,23 @@ class CalibratedScoresTable {
         score = RuleScores.minScore;
       }
 
-      // Scenario 8: sign flip vs hardcoded design intent — clamp to 0
+      // Scenario 8: sign flip vs hardcoded design intent — skip and fallback
       //
       // 例：TECH_BREAKDOWN（跌破支撐）hardcoded -20，calibrated +22。Backtest
       // 統計上 hit_rate 0.547 / t-stat 4.07 是合法 pipeline 輸出，但 UX 上
       // 使用者看到 Top 20 推薦顯示 reason chip「跌破支撐」對分數有正貢獻
       // 會直接質疑 App 的可信度。
       //
-      // Pre-launch decision: 翻轉符號的 rule 一律 clamp 到 0（等同 cut，
-      // 不貢獻分數），但保留 metadata 在 table 中供 review。等 Stage 4 累積
-      // 真實 forward data（不只是 backtest）驗證 sign-flip pattern 仍穩定後
-      // 再考慮解鎖。對稱處理 bearish→positive 與 bullish→negative：兩個方向
-      // 都代表 calibration 與 design semantics 不一致，採同一個保守 fallback。
+      // **2026-06-19 修正**：原本 clamp 到 0 + 寫進 `_scores`，配合 lookup
+      // 把 0 視為「有值」→ hardcoded 永遠 fallback 不了 → TECH_BREAKDOWN
+      // 從 -20 變成 0 → Mode C 弱勢觀察少一條 -20 訊號。
+      //
+      // 改成 **skip 該 rule（不寫進 _scores）**：lookup 找不到 → fallback 到
+      // hardcoded -20 → Mode C 正常拿到 -20 → 跌破支撐重回 Mode C。
+      //
+      // sign-flip 通常代表 backtest 對單一 horizon 過擬合，design semantics
+      // 才是 ground truth。pre-launch 階段強制信 hardcoded、等 Stage 4 累積
+      // 真實 forward data 後再考慮放回。
       if (hardcodedScores != null) {
         final hardcoded = hardcodedScores[ruleId];
         if (hardcoded != null && hardcoded != 0 && score != 0) {
@@ -284,9 +306,9 @@ class CalibratedScoresTable {
           if (hardcodedPositive != calibratedPositive) {
             warnings.add(
               'rule $ruleId: sign flip — hardcoded $hardcoded vs calibrated '
-              '$score, clamped to 0 (rule treated as cut for safety)',
+              '$score, skipped (fallback to hardcoded)',
             );
-            score = 0;
+            continue;
           }
         }
       }

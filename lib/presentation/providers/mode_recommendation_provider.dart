@@ -110,12 +110,23 @@ final modeRecommendationsProvider =
       final scores = await repo.getModeStockScores(analysisDate, modeCodes);
       if (scores.isEmpty) return [];
 
-      // 4. 按 abs(modeScoreShort) DESC 排序（涵蓋 Mode C 負分情況）
-      //    UI 預設用 5D 排，user 可在 card 內看到 60D 是否同方向強
+      // 4. 排序：mode-aware sort 方向
+      //
+      // **2026-06-19 audit 修正**：原本所有 mode 都用 abs(score) DESC，但
+      // Mode C 弱勢觀察的「最弱」=「分數最負」，不是「絕對值最大」。abs 排
+      // 會讓「弱勢 0 分 + 0 chip 拖進來」跟「弱勢 -50 處置股」混在一起、
+      // 處置股反而排不到前面、aggregator 變廢。
+      //
+      // - Mode A / B（正分為主）：DESC by score short（最強訊號優先）
+      // - Mode C（負分為主）：ASC by score short（最負警示優先）
+      //
+      // UI 預設用 5D 排序，user 可在卡片內看到 60D 是否同方向強。
       final sorted = [...scores]
-        ..sort(
-          (a, b) => b.modeScoreShort.abs().compareTo(a.modeScoreShort.abs()),
-        );
+        ..sort((a, b) {
+          return mode == ScoringMode.weaknessObserve
+              ? a.modeScoreShort.compareTo(b.modeScoreShort) // 最負優先
+              : b.modeScoreShort.compareTo(a.modeScoreShort); // 最正優先
+        });
       final top = sorted.take(30).toList();
 
       // 5. 批次載入股票 master + 最新價 + 30 日價量 + 該日 reasons
