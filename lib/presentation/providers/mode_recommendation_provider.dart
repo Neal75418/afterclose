@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/reason_type.dart';
@@ -69,26 +70,92 @@ List<String> reasonCodesForMode(ScoringMode mode) {
       .toList();
 }
 
-/// **2026-06-19 audit Action 5 + C-1 重構**
+/// 從 priceHistory 算 5 trading days 報酬 (%)。
 ///
-/// 從「per-mode 獨立查詢」改成「all-mode 預先計算 + 獨佔分派 + anti-filter」。
+/// 回 null 當：history 太短（< 6 個收盤）/ 端點 close null / 起點 close 0。
+/// caller 把 null 視為「不知道、不擋」(permissive)，避免靜默 drop 新 IPO /
+/// sparse history。
+@visibleForTesting
+double? computeRet5dForHistory(List<DailyPriceEntry>? history) {
+  if (history == null || history.length < 6) return null;
+  final latest = history.last.close;
+  final old = history[history.length - 6].close;
+  if (latest == null || old == null || old == 0) return null;
+  return (latest - old) / old * 100;
+}
+
+/// 判斷某檔股票是否「夠資格」指派到 [mode]。
+///
+/// **2026-06-19 audit Action 5b — eligibility-first 指派**
+///
+/// 從「先指派再 drop」改成「指派前先 filter」。治掉 6651 全宇昕 case：
+/// today +9.12%、A=42 / B=28 / C=0：
+/// - 舊：max |score| 選中 A → anti-filter drop（today > 8%）→ 三 tab 都消失
+/// - 新：A 不合格、B 合格、C 不合格 → 落到 B ✅
+///
+/// `todayPct` / `ret5d` 為 null 代表 price data 缺失（新 IPO / sparse history /
+/// data race）：採「不知道就不擋」semantics、避免靜默 drop。
+@visibleForTesting
+bool isEligibleForMode({
+  required ScoringMode mode,
+  required ModeStockScore score,
+  required double? todayPct,
+  required double? ret5d,
+}) {
+  switch (mode) {
+    case ScoringMode.momentumEntry:
+      // 當日 > +8% 一律踢出（**無強訊號豁免**、會自動導去 Mode B）
+      if (todayPct != null && todayPct > ModeFilters.modeAExcludeTodayPct) {
+        return false;
+      }
+      // 5D > +8% 踢出 UNLESS score ≥ 50（強訊號豁免、僅作用 5D）
+      if (ret5d != null &&
+          ret5d > ModeFilters.modeAExclude5dPct &&
+          score.modeScoreShort < ModeFilters.modeAStrongScoreOverride) {
+        return false;
+      }
+      return true;
+
+    case ScoringMode.strengthObserve:
+      // 強勢觀察需要正分證據；score ≤ 0 不指派（避免 SUM-cancel 0 row 或
+      // 罕見負分 B-rule 污染 DESC 排序）
+      return score.modeScoreShort > 0;
+
+    case ScoringMode.weaknessObserve:
+      // 當日 > 0% 踢出（今日紅 K 不算弱勢；strict `>` 讓 0.00% 平盤 stays）
+      if (todayPct != null && todayPct > ModeFilters.modeCExcludeTodayPct) {
+        return false;
+      }
+      // 弱勢觀察需要負分證據；score ≥ 0 不指派
+      return score.modeScoreShort < 0;
+
+    case ScoringMode.neutral:
+      return false;
+  }
+}
+
+/// **2026-06-19 audit Action 5b — eligibility-first 指派**
+///
+/// 從「max |score| 指派 → 後 anti-filter drop」改成「**filter-aware
+/// assignment**」：每檔股票只在「合格 mode」之間選 max |scoreShort|，0 個
+/// 合格 OR 合格但 |score| < [ModeFilters.minRoutedAbsScore] floor 則整檔
+/// drop。
 ///
 /// ## 為什麼換架構
 ///
-/// 原版每次 tab 切換各自 query DB、各 mode 沒有共識：
-/// - 同一檔股票（如 6742 澤米）會同時出現在 3 個 tab（A +57 / B +62 / C -25）
-/// - User 觀感「這檔到底該歸哪邊？」、tab 區分模糊
-/// - 已大漲股 / 漲停股出現在「起漲」/「弱勢」tab 違反 mental model
+/// 5a 版本「先指派、後 drop」會把「主要 mode 過 filter / 次要 mode 仍有
+/// 訊號」的股票完全弄丟。例：6651 全宇昕 today +9.12%, A=42 / B=28 / C=0：
+/// - 5a：max |score| 選 A → Mode A filter today > 8% → drop → 3 tab 都消失 ❌
+/// - 5b：A 不合格、B 合格、C 不合格 → 落 B ✅
 ///
-/// 新版：
-/// - **C-1 mode 獨佔**：每檔股票指派到 |score| 最大的 mode、只在該 tab 顯示
-/// - **B anti-filter**：Mode A 5D > +8% 踢出（強訊號例外）/ Mode C 今日 > +5% 踢出
-/// - 拉一次資料、3 個 tab 共用、tab 切換瞬間 cached
+/// 同時治掉漲停股出現在 Mode C 弱勢 tab（5% threshold 太鬆）— 收緊到 0%、
+/// 透過 eligibility 自動把「有警示但今天漲」的股票導去 B（強勢觀察）。
 ///
 /// ## 結構
 ///
-/// 內部 [_modeAssignmentsProvider] 拉完整 `Map<ScoringMode, List<ModeRecommendation>>`、
-/// 外部 [modeRecommendationsProvider] 是薄 slice — 既有 test override 模式不動。
+/// 內部 [_modeAssignmentsProvider] 一次拉完整
+/// `Map<ScoringMode, List<ModeRecommendation>>`、外部 [modeRecommendationsProvider]
+/// 是薄 slice — 既有 test override 模式不動。
 final _modeAssignmentsProvider =
     FutureProvider<Map<ScoringMode, List<ModeRecommendation>>>((ref) async {
       // Auto-reload trigger
@@ -102,12 +169,12 @@ final _modeAssignmentsProvider =
         for (final m in ScoringMode.userFacingModes) m: const [],
       };
 
-      // 1. 找最新 daily_reason 的日期
+      // STEP 1 — 找最新 data date
       final latestPriceDate = await marketRepo.getLatestDataDate();
       if (latestPriceDate == null) return emptyResult;
       final analysisDate = DateContext.normalize(latestPriceDate);
 
-      // 2. 平行查 3 個 mode 的 SUM aggregate
+      // STEP 2 — 平行查 3 個 mode 的 SUM aggregate
       final modeScoresEntries = await Future.wait(
         ScoringMode.userFacingModes.map((m) async {
           final codes = reasonCodesForMode(m);
@@ -120,57 +187,21 @@ final _modeAssignmentsProvider =
         }),
       );
 
-      // 3. Build symbol → {mode → ModeStockScore} 矩陣
+      // STEP 3 — Build symbol → {mode → ModeStockScore} 矩陣
       final stockModeScores = <String, Map<ScoringMode, ModeStockScore>>{};
       for (final entry in modeScoresEntries) {
         for (final s in entry.value) {
           stockModeScores.putIfAbsent(s.symbol, () => {})[entry.key] = s;
         }
       }
+      if (stockModeScores.isEmpty) return emptyResult;
 
-      // 4. C-1 mode 獨佔分派：每檔股票指派給 |scoreShort| 最大的 mode
-      final assignmentMap = <ScoringMode, List<ModeStockScore>>{
-        for (final m in ScoringMode.userFacingModes) m: [],
-      };
-      for (final entry in stockModeScores.entries) {
-        final modes = entry.value;
-        ScoringMode? bestMode;
-        double bestAbs = -1;
-        for (final mEntry in modes.entries) {
-          final absScore = mEntry.value.modeScoreShort.abs();
-          if (absScore > bestAbs) {
-            bestAbs = absScore;
-            bestMode = mEntry.key;
-          }
-        }
-        if (bestMode != null) {
-          assignmentMap[bestMode]!.add(modes[bestMode]!);
-        }
-      }
-
-      // 5. Mode-aware sort（Mode C ASC 最負優先、其他 DESC 最正優先）
-      //    取 top 50 buffer（為了 anti-filter 後仍 ≥ 30 顯示）
-      for (final mode in assignmentMap.keys) {
-        assignmentMap[mode]!.sort((a, b) {
-          return mode == ScoringMode.weaknessObserve
-              ? a.modeScoreShort.compareTo(b.modeScoreShort)
-              : b.modeScoreShort.compareTo(a.modeScoreShort);
-        });
-        if (assignmentMap[mode]!.length > 50) {
-          assignmentMap[mode] = assignmentMap[mode]!.take(50).toList();
-        }
-      }
-
-      // 6. Bulk load stock data — all assigned symbols 一次撈
-      final allSymbols = assignmentMap.values
-          .expand((l) => l.map((s) => s.symbol))
-          .toSet()
-          .toList();
-      if (allSymbols.isEmpty) return emptyResult;
-
+      // STEP 4 — 一次撈所有 candidate 的 stock data（priceHistory 給 ret5d /
+      //          sparkline 重用；reasons / stocks / analyses 給後續 build）
+      final allCandidateSymbols = stockModeScores.keys.toList();
       final historyCtx = DateContext.forDate(analysisDate);
       final data = await cachedDb.loadStockListData(
-        symbols: allSymbols,
+        symbols: allCandidateSymbols,
         analysisDate: analysisDate,
         historyStart: historyCtx.historyStart,
       );
@@ -179,45 +210,79 @@ final _modeAssignmentsProvider =
         data.latestPrices,
       );
 
-      // 7. B anti-filter + 組 ModeRecommendation
+      // STEP 5 — eligibility-first 指派 + floor
+      final assignmentMap = <ScoringMode, List<ModeStockScore>>{
+        for (final m in ScoringMode.userFacingModes) m: <ModeStockScore>[],
+      };
+      var droppedNoEligible = 0;
+      var droppedBelowFloor = 0;
+      for (final entry in stockModeScores.entries) {
+        final symbol = entry.key;
+        final modes = entry.value;
+        final todayPct = priceChanges[symbol];
+        final ret5d = computeRet5dForHistory(data.priceHistories[symbol]);
+
+        ScoringMode? bestMode;
+        var bestAbs = -1.0;
+        for (final mEntry in modes.entries) {
+          if (!isEligibleForMode(
+            mode: mEntry.key,
+            score: mEntry.value,
+            todayPct: todayPct,
+            ret5d: ret5d,
+          )) {
+            continue;
+          }
+          final absScore = mEntry.value.modeScoreShort.abs();
+          if (absScore > bestAbs) {
+            bestAbs = absScore;
+            bestMode = mEntry.key;
+          }
+        }
+
+        if (bestMode == null) {
+          droppedNoEligible++;
+          continue;
+        }
+        if (bestAbs < ModeFilters.minRoutedAbsScore) {
+          droppedBelowFloor++;
+          continue;
+        }
+        assignmentMap[bestMode]!.add(modes[bestMode]!);
+      }
+      AppLogger.debug(
+        'ModeRecommendations',
+        'candidates=${stockModeScores.length} '
+            'A=${assignmentMap[ScoringMode.momentumEntry]!.length} '
+            'B=${assignmentMap[ScoringMode.strengthObserve]!.length} '
+            'C=${assignmentMap[ScoringMode.weaknessObserve]!.length} '
+            'droppedNoEligible=$droppedNoEligible '
+            'droppedBelowFloor=$droppedBelowFloor',
+      );
+
+      // STEP 6 — Mode-aware sort + symbol tiebreaker（穩定 rank across refreshes）
+      for (final mode in assignmentMap.keys) {
+        assignmentMap[mode]!.sort((a, b) {
+          final primary = mode == ScoringMode.weaknessObserve
+              ? a.modeScoreShort.compareTo(b.modeScoreShort) // 最負優先
+              : b.modeScoreShort.compareTo(a.modeScoreShort); // 最正優先
+          if (primary != 0) return primary;
+          return a.symbol.compareTo(b.symbol); // 二級 key：symbol ASC
+        });
+      }
+
+      // STEP 7 — 組 ModeRecommendation per mode、cap 30
       final result = <ScoringMode, List<ModeRecommendation>>{};
       for (final mode in ScoringMode.userFacingModes) {
         final codeSet = reasonCodesForMode(mode).toSet();
-        final filtered = <ModeRecommendation>[];
+        final list = <ModeRecommendation>[];
 
         for (final s in assignmentMap[mode]!) {
           final symbol = s.symbol;
-          final priceChange = priceChanges[symbol];
           final priceHistory = data.priceHistories[symbol];
 
-          // 5D return（Mode A 用）— 從 priceHistory 算（已 load 給 sparkline）
-          double? ret5d;
-          if (priceHistory != null && priceHistory.length >= 6) {
-            final latest = priceHistory.last.close;
-            final old = priceHistory[priceHistory.length - 6].close;
-            if (latest != null && old != null && old != 0) {
-              ret5d = (latest - old) / old * 100;
-            }
-          }
-
-          // Anti-filter
-          if (mode == ScoringMode.momentumEntry) {
-            // Mode A: 5D > +8% 踢出 UNLESS score ≥ 50（強訊號豁免）
-            if (ret5d != null &&
-                ret5d > ModeFilters.modeAExclude5dPct &&
-                s.modeScoreShort < ModeFilters.modeAStrongScoreOverride) {
-              continue;
-            }
-          } else if (mode == ScoringMode.weaknessObserve) {
-            // Mode C: 今日 > +5% 踢出（漲停絕不在弱勢）
-            if (priceChange != null &&
-                priceChange > ModeFilters.modeCExcludeTodayPct) {
-              continue;
-            }
-          }
-
           // mode-filtered reasons（其他 mode + neutral 的 chip 不顯示）
-          final allReasons = data.reasons[symbol] ?? [];
+          final allReasons = data.reasons[symbol] ?? const [];
           final modeReasons = allReasons
               .where((r) => codeSet.contains(r.reasonType))
               .toList();
@@ -235,26 +300,26 @@ final _modeAssignmentsProvider =
                 .toList();
           }
 
-          filtered.add(
+          list.add(
             ModeRecommendation(
               symbol: symbol,
-              rank: filtered.length + 1,
+              rank: list.length + 1,
               modeScoreShort: s.modeScoreShort,
               modeScoreLong: s.modeScoreLong,
               reasons: modeReasons,
               stockName: data.stocks[symbol]?.name,
               market: data.stocks[symbol]?.market,
               latestClose: data.latestPrices[symbol]?.close,
-              priceChange: priceChange,
+              priceChange: priceChanges[symbol],
               trendState: data.analyses[symbol]?.trendState,
               recentPrices: recentPrices,
             ),
           );
 
-          if (filtered.length >= 30) break;
+          if (list.length >= 30) break;
         }
 
-        result[mode] = filtered;
+        result[mode] = list;
       }
 
       return result;

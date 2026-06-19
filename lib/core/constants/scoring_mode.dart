@@ -93,15 +93,48 @@ abstract final class ModeFilters {
   /// 對應「REVERSAL_W2S +35 + 其他輔助訊號 ≥ 15」的組合，明確的反轉確認
   /// 而非單一弱訊號。e.g. 6770 力積電（弱轉強 35 + 晨星 25 = 60）即使 5D
   /// 漲 15%、仍是真起漲、應保留。
+  ///
+  /// **2026-06-19 audit Action 5b**：豁免**只作用於 5D filter**、不豁免
+  /// [modeAExcludeTodayPct]。理由：今日 gap-up +9% 即使有最強反轉訊號、
+  /// 對 user mental model 已是「**追高**」而非「起漲」；這檔股票同時應該
+  /// 在 Mode B 有訊號（強勢確認）、filter-aware assign 會自動把它導去 B。
   static const double modeAStrongScoreOverride = 50;
 
-  /// Mode C（弱勢觀察）剔除當日漲幅 > 5% 的股票
+  /// Mode A 剔除「**當日**漲幅 > 8%」（無豁免）
   ///
-  /// 「弱勢」mental model = 已下跌 / 正在轉空。漲停（+9.97%）股票出現在
-  /// 弱勢 tab 是直接矛盾 — 即使 RSI 超買 / PE 高估等警示 fires、那是
-  /// 「過熱風險」不是「下跌中」。
+  /// 跟 [modeAExclude5dPct] 互補：5D filter 擋「一週累積已漲多」、今日 filter
+  /// 擋「**今天突然爆衝**」。原本只有 5D 抓不到「5D 累積還沒 +8% 但今天 gap
+  /// up +9.92% 漲停」的 case（6651 全宇昕、3090 日電貿等）。
   ///
-  /// 5% 門檻設計：一般股票 ±5% 是 normal 區間、>+5% 才算明顯上漲；
-  /// 漲停（+9.97% / +10%）一定被擋下。
-  static const double modeCExcludeTodayPct = 5.0;
+  /// **沒有強訊號豁免**：分數再高（如 60 分弱轉強+晨星）、今天就漲 +9% 也
+  /// 算已過起漲點。filter-aware assign 會自動把這檔分派到 Mode B 強勢觀察
+  /// （該檔同時應有 Mode B 訊號）。
+  ///
+  /// 跟 [modeCExcludeTodayPct] (0%) 同一條 user mental model 軸：
+  /// - 起漲候選：今日漲幅應「適度」（≤ 8%）
+  /// - 弱勢觀察：今日漲幅應「不正」（≤ 0%）
+  static const double modeAExcludeTodayPct = 8.0;
+
+  /// Mode C（弱勢觀察）剔除「當日上漲」的股票
+  ///
+  /// 「弱勢」mental model = 已下跌 / 正在轉空。今日只要紅 K（> 0%）就跟
+  /// 「弱勢」前提衝突 — 即使 RSI 超買 / PE 高估等警示 fires、那是「過熱
+  /// 風險」不是「下跌中」、不該指派到弱勢 tab。
+  ///
+  /// **2026-06-19 audit 從 +5% 收緊到 0%**：5% 留太多「今天反彈但有警示」
+  /// case 在弱勢 tab、user mental model 對不上。0% 嚴格界定「**今日收紅 =
+  /// 不算弱勢**」。strict `>` 比較讓 0.00% 平盤 stays（合理：平盤不算漲）。
+  static const double modeCExcludeTodayPct = 0.0;
+
+  /// 指派 floor：best-eligible mode 的 |modeScoreShort| 必須 ≥ 10 才指派
+  ///
+  /// 避免 eligibility-first 把「主要 mode 不合格、次要 mode 只有 trivial
+  /// 分數」的股票塞進非主要 tab。
+  ///
+  /// 範例：股票 X 有 A=80（但 today +10% 被擋）/ B=0 / C=-2（today -1%）
+  /// - 無 floor：C(-2) 是唯一合格 → 出現在 Mode C 弱勢 tab 但 score -2
+  ///   是噪音、排在 -50 處置股下面也很怪
+  /// - 有 floor ≥ 10：bestAbs = 2 < 10 → 整檔 drop ✅（今天訊號狀態不穩、
+  ///   跳過比誤導好）
+  static const int minRoutedAbsScore = 10;
 }
