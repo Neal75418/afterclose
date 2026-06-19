@@ -1534,5 +1534,17 @@
     "peUndervalued": "PE ratio ≤ 10",
     "peOvervalued": "PE ratio ≥ 60",
     "pbrUndervalued": "PBR ≤ 0.8"
+  },
+  "updateHistory": {
+    "title": "Update History",
+    "refresh": "Refresh",
+    "empty": "No update records yet",
+    "error": "Failed to load: {}",
+    "running": "Running",
+    "statusSuccess": "SUCCESS",
+    "statusPartial": "PARTIAL",
+    "statusFailed": "FAILED",
+    "statusRunning": "RUNNING",
+    "statusUnknown": "UNKNOWN"
   }
 }

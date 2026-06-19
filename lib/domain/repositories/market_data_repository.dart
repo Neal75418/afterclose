@@ -19,4 +19,9 @@ abstract class IMarketDataRepository {
 
   /// 最近一次完成的 daily update 紀錄（時間與狀態，用於 UI 顯示「最後更新時間」）
   Future<UpdateRunEntry?> getLatestUpdateRun();
+
+  /// 最近 N 筆 update_run 歷史紀錄（UI 顯示「更新紀錄」list 用）
+  ///
+  /// 依 id DESC 排（最新在前）。包含 SUCCESS / PARTIAL / FAILED 各種狀態。
+  Future<List<UpdateRunEntry>> getRecentUpdateRuns({int limit = 30});
 }

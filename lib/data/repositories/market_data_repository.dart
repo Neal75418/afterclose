@@ -155,4 +155,8 @@ class MarketDataRepository implements IMarketDataRepository {
 
   @override
   Future<UpdateRunEntry?> getLatestUpdateRun() => _db.getLatestUpdateRun();
+
+  @override
+  Future<List<UpdateRunEntry>> getRecentUpdateRuns({int limit = 30}) =>
+      _db.getRecentUpdateRuns(limit: limit);
 }

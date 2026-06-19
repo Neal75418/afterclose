@@ -117,6 +117,17 @@ mixin UserDaoMixin on $AppDatabase {
         .getSingleOrNull();
   }
 
+  /// 取得最近 N 筆更新執行記錄（包含 SUCCESS / PARTIAL / FAILED）
+  ///
+  /// UI 顯示「更新紀錄」歷史列表用，user tap Today 上的 timestamp 帶出。
+  /// 依 id DESC 排（最新的在前）。
+  Future<List<UpdateRunEntry>> getRecentUpdateRuns({int limit = 30}) {
+    return (select(updateRun)
+          ..orderBy([(t) => OrderingTerm.desc(t.id)])
+          ..limit(limit))
+        .get();
+  }
+
   // ==================================================
   // 股價提醒操作
   // ==================================================

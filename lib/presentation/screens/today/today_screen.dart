@@ -21,8 +21,10 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
+import 'package:afterclose/presentation/providers/update_history_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/update_history_sheet.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -352,15 +354,31 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         ),
 
         // 最後更新時間 + 資料日期（Consumer 隔離日期狀態）
+        //
+        // 2026-06-19：最後更新時間整段 tappable，彈出 UpdateHistorySheet
+        // 顯示最近 30 筆 update_run，含失敗 / partial 狀態與 message。
+        // 上次 run 不是 SUCCESS 時 timestamp 旁有橘 / 紅 dot 提示。
         Consumer(
           builder: (context, ref, _) {
             final lastUpdate = ref.watch(
               todayProvider.select((s) => s.lastUpdate),
             );
             final dataDate = ref.watch(todayProvider.select((s) => s.dataDate));
+            final historyAsync = ref.watch(updateHistoryProvider);
             if (lastUpdate == null && dataDate == null) {
               return const SliverToBoxAdapter(child: SizedBox.shrink());
             }
+            final latestStatus = historyAsync
+                .whenOrNull(
+                  data: (rows) => rows.isEmpty ? null : rows.first.status,
+                )
+                ?.toUpperCase();
+            final statusDotColor = switch (latestStatus) {
+              'SUCCESS' => null, // 健康狀態不顯示 dot，減少 noise
+              'PARTIAL' => Colors.orange.shade700,
+              'FAILED' => theme.colorScheme.error,
+              _ => null,
+            };
             return SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -369,32 +387,57 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                   DesignTokens.spacing16,
                   DesignTokens.spacing8,
                 ),
-                child: Wrap(
-                  spacing: DesignTokens.spacing8,
-                  runSpacing: DesignTokens.spacing4,
-                  children: [
-                    if (lastUpdate != null)
-                      Text(
-                        S.todayLastUpdate(S.dateFormat(lastUpdate)),
-                        style: theme.textTheme.bodySmall?.copyWith(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () => UpdateHistorySheet.show(context),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: DesignTokens.spacing4,
+                      vertical: DesignTokens.spacing4,
+                    ),
+                    child: Wrap(
+                      spacing: DesignTokens.spacing8,
+                      runSpacing: DesignTokens.spacing4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        if (lastUpdate != null)
+                          Text(
+                            S.todayLastUpdate(S.dateFormat(lastUpdate)),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if (lastUpdate != null && statusDotColor != null)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: statusDotColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        if (lastUpdate != null && dataDate != null)
+                          Text(
+                            '·',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        if (dataDate != null)
+                          Text(
+                            S.todayDataDate(_formatDataDate(dataDate)),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 16,
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
-                      ),
-                    if (lastUpdate != null && dataDate != null)
-                      Text(
-                        '·',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    if (dataDate != null)
-                      Text(
-                        S.todayDataDate(_formatDataDate(dataDate)),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             );

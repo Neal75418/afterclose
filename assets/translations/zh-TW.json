@@ -1534,5 +1534,17 @@
     "peUndervalued": "本益比 ≤ 10",
     "peOvervalued": "本益比 ≥ 60",
     "pbrUndervalued": "股價淨值比 ≤ 0.8"
+  },
+  "updateHistory": {
+    "title": "更新紀錄",
+    "refresh": "重新整理",
+    "empty": "尚無更新紀錄",
+    "error": "載入失敗：{}",
+    "running": "進行中",
+    "statusSuccess": "成功",
+    "statusPartial": "部分完成",
+    "statusFailed": "失敗",
+    "statusRunning": "進行中",
+    "statusUnknown": "未知"
   }
 }
