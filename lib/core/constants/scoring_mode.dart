@@ -69,3 +69,39 @@ enum ScoringMode {
     ScoringMode.weaknessObserve,
   ];
 }
+
+/// Mode-aware UI filter thresholds（2026-06-19 audit Action 5）
+///
+/// 治掉「**已大漲股票卡在 Mode A 起漲候選**」與「**漲停股出現在 Mode C 弱勢
+/// 觀察**」兩種違反 mental model 的 case：
+/// - 1907 永豐餘 5D +9.73% 還在「起漲」（已漲一波）
+/// - 4551 智伸科 漲停 +9.93% 還在「弱勢」（RSI 超買 + 吊人線 fires 但今天漲）
+///
+/// 跟 mode-aware sort（[ScoringMode.weaknessObserve] 用 sum ASC）配套：先按
+/// score 排再 anti-filter、被踢的不算 quota；filter 後不足 30 也照舊。
+abstract final class ModeFilters {
+  /// Mode A（起漲候選）剔除 5 日漲幅 > 8% 的股票
+  ///
+  /// 「起漲」mental model = 還沒漲、即將漲。一週已漲 >8% 不符合此定義。
+  /// **但**強訊號（[modeAStrongScoreOverride] 以上）例外保留 — 反轉訊號
+  /// 規則本身就帶「起漲」語意（REVERSAL_W2S +35），即使技術面顯示已漲、
+  /// 規則仍判斷是底部起漲確認、不該被技術 filter 蓋過。
+  static const double modeAExclude5dPct = 8.0;
+
+  /// Mode A 強訊號豁免分數：sum_short ≥ 50 不受 5D filter 影響
+  ///
+  /// 對應「REVERSAL_W2S +35 + 其他輔助訊號 ≥ 15」的組合，明確的反轉確認
+  /// 而非單一弱訊號。e.g. 6770 力積電（弱轉強 35 + 晨星 25 = 60）即使 5D
+  /// 漲 15%、仍是真起漲、應保留。
+  static const double modeAStrongScoreOverride = 50;
+
+  /// Mode C（弱勢觀察）剔除當日漲幅 > 5% 的股票
+  ///
+  /// 「弱勢」mental model = 已下跌 / 正在轉空。漲停（+9.97%）股票出現在
+  /// 弱勢 tab 是直接矛盾 — 即使 RSI 超買 / PE 高估等警示 fires、那是
+  /// 「過熱風險」不是「下跌中」。
+  ///
+  /// 5% 門檻設計：一般股票 ±5% 是 normal 區間、>+5% 才算明顯上漲；
+  /// 漲停（+9.97% / +10%）一定被擋下。
+  static const double modeCExcludeTodayPct = 5.0;
+}
