@@ -1,4 +1,5 @@
 import 'package:easy_localization/easy_localization.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -81,22 +82,59 @@ class UpdateHistorySheet extends ConsumerWidget {
                   );
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(DesignTokens.spacing16),
-                    child: Text(
-                      'updateHistory.error'.tr(args: ['$e']),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                  ),
-                ),
+                error: (e, _) => _ErrorView(error: e, ref: ref),
               ),
             ),
           ],
         );
       },
+    );
+  }
+}
+
+/// 錯誤 view — 友善訊息 + 重試按鈕（debug build 才印 raw exception）
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({required this.error, required this.ref});
+
+  final Object error;
+  final WidgetRef ref;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(DesignTokens.spacing24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
+            const SizedBox(height: DesignTokens.spacing12),
+            Text(
+              'updateHistory.loadError'.tr(),
+              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            if (kDebugMode) ...[
+              const SizedBox(height: DesignTokens.spacing8),
+              Text(
+                '$error',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontFamilyFallback: const ['Menlo', 'Courier New'],
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: DesignTokens.spacing16),
+            FilledButton.tonalIcon(
+              onPressed: () => ref.invalidate(updateHistoryProvider),
+              icon: const Icon(Icons.refresh),
+              label: Text('updateHistory.retry'.tr()),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -112,10 +150,8 @@ class _UpdateRunTile extends StatelessWidget {
     final status = _UpdateRunStatus.fromString(row.status);
     final duration = row.finishedAt?.difference(row.startedAt);
 
-    final dateStr = DateFormat('MM-dd HH:mm').format(row.startedAt.toLocal());
-    final durationStr = duration == null
-        ? 'updateHistory.running'.tr()
-        : '${duration.inSeconds}s';
+    final dateStr = _formatRunDate(context, row.startedAt);
+    final durationStr = _formatDuration(duration);
 
     final hasMessage = row.message != null && row.message!.isNotEmpty;
     // 只在 message 真的「展開有意義」時才用 ExpansionTile：
@@ -126,14 +162,18 @@ class _UpdateRunTile extends StatelessWidget {
     final needsExpand =
         hasMessage && (row.message!.contains('\n') || row.message!.length > 80);
 
+    final titleRow = MergeSemantics(
+      child: _TitleRow(
+        dateStr: dateStr,
+        durationStr: durationStr,
+        status: status,
+      ),
+    );
+
     if (needsExpand) {
       return ExpansionTile(
         leading: _StatusIcon(status: status),
-        title: _TitleRow(
-          dateStr: dateStr,
-          durationStr: durationStr,
-          status: status,
-        ),
+        title: titleRow,
         subtitle: Text(
           row.message!.split('\n').first,
           maxLines: 1,
@@ -154,7 +194,7 @@ class _UpdateRunTile extends StatelessWidget {
             child: SelectableText(
               row.message!,
               style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: 'monospace',
+                fontFamilyFallback: const ['Menlo', 'Courier New', 'monospace'],
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -165,11 +205,7 @@ class _UpdateRunTile extends StatelessWidget {
 
     return ListTile(
       leading: _StatusIcon(status: status),
-      title: _TitleRow(
-        dateStr: dateStr,
-        durationStr: durationStr,
-        status: status,
-      ),
+      title: titleRow,
       subtitle: hasMessage
           ? Text(
               row.message!,
@@ -182,6 +218,35 @@ class _UpdateRunTile extends StatelessWidget {
           : null,
     );
   }
+}
+
+/// 跨年補年份、locale-aware 的日期格式
+///
+/// - 今年內：`MMMd HH:mm` 例 `Jun 23 15:30` / `6月23日 15:30`
+/// - 跨年：補上年份 `MMM y HH:mm`
+/// - 使用 [context.locale]（easy_localization），自動跟 app 設定一致
+String _formatRunDate(BuildContext context, DateTime startedAt) {
+  final local = startedAt.toLocal();
+  final now = DateTime.now();
+  final localeName = context.locale.toString();
+  final dateFmt = local.year == now.year
+      ? DateFormat.MMMd(localeName)
+      : DateFormat.yMMMd(localeName);
+  final timeFmt = DateFormat.Hm(localeName);
+  return '${dateFmt.format(local)} ${timeFmt.format(local)}';
+}
+
+/// 時長格式化 — 對負值（時鐘漂移）跟長值（> 60s）友善
+String _formatDuration(Duration? d) {
+  if (d == null) return 'updateHistory.running'.tr();
+  final secs = d.inSeconds;
+  if (secs < 0) return '—';
+  if (secs < 60) return 'updateHistory.durationSeconds'.tr(args: ['$secs']);
+  final minutes = secs ~/ 60;
+  final remainSecs = secs % 60;
+  return 'updateHistory.durationMinutesSeconds'.tr(
+    args: ['$minutes', '$remainSecs'],
+  );
 }
 
 class _TitleRow extends StatelessWidget {
@@ -229,7 +294,12 @@ class _StatusIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Icon(status.icon, color: status.color(theme), size: 20);
+    return Icon(
+      status.icon,
+      color: status.color(theme),
+      size: 20,
+      semanticLabel: status.labelKey.tr(),
+    );
   }
 }
 
@@ -257,8 +327,8 @@ enum _UpdateRunStatus {
   };
 
   Color color(ThemeData theme) => switch (this) {
-    _UpdateRunStatus.success => Colors.green.shade600,
-    _UpdateRunStatus.partial => Colors.orange.shade700,
+    _UpdateRunStatus.success => DesignTokens.successColor(theme),
+    _UpdateRunStatus.partial => DesignTokens.warningColor(theme),
     _UpdateRunStatus.failed => theme.colorScheme.error,
     _UpdateRunStatus.running => theme.colorScheme.primary,
     _UpdateRunStatus.unknown => theme.colorScheme.onSurfaceVariant,

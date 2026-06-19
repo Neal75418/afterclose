@@ -368,74 +368,94 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             if (lastUpdate == null && dataDate == null) {
               return const SliverToBoxAdapter(child: SizedBox.shrink());
             }
-            final latestStatus = historyAsync
-                .whenOrNull(
-                  data: (rows) => rows.isEmpty ? null : rows.first.status,
-                )
-                ?.toUpperCase();
-            final statusDotColor = switch (latestStatus) {
-              'SUCCESS' => null, // 健康狀態不顯示 dot，減少 noise
-              'PARTIAL' => Colors.orange.shade700,
-              'FAILED' => theme.colorScheme.error,
-              _ => null,
-            };
+            // loading / error 時讓 badge 維持上次的 data —— 避免「狀態
+            // 突然消失看起來像問題自己好了」的視覺誤導
+            final latestRows = historyAsync.maybeWhen(
+              data: (r) => r,
+              orElse: () => null,
+            );
+            final latestStatus = (latestRows == null || latestRows.isEmpty)
+                ? null
+                : latestRows.first.status.toUpperCase();
+            // 用有形狀的 Icon 取代純色 Container — color-blind user 看得出
+            // 區別，screen reader 也能用 semanticLabel 念出來
+            final ({IconData icon, Color color, String labelKey})? statusBadge =
+                switch (latestStatus) {
+                  'SUCCESS' => null, // 健康狀態不顯示，減少 noise
+                  'PARTIAL' => (
+                    icon: Icons.error_outline,
+                    color: DesignTokens.warningColor(theme),
+                    labelKey: 'updateHistory.statusPartial',
+                  ),
+                  'FAILED' => (
+                    icon: Icons.cancel,
+                    color: theme.colorScheme.error,
+                    labelKey: 'updateHistory.statusFailed',
+                  ),
+                  _ => null,
+                };
             return SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(
                   DesignTokens.spacing16,
-                  DesignTokens.spacing16,
-                  DesignTokens.spacing16,
                   DesignTokens.spacing8,
+                  DesignTokens.spacing16,
+                  DesignTokens.spacing4,
                 ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: () => UpdateHistorySheet.show(context),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: DesignTokens.spacing4,
-                      vertical: DesignTokens.spacing4,
-                    ),
-                    child: Wrap(
-                      spacing: DesignTokens.spacing8,
-                      runSpacing: DesignTokens.spacing4,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        if (lastUpdate != null)
-                          Text(
-                            S.todayLastUpdate(S.dateFormat(lastUpdate)),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                child: Semantics(
+                  button: true,
+                  label: 'updateHistory.openHistoryHint'.tr(),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () => UpdateHistorySheet.show(context),
+                    // Vertical padding spacing12 = 12 + 14 (text) + 12 = 38pt
+                    // 還差最少 6pt 到 iOS 44pt，所以再加 spacing4 = 44pt 整。
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: DesignTokens.spacing8,
+                        vertical:
+                            DesignTokens.spacing12 + DesignTokens.spacing4 / 2,
+                      ),
+                      child: Wrap(
+                        spacing: DesignTokens.spacing8,
+                        runSpacing: DesignTokens.spacing4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (lastUpdate != null)
+                            Text(
+                              S.todayLastUpdate(S.dateFormat(lastUpdate)),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        if (lastUpdate != null && statusDotColor != null)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: statusDotColor,
-                              shape: BoxShape.circle,
+                          if (lastUpdate != null && statusBadge != null)
+                            Icon(
+                              statusBadge.icon,
+                              size: 14,
+                              color: statusBadge.color,
+                              semanticLabel: statusBadge.labelKey.tr(),
                             ),
-                          ),
-                        if (lastUpdate != null && dataDate != null)
-                          Text(
-                            '·',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                          if (lastUpdate != null && dataDate != null)
+                            Text(
+                              '·',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        if (dataDate != null)
-                          Text(
-                            S.todayDataDate(_formatDataDate(dataDate)),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                          if (dataDate != null)
+                            Text(
+                              S.todayDataDate(_formatDataDate(dataDate)),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 16,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

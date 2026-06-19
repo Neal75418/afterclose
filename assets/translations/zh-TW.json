@@ -1538,12 +1538,16 @@
   "updateHistory": {
     "title": "更新紀錄",
     "empty": "尚無更新紀錄",
-    "error": "載入失敗：{}",
     "running": "進行中",
     "statusSuccess": "成功",
     "statusPartial": "部分完成",
     "statusFailed": "失敗",
     "statusRunning": "進行中",
-    "statusUnknown": "未知"
+    "statusUnknown": "未知",
+    "loadError": "更新紀錄載入失敗，請稍後再試",
+    "retry": "重試",
+    "openHistoryHint": "點擊查看更新紀錄",
+    "durationSeconds": "{}秒",
+    "durationMinutesSeconds": "{}分{}秒"
   }
 }

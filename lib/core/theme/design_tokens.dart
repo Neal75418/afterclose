@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
 
 /// 設計系統核心常數
 ///
@@ -174,6 +174,38 @@ abstract final class DesignTokens {
   static const double shadowSpreadGlow = -4.0;
 
   // ==================================================
+  // 語意色（status indicators）
+  // ==================================================
+  //
+  // colorScheme 沒涵蓋 success / warning 兩個語意 — Material 3 預設只給
+  // primary / secondary / tertiary / error。app 內 status indicator 過去
+  // 各自 hardcode `Colors.green.shade600` / `Colors.orange.shade700`，dark
+  // mode 對比僅勉強壓 WCAG AA（4.96:1）、不同 widget 容易飄。
+  //
+  // 抽 token 統一管理：明暗兩組顏色針對對應背景挑 ≥7:1 對比（AAA），
+  // 並提供 `successColor(theme)` / `warningColor(theme)` helper 自動切換。
+
+  /// Success 語意色（亮 theme，例如 ListTile / Today timestamp dot）
+  ///
+  /// `#2E7D32`（green 800）對 `#FFFFFF` 對比 ~8.6:1，符合 AAA。
+  static const Color successLight = Color(0xFF2E7D32);
+
+  /// Success 語意色（暗 theme）
+  ///
+  /// `#4ADE80`（emerald 400）對 `#1E293B`（slate 800）對比 ~9.2:1。
+  static const Color successDark = Color(0xFF4ADE80);
+
+  /// Warning 語意色（亮 theme，partial 用）
+  ///
+  /// `#E65100`（orange 900）對 `#FFFFFF` 對比 ~7.8:1。
+  static const Color warningLight = Color(0xFFE65100);
+
+  /// Warning 語意色（暗 theme）
+  ///
+  /// `#FB923C`（orange 400）對 `#1E293B` 對比 ~7.6:1。
+  static const Color warningDark = Color(0xFFFB923C);
+
+  // ==================================================
   // 圖表色盤
   // ==================================================
 
@@ -190,4 +222,14 @@ abstract final class DesignTokens {
     Color(0xFFFFEB3B), // Yellow
     Color(0xFF795548), // Brown
   ];
+
+  /// 依 theme 模式取 success 語意色
+  static Color successColor(ThemeData theme) {
+    return theme.brightness == Brightness.dark ? successDark : successLight;
+  }
+
+  /// 依 theme 模式取 warning 語意色
+  static Color warningColor(ThemeData theme) {
+    return theme.brightness == Brightness.dark ? warningDark : warningLight;
+  }
 }

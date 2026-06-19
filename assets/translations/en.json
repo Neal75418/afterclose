@@ -1538,12 +1538,16 @@
   "updateHistory": {
     "title": "Update History",
     "empty": "No update records yet",
-    "error": "Failed to load: {}",
     "running": "Running",
     "statusSuccess": "SUCCESS",
     "statusPartial": "PARTIAL",
     "statusFailed": "FAILED",
     "statusRunning": "RUNNING",
-    "statusUnknown": "UNKNOWN"
+    "statusUnknown": "UNKNOWN",
+    "loadError": "Failed to load update history, please try again",
+    "retry": "Retry",
+    "openHistoryHint": "Open update history",
+    "durationSeconds": "{}s",
+    "durationMinutesSeconds": "{}m {}s"
   }
 }
