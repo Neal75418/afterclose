@@ -40,6 +40,10 @@ class UpdateHistorySheet extends ConsumerWidget {
       builder: (context, scrollController) {
         return Column(
           children: [
+            // Title bar 不放手動 refresh 按鈕 — provider 已透過
+            // dataUpdateEpochProvider 在任何 update 完成時自動 reload，
+            // 而且打開 sheet 時就會 fetch 最新。手動按按鈕 99% 時間沒事做
+            // （DB 沒變化），看起來像壞掉，整層移除。
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 DesignTokens.spacing16,
@@ -47,19 +51,9 @@ class UpdateHistorySheet extends ConsumerWidget {
                 DesignTokens.spacing16,
                 DesignTokens.spacing12,
               ),
-              child: Row(
-                children: [
-                  Text(
-                    'updateHistory.title'.tr(),
-                    style: theme.textTheme.titleLarge,
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    tooltip: 'updateHistory.refresh'.tr(),
-                    onPressed: () => ref.invalidate(updateHistoryProvider),
-                  ),
-                ],
+              child: Text(
+                'updateHistory.title'.tr(),
+                style: theme.textTheme.titleLarge,
               ),
             ),
             const Divider(height: 1),
@@ -123,8 +117,16 @@ class _UpdateRunTile extends StatelessWidget {
         ? 'updateHistory.running'.tr()
         : '${duration.inSeconds}s';
 
-    Widget? trailing;
-    if (row.message != null && row.message!.isNotEmpty) {
+    final hasMessage = row.message != null && row.message!.isNotEmpty;
+    // 只在 message 真的「展開有意義」時才用 ExpansionTile：
+    //   - 含換行（stack trace / multi-line error）
+    //   - 或單行但超長（> 80 字，subtitle ellipsis 後看不到全貌）
+    // 大部分 message 是「更新完成」短句，直接平鋪 ListTile 就好，
+    // 展開後跟收起完全一樣的 bug。
+    final needsExpand =
+        hasMessage && (row.message!.contains('\n') || row.message!.length > 80);
+
+    if (needsExpand) {
       return ExpansionTile(
         leading: _StatusIcon(status: status),
         title: _TitleRow(
@@ -168,7 +170,16 @@ class _UpdateRunTile extends StatelessWidget {
         durationStr: durationStr,
         status: status,
       ),
-      trailing: trailing,
+      subtitle: hasMessage
+          ? Text(
+              row.message!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : null,
     );
   }
 }

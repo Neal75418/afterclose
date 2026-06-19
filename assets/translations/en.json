@@ -1537,7 +1537,6 @@
   },
   "updateHistory": {
     "title": "Update History",
-    "refresh": "Refresh",
     "empty": "No update records yet",
     "error": "Failed to load: {}",
     "running": "Running",

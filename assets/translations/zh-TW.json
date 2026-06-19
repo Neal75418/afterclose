@@ -1537,7 +1537,6 @@
   },
   "updateHistory": {
     "title": "更新紀錄",
-    "refresh": "重新整理",
     "empty": "尚無更新紀錄",
     "error": "載入失敗：{}",
     "running": "進行中",
