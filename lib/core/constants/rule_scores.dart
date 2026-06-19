@@ -99,7 +99,10 @@ abstract final class RuleScores {
   static const int patternEngulfingBullish = 22;
 
   /// 空頭吞噬分數（空方，扣分）
-  static const int patternEngulfingBearish = -18;
+  ///
+  /// **2026-06-19 v2 audit 降級 -18 → -10**：Mode C 改為「強股回檔進場」、降為
+  /// 拉回 warning context。
+  static const int patternEngulfingBearish = -10;
 
   /// 錘子線分數（多方，底部反轉）
   static const int patternHammerBullish = 18;
@@ -111,13 +114,19 @@ abstract final class RuleScores {
   static const int patternGapUp = 20;
 
   /// 跳空下跌分數（空方，扣分）
-  static const int patternGapDown = -15;
+  ///
+  /// **2026-06-19 v2 audit 降級 -15 → -8**：Mode C 改為「強股回檔進場」、降為
+  /// 急回檔 warning context。
+  static const int patternGapDown = -8;
 
   /// 晨星分數（多方，底部反轉）
   static const int patternMorningStar = 25;
 
   /// 暮星分數（空方，扣分）
-  static const int patternEveningStar = -20;
+  ///
+  /// **2026-06-19 v2 audit 降級 -20 → -10**：Mode C 改為「強股回檔進場」混合
+  /// tab、暮星從「反轉確認」降為「拉回起點 warning」。
+  static const int patternEveningStar = -10;
 
   /// 三白兵分數（多方）
   static const int patternThreeWhiteSoldiers = 22;
@@ -282,4 +291,31 @@ abstract final class RuleScores {
 
   /// ROE 衰退（空方）
   static const int roeDeclining = -10;
+
+  // ==================================================
+  // 第 9 階段：強股回檔進場（Mode C v2）— 2026-06-19
+  // ==================================================
+  //
+  // 「強股剛開始拉回、找進場時機」3 條主訊號 rule。**正分**（buy signal）— 打破
+  // 舊「Mode C 全負分 warning tab」invariant，因為新 Mode C 是觀察機會 tab。
+  //
+  // **CALIBRATION_PENDING**：threshold 是直覺值、缺台股 backtest。pre-launch 上線
+  // 靠 telemetry 30 天累積樣本後校準。
+
+  /// 強勢回檔至 MA20（量縮）
+  ///
+  /// 強股拉回 MA20 動態支撐位 + 量能縮減 + 多頭排列維持。最常見的「健康回檔」訊號。
+  static const int pullbackToMa20 = 15;
+
+  /// 支撐位錘子線（強股止跌）
+  ///
+  /// 強股拉回 MA20 / MA60 + 出現錘子線 K 線型態 + 收盤站穩支撐。比單純 pullback
+  /// 多了「**止跌確認**」、給分稍高。
+  static const int hammerAtSupport = 18;
+
+  /// KD 高檔回落未死叉（動能稍歇）
+  ///
+  /// KD 從 80+ 回落到 [50, 75] 區間但 K > D（未死叉）+ 多頭排列維持。技術指標
+  /// proxy、相對較弱訊號、給分較低。
+  static const int kdHighPullback = 12;
 }

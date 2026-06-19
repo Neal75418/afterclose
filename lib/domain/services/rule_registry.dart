@@ -9,6 +9,7 @@ import 'package:afterclose/domain/services/rules/divergence_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_rules.dart';
 import 'package:afterclose/domain/services/rules/fundamental_scan_rules.dart';
 import 'package:afterclose/domain/services/rules/insider_rules.dart';
+import 'package:afterclose/domain/services/rules/pullback_rules.dart';
 import 'package:afterclose/domain/services/rules/warning_rules.dart';
 
 /// 規則註冊表 — 集中管理所有可用規則
@@ -77,6 +78,10 @@ abstract final class RuleRegistry {
     ROEExcellentRule(),
     ROEImprovingRule(),
     ROEDecliningRule(),
+    // 第 9 階段：強股回檔進場（Mode C v2 — 2026-06-19）
+    HealthyPullbackToMa20Rule(),
+    HammerAtSupportRule(),
+    KdHighLevelPullbackRule(),
     // Killer Features：注意/處置股票規則
     TradingWarningAttentionRule(),
     TradingWarningDisposalRule(),

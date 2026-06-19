@@ -166,14 +166,23 @@ void main() {
     });
   });
 
-  group('isEligibleForMode — Mode C (weaknessObserve)', () {
-    test('eligible when today ≤ 0 and score < 0', () {
+  // **2026-06-19 v2 audit — Mode C 重定義為「回檔觀察 / 強股回檔進場」**
+  // - 從「負分警示」改「正分機會」tab
+  // - 必過 gate：至少 1 條主訊號 rule fire（PULLBACK_TO_MA20 / HAMMER_AT_SUPPORT /
+  //   KD_HIGH_PULLBACK / PATTERN_HAMMER）
+  // - todayPct in [-4%, 0%]（回檔但非崩跌）
+  // - score ≥ +12（最弱主訊號 kdHighPullback 的分數）
+  group('isEligibleForMode — Mode C v2 (回檔觀察 pullbackEntry)', () {
+    const mainSignalGate = {'PULLBACK_TO_MA20'};
+
+    test('eligible when all conditions met (主訊號 + 今日 ≤0 + score ≥12)', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.weaknessObserve,
-          score: _score(short: -20),
+          score: _score(short: 15),
           todayPct: -1.5,
           ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
       );
@@ -184,9 +193,10 @@ void main() {
       expect(
         isEligibleForMode(
           mode: ScoringMode.weaknessObserve,
-          score: _score(short: -20),
+          score: _score(short: 15),
           todayPct: 0.0,
           ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
       );
@@ -197,45 +207,166 @@ void main() {
       expect(
         isEligibleForMode(
           mode: ScoringMode.weaknessObserve,
-          score: _score(short: -20),
+          score: _score(short: 15),
           todayPct: 0.01,
           ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
         ),
         isFalse,
       );
     });
 
-    test('mode_c_rejects_zero_score_row', () {
+    test('mode_c_drops_stock_at_min_today_boundary (-4.01%)', () {
+      // 深 V 不算健康回檔
       expect(
         isEligibleForMode(
           mode: ScoringMode.weaknessObserve,
-          score: _score(short: 0),
+          score: _score(short: 15),
+          todayPct: -4.01,
+          ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
+        ),
+        isFalse,
+      );
+    });
+
+    test('mode_c_keeps_stock_at_exact_min_today (-4.00%)', () {
+      // strict `<` so -4.00% stays
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.weaknessObserve,
+          score: _score(short: 15),
+          todayPct: -4.0,
+          ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
+        ),
+        isTrue,
+      );
+    });
+
+    test('mode_c_rejects_when_no_main_signal_fires (gate)', () {
+      // 只有 warning rule fire、無主訊號 → drop
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.weaknessObserve,
+          score: _score(short: 15),
           todayPct: -1.0,
           ret5d: null,
+          triggeredReasonCodes: const {'RSI_EXTREME_OVERBOUGHT'},
         ),
         isFalse,
       );
     });
 
-    test('mode_c_rejects_positive_score', () {
-      // 不應發生（Mode C rule 都是負分）但 defensive 該擋
+    test('mode_c_rejects_when_score_below_min_12', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.weaknessObserve,
-          score: _score(short: 5),
+          score: _score(short: 11),
           todayPct: -1.0,
           ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
         ),
         isFalse,
       );
     });
 
-    test('null_today_pct_treated_as_pass — mode C', () {
+    test('mode_c_keeps_at_exact_min_score_12', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.weaknessObserve,
-          score: _score(short: -20),
+          score: _score(short: 12),
+          todayPct: -1.0,
+          ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
+        ),
+        isTrue,
+      );
+    });
+
+    test(
+      'mode_c_accepts_other_main_signals (HAMMER_AT_SUPPORT / KD_HIGH_PULLBACK / PATTERN_HAMMER)',
+      () {
+        for (final code in [
+          'HAMMER_AT_SUPPORT',
+          'KD_HIGH_PULLBACK',
+          'PATTERN_HAMMER',
+        ]) {
+          expect(
+            isEligibleForMode(
+              mode: ScoringMode.weaknessObserve,
+              score: _score(short: 15),
+              todayPct: -1.0,
+              ret5d: null,
+              triggeredReasonCodes: {code},
+            ),
+            isTrue,
+            reason: 'main signal $code should pass gate',
+          );
+        }
+      },
+    );
+
+    test('null_today_pct_with_gate_treated_as_pass — mode C', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.weaknessObserve,
+          score: _score(short: 15),
           todayPct: null,
+          ret5d: null,
+          triggeredReasonCodes: mainSignalGate,
+        ),
+        isTrue,
+      );
+    });
+
+    test('empty_triggered_codes_default_fails_gate', () {
+      // 預設 triggeredReasonCodes 空 set → gate 失敗
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.weaknessObserve,
+          score: _score(short: 15),
+          todayPct: -1.0,
+          ret5d: null,
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  // Mode B 從 v2 加 `todayPct > 0` 排他條件（讓 Mode C 接走回檔股）
+  group('isEligibleForMode — Mode B v2 排他 today ≤ 0', () {
+    test('mode_b_rejects_today_negative_to_let_mode_c_handle', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.strengthObserve,
+          score: _score(short: 30),
+          todayPct: -1.0,
+          ret5d: null,
+        ),
+        isFalse,
+      );
+    });
+
+    test('mode_b_rejects_today_zero_to_let_mode_c_handle', () {
+      // strict `<=` Mode C maxTodayPct(0) → today=0 也讓給 C
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.strengthObserve,
+          score: _score(short: 30),
+          todayPct: 0.0,
+          ret5d: null,
+        ),
+        isFalse,
+      );
+    });
+
+    test('mode_b_keeps_today_positive', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.strengthObserve,
+          score: _score(short: 30),
+          todayPct: 0.1,
           ret5d: null,
         ),
         isTrue,

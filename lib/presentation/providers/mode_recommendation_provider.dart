@@ -101,6 +101,7 @@ bool isEligibleForMode({
   required ModeStockScore score,
   required double? todayPct,
   required double? ret5d,
+  Set<String> triggeredReasonCodes = const {},
 }) {
   switch (mode) {
     case ScoringMode.momentumEntry:
@@ -119,15 +120,29 @@ bool isEligibleForMode({
     case ScoringMode.strengthObserve:
       // 強勢觀察需要正分證據；score ≤ 0 不指派（避免 SUM-cancel 0 row 或
       // 罕見負分 B-rule 污染 DESC 排序）
-      return score.modeScoreShort > 0;
-
-    case ScoringMode.weaknessObserve:
-      // 當日 > 0% 踢出（今日紅 K 不算弱勢；strict `>` 讓 0.00% 平盤 stays）
-      if (todayPct != null && todayPct > ModeFilters.modeCExcludeTodayPct) {
+      if (score.modeScoreShort <= 0) return false;
+      // **2026-06-19 v2 audit**：今日下跌讓 Mode C 處理（B/C 排他）
+      if (todayPct != null && todayPct <= ModeFilters.modeCMaxTodayPct) {
         return false;
       }
-      // 弱勢觀察需要負分證據；score ≥ 0 不指派
-      return score.modeScoreShort < 0;
+      return true;
+
+    case ScoringMode.weaknessObserve:
+      // **2026-06-19 v2 audit — 回檔觀察重定義**：強股剛開始回檔、找進場時機
+      //
+      // (1) 今日須回檔但非崩跌（0 ≥ todayPct ≥ -4%）
+      if (todayPct != null) {
+        if (todayPct > ModeFilters.modeCMaxTodayPct) return false;
+        if (todayPct < ModeFilters.modeCMinTodayPct) return false;
+      }
+      // (2) **必過 gate**：至少 1 條主訊號 rule fire
+      //     避免「純警示無進場點」雜訊（舊 Mode C 主問題）
+      final hasMainSignal = ModeFilters.modeCRequiredAnyOf.any(
+        triggeredReasonCodes.contains,
+      );
+      if (!hasMainSignal) return false;
+      // (3) Mode score ≥ +12（v2 從負分改正分機會 tab、+12 是最弱主訊號）
+      return score.modeScoreShort >= ModeFilters.modeCMinScore;
 
     case ScoringMode.neutral:
       return false;
@@ -210,7 +225,11 @@ final _modeAssignmentsProvider =
         data.latestPrices,
       );
 
-      // STEP 5 — eligibility-first 指派 + floor
+      // STEP 5 — eligibility-first 指派 + floor + routing priority
+      //
+      // **2026-06-19 v2 audit**：multi-mode eligible 時，先按 ScoringMode.routingPriority
+      // 高者勝（pullbackEntry 3 > momentumEntry 2 > strengthObserve 1）、tiebreak
+      // 用 max |scoreShort|。Mode C 是「進場時機」最 actionable、應優先 surface。
       final assignmentMap = <ScoringMode, List<ModeStockScore>>{
         for (final m in ScoringMode.userFacingModes) m: <ModeStockScore>[],
       };
@@ -222,7 +241,14 @@ final _modeAssignmentsProvider =
         final todayPct = priceChanges[symbol];
         final ret5d = computeRet5dForHistory(data.priceHistories[symbol]);
 
+        // 取得該股 daily_reason 內所有 triggered reason codes（給 Mode C gate 用）
+        final triggeredCodes = <String>{
+          for (final r in data.reasons[symbol] ?? const <DailyReasonEntry>[])
+            r.reasonType,
+        };
+
         ScoringMode? bestMode;
+        var bestPriority = -1;
         var bestAbs = -1.0;
         for (final mEntry in modes.entries) {
           if (!isEligibleForMode(
@@ -230,11 +256,16 @@ final _modeAssignmentsProvider =
             score: mEntry.value,
             todayPct: todayPct,
             ret5d: ret5d,
+            triggeredReasonCodes: triggeredCodes,
           )) {
             continue;
           }
+          final priority = mEntry.key.routingPriority;
           final absScore = mEntry.value.modeScoreShort.abs();
-          if (absScore > bestAbs) {
+          // 優先 priority 高者；同 priority 用 max |score| tiebreak
+          if (priority > bestPriority ||
+              (priority == bestPriority && absScore > bestAbs)) {
+            bestPriority = priority;
             bestAbs = absScore;
             bestMode = mEntry.key;
           }
@@ -260,12 +291,14 @@ final _modeAssignmentsProvider =
             'droppedBelowFloor=$droppedBelowFloor',
       );
 
-      // STEP 6 — Mode-aware sort + symbol tiebreaker（穩定 rank across refreshes）
+      // STEP 6 — Sort all modes DESC by score + symbol tiebreaker
+      //
+      // **2026-06-19 v2 audit**：Mode C 從 ASC（最負優先）改 DESC（最正優先）— 因為
+      // v2 Mode C 是「機會 tab」（正分主訊號 + 負分 warning context），主訊號
+      // (+15/+18) 應排在最前面。
       for (final mode in assignmentMap.keys) {
         assignmentMap[mode]!.sort((a, b) {
-          final primary = mode == ScoringMode.weaknessObserve
-              ? a.modeScoreShort.compareTo(b.modeScoreShort) // 最負優先
-              : b.modeScoreShort.compareTo(a.modeScoreShort); // 最正優先
+          final primary = b.modeScoreShort.compareTo(a.modeScoreShort); // DESC
           if (primary != 0) return primary;
           return a.symbol.compareTo(b.symbol); // 二級 key：symbol ASC
         });

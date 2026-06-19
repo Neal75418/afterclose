@@ -44,7 +44,7 @@
   "scoringMode": {
     "momentumEntry": "Entry",
     "strengthObserve": "Strong",
-    "weaknessObserve": "Weak",
+    "weaknessObserve": "Pullback",
     "neutral": "Neutral"
   },
   "today": {
@@ -566,7 +566,10 @@
     "highPledgeRatio": "High Pledge",
     "foreignConcentrationWarning": "Foreign Conc.",
     "foreignExodus": "Foreign Exodus",
-    "priceVolumeWeakRally": "Weak Rally Warning"
+    "priceVolumeWeakRally": "Weak Rally Warning",
+    "pullbackToMa20": "Pullback to MA20",
+    "hammerAtSupport": "Hammer at Support",
+    "kdHighPullback": "KD High Pullback"
   },
   "reasonTip": {
     "volumeSpike": "Trading volume significantly increased, indicating major capital flow.",
@@ -600,7 +603,10 @@
     "pbrUndervalued": "Low price-to-book ratio, potentially undervalued.",
     "foreignConcentration": "High foreign investor concentration, concentration risk.",
     "foreignExodus": "Foreign capital accelerating outflow, selling pressure increasing.",
-    "priceVolumeWeakRally": "Price rising on declining volume — weak rally warning, possible reversal ahead."
+    "priceVolumeWeakRally": "Price rising on declining volume — weak rally warning, possible reversal ahead.",
+    "pullbackToMa20": "Strong uptrend pulling back to MA20 with volume shrinking, trend intact — healthy entry timing.",
+    "hammerAtSupport": "Strong stock testing MA20/MA60 support with bullish hammer formation — reversal entry point.",
+    "kdHighPullback": "KD declining from overbought without dead cross, MA alignment maintained — momentum cooling, consider scaling in."
   },
   "onboarding": {
     "skip": "Skip",

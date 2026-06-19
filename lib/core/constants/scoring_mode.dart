@@ -52,11 +52,35 @@ enum ScoringMode {
   /// Tab 圖示
   ///
   /// 不直接 import Material — 由 UI 層 mapping，這個檔保持 pure Dart。
+  ///
+  /// **2026-06-19 v2**：weaknessObserve 從 `warning` 改 `south_east`（向下回檔
+  /// 感、觀察機會、不再是警示）— 對應 Mode C 從「弱勢警示」改為「回檔進場」語意。
   String get iconKey => switch (this) {
     ScoringMode.momentumEntry => 'trending_up', // Icons.trending_up
     ScoringMode.strengthObserve => 'bolt', // Icons.bolt
-    ScoringMode.weaknessObserve => 'warning', // Icons.warning_amber
+    ScoringMode.weaknessObserve => 'south_east', // Icons.south_east
     ScoringMode.neutral => 'circle_outlined',
+  };
+
+  /// Mode routing priority — eligibility-first assignment 時的優先順序
+  ///
+  /// **2026-06-19 v2 audit 引入**：當一檔股票對多個 mode 都 eligible（罕見、但
+  /// edge case 存在）時，按此優先順序選擇 mode，數字越大優先級越高、tiebreak 用
+  /// max |modeScoreShort|。
+  ///
+  /// 設計理由：
+  /// - **weaknessObserve (pullbackEntry) 3 — 最 actionable**：「強股回檔進場」是
+  ///   user 真正下單的時刻、最該被 surface 出來
+  /// - **momentumEntry 2 — 中**：「起漲候選」是研究階段
+  /// - **strengthObserve 1 — 監控**：「強勢觀察」純監控、不急
+  ///
+  /// 實務上 Mode B / Mode C eligibility 已透過 todayPct (>0 vs ≤0) 互斥，這個
+  /// priority 主要處理 Mode A / Mode C 邊界 case（罕見）。
+  int get routingPriority => switch (this) {
+    ScoringMode.weaknessObserve => 3, // pullbackEntry — 最 actionable
+    ScoringMode.momentumEntry => 2,
+    ScoringMode.strengthObserve => 1,
+    ScoringMode.neutral => 0,
   };
 
   /// Tab 是否在 Today 顯示（neutral 不顯示為 tab）
@@ -110,21 +134,45 @@ abstract final class ModeFilters {
   /// 算已過起漲點。filter-aware assign 會自動把這檔分派到 Mode B 強勢觀察
   /// （該檔同時應有 Mode B 訊號）。
   ///
-  /// 跟 [modeCExcludeTodayPct] (0%) 同一條 user mental model 軸：
+  /// 跟 [modeCMaxTodayPct] (0%) 同一條 user mental model 軸：
   /// - 起漲候選：今日漲幅應「適度」（≤ 8%）
   /// - 弱勢觀察：今日漲幅應「不正」（≤ 0%）
   static const double modeAExcludeTodayPct = 8.0;
 
-  /// Mode C（弱勢觀察）剔除「當日上漲」的股票
+  /// Mode C（回檔觀察 v2）今日漲幅上限
   ///
-  /// 「弱勢」mental model = 已下跌 / 正在轉空。今日只要紅 K（> 0%）就跟
-  /// 「弱勢」前提衝突 — 即使 RSI 超買 / PE 高估等警示 fires、那是「過熱
-  /// 風險」不是「下跌中」、不該指派到弱勢 tab。
+  /// **2026-06-19 v2 audit 重定義 Mode C 為「強股回檔進場」**：今日須收黑或平盤
+  /// 才算「剛開始回檔」、上漲就不是回檔。strict `>` 比較讓 0.00% 平盤 stays。
+  static const double modeCMaxTodayPct = 0.0;
+
+  /// Mode C 今日跌幅下限（-4%、深 V 不算健康回檔）
   ///
-  /// **2026-06-19 audit 從 +5% 收緊到 0%**：5% 留太多「今天反彈但有警示」
-  /// case 在弱勢 tab、user mental model 對不上。0% 嚴格界定「**今日收紅 =
-  /// 不算弱勢**」。strict `>` 比較讓 0.00% 平盤 stays（合理：平盤不算漲）。
-  static const double modeCExcludeTodayPct = 0.0;
+  /// 「健康回檔」mental model = 強股**小幅**拉回提供進場時機。今日大跌 > 4% 通常
+  /// 是恐慌賣壓 / 突發利空、不是 sweet spot 進場點。設 -4% 作 floor 過濾深 V。
+  ///
+  /// **CALIBRATION_PENDING**：-4% 是直覺值、缺 backtest。上線後看實際 fire 範圍
+  /// 再調。
+  static const double modeCMinTodayPct = -4.0;
+
+  /// Mode C 最低 mode score（≥ +12）
+  ///
+  /// v2 Mode C 從「全負分警示」改為「正分機會」tab、score 門檻改正分。+12 對應
+  /// 最弱的主訊號 `kdHighPullback`（單獨 fire 也夠 actionable）。
+  static const double modeCMinScore = 12.0;
+
+  /// Mode C eligibility 必過 gate：至少 1 條主訊號 rule fire
+  ///
+  /// 4 條主訊號 rule 提供「回檔進場時機」確認、舊負分 warning rule 單獨 fire 不
+  /// 足以入 Mode C（避免「純警示無進場點」雜訊）。
+  ///
+  /// 這 4 條 rule 識別子用字串避免循環 import（ReasonType import scoring_mode、
+  /// 反方向會 cycle）— 從 ReasonType.code 比對。
+  static const Set<String> modeCRequiredAnyOf = {
+    'PULLBACK_TO_MA20',
+    'HAMMER_AT_SUPPORT',
+    'KD_HIGH_PULLBACK',
+    'PATTERN_HAMMER',
+  };
 
   /// 指派 floor：best-eligible mode 的 |modeScoreShort| 必須 ≥ 10 才指派
   ///
