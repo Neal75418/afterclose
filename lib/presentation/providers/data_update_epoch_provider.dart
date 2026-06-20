@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// 用途：`UpdateService.runUpdate` 完成後 bump 一次，依賴 `daily_analysis`
 /// / `daily_reason` / `daily_recommendation` / `daily_price` 的 provider
-/// （scan, watchlist, recommendationPerformance, industryEps, stockDetail）
+/// （scan, watchlist, industryEps, stockDetail）
 /// 用 `ref.listen` 監聽，收到任意值變動就觸發各自的 `loadData()` reload。
 ///
 /// 過去 `runUpdate` 完成後只 imperative 呼叫 `todayProvider.loadData()` 與

@@ -724,28 +724,6 @@ class RuleAccuracyService {
     );
   }
 
-  /// 取得所有規則的準確度統計
-  ///
-  /// [period] 持有天數週期，如 '5D'、'60D'（預設 '5D'）。'ALL' 已移除。
-  Future<List<RuleStats>> getAllRuleStats({String? period}) async {
-    final results = await (_db.select(
-      _db.ruleAccuracy,
-    )..where((t) => t.period.equals(period ?? '5D'))).get();
-
-    return results.map((r) {
-      final hitRate = r.triggerCount > 0
-          ? (r.successCount / r.triggerCount) * 100
-          : 0.0;
-
-      return RuleStats(
-        ruleId: r.ruleId,
-        hitRate: hitRate,
-        avgReturn: r.avgReturn,
-        triggerCount: r.triggerCount,
-      );
-    }).toList();
-  }
-
   /// 取得規則摘要文字（用於 UI 顯示）
   ///
   /// 例如：「命中率 65%，平均 5 日報酬 +2.3%」

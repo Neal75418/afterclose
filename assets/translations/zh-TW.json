@@ -215,15 +215,6 @@
         "instSell": "法人大量賣出 {value}，機構出脫跡象",
         "instMove": "法人大量異動 {value}，籌碼面需留意"
       }
-    },
-    "recPerformance": {
-      "title": "推薦績效",
-      "recentResults": "近 {count} 筆驗證結果",
-      "winRate": "勝率",
-      "avgReturn": "平均報酬",
-      "totalCount": "驗證筆數",
-      "topRules": "最強規則 Top 3",
-      "accumulating": "推薦績效累積中，需至少 5 筆驗證資料"
     }
   },
   "stockSearch": {
@@ -743,25 +734,6 @@
     "autoUpdate": "每日自動更新",
     "autoUpdateDesc": "每日收盤後（15:00）自動更新資料並推送通知",
     "autoUpdateFailed": "自動更新排程設定失敗，請稍後再試"
-  },
-  "recPerf": {
-    "title": "推薦績效追蹤",
-    "periodAll": "全部",
-    "overallStats": "整體統計",
-    "winRate": "勝率",
-    "avgReturn": "平均報酬",
-    "totalValidated": "驗證筆數",
-    "backfill": "歷史回填",
-    "backfillDesc": "回溯驗證所有歷史推薦，計算實際績效。首次執行可能需要數分鐘。",
-    "runBackfill": "開始回填",
-    "backfillProgress": "{current} / {total} 個日期",
-    "stockDetails": "個股驗證明細",
-    "priceRange": "買入 {entry} → 賣出 {exit} ({days})",
-    "primaryRule": "主因：{rule}",
-    "pendingValidation": "尚未驗證",
-    "noData": "尚無驗證資料",
-    "noDataHint": "請先執行每日更新或歷史回填，以產生驗證數據",
-    "disclaimer": "歷史績效僅供參考，不代表未來實際報酬，亦不構成投資建議。"
   },
   "alert": {
     "title": "價格提醒",

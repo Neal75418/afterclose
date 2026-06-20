@@ -15,7 +15,6 @@ import 'package:afterclose/presentation/widgets/market_dashboard/industry_perfor
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/recommendation_performance_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
@@ -482,12 +481,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
       sections.add(IndustryPerformanceRow(industries: industries));
     }
 
-    // 推薦績效（全市場，非 per-market）
-    final recPerf = widget.state.recommendationPerformance;
-    if (recPerf != null) {
-      sections.add(RecommendationPerformanceRow(data: recPerf));
-    }
-
     // 組合所有 sections
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -617,19 +610,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
           ),
           const SizedBox(height: DesignTokens.spacing12),
           row,
-        ],
-
-        // 共用：推薦績效看板
-        if (widget.state.recommendationPerformance != null) ...[
-          const SizedBox(height: DesignTokens.spacing14),
-          Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: DesignTokens.spacing14),
-          RecommendationPerformanceRow(
-            data: widget.state.recommendationPerformance!,
-          ),
         ],
       ],
     );

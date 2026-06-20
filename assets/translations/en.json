@@ -215,15 +215,6 @@
         "instSell": "Institutions sold {value} — unwinding position",
         "instMove": "Large institutional move of {value} — monitor chip flow"
       }
-    },
-    "recPerformance": {
-      "title": "Rec. Performance",
-      "recentResults": "Last {count} results",
-      "winRate": "Win Rate",
-      "avgReturn": "Avg Return",
-      "totalCount": "Total",
-      "topRules": "Top 3 Rules",
-      "accumulating": "Accumulating data, need at least 5 validations"
     }
   },
   "stockSearch": {
@@ -743,25 +734,6 @@
     "autoUpdate": "Daily Auto Update",
     "autoUpdateDesc": "Automatically update data after market close (15:00) and send notification",
     "autoUpdateFailed": "Failed to schedule auto-update. Please try again later."
-  },
-  "recPerf": {
-    "title": "Recommendation Performance",
-    "periodAll": "All",
-    "overallStats": "Overall Statistics",
-    "winRate": "Win Rate",
-    "avgReturn": "Avg Return",
-    "totalValidated": "Validated",
-    "backfill": "Historical Backfill",
-    "backfillDesc": "Retroactively validate all historical recommendations to calculate actual performance. First run may take several minutes.",
-    "runBackfill": "Start Backfill",
-    "backfillProgress": "{current} / {total} dates",
-    "stockDetails": "Stock Validation Details",
-    "priceRange": "Buy {entry} → Sell {exit} ({days})",
-    "primaryRule": "Primary: {rule}",
-    "pendingValidation": "Pending",
-    "noData": "No Validation Data",
-    "noDataHint": "Run a daily update or historical backfill to generate validation data",
-    "disclaimer": "Past performance is for reference only and does not represent future returns. This is not investment advice."
   },
   "alert": {
     "title": "Price Alerts",

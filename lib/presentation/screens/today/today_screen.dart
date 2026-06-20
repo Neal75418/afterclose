@@ -546,22 +546,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
                 data: (recs) => S.todayTop10(recs.length),
                 orElse: () => S.todayTop10Loading,
               );
-              return SectionHeader(
-                title: title,
-                icon: Icons.trending_up,
-                trailing: IconButton(
-                  icon: Icon(
-                    Icons.analytics_outlined,
-                    size: 20,
-                    color: theme.colorScheme.primary,
-                  ),
-                  tooltip: 'recPerf.title'.tr(),
-                  onPressed: () =>
-                      context.push(AppRoutes.recommendationPerformance),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              );
+              return SectionHeader(title: title, icon: Icons.trending_up);
             },
           ),
         ),

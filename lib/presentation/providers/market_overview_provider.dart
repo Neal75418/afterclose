@@ -16,7 +16,6 @@ import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:afterclose/domain/models/market_overview_models.dart';
 export 'package:afterclose/domain/models/market_overview_models.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart';
-import 'package:afterclose/domain/services/rule_accuracy_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
@@ -40,7 +39,6 @@ class MarketOverviewState {
     this.institutionalStreakByMarket = const {},
     this.industrySummaryByMarket = const {},
     this.historyTrends = const HistoryTrends(),
-    this.recommendationPerformance,
     this.chipAnomaliesByMarket = const {},
     this.isLoading = false,
     this.error,
@@ -93,9 +91,6 @@ class MarketOverviewState {
   /// 30 日歷史趨勢資料（法人、成交量、融資融券、漲跌比）
   final HistoryTrends historyTrends;
 
-  /// 推薦績效摘要（全市場，非 per-market）
-  final RecommendationPerformance? recommendationPerformance;
-
   /// 籌碼異動摘要（依市場分組）
   final Map<String, List<ChipAnomaly>> chipAnomaliesByMarket;
 
@@ -131,7 +126,6 @@ class MarketOverviewState {
     Map<String, InstitutionalStreak>? institutionalStreakByMarket,
     Map<String, List<IndustrySummary>>? industrySummaryByMarket,
     HistoryTrends? historyTrends,
-    RecommendationPerformance? recommendationPerformance,
     Map<String, List<ChipAnomaly>>? chipAnomaliesByMarket,
     bool? isLoading,
     Object? error = _sentinel,
@@ -158,8 +152,6 @@ class MarketOverviewState {
       industrySummaryByMarket:
           industrySummaryByMarket ?? this.industrySummaryByMarket,
       historyTrends: historyTrends ?? this.historyTrends,
-      recommendationPerformance:
-          recommendationPerformance ?? this.recommendationPerformance,
       chipAnomaliesByMarket:
           chipAnomaliesByMarket ?? this.chipAnomaliesByMarket,
       isLoading: isLoading ?? this.isLoading,
@@ -257,8 +249,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         _loadTurnoverHistoryByMarket(dataDate), // [13]
         _loadMarginHistoryByMarket(dataDate), // [14]
         _loadAdvanceDeclineHistoryByMarket(dataDate), // [15]
-        _loadRecommendationPerformance(), // [16]
-        _loadChipAnomalies(dataDate), // [17]
+        _loadChipAnomalies(dataDate), // [16]
       ]);
 
       // 超時機制：最多等 _loadTimeoutSec 秒
@@ -338,8 +329,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final marginHistory =
         results[14] as Map<String, ({List<double> margin, List<double> short})>;
     final advRatioHistory = results[15] as Map<String, List<double>>;
-    final recPerf = results[16] as RecommendationPerformance?;
-    final chipAnomalies = results[17] as Map<String, List<ChipAnomaly>>;
+    final chipAnomalies = results[16] as Map<String, List<ChipAnomaly>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
@@ -409,7 +399,6 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         },
         advanceRatio: advRatioHistory,
       ),
-      recommendationPerformance: recPerf,
       chipAnomaliesByMarket: chipAnomalies,
       dataDate: dataDate,
       sectionDates: sectionDates,
@@ -977,65 +966,6 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入漲跌比歷史趨勢失敗', e);
       return {};
-    }
-  }
-
-  /// 載入推薦績效摘要（全市場，非 per-market）
-  ///
-  /// 使用現有 [RuleAccuracyService] 的查詢方法，
-  /// 組合出 dashboard 需要的精簡摘要。
-  Future<RecommendationPerformance?> _loadRecommendationPerformance() async {
-    try {
-      final service = RuleAccuracyService(database: _db);
-
-      // 平行載入三組資料。
-      // 兩個 stats 查詢都顯式傳 '5D'：
-      // - getAllRuleStats('5D')：per-rule 統計
-      // - getOverallPerformanceStats('5D')：dashboard summary
-      // 不傳 period 會混所有 holding_days，1D/3D 預設 threshold=0% 拉高 winRate
-      // 但 returnRate 微小，造成「100% wins + 0.00% avgReturn」的怪現象。
-      // 統一在 5D 才能讓 winRate / avgReturn 對應同一語意。
-      final (stats, records, allRules) = await (
-        service.getOverallPerformanceStats(period: '5D'),
-        service.getStockValidationRecords(limit: 30),
-        service.getAllRuleStats(period: '5D'),
-      ).wait;
-
-      // 門檻：至少 5 筆驗證資料
-      if (stats.totalCount < 5) return null;
-
-      // 近 30 筆勝負序列
-      final recentResults = records
-          .where((r) => r.isSuccess != null)
-          .take(30)
-          .map((r) => r.isSuccess!)
-          .toList();
-
-      // Top 3 規則（門檻：至少 5 次觸發）
-      final qualifiedRules = allRules.where((r) => r.triggerCount >= 5).toList()
-        ..sort((a, b) => b.hitRate.compareTo(a.hitRate));
-      final topRules = qualifiedRules
-          .take(3)
-          .map(
-            (r) => TopRule(
-              ruleId: r.ruleId,
-              winRate: r.hitRate,
-              avgReturn: r.avgReturn,
-              triggerCount: r.triggerCount,
-            ),
-          )
-          .toList();
-
-      return RecommendationPerformance(
-        recentResults: recentResults,
-        winRate: stats.winRate,
-        avgReturn: stats.avgReturn,
-        totalCount: stats.totalCount,
-        topRules: topRules,
-      );
-    } catch (e) {
-      AppLogger.warning('MarketOverviewNotifier', '載入推薦績效摘要失敗', e);
-      return null;
     }
   }
 

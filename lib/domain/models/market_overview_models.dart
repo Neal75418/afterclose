@@ -99,47 +99,6 @@ class InstitutionalStreak {
   final int dealerStreak;
 }
 
-/// 推薦績效摘要（用於 dashboard 精簡顯示）
-class RecommendationPerformance {
-  const RecommendationPerformance({
-    required this.recentResults,
-    required this.winRate,
-    required this.avgReturn,
-    required this.totalCount,
-    required this.topRules,
-  });
-
-  /// 近 30 筆驗證勝負序列（true=獲利，false=虧損），newest→oldest
-  final List<bool> recentResults;
-
-  /// 整體勝率 %
-  final double winRate;
-
-  /// 平均報酬 %
-  final double avgReturn;
-
-  /// 已驗證推薦總筆數
-  final int totalCount;
-
-  /// 勝率最高的 Top 3 規則
-  final List<TopRule> topRules;
-}
-
-/// 勝率最高的規則（用於 dashboard 顯示）
-class TopRule {
-  const TopRule({
-    required this.ruleId,
-    required this.winRate,
-    required this.avgReturn,
-    required this.triggerCount,
-  });
-
-  final String ruleId;
-  final double winRate;
-  final double avgReturn;
-  final int triggerCount;
-}
-
 /// 產業表現
 class IndustrySummary {
   const IndustrySummary({

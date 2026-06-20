@@ -16,7 +16,6 @@ abstract final class AppRoutes {
   static const portfolio = '/portfolio';
   static const compare = '/compare';
   static const calendar = '/calendar';
-  static const recommendationPerformance = '/recommendation-performance';
   static const shortSellRanking = '/short-sell-ranking';
   static const industryEps = '/industry-eps';
 
