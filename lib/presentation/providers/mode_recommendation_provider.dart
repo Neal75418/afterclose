@@ -233,9 +233,18 @@ final _modeAssignmentsProvider =
       if (stockModeScores.isEmpty) return emptyResult;
 
       // STEP 4 — 一次撈所有 candidate 的 stock data（priceHistory 給 ret5d /
-      //          sparkline 重用；reasons / stocks / analyses 給後續 build）
+      //          ret20d / sparkline 重用；reasons / stocks / analyses 給後續 build）
+      //
+      // **2026-06-20 修正窗口太短 bug**：原 DateContext.forDate(analysisDate) 預設
+      // historyDays=5（日曆天）→ 每檔只載 ~4 筆 priceHistory → computeRet5dForHistory
+      // (需 6 筆) 跟 computeRet20dForHistory (需 21 筆) 全回 null → **5D filter 跟
+      // 20D guard 從 commit 253f732 起一直是死的**（只有 today filter 活著、遮蔽
+      // 此 bug）。6770 力積電 today+5.7% 躲過 today filter、5D+15%/20D+25% 的 filter
+      // 都沒生效 → 霸榜 Mode A。
+      //
+      // 改 50 日曆天 ≈ 33 交易日：足夠算 20D 報酬（21 筆）+ 30 日 sparkline + 假日 margin。
       final allCandidateSymbols = stockModeScores.keys.toList();
-      final historyCtx = DateContext.forDate(analysisDate);
+      final historyCtx = DateContext.forDate(analysisDate, historyDays: 50);
       final data = await cachedDb.loadStockListData(
         symbols: allCandidateSymbols,
         analysisDate: analysisDate,
