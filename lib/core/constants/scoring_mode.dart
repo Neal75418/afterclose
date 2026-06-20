@@ -105,50 +105,32 @@ enum ScoringMode {
 /// 跟 mode-aware sort（[ScoringMode.weaknessObserve] 用 sum ASC）配套：先按
 /// score 排再 anti-filter、被踢的不算 quota；filter 後不足 30 也照舊。
 abstract final class ModeFilters {
-  /// Mode A（起漲候選）剔除 5 日漲幅 > 8% 的股票
+  /// Mode A（起漲候選）MA20 正乖離率上限（+15%）— **2026-06-20 Wave 2a**
   ///
-  /// 「起漲」mental model = 還沒漲、即將漲。一週已漲 >8% 不符合此定義。
-  /// **但**強訊號（[modeAStrongScoreOverride] 以上）例外保留 — 反轉訊號
-  /// 規則本身就帶「起漲」語意（REVERSAL_W2S +35），即使技術面顯示已漲、
-  /// 規則仍判斷是底部起漲確認、不該被技術 filter 蓋過。
-  static const double modeAExclude5dPct = 8.0;
-
-  /// Mode A 強訊號豁免分數：sum_short ≥ 50 不受 5D filter 影響
+  /// analyst「準備起漲 vs 已漲」看的是「離 MA20 多遠（延伸度 / 乖離）」而非
+  /// 「最近漲幅」。`(close − MA20) / MA20 > +15%` = 已漲一波、過度延伸、不符
+  /// 「還沒漲、即將起漲」語意 → 踢出（若強勢會自動導去 Mode B）。
   ///
-  /// 對應「REVERSAL_W2S +35 + 其他輔助訊號 ≥ 15」的組合，明確的反轉確認
-  /// 而非單一弱訊號。e.g. 6770 力積電（弱轉強 35 + 晨星 25 = 60）即使 5D
-  /// 漲 15%、仍是真起漲、應保留。
+  /// **取代**舊「5D 漲幅 8% + score≥50 豁免 + 20D≤20% 副條件」整套補丁：漲幅
+  /// proxy + 豁免特例反覆漏掉「強反轉**已漲一波**」（6742 乖離+15.7% / 6770
+  /// 20D+25.5% 霸榜）。乖離率直接量延伸度、無需豁免。
   ///
-  /// **2026-06-19 audit Action 5b**：豁免**只作用於 5D filter**、不豁免
-  /// [modeAExcludeTodayPct]。理由：今日 gap-up +9% 即使有最強反轉訊號、
-  /// 對 user mental model 已是「**追高**」而非「起漲」；這檔股票同時應該
-  /// 在 Mode B 有訊號（強勢確認）、filter-aware assign 會自動把它導去 B。
-  static const double modeAStrongScoreOverride = 50;
-
-  /// 強訊號豁免的 20D 漲幅上限（+20%）
-  ///
-  /// **2026-06-20 A/B 體檢加**：[modeAStrongScoreOverride] 豁免本意保護「強反轉
-  /// 訊號但還沒漲」，但實測漏了「強反轉**已漲一波**」的股票霸佔 Mode A 最前排
-  /// （6770 力積電 20D+25.5% / 6742 澤米 20D+26.4% 被豁免保留在 #1/#2、與「還沒
-  /// 漲」tab 語意直接衝突）。
-  ///
-  /// 加副條件：豁免只在 20D 漲幅 ≤ +20% 時生效。20D 已漲 >20% = 明確「已漲一波」、
-  /// 無論訊號多強都不該在「起漲候選」。真正的「強反轉未動」20D 漲幅本來就低、不受影響。
-  static const double modeAStrongExemptMax20dPct = 20.0;
+  /// +15% = 台股標準「正乖離偏熱」線（實測當日 107 檔候選踢 33 檔/31%，清掉
+  /// >20% 大幅延伸的 24 檔 + 12-20% 段、保留 ≤15% 早期移動股）。
+  /// **CALIBRATION_PENDING**：缺 forward backtest，上線後看 fire 範圍再調。
+  static const double modeAMaxBiasMa20Pct = 15.0;
 
   /// Mode A 剔除「**當日**漲幅 > 8%」（無豁免）
   ///
-  /// 跟 [modeAExclude5dPct] 互補：5D filter 擋「一週累積已漲多」、今日 filter
-  /// 擋「**今天突然爆衝**」。原本只有 5D 抓不到「5D 累積還沒 +8% 但今天 gap
-  /// up +9.92% 漲停」的 case（6651 全宇昕、3090 日電貿等）。
+  /// 跟 [modeAMaxBiasMa20Pct] 互補：乖離 gate 擋「累積已延伸」、今日 filter
+  /// 擋「**今天突然爆衝**」（5D 累積還沒高但今天 gap up +9.92% 漲停的 case，
+  /// 如 6651 全宇昕 / 3090 日電貿 — 從低於 MA20 跳上來、乖離未必過線）。
   ///
-  /// **沒有強訊號豁免**：分數再高（如 60 分弱轉強+晨星）、今天就漲 +9% 也
-  /// 算已過起漲點。filter-aware assign 會自動把這檔分派到 Mode B 強勢觀察
-  /// （該檔同時應有 Mode B 訊號）。
+  /// **沒有強訊號豁免**：分數再高、今天就漲 +9% 也算追高、自動導去 Mode B。
   ///
   /// 跟 [modeCMaxTodayPct] (0%) 同一條 user mental model 軸：
   /// - 起漲候選：今日漲幅應「適度」（≤ 8%）
-  /// - 弱勢觀察：今日漲幅應「不正」（≤ 0%）
+  /// - 回檔觀察：今日漲幅應「不正」（≤ 0%）
   static const double modeAExcludeTodayPct = 8.0;
 
   /// Mode C（回檔觀察 v2）今日漲幅上限

@@ -82,31 +82,29 @@ List<String> reasonCodesForMode(ScoringMode mode) {
       .toList();
 }
 
-/// 從 priceHistory 算 5 trading days 報酬 (%)。
+/// 從 priceHistory 算最新收盤對 MA20 的乖離率 (%)：`(close − MA20) / MA20 × 100`。
 ///
-/// 回 null 當：history 太短（< 6 個收盤）/ 端點 close null / 起點 close 0。
-/// caller 把 null 視為「不知道、不擋」(permissive)，避免靜默 drop 新 IPO /
-/// sparse history。
-@visibleForTesting
-double? computeRet5dForHistory(List<DailyPriceEntry>? history) {
-  if (history == null || history.length < 6) return null;
-  final latest = history.last.close;
-  final old = history[history.length - 6].close;
-  if (latest == null || old == null || old == 0) return null;
-  return (latest - old) / old * 100;
-}
-
-/// 從 priceHistory 算 20 trading days 報酬 (%)。
+/// **2026-06-20 Wave 2a — analyst「延伸度」軸**：取代舊「5D/20D 漲幅 proxy」。
+/// Mode A「準備起漲」應貼近 MA20（低乖離）；大幅正乖離 = 已漲一波、過度延伸、
+/// 不符「還沒漲」語意（Minervini「not extended」原則）。
 ///
-/// 用於 Mode A 強訊號豁免的「已漲一波」副條件。回 null 規則同 [computeRet5dForHistory]
-/// （history < 21 / 端點 null / 起點 0）→ caller 視為「不知道、不擋豁免」。
+/// 回 null 當 history < 20 筆 / 任一收盤 null / MA20 為 0 → caller 視為「不知道、
+/// 不擋」(permissive)，避免靜默 drop 新 IPO / sparse history。
 @visibleForTesting
-double? computeRet20dForHistory(List<DailyPriceEntry>? history) {
-  if (history == null || history.length < 21) return null;
+double? computeBiasMa20ForHistory(List<DailyPriceEntry>? history) {
+  if (history == null || history.length < 20) return null;
   final latest = history.last.close;
-  final old = history[history.length - 21].close;
-  if (latest == null || old == null || old == 0) return null;
-  return (latest - old) / old * 100;
+  if (latest == null) return null;
+  final last20 = history.sublist(history.length - 20);
+  var sum = 0.0;
+  for (final p in last20) {
+    final c = p.close;
+    if (c == null) return null;
+    sum += c;
+  }
+  final ma20 = sum / 20;
+  if (ma20 == 0) return null;
+  return (latest - ma20) / ma20 * 100;
 }
 
 /// 判斷某檔股票是否「夠資格」指派到 [mode]。
@@ -125,28 +123,26 @@ bool isEligibleForMode({
   required ScoringMode mode,
   required ModeStockScore score,
   required double? todayPct,
-  required double? ret5d,
-  double? ret20d,
+  double? biasMa20,
   Set<String> triggeredReasonCodes = const {},
 }) {
   switch (mode) {
     case ScoringMode.momentumEntry:
-      // 當日 > +8% 一律踢出（**無強訊號豁免**、會自動導去 Mode B）
+      // 當日 > +8% 一律踢出（追高、自動導去 Mode B 強勢觀察）
       if (todayPct != null && todayPct > ModeFilters.modeAExcludeTodayPct) {
         return false;
       }
-      // 5D > +8% 踢出 UNLESS 強訊號豁免。
+      // **2026-06-20 Wave 2a — 乖離率 gate 取代 5D 漲幅 proxy + 強訊號豁免**：
+      // analyst 判「準備起漲 vs 已漲」看的是「離 MA20 多遠（延伸度）」而非「最近
+      // 漲幅」。MA20 正乖離 > +15%（台股標準偏熱線）= 已漲一波、過度延伸 → 不符
+      // 「還沒漲、即將起漲」語意，踢出（同時若它強勢、會自動導去 Mode B）。
       //
-      // **2026-06-20 A/B 體檢收緊豁免**：豁免要 score ≥ 50 AND 20D 漲幅 ≤ +20%。
-      // 原本只看 score、漏了「強反轉已漲一波」（6770 20D+25.5% 霸榜 #1）。20D 已漲
-      // >20% = 明確「已漲」、無論訊號多強都不該在「起漲候選」。20D null（資料不足）
-      // 視為「不知道、給豁免」(permissive)。
-      if (ret5d != null && ret5d > ModeFilters.modeAExclude5dPct) {
-        final strongExempt =
-            score.modeScoreShort >= ModeFilters.modeAStrongScoreOverride &&
-            (ret20d == null ||
-                ret20d <= ModeFilters.modeAStrongExemptMax20dPct);
-        if (!strongExempt) return false;
+      // 取代舊「5D>8% + score≥50 豁免 + 20D≤20% 副條件」整套補丁：豁免本意是保護
+      // 「強反轉但還沒漲」，但反覆漏掉「強反轉**已漲一波**」（6742 乖離+15.7%、
+      // 6770 20D+25.5% 霸榜）。乖離率直接量「漲多少」、無需豁免特例。
+      // bias null（history < 20）→ permissive 不擋。
+      if (biasMa20 != null && biasMa20 > ModeFilters.modeAMaxBiasMa20Pct) {
+        return false;
       }
       return true;
 
@@ -244,17 +240,14 @@ final _modeAssignmentsProvider =
       }
       if (stockModeScores.isEmpty) return emptyResult;
 
-      // STEP 4 — 一次撈所有 candidate 的 stock data（priceHistory 給 ret5d /
-      //          ret20d / sparkline 重用；reasons / stocks / analyses 給後續 build）
+      // STEP 4 — 一次撈所有 candidate 的 stock data（priceHistory 給 MA20 乖離 /
+      //          sparkline 重用；reasons / stocks / analyses 給後續 build）
       //
-      // **2026-06-20 修正窗口太短 bug**：原 DateContext.forDate(analysisDate) 預設
-      // historyDays=5（日曆天）→ 每檔只載 ~4 筆 priceHistory → computeRet5dForHistory
-      // (需 6 筆) 跟 computeRet20dForHistory (需 21 筆) 全回 null → **5D filter 跟
-      // 20D guard 從 commit 253f732 起一直是死的**（只有 today filter 活著、遮蔽
-      // 此 bug）。6770 力積電 today+5.7% 躲過 today filter、5D+15%/20D+25% 的 filter
-      // 都沒生效 → 霸榜 Mode A。
+      // **窗口長度需求**：computeBiasMa20ForHistory 需 ≥ 20 筆收盤算 MA20。
+      // historyDays=50 日曆天 ≈ 33 交易日：足夠算 MA20 + 30 日 sparkline + 假日 margin。
       //
-      // 改 50 日曆天 ≈ 33 交易日：足夠算 20D 報酬（21 筆）+ 30 日 sparkline + 假日 margin。
+      // **歷史備註**：原預設 historyDays=5 → 每檔 ~4 筆 → Mode A 漲幅 filter 從
+      // commit 253f732 起一直是死的（只有 today filter 活著）；2026-06-20 修為 50。
       final allCandidateSymbols = stockModeScores.keys.toList();
       final historyCtx = DateContext.forDate(analysisDate, historyDays: 50);
       final data = await cachedDb.loadStockListData(
@@ -291,8 +284,7 @@ final _modeAssignmentsProvider =
         }
 
         final todayPct = priceChanges[symbol];
-        final ret5d = computeRet5dForHistory(data.priceHistories[symbol]);
-        final ret20d = computeRet20dForHistory(data.priceHistories[symbol]);
+        final biasMa20 = computeBiasMa20ForHistory(data.priceHistories[symbol]);
 
         // 取得該股 daily_reason 內所有 triggered reason codes（給 Mode C gate 用）
         final triggeredCodes = <String>{
@@ -308,8 +300,7 @@ final _modeAssignmentsProvider =
             mode: mEntry.key,
             score: mEntry.value,
             todayPct: todayPct,
-            ret5d: ret5d,
-            ret20d: ret20d,
+            biasMa20: biasMa20,
             triggeredReasonCodes: triggeredCodes,
           )) {
             continue;

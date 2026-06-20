@@ -1,5 +1,5 @@
 // Unit tests for the pure helpers exposed by mode_recommendation_provider —
-// `isEligibleForMode` predicate + `computeRet5dForHistory`.
+// `isEligibleForMode` predicate + `computeBiasMa20ForHistory`.
 //
 // 2026-06-19 audit Action 5b: filter-aware mode assignment. Predicate is the
 // single source of truth for which mode a stock is allowed to land in.
@@ -12,162 +12,125 @@ import 'package:afterclose/data/database/dao/analysis_dao.dart';
 import 'package:afterclose/presentation/providers/mode_recommendation_provider.dart';
 
 void main() {
-  group('isEligibleForMode — Mode A (momentumEntry)', () {
-    test('eligible when today and 5D both within thresholds', () {
+  group('isEligibleForMode — Mode A (momentumEntry) — 乖離率 gate', () {
+    test('eligible when today and bias both within thresholds', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
           score: _score(short: 30),
           todayPct: 5.0,
-          ret5d: 5.0,
+          biasMa20: 5.0,
         ),
         isTrue,
       );
     });
 
-    test('ineligible when today > +8% (no override)', () {
+    test('ineligible when today > +8%', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
           score: _score(short: 30),
           todayPct: 8.01,
-          ret5d: 0.0,
+          biasMa20: 0.0,
         ),
         isFalse,
       );
     });
 
-    test('mode_a_keeps_stock_at_exact_8pct_today_boundary', () {
-      // strict `>` so 8.00% stays
+    test('keeps stock at exact +8% today boundary (strict >)', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
           score: _score(short: 30),
           todayPct: 8.0,
-          ret5d: 0.0,
+          biasMa20: 0.0,
         ),
         isTrue,
       );
     });
 
-    test('score_override_bypasses_5d_filter_but_not_today', () {
-      // 5D > 8% but score >= 50 → 5D 不擋；today 2% < 8% → today 不擋 → eligible
+    test('ineligible when MA20 bias > +15% (6742-style 已漲一波)', () {
+      // 6742 澤米：乖離 +15.7% → 過度延伸、踢出
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
-          score: _score(short: 60),
+          score: _score(short: 57),
           todayPct: 2.0,
-          ret5d: 15.0,
-        ),
-        isTrue,
-      );
-    });
-
-    test('score_override_does_NOT_bypass_today_filter', () {
-      // 6651-style: high score but today gap-up
-      expect(
-        isEligibleForMode(
-          mode: ScoringMode.momentumEntry,
-          score: _score(short: 80),
-          todayPct: 10.0,
-          ret5d: 2.0,
+          biasMa20: 15.7,
         ),
         isFalse,
       );
     });
 
-    // **2026-06-20 A/B 體檢**：強訊號豁免加 20D ≤ +20% 副條件（治 6770 已漲霸榜）
-    test('score_override_denied_when_20d_already_risen_over_20pct', () {
-      // 6770-style: score 90、5D>8%、但 20D +25.5% 已漲一波 → 豁免取消 → 踢出
+    test('high score does NOT exempt extended stock (豁免已移除)', () {
+      // 強訊號不再豁免延伸：score 90 但乖離 +20% → 仍踢出
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
           score: _score(short: 90),
-          todayPct: 5.0,
-          ret5d: 15.0,
-          ret20d: 25.5,
+          todayPct: 2.0,
+          biasMa20: 20.0,
         ),
         isFalse,
       );
     });
 
-    test(
-      'score_override_kept_when_20d_modest (strong reversal not yet risen)',
-      () {
-        // 強反轉未動：score 60、5D>8%、20D 只 +10% → 豁免維持 → 保留
-        expect(
-          isEligibleForMode(
-            mode: ScoringMode.momentumEntry,
-            score: _score(short: 60),
-            todayPct: 2.0,
-            ret5d: 15.0,
-            ret20d: 10.0,
-          ),
-          isTrue,
-        );
-      },
-    );
-
-    test('score_override_20d_exactly_20pct_boundary_kept', () {
-      // strict `>` so 20D == 20.0% 仍豁免
+    test('keeps stock at exact +15% bias boundary (strict >)', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
-          score: _score(short: 60),
+          score: _score(short: 30),
           todayPct: 2.0,
-          ret5d: 15.0,
-          ret20d: 20.0,
+          biasMa20: 15.0,
         ),
         isTrue,
       );
     });
 
-    test('score_override_null_20d_treated_as_permissive', () {
-      // 20D 資料不足（新股）→ null → 不擋豁免
-      expect(
-        isEligibleForMode(
-          mode: ScoringMode.momentumEntry,
-          score: _score(short: 60),
-          todayPct: 2.0,
-          ret5d: 15.0,
-          ret20d: null,
-        ),
-        isTrue,
-      );
-    });
-
-    test('mode_a_eligible_when_history_below_6_closes (ret5d null)', () {
+    test('eligible when bias modest (貼均線早期移動)', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
           score: _score(short: 30),
           todayPct: 3.0,
-          ret5d: null,
+          biasMa20: 8.0,
         ),
         isTrue,
       );
     });
 
-    test('null_today_pct_treated_as_pass (data lag / new IPO)', () {
+    test('null bias (history < 20) treated as permissive', () {
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 30),
+          todayPct: 3.0,
+          biasMa20: null,
+        ),
+        isTrue,
+      );
+    });
+
+    test('null today treated as pass (data lag / new IPO)', () {
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
           score: _score(short: 30),
           todayPct: null,
-          ret5d: null,
+          biasMa20: null,
         ),
         isTrue,
       );
     });
 
-    test('5d_filter_excludes_when_no_override', () {
-      // 5D > 8%, score < 50 → 5D 擋
+    test('today gap-up excludes even when bias modest (導去 Mode B)', () {
+      // 從低於 MA20 跳上來：乖離還小但今天 +10% → today gate 擋
       expect(
         isEligibleForMode(
           mode: ScoringMode.momentumEntry,
-          score: _score(short: 30),
-          todayPct: 2.0,
-          ret5d: 9.0,
+          score: _score(short: 40),
+          todayPct: 10.0,
+          biasMa20: 3.0,
         ),
         isFalse,
       );
@@ -181,7 +144,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: 1),
           todayPct: null,
-          ret5d: null,
         ),
         isTrue,
       );
@@ -193,7 +155,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: 0),
           todayPct: null,
-          ret5d: null,
         ),
         isFalse,
       );
@@ -206,7 +167,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: -15),
           todayPct: null,
-          ret5d: null,
         ),
         isFalse,
       );
@@ -219,7 +179,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: 50),
           todayPct: 10.0,
-          ret5d: 20.0,
         ),
         isTrue,
       );
@@ -241,7 +200,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: -1.5,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
@@ -255,7 +213,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: 0.0,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
@@ -269,7 +226,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: 0.01,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isFalse,
@@ -283,7 +239,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: -4.01,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isFalse,
@@ -297,7 +252,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: -4.0,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
@@ -311,7 +265,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: -1.0,
-          ret5d: null,
           triggeredReasonCodes: const {'RSI_EXTREME_OVERBOUGHT'},
         ),
         isFalse,
@@ -324,7 +277,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 11),
           todayPct: -1.0,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isFalse,
@@ -337,7 +289,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 12),
           todayPct: -1.0,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
@@ -353,7 +304,6 @@ void main() {
               mode: ScoringMode.weaknessObserve,
               score: _score(short: 15),
               todayPct: -1.0,
-              ret5d: null,
               triggeredReasonCodes: {code},
             ),
             isTrue,
@@ -369,7 +319,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: null,
-          ret5d: null,
           triggeredReasonCodes: mainSignalGate,
         ),
         isTrue,
@@ -383,7 +332,6 @@ void main() {
           mode: ScoringMode.weaknessObserve,
           score: _score(short: 15),
           todayPct: -1.0,
-          ret5d: null,
         ),
         isFalse,
       );
@@ -398,7 +346,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: 30),
           todayPct: -1.0,
-          ret5d: null,
         ),
         isFalse,
       );
@@ -411,7 +358,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: 30),
           todayPct: 0.0,
-          ret5d: null,
         ),
         isFalse,
       );
@@ -423,7 +369,6 @@ void main() {
           mode: ScoringMode.strengthObserve,
           score: _score(short: 30),
           todayPct: 0.1,
-          ret5d: null,
         ),
         isTrue,
       );
@@ -437,104 +382,63 @@ void main() {
           mode: ScoringMode.neutral,
           score: _score(short: 50),
           todayPct: 0.0,
-          ret5d: 0.0,
         ),
         isFalse,
       );
     });
   });
 
-  group('computeRet5dForHistory', () {
+  group('computeBiasMa20ForHistory', () {
     test('returns null when history is null', () {
-      expect(computeRet5dForHistory(null), isNull);
+      expect(computeBiasMa20ForHistory(null), isNull);
     });
 
-    test('returns null when history.length < 6', () {
-      final h = [
-        _price(100),
-        _price(101),
-        _price(102),
-        _price(103),
-        _price(104),
-      ];
-      expect(computeRet5dForHistory(h), isNull);
+    test('returns null when history.length < 20', () {
+      final h = List.generate(19, (_) => _price(100));
+      expect(computeBiasMa20ForHistory(h), isNull);
     });
 
-    test('returns null when oldest close is 0', () {
-      final h = [
-        _price(0),
-        _price(101),
-        _price(102),
-        _price(103),
-        _price(104),
-        _price(105),
-      ];
-      expect(computeRet5dForHistory(h), isNull);
-    });
-
-    test('returns null when oldest close is null', () {
-      final h = [
-        _price(null),
-        _price(101),
-        _price(102),
-        _price(103),
-        _price(104),
-        _price(105),
-      ];
-      expect(computeRet5dForHistory(h), isNull);
+    test('returns null when any close in MA20 window is null', () {
+      final h = List.generate(20, (i) => _price(i == 5 ? null : 100));
+      expect(computeBiasMa20ForHistory(h), isNull);
     });
 
     test('returns null when latest close is null', () {
-      final h = [
-        _price(100),
-        _price(101),
-        _price(102),
-        _price(103),
-        _price(104),
-        _price(null),
-      ];
-      expect(computeRet5dForHistory(h), isNull);
+      final h = List.generate(20, (i) => _price(i == 19 ? null : 100));
+      expect(computeBiasMa20ForHistory(h), isNull);
     });
 
-    test('computes +10% for valid history', () {
-      // index 0 (length-6) = 100, last = 110 → +10%
-      final h = [
-        _price(100),
-        _price(102),
-        _price(104),
-        _price(106),
-        _price(108),
-        _price(110),
-      ];
-      expect(computeRet5dForHistory(h), closeTo(10.0, 0.001));
+    test('returns null when MA20 is 0 (all zero closes)', () {
+      final h = List.generate(20, (_) => _price(0));
+      expect(computeBiasMa20ForHistory(h), isNull);
     });
 
-    test('computes -5% for negative return', () {
+    test('computes +10% bias (MA20=100, latest=110)', () {
+      // 10×90 + 10×110 → MA20 = 100, latest = 110 → +10%
       final h = [
-        _price(100),
-        _price(98),
-        _price(96),
-        _price(96),
-        _price(95),
-        _price(95),
+        ...List.generate(10, (_) => _price(90)),
+        ...List.generate(10, (_) => _price(110)),
       ];
-      expect(computeRet5dForHistory(h), closeTo(-5.0, 0.001));
+      expect(computeBiasMa20ForHistory(h), closeTo(10.0, 0.001));
     });
 
-    test('uses index length-6, not 5 — accommodates longer history', () {
-      // length 8: comparison is index 2 (length-6) vs index 7 (last)
-      // index 2 = 200, index 7 = 220 → +10%
+    test('negative bias when latest below MA20', () {
+      // 10×110 + 10×90 → MA20 = 100, latest = 90 → -10%
       final h = [
-        _price(50), // ignored
-        _price(100), // ignored
-        _price(200), // [length-6]
-        _price(205),
-        _price(210),
-        _price(215),
-        _price(218),
-        _price(220), // last
+        ...List.generate(10, (_) => _price(110)),
+        ...List.generate(10, (_) => _price(90)),
       ];
-      expect(computeRet5dForHistory(h), closeTo(10.0, 0.001));
+      expect(computeBiasMa20ForHistory(h), closeTo(-10.0, 0.001));
+    });
+
+    test('uses last 20 closes only — ignores older history', () {
+      // 前置極端值落在 MA20 窗口外、不影響
+      final h = [
+        _price(99999),
+        ...List.generate(10, (_) => _price(90)),
+        ...List.generate(10, (_) => _price(110)),
+      ];
+      expect(computeBiasMa20ForHistory(h), closeTo(10.0, 0.001));
     });
   });
 }
