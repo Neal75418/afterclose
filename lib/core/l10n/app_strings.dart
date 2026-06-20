@@ -43,7 +43,19 @@ class S {
   // ==================================================
   // 今日頁面
   // ==================================================
-  static String get todayTop10 => 'today.top10'.tr();
+  /// 動態 header：`今日推薦 ({count} 檔)` — 反映該 mode 通過 eligibility filter
+  /// 後實際清單長度（每天不固定）。loading / 無資料 fallback 用 [todayTop10Loading]。
+  ///
+  /// **2026-06-20**：從固定 `今日推薦 Top 20` 改動態。舊「Top 20」是 horizon
+  /// UI 時代 hardcoded 20 cap 的字面、跟新 Mode UI 動態 cap 30 + score floor
+  /// 邏輯不符。動態 N 反映真實品質：Mode A 通常 15-30、Mode B 飽和 30、Mode C
+  /// 強市稀缺 0-5。
+  static String todayTop10(int count) =>
+      'today.top10'.tr(namedArgs: {'count': '$count'});
+
+  /// loading / error fallback header（沒 count）
+  static String get todayTop10Loading => 'today.top10Loading'.tr();
+
   static String get todayHorizonShort => 'today.horizon.short'.tr();
   static String get todayHorizonLong => 'today.horizon.long'.tr();
   static String get todayWatchlistStatus => 'today.watchlistStatus'.tr();

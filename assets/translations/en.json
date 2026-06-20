@@ -48,7 +48,8 @@
     "neutral": "Neutral"
   },
   "today": {
-    "top10": "Today's Top 20",
+    "top10": "Today's Picks ({count})",
+    "top10Loading": "Today's Picks",
     "horizon": {
       "short": "Short",
       "long": "Long"

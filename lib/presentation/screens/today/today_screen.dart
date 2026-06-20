@@ -530,23 +530,38 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           },
         ),
 
-        // Top 10 區塊
+        // 推薦清單 header — 動態顯示「今日推薦 (N 檔)」
+        //
+        // **2026-06-20**：N 跟著該 mode tab 通過 eligibility filter 的清單長度走、
+        // 不是固定「Top 20」。Mode A 通常 15-30、Mode B 飽和 30、Mode C 0-10。
+        // 動態 N 讓 user 一眼知道「今天市場有幾檔機會」、不被舊 Top 20 字面誤導。
         SliverToBoxAdapter(
-          child: SectionHeader(
-            title: S.todayTop10,
-            icon: Icons.trending_up,
-            trailing: IconButton(
-              icon: Icon(
-                Icons.analytics_outlined,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              tooltip: 'recPerf.title'.tr(),
-              onPressed: () =>
-                  context.push(AppRoutes.recommendationPerformance),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
+          child: Consumer(
+            builder: (context, ref, _) {
+              final mode = ref.watch(selectedModeProvider);
+              final asyncRecs = ref.watch(modeRecommendationsProvider(mode));
+              // loading / error 時用無 count 版本、避免「Top 0」尷尬
+              final title = asyncRecs.maybeWhen(
+                data: (recs) => S.todayTop10(recs.length),
+                orElse: () => S.todayTop10Loading,
+              );
+              return SectionHeader(
+                title: title,
+                icon: Icons.trending_up,
+                trailing: IconButton(
+                  icon: Icon(
+                    Icons.analytics_outlined,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  tooltip: 'recPerf.title'.tr(),
+                  onPressed: () =>
+                      context.push(AppRoutes.recommendationPerformance),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              );
+            },
           ),
         ),
 

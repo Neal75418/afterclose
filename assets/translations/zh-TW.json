@@ -48,7 +48,8 @@
     "neutral": "中性"
   },
   "today": {
-    "top10": "今日推薦 Top 20",
+    "top10": "今日推薦 ({count} 檔)",
+    "top10Loading": "今日推薦",
     "horizon": {
       "short": "短線",
       "long": "長線"
