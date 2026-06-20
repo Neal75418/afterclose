@@ -14,9 +14,9 @@ void main() {
       );
     });
 
-    test('severe 8 條、moderate 19 條、all = 聯集 27 條', () {
-      expect(RiskWarnings.severe, hasLength(8));
-      expect(RiskWarnings.moderate, hasLength(19));
+    test('severe 7 條、moderate 20 條、all = 聯集 27 條', () {
+      expect(RiskWarnings.severe, hasLength(7));
+      expect(RiskWarnings.moderate, hasLength(20));
       expect(RiskWarnings.all, hasLength(27));
       expect(
         RiskWarnings.all,
@@ -42,7 +42,6 @@ void main() {
       for (final w in [
         ReasonType.tradingWarningDisposal,
         ReasonType.highPledgeRatio,
-        ReasonType.tradingWarningAttention,
         ReasonType.maAlignmentBearish,
         ReasonType.techBreakdown,
         ReasonType.foreignExodus,
@@ -59,6 +58,14 @@ void main() {
       ]) {
         expect(RiskWarnings.severityOf(w), RiskSeverity.moderate, reason: '$w');
       }
+    });
+
+    test('注意股降級 → moderate（非 severe，避免紅海稀釋）', () {
+      // 注意股是最輕監管旗標、單日 fire 53 檔；當 severe 會淹沒稀有的處置股
+      expect(
+        RiskWarnings.severityOf(ReasonType.tradingWarningAttention),
+        RiskSeverity.moderate,
+      );
     });
 
     test('dayTradingHigh 是 +12 正分、但語意警訊 → 強制 moderate', () {

@@ -30,24 +30,32 @@ enum RiskSeverity {
 /// 反向引用 [ReasonType] 會 cycle（同 [ModeFilters.modeCRequiredAnyOf] 為何用字串）。
 /// 本檔在 import 下游，可安全用 typed [ReasonType]。
 abstract final class RiskWarnings {
-  /// 🔴 嚴重（8 條）— 強制風險，徽章紅底
+  /// 🔴 嚴重（7 條）— 強制風險、稀有且嚴重，徽章紅底
+  ///
+  /// **鐵律：紅色要稀有才有意義**。注意股**不**在此（見 [moderate] 的降級說明）。
   static const Set<ReasonType> severe = {
     ReasonType.tradingWarningDisposal, // 處置股 (-50)
     ReasonType.insiderSellingStreak, // 內部人連續減持 (-25)
     ReasonType.foreignExodus, // 外資加速流出 (-20)
     ReasonType.techBreakdown, // 跌破支撐 / 破底 (-20)
     ReasonType.highPledgeRatio, // 高質押比例 (-18)
-    ReasonType.tradingWarningAttention, // 注意股 (-15)
     ReasonType.maAlignmentBearish, // 空頭排列 (-15)
     ReasonType.priceVolumeBearishDivergence, // 價跌量增 / 恐慌 (-15)
   };
 
-  /// 🟡 中度（19 條）— 投機 / 轉弱 / 基本面 lagging，徽章琥珀底
+  /// 🟡 中度（20 條）— 投機 / 轉弱 / 基本面 lagging，徽章琥珀底
   ///
   /// **2026-06-20 設計報告外的修正**：報告漏列 [ReasonType.patternDojiBearish]
   /// (-5)，它與已納入的 [ReasonType.patternHangingMan] / [ReasonType.dayTradingExtreme]
   /// (同 -5) 同屬高檔反轉警訊，排除不一致 → 補進中度。
+  ///
+  /// **2026-06-20 上線後降級**：[ReasonType.tradingWarningAttention]（注意股）從
+  /// severe 降 moderate。理由 (1) 注意股是 TWSE **最輕級**監管旗標（異常成交/週轉/
+  /// 本益比），遠輕於有交易限制的處置股；(2) 既有 [WarningBadgeType] 早就把注意設
+  /// 橘、處置設紅，把它設 severe 自打嘴巴；(3) live 實測注意股單日 fire 53 檔、其他
+  /// severe 合計才 18 檔 → 當 severe 會讓強勢 tab 變紅海、淹沒真正稀有的處置股(1)。
   static const Set<ReasonType> moderate = {
+    ReasonType.tradingWarningAttention, // 注意股 (-15)，最輕監管旗標、高頻
     ReasonType.reversalS2W, // 趨勢翻轉 (-25)
     ReasonType.patternThreeBlackCrows, // 三烏鴉 (-18)
     ReasonType.institutionalSellStreak, // 法人連賣 (-15)
