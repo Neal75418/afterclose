@@ -235,9 +235,19 @@ final _modeAssignmentsProvider =
       };
       var droppedNoEligible = 0;
       var droppedBelowFloor = 0;
+      var droppedEtf = 0;
       for (final entry in stockModeScores.entries) {
         final symbol = entry.key;
         final modes = entry.value;
+
+        // **2026-06-20 ETF 過濾**：台股掃描 app、rule 全為個股行為設計。ETF（尤其
+        // 美股指數）走勢平滑、「淺回檔 + 量縮」幾乎天天成立 → 灌進 Mode C 純雜訊。
+        // user 決定 3 個 tab 全濾。stock_master.industry == 'ETF' 是乾淨標記。
+        if (data.stocks[symbol]?.industry == 'ETF') {
+          droppedEtf++;
+          continue;
+        }
+
         final todayPct = priceChanges[symbol];
         final ret5d = computeRet5dForHistory(data.priceHistories[symbol]);
 
@@ -288,7 +298,8 @@ final _modeAssignmentsProvider =
             'B=${assignmentMap[ScoringMode.strengthObserve]!.length} '
             'C=${assignmentMap[ScoringMode.weaknessObserve]!.length} '
             'droppedNoEligible=$droppedNoEligible '
-            'droppedBelowFloor=$droppedBelowFloor',
+            'droppedBelowFloor=$droppedBelowFloor '
+            'droppedEtf=$droppedEtf',
       );
 
       // STEP 6 — Sort all modes DESC by score + symbol tiebreaker
