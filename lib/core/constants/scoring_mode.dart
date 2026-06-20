@@ -172,6 +172,14 @@ abstract final class ModeFilters {
     'KD_HIGH_PULLBACK',
   };
 
+  /// 每個 tab 顯示上限 — **2026-06-20 Wave 2b** 從寫死 30 抽成具名常數
+  ///
+  /// 配合 Mode B 改 60D 報酬排序：排序修好後 top N 就是真正最強 N 檔、cap 才有
+  /// 意義（舊 score 排序 corr+0.17、cut 點隨機，cap 30 砍掉的不見得比留的差）。
+  /// 維持 30：30 檔是一天好掃的清單、#31+ 的 60D 確實較弱、漏的不多；要更廣覆蓋
+  /// 改大此值即可（一行）。三個 tab 共用。
+  static const int modeRecommendationCap = 30;
+
   /// 指派 floor：best-eligible mode 的 |modeScoreShort| 必須 ≥ 10 才指派
   ///
   /// 避免 eligibility-first 把「主要 mode 不合格、次要 mode 只有 trivial

@@ -107,6 +107,24 @@ double? computeBiasMa20ForHistory(List<DailyPriceEntry>? history) {
   return (latest - ma20) / ma20 * 100;
 }
 
+/// 從 priceHistory 算 60 trading days 報酬 (%)。
+///
+/// **2026-06-20 Wave 2b — Mode B 動能 / 相對強度排序鍵**：60D 報酬是 RS（相對
+/// 強度）的 proxy。Mode B 內部用它排序、與「全市場 60D percentile rank」**同序**
+/// （percentile 是 60D 報酬的單調函數）→ 無需算全市場 percentile。取代 score 排序
+/// （實測 corr(score, 20D) ≈ +0.17、近乎無鑑別力）。
+///
+/// 回 null 當 history < 61 筆 / 端點 close null / 起點 0 → caller 視為「資料不足、
+/// 排最後」。
+@visibleForTesting
+double? computeRet60dForHistory(List<DailyPriceEntry>? history) {
+  if (history == null || history.length < 61) return null;
+  final latest = history.last.close;
+  final old = history[history.length - 61].close;
+  if (latest == null || old == null || old == 0) return null;
+  return (latest - old) / old * 100;
+}
+
 /// 判斷某檔股票是否「夠資格」指派到 [mode]。
 ///
 /// **2026-06-19 audit Action 5b — eligibility-first 指派**
@@ -243,13 +261,14 @@ final _modeAssignmentsProvider =
       // STEP 4 — 一次撈所有 candidate 的 stock data（priceHistory 給 MA20 乖離 /
       //          sparkline 重用；reasons / stocks / analyses 給後續 build）
       //
-      // **窗口長度需求**：computeBiasMa20ForHistory 需 ≥ 20 筆收盤算 MA20。
-      // historyDays=50 日曆天 ≈ 33 交易日：足夠算 MA20 + 30 日 sparkline + 假日 margin。
+      // **窗口長度需求**：Mode B 60D 報酬排序（Wave 2b）需 ≥ 61 筆收盤、Mode A
+      // MA20 乖離需 ≥ 20 筆。95 日曆天 ≈ 65 交易日：足夠算 60D + MA20 + 30 日
+      // sparkline + 連假 margin（CNY 等假日叢集）。
       //
       // **歷史備註**：原預設 historyDays=5 → 每檔 ~4 筆 → Mode A 漲幅 filter 從
-      // commit 253f732 起一直是死的（只有 today filter 活著）；2026-06-20 修為 50。
+      // commit 253f732 起一直是死的；2026-06-20 修為 50（乖離 gate）、再到 95（60D 排序）。
       final allCandidateSymbols = stockModeScores.keys.toList();
-      final historyCtx = DateContext.forDate(analysisDate, historyDays: 50);
+      final historyCtx = DateContext.forDate(analysisDate, historyDays: 95);
       final data = await cachedDb.loadStockListData(
         symbols: allCandidateSymbols,
         analysisDate: analysisDate,
@@ -337,20 +356,47 @@ final _modeAssignmentsProvider =
             'droppedEtf=$droppedEtf',
       );
 
-      // STEP 6 — Sort all modes DESC by score + symbol tiebreaker
+      // STEP 6 — Sort each mode
       //
-      // **2026-06-19 v2 audit**：Mode C 從 ASC（最負優先）改 DESC（最正優先）— 因為
-      // v2 Mode C 是「機會 tab」（正分主訊號 + 負分 warning context），主訊號
-      // (+15/+18) 應排在最前面。
+      // **2026-06-20 Wave 2b — Mode B 改 60D 報酬排序**：score 排序實測 corr+0.17
+      // 無鑑別力（同分平台、cut 點隨機）。改用 60D 報酬（相對強度 proxy）DESC →
+      // top N 真的是最強 N 檔、cap 才有意義。null（history < 61）排最後、tiebreak
+      // 用 score DESC 再 symbol ASC。
+      // Mode A（起漲訊號強度）/ Mode C（回檔主訊號強度、2026-06-19 改 DESC 最正優先）
+      // 維持 score DESC。
+      final ret60ForB = <String, double>{};
+      for (final s in assignmentMap[ScoringMode.strengthObserve]!) {
+        final r = computeRet60dForHistory(data.priceHistories[s.symbol]);
+        if (r != null) ret60ForB[s.symbol] = r;
+      }
       for (final mode in assignmentMap.keys) {
-        assignmentMap[mode]!.sort((a, b) {
-          final primary = b.modeScoreShort.compareTo(a.modeScoreShort); // DESC
-          if (primary != 0) return primary;
-          return a.symbol.compareTo(b.symbol); // 二級 key：symbol ASC
-        });
+        if (mode == ScoringMode.strengthObserve) {
+          assignmentMap[mode]!.sort((a, b) {
+            final ra = ret60ForB[a.symbol];
+            final rb = ret60ForB[b.symbol];
+            // 有資料優先於無資料；都有則 60D DESC
+            if (ra != null && rb == null) return -1;
+            if (ra == null && rb != null) return 1;
+            if (ra != null && rb != null) {
+              final byRet = rb.compareTo(ra);
+              if (byRet != 0) return byRet;
+            }
+            final byScore = b.modeScoreShort.compareTo(a.modeScoreShort);
+            if (byScore != 0) return byScore;
+            return a.symbol.compareTo(b.symbol);
+          });
+        } else {
+          assignmentMap[mode]!.sort((a, b) {
+            final primary = b.modeScoreShort.compareTo(
+              a.modeScoreShort,
+            ); // DESC
+            if (primary != 0) return primary;
+            return a.symbol.compareTo(b.symbol); // 二級 key：symbol ASC
+          });
+        }
       }
 
-      // STEP 7 — 組 ModeRecommendation per mode、cap 30
+      // STEP 7 — 組 ModeRecommendation per mode、cap modeRecommendationCap
       final result = <ScoringMode, List<ModeRecommendation>>{};
       for (final mode in ScoringMode.userFacingModes) {
         final codeSet = reasonCodesForMode(mode).toSet();
@@ -409,7 +455,7 @@ final _modeAssignmentsProvider =
             ),
           );
 
-          if (list.length >= 30) break;
+          if (list.length >= ModeFilters.modeRecommendationCap) break;
         }
 
         result[mode] = list;

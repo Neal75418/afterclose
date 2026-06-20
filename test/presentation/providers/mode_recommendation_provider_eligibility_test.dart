@@ -441,6 +441,64 @@ void main() {
       expect(computeBiasMa20ForHistory(h), closeTo(10.0, 0.001));
     });
   });
+
+  group('computeRet60dForHistory', () {
+    test('returns null when history is null', () {
+      expect(computeRet60dForHistory(null), isNull);
+    });
+
+    test('returns null when history.length < 61', () {
+      final h = List.generate(60, (_) => _price(100));
+      expect(computeRet60dForHistory(h), isNull);
+    });
+
+    test('returns null when oldest (index length-61) close is 0', () {
+      final h = [
+        _price(0),
+        ...List.generate(59, (_) => _price(120)),
+        _price(150),
+      ];
+      expect(computeRet60dForHistory(h), isNull);
+    });
+
+    test('returns null when oldest close is null', () {
+      final h = [
+        _price(null),
+        ...List.generate(59, (_) => _price(120)),
+        _price(150),
+      ];
+      expect(computeRet60dForHistory(h), isNull);
+    });
+
+    test('returns null when latest close is null', () {
+      final h = [
+        _price(100),
+        ...List.generate(59, (_) => _price(120)),
+        _price(null),
+      ];
+      expect(computeRet60dForHistory(h), isNull);
+    });
+
+    test('computes +50% (index length-61 = 100, last = 150)', () {
+      final h = [
+        _price(100), // [length-61]
+        ...List.generate(59, (_) => _price(120)), // ignored
+        _price(150), // last
+      ];
+      expect(computeRet60dForHistory(h), closeTo(50.0, 0.001));
+    });
+
+    test('uses index length-61, not 60 — accommodates longer history', () {
+      // length 62：比較 index 1 (length-61) vs index 61 (last)
+      final h = [
+        _price(999), // ignored
+        _price(200), // [length-61]
+        ...List.generate(59, (_) => _price(210)),
+        _price(220), // last
+      ];
+      expect(computeRet60dForHistory(h), closeTo(10.0, 0.001));
+    });
+  });
 }
 
 /// 建立 ModeStockScore 的 helper（test 內最常用 short 分數）
