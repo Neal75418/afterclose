@@ -14,10 +14,9 @@ import 'package:afterclose/presentation/providers/providers.dart';
 
 /// Mode-based 推薦項目（每檔包含 5D 跟 60D 雙 score）
 ///
-/// 跟 [RecommendationWithDetails] 的差別：
 /// - 雙 score（modeScoreShort / modeScoreLong）vs 單 score
 /// - reasons 已 filter 到該 mode 內的 rule
-/// - score 是該 mode 內 rule 加總（不是全 rule 加總、不是 daily_recommendation 的 stored score）
+/// - score 是該 mode 內 rule 加總（不是全 rule 加總）
 class ModeRecommendation {
   ModeRecommendation({
     required this.symbol,

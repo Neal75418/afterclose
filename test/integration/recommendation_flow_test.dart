@@ -1,7 +1,11 @@
-// Integration test: 推薦清單從 DB 到 Provider State 的完整流程
+// Integration test: TodayNotifier.loadData() 編排狀態的端到端流程
 //
-// 驗證：DB 資料 → AnalysisRepository → TodayNotifier.loadData()
-// → TodayState.recommendations 的端到端資料流程。
+// 驗證：DB 資料 → MarketDataRepository → TodayNotifier.loadData()
+// → TodayState.dataDate / lastUpdate 的端到端編排流程。
+//
+// **2026-06-21 退役舊推薦系統 Step 3**：推薦清單已搬到
+// modeRecommendationsProvider，loadData() 不再載入 daily_recommendation。
+// 本檔案因此只覆蓋 loadData 的編排輸出（資料日期 / 最後更新時間）。
 // 使用真實 in-memory SQLite 資料庫 + 真實 Repository 邏輯。
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +21,6 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/update_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 // ==========================================
 // Mocks（僅 mock 無法使用真實實例的依賴）
@@ -38,7 +41,8 @@ void main() {
 
   final testDate = DateTime(2026, 3, 10);
 
-  /// 預填充資料庫：股票 + 價格 + 分析 + 推薦
+  /// 預填充資料庫：loadData 編排狀態所需的最小資料
+  /// （價格歷史 → dataDate，更新執行記錄 → lastUpdate）
   Future<void> seedDatabase() async {
     // 股票主檔
     await db.upsertStocks([
@@ -46,7 +50,7 @@ void main() {
       StockMasterCompanion.insert(symbol: '2317', name: '鴻海', market: 'TWSE'),
     ]);
 
-    // 價格歷史（20 天）
+    // 價格歷史（20 天）— 決定 getLatestDataDate 的最新一天
     for (final symbol in ['2330', '2317']) {
       final prices = <DailyPriceCompanion>[];
       for (int i = 0; i < 20; i++) {
@@ -65,66 +69,6 @@ void main() {
       }
       await db.insertPrices(prices);
     }
-
-    // 分析結果
-    await db.insertAnalysis(
-      DailyAnalysisCompanion.insert(
-        symbol: '2330',
-        date: testDate,
-        trendState: 'UP',
-        scoreShort: const Value(85.0),
-        scoreLong: const Value(85.0),
-      ),
-    );
-    await db.insertAnalysis(
-      DailyAnalysisCompanion.insert(
-        symbol: '2317',
-        date: testDate,
-        trendState: 'UP',
-        scoreShort: const Value(72.0),
-        scoreLong: const Value(72.0),
-      ),
-    );
-
-    // 分析原因
-    await db.insertReasons([
-      DailyReasonCompanion.insert(
-        symbol: '2330',
-        date: testDate,
-        rank: 1,
-        reasonType: 'GOLDEN_CROSS',
-        evidenceJson: '{}',
-        ruleScoreShort: const Value(25.0),
-        ruleScoreLong: const Value(25.0),
-      ),
-      DailyReasonCompanion.insert(
-        symbol: '2317',
-        date: testDate,
-        rank: 1,
-        reasonType: 'VOLUME_SPIKE',
-        evidenceJson: '{}',
-        ruleScoreShort: const Value(22.0),
-        ruleScoreLong: const Value(22.0),
-      ),
-    ]);
-
-    // 推薦清單
-    await db.insertRecommendations([
-      DailyRecommendationCompanion.insert(
-        symbol: '2330',
-        date: testDate,
-        score: 85.0,
-        rank: 1,
-        horizon: Horizon.short.name,
-      ),
-      DailyRecommendationCompanion.insert(
-        symbol: '2317',
-        date: testDate,
-        score: 72.0,
-        rank: 2,
-        horizon: Horizon.short.name,
-      ),
-    ]);
 
     // 更新執行記錄（傳入固定時間避免依賴真實系統時鐘）
     final runId = await db.createUpdateRun(testDate, 'running');
@@ -163,80 +107,7 @@ void main() {
     await db.close();
   });
 
-  group('Recommendation Flow Integration', () {
-    test(
-      'TodayNotifier.loadData() populates recommendations from DB',
-      () async {
-        await seedDatabase();
-
-        // 呼叫 loadData
-        final notifier = container.read(todayProvider.notifier);
-        await notifier.loadData();
-
-        // 驗證 state
-        final state = container.read(todayProvider);
-        expect(state.isLoading, isFalse);
-        expect(state.error, isNull);
-        expect(state.recommendations.length, 2);
-
-        // 驗證第一名推薦
-        final top = state.recommendations.first;
-        expect(top.symbol, '2330');
-        expect(top.stockName, '台積電');
-        expect(top.market, 'TWSE');
-        expect(top.score, 85.0);
-        expect(top.rank, 1);
-        expect(top.latestClose, isNotNull);
-        expect(top.reasons.length, 1);
-        expect(top.reasons.first.reasonType, 'GOLDEN_CROSS');
-        expect(top.trendState, 'UP');
-
-        // 驗證第二名推薦
-        final second = state.recommendations.last;
-        expect(second.symbol, '2317');
-        expect(second.stockName, '鴻海');
-        expect(second.score, 72.0);
-        expect(second.rank, 2);
-      },
-    );
-
-    test(
-      'TodayNotifier.loadData() returns empty when no recommendations',
-      () async {
-        // 只寫入股票主檔，不寫入推薦
-        await db.upsertStocks([
-          StockMasterCompanion.insert(
-            symbol: '2330',
-            name: '台積電',
-            market: 'TWSE',
-          ),
-        ]);
-
-        final notifier = container.read(todayProvider.notifier);
-        await notifier.loadData();
-
-        final state = container.read(todayProvider);
-        expect(state.isLoading, isFalse);
-        expect(state.error, isNull);
-        expect(state.recommendations, isEmpty);
-      },
-    );
-
-    test('recommendation includes recent prices for sparkline', () async {
-      await seedDatabase();
-
-      final notifier = container.read(todayProvider.notifier);
-      await notifier.loadData();
-
-      final state = container.read(todayProvider);
-      final top = state.recommendations.first;
-
-      // 應有最近價格資料供迷你走勢圖使用
-      expect(top.recentPrices, isNotNull);
-      expect(top.recentPrices!.length, greaterThan(0));
-      expect(top.recentPrices!.length, lessThanOrEqualTo(30));
-    });
-
+  group('loadData Orchestration Integration', () {
     test('dataDate matches latest price date in DB', () async {
       await seedDatabase();
 

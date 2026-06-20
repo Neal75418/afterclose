@@ -61,8 +61,12 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     // 使用 selector 分離 loading/error 狀態，避免 updateProgress 變更時重建整個畫面
     final isLoading = ref.watch(todayProvider.select((s) => s.isLoading));
     final error = ref.watch(todayProvider.select((s) => s.error));
+    // 「有內容可顯示」改用 3-mode 同源判斷（取代已退役的 todayProvider.recommendations）：
+    // 用於決定 loadData 出錯時要顯示全屏 error 還是保留現有內容（起漲候選 tab 有資料即視為有內容）。
     final hasRecommendations = ref.watch(
-      todayProvider.select((s) => s.recommendations.isNotEmpty),
+      modeRecommendationsProvider(
+        ScoringMode.momentumEntry,
+      ).select((async) => async.asData?.value.isNotEmpty ?? false),
     );
     // 使用 selector 只監聽 watchlist 的 symbols，避免不必要的重建
     final watchlistSymbols = ref.watch(
