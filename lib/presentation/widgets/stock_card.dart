@@ -9,7 +9,9 @@ import 'package:afterclose/core/extensions/trend_state_extension.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/utils/price_limit.dart';
+import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
+import 'package:afterclose/presentation/widgets/risk_badge_cluster.dart';
 import 'package:afterclose/presentation/widgets/score_ring.dart';
 import 'package:afterclose/presentation/widgets/stock_card_price.dart';
 import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
@@ -42,6 +44,7 @@ class StockCard extends StatefulWidget {
     this.onWatchlistTap,
     this.recentPrices,
     this.warningType,
+    this.warningReasons = const [],
     this.showLimitMarkers = true,
   });
 
@@ -70,8 +73,12 @@ class StockCard extends StatefulWidget {
   final VoidCallback? onWatchlistTap;
   final List<double>? recentPrices;
 
-  /// 警示類型（注意股票、處置股票、高質押）
+  /// 警示類型（注意股票、處置股票、高質押）— watchlist 等單一警示用
   final WarningBadgeType? warningType;
+
+  /// 風險警訊類訊號（Today mode 卡片用）— 聚合成 [RiskBadgeCluster] 徽章。
+  /// 與 [warningType] 在不同畫面使用、實務互斥；同時有值時 cluster 優先。
+  final List<ReasonType> warningReasons;
 
   /// 是否顯示漲跌停標記
   final bool showLimitMarkers;
@@ -281,8 +288,14 @@ class _StockCardState extends State<StockCard> {
                   ),
                 ),
               ),
-              // 警示標記覆蓋層
-              if (widget.warningType != null)
+              // 警示標記覆蓋層（cluster 優先於單一 warningType）
+              if (widget.warningReasons.isNotEmpty)
+                Positioned(
+                  top: 0,
+                  right: 12,
+                  child: RiskBadgeCluster(warnings: widget.warningReasons),
+                )
+              else if (widget.warningType != null)
                 Positioned(
                   top: 0,
                   right: 12,

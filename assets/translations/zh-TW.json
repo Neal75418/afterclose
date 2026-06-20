@@ -1438,7 +1438,14 @@
     "alertSuffix": "警示",
     "hintDisposal": "此股票已被列入處置股票，交易受限",
     "hintAttention": "此股票已被列入注意股票",
-    "hintHighPledge": "此股票董監質押比例偏高"
+    "hintHighPledge": "此股票董監質押比例偏高",
+    "risk": {
+      "title": "風險警示",
+      "severe": "嚴重",
+      "moderate": "中度",
+      "semantics": "{} 項風險警示",
+      "tapHint": "點擊查看風險明細"
+    }
   },
   "export": {
     "title": "匯出分享",

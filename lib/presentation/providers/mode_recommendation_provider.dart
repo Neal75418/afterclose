@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:afterclose/core/constants/risk_warnings.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -24,6 +25,7 @@ class ModeRecommendation {
     required this.modeScoreShort,
     required this.modeScoreLong,
     required this.reasons,
+    this.warningReasons = const [],
     this.stockName,
     this.market,
     this.latestClose,
@@ -51,6 +53,13 @@ class ModeRecommendation {
   /// **該 mode 內**的觸發理由（已過濾掉其他 mode 跟 neutral 的 rule）
   final List<DailyReasonEntry> reasons;
 
+  /// 該股觸發的 **neutral 警訊類**訊號（[RiskWarnings.all] 子集）
+  ///
+  /// 與 [reasons]（mode-only evidence chip）正交：警訊不 route 股票、不貢獻 mode
+  /// score、不污染 evidence chip，但要在卡片以風險徽章浮上來（補回階段重設計
+  /// 拆掉的主畫面風險可見性）。空 list = 該股無警訊、徽章不顯示。
+  final List<ReasonType> warningReasons;
+
   final String? trendState;
   final List<double>? recentPrices;
 
@@ -58,6 +67,9 @@ class ModeRecommendation {
   late final List<String> reasonTypes = reasons
       .map((r) => r.reasonType)
       .toList();
+
+  /// 警訊中最高嚴重度（任一 severe → severe），無警訊回 `null` — 決定徽章顏色
+  RiskSeverity? get topSeverity => RiskWarnings.topSeverity(warningReasons);
 }
 
 /// 把 [ScoringMode] mapping 到該 mode 內所有 [ReasonType] 的 DB code
@@ -363,6 +375,19 @@ final _modeAssignmentsProvider =
               .where((r) => codeSet.contains(r.reasonType))
               .toList();
 
+          // 風險警訊：從全部 reasons 抽 warning-class（neutral 子集）、不分 mode。
+          // 與 modeReasons 正交 — 不 route、不污染 evidence chip / mode score，只供
+          // 卡片風險徽章。補回階段重設計把警訊丟 neutral 後消失的主畫面可見性。
+          // 用 Set 去重（對齊相鄰 triggeredCodes idiom）防徽章 count 灌水。
+          final warningSet = <ReasonType>{};
+          for (final r in allReasons) {
+            final type = reasonTypeFromCode(r.reasonType);
+            if (type != null && RiskWarnings.all.contains(type)) {
+              warningSet.add(type);
+            }
+          }
+          final warningReasons = warningSet.toList();
+
           // 最近 30 日收盤價（迷你走勢圖）
           List<double>? recentPrices;
           if (priceHistory != null && priceHistory.isNotEmpty) {
@@ -383,6 +408,7 @@ final _modeAssignmentsProvider =
               modeScoreShort: s.modeScoreShort,
               modeScoreLong: s.modeScoreLong,
               reasons: modeReasons,
+              warningReasons: warningReasons,
               stockName: data.stocks[symbol]?.name,
               market: data.stocks[symbol]?.market,
               latestClose: data.latestPrices[symbol]?.close,

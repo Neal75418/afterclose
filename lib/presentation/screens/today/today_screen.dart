@@ -165,6 +165,7 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         score: rec.modeScoreShort,
         dualScore: (rec.modeScoreShort, rec.modeScoreLong),
         reasons: rec.reasonTypes,
+        warningReasons: rec.warningReasons,
         trendState: rec.trendState,
         recentPrices: rec.recentPrices,
         isInWatchlist: isInWatchlist,

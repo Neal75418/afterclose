@@ -1438,7 +1438,14 @@
     "alertSuffix": "Alert",
     "hintDisposal": "This stock is on the disposal list, trading restricted",
     "hintAttention": "This stock is on the attention list",
-    "hintHighPledge": "High insider pledge ratio for this stock"
+    "hintHighPledge": "High insider pledge ratio for this stock",
+    "risk": {
+      "title": "Risk Warnings",
+      "severe": "Severe",
+      "moderate": "Moderate",
+      "semantics": "{} risk warnings",
+      "tapHint": "Tap to view risk details"
+    }
   },
   "export": {
     "title": "Export & Share",

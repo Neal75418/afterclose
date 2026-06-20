@@ -23,12 +23,13 @@ enum ScoringMode {
   /// 帶量、RSI 超買（警示中夾雜進場資訊）。
   strengthObserve,
 
-  /// 弱勢觀察 — 已跌、確認轉空 / 避開
+  /// 回檔觀察 — 強股剛開始回檔、找進場時機（identifier 沿用 weaknessObserve
+  /// 避免 DB migration；tab name 已改「回檔觀察」）
   ///
-  /// 用於「我想確認某檔是不是真的崩了、要不要避開或反向」。
-  /// 包含：強轉弱、跌破支撐、看空 K 線、52 週低、空頭排列、超賣、外資減
-  /// 碼、法人連賣、注意股 / 處置股、內部人連賣、質押風險、估值過高、
-  /// 營收年減、EPS 衰退、ROE 下滑。
+  /// **2026-06-19 v2 重定義**：原為「弱勢警示」tab、現為「強股回檔進場」。
+  /// 只含 3 條正分主訊號（回檔到 MA20 / MA10、支撐錘子、KD 高檔回落）。
+  /// 舊弱勢警訊（空頭排列 / 注意股 / 處置股 / 質押 / 超買…）已全移 [neutral]，
+  /// 改由 Today 卡片的 RiskBadgeCluster 風險徽章呈現（見 RiskWarnings）。
   weaknessObserve,
 
   /// 中性 — 不貢獻任何 mode score（背景 filter / value rule）
