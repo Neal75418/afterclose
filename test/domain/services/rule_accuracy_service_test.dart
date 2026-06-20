@@ -1,15 +1,15 @@
-// Unit tests for [RuleAccuracyService] covering Stage 2 LEAN scope:
-//   Commit 1 (additive):
-//     1. `holdingPeriods` constant includes 60D
-//     2. Per-period success threshold parameterization
-//        (5D≥1.5%, 10D≥5%, 20D≥8%, 60D≥8% — 5D/60D 為 evidence-based 校正值)
-//     3. Fallback `returnRate >= 0` for periods without explicit threshold (1D/3D)
+// Unit tests for [RuleAccuracyService] covering the rule_accuracy keep-path
+// after the recommendation_validation feature was retired (Step 2):
+//   1. `holdingPeriods` constant includes 60D
+//   2. Per-period success threshold parameterization
+//      (5D≥1.5%, 60D≥8% — evidence-based 校正值; 1D/3D fall back to ≥0)
+//   3. `updateRuleAccuracyStats` → `_computeUnbiasedRuleStats` aggregates from
+//      `daily_reason` directly (all ranks counted, multi-symbol aggregation,
+//      missing prices skipped, empty guard, stale-row clearing)
 //
-//   Commit 2 (Gap 1 fix — primary_rule_id bias):
-//     4. `_computeUnbiasedRuleStats` aggregates from `daily_reason` directly
-//     5. All ranks counted, not just rank 0 primary
-//     6. Multi-symbol and multi-date aggregation
-//     7. Missing prices gracefully skipped
+// `_computeUnbiasedRuleStats` also has end-to-end coverage in
+// `test/tool/replay_calibrator_test.dart`; these tests focus on the public
+// `updateRuleAccuracyStats` entry point + the threshold / empty-guard contract.
 
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
@@ -17,7 +17,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/rule_accuracy_service.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
   late AppDatabase db;
@@ -31,6 +30,64 @@ void main() {
   tearDown(() async {
     await db.close();
   });
+
+  /// Seed `daily_reason` + `daily_price` (entry + exit) for a single rule
+  /// trigger that yields [returnRatePct] over [periodDays] trading days.
+  /// Routes through `updateRuleAccuracyStats` → `_computeUnbiasedRuleStats`.
+  Future<void> seedReason({
+    required String symbol,
+    required DateTime entryDate,
+    required String reasonType,
+    required int rank,
+    required int periodDays,
+    required double returnRatePct,
+  }) async {
+    const entryPrice = 100.0;
+    final exitPrice = entryPrice * (1 + returnRatePct / 100);
+    final exitDate = TaiwanCalendar.addTradingDays(entryDate, periodDays);
+
+    await db.upsertStocks([
+      StockMasterCompanion.insert(
+        symbol: symbol,
+        name: 'Test $symbol',
+        market: 'TWSE',
+      ),
+    ]);
+
+    await db.insertPrices([
+      DailyPriceCompanion.insert(
+        symbol: symbol,
+        date: entryDate,
+        close: const Value(entryPrice),
+      ),
+      DailyPriceCompanion.insert(
+        symbol: symbol,
+        date: exitDate,
+        close: Value(exitPrice),
+      ),
+    ]);
+
+    await db.insertReasons([
+      DailyReasonCompanion.insert(
+        symbol: symbol,
+        date: entryDate,
+        reasonType: reasonType,
+        rank: rank,
+        evidenceJson: '{}',
+        ruleScoreShort: const Value(25.0),
+        ruleScoreLong: const Value(25.0),
+      ),
+    ]);
+  }
+
+  Future<RuleAccuracyEntry?> fetchRuleAccuracy(
+    String ruleId, {
+    required String period,
+  }) {
+    return (db.select(db.ruleAccuracy)
+          ..where((t) => t.ruleId.equals(ruleId) & t.period.equals(period)))
+        .getSingleOrNull();
+  }
 
   // ========================================================================
   // holdingPeriods constant — Stage 2 adds 60D for long-horizon calibration
@@ -57,146 +114,81 @@ void main() {
   });
 
   // ========================================================================
-  // Parameterized success threshold — verify via backfill end-to-end
+  // Per-period success threshold — verify via rule_accuracy successCount
   // ========================================================================
 
   group('Per-period success threshold', () {
-    /// Seed DB with one stock, one recommendation, entry + exit prices that
-    /// produce the requested [returnRatePct] over [period] trading days.
-    Future<void> seedScenario({
-      required String symbol,
-      required DateTime entryDate,
-      required int period,
-      required double returnRatePct,
-      String reasonType = 'TECH_BREAKOUT',
-    }) async {
-      const entryPrice = 100.0;
-      final exitPrice = entryPrice * (1 + returnRatePct / 100);
-      final exitDate = TaiwanCalendar.addTradingDays(entryDate, period);
-
-      await db.upsertStocks([
-        StockMasterCompanion.insert(
-          symbol: symbol,
-          name: 'Test',
-          market: 'TWSE',
-        ),
-      ]);
-
-      await db.insertPrices([
-        DailyPriceCompanion.insert(
-          symbol: symbol,
-          date: entryDate,
-          close: const Value(entryPrice),
-        ),
-        DailyPriceCompanion.insert(
-          symbol: symbol,
-          date: exitDate,
-          close: Value(exitPrice),
-        ),
-      ]);
-
-      await db.insertAnalysis(
-        DailyAnalysisCompanion.insert(
-          symbol: symbol,
-          date: entryDate,
-          trendState: 'UP',
-          scoreShort: const Value(50.0),
-          scoreLong: const Value(50.0),
-        ),
-      );
-
-      await db.insertRecommendations([
-        DailyRecommendationCompanion.insert(
-          symbol: symbol,
-          date: entryDate,
-          rank: 1,
-          score: 50.0,
-          horizon: Horizon.short.name,
-        ),
-      ]);
-
-      await db.insertReasons([
-        DailyReasonCompanion.insert(
-          symbol: symbol,
-          date: entryDate,
-          reasonType: reasonType,
-          rank: 0,
-          evidenceJson: '{}',
-          ruleScoreShort: const Value(25.0),
-          ruleScoreLong: const Value(25.0),
-        ),
-      ]);
-    }
-
-    /// Query the single validation row for the given period.
-    Future<RecommendationValidationEntry?> fetchValidation(int period) {
-      return (db.select(
-        db.recommendationValidation,
-      )..where((t) => t.holdingDays.equals(period))).getSingleOrNull();
-    }
-
-    // ---- 5D threshold = 3% ----
+    // ---- 5D threshold = 1.5% ----
 
     test(
       '5D: returnRate 1.4% does NOT count as success (below 1.5% threshold)',
       () async {
-        await seedScenario(
+        await seedReason(
           symbol: '2330',
           entryDate: DateTime.utc(2026, 1, 5),
-          period: 5,
+          reasonType: 'TECH_BREAKOUT',
+          rank: 0,
+          periodDays: 5,
           returnRatePct: 1.4,
         );
 
-        await service.backfillAllHistoricalRecommendations();
+        await service.updateRuleAccuracyStats();
 
-        final row = await fetchValidation(5);
+        final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '5D');
         expect(row, isNotNull);
-        expect(row!.returnRate, closeTo(1.4, 0.001));
+        expect(row!.triggerCount, 1);
+        expect(row.avgReturn, closeTo(1.4, 0.01));
         expect(
-          row.isSuccess,
-          isFalse,
+          row.successCount,
+          0,
           reason: '1.4% < 1.5% threshold → not a success',
         );
       },
     );
 
     test('5D: returnRate 1.51% counts as success (above boundary)', () async {
-      // Boundary 用 1.51% 而非剛好 1.5%，因為 seedScenario 內部用浮點
-      // 算 entry/exit price，恰好 1.5% 可能落在 1.499... 微小於 threshold。
-      // 取 1.51% 確保穩定通過 inclusive boundary 測試而不仰賴精度。
-      await seedScenario(
+      // Boundary 用 1.51% 而非剛好 1.5%，因為內部用浮點算 entry/exit price，
+      // 恰好 1.5% 可能落在 1.499... 微小於 threshold。取 1.51% 確保穩定通過
+      // inclusive boundary 測試而不仰賴精度。
+      await seedReason(
         symbol: '2330',
         entryDate: DateTime.utc(2026, 1, 5),
-        period: 5,
+        reasonType: 'TECH_BREAKOUT',
+        rank: 0,
+        periodDays: 5,
         returnRatePct: 1.51,
       );
 
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
-      final row = await fetchValidation(5);
+      final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '5D');
       expect(row, isNotNull);
-      expect(row!.returnRate, closeTo(1.51, 0.001));
-      expect(row.isSuccess, isTrue, reason: '1.51% ≥ 1.5% threshold → success');
+      expect(row!.triggerCount, 1);
+      expect(row.avgReturn, closeTo(1.51, 0.01));
+      expect(row.successCount, 1, reason: '1.51% ≥ 1.5% threshold → success');
     });
 
     // ---- 60D threshold = 8% ----
 
     test('60D: returnRate 7.9% does NOT count as success', () async {
-      await seedScenario(
+      await seedReason(
         symbol: '2330',
         entryDate: DateTime.utc(2026, 1, 5),
-        period: 60,
+        reasonType: 'TECH_BREAKOUT',
+        rank: 0,
+        periodDays: 60,
         returnRatePct: 7.9,
       );
 
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
-      final row = await fetchValidation(60);
+      final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '60D');
       expect(row, isNotNull);
-      expect(row!.returnRate, closeTo(7.9, 0.001));
+      expect(row!.triggerCount, 1);
+      expect(row.avgReturn, closeTo(7.9, 0.01));
       expect(
-        row.isSuccess,
-        isFalse,
+        row.successCount,
+        0,
         reason: '7.9% < 8% threshold → not a success',
       );
     });
@@ -204,21 +196,24 @@ void main() {
     test(
       '60D: returnRate 8.0% counts as success (boundary, inclusive)',
       () async {
-        await seedScenario(
+        await seedReason(
           symbol: '2330',
           entryDate: DateTime.utc(2026, 1, 5),
-          period: 60,
+          reasonType: 'TECH_BREAKOUT',
+          rank: 0,
+          periodDays: 60,
           returnRatePct: 8.0,
         );
 
-        await service.backfillAllHistoricalRecommendations();
+        await service.updateRuleAccuracyStats();
 
-        final row = await fetchValidation(60);
+        final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '60D');
         expect(row, isNotNull);
-        expect(row!.returnRate, closeTo(8.0, 0.001));
+        expect(row!.triggerCount, 1);
+        expect(row.avgReturn, closeTo(8.0, 0.01));
         expect(
-          row.isSuccess,
-          isTrue,
+          row.successCount,
+          1,
           reason: '8.0% ≥ 8% threshold (inclusive) → success',
         );
       },
@@ -229,114 +224,58 @@ void main() {
     test(
       '1D fallback: returnRate 0.1% counts as success (≥ 0 baseline)',
       () async {
-        await seedScenario(
+        await seedReason(
           symbol: '2330',
           entryDate: DateTime.utc(2026, 1, 5),
-          period: 1,
+          reasonType: 'TECH_BREAKOUT',
+          rank: 0,
+          periodDays: 1,
           returnRatePct: 0.1,
         );
 
-        await service.backfillAllHistoricalRecommendations();
+        await service.updateRuleAccuracyStats();
 
-        final row = await fetchValidation(1);
+        final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '1D');
         expect(row, isNotNull);
         expect(
-          row!.isSuccess,
-          isTrue,
+          row!.successCount,
+          1,
           reason: '1D falls back to ≥ 0 baseline → 0.1% is success',
         );
       },
     );
 
     test('1D fallback: returnRate -0.1% does NOT count as success', () async {
-      await seedScenario(
+      await seedReason(
         symbol: '2330',
         entryDate: DateTime.utc(2026, 1, 5),
-        period: 1,
+        reasonType: 'TECH_BREAKOUT',
+        rank: 0,
+        periodDays: 1,
         returnRatePct: -0.1,
       );
 
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
-      final row = await fetchValidation(1);
+      final row = await fetchRuleAccuracy('TECH_BREAKOUT', period: '1D');
       expect(row, isNotNull);
       expect(
-        row!.isSuccess,
-        isFalse,
+        row!.successCount,
+        0,
         reason: 'Negative return fails ≥ 0 baseline',
       );
     });
   });
 
   // ========================================================================
-  // Gap 1 fix — unbiased rule stats via daily_reason data source swap
+  // Gap 1 fix — unbiased rule stats via daily_reason data source
   // ========================================================================
   //
-  // The new `_computeUnbiasedRuleStats` reads every triggered reason in
-  // `daily_reason` (not just the rank-0 primary) and aggregates per rule.
-  // These tests verify the new flow directly, bypassing `daily_recommendation`
-  // entirely — we seed reasons + prices only, skip the Top 20 tables.
+  // `_computeUnbiasedRuleStats` reads every triggered reason in `daily_reason`
+  // (not just the rank-0 primary) and aggregates per rule. These tests verify
+  // the new flow directly via the public `updateRuleAccuracyStats` entry point.
 
   group('Gap 1 fix: unbiased rule stats from daily_reason', () {
-    /// Seed `daily_reason` + `daily_price` without touching `daily_recommendation`.
-    /// Calling `backfillAllHistoricalRecommendations()` in this state runs an
-    /// empty backfill loop but still triggers `_updateRuleAccuracyStats` at end,
-    /// which now routes to `_computeUnbiasedRuleStats`.
-    Future<void> seedReason({
-      required String symbol,
-      required DateTime entryDate,
-      required String reasonType,
-      required int rank,
-      required int periodDays,
-      required double returnRatePct,
-    }) async {
-      const entryPrice = 100.0;
-      final exitPrice = entryPrice * (1 + returnRatePct / 100);
-      final exitDate = TaiwanCalendar.addTradingDays(entryDate, periodDays);
-
-      await db.upsertStocks([
-        StockMasterCompanion.insert(
-          symbol: symbol,
-          name: 'Test $symbol',
-          market: 'TWSE',
-        ),
-      ]);
-
-      await db.insertPrices([
-        DailyPriceCompanion.insert(
-          symbol: symbol,
-          date: entryDate,
-          close: const Value(entryPrice),
-        ),
-        DailyPriceCompanion.insert(
-          symbol: symbol,
-          date: exitDate,
-          close: Value(exitPrice),
-        ),
-      ]);
-
-      await db.insertReasons([
-        DailyReasonCompanion.insert(
-          symbol: symbol,
-          date: entryDate,
-          reasonType: reasonType,
-          rank: rank,
-          evidenceJson: '{}',
-          ruleScoreShort: const Value(25.0),
-          ruleScoreLong: const Value(25.0),
-        ),
-      ]);
-    }
-
-    Future<RuleAccuracyEntry?> fetchRuleAccuracy(
-      String ruleId, {
-      required String period,
-    }) {
-      return (db.select(db.ruleAccuracy)
-            ..where((t) => t.ruleId.equals(ruleId) & t.period.equals(period)))
-          .getSingleOrNull();
-    }
-
     test(
       'all triggered ranks counted (rank 0, 1, 2) — not only rank 0 primary',
       () async {
@@ -370,7 +309,7 @@ void main() {
           returnRatePct: 4.0,
         );
 
-        await service.backfillAllHistoricalRecommendations();
+        await service.updateRuleAccuracyStats();
 
         final rank0 = await fetchRuleAccuracy('TECH_BREAKOUT', period: '5D');
         final rank1 = await fetchRuleAccuracy('VOLUME_SPIKE', period: '5D');
@@ -392,7 +331,7 @@ void main() {
         expect(rank1!.triggerCount, 1);
         expect(rank2!.triggerCount, 1);
 
-        // All three returns = 4% > 3% threshold → successCount = 1 each
+        // All three returns = 4% > 1.5% threshold → successCount = 1 each
         expect(rank0.successCount, 1);
         expect(rank1.successCount, 1);
         expect(rank2.successCount, 1);
@@ -413,18 +352,18 @@ void main() {
         );
       }
 
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
       final stat = await fetchRuleAccuracy('VOLUME_SPIKE', period: '5D');
       expect(stat, isNotNull);
       expect(stat!.triggerCount, 3, reason: '3 symbols × 1 date = 3 triggers');
-      expect(stat.successCount, 3, reason: '5% > 3% threshold for all 3');
+      expect(stat.successCount, 3, reason: '5% > 1.5% threshold for all 3');
       expect(stat.avgReturn, closeTo(5.0, 0.01));
     });
 
     test('ALL period is no longer written (removed 2026-04)', () async {
       // ALL period aggregation across holdingPeriods was removed because
-      // 1D (threshold 0%) and 60D (threshold 12%) success_counts share a
+      // 1D (threshold 0%) and 60D (threshold 8%) success_counts share a
       // denominator, producing a hit_rate that's mechanically inflated by
       // low-threshold samples and has no actionable interpretation.
       final entry = DateTime.utc(2026, 1, 5);
@@ -463,7 +402,7 @@ void main() {
         ),
       ]);
 
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
       final fiveD = await fetchRuleAccuracy('TECH_BREAKOUT', period: '5D');
       final sixtyD = await fetchRuleAccuracy('TECH_BREAKOUT', period: '60D');
@@ -502,7 +441,7 @@ void main() {
         ),
       ]);
 
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
       // No period has a valid exit price → PATTERN_DOJI should not appear
       // anywhere in rule_accuracy
@@ -536,7 +475,7 @@ void main() {
         // Do NOT seed any daily_reason rows → empty state
         // This simulates "syncer failed / DB partially cleared" scenario
 
-        await service.backfillAllHistoricalRecommendations();
+        await service.updateRuleAccuracyStats();
 
         // Existing row must NOT be wiped by the empty-guard (Stage 2 code
         // review followup — see _computeUnbiasedRuleStats docstring).
@@ -583,7 +522,7 @@ void main() {
         periodDays: 5,
         returnRatePct: 4.0,
       );
-      await service.backfillAllHistoricalRecommendations();
+      await service.updateRuleAccuracyStats();
 
       // Stale row should be gone
       final after = await fetchRuleAccuracy('STALE_RULE', period: '5D');
@@ -600,163 +539,68 @@ void main() {
     });
   });
 
-  // ==================================================
-  // H1 regression: dual-horizon dailyRecommendation must filter to short
-  // ==================================================
-  //
-  // Stage 5b 之後 daily_recommendation 每天可有 short + long 兩 rows（相同
-  // symbol 也可能在兩個 horizon 都上榜）。_computeValidation 與
-  // backfillAllHistoricalRecommendations 必須只取 short horizon — 否則
-  // recommendation_validation 表 PK (date, symbol, holdingDays) 會被 long
-  // row 覆蓋，UI 顯示的 primaryRuleId / returnRate 變成 last-write-wins
-  // 不確定行為。
-  group('H1 regression: short-only horizon filter on daily_recommendation', () {
-    test(
-      'long horizon recommendations are NOT validated even if same date',
-      () async {
-        final entry = DateTime.utc(2026, 1, 5);
-        const entryPrice = 100.0;
-        final exitDate = TaiwanCalendar.addTradingDays(entry, 5);
+  // ========================================================================
+  // getRuleStats / getRuleSummaryText read-path
+  // ========================================================================
 
-        await db.upsertStocks([
-          StockMasterCompanion.insert(
-            symbol: '2330',
-            name: 'TSMC',
-            market: 'TWSE',
-          ),
-          StockMasterCompanion.insert(
-            symbol: '2454',
-            name: 'MediaTek',
-            market: 'TWSE',
-          ),
-        ]);
+  group('getRuleStats / getRuleSummaryText', () {
+    test('getRuleStats returns null for unknown rule', () async {
+      final stats = await service.getRuleStats('NO_SUCH_RULE', period: '5D');
+      expect(stats, isNull);
+    });
 
-        await db.insertPrices([
-          // 2330 entry/exit
-          DailyPriceCompanion.insert(
-            symbol: '2330',
-            date: entry,
-            close: const Value(entryPrice),
-          ),
-          DailyPriceCompanion.insert(
-            symbol: '2330',
-            date: exitDate,
-            close: const Value(105.0), // +5% (above 5D 3% threshold → success)
-          ),
-          // 2454 entry/exit (long-only — should NOT show up in validation)
-          DailyPriceCompanion.insert(
-            symbol: '2454',
-            date: entry,
-            close: const Value(entryPrice),
-          ),
-          DailyPriceCompanion.insert(
-            symbol: '2454',
-            date: exitDate,
-            close: const Value(110.0),
-          ),
-        ]);
+    test('getRuleStats computes hitRate from trigger/success counts', () async {
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'TECH_BREAKOUT',
+              period: '5D',
+              triggerCount: const Value(10),
+              successCount: const Value(6),
+              avgReturn: const Value(2.3),
+            ),
+          );
 
-        // 2330 上 short Top 20、2454 上 long Top 20 — 不同股票、同日。
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            symbol: '2330',
-            date: entry,
-            rank: 1,
-            score: 80.0,
-            horizon: Horizon.short.name,
-          ),
-          DailyRecommendationCompanion.insert(
-            symbol: '2454',
-            date: entry,
-            rank: 1,
-            score: 80.0,
-            horizon: Horizon.long.name,
-          ),
-        ]);
+      final stats = await service.getRuleStats('TECH_BREAKOUT', period: '5D');
+      expect(stats, isNotNull);
+      expect(stats!.hitRate, closeTo(60.0, 0.001));
+      expect(stats.avgReturn, closeTo(2.3, 0.001));
+      expect(stats.triggerCount, 10);
+    });
 
-        await service.backfillAllHistoricalRecommendations();
+    test('getRuleSummaryText returns null below 5-sample minimum', () async {
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'TECH_BREAKOUT',
+              period: '5D',
+              triggerCount: const Value(4),
+              successCount: const Value(3),
+              avgReturn: const Value(2.3),
+            ),
+          );
 
-        // recommendation_validation 應該只看到 2330（short），2454（long）
-        // 必須被 horizon filter 排除。
-        final rows = await (db.select(
-          db.recommendationValidation,
-        )..where((t) => t.holdingDays.equals(5))).get();
-        final symbols = rows.map((r) => r.symbol).toSet();
-        expect(symbols, equals({'2330'}));
-        expect(
-          symbols.contains('2454'),
-          isFalse,
-          reason: 'long-horizon rec must not leak into validation table',
-        );
-      },
-    );
-  });
+      final text = await service.getRuleSummaryText('TECH_BREAKOUT');
+      expect(text, isNull, reason: 'triggerCount < 5 → no summary');
+    });
 
-  // ==================================================
-  // H2 regression: exit price must be exact-date, not ±1d window
-  // ==================================================
-  //
-  // Before fix: backfill / _computeValidation 用 `±1d window + DESC +
-  // putIfAbsent` → `exitDate+1d` 有 row 時必先吃，1D hold 變成 2D 算，
-  // returnRate 系統性灌水。
-  //
-  // After fix: exact-date lookup — `exitDate+1d` 的 row 即使存在也不會
-  // 被用到。
-  group('H2 regression: exit price exact-date lookup', () {
-    test(
-      'backfill ignores price row at exitDate+1d, uses exact exitDate close',
-      () async {
-        final entry = DateTime.utc(2026, 1, 5);
-        final exitDate = TaiwanCalendar.addTradingDays(entry, 5);
-        // exitDate+1d 故意放一個荒謬高的價格，舊代碼會誤抓
-        final wrongExitNextDay = exitDate.add(const Duration(days: 1));
+    test('getRuleSummaryText formats hit rate + avg return', () async {
+      await db
+          .into(db.ruleAccuracy)
+          .insert(
+            RuleAccuracyCompanion.insert(
+              ruleId: 'TECH_BREAKOUT',
+              period: '5D',
+              triggerCount: const Value(10),
+              successCount: const Value(7),
+              avgReturn: const Value(2.34),
+            ),
+          );
 
-        await db.upsertStocks([
-          StockMasterCompanion.insert(
-            symbol: '2330',
-            name: 'TSMC',
-            market: 'TWSE',
-          ),
-        ]);
-
-        await db.insertPrices([
-          DailyPriceCompanion.insert(
-            symbol: '2330',
-            date: entry,
-            close: const Value(100.0),
-          ),
-          DailyPriceCompanion.insert(
-            symbol: '2330',
-            date: exitDate,
-            close: const Value(103.0), // 真實 +3% (5D 門檻邊緣)
-          ),
-          DailyPriceCompanion.insert(
-            symbol: '2330',
-            date: wrongExitNextDay,
-            close: const Value(200.0), // 舊代碼會抓這條 → +100%
-          ),
-        ]);
-
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            symbol: '2330',
-            date: entry,
-            rank: 1,
-            score: 80.0,
-            horizon: Horizon.short.name,
-          ),
-        ]);
-
-        await service.backfillAllHistoricalRecommendations();
-
-        final row = await (db.select(
-          db.recommendationValidation,
-        )..where((t) => t.holdingDays.equals(5))).getSingleOrNull();
-        expect(row, isNotNull);
-        // 應該是 exact exitDate (103/100 - 1) * 100 = 3.0；
-        // 若 regress 回 ±1d window 會看到 (200/100 - 1) * 100 = 100.0
-        expect(row!.returnRate, closeTo(3.0, 0.001));
-      },
-    );
+      final text = await service.getRuleSummaryText('TECH_BREAKOUT');
+      expect(text, '命中率 70%，平均 5 日報酬 +2.3%');
+    });
   });
 }

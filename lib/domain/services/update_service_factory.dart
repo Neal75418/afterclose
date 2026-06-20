@@ -141,8 +141,7 @@ class UpdateServiceFactory {
       ),
       services: UpdateServices(
         ruleAccuracy:
-            ruleAccuracyService ??
-            RuleAccuracyService(database: database, clock: clock),
+            ruleAccuracyService ?? RuleAccuracyService(database: database),
       ),
       clock: clock,
     );

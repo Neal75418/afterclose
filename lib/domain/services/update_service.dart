@@ -285,13 +285,13 @@ class UpdateService {
       ctx.onProgress?.call(10, 10, '完成');
       await _finishUpdate(ctx, result);
 
-      // 步驟 10+: 推薦驗證。docstring 自承「非阻塞」，但這裡 await =
-      // foreground 仍會等到驗證完成才 return。從 user 角度本來就是 run
-      // 完整個 update 才看到結果，所以等推薦驗證跑完一起回也合理。
+      // 步驟 10+: 重算規則準確度統計。docstring 自承「非阻塞」，但這裡 await =
+      // foreground 仍會等到統計更新完成才 return。從 user 角度本來就是 run
+      // 完整個 update 才看到結果，所以等統計更新跑完一起回也合理。
       // 真正「非阻塞」語意要 `unawaited(...)` —— 但 background WorkManager
-      // 路徑若不 await，isolate 可能在驗證跑完前被 OS 殺掉。所以維持 await
+      // 路徑若不 await，isolate 可能在統計更新跑完前被 OS 殺掉。所以維持 await
       // 是 by-design，docstring 同步澄清。
-      await _validatePastRecommendationsFailSafe();
+      await _updateRuleAccuracyStatsFailSafe();
 
       return result;
     } catch (e) {
@@ -842,21 +842,20 @@ class UpdateService {
     await _fetchAlertPrices(ctx, result);
   }
 
-  /// 回溯驗證過去推薦。**失敗不會拋例外**（fail-safe），失敗只 log，
-  /// 不影響 update result.success。
+  /// 重算規則準確度統計（`rule_accuracy`）。**失敗不會拋例外**（fail-safe），
+  /// 失敗只 log，不影響 update result.success。
   ///
-  /// 命名重點：「fail-safe」≠「非阻塞」。caller 仍會 await 等驗證跑完才
-  /// return（避免 background isolate 被 WorkManager kill）。之前命名
-  /// `_validatePastRecommendations` + 註解寫「非阻塞」是名實不符。
-  Future<void> _validatePastRecommendationsFailSafe() async {
+  /// 命名重點：「fail-safe」≠「非阻塞」。caller 仍會 await 等統計更新跑完才
+  /// return（避免 background isolate 被 WorkManager kill）。
+  Future<void> _updateRuleAccuracyStatsFailSafe() async {
     final service = _ruleAccuracyService;
     if (service == null) return;
 
     try {
-      await service.validatePastRecommendationsMultiPeriod();
-      AppLogger.info('UpdateService', '步驟 10+: 推薦驗證完成');
+      await service.updateRuleAccuracyStats();
+      AppLogger.info('UpdateService', '步驟 10+: 規則準確度統計更新完成');
     } catch (e, stack) {
-      AppLogger.error('UpdateService', '推薦驗證失敗（fail-safe）', e, stack);
+      AppLogger.error('UpdateService', '規則準確度統計更新失敗（fail-safe）', e, stack);
     }
   }
 
