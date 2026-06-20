@@ -84,6 +84,19 @@ double? computeRet5dForHistory(List<DailyPriceEntry>? history) {
   return (latest - old) / old * 100;
 }
 
+/// 從 priceHistory 算 20 trading days 報酬 (%)。
+///
+/// 用於 Mode A 強訊號豁免的「已漲一波」副條件。回 null 規則同 [computeRet5dForHistory]
+/// （history < 21 / 端點 null / 起點 0）→ caller 視為「不知道、不擋豁免」。
+@visibleForTesting
+double? computeRet20dForHistory(List<DailyPriceEntry>? history) {
+  if (history == null || history.length < 21) return null;
+  final latest = history.last.close;
+  final old = history[history.length - 21].close;
+  if (latest == null || old == null || old == 0) return null;
+  return (latest - old) / old * 100;
+}
+
 /// 判斷某檔股票是否「夠資格」指派到 [mode]。
 ///
 /// **2026-06-19 audit Action 5b — eligibility-first 指派**
@@ -101,6 +114,7 @@ bool isEligibleForMode({
   required ModeStockScore score,
   required double? todayPct,
   required double? ret5d,
+  double? ret20d,
   Set<String> triggeredReasonCodes = const {},
 }) {
   switch (mode) {
@@ -109,11 +123,18 @@ bool isEligibleForMode({
       if (todayPct != null && todayPct > ModeFilters.modeAExcludeTodayPct) {
         return false;
       }
-      // 5D > +8% 踢出 UNLESS score ≥ 50（強訊號豁免、僅作用 5D）
-      if (ret5d != null &&
-          ret5d > ModeFilters.modeAExclude5dPct &&
-          score.modeScoreShort < ModeFilters.modeAStrongScoreOverride) {
-        return false;
+      // 5D > +8% 踢出 UNLESS 強訊號豁免。
+      //
+      // **2026-06-20 A/B 體檢收緊豁免**：豁免要 score ≥ 50 AND 20D 漲幅 ≤ +20%。
+      // 原本只看 score、漏了「強反轉已漲一波」（6770 20D+25.5% 霸榜 #1）。20D 已漲
+      // >20% = 明確「已漲」、無論訊號多強都不該在「起漲候選」。20D null（資料不足）
+      // 視為「不知道、給豁免」(permissive)。
+      if (ret5d != null && ret5d > ModeFilters.modeAExclude5dPct) {
+        final strongExempt =
+            score.modeScoreShort >= ModeFilters.modeAStrongScoreOverride &&
+            (ret20d == null ||
+                ret20d <= ModeFilters.modeAStrongExemptMax20dPct);
+        if (!strongExempt) return false;
       }
       return true;
 
@@ -250,6 +271,7 @@ final _modeAssignmentsProvider =
 
         final todayPct = priceChanges[symbol];
         final ret5d = computeRet5dForHistory(data.priceHistories[symbol]);
+        final ret20d = computeRet20dForHistory(data.priceHistories[symbol]);
 
         // 取得該股 daily_reason 內所有 triggered reason codes（給 Mode C gate 用）
         final triggeredCodes = <String>{
@@ -266,6 +288,7 @@ final _modeAssignmentsProvider =
             score: mEntry.value,
             todayPct: todayPct,
             ret5d: ret5d,
+            ret20d: ret20d,
             triggeredReasonCodes: triggeredCodes,
           )) {
             continue;

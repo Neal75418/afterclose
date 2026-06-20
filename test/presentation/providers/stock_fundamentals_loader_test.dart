@@ -377,12 +377,14 @@ void main() {
       verifyNever(() => mockDb.getLatestQuarterMetrics(any()));
     });
 
-    test('calculates ROE when NetIncome exists but ROE missing', () async {
+    test('calculates ROE when IncomeAfterTaxes exists but ROE missing', () async {
+      // **2026-06-20 修正**：原用 'NetIncome'（DB 幻影字串、0 筆）→ 改正確欄位
+      // 'IncomeAfterTaxes'（稅後淨利、單季）。
       final epsData = [createEps(date: DateTime(2025, 11, 14))];
       when(() => mockDb.getEPSHistory(any())).thenAnswer((_) async => epsData);
       when(
         () => mockDb.getLatestQuarterMetrics(any()),
-      ).thenAnswer((_) async => {'NetIncome': 50000.0});
+      ).thenAnswer((_) async => {'IncomeAfterTaxes': 50000.0});
 
       final equityEntry = FinancialDataEntry(
         symbol: '2330',
@@ -397,7 +399,7 @@ void main() {
 
       final result = await loader.loadAll('2330');
 
-      // ROE = NetIncome * 4 / Equity * 100 = 50000 * 4 / 200000 * 100 = 100.0
+      // ROE = IncomeAfterTaxes * 4 / Equity * 100 = 50000 * 4 / 200000 * 100 = 100.0
       expect(result.quarterMetrics['ROE'], 100.0);
     });
 

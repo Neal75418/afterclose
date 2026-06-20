@@ -124,6 +124,17 @@ abstract final class ModeFilters {
   /// 在 Mode B 有訊號（強勢確認）、filter-aware assign 會自動把它導去 B。
   static const double modeAStrongScoreOverride = 50;
 
+  /// 強訊號豁免的 20D 漲幅上限（+20%）
+  ///
+  /// **2026-06-20 A/B 體檢加**：[modeAStrongScoreOverride] 豁免本意保護「強反轉
+  /// 訊號但還沒漲」，但實測漏了「強反轉**已漲一波**」的股票霸佔 Mode A 最前排
+  /// （6770 力積電 20D+25.5% / 6742 澤米 20D+26.4% 被豁免保留在 #1/#2、與「還沒
+  /// 漲」tab 語意直接衝突）。
+  ///
+  /// 加副條件：豁免只在 20D 漲幅 ≤ +20% 時生效。20D 已漲 >20% = 明確「已漲一波」、
+  /// 無論訊號多強都不該在「起漲候選」。真正的「強反轉未動」20D 漲幅本來就低、不受影響。
+  static const double modeAStrongExemptMax20dPct = 20.0;
+
   /// Mode A 剔除「**當日**漲幅 > 8%」（無豁免）
   ///
   /// 跟 [modeAExclude5dPct] 互補：5D filter 擋「一週累積已漲多」、今日 filter

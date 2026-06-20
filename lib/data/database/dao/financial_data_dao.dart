@@ -104,20 +104,25 @@ mixin FinancialDataDaoMixin on $AppDatabase {
 
   /// 批次計算 ROE 歷史（評分管線用）
   ///
-  /// 從 INCOME.NetIncome + BALANCE.Equity 按 symbol+date join 計算
-  /// ROE = NetIncome / Equity × 100
+  /// 從 INCOME.IncomeAfterTaxes + BALANCE.Equity 按 symbol+date join 計算
+  /// ROE = IncomeAfterTaxes × 4 / Equity × 100（年化）
   /// 回傳虛擬 FinancialDataEntry (dataType='ROE')
+  ///
+  /// **2026-06-20 修正**：原查 `'NetIncome'` 但 DB financial_data 0 筆 'NetIncome'
+  /// （幻影字串）→ roeHistory 永遠空 → ROE_EXCELLENT / ROE_IMPROVING / ROE_DECLINING
+  /// 三條 rule 全史 0 fire（死碼）。正確欄位 'IncomeAfterTaxes'（稅後淨利、單季、
+  /// 4585 筆）。已驗 IncomeAfterTaxes 是單季非累計 → ×4 年化正確。
   Future<Map<String, List<FinancialDataEntry>>> getROEHistoryBatch(
     List<String> symbols,
   ) async {
     if (symbols.isEmpty) return {};
 
-    // 1. 批次查 NetIncome
+    // 1. 批次查稅後淨利
     final netIncomeEntries =
         await (select(financialData)
               ..where((t) => t.symbol.isIn(symbols))
               ..where((t) => t.statementType.equals('INCOME'))
-              ..where((t) => t.dataType.equals('NetIncome'))
+              ..where((t) => t.dataType.equals('IncomeAfterTaxes'))
               ..orderBy([(t) => OrderingTerm.desc(t.date)]))
             .get();
 
@@ -138,7 +143,7 @@ mixin FinancialDataDaoMixin on $AppDatabase {
       }
     }
 
-    // 4. Join 計算年化 ROE（季度 NetIncome × 4 / Equity × 100）
+    // 4. Join 計算年化 ROE（季度 IncomeAfterTaxes × 4 / Equity × 100）
     final result = <String, List<FinancialDataEntry>>{};
     for (final ni in netIncomeEntries) {
       if (ni.value == null) continue;

@@ -76,6 +76,66 @@ void main() {
       );
     });
 
+    // **2026-06-20 A/B 體檢**：強訊號豁免加 20D ≤ +20% 副條件（治 6770 已漲霸榜）
+    test('score_override_denied_when_20d_already_risen_over_20pct', () {
+      // 6770-style: score 90、5D>8%、但 20D +25.5% 已漲一波 → 豁免取消 → 踢出
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 90),
+          todayPct: 5.0,
+          ret5d: 15.0,
+          ret20d: 25.5,
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'score_override_kept_when_20d_modest (strong reversal not yet risen)',
+      () {
+        // 強反轉未動：score 60、5D>8%、20D 只 +10% → 豁免維持 → 保留
+        expect(
+          isEligibleForMode(
+            mode: ScoringMode.momentumEntry,
+            score: _score(short: 60),
+            todayPct: 2.0,
+            ret5d: 15.0,
+            ret20d: 10.0,
+          ),
+          isTrue,
+        );
+      },
+    );
+
+    test('score_override_20d_exactly_20pct_boundary_kept', () {
+      // strict `>` so 20D == 20.0% 仍豁免
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 60),
+          todayPct: 2.0,
+          ret5d: 15.0,
+          ret20d: 20.0,
+        ),
+        isTrue,
+      );
+    });
+
+    test('score_override_null_20d_treated_as_permissive', () {
+      // 20D 資料不足（新股）→ null → 不擋豁免
+      expect(
+        isEligibleForMode(
+          mode: ScoringMode.momentumEntry,
+          score: _score(short: 60),
+          todayPct: 2.0,
+          ret5d: 15.0,
+          ret20d: null,
+        ),
+        isTrue,
+      );
+    });
+
     test('mode_a_eligible_when_history_below_6_closes (ret5d null)', () {
       expect(
         isEligibleForMode(

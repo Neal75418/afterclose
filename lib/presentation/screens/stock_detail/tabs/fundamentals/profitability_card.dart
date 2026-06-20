@@ -45,12 +45,15 @@ class ProfitabilityCard extends StatelessWidget {
         ),
       );
     }
-    // 稅後淨利率 = NetIncome / Revenue × 100
-    if (metrics.containsKey('NetIncome') && revenue != null && revenue != 0) {
+    // 稅後淨利率 = IncomeAfterTaxes / Revenue × 100
+    // **2026-06-20 修正**：原 'NetIncome' 幻影字串（DB 0 筆）→ 淨利率永遠不顯示。
+    if (metrics.containsKey('IncomeAfterTaxes') &&
+        revenue != null &&
+        revenue != 0) {
       items.add(
         ProfitMetric(
           'stockDetail.netMargin'.tr(),
-          metrics['NetIncome']! / revenue * 100,
+          metrics['IncomeAfterTaxes']! / revenue * 100,
         ),
       );
     }

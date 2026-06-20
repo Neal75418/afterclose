@@ -232,7 +232,8 @@ class StockFundamentalsLoader {
   /// 載入 EPS 歷史與季度財務指標（含 ROE 計算）
   ///
   /// 從 DB 取得 EPS 資料與最新季度指標，
-  /// 若有 NetIncome 但缺 ROE，則計算年化 ROE。
+  /// 若有 IncomeAfterTaxes 但缺 ROE，則計算年化 ROE。
+  /// **2026-06-20 修正**：原查 'NetIncome' 幻影字串（DB 0 筆）→ 個股頁 ROE 永遠空。
   Future<
     ({List<FinancialDataEntry> epsData, Map<String, double> quarterMetrics})
   >
@@ -244,8 +245,8 @@ class StockFundamentalsLoader {
       if (epsData.isNotEmpty) {
         quarterMetrics = await _db.getLatestQuarterMetrics(symbol);
       }
-      // 計算 ROE：從 Equity 歷史 join NetIncome（需同季日期對齊）
-      if (quarterMetrics.containsKey('NetIncome') &&
+      // 計算 ROE：從 Equity 歷史 join IncomeAfterTaxes（需同季日期對齊）
+      if (quarterMetrics.containsKey('IncomeAfterTaxes') &&
           !quarterMetrics.containsKey('ROE') &&
           epsData.isNotEmpty) {
         final latestIncomeDate = epsData.first.date;
@@ -255,9 +256,9 @@ class StockFundamentalsLoader {
           if (eq.date == latestIncomeDate &&
               eq.value != null &&
               eq.value! > 0) {
-            // 年化 ROE：季度 NetIncome × 4 / Equity × 100
+            // 年化 ROE：季度 IncomeAfterTaxes × 4 / Equity × 100
             quarterMetrics['ROE'] =
-                quarterMetrics['NetIncome']! * 4 / eq.value! * 100;
+                quarterMetrics['IncomeAfterTaxes']! * 4 / eq.value! * 100;
             break;
           }
         }

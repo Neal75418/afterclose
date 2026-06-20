@@ -207,7 +207,8 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.patternThreeWhiteSoldiers => ScoringMode.momentumEntry,
     ReasonType.lowVolumeAccumulation => ScoringMode.momentumEntry,
     ReasonType.maAlignmentBullish => ScoringMode.momentumEntry,
-    ReasonType.highVolumeBreakout => ScoringMode.momentumEntry,
+    // **2026-06-20 A/B 體檢移出**：highVolumeBreakout（高檔爆量突破）= 已突破已漲
+    // （fire 24 檔實測 5D+22.8%/20D+60.5%），語意是「已突破」非「即將起漲」、搬 Mode B
     ReasonType.epsTurnaround => ScoringMode.momentumEntry,
     ReasonType.revenueMomGrowth => ScoringMode.momentumEntry,
     ReasonType.roeImproving => ScoringMode.momentumEntry,
@@ -216,7 +217,8 @@ extension ReasonTypeScoringMode on ReasonType {
       ScoringMode.momentumEntry, // 唯一 backtest 正 alpha
     // **2026-06-19 audit 移入 Mode A**：hardcoded 正分、原本歸 Mode C 不合理：
     ReasonType.patternDoji => ScoringMode.momentumEntry, // +10 低檔十字線反轉
-    ReasonType.week52Low => ScoringMode.momentumEntry, // +8 逆勢買點
+    // **2026-06-20 A/B 體檢移出 week52Low**：0 fire ever（前提空頭 close<MA20<MA60
+    // 與 momentum 母體 75% UP 互斥）+ backtest hit 0.27 強反指標 → 搬 neutral
     ReasonType.rsiExtremeOversold => ScoringMode.momentumEntry, // +10 RSI 超賣反彈
     // ============ Mode B: 強勢觀察（11 條 — 2026-06-19 audit 後）============
     // 已漲 / 籌碼面強 — user mental model「追蹤強勢、等回檔」。
@@ -233,6 +235,8 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.volumeSpike => ScoringMode.strengthObserve,
     ReasonType.newsRelated => ScoringMode.strengthObserve,
     ReasonType.roeExcellent => ScoringMode.strengthObserve,
+    // **2026-06-20 A/B 體檢移入**：高檔爆量突破 = 已突破已漲、屬「強勢」非「起漲」
+    ReasonType.highVolumeBreakout => ScoringMode.strengthObserve,
 
     // ============ Mode C: 回檔觀察（v2.1 — 強股回檔進場、純 3 條正分主訊號）============
     // **2026-06-19 v2 audit 重定義**：user 真實意圖是「**強股剛開始回檔、找進場時機**」。
@@ -294,6 +298,9 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.epsConsecutiveGrowth => ScoringMode.neutral,
     ReasonType.epsYoYSurge => ScoringMode.neutral,
     ReasonType.priceVolumeWeakRally => ScoringMode.neutral, // 觸發條件「價漲量縮」與弱勢矛盾
+    // **2026-06-20 A/B 體檢移入**：52 週低 = 空頭創低、放「起漲」自相矛盾、且 0 fire
+    // ever（前提空頭與 momentum 母體互斥）+ backtest 強反指標。
+    ReasonType.week52Low => ScoringMode.neutral,
   };
 }
 
