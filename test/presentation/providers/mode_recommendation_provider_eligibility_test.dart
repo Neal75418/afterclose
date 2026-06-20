@@ -285,13 +285,9 @@ void main() {
     });
 
     test(
-      'mode_c_accepts_other_main_signals (HAMMER_AT_SUPPORT / KD_HIGH_PULLBACK / PATTERN_HAMMER)',
+      'mode_c_accepts_other_main_signals (HAMMER_AT_SUPPORT / KD_HIGH_PULLBACK)',
       () {
-        for (final code in [
-          'HAMMER_AT_SUPPORT',
-          'KD_HIGH_PULLBACK',
-          'PATTERN_HAMMER',
-        ]) {
+        for (final code in ['HAMMER_AT_SUPPORT', 'KD_HIGH_PULLBACK']) {
           expect(
             isEligibleForMode(
               mode: ScoringMode.weaknessObserve,

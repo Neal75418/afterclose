@@ -194,12 +194,13 @@ extension ReasonTypeScoringMode on ReasonType {
   /// - neutral: 觸發頻繁但無 alpha 的 noise filter rule、value rule 跟 momentum
   ///   無關 — 仍寫進 daily_reason 顯示 evidence chip，但不影響任何 mode 排名
   ScoringMode get scoringMode => switch (this) {
-    // ============ Mode A: 起漲候選（17 條 — 2026-06-19 audit 後）============
+    // ============ Mode A: 起漲候選（17 條 — 含 patternHammer 2026-06-20 回歸）============
     // 反轉 / 突破 / 底部 / 逆勢買進訊號 — user mental model「找還沒漲、即將起漲」。
     ReasonType.reversalW2S => ScoringMode.momentumEntry,
     ReasonType.techBreakout => ScoringMode.momentumEntry,
     ReasonType.patternBullishEngulfing => ScoringMode.momentumEntry,
-    // **2026-06-19 v2 audit 移出**：patternHammer 搬 Mode C（用於「強股回檔錘子」）
+    ReasonType.patternHammer =>
+      ScoringMode.momentumEntry, // 低檔錘子反轉（trendState != up 才 fire）
     ReasonType.patternMorningStar => ScoringMode.momentumEntry,
     ReasonType.patternThreeWhiteSoldiers => ScoringMode.momentumEntry,
     ReasonType.lowVolumeAccumulation => ScoringMode.momentumEntry,
@@ -231,23 +232,25 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.newsRelated => ScoringMode.strengthObserve,
     ReasonType.roeExcellent => ScoringMode.strengthObserve,
 
-    // ============ Mode C: 回檔觀察（v2 — 強股回檔進場、11 條）============
+    // ============ Mode C: 回檔觀察（v2 — 強股回檔進場、10 條）============
     // **2026-06-19 v2 audit 重定義**：user 真實意圖是「**強股剛開始回檔、找進場時機**」。
     // identifier `weaknessObserve` 保留避免 DB migration、tab name i18n 改「回檔觀察」。
     //
-    // 組成：4 條正分主訊號 + 7 條負分 warning context（混合 tab、打破舊「全負分」invariant）
+    // 組成：3 條正分主訊號 + 7 條負分 warning context（混合 tab、打破舊「全負分」invariant）
     // - 主訊號（gate 必過、from pullback_rules.dart）：
     //     pullbackToMa20 (+15) / hammerAtSupport (+18) / kdHighPullback (+12)
-    //     + patternHammer (+18、從 Mode A 搬入)
     // - Warning context（高檔反轉 / 過熱訊號、輔助 evidence chip）：
+    //
+    // **2026-06-20 早期體檢修正**：patternHammer 移回 Mode A。HammerRule 要
+    // trendState != up 才 fire（candlestick_rules.dart），跟 Mode C「強股回檔」
+    // (trendState == up) 天生互斥 → 全 DB history 0 fire 是死碼。Mode C 的「強股
+    // 錘子」角色由 HammerAtSupportRule（自帶 bull stack 自驗、不依賴 trendState）擔。
     //     吊人線 / 高檔十字 / 暮星 / 空頭吞噬 / 跳空下跌 / RSI 超買 / 外資集中警示
     //
     // **舊 Mode C 移出 20 條到 neutral**（已弱化趨勢類、不符「剛開始回檔」mental model）
     ReasonType.pullbackToMa20 => ScoringMode.weaknessObserve, // 主 +15
     ReasonType.hammerAtSupport => ScoringMode.weaknessObserve, // 主 +18
     ReasonType.kdHighPullback => ScoringMode.weaknessObserve, // 主 +12
-    ReasonType.patternHammer =>
-      ScoringMode.weaknessObserve, // 主 +18（從 Mode A 搬入）
     // Warning context（強勢股潛在反轉 / 過熱訊號）
     ReasonType.patternHangingMan => ScoringMode.weaknessObserve, // -12 高檔吊人線
     ReasonType.patternDojiBearish => ScoringMode.weaknessObserve, // -5 高檔十字

@@ -162,16 +162,19 @@ abstract final class ModeFilters {
 
   /// Mode C eligibility 必過 gate：至少 1 條主訊號 rule fire
   ///
-  /// 4 條主訊號 rule 提供「回檔進場時機」確認、舊負分 warning rule 單獨 fire 不
+  /// 3 條主訊號 rule 提供「回檔進場時機」確認、舊負分 warning rule 單獨 fire 不
   /// 足以入 Mode C（避免「純警示無進場點」雜訊）。
   ///
-  /// 這 4 條 rule 識別子用字串避免循環 import（ReasonType import scoring_mode、
+  /// 這 3 條 rule 識別子用字串避免循環 import（ReasonType import scoring_mode、
   /// 反方向會 cycle）— 從 ReasonType.code 比對。
+  ///
+  /// **2026-06-20 早期體檢修正**：移除 PATTERN_HAMMER。HammerRule 要 trendState
+  /// != up 才 fire、跟 Mode C「強股回檔」(trendState == up) 互斥 → 永遠 0 fire
+  /// 的死碼 gate 入口。已搬回 Mode A、強股錘子角色由 HAMMER_AT_SUPPORT 擔。
   static const Set<String> modeCRequiredAnyOf = {
     'PULLBACK_TO_MA20',
     'HAMMER_AT_SUPPORT',
     'KD_HIGH_PULLBACK',
-    'PATTERN_HAMMER',
   };
 
   /// 指派 floor：best-eligible mode 的 |modeScoreShort| 必須 ≥ 10 才指派

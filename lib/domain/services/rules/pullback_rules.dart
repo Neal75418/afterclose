@@ -196,8 +196,12 @@ class HammerAtSupportRule extends StockRule {
     if ((close - open).abs() == 0) return null;
 
     // ---- Step 5: 下影線觸及支撐 (MA20 或 MA60) ----
-    final touchMa20 = (low - ma20).abs() / ma20 <= 0.015;
-    final touchMa60 = (low - ma60).abs() / ma60 <= 0.015;
+    //
+    // **2026-06-20 早期體檢修正（CALIBRATION_PENDING）**：原 ±1.5% 太緊 — 強股的
+    // low 通常在 MA20 上方（實測中位數 +11.1%、只 7.8% 落 ±1.5%）、理論母體 ~0。
+    // 放寬到 ±4%（對齊 strong-stock low p10≈-3.5%）讓「拉回測支撐」的強股進得來。
+    final touchMa20 = (low - ma20).abs() / ma20 <= 0.04;
+    final touchMa60 = (low - ma60).abs() / ma60 <= 0.04;
     if (!touchMa20 && !touchMa60) return null;
     final support = touchMa20 ? 'MA20' : 'MA60';
     final supportLevel = touchMa20 ? ma20 : ma60;
@@ -205,8 +209,12 @@ class HammerAtSupportRule extends StockRule {
     // ---- Step 6: 收盤站穩支撐 (close >= supportLevel * 0.985) ----
     if (close < supportLevel * 0.985) return null;
 
-    // ---- Step 7: close 在 MA20 附近（≤ MA20 * 1.03）— 與 HangingMan 互斥位置 ----
-    if (close > ma20 * 1.03) return null;
+    // ---- Step 7: close 在 MA20 附近（≤ MA20 * 1.06）— 與 HangingMan 互斥位置 ----
+    //
+    // **2026-06-20 早期體檢修正**：原 ≤ MA20*1.03 配合 ±4% touch 放寬同步放寬到
+    // 1.06，避免「low 觸支撐但 close 已彈回」的強股回檔被擋。仍保留上界讓真正高
+    // 檔（HangingMan 區）交給 HangingManRule 處理。
+    if (close > ma20 * 1.06) return null;
 
     // ---- Step 8: 非跌停 ----
     if (isLimitDownDay(data)) return null;
@@ -285,21 +293,36 @@ class KdHighLevelPullbackRule extends StockRule {
     // ---- Step 3: 多頭排列 ----
     if (ma20 <= ma60) return null;
 
-    // ---- Step 4: 前日 KD 在高檔（prevKdK >= 80）----
-    if (prevKdK < 80) return null;
+    // ---- Step 4: 前日 KD 在高檔（prevKdK >= 78）----
+    //
+    // **2026-06-20 早期體檢修正（CALIBRATION_PENDING）**：原 >= 80 太緊、80 邊緣
+    // 回落進不來。放寬到 78 容納剛從超買區滑落的 case。
+    if (prevKdK < 78) return null;
 
-    // ---- Step 5: 今日 K 回落到 [50, 75] 區間（inclusive 兩端）----
-    if (kdK < 50 || kdK > 75) return null;
+    // ---- Step 5: 今日 K 回落到 [60, 80) 區間 ----
+    //
+    // **2026-06-20 早期體檢修正**：原 [50, 75] 含數學矛盾 — KD 平滑因子寫死 1/3
+    // （technical_indicator_service kSmoothFactor），prevKdK≥78 時單日 K 下限 =
+    // 78×2/3 = 52，[50,52) 物理上一天到不了；上緣 75 又把真實「高檔剛回落」帶
+    // (75-80) 排除掉。改 [60, 80)：60 是 1/3 平滑可達的合理下緣、80 開區間排除
+    // 「還在超買沒回落」。實測 prevKdK≥80 母體原 0 fire、改後預估 10-30 檔可進。
+    if (kdK < 60 || kdK >= 80) return null;
 
     // ---- Step 6: 未死叉（kdK > kdD）----
+    //
+    // 語意核心保留。窗口上移到 [60,80) 後 K 仍在 D 上方機率大增、不再像舊窗口
+    // [50,75] 那樣「掉進區間的都已死叉」自相殘殺。
     if (kdK <= kdD) return null;
 
     // ---- Step 7: 收盤未破 MA20 過深（>= ma20 * 0.99）----
     if (todayClose < ma20 * 0.99) return null;
 
-    // ---- Step 8: K 值漸降非崩跌（單日 K 跌幅 <= 20）----
+    // ---- Step 8: K 值漸降非崩跌（單日 K 跌幅 <= 30）----
+    //
+    // **2026-06-20 早期體檢修正**：原 <= 20 跟 [60,80) 窗口衝突（prevKdK 高時
+    // drop 自然 > 20）、是窗口變窄元兇。放寬到 30 保留 panic 防護但不殺窗口。
     final kdKDailyDrop = prevKdK - kdK;
-    if (kdKDailyDrop > 20) return null;
+    if (kdKDailyDrop > 30) return null;
 
     // ---- Step 9: 非跌停 ----
     if (isLimitDownDay(data)) return null;
