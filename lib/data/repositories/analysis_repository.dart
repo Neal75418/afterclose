@@ -229,46 +229,6 @@ class AnalysisRepository implements IAnalysisRepository {
   }
 
   // ==================================================
-  // 冷卻期檢查
-  // ==================================================
-
-  /// 檢查股票是否近期曾被推薦（單一查詢）
-  @override
-  Future<bool> wasRecentlyRecommended(
-    String symbol, {
-    int days = RuleParams.cooldownDays,
-  }) {
-    final now = _clock.now();
-    final endDate = DateContext.normalize(
-      now.subtract(const Duration(days: 1)),
-    );
-    final startDate = DateContext.normalize(now.subtract(Duration(days: days)));
-
-    return _db.wasSymbolRecommendedInRange(
-      symbol,
-      startDate: startDate,
-      endDate: endDate,
-    );
-  }
-
-  /// 取得所有近期曾被推薦的股票（供批次冷卻期檢查）
-  @override
-  Future<Set<String>> getRecentlyRecommendedSymbols({
-    int days = RuleParams.cooldownDays,
-  }) {
-    final now = _clock.now();
-    final endDate = DateContext.normalize(
-      now.subtract(const Duration(days: 1)),
-    );
-    final startDate = DateContext.normalize(now.subtract(Duration(days: days)));
-
-    return _db.getRecommendedSymbolsInRange(
-      startDate: startDate,
-      endDate: endDate,
-    );
-  }
-
-  // ==================================================
   // 智慧日期回退
   // ==================================================
 

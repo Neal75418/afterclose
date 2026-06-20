@@ -43,14 +43,12 @@ class ScoringService {
     required List<String> candidates,
     required DateTime date,
     required ScoringBatchData batchData,
-    Set<String>? recentlyRecommended,
     Future<MarketDataContext?> Function(String)? marketDataBuilder,
     void Function(int current, int total)? onProgress,
   }) async {
     if (candidates.isEmpty) return [];
 
     final scoredStocks = <ScoredStock>[];
-    final recentSet = recentlyRecommended ?? <String>{};
     final instMap =
         batchData.institutionalMap ?? <String, List<DailyInstitutionalEntry>>{};
 
@@ -159,7 +157,6 @@ class ScoringService {
       // 計算雙 horizon 分數
       // H-1 fix：mutex 用 horizon-aware calibrated lookup（calculateScore 是
       // pure arithmetic，不做 mutex；caller 顯式控制）。
-      final wasRecent = recentSet.contains(symbol);
       final mutedShort = _ruleEngine.applyMutexGroups(
         reasons,
         (r) => calibratedScores.lookup(Horizon.short, r.type.code) ?? r.score,
@@ -173,13 +170,11 @@ class ScoringService {
         mutedShort,
         horizon: Horizon.short,
         calibratedScores: calibratedScores,
-        wasRecentlyRecommended: wasRecent,
       );
       final scoreLong = _ruleEngine.calculateScore(
         mutedLong,
         horizon: Horizon.long,
         calibratedScores: calibratedScores,
-        wasRecentlyRecommended: wasRecent,
       );
 
       // 任一 horizon 達標就保留（與 isolate 路徑對齊）
@@ -281,7 +276,6 @@ class ScoringService {
     required List<String> candidates,
     required DateTime date,
     required ScoringBatchData batchData,
-    Set<String>? recentlyRecommended,
   }) async {
     if (candidates.isEmpty) return [];
 
@@ -304,7 +298,6 @@ class ScoringService {
       revenueMap: batchData.revenueMap,
       valuationMap: batchData.valuationMap,
       revenueHistoryMap: batchData.revenueHistoryMap,
-      recentlyRecommended: recentlyRecommended,
       date: date,
       dayTradingMap: batchData.dayTradingMap,
       shareholdingMap: batchData.shareholdingMap,
@@ -338,7 +331,6 @@ class ScoringService {
         candidates: candidates,
         date: date,
         batchData: batchData,
-        recentlyRecommended: recentlyRecommended,
         marketDataBuilder: (symbol) async {
           return _buildMarketDataFromMaps(
             symbol: symbol,
@@ -528,9 +520,8 @@ class ScoringService {
 
 /// 已計算分數的股票
 ///
-/// Dual-horizon: 每支股票同時攜帶短線與長線分數。
-/// 下游（`update_service._generateRecommendations` / [splitScoredStocksIntoHorizons]）
-/// 依 horizon 分別 sort 後寫入兩個獨立 Top N 列表。
+/// Dual-horizon: 每支股票同時攜帶短線與長線分數，供 3-mode tab 的雙 score 顯示。
+/// （pre-2026-06-21：曾由已退役的 daily_recommendation 產生流程依 horizon 各取 Top N。）
 class ScoredStock {
   const ScoredStock({
     required this.symbol,
@@ -597,8 +588,8 @@ class ScoredStock {
 
 /// 把 [ScoredStock] 清單切成 dual-horizon 的 Top N 推薦列表（純函式）
 ///
-/// Commit history：從 `update_service._generateRecommendations` 抽出的
-/// 純邏輯部分。決定 short / long 各自的 Top N 是兩次獨立的 sort + take + map，
+/// History：原為已退役的 daily_recommendation 產生流程的純邏輯部分（保留為
+/// 可重用工具 + 單元測試覆蓋）。決定 short / long 各自的 Top N 是兩次獨立的 sort + take + map，
 /// 抽出來讓單元測試可以直接驗證 per-horizon 排序 / minTurnover 過濾 /
 /// dailyTopN cap 這幾個行為，而不用把整個 update_service 拉進測試矩陣。
 ///

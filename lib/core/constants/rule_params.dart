@@ -160,12 +160,6 @@ abstract final class RuleParams {
   // 評分與輸出
   // ==================================================
 
-  /// 重複推薦冷卻天數
-  static const int cooldownDays = 2;
-
-  /// 冷卻期固定扣分（取代乘數，避免高分股被腰斬）
-  static const double cooldownPenalty = 15;
-
   /// 每檔股票最多理由數（資料庫儲存用，供篩選功能使用）
   /// 設為 60 確保所有規則都能被儲存（目前共 60 條規則）
   /// UI 顯示時會用 .take(2) 或 .take(3) 限制

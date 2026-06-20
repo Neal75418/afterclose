@@ -458,67 +458,6 @@ void main() {
         expect(recommendations.length, 1);
         expect(recommendations.first.symbol, '2317');
       });
-
-      test('wasSymbolRecommendedInRange returns correct result', () async {
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            date: yesterday,
-            symbol: '2330',
-            score: 80.0,
-            rank: 1,
-            horizon: Horizon.short.name,
-          ),
-        ]);
-
-        final was = await db.wasSymbolRecommendedInRange(
-          '2330',
-          startDate: DateTime.utc(2025, 6, 10),
-          endDate: today,
-        );
-        expect(was, isTrue);
-
-        final wasNot = await db.wasSymbolRecommendedInRange(
-          '2317',
-          startDate: DateTime.utc(2025, 6, 10),
-          endDate: today,
-        );
-        expect(wasNot, isFalse);
-      });
-
-      test('getRecommendedSymbolsInRange returns all symbols', () async {
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            date: yesterday,
-            symbol: '2330',
-            score: 80.0,
-            rank: 1,
-            horizon: Horizon.short.name,
-          ),
-          DailyRecommendationCompanion.insert(
-            date: today,
-            symbol: '2317',
-            score: 60.0,
-            rank: 1,
-            horizon: Horizon.short.name,
-          ),
-        ]);
-
-        final symbols = await db.getRecommendedSymbolsInRange(
-          startDate: DateTime.utc(2025, 6, 10),
-          endDate: today,
-        );
-
-        expect(symbols, containsAll(['2330', '2317']));
-      });
-
-      test('getRecommendedSymbolsInRange returns empty for no data', () async {
-        final symbols = await db.getRecommendedSymbolsInRange(
-          startDate: DateTime.utc(2025, 6, 10),
-          endDate: today,
-        );
-
-        expect(symbols, isEmpty);
-      });
     });
   });
 }

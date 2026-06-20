@@ -1,4 +1,3 @@
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -46,26 +45,17 @@ class CacheWarmupService {
 
       AppLogger.info('CacheWarmupService', '自選股數量: ${watchlistSymbols.length}');
 
-      // 2. 預載 Top 20 推薦
+      // 2. 預熱符號 = 自選股
+      //
+      // **2026-06-21 退役舊推薦系統 Step 4**：daily_recommendation 已停寫，
+      // 3-mode tab 從 daily_reason 即時聚合、不依賴冷啟預熱 Top-20 清單。
+      // 只預熱自選股即可（其餘股票進入個股頁時按需載入）。
       final latestDataDate = await _db.getLatestDataDate();
       final analysisDate = latestDataDate != null
           ? DateContext.normalize(latestDataDate)
           : dateCtx.today;
 
-      // Cold start 一律預熱 short：selectedHorizonProvider 預設 short 且
-      // 非持久化（每次 cold start 重置），warmup 在 main.dart bootstrap 階段
-      // 跑時 user-selected horizon 必然是 short。若未來加 horizon 持久化，
-      // 改為從 ProviderContainer 讀 selectedHorizonProvider 注入。
-      final recommendations = await _db.getRecommendations(
-        analysisDate,
-        horizon: Horizon.short,
-      );
-      final recSymbols = recommendations.take(20).map((e) => e.symbol).toList();
-
-      AppLogger.info('CacheWarmupService', '今日推薦數量: ${recSymbols.length}');
-
-      // 3. 合併符號清單（去重）
-      final allSymbols = {...watchlistSymbols, ...recSymbols}.toList();
+      final allSymbols = watchlistSymbols;
 
       if (allSymbols.isEmpty) {
         AppLogger.info('CacheWarmupService', '無資料需預熱');

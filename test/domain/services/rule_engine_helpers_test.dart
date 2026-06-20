@@ -241,46 +241,6 @@ void main() {
       expect(score, 0);
     });
 
-    test('apply cooldown penalty correctly', () {
-      final reasons = [
-        const TriggeredReason(
-          type: ReasonType.reversalW2S,
-          score: 35,
-          description: 'Reversal',
-        ),
-      ];
-
-      // Base: 35
-      // Cooldown: -15
-      // Total: 20
-      final score = ruleEngine.calculateScore(
-        reasons,
-        wasRecentlyRecommended: true,
-        horizon: Horizon.short,
-      );
-      expect(score, 20);
-    });
-
-    test('not go below 0 with cooldown penalty', () {
-      final reasons = [
-        const TriggeredReason(
-          type: ReasonType.newsRelated,
-          score: 8,
-          description: 'News',
-        ),
-      ];
-
-      // Base: 8
-      // Cooldown: -15
-      // Raw: -7 → clamped to 0
-      final score = ruleEngine.calculateScore(
-        reasons,
-        wasRecentlyRecommended: true,
-        horizon: Horizon.short,
-      );
-      expect(score, 0);
-    });
-
     test('handle mixed positive and negative scores', () {
       final reasons = [
         const TriggeredReason(

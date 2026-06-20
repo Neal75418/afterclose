@@ -547,46 +547,6 @@ void main() {
         expect(recommendations.first.symbol, '2330'); // Rank 1
         expect(recommendations.last.symbol, '2317'); // Rank 2
       });
-
-      test('check if symbol was recommended in range', () async {
-        final now = DateTime.now();
-        final today = DateTime.utc(now.year, now.month, now.day);
-
-        // First create the stock (foreign key requirement)
-        await db.upsertStock(
-          StockMasterCompanion.insert(
-            symbol: '2330',
-            name: '台積電',
-            market: 'TWSE',
-          ),
-        );
-
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            date: today.subtract(const Duration(days: 2)),
-            symbol: '2330',
-            score: 50.0,
-            rank: 1,
-            horizon: Horizon.short.name,
-          ),
-        ]);
-
-        final wasRecommended = await db.wasSymbolRecommendedInRange(
-          '2330',
-          startDate: today.subtract(const Duration(days: 5)),
-          endDate: today,
-        );
-
-        expect(wasRecommended, isTrue);
-
-        final wasNotRecommended = await db.wasSymbolRecommendedInRange(
-          '2317',
-          startDate: today.subtract(const Duration(days: 5)),
-          endDate: today,
-        );
-
-        expect(wasNotRecommended, isFalse);
-      });
     });
 
     group('Settings Operations', () {

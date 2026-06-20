@@ -24,7 +24,6 @@ class ScoringIsolateInput {
     this.revenueMap,
     this.valuationMap,
     this.revenueHistoryMap,
-    this.recentlyRecommended,
     this.date,
     this.dayTradingMap,
     this.shareholdingMap,
@@ -44,7 +43,6 @@ class ScoringIsolateInput {
   final Map<String, MonthlyRevenueEntry>? revenueMap;
   final Map<String, StockValuationEntry>? valuationMap;
   final Map<String, List<MonthlyRevenueEntry>>? revenueHistoryMap;
-  final Set<String>? recentlyRecommended;
 
   /// 評估目標日期（供規則判斷資料新鮮度）
   final DateTime? date;
@@ -97,7 +95,6 @@ class ScoringIsolateInput {
     'revenueHistoryMap': revenueHistoryMap?.map(
       (k, v) => MapEntry(k, v.map((e) => e.toIsolateMap()).toList()),
     ),
-    'recentlyRecommended': recentlyRecommended?.toList(),
     'date': date?.millisecondsSinceEpoch,
     'dayTradingMap': dayTradingMap,
     'shareholdingMap': shareholdingMap?.map((k, v) => MapEntry(k, v.toMap())),
@@ -145,9 +142,6 @@ class ScoringIsolateInput {
         'revenueHistoryMap',
         IsolateMappers.monthlyRevenue,
       ).ifEmpty(null),
-      recentlyRecommended: map['recentlyRecommended'] != null
-          ? Set<String>.from(map['recentlyRecommended'])
-          : null,
       date: map['date'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['date'] as int)
           : null,
@@ -450,8 +444,6 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   var skippedLowLiquidity = 0;
   var skippedLowScore = 0;
 
-  final recentSet = input.recentlyRecommended ?? <String>{};
-
   for (final symbol in input.candidates) {
     // 1. 取得並驗證價格資料
     final prices = input.pricesMap[symbol];
@@ -527,7 +519,6 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
     //    設計決議（設計 §9）：`minScoreThreshold` 兩 horizon 共用，
     //    不做 per-horizon 拆分（YAGNI）。「任一通過」的語意能涵蓋
     //    短線強勢 + 長線弱勢 或反之的候選。
-    final wasRecent = recentSet.contains(symbol);
 
     // H-1 fix：mutex 過濾用 horizon-aware calibrated lookup（caller 顯式
     // 控制 — calculateScore 是 pure arithmetic contract，不做 mutex）。
@@ -548,13 +539,11 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       mutedShort,
       horizon: Horizon.short,
       calibratedScores: input.calibratedScores,
-      wasRecentlyRecommended: wasRecent,
     );
     final scoreLong = ruleEngine.calculateScore(
       mutedLong,
       horizon: Horizon.long,
       calibratedScores: input.calibratedScores,
-      wasRecentlyRecommended: wasRecent,
     );
 
     if (scoreShort < RuleParams.minScoreThreshold &&

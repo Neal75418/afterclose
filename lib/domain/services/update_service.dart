@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:afterclose/core/constants/api_config.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/default_stocks.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -29,9 +28,8 @@ import 'package:afterclose/domain/services/update_service_deps.dart';
 /// 5. 取得 RSS 新聞
 /// 6. 篩選候選股票（候選優先策略）
 /// 7. 執行分析
-/// 8. 套用規則引擎
-/// 9. 產生前 10 名
-/// 10. 標記完成
+/// 8. 套用規則引擎（寫 daily_reason）
+/// 9-10. 標記完成（daily_recommendation 已退役、3-mode 從 daily_reason 即時聚合）
 class UpdateService {
   UpdateService({
     required AppDatabase database,
@@ -273,15 +271,13 @@ class UpdateService {
       );
       result.stocksAnalyzed = scoredStocks.length;
 
-      // 步驟 9-10：推薦 + 完成
-      ctx.onProgress?.call(9, 10, '產生推薦');
-      final counts = await _generateRecommendations(
-        scoredStocks,
-        ctx.normalizedDate,
-      );
-      // Dual-horizon: 統計回報 short + long 寫入總筆數
-      // （每日最多 2 * dailyTopN 列，兩個 horizon 各自適用 turnover 門檻）。
-      result.recommendationsGenerated = counts.shortCount + counts.longCount;
+      // 步驟 9-10：完成
+      //
+      // **2026-06-21 退役舊推薦系統 Step 4**：daily_recommendation 已停寫。
+      // 3-mode tab（起漲/強勢/回檔）從 daily_reason 即時聚合（scoring 已寫入
+      // daily_reason）、不再產生 / 儲存 Top-20 推薦清單。result.recommendationsGenerated
+      // 保留為欄位但不再設值（預設 0；通知 / log 的「推薦數」隨之為 0）。
+      ctx.onProgress?.call(9, 10, '完成分析');
       ctx.onProgress?.call(10, 10, '完成');
       await _finishUpdate(ctx, result);
 
@@ -764,9 +760,6 @@ class UpdateService {
       candidates,
     );
 
-    final recentlyRecommended = await _analysisRepo
-        .getRecentlyRecommendedSymbols();
-
     await _analysisRepo.clearReasonsForDate(ctx.normalizedDate);
     await _analysisRepo.clearAnalysisForDate(ctx.normalizedDate);
 
@@ -775,47 +768,10 @@ class UpdateService {
       candidates: candidates,
       date: ctx.normalizedDate,
       batchData: batchData,
-      recentlyRecommended: recentlyRecommended,
     );
 
     AppLogger.info('UpdateService', '步驟 7-8: 評分 ${scoredStocks.length} 檔');
     return scoredStocks;
-  }
-
-  /// 產生雙 horizon 推薦列，並回傳各自實際寫入的筆數
-  ///
-  /// Dual-horizon：`update_service` 的 `recommendationsGenerated`
-  /// 計數改用這裡回傳的值，避免用 `scoredStocks.take(dailyTopN).length`
-  /// 這種 pre-Commit-3 的近似值（既沒套 turnover 門檻、也只反映單 horizon）。
-  Future<({int shortCount, int longCount})> _generateRecommendations(
-    List<ScoredStock> scoredStocks,
-    DateTime date,
-  ) async {
-    // 純函式負責 turnover 過濾 + 雙 sort + Top N cut
-    final (:shortRecs, :longRecs) = splitScoredStocksIntoHorizons(
-      scoredStocks,
-      dailyTopN: RuleParams.dailyTopN,
-      minTurnover: RuleParams.topNMinTurnover,
-    );
-
-    // 寫入兩份獨立的 Top N — 各自原子性取代同 horizon 的舊列
-    await _analysisRepo.saveRecommendations(
-      date,
-      shortRecs,
-      horizon: Horizon.short,
-    );
-    await _analysisRepo.saveRecommendations(
-      date,
-      longRecs,
-      horizon: Horizon.long,
-    );
-
-    AppLogger.info(
-      'UpdateService',
-      '步驟 9: 推薦 short=${shortRecs.length}, long=${longRecs.length}',
-    );
-
-    return (shortCount: shortRecs.length, longCount: longRecs.length);
   }
 
   Future<void> _finishUpdate(_UpdateContext ctx, UpdateResult result) async {

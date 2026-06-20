@@ -54,7 +54,6 @@ void main() {
         newsMap: {'2330': []},
         institutionalMap: {},
         date: date,
-        recentlyRecommended: {'1234'},
       );
 
       final map = input.toMap();
@@ -62,7 +61,6 @@ void main() {
 
       expect(restored.candidates, ['2330', '2317']);
       expect(restored.date, isNotNull);
-      expect(restored.recentlyRecommended, {'1234'});
     });
   });
 }

@@ -151,35 +151,6 @@ void main() {
       expect(score, 52);
     });
 
-    test('cooldown penalty applies after horizon-aware sum', () {
-      const reasons = [
-        TriggeredReason(
-          type: ReasonType.techBreakout,
-          score: 25,
-          description: 'breakout',
-        ),
-        TriggeredReason(
-          type: ReasonType.volumeSpike,
-          score: 22,
-          description: 'volume',
-        ),
-      ];
-
-      final normal = engine.calculateScore(
-        reasons,
-        horizon: Horizon.short,
-        calibratedScores: CalibratedScoreContext.empty,
-      );
-      final withCooldown = engine.calculateScore(
-        reasons,
-        horizon: Horizon.short,
-        calibratedScores: CalibratedScoreContext.empty,
-        wasRecentlyRecommended: true,
-      );
-
-      expect(normal - withCooldown, RuleParams.cooldownPenalty);
-    });
-
     test('clamps at RuleScores.maxScore across horizons', () {
       final reasons = List.generate(
         5,
@@ -206,31 +177,6 @@ void main() {
 
       expect(shortScore, RuleScores.maxScore);
       expect(longScore, RuleScores.maxScore);
-    });
-
-    test('clamps at 0 when calibrated sum + cooldown goes negative', () {
-      const reasons = [
-        TriggeredReason(
-          type: ReasonType.techBreakout,
-          score: 25,
-          description: 'breakout',
-        ),
-      ];
-
-      const ctx = CalibratedScoreContext(
-        shortScores: {'TECH_BREAKOUT': 5}, // 很低的 calibrated
-        longScores: {},
-      );
-
-      // calibrated 5 - cooldownPenalty (15) = -10 → clamp 0
-      final score = engine.calculateScore(
-        reasons,
-        horizon: Horizon.short,
-        calibratedScores: ctx,
-        wasRecentlyRecommended: true,
-      );
-
-      expect(score, 0);
     });
 
     test('calibrated value of 0 falls back to reason.score (2026-06-19)', () {

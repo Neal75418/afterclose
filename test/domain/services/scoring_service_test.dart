@@ -240,7 +240,6 @@ void main() {
       when(
         () => mockRuleEngine.calculateScore(
           any(),
-          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
         ),
@@ -330,7 +329,6 @@ void main() {
       when(
         () => mockRuleEngine.calculateScore(
           any(),
-          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
         ),
@@ -394,107 +392,6 @@ void main() {
       expect(result.length, 2);
       expect(result.first.symbol, 'HIGH_SCORE');
       expect(result.last.symbol, 'LOW_SCORE');
-    });
-
-    test('apply cooldown penalty for recently recommended stocks', () async {
-      // Arrange
-      final pricesMap = {
-        'COOLDOWN': [
-          ...generatePricesWithVolumeSpike(
-            days: 30,
-            normalVolume: 2000000,
-            spikeVolume: 5000000,
-          ),
-        ],
-      };
-
-      // Mock DB to return true for wasRecommended
-      when(
-        () => mockAnalysisRepository.wasRecentlyRecommended(
-          'COOLDOWN',
-          days: any(
-            named: 'days',
-          ), // Argument is named 'days', not startDate/endDate
-        ),
-      ).thenAnswer((_) async => true);
-
-      // Mock Analysis Service
-      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
-        const AnalysisResult(
-          trendState: TrendState.up,
-          reversalState: ReversalState.none,
-          supportLevel: 100,
-          resistanceLevel: 120,
-        ),
-      );
-      when(
-        () => mockAnalysisService.buildContext(
-          any(),
-          priceHistory: any(named: 'priceHistory'),
-          marketData: any(named: 'marketData'),
-          evaluationTime: any(named: 'evaluationTime'),
-        ),
-      ).thenReturn(
-        AnalysisContext(
-          evaluationTime: DateTime(2025, 6, 1),
-          trendState: TrendState.up,
-        ),
-      );
-
-      // Mock Rule Engine
-      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
-        const TriggeredReason(
-          type: ReasonType.volumeSpike,
-          score: 10,
-          description: 'Dummy',
-        ),
-      ]);
-
-      when(
-        () => mockRuleEngine.calculateScore(
-          any(),
-          wasRecentlyRecommended: true,
-          horizon: any(named: 'horizon'),
-          calibratedScores: any(named: 'calibratedScores'),
-        ),
-      ).thenReturn(80);
-
-      when(
-        () => mockAnalysisRepository.saveAnalysis(
-          symbol: any(named: 'symbol'),
-          date: any(named: 'date'),
-          trendState: any(named: 'trendState'),
-          scoreShort: any(named: 'scoreShort'),
-          scoreLong: any(named: 'scoreLong'),
-          reversalState: any(named: 'reversalState'),
-          supportLevel: any(named: 'supportLevel'),
-          resistanceLevel: any(named: 'resistanceLevel'),
-        ),
-      ).thenAnswer((_) async {});
-
-      when(
-        () => mockAnalysisRepository.saveReasons(any(), any(), any()),
-      ).thenAnswer((_) async {});
-
-      // Act
-      await scoringService.scoreStocks(
-        candidates: ['COOLDOWN'],
-        date: DateTime(2025, 6, 15),
-        batchData: ScoringBatchData(pricesMap: pricesMap, newsMap: {}),
-        recentlyRecommended: {'COOLDOWN'},
-      );
-
-      // Assert
-      // Stage 5b dual-horizon：calculateScore 每支股票呼叫兩次
-      // （Horizon.short 一次、Horizon.long 一次），兩次都應帶 cooldown 旗標。
-      verify(
-        () => mockRuleEngine.calculateScore(
-          any(),
-          wasRecentlyRecommended: true,
-          horizon: any(named: 'horizon'),
-          calibratedScores: any(named: 'calibratedScores'),
-        ),
-      ).called(2);
     });
   });
 
@@ -617,7 +514,6 @@ void main() {
       verifyNever(
         () => mockRuleEngine.calculateScore(
           any(),
-          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
         ),
@@ -668,7 +564,6 @@ void main() {
       when(
         () => mockRuleEngine.calculateScore(
           any(),
-          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
         ),
@@ -810,7 +705,6 @@ void main() {
       when(
         () => mockRuleEngine.calculateScore(
           any(),
-          wasRecentlyRecommended: any(named: 'wasRecentlyRecommended'),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
         ),

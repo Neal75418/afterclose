@@ -262,33 +262,4 @@ mixin AnalysisDaoMixin on $AppDatabase {
       }
     });
   }
-
-  /// 檢查股票是否在日期範圍內曾被推薦（單次查詢）
-  Future<bool> wasSymbolRecommendedInRange(
-    String symbol, {
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
-    final result =
-        await (select(dailyRecommendation)
-              ..where((t) => t.symbol.equals(symbol))
-              ..where((t) => t.date.isBiggerOrEqualValue(startDate))
-              ..where((t) => t.date.isSmallerOrEqualValue(endDate))
-              ..limit(1))
-            .getSingleOrNull();
-    return result != null;
-  }
-
-  /// 取得日期範圍內所有曾被推薦的股票代碼（批次檢查）
-  Future<Set<String>> getRecommendedSymbolsInRange({
-    required DateTime startDate,
-    required DateTime endDate,
-  }) async {
-    final results =
-        await (select(dailyRecommendation)
-              ..where((t) => t.date.isBiggerOrEqualValue(startDate))
-              ..where((t) => t.date.isSmallerOrEqualValue(endDate)))
-            .get();
-    return results.map((r) => r.symbol).toSet();
-  }
 }

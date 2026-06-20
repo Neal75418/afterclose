@@ -208,7 +208,6 @@ class RuleEngine {
     List<TriggeredReason> reasons, {
     required Horizon horizon,
     CalibratedScoreContext calibratedScores = CalibratedScoreContext.empty,
-    bool wasRecentlyRecommended = false,
   }) {
     if (reasons.isEmpty) return 0;
 
@@ -217,7 +216,7 @@ class RuleEngine {
     // 1. 累計各規則的分數 — 優先用 calibrated 值，查無則 fallback 到
     //    hardcoded `reason.score`。多空訊號透過正負分數自然抵消。
     //
-    // 注意：本 method 是純算術契約（sum + cooldown + clamp），不做 mutex
+    // 注意：本 method 是純算術契約（sum + clamp），不做 mutex
     // 過濾。Mutex 過濾應由呼叫端（scoring_isolate / scoring_service）
     // 用 horizon-aware scoreOf 呼叫 [applyMutexGroups] 後再傳進來 —
     // 這樣 calibration 才能影響哪條 rule 贏 mutex group。
@@ -226,12 +225,7 @@ class RuleEngine {
       score += calibrated ?? reason.score;
     }
 
-    // 2. 冷卻期懲罰：固定扣分而非乘數，避免高分股被不公平腰斬
-    if (wasRecentlyRecommended) {
-      score -= RuleParams.cooldownPenalty;
-    }
-
-    // 3. 分數範圍限制（下限 0：僅推薦做多；上限 maxScore 避免多訊號膨脹）
+    // 2. 分數範圍限制（下限 0：僅推薦做多；上限 maxScore 避免多訊號膨脹）
     if (score < 0) score = 0;
     if (score > RuleScores.maxScore) score = RuleScores.maxScore.toDouble();
 
