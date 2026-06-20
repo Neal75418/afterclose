@@ -23,13 +23,13 @@ flowchart LR
     end
 
     subgraph Output["產出"]
-        Top20["Top 20 推薦"]
+        Modes["三模式選股<br/>起漲 / 強勢 / 回檔"]
         Alert["異常警示"]
     end
 
     API --> Sync
     RSS --> Sync
-    Sync --> Rules --> Score --> Top20
+    Sync --> Rules --> Score --> Modes
     Score --> Alert
 ```
 

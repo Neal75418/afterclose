@@ -4,6 +4,50 @@ All notable changes to AfterClose will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased] — Today 三模式選股 analyst-grounded 重設計
+
+> 取代舊「短/長線」雙 horizon tab，改為對應「股票在趨勢中的階段」（Weinstein /
+> Minervini / CAN SLIM 框架）的三個觀察模式。
+
+### ✨ Added
+
+- **3-Mode Today UI**：三個觀察模式取代雙 horizon tab：
+  - **起漲候選**（momentumEntry）— 還沒漲、即將起漲（Stage 1→2）
+  - **強勢觀察**（strengthObserve）— 已漲、強勢領導（Stage 2）
+  - **回檔觀察**（weaknessObserve v2）— 強股回檔進場時機（buy-the-dip）
+- **風險警示徽章**：neutral 分類的警訊（處置股 / 高質押 / 空頭排列 / 死叉 / 高當沖…）
+  以卡片右上角聚合 `⚠ N` 徽章浮回主畫面，依嚴重度分 🔴 紅 / 🟡 橘、tap 展開明細。
+  補回階段重設計後主畫面失去的風險可見性（純顯示層、不影響 routing / score）。
+- **Mode C 回檔觀察 v2**：3 條新回檔進場主訊號（回檔到 MA20 / MA10、支撐錘子、
+  KD 高檔回落）+ MA10 淺回檔提高日常可用頻率。
+- **動態 header**：顯示實際推薦清單長度（取代固定「Top 20」）。
+
+### 🔧 Changed — analyst-grounded
+
+- **階段分類歸位**：依分析師框架重分類 rule — 多頭排列 A→B（趨勢已確立 Stage 2）、
+  KD 低檔金叉 B→A（反轉啟動）、高當沖 → neutral（投機過熱、非趨勢強度）。
+- **Mode A 乖離率 gate**：用 MA20 正乖離 ≤ +15%（analyst「not extended」原則）取代
+  舊「5D 漲幅 + 強訊號豁免 + 20D 副條件」整套補丁 — 已延伸股自動導去 Mode B。
+- **Mode B 60D 報酬排序**：用 60D 報酬（相對強度 RS proxy）取代 score 排序
+  （實測 corr+0.17 無鑑別力）— top N 真的是最強 N 檔、cap（30）才有意義。
+- **三 tab 全濾 ETF**：個股掃描純化（ETF 走勢平滑、淺回檔幾乎天天成立 = 雜訊）。
+
+### 🔧 Fixed
+
+- **ROE 死碼**：3 條 ROE rule 用幻影欄位 `NetIncome`（DB 0 筆）→ 改 `IncomeAfterTaxes`
+  （稅後淨利、單季 ×4 年化），同步修個股詳情頁稅後淨利率 / ROE。
+- **priceHistory 窗口太短**：載入窗口僅 ~4 筆 → Mode A 漲幅 filter 從 commit 253f732
+  起一直是死的（只有 today filter 活著）→ 修為足夠窗口（後續 Wave 2 改乖離 gate）。
+- **Mode C score 壓分 bug**：負分 warning rule 污染 Mode C 正分加總、冤枉隱藏合格的
+  強股回檔 → 7 條 warning 移出 neutral，Mode C 變純正分「進場機會」tab。
+- **calibrated 0 fallback**：scoring isolate 的 `CalibratedScoreContext.lookup` 也把
+  0 視為 null fallback（與 table lookup 雙 class 對齊）。
+
+### 🧪 Tests
+
+- **2618 tests passing**（新增 risk_warnings taxonomy / RiskBadgeCluster widget /
+  乖離 + 60D helper / Mode C pullback rule 等測試）。
+
 ## [0.4.0] — 2026-03-25
 
 ### ✨ Added
