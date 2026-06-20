@@ -205,10 +205,15 @@ extension ReasonTypeScoringMode on ReasonType {
       ScoringMode.momentumEntry, // 低檔錘子反轉（trendState != up 才 fire）
     ReasonType.patternMorningStar => ScoringMode.momentumEntry,
     ReasonType.patternThreeWhiteSoldiers => ScoringMode.momentumEntry,
-    ReasonType.lowVolumeAccumulation => ScoringMode.momentumEntry,
-    ReasonType.maAlignmentBullish => ScoringMode.momentumEntry,
-    // **2026-06-20 A/B 體檢移出**：highVolumeBreakout（高檔爆量突破）= 已突破已漲
-    // （fire 24 檔實測 5D+22.8%/20D+60.5%），語意是「已突破」非「即將起漲」、搬 Mode B
+    ReasonType.lowVolumeAccumulation =>
+      ScoringMode.momentumEntry, // 唯一真 Stage 1 蓄勢（20D -14.6% 真沒漲）
+    // **2026-06-20 階段重設計移出**：maAlignmentBullish（多頭排列）= 趨勢已確立
+    // = Weinstein Stage 2「已在漲」（20D +36.9%、76% 已漲>15%），不是「即將起漲」
+    // → 搬 Mode B。這是「已漲卡 A」的最大單一來源。
+    // **同移出**：highVolumeBreakout（高檔爆量突破、已突破）→ Mode B
+    // **2026-06-20 階段重設計移入**：kdGoldenCross = 低檔金叉 = Stage 1→2 反轉啟動、
+    // 屬「準備起漲」（rule 自身要求低檔、放「已漲強勢」tab 自相矛盾）。
+    ReasonType.kdGoldenCross => ScoringMode.momentumEntry,
     ReasonType.epsTurnaround => ScoringMode.momentumEntry,
     ReasonType.revenueMomGrowth => ScoringMode.momentumEntry,
     ReasonType.roeImproving => ScoringMode.momentumEntry,
@@ -220,24 +225,24 @@ extension ReasonTypeScoringMode on ReasonType {
     // **2026-06-20 A/B 體檢移出 week52Low**：0 fire ever（前提空頭 close<MA20<MA60
     // 與 momentum 母體 75% UP 互斥）+ backtest hit 0.27 強反指標 → 搬 neutral
     ReasonType.rsiExtremeOversold => ScoringMode.momentumEntry, // +10 RSI 超賣反彈
-    // ============ Mode B: 強勢觀察（11 條 — 2026-06-19 audit 後）============
-    // 已漲 / 籌碼面強 — user mental model「追蹤強勢、等回檔」。
-    // **2026-06-19 audit 移出**：rsiExtremeOverbought (-8) + dayTradingExtreme (-5)
-    // 兩條 hardcoded 負分警示放強勢 tab 是自打嘴巴，改入 Mode C。
+    // ============ Mode B: 強勢觀察（= Weinstein Stage 2 上漲中、強勢領導）============
+    // 已漲 / 趨勢確立 / 籌碼面強 — user mental model「追蹤強勢、等回檔」。
+    // **2026-06-20 階段重設計移入**：maAlignmentBullish（多頭排列 = 趨勢確立的定義）
+    // + highVolumeBreakout（已突破）— 兩條都是 Stage 2「已在漲」訊號。
+    // **移出**：kdGoldenCross（低檔金叉 = Stage 1→2 反轉 → 搬 Mode A）；
+    //          dayTradingHigh（高當沖 = 投機過熱/散戶接刀警訊、非趨勢強度 → 搬 neutral）。
     ReasonType.priceSpike => ScoringMode.strengthObserve,
     ReasonType.patternGapUp => ScoringMode.strengthObserve,
-    ReasonType.week52High => ScoringMode.strengthObserve,
+    ReasonType.week52High => ScoringMode.strengthObserve, // 最乾淨 Stage 2 marker
     ReasonType.institutionalBuyStreak => ScoringMode.strengthObserve,
     ReasonType.foreignShareholdingIncreasing => ScoringMode.strengthObserve,
-    ReasonType.dayTradingHigh => ScoringMode.strengthObserve,
     ReasonType.institutionalBuy => ScoringMode.strengthObserve,
-    ReasonType.kdGoldenCross => ScoringMode.strengthObserve,
     ReasonType.volumeSpike => ScoringMode.strengthObserve,
     ReasonType.newsRelated => ScoringMode.strengthObserve,
     ReasonType.roeExcellent => ScoringMode.strengthObserve,
-    // **2026-06-20 A/B 體檢移入**：高檔爆量突破 = 已突破已漲、屬「強勢」非「起漲」
-    ReasonType.highVolumeBreakout => ScoringMode.strengthObserve,
-
+    ReasonType.highVolumeBreakout => ScoringMode.strengthObserve, // 已突破
+    ReasonType.maAlignmentBullish =>
+      ScoringMode.strengthObserve, // 多頭排列 = 趨勢確立 Stage 2
     // ============ Mode C: 回檔觀察（v2.1 — 強股回檔進場、純 3 條正分主訊號）============
     // **2026-06-19 v2 audit 重定義**：user 真實意圖是「**強股剛開始回檔、找進場時機**」。
     // identifier `weaknessObserve` 保留避免 DB migration、tab name i18n 改「回檔觀察」。
@@ -285,6 +290,9 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.insiderSellingStreak => ScoringMode.neutral, // 公司面警訊
     ReasonType.highPledgeRatio => ScoringMode.neutral, // 質押風險無關回檔
     ReasonType.dayTradingExtreme => ScoringMode.neutral, // 投機、非健康回檔
+    // **2026-06-20 階段重設計移入**：dayTradingHigh（高當沖比例）= 投機過熱 /
+    // 散戶接刀換手率、非趨勢強度；跟 dayTradingExtreme 同 namespace 對齊入 neutral。
+    ReasonType.dayTradingHigh => ScoringMode.neutral,
     ReasonType.peOvervalued => ScoringMode.neutral, // 強股 feature、誤殺
     ReasonType.revenueYoyDecline => ScoringMode.neutral, // 基本面 lagging
     ReasonType.epsDeclineWarning => ScoringMode.neutral, // 基本面 lagging
