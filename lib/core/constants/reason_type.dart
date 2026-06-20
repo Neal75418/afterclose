@@ -232,36 +232,34 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.newsRelated => ScoringMode.strengthObserve,
     ReasonType.roeExcellent => ScoringMode.strengthObserve,
 
-    // ============ Mode C: 回檔觀察（v2 — 強股回檔進場、10 條）============
+    // ============ Mode C: 回檔觀察（v2.1 — 強股回檔進場、純 3 條正分主訊號）============
     // **2026-06-19 v2 audit 重定義**：user 真實意圖是「**強股剛開始回檔、找進場時機**」。
     // identifier `weaknessObserve` 保留避免 DB migration、tab name i18n 改「回檔觀察」。
     //
-    // 組成：3 條正分主訊號 + 7 條負分 warning context（混合 tab、打破舊「全負分」invariant）
-    // - 主訊號（gate 必過、from pullback_rules.dart）：
+    // 組成：**只有 3 條正分主訊號**（gate 必過、from pullback_rules.dart）：
     //     pullbackToMa20 (+15) / hammerAtSupport (+18) / kdHighPullback (+12)
-    // - Warning context（高檔反轉 / 過熱訊號、輔助 evidence chip）：
     //
-    // **2026-06-20 早期體檢修正**：patternHammer 移回 Mode A。HammerRule 要
-    // trendState != up 才 fire（candlestick_rules.dart），跟 Mode C「強股回檔」
-    // (trendState == up) 天生互斥 → 全 DB history 0 fire 是死碼。Mode C 的「強股
-    // 錘子」角色由 HammerAtSupportRule（自帶 bull stack 自驗、不依賴 trendState）擔。
-    //     吊人線 / 高檔十字 / 暮星 / 空頭吞噬 / 跳空下跌 / RSI 超買 / 外資集中警示
+    // **2026-06-20 早期體檢修正 A（warning 壓分 bug）**：原本還掛 7 條負分 warning
+    // (吊人線 -12 等) 當 context chip，但它們污染 Mode C score 加總 — 例 2637 fire
+    // HAMMER_AT_SUPPORT +18 + PATTERN_HANGING_MAN -12 → Mode C SUM=6 < gate 12 →
+    // 合格的強股回檔被冤枉隱藏。7 條 warning 全移到 neutral（仍 fire 寫 daily_reason、
+    // 只是不污染 Mode C 排名）。Mode C 變純正分「進場機會」tab、不再有負分扣分。
     //
-    // **舊 Mode C 移出 20 條到 neutral**（已弱化趨勢類、不符「剛開始回檔」mental model）
+    // **2026-06-20 早期體檢修正 P0**：patternHammer 移回 Mode A（HammerRule 要
+    // trendState != up、跟強股互斥 → 死碼）。強股錘子角色由 HammerAtSupportRule 擔。
     ReasonType.pullbackToMa20 => ScoringMode.weaknessObserve, // 主 +15
     ReasonType.hammerAtSupport => ScoringMode.weaknessObserve, // 主 +18
     ReasonType.kdHighPullback => ScoringMode.weaknessObserve, // 主 +12
-    // Warning context（強勢股潛在反轉 / 過熱訊號）
-    ReasonType.patternHangingMan => ScoringMode.weaknessObserve, // -12 高檔吊人線
-    ReasonType.patternDojiBearish => ScoringMode.weaknessObserve, // -5 高檔十字
-    ReasonType.patternEveningStar => ScoringMode.weaknessObserve, // -10 (降級) 暮星
-    ReasonType.patternBearishEngulfing =>
-      ScoringMode.weaknessObserve, // -10 (降級) 空頭吞噬
-    ReasonType.patternGapDown => ScoringMode.weaknessObserve, // -8 (降級) 跳空下跌
-    ReasonType.rsiExtremeOverbought => ScoringMode.weaknessObserve, // -8 RSI 超買
-    ReasonType.foreignConcentrationWarning =>
-      ScoringMode.weaknessObserve, // -8 外資集中警示
-    // ============ Neutral（28 條 — v2 大幅擴充）============
+    // ============ Neutral（35 條 — v2.1 再 +7 warning）============
+    // **2026-06-20 修正 A 移入 7 條**（原 Mode C warning context、會壓分 bug）：
+    ReasonType.patternHangingMan => ScoringMode.neutral, // 高檔吊人線
+    ReasonType.patternDojiBearish => ScoringMode.neutral, // 高檔十字
+    ReasonType.patternEveningStar => ScoringMode.neutral, // 暮星
+    ReasonType.patternBearishEngulfing => ScoringMode.neutral, // 空頭吞噬
+    ReasonType.patternGapDown => ScoringMode.neutral, // 跳空下跌
+    ReasonType.rsiExtremeOverbought => ScoringMode.neutral, // RSI 超買
+    ReasonType.foreignConcentrationWarning => ScoringMode.neutral, // 外資集中警示
+    // ============ Neutral（v2 大幅擴充）============
     // **2026-06-19 v2 移入 20 條從舊 Mode C**：「已弱化趨勢」類訊號 — 不符「**剛開始**
     // 回檔」mental model：
     ReasonType.reversalS2W => ScoringMode.neutral, // 趨勢翻轉、已弱化
