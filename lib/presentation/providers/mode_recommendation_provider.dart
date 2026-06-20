@@ -134,7 +134,7 @@ double? computeRet60dForHistory(List<DailyPriceEntry>? history) {
 /// - 舊：max |score| 選中 A → anti-filter drop（today > 8%）→ 三 tab 都消失
 /// - 新：A 不合格、B 合格、C 不合格 → 落到 B ✅
 ///
-/// `todayPct` / `ret5d` 為 null 代表 price data 缺失（新 IPO / sparse history /
+/// `todayPct` / `biasMa20` 為 null 代表 price data 缺失（新 IPO / sparse history /
 /// data race）：採「不知道就不擋」semantics、避免靜默 drop。
 @visibleForTesting
 bool isEligibleForMode({
