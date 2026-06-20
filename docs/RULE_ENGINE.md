@@ -13,7 +13,7 @@ AfterClose 推薦規則引擎 — **62 條異常偵測規則**
 flowchart LR
     Data["市場資料"] --> Engine["Rule Engine\n62 Rules"]
     Engine --> Score["分數合成"]
-    Score --> Top["Top 20"]
+    Score --> Modes["三模式選股<br/>起漲 / 強勢 / 回檔"]
 
     style Data fill:#2563EB,color:#fff,stroke:#1D4ED8
     style Engine fill:#4F46E5,stroke:#3730A3,color:#fff
@@ -26,7 +26,7 @@ flowchart LR
 | 目的 | 異常提示（Attention Alert） |
 | 產出 | 每檔最多 2 個理由            |
 | 分數 | 0 ~ 80（負分歸零，上限 80）    |
-| 輸出 | 每日 Top 20             |
+| 輸出 | 三模式選股（起漲 / 強勢 / 回檔）|
 
 ---
 
