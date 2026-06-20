@@ -197,6 +197,127 @@ void main() {
   });
 
   // ============================================================
+  // HealthyPullbackToMa10Rule — 2026-06-20 B2 淺回檔（close > ma20 與 MA20 互斥）
+  // ============================================================
+  group('HealthyPullbackToMa10Rule', () {
+    const rule = HealthyPullbackToMa10Rule();
+    // 黃金路徑：ma10 100 > ma20 95 > ma60 90、close 100 距 ma10 0%、close > ma20、
+    // past20=90 (ma10 100>94.5)、今日收黑、量縮、過去 5 日有紅 K
+    final goldenInd = const TechnicalIndicators(
+      ma10: 100,
+      ma20: 95,
+      ma60: 90,
+      volumeMA20: 1000,
+    );
+    List<DailyPriceEntry> goldenPrices() => buildPrices(
+      count: 21,
+      overrides: {
+        0: candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90), // past20
+        15: candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99), // 紅 K
+        19: candle(dayIdx: 19, open: 102, high: 103, low: 101, close: 102), // 昨
+        20: candle(
+          dayIdx: 20,
+          open: 101,
+          high: 101,
+          low: 99,
+          close: 100,
+          volume: 800,
+        ), // 今日收黑 + 量縮
+      },
+    );
+
+    test('fires on ideal shallow pullback to MA10', () {
+      final r = rule.evaluate(ctx(goldenInd), stock(goldenPrices()));
+      expect(r, isNotNull);
+      expect(r!.type, ReasonType.pullbackToMa10);
+      expect(r.score, 12);
+    });
+
+    test('null when close <= ma20 (deep — let MA20 rule handle)', () {
+      // close=94 <= ma20=95 → 不算淺回檔
+      final prices = goldenPrices();
+      prices[20] = candle(
+        dayIdx: 20,
+        open: 95,
+        high: 95,
+        low: 93,
+        close: 94,
+        volume: 800,
+      );
+      expect(rule.evaluate(ctx(goldenInd), stock(prices)), isNull);
+    });
+
+    test('null when not mid-term bull stack (ma10 <= ma20)', () {
+      final ind = const TechnicalIndicators(
+        ma10: 95,
+        ma20: 100,
+        ma60: 90,
+        volumeMA20: 1000,
+      );
+      expect(rule.evaluate(ctx(ind), stock(goldenPrices())), isNull);
+    });
+
+    test('null when too far above MA10 (> +2.5%)', () {
+      // close=103 距 ma10 100 = +3% > 2.5%
+      final prices = goldenPrices();
+      prices[20] = candle(
+        dayIdx: 20,
+        open: 104,
+        high: 104,
+        low: 102,
+        close: 103,
+        volume: 800,
+      );
+      // close 103 > ma20 95、今日 103 < 昨 102? no → 也擋。改昨日更高確保只測距離
+      prices[19] = candle(
+        dayIdx: 19,
+        open: 105,
+        high: 106,
+        low: 104,
+        close: 105,
+      );
+      expect(rule.evaluate(ctx(goldenInd), stock(prices)), isNull);
+    });
+
+    test('null when today up', () {
+      final prices = goldenPrices();
+      prices[20] = candle(
+        dayIdx: 20,
+        open: 100,
+        high: 101,
+        low: 99,
+        close: 100.5,
+        volume: 800,
+      );
+      // 昨日 102 → 今 100.5 收黑... 改昨日 100 讓今日漲
+      prices[19] = candle(dayIdx: 19, open: 99, high: 100, low: 98, close: 99);
+      expect(rule.evaluate(ctx(goldenInd), stock(prices)), isNull);
+    });
+
+    test('null when volume not shrunk', () {
+      final prices = goldenPrices();
+      prices[20] = candle(
+        dayIdx: 20,
+        open: 101,
+        high: 101,
+        low: 99,
+        close: 100,
+        volume: 1000,
+      );
+      expect(rule.evaluate(ctx(goldenInd), stock(prices)), isNull);
+    });
+
+    test('null when ma10 unavailable', () {
+      final ind = const TechnicalIndicators(
+        ma20: 95,
+        ma60: 90,
+        volumeMA20: 1000,
+      );
+      expect(rule.evaluate(ctx(ind), stock(goldenPrices())), isNull);
+    });
+  });
+
+  // ============================================================
   // KdHighLevelPullbackRule — 修正後窗口 [60,80) + prevKdK>=78 + drop<=30
   // ============================================================
   group('KdHighLevelPullbackRule (fixed window)', () {

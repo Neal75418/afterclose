@@ -90,6 +90,7 @@ enum ReasonType {
   // 現在剛開始拉回**」的進場時機。score 正分（跟 Mode A/B 一致）— 打破舊「Mode C 全
   // 負分」invariant，因為新 Mode C 是「觀察機會 tab」而非「警示 tab」。
   pullbackToMa20('PULLBACK_TO_MA20'),
+  pullbackToMa10('PULLBACK_TO_MA10'),
   hammerAtSupport('HAMMER_AT_SUPPORT'),
   kdHighPullback('KD_HIGH_PULLBACK');
 
@@ -175,6 +176,7 @@ enum ReasonType {
     ReasonType.roeDeclining => RuleScores.roeDeclining,
     // 第 9 階段：強股回檔進場
     ReasonType.pullbackToMa20 => RuleScores.pullbackToMa20,
+    ReasonType.pullbackToMa10 => RuleScores.pullbackToMa10,
     ReasonType.hammerAtSupport => RuleScores.hammerAtSupport,
     ReasonType.kdHighPullback => RuleScores.kdHighPullback,
   };
@@ -247,7 +249,9 @@ extension ReasonTypeScoringMode on ReasonType {
     //
     // **2026-06-20 早期體檢修正 P0**：patternHammer 移回 Mode A（HammerRule 要
     // trendState != up、跟強股互斥 → 死碼）。強股錘子角色由 HammerAtSupportRule 擔。
-    ReasonType.pullbackToMa20 => ScoringMode.weaknessObserve, // 主 +15
+    ReasonType.pullbackToMa20 => ScoringMode.weaknessObserve, // 主 +15 深回檔
+    ReasonType.pullbackToMa10 =>
+      ScoringMode.weaknessObserve, // 主 +12 淺回檔（2026-06-20 B2 加）
     ReasonType.hammerAtSupport => ScoringMode.weaknessObserve, // 主 +18
     ReasonType.kdHighPullback => ScoringMode.weaknessObserve, // 主 +12
     // ============ Neutral（35 條 — v2.1 再 +7 warning）============
@@ -373,6 +377,7 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.foreignExodus => 'reasons.foreignExodus',
     // 第 9 階段：強股回檔進場
     ReasonType.pullbackToMa20 => 'reasons.pullbackToMa20',
+    ReasonType.pullbackToMa10 => 'reasons.pullbackToMa10',
     ReasonType.hammerAtSupport => 'reasons.hammerAtSupport',
     ReasonType.kdHighPullback => 'reasons.kdHighPullback',
   };
@@ -451,6 +456,7 @@ extension ReasonTypeI18n on ReasonType {
     ReasonType.foreignExodus => 'reasonTip.foreignExodus',
     // 第 9 階段：強股回檔進場
     ReasonType.pullbackToMa20 => 'reasonTip.pullbackToMa20',
+    ReasonType.pullbackToMa10 => 'reasonTip.pullbackToMa10',
     ReasonType.hammerAtSupport => 'reasonTip.hammerAtSupport',
     ReasonType.kdHighPullback => 'reasonTip.kdHighPullback',
   };

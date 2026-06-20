@@ -570,7 +570,8 @@
     "priceVolumeWeakRally": "價漲量縮警示",
     "pullbackToMa20": "強勢回檔 MA20",
     "hammerAtSupport": "支撐錘子",
-    "kdHighPullback": "KD 高檔回落"
+    "kdHighPullback": "KD 高檔回落",
+    "pullbackToMa10": "強勢回檔 MA10"
   },
   "reasonTip": {
     "volumeSpike": "成交量顯著放大，可能有重要資金進出。",
@@ -607,7 +608,8 @@
     "priceVolumeWeakRally": "價格上漲但成交量萎縮，漲勢無力警示，後續可能反轉。",
     "pullbackToMa20": "強勢趨勢中拉回到 MA20、量縮、趨勢未破壞 — 健康回檔進場時機。",
     "hammerAtSupport": "強股拉回 MA20/MA60 支撐位、出現錘子線止跌 — 反轉確認進場點。",
-    "kdHighPullback": "KD 從高檔回落但未死叉、多頭排列維持 — 動能稍歇可考慮分批進場。"
+    "kdHighPullback": "KD 從高檔回落但未死叉、多頭排列維持 — 動能稍歇可考慮分批進場。",
+    "pullbackToMa10": "強勢趨勢中淺回檔到 MA10（close 仍在 MA20 上方）、量縮 — 日常 buy the dip 進場帶。"
   },
   "onboarding": {
     "skip": "略過",

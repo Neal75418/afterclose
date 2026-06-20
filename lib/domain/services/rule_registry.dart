@@ -78,8 +78,9 @@ abstract final class RuleRegistry {
     ROEExcellentRule(),
     ROEImprovingRule(),
     ROEDecliningRule(),
-    // 第 9 階段：強股回檔進場（Mode C v2 — 2026-06-19）
+    // 第 9 階段：強股回檔進場（Mode C v2 — 2026-06-19；MA10 2026-06-20 B2 加）
     HealthyPullbackToMa20Rule(),
+    HealthyPullbackToMa10Rule(),
     HammerAtSupportRule(),
     KdHighLevelPullbackRule(),
     // Killer Features：注意/處置股票規則

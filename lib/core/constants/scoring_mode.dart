@@ -172,7 +172,8 @@ abstract final class ModeFilters {
   /// != up 才 fire、跟 Mode C「強股回檔」(trendState == up) 互斥 → 永遠 0 fire
   /// 的死碼 gate 入口。已搬回 Mode A、強股錘子角色由 HAMMER_AT_SUPPORT 擔。
   static const Set<String> modeCRequiredAnyOf = {
-    'PULLBACK_TO_MA20',
+    'PULLBACK_TO_MA20', // 深回檔
+    'PULLBACK_TO_MA10', // 淺回檔（2026-06-20 B2 加、日常可用頻率）
     'HAMMER_AT_SUPPORT',
     'KD_HIGH_PULLBACK',
   };

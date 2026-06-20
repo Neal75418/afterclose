@@ -302,10 +302,16 @@ abstract final class RuleScores {
   // **CALIBRATION_PENDING**：threshold 是直覺值、缺台股 backtest。pre-launch 上線
   // 靠 telemetry 30 天累積樣本後校準。
 
-  /// 強勢回檔至 MA20（量縮）
+  /// 強勢回檔至 MA20（深回檔、量縮）
   ///
-  /// 強股拉回 MA20 動態支撐位 + 量能縮減 + 多頭排列維持。最常見的「健康回檔」訊號。
+  /// 強股拉回 MA20 動態支撐位 + 量能縮減 + 多頭排列維持。較深的回檔、較高把握。
   static const int pullbackToMa20 = 15;
+
+  /// 強勢回檔至 MA10（淺回檔、量縮）
+  ///
+  /// 2026-06-20 B2 加：強股拉回 MA10（close 仍在 MA20 上方、與 MA20 深回檔互斥）。
+  /// 「buy the dip」的經典淺回檔進場帶、頻率較高、給分稍低（最頻繁＝最低分 tier）。
+  static const int pullbackToMa10 = 12;
 
   /// 支撐位錘子線（強股止跌）
   ///

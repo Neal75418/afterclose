@@ -154,6 +154,99 @@ class HealthyPullbackToMa20Rule extends StockRule {
 }
 
 // ============================================
+// Rule A2: PULLBACK_TO_MA10 — 強勢淺回檔至 MA10 (量縮)
+// ============================================
+
+/// 強股拉回 MA10（淺回檔）+ 量縮 + 多頭排列維持 + close 仍在 MA20 上方
+///
+/// **2026-06-20 B2 加**：MA20 深回檔對強股太稀有（強股遠在 MA20 上方）、Mode C
+/// 常空白。MA10 是「buy the dip」經典淺回檔帶、日常頻率高。score +12（淺＝最低
+/// tier）。
+///
+/// **與 [HealthyPullbackToMa20Rule] 互斥**：要求 close > ma20（價還沒跌到深支撐），
+/// MA20 rule 要 close 在 ma20 附近 → 同一檔不會雙 fire（趨勢市 ma10 與 ma20 分離）。
+///
+/// **CALIBRATION_PENDING**：閾值直覺值、缺 backtest。
+class HealthyPullbackToMa10Rule extends StockRule {
+  const HealthyPullbackToMa10Rule();
+
+  @override
+  String get id => 'pullback_to_ma10';
+
+  @override
+  TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    // ---- Step 1: history / indicators 必備 ----
+    if (data.prices.length < 21) return null;
+    final ind = context.indicators;
+    if (ind == null) return null;
+    final ma10 = ind.ma10;
+    final ma20 = ind.ma20;
+    final ma60 = ind.ma60;
+    final volumeMA20 = ind.volumeMA20;
+    if (ma10 == null || ma20 == null || ma60 == null || volumeMA20 == null) {
+      return null;
+    }
+
+    final today = data.prices.last;
+    final yesterday = data.prices[data.prices.length - 2];
+    final todayClose = today.close;
+    final todayVolume = today.volume;
+    final yesterdayClose = yesterday.close;
+    if (todayClose == null ||
+        todayVolume == null ||
+        todayVolume <= 0 ||
+        yesterdayClose == null) {
+      return null;
+    }
+
+    // ---- Step 2: 中期多頭排列（不要求 ma5>ma10、因 ma5 正回落）----
+    if (!(ma10 > ma20 && ma20 > ma60)) return null;
+
+    // ---- Step 3: 淺回檔分界 — close 仍在 MA20 上方（與 MA20 深回檔互斥）----
+    if (todayClose <= ma20) return null;
+
+    // ---- Step 4: 過去 20 日強勢（錨在 ma10）----
+    if (!wasStrongOverPeriod(data, ma10, days: 20)) return null;
+
+    // ---- Step 5: 拉回到 MA10 附近 (-1.5% ~ +2.5%) ----
+    final distanceToMa10 = (todayClose - ma10) / ma10;
+    if (distanceToMa10 < -0.015 || distanceToMa10 > 0.025) return null;
+
+    // ---- Step 6: 今日收黑 ----
+    if (todayClose >= yesterdayClose) return null;
+
+    // ---- Step 7: 量縮 (< volumeMA20 * 0.85) ----
+    if (todayVolume >= volumeMA20 * 0.85) return null;
+
+    // ---- Step 8: 非跌停 ----
+    if (isLimitDownDay(data)) return null;
+
+    // ---- Step 9: 過去 5 日非瀑布跌 ----
+    if (!hasRecentBullishCandle(data, days: 5)) return null;
+
+    final past20Close = data.prices[data.prices.length - 1 - 20].close ?? 0;
+    final past20dGain = past20Close > 0 ? (ma10 / past20Close - 1) * 100 : 0.0;
+
+    return TriggeredReason(
+      type: ReasonType.pullbackToMa10,
+      score: RuleScores.pullbackToMa10,
+      description: '強勢回檔至 MA10 (淺回檔)',
+      evidence: {
+        'close': todayClose,
+        'ma10': ma10,
+        'ma20': ma20,
+        'ma60': ma60,
+        'distanceToMa10Pct': distanceToMa10 * 100,
+        'volume': todayVolume,
+        'volumeMA20': volumeMA20,
+        'volumeRatio': todayVolume / volumeMA20,
+        'past20dGain': past20dGain,
+      },
+    );
+  }
+}
+
+// ============================================
 // Rule B: HAMMER_AT_SUPPORT — 強股拉回支撐 + 錘子止跌
 // ============================================
 

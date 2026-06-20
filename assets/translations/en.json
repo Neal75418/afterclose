@@ -570,7 +570,8 @@
     "priceVolumeWeakRally": "Weak Rally Warning",
     "pullbackToMa20": "Pullback to MA20",
     "hammerAtSupport": "Hammer at Support",
-    "kdHighPullback": "KD High Pullback"
+    "kdHighPullback": "KD High Pullback",
+    "pullbackToMa10": "Pullback to MA10"
   },
   "reasonTip": {
     "volumeSpike": "Trading volume significantly increased, indicating major capital flow.",
@@ -607,7 +608,8 @@
     "priceVolumeWeakRally": "Price rising on declining volume — weak rally warning, possible reversal ahead.",
     "pullbackToMa20": "Strong uptrend pulling back to MA20 with volume shrinking, trend intact — healthy entry timing.",
     "hammerAtSupport": "Strong stock testing MA20/MA60 support with bullish hammer formation — reversal entry point.",
-    "kdHighPullback": "KD declining from overbought without dead cross, MA alignment maintained — momentum cooling, consider scaling in."
+    "kdHighPullback": "KD declining from overbought without dead cross, MA alignment maintained — momentum cooling, consider scaling in.",
+    "pullbackToMa10": "Shallow pullback to MA10 in strong uptrend (close still above MA20), volume shrinking — daily dip-buying zone."
   },
   "onboarding": {
     "skip": "Skip",
