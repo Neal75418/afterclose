@@ -155,7 +155,6 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   /// 顯示更新完成通知
   Future<void> showUpdateCompleteNotification({
-    required int recommendationCount,
     required int alertsTriggered,
   }) async {
     if (!state.isInitialized || !state.hasPermission) return;
@@ -163,15 +162,10 @@ class NotificationNotifier extends Notifier<NotificationState> {
     final String body;
     if (alertsTriggered > 0) {
       body = 'notification.updateWithAlerts'.tr(
-        namedArgs: {
-          'recommendations': recommendationCount.toString(),
-          'alerts': alertsTriggered.toString(),
-        },
+        namedArgs: {'alerts': alertsTriggered.toString()},
       );
     } else {
-      body = 'notification.updateNoAlerts'.tr(
-        namedArgs: {'recommendations': recommendationCount.toString()},
-      );
+      body = 'notification.updateNoAlerts'.tr();
     }
 
     await _service.showNotification(

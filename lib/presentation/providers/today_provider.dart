@@ -258,7 +258,6 @@ class TodayNotifier extends Notifier<TodayState> {
       if (alertsTriggered > 0) {
         final notificationNotifier = ref.read(notificationProvider.notifier);
         await notificationNotifier.showUpdateCompleteNotification(
-          recommendationCount: result.recommendationsGenerated,
           alertsTriggered: alertsTriggered,
         );
       }

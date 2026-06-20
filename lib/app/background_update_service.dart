@@ -218,13 +218,6 @@ Future<void> _showUpdateNotification(UpdateResult result) async {
     title = isChinese ? '盤後資料已更新' : 'Market data updated';
 
     final parts = <String>[];
-    if (result.recommendationsGenerated > 0) {
-      parts.add(
-        isChinese
-            ? 'Top ${result.recommendationsGenerated} 推薦'
-            : 'Top ${result.recommendationsGenerated} picks',
-      );
-    }
     if (result.stocksAnalyzed > 0) {
       parts.add(
         isChinese

@@ -275,8 +275,7 @@ class UpdateService {
       //
       // **2026-06-21 退役舊推薦系統 Step 4**：daily_recommendation 已停寫。
       // 3-mode tab（起漲/強勢/回檔）從 daily_reason 即時聚合（scoring 已寫入
-      // daily_reason）、不再產生 / 儲存 Top-20 推薦清單。result.recommendationsGenerated
-      // 保留為欄位但不再設值（預設 0；通知 / log 的「推薦數」隨之為 0）。
+      // daily_reason）、不再產生 / 儲存 Top-20 推薦清單。
       ctx.onProgress?.call(9, 10, '完成分析');
       ctx.onProgress?.call(10, 10, '完成');
       await _finishUpdate(ctx, result);
@@ -778,8 +777,7 @@ class UpdateService {
     final dateStr = '${ctx.normalizedDate.month}/${ctx.normalizedDate.day}';
     AppLogger.info(
       'UpdateService',
-      '完成 ($dateStr): 價格=${result.pricesUpdated}, 分析=${result.stocksAnalyzed}, '
-          '推薦=${result.recommendationsGenerated}',
+      '完成 ($dateStr): 價格=${result.pricesUpdated}, 分析=${result.stocksAnalyzed}',
     );
 
     final status = result.errors.isEmpty
@@ -905,7 +903,6 @@ class UpdateResult {
   int newsUpdated = 0;
   int candidatesFound = 0;
   int stocksAnalyzed = 0;
-  int recommendationsGenerated = 0;
   List<String> errors = [];
   bool hasRateLimitError = false;
   Map<String, double> currentPrices = {};
@@ -927,9 +924,8 @@ class UpdateResult {
     if (skipped) return message ?? '跳過更新';
     if (!success) return '更新失敗: ${errors.join(', ')}';
     if (errors.isNotEmpty) {
-      return '分析 $stocksAnalyzed 檔，產生 $recommendationsGenerated 個推薦'
-          '（${errors.length} 項警告）';
+      return '分析 $stocksAnalyzed 檔（${errors.length} 項警告）';
     }
-    return '分析 $stocksAnalyzed 檔，產生 $recommendationsGenerated 個推薦';
+    return '分析 $stocksAnalyzed 檔';
   }
 }

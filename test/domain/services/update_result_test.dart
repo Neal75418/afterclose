@@ -68,9 +68,8 @@ void main() {
       test('return success summary with counts', () {
         result.success = true;
         result.stocksAnalyzed = 150;
-        result.recommendationsGenerated = 10;
 
-        expect(result.summary, '分析 150 檔，產生 10 個推薦');
+        expect(result.summary, '分析 150 檔');
       });
     });
   });
