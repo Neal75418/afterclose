@@ -156,4 +156,20 @@ abstract final class AnalysisParams {
   ///
   /// 漲停或跌停家數達此值視為市場失衡。
   static const int limitImbalanceThreshold = 30;
+
+  // ==================================================
+  // 大盤位階（均線乖離）門檻
+  // ==================================================
+
+  /// 大盤位階短期均線週期（MA20）
+  ///
+  /// 用於 [TechnicalIndicatorService.calculateMarketStage] 判斷加權指數
+  /// 相對短期均線的位置，對應 Weinstein 階段分析的趨勢結構錨點。
+  static const int marketStageShortMaPeriod = 20;
+
+  /// 大盤位階長期均線週期（MA60）
+  ///
+  /// 多頭排列需 MA20 > MA60，至少需 [marketStageShortMaPeriod] +
+  /// [marketStageLongMaPeriod] 個有效交易日才能完整計算。
+  static const int marketStageLongMaPeriod = 60;
 }

@@ -124,6 +124,19 @@ abstract final class ApiConfig {
   /// 民國年轉換偏移量（民國元年 = 西元 1912 年，偏移量 = 1911）
   static const int rocYearOffset = 1911;
 
+  /// 合理西元年下限（日期解析防護）
+  ///
+  /// 台股集中市場 1962 年開業，2000 為保守下限。早於此年的日期視為解析錯誤
+  /// （曾出現 `0000-12-18` 等髒資料），由 [TwParseUtils.parseAdDate] 與
+  /// [MarketIndexSyncer] 的寫入防護拒絕。
+  static const int minSaneAdYear = 2000;
+
+  /// 寫入日期與請求日期容許的最大偏移天數（指數同步防護）
+  ///
+  /// TWSE API 偶爾回傳與請求日期無關的髒日期（例如固定 `12-18`）。同步當日
+  /// 資料時，若解析出的日期與請求日期相差超過此天數即視為異常並跳過。
+  static const int marketIndexDateDriftToleranceDays = 7;
+
   /// 預設歷史回溯天數
   static const int defaultHistoryLookbackDays = 5;
 

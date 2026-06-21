@@ -291,6 +291,8 @@ class _MarketDashboardState extends State<MarketDashboard> {
           HeroIndexSection(
             index: taiex.first,
             historyData: widget.state.indexHistory[taiex.first.name] ?? [],
+            stageHistory:
+                widget.state.indexStageHistory[taiex.first.name] ?? [],
             totalReturnHistory:
                 widget.state.indexHistory[MarketIndexNames.totalReturnIndex] ??
                 [],
@@ -309,6 +311,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
             index: tpexIdx.first,
             historyData:
                 widget.state.indexHistory[MarketIndexNames.tpexIndex] ?? [],
+            stageHistory:
+                widget.state.indexStageHistory[MarketIndexNames.tpexIndex] ??
+                [],
           ),
         );
       } else {
@@ -592,6 +597,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           HeroIndexSection(
             index: heroIdx.first,
             historyData: widget.state.indexHistory[heroName] ?? [],
+            stageHistory: widget.state.indexStageHistory[heroName] ?? [],
             totalReturnHistory: market == MarketCode.twse
                 ? widget.state.indexHistory[MarketIndexNames
                           .totalReturnIndex] ??

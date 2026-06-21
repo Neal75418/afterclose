@@ -1,7 +1,56 @@
 import 'dart:collection';
 import 'dart:math';
 
+import 'package:afterclose/core/constants/analysis_params.dart';
 import 'package:afterclose/data/database/app_database.dart';
+
+/// 大盤位階（均線排列）分類
+///
+/// 依加權指數收盤價與 MA20/MA60 的相對位置判斷趨勢結構，
+/// 對應 Weinstein 階段分析，作為各項籌碼/法人訊號多空意義的錨點。
+enum MarketStage {
+  /// 多頭排列：收盤 > MA20 > MA60
+  bullish,
+
+  /// 空頭排列：收盤 < MA20 < MA60
+  bearish,
+
+  /// 均線糾結：未形成明確多空排列
+  neutral,
+
+  /// 資料不足：有效收盤價少於 MA60 所需筆數
+  insufficient,
+}
+
+/// 大盤位階計算結果
+///
+/// [stage] 為 [MarketStage.insufficient] 時，[ma60]/[biasMa60] 可能為 null。
+class MarketStageResult {
+  const MarketStageResult({
+    required this.stage,
+    this.latestClose,
+    this.ma20,
+    this.ma60,
+    this.biasMa20,
+    this.biasMa60,
+  });
+
+  /// 資料不足（少於 MA60 所需筆數）的固定結果
+  static const insufficient = MarketStageResult(
+    stage: MarketStage.insufficient,
+  );
+
+  final MarketStage stage;
+  final double? latestClose;
+  final double? ma20;
+  final double? ma60;
+
+  /// 距 MA20 乖離率（%），正值表示收盤在均線之上
+  final double? biasMa20;
+
+  /// 距 MA60 乖離率（%），正值表示收盤在均線之上
+  final double? biasMa60;
+}
 
 /// 技術指標計算服務
 ///
@@ -32,6 +81,54 @@ class TechnicalIndicatorService {
     }
 
     return result;
+  }
+
+  /// 計算大盤位階（均線排列 + 乖離率）
+  ///
+  /// [closes] 須為時間升序（最舊→最新）的收盤價列表。
+  /// 複用 [calculateSMA] 取得最新的 MA20/MA60，並計算收盤價對兩條均線的
+  /// 乖離率（%）。當有效資料少於 MA60 所需筆數時回傳
+  /// [MarketStageResult.insufficient]。
+  ///
+  /// 位階判定：
+  /// - 多頭排列：收盤 > MA20 > MA60
+  /// - 空頭排列：收盤 < MA20 < MA60
+  /// - 均線糾結：其餘情況
+  MarketStageResult calculateMarketStage(List<double> closes) {
+    const shortPeriod = AnalysisParams.marketStageShortMaPeriod;
+    const longPeriod = AnalysisParams.marketStageLongMaPeriod;
+
+    if (closes.length < longPeriod) return MarketStageResult.insufficient;
+
+    final ma20 = calculateSMA(closes, shortPeriod).last;
+    final ma60 = calculateSMA(closes, longPeriod).last;
+
+    // MA60 為 null 表示有效資料不足（防禦：理論上長度已 >= longPeriod）
+    if (ma20 == null || ma60 == null || ma20 == 0 || ma60 == 0) {
+      return MarketStageResult.insufficient;
+    }
+
+    final latestClose = closes.last;
+    final biasMa20 = (latestClose - ma20) / ma20 * 100;
+    final biasMa60 = (latestClose - ma60) / ma60 * 100;
+
+    final MarketStage stage;
+    if (latestClose > ma20 && ma20 > ma60) {
+      stage = MarketStage.bullish;
+    } else if (latestClose < ma20 && ma20 < ma60) {
+      stage = MarketStage.bearish;
+    } else {
+      stage = MarketStage.neutral;
+    }
+
+    return MarketStageResult(
+      stage: stage,
+      latestClose: latestClose,
+      ma20: ma20,
+      ma60: ma60,
+      biasMa20: biasMa20,
+      biasMa60: biasMa60,
+    );
   }
 
   /// 計算指數移動平均線 (EMA)

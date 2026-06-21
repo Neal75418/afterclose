@@ -91,6 +91,31 @@ void main() {
 
         expect(result.year, before.year);
       });
+
+      test('rejects implausibly early year (e.g. 0000-12-18 junk)', () {
+        // 曾因 API 髒資料寫入 0000-12-18 等錯誤年份，現應回退到今日
+        final before = DateTime.now();
+        final result = TwParseUtils.parseAdDate('00001218');
+
+        expect(result.year, before.year);
+        expect(result.year, isNot(0));
+      });
+
+      test('rejects out-of-range month', () {
+        final before = DateTime.now();
+        final result = TwParseUtils.parseAdDate('20261318'); // month 13
+
+        expect(result.year, before.year);
+      });
+
+      test('rejects normalized invalid day (e.g. 02/30)', () {
+        // 2/30 會被 DateTime 正規化為 3/2，視為無效 → 回退今日
+        final before = DateTime.now();
+        final result = TwParseUtils.parseAdDate('20260230');
+
+        expect(result.year, before.year);
+        expect(result.month, isNot(3));
+      });
     });
 
     group('parseSlashRocDate', () {

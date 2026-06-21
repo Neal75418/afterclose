@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
@@ -19,12 +20,18 @@ class HeroIndexSection extends StatelessWidget {
     super.key,
     required this.index,
     this.historyData = const [],
+    this.stageHistory = const [],
     this.totalReturnHistory = const [],
     this.reserveBadgeSpace = false,
   });
 
   final TwseMarketIndex index;
   final List<double> historyData;
+
+  /// 較長窗口的收盤歷史（供大盤位階 MA60 計算，升序 oldest→newest）
+  ///
+  /// 與 [historyData]（30 點走勢圖）分離，需 ≥60 個交易日才能算出 MA60。
+  final List<double> stageHistory;
 
   /// 含息報酬指數歷史資料（供計算股息貢獻比較）
   final List<double> totalReturnHistory;
@@ -123,6 +130,9 @@ class HeroIndexSection extends StatelessWidget {
                 ],
               ),
 
+              // 大盤位階（均線乖離）— 緊湊單行，位於大數字與走勢圖之間
+              ..._buildStageRow(context, theme),
+
               // Sparkline 走勢圖
               if (historyData.length >= 2) ...[
                 const SizedBox(height: DesignTokens.spacing12),
@@ -157,6 +167,92 @@ class HeroIndexSection extends StatelessWidget {
         ],
       ],
     );
+  }
+
+  /// 建構大盤位階單行（位階 chip + 距 20MA / 距 60MA 乖離率）
+  ///
+  /// 資料不足時顯示「位階資料不足」muted 提示；完全沒有歷史資料時回傳空。
+  List<Widget> _buildStageRow(BuildContext context, ThemeData theme) {
+    if (stageHistory.length < 2) return const [];
+
+    final result = TechnicalIndicatorService().calculateMarketStage(
+      stageHistory,
+    );
+
+    final mutedColor = theme.colorScheme.onSurfaceVariant.withValues(
+      alpha: 0.6,
+    );
+
+    // 資料不足：顯示 muted 提示（一行）
+    if (result.stage == MarketStage.insufficient) {
+      return [
+        const SizedBox(height: DesignTokens.spacing8),
+        Text(
+          'marketOverview.stage.insufficient'.tr(),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: mutedColor,
+            fontSize: DesignTokens.fontSizeXs,
+          ),
+        ),
+      ];
+    }
+
+    // 台股慣例：多頭 / 正乖離 = 紅、空頭 / 負乖離 = 綠、糾結 = 灰
+    final (stageColor, stageKey) = switch (result.stage) {
+      MarketStage.bullish => (AppTheme.upColor, 'bullish'),
+      MarketStage.bearish => (AppTheme.downColor, 'bearish'),
+      MarketStage.neutral => (AppTheme.neutralColor, 'neutral'),
+      MarketStage.insufficient => (AppTheme.neutralColor, 'insufficient'),
+    };
+
+    return [
+      const SizedBox(height: DesignTokens.spacing8),
+      Row(
+        children: [
+          // 位階 chip
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.spacing8,
+              vertical: DesignTokens.spacing2,
+            ),
+            decoration: BoxDecoration(
+              color: stageColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+            ),
+            child: Text(
+              'marketOverview.stage.$stageKey'.tr(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: stageColor,
+                fontWeight: FontWeight.w700,
+                fontSize: DesignTokens.fontSizeXs,
+              ),
+            ),
+          ),
+          const SizedBox(width: DesignTokens.spacing8),
+          // 距 20MA / 距 60MA 乖離率
+          Flexible(
+            child: Text(
+              '${'marketOverview.biasMa20'.tr(namedArgs: {'value': _formatBias(result.biasMa20)})}'
+              '  '
+              '${'marketOverview.biasMa60'.tr(namedArgs: {'value': _formatBias(result.biasMa60)})}',
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: mutedColor,
+                fontSize: DesignTokens.fontSizeXs,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  /// 格式化乖離率（帶正負號，一位小數）
+  static String _formatBias(double? bias) {
+    if (bias == null) return '--';
+    final sign = bias > 0 ? '+' : '';
+    return '$sign${bias.toStringAsFixed(1)}';
   }
 }
 

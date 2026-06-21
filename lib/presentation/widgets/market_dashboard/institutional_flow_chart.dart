@@ -77,6 +77,9 @@ class InstitutionalFlowChart extends StatelessWidget {
         data.dealerNet,
         AppTheme.dealerColor,
         streak: streak?.dealerStreak,
+        // 自營淨額由造市庫存 + 權證避險 delta 主導，連續買超近乎結構性恆正，
+        // 非看多訊號，標註提示降低誤讀。
+        isDealer: true,
       ),
     ];
 
@@ -155,11 +158,20 @@ class InstitutionalFlowChart extends StatelessWidget {
 }
 
 class _FlowItem {
-  const _FlowItem(this.label, this.value, this.color, {this.streak});
+  const _FlowItem(
+    this.label,
+    this.value,
+    this.color, {
+    this.streak,
+    this.isDealer = false,
+  });
   final String label;
   final double value;
   final Color color;
   final int? streak;
+
+  /// 是否為自營商（含避險部位，方向參考性低，需標註提示）
+  final bool isDealer;
 }
 
 class _FlowCard extends StatelessWidget {
@@ -215,6 +227,20 @@ class _FlowCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            // 自營商：含避險部位提示（ⓘ tooltip），降低連續買超誤讀
+                            if (item.isDealer) ...[
+                              const SizedBox(width: 3),
+                              Tooltip(
+                                message: 'marketOverview.dealerHedgeNote'.tr(),
+                                triggerMode: TooltipTriggerMode.tap,
+                                child: Icon(
+                                  Icons.info_outline,
+                                  size: DesignTokens.fontSizeXs,
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                                ),
+                              ),
+                            ],
                             if (item.streak != null &&
                                 item.streak!.abs() >= 2) ...[
                               const SizedBox(width: 6),

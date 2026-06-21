@@ -22,16 +22,27 @@ abstract final class TwParseUtils {
   /// 解析 YYYYMMDD 格式的西元日期（例如 "20260121"）
   ///
   /// 回傳本地時間午夜以匹配資料庫儲存格式。
-  /// 無效格式時回傳今日午夜。
+  /// 無效格式（長度、非數字、年份過早、月日越界或被正規化）時回傳今日午夜。
+  ///
+  /// **防護動機**：API 偶爾回傳髒日期字串（例如 `00001218`），早期僅檢查長度
+  /// 而未驗證內容，導致 `0000-12-18` 等錯誤年份寫入 DB 並污染走勢圖與均線。
   static DateTime parseAdDate(String dateStr) {
-    if (dateStr.length != 8) {
-      final now = DateTime.now();
-      return DateContext.normalize(now);
-    }
-    final year = int.parse(dateStr.substring(0, 4));
-    final month = int.parse(dateStr.substring(4, 6));
-    final day = int.parse(dateStr.substring(6, 8));
-    return DateTime(year, month, day);
+    final fallback = DateContext.normalize(DateTime.now());
+    if (dateStr.length != 8) return fallback;
+
+    final year = int.tryParse(dateStr.substring(0, 4));
+    final month = int.tryParse(dateStr.substring(4, 6));
+    final day = int.tryParse(dateStr.substring(6, 8));
+    if (year == null || month == null || day == null) return fallback;
+
+    // 年份過早視為解析錯誤（例如 "0000"）
+    if (year < ApiConfig.minSaneAdYear) return fallback;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return fallback;
+
+    final date = DateTime(year, month, day);
+    // 驗證日期未被正規化（例如 2/30 會變成 3/2，表示原始日期無效）
+    if (date.month != month || date.day != day) return fallback;
+    return date;
   }
 
   /// 解析含斜線的民國日期（例如 "115/01/02"）

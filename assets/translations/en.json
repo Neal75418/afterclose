@@ -126,6 +126,7 @@
     "disposalCount": "{count} Disposal",
     "consecutiveBuy": "{count}D Buy",
     "consecutiveSell": "{count}D Sell",
+    "dealerHedgeNote": "Dealer net includes hedging positions; less directional signal than foreign/trust.",
     "tpexIndex": "TPEx Index",
     "industryPerformance": "Industry Performance",
     "industryTopBottom": "Top/Bottom {count}",
@@ -133,6 +134,14 @@
     "day30Trend": "30-Day Trend",
     "totalReturnIndex": "Total Return",
     "dividendContribution": "Div. Contribution {pct}%",
+    "stage": {
+      "bullish": "Bullish Alignment",
+      "bearish": "Bearish Alignment",
+      "neutral": "MA Convergence",
+      "insufficient": "Insufficient Data"
+    },
+    "biasMa20": "vs MA20 {value}%",
+    "biasMa60": "vs MA60 {value}%",
     "sentiment": {
       "title": "Market Sentiment",
       "extremeFear": "Extreme Fear",

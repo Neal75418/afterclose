@@ -126,6 +126,7 @@
     "disposalCount": "處置 {count} 檔",
     "consecutiveBuy": "連{count}日買超",
     "consecutiveSell": "連{count}日賣超",
+    "dealerHedgeNote": "自營含避險部位，方向參考性低於外資/投信",
     "tpexIndex": "櫃買指數",
     "industryPerformance": "產業表現",
     "industryTopBottom": "前後各{count}名",
@@ -133,6 +134,14 @@
     "day30Trend": "近 30 日走勢",
     "totalReturnIndex": "含息報酬",
     "dividendContribution": "息值貢獻 {pct}%",
+    "stage": {
+      "bullish": "多頭排列",
+      "bearish": "空頭排列",
+      "neutral": "均線糾結",
+      "insufficient": "位階資料不足"
+    },
+    "biasMa20": "距20MA {value}%",
+    "biasMa60": "距60MA {value}%",
     "sentiment": {
       "title": "市場情緒",
       "extremeFear": "極度恐懼",

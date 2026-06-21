@@ -69,6 +69,71 @@ void main() {
   });
 
   // ==========================================
+  // calculateMarketStage
+  // ==========================================
+
+  group('calculateMarketStage', () {
+    test('returns insufficient when fewer than 60 valid closes', () {
+      final closes = List.generate(59, (i) => 100.0 + i);
+      final result = service.calculateMarketStage(closes);
+
+      expect(result.stage, equals(MarketStage.insufficient));
+      expect(result.ma60, isNull);
+      expect(result.biasMa20, isNull);
+    });
+
+    test('detects bullish alignment (close > MA20 > MA60)', () {
+      // 持續上升：最新收盤 > MA20 > MA60
+      final closes = List.generate(80, (i) => 100.0 + i.toDouble());
+      final result = service.calculateMarketStage(closes);
+
+      expect(result.stage, equals(MarketStage.bullish));
+      expect(result.ma20, isNotNull);
+      expect(result.ma60, isNotNull);
+      expect(result.ma20! > result.ma60!, isTrue);
+      expect(result.latestClose! > result.ma20!, isTrue);
+      // 上升趨勢中收盤在均線之上 → 正乖離
+      expect(result.biasMa20! > 0, isTrue);
+      expect(result.biasMa60! > 0, isTrue);
+    });
+
+    test('detects bearish alignment (close < MA20 < MA60)', () {
+      // 持續下降：最新收盤 < MA20 < MA60
+      final closes = List.generate(80, (i) => 200.0 - i.toDouble());
+      final result = service.calculateMarketStage(closes);
+
+      expect(result.stage, equals(MarketStage.bearish));
+      expect(result.ma20! < result.ma60!, isTrue);
+      expect(result.latestClose! < result.ma20!, isTrue);
+      // 下降趨勢中收盤在均線之下 → 負乖離
+      expect(result.biasMa20! < 0, isTrue);
+      expect(result.biasMa60! < 0, isTrue);
+    });
+
+    test('detects neutral when not a full alignment', () {
+      // 上升後最新一根急殺，破 MA20 但 MA20 仍 > MA60 → 既非多頭也非空頭
+      final closes = [
+        ...List.generate(79, (i) => 100.0 + i.toDouble()),
+        80.0, // 最新收盤跌破短均
+      ];
+      final result = service.calculateMarketStage(closes);
+
+      expect(result.stage, equals(MarketStage.neutral));
+      // MA20 > MA60（仍是上升結構）但收盤已跌破 MA20
+      expect(result.ma20! > result.ma60!, isTrue);
+      expect(result.latestClose! < result.ma20!, isTrue);
+    });
+
+    test('bias sign is correct for close above and below MA', () {
+      // 全部相同價 → 收盤等於均線 → 乖離率為 0
+      final flat = List.filled(70, 150.0);
+      final flatResult = service.calculateMarketStage(flat);
+      expect(flatResult.biasMa20, closeTo(0.0, 0.001));
+      expect(flatResult.biasMa60, closeTo(0.0, 0.001));
+    });
+  });
+
+  // ==========================================
   // calculateEMA
   // ==========================================
 

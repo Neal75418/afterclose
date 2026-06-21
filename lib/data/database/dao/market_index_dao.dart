@@ -31,12 +31,17 @@ mixin MarketIndexDaoMixin on $AppDatabase {
     int days = 30,
     DateTime? now,
   }) async {
-    final cutoff = (now ?? DateTime.now()).subtract(Duration(days: days + 10));
+    final upperBound = now ?? DateTime.now();
+    final cutoff = upperBound.subtract(Duration(days: days + 10));
+    // 上界防護：未來日期的髒資料（曾因 parseAdDate 誤判而寫入）永遠不會被讀出，
+    // 避免污染走勢圖（V 字毛刺）與均線計算。
     final rows =
         await (select(marketIndex)
               ..where(
                 (t) =>
-                    t.name.isIn(indexNames) & t.date.isBiggerThanValue(cutoff),
+                    t.name.isIn(indexNames) &
+                    t.date.isBiggerThanValue(cutoff) &
+                    t.date.isSmallerOrEqualValue(upperBound),
               )
               ..orderBy([(t) => OrderingTerm.asc(t.date)]))
             .get();

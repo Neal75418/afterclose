@@ -67,7 +67,7 @@ class MarketIndexSyncer {
       final indices = await _twse.getMarketIndices();
 
       if (indices.isNotEmpty) {
-        final companions = _filterAndConvert(indices);
+        final companions = _filterAndConvert(indices, _clock.now());
         if (companions.isNotEmpty) {
           await _db.upsertMarketIndices(companions);
           synced = companions.length;
@@ -193,7 +193,7 @@ class MarketIndexSyncer {
 
         if (indices.isEmpty) continue;
 
-        final companions = _filterAndConvert(indices);
+        final companions = _filterAndConvert(indices, date);
         if (companions.isEmpty) continue;
 
         await _db.upsertMarketIndices(companions);
@@ -274,10 +274,20 @@ class MarketIndexSyncer {
   }
 
   /// 篩選 Dashboard 重點指數並轉換為 DB companion
-  List<MarketIndexCompanion> _filterAndConvert(List<TwseMarketIndex> indices) {
+  ///
+  /// [expectedDate] 為本次請求對應的交易日，用於日期合理性防護：
+  /// 解析出的日期若與 [expectedDate] 相差超過
+  /// [ApiConfig.marketIndexDateDriftToleranceDays] 天，或年份早於
+  /// [ApiConfig.minSaneAdYear] / 晚於明年，視為髒資料並跳過，避免再次寫入
+  /// 像 `0000-12-18` / `2026-12-18` 這類污染走勢圖與均線的列。
+  List<MarketIndexCompanion> _filterAndConvert(
+    List<TwseMarketIndex> indices,
+    DateTime expectedDate,
+  ) {
     final targetNames = MarketIndexNames.dashboardIndices.toSet();
     final filtered = indices
         .where((idx) => targetNames.contains(idx.name))
+        .where((idx) => _isPlausibleDate(idx.date, expectedDate))
         .toList();
 
     if (filtered.isEmpty) {
@@ -286,5 +296,33 @@ class MarketIndexSyncer {
     }
 
     return filtered.map((idx) => idx.toDatabaseCompanion()).toList();
+  }
+
+  /// 寫入前日期合理性防護
+  ///
+  /// 拒絕年份越界（< [ApiConfig.minSaneAdYear] 或 > 明年）或與 [expectedDate]
+  /// 偏移過大的日期，並記錄 warning。
+  bool _isPlausibleDate(DateTime date, DateTime expectedDate) {
+    final maxYear = _clock.now().year + 1;
+    if (date.year < ApiConfig.minSaneAdYear || date.year > maxYear) {
+      AppLogger.warning(
+        'MarketIndexSyncer',
+        '跳過年份越界的指數日期: ${DateContext.formatYmd(date)}'
+            '（合理範圍 ${ApiConfig.minSaneAdYear}~$maxYear）',
+      );
+      return false;
+    }
+
+    final driftDays = date.difference(expectedDate).inDays.abs();
+    if (driftDays > ApiConfig.marketIndexDateDriftToleranceDays) {
+      AppLogger.warning(
+        'MarketIndexSyncer',
+        '跳過與請求日期偏移過大的指數日期: ${DateContext.formatYmd(date)}'
+            '（請求 ${DateContext.formatYmd(expectedDate)}、偏移 $driftDays 天）',
+      );
+      return false;
+    }
+
+    return true;
   }
 }

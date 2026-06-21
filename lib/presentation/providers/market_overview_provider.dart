@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/constants/data_freshness.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
@@ -28,6 +29,7 @@ class MarketOverviewState {
   const MarketOverviewState({
     this.indices = const [],
     this.indexHistory = const {},
+    this.indexStageHistory = const {},
     this.advanceDecline = const AdvanceDecline(),
     // 依市場分組的統計（預設空 Map）
     this.advanceDeclineByMarket = const {},
@@ -56,6 +58,12 @@ class MarketOverviewState {
 
   /// 指數名稱 → 近 30 日收盤值列表（供走勢圖使用）
   final Map<String, List<double>> indexHistory;
+
+  /// 指數名稱 → 較長窗口收盤值列表（供大盤位階 MA60 計算使用）
+  ///
+  /// 與 [indexHistory] 分離：sparkline 維持 30 點不變，位階計算需 ≥60
+  /// 個交易日才能算出 MA60，因此另載入較長窗口（見 [_loadIndexStageHistory]）。
+  final Map<String, List<double>> indexStageHistory;
   final AdvanceDecline advanceDecline;
 
   /// 漲跌家數（依市場分組）
@@ -116,6 +124,7 @@ class MarketOverviewState {
   MarketOverviewState copyWith({
     List<TwseMarketIndex>? indices,
     Map<String, List<double>>? indexHistory,
+    Map<String, List<double>>? indexStageHistory,
     AdvanceDecline? advanceDecline,
     Map<String, AdvanceDecline>? advanceDeclineByMarket,
     Map<String, InstitutionalTotals>? institutionalByMarket,
@@ -136,6 +145,7 @@ class MarketOverviewState {
     return MarketOverviewState(
       indices: indices ?? this.indices,
       indexHistory: indexHistory ?? this.indexHistory,
+      indexStageHistory: indexStageHistory ?? this.indexStageHistory,
       advanceDecline: advanceDecline ?? this.advanceDecline,
       advanceDeclineByMarket:
           advanceDeclineByMarket ?? this.advanceDeclineByMarket,
@@ -251,6 +261,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         _loadMarginHistoryByMarket(dataDate), // [14]
         _loadAdvanceDeclineHistoryByMarket(dataDate), // [15]
         _loadChipAnomalies(dataDate), // [16]
+        _loadIndexStageHistory(), // [17] Map<String, List<double>>
       ]);
 
       // 超時機制：最多等 _loadTimeoutSec 秒
@@ -331,19 +342,30 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         results[14] as Map<String, ({List<double> margin, List<double> short})>;
     final advRatioHistory = results[15] as Map<String, List<double>>;
     final chipAnomalies = results[16] as Map<String, List<ChipAnomaly>>;
+    final rawStageHistory = results[17] as Map<String, List<double>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
       for (final e in rawHistory.entries) e.key: List<double>.from(e.value),
     };
+    final indexStageHistory = <String, List<double>>{
+      for (final e in rawStageHistory.entries)
+        e.key: List<double>.from(e.value),
+    };
 
-    // 將即時 API 的今日收盤價追加到歷史資料，確保走勢圖反映最新資料
+    // 將即時 API 的今日收盤價追加到歷史資料，確保走勢圖與位階反映最新資料
     for (final idx in indices) {
       final history = indexHistory[idx.name];
       if (history != null && history.isNotEmpty) {
         // 使用 epsilon 比較避免浮點數精度問題
         if ((history.last - idx.close).abs() > 0.001) {
           history.add(idx.close);
+        }
+      }
+      final stageHistory = indexStageHistory[idx.name];
+      if (stageHistory != null && stageHistory.isNotEmpty) {
+        if ((stageHistory.last - idx.close).abs() > 0.001) {
+          stageHistory.add(idx.close);
         }
       }
     }
@@ -380,6 +402,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       indices: indices,
       advanceDecline: advanceDecline,
       indexHistory: indexHistory,
+      indexStageHistory: indexStageHistory,
       advanceDeclineByMarket: advDecByMarket,
       institutionalByMarket: instByMarket,
       marginByMarket: marginByMarket,
@@ -555,6 +578,31 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       return result;
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入指數歷史失敗', e);
+      return {};
+    }
+  }
+
+  /// 從 DB 載入較長窗口的指數歷史（供大盤位階 MA60 計算）
+  ///
+  /// 與 [_loadIndexHistory]（30 點走勢圖）分離：位階需 ≥60 個交易日才能算
+  /// MA60，因此使用 [DataFreshness.marketStageHistoryLookbackDays] 較長窗口，
+  /// 僅查 Hero 指數（加權指數 + 櫃買指數）以避免拉長其他 sparkline。
+  Future<Map<String, List<double>>> _loadIndexStageHistory() async {
+    try {
+      final indexNames = [MarketIndexNames.taiex, MarketIndexNames.tpexIndex];
+
+      final historyMap = await _db.getIndexHistoryBatch(
+        indexNames,
+        days: DataFreshness.marketStageHistoryLookbackDays,
+      );
+
+      final result = <String, List<double>>{};
+      for (final entry in historyMap.entries) {
+        result[entry.key] = entry.value.map((e) => e.close).toList();
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverviewNotifier', '載入指數位階歷史失敗', e);
       return {};
     }
   }

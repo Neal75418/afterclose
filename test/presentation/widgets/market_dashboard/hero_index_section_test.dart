@@ -54,5 +54,60 @@ void main() {
 
       expect(find.text('-80.10'), findsOneWidget);
     });
+
+    group('market stage row', () {
+      // 持續上升 80 點 → 多頭排列（close > MA20 > MA60）
+      final bullishHistory = List.generate(80, (i) => 22000.0 + i.toDouble());
+
+      testWidgets('renders stage chip with sufficient stage history', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestApp(
+            HeroIndexSection(
+              index: createIndex(),
+              historyData: bullishHistory,
+              stageHistory: bullishHistory,
+            ),
+          ),
+        );
+
+        // 位階 chip + 距 20MA / 距 60MA 乖離率（無載入翻譯時 .tr() 回傳 key）
+        expect(find.text('marketOverview.stage.bullish'), findsOneWidget);
+        expect(find.textContaining('marketOverview.biasMa20'), findsOneWidget);
+      });
+
+      testWidgets('shows insufficient muted text when stage history is short', (
+        tester,
+      ) async {
+        // 少於 MA60 所需筆數（<60）→ 位階資料不足
+        final shortHistory = List.generate(30, (i) => 22000.0 + i.toDouble());
+
+        await tester.pumpWidget(
+          buildTestApp(
+            HeroIndexSection(
+              index: createIndex(),
+              historyData: shortHistory,
+              stageHistory: shortHistory,
+            ),
+          ),
+        );
+
+        expect(find.text('marketOverview.stage.insufficient'), findsOneWidget);
+        // 資料不足時不顯示位階 chip
+        expect(find.text('marketOverview.stage.bullish'), findsNothing);
+      });
+
+      testWidgets('omits stage row entirely when no stage history', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestApp(HeroIndexSection(index: createIndex())),
+        );
+
+        expect(find.text('marketOverview.stage.insufficient'), findsNothing);
+        expect(find.text('marketOverview.stage.bullish'), findsNothing);
+      });
+    });
   });
 }
