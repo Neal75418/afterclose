@@ -411,6 +411,42 @@ void main() {
           reason: '高基期真實暴增不應被下限誤殺',
         );
       });
+
+      test('冷基期突發建空高量豁免（堡達案例）', () async {
+        // avg5d = 5 張（< 標準均量下限 10、但 ≥ 高量豁免下限 3）
+        // today = 130 張（≥ 高量下限 100），倍率 26 倍、最早期軋空前兆
+        await insertShortSurgeData(
+          todayShortSell: 130.0,
+          historyShortSell: 5.0,
+        );
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any(
+            (a) => a.type == ChipAnomalyType.shortSurge && a.symbol == '2330',
+          ),
+          isTrue,
+          reason: '今日 ≥ 100 張且均量 ≥ 3 張，冷基期突發建空應被高量豁免救回',
+        );
+      });
+
+      test('高量但均量低於豁免下限仍被濾除', () async {
+        // avg5d = 2 張（< 高量豁免下限 3），today = 130 張（≥ 高量下限 100）
+        // 即使當日量高，近零基期仍應濾除（避免 8476/3528 型噪訊）
+        await insertShortSurgeData(
+          todayShortSell: 130.0,
+          historyShortSell: 2.0,
+        );
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.shortSurge),
+          isFalse,
+          reason: '均量 < 3 張即使當日量高仍應濾除（近零基期噪訊）',
+        );
+      });
     });
 
     // ─────────────────────────────────────────────────────────────────────────

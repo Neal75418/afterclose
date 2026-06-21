@@ -152,6 +152,20 @@ class ChipAnomalyParams {
   /// 避免極小基期（< 1 張）使倍率失真。
   static const double shortSurgeMinAvgLots = 10.0;
 
+  /// 融券暴增：高量豁免的當日量下限（張）
+  ///
+  /// 「冷基期突發建空」（如某檔平時 4-7 張、今日突放 100+ 張）是最早期的軋空
+  /// 前兆，但會被 [shortSurgeMinAvgLots]=10 的均量地板誤殺。故開高量豁免：當日
+  /// 量達此下限時，均量地板放寬到 [shortSurgeHighVolMinAvgLots]，救回這類真訊號。
+  static const double shortSurgeHighVolTodayLots = 100.0;
+
+  /// 融券暴增：高量豁免時的均量下限（張）
+  ///
+  /// 高量豁免（當日 ≥ [shortSurgeHighVolTodayLots]）放寬的均量地板。仍須 ≥ 3 張
+  /// 以排除近零基期爆值（如 3528 均 0.333 張的 687 倍噪音）。亦作為 avg5d 的
+  /// HAVING 預過濾門檻（兩條路徑中最低的均量要求）。
+  static const double shortSurgeHighVolMinAvgLots = 3.0;
+
   /// 法人集中大買/賣：回溯天數
   static const int institutionalSurgeLookbackDays = 60;
 

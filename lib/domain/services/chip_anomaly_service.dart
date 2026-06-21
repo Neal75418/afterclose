@@ -235,9 +235,13 @@ class ChipAnomalyService {
 
   /// 融券暴增：當日融券賣出 > 近 5 日均融券賣出 × [ChipAnomalyParams.shortSurgeMultiplier]
   ///
-  /// 另設絕對量下限避免近零基期假訊號：當日量須 ≥
-  /// [ChipAnomalyParams.shortSurgeMinTodayLots] 張、5 日均量須 ≥
-  /// [ChipAnomalyParams.shortSurgeMinAvgLots] 張，倍率才有意義。
+  /// 絕對量下限採雙路徑避免近零基期假訊號、同時救回冷基期突發建空：
+  /// - 標準路徑：當日量 ≥ [ChipAnomalyParams.shortSurgeMinTodayLots] 張
+  ///   且 5 日均量 ≥ [ChipAnomalyParams.shortSurgeMinAvgLots] 張
+  /// - 高量豁免：當日量 ≥ [ChipAnomalyParams.shortSurgeHighVolTodayLots] 張時，
+  ///   均量地板放寬到 [ChipAnomalyParams.shortSurgeHighVolMinAvgLots] 張
+  /// avg5d 一律先以最低均量地板（HighVolMinAvgLots=3 張）HAVING 預過濾，排除近零
+  /// 基期爆值（如 3528 均 0.333 張的 687 倍噪音）。
   Future<List<ChipAnomaly>> _detectShortSurge(DateTime date) async {
     try {
       final dateLowerBound = date.subtract(
@@ -262,13 +266,17 @@ class ChipAnomalyService {
           SELECT symbol, AVG(short_sell) AS avg_short
           FROM recent WHERE rn BETWEEN 2 AND 6
           GROUP BY symbol
-          HAVING AVG(short_sell) >= ${ChipAnomalyParams.shortSurgeMinAvgLots}
+          HAVING AVG(short_sell) >= ${ChipAnomalyParams.shortSurgeHighVolMinAvgLots}
         )
         SELECT t.symbol, t.name, t.market, t.short_sell, a.avg_short,
                (t.short_sell / a.avg_short) AS ratio
         FROM today t
         INNER JOIN avg5d a ON t.symbol = a.symbol
         WHERE t.short_sell > a.avg_short * ${ChipAnomalyParams.shortSurgeMultiplier}
+          AND (
+            a.avg_short >= ${ChipAnomalyParams.shortSurgeMinAvgLots}
+            OR t.short_sell >= ${ChipAnomalyParams.shortSurgeHighVolTodayLots}
+          )
         ORDER BY ratio DESC
         LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
