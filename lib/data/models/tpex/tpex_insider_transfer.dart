@@ -32,12 +32,15 @@ class TpexInsiderTransfer {
       throw FormatException('無效的申報日期: "$reportDateStr"', json);
     }
 
-    // 轉讓股數/持股數可能為空（尚未確定的申報），預設 0
-    final transferSharesStr = json['轉讓股數']?.toString().trim() ?? '';
+    // ⚠️ TPEx OpenAPI (mopsfin_t187ap12_O) 的實際 key 帶群組前綴，舊版讀
+    // '轉讓股數'/'目前持有股數' 等不存在的 key → 全部 fallback 成 0（已驗 17/17 筆
+    // 皆 0 的 bug）。以下 key 已對 live API 核實。
+    final transferSharesStr = json['預定轉讓方式及股數-轉讓股數']?.toString().trim() ?? '';
     final transferShares =
         int.tryParse(transferSharesStr.replaceAll(',', '')) ?? 0;
 
-    final currentHoldingStr = json['目前持有股數']?.toString().trim() ?? '';
+    // 目前持有採「自有持股」（另有「保留運用決定權信託股數」未計入）
+    final currentHoldingStr = json['目前持有股數-自有持股']?.toString().trim() ?? '';
     final currentHolding =
         int.tryParse(currentHoldingStr.replaceAll(',', '')) ?? 0;
 
@@ -52,7 +55,7 @@ class TpexInsiderTransfer {
       reportDate: reportDate,
       identity: json['申請人身分']?.toString() ?? '',
       name: json['姓名']?.toString() ?? '',
-      transferMethod: json['轉讓方式']?.toString() ?? '',
+      transferMethod: json['預定轉讓方式及股數-轉讓方式']?.toString() ?? '',
       transferShares: transferShares,
       currentHolding: currentHolding,
       validPeriodStart: validPeriodStart,
