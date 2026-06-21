@@ -14,6 +14,13 @@ abstract final class Breakpoints {
 
   /// 導航欄收合斷點（低於此寬度使用 BottomNav）
   static const double navigationRailBreakpoint = 600;
+
+  /// Modal bottom sheet 最大寬度。
+  ///
+  /// 寬視窗（桌面）下 modal bottom sheet 預設撐滿全寬、不置中，閱讀體驗差；
+  /// 給 `showModalBottomSheet(constraints:)` 限寬後 Flutter 會自動水平置中，
+  /// 窄視窗（< 此值）則仍維持滿寬。
+  static const double sheetMaxWidth = 640;
 }
 
 /// 設備類型枚舉

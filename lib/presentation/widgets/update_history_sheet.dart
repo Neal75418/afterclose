@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/update_history_provider.dart';
@@ -24,6 +25,8 @@ class UpdateHistorySheet extends ConsumerWidget {
       isScrollControlled: true,
       useRootNavigator: true,
       showDragHandle: true,
+      // 寬視窗（桌面）限寬 + 自動水平置中，避免 sheet 撐滿全寬；窄視窗仍滿寬
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (_) => const UpdateHistorySheet(),
     );
   }
