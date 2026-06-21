@@ -140,6 +140,16 @@ abstract final class ApiConfig {
   /// 預設歷史回溯天數
   static const int defaultHistoryLookbackDays = 5;
 
+  /// 法人資料「日常更新」的回補天數（涵蓋分析所需的 ~10 天回溯）
+  static const int institutionalDailyBackfillDays = 15;
+
+  /// 法人資料「強制同步」的回補天數（calendar，~62 個交易日）
+  ///
+  /// 強制同步會清空法人資料重抓，故一次補深一點以恢復下游信號所需的歷史深度：
+  /// institutionalSurge baseline（60 日）、自營/外資 streak 深度、情緒法人
+  /// Z-score 視窗（10 日）。以 1 秒/交易日節流，~62 個交易日約 2-3 分鐘。
+  static const int institutionalForceBackfillDays = 90;
+
   /// 分析結束日期偏移天數
   static const int analysisEndDateOffsetDays = 1;
 

@@ -48,7 +48,15 @@ class InstitutionalRepository implements IInstitutionalRepository {
     return _db.getInstitutionalHistory(symbol, startDate: startDate);
   }
 
-  /// 同步單檔股票的法人資料
+  /// 同步單檔股票的法人資料（FinMind per-symbol 路徑）
+  ///
+  /// ⚠️ landmine：此路徑**目前未接入 daily 更新流程**（daily 走
+  /// [syncAllMarketInstitutional] 的 TWSE/TPEx 整批）。它經 FinMind 的
+  /// [DtoExtensions.toDatabaseCompanion] 寫入，而該 companion **不寫
+  /// dealer_self_net（會留 NULL）**，且 FinMind 的 dealer_net 是
+  /// 「自行+避險」buy−sell 衍生、與 TWSE row[11] 口徑不完全等價。
+  /// **若日後要把它重新接到 daily_institutional 寫入流程，必須先補
+  /// dealer_self_net + 對齊口徑**，否則會製造 NULL self_net + 異口徑髒資料。
   @override
   Future<int> syncInstitutionalData(
     String symbol, {

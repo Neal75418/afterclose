@@ -18,11 +18,13 @@ class InstitutionalSyncer {
   /// 同步法人資料
   ///
   /// 包含當日資料及近期回補
-  /// [backfillDays] 指定回補天數，預設 15 天（覆蓋分析所需的 10 天回溯）
+  /// [backfillDays] 指定回補天數，預設 [ApiConfig.institutionalDailyBackfillDays]
+  /// （日常更新 15 天）；強制同步由 caller 傳深一點的
+  /// [ApiConfig.institutionalForceBackfillDays] 以恢復下游信號所需的歷史深度
   Future<InstitutionalSyncResult> syncInstitutionalData({
     required DateTime date,
     bool force = false,
-    int backfillDays = 15,
+    int backfillDays = ApiConfig.institutionalDailyBackfillDays,
   }) async {
     var syncedDays = 0;
     final errors = <String>[];

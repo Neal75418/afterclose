@@ -10,6 +10,11 @@ class InstitutionalShiftRule extends StockRule {
   const InstitutionalShiftRule();
 
   /// 計算三大法人合計淨額（外資 + 投信 + 自營商）
+  ///
+  /// ⚠️ 防呆：dealer 必須用 [dealerNet]（自營商「合計」含避險），以對齊 TWSE
+  /// 官方公布的三大法人買賣超口徑。**勿改成 dealerSelfNet（自行買賣，不含避險）**
+  /// —— 那是給「自營主動方向 streak」用的不同口徑（見 market_overview_provider
+  /// 的自營 streak）。兩端口徑刻意分歧、by-design。
   static double _totalNet(DailyInstitutionalEntry entry) {
     return (entry.foreignNet ?? 0.0) +
         (entry.investmentTrustNet ?? 0.0) +

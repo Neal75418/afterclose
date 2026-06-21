@@ -1025,6 +1025,9 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       final raw = await _db.getRecentInstitutionalDailyByMarket(date);
       final result = <String, List<DatedValue>>{};
       for (final entry in raw.entries) {
+        // ⚠️ 防呆：三大法人合計用 dealerNet（含避險合計），對齊 TWSE 官方口徑、
+        // 餵情緒法人 Z-score。**勿改成 dealerSelfNet** —— 那是自營主動方向 streak
+        // 的不同口徑（見 _validateStreakConsistency 對自營不跨源對齊的註解）。
         result[entry.key] = entry.value.reversed
             .map<DatedValue>(
               (e) => (
