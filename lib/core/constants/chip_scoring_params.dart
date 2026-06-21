@@ -140,6 +140,18 @@ class ChipAnomalyParams {
   /// 融券暴增：當日融券賣出超過近期均量的倍率門檻
   static const double shortSurgeMultiplier = 3.0;
 
+  /// 融券暴增：當日融券賣出絕對量下限（張）
+  ///
+  /// 純倍率門檻在近零基期會放大成假訊號（如當日 229 張 / 5 日均 0.333 張
+  /// = 687 倍）。要求當日量達此下限才納入，過濾低量雜訊。
+  static const double shortSurgeMinTodayLots = 50.0;
+
+  /// 融券暴增：近 5 日均融券賣出絕對量下限（張）
+  ///
+  /// 與 [shortSurgeMinTodayLots] 搭配，要求均量基期達此下限才參與倍率比較，
+  /// 避免極小基期（< 1 張）使倍率失真。
+  static const double shortSurgeMinAvgLots = 10.0;
+
   /// 法人集中大買/賣：回溯天數
   static const int institutionalSurgeLookbackDays = 60;
 

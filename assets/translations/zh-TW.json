@@ -146,7 +146,6 @@
       "institutional": "法人動向",
       "volumeMomentum": "量能",
       "marginChange": "融資變化",
-      "limitRatio": "漲停比",
       "industryBreadth": "產業廣度",
       "trend": "趨勢"
     },
@@ -158,7 +157,7 @@
       "foreignNearLimit": "外資逼近上限",
       "shortSurge": "融券暴增",
       "institutionalSurge": "法人集中買賣",
-      "subtitleHighPledge": "董監質押比逾 50%，留意強制賣壓",
+      "subtitleHighPledge": "董監質押比逾 {threshold}%，留意強制賣壓",
       "subtitleInsiderTransfer": "董監事或大股東申報轉讓股票",
       "subtitleForeignNearLimit": "外資持股逼近法定上限",
       "subtitleShortSurge": "融券賣出暴增，注意空頭壓力",

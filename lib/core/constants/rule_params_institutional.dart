@@ -12,6 +12,13 @@ abstract final class InstitutionalParams {
   /// 法人連續買賣天數門檻
   static const int institutionalStreakDays = 4;
 
+  /// 法人連續買賣超「連續天數」徽章的回溯天數上限
+  ///
+  /// 市場總覽連續買賣超徽章（[InstitutionalStreak]）的取數窗口。預設 30 會
+  /// 把真實連續天數截斷在 30（DB 內 dealer 曾連 47 日淨買、卻顯示「連30日」），
+  /// 故獨立放寬至 90。徽章於 streak 觸頂時顯示「90+」。
+  static const int kStreakLookbackDays = 90;
+
   /// 法人每日最低淨買賣門檻（股）
   ///
   /// 每日淨買賣超須達此門檻才算有效交易日。

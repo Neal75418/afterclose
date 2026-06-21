@@ -37,7 +37,7 @@ class MarketSentiment {
 
 /// 市場情緒計算服務
 ///
-/// 綜合 6 項市場指標計算單一情緒分數 (0-100)。
+/// 綜合 5 項市場指標計算單一情緒分數 (0-100)。
 /// 純計算，無 IO 依賴，易於單元測試。
 class MarketSentimentService {
   const MarketSentimentService._();
@@ -50,12 +50,11 @@ class MarketSentimentService {
     required List<double> institutionalNetHistory,
     required List<double> turnoverHistory,
     required List<double> marginBalanceHistory,
-    LimitUpDown? limitUpDown,
     List<IndustrySummary> industries = const [],
   }) {
     final subScores = <String, double>{};
 
-    // 1. 漲跌比 (25%) — advance / total 線性映射
+    // 1. 漲跌比 (35%) — advance / total 線性映射
     final adTotal = advanceDecline.total;
     if (adTotal > 0) {
       final ratio = advanceDecline.advance / adTotal;
@@ -101,16 +100,7 @@ class MarketSentimentService {
       }
     }
 
-    // 5. 漲停跌停比 (10%)
-    if (limitUpDown != null) {
-      final luTotal = limitUpDown.limitUp + limitUpDown.limitDown;
-      if (luTotal > 0) {
-        final ratio = limitUpDown.limitUp / luTotal;
-        subScores['limitRatio'] = ratio * 100;
-      }
-    }
-
-    // 6. 產業廣度 (10%) — 上漲產業數/總產業數
+    // 5. 產業廣度 (10%) — 上漲產業數/總產業數
     if (industries.isNotEmpty) {
       final upCount = industries.where((i) => i.avgChangePct > 0).length;
       subScores['industryBreadth'] = upCount / industries.length * 100;
@@ -120,11 +110,10 @@ class MarketSentimentService {
     if (subScores.isEmpty) return MarketSentiment._empty;
 
     const weights = {
-      'advanceRatio': 0.25,
+      'advanceRatio': 0.35,
       'institutional': 0.25,
       'volumeMomentum': 0.15,
       'marginChange': 0.15,
-      'limitRatio': 0.10,
       'industryBreadth': 0.10,
     };
 
@@ -151,8 +140,8 @@ class MarketSentimentService {
   /// 計算歷史情緒分數序列（供趨勢 sparkline）
   ///
   /// 利用 30 日歷史資料回溯計算每日情緒分數。
-  /// 歷史日缺少 limitUpDown 和 industries（合計權重 20%），
-  /// 已有指標的權重會自動正規化，趨勢形狀仍正確。
+  /// 歷史日缺少 industries（權重 10%），已有指標的權重會自動正規化，
+  /// 趨勢形狀仍正確。
   ///
   /// 所有 history 參數為 oldest→newest。
   static List<double> calculateHistoricalScores({

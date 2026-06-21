@@ -235,7 +235,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final instHist = trends.institutionalTotalNet[marketKey];
     final turnHist = trends.turnover[marketKey];
     final marginHist = trends.marginBalance[marketKey];
-    final limitUD = widget.state.limitUpDownByMarket[marketKey];
     final industries = widget.state.industrySummaryByMarket[marketKey];
 
     // 至少需要漲跌家數 + 一項歷史資料
@@ -250,7 +249,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
       institutionalNetHistory: instHist ?? [],
       turnoverHistory: turnHist ?? [],
       marginBalanceHistory: marginHist ?? [],
-      limitUpDown: limitUD,
       industries: industries ?? [],
     );
   }

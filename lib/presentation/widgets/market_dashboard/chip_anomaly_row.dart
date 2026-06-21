@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:afterclose/core/constants/rule_params_fundamental.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/domain/services/chip_anomaly_service.dart'
@@ -430,7 +431,12 @@ _TypeMeta _typeMeta(ChipAnomalyType type) {
       return _TypeMeta(
         icon: Icons.lock_outline_rounded,
         label: 'marketOverview.chipAnomaly.highPledge'.tr(),
-        subtitle: 'marketOverview.chipAnomaly.subtitleHighPledge'.tr(),
+        subtitle: 'marketOverview.chipAnomaly.subtitleHighPledge'.tr(
+          namedArgs: {
+            'threshold': FundamentalParams.highPledgeRatioThreshold
+                .toStringAsFixed(0),
+          },
+        ),
       );
     case ChipAnomalyType.insiderTransfer:
       return _TypeMeta(

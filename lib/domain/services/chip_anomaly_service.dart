@@ -8,7 +8,7 @@ import 'package:afterclose/data/database/app_database.dart';
 
 /// 籌碼異動類型
 enum ChipAnomalyType {
-  /// 質押率飆升（> 50%）
+  /// 質押率飆升（>= 70%）
   highPledge,
 
   /// 內部人轉讓申報
@@ -17,7 +17,7 @@ enum ChipAnomalyType {
   /// 外資逼近持股上限（> 上限 × 90%）
   foreignNearLimit,
 
-  /// 融券暴增（當日融券賣出 > 5日均量 × 3）
+  /// 融券暴增（當日融券賣出 > 5日均量 × 3，且當日量 ≥ 50 張、均量 ≥ 10 張下限）
   shortSurge,
 
   /// 法人集中大買/賣（單日淨額 > 30日平均絕對值 × 5）
@@ -234,6 +234,10 @@ class ChipAnomalyService {
   }
 
   /// 融券暴增：當日融券賣出 > 近 5 日均融券賣出 × [ChipAnomalyParams.shortSurgeMultiplier]
+  ///
+  /// 另設絕對量下限避免近零基期假訊號：當日量須 ≥
+  /// [ChipAnomalyParams.shortSurgeMinTodayLots] 張、5 日均量須 ≥
+  /// [ChipAnomalyParams.shortSurgeMinAvgLots] 張，倍率才有意義。
   Future<List<ChipAnomaly>> _detectShortSurge(DateTime date) async {
     try {
       final dateLowerBound = date.subtract(
@@ -252,13 +256,13 @@ class ChipAnomalyService {
         ),
         today AS (
           SELECT symbol, name, market, short_sell
-          FROM recent WHERE rn = 1 AND short_sell > 0
+          FROM recent WHERE rn = 1 AND short_sell >= ${ChipAnomalyParams.shortSurgeMinTodayLots}
         ),
         avg5d AS (
           SELECT symbol, AVG(short_sell) AS avg_short
           FROM recent WHERE rn BETWEEN 2 AND 6
           GROUP BY symbol
-          HAVING AVG(short_sell) > 0
+          HAVING AVG(short_sell) >= ${ChipAnomalyParams.shortSurgeMinAvgLots}
         )
         SELECT t.symbol, t.name, t.market, t.short_sell, a.avg_short,
                (t.short_sell / a.avg_short) AS ratio

@@ -361,6 +361,56 @@ void main() {
 
         expect(anomaly.keyValue, '4.0倍');
       });
+
+      test('近零基期高倍率被絕對量下限濾除', () async {
+        // avg5d = 0.333 張（< 均量下限 10），today = 229 張
+        // 倍率 687 倍但基期過低 → 應被濾除（模擬 3528 安馳案例）
+        await insertShortSurgeData(
+          todayShortSell: 229.0,
+          historyShortSell: 0.333,
+        );
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.shortSurge),
+          isFalse,
+          reason: '均量基期 < 10 張應被下限濾除，避免假性高倍率',
+        );
+      });
+
+      test('當日量低於下限被濾除', () async {
+        // avg5d = 1 張、today = 40 張（< 當日下限 50），倍率 40 倍
+        // 雖達倍率但當日絕對量過低 → 應被濾除
+        await insertShortSurgeData(todayShortSell: 40.0, historyShortSell: 1.0);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any((a) => a.type == ChipAnomalyType.shortSurge),
+          isFalse,
+          reason: '當日量 < 50 張應被下限濾除',
+        );
+      });
+
+      test('真實高基期暴增仍應偵測（和桐案例）', () async {
+        // avg5d = 87.33 張（≥ 均量下限 10）、today = 2833 張（≥ 當日下限 50）
+        // 倍率約 32 倍 → 真實暴增應正常回報
+        await insertShortSurgeData(
+          todayShortSell: 2833.0,
+          historyShortSell: 87.33,
+        );
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any(
+            (a) => a.type == ChipAnomalyType.shortSurge && a.symbol == '2330',
+          ),
+          isTrue,
+          reason: '高基期真實暴增不應被下限誤殺',
+        );
+      });
     });
 
     // ─────────────────────────────────────────────────────────────────────────

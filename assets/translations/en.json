@@ -146,7 +146,6 @@
       "institutional": "Institutional",
       "volumeMomentum": "Volume",
       "marginChange": "Margin Chg",
-      "limitRatio": "Limit Ratio",
       "industryBreadth": "Breadth",
       "trend": "Trend"
     },
@@ -158,7 +157,7 @@
       "foreignNearLimit": "Foreign Near Limit",
       "shortSurge": "Short Surge",
       "institutionalSurge": "Inst. Surge",
-      "subtitleHighPledge": "Insider pledge ratio >50%, watch for forced selling",
+      "subtitleHighPledge": "Insider pledge ratio >{threshold}%, watch for forced selling",
       "subtitleInsiderTransfer": "Director or major shareholder filed transfer notice",
       "subtitleForeignNearLimit": "Foreign holdings approaching regulatory ceiling",
       "subtitleShortSurge": "Short selling surged, watch for downside pressure",

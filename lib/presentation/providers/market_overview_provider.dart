@@ -6,6 +6,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/constants/industry_names.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
+import 'package:afterclose/core/constants/rule_params_institutional.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -828,7 +829,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     DateTime date,
   ) async {
     try {
-      final data = await _db.getRecentInstitutionalDailyByMarket(date);
+      final data = await _db.getRecentInstitutionalDailyByMarket(
+        date,
+        days: InstitutionalParams.kStreakLookbackDays,
+      );
       final result = <String, InstitutionalStreak>{};
 
       for (final entry in data.entries) {

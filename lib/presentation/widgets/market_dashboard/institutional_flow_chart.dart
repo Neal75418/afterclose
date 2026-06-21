@@ -1,6 +1,7 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/constants/rule_params_institutional.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -304,12 +305,14 @@ class _StreakBadge extends StatelessWidget {
     final theme = Theme.of(context);
     final isBuy = streak > 0;
     final color = isBuy ? AppTheme.upColor : AppTheme.downColor;
+    // streak 觸頂（達取數窗口上限）時顯示「90+」，否則顯示真實天數
+    final countDisplay = streak.abs() >= InstitutionalParams.kStreakLookbackDays
+        ? '${InstitutionalParams.kStreakLookbackDays}+'
+        : '${streak.abs()}';
     final text = isBuy
-        ? 'marketOverview.consecutiveBuy'.tr(
-            namedArgs: {'count': '${streak.abs()}'},
-          )
+        ? 'marketOverview.consecutiveBuy'.tr(namedArgs: {'count': countDisplay})
         : 'marketOverview.consecutiveSell'.tr(
-            namedArgs: {'count': '${streak.abs()}'},
+            namedArgs: {'count': countDisplay},
           );
 
     return Container(

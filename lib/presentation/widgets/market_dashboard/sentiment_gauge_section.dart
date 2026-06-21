@@ -277,7 +277,6 @@ class _SubScoresGrid extends StatelessWidget {
       ('institutional', 'marketOverview.sentiment.institutional'),
       ('volumeMomentum', 'marketOverview.sentiment.volumeMomentum'),
       ('marginChange', 'marketOverview.sentiment.marginChange'),
-      ('limitRatio', 'marketOverview.sentiment.limitRatio'),
       ('industryBreadth', 'marketOverview.sentiment.industryBreadth'),
     ];
 

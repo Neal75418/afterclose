@@ -383,6 +383,81 @@ void main() {
       });
     });
 
+    // ── getRecentAdvanceDeclineByMarket ────────────────────
+
+    group('getRecentAdvanceDeclineByMarket', () {
+      test('aggregates advance/decline per market, date descending', () async {
+        for (var i = 0; i < 3; i++) {
+          final d = today.subtract(Duration(days: i));
+          await db.insertPrices([
+            DailyPriceCompanion.insert(
+              symbol: '2330',
+              date: d,
+              close: const Value(100.0),
+              priceChange: const Value(1.0), // advance
+            ),
+            DailyPriceCompanion.insert(
+              symbol: '2317',
+              date: d,
+              close: const Value(50.0),
+              priceChange: const Value(-1.0), // decline
+            ),
+          ]);
+        }
+
+        final result = await db.getRecentAdvanceDeclineByMarket(
+          today,
+          days: 3,
+          minCoverage: 1,
+        );
+        final twse = result['TWSE']!;
+
+        // 本方法保留最多 days 筆（與 turnover 的 days+1 不同，刻意不改動既有
+        // sparkline 長度語意）
+        expect(twse.length, 3);
+        expect(twse.first.date, today);
+        expect(twse.first.advance, 1);
+        expect(twse.first.decline, 1);
+      });
+
+      test('excludes half-coverage days below minCoverage threshold', () async {
+        // 完整日：2 檔報價（達門檻 2）
+        await db.insertPrices([
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: today,
+            close: const Value(100.0),
+            priceChange: const Value(1.0),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2317',
+            date: today,
+            close: const Value(50.0),
+            priceChange: const Value(-1.0),
+          ),
+        ]);
+        // 半套日：僅 1 檔（模擬只同步候選子集，未達門檻）
+        await db.insertPrices([
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 1)),
+            close: const Value(100.0),
+            priceChange: const Value(1.0),
+          ),
+        ]);
+
+        final result = await db.getRecentAdvanceDeclineByMarket(
+          today,
+          days: 5,
+          minCoverage: 2,
+        );
+
+        // 半套日（1 檔 < 門檻 2）被濾除，只剩完整日
+        expect(result['TWSE']!.length, 1, reason: '半套日應被濾除');
+        expect(result['TWSE']!.first.date, today);
+      });
+    });
+
     // ── getActiveWarningCountsByMarket ─────────────────────
 
     group('getActiveWarningCountsByMarket', () {
