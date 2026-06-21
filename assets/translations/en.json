@@ -95,7 +95,6 @@
     "exFinance": "Ex-Finance",
     "electronics": "Electronics",
     "finance": "Finance",
-    "industryIndices": "Industry Indices",
     "semiconductor": "Semiconductor",
     "shipping": "Shipping",
     "biotech": "Biotech",
@@ -150,45 +149,6 @@
       "limitRatio": "Limit Ratio",
       "industryBreadth": "Breadth",
       "trend": "Trend"
-    },
-    "keyInsights": {
-      "title": "Key Insights",
-      "sentimentExtreme": {
-        "title": "Extreme Sentiment",
-        "descFear": "Market panic — sentiment score only {score}",
-        "descGreed": "Market overheated — sentiment score at {score}"
-      },
-      "institutionalStreak": {
-        "title": "Institutional Flow",
-        "descForeignBuy": "Foreign investors net buying for {days} consecutive days",
-        "descForeignSell": "Foreign investors net selling for {days} consecutive days",
-        "descTrustBuy": "Investment trust net buying for {days} consecutive days",
-        "descTrustSell": "Investment trust net selling for {days} consecutive days"
-      },
-      "volumeAnomaly": {
-        "title": "Volume Anomaly",
-        "descHigh": "Today's volume up {pct}% vs 5-day average",
-        "descLow": "Today's volume down {pct}% vs 5-day average"
-      },
-      "chipAlert": {
-        "title": "Chip Alert",
-        "desc": "{count} stocks with high-severity anomalies"
-      },
-      "limitImbalance": {
-        "title": "Limit Hit Imbalance",
-        "descUp": "{up} limit up, {down} limit down",
-        "descDown": "{down} limit down, {up} limit up"
-      },
-      "marginSurge": {
-        "title": "Margin Trading Surge",
-        "descMargin": "Margin balance changed {pct}% in one day",
-        "descShort": "Short balance changed {pct}% in one day"
-      },
-      "industryConcentration": {
-        "title": "Sector Convergence",
-        "descUp": "{pct}% of sectors rising — broad-based rally",
-        "descDown": "{pct}% of sectors falling — broad-based decline"
-      }
     },
     "chipAnomaly": {
       "title": "Chip Anomalies",

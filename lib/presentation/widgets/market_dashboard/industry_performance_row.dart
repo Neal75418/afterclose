@@ -9,7 +9,7 @@ import 'package:afterclose/presentation/providers/market_overview_provider.dart'
 /// 產業表現區域
 ///
 /// 顯示各產業的平均漲跌幅、漲跌家數。
-/// 桌面版使用 Wrap 排列（同 SubIndicesRow），手機版水平捲動。
+/// 桌面版使用 Wrap 排列，手機版水平捲動。
 class IndustryPerformanceRow extends StatelessWidget {
   const IndustryPerformanceRow({super.key, required this.industries});
 

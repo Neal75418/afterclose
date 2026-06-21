@@ -10,19 +10,16 @@ import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/key_insights_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/industry_performance_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/margin_compact_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/chip_anomaly_row.dart';
-import 'package:afterclose/presentation/widgets/market_dashboard/sub_indices_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/trading_turnover_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/sentiment_gauge_section.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/warnings_summary_row.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
-import 'package:afterclose/domain/services/market_insight_service.dart';
 import 'package:afterclose/domain/services/market_sentiment_service.dart';
 
 /// 大盤總覽 Dashboard
@@ -281,24 +278,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
-  /// 偵測智慧摘要洞察
-  ///
-  /// 接受已計算好的 [sentiment] 避免重複呼叫 [_computeSentiment]。
-  List<MarketInsight> _computeInsights(
-    String marketKey,
-    MarketSentiment? sentiment,
-  ) {
-    return MarketInsightService.detect(
-      sentiment: sentiment,
-      streak: widget.state.institutionalStreakByMarket[marketKey],
-      turnoverComparison: widget.state.turnoverComparisonByMarket[marketKey],
-      chipAnomalies: widget.state.chipAnomaliesByMarket[marketKey] ?? [],
-      limitUpDown: widget.state.limitUpDownByMarket[marketKey],
-      margin: widget.state.marginByMarket[marketKey],
-      industries: widget.state.industrySummaryByMarket[marketKey] ?? [],
-    );
-  }
-
   /// 建構手機單欄顯示
   Widget _buildMobileView(ThemeData theme) {
     final sections = <Widget>[];
@@ -317,26 +296,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
             totalReturnHistory:
                 widget.state.indexHistory[MarketIndexNames.totalReturnIndex] ??
                 [],
-          ),
-        );
-      }
-
-      // Section 2: 子指數列
-      const subOrder = MarketIndexNames.dashboardIndices;
-      final subIndices =
-          widget.state.indices
-              .where((idx) => idx.name != MarketIndexNames.taiex)
-              .toList()
-            ..sort(
-              (a, b) =>
-                  subOrder.indexOf(a.name).compareTo(subOrder.indexOf(b.name)),
-            );
-
-      if (subIndices.isNotEmpty) {
-        sections.add(
-          SubIndicesRow(
-            subIndices: subIndices,
-            historyMap: widget.state.indexHistory,
           ),
         );
       }
@@ -380,12 +339,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
           sentimentHistory: _computeSentimentHistory(marketKey),
         ),
       );
-    }
-
-    // Section: 智慧摘要
-    final insights = _computeInsights(marketKey, sentiment);
-    if (insights.isNotEmpty) {
-      sections.add(KeyInsightsRow(insights: insights));
     }
 
     // Section 3+: 統計數據（依選擇的市場顯示）
@@ -508,7 +461,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
   /// 使用跨欄配對方式，每個 section 型別左右配成一組 [IntrinsicHeight] + [Row]，
   /// 確保對應 section 水平對齊，避免左右高度差異導致後續 section 錯位。
   Widget _buildParallelView(ThemeData theme) {
-    final subIndicesWidget = _buildSharedSubIndices();
     final sentiment = _computeSentiment(MarketCode.twse);
 
     // 每個 section builder 返回 Widget?，null 表示該市場無此資料
@@ -534,17 +486,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 共用：子指數列
-        if (subIndicesWidget != null) ...[
-          subIndicesWidget,
-          const SizedBox(height: DesignTokens.spacing14),
-          Divider(
-            height: 1,
-            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: DesignTokens.spacing14),
-        ],
-
         // 共用：市場情緒儀表板（僅 TWSE，TPEx 資料量不足以穩定計算）
         if (sentiment != null) ...[
           Row(
@@ -579,21 +520,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
           const SizedBox(height: DesignTokens.spacing14),
         ],
 
-        // 共用：智慧摘要
-        ...() {
-          final insights = _computeInsights(MarketCode.twse, sentiment);
-          if (insights.isEmpty) return <Widget>[];
-          return <Widget>[
-            KeyInsightsRow(insights: insights),
-            const SizedBox(height: DesignTokens.spacing14),
-            Divider(
-              height: 1,
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-            ),
-            const SizedBox(height: DesignTokens.spacing14),
-          ];
-        }(),
-
         // 標題 + Hero 指數配對
         _buildPairedRow(
           theme,
@@ -612,30 +538,6 @@ class _MarketDashboardState extends State<MarketDashboard> {
           row,
         ],
       ],
-    );
-  }
-
-  /// 建構共用子指數列（TWSE 產業指數，放在雙欄上方）
-  Widget? _buildSharedSubIndices() {
-    const subOrder = MarketIndexNames.dashboardIndices;
-    final subIndices =
-        widget.state.indices
-            .where(
-              (idx) =>
-                  idx.name != MarketIndexNames.taiex &&
-                  idx.name != MarketIndexNames.tpexIndex,
-            )
-            .toList()
-          ..sort(
-            (a, b) =>
-                subOrder.indexOf(a.name).compareTo(subOrder.indexOf(b.name)),
-          );
-
-    if (subIndices.isEmpty) return null;
-
-    return SubIndicesRow(
-      subIndices: subIndices,
-      historyMap: widget.state.indexHistory,
     );
   }
 
