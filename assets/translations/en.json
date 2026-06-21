@@ -181,7 +181,8 @@
       "volumeMomentum": "Volume",
       "marginChange": "Margin Chg",
       "industryBreadth": "Breadth",
-      "trend": "Trend"
+      "trend": "Trend",
+      "details": "Details"
     },
     "chipAnomaly": {
       "title": "Chip Anomalies",

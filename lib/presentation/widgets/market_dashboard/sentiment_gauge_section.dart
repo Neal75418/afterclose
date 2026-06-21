@@ -8,8 +8,10 @@ import 'package:afterclose/presentation/widgets/stock_card_sparkline.dart';
 
 /// 市場情緒儀表板
 ///
-/// 顯示市場情緒分數 (0-100)、等級、漸層 bar 指標位置、6 項子指標。
-class SentimentGaugeSection extends StatelessWidget {
+/// 顯示市場情緒分數 (0-100)、等級、漸層 bar 指標位置。子指標預設收摺
+/// （CNN Fear&Greed 範式：總分為主、細項按需展開），避免一次塞 5 個
+/// 看不懂的子分數造成認知過載。
+class SentimentGaugeSection extends StatefulWidget {
   const SentimentGaugeSection({
     super.key,
     required this.sentiment,
@@ -27,8 +29,17 @@ class SentimentGaugeSection extends StatelessWidget {
   final bool showInternalTitle;
 
   @override
+  State<SentimentGaugeSection> createState() => _SentimentGaugeSectionState();
+}
+
+class _SentimentGaugeSectionState extends State<SentimentGaugeSection> {
+  /// 子指標細項是否展開（預設收摺）
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final sentiment = widget.sentiment;
     final color = _levelColor(sentiment.level);
     final levelText = _levelText(sentiment.level);
 
@@ -36,7 +47,7 @@ class SentimentGaugeSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 標題行（可由桌面版 dashboard 隱藏避免重複）
-        if (showInternalTitle) ...[
+        if (widget.showInternalTitle) ...[
           Text(
             'marketOverview.sentiment.title'.tr(),
             style: theme.textTheme.labelSmall?.copyWith(
@@ -95,14 +106,30 @@ class SentimentGaugeSection extends StatelessWidget {
 
               // 漸層 bar + 三角形指標
               _GradientBar(score: sentiment.score),
-              const SizedBox(height: DesignTokens.spacing14),
 
-              // 子指標 grid (2×3)
-              if (sentiment.subScores.isNotEmpty)
-                _SubScoresGrid(subScores: sentiment.subScores),
+              // 子指標：預設收摺，點「細項」展開（CNN Fear&Greed 範式）
+              if (sentiment.subScores.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.spacing8),
+                _SubScoresToggle(
+                  expanded: _expanded,
+                  onTap: () => setState(() => _expanded = !_expanded),
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 180),
+                  alignment: Alignment.topCenter,
+                  child: _expanded
+                      ? Padding(
+                          padding: const EdgeInsets.only(
+                            top: DesignTokens.spacing10,
+                          ),
+                          child: _SubScoresGrid(subScores: sentiment.subScores),
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
+              ],
 
               // 趨勢 sparkline
-              if (sentimentHistory.length >= 5) ...[
+              if (widget.sentimentHistory.length >= 5) ...[
                 const SizedBox(height: DesignTokens.spacing10),
                 Row(
                   children: [
@@ -120,7 +147,7 @@ class SentimentGaugeSection extends StatelessWidget {
                       child: SizedBox(
                         height: 28,
                         child: MiniSparkline(
-                          prices: sentimentHistory,
+                          prices: widget.sentimentHistory,
                           color: color,
                           width: double.infinity,
                           height: 28,
@@ -156,6 +183,49 @@ class SentimentGaugeSection extends StatelessWidget {
       SentimentLevel.extremeGreed => 'marketOverview.sentiment.extremeGreed',
     };
     return key.tr();
+  }
+}
+
+/// 子指標展開/收摺切換列
+class _SubScoresToggle extends StatelessWidget {
+  const _SubScoresToggle({required this.expanded, required this.onTap});
+
+  final bool expanded;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final mutedColor = theme.colorScheme.onSurfaceVariant.withValues(
+      alpha: 0.7,
+    );
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: DesignTokens.spacing4),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'marketOverview.sentiment.details'.tr(),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: mutedColor,
+                fontSize: DesignTokens.fontSizeXs,
+              ),
+            ),
+            const SizedBox(width: DesignTokens.spacing4),
+            Icon(
+              expanded ? Icons.expand_less : Icons.expand_more,
+              size: 14,
+              color: mutedColor,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

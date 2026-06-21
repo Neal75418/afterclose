@@ -181,7 +181,8 @@
       "volumeMomentum": "量能",
       "marginChange": "融資變化",
       "industryBreadth": "產業廣度",
-      "trend": "趨勢"
+      "trend": "趨勢",
+      "details": "細項"
     },
     "chipAnomaly": {
       "title": "籌碼異動",
