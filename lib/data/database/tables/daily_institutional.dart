@@ -24,8 +24,19 @@ class DailyInstitutional extends Table {
   /// 投信買賣超（張）
   RealColumn get investmentTrustNet => real().nullable()();
 
-  /// 自營商買賣超（張）
+  /// 自營商買賣超（張）— 自行買賣 + 避險合計（對外口徑，媒體/TWSE 報的就是此值）
   RealColumn get dealerNet => real().nullable()();
+
+  /// 自營商「自行買賣」買賣超（張，不含避險）
+  ///
+  /// FinMind 的 Dealer_self。自營避險部位結構性偏買，會使合計 [dealerNet]
+  /// 連續買超天數失真（恆正）；此欄供「自行買賣」streak 等需要真實自營主動
+  /// 方向的場景使用。
+  ///
+  /// ⚠️ 此欄以 idempotent ALTER 路徑（見 AppDatabase beforeOpen 的
+  /// `_ensureDealerSelfNetColumn`）加入既有 DB，刻意「不」bump schema
+  /// fingerprint，避免 wipe 掉使用者累積的 derived 資料。
+  RealColumn get dealerSelfNet => real().nullable()();
 
   @override
   Set<Column> get primaryKey => {symbol, date};

@@ -180,9 +180,38 @@ class AppDatabase extends $AppDatabase
       // 不會因為 CASCADE 連鎖觸發非預期刪除。若偵測到 fingerprint mismatch，
       // 會把所有 Drift managed table drop 後由 Migrator 重建。
       await _ensureSchemaFingerprint();
+      await _ensureDealerSelfNetColumn();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// Pre-launch idempotent 加欄：在「不」bump schema fingerprint（不 wipe 既有
+  /// derived 資料）的前提下，為既有 DB 補上 `daily_institutional.dealer_self_net`。
+  ///
+  /// - 全新安裝：`createAll` 已依表定義建出此欄，這裡 PRAGMA 查到便 no-op。
+  /// - 既有 DB：fingerprint 未變→不 wipe，這裡偵測缺欄並 `ALTER TABLE ADD COLUMN`，
+  ///   既有 47 天法人資料與其餘 derived 表全部保留。
+  /// - 未來若有人 bump fingerprint 觸發 wipe：createAll 重建已含此欄，這裡 no-op。
+  ///
+  /// SQLite 的 `ALTER TABLE ADD COLUMN` 不支援 `IF NOT EXISTS`，故先以
+  /// `PRAGMA table_info` 判斷欄位是否存在，確保 idempotent（每次開啟可安全重跑）。
+  Future<void> _ensureDealerSelfNetColumn() async {
+    final columns = await customSelect(
+      "PRAGMA table_info('daily_institutional')",
+    ).get();
+    final hasColumn = columns.any(
+      (row) => row.read<String>('name') == 'dealer_self_net',
+    );
+    if (hasColumn) return;
+
+    await customStatement(
+      'ALTER TABLE daily_institutional ADD COLUMN dealer_self_net REAL',
+    );
+    AppLogger.info(
+      'AppDatabase',
+      '既有 DB 補上 daily_institutional.dealer_self_net 欄（保留既有資料）',
+    );
+  }
 
   /// 檢查 schema fingerprint 是否與當前 code 一致，若不一致則 drop 全部 table 重建
   ///

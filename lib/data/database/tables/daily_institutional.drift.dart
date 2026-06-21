@@ -14,6 +14,7 @@ typedef $$DailyInstitutionalTableCreateCompanionBuilder =
       i0.Value<double?> foreignNet,
       i0.Value<double?> investmentTrustNet,
       i0.Value<double?> dealerNet,
+      i0.Value<double?> dealerSelfNet,
       i0.Value<int> rowid,
     });
 typedef $$DailyInstitutionalTableUpdateCompanionBuilder =
@@ -23,6 +24,7 @@ typedef $$DailyInstitutionalTableUpdateCompanionBuilder =
       i0.Value<double?> foreignNet,
       i0.Value<double?> investmentTrustNet,
       i0.Value<double?> dealerNet,
+      i0.Value<double?> dealerSelfNet,
       i0.Value<int> rowid,
     });
 
@@ -101,6 +103,11 @@ class $$DailyInstitutionalTableFilterComposer
     builder: (column) => i0.ColumnFilters(column),
   );
 
+  i0.ColumnFilters<double> get dealerSelfNet => $composableBuilder(
+    column: $table.dealerSelfNet,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
   i3.$$StockMasterTableFilterComposer get symbol {
     final i3.$$StockMasterTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -158,6 +165,11 @@ class $$DailyInstitutionalTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
+  i0.ColumnOrderings<double> get dealerSelfNet => $composableBuilder(
+    column: $table.dealerSelfNet,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
   i3.$$StockMasterTableOrderingComposer get symbol {
     final i3.$$StockMasterTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -210,6 +222,11 @@ class $$DailyInstitutionalTableAnnotationComposer
 
   i0.GeneratedColumn<double> get dealerNet =>
       $composableBuilder(column: $table.dealerNet, builder: (column) => column);
+
+  i0.GeneratedColumn<double> get dealerSelfNet => $composableBuilder(
+    column: $table.dealerSelfNet,
+    builder: (column) => column,
+  );
 
   i3.$$StockMasterTableAnnotationComposer get symbol {
     final i3.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
@@ -280,6 +297,7 @@ class $$DailyInstitutionalTableTableManager
                 i0.Value<double?> foreignNet = const i0.Value.absent(),
                 i0.Value<double?> investmentTrustNet = const i0.Value.absent(),
                 i0.Value<double?> dealerNet = const i0.Value.absent(),
+                i0.Value<double?> dealerSelfNet = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyInstitutionalCompanion(
                 symbol: symbol,
@@ -287,6 +305,7 @@ class $$DailyInstitutionalTableTableManager
                 foreignNet: foreignNet,
                 investmentTrustNet: investmentTrustNet,
                 dealerNet: dealerNet,
+                dealerSelfNet: dealerSelfNet,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -296,6 +315,7 @@ class $$DailyInstitutionalTableTableManager
                 i0.Value<double?> foreignNet = const i0.Value.absent(),
                 i0.Value<double?> investmentTrustNet = const i0.Value.absent(),
                 i0.Value<double?> dealerNet = const i0.Value.absent(),
+                i0.Value<double?> dealerSelfNet = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.DailyInstitutionalCompanion.insert(
                 symbol: symbol,
@@ -303,6 +323,7 @@ class $$DailyInstitutionalTableTableManager
                 foreignNet: foreignNet,
                 investmentTrustNet: investmentTrustNet,
                 dealerNet: dealerNet,
+                dealerSelfNet: dealerSelfNet,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -443,6 +464,17 @@ class $DailyInstitutionalTable extends i2.DailyInstitutional
     type: i0.DriftSqlType.double,
     requiredDuringInsert: false,
   );
+  static const i0.VerificationMeta _dealerSelfNetMeta =
+      const i0.VerificationMeta('dealerSelfNet');
+  @override
+  late final i0.GeneratedColumn<double> dealerSelfNet =
+      i0.GeneratedColumn<double>(
+        'dealer_self_net',
+        aliasedName,
+        true,
+        type: i0.DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   @override
   List<i0.GeneratedColumn> get $columns => [
     symbol,
@@ -450,6 +482,7 @@ class $DailyInstitutionalTable extends i2.DailyInstitutional
     foreignNet,
     investmentTrustNet,
     dealerNet,
+    dealerSelfNet,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -500,6 +533,15 @@ class $DailyInstitutionalTable extends i2.DailyInstitutional
         dealerNet.isAcceptableOrUnknown(data['dealer_net']!, _dealerNetMeta),
       );
     }
+    if (data.containsKey('dealer_self_net')) {
+      context.handle(
+        _dealerSelfNetMeta,
+        dealerSelfNet.isAcceptableOrUnknown(
+          data['dealer_self_net']!,
+          _dealerSelfNetMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -532,6 +574,10 @@ class $DailyInstitutionalTable extends i2.DailyInstitutional
         i0.DriftSqlType.double,
         data['${effectivePrefix}dealer_net'],
       ),
+      dealerSelfNet: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.double,
+        data['${effectivePrefix}dealer_self_net'],
+      ),
     );
   }
 
@@ -555,14 +601,26 @@ class DailyInstitutionalEntry extends i0.DataClass
   /// 投信買賣超（張）
   final double? investmentTrustNet;
 
-  /// 自營商買賣超（張）
+  /// 自營商買賣超（張）— 自行買賣 + 避險合計（對外口徑，媒體/TWSE 報的就是此值）
   final double? dealerNet;
+
+  /// 自營商「自行買賣」買賣超（張，不含避險）
+  ///
+  /// FinMind 的 Dealer_self。自營避險部位結構性偏買，會使合計 [dealerNet]
+  /// 連續買超天數失真（恆正）；此欄供「自行買賣」streak 等需要真實自營主動
+  /// 方向的場景使用。
+  ///
+  /// ⚠️ 此欄以 idempotent ALTER 路徑（見 AppDatabase beforeOpen 的
+  /// `_ensureDealerSelfNetColumn`）加入既有 DB，刻意「不」bump schema
+  /// fingerprint，避免 wipe 掉使用者累積的 derived 資料。
+  final double? dealerSelfNet;
   const DailyInstitutionalEntry({
     required this.symbol,
     required this.date,
     this.foreignNet,
     this.investmentTrustNet,
     this.dealerNet,
+    this.dealerSelfNet,
   });
   @override
   Map<String, i0.Expression> toColumns(bool nullToAbsent) {
@@ -577,6 +635,9 @@ class DailyInstitutionalEntry extends i0.DataClass
     }
     if (!nullToAbsent || dealerNet != null) {
       map['dealer_net'] = i0.Variable<double>(dealerNet);
+    }
+    if (!nullToAbsent || dealerSelfNet != null) {
+      map['dealer_self_net'] = i0.Variable<double>(dealerSelfNet);
     }
     return map;
   }
@@ -594,6 +655,9 @@ class DailyInstitutionalEntry extends i0.DataClass
       dealerNet: dealerNet == null && nullToAbsent
           ? const i0.Value.absent()
           : i0.Value(dealerNet),
+      dealerSelfNet: dealerSelfNet == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(dealerSelfNet),
     );
   }
 
@@ -610,6 +674,7 @@ class DailyInstitutionalEntry extends i0.DataClass
         json['investmentTrustNet'],
       ),
       dealerNet: serializer.fromJson<double?>(json['dealerNet']),
+      dealerSelfNet: serializer.fromJson<double?>(json['dealerSelfNet']),
     );
   }
   @override
@@ -621,6 +686,7 @@ class DailyInstitutionalEntry extends i0.DataClass
       'foreignNet': serializer.toJson<double?>(foreignNet),
       'investmentTrustNet': serializer.toJson<double?>(investmentTrustNet),
       'dealerNet': serializer.toJson<double?>(dealerNet),
+      'dealerSelfNet': serializer.toJson<double?>(dealerSelfNet),
     };
   }
 
@@ -630,6 +696,7 @@ class DailyInstitutionalEntry extends i0.DataClass
     i0.Value<double?> foreignNet = const i0.Value.absent(),
     i0.Value<double?> investmentTrustNet = const i0.Value.absent(),
     i0.Value<double?> dealerNet = const i0.Value.absent(),
+    i0.Value<double?> dealerSelfNet = const i0.Value.absent(),
   }) => i1.DailyInstitutionalEntry(
     symbol: symbol ?? this.symbol,
     date: date ?? this.date,
@@ -638,6 +705,9 @@ class DailyInstitutionalEntry extends i0.DataClass
         ? investmentTrustNet.value
         : this.investmentTrustNet,
     dealerNet: dealerNet.present ? dealerNet.value : this.dealerNet,
+    dealerSelfNet: dealerSelfNet.present
+        ? dealerSelfNet.value
+        : this.dealerSelfNet,
   );
   DailyInstitutionalEntry copyWithCompanion(
     i1.DailyInstitutionalCompanion data,
@@ -652,6 +722,9 @@ class DailyInstitutionalEntry extends i0.DataClass
           ? data.investmentTrustNet.value
           : this.investmentTrustNet,
       dealerNet: data.dealerNet.present ? data.dealerNet.value : this.dealerNet,
+      dealerSelfNet: data.dealerSelfNet.present
+          ? data.dealerSelfNet.value
+          : this.dealerSelfNet,
     );
   }
 
@@ -662,14 +735,21 @@ class DailyInstitutionalEntry extends i0.DataClass
           ..write('date: $date, ')
           ..write('foreignNet: $foreignNet, ')
           ..write('investmentTrustNet: $investmentTrustNet, ')
-          ..write('dealerNet: $dealerNet')
+          ..write('dealerNet: $dealerNet, ')
+          ..write('dealerSelfNet: $dealerSelfNet')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(symbol, date, foreignNet, investmentTrustNet, dealerNet);
+  int get hashCode => Object.hash(
+    symbol,
+    date,
+    foreignNet,
+    investmentTrustNet,
+    dealerNet,
+    dealerSelfNet,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -678,7 +758,8 @@ class DailyInstitutionalEntry extends i0.DataClass
           other.date == this.date &&
           other.foreignNet == this.foreignNet &&
           other.investmentTrustNet == this.investmentTrustNet &&
-          other.dealerNet == this.dealerNet);
+          other.dealerNet == this.dealerNet &&
+          other.dealerSelfNet == this.dealerSelfNet);
 }
 
 class DailyInstitutionalCompanion
@@ -688,6 +769,7 @@ class DailyInstitutionalCompanion
   final i0.Value<double?> foreignNet;
   final i0.Value<double?> investmentTrustNet;
   final i0.Value<double?> dealerNet;
+  final i0.Value<double?> dealerSelfNet;
   final i0.Value<int> rowid;
   const DailyInstitutionalCompanion({
     this.symbol = const i0.Value.absent(),
@@ -695,6 +777,7 @@ class DailyInstitutionalCompanion
     this.foreignNet = const i0.Value.absent(),
     this.investmentTrustNet = const i0.Value.absent(),
     this.dealerNet = const i0.Value.absent(),
+    this.dealerSelfNet = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   });
   DailyInstitutionalCompanion.insert({
@@ -703,6 +786,7 @@ class DailyInstitutionalCompanion
     this.foreignNet = const i0.Value.absent(),
     this.investmentTrustNet = const i0.Value.absent(),
     this.dealerNet = const i0.Value.absent(),
+    this.dealerSelfNet = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   }) : symbol = i0.Value(symbol),
        date = i0.Value(date);
@@ -712,6 +796,7 @@ class DailyInstitutionalCompanion
     i0.Expression<double>? foreignNet,
     i0.Expression<double>? investmentTrustNet,
     i0.Expression<double>? dealerNet,
+    i0.Expression<double>? dealerSelfNet,
     i0.Expression<int>? rowid,
   }) {
     return i0.RawValuesInsertable({
@@ -721,6 +806,7 @@ class DailyInstitutionalCompanion
       if (investmentTrustNet != null)
         'investment_trust_net': investmentTrustNet,
       if (dealerNet != null) 'dealer_net': dealerNet,
+      if (dealerSelfNet != null) 'dealer_self_net': dealerSelfNet,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -731,6 +817,7 @@ class DailyInstitutionalCompanion
     i0.Value<double?>? foreignNet,
     i0.Value<double?>? investmentTrustNet,
     i0.Value<double?>? dealerNet,
+    i0.Value<double?>? dealerSelfNet,
     i0.Value<int>? rowid,
   }) {
     return i1.DailyInstitutionalCompanion(
@@ -739,6 +826,7 @@ class DailyInstitutionalCompanion
       foreignNet: foreignNet ?? this.foreignNet,
       investmentTrustNet: investmentTrustNet ?? this.investmentTrustNet,
       dealerNet: dealerNet ?? this.dealerNet,
+      dealerSelfNet: dealerSelfNet ?? this.dealerSelfNet,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -763,6 +851,9 @@ class DailyInstitutionalCompanion
     if (dealerNet.present) {
       map['dealer_net'] = i0.Variable<double>(dealerNet.value);
     }
+    if (dealerSelfNet.present) {
+      map['dealer_self_net'] = i0.Variable<double>(dealerSelfNet.value);
+    }
     if (rowid.present) {
       map['rowid'] = i0.Variable<int>(rowid.value);
     }
@@ -777,6 +868,7 @@ class DailyInstitutionalCompanion
           ..write('foreignNet: $foreignNet, ')
           ..write('investmentTrustNet: $investmentTrustNet, ')
           ..write('dealerNet: $dealerNet, ')
+          ..write('dealerSelfNet: $dealerSelfNet, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
