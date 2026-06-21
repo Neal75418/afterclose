@@ -241,6 +241,7 @@ void main() {
             dealerBuy: 0,
             dealerSell: 0,
             dealerNet: 0,
+            dealerSelfNet: 15,
             totalNet: 1200,
           ),
           // 1234 不在 targetSymbols 內 → 應被過濾
@@ -276,6 +277,7 @@ void main() {
             dealerBuy: 0,
             dealerSell: 0,
             dealerNet: 0,
+            dealerSelfNet: -8,
             totalNet: 300,
           ),
         ],
@@ -315,6 +317,11 @@ void main() {
       final symbols = captured.map((e) => e.symbol.value).toSet();
       expect(symbols, equals({'2330', '6488'}));
       expect(inserted, equals(2));
+
+      // dealerSelfNet 必須一路串到 companion（自行買賣 streak 的資料來源）
+      final bySymbol = {for (final c in captured) c.symbol.value: c};
+      expect(bySymbol['2330']!.dealerSelfNet.value, 15);
+      expect(bySymbol['6488']!.dealerSelfNet.value, -8);
     });
 
     test('skips rows with all-zero net values (no signal)', () async {

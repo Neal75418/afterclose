@@ -14,6 +14,7 @@ class TpexInstitutional {
     required this.dealerSell,
     required this.dealerNet,
     required this.totalNet,
+    this.dealerSelfNet = 0,
   });
 
   final DateTime date;
@@ -29,4 +30,7 @@ class TpexInstitutional {
   final double dealerSell;
   final double dealerNet;
   final double totalNet;
+
+  /// 自營商「自行買賣」買賣超（不含避險），供真實主動方向 streak（row[16]）。
+  final double dealerSelfNet;
 }

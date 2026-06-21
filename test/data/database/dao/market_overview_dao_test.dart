@@ -632,7 +632,61 @@ void main() {
         expect(twse.first.foreignNet, 300.0);
         expect(twse.first.trustNet, 40.0);
         expect(twse.first.dealerNet, -10.0);
+        // dealerSelfNet 未設 → SUM(NULL) 回 NULL（不 COALESCE，供 streak 隱藏判斷）
+        expect(twse.first.dealerSelfNet, isNull);
       });
+
+      test(
+        'aggregates dealerSelfNet when present (nullable, no COALESCE)',
+        () async {
+          await db.insertInstitutionalData([
+            DailyInstitutionalCompanion.insert(
+              symbol: '2330',
+              date: today,
+              dealerNet: const Value(100.0),
+              dealerSelfNet: const Value(40.0),
+            ),
+            DailyInstitutionalCompanion.insert(
+              symbol: '2317',
+              date: today,
+              dealerNet: const Value(20.0),
+              dealerSelfNet: const Value(-15.0),
+            ),
+          ]);
+
+          final result = await db.getRecentInstitutionalDailyByMarket(today);
+
+          final twse = result['TWSE']!;
+          // Aggregated dealerSelfNet = 40 + (-15) = 25
+          expect(twse.first.dealerSelfNet, 25.0);
+        },
+      );
+
+      test(
+        'dealerSelfNet stays null when all rows for the day are null',
+        () async {
+          // 既有歷史 row：dealer_self_net 全 NULL（重新同步前）
+          await db.insertInstitutionalData([
+            DailyInstitutionalCompanion.insert(
+              symbol: '2330',
+              date: today,
+              dealerNet: const Value(100.0),
+            ),
+            DailyInstitutionalCompanion.insert(
+              symbol: '2317',
+              date: today,
+              dealerNet: const Value(50.0),
+            ),
+          ]);
+
+          final result = await db.getRecentInstitutionalDailyByMarket(today);
+
+          // SUM(NULL, NULL) = NULL（非 0）→ 上層判定該日無自行買賣資料
+          expect(result['TWSE']!.first.dealerSelfNet, isNull);
+          // 其他欄位仍正常 COALESCE 為數值
+          expect(result['TWSE']!.first.dealerNet, 150.0);
+        },
+      );
 
       test('returns multiple days sorted descending', () async {
         final yesterday = today.subtract(const Duration(days: 1));

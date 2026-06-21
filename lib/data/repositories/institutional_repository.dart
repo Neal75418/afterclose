@@ -150,6 +150,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
           .toList();
 
       // TWSE/TPEX API 回傳股數，直接儲存（規則參數單位為股）
+      // dealerSelfNet 與 dealerNet 採同一單位轉換（兩者皆直接存原值）
       final twseEntries = _toInstitutionalEntries(
         validTwseData,
         (i) => (
@@ -158,6 +159,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
           foreignNet: i.foreignNet.toDouble(),
           investmentTrustNet: i.investmentTrustNet.toDouble(),
           dealerNet: i.dealerNet.toDouble(),
+          dealerSelfNet: i.dealerSelfNet.toDouble(),
         ),
       );
       final tpexEntries = _toInstitutionalEntries(
@@ -168,6 +170,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
           foreignNet: i.foreignNet.toDouble(),
           investmentTrustNet: i.investmentTrustNet.toDouble(),
           dealerNet: i.dealerNet.toDouble(),
+          dealerSelfNet: i.dealerSelfNet.toDouble(),
         ),
       );
 
@@ -252,6 +255,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
           foreignNet: i.foreignNet.toDouble(),
           investmentTrustNet: i.investmentTrustNet.toDouble(),
           dealerNet: i.dealerNet.toDouble(),
+          dealerSelfNet: i.dealerSelfNet.toDouble(),
         ),
       );
       final tpexEntries = _toInstitutionalEntries(
@@ -262,6 +266,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
           foreignNet: i.foreignNet.toDouble(),
           investmentTrustNet: i.investmentTrustNet.toDouble(),
           dealerNet: i.dealerNet.toDouble(),
+          dealerSelfNet: i.dealerSelfNet.toDouble(),
         ),
       );
 
@@ -297,6 +302,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
       double foreignNet,
       double investmentTrustNet,
       double dealerNet,
+      double dealerSelfNet,
     })
     Function(T)
     extract,
@@ -309,6 +315,7 @@ class InstitutionalRepository implements IInstitutionalRepository {
         foreignNet: Value(f.foreignNet),
         investmentTrustNet: Value(f.investmentTrustNet),
         dealerNet: Value(f.dealerNet),
+        dealerSelfNet: Value(f.dealerSelfNet),
       );
     }).toList();
   }

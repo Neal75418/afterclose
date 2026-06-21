@@ -17,6 +17,7 @@ class TwseInstitutional {
     required this.dealerSell,
     required this.dealerNet,
     required this.totalNet,
+    this.dealerSelfNet = 0,
   });
 
   factory TwseInstitutional.fromJson(Map<String, dynamic> json) {
@@ -43,6 +44,8 @@ class TwseInstitutional {
       dealerSell: _parseDouble(json['DealerTotalSell']) ?? 0,
       dealerNet: _parseDouble(json['DealerTotalNetBuySell']) ?? 0,
       totalNet: _parseDouble(json['TotalNetBuySell']) ?? 0,
+      // 此 named-key JSON 路徑（非每日 daily-sync 路徑）無自行買賣欄位，預設 0
+      dealerSelfNet: 0,
     );
   }
 
@@ -68,6 +71,10 @@ class TwseInstitutional {
   final double dealerSell;
   final double dealerNet;
   final double totalNet;
+
+  /// 自營商「自行買賣」買賣超（不含避險），供真實主動方向 streak。
+  /// daily-sync 路徑由 T86 row[14] 解析；named-key fromJson 路徑無此欄，預設 0。
+  final double dealerSelfNet;
 
   static double? _parseDouble(dynamic value) {
     if (value == null) return null;

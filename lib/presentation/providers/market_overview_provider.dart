@@ -495,7 +495,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       result[market] = InstitutionalStreak(
         foreignStreak: _alignStreak(streak.foreignStreak, inst.foreignNet),
         trustStreak: _alignStreak(streak.trustStreak, inst.trustNet),
-        dealerStreak: _alignStreak(streak.dealerStreak, inst.dealerNet),
+        // 自營 streak 改用 dealer_self_net（自行買賣）計算，但 inst.dealerNet 是
+        // 含避險的「合計」；兩者因避險部位可能反號，用合計對齊會誤把真實自行買賣
+        // streak 重設掉。故自營 streak 直接採信 daily_institutional 來源、不做跨源
+        // 對齊（外資/投信維持對齊，其來源與對齊基準同口徑）。
+        dealerStreak: streak.dealerStreak,
       );
     }
     return result;
@@ -940,8 +944,10 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
           trustStreak: _calculateStreak(
             dailyList.map((e) => e.trustNet).toList(),
           ),
-          dealerStreak: _calculateStreak(
-            dailyList.map((e) => e.dealerNet).toList(),
+          // 自營 streak 改用「自行買賣」淨額（不含避險，反映真實主動方向）。
+          // dealerSelfNet 為 nullable：重新同步前的歷史日為 NULL。
+          dealerStreak: _calculateNullableStreak(
+            dailyList.map((e) => e.dealerSelfNet).toList(),
           ),
         );
       }
@@ -966,6 +972,37 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final isPositive = first > 0;
     int count = 0;
     for (final v in values) {
+      if ((isPositive && v > 0) || (!isPositive && v < 0)) {
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    return isPositive ? count : -count;
+  }
+
+  /// 計算連續同方向天數，容忍 null（純函式）
+  ///
+  /// [values] 按日期降序（最新在前）。null 代表該日無「自行買賣」資料
+  /// （重新同步前累積的歷史 row，dealer_self_net 全 NULL → 聚合後仍 NULL）。
+  ///
+  /// 規則：
+  /// - 最新一天為 null（或空輸入）→ 回 0：badge 隱藏（門檻 ≥ 2），避免在
+  ///   尚未重新同步的舊資料上顯示誤導性 streak。
+  /// - 中段遇到 null → 中斷 streak（**不**視為 0/正負，直接 break）。
+  static int _calculateNullableStreak(List<double?> values) {
+    if (values.isEmpty) return 0;
+
+    final first = values.first;
+    // 最新一天無自行買賣資料 → 隱藏 badge
+    if (first == null || first == 0) return 0;
+
+    final isPositive = first > 0;
+    int count = 0;
+    for (final v in values) {
+      // 中段 null 中斷 streak（既非同方向亦非反方向，保守 break）
+      if (v == null) break;
       if ((isPositive && v > 0) || (!isPositive && v < 0)) {
         count++;
       } else {

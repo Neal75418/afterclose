@@ -112,6 +112,7 @@ void main() {
                 double foreignNet,
                 double trustNet,
                 double dealerNet,
+                double? dealerSelfNet,
               })
             >
           >{},
@@ -463,6 +464,168 @@ void main() {
       expect(state.adLineByMarket['TWSE'], [-20.0, 10.0, 60.0]);
     });
 
+    // ── 自營 streak 改用 dealerSelfNet（null-safe）─────────────
+    //
+    // setupEmptyDefaults 讓 getInstitutionalAmounts 回 null → instByMarket 空，
+    // _validateStreakConsistency 對 streak 直接 pass-through（不做方向對齊），
+    // 故可純粹驗 dealerSelfNet 的 streak 計算。
+    group('dealer streak uses dealerSelfNet (null-safe)', () {
+      DateTime d(int back) => testDate.subtract(Duration(days: back));
+
+      /// 設定法人每日聚合（日期降序，最新在前）。
+      /// [dealerSelf] 與 daily 等長，逐日對應 dealer_self_net（可含 null）。
+      void stubInstDaily(List<double?> dealerSelf) {
+        when(
+          () => mockDb.getRecentInstitutionalDailyByMarket(
+            any(),
+            days: any(named: 'days'),
+          ),
+        ).thenAnswer(
+          (_) async => {
+            'TWSE': [
+              for (var i = 0; i < dealerSelf.length; i++)
+                (
+                  date: d(i),
+                  foreignNet: 0.0,
+                  trustNet: 0.0,
+                  // 含避險合計刻意恆正（重現 bug 前提：合計 streak 失真），
+                  // 但 streak 應改採 dealerSelfNet，不受此影響。
+                  dealerNet: 100.0,
+                  dealerSelfNet: dealerSelf[i],
+                ),
+            ],
+          },
+        );
+      }
+
+      test('populated dealerSelfNet → correct buy streak', () async {
+        setupEmptyDefaults();
+        // 最新 3 日皆買超（>0），第 4 日翻空 → streak = +3
+        stubInstDaily([5.0, 4.0, 3.0, -2.0, -1.0]);
+
+        final notifier = container.read(marketOverviewProvider.notifier);
+        await notifier.loadData();
+
+        final state = container.read(marketOverviewProvider);
+        expect(
+          state.institutionalStreakByMarket['TWSE']?.dealerStreak,
+          3,
+          reason: '自營 streak 應為 +3（自行買賣，非含避險合計）',
+        );
+      });
+
+      test('populated dealerSelfNet → correct sell streak', () async {
+        setupEmptyDefaults();
+        stubInstDaily([-5.0, -4.0, 2.0]);
+
+        final notifier = container.read(marketOverviewProvider.notifier);
+        await notifier.loadData();
+
+        final state = container.read(marketOverviewProvider);
+        expect(
+          state.institutionalStreakByMarket['TWSE']?.dealerStreak,
+          -2,
+          reason: '連 2 日賣超 → -2',
+        );
+      });
+
+      test('latest day null dealerSelfNet → streak 0 (badge hidden)', () async {
+        setupEmptyDefaults();
+        // 全為歷史 NULL（重新同步前的舊資料）
+        stubInstDaily([null, null, null]);
+
+        final notifier = container.read(marketOverviewProvider.notifier);
+        await notifier.loadData();
+
+        final state = container.read(marketOverviewProvider);
+        expect(
+          state.institutionalStreakByMarket['TWSE']?.dealerStreak,
+          0,
+          reason: '最新日 dealerSelfNet 為 null → streak 0，badge 隱藏',
+        );
+      });
+
+      test('mid-series null breaks the run (not counted)', () async {
+        setupEmptyDefaults();
+        // 最新 2 日買超，第 3 日 null → streak 停在 2（null 中斷，不誤計）
+        stubInstDaily([5.0, 4.0, null, 3.0, 2.0]);
+
+        final notifier = container.read(marketOverviewProvider.notifier);
+        await notifier.loadData();
+
+        final state = container.read(marketOverviewProvider);
+        expect(
+          state.institutionalStreakByMarket['TWSE']?.dealerStreak,
+          2,
+          reason: '中段 null 中斷 streak，不把 null 後的同向日納入',
+        );
+      });
+
+      test('含避險合計反號不重設自行買賣 streak（自營不跨源對齊）', () async {
+        setupEmptyDefaults();
+        // 自行買賣連 3 日買超 → self streak +3
+        stubInstDaily([5.0, 4.0, 3.0, -2.0]);
+        // 但今日「含避險合計」為負（避險反向）：舊碼用合計對齊會把 +3 判為方向
+        // 矛盾、重設成 -1（badge 隱藏）；修後自營不跨源對齊 → 保留 +3
+        when(
+          () => mockTwse.getInstitutionalAmounts(date: any(named: 'date')),
+        ).thenAnswer(
+          (_) async => TwseInstitutionalAmounts(
+            date: testDate,
+            foreignNet: 0,
+            trustNet: 0,
+            dealerNet: -9999,
+          ),
+        );
+
+        final notifier = container.read(marketOverviewProvider.notifier);
+        await notifier.loadData();
+
+        final state = container.read(marketOverviewProvider);
+        expect(
+          state.institutionalStreakByMarket['TWSE']?.dealerStreak,
+          3,
+          reason: '自營 streak 採信 dealerSelfNet（+3），不因含避險合計反號被重設隱藏',
+        );
+      });
+
+      test(
+        'foreign/trust streaks unaffected by dealerSelfNet switch',
+        () async {
+          setupEmptyDefaults();
+          when(
+            () => mockDb.getRecentInstitutionalDailyByMarket(
+              any(),
+              days: any(named: 'days'),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              'TWSE': [
+                for (var i = 0; i < 3; i++)
+                  (
+                    date: d(i),
+                    foreignNet: 10.0, // 連 3 日買超
+                    trustNet: -5.0, // 連 3 日賣超
+                    dealerNet: 100.0,
+                    dealerSelfNet: null, // 自營隱藏，不影響外資/投信
+                  ),
+              ],
+            },
+          );
+
+          final notifier = container.read(marketOverviewProvider.notifier);
+          await notifier.loadData();
+
+          final streak = container
+              .read(marketOverviewProvider)
+              .institutionalStreakByMarket['TWSE']!;
+          expect(streak.foreignStreak, 3, reason: '外資 streak 仍用 foreignNet');
+          expect(streak.trustStreak, -3, reason: '投信 streak 仍用 trustNet');
+          expect(streak.dealerStreak, 0, reason: '自營 dealerSelfNet 全 null → 0');
+        },
+      );
+    });
+
     test('history sparklines 保留各自完整序列（不被情緒對齊的日期交集縮短）', () async {
       setupEmptyDefaults();
 
@@ -513,6 +676,7 @@ void main() {
                 foreignNet: 100.0 + back,
                 trustNet: 0.0,
                 dealerNet: 0.0,
+                dealerSelfNet: 0.0,
               ),
           ],
         },

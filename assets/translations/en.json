@@ -126,7 +126,7 @@
     "disposalCount": "{count} Disposal",
     "consecutiveBuy": "{count}D Buy",
     "consecutiveSell": "{count}D Sell",
-    "dealerHedgeNote": "Dealer net includes hedging positions; less directional signal than foreign/trust.",
+    "dealerHedgeNote": "Streak is based on dealer proprietary (self) trading, excluding hedging; the displayed net amount is the combined total including hedging.",
     "tpexIndex": "TPEx Index",
     "industryPerformance": "Industry Performance",
     "industryTopBottom": "Top/Bottom {count}",

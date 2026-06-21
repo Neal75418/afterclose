@@ -179,17 +179,33 @@ class TwseClient {
 
   /// 解析法人資料列
   ///
-  /// 列格式: [代號, 名稱, 外資買, 外資賣, 外資淨買, 外資自營買, 外資自營賣, 外資自營淨買,
-  ///         投信買, 投信賣, 投信淨買, 自營買, 自營賣, 自營淨買, 自營避險買, 自營避險賣, 自營避險淨買, 三大法人淨買]
+  /// T86（selectType=ALLBUT0999）回傳 19 欄陣列（已對 live API 驗證）：
+  /// [0] 代號, [1] 名稱
+  /// [2] 外陸資(不含外資自營)買進, [3] 賣出, [4] 外陸資買賣超（→ foreignNet）
+  /// [5] 外資自營買進, [6] 賣出, [7] 外資自營買賣超
+  /// [8] 投信買進, [9] 賣出, [10] 投信買賣超（→ investmentTrustNet）
+  /// [11] 自營商買賣超(合計)（→ dealerNet，含避險，對外口徑）
+  /// [12] 自營商(自行買賣)買進, [13] 賣出, [14] 自營商(自行買賣)買賣超（→ dealerSelfNet）
+  /// [15] 自營商(避險)買進, [16] 賣出, [17] 自營商(避險)買賣超
+  /// [18] 三大法人買賣超（→ totalNet）
+  ///
+  /// 算術不變式（已對 1318/1318 row 驗證）：[11] 合計 = [14] 自行 + [17] 避險。
+  ///
+  /// 注意：dealerBuy/dealerSell 下游未消費，為口徑正確取「自行 + 避險」合併
+  /// （[12]+[15] / [13]+[16]）。
   TwseInstitutional? _parseInstitutionalRow(List<dynamic> row, DateTime date) {
     return MarketClientMixin.safeParseRow(
       row: row,
-      minLength: 18,
+      minLength: 19,
       tag: _tag,
       operation: '法人資料',
       parser: () {
         final code = row[0]?.toString() ?? '';
         if (code.isEmpty) return null;
+        final dealerSelfBuy = TwParseUtils.parseFormattedDouble(row[12]) ?? 0;
+        final dealerSelfSell = TwParseUtils.parseFormattedDouble(row[13]) ?? 0;
+        final dealerHedgeBuy = TwParseUtils.parseFormattedDouble(row[15]) ?? 0;
+        final dealerHedgeSell = TwParseUtils.parseFormattedDouble(row[16]) ?? 0;
         return TwseInstitutional(
           date: date,
           code: code,
@@ -200,10 +216,15 @@ class TwseClient {
           investmentTrustBuy: TwParseUtils.parseFormattedDouble(row[8]) ?? 0,
           investmentTrustSell: TwParseUtils.parseFormattedDouble(row[9]) ?? 0,
           investmentTrustNet: TwParseUtils.parseFormattedDouble(row[10]) ?? 0,
-          dealerBuy: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
-          dealerSell: TwParseUtils.parseFormattedDouble(row[12]) ?? 0,
-          dealerNet: TwParseUtils.parseFormattedDouble(row[13]) ?? 0,
-          totalNet: TwParseUtils.parseFormattedDouble(row[17]) ?? 0,
+          // 自營商買進/賣出取「自行 + 避險」合併（下游未用，僅為口徑正確）
+          dealerBuy: dealerSelfBuy + dealerHedgeBuy,
+          dealerSell: dealerSelfSell + dealerHedgeSell,
+          // [11] 自營商買賣超(合計) — 含避險，對外口徑（媒體/TWSE 報的值）
+          dealerNet: TwParseUtils.parseFormattedDouble(row[11]) ?? 0,
+          // [14] 自營商(自行買賣)買賣超 — 不含避險，供真實主動方向 streak
+          dealerSelfNet: TwParseUtils.parseFormattedDouble(row[14]) ?? 0,
+          // [18] 三大法人買賣超
+          totalNet: TwParseUtils.parseFormattedDouble(row[18]) ?? 0,
         );
       },
     );

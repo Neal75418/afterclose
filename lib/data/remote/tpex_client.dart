@@ -177,7 +177,7 @@ class TpexClient {
   /// [5-7] 外資自營商 買/賣/淨
   /// [8-10] 外資及陸資(合計) 買/賣/淨
   /// [11-13] 投信 買/賣/淨
-  /// [14-16] 自營商(自行) 買/賣/淨
+  /// [14-16] 自營商(自行) 買/賣/淨（[16] → dealerSelfNet，不含避險）
   /// [17-19] 自營商(避險) 買/賣/淨
   /// [20-22] 自營商(合計) 買/賣/淨
   /// [23] 三大法人買賣超股數合計
@@ -205,6 +205,8 @@ class TpexClient {
           dealerBuy: TwParseUtils.parseFormattedDouble(row[20]) ?? 0,
           dealerSell: TwParseUtils.parseFormattedDouble(row[21]) ?? 0,
           dealerNet: TwParseUtils.parseFormattedDouble(row[22]) ?? 0,
+          // [16] 自營商(自行) 買賣超 — 不含避險，供真實主動方向 streak
+          dealerSelfNet: TwParseUtils.parseFormattedDouble(row[16]) ?? 0,
           totalNet: TwParseUtils.parseFormattedDouble(row[23]) ?? 0,
         );
       },

@@ -126,7 +126,7 @@
     "disposalCount": "處置 {count} 檔",
     "consecutiveBuy": "連{count}日買超",
     "consecutiveSell": "連{count}日賣超",
-    "dealerHedgeNote": "自營含避險部位，方向參考性低於外資/投信",
+    "dealerHedgeNote": "連續天數以自營自行買賣(不含避險)計；買賣超金額為含避險合計",
     "tpexIndex": "櫃買指數",
     "industryPerformance": "產業表現",
     "industryTopBottom": "前後各{count}名",

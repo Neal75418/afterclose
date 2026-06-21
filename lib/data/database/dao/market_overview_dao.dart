@@ -335,13 +335,23 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
 
   /// 取得近 N 日各市場法人每日淨額聚合（供連續買賣超天數計算）
   ///
-  /// 回傳 `Map<String, List<({DateTime date, double foreignNet, double trustNet, double dealerNet})>>`
+  /// 回傳 `Map<String, List<({DateTime date, double foreignNet, double trustNet, double dealerNet, double? dealerSelfNet})>>`
   /// 日期降序排列（最新在前）
+  ///
+  /// [dealerSelfNet]（自營自行買賣）刻意為 nullable 且**不** COALESCE：
+  /// 重新同步前的歷史 row 此欄全 NULL，`SUM(NULL)` 回 NULL → 上層據此判斷
+  /// 該日無自行買賣資料（streak 隱藏），不會被誤當作 0。
   Future<
     Map<
       String,
       List<
-        ({DateTime date, double foreignNet, double trustNet, double dealerNet})
+        ({
+          DateTime date,
+          double foreignNet,
+          double trustNet,
+          double dealerNet,
+          double? dealerSelfNet,
+        })
       >
     >
   >
@@ -355,7 +365,8 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     SELECT sm.market, di.date,
       COALESCE(SUM(di.foreign_net), 0) as foreign_net,
       COALESCE(SUM(di.investment_trust_net), 0) as trust_net,
-      COALESCE(SUM(di.dealer_net), 0) as dealer_net
+      COALESCE(SUM(di.dealer_net), 0) as dealer_net,
+      SUM(di.dealer_self_net) as dealer_self_net
     FROM daily_institutional di
     INNER JOIN stock_master sm ON di.symbol = sm.symbol
     WHERE di.date > ? AND di.date < ?
@@ -381,6 +392,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
               double foreignNet,
               double trustNet,
               double dealerNet,
+              double? dealerSelfNet,
             })
           >
         >{};
@@ -394,6 +406,8 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
         foreignNet: row.readNullable<double>('foreign_net') ?? 0,
         trustNet: row.readNullable<double>('trust_net') ?? 0,
         dealerNet: row.readNullable<double>('dealer_net') ?? 0,
+        // nullable：全 NULL 的歷史日聚合後仍 NULL（不 COALESCE）
+        dealerSelfNet: row.readNullable<double>('dealer_self_net'),
       ));
     }
 
