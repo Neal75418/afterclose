@@ -217,9 +217,8 @@ class _MarginItem extends StatelessWidget {
                   const SizedBox(height: DesignTokens.spacing6),
                   MiniTrendChart(
                     dataPoints: history!,
-                    height: 28,
+                    height: 36,
                     lineColor: color,
-                    fillColor: color.withValues(alpha: 0.08),
                   ),
                 ],
               ],

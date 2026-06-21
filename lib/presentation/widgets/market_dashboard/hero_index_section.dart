@@ -142,7 +142,6 @@ class HeroIndexSection extends StatelessWidget {
                   dataPoints: historyData,
                   height: 60,
                   lineColor: color,
-                  fillColor: color.withValues(alpha: 0.08),
                 ),
               ],
             ],

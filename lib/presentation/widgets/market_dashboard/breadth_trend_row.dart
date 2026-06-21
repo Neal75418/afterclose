@@ -103,12 +103,7 @@ class BreadthTrendRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: DesignTokens.spacing6),
-          MiniTrendChart(
-            dataPoints: line,
-            height: 32,
-            lineColor: adColor,
-            fillColor: adColor.withValues(alpha: 0.08),
-          ),
+          MiniTrendChart(dataPoints: line, height: 36, lineColor: adColor),
         ],
 
         // 判讀層（廣度趨勢）

@@ -154,11 +154,8 @@ class AdvanceDeclineGauge extends StatelessWidget {
           const SizedBox(height: DesignTokens.spacing10),
           MiniTrendChart(
             dataPoints: advanceRatioHistory!,
-            height: 32,
+            height: 36,
             lineColor: AppTheme.upColor,
-            fillColor: AppTheme.upColor.withValues(alpha: 0.08),
-            minY: 0,
-            maxY: 1,
           ),
         ],
 
