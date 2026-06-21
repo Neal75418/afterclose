@@ -488,9 +488,11 @@ void main() {
         // 3293 (TPEx) 今日 130 = 窗口 [130,120,110] 最高 → new high
         await insertCloses('3293', [130, 120, 110]);
 
+        // minHistoryDays=1：薄歷史 fixture（各 3 列）不被歷史門檻濾除
         final result = await db.getNewHighLowCountsByMarket(
           today,
           lookbackDays: 3,
+          minHistoryDays: 1,
         );
 
         // TWSE: 1 high (2330), 1 low (2317)
@@ -508,11 +510,47 @@ void main() {
         final result = await db.getNewHighLowCountsByMarket(
           today,
           lookbackDays: 3,
+          minHistoryDays: 1,
         );
 
         expect(result['TWSE']?.newHighs, 1);
         // 100 也 >= 窗口最低嗎？窗口 [100,100,90] 最低 90，100 != 90 → 非新低
         expect(result['TWSE']?.newLows, 0);
+      });
+
+      test('excludes thin-history stocks below minHistoryDays', () async {
+        // 薄歷史個股（5 列）今日創「新低」，但歷史不足 → 應被排除
+        // 12110 是降序：今日 12 < 窗口最低嗎？窗口取今日 + 前 lookbackDays-1
+        // 列，今日 12 為最低 → 否則會被認列為 new low。
+        await insertCloses('2317', [12, 13, 14, 15, 16]); // TWSE，僅 5 列
+        // 完整歷史個股（12 列）今日創新高 → 應被計入
+        await insertCloses('2330', [
+          130,
+          120,
+          118,
+          116,
+          114,
+          112,
+          110,
+          108,
+          106,
+          104,
+          102,
+          100,
+        ]); // TWSE，12 列
+
+        // lookbackDays=12 涵蓋整段歷史；minHistoryDays=10 → 5 列薄股被濾除、
+        // 12 列完整股保留
+        final result = await db.getNewHighLowCountsByMarket(
+          today,
+          lookbackDays: 12,
+          minHistoryDays: 10,
+        );
+
+        // 2330 (12 列) 今日 130 = 窗口最高 → 計入 new high
+        expect(result['TWSE']?.newHighs, 1, reason: '完整歷史創新高個股應計入');
+        // 2317 (5 列) 今日 12 = 窗口最低，但歷史 < 10 → 不應被當作 new low
+        expect(result['TWSE']?.newLows, 0, reason: '薄歷史個股不應被認列創新低');
       });
 
       test('excludes rows with null close', () async {
@@ -523,6 +561,7 @@ void main() {
         final result = await db.getNewHighLowCountsByMarket(
           today,
           lookbackDays: 3,
+          minHistoryDays: 1,
         );
 
         expect(result, isEmpty);
@@ -532,6 +571,7 @@ void main() {
         final result = await db.getNewHighLowCountsByMarket(
           today,
           lookbackDays: 3,
+          minHistoryDays: 1,
         );
 
         expect(result, isEmpty);
@@ -867,7 +907,12 @@ void main() {
           ),
         ]);
 
-        final result = await db.getIndustrySummaryByMarket(today, 'TWSE');
+        // minStockCount=1：fixture 每產業僅 1 檔，不被最低個股數門檻濾除
+        final result = await db.getIndustrySummaryByMarket(
+          today,
+          'TWSE',
+          minStockCount: 1,
+        );
 
         expect(result.length, 2);
         // Sorted by avgChangePct DESC → 半導體業 first
@@ -899,14 +944,87 @@ void main() {
           ),
         ]);
 
-        final twse = await db.getIndustrySummaryByMarket(today, 'TWSE');
-        final tpex = await db.getIndustrySummaryByMarket(today, 'TPEx');
+        final twse = await db.getIndustrySummaryByMarket(
+          today,
+          'TWSE',
+          minStockCount: 1,
+        );
+        final tpex = await db.getIndustrySummaryByMarket(
+          today,
+          'TPEx',
+          minStockCount: 1,
+        );
 
         expect(twse.length, 1);
         expect(twse.first.industry, '半導體業');
 
         expect(tpex.length, 1);
         expect(tpex.first.industry, '半導體業');
+      });
+
+      test('excludes industries below minStockCount', () async {
+        // 半導體業：3 檔（達門檻）；其他電子業：1 檔（單股，未達門檻 3）
+        await db.upsertStocks([
+          StockMasterCompanion.insert(
+            symbol: '2330',
+            name: '台積電',
+            market: 'TWSE',
+            industry: const Value('半導體業'),
+          ),
+          StockMasterCompanion.insert(
+            symbol: '2454',
+            name: '聯發科',
+            market: 'TWSE',
+            industry: const Value('半導體業'),
+          ),
+          StockMasterCompanion.insert(
+            symbol: '2308',
+            name: '台達電',
+            market: 'TWSE',
+            industry: const Value('半導體業'),
+          ),
+          StockMasterCompanion.insert(
+            symbol: '2317',
+            name: '鴻海',
+            market: 'TWSE',
+            industry: const Value('其他電子業'),
+          ),
+        ]);
+        await db.insertPrices([
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: today,
+            close: const Value(110.0),
+            priceChange: const Value(2.0),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2454',
+            date: today,
+            close: const Value(900.0),
+            priceChange: const Value(10.0),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2308',
+            date: today,
+            close: const Value(300.0),
+            priceChange: const Value(3.0),
+          ),
+          // 單股產業，今日近漲停 → 若無門檻會竄上排行第一
+          DailyPriceCompanion.insert(
+            symbol: '2317',
+            date: today,
+            close: const Value(110.0),
+            priceChange: const Value(10.0),
+          ),
+        ]);
+
+        // 預設 minStockCount = kIndustryMinStockCount (3)
+        final result = await db.getIndustrySummaryByMarket(today, 'TWSE');
+
+        // 單股「其他電子業」被排除，只剩 3 檔的半導體業
+        expect(result.length, 1, reason: '單股產業應被最低個股數門檻排除');
+        expect(result.first.industry, '半導體業');
+        expect(result.first.stockCount, 3);
       });
 
       test('excludes stocks with null industry', () async {
@@ -920,14 +1038,22 @@ void main() {
           ),
         ]);
 
-        final result = await db.getIndustrySummaryByMarket(today, 'TWSE');
+        final result = await db.getIndustrySummaryByMarket(
+          today,
+          'TWSE',
+          minStockCount: 1,
+        );
 
         expect(result, isEmpty);
       });
 
       test('returns empty list when no data for date', () async {
         await insertStocksWithIndustry();
-        final result = await db.getIndustrySummaryByMarket(today, 'TWSE');
+        final result = await db.getIndustrySummaryByMarket(
+          today,
+          'TWSE',
+          minStockCount: 1,
+        );
 
         expect(result, isEmpty);
       });

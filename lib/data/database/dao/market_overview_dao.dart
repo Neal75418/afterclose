@@ -581,11 +581,17 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
   /// 注意：WINDOW frame 的 `lookbackDays - 1`（FOLLOWING 列數）為 SQLite
   /// 字面量、不可綁定參數，故以信任的 int 常數插值進查詢字串（非使用者輸入）。
   ///
+  /// [minHistoryDays]（預設 [kNewHighLowMinHistoryDays]）為最低歷史交易日
+  /// 門檻：window 只比對 DB 內實存交易日，故薄歷史個股（僅數十日）會被誤判
+  /// 創高/創低，個股歷史筆數未達此門檻者排除，避免 over-count。同 frame 列數
+  /// 限制，以信任 int 字面量插值進查詢（非使用者輸入）。
+  ///
   /// 回傳 `Map<String, ({int newHighs, int newLows})>`
   Future<Map<String, ({int newHighs, int newLows})>>
   getNewHighLowCountsByMarket(
     DateTime date, {
     int lookbackDays = kNewHighLowLookbackDays,
+    int minHistoryDays = kNewHighLowMinHistoryDays,
   }) async {
     final endOfDay = DateContext.normalize(date).add(const Duration(days: 1));
     // 寬鬆回看：以日曆日 lookbackDays×2 涵蓋約 lookbackDays 個交易日
@@ -599,6 +605,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     WITH win AS (
       SELECT dp.symbol, sm.market, dp.close,
         MAX(dp.close) OVER w AS hi, MIN(dp.close) OVER w AS lo,
+        COUNT(*) OVER (PARTITION BY dp.symbol) AS hist_count,
         ROW_NUMBER() OVER (PARTITION BY dp.symbol ORDER BY dp.date DESC) rn
       FROM daily_price dp INNER JOIN stock_master sm ON sm.symbol = dp.symbol
       WHERE dp.close IS NOT NULL AND dp.date > ? AND dp.date < ?
@@ -607,7 +614,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     SELECT market,
       SUM(CASE WHEN close >= hi THEN 1 ELSE 0 END) AS new_highs,
       SUM(CASE WHEN close <= lo THEN 1 ELSE 0 END) AS new_lows
-    FROM win WHERE rn = 1 GROUP BY market
+    FROM win WHERE rn = 1 AND hist_count >= $minHistoryDays GROUP BY market
   ''';
 
     final results = await customSelect(
@@ -636,6 +643,13 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
   /// 取得指定日期的產業表現統計（指定市場）
   ///
   /// 依平均漲跌幅降序排列。
+  ///
+  /// [minStockCount]（預設 [kIndustryMinStockCount]）為產業納入排名的最低
+  /// 個股數門檻：單一/雙股「產業」的平均漲跌幅即那一兩檔的個別波動，不構成
+  /// 有意義的類股平均，卻可能憑單檔接近漲停竄上排行第一，故以 `HAVING
+  /// COUNT(*) >= ?` 在 per-industry（已先以 `sm.market = ?` 過濾）層級剔除。
+  /// 個股數本身仍回傳於 [({int stockCount})]，不影響既有
+  /// avg/advance/decline 計算。
   Future<
     List<
       ({
@@ -647,7 +661,11 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
       })
     >
   >
-  getIndustrySummaryByMarket(DateTime date, String market) async {
+  getIndustrySummaryByMarket(
+    DateTime date,
+    String market, {
+    int minStockCount = kIndustryMinStockCount,
+  }) async {
     final startOfDay = DateContext.normalize(date);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
@@ -663,6 +681,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
       AND (dp.close - dp.price_change) != 0
       AND sm.industry IS NOT NULL
     GROUP BY sm.industry
+    HAVING COUNT(*) >= ?
     ORDER BY avg_change_pct DESC
   ''';
 
@@ -672,6 +691,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
         Variable.withDateTime(startOfDay),
         Variable.withDateTime(endOfDay),
         Variable.withString(market),
+        Variable.withInt(minStockCount),
       ],
       readsFrom: {dailyPrice, stockMaster},
     ).get();
