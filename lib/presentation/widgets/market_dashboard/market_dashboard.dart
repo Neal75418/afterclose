@@ -244,6 +244,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
   }
 
   /// 計算指定市場的市場情緒分數
+  ///
+  /// 今日情緒：各子指標各自用「自己的」完整序列獨立計算，不跨序列對齊，
+  /// 故僅取各序列的 `.value` 即可。
   MarketSentiment? _computeSentiment(String marketKey) {
     final ad = widget.state.advanceDeclineByMarket[marketKey];
     final trends = widget.state.historyTrends;
@@ -261,14 +264,17 @@ class _MarketDashboardState extends State<MarketDashboard> {
 
     return MarketSentimentService.calculate(
       advanceDecline: ad,
-      institutionalNetHistory: instHist ?? [],
-      turnoverHistory: turnHist ?? [],
-      marginBalanceHistory: marginHist ?? [],
+      institutionalNetHistory: _values(instHist) ?? const [],
+      turnoverHistory: _values(turnHist) ?? const [],
+      marginBalanceHistory: _values(marginHist) ?? const [],
       industries: industries ?? [],
     );
   }
 
   /// 計算歷史情緒分數序列（供趨勢 sparkline）
+  ///
+  /// 將四個帶日期序列原樣傳入，由 [MarketSentimentService.calculateHistoricalScores]
+  /// 依日期 inner-join 對齊（不同 coverage 來源日期集不同，不可按 index 拼接）。
   List<double> _computeSentimentHistory(String marketKey) {
     final trends = widget.state.historyTrends;
     final advRatioHist = trends.advanceRatio[marketKey];
@@ -290,6 +296,12 @@ class _MarketDashboardState extends State<MarketDashboard> {
       marginBalanceHistory: marginHist,
     );
   }
+
+  /// 取帶日期序列的「完整」值序列（供個別 sparkline / 今日情緒）。
+  ///
+  /// 個別 sparkline 必須保留各自完整序列，不可縮到四序列日期交集。
+  static List<double>? _values(List<DatedValue>? series) =>
+      series?.map((e) => e.value).toList();
 
   /// 建構手機單欄顯示
   Widget _buildMobileView(ThemeData theme) {
@@ -372,12 +384,15 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final industries = widget.state.industrySummaryByMarket[marketKey];
 
     // 30日歷史趨勢
+    //
+    // 個別 sparkline 取各自「完整」序列（map 到 .value），不縮到情緒對齊交集；
+    // shortBalance 本來就是純 double（不參與情緒對齊）。
     final trends = widget.state.historyTrends;
-    final instNetHist = trends.institutionalTotalNet[marketKey];
-    final turnoverHist = trends.turnover[marketKey];
-    final marginHist = trends.marginBalance[marketKey];
+    final instNetHist = _values(trends.institutionalTotalNet[marketKey]);
+    final turnoverHist = _values(trends.turnover[marketKey]);
+    final marginHist = _values(trends.marginBalance[marketKey]);
     final shortHist = trends.shortBalance[marketKey];
-    final advRatioHist = trends.advanceRatio[marketKey];
+    final advRatioHist = _values(trends.advanceRatio[marketKey]);
 
     if (adData != null && adData.total > 0) {
       sections.add(
@@ -693,7 +708,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return AdvanceDeclineGauge(
       data: adData,
       limitUpDown: widget.state.limitUpDownByMarket[market],
-      advanceRatioHistory: widget.state.historyTrends.advanceRatio[market],
+      advanceRatioHistory: _values(
+        widget.state.historyTrends.advanceRatio[market],
+      ),
     );
   }
 
@@ -721,7 +738,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     return TradingTurnoverRow(
       data: turnoverData,
       turnoverComparison: widget.state.turnoverComparisonByMarket[market],
-      turnoverHistory: widget.state.historyTrends.turnover[market],
+      turnoverHistory: _values(widget.state.historyTrends.turnover[market]),
       indexChangePercent: _indexChangePercent(market),
     );
   }
@@ -740,8 +757,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
       child: InstitutionalFlowChart(
         data: instData,
         streak: widget.state.institutionalStreakByMarket[market],
-        totalNetHistory:
-            widget.state.historyTrends.institutionalTotalNet[market],
+        totalNetHistory: _values(
+          widget.state.historyTrends.institutionalTotalNet[market],
+        ),
       ),
     );
   }
@@ -756,7 +774,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
       sectionKey: MarketOverviewState.kSectionMargin,
       child: MarginCompactRow(
         data: marginData,
-        marginBalanceHistory: widget.state.historyTrends.marginBalance[market],
+        marginBalanceHistory: _values(
+          widget.state.historyTrends.marginBalance[market],
+        ),
         shortBalanceHistory: widget.state.historyTrends.shortBalance[market],
         indexChangePercent: _indexChangePercent(market),
       ),

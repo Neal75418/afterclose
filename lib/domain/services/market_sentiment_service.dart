@@ -42,6 +42,12 @@ class MarketSentiment {
 class MarketSentimentService {
   const MarketSentimentService._();
 
+  /// 回溯計算歷史情緒分數所需的最少對齊交易日數。
+  ///
+  /// 等同 Z-score（法人動向子指標）的最小樣本數：少於此日數無法產生有意義的
+  /// 標準差，[calculateHistoricalScores] 直接回傳空列表。
+  static const _kMinHistoricalDays = 5;
+
   /// 計算市場情緒分數
   ///
   /// 所有 history 參數為 oldest→newest 時序排列。
@@ -143,27 +149,39 @@ class MarketSentimentService {
   /// 歷史日缺少 industries（權重 10%），已有指標的權重會自動正規化，
   /// 趨勢形狀仍正確。
   ///
-  /// 所有 history 參數為 oldest→newest。
+  /// **依日期 inner-join 對齊**：四個輸入序列來自不同 coverage 的來源
+  /// （漲跌比/成交額經完整日 filter；法人/融資餘額為未 filter 的完整每日），
+  /// 日期集不同。若按 array index 直接拼接，「index i」會把不同交易日的資料
+  /// 混在同一筆情緒分數裡。故先取四序列共同日期、依時序排序後再逐日計分，
+  /// 確保每筆分數的四項輸入皆來自同一交易日。
+  ///
+  /// 所有 history 參數為 oldest→newest（內部會自行依日期重排，不依賴傳入順序）。
   static List<double> calculateHistoricalScores({
-    required List<double> advanceRatioHistory,
-    required List<double> institutionalNetHistory,
-    required List<double> turnoverHistory,
-    required List<double> marginBalanceHistory,
+    required List<DatedValue> advanceRatioHistory,
+    required List<DatedValue> institutionalNetHistory,
+    required List<DatedValue> turnoverHistory,
+    required List<DatedValue> marginBalanceHistory,
   }) {
-    final minLen = [
-      advanceRatioHistory.length,
-      institutionalNetHistory.length,
-      turnoverHistory.length,
-      marginBalanceHistory.length,
-    ].reduce(math.min);
+    // 依日期 inner-join：僅保留四序列皆存在的日期，並依時序（oldest→newest）排序。
+    final aligned = _innerJoinByDate([
+      advanceRatioHistory,
+      institutionalNetHistory,
+      turnoverHistory,
+      marginBalanceHistory,
+    ]);
 
     // Z-score 至少需要 5 天資料
-    if (minLen < 5) return [];
+    if (aligned.length < _kMinHistoricalDays) return [];
+
+    final advanceRatio = aligned.map((row) => row[0]).toList();
+    final institutional = aligned.map((row) => row[1]).toList();
+    final turnover = aligned.map((row) => row[2]).toList();
+    final marginBalance = aligned.map((row) => row[3]).toList();
 
     final scores = <double>[];
 
-    for (int i = 4; i < minLen; i++) {
-      final ratio = advanceRatioHistory[i].clamp(0.0, 1.0);
+    for (int i = _kMinHistoricalDays - 1; i < aligned.length; i++) {
+      final ratio = advanceRatio[i].clamp(0.0, 1.0);
       final syntheticAd = AdvanceDecline(
         advance: (ratio * 1000).round(),
         decline: ((1 - ratio) * 1000).round(),
@@ -171,9 +189,9 @@ class MarketSentimentService {
 
       final result = calculate(
         advanceDecline: syntheticAd,
-        institutionalNetHistory: institutionalNetHistory.sublist(0, i + 1),
-        turnoverHistory: turnoverHistory.sublist(0, i + 1),
-        marginBalanceHistory: marginBalanceHistory.sublist(0, i + 1),
+        institutionalNetHistory: institutional.sublist(0, i + 1),
+        turnoverHistory: turnover.sublist(0, i + 1),
+        marginBalanceHistory: marginBalance.sublist(0, i + 1),
       );
 
       scores.add(result.score);
@@ -181,6 +199,33 @@ class MarketSentimentService {
 
     return scores;
   }
+
+  /// 將多個帶日期序列依日期 inner-join，回傳依日期升序排列的對齊值列表。
+  ///
+  /// 回傳的每一筆 `row` 為 `List<double>`，順序對應傳入的 [series] 順序
+  /// （`row[k]` 即第 k 個序列在該日期的值）。僅保留所有序列皆存在的日期。
+  static List<List<double>> _innerJoinByDate(List<List<DatedValue>> series) {
+    if (series.isEmpty) return const [];
+
+    // 每個序列各自建 date(正規化到日) → value 索引，便於 O(1) 查找。
+    final maps = series
+        .map((s) => {for (final p in s) _dateKey(p.date): p.value})
+        .toList();
+
+    // 共同日期 = 第一個序列的鍵交集其餘序列。
+    final commonKeys =
+        maps.first.keys
+            .where((k) => maps.every((m) => m.containsKey(k)))
+            .toList()
+          ..sort();
+
+    return [
+      for (final k in commonKeys) [for (final m in maps) m[k]!],
+    ];
+  }
+
+  /// 將 [DateTime] 正規化為「當日」整數鍵（忽略時分秒），供日期對齊比對。
+  static int _dateKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
   /// 線性映射 [low, high] → [0, 100]
   static double _linearMap(double value, double low, double high) {

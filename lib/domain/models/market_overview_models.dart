@@ -116,10 +116,22 @@ class IndustrySummary {
   final int decline;
 }
 
+/// 帶日期的歷史資料點（時序排列 oldest→newest）
+///
+/// 情緒綜合（[HistoryTrends] 的四個 sentiment-input 欄位）需要 [date] 才能
+/// 依日期 inner-join 對齊，避免不同 coverage 來源的序列按 array index 錯位
+/// 拼接（filter 過的漲跌比/成交額 vs 未 filter 的法人/融資餘額日期集不同）。
+typedef DatedValue = ({DateTime date, double value});
+
 /// 30 日歷史趨勢資料（供 sparkline / bar chart，時序排列 oldest→newest）
 ///
 /// 將 5 個同型別的歷史趨勢欄位封裝為一個物件，
 /// 避免 [MarketOverviewState] 中的 data clump。
+///
+/// 四個 sentiment-input 欄位（[institutionalTotalNet]、[turnover]、
+/// [marginBalance]、[advanceRatio]）攜帶日期，供
+/// [MarketSentimentService.calculateHistoricalScores] 依日期對齊。個別
+/// sparkline 仍取各自完整序列的 `.value`，不受對齊影響。
 class HistoryTrends {
   const HistoryTrends({
     this.institutionalTotalNet = const {},
@@ -130,17 +142,17 @@ class HistoryTrends {
   });
 
   /// 法人合計淨額（元）
-  final Map<String, List<double>> institutionalTotalNet;
+  final Map<String, List<DatedValue>> institutionalTotalNet;
 
   /// 成交量（元）
-  final Map<String, List<double>> turnover;
+  final Map<String, List<DatedValue>> turnover;
 
   /// 融資餘額（張）
-  final Map<String, List<double>> marginBalance;
+  final Map<String, List<DatedValue>> marginBalance;
 
-  /// 融券餘額（張）
+  /// 融券餘額（張）— 僅供 sparkline，不參與情緒對齊
   final Map<String, List<double>> shortBalance;
 
   /// 漲跌比 (advance/total, 0~1)
-  final Map<String, List<double>> advanceRatio;
+  final Map<String, List<DatedValue>> advanceRatio;
 }

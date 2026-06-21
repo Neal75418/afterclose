@@ -376,11 +376,12 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final rawStreak = results[10] as Map<String, InstitutionalStreak>;
     final industrySummaryByMarket =
         results[11] as Map<String, List<IndustrySummary>>;
-    final instHistory = results[12] as Map<String, List<double>>;
-    final turnoverHist = results[13] as Map<String, List<double>>;
+    final instHistory = results[12] as Map<String, List<DatedValue>>;
+    final turnoverHist = results[13] as Map<String, List<DatedValue>>;
     final marginHistory =
-        results[14] as Map<String, ({List<double> margin, List<double> short})>;
-    final advRatioHistory = results[15] as Map<String, List<double>>;
+        results[14]
+            as Map<String, ({List<DatedValue> margin, List<double> short})>;
+    final advRatioHistory = results[15] as Map<String, List<DatedValue>>;
     final chipAnomalies = results[16] as Map<String, List<ChipAnomaly>>;
     final rawStageHistory = results[17] as Map<String, List<double>>;
     final newHighLowByMarket =
@@ -975,21 +976,25 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     return isPositive ? count : -count;
   }
 
-  /// 載入法人合計淨額 30 日歷史（供趨勢 bar chart）
+  /// 載入法人合計淨額 30 日歷史（供趨勢 bar chart + 情緒對齊）
   ///
   /// 複用既有 [getRecentInstitutionalDailyByMarket]，
-  /// 提取 totalNet (foreign+trust+dealer) 並反轉為 oldest→newest。
-  Future<Map<String, List<double>>> _loadInstitutionalHistoryByMarket(
+  /// 提取 totalNet (foreign+trust+dealer)、保留日期並反轉為 oldest→newest。
+  /// 保留日期供 [MarketSentimentService.calculateHistoricalScores] 依日期對齊。
+  Future<Map<String, List<DatedValue>>> _loadInstitutionalHistoryByMarket(
     DateTime date,
   ) async {
     try {
       final raw = await _db.getRecentInstitutionalDailyByMarket(date);
-      final result = <String, List<double>>{};
+      final result = <String, List<DatedValue>>{};
       for (final entry in raw.entries) {
-        result[entry.key] = entry.value
-            .map((e) => e.foreignNet + e.trustNet + e.dealerNet)
-            .toList()
-            .reversed
+        result[entry.key] = entry.value.reversed
+            .map<DatedValue>(
+              (e) => (
+                date: e.date,
+                value: e.foreignNet + e.trustNet + e.dealerNet,
+              ),
+            )
             .toList();
       }
       return result;
@@ -999,20 +1004,18 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     }
   }
 
-  /// 載入成交額 30 日歷史（供趨勢 bar chart）
+  /// 載入成交額 30 日歷史（供趨勢 bar chart + 情緒對齊）
   ///
-  /// 傳入 days: 30 覆蓋預設的 5 天，反轉為 oldest→newest。
-  Future<Map<String, List<double>>> _loadTurnoverHistoryByMarket(
+  /// 傳入 days: 30 覆蓋預設的 5 天，保留日期並反轉為 oldest→newest。
+  Future<Map<String, List<DatedValue>>> _loadTurnoverHistoryByMarket(
     DateTime date,
   ) async {
     try {
       final raw = await _db.getRecentTurnoverByMarket(date, days: 30);
-      final result = <String, List<double>>{};
+      final result = <String, List<DatedValue>>{};
       for (final entry in raw.entries) {
-        result[entry.key] = entry.value
-            .map((e) => e.turnover)
-            .toList()
-            .reversed
+        result[entry.key] = entry.value.reversed
+            .map<DatedValue>((e) => (date: e.date, value: e.turnover))
             .toList();
       }
       return result;
@@ -1022,18 +1025,22 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     }
   }
 
-  /// 載入融資/融券餘額 30 日歷史（供趨勢 sparkline）
+  /// 載入融資/融券餘額 30 日歷史（供趨勢 sparkline + 情緒對齊）
   ///
   /// 回傳同時包含 margin 和 short 兩組 List，避免查兩次。
-  Future<Map<String, ({List<double> margin, List<double> short})>>
+  /// margin 攜帶日期供情緒對齊；short 僅供 sparkline，維持純 [double]。
+  Future<Map<String, ({List<DatedValue> margin, List<double> short})>>
   _loadMarginHistoryByMarket(DateTime date) async {
     try {
       final raw = await _db.getRecentMarginTradingByMarket(date);
-      final result = <String, ({List<double> margin, List<double> short})>{};
+      final result =
+          <String, ({List<DatedValue> margin, List<double> short})>{};
       for (final entry in raw.entries) {
         final reversed = entry.value.reversed.toList();
         result[entry.key] = (
-          margin: reversed.map((e) => e.marginBalance).toList(),
+          margin: reversed
+              .map<DatedValue>((e) => (date: e.date, value: e.marginBalance))
+              .toList(),
           short: reversed.map((e) => e.shortBalance).toList(),
         );
       }
@@ -1044,19 +1051,20 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     }
   }
 
-  /// 載入漲跌比 30 日歷史（供趨勢 sparkline）
+  /// 載入漲跌比 30 日歷史（供趨勢 sparkline + 情緒對齊）
   ///
   /// 計算 advance / (advance + decline + unchanged)，範圍 0~1。
-  Future<Map<String, List<double>>> _loadAdvanceDeclineHistoryByMarket(
+  /// 保留日期供 [MarketSentimentService.calculateHistoricalScores] 依日期對齊。
+  Future<Map<String, List<DatedValue>>> _loadAdvanceDeclineHistoryByMarket(
     DateTime date,
   ) async {
     try {
       final raw = await _db.getRecentAdvanceDeclineByMarket(date);
-      final result = <String, List<double>>{};
+      final result = <String, List<DatedValue>>{};
       for (final entry in raw.entries) {
-        result[entry.key] = entry.value.reversed.map((e) {
+        result[entry.key] = entry.value.reversed.map<DatedValue>((e) {
           final total = e.advance + e.decline + e.unchanged;
-          return total > 0 ? e.advance / total : 0.5;
+          return (date: e.date, value: total > 0 ? e.advance / total : 0.5);
         }).toList();
       }
       return result;

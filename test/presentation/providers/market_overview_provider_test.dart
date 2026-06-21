@@ -462,6 +462,116 @@ void main() {
       // 累積 AD 線 oldest→newest：[-20, -20+30=10, 10+50=60]
       expect(state.adLineByMarket['TWSE'], [-20.0, 10.0, 60.0]);
     });
+
+    test('history sparklines 保留各自完整序列（不被情緒對齊的日期交集縮短）', () async {
+      setupEmptyDefaults();
+
+      // 兩組來源日期集刻意不同（重現 bug 前提）：
+      // - turnover / advanceRatio：coverage-filter 過，僅 8 個完整日。
+      // - institutional / margin：未 filter，12 個每日（含 turnover/AD 缺的 4 個舊日）。
+      // 全部 DAO 回傳日期降序（最新在前）。
+      DateTime d(int back) => testDate.subtract(Duration(days: back));
+
+      // 8 個完整日（back 0..7）
+      when(
+        () => mockDb.getRecentTurnoverByMarket(any(), days: any(named: 'days')),
+      ).thenAnswer(
+        (_) async => {
+          'TWSE': [
+            for (var back = 0; back < 8; back++)
+              (date: d(back), turnover: 1000.0 + back),
+          ],
+        },
+      );
+      when(
+        () => mockDb.getRecentAdvanceDeclineByMarket(
+          any(),
+          days: any(named: 'days'),
+          minCoverage: any(named: 'minCoverage'),
+        ),
+      ).thenAnswer(
+        (_) async => {
+          'TWSE': [
+            for (var back = 0; back < 8; back++)
+              (date: d(back), advance: 60, decline: 40, unchanged: 0),
+          ],
+        },
+      );
+
+      // 12 個每日（back 0..11）— 比上面多出 back 8..11 共 4 個舊日
+      when(
+        () => mockDb.getRecentInstitutionalDailyByMarket(
+          any(),
+          days: any(named: 'days'),
+        ),
+      ).thenAnswer(
+        (_) async => {
+          'TWSE': [
+            for (var back = 0; back < 12; back++)
+              (
+                date: d(back),
+                foreignNet: 100.0 + back,
+                trustNet: 0.0,
+                dealerNet: 0.0,
+              ),
+          ],
+        },
+      );
+      when(
+        () => mockDb.getRecentMarginTradingByMarket(
+          any(),
+          days: any(named: 'days'),
+        ),
+      ).thenAnswer(
+        (_) async => {
+          'TWSE': [
+            for (var back = 0; back < 12; back++)
+              (
+                date: d(back),
+                marginBalance: 10000.0 + back,
+                shortBalance: 500.0 + back,
+              ),
+          ],
+        },
+      );
+
+      final notifier = container.read(marketOverviewProvider.notifier);
+      await notifier.loadData();
+
+      final state = container.read(marketOverviewProvider);
+      final trends = state.historyTrends;
+
+      // 個別 sparkline 必須維持各自完整長度，不被 4-way 日期交集（8）縮短。
+      expect(
+        trends.turnover['TWSE'],
+        hasLength(8),
+        reason: 'turnover sparkline 應為完整 8 日',
+      );
+      expect(
+        trends.advanceRatio['TWSE'],
+        hasLength(8),
+        reason: 'advanceRatio sparkline 應為完整 8 日',
+      );
+      expect(
+        trends.institutionalTotalNet['TWSE'],
+        hasLength(12),
+        reason: 'institutional sparkline 應為完整 12 日（未被縮到交集 8）',
+      );
+      expect(
+        trends.marginBalance['TWSE'],
+        hasLength(12),
+        reason: 'margin sparkline 應為完整 12 日（未被縮到交集 8）',
+      );
+      expect(
+        trends.shortBalance['TWSE'],
+        hasLength(12),
+        reason: 'short sparkline 應為完整 12 日',
+      );
+
+      // 帶日期序列為 oldest→newest（最舊在前）。
+      final turnover = trends.turnover['TWSE']!;
+      expect(turnover.first.date.isBefore(turnover.last.date), isTrue);
+    });
   });
 
   group('cumulativeAdLine', () {

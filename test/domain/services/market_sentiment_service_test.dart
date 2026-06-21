@@ -95,4 +95,199 @@ void main() {
       expect(result.score, closeTo((0.35 * 100 + 0.25 * 75) / 0.60, 1e-9));
     });
   });
+
+  group('MarketSentimentService.calculateHistoricalScores', () {
+    // 以基準日 + 偏移天數建構帶日期序列（oldest→newest）。
+    final base = DateTime(2026, 1, 1);
+    DateTime day(int offset) => base.add(Duration(days: offset));
+
+    /// 將 (dayOffset, value) 配對轉為帶日期序列。
+    List<DatedValue> series(List<({int day, double value})> points) => [
+      for (final p in points) (date: day(p.day), value: p.value),
+    ];
+
+    // 八個共同交易日（day 0..7）的對齊基準輸入。
+    // advanceRatio 用遞增比值讓每日分數不同，便於辨識錯位。
+    final advanceRatioCommon = series(const [
+      (day: 0, value: 0.30),
+      (day: 1, value: 0.40),
+      (day: 2, value: 0.50),
+      (day: 3, value: 0.55),
+      (day: 4, value: 0.60),
+      (day: 5, value: 0.65),
+      (day: 6, value: 0.70),
+      (day: 7, value: 0.75),
+    ]);
+    final turnoverCommon = series(const [
+      (day: 0, value: 1000),
+      (day: 1, value: 1100),
+      (day: 2, value: 1200),
+      (day: 3, value: 1300),
+      (day: 4, value: 1250),
+      (day: 5, value: 1400),
+      (day: 6, value: 1500),
+      (day: 7, value: 1600),
+    ]);
+    final institutionalCommon = series(const [
+      (day: 0, value: 50),
+      (day: 1, value: 80),
+      (day: 2, value: -20),
+      (day: 3, value: 60),
+      (day: 4, value: 90),
+      (day: 5, value: 30),
+      (day: 6, value: 70),
+      (day: 7, value: 100),
+    ]);
+    final marginCommon = series(const [
+      (day: 0, value: 10000),
+      (day: 1, value: 10100),
+      (day: 2, value: 10050),
+      (day: 3, value: 10200),
+      (day: 4, value: 10300),
+      (day: 5, value: 10250),
+      (day: 6, value: 10400),
+      (day: 7, value: 10500),
+    ]);
+
+    test('輸入皆對齊時（同一組日期）正常產生分數序列', () {
+      final scores = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: advanceRatioCommon,
+        institutionalNetHistory: institutionalCommon,
+        turnoverHistory: turnoverCommon,
+        marginBalanceHistory: marginCommon,
+      );
+
+      // 8 共同日，從第 5 日（index 4）起逐日計分 ⇒ 4 筆。
+      expect(scores.length, advanceRatioCommon.length - 4);
+      expect(scores, everyElement(inInclusiveRange(0.0, 100.0)));
+    });
+
+    test('日期錯位：法人/融資多出 2 個較舊日，結果只用共同日（排除錯位日）', () {
+      // institutional 與 margin 在前面多 2 個 advanceRatio/turnover 沒有的舊日。
+      // 若仍按 array index 拼接，這 2 個舊日會把不同交易日的資料混進同一筆分數。
+      final institutionalExtra = series(const [
+        (day: -2, value: 999), // advanceRatio/turnover 無此日
+        (day: -1, value: 888), // advanceRatio/turnover 無此日
+        (day: 0, value: 50),
+        (day: 1, value: 80),
+        (day: 2, value: -20),
+        (day: 3, value: 60),
+        (day: 4, value: 90),
+        (day: 5, value: 30),
+        (day: 6, value: 70),
+        (day: 7, value: 100),
+      ]);
+      final marginExtra = series(const [
+        (day: -2, value: 1), // advanceRatio/turnover 無此日
+        (day: -1, value: 2), // advanceRatio/turnover 無此日
+        (day: 0, value: 10000),
+        (day: 1, value: 10100),
+        (day: 2, value: 10050),
+        (day: 3, value: 10200),
+        (day: 4, value: 10300),
+        (day: 5, value: 10250),
+        (day: 6, value: 10400),
+        (day: 7, value: 10500),
+      ]);
+
+      final misaligned = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: advanceRatioCommon,
+        institutionalNetHistory: institutionalExtra,
+        turnoverHistory: turnoverCommon,
+        marginBalanceHistory: marginExtra,
+      );
+
+      // 對照組：把多出的舊日剔除，只留共同日的「正確對齊」輸入。
+      final alignedReference = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: advanceRatioCommon,
+        institutionalNetHistory: institutionalCommon,
+        turnoverHistory: turnoverCommon,
+        marginBalanceHistory: marginCommon,
+      );
+
+      // inner-join 後兩者必須完全相同：錯位的 day -2 / day -1 被排除，
+      // 共同日的分數逐筆相等（證明未把不同日資料拼在一起）。
+      expect(misaligned, hasLength(alignedReference.length));
+      for (var i = 0; i < misaligned.length; i++) {
+        expect(misaligned[i], closeTo(alignedReference[i], 1e-9));
+      }
+    });
+
+    test('傳入順序被打亂時仍依日期重排（不依賴輸入順序）', () {
+      // 將其中一個序列順序反轉（newest→oldest），結果應與正常順序一致。
+      final shuffledTurnover = turnoverCommon.reversed.toList();
+
+      final fromShuffled = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: advanceRatioCommon,
+        institutionalNetHistory: institutionalCommon,
+        turnoverHistory: shuffledTurnover,
+        marginBalanceHistory: marginCommon,
+      );
+      final fromOrdered = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: advanceRatioCommon,
+        institutionalNetHistory: institutionalCommon,
+        turnoverHistory: turnoverCommon,
+        marginBalanceHistory: marginCommon,
+      );
+
+      expect(fromShuffled, hasLength(fromOrdered.length));
+      for (var i = 0; i < fromShuffled.length; i++) {
+        expect(fromShuffled[i], closeTo(fromOrdered[i], 1e-9));
+      }
+    });
+
+    test('共同日少於 5 天時回傳空列表（Z-score 樣本不足）', () {
+      // 僅 4 個共同日（day 0..3），其餘日期各序列不重疊。
+      final adShort = series(const [
+        (day: 0, value: 0.4),
+        (day: 1, value: 0.5),
+        (day: 2, value: 0.6),
+        (day: 3, value: 0.55),
+      ]);
+      final instShort = series(const [
+        (day: 0, value: 10),
+        (day: 1, value: 20),
+        (day: 2, value: 30),
+        (day: 3, value: 25),
+      ]);
+      final turnShort = series(const [
+        (day: 0, value: 100),
+        (day: 1, value: 110),
+        (day: 2, value: 120),
+        (day: 3, value: 115),
+      ]);
+      final marginShort = series(const [
+        (day: 0, value: 1000),
+        (day: 1, value: 1010),
+        (day: 2, value: 1005),
+        (day: 3, value: 1020),
+      ]);
+
+      final scores = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: adShort,
+        institutionalNetHistory: instShort,
+        turnoverHistory: turnShort,
+        marginBalanceHistory: marginShort,
+      );
+
+      expect(scores, isEmpty);
+    });
+
+    test('完全無共同日時回傳空列表', () {
+      final scores = MarketSentimentService.calculateHistoricalScores(
+        advanceRatioHistory: advanceRatioCommon, // day 0..7
+        institutionalNetHistory: series(const [
+          (day: 100, value: 1),
+          (day: 101, value: 2),
+          (day: 102, value: 3),
+          (day: 103, value: 4),
+          (day: 104, value: 5),
+        ]),
+        turnoverHistory: turnoverCommon,
+        marginBalanceHistory: marginCommon,
+      );
+
+      expect(scores, isEmpty);
+    });
+  });
 }
