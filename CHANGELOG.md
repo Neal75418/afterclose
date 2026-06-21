@@ -32,6 +32,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   （實測 corr+0.17 無鑑別力）— top N 真的是最強 N 檔、cap（30）才有意義。
 - **三 tab 全濾 ETF**：個股掃描純化（ETF 走勢平滑、淺回檔幾乎天天成立 = 雜訊）。
 
+### 🗑️ Removed — 退役舊推薦系統（daily_recommendation）
+
+> 舊「雙 horizon Top-20」推薦系統（`daily_recommendation`）與 3-mode（走
+> `daily_reason`）平行存在；其「推薦績效追蹤」頁追蹤的是這份已隱形、survivorship-biased
+> 的舊清單，製造困惑。窮盡依賴 audit 後分 4 步安全退役（淨刪約 -2,600 行）。
+
+- **推薦績效追蹤頁 + 市場儀表板績效摘要列**：移除（量錯對象 + 統計有已知偏差）。
+  保留個股詳情的 per-rule 命中率（`rule_accuracy`、走 `daily_reason`、unbiased）。
+- **recommendation_validation 讀寫**：移除（解耦保留 `rule_accuracy` 更新）。
+- **daily_recommendation 停寫**：`_generateRecommendations` 移除；表保留但永不再寫，
+  3-mode 全程從 `daily_reason` 即時聚合。
+- **cooldown 懲罰**：「最近 2 天推薦過 −15 分」退役 — 舊 Top-20「換血」邏輯，與
+  3-mode「持續強股本就該天天看到」模型衝突。
+- **更新通知「推薦數」**：移除恆為 0 的 `recommendationsGenerated`，通知不再顯示
+  誤導的「0 推薦」。
+
 ### 🔧 Fixed
 
 - **ROE 死碼**：3 條 ROE rule 用幻影欄位 `NetIncome`（DB 0 筆）→ 改 `IncomeAfterTaxes`
@@ -45,8 +61,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🧪 Tests
 
-- **2618 tests passing**（新增 risk_warnings taxonomy / RiskBadgeCluster widget /
-  乖離 + 60D helper / Mode C pullback rule 等測試）。
+- **2577 tests passing**（新增 risk_warnings taxonomy / RiskBadgeCluster widget /
+  乖離 + 60D helper / Mode C pullback rule 等測試；退役舊推薦系統後移除對應的
+  validation / cooldown 測試）。
 
 ## [0.4.0] — 2026-03-25
 
