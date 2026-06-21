@@ -78,21 +78,24 @@ class MiniTrendChart extends StatelessWidget {
                 // 消除 Catmull-Rom 曲線在資料點間「鼓出去」的波浪變形（醜的頭號元兇）
                 preventCurveOverShooting: true,
                 color: color,
-                barWidth: 2.5,
+                barWidth: 3,
                 isStrokeCapRound: true,
                 dotData: FlDotData(show: showDots),
                 belowBarData: BarAreaData(
                   show: true,
-                  // 預設用線色漸層填充（上濃下淡）；caller 指定 fillColor 時走平塗
+                  // 預設用線色面積漸層（上濃下透明），把細線變成有質感的面積圖；
+                  // caller 指定 fillColor 時走平塗
                   color: fillColor,
                   gradient: fillColor == null
                       ? LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            color.withValues(alpha: 0.22),
-                            color.withValues(alpha: 0.04),
+                            color.withValues(alpha: 0.38),
+                            color.withValues(alpha: 0.10),
+                            color.withValues(alpha: 0.0),
                           ],
+                          stops: const [0.0, 0.55, 1.0],
                         )
                       : null,
                 ),
