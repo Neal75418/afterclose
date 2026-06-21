@@ -282,7 +282,11 @@ void main() {
           ]);
         }
 
-        final result = await db.getRecentTurnoverByMarket(today, days: 2);
+        final result = await db.getRecentTurnoverByMarket(
+          today,
+          days: 2,
+          minCoverage: 1,
+        );
         final twse = result['TWSE']!;
 
         // days+1 = 3 entries
@@ -309,7 +313,10 @@ void main() {
           ),
         ]);
 
-        final result = await db.getRecentTurnoverByMarket(today);
+        final result = await db.getRecentTurnoverByMarket(
+          today,
+          minCoverage: 1,
+        );
 
         expect(result['TWSE']!.first.turnover, 100000.0);
         expect(result['TPEx']!.first.turnover, 60000.0);
@@ -328,10 +335,51 @@ void main() {
           ]);
         }
 
-        final result = await db.getRecentTurnoverByMarket(today, days: 3);
+        final result = await db.getRecentTurnoverByMarket(
+          today,
+          days: 3,
+          minCoverage: 1,
+        );
 
         // Should have at most 3+1 = 4 entries
         expect(result['TWSE']!.length, 4);
+      });
+
+      test('excludes half-coverage days below minCoverage threshold', () async {
+        // 完整日：2 檔報價（達門檻 2）
+        await db.insertPrices([
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: today,
+            close: const Value(100.0),
+            volume: const Value(1000.0),
+          ),
+          DailyPriceCompanion.insert(
+            symbol: '2317',
+            date: today,
+            close: const Value(50.0),
+            volume: const Value(500.0),
+          ),
+        ]);
+        // 半套日：僅 1 檔（模擬只同步候選子集，未達門檻）
+        await db.insertPrices([
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 1)),
+            close: const Value(100.0),
+            volume: const Value(1000.0),
+          ),
+        ]);
+
+        final result = await db.getRecentTurnoverByMarket(
+          today,
+          days: 5,
+          minCoverage: 2,
+        );
+
+        // 半套日（1 檔 < 門檻 2）被濾除，只剩完整日
+        expect(result['TWSE']!.length, 1, reason: '半套日應被濾除');
+        expect(result['TWSE']!.first.date, today);
       });
     });
 

@@ -234,17 +234,28 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     return byMarket;
   }
 
-  /// 取得近 N+1 個交易日各市場成交額（供計算今日 vs 均量比較）
+  /// 取得近 N+1 個「完整覆蓋」交易日各市場成交額（供計算今日 vs 均量比較）
+  ///
+  /// 本地 DB 部分日子僅同步候選子集（約半市場），混入後會使均量嚴重失真
+  /// （曾出現假性「5日均 +278%」），故以 [minCoverage]（預設
+  /// [kMinSymbolsForCompleteTradingDay]）濾除半套日，只保留個股報價數達
+  /// 門檻的完整日。完整日約佔交易日 4-5 成，故回看窗口放寬至 days*5，確保
+  /// 能取到 N+1 個完整日。
   ///
   /// 回傳 `Map<String, List<({DateTime date, double turnover})>>`
-  /// 日期降序排列（最新在前），第一筆為當日，後續為前 N 日
+  /// 日期降序排列（最新在前），第一筆為當日，後續為前 N 個完整日
   Future<Map<String, List<({DateTime date, double turnover})>>>
-  getRecentTurnoverByMarket(DateTime date, {int days = 5}) async {
+  getRecentTurnoverByMarket(
+    DateTime date, {
+    int days = 5,
+    int? minCoverage,
+  }) async {
+    final coverage = minCoverage ?? kMinSymbolsForCompleteTradingDay;
     final endOfDay = DateContext.normalize(date).add(const Duration(days: 1));
-    // 多取幾天以排除非交易日
+    // 完整日約佔交易日 4-5 成，放寬回看窗口以確保能取到 N+1 個完整日
     final startDate = DateContext.normalize(
       date,
-    ).subtract(Duration(days: days * 2 + 5));
+    ).subtract(Duration(days: days * 5 + 7));
 
     const query = '''
     SELECT sm.market, dp.date, COALESCE(SUM(dp.close * dp.volume), 0) as day_turnover
@@ -253,6 +264,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     WHERE dp.date > ? AND dp.date < ?
       AND dp.volume IS NOT NULL AND dp.close IS NOT NULL
     GROUP BY sm.market, dp.date
+    HAVING COUNT(DISTINCT dp.symbol) >= ?
     ORDER BY dp.date DESC
   ''';
 
@@ -261,6 +273,7 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
       variables: [
         Variable.withDateTime(startDate),
         Variable.withDateTime(endOfDay),
+        Variable.withInt(coverage),
       ],
       readsFrom: {dailyPrice, stockMaster},
     ).get();
