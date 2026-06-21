@@ -142,6 +142,12 @@
     },
     "biasMa20": "距20MA {value}%",
     "biasMa60": "距60MA {value}%",
+    "breadthTrend": {
+      "title": "市場廣度趨勢",
+      "newHigh": "52週新高",
+      "newLow": "52週新低",
+      "adLine": "AD 騰落線"
+    },
     "reading": {
       "volumePrice": {
         "healthyUp": "量增配漲，量價健康",
@@ -161,6 +167,12 @@
         "broadUp": "普漲，廣度健康",
         "broadDown": "普跌，賣壓擴散",
         "mixed": "漲跌互現，方向不明"
+      },
+      "breadthTrend": {
+        "confirmUp": "新高擴張，廣度確認多方",
+        "divergence": "指數漲但新低未縮，留意廣度背離",
+        "weakDown": "新低擴散，弱勢未止",
+        "neutral": "廣度中性"
       },
       "stageBias": {
         "overheated": "乖離偏大，短線偏熱",

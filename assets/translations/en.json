@@ -142,6 +142,12 @@
     },
     "biasMa20": "vs MA20 {value}%",
     "biasMa60": "vs MA60 {value}%",
+    "breadthTrend": {
+      "title": "Market Breadth Trend",
+      "newHigh": "52W Highs",
+      "newLow": "52W Lows",
+      "adLine": "A/D Line"
+    },
     "reading": {
       "volumePrice": {
         "healthyUp": "Rising on volume — healthy price-volume",
@@ -161,6 +167,12 @@
         "broadUp": "Broad advance — healthy breadth",
         "broadDown": "Broad decline — selling spreading",
         "mixed": "Mixed advances/declines — direction unclear"
+      },
+      "breadthTrend": {
+        "confirmUp": "New highs expanding — breadth confirms the upside",
+        "divergence": "Index up but new lows persist — watch for breadth divergence",
+        "weakDown": "New lows spreading — weakness not yet over",
+        "neutral": "Breadth neutral"
       },
       "stageBias": {
         "overheated": "Wide bias — short-term overheated",

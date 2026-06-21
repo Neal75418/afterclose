@@ -209,6 +209,81 @@ void main() {
     });
   });
 
+  group('MarketReadingService.interpretBreadthTrend', () {
+    // threshold-free：純比較 newHighs vs newLows + 指數方向
+
+    test('指數漲 & 新高 > 新低 → positive confirmUp', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 156,
+        newLows: 29,
+        indexChangePercent: 0.8,
+      );
+      expect(r.tone, InterpretationTone.positive);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.confirmUp');
+    });
+
+    test('指數漲 & 新低 > 新高 → warning divergence', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 20,
+        newLows: 80,
+        indexChangePercent: 0.5,
+      );
+      expect(r.tone, InterpretationTone.warning);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.divergence');
+    });
+
+    test('指數漲 & 新低 == 新高 → warning divergence (新低未縮)', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 40,
+        newLows: 40,
+        indexChangePercent: 0.3,
+      );
+      expect(r.tone, InterpretationTone.warning);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.divergence');
+    });
+
+    test('指數跌 & 新低 > 新高 → negative weakDown', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 15,
+        newLows: 90,
+        indexChangePercent: -1.1,
+      );
+      expect(r.tone, InterpretationTone.negative);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.weakDown');
+    });
+
+    test('指數跌 & 新高 >= 新低 → neutral (else 分支)', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 60,
+        newLows: 30,
+        indexChangePercent: -0.4,
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.neutral');
+    });
+
+    test('指數跌 & 新高 == 新低 → neutral (else 分支)', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 30,
+        newLows: 30,
+        indexChangePercent: -0.7,
+      );
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.neutral');
+    });
+
+    test('indexChangePercent == 0 視為非 UP（新高多→走 else neutral）', () {
+      final r = MarketReadingService.interpretBreadthTrend(
+        newHighs: 100,
+        newLows: 10,
+        indexChangePercent: 0.0,
+      );
+      // isUp=false、newLows(10) > newHighs(100) 為 false → else neutral
+      expect(r.tone, InterpretationTone.neutral);
+      expect(r.messageKey, 'marketOverview.reading.breadthTrend.neutral');
+    });
+  });
+
   group('MarketReadingService.interpretStageBias', () {
     // 門檻 kBiasOverheatPct = 15
 

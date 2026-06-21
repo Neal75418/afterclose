@@ -458,6 +458,86 @@ void main() {
       });
     });
 
+    // ── getNewHighLowCountsByMarket ────────────────────────
+
+    group('getNewHighLowCountsByMarket', () {
+      /// 插入一檔個股的多日收盤（最新日為 [today]，往前回溯）
+      Future<void> insertCloses(String symbol, List<double> closesDesc) async {
+        // closesDesc[0] = 今日，closesDesc[1] = 昨日 ...
+        final rows = <DailyPriceCompanion>[];
+        for (var i = 0; i < closesDesc.length; i++) {
+          rows.add(
+            DailyPriceCompanion.insert(
+              symbol: symbol,
+              date: today.subtract(Duration(days: i)),
+              close: Value(closesDesc[i]),
+            ),
+          );
+        }
+        await db.insertPrices(rows);
+      }
+
+      test('counts new highs and new lows per market', () async {
+        // lookbackDays=3 → 窗口 = 今日 + 前 2 日（CURRENT ROW AND 2 FOLLOWING）
+        // 2330 (TWSE) 今日 120 = 窗口 [120,110,100] 最高 → new high
+        await insertCloses('2330', [120, 110, 100]);
+        // 2317 (TWSE) 今日 90 = 窗口 [90,100,110] 最低 → new low
+        await insertCloses('2317', [90, 100, 110]);
+        // 6488 (TPEx) 今日 105 = 窗口 [105,100,110] 介於中間 → 既非高也非低
+        await insertCloses('6488', [105, 100, 110]);
+        // 3293 (TPEx) 今日 130 = 窗口 [130,120,110] 最高 → new high
+        await insertCloses('3293', [130, 120, 110]);
+
+        final result = await db.getNewHighLowCountsByMarket(
+          today,
+          lookbackDays: 3,
+        );
+
+        // TWSE: 1 high (2330), 1 low (2317)
+        expect(result['TWSE']?.newHighs, 1);
+        expect(result['TWSE']?.newLows, 1);
+        // TPEx: 1 high (3293), 0 low（6488 在區間內）
+        expect(result['TPEx']?.newHighs, 1);
+        expect(result['TPEx']?.newLows, 0);
+      });
+
+      test('today equal to window max counts as new high (>=)', () async {
+        // 今日 100 = 前一日 100（持平於窗口最高）→ close >= hi 成立
+        await insertCloses('2330', [100, 100, 90]);
+
+        final result = await db.getNewHighLowCountsByMarket(
+          today,
+          lookbackDays: 3,
+        );
+
+        expect(result['TWSE']?.newHighs, 1);
+        // 100 也 >= 窗口最低嗎？窗口 [100,100,90] 最低 90，100 != 90 → 非新低
+        expect(result['TWSE']?.newLows, 0);
+      });
+
+      test('excludes rows with null close', () async {
+        await db.insertPrices([
+          DailyPriceCompanion.insert(symbol: '2330', date: today),
+        ]);
+
+        final result = await db.getNewHighLowCountsByMarket(
+          today,
+          lookbackDays: 3,
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('returns empty map when no data', () async {
+        final result = await db.getNewHighLowCountsByMarket(
+          today,
+          lookbackDays: 3,
+        );
+
+        expect(result, isEmpty);
+      });
+    });
+
     // ── getActiveWarningCountsByMarket ─────────────────────
 
     group('getActiveWarningCountsByMarket', () {

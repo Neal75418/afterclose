@@ -553,6 +553,72 @@ mixin MarketOverviewDaoMixin on $AppDatabase {
     return byMarket;
   }
 
+  /// 取得各市場 52 週新高/新低家數（依市場分組）
+  ///
+  /// 對每檔個股，比較今日收盤與 trailing-[lookbackDays] 日（含今日）的最高/
+  /// 最低收盤：close ≥ 區間最高 ⇒ 創 52 週新高、close ≤ 區間最低 ⇒ 創 52 週
+  /// 新低，依 market 分組計數。為廣度趨勢（market breadth trend）指標。
+  ///
+  /// 採用 window function：以每檔個股的日期降序開窗，frame 取「當列起往後
+  /// [lookbackDays] 列」涵蓋 trailing window，`rn = 1` 即今日該列。
+  /// 日期範圍 start = date − lookbackDays×2 日（寬鬆，確保涵蓋 252 個交易
+  /// 日）、end = date+1 日。
+  ///
+  /// 注意：WINDOW frame 的 `lookbackDays - 1`（FOLLOWING 列數）為 SQLite
+  /// 字面量、不可綁定參數，故以信任的 int 常數插值進查詢字串（非使用者輸入）。
+  ///
+  /// 回傳 `Map<String, ({int newHighs, int newLows})>`
+  Future<Map<String, ({int newHighs, int newLows})>>
+  getNewHighLowCountsByMarket(
+    DateTime date, {
+    int lookbackDays = kNewHighLowLookbackDays,
+  }) async {
+    final endOfDay = DateContext.normalize(date).add(const Duration(days: 1));
+    // 寬鬆回看：以日曆日 lookbackDays×2 涵蓋約 lookbackDays 個交易日
+    final startDate = DateContext.normalize(
+      date,
+    ).subtract(Duration(days: lookbackDays * 2));
+
+    // frame 的 FOLLOWING 列數須為字面量（SQLite 不允許綁定），插值信任常數
+    final query =
+        '''
+    WITH win AS (
+      SELECT dp.symbol, sm.market, dp.close,
+        MAX(dp.close) OVER w AS hi, MIN(dp.close) OVER w AS lo,
+        ROW_NUMBER() OVER (PARTITION BY dp.symbol ORDER BY dp.date DESC) rn
+      FROM daily_price dp INNER JOIN stock_master sm ON sm.symbol = dp.symbol
+      WHERE dp.close IS NOT NULL AND dp.date > ? AND dp.date < ?
+      WINDOW w AS (PARTITION BY dp.symbol ORDER BY dp.date DESC
+        ROWS BETWEEN CURRENT ROW AND ${lookbackDays - 1} FOLLOWING))
+    SELECT market,
+      SUM(CASE WHEN close >= hi THEN 1 ELSE 0 END) AS new_highs,
+      SUM(CASE WHEN close <= lo THEN 1 ELSE 0 END) AS new_lows
+    FROM win WHERE rn = 1 GROUP BY market
+  ''';
+
+    final results = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startDate),
+        Variable.withDateTime(endOfDay),
+      ],
+      readsFrom: {dailyPrice, stockMaster},
+    ).get();
+
+    final byMarket = <String, ({int newHighs, int newLows})>{};
+    for (final row in results) {
+      final market = row.readNullable<String>('market');
+      if (market == null) continue;
+
+      byMarket[market] = (
+        newHighs: row.readNullable<int>('new_highs') ?? 0,
+        newLows: row.readNullable<int>('new_lows') ?? 0,
+      );
+    }
+
+    return byMarket;
+  }
+
   /// 取得指定日期的產業表現統計（指定市場）
   ///
   /// 依平均漲跌幅降序排列。

@@ -128,6 +128,25 @@ void main() {
             })
           >[],
     );
+    when(
+      () => mockDb.getNewHighLowCountsByMarket(
+        any(),
+        lookbackDays: any(named: 'lookbackDays'),
+      ),
+    ).thenAnswer((_) async => <String, ({int newHighs, int newLows})>{});
+    when(
+      () => mockDb.getRecentAdvanceDeclineByMarket(
+        any(),
+        days: any(named: 'days'),
+        minCoverage: any(named: 'minCoverage'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          <
+            String,
+            List<({DateTime date, int advance, int decline, int unchanged})>
+          >{},
+    );
   }
 
   group('MarketOverviewState', () {
@@ -386,6 +405,84 @@ void main() {
 
       final state = container.read(marketOverviewProvider);
       expect(state.dataDate, isNotNull);
+    });
+
+    test('loadData populates breadth trend (new high/low + AD line)', () async {
+      setupEmptyDefaults();
+
+      when(
+        () => mockDb.getNewHighLowCountsByMarket(
+          any(),
+          lookbackDays: any(named: 'lookbackDays'),
+        ),
+      ).thenAnswer(
+        (_) async => {
+          'TWSE': (newHighs: 156, newLows: 29),
+          'TPEx': (newHighs: 82, newLows: 55),
+        },
+      );
+
+      // 日期降序（最新在前）：每日 adv-dec = +50, +30, -20
+      // 反轉 oldest→newest 後累積 = [-20, 10, 60]
+      when(
+        () => mockDb.getRecentAdvanceDeclineByMarket(
+          any(),
+          days: any(named: 'days'),
+          minCoverage: any(named: 'minCoverage'),
+        ),
+      ).thenAnswer(
+        (_) async => {
+          'TWSE': [
+            (date: testDate, advance: 80, decline: 30, unchanged: 0), // +50
+            (
+              date: testDate.subtract(const Duration(days: 1)),
+              advance: 60,
+              decline: 30,
+              unchanged: 0,
+            ), // +30
+            (
+              date: testDate.subtract(const Duration(days: 2)),
+              advance: 40,
+              decline: 60,
+              unchanged: 0,
+            ), // -20
+          ],
+        },
+      );
+
+      final notifier = container.read(marketOverviewProvider.notifier);
+      await notifier.loadData();
+
+      final state = container.read(marketOverviewProvider);
+      expect(state.newHighLowByMarket['TWSE']?.newHighs, 156);
+      expect(state.newHighLowByMarket['TWSE']?.newLows, 29);
+      expect(state.newHighLowByMarket['TPEx']?.newHighs, 82);
+      expect(state.newHighLowByMarket['TPEx']?.newLows, 55);
+
+      // 累積 AD 線 oldest→newest：[-20, -20+30=10, 10+50=60]
+      expect(state.adLineByMarket['TWSE'], [-20.0, 10.0, 60.0]);
+    });
+  });
+
+  group('cumulativeAdLine', () {
+    test('running sum oldest→newest on known series', () {
+      expect(cumulativeAdLine([5, 3, -2, 4]), [5.0, 8.0, 6.0, 10.0]);
+    });
+
+    test('all-positive series strictly increases', () {
+      expect(cumulativeAdLine([1, 1, 1]), [1.0, 2.0, 3.0]);
+    });
+
+    test('all-negative series strictly decreases', () {
+      expect(cumulativeAdLine([-1, -2, -3]), [-1.0, -3.0, -6.0]);
+    });
+
+    test('single element returns itself', () {
+      expect(cumulativeAdLine([7]), [7.0]);
+    });
+
+    test('empty input returns empty list', () {
+      expect(cumulativeAdLine([]), isEmpty);
     });
   });
 }

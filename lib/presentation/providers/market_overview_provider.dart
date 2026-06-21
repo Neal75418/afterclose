@@ -21,6 +21,27 @@ import 'package:afterclose/domain/services/chip_anomaly_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
 // ==================================================
+// 廣度趨勢純函式
+// ==================================================
+
+/// 計算 AD 騰落線（Advance-Decline Line）的累積序列。
+///
+/// [dailyNet] 為每日 (上漲 − 下跌) 家數，順序須為 oldest→newest。
+/// 回傳同長度的累積 running sum（oldest→newest），供 sparkline 繪製。
+/// 空輸入回傳空列表。
+///
+/// 純函式、無 IO，便於單元測試。
+List<double> cumulativeAdLine(List<double> dailyNet) {
+  final result = <double>[];
+  var running = 0.0;
+  for (final net in dailyNet) {
+    running += net;
+    result.add(running);
+  }
+  return result;
+}
+
+// ==================================================
 // 大盤總覽狀態
 // ==================================================
 
@@ -41,6 +62,8 @@ class MarketOverviewState {
     this.warningCountsByMarket = const {},
     this.institutionalStreakByMarket = const {},
     this.industrySummaryByMarket = const {},
+    this.newHighLowByMarket = const {},
+    this.adLineByMarket = const {},
     this.historyTrends = const HistoryTrends(),
     this.chipAnomaliesByMarket = const {},
     this.isLoading = false,
@@ -97,6 +120,14 @@ class MarketOverviewState {
   /// 產業表現（依市場分組）
   final Map<String, List<IndustrySummary>> industrySummaryByMarket;
 
+  /// 52 週新高/新低家數（依市場分組）— 廣度趨勢
+  /// Key: 'TWSE' / 'TPEx'
+  final Map<String, ({int newHighs, int newLows})> newHighLowByMarket;
+
+  /// AD 騰落線累積值（依市場分組，oldest→newest，供 sparkline）— 廣度趨勢
+  /// Key: 'TWSE' / 'TPEx'
+  final Map<String, List<double>> adLineByMarket;
+
   /// 30 日歷史趨勢資料（法人、成交量、融資融券、漲跌比）
   final HistoryTrends historyTrends;
 
@@ -135,6 +166,8 @@ class MarketOverviewState {
     Map<String, WarningCounts>? warningCountsByMarket,
     Map<String, InstitutionalStreak>? institutionalStreakByMarket,
     Map<String, List<IndustrySummary>>? industrySummaryByMarket,
+    Map<String, ({int newHighs, int newLows})>? newHighLowByMarket,
+    Map<String, List<double>>? adLineByMarket,
     HistoryTrends? historyTrends,
     Map<String, List<ChipAnomaly>>? chipAnomaliesByMarket,
     bool? isLoading,
@@ -162,6 +195,8 @@ class MarketOverviewState {
           institutionalStreakByMarket ?? this.institutionalStreakByMarket,
       industrySummaryByMarket:
           industrySummaryByMarket ?? this.industrySummaryByMarket,
+      newHighLowByMarket: newHighLowByMarket ?? this.newHighLowByMarket,
+      adLineByMarket: adLineByMarket ?? this.adLineByMarket,
       historyTrends: historyTrends ?? this.historyTrends,
       chipAnomaliesByMarket:
           chipAnomaliesByMarket ?? this.chipAnomaliesByMarket,
@@ -262,6 +297,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         _loadAdvanceDeclineHistoryByMarket(dataDate), // [15]
         _loadChipAnomalies(dataDate), // [16]
         _loadIndexStageHistory(), // [17] Map<String, List<double>>
+        _loadNewHighLowByMarket(
+          dataDate,
+          fallbackDate: fallbackDate,
+        ), // [18] Map<String, ({int newHighs, int newLows})>
+        _loadAdLineByMarket(dataDate), // [19] Map<String, List<double>>
       ]);
 
       // 超時機制：最多等 _loadTimeoutSec 秒
@@ -343,6 +383,9 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final advRatioHistory = results[15] as Map<String, List<double>>;
     final chipAnomalies = results[16] as Map<String, List<ChipAnomaly>>;
     final rawStageHistory = results[17] as Map<String, List<double>>;
+    final newHighLowByMarket =
+        results[18] as Map<String, ({int newHighs, int newLows})>;
+    final adLineByMarket = results[19] as Map<String, List<double>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
@@ -412,6 +455,8 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       warningCountsByMarket: warningCountsByMarket,
       institutionalStreakByMarket: validatedStreak,
       industrySummaryByMarket: industrySummaryByMarket,
+      newHighLowByMarket: newHighLowByMarket,
+      adLineByMarket: adLineByMarket,
       historyTrends: HistoryTrends(
         institutionalTotalNet: instHistory,
         turnover: turnoverHist,
@@ -1030,6 +1075,58 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       return await service.detectAnomaliesByMarket(date);
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入籌碼異動失敗', e);
+      return {};
+    }
+  }
+
+  /// 載入 52 週新高/新低家數（依市場分組）— 廣度趨勢
+  ///
+  /// 若主要日期缺少某市場資料，自動用 [fallbackDate] 補齊。
+  Future<Map<String, ({int newHighs, int newLows})>> _loadNewHighLowByMarket(
+    DateTime date, {
+    DateTime? fallbackDate,
+  }) async {
+    try {
+      final data = await _db.getNewHighLowCountsByMarket(date);
+
+      // 回退：若缺少某市場，嘗試前一交易日補齊
+      if (fallbackDate != null && data.length < 2) {
+        final fallbackData = await _db.getNewHighLowCountsByMarket(
+          fallbackDate,
+        );
+        for (final entry in fallbackData.entries) {
+          data.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+
+      return data;
+    } catch (e) {
+      AppLogger.warning('MarketOverviewNotifier', '載入 52 週新高新低家數失敗', e);
+      return {};
+    }
+  }
+
+  /// 載入 AD 騰落線（依市場分組，oldest→newest 累積值）— 廣度趨勢
+  ///
+  /// 複用 [getRecentAdvanceDeclineByMarket]（已 coverage-filter 完整日），
+  /// 取每日 (advance − decline) 後由舊到新累加為騰落線。
+  Future<Map<String, List<double>>> _loadAdLineByMarket(DateTime date) async {
+    try {
+      final raw = await _db.getRecentAdvanceDeclineByMarket(
+        date,
+        days: kAdLineLookbackDays,
+      );
+      final result = <String, List<double>>{};
+      for (final entry in raw.entries) {
+        // raw 為日期降序（最新在前），反轉為 oldest→newest 後累加
+        final dailyNet = entry.value.reversed
+            .map((e) => (e.advance - e.decline).toDouble())
+            .toList();
+        result[entry.key] = cumulativeAdLine(dailyNet);
+      }
+      return result;
+    } catch (e) {
+      AppLogger.warning('MarketOverviewNotifier', '載入 AD 騰落線失敗', e);
       return {};
     }
   }

@@ -155,6 +155,46 @@ class MarketReadingService {
     );
   }
 
+  /// 廣度趨勢判讀（52 週新高/新低家數 vs 指數漲跌）
+  ///
+  /// 結合廣度趨勢（新高 / 新低家數）與指數方向，偵測「廣度確認」或
+  /// 「廣度背離」。純比較家數、threshold-free（不含魔術數字）。
+  ///
+  /// - 指數漲 & 新高 > 新低：新高擴張，廣度確認多方（positive）
+  /// - 指數漲 & 新低 ≥ 新高：指數漲但新低未縮，留意廣度背離（warning）
+  /// - 指數跌 & 新低 > 新高：新低擴散，弱勢未止（negative）
+  /// - 其餘：廣度中性（neutral）
+  static MarketReading interpretBreadthTrend({
+    required int newHighs,
+    required int newLows,
+    required double indexChangePercent,
+  }) {
+    final isUp = indexChangePercent > 0;
+
+    if (isUp && newHighs > newLows) {
+      return const MarketReading(
+        messageKey: 'marketOverview.reading.breadthTrend.confirmUp',
+        tone: InterpretationTone.positive,
+      );
+    }
+    if (isUp && newLows >= newHighs) {
+      return const MarketReading(
+        messageKey: 'marketOverview.reading.breadthTrend.divergence',
+        tone: InterpretationTone.warning,
+      );
+    }
+    if (!isUp && newLows > newHighs) {
+      return const MarketReading(
+        messageKey: 'marketOverview.reading.breadthTrend.weakDown',
+        tone: InterpretationTone.negative,
+      );
+    }
+    return const MarketReading(
+      messageKey: 'marketOverview.reading.breadthTrend.neutral',
+      tone: InterpretationTone.neutral,
+    );
+  }
+
   /// 位階乖離判讀（增強既有「大盤位階」單行）
   ///
   /// 僅在極端乖離時回傳補充判讀，其餘回傳 null（位階 chip 已足夠表達）。

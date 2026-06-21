@@ -9,6 +9,7 @@ import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/advance_decline_gauge.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/breadth_trend_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/hero_index_section.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/industry_performance_row.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/institutional_flow_chart.dart';
@@ -388,6 +389,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
       );
     }
 
+    // 市場廣度趨勢（52 週新高新低 + AD 騰落線）— 緊接漲跌家數，廣度快照 + 趨勢同處
+    final breadthTrend = _buildBreadthTrendSection(marketKey);
+    if (breadthTrend != null) sections.add(breadthTrend);
+
     // 成交量統計
     if (turnoverData != null && turnoverData.totalTurnover > 0) {
       sections.add(
@@ -485,6 +490,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
     // 每個 section builder 返回 Widget?，null 表示該市場無此資料
     final sectionBuilders = <Widget? Function(String)>[
       _buildAdvanceDeclineSection,
+      _buildBreadthTrendSection,
       _buildTurnoverSection,
       _buildInstitutionalSection,
       _buildMarginSection,
@@ -688,6 +694,24 @@ class _MarketDashboardState extends State<MarketDashboard> {
       data: adData,
       limitUpDown: widget.state.limitUpDownByMarket[market],
       advanceRatioHistory: widget.state.historyTrends.advanceRatio[market],
+    );
+  }
+
+  /// 市場廣度趨勢 section（52 週新高新低 + AD 騰落線）
+  ///
+  /// 兩項資料皆無時回傳 null（該市場不顯示此 section）。
+  Widget? _buildBreadthTrendSection(String market) {
+    final newHighLow = widget.state.newHighLowByMarket[market];
+    final adLine = widget.state.adLineByMarket[market];
+
+    final hasNewHighLow = newHighLow != null;
+    final hasAdLine = adLine != null && adLine.length >= 2;
+    if (!hasNewHighLow && !hasAdLine) return null;
+
+    return BreadthTrendRow(
+      newHighLow: newHighLow,
+      adLine: adLine,
+      indexChangePercent: _indexChangePercent(market),
     );
   }
 
