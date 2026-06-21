@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/l10n/app_strings.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -57,6 +58,7 @@ class _ComparisonScreenState extends ConsumerState<ComparisonScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (context) => StockPickerSheet(existingSymbols: state.symbols),
     );
 

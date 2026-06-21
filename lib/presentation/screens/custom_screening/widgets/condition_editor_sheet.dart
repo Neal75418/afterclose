@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
@@ -25,6 +26,7 @@ class ConditionEditorSheet extends StatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(DesignTokens.radiusXl),

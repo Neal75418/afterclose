@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
@@ -99,6 +100,7 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (context) => DraggableScrollableSheet(
         initialChildSize: 0.5,
         minChildSize: 0.3,

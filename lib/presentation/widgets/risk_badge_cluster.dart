@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/constants/risk_warnings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/widgets/reason_tags.dart';
 
@@ -99,6 +100,7 @@ class RiskBadgeCluster extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(

@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 
@@ -19,6 +20,7 @@ void showScanFilterBottomSheet({
     context: context,
     isScrollControlled: true,
     backgroundColor: theme.colorScheme.surface,
+    constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),

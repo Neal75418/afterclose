@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -23,6 +24,7 @@ void showEventDetailSheet(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
+    constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
     builder: (context) => EventDetailSheet(event: event, onDelete: onDelete),
   );
 }
@@ -247,6 +249,9 @@ class _EventDetailSheetState extends ConsumerState<EventDetailSheet> {
                         context: parentContext,
                         isScrollControlled: true,
                         useSafeArea: true,
+                        constraints: const BoxConstraints(
+                          maxWidth: Breakpoints.sheetMaxWidth,
+                        ),
                         builder: (_) => AddEventSheet(existingEvent: event),
                       );
                     },

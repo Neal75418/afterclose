@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/number_formatter.dart';
@@ -85,6 +86,9 @@ class PositionDetailScreen extends ConsumerWidget {
             context: context,
             isScrollControlled: true,
             useSafeArea: true,
+            constraints: const BoxConstraints(
+              maxWidth: Breakpoints.sheetMaxWidth,
+            ),
             builder: (context) => AddTransactionSheet(initialSymbol: symbol),
           );
         },
@@ -218,6 +222,9 @@ class PositionDetailScreen extends ConsumerWidget {
                 context: context,
                 isScrollControlled: true,
                 useSafeArea: true,
+                constraints: const BoxConstraints(
+                  maxWidth: Breakpoints.sheetMaxWidth,
+                ),
                 builder: (_) =>
                     AddTransactionSheet(initialSymbol: symbol, existingTx: tx),
               );

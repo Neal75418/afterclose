@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
@@ -358,6 +359,7 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (context) => AddEventSheet(initialDate: _selectedDay),
     );
   }

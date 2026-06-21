@@ -9,6 +9,7 @@ import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 到價提醒分頁 - 個股價格警示設定
@@ -379,6 +380,7 @@ class _AlertsTabState extends ConsumerState<AlertsTab> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (context) => _AddAlertSheet(
         symbol: widget.symbol,
         currentPrice: currentPrice,

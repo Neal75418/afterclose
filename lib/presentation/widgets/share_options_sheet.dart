@@ -1,6 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
+import 'package:afterclose/core/theme/breakpoints.dart';
+
 /// 分享選項 BottomSheet
 ///
 /// 顯示可用的匯出格式（PNG / CSV），回傳使用者選擇的格式。
@@ -26,6 +28,7 @@ class ShareOptionsSheet extends StatelessWidget {
   }) {
     return showModalBottomSheet<ShareFormat>(
       context: context,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (context) => ShareOptionsSheet(
         showPng: showPng,
         showCsv: showCsv,

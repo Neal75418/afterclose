@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/extensions/trend_state_extension.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
@@ -47,6 +48,7 @@ Future<void> showStockPreviewSheet({
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
+    constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
     builder: (context) => StockPreviewSheet(
       data: data,
       onViewDetails: onViewDetails,

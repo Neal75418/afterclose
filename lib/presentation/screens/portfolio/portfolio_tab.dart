@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/l10n/app_strings.dart';
 import 'package:afterclose/presentation/providers/portfolio_provider.dart';
@@ -255,6 +256,7 @@ class _PortfolioTabState extends ConsumerState<PortfolioTab> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       builder: (context) => const AddTransactionSheet(),
     );
   }

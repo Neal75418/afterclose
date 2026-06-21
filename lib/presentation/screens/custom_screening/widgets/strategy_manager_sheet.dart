@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:afterclose/domain/models/screening_condition.dart';
 import 'package:afterclose/presentation/providers/custom_screening_provider.dart';
 import 'package:afterclose/presentation/widgets/common/drag_handle.dart';
+import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// 策略儲存/載入 Bottom Sheet
@@ -16,6 +17,7 @@ class StrategyManagerSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Theme.of(context).colorScheme.surface,
+      constraints: const BoxConstraints(maxWidth: Breakpoints.sheetMaxWidth),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
