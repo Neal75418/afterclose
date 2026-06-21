@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/mini_bar_chart.dart';
 
 /// 成交額統計列
@@ -15,6 +17,7 @@ class TradingTurnoverRow extends StatelessWidget {
     required this.data,
     this.turnoverComparison,
     this.turnoverHistory,
+    this.indexChangePercent,
   });
 
   final TradingTurnover data;
@@ -22,6 +25,9 @@ class TradingTurnoverRow extends StatelessWidget {
 
   /// 30日成交額歷史（供趨勢 bar chart，oldest→newest）
   final List<double>? turnoverHistory;
+
+  /// 大盤（加權指數）漲跌幅（%），供量價判讀；null 時不顯示判讀行
+  final double? indexChangePercent;
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +37,24 @@ class TradingTurnoverRow extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    // 量價判讀：需有 5 日均量比較 + 大盤漲跌幅，缺一不顯示
+    final comparison = turnoverComparison;
+    final changePct = indexChangePercent;
+    final reading =
+        (comparison != null &&
+            comparison.avg5dTurnover > 0 &&
+            changePct != null)
+        ? MarketReadingService.interpretVolumePrice(
+            todayTurnover: comparison.todayTurnover,
+            avg5dTurnover: comparison.avg5dTurnover,
+            indexChangePercent: changePct,
+          )
+        : null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -99,6 +120,8 @@ class TradingTurnoverRow extends StatelessWidget {
               ),
             ],
           ),
+          // 判讀層（量價）
+          MarketReadingLine(reading: reading),
           // 30日趨勢 bar chart
           if (turnoverHistory != null && turnoverHistory!.length >= 2) ...[
             const SizedBox(height: 8),

@@ -51,9 +51,46 @@ void main() {
         buildTestApp(const AdvanceDeclineGauge(data: data)),
       );
 
-      // With unchanged=0, only 2 Flexible segments
-      final flexibles = find.byType(Flexible);
-      expect(flexibles, findsNWidgets(2));
+      // With unchanged=0, only 2 Flexible segments inside the segmented bar.
+      // 限定在 ClipRRect（分段條容器）內計數，避免把判讀行（P2）的 Flexible 一併計入。
+      final barSegments = find.descendant(
+        of: find.byType(ClipRRect),
+        matching: find.byType(Flexible),
+      );
+      expect(barSegments, findsNWidgets(2));
+    });
+
+    // 判讀層（P2）— 廣度判讀行
+    testWidgets('renders breadth interpretation line for valid input', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // advance/(adv+dec) = 700/1000 = 0.70 > 0.60 → broadUp
+      const data = AdvanceDecline(advance: 700, unchanged: 0, decline: 300);
+      await tester.pumpWidget(
+        buildTestApp(const AdvanceDeclineGauge(data: data)),
+      );
+
+      expect(
+        find.text('marketOverview.reading.breadth.broadUp'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no interpretation line when data is absent (total 0)', (
+      tester,
+    ) async {
+      // total == 0 → 整個 widget 收斂為 SizedBox.shrink，不顯示判讀行
+      await tester.pumpWidget(
+        buildTestApp(const AdvanceDeclineGauge(data: AdvanceDecline())),
+      );
+
+      expect(
+        find.textContaining('marketOverview.reading.breadth'),
+        findsNothing,
+      );
     });
   });
 }

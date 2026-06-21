@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -108,6 +109,60 @@ void main() {
         expect(find.text('marketOverview.stage.insufficient'), findsNothing);
         expect(find.text('marketOverview.stage.bullish'), findsNothing);
       });
+
+      // 判讀層（P2）— 位階乖離判讀行
+      testWidgets(
+        'renders stage-bias interpretation line when bias is extreme',
+        (tester) async {
+          tester.view.physicalSize = const Size(3000, 2400);
+          addTearDown(() => tester.view.resetPhysicalSize());
+
+          // 前 79 天平盤在 22000，最後一天暴衝到 30000。
+          // close=30000 > MA20 > MA60，且距 MA60 乖離遠大於 15% → overheated。
+          final overheatedHistory = [
+            ...List.generate(79, (_) => 22000.0),
+            30000.0,
+          ];
+
+          await tester.pumpWidget(
+            buildTestApp(
+              HeroIndexSection(
+                index: createIndex(),
+                historyData: overheatedHistory,
+                stageHistory: overheatedHistory,
+              ),
+            ),
+          );
+
+          expect(
+            find.text('marketOverview.reading.stageBias.overheated'),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'no stage-bias line when bias is mild (bullish but not hot)',
+        (tester) async {
+          // 線性緩升：close 距 MA60 乖離僅約 0.1%，遠低於 15% 門檻 → 無判讀行
+          await tester.pumpWidget(
+            buildTestApp(
+              HeroIndexSection(
+                index: createIndex(),
+                historyData: bullishHistory,
+                stageHistory: bullishHistory,
+              ),
+            ),
+          );
+
+          // 位階 chip 仍在，但不應出現乖離判讀行
+          expect(find.text('marketOverview.stage.bullish'), findsOneWidget);
+          expect(
+            find.textContaining('marketOverview.reading.stageBias'),
+            findsNothing,
+          );
+        },
+      );
     });
   });
 }

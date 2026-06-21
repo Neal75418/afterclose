@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
+import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 
 /// Hero 指數區域
@@ -205,6 +207,14 @@ class HeroIndexSection extends StatelessWidget {
       MarketStage.insufficient => (AppTheme.neutralColor, 'insufficient'),
     };
 
+    // 位階乖離判讀（僅在極端乖離時補充一行，其餘為 null 不顯示）
+    final reading = result.biasMa60 == null
+        ? null
+        : MarketReadingService.interpretStageBias(
+            stage: result.stage,
+            biasMa60: result.biasMa60!,
+          );
+
     return [
       const SizedBox(height: DesignTokens.spacing8),
       Row(
@@ -245,6 +255,8 @@ class HeroIndexSection extends StatelessWidget {
           ),
         ],
       ),
+      // 判讀層（位階乖離）— 僅在 reading 非 null 時渲染
+      if (reading != null) MarketReadingLine(reading: reading),
     ];
   }
 

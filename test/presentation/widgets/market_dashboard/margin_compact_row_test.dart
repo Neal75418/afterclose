@@ -43,5 +43,42 @@ void main() {
       expect(find.byIcon(Icons.arrow_downward_rounded), findsOneWidget);
       expect(find.byIcon(Icons.arrow_upward_rounded), findsOneWidget);
     });
+
+    // 判讀層（P2）— 籌碼槓桿判讀行
+    testWidgets('renders margin-leverage interpretation line for valid input', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // 融資增 (+500) & 指數漲 → overheating
+      const data = MarginTradingTotals(marginChange: 500, marginBalance: 50000);
+      await tester.pumpWidget(
+        buildTestApp(
+          const MarginCompactRow(data: data, indexChangePercent: 1.0),
+        ),
+      );
+
+      expect(
+        find.text('marketOverview.reading.marginLeverage.overheating'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no interpretation line when indexChangePercent is absent', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      const data = MarginTradingTotals(marginChange: 500, marginBalance: 50000);
+      // 缺 indexChangePercent → 不顯示判讀行
+      await tester.pumpWidget(buildTestApp(const MarginCompactRow(data: data)));
+
+      expect(
+        find.textContaining('marketOverview.reading.marginLeverage'),
+        findsNothing,
+      );
+    });
   });
 }

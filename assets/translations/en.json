@@ -142,6 +142,31 @@
     },
     "biasMa20": "vs MA20 {value}%",
     "biasMa60": "vs MA60 {value}%",
+    "reading": {
+      "volumePrice": {
+        "healthyUp": "Rising on volume — healthy price-volume",
+        "weakUp": "Up on shrinking volume — momentum fading",
+        "heavySelloff": "Selloff on volume — heavy pressure",
+        "quietConsolidation": "Light volume, consolidating — stay cautious",
+        "flat": "Volume steady"
+      },
+      "marginLeverage": {
+        "overheating": "Margin up while index rises — retail leverage building, watch for overheating",
+        "healthyWashout": "Index up, margin down — chips washed out, relatively healthy",
+        "trapped": "Index down, margin up — getting more trapped",
+        "deleveraging": "Index down, margin down — deleveraging underway",
+        "stable": "Margin steady"
+      },
+      "breadth": {
+        "broadUp": "Broad advance — healthy breadth",
+        "broadDown": "Broad decline — selling spreading",
+        "mixed": "Mixed advances/declines — direction unclear"
+      },
+      "stageBias": {
+        "overheated": "Wide bias — short-term overheated",
+        "oversold": "Oversold — watch for a bounce"
+      }
+    },
     "sentiment": {
       "title": "Market Sentiment",
       "extremeFear": "Extreme Fear",

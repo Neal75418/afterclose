@@ -228,6 +228,20 @@ class _MarketDashboardState extends State<MarketDashboard> {
     );
   }
 
+  /// 取得指定市場 Hero 指數的漲跌幅（%）
+  ///
+  /// 供量價 / 籌碼槓桿判讀使用（TWSE→加權指數、TPEx→櫃買指數）。
+  /// 找不到對應指數時回傳 null，判讀行不顯示。
+  double? _indexChangePercent(String marketKey) {
+    final heroName = marketKey == MarketCode.twse
+        ? MarketIndexNames.taiex
+        : MarketIndexNames.tpexIndex;
+    for (final idx in widget.state.indices) {
+      if (idx.name == heroName) return idx.changePercent;
+    }
+    return null;
+  }
+
   /// 計算指定市場的市場情緒分數
   MarketSentiment? _computeSentiment(String marketKey) {
     final ad = widget.state.advanceDeclineByMarket[marketKey];
@@ -381,6 +395,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
           data: turnoverData,
           turnoverComparison: turnoverComparison,
           turnoverHistory: turnoverHist,
+          indexChangePercent: _indexChangePercent(marketKey),
         ),
       );
     }
@@ -411,6 +426,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
             data: marginData,
             marginBalanceHistory: marginHist,
             shortBalanceHistory: shortHist,
+            indexChangePercent: _indexChangePercent(marketKey),
           ),
         ),
       );
@@ -682,6 +698,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
       data: turnoverData,
       turnoverComparison: widget.state.turnoverComparisonByMarket[market],
       turnoverHistory: widget.state.historyTrends.turnover[market],
+      indexChangePercent: _indexChangePercent(market),
     );
   }
 
@@ -717,6 +734,7 @@ class _MarketDashboardState extends State<MarketDashboard> {
         data: marginData,
         marginBalanceHistory: widget.state.historyTrends.marginBalance[market],
         shortBalanceHistory: widget.state.historyTrends.shortBalance[market],
+        indexChangePercent: _indexChangePercent(market),
       ),
     );
   }

@@ -142,6 +142,31 @@
     },
     "biasMa20": "距20MA {value}%",
     "biasMa60": "距60MA {value}%",
+    "reading": {
+      "volumePrice": {
+        "healthyUp": "量增配漲，量價健康",
+        "weakUp": "量縮上漲，動能轉弱",
+        "heavySelloff": "量增殺盤，賣壓沉重",
+        "quietConsolidation": "量縮整理，觀望",
+        "flat": "量能持平"
+      },
+      "marginLeverage": {
+        "overheating": "融資增、指數漲：散戶槓桿升溫，留意過熱",
+        "healthyWashout": "指數漲、融資減：籌碼洗清，相對健康",
+        "trapped": "指數跌、融資增：套牢加深",
+        "deleveraging": "指數跌、融資減：去槓桿中",
+        "stable": "融資變動平穩"
+      },
+      "breadth": {
+        "broadUp": "普漲，廣度健康",
+        "broadDown": "普跌，賣壓擴散",
+        "mixed": "漲跌互現，方向不明"
+      },
+      "stageBias": {
+        "overheated": "乖離偏大，短線偏熱",
+        "oversold": "超跌，留意反彈"
+      }
+    },
     "sentiment": {
       "title": "市場情緒",
       "extremeFear": "極度恐懼",

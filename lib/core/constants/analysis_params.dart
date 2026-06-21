@@ -158,6 +158,36 @@ abstract final class AnalysisParams {
   static const int limitImbalanceThreshold = 30;
 
   // ==================================================
+  // 判讀層（MarketReadingService）門檻
+  // ==================================================
+  //
+  // 供 [MarketReadingService] 將大盤總覽各區塊的原始數字轉成一行分析師
+  // 口吻的判讀文字。皆為 label-only，不影響任何評分。
+
+  /// 量價判讀的「量能顯著變動」門檻（百分比）
+  ///
+  /// 今日成交額相對 5 日均量的變化超過 ±此值，才視為「量增 / 量縮」，
+  /// 落在區間內視為「量能持平」。
+  static const double kVolumeSurgePct = 10.0;
+
+  /// 廣度判讀的「普漲」上漲家數占比門檻（0~1）
+  ///
+  /// 上漲家數 / (上漲 + 下跌) 高於此值視為普漲。
+  static const double kBreadthBroadUpRatio = 0.60;
+
+  /// 廣度判讀的「普跌」上漲家數占比門檻（0~1）
+  ///
+  /// 上漲家數 / (上漲 + 下跌) 低於此值視為普跌；
+  /// 介於 [kBreadthBroadDownRatio] 與 [kBreadthBroadUpRatio] 間視為漲跌互現。
+  static const double kBreadthBroadDownRatio = 0.40;
+
+  /// 位階乖離判讀的「乖離偏大」門檻（百分比，正負對稱）
+  ///
+  /// 多頭排列下 MA60 正乖離超過此值視為「短線偏熱」；
+  /// 空頭排列下 MA60 負乖離超過此值視為「超跌」。
+  static const double kBiasOverheatPct = 15.0;
+
+  // ==================================================
   // 大盤位階（均線乖離）門檻
   // ==================================================
 

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
+import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 
 /// 漲跌家數水平分段條
 ///
@@ -32,6 +34,12 @@ class AdvanceDeclineGauge extends StatelessWidget {
     final advPct = data.advance / total;
     final unchPct = data.unchanged / total;
     final declPct = data.decline / total;
+
+    // 廣度判讀（僅需漲跌家數，service 內部 guard 分母）
+    final reading = MarketReadingService.interpretBreadth(
+      advance: data.advance,
+      decline: data.decline,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,6 +161,9 @@ class AdvanceDeclineGauge extends StatelessWidget {
             maxY: 1,
           ),
         ],
+
+        // 判讀層（廣度）
+        MarketReadingLine(reading: reading),
       ],
     );
   }

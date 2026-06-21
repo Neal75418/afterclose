@@ -68,6 +68,80 @@ void main() {
     // Regression — 2026-06 screenshot 顯示左卡片 5日均 badge 右側溢出 1.1px。
     // 觸發條件：半寬 dashboard 卡片 + 萬億級成交額 + 5 位數百分比。
     // FittedBox(scaleDown) 修正在此寬度下不應再 throw RenderFlex overflow。
+    // 判讀層（P2）— 量價判讀行
+    testWidgets('renders volume-price interpretation line for valid input', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      // today 130 vs avg5d 100 → +30% 量增；指數漲 → healthyUp
+      const data = TradingTurnover(totalTurnover: 5e10);
+      const comparison = TurnoverComparison(
+        todayTurnover: 130,
+        avg5dTurnover: 100,
+      );
+      await tester.pumpWidget(
+        buildTestApp(
+          const TradingTurnoverRow(
+            data: data,
+            turnoverComparison: comparison,
+            indexChangePercent: 1.0,
+          ),
+        ),
+      );
+
+      // .tr() 未載入翻譯時回傳 key
+      expect(
+        find.text('marketOverview.reading.volumePrice.healthyUp'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no interpretation line when indexChangePercent is absent', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      const data = TradingTurnover(totalTurnover: 5e10);
+      const comparison = TurnoverComparison(
+        todayTurnover: 130,
+        avg5dTurnover: 100,
+      );
+      // 缺 indexChangePercent → 不顯示判讀行
+      await tester.pumpWidget(
+        buildTestApp(
+          const TradingTurnoverRow(data: data, turnoverComparison: comparison),
+        ),
+      );
+
+      expect(
+        find.textContaining('marketOverview.reading.volumePrice'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('no interpretation line when turnoverComparison is absent', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(3000, 2400);
+      addTearDown(() => tester.view.resetPhysicalSize());
+
+      const data = TradingTurnover(totalTurnover: 5e10);
+      // 有指數但無均量比較 → 不顯示判讀行
+      await tester.pumpWidget(
+        buildTestApp(
+          const TradingTurnoverRow(data: data, indexChangePercent: 1.0),
+        ),
+      );
+
+      expect(
+        find.textContaining('marketOverview.reading.volumePrice'),
+        findsNothing,
+      );
+    });
+
     testWidgets(
       'narrow card with huge turnover + 5-digit percent does not overflow',
       (tester) async {

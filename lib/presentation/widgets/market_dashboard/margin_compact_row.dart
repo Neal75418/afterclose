@@ -2,9 +2,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
+import 'package:afterclose/domain/services/market_reading_service.dart';
 import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
+import 'package:afterclose/presentation/widgets/market_dashboard/market_reading_line.dart';
 
 /// 融資融券精簡顯示
 ///
@@ -15,6 +17,7 @@ class MarginCompactRow extends StatelessWidget {
     required this.data,
     this.marginBalanceHistory,
     this.shortBalanceHistory,
+    this.indexChangePercent,
   });
 
   final MarginTradingTotals data;
@@ -25,6 +28,9 @@ class MarginCompactRow extends StatelessWidget {
   /// 30日融券餘額歷史（供趨勢 sparkline，oldest→newest）
   final List<double>? shortBalanceHistory;
 
+  /// 大盤（加權指數）漲跌幅（%），供籌碼槓桿判讀；null 時不顯示判讀行
+  final double? indexChangePercent;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -32,6 +38,15 @@ class MarginCompactRow extends StatelessWidget {
     if (data.marginChange == 0 && data.shortChange == 0) {
       return const SizedBox.shrink();
     }
+
+    // 籌碼槓桿判讀：需大盤漲跌幅，缺則不顯示
+    final changePct = indexChangePercent;
+    final reading = changePct != null
+        ? MarketReadingService.interpretMarginLeverage(
+            marginChange: data.marginChange,
+            indexChangePercent: changePct,
+          )
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -71,6 +86,8 @@ class MarginCompactRow extends StatelessWidget {
             ratio: data.shortBalance / data.marginBalance * 100,
           ),
         ],
+        // 判讀層（籌碼槓桿）
+        MarketReadingLine(reading: reading),
       ],
     );
   }
