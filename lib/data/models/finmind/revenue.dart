@@ -25,8 +25,12 @@ class FinMindRevenue {
 
     return FinMindRevenue(
       stockId: stockId.toString(),
+      // ⚠️ FinMind 的 revenue 單位是「元」，但本欄位（與 TWSE/TPEx writer、消費端
+      // RevenueNewHighRule、欄位註解）一律以「千元」為慣例。不轉換會讓 FinMind 同步
+      // 的股票營收灌大 1000 倍（同一欄混用單位）。故 ÷1000 對齊千元。
+      // 成長率(MoM/YoY)為營收比值、不受此縮放影響。
       date: date.toString(),
-      revenue: JsonParsers.parseDouble(json['revenue']) ?? 0,
+      revenue: (JsonParsers.parseDouble(json['revenue']) ?? 0) / 1000,
       revenueMonth: JsonParsers.parseInt(json['revenue_month']) ?? 0,
       revenueYear: JsonParsers.parseInt(json['revenue_year']) ?? 0,
     );
