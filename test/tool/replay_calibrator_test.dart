@@ -149,7 +149,11 @@ void main() {
 
       final calibrator = ReplayCalibrator(
         db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+        ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
         logger: (_) {},
@@ -199,7 +203,11 @@ void main() {
 
         final calibrator = ReplayCalibrator(
           db: db,
-          config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+          config: const ReplayConfig(
+            dbPath: ':memory:',
+            minHistoryDays: 20,
+            excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+          ),
           analysisService: mockAnalysis,
           ruleEngine: mockRuleEngine,
           logger: (_) {},
@@ -232,7 +240,11 @@ void main() {
 
       final calibrator = ReplayCalibrator(
         db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+        ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
         logger: (_) {},
@@ -260,7 +272,11 @@ void main() {
 
       final calibrator = ReplayCalibrator(
         db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+        ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
         logger: (_) {},
@@ -291,7 +307,11 @@ void main() {
 
         final calibrator = ReplayCalibrator(
           db: db,
-          config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+          config: const ReplayConfig(
+            dbPath: ':memory:',
+            minHistoryDays: 20,
+            excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+          ),
           analysisService: mockAnalysis,
           ruleEngine: mockRuleEngine,
           logger: (_) {},
@@ -317,7 +337,11 @@ void main() {
 
       final calibrator = ReplayCalibrator(
         db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+        ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
         logger: (_) {},
@@ -343,7 +367,11 @@ void main() {
 
       final calibrator = ReplayCalibrator(
         db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+        ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
         logger: (_) {},
@@ -393,7 +421,11 @@ void main() {
 
       final calibrator = ReplayCalibrator(
         db: db,
-        config: const ReplayConfig(dbPath: ':memory:', minHistoryDays: 20),
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false, // 既有測試驗證絕對報酬機制；超額另有專測
+        ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
         logger: (_) {},
@@ -428,6 +460,7 @@ void main() {
           dbPath: ':memory:',
           minHistoryDays: 20,
           dryRun: true,
+          excessReturn: false,
         ),
         analysisService: mockAnalysis,
         ruleEngine: mockRuleEngine,
@@ -441,6 +474,76 @@ void main() {
       final rows = await db.select(db.ruleAccuracy).get();
       expect(rows, isEmpty);
       verifyNever(() => mockRuleEngine.evaluateStock(any(), any()));
+    });
+  });
+
+  group('ReplayCalibrator — cross-sectional excess return', () {
+    test('excess mode: 橫斷面加總 ≈ 0（去 beta），絕對模式則明顯為正', () async {
+      // 3 檔不同成長率、同日期 → 構成每日橫斷面。rule 在每檔每天都觸發，
+      // 故超額報酬（個股 − 當日均值）橫斷面加總為 0。
+      await seedStock('SLOW', priceDays: 200, growthPerDay: 0.5);
+      await seedStock('MED', priceDays: 200);
+      await seedStock('FAST', priceDays: 200, growthPerDay: 1.5);
+
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+        TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'x',
+        ),
+      ]);
+
+      final excess = await ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          minUniverseSymbols: 2, // 3 檔 universe 通過門檻
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+
+      final stats = excess.ruleStats[ReasonType.techBreakout.code]!;
+      expect(stats.short.triggerCount, greaterThan(0));
+      expect(
+        stats.short.avgReturn,
+        closeTo(0.0, 0.01),
+        reason: '5D 超額橫斷面加總應 ≈ 0（多空 beta 被扣除）',
+      );
+      expect(stats.long.avgReturn, closeTo(0.0, 0.01), reason: '60D 同理');
+    });
+
+    test('guard: 當日 universe < minUniverseSymbols → 跳過所有 firing', () async {
+      await seedStock('A', priceDays: 200);
+      await seedStock('B', priceDays: 200);
+
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+        TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'x',
+        ),
+      ]);
+
+      final result = await ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          minUniverseSymbols: 5, // 2 檔 universe 不足 → 全跳過
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+
+      expect(
+        result.totalFirings,
+        0,
+        reason: 'universe 覆蓋不足（半套日語意）→ 該日均值不可靠、跳過',
+      );
     });
   });
 }

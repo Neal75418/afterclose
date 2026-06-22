@@ -88,6 +88,8 @@ class BackfillConfig {
     this.dryRun = false,
     this.skipStockListSync = false,
     this.interDayDelayMs = 5000,
+    this.startDateOverride,
+    this.endDateOverride,
   });
 
   /// SQLite 檔案路徑
@@ -120,6 +122,15 @@ class BackfillConfig {
   /// 單元測試傳 0 跳過 delay。可用 env var `BACKFILL_INTER_DAY_DELAY_MS`
   /// 覆寫不必改 code。
   final int interDayDelayMs;
+
+  /// 明確指定 backfill 起始日（覆寫 years-based 計算）。
+  ///
+  /// null = 用 `endDate - years*365`。用於精準回補特定區間（例如只補
+  /// 2021-2023 而不重抓已存在的 2024-2026）。
+  final DateTime? startDateOverride;
+
+  /// 明確指定 backfill 結束日（覆寫 `DateTime.now()`）。null = now。
+  final DateTime? endDateOverride;
 }
 
 /// 單一 phase 的執行結果
@@ -223,9 +234,11 @@ class Backfiller {
       );
     }
 
-    // 日期範圍
-    final endDate = DateTime.now();
-    final startDate = endDate.subtract(Duration(days: config.years * 365));
+    // 日期範圍 — 優先用明確的 start/end override，否則回退 years-based
+    final endDate = config.endDateOverride ?? DateTime.now();
+    final startDate =
+        config.startDateOverride ??
+        endDate.subtract(Duration(days: config.years * 365));
     _log('📅 Date range: ${_formatDate(startDate)} → ${_formatDate(endDate)}');
 
     // Phase 1: prices — TWSE 上市 / TPEx 上櫃皆走 per-day batch
@@ -873,6 +886,8 @@ BackfillConfig? _parseArgs(List<String> args) {
   String? finMindToken;
   List<String>? symbolsWhitelist;
   var dryRun = false;
+  DateTime? startDateOverride;
+  DateTime? endDateOverride;
 
   for (var i = 0; i < args.length; i++) {
     final arg = args[i];
@@ -888,6 +903,20 @@ BackfillConfig? _parseArgs(List<String> args) {
           return null;
         }
         years = parsed;
+      case '--start-date':
+        if (i + 1 >= args.length) return null;
+        startDateOverride = DateTime.tryParse(args[++i]);
+        if (startDateOverride == null) {
+          stderr.writeln('❌ Invalid --start-date: expected YYYY-MM-DD');
+          return null;
+        }
+      case '--end-date':
+        if (i + 1 >= args.length) return null;
+        endDateOverride = DateTime.tryParse(args[++i]);
+        if (endDateOverride == null) {
+          stderr.writeln('❌ Invalid --end-date: expected YYYY-MM-DD');
+          return null;
+        }
       case '--finmind-token':
         if (i + 1 >= args.length) return null;
         finMindToken = args[++i];
@@ -919,6 +948,14 @@ BackfillConfig? _parseArgs(List<String> args) {
     return null;
   }
 
+  // start/end override 健全性檢查
+  if (startDateOverride != null &&
+      endDateOverride != null &&
+      !startDateOverride.isBefore(endDateOverride)) {
+    stderr.writeln('❌ --start-date 必須早於 --end-date');
+    return null;
+  }
+
   // env var override 讓你在不改 code 下實驗 rate limit 容忍度
   final delayOverride = Platform.environment['BACKFILL_INTER_DAY_DELAY_MS'];
   final interDayDelayMs = delayOverride != null
@@ -932,6 +969,8 @@ BackfillConfig? _parseArgs(List<String> args) {
     symbolsWhitelist: symbolsWhitelist,
     dryRun: dryRun,
     interDayDelayMs: interDayDelayMs,
+    startDateOverride: startDateOverride,
+    endDateOverride: endDateOverride,
   );
 }
 
@@ -949,6 +988,12 @@ void _printUsage(IOSink sink) {
     '  --db <path>           SQLite file path (default: tool/calibration.db)',
   );
   sink.writeln('  --years <N>           Lookback years (default: 2)');
+  sink.writeln(
+    '  --start-date <date>   Explicit start YYYY-MM-DD (overrides --years)',
+  );
+  sink.writeln(
+    '  --end-date <date>     Explicit end YYYY-MM-DD (default: now)',
+  );
   sink.writeln(
     '  --finmind-token       FinMind API token (or set FINMIND_TOKEN env var)',
   );

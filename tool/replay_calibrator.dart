@@ -64,6 +64,10 @@ class ReplayConfig {
     this.minHistoryDays = RuleParams.swingWindow,
     this.dryRun = false,
     this.symbolsWhitelist,
+    this.excessReturn = true,
+    this.minUniverseSymbols = 100,
+    this.excessSuccessThreshold = 0.0,
+    this.dateFilter,
   });
 
   final String dbPath;
@@ -75,6 +79,24 @@ class ReplayConfig {
 
   /// 可選 whitelist（測試用，限定 symbol 範圍）
   final List<String>? symbolsWhitelist;
+
+  /// 橫斷面超額報酬模式：forward return 減去「當日全市場平均 forward
+  /// return」，去除多空 beta，量測訊號的相對 alpha。false = 舊的絕對報酬
+  /// （供 walk-forward 新舊對比）。
+  final bool excessReturn;
+
+  /// 計算當日 universe 均值所需的最小 symbol 數。某交易日有效樣本不足
+  /// （半套日 / 稀疏歷史）時，該日的均值不可靠 → 跳過該日所有 firing。
+  final int minUniverseSymbols;
+
+  /// 超額報酬模式下的命中門檻（百分點）。預設 0 = 「贏過當日大盤平均」。
+  /// 刻意不沿用 [CalibrationThresholds]（那是絕對報酬語意、且與 runtime
+  /// rule_accuracy 共用，改它會動到 app 顯示）。
+  final double excessSuccessThreshold;
+
+  /// 可選日期過濾（含頭含尾）。供 walk-forward 限定校準窗使用。
+  /// null = 不過濾（用全部 backfill 資料）。
+  final ({DateTime? start, DateTime? end})? dateFilter;
 }
 
 /// 單一 rule × horizon 的統計累加器
@@ -184,10 +206,24 @@ class ReplayCalibrator {
       );
     }
 
-    // 2. Replay 所有 firings + 即時計算 forward return
+    // 2a. 橫斷面 universe 均值 forward return（每個交易日一個值）— 供超額
+    // 報酬扣除多空 beta 用。只在 excessReturn 模式下計算。
+    _UniverseMeans? universeMeans;
+    if (config.excessReturn) {
+      _log('');
+      _log('▶️  Computing cross-sectional universe mean returns...');
+      universeMeans = _computeUniverseMeanReturns(data);
+      _log(
+        '✅ Universe means: ${universeMeans.mean5.length} days (5D), '
+        '${universeMeans.mean60.length} days (60D)',
+      );
+    }
+
+    // 2b. Replay 所有 firings + 即時計算 (超額) forward return
     _log('');
     _log(
-      '▶️  Replaying rule firings across ${data.pricesBySymbol.length} symbols...',
+      '▶️  Replaying rule firings across ${data.pricesBySymbol.length} symbols'
+      '${config.excessReturn ? " (excess-return mode)" : " (absolute-return mode)"}...',
     );
     final replayStart = DateTime.now();
     final ruleStats = <String, RuleStats>{};
@@ -198,7 +234,7 @@ class ReplayCalibrator {
 
     for (final symbol in data.pricesBySymbol.keys) {
       symbolsProcessed++;
-      final result = _replaySymbol(symbol, data, ruleStats);
+      final result = _replaySymbol(symbol, data, ruleStats, universeMeans);
       daysProcessed += result.days;
       totalFirings += result.firings;
 
@@ -252,6 +288,7 @@ class ReplayCalibrator {
     String symbol,
     _BackfilledData data,
     Map<String, RuleStats> ruleStats,
+    _UniverseMeans? universeMeans,
   ) {
     final prices = data.pricesBySymbol[symbol];
     if (prices == null || prices.length < config.minHistoryDays) {
@@ -260,14 +297,17 @@ class ReplayCalibrator {
 
     const shortDays = 5;
     const longDays = 60;
-    // 從 canonical 常數讀出 — 不要在這邊重新寫死值，否則跟
-    // RuleAccuracyService 與 recalibrate 會 drift（過去就是這樣壞掉的）
-    final shortThreshold =
-        CalibrationThresholds.successThresholds[shortDays] ??
-        CalibrationThresholds.defaultSuccessThreshold;
-    final longThreshold =
-        CalibrationThresholds.successThresholds[longDays] ??
-        CalibrationThresholds.defaultSuccessThreshold;
+    // 門檻：超額模式用 excessSuccessThreshold（「贏過大盤即命中」）；
+    // 絕對模式沿用 canonical CalibrationThresholds（不在此重寫死值，否則跟
+    // RuleAccuracyService 與 recalibrate drift — 過去就是這樣壞掉的）。
+    final shortThreshold = config.excessReturn
+        ? config.excessSuccessThreshold
+        : (CalibrationThresholds.successThresholds[shortDays] ??
+              CalibrationThresholds.defaultSuccessThreshold);
+    final longThreshold = config.excessReturn
+        ? config.excessSuccessThreshold
+        : (CalibrationThresholds.successThresholds[longDays] ??
+              CalibrationThresholds.defaultSuccessThreshold);
 
     var daysEvaluated = 0;
     var firingsRecorded = 0;
@@ -279,6 +319,14 @@ class ReplayCalibrator {
       final currentPrice = prices[i];
       final entryClose = currentPrice.close;
       if (entryClose == null || entryClose <= 0) continue;
+
+      // dateFilter：walk-forward 校準窗 — 只把窗內 entry 當 firing（early
+      // skip，省下昂貴的 evaluateStock）。universe 均值仍用全部資料計算。
+      final df = config.dateFilter;
+      if (df != null) {
+        if (df.start != null && currentPrice.date.isBefore(df.start!)) continue;
+        if (df.end != null && currentPrice.date.isAfter(df.end!)) continue;
+      }
 
       // 建立分析視窗
       final pricesUpToDay = prices.sublist(0, i + 1);
@@ -309,8 +357,24 @@ class ReplayCalibrator {
       final longExit = prices[i + longDays].close;
       if (shortExit == null || longExit == null) continue;
 
-      final shortReturn = (shortExit / entryClose - 1) * 100;
-      final longReturn = (longExit / entryClose - 1) * 100;
+      var shortReturn = (shortExit / entryClose - 1) * 100;
+      var longReturn = (longExit / entryClose - 1) * 100;
+
+      // 橫斷面超額：減去當日全市場平均 forward return（去 beta）。
+      // 該日 universe 覆蓋不足（半套日 / 稀疏歷史）→ 均值不可靠，跳過。
+      if (config.excessReturn) {
+        final key = _dateKey(currentPrice.date);
+        final m5 = universeMeans!.mean5[key];
+        final m60 = universeMeans.mean60[key];
+        if (m5 == null ||
+            m60 == null ||
+            (universeMeans.count5[key] ?? 0) < config.minUniverseSymbols ||
+            (universeMeans.count60[key] ?? 0) < config.minUniverseSymbols) {
+          continue;
+        }
+        shortReturn -= m5;
+        longReturn -= m60;
+      }
 
       for (final reason in reasons) {
         final ruleId = reason.type.code;
@@ -452,6 +516,57 @@ class ReplayCalibrator {
     );
   }
 
+  /// 計算每個交易日的「全市場平均 forward return」（5D / 60D）。
+  ///
+  /// 對所有 symbol × 所有交易日累加 (date → 報酬)，再除以該日有效樣本數。
+  /// 用於橫斷面超額報酬：個股報酬 − 當日均值 = 相對 alpha（去多空 beta）。
+  _UniverseMeans _computeUniverseMeanReturns(_BackfilledData data) {
+    const shortDays = 5;
+    const longDays = 60;
+    final sum5 = <DateTime, double>{};
+    final cnt5 = <DateTime, int>{};
+    final sum60 = <DateTime, double>{};
+    final cnt60 = <DateTime, int>{};
+
+    for (final prices in data.pricesBySymbol.values) {
+      for (var i = 0; i < prices.length; i++) {
+        final entry = prices[i].close;
+        if (entry == null || entry <= 0) continue;
+        final key = _dateKey(prices[i].date);
+
+        if (i + shortDays < prices.length) {
+          final exit = prices[i + shortDays].close;
+          if (exit != null && exit > 0) {
+            sum5[key] = (sum5[key] ?? 0) + (exit / entry - 1) * 100;
+            cnt5[key] = (cnt5[key] ?? 0) + 1;
+          }
+        }
+        if (i + longDays < prices.length) {
+          final exit = prices[i + longDays].close;
+          if (exit != null && exit > 0) {
+            sum60[key] = (sum60[key] ?? 0) + (exit / entry - 1) * 100;
+            cnt60[key] = (cnt60[key] ?? 0) + 1;
+          }
+        }
+      }
+    }
+
+    final mean5 = <DateTime, double>{};
+    final mean60 = <DateTime, double>{};
+    sum5.forEach((d, s) => mean5[d] = s / cnt5[d]!);
+    sum60.forEach((d, s) => mean60[d] = s / cnt60[d]!);
+
+    return _UniverseMeans(
+      mean5: mean5,
+      mean60: mean60,
+      count5: cnt5,
+      count60: cnt60,
+    );
+  }
+
+  /// 把 DateTime 正規化成 (年,月,日) 當 map key，避免時間分量造成同日不同 key。
+  static DateTime _dateKey(DateTime d) => DateTime(d.year, d.month, d.day);
+
   /// Upsert rule_accuracy rows
   ///
   /// 每條 rule 寫入兩行：period = '5D' / '60D'，對齊 rule_accuracy_service
@@ -580,6 +695,22 @@ class _PerSymbolResult {
   final int firings;
 }
 
+/// 每個交易日的全市場平均 forward return（橫斷面均值）+ 有效樣本數。
+/// 供超額報酬扣除多空 beta；count 用於半套日 / 稀疏歷史的可靠度 guard。
+class _UniverseMeans {
+  const _UniverseMeans({
+    required this.mean5,
+    required this.mean60,
+    required this.count5,
+    required this.count60,
+  });
+
+  final Map<DateTime, double> mean5;
+  final Map<DateTime, double> mean60;
+  final Map<DateTime, int> count5;
+  final Map<DateTime, int> count60;
+}
+
 // ============================================================================
 // CLI entry
 // ============================================================================
@@ -632,6 +763,7 @@ ReplayConfig? _parseArgs(List<String> args) {
   var minHistoryDays = RuleParams.swingWindow;
   var dryRun = false;
   List<String>? symbolsWhitelist;
+  var excessReturn = true;
 
   for (var i = 0; i < args.length; i++) {
     final arg = args[i];
@@ -639,6 +771,9 @@ ReplayConfig? _parseArgs(List<String> args) {
       case '--db':
         if (i + 1 >= args.length) return null;
         dbPath = args[++i];
+      case '--no-excess':
+        // 舊的絕對報酬模式（供新舊對比）。預設走橫斷面超額。
+        excessReturn = false;
       case '--min-history':
         if (i + 1 >= args.length) return null;
         final parsed = int.tryParse(args[++i]);
@@ -669,6 +804,7 @@ ReplayConfig? _parseArgs(List<String> args) {
     minHistoryDays: minHistoryDays,
     dryRun: dryRun,
     symbolsWhitelist: symbolsWhitelist,
+    excessReturn: excessReturn,
   );
 }
 

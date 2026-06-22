@@ -32,6 +32,16 @@ void main() {
       args.addAll(['--years', years]);
     }
 
+    // 精準區間覆寫（例：只補 2021-2023，不重抓既有 2024-2026）
+    final startDate = Platform.environment['BACKFILL_START_DATE'];
+    if (startDate != null && startDate.isNotEmpty) {
+      args.addAll(['--start-date', startDate]);
+    }
+    final endDate = Platform.environment['BACKFILL_END_DATE'];
+    if (endDate != null && endDate.isNotEmpty) {
+      args.addAll(['--end-date', endDate]);
+    }
+
     final db = Platform.environment['CALIBRATION_DB'];
     if (db != null && db.isNotEmpty) {
       args.addAll(['--db', db]);
