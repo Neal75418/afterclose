@@ -98,6 +98,7 @@ class WalkForwardValidator {
     required this.oldShortScores,
     required this.oldLongScores,
     required this.foldYears,
+    this.symbolsWhitelist,
     this.minUniverseSymbols = 100,
     void Function(String)? logger,
   }) : _log = logger ?? print;
@@ -110,6 +111,11 @@ class WalkForwardValidator {
 
   /// 要當測試年的 fold（leave-one-year-out）。
   final List<int> foldYears;
+
+  /// 限定 universe 的 symbol 樣本（流動性前 N 檔）。full-market 全期 replay
+  /// 運算量太大（~千萬次 eval × 10 replays），故 walk-forward 跑流動性樣本。
+  /// null = 全市場（測試/小資料用）。
+  final List<String>? symbolsWhitelist;
   final int minUniverseSymbols;
   final void Function(String) _log;
 
@@ -130,6 +136,7 @@ class WalkForwardValidator {
         config: ReplayConfig(
           dbPath: ':memory:',
           minUniverseSymbols: minUniverseSymbols,
+          symbolsWhitelist: symbolsWhitelist,
           excludeFilter: (start: yearStart, end: yearEnd),
         ),
         logger: (_) {},
@@ -150,6 +157,7 @@ class WalkForwardValidator {
         config: ReplayConfig(
           dbPath: ':memory:',
           minUniverseSymbols: minUniverseSymbols,
+          symbolsWhitelist: symbolsWhitelist,
           dateFilter: (start: yearStart, end: yearEnd),
         ),
         logger: (_) {},
@@ -375,16 +383,37 @@ Future<int> runWalkForwardCli(List<String> args) async {
           .whereType<int>()
           .toList();
 
+  // 流動性樣本：full-market 全期 replay × 10 運算量太大，故跑 top-N 流動股。
+  // ⚠️ top-by-volume 含存活者偏誤（已知限制，見 design §9）；對「方法論方向性
+  // 驗證」足夠。WF_SAMPLE_SIZE=0 → 全市場（小資料/測試用）。
+  final sampleSize =
+      int.tryParse(Platform.environment['WF_SAMPLE_SIZE'] ?? '400') ?? 400;
+
   print('📂 DB: $dbPath');
   print('📅 Fold years: ${foldYears.join(", ")}');
 
   final db = AppDatabase.forToolFile(dbPath);
   try {
+    List<String>? sample;
+    if (sampleSize > 0) {
+      final rows = await db
+          .customSelect(
+            'SELECT symbol FROM daily_price '
+            "WHERE date >= '2021-01-01' "
+            'GROUP BY symbol HAVING COUNT(*) > 400 '
+            'ORDER BY AVG(volume) DESC LIMIT $sampleSize',
+          )
+          .get();
+      sample = rows.map((r) => r.read<String>('symbol')).toList();
+      print('🎯 流動性樣本: ${sample.length} 檔（avg volume top-$sampleSize）');
+    }
+
     final validator = WalkForwardValidator(
       db: db,
       oldShortScores: parseCalibratedScores(shortFile.readAsStringSync()),
       oldLongScores: parseCalibratedScores(longFile.readAsStringSync()),
       foldYears: foldYears,
+      symbolsWhitelist: sample,
     );
     final verdict = await validator.run();
 
