@@ -68,6 +68,7 @@ class ReplayConfig {
     this.minUniverseSymbols = 100,
     this.excessSuccessThreshold = 0.0,
     this.dateFilter,
+    this.excludeFilter,
   });
 
   final String dbPath;
@@ -97,6 +98,11 @@ class ReplayConfig {
   /// 可選日期過濾（含頭含尾）。供 walk-forward 限定校準窗使用。
   /// null = 不過濾（用全部 backfill 資料）。
   final ({DateTime? start, DateTime? end})? dateFilter;
+
+  /// 可選日期排除（含頭含尾）。entry 落在此區間的 firing 被跳過。
+  /// 供 walk-forward leave-one-year-out 的「train = 除測試年外全部」使用。
+  /// 與 [dateFilter] 互斥語意：dateFilter 限「窗內」、excludeFilter 排「窗內」。
+  final ({DateTime start, DateTime end})? excludeFilter;
 }
 
 /// 單一 rule × horizon 的統計累加器
@@ -326,6 +332,14 @@ class ReplayCalibrator {
       if (df != null) {
         if (df.start != null && currentPrice.date.isBefore(df.start!)) continue;
         if (df.end != null && currentPrice.date.isAfter(df.end!)) continue;
+      }
+
+      // excludeFilter：leave-one-year-out 的 train = 排除測試年的 entry。
+      final ex = config.excludeFilter;
+      if (ex != null &&
+          !currentPrice.date.isBefore(ex.start) &&
+          !currentPrice.date.isAfter(ex.end)) {
+        continue;
       }
 
       // 建立分析視窗
