@@ -580,13 +580,22 @@ class ReplayCalibrator {
     return DateTime(year, month, 10);
   }
 
-  /// 季財報的「實際公布日」：Q1-Q3 季末後 45 天內、年報（Q4/12 月底）次年
-  /// 3/31 前（台股財報揭露期限）。[quarterEnd] 是季底日。public 供測試。
-  static DateTime financialVisibleDate(DateTime quarterEnd) {
-    if (quarterEnd.month == 12) {
-      return DateTime(quarterEnd.year + 1, 3, 31);
-    }
-    return quarterEnd.add(const Duration(days: 45));
+  /// 季財報的「實際公布日」（台股揭露期限）：Q1≈5/15、Q2≈8/14、Q3≈11/14、
+  /// 年報(Q4)次年 3/31。
+  ///
+  /// ⚠️ 刻意「季正規化」而非對輸入日 +45 天 —— 因 codebase 內財報 date 語意不
+  /// 一致（backfill/calibration.db 存季底 3/31…；app 另一路徑 parseQuarterDate
+  /// 存季初 1/1…）。本函式從 month 推季號，對「季初或季底」輸入皆給同一公布日，
+  /// 消除該歧義。[anyDateInQuarter] 是季內任一日。public 供測試。
+  static DateTime financialVisibleDate(DateTime anyDateInQuarter) {
+    final quarter = (anyDateInQuarter.month - 1) ~/ 3; // 0=Q1 .. 3=Q4
+    final year = anyDateInQuarter.year;
+    return switch (quarter) {
+      0 => DateTime(year, 5, 15), // Q1 季末後 ~45 天
+      1 => DateTime(year, 8, 14), // Q2
+      2 => DateTime(year, 11, 14), // Q3
+      _ => DateTime(year + 1, 3, 31), // Q4 / 年報
+    };
   }
 
   /// Upsert rule_accuracy rows

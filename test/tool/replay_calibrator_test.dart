@@ -513,6 +513,27 @@ void main() {
         reason: '5D 超額橫斷面加總應 ≈ 0（多空 beta 被扣除）',
       );
       expect(stats.long.avgReturn, closeTo(0.0, 0.01), reason: '60D 同理');
+
+      // 對照組：同一份上漲資料，絕對模式 avgReturn 明顯為正（beta 未扣）。
+      // 這正是超額模式要消除的「多頭把一切墊高」假象。
+      final absolute = await ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+      final absStats = absolute.ruleStats[ReasonType.techBreakout.code]!;
+      expect(
+        absStats.short.avgReturn,
+        greaterThan(1.0),
+        reason: '絕對模式含 beta → 明顯為正（與超額的 ≈0 對比）',
+      );
+      expect(absStats.long.avgReturn, greaterThan(1.0));
     });
 
     test('guard: 當日 universe < minUniverseSymbols → 跳過所有 firing', () async {
@@ -568,7 +589,8 @@ void main() {
       );
     });
 
-    test('季財報公布日：Q1-Q3 季末+45 天、年報次年 3/31', () {
+    test('季財報公布日：Q1≈5/15 / Q2≈8/14 / Q3≈11/14 / 年報次年 3/31', () {
+      // 季底輸入（calibration.db 實際存的語意）
       expect(
         ReplayCalibrator.financialVisibleDate(DateTime(2026, 3, 31)),
         DateTime(2026, 5, 15),
@@ -581,17 +603,87 @@ void main() {
         ReplayCalibrator.financialVisibleDate(DateTime(2026, 9, 30)),
         DateTime(2026, 11, 14),
       );
-      // 年報（Q4）→ 次年 3/31
       expect(
         ReplayCalibrator.financialVisibleDate(DateTime(2026, 12, 31)),
         DateTime(2027, 3, 31),
       );
-      // 公布日嚴格晚於季底 → 無 look-ahead
+    });
+
+    test('財報公布日對「季初 vs 季底」輸入皆給同一日（消除 date 語意歧義）', () {
+      // codebase 內財報 date 語意不一致（季初 1/4/7/10 vs 季底 3/6/9/12）。
+      // 季正規化後，同一季的任一輸入日都對應同一公布日 → 兩種語意都正確。
+      for (final pair in [
+        (DateTime(2026, 1, 1), DateTime(2026, 3, 31)), // Q1 季初/季底
+        (DateTime(2026, 4, 1), DateTime(2026, 6, 30)), // Q2
+        (DateTime(2026, 7, 1), DateTime(2026, 9, 30)), // Q3
+        (DateTime(2026, 10, 1), DateTime(2026, 12, 31)), // Q4
+      ]) {
+        expect(
+          ReplayCalibrator.financialVisibleDate(pair.$1),
+          ReplayCalibrator.financialVisibleDate(pair.$2),
+          reason: '季初與季底輸入應給同一公布日',
+        );
+      }
+      // 無 look-ahead：公布日晚於整季（連季初輸入也晚於季底）
       expect(
         ReplayCalibrator.financialVisibleDate(
-          DateTime(2026, 3, 31),
+          DateTime(2026, 1, 1),
         ).isAfter(DateTime(2026, 3, 31)),
         isTrue,
+      );
+    });
+  });
+
+  group('ReplayCalibrator — dateFilter（walk-forward 校準窗）', () {
+    test('只把窗內 entry 當 firing；universe 仍用全資料', () async {
+      // 單檔 + 絕對模式（隔離 dateFilter；超額模式的 universe guard 會干擾）。
+      // seedStock 用 calendar days：2024-01-01 起，i 天 → 2024-01-01 + i。
+      await seedStock('WF', priceDays: 200);
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+        TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: 'x',
+        ),
+      ]);
+
+      // 無 filter：i=20..139 → 120 firings
+      final full = await ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+      expect(
+        full.ruleStats[ReasonType.techBreakout.code]!.short.triggerCount,
+        120,
+      );
+
+      // 窗 [2024-02-01, 2024-03-01]（calendar i=31..60）→ ~30 firings
+      final windowed = await ReplayCalibrator(
+        db: db,
+        config: ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+          dateFilter: (start: DateTime(2024, 2, 1), end: DateTime(2024, 3, 1)),
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+      final n =
+          windowed.ruleStats[ReasonType.techBreakout.code]!.short.triggerCount;
+      expect(n, lessThan(120), reason: 'dateFilter 應限制 firing 在窗內');
+      expect(
+        n,
+        inInclusiveRange(28, 32),
+        reason: '窗 2/1-3/1 約 30 個 calendar-day entry',
       );
     });
   });
