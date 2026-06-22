@@ -105,6 +105,18 @@ class ReplayConfig {
   final ({DateTime start, DateTime end})? excludeFilter;
 }
 
+/// 分數層驗證 sink：對「有訊號」的股票日，回報加總後的手調分（已 clamp
+/// [0, maxScore]）及其 5D / 60D forward return。供 tool/score_validate.dart
+/// 量測「composite 分數 → 未來報酬」的單調性（高分股是否真的更會漲）。
+/// [shortReturn]/[longReturn] 隨 replay 模式為絕對或超額報酬。
+typedef ScoreSampleSink =
+    void Function(
+      double score,
+      double shortReturn,
+      double longReturn,
+      DateTime date,
+    );
+
 /// 單一 rule × horizon 的統計累加器
 class RuleHorizonStats {
   RuleHorizonStats();
@@ -165,15 +177,18 @@ class ReplayCalibrator {
     required this.config,
     AnalysisService? analysisService,
     RuleEngine? ruleEngine,
+    ScoreSampleSink? scoreSink,
     void Function(String)? logger,
   }) : _analysis = analysisService ?? AnalysisService(),
        _ruleEngine = ruleEngine ?? RuleEngine(),
+       _scoreSink = scoreSink,
        _log = logger ?? print;
 
   final AppDatabase db;
   final ReplayConfig config;
   final AnalysisService _analysis;
   final RuleEngine _ruleEngine;
+  final ScoreSampleSink? _scoreSink;
   final void Function(String) _log;
 
   Future<ReplayResult> run() async {
@@ -388,6 +403,18 @@ class ReplayCalibrator {
         }
         shortReturn -= m5;
         longReturn -= m60;
+      }
+
+      // 分數層驗證 hook（additive；sink 為 null 時零影響）：對有訊號的股票日，
+      // 加總手調基礎分並 clamp [0, maxScore]，連同 forward return 交給 sink。
+      // 用 reason.score（基礎分）= app 當前實際評分行為（校準層目前全 fallback）。
+      if (_scoreSink != null) {
+        var raw = 0.0;
+        for (final reason in reasons) {
+          raw += reason.score;
+        }
+        final clamped = raw.clamp(0.0, RuleScores.maxScore.toDouble());
+        _scoreSink(clamped, shortReturn, longReturn, currentPrice.date);
       }
 
       for (final reason in reasons) {
