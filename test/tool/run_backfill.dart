@@ -61,6 +61,11 @@ void main() {
       args.add('--prices-via-finmind');
     }
 
+    // 跳過基本面 3 phase（省 FinMind quota；第一階段只驗價格類規則）
+    if (Platform.environment['BACKFILL_SKIP_FUNDAMENTALS'] == '1') {
+      args.add('--skip-fundamentals');
+    }
+
     // Token is read from FINMIND_TOKEN env var inside backfill.dart's
     // _parseArgs — no need to pass explicitly here.
     final code = await backfill.runBackfillCli(args);

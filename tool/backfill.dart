@@ -93,6 +93,7 @@ class BackfillConfig {
     this.startDateOverride,
     this.endDateOverride,
     this.pricesViaFinMind = false,
+    this.skipFundamentals = false,
   });
 
   /// SQLite 檔案路徑
@@ -140,6 +141,12 @@ class BackfillConfig {
   /// 2026-06 起 TWSE STOCK_DAY_ALL 已不支援歷史 date 參數（一律回最新日），
   /// 故歷史回補（2021-2023 等）必須走 FinMind。預設 false 維持原 batch 行為。
   final bool pricesViaFinMind;
+
+  /// 跳過 3 個基本面 phase（revenue / financial / valuation）。
+  ///
+  /// 基本面是 FinMind quota 最大宗（~3× 價格用量）。第一階段 walk-forward
+  /// 只驗證價格類規則時可跳過，省下大量配額；基本面留作選配第二階段。
+  final bool skipFundamentals;
 }
 
 /// 單一 phase 的執行結果
@@ -306,39 +313,45 @@ class Backfiller {
         endDate: endDate,
       ),
     );
-    phases.add(
-      await _runPhase(
-        name: 'revenue',
-        symbols: symbols,
-        syncOne: (symbol) => deps.fundamentalRepo.syncMonthlyRevenue(
-          symbol: symbol,
-          startDate: startDate,
-          endDate: endDate,
+    // 基本面 3 phase 是 FinMind quota 最大宗 — skipFundamentals 時跳過，
+    // 只跑價格 + 法人（第一階段 walk-forward 只驗價格類規則）。
+    if (!config.skipFundamentals) {
+      phases.add(
+        await _runPhase(
+          name: 'revenue',
+          symbols: symbols,
+          syncOne: (symbol) => deps.fundamentalRepo.syncMonthlyRevenue(
+            symbol: symbol,
+            startDate: startDate,
+            endDate: endDate,
+          ),
         ),
-      ),
-    );
-    phases.add(
-      await _runPhase(
-        name: 'financial',
-        symbols: symbols,
-        syncOne: (symbol) => deps.fundamentalRepo.syncFinancialStatements(
-          symbol: symbol,
-          startDate: startDate,
-          endDate: endDate,
+      );
+      phases.add(
+        await _runPhase(
+          name: 'financial',
+          symbols: symbols,
+          syncOne: (symbol) => deps.fundamentalRepo.syncFinancialStatements(
+            symbol: symbol,
+            startDate: startDate,
+            endDate: endDate,
+          ),
         ),
-      ),
-    );
-    phases.add(
-      await _runPhase(
-        name: 'valuation',
-        symbols: symbols,
-        syncOne: (symbol) => deps.fundamentalRepo.syncValuationData(
-          symbol: symbol,
-          startDate: startDate,
-          endDate: endDate,
+      );
+      phases.add(
+        await _runPhase(
+          name: 'valuation',
+          symbols: symbols,
+          syncOne: (symbol) => deps.fundamentalRepo.syncValuationData(
+            symbol: symbol,
+            startDate: startDate,
+            endDate: endDate,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      _log('⏭️  skipFundamentals — 跳過 revenue/financial/valuation phase');
+    }
 
     final totalDuration = DateTime.now().difference(overallStart);
     final result = BackfillResult(phases: phases, totalDuration: totalDuration);
@@ -1045,6 +1058,7 @@ BackfillConfig? _parseArgs(List<String> args) {
   DateTime? startDateOverride;
   DateTime? endDateOverride;
   var pricesViaFinMind = false;
+  var skipFundamentals = false;
 
   for (var i = 0; i < args.length; i++) {
     final arg = args[i];
@@ -1055,6 +1069,8 @@ BackfillConfig? _parseArgs(List<String> args) {
       case '--prices-via-finmind':
         // 歷史回補必用：STOCK_DAY_ALL batch 已不支援歷史日期
         pricesViaFinMind = true;
+      case '--skip-fundamentals':
+        skipFundamentals = true;
       case '--years':
         if (i + 1 >= args.length) return null;
         final parsed = int.tryParse(args[++i]);
@@ -1132,6 +1148,7 @@ BackfillConfig? _parseArgs(List<String> args) {
     startDateOverride: startDateOverride,
     endDateOverride: endDateOverride,
     pricesViaFinMind: pricesViaFinMind,
+    skipFundamentals: skipFundamentals,
   );
 }
 
