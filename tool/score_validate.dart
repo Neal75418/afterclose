@@ -82,13 +82,42 @@ List<BucketSummary> summarize(Iterable<({double score, double ret})> samples) {
   );
 }
 
+/// 依「上界陣列」把樣本分組（band i = 第一個滿足 value < upperBounds[i]；
+/// 超過所有上界 → 最後一組）。供「天花板內部用未封頂原始分」分析。
+/// 例：upperBounds [100,120,150] → 4 組：<100 / 100-120 / 120-150 / ≥150。
+List<BucketSummary> summarizeByBands(
+  Iterable<({double value, double ret})> samples,
+  List<double> upperBounds,
+) {
+  final buckets = List.generate(upperBounds.length + 1, (_) => BucketSummary());
+  for (final s in samples) {
+    var idx = upperBounds.length;
+    for (var i = 0; i < upperBounds.length; i++) {
+      if (s.value < upperBounds[i]) {
+        idx = i;
+        break;
+      }
+    }
+    buckets[idx].add(s.ret);
+  }
+  return buckets;
+}
+
 // ============================================================================
 // Sample collection
 // ============================================================================
 
-typedef ScoreRow = ({double score, double sret, double lret, int year});
+typedef ScoreRow = ({
+  double score,
+  double raw,
+  double vol,
+  double sret,
+  double lret,
+  int year,
+});
 
-/// 跑一次 replay，把每個有訊號股票日的 (分數, 5D/60D報酬, 年) 收集起來。
+/// 跑一次 replay，把每個有訊號股票日的 (clamped 分, 未封頂原始分, 5D/60D報酬,
+/// 年) 收集起來。
 Future<List<ScoreRow>> _collect(
   AppDatabase db, {
   required bool excess,
@@ -104,8 +133,14 @@ Future<List<ScoreRow>> _collect(
       minUniverseSymbols: 50,
       symbolsWhitelist: sample,
     ),
-    scoreSink: (score, sret, lret, date) =>
-        rows.add((score: score, sret: sret, lret: lret, year: date.year)),
+    scoreSink: (score, raw, vol, sret, lret, date) => rows.add((
+      score: score,
+      raw: raw,
+      vol: vol,
+      sret: sret,
+      lret: lret,
+      year: date.year,
+    )),
     logger: log,
   ).run();
   return rows;
@@ -212,6 +247,87 @@ Future<int> runScoreValidateCli(List<String> args) async {
       '60D 全期',
       summarize(exc.map((s) => (score: s.score, ret: s.lret))),
     );
+
+    // 🔑 A 驗證：天花板(clamped=80)內部，改用「未封頂原始分」排序有沒有用?
+    print('');
+    print('═' * 60);
+    print('🔑 A 驗證：天花板內部(clamped=80)用「未封頂原始分」還分得出報酬嗎?');
+    print('═' * 60);
+    final ceiling = abs.where((s) => s.score >= 80).toList();
+    print('  撞到 80 上限的樣本: ${ceiling.length}（現況排序只能用股號裂解）');
+    const bands = [100.0, 120.0, 150.0];
+    const bandLabels = ['80-100', '100-120', '120-150', '150+'];
+    final cb = summarizeByBands(
+      ceiling.map((s) => (value: s.raw, ret: s.lret)),
+      bands,
+    );
+    print('    原始分      n      勝率     平均60D報酬');
+    for (var i = 0; i < cb.length; i++) {
+      final b = cb[i];
+      if (b.count == 0) {
+        print('    ${bandLabels[i].padRight(8)}  (無)');
+        continue;
+      }
+      print(
+        '    ${bandLabels[i].padRight(8)} '
+        '${b.count.toString().padLeft(6)}  '
+        '${(b.winRate * 100).toStringAsFixed(0).padLeft(3)}%  '
+        '${b.avgReturn >= 0 ? "+" : ""}${b.avgReturn.toStringAsFixed(1)}%',
+      );
+    }
+    final cm = monotonicity(cb);
+    final cVerdict = cm.monotonic
+        ? '✅ 原始分在天花板內仍有鑑別力 → 改用原始分當排序鍵【有效】'
+        : (cm.spread > 0
+              ? '🟡 大致正相關但非嚴格單調 → 原始分排序略優於股號'
+              : '❌ 天花板內原始分無鑑別力 → 改排序鍵幫助有限，需另尋 tiebreaker');
+    print(
+      '    → spread=${cm.spread >= 0 ? "+" : ""}'
+      '${cm.spread.toStringAsFixed(1)}%  $cVerdict',
+    );
+
+    // 🔑 C 驗證：高分股裡，按波動度分組 — 低波動的勝率/報酬會比較好嗎?
+    print('');
+    print('═' * 60);
+    print('🔑 C 驗證：高分股(score≥40)按波動度分組 — 低波動勝率更高嗎?');
+    print('═' * 60);
+    final picks = abs.where((s) => s.score >= 40 && s.vol > 0).toList();
+    print('  高分樣本(score≥40、有波動度): ${picks.length}');
+    const volBands = [2.0, 3.0, 4.0];
+    const volLabels = ['<2% 低波', '2-3%', '3-4%', '>4% 高波'];
+    final vb = summarizeByBands(
+      picks.map((s) => (value: s.vol, ret: s.lret)),
+      volBands,
+    );
+    print('    日波動度    n      勝率     平均60D報酬');
+    for (var i = 0; i < vb.length; i++) {
+      final b = vb[i];
+      if (b.count == 0) {
+        print('    ${volLabels[i].padRight(9)} (無)');
+        continue;
+      }
+      print(
+        '    ${volLabels[i].padRight(9)} '
+        '${b.count.toString().padLeft(6)}  '
+        '${(b.winRate * 100).toStringAsFixed(0).padLeft(3)}%  '
+        '${b.avgReturn >= 0 ? "+" : ""}${b.avgReturn.toStringAsFixed(1)}%',
+      );
+    }
+    final lowVol = vb.first;
+    final highVol = vb.last;
+    if (lowVol.count > 0 && highVol.count > 0) {
+      final winGain = (lowVol.winRate - highVol.winRate) * 100;
+      final retCost = lowVol.avgReturn - highVol.avgReturn;
+      print(
+        '    → 低波 vs 高波：勝率 ${winGain >= 0 ? "+" : ""}'
+        '${winGain.toStringAsFixed(0)}pp、報酬 ${retCost >= 0 ? "+" : ""}'
+        '${retCost.toStringAsFixed(1)}%',
+      );
+      final verdict = winGain > 3
+          ? '✅ 低波勝率明顯較高 → 風險調整能升勝率（報酬差=tradeoff 代價）'
+          : '🟡 低波勝率優勢有限 → 風險調整效益不明顯';
+      print('    $verdict');
+    }
     return 0;
   } finally {
     await db.close();

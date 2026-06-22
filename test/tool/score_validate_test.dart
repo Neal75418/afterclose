@@ -59,4 +59,31 @@ void main() {
       expect(monotonicity(b).monotonic, false);
     });
   });
+
+  group('summarizeByBands', () {
+    test('依上界分組（<100 / 100-120 / 120-150 / ≥150）', () {
+      final samples = <({double value, double ret})>[
+        (value: 85, ret: 1), // band0 <100
+        (value: 99, ret: 3), // band0
+        (value: 110, ret: 5), // band1
+        (value: 140, ret: 7), // band2
+        (value: 200, ret: 9), // band3 ≥150
+      ];
+      final b = summarizeByBands(samples, [100, 120, 150]);
+      expect(b.length, 4);
+      expect(b[0].count, 2);
+      expect(b[0].avgReturn, closeTo(2.0, 1e-9)); // (1+3)/2
+      expect(b[1].count, 1);
+      expect(b[1].avgReturn, closeTo(5.0, 1e-9));
+      expect(b[2].count, 1);
+      expect(b[3].count, 1);
+      expect(b[3].avgReturn, closeTo(9.0, 1e-9));
+    });
+
+    test('邊界值歸右組（value==上界 → 下一組）', () {
+      final b = summarizeByBands([(value: 100, ret: 1)], [100, 120]);
+      expect(b[0].count, 0, reason: '100 不 < 100');
+      expect(b[1].count, 1, reason: '100 < 120 → band1');
+    });
+  });
 }

@@ -43,6 +43,7 @@
 // `tool/recalibrate.dart` reads from this table as its input.
 
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value;
 
@@ -105,13 +106,19 @@ class ReplayConfig {
   final ({DateTime start, DateTime end})? excludeFilter;
 }
 
-/// 分數層驗證 sink：對「有訊號」的股票日，回報加總後的手調分（已 clamp
-/// [0, maxScore]）及其 5D / 60D forward return。供 tool/score_validate.dart
-/// 量測「composite 分數 → 未來報酬」的單調性（高分股是否真的更會漲）。
+/// 分數層驗證 sink：對「有訊號」的股票日，回報加總後的手調分及其 5D / 60D
+/// forward return。供 tool/score_validate.dart 量測「composite 分數 → 未來
+/// 報酬」的單調性（高分股是否真的更會漲）。
+/// [score] 是已 clamp [0, maxScore] 的對外分；[rawScore] 是**未封頂**原始加總
+/// （供「天花板內部用原始分還分不分得出報酬」的排序鍵驗證）。
+/// [volatility] 是進場日「過去 20 日日報酬標準差(%)」（供 C 風險調整驗證：
+/// 高分股裡偏好低波動者,勝率會不會升）。
 /// [shortReturn]/[longReturn] 隨 replay 模式為絕對或超額報酬。
 typedef ScoreSampleSink =
     void Function(
       double score,
+      double rawScore,
+      double volatility,
       double shortReturn,
       double longReturn,
       DateTime date,
@@ -414,7 +421,35 @@ class ReplayCalibrator {
           raw += reason.score;
         }
         final clamped = raw.clamp(0.0, RuleScores.maxScore.toDouble());
-        _scoreSink(clamped, shortReturn, longReturn, currentPrice.date);
+        // 進場日波動度：過去 20 日日報酬標準差(%)。供 C 風險調整驗證。
+        const volWindow = 20;
+        var volatility = 0.0;
+        if (i >= volWindow) {
+          final rets = <double>[];
+          for (var k = i - volWindow + 1; k <= i; k++) {
+            final prev = prices[k - 1].close;
+            final cur = prices[k].close;
+            if (prev != null && cur != null && prev > 0) {
+              rets.add(cur / prev - 1);
+            }
+          }
+          if (rets.length >= 2) {
+            final mean = rets.reduce((a, b) => a + b) / rets.length;
+            var sq = 0.0;
+            for (final r in rets) {
+              sq += (r - mean) * (r - mean);
+            }
+            volatility = math.sqrt(sq / rets.length) * 100;
+          }
+        }
+        _scoreSink(
+          clamped,
+          raw,
+          volatility,
+          shortReturn,
+          longReturn,
+          currentPrice.date,
+        );
       }
 
       for (final reason in reasons) {
