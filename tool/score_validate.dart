@@ -111,6 +111,7 @@ typedef ScoreRow = ({
   double score,
   double raw,
   double vol,
+  double trend,
   double sret,
   double lret,
   int year,
@@ -133,10 +134,11 @@ Future<List<ScoreRow>> _collect(
       minUniverseSymbols: 50,
       symbolsWhitelist: sample,
     ),
-    scoreSink: (score, raw, vol, sret, lret, date) => rows.add((
+    scoreSink: (score, raw, vol, trend, sret, lret, date) => rows.add((
       score: score,
       raw: raw,
       vol: vol,
+      trend: trend,
       sret: sret,
       lret: lret,
       year: date.year,
@@ -326,6 +328,56 @@ Future<int> runScoreValidateCli(List<String> args) async {
       final verdict = winGain > 3
           ? '✅ 低波勝率明顯較高 → 風險調整能升勝率（報酬差=tradeoff 代價）'
           : '🟡 低波勝率優勢有限 → 風險調整效益不明顯';
+      print('    $verdict');
+    }
+
+    // 🔑 B-trend 驗證：高分股裡，下跌趨勢(close<MA60)的勝率/報酬是不是更差?
+    print('');
+    print('═' * 60);
+    print('🔑 B-趨勢驗證：高分股(score≥40)按「相對60日均線」分組 — 下跌股更差嗎?');
+    print('═' * 60);
+    final tpicks = abs.where((s) => s.score >= 40 && s.trend != 0).toList();
+    print('  高分樣本(score≥40、有趨勢): ${tpicks.length}');
+    const trendBands = [-5.0, 0.0, 10.0];
+    const trendLabels = ['<-5% 深跌', '-5~0% 偏跌', '0~10% 偏漲', '>10% 強漲'];
+    final tb = summarizeByBands(
+      tpicks.map((s) => (value: s.trend, ret: s.lret)),
+      trendBands,
+    );
+    print('    相對MA60    n      勝率     平均60D報酬');
+    for (var i = 0; i < tb.length; i++) {
+      final b = tb[i];
+      if (b.count == 0) {
+        print('    ${trendLabels[i].padRight(9)} (無)');
+        continue;
+      }
+      print(
+        '    ${trendLabels[i].padRight(9)} '
+        '${b.count.toString().padLeft(6)}  '
+        '${(b.winRate * 100).toStringAsFixed(0).padLeft(3)}%  '
+        '${b.avgReturn >= 0 ? "+" : ""}${b.avgReturn.toStringAsFixed(1)}%',
+      );
+    }
+    // 2 分法：下跌(<0) vs 多頭(≥0)
+    final twoWay = summarizeByBands(
+      tpicks.map((s) => (value: s.trend, ret: s.lret)),
+      [0.0],
+    );
+    final down = twoWay[0];
+    final up = twoWay[1];
+    if (down.count > 0 && up.count > 0) {
+      final winGap = (down.winRate - up.winRate) * 100;
+      final retGap = down.avgReturn - up.avgReturn;
+      print(
+        '    → 下跌 vs 多頭：勝率 ${winGap >= 0 ? "+" : ""}'
+        '${winGap.toStringAsFixed(0)}pp、報酬 ${retGap >= 0 ? "+" : ""}'
+        '${retGap.toStringAsFixed(1)}%',
+      );
+      final verdict = retGap < -2
+          ? '✅ 下跌趨勢高分股明顯更差 → 排除/降權下跌股【有效】'
+          : (retGap < -0.5
+                ? '🟡 下跌股略差 → 降權效益有限'
+                : '❌ 下跌股沒更差（甚至更好=反轉股）→ 排除下跌股會誤殺');
       print('    $verdict');
     }
     return 0;

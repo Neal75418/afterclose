@@ -113,12 +113,15 @@ class ReplayConfig {
 /// （供「天花板內部用原始分還分不分得出報酬」的排序鍵驗證）。
 /// [volatility] 是進場日「過去 20 日日報酬標準差(%)」（供 C 風險調整驗證：
 /// 高分股裡偏好低波動者,勝率會不會升）。
+/// [trendPct] 是進場日 close 相對 60 日均線的偏離(%)，>0 多頭、<0 空頭（供
+/// B-個股趨勢驗證：高分股裡下跌趨勢者是否更差）。
 /// [shortReturn]/[longReturn] 隨 replay 模式為絕對或超額報酬。
 typedef ScoreSampleSink =
     void Function(
       double score,
       double rawScore,
       double volatility,
+      double trendPct,
       double shortReturn,
       double longReturn,
       DateTime date,
@@ -442,10 +445,28 @@ class ReplayCalibrator {
             volatility = math.sqrt(sq / rets.length) * 100;
           }
         }
+        // 趨勢 proxy：close 相對 60 日均線偏離(%)。>0 多頭、<0 空頭。
+        const maWindow = 60;
+        var trendPct = 0.0;
+        if (i >= maWindow) {
+          var sum = 0.0;
+          var cnt = 0;
+          for (var k = i - maWindow + 1; k <= i; k++) {
+            final c = prices[k].close;
+            if (c != null && c > 0) {
+              sum += c;
+              cnt++;
+            }
+          }
+          if (cnt > 0 && entryClose > 0) {
+            trendPct = (entryClose / (sum / cnt) - 1) * 100;
+          }
+        }
         _scoreSink(
           clamped,
           raw,
           volatility,
+          trendPct,
           shortReturn,
           longReturn,
           currentPrice.date,
