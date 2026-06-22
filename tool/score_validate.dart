@@ -103,6 +103,15 @@ List<BucketSummary> summarizeByBands(
   return buckets;
 }
 
+/// 把一組報酬聚成 [BucketSummary]（n / 勝率 / 平均報酬）。
+BucketSummary statsOf(Iterable<double> rets) {
+  final b = BucketSummary();
+  for (final r in rets) {
+    b.add(r);
+  }
+  return b;
+}
+
 // ============================================================================
 // Sample collection
 // ============================================================================
@@ -112,6 +121,9 @@ typedef ScoreRow = ({
   double raw,
   double vol,
   double trend,
+  double modeMom,
+  double modeStr,
+  double modePul,
   double sret,
   double lret,
   int year,
@@ -134,14 +146,17 @@ Future<List<ScoreRow>> _collect(
       minUniverseSymbols: 50,
       symbolsWhitelist: sample,
     ),
-    scoreSink: (score, raw, vol, trend, sret, lret, date) => rows.add((
-      score: score,
-      raw: raw,
-      vol: vol,
-      trend: trend,
-      sret: sret,
-      lret: lret,
-      year: date.year,
+    scoreSink: (s) => rows.add((
+      score: s.score,
+      raw: s.rawScore,
+      vol: s.volatility,
+      trend: s.trendPct,
+      modeMom: s.modeMomentum,
+      modeStr: s.modeStrength,
+      modePul: s.modePullback,
+      sret: s.shortReturn,
+      lret: s.longReturn,
+      year: s.date.year,
     )),
     logger: log,
   ).run();
@@ -380,6 +395,66 @@ Future<int> runScoreValidateCli(List<String> args) async {
                 : '❌ 下跌股沒更差（甚至更好=反轉股）→ 排除下跌股會誤殺');
       print('    $verdict');
     }
+
+    // 🔑 分模式驗證：各模式「訊號 vs 同池基準」（公平比較）
+    // Mode A「起漲」本就在下跌池撈，比它跟 Mode B 不公平；要問的是「同池裡，
+    // 有訊號的有沒有贏過沒訊號的」= 該模式訊號到底有沒有 skill。
+    print('');
+    print('═' * 60);
+    print('🔑 分模式驗證：訊號 vs「同池基準」(lift>0 = 該模式真能挑出贏家)');
+    print('═' * 60);
+    void modeCheck(
+      String name,
+      String poolDesc,
+      List<ScoreRow> pool,
+      bool Function(ScoreRow) hasSignal,
+    ) {
+      final sig = statsOf(pool.where(hasSignal).map((s) => s.lret));
+      final base = statsOf(pool.where((s) => !hasSignal(s)).map((s) => s.lret));
+      if (sig.count == 0 || base.count == 0) {
+        print('  ▶ $name：樣本不足');
+        return;
+      }
+      final lift = sig.avgReturn - base.avgReturn;
+      final winLift = (sig.winRate - base.winRate) * 100;
+      print('  ▶ $name（池=$poolDesc）');
+      print(
+        '     訊號組  n=${sig.count.toString().padLeft(5)}  '
+        '勝率 ${(sig.winRate * 100).toStringAsFixed(0)}%  '
+        '報酬 ${sig.avgReturn >= 0 ? "+" : ""}${sig.avgReturn.toStringAsFixed(1)}%',
+      );
+      print(
+        '     基準組  n=${base.count.toString().padLeft(5)}  '
+        '勝率 ${(base.winRate * 100).toStringAsFixed(0)}%  '
+        '報酬 ${base.avgReturn >= 0 ? "+" : ""}${base.avgReturn.toStringAsFixed(1)}%',
+      );
+      final verdict = lift > 1
+          ? '✅ 訊號有 skill（贏同池）'
+          : (lift > -1 ? '🟡 訊號中性（跟同池差不多）' : '❌ 訊號反而更差（接刀）');
+      print(
+        '     → lift 報酬 ${lift >= 0 ? "+" : ""}${lift.toStringAsFixed(1)}%、'
+        '勝率 ${winLift >= 0 ? "+" : ""}${winLift.toStringAsFixed(0)}pp  $verdict',
+      );
+    }
+
+    modeCheck(
+      'Mode A 起漲',
+      '下跌 trend<0',
+      abs.where((s) => s.trend < 0).toList(),
+      (s) => s.modeMom >= 15,
+    );
+    modeCheck(
+      'Mode B 強勢',
+      '多頭 trend>0',
+      abs.where((s) => s.trend > 0).toList(),
+      (s) => s.modeStr >= 15,
+    );
+    modeCheck(
+      'Mode C 回檔',
+      '多頭 trend>0',
+      abs.where((s) => s.trend > 0).toList(),
+      (s) => s.modePul >= 12,
+    );
     return 0;
   } finally {
     await db.close();

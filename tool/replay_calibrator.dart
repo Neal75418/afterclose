@@ -49,6 +49,7 @@ import 'package:drift/drift.dart' show Value;
 
 import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
+import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
@@ -114,18 +115,24 @@ class ReplayConfig {
 /// [volatility] 是進場日「過去 20 日日報酬標準差(%)」（供 C 風險調整驗證：
 /// 高分股裡偏好低波動者,勝率會不會升）。
 /// [trendPct] 是進場日 close 相對 60 日均線的偏離(%)，>0 多頭、<0 空頭（供
-/// B-個股趨勢驗證：高分股裡下跌趨勢者是否更差）。
+/// B-個股趨勢 / 分模式驗證）。
+/// [modeMomentum]/[modeStrength]/[modePullback] 是該股票日「起漲 / 強勢 / 回檔」
+/// 三模式各自規則的分數加總（供「訊號 vs 同池基準」分模式驗證）。
 /// [shortReturn]/[longReturn] 隨 replay 模式為絕對或超額報酬。
-typedef ScoreSampleSink =
-    void Function(
-      double score,
-      double rawScore,
-      double volatility,
-      double trendPct,
-      double shortReturn,
-      double longReturn,
-      DateTime date,
-    );
+typedef ScoreSample = ({
+  double score,
+  double rawScore,
+  double volatility,
+  double trendPct,
+  double modeMomentum,
+  double modeStrength,
+  double modePullback,
+  double shortReturn,
+  double longReturn,
+  DateTime date,
+});
+
+typedef ScoreSampleSink = void Function(ScoreSample sample);
 
 /// 單一 rule × horizon 的統計累加器
 class RuleHorizonStats {
@@ -420,8 +427,21 @@ class ReplayCalibrator {
       // 用 reason.score（基礎分）= app 當前實際評分行為（校準層目前全 fallback）。
       if (_scoreSink != null) {
         var raw = 0.0;
+        var modeMom = 0.0;
+        var modeStr = 0.0;
+        var modePul = 0.0;
         for (final reason in reasons) {
           raw += reason.score;
+          switch (reason.type.scoringMode) {
+            case ScoringMode.momentumEntry:
+              modeMom += reason.score;
+            case ScoringMode.strengthObserve:
+              modeStr += reason.score;
+            case ScoringMode.weaknessObserve:
+              modePul += reason.score;
+            case ScoringMode.neutral:
+              break;
+          }
         }
         final clamped = raw.clamp(0.0, RuleScores.maxScore.toDouble());
         // 進場日波動度：過去 20 日日報酬標準差(%)。供 C 風險調整驗證。
@@ -462,15 +482,18 @@ class ReplayCalibrator {
             trendPct = (entryClose / (sum / cnt) - 1) * 100;
           }
         }
-        _scoreSink(
-          clamped,
-          raw,
-          volatility,
-          trendPct,
-          shortReturn,
-          longReturn,
-          currentPrice.date,
-        );
+        _scoreSink((
+          score: clamped,
+          rawScore: raw,
+          volatility: volatility,
+          trendPct: trendPct,
+          modeMomentum: modeMom,
+          modeStrength: modeStr,
+          modePullback: modePul,
+          shortReturn: shortReturn,
+          longReturn: longReturn,
+          date: currentPrice.date,
+        ));
       }
 
       for (final reason in reasons) {
