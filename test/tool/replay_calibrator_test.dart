@@ -546,4 +546,53 @@ void main() {
       );
     });
   });
+
+  group('ReplayCalibrator — look-ahead 修正（公布日 lag）', () {
+    test('月營收公布日 = 次月 10 號（不偷看當月）', () {
+      // 3 月營收（DB 存 3/1）→ 4/10 才可見；3 月內的訊號看不到
+      expect(
+        ReplayCalibrator.revenueVisibleDate(DateTime(2026, 3, 1)),
+        DateTime(2026, 4, 10),
+      );
+      // 12 月營收 → 次年 1/10（跨年）
+      expect(
+        ReplayCalibrator.revenueVisibleDate(DateTime(2026, 12, 1)),
+        DateTime(2027, 1, 10),
+      );
+      // 公布日嚴格晚於營收月底 → 無 look-ahead
+      expect(
+        ReplayCalibrator.revenueVisibleDate(
+          DateTime(2026, 5, 1),
+        ).isAfter(DateTime(2026, 5, 31)),
+        isTrue,
+      );
+    });
+
+    test('季財報公布日：Q1-Q3 季末+45 天、年報次年 3/31', () {
+      expect(
+        ReplayCalibrator.financialVisibleDate(DateTime(2026, 3, 31)),
+        DateTime(2026, 5, 15),
+      );
+      expect(
+        ReplayCalibrator.financialVisibleDate(DateTime(2026, 6, 30)),
+        DateTime(2026, 8, 14),
+      );
+      expect(
+        ReplayCalibrator.financialVisibleDate(DateTime(2026, 9, 30)),
+        DateTime(2026, 11, 14),
+      );
+      // 年報（Q4）→ 次年 3/31
+      expect(
+        ReplayCalibrator.financialVisibleDate(DateTime(2026, 12, 31)),
+        DateTime(2027, 3, 31),
+      );
+      // 公布日嚴格晚於季底 → 無 look-ahead
+      expect(
+        ReplayCalibrator.financialVisibleDate(
+          DateTime(2026, 3, 31),
+        ).isAfter(DateTime(2026, 3, 31)),
+        isTrue,
+      );
+    });
+  });
 }

@@ -403,8 +403,10 @@ class ReplayCalibrator {
         ?.where((e) => !e.date.isAfter(currentDate))
         .toList();
 
+    // look-ahead 修正：月營收次月 10 號才公布，故以「公布日」而非「營收月」
+    // 過濾，避免訊號偷看尚未公布的營收。
     final revenueHistory = data.revenueBySymbol[symbol]
-        ?.where((e) => !e.date.isAfter(currentDate))
+        ?.where((e) => !revenueVisibleDate(e.date).isAfter(currentDate))
         .toList();
     // Revenue history 需要依時間降序（最新在前）
     revenueHistory?.sort((a, b) => b.date.compareTo(a.date));
@@ -420,13 +422,15 @@ class ReplayCalibrator {
         ? null
         : valuationHistory.first;
 
+    // look-ahead 修正：季財報季末後才公布（Q1-Q3 +45 天、年報次年 3/31），
+    // 故以「公布日」過濾。
     final epsHistory = data.epsBySymbol[symbol]
-        ?.where((e) => !e.date.isAfter(currentDate))
+        ?.where((e) => !financialVisibleDate(e.date).isAfter(currentDate))
         .toList();
     epsHistory?.sort((a, b) => b.date.compareTo(a.date));
 
     final roeHistory = data.roeBySymbol[symbol]
-        ?.where((e) => !e.date.isAfter(currentDate))
+        ?.where((e) => !financialVisibleDate(e.date).isAfter(currentDate))
         .toList();
     roeHistory?.sort((a, b) => b.date.compareTo(a.date));
 
@@ -566,6 +570,24 @@ class ReplayCalibrator {
 
   /// 把 DateTime 正規化成 (年,月,日) 當 map key，避免時間分量造成同日不同 key。
   static DateTime _dateKey(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// 月營收的「實際公布日」≈ 次月 10 號（台股月營收揭露慣例）。
+  /// [revenueMonthDate] 是營收所屬月份（DB 存該月 1 號）。public 供測試。
+  static DateTime revenueVisibleDate(DateTime revenueMonthDate) {
+    final isDec = revenueMonthDate.month == 12;
+    final year = isDec ? revenueMonthDate.year + 1 : revenueMonthDate.year;
+    final month = isDec ? 1 : revenueMonthDate.month + 1;
+    return DateTime(year, month, 10);
+  }
+
+  /// 季財報的「實際公布日」：Q1-Q3 季末後 45 天內、年報（Q4/12 月底）次年
+  /// 3/31 前（台股財報揭露期限）。[quarterEnd] 是季底日。public 供測試。
+  static DateTime financialVisibleDate(DateTime quarterEnd) {
+    if (quarterEnd.month == 12) {
+      return DateTime(quarterEnd.year + 1, 3, 31);
+    }
+    return quarterEnd.add(const Duration(days: 45));
+  }
 
   /// Upsert rule_accuracy rows
   ///
