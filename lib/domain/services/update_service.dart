@@ -602,6 +602,7 @@ class UpdateService {
         try {
           await fundamentalSyncer.syncOtcWatchlistFundamentals(
             date: normalizedDate,
+            force: ctx.force,
           );
         } on RateLimitException catch (e) {
           ctx.rateLimitedAbort = true;

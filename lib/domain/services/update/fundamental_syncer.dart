@@ -50,7 +50,11 @@ class FundamentalSyncer {
     }
 
     try {
-      revenueCount = await _fundamentalRepo.syncAllMarketRevenue(date);
+      // force 需轉給營收：否則強制同步時營收會因 skip-if-cached 而不重抓。
+      revenueCount = await _fundamentalRepo.syncAllMarketRevenue(
+        date,
+        force: force,
+      );
     } on RateLimitException {
       rethrow;
     } on NetworkException {
@@ -76,6 +80,7 @@ class FundamentalSyncer {
   /// TWSE 批次 API 僅涵蓋上市股票，上櫃自選股需逐檔補充
   Future<FundamentalSyncResult> syncOtcWatchlistFundamentals({
     required DateTime date,
+    bool force = false,
   }) async {
     final watchlist = await _db.getWatchlist();
     final otcStocks = await _db.getStocksByMarket(MarketCode.tpex);
@@ -97,6 +102,7 @@ class FundamentalSyncer {
       valuationCount = await _fundamentalRepo.syncOtcValuation(
         otcWatchlistSymbols,
         date: date,
+        force: force,
       );
     } on RateLimitException {
       rethrow;
@@ -110,6 +116,7 @@ class FundamentalSyncer {
       revenueCount = await _fundamentalRepo.syncOtcRevenue(
         otcWatchlistSymbols,
         date: date,
+        force: force,
       );
     } on RateLimitException {
       rethrow;
