@@ -768,13 +768,36 @@ class Backfiller {
 
     final startStr = _formatDate(startDate);
     final endStr = _formatDate(endDate);
+
+    // Resumability：跳過已補過該區間的 symbol（前次 run 完成的）。閾值 > 100
+    // 列以排除既有稀疏樣本（原 calibration.db 每股僅數列），只認「完整回補過」。
+    // ISO date 字串可直接字典序比較（DB 存 ISO text）。
+    final endExclusive = _formatDate(endDate.add(const Duration(days: 1)));
+    final doneRows = await deps.db
+        .customSelect(
+          'SELECT symbol FROM daily_price '
+          "WHERE date >= '$startStr' AND date < '$endExclusive' "
+          'GROUP BY symbol HAVING COUNT(*) > 100',
+        )
+        .get();
+    final doneSymbols = doneRows.map((r) => r.read<String>('symbol')).toSet();
+    if (doneSymbols.isNotEmpty) {
+      _log('  ↪️  resumability: 跳過 ${doneSymbols.length} 個已完成 symbol');
+    }
+
     final failed = <String>[];
     var succeeded = 0;
     var rowsInserted = 0;
+    var skipped = 0;
     var lastLogAt = DateTime.now();
 
     for (var i = 0; i < symbols.length; i++) {
       final symbol = symbols[i];
+      if (doneSymbols.contains(symbol)) {
+        skipped++;
+        succeeded++;
+        continue;
+      }
       try {
         final fps = await finMind.getDailyPrices(
           stockId: symbol,
@@ -819,7 +842,7 @@ class Backfiller {
         final pct = ((i + 1) / symbols.length * 100).toStringAsFixed(1);
         _log(
           '  📊 [prices:finmind] ${i + 1}/${symbols.length} ($pct%), '
-          'rows=$rowsInserted, failed=${failed.length}, '
+          'rows=$rowsInserted, skipped=$skipped, failed=${failed.length}, '
           'elapsed ${_formatDuration(now.difference(phaseStart))}',
         );
         lastLogAt = now;
