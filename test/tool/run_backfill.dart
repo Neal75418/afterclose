@@ -56,6 +56,11 @@ void main() {
       args.add('--dry-run');
     }
 
+    // 歷史回補必用：STOCK_DAY_ALL batch 不支援歷史日期 → 走 FinMind per-symbol
+    if (Platform.environment['BACKFILL_PRICES_VIA_FINMIND'] == '1') {
+      args.add('--prices-via-finmind');
+    }
+
     // Token is read from FINMIND_TOKEN env var inside backfill.dart's
     // _parseArgs — no need to pass explicitly here.
     final code = await backfill.runBackfillCli(args);

@@ -57,6 +57,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
+
 import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
@@ -90,6 +92,7 @@ class BackfillConfig {
     this.interDayDelayMs = 5000,
     this.startDateOverride,
     this.endDateOverride,
+    this.pricesViaFinMind = false,
   });
 
   /// SQLite 檔案路徑
@@ -131,6 +134,12 @@ class BackfillConfig {
 
   /// 明確指定 backfill 結束日（覆寫 `DateTime.now()`）。null = now。
   final DateTime? endDateOverride;
+
+  /// 價格回補改走 FinMind per-symbol（而非 TWSE STOCK_DAY_ALL batch）。
+  ///
+  /// 2026-06 起 TWSE STOCK_DAY_ALL 已不支援歷史 date 參數（一律回最新日），
+  /// 故歷史回補（2021-2023 等）必須走 FinMind。預設 false 維持原 batch 行為。
+  final bool pricesViaFinMind;
 }
 
 /// 單一 phase 的執行結果
@@ -183,6 +192,7 @@ class BackfillDeps {
     required this.priceRepo,
     required this.institutionalRepo,
     required this.fundamentalRepo,
+    this.finMind,
   });
 
   final AppDatabase db;
@@ -190,6 +200,9 @@ class BackfillDeps {
   final IPriceRepository priceRepo;
   final IInstitutionalRepository institutionalRepo;
   final IFundamentalRepository fundamentalRepo;
+
+  /// FinMind client — 僅 `pricesViaFinMind` 模式需要（歷史價格 per-symbol 回補）。
+  final FinMindClient? finMind;
 }
 
 // ============================================================================
@@ -251,24 +264,35 @@ class Backfiller {
     //     ≈ 33,000 calls 太集中）
     //   - 舊 FinMind per-symbol path 吃 600/day 免費額度
     // batch path 後兩個市場各約 500 calls / 2 年，永久脫離兩種 rate limit。
-    final partitioned = await _partitionSymbolsByMarket(symbols);
-    if (partitioned.twse.isNotEmpty) {
+    if (config.pricesViaFinMind) {
+      // 歷史回補：STOCK_DAY_ALL batch 已不支援歷史日期 → 走 FinMind per-symbol
       phases.add(
-        await _backfillTwsePricesBatch(
-          twseSymbols: partitioned.twse,
+        await _backfillPricesViaFinMind(
+          symbols: symbols,
           startDate: startDate,
           endDate: endDate,
         ),
       );
-    }
-    if (partitioned.tpex.isNotEmpty) {
-      phases.add(
-        await _backfillTpexPricesBatch(
-          tpexSymbols: partitioned.tpex,
-          startDate: startDate,
-          endDate: endDate,
-        ),
-      );
+    } else {
+      final partitioned = await _partitionSymbolsByMarket(symbols);
+      if (partitioned.twse.isNotEmpty) {
+        phases.add(
+          await _backfillTwsePricesBatch(
+            twseSymbols: partitioned.twse,
+            startDate: startDate,
+            endDate: endDate,
+          ),
+        );
+      }
+      if (partitioned.tpex.isNotEmpty) {
+        phases.add(
+          await _backfillTpexPricesBatch(
+            tpexSymbols: partitioned.tpex,
+            startDate: startDate,
+            endDate: endDate,
+          ),
+        );
+      }
     }
     // Phase 2: institutional — 改走 TWSE T86 + TPEx daily batch
     //
@@ -709,6 +733,114 @@ class Backfiller {
     );
   }
 
+  /// 用 FinMind TaiwanStockPrice 逐檔回補歷史價格（上市 + 上櫃皆可）。
+  ///
+  /// 動機：TWSE STOCK_DAY_ALL batch 端點 2026-06 起不再支援歷史 date 參數
+  /// （一律回最新交易日），舊的 TWSE per-symbol 月度端點則 rate-limit 嚴重。
+  /// FinMind getDailyPrices 一個 call 帶整段 date range、per-symbol，是歷史
+  /// 回補唯一可行來源。
+  ///
+  /// rate limit / network 政策同 [_runPhase]：立即 abort；其他例外記 failed
+  /// 後續行。每檔之間沿用 [BackfillConfig.interDayDelayMs] delay 控 FinMind
+  /// 600/hr 額度。
+  Future<PhaseResult> _backfillPricesViaFinMind({
+    required List<String> symbols,
+    required DateTime startDate,
+    required DateTime endDate,
+  }) async {
+    final finMind = deps.finMind;
+    _log('');
+    _log(
+      '▶️  Phase [prices:finmind] — ${symbols.length} symbols × FinMind range',
+    );
+    final phaseStart = DateTime.now();
+    if (finMind == null) {
+      _log('⚠️  [prices:finmind] 無 FinMindClient 注入 — 跳過');
+      return PhaseResult(
+        phase: 'prices:finmind',
+        symbolsProcessed: 0,
+        symbolsSucceeded: 0,
+        rowsInserted: 0,
+        failedSymbols: const [],
+        duration: DateTime.now().difference(phaseStart),
+      );
+    }
+
+    final startStr = _formatDate(startDate);
+    final endStr = _formatDate(endDate);
+    final failed = <String>[];
+    var succeeded = 0;
+    var rowsInserted = 0;
+    var lastLogAt = DateTime.now();
+
+    for (var i = 0; i < symbols.length; i++) {
+      final symbol = symbols[i];
+      try {
+        final fps = await finMind.getDailyPrices(
+          stockId: symbol,
+          startDate: startStr,
+          endDate: endStr,
+        );
+        final companions = <DailyPriceCompanion>[];
+        for (final fp in fps) {
+          final date = DateTime.tryParse(fp.date);
+          if (date == null) continue;
+          companions.add(
+            DailyPriceCompanion.insert(
+              symbol: symbol,
+              date: date,
+              open: Value(fp.open),
+              high: Value(fp.high),
+              low: Value(fp.low),
+              close: Value(fp.close),
+              volume: Value(fp.volume),
+            ),
+          );
+        }
+        if (companions.isNotEmpty) {
+          await deps.db.insertPrices(companions);
+          rowsInserted += companions.length;
+        }
+        succeeded++;
+      } on RateLimitException catch (e) {
+        _log('⛔ Phase [prices:finmind] $symbol 觸發 rate limit — abort: $e');
+        rethrow;
+      } on NetworkException catch (e) {
+        _log('⛔ Phase [prices:finmind] $symbol 網路錯誤 — abort: $e');
+        rethrow;
+      } catch (e) {
+        failed.add(symbol);
+        _log('  ⚠️  $symbol failed: $e');
+      }
+
+      final now = DateTime.now();
+      if (now.difference(lastLogAt).inSeconds >= 10 ||
+          i == symbols.length - 1) {
+        final pct = ((i + 1) / symbols.length * 100).toStringAsFixed(1);
+        _log(
+          '  📊 [prices:finmind] ${i + 1}/${symbols.length} ($pct%), '
+          'rows=$rowsInserted, failed=${failed.length}, '
+          'elapsed ${_formatDuration(now.difference(phaseStart))}',
+        );
+        lastLogAt = now;
+      }
+
+      // FinMind 600/hr 額度 → 控速（與 batch 端點共用 delay 旋鈕）
+      if (config.interDayDelayMs > 0) {
+        await Future.delayed(Duration(milliseconds: config.interDayDelayMs));
+      }
+    }
+
+    return PhaseResult(
+      phase: 'prices:finmind',
+      symbolsProcessed: symbols.length,
+      symbolsSucceeded: succeeded,
+      rowsInserted: rowsInserted,
+      failedSymbols: failed,
+      duration: DateTime.now().difference(phaseStart),
+    );
+  }
+
   void _logDryRunPlan(List<String> symbols) {
     _log('');
     _log('DRY RUN PLAN:');
@@ -850,6 +982,7 @@ Future<int> runBackfillCli(List<String> args) async {
       priceRepo: priceRepo,
       institutionalRepo: institutionalRepo,
       fundamentalRepo: fundamentalRepo,
+      finMind: finMind,
     );
 
     final backfiller = Backfiller(config: config, deps: deps);
@@ -888,6 +1021,7 @@ BackfillConfig? _parseArgs(List<String> args) {
   var dryRun = false;
   DateTime? startDateOverride;
   DateTime? endDateOverride;
+  var pricesViaFinMind = false;
 
   for (var i = 0; i < args.length; i++) {
     final arg = args[i];
@@ -895,6 +1029,9 @@ BackfillConfig? _parseArgs(List<String> args) {
       case '--db':
         if (i + 1 >= args.length) return null;
         dbPath = args[++i];
+      case '--prices-via-finmind':
+        // 歷史回補必用：STOCK_DAY_ALL batch 已不支援歷史日期
+        pricesViaFinMind = true;
       case '--years':
         if (i + 1 >= args.length) return null;
         final parsed = int.tryParse(args[++i]);
@@ -971,6 +1108,7 @@ BackfillConfig? _parseArgs(List<String> args) {
     interDayDelayMs: interDayDelayMs,
     startDateOverride: startDateOverride,
     endDateOverride: endDateOverride,
+    pricesViaFinMind: pricesViaFinMind,
   );
 }
 
@@ -993,6 +1131,12 @@ void _printUsage(IOSink sink) {
   );
   sink.writeln(
     '  --end-date <date>     Explicit end YYYY-MM-DD (default: now)',
+  );
+  sink.writeln(
+    '  --prices-via-finmind  Historical prices via FinMind per-symbol '
+    '(required\n'
+    '                        for history; STOCK_DAY_ALL batch no longer serves\n'
+    '                        historical dates)',
   );
   sink.writeln(
     '  --finmind-token       FinMind API token (or set FINMIND_TOKEN env var)',
