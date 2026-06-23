@@ -17,7 +17,6 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
@@ -73,20 +72,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       if (!_active) return;
       if (state.price.analysis == null && state.reasons.isEmpty) return;
       loadData();
-    });
-
-    // Stage 5c dual-horizon：切換 horizon 時重新生成 AI 摘要，保留其他資料
-    // 不動。不走 ref.watch 重建 notifier，因為此 notifier 是 command-based
-    // （build 只回空 state，資料由 loadData 等 imperative command 載入）。
-    ref.listen<Horizon>(selectedHorizonProvider, (prev, next) {
-      if (prev == next) return;
-      if (!_active) return;
-      // 只有在資料已載入後才重算，否則 loadData 會用最新 horizon 生成
-      if (state.reasons.isEmpty && state.price.analysis == null) return;
-      _regenerateAiSummary(
-        revenueData: state.fundamentals.revenueHistory,
-        latestPER: state.fundamentals.latestPER,
-      );
     });
 
     return const StockDetailState();
@@ -182,11 +167,8 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         );
       }
 
-      // 生成 AI 智慧分析摘要（Stage 5c：依當前 horizon）
-      // 在 await 完成後重新讀 horizon — 若使用者在 loadData 進行中切換，
-      // listener 會在 state.reasons 還是空的時被 guard 擋掉，這裡是
-      // 「捕捉 in-flight 切換」的補救點。
-      final loadHorizon = ref.read(selectedHorizonProvider);
+      // 生成 AI 智慧分析摘要（horizon 固定 short — 選擇器已於 2026-06 移除）。
+      const loadHorizon = Horizon.short;
       final summaryData = const AnalysisSummaryService().generate(
         analysis: analysis,
         reasons: reasons,
@@ -216,16 +198,6 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         dataDate: dataDate,
         hasDataMismatch: hasDataMismatch,
       );
-
-      // 載入完成後再次檢查 horizon — 若 in-flight 切換造成上面的
-      // summary 是舊 horizon 算的，立刻重算。state.reasons 此時已寫入，
-      // listener 的 guard 不會再擋住。
-      if (_active && ref.read(selectedHorizonProvider) != loadHorizon) {
-        _regenerateAiSummary(
-          revenueData: state.fundamentals.revenueHistory,
-          latestPER: state.fundamentals.latestPER,
-        );
-      }
     } catch (e) {
       AppLogger.warning('StockDetailNotifier', '載入股票詳情失敗: $_symbol', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
@@ -388,7 +360,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       institutionalHistory: state.chip.institutionalHistory,
       revenueHistory: revenueData,
       latestPER: latestPER,
-      horizon: ref.read(selectedHorizonProvider),
+      horizon: Horizon.short,
     );
     state = state.copyWith(
       aiSummary: const SummaryLocalizer().localize(summaryData),

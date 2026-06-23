@@ -15,7 +15,6 @@ import 'package:afterclose/domain/services/analysis_summary_service.dart';
 import 'package:afterclose/presentation/mappers/finmind_model_mapper.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 
 // ==================================================
 // 比較狀態
@@ -104,17 +103,6 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     _active = true;
     _loadGeneration = 0;
     ref.onDispose(() => _active = false);
-
-    // Stage 5c dual-horizon：切換 horizon 時重新生成所有 summary，保留
-    // 其他已載入資料（stocksMap / priceHistoriesMap / institutionalMap...）
-    // 不動。Command-based reload 模式，避免整個 notifier rebuild 把大量
-    // batch-loaded data 清空。
-    ref.listen<Horizon>(selectedHorizonProvider, (prev, next) {
-      if (prev == next) return;
-      if (!_active) return;
-      if (state.symbols.isEmpty) return;
-      _regenerateAllSummaries();
-    });
 
     return const ComparisonState();
   }
@@ -224,9 +212,8 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
     final generation = ++_loadGeneration;
 
     try {
-      // Stage 5c: 在 loop 開始前 snapshot horizon，避免 horizon 在迴圈
-      // 跑到一半時被切換造成同一 batch 內不同 symbol 用不同 horizon。
-      final loadHorizon = ref.read(selectedHorizonProvider);
+      // horizon 固定 short（選擇器已於 2026-06 移除）。
+      const loadHorizon = Horizon.short;
       final dateCtx = DateContext.now(historyDays: 90);
 
       // 使用資料庫最新價格日期，確保盤前/非交易日也能顯示上次分析結果
@@ -306,13 +293,6 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
         summariesMap: summaries,
         isLoading: false,
       );
-
-      // Stage 5c: 載入過程中 horizon 可能已被切換，但 listener 在
-      // state.symbols 為空時被擋住。state 寫入後立刻補一次 regen
-      // 確保顯示符合最新 horizon。
-      if (_active && ref.read(selectedHorizonProvider) != loadHorizon) {
-        _regenerateAllSummaries();
-      }
     } catch (e) {
       // generation 過期時不覆蓋新載入的錯誤狀態
       if (_loadGeneration != generation) return;
@@ -329,50 +309,6 @@ class ComparisonNotifier extends Notifier<ComparisonState> {
       AppLogger.warning('ComparisonNotifier', '載入比較資料失敗', e);
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
     }
-  }
-
-  /// 以當前 horizon 重新生成所有股票的 AI 摘要（Stage 5c）
-  ///
-  /// 不重新向 DB / API 取資料 — 只重跑 `summaryService.generate` 跟
-  /// `localizer.localize` 這段純運算。觸發來源是 [selectedHorizonProvider]
-  /// 的 listen callback。
-  void _regenerateAllSummaries() {
-    if (state.symbols.isEmpty) return;
-    const summaryService = AnalysisSummaryService();
-    const localizer = SummaryLocalizer();
-    final horizon = ref.read(selectedHorizonProvider);
-    final summaries = <String, StockSummary>{};
-
-    for (final symbol in state.symbols) {
-      final analysis = state.analysesMap[symbol];
-      final reasons = state.reasonsMap[symbol] ?? [];
-      final latestPrice = state.latestPricesMap[symbol];
-      final priceHistory = state.priceHistoriesMap[symbol] ?? [];
-
-      final finMindRevenues = FinMindModelMapper.toFinMindRevenues(
-        state.revenueMap[symbol] ?? [],
-      );
-      final finMindPER = FinMindModelMapper.toFinMindPER(
-        state.valuationsMap[symbol],
-      );
-
-      final summaryData = summaryService.generate(
-        analysis: analysis,
-        reasons: reasons,
-        latestPrice: latestPrice,
-        priceChange: PriceCalculator.calculatePriceChange(
-          priceHistory,
-          latestPrice,
-        ),
-        institutionalHistory: state.institutionalMap[symbol] ?? [],
-        revenueHistory: finMindRevenues,
-        latestPER: finMindPER,
-        horizon: horizon,
-      );
-      summaries[symbol] = localizer.localize(summaryData);
-    }
-
-    state = state.copyWith(summariesMap: summaries);
   }
 }
 
