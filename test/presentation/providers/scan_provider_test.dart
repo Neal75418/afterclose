@@ -145,7 +145,7 @@ void main() {
     Map<String, List<DailyReasonEntry>>? reasons,
   }) {
     when(
-      () => mockAnalysisRepo.findLatestAnalyses(horizon: Horizon.short),
+      () => mockAnalysisRepo.findLatestAnalyses(horizon: Horizon.long),
     ).thenAnswer((_) async => (targetDate: testDate, analyses: analyses));
     when(
       () => mockDb.getReasonsBatch(any(), any()),
@@ -331,7 +331,7 @@ void main() {
 
     test('loadData handles error gracefully', () async {
       when(
-        () => mockAnalysisRepo.findLatestAnalyses(horizon: Horizon.short),
+        () => mockAnalysisRepo.findLatestAnalyses(horizon: Horizon.long),
       ).thenThrow(Exception('Database error'));
 
       final notifier = container.read(scanProvider.notifier);

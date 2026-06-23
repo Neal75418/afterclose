@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/scan_models.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
@@ -6,10 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const service = ScanFilterService();
 
-  // Helper: create a DailyAnalysisEntry
+  // Helper: create a DailyAnalysisEntry。[scoreLong] 省略時等於 [score]（短=長），
+  // 需測 horizon 分歧時才顯式給不同值。
   DailyAnalysisEntry createAnalysis({
     required String symbol,
     double score = 50.0,
+    double? scoreLong,
     String trendState = 'UP',
   }) {
     return DailyAnalysisEntry(
@@ -18,7 +21,7 @@ void main() {
       trendState: trendState,
       reversalState: 'NONE',
       scoreShort: score,
-      scoreLong: score,
+      scoreLong: scoreLong ?? score,
       computedAt: DateTime(2025, 1, 15),
     );
   }
@@ -198,6 +201,47 @@ void main() {
       expect(analyses[0].symbol, equals('A'));
       expect(analyses[1].symbol, equals('B'));
       expect(analyses[2].symbol, equals('C'));
+    });
+
+    test('default horizon (short) 仍依 scoreShort 排序（回歸保護）', () {
+      final analyses = [
+        createAnalysis(symbol: 'A', score: 80, scoreLong: 10),
+        createAnalysis(symbol: 'B', score: 10, scoreLong: 80),
+      ];
+
+      service.applySort(analyses, ScanSort.scoreDesc); // 不傳 horizon = short
+
+      // 依 scoreShort 降冪：A(80) > B(10)
+      expect(analyses[0].symbol, equals('A'));
+      expect(analyses[1].symbol, equals('B'));
+    });
+
+    test('horizon=long 時依 scoreLong 排序（新行為）', () {
+      final analyses = [
+        createAnalysis(symbol: 'A', score: 80, scoreLong: 10),
+        createAnalysis(symbol: 'B', score: 10, scoreLong: 80),
+        createAnalysis(symbol: 'C', score: 50, scoreLong: 50),
+      ];
+
+      service.applySort(analyses, ScanSort.scoreDesc, horizon: Horizon.long);
+
+      // 依 scoreLong 降冪：B(80) > C(50) > A(10)
+      expect(analyses[0].symbol, equals('B'));
+      expect(analyses[1].symbol, equals('C'));
+      expect(analyses[2].symbol, equals('A'));
+    });
+
+    test('horizon=long + scoreAsc 依 scoreLong 升冪', () {
+      final analyses = [
+        createAnalysis(symbol: 'A', score: 80, scoreLong: 10),
+        createAnalysis(symbol: 'B', score: 10, scoreLong: 80),
+      ];
+
+      service.applySort(analyses, ScanSort.scoreAsc, horizon: Horizon.long);
+
+      // 依 scoreLong 升冪：A(10) < B(80)
+      expect(analyses[0].symbol, equals('A'));
+      expect(analyses[1].symbol, equals('B'));
     });
   });
 }

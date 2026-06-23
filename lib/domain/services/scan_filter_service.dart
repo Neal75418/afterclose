@@ -1,3 +1,4 @@
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
@@ -58,14 +59,20 @@ class ScanFilterService {
   /// 套用全域排序：依 [sort] 對分析結果排序
   ///
   /// 就地排序（in-place），直接修改傳入的 list。
-  void applySort(List<DailyAnalysisEntry> analyses, ScanSort sort) {
-    // 預設依短線分數排序；UI horizon 切換時應改根據當前
-    // 選中的 horizon 決定排序欄位
+  /// [horizon] 決定排序欄位：long → scoreLong、否則 scoreShort（預設 short
+  /// 保持向後相容）。
+  void applySort(
+    List<DailyAnalysisEntry> analyses,
+    ScanSort sort, {
+    Horizon horizon = Horizon.short,
+  }) {
+    double scoreOf(DailyAnalysisEntry a) =>
+        horizon == Horizon.long ? a.scoreLong : a.scoreShort;
     if (sort == ScanSort.scoreAsc) {
-      analyses.sort((a, b) => a.scoreShort.compareTo(b.scoreShort));
+      analyses.sort((a, b) => scoreOf(a).compareTo(scoreOf(b)));
     } else {
       // 預設：分數降冪
-      analyses.sort((b, a) => a.scoreShort.compareTo(b.scoreShort));
+      analyses.sort((b, a) => scoreOf(a).compareTo(scoreOf(b)));
     }
   }
 
@@ -76,11 +83,14 @@ class ScanFilterService {
   /// 將分析結果批次轉換為 [ScanStockItem] 列表
   ///
   /// 從 [CachedDatabaseAccessor] 載入詳細資料並組裝為 UI 所需的物件。
+  /// [horizon] 決定每張卡顯示的分數欄位：long → scoreLong、否則 scoreShort
+  /// （預設 short 保持向後相容）。
   Future<List<ScanStockItem>> buildStockItems({
     required List<DailyAnalysisEntry> analyses,
     required DateContext dateCtx,
     required CachedDatabaseAccessor cachedDb,
     required Set<String> watchlistSymbols,
+    Horizon horizon = Horizon.short,
   }) async {
     if (analyses.isEmpty) return [];
 
@@ -124,7 +134,9 @@ class ScanFilterService {
       }
       return ScanStockItem(
         symbol: analysis.symbol,
-        score: analysis.scoreShort,
+        score: horizon == Horizon.long
+            ? analysis.scoreLong
+            : analysis.scoreShort,
         stockName: stocksMap[analysis.symbol]?.name,
         market: stocksMap[analysis.symbol]?.market,
         industry: stocksMap[analysis.symbol]?.industry,

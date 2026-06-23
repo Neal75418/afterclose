@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/pagination.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
@@ -14,7 +15,6 @@ import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/scan_filter_service.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
-import 'package:afterclose/presentation/providers/selected_horizon_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // Re-export（向後相容）
@@ -193,6 +193,14 @@ class ScanNotifier extends Notifier<ScanState> {
   int _reloadSeq = 0;
   DateContext? _dateCtx;
 
+  /// 掃描頁固定用長線（60D）鏡頭：scoreLong 過濾 / 排序 / 顯示。
+  ///
+  /// 為什麼定死 long：實證 edge 在 60D（高分→報酬 spread +6.3% 單調），5D 接近
+  /// 雜訊（+0.8%）；且舊的全域 horizon 開關已於 2026-06-19 被 3-tab Mode UI 取代、
+  /// 無 UI 可切（selectedHorizonProvider 成孤兒永遠 short）→ 掃描頁直接用有 edge
+  /// 的 60D，不依賴該死 provider。改全 app 預設 60D 是另一個獨立決定（B2）。
+  static const Horizon _horizon = Horizon.long;
+
   /// 清除錯誤狀態
   void clearError() => state = state.copyWith(error: null);
 
@@ -204,8 +212,7 @@ class ScanNotifier extends Notifier<ScanState> {
       // 智慧回退：找到最近有資料的日期（統一由 Repository 處理日期正規化）
       // scan 預設依 short horizon 排序；UI 切 horizon 時也走同一 reload
       // path（dataUpdateEpoch listener 或 horizon listener 都會重新呼這條）。
-      final horizon = ref.read(selectedHorizonProvider);
-      final result = await _analysisRepo.findLatestAnalyses(horizon: horizon);
+      final result = await _analysisRepo.findLatestAnalyses(horizon: _horizon);
       if (!_active) return;
       final targetDate = result.targetDate;
       final analyses = result.analyses;
@@ -213,8 +220,8 @@ class ScanNotifier extends Notifier<ScanState> {
       // 更新 DateContext 以反映實際資料日期
       final dateCtx = DateContext.forDate(targetDate);
       _dateCtx = dateCtx;
-      // 預設用短線分數過濾，未來可加 horizon 切換
-      _allAnalyses = analyses.where((a) => a.scoreShort > 0).toList();
+      // 掃描頁固定長線 → 以 scoreLong > 0 過濾 universe。
+      _allAnalyses = analyses.where((a) => a.scoreLong > 0).toList();
       _allReasons = {};
       // Lazy load：只在目前 filter 真正需要時才載入（切換 filter 時按需載入）
       if (_allAnalyses.isNotEmpty && state.filter != ScanFilter.all) {
@@ -431,6 +438,7 @@ class ScanNotifier extends Notifier<ScanState> {
       dateCtx: dateCtx,
       cachedDb: _cachedDb,
       watchlistSymbols: Set.unmodifiable(_watchlistSymbols),
+      horizon: _horizon,
     );
   }
 
@@ -448,7 +456,7 @@ class ScanNotifier extends Notifier<ScanState> {
 
   /// 套用全域排序至 _filteredAnalyses
   void _applyGlobalSort(ScanSort sort) {
-    _service.applySort(_filteredAnalyses, sort);
+    _service.applySort(_filteredAnalyses, sort, horizon: _horizon);
   }
 
   /// 從 watchlistProvider 同步自選清單狀態到 scan 畫面
