@@ -15,10 +15,12 @@ import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
 import 'package:afterclose/domain/services/data_sync_service.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/presentation/mappers/summary_localizer.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
+import 'package:afterclose/presentation/providers/market_overview_provider.dart';
 import 'package:afterclose/presentation/providers/stock_detail_state.dart';
 import 'package:afterclose/presentation/providers/stock_fundamentals_loader.dart';
 import 'package:afterclose/presentation/providers/stock_chip_loader.dart';
@@ -81,6 +83,18 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
   DataSyncService get _dataSyncService => ref.read(dataSyncServiceProvider);
   MarketDataRepository get _marketRepo =>
       ref.read(marketDataRepositoryProvider);
+
+  /// 大盤位階（多頭/空頭/盤整）— 供 AI 摘要的 regime context 行使用。
+  /// 讀 marketOverview 已載入的加權指數長窗口 closes；未載入或資料不足回 null
+  /// （摘要 graceful 不顯示位階行）。
+  MarketStage? _currentMarketStage() {
+    final closes = ref
+        .read(marketOverviewProvider)
+        .indexStageHistory[MarketIndexNames.taiex];
+    if (closes == null || closes.isEmpty) return null;
+    final result = TechnicalIndicatorService().calculateMarketStage(closes);
+    return result.stage == MarketStage.insufficient ? null : result.stage;
+  }
 
   /// 載入股票詳情資料
   Future<void> loadData() async {
@@ -181,6 +195,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
         revenueHistory: state.fundamentals.revenueHistory,
         latestPER: state.fundamentals.latestPER,
         horizon: loadHorizon,
+        marketStage: _currentMarketStage(),
       );
       final summary = const SummaryLocalizer().localize(summaryData);
       if (!_active) return;
@@ -361,6 +376,7 @@ class StockDetailNotifier extends Notifier<StockDetailState> {
       revenueHistory: revenueData,
       latestPER: latestPER,
       horizon: Horizon.short,
+      marketStage: _currentMarketStage(),
     );
     state = state.copyWith(
       aiSummary: const SummaryLocalizer().localize(summaryData),

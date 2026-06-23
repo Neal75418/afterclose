@@ -11,6 +11,7 @@ import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/signal_confluence.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 import 'package:afterclose/domain/models/signal_names.dart';
 
 /// 個股 AI 智慧分析摘要生成服務
@@ -40,6 +41,7 @@ class AnalysisSummaryService {
     required List<FinMindRevenue> revenueHistory,
     required FinMindPER? latestPER,
     required Horizon horizon,
+    MarketStage? marketStage,
   }) {
     if (analysis == null && reasons.isEmpty) {
       return const SummaryData(
@@ -70,6 +72,7 @@ class AnalysisSummaryService {
       bearishConfluence: bearishConfluence,
       hasConflict: hasConflict,
       horizon: horizon,
+      marketStage: marketStage,
     );
 
     // 匯流整合的關鍵訊號 & 風險因子
@@ -139,8 +142,21 @@ class AnalysisSummaryService {
     required ConfluenceResult bearishConfluence,
     required bool hasConflict,
     required Horizon horizon,
+    MarketStage? marketStage,
   }) {
     final parts = <LocalizableString>[];
+
+    // 大盤位階 context：讓個股多空 read 有 regime 脈絡（順勢 vs 逆勢）。
+    // insufficient / null（大盤資料未載入）時不顯示，graceful degrade。
+    final marketKey = switch (marketStage) {
+      MarketStage.bullish => 'summary.marketBullish',
+      MarketStage.bearish => 'summary.marketBearish',
+      MarketStage.neutral => 'summary.marketNeutral',
+      _ => null,
+    };
+    if (marketKey != null) {
+      parts.add(LocalizableString(marketKey));
+    }
 
     final close = latestPrice?.close?.toStringAsFixed(1) ?? '-';
     final change = priceChange?.abs().toStringAsFixed(1) ?? '0.0';

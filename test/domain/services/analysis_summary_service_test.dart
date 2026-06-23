@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/stock_summary.dart';
 import 'package:afterclose/domain/services/analysis_summary_service.dart';
+import 'package:afterclose/domain/services/technical_indicator_service.dart';
 
 import '../../helpers/analysis_data_generators.dart';
 import '../../helpers/price_data_generators.dart';
@@ -34,6 +35,43 @@ void main() {
       expect(result.hasConflict, isFalse);
       expect(result.confluenceCount, 0);
       expect(result.overallParts.first.key, 'summary.noSignals');
+    });
+
+    test('prepends market-regime context line when marketStage given', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(trendState: 'UP', score: 70),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: null,
+        priceChange: 1.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+        marketStage: MarketStage.bullish,
+      );
+
+      // 大盤位階行置頂、對應 key
+      expect(result.overallParts.first.key, 'summary.marketBullish');
+    });
+
+    test('omits market line when marketStage null or insufficient', () {
+      SummaryData gen(MarketStage? stage) => service.generate(
+        analysis: createTestAnalysis(trendState: 'UP', score: 70),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: null,
+        priceChange: 1.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+        marketStage: stage,
+      );
+
+      for (final r in [gen(null), gen(MarketStage.insufficient)]) {
+        expect(_overallContainsKey(r, 'summary.marketBullish'), isFalse);
+        expect(_overallContainsKey(r, 'summary.marketNeutral'), isFalse);
+        expect(_overallContainsKey(r, 'summary.marketBearish'), isFalse);
+      }
     });
 
     test('return strongBullish when ratio ≥ 0.75 and score ≥ 55', () {
