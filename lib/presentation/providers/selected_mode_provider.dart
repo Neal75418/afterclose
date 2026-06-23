@@ -4,15 +4,15 @@ import 'package:afterclose/core/constants/scoring_mode.dart';
 
 /// 當前使用者在 Today screen 選擇的 mode（3-tab UI 主軸）
 ///
-/// 跟 [selectedHorizonProvider] **正交共存**：mode 決定看哪類訊號（起漲 /
-/// 強勢 / 弱勢），horizon 決定卡片內 5D / 60D score 哪個當主排序。
+/// mode 決定看哪類訊號（起漲 / 強勢 / 弱勢）。
+///
+/// （歷史：原與全域 horizon 開關正交共存，但該開關已於 2026-06 移除；scan 定死
+/// 60D、stock detail / comparison 定死 5D。）
 ///
 /// ## 為什麼是全域 state 但只給 Today 用
 ///
-/// Stock detail / scan / comparison 維持 horizon-based 不動（hybrid 設計
-/// Option B），所以這個 provider 不像 [selectedHorizonProvider] 跨多個
-/// screen 共享 — 但仍用全域 state 保留未來擴展空間（例如 watchlist tab
-/// 想 reuse mode filter 時不需重構）。
+/// 用全域 state 保留未來擴展空間（例如 watchlist tab 想 reuse mode filter 時
+/// 不需重構）。
 ///
 /// ## 生命週期
 ///

@@ -562,8 +562,8 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
         // user 真實的 3 種觀察心智。5D 跟 60D 雙 score 改在 StockCard 內並排
         // 顯示，user 一眼看到兩個 timeframe 強弱對比。
         //
-        // selectedHorizonProvider 保留給 stock detail / scan / comparison 用
-        // （hybrid Option B）。Today 內 sort 預設按 5D abs(score) DESC。
+        // horizon 選擇器/provider 已於 2026-06 移除：scan 定死 60D、stock
+        // detail / comparison 定死 5D。Today 內 sort 預設按 5D abs(score) DESC。
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

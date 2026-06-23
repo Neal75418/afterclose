@@ -196,9 +196,8 @@ class ScanNotifier extends Notifier<ScanState> {
   /// 掃描頁固定用長線（60D）鏡頭：scoreLong 過濾 / 排序 / 顯示。
   ///
   /// 為什麼定死 long：實證 edge 在 60D（高分→報酬 spread +6.3% 單調），5D 接近
-  /// 雜訊（+0.8%）；且舊的全域 horizon 開關已於 2026-06-19 被 3-tab Mode UI 取代、
-  /// 無 UI 可切（selectedHorizonProvider 成孤兒永遠 short）→ 掃描頁直接用有 edge
-  /// 的 60D，不依賴該死 provider。改全 app 預設 60D 是另一個獨立決定（B2）。
+  /// 雜訊（+0.8%）；且設 horizon 的全域開關已於 2026-06-19 被 3-tab Mode UI 取代、
+  /// 無 UI 可切 → 掃描頁直接用有 edge 的 60D。
   static const Horizon _horizon = Horizon.long;
 
   /// 清除錯誤狀態
