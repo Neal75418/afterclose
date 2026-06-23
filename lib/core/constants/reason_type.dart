@@ -238,7 +238,8 @@ extension ReasonTypeScoringMode on ReasonType {
     ReasonType.foreignShareholdingIncreasing => ScoringMode.strengthObserve,
     ReasonType.institutionalBuy => ScoringMode.strengthObserve,
     ReasonType.volumeSpike => ScoringMode.strengthObserve,
-    ReasonType.newsRelated => ScoringMode.strengthObserve,
+    ReasonType.newsRelated =>
+      ScoringMode.neutral, // RSS 標題 keyword 情緒為弱訊號 → 移出選股評分（新聞頁 + 證據 chip 仍顯示）
     ReasonType.roeExcellent => ScoringMode.strengthObserve,
     ReasonType.highVolumeBreakout => ScoringMode.strengthObserve, // 已突破
     ReasonType.maAlignmentBullish =>
