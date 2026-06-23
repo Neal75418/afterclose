@@ -45,5 +45,45 @@ void main() {
       );
       expect(t.currentHolding, 0);
     });
+
+    test('信託/贈與等非市場交易：方式別股數欄空 → fallback 到「預定轉讓總股數-自有持股」', () {
+      // 真實 live API 列（信託 5347 世界）：方式別股數欄為空，股數在總股數欄。
+      // 持股算術驗證：目前持有 231089 − 轉讓後 123089 = 108000。
+      final t = TpexInsiderTransfer.fromJson(<String, dynamic>{
+        'SecuritiesCompanyCode': '5347',
+        'CompanyName': '世界',
+        'Date': '1150622',
+        '姓名': '王子豪',
+        '預定轉讓方式及股數-轉讓方式': '信託',
+        '預定轉讓方式及股數-轉讓股數': '', // 信託/贈與/洽特定人此欄恆空
+        '預定轉讓總股數-自有持股': '108000',
+        '目前持有股數-自有持股': '231089',
+        '有效轉讓期間': '1150622~1150624',
+      });
+
+      expect(
+        t.transferShares,
+        108000,
+        reason: '方式別股數欄空時須 fallback 到「預定轉讓總股數-自有持股」',
+      );
+      expect(t.transferMethod, '信託');
+    });
+
+    test('一般交易：兩股數欄都有值時優先方式別股數（fallback 不得改動既有行為）', () {
+      final t = TpexInsiderTransfer.fromJson(<String, dynamic>{
+        'SecuritiesCompanyCode': '2061',
+        'Date': '1150618',
+        '預定轉讓方式及股數-轉讓方式': '一般交易(每日得轉讓股數限制)',
+        '預定轉讓方式及股數-轉讓股數': '500000',
+        '預定轉讓總股數-自有持股': '999999', // 若誤用此欄會讀成 999999
+        '目前持有股數-自有持股': '3232155',
+      });
+
+      expect(
+        t.transferShares,
+        500000,
+        reason: '方式別股數欄有值時須優先，不得被 fallback 蓋成總股數',
+      );
+    });
   });
 }

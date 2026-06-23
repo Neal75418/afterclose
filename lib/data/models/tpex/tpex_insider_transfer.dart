@@ -35,7 +35,17 @@ class TpexInsiderTransfer {
     // ⚠️ TPEx OpenAPI (mopsfin_t187ap12_O) 的實際 key 帶群組前綴，舊版讀
     // '轉讓股數'/'目前持有股數' 等不存在的 key → 全部 fallback 成 0（已驗 17/17 筆
     // 皆 0 的 bug）。以下 key 已對 live API 核實。
-    final transferSharesStr = json['預定轉讓方式及股數-轉讓股數']?.toString().trim() ?? '';
+    //
+    // 「預定轉讓方式及股數-轉讓股數」只有「一般交易/鉅額逐筆」(走市場、有每日限額)
+    // 才填；信託/贈與/洽特定人該欄為空，股數改放「預定轉讓總股數-自有持股」。故空值
+    // 時 fallback 到後者（已對 live API 用持股算術驗證：目前持有 − 轉讓後持股 = 該值）。
+    // 採「自有持股」與下方 currentHolding（亦自有持股）口徑一致。
+    final methodSpecificSharesStr =
+        json['預定轉讓方式及股數-轉讓股數']?.toString().trim() ?? '';
+    final totalOwnSharesStr = json['預定轉讓總股數-自有持股']?.toString().trim() ?? '';
+    final transferSharesStr = methodSpecificSharesStr.isNotEmpty
+        ? methodSpecificSharesStr
+        : totalOwnSharesStr;
     final transferShares =
         int.tryParse(transferSharesStr.replaceAll(',', '')) ?? 0;
 
