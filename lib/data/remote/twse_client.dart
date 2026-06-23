@@ -54,7 +54,7 @@ class TwseClient {
       }
 
       final response = await _dio.get(
-        '/rwd/zh/afterTrading/STOCK_DAY_ALL',
+        ApiEndpoints.twseDailyPricesAll,
         queryParameters: queryParams,
       );
 
@@ -141,7 +141,7 @@ class TwseClient {
       }
 
       final response = await _dio.get(
-        '/rwd/zh/fund/T86',
+        ApiEndpoints.twseInstitutional,
         queryParameters: queryParams,
       );
 
@@ -436,7 +436,7 @@ class TwseClient {
       if (cached != null) return cached;
 
       final response = await _dio.get(
-        '/rwd/zh/marginTrading/MI_MARGN',
+        ApiEndpoints.twseMarginTrading,
         queryParameters: {'response': 'json', 'selectType': 'ALL'},
       );
 
@@ -634,7 +634,7 @@ class TwseClient {
       if (cached != null) return cached;
 
       final response = await _dio.get(
-        '/exchangeReport/TWTB4U',
+        ApiEndpoints.twseDayTrading,
         queryParameters: {
           'response': 'json',
           'date': TwParseUtils.formatDateCompact(targetDate),
