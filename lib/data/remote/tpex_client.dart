@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
@@ -295,7 +296,9 @@ class TpexClient {
       final cached = _cache.get(cacheKey) as List<TpexValuation>?;
       if (cached != null) return cached;
 
-      final targetDate = date ?? DateTime.now();
+      // 估值 API 不回傳統一交易日，且過去 fallback 用 DateTime.now()（含時間戳）→
+      // 同日多次同步會產生不同 PK、無法去重。正規化到當日 00:00（同 daily_price 口徑）。
+      final targetDate = DateContext.normalize(date ?? DateTime.now());
 
       // TPEX OpenAPI 只回傳最新資料，不接受日期參數
       final response = await _dio.get(

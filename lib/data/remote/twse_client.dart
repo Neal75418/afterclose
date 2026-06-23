@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
@@ -551,7 +552,10 @@ class TwseClient {
         AppLogger.warning(_tag, '估值資料: 非預期資料型別');
         return [];
       }
-      final resDate = DateTime.now(); // Open Data 總是回傳最新資料
+      // Open Data 不回傳交易日。過去用 DateTime.now()（含時間戳）當 date，使
+      // PK (symbol,date) 每次同步都不同 → insertOrReplace 無法去重 → 重複膨脹。
+      // 正規化到當日 00:00（同 daily_price 口徑），同日多次同步即可去重。
+      final resDate = DateContext.normalize(date ?? DateTime.now());
 
       final results = data.map((item) {
         final map = item as Map<String, dynamic>;

@@ -1,5 +1,6 @@
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/data/models/finmind/per.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
@@ -21,6 +22,10 @@ void main() {
   late MockTwseClient mockTwse;
   late MockTpexClient mockTpex;
   late FundamentalRepository repo;
+
+  setUpAll(() {
+    registerFallbackValue(<StockValuationCompanion>[]);
+  });
 
   setUp(() {
     mockDb = MockAppDatabase();
@@ -143,6 +148,47 @@ void main() {
           endDate: DateTime(2025, 1, 31),
         ),
         throwsA(isA<RateLimitException>()),
+      );
+    });
+
+    test('估值日期正規化：含時間的 date → 持久化時去除時間（防 PK 重複膨脹）', () async {
+      final captured = <List<StockValuationCompanion>>[];
+      when(
+        () => mockFinMind.getPERData(
+          stockId: any(named: 'stockId'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer(
+        (_) async => const [
+          FinMindPER(
+            stockId: '2330',
+            date: '2026-06-23T14:30:00', // 含時間戳
+            per: 30,
+            pbr: 5,
+            dividendYield: 2,
+          ),
+        ],
+      );
+      when(() => mockDb.insertValuationData(any())).thenAnswer((
+        invocation,
+      ) async {
+        captured.add(
+          invocation.positionalArguments.first as List<StockValuationCompanion>,
+        );
+      });
+
+      await repo.syncValuationData(
+        symbol: '2330',
+        startDate: DateTime(2026, 6, 1),
+        endDate: DateTime(2026, 6, 30),
+      );
+
+      expect(captured, hasLength(1));
+      expect(
+        captured.first.single.date.value,
+        DateTime(2026, 6, 23),
+        reason: 'date 須正規化到 00:00、不含時間，否則同日多次同步會產生不同 PK',
       );
     });
   });

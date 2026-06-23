@@ -133,7 +133,11 @@ class FundamentalRepository implements IFundamentalRepository {
         endDate: DateContext.formatYmd(endDate),
       ),
       mapToCompanion: (data) => data.map((r) {
-        final parsedDate = DateTime.tryParse(r.date) ?? _clock.now();
+        // 正規化到當日 00:00：r.date 解析失敗時 fallback 的 _clock.now() 含時間戳，
+        // 會讓 PK (symbol,date) 每次不同、無法去重（同 valuation 重複膨脹根因）。
+        final parsedDate = DateContext.normalize(
+          DateTime.tryParse(r.date) ?? _clock.now(),
+        );
         return StockValuationCompanion.insert(
           symbol: symbol,
           date: parsedDate,
