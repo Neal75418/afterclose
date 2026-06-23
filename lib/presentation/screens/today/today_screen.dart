@@ -570,28 +570,53 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
             child: Consumer(
               builder: (context, ref, _) {
                 final mode = ref.watch(selectedModeProvider);
-                return SegmentedButton<ScoringMode>(
-                  segments: [
-                    ButtonSegment(
-                      value: ScoringMode.momentumEntry,
-                      label: Text('scoringMode.momentumEntry'.tr()),
-                      icon: const Icon(Icons.trending_up, size: 18),
+                // 每個 mode 一行說明，解新用戶「該用哪個」的困惑
+                final descKey = switch (mode) {
+                  ScoringMode.momentumEntry => 'scoringMode.momentumEntryDesc',
+                  ScoringMode.strengthObserve =>
+                    'scoringMode.strengthObserveDesc',
+                  ScoringMode.weaknessObserve =>
+                    'scoringMode.weaknessObserveDesc',
+                  _ => '',
+                };
+                return Column(
+                  children: [
+                    SegmentedButton<ScoringMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: ScoringMode.momentumEntry,
+                          label: Text('scoringMode.momentumEntry'.tr()),
+                          icon: const Icon(Icons.trending_up, size: 18),
+                        ),
+                        ButtonSegment(
+                          value: ScoringMode.strengthObserve,
+                          label: Text('scoringMode.strengthObserve'.tr()),
+                          icon: const Icon(Icons.bolt, size: 18),
+                        ),
+                        ButtonSegment(
+                          value: ScoringMode.weaknessObserve,
+                          label: Text('scoringMode.weaknessObserve'.tr()),
+                          icon: const Icon(Icons.warning_amber, size: 18),
+                        ),
+                      ],
+                      selected: {mode},
+                      onSelectionChanged: (set) {
+                        ref
+                            .read(selectedModeProvider.notifier)
+                            .select(set.first);
+                      },
                     ),
-                    ButtonSegment(
-                      value: ScoringMode.strengthObserve,
-                      label: Text('scoringMode.strengthObserve'.tr()),
-                      icon: const Icon(Icons.bolt, size: 18),
-                    ),
-                    ButtonSegment(
-                      value: ScoringMode.weaknessObserve,
-                      label: Text('scoringMode.weaknessObserve'.tr()),
-                      icon: const Icon(Icons.warning_amber, size: 18),
-                    ),
+                    if (descKey.isNotEmpty) ...[
+                      const SizedBox(height: DesignTokens.spacing8),
+                      Text(
+                        descKey.tr(),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ],
-                  selected: {mode},
-                  onSelectionChanged: (set) {
-                    ref.read(selectedModeProvider.notifier).select(set.first);
-                  },
                 );
               },
             ),

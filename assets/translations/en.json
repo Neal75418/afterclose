@@ -45,7 +45,10 @@
     "momentumEntry": "Entry",
     "strengthObserve": "Strong",
     "weaknessObserve": "Pullback",
-    "neutral": "Neutral"
+    "neutral": "Neutral",
+    "momentumEntryDesc": "Early breakouts just starting to move",
+    "strengthObserveDesc": "Already strong — watching for continuation",
+    "weaknessObserveDesc": "Strong names pulling back — buy-the-dip"
   },
   "today": {
     "top10": "Today's Picks ({count})",
@@ -1250,6 +1253,7 @@
     "sentimentStrongBearish": "Strongly Bearish",
     "chartTitle": "Price Comparison",
     "radarTitle": "Radar Overview",
+    "radarCaption": "Outer = better; all axes normalized 0–100 (valuation inverted: lower P/E scores higher)",
     "verdictWinner": "{symbol} wins in {count}/6 dimensions",
     "verdictTie": "Mixed results, decide based on your strategy",
     "noData": "No data",

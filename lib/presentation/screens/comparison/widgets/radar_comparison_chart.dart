@@ -49,6 +49,13 @@ class RadarComparisonChart extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              const SizedBox(height: DesignTokens.spacing4),
+              Text(
+                'comparison.radarCaption'.tr(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
               const SizedBox(height: DesignTokens.spacing8),
               SizedBox(
                 height: 250,

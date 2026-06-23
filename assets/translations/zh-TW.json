@@ -45,7 +45,10 @@
     "momentumEntry": "起漲候選",
     "strengthObserve": "強勢觀察",
     "weaknessObserve": "回檔觀察",
-    "neutral": "中性"
+    "neutral": "中性",
+    "momentumEntryDesc": "突破起漲、剛啟動的標的（追早期動能）",
+    "strengthObserveDesc": "已在強勢段、觀察續強動能",
+    "weaknessObserveDesc": "強勢股拉回、等健康回檔買點"
   },
   "today": {
     "top10": "今日推薦 ({count} 檔)",
@@ -1250,6 +1253,7 @@
     "sentimentStrongBearish": "強力看空",
     "chartTitle": "價格走勢比較",
     "radarTitle": "綜合雷達圖",
+    "radarCaption": "外圈＝越好，各軸已正規化 0–100（估值軸已轉向：本益比越低分數越高）",
     "verdictWinner": "{symbol} 在 {count}/6 面向勝出",
     "verdictTie": "各有優勢，請依個人策略判斷",
     "noData": "暫無資料",
