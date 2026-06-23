@@ -659,6 +659,54 @@ void main() {
       expect(_overallContainsKey(result, 'summary.riskReward'), isTrue);
     });
 
+    test('append favorable RR note when upside ≥ 2× downside', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(
+          trendState: 'UP',
+          score: 50,
+          supportLevel: 115.0,
+          resistanceLevel: 125.0,
+        ),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: createTestPrice(close: 116.0, date: DateTime.now()),
+        priceChange: 1.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+      // RR = (125-116)/(116-115) = 9 ≥ 2 → favorable
+      expect(
+        _overallContainsKey(result, 'summary.riskRewardFavorable'),
+        isTrue,
+      );
+      expect(_overallContainsKey(result, 'summary.riskRewardPoor'), isFalse);
+    });
+
+    test('append poor RR note when downside > upside', () {
+      final result = service.generate(
+        analysis: createTestAnalysis(
+          trendState: 'UP',
+          score: 50,
+          supportLevel: 115.0,
+          resistanceLevel: 125.0,
+        ),
+        reasons: [createTestReason(reasonType: 'TECH_BREAKOUT', ruleScore: 20)],
+        latestPrice: createTestPrice(close: 124.0, date: DateTime.now()),
+        priceChange: 1.0,
+        institutionalHistory: [],
+        revenueHistory: [],
+        latestPER: null,
+        horizon: Horizon.short,
+      );
+      // RR = (125-124)/(124-115) ≈ 0.11 < 1 → poor
+      expect(_overallContainsKey(result, 'summary.riskRewardPoor'), isTrue);
+      expect(
+        _overallContainsKey(result, 'summary.riskRewardFavorable'),
+        isFalse,
+      );
+    });
+
     test('use confluenceOverall key when confluence exists', () {
       final now = DateTime.now();
       final latestPrice = createTestPrice(close: 105.0, date: now);

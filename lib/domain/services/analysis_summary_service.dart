@@ -232,6 +232,12 @@ class AnalysisSummaryService {
               'ratio': rr.toStringAsFixed(1),
             }),
           );
+          // RR 判讀：上檔空間 vs 下檔風險（賠率高/低提示）
+          if (rr >= AnalysisParams.riskRewardFavorableThreshold) {
+            parts.add(const LocalizableString('summary.riskRewardFavorable'));
+          } else if (rr < 1) {
+            parts.add(const LocalizableString('summary.riskRewardPoor'));
+          }
         }
       } else {
         parts.add(
