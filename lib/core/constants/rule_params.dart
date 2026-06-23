@@ -78,11 +78,6 @@ abstract final class RuleParams {
   /// 候選股最低成交量（1000 張 = 1,000,000 股）
   static const double minCandidateVolumeShares = 1000000;
 
-  /// Top N 推薦最低成交額（8000 萬台幣）
-  ///
-  /// 確保推薦的都是主流標的。
-  static const double topNMinTurnover = 80000000;
-
   /// 高當沖規則最低成交量（10,000 張 = 10,000,000 股）
   static const double minDayTradingVolumeShares = 10000000;
 

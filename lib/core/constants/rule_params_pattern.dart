@@ -38,9 +38,6 @@ abstract final class PatternParams {
   /// 第二根 K 線實體不可超過第一根的 0.5 倍。
   static const double starSmallBodyMaxRatio = 0.5;
 
-  /// 強勢 K 線跌幅門檻（1.0%）
-  static const double strongCandleDropThreshold = 0.01;
-
   /// 晨/暮星第二根跳空容差上界（2%）
   ///
   /// 星體中點允許略高於第一根收盤價（不強制完美跳空）。

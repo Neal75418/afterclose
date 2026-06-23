@@ -92,21 +92,9 @@ abstract final class TrendParams {
   /// 用於弱轉強（底部反轉）訊號確認。
   static const double reversalVolumeConfirm = 1.5;
 
-  /// 強轉弱成交量確認門檻
-  ///
-  /// 頭部反轉（強轉弱）的成交量要求較寬鬆。
-  /// 頭部形成時往往是「量縮」而非「量增」，
-  /// 因此只需要基本成交量即可。
-  static const double s2wVolumeConfirm = 0.8;
-
   // ==================================================
   // ATR 與支撐壓力搜尋
   // ==================================================
-
-  /// ATR 計算週期
-  ///
-  /// 14 日為業界標準 ATR 週期。
-  static const int atrPeriod = 14;
 
   /// ATR 距離乘數（支撐/壓力搜尋半徑）
   ///
@@ -119,11 +107,6 @@ abstract final class TrendParams {
   /// 數值越大，距離衰減越快（越近的關卡分數越高）。
   static const double distanceDecayFactor = 10.0;
 
-  /// ATR 動態距離上限（比例）
-  ///
-  /// 限制 ATR-based 搜尋距離的最大值，避免高波動股過度搜尋。
-  static const double maxAtrDistance = 0.20;
-
   /// 趨勢偵測最少資料點數
   ///
   /// 收盤價序列需達此數量才進行趨勢判斷。
@@ -135,14 +118,6 @@ abstract final class TrendParams {
 
   /// 價量背離分析回溯天數
   static const int priceVolumeLookbackDays = 5;
-
-  /// 背離偵測最低價格變動門檻（%）
-  ///
-  /// 價格變動需達此門檻，背離才有意義。
-  static const double priceVolumePriceThreshold = 3.0;
-
-  /// 背離偵測成交量變動門檻（%）
-  static const double priceVolumeVolumeThreshold = 30.0;
 
   /// 「高檔爆量」訊號的高位門檻（百分位）
   ///

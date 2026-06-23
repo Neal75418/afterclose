@@ -113,11 +113,6 @@ abstract final class DataFreshness {
   /// 實際資料達預期交易日的 50% 即視為足夠，不需重複同步。
   static const double minAcceptableDataRatio = 0.5;
 
-  /// 無歷史資料股票所需完整同步月數
-  ///
-  /// DB 全新時每檔股票平均需要抓取約 14 個月的歷史。
-  static const int historicalFullSyncMonths = 14;
-
   // `historicalPartialSyncMonths`（早期固定 4）已於 2026-06 移除：partial 場景
   // 的 API 呼叫數實際取決於 cached 資料的月份分佈，由 estimator 動態計算，
   // 而非靠單一常數估算。詳見 `HistoricalPriceSyncer._estimateAvgMonthsNeeded`。
@@ -130,16 +125,6 @@ abstract final class DataFreshness {
   ///
   /// 用於由同步天數估算已處理的資料量。
   static const int estimatedDailyInstitutionalRecords = 1000;
-
-  // ==================================================
-  // 財務資料查詢緩衝
-  // ==================================================
-
-  /// 每季約含的日曆天數（用於由季數推算查詢起始日期）
-  static const int daysPerQuarter = 90;
-
-  /// 財務指標查詢額外緩衝天數（確保跨季邊界不遺漏資料）
-  static const int quarterBufferDays = 30;
 
   // ==================================================
   // 篩選器查詢回溯天數

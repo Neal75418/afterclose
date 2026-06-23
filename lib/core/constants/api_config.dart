@@ -137,9 +137,6 @@ abstract final class ApiConfig {
   /// 資料時，若解析出的日期與請求日期相差超過此天數即視為異常並跳過。
   static const int marketIndexDateDriftToleranceDays = 7;
 
-  /// 預設歷史回溯天數
-  static const int defaultHistoryLookbackDays = 5;
-
   /// 法人資料「日常更新」的回補天數（涵蓋分析所需的 ~10 天回溯）
   static const int institutionalDailyBackfillDays = 15;
 
@@ -149,12 +146,6 @@ abstract final class ApiConfig {
   /// institutionalSurge baseline（60 日）、自營/外資 streak 深度、情緒法人
   /// Z-score 視窗（10 日）。以 1 秒/交易日節流，~62 個交易日約 2-3 分鐘。
   static const int institutionalForceBackfillDays = 90;
-
-  /// 分析結束日期偏移天數
-  static const int analysisEndDateOffsetDays = 1;
-
-  /// 新聞歷史回溯天數
-  static const int newsHistoryLookbackDays = 1;
 
   /// 新聞內容最大長度（超過截斷以節省儲存空間）
   static const int newsContentMaxLength = 500;
