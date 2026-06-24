@@ -42,6 +42,7 @@ class ScanState {
     this.hasMore = true,
     this.totalCount = 0,
     this.totalAnalyzedCount = 0,
+    this.tradeableUniverseCount = 0,
     this.error,
   });
 
@@ -76,6 +77,11 @@ class ScanState {
   /// 今日已掃描（分析）的項目總數
   final int totalAnalyzedCount;
 
+  /// 今日「可交易池」股數（過流動性門檻）。供覆蓋透明度 funnel：
+  /// 「自 [tradeableUniverseCount] 檔可交易股篩出 [totalAnalyzedCount] 檔有訊號」，
+  /// 讓使用者知道清單是訊號子集、非全市場。
+  final int tradeableUniverseCount;
+
   final String? error;
 
   ScanState copyWith({
@@ -92,6 +98,7 @@ class ScanState {
     bool? hasMore,
     int? totalCount,
     int? totalAnalyzedCount,
+    int? tradeableUniverseCount,
     Object? error = _sentinel,
   }) {
     return ScanState(
@@ -109,6 +116,8 @@ class ScanState {
       hasMore: hasMore ?? this.hasMore,
       totalCount: totalCount ?? this.totalCount,
       totalAnalyzedCount: totalAnalyzedCount ?? this.totalAnalyzedCount,
+      tradeableUniverseCount:
+          tradeableUniverseCount ?? this.tradeableUniverseCount,
       error: error == _sentinel ? this.error : error as String?,
     );
   }
@@ -235,6 +244,9 @@ class ScanNotifier extends Notifier<ScanState> {
         latestInstDate,
       );
 
+      // 覆蓋透明度 funnel 的分母：當日「可交易池」股數（過流動性門檻）
+      final tradeableUniverse = await _db.getTradeableUniverseCount(targetDate);
+
       // 載入產業列表（使用 static 快取 + TTL）
       final now = DateTime.now();
       final cacheExpired =
@@ -267,6 +279,7 @@ class ScanNotifier extends Notifier<ScanState> {
           hasMore: false,
           totalCount: 0,
           totalAnalyzedCount: _allAnalyses.length,
+          tradeableUniverseCount: tradeableUniverse,
         );
         return;
       }
@@ -289,6 +302,7 @@ class ScanNotifier extends Notifier<ScanState> {
         hasMore: _filteredAnalyses.length > kPageSize,
         totalCount: _filteredAnalyses.length,
         totalAnalyzedCount: _allAnalyses.length,
+        tradeableUniverseCount: tradeableUniverse,
       );
     } catch (e, s) {
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));

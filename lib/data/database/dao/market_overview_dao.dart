@@ -1,11 +1,46 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.drift.dart';
 
 /// 大盤總覽彙總查詢操作
 mixin MarketOverviewDaoMixin on $AppDatabase {
+  /// 取得指定日期「可交易池」股數 —— 過流動性門檻的 daily_price 筆數。
+  ///
+  /// 與 scoring 的 `LiquidityChecker` 同口徑（volume ≥ [RuleParams.minCandidateVolumeShares]
+  /// 且 turnover = close×volume ≥ [RuleParams.minCandidateTurnover]），供掃描頁顯示
+  /// 覆蓋透明度：「自 N 檔可交易股篩出 X 檔有訊號」，讓使用者知道清單是
+  /// 訊號子集、非全市場。
+  Future<int> getTradeableUniverseCount(DateTime date) async {
+    final startOfDay = DateContext.normalize(date);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    const query = '''
+    SELECT COUNT(*) as cnt
+    FROM daily_price dp
+    WHERE dp.date >= ? AND dp.date < ?
+      AND dp.volume IS NOT NULL
+      AND dp.close IS NOT NULL
+      AND dp.volume >= ?
+      AND dp.close * dp.volume >= ?
+  ''';
+
+    final result = await customSelect(
+      query,
+      variables: [
+        Variable.withDateTime(startOfDay),
+        Variable.withDateTime(endOfDay),
+        Variable.withReal(RuleParams.minCandidateVolumeShares),
+        Variable.withReal(RuleParams.minCandidateTurnover),
+      ],
+      readsFrom: {dailyPrice},
+    ).getSingleOrNull();
+
+    return result?.read<int>('cnt') ?? 0;
+  }
+
   /// 取得指定日期的上漲/下跌/平盤家數（依市場分組）
   ///
   /// 從 DailyPrice 統計當日漲跌家數，依 market 欄位分組。

@@ -240,6 +240,7 @@
     "more": "更多",
     "stockCount": "共 {count} 檔",
     "stockCountLoaded": "已載入 {loaded}/{total} 檔",
+    "coverageFunnel": "自 {universe} 檔可交易股篩出（僅列有訊號者）",
     "view": "查看",
     "moreFilters": "更多篩選",
     "filterAll": "全部",

@@ -322,7 +322,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           horizontal: context.responsiveHorizontalPadding,
           vertical: 4,
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               state.hasMore
@@ -339,6 +340,20 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            // 覆蓋透明度：清單是「可交易股中有訊號」的子集，非全市場掃描
+            if (state.tradeableUniverseCount > 0)
+              Text(
+                'scan.coverageFunnel'.tr(
+                  namedArgs: {
+                    'universe': state.tradeableUniverseCount.toString(),
+                  },
+                ),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.7,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

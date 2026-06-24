@@ -139,6 +139,7 @@ Widget buildTestWidget({
         hasMore: false,
         totalCount: 3,
         totalAnalyzedCount: 1500,
+        tradeableUniverseCount: 2800,
         dataDate: DateTime(2026, 3, 10),
       );
   return buildProviderTestApp(

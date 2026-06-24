@@ -162,6 +162,9 @@ void main() {
     ).thenAnswer((_) async => ['半導體業', '金融業']);
     when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
     when(
+      () => mockDb.getTradeableUniverseCount(any()),
+    ).thenAnswer((_) async => 850);
+    when(
       () => mockCachedDb.loadScanData(
         symbols: any(named: 'symbols'),
         analysisDate: any(named: 'analysisDate'),

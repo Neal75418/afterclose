@@ -30,6 +30,59 @@ void main() {
       await insertTestStocks();
     });
 
+    group('getTradeableUniverseCount', () {
+      test('只計入過流動性門檻（量≥100萬 且 成交額≥3000萬）的股', () async {
+        await db.insertPrices([
+          // PASS：量 200萬、成交額 2 億
+          DailyPriceCompanion.insert(
+            symbol: '2330',
+            date: today,
+            close: const Value(100.0),
+            volume: const Value(2000000.0),
+          ),
+          // FAIL：量 50萬 < 100萬
+          DailyPriceCompanion.insert(
+            symbol: '2317',
+            date: today,
+            close: const Value(100.0),
+            volume: const Value(500000.0),
+          ),
+          // FAIL：成交額 10×150萬 = 1500萬 < 3000萬
+          DailyPriceCompanion.insert(
+            symbol: '6488',
+            date: today,
+            close: const Value(10.0),
+            volume: const Value(1500000.0),
+          ),
+          // PASS（邊界）：量剛好 100萬、成交額 2 億
+          DailyPriceCompanion.insert(
+            symbol: '3293',
+            date: today,
+            close: const Value(200.0),
+            volume: const Value(1000000.0),
+          ),
+        ]);
+
+        expect(await db.getTradeableUniverseCount(today), 2);
+      });
+
+      test('null volume 或 close 不計入', () async {
+        await db.insertPrices([
+          DailyPriceCompanion.insert(symbol: '2330', date: today), // 無量/價
+          DailyPriceCompanion.insert(
+            symbol: '2317',
+            date: today,
+            close: const Value(100.0), // 有價無量
+          ),
+        ]);
+        expect(await db.getTradeableUniverseCount(today), 0);
+      });
+
+      test('無資料日期回 0', () async {
+        expect(await db.getTradeableUniverseCount(today), 0);
+      });
+    });
+
     group('getAdvanceDeclineCountsByMarket', () {
       test('groups advance/decline/unchanged by market', () async {
         await db.insertPrices([
