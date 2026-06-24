@@ -360,6 +360,49 @@ void main() {
       expect(state.advanceDeclineByMarket['TWSE']?.advance, 400);
       expect(state.advanceDeclineByMarket['TPEx']?.decline, 100);
       expect(state.turnoverByMarket['TWSE']?.totalTurnover, 200000000000.0);
+      expect(
+        state.advanceDeclineStaleDates,
+        isEmpty,
+        reason: '兩市場當日皆有資料 → 無回退、staleDates 應為空',
+      );
+    });
+
+    test('某市場當日缺資料 → 回退前一交易日並記錄 advanceDeclineStaleDates', () async {
+      setupEmptyDefaults();
+
+      // any() = 回退日（含兩市場）；testDate = 當日只有上櫃（上市個股未釋出）。
+      // mocktail 後註冊的 stub 優先，故 testDate 呼叫回 TPEx-only、回退日呼叫回兩者。
+      when(() => mockDb.getAdvanceDeclineCountsByMarket(any())).thenAnswer(
+        (_) async => {
+          'TWSE': (advance: 250, decline: 800, unchanged: 70),
+          'TPEx': (advance: 400, decline: 350, unchanged: 60),
+        },
+      );
+      when(() => mockDb.getAdvanceDeclineCountsByMarket(testDate)).thenAnswer(
+        (_) async => {'TPEx': (advance: 400, decline: 350, unchanged: 60)},
+      );
+
+      final notifier = container.read(marketOverviewProvider.notifier);
+      await notifier.loadData();
+
+      final state = container.read(marketOverviewProvider);
+      // 上市當日缺資料 → 標記為回退（stale），且資料採回退日
+      expect(
+        state.advanceDeclineStaleDates.containsKey('TWSE'),
+        isTrue,
+        reason: '上市當日缺資料 → 應記錄 advanceDeclineStaleDates',
+      );
+      expect(
+        state.advanceDeclineByMarket['TWSE']?.advance,
+        250,
+        reason: '上市漲跌家數採用回退日資料',
+      );
+      // 上櫃當日有資料 → 不算 stale
+      expect(
+        state.advanceDeclineStaleDates.containsKey('TPEx'),
+        isFalse,
+        reason: '上櫃當日有資料 → 不應標記 stale',
+      );
     });
 
     test('loadData handles error gracefully', () async {

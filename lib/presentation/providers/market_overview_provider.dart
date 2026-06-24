@@ -70,6 +70,7 @@ class MarketOverviewState {
     this.error,
     this.dataDate,
     this.sectionDates = const {},
+    this.advanceDeclineStaleDates = const {},
   });
 
   // Section key 常數（供 sectionDates 使用）
@@ -92,6 +93,14 @@ class MarketOverviewState {
   /// 漲跌家數（依市場分組）
   /// Key: 'TWSE' / 'TPEx'
   final Map<String, AdvanceDecline> advanceDeclineByMarket;
+
+  /// 漲跌家數使用 fallback（前一交易日）的市場 → 該 fallback 實際日期。
+  ///
+  /// 當某市場當日 per-stock 資料未釋出，[MarketOverviewNotifier._loadAdvanceDeclineByMarket]
+  /// 會回退到前一交易日補值。此 map 記錄哪些市場是回退來的、實際日期為何，供 UI 在
+  /// 該市場漲跌家數標示「資料非當日」，避免把舊日廣度誤讀成今日。
+  /// 僅包含「有回退」的市場；當日資料正常的市場不會出現在此 map。
+  final Map<String, DateTime> advanceDeclineStaleDates;
 
   /// 法人買賣超（依市場分組）
   /// Key: 'TWSE' / 'TPEx'
@@ -174,6 +183,7 @@ class MarketOverviewState {
     Object? error = _sentinel,
     DateTime? dataDate,
     Map<String, DateTime>? sectionDates,
+    Map<String, DateTime>? advanceDeclineStaleDates,
   }) {
     return MarketOverviewState(
       indices: indices ?? this.indices,
@@ -204,6 +214,8 @@ class MarketOverviewState {
       error: error == _sentinel ? this.error : error as String?,
       dataDate: dataDate ?? this.dataDate,
       sectionDates: sectionDates ?? this.sectionDates,
+      advanceDeclineStaleDates:
+          advanceDeclineStaleDates ?? this.advanceDeclineStaleDates,
     );
   }
 }
@@ -360,7 +372,13 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
     final indices = results[0] as List<TwseMarketIndex>;
     final advanceDecline = results[1] as AdvanceDecline;
     final rawHistory = results[2] as Map<String, List<double>>;
-    final advDecByMarket = results[3] as Map<String, AdvanceDecline>;
+    final advDecResult =
+        results[3]
+            as ({
+              Map<String, AdvanceDecline> data,
+              Map<String, DateTime> staleDates,
+            });
+    final advDecByMarket = advDecResult.data;
     final instResult =
         results[4]
             as ({Map<String, InstitutionalTotals> data, DateTime dataDate});
@@ -448,6 +466,7 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       indexHistory: indexHistory,
       indexStageHistory: indexStageHistory,
       advanceDeclineByMarket: advDecByMarket,
+      advanceDeclineStaleDates: advDecResult.staleDates,
       institutionalByMarket: instByMarket,
       marginByMarket: marginByMarket,
       turnoverByMarket: turnoverByMarket,
@@ -674,34 +693,41 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   /// 載入漲跌家數（依市場分組）
   ///
   /// 若主要日期缺少某市場資料，自動用 [fallbackDate] 補齊。
-  Future<Map<String, AdvanceDecline>> _loadAdvanceDeclineByMarket(
-    DateTime date, {
-    DateTime? fallbackDate,
-  }) async {
+  /// 回傳 [staleDates]：記錄哪些市場是回退來的（market → fallbackDate），供 UI 標示
+  /// 「資料非當日」，避免把舊日廣度誤讀成今日。當日資料正常的市場不會出現在內。
+  Future<({Map<String, AdvanceDecline> data, Map<String, DateTime> staleDates})>
+  _loadAdvanceDeclineByMarket(DateTime date, {DateTime? fallbackDate}) async {
+    final staleDates = <String, DateTime>{};
     try {
       final data = await _db.getAdvanceDeclineCountsByMarket(date);
 
-      // 回退：若缺少某市場，嘗試前一交易日補齊
+      // 回退：若缺少某市場，嘗試前一交易日補齊（並記錄該市場為回退來源）
       if (fallbackDate != null && data.length < 2) {
         final fallbackData = await _db.getAdvanceDeclineCountsByMarket(
           fallbackDate,
         );
         for (final entry in fallbackData.entries) {
-          data.putIfAbsent(entry.key, () => entry.value);
+          if (!data.containsKey(entry.key)) {
+            data[entry.key] = entry.value;
+            staleDates[entry.key] = fallbackDate;
+          }
         }
       }
 
-      return {
-        for (final entry in data.entries)
-          entry.key: AdvanceDecline(
-            advance: entry.value.advance,
-            decline: entry.value.decline,
-            unchanged: entry.value.unchanged,
-          ),
-      };
+      return (
+        data: {
+          for (final entry in data.entries)
+            entry.key: AdvanceDecline(
+              advance: entry.value.advance,
+              decline: entry.value.decline,
+              unchanged: entry.value.unchanged,
+            ),
+        },
+        staleDates: staleDates,
+      );
     } catch (e) {
       AppLogger.warning('MarketOverviewNotifier', '載入分市場漲跌家數失敗', e);
-      return {};
+      return (data: <String, AdvanceDecline>{}, staleDates: staleDates);
     }
   }
 

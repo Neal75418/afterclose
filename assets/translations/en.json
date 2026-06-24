@@ -92,6 +92,7 @@
     "tpexNoIndex": "No index data for OTC market",
     "noData": "No data",
     "notToday": "(Not today)",
+    "staleBreadth": "Breadth from {dataDate} ({mainDate} stocks not yet released)",
     "sentimentLabel": "Market Sentiment",
     "loadError": "Failed to load market data",
     "taiex": "TAIEX",

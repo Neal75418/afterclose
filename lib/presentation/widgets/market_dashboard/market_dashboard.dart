@@ -372,11 +372,9 @@ class _MarketDashboardState extends State<MarketDashboard> {
     }
 
     // Section 3+: 統計數據（依選擇的市場顯示）
-    final adData = widget.state.advanceDeclineByMarket[marketKey];
     final instData = widget.state.institutionalByMarket[marketKey];
     final marginData = widget.state.marginByMarket[marketKey];
     final turnoverData = widget.state.turnoverByMarket[marketKey];
-    final limitUpDown = widget.state.limitUpDownByMarket[marketKey];
     final turnoverComparison =
         widget.state.turnoverComparisonByMarket[marketKey];
     final warningCounts = widget.state.warningCountsByMarket[marketKey];
@@ -392,17 +390,10 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final turnoverHist = _values(trends.turnover[marketKey]);
     final marginHist = _values(trends.marginBalance[marketKey]);
     final shortHist = trends.shortBalance[marketKey];
-    final advRatioHist = _values(trends.advanceRatio[marketKey]);
 
-    if (adData != null && adData.total > 0) {
-      sections.add(
-        AdvanceDeclineGauge(
-          data: adData,
-          limitUpDown: limitUpDown,
-          advanceRatioHistory: advRatioHist,
-        ),
-      );
-    }
+    // 走共用 builder：含「漲跌家數為前一交易日 fallback」的明顯標示（手機與桌面一致）
+    final adSection = _buildAdvanceDeclineSection(marketKey);
+    if (adSection != null) sections.add(adSection);
 
     // 市場廣度趨勢（52 週新高新低 + AD 騰落線）— 緊接漲跌家數，廣度快照 + 趨勢同處
     final breadthTrend = _buildBreadthTrendSection(marketKey);
@@ -705,12 +696,27 @@ class _MarketDashboardState extends State<MarketDashboard> {
   Widget? _buildAdvanceDeclineSection(String market) {
     final adData = widget.state.advanceDeclineByMarket[market];
     if (adData == null || adData.total <= 0) return null;
-    return AdvanceDeclineGauge(
+    final gauge = AdvanceDeclineGauge(
       data: adData,
       limitUpDown: widget.state.limitUpDownByMarket[market],
       advanceRatioHistory: _values(
         widget.state.historyTrends.advanceRatio[market],
       ),
+    );
+    // 該市場漲跌家數為前一交易日 fallback（當日個股未釋出）時，明顯標示避免把
+    // 舊日廣度誤讀成今日（per-market，與全域 sectionDates 不同口徑）。
+    final staleDate = widget.state.advanceDeclineStaleDates[market];
+    final mainDate = widget.state.dataDate;
+    // 兩者都需在；mainDate 缺時（理論上不會，與 staleDates 同批由 _buildState 設定）
+    // 退回純 gauge，避免標示出現空白日期。
+    if (staleDate == null || mainDate == null) return gauge;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StaleBreadthBadge(dataDate: staleDate, mainDate: mainDate),
+        const SizedBox(height: DesignTokens.spacing6),
+        gauge,
+      ],
     );
   }
 
@@ -802,5 +808,55 @@ class _MarketDashboardState extends State<MarketDashboard> {
     final industries = widget.state.industrySummaryByMarket[market];
     if (industries == null || industries.isEmpty) return null;
     return IndustryPerformanceRow(industries: industries);
+  }
+}
+
+/// 漲跌家數使用前一交易日 fallback 時的明顯標示。
+///
+/// 當某市場當日個股資料未釋出，廣度回退到 [dataDate]（前一交易日）。此 badge
+/// 點明「顯示的是哪天、哪天還沒釋出」，避免把舊日廣度誤讀成今日。
+class _StaleBreadthBadge extends StatelessWidget {
+  const _StaleBreadthBadge({required this.dataDate, required this.mainDate});
+
+  final DateTime dataDate;
+  final DateTime mainDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final warning = DesignTokens.warningColor(theme);
+    final text = 'marketOverview.staleBreadth'.tr(
+      namedArgs: {
+        'dataDate': '${dataDate.month}/${dataDate.day}',
+        'mainDate': '${mainDate.month}/${mainDate.day}',
+      },
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: DesignTokens.spacing8,
+        vertical: DesignTokens.spacing4,
+      ),
+      decoration: BoxDecoration(
+        color: warning.withAlpha(30),
+        borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.history, size: 12, color: warning),
+          const SizedBox(width: DesignTokens.spacing4),
+          Flexible(
+            child: Text(
+              text,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: DesignTokens.fontSizeXs,
+                color: warning,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
