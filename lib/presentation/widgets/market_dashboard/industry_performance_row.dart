@@ -15,8 +15,8 @@ class IndustryPerformanceRow extends StatelessWidget {
 
   final List<IndustrySummary> industries;
 
-  /// 桌面 Wrap 模式最多顯示的產業數量（top N + bottom N）
-  static const _desktopMaxItems = 9;
+  /// 桌面 Wrap 模式最多顯示的產業數量（前 N + 後 N，對稱）
+  static const _desktopMaxItems = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +93,7 @@ class IndustryPerformanceRow extends StatelessWidget {
     if (industries.length <= _desktopMaxItems) return industries;
     // 取前半 + 後半，保持排序順序
     const half = _desktopMaxItems ~/ 2;
-    final top = industries.take(half + 1).toList(); // 多取一個給奇數
+    final top = industries.take(half).toList();
     final bottom = industries.skip(industries.length - half).toList();
     // 去重（如果列表很短可能重疊）
     final seen = <String>{};
