@@ -311,6 +311,34 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
+  /// 標頭文字：覆蓋透明度漏斗（可交易 → 有訊號 → 已載入），一行收窄。
+  ///
+  /// 有可交易池資料時顯示漏斗，讓使用者知道清單是訊號子集、非全市場掃描；
+  /// 尚未算出（[ScanState.tradeableUniverseCount] = 0）時退回原本的數量/分頁顯示。
+  String _coverageLabel(ScanState state) {
+    if (state.tradeableUniverseCount > 0) {
+      final args = {
+        'universe': state.tradeableUniverseCount.toString(),
+        'signals': state.totalAnalyzedCount.toString(),
+      };
+      return state.hasMore
+          ? 'scan.coverageFunnelLoaded'.tr(
+              namedArgs: {...args, 'loaded': state.stocks.length.toString()},
+            )
+          : 'scan.coverageFunnel'.tr(namedArgs: args);
+    }
+    return state.hasMore
+        ? 'scan.stockCountLoaded'.tr(
+            namedArgs: {
+              'loaded': state.stocks.length.toString(),
+              'total': state.totalCount.toString(),
+            },
+          )
+        : 'scan.stockCount'.tr(
+            namedArgs: {'count': state.stocks.length.toString()},
+          );
+  }
+
   /// 股票數量列（分頁時顯示已載入/總數）
   Widget _buildStockCount(BuildContext context, ScanState state) {
     final theme = Theme.of(context);
@@ -322,38 +350,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           horizontal: context.responsiveHorizontalPadding,
           vertical: 4,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              state.hasMore
-                  ? 'scan.stockCountLoaded'.tr(
-                      namedArgs: {
-                        'loaded': state.stocks.length.toString(),
-                        'total': state.totalCount.toString(),
-                      },
-                    )
-                  : 'scan.stockCount'.tr(
-                      namedArgs: {'count': state.stocks.length.toString()},
-                    ),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            Expanded(
+              child: Text(
+                _coverageLabel(state),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-            // 覆蓋透明度：清單是「可交易股中有訊號」的子集，非全市場掃描
-            if (state.tradeableUniverseCount > 0)
-              Text(
-                'scan.coverageFunnel'.tr(
-                  namedArgs: {
-                    'universe': state.tradeableUniverseCount.toString(),
-                  },
-                ),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant.withValues(
-                    alpha: 0.7,
-                  ),
-                ),
-              ),
           ],
         ),
       ),
