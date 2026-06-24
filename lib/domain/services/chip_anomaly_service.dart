@@ -247,6 +247,9 @@ class ChipAnomalyService {
       final dateLowerBound = date.subtract(
         const Duration(days: ChipAnomalyParams.shortSurgeLookbackDays),
       );
+      final disposalLookback = date.subtract(
+        const Duration(days: ChipAnomalyParams.disposalExclusionLookbackDays),
+      );
 
       const query =
           '''
@@ -277,6 +280,10 @@ class ChipAnomalyService {
             a.avg_short >= ${ChipAnomalyParams.shortSurgeMinAvgLots}
             OR t.short_sell >= ${ChipAnomalyParams.shortSurgeHighVolTodayLots}
           )
+          AND t.symbol NOT IN (
+            SELECT symbol FROM trading_warning
+            WHERE warning_type = 'DISPOSAL' AND date >= ?
+          )
         ORDER BY ratio DESC
         LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
@@ -287,6 +294,7 @@ class ChipAnomalyService {
             variables: [
               Variable.withDateTime(date),
               Variable.withDateTime(dateLowerBound),
+              Variable.withDateTime(disposalLookback),
             ],
           )
           .get();
@@ -316,6 +324,9 @@ class ChipAnomalyService {
       final dateLowerBound = date.subtract(
         const Duration(days: ChipAnomalyParams.institutionalSurgeLookbackDays),
       );
+      final disposalLookback = date.subtract(
+        const Duration(days: ChipAnomalyParams.disposalExclusionLookbackDays),
+      );
 
       const query =
           '''
@@ -344,6 +355,10 @@ class ChipAnomalyService {
         FROM today t
         INNER JOIN avg30d a ON t.symbol = a.symbol
         WHERE ABS(t.total_net) > a.avg_abs_net * ${ChipAnomalyParams.institutionalSurgeMultiplier}
+          AND t.symbol NOT IN (
+            SELECT symbol FROM trading_warning
+            WHERE warning_type = 'DISPOSAL' AND date >= ?
+          )
         ORDER BY surge_ratio DESC
         LIMIT ${ChipAnomalyParams.maxResultsPerType}
       ''';
@@ -354,6 +369,7 @@ class ChipAnomalyService {
             variables: [
               Variable.withDateTime(date),
               Variable.withDateTime(dateLowerBound),
+              Variable.withDateTime(disposalLookback),
             ],
           )
           .get();

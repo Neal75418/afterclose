@@ -171,4 +171,11 @@ class ChipAnomalyParams {
 
   /// 法人集中大買/賣：當日淨額超過近期均值的倍率門檻
   static const double institutionalSurgeMultiplier = 5.0;
+
+  /// 機會型訊號（法人集中、融券暴增）排除「近期處置」股的回溯天數
+  ///
+  /// 處置/全額交割股的法人大賣、融券暴增多為 distress 症狀而非可操作訊號，
+  /// 且會佔用 [maxResultsPerType] 席位擠掉真訊號。近此天數內有 DISPOSAL 警示者
+  /// 從機會型類別排除（風險型「高質押」不排除）。
+  static const int disposalExclusionLookbackDays = 30;
 }

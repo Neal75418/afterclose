@@ -500,6 +500,53 @@ void main() {
         );
       });
 
+      test('處置股(DISPOSAL)從法人集中排除', () async {
+        await insertInstitutionalData(todayNet: 6000000.0);
+        // 2330 觸發 surge，但近期有 DISPOSAL 處置 → 應被排除
+        await db.insertWarningData([
+          TradingWarningCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 5)),
+            warningType: 'DISPOSAL',
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any(
+            (a) =>
+                a.type == ChipAnomalyType.institutionalSurge &&
+                a.symbol == '2330',
+          ),
+          isFalse,
+          reason: '處置股的法人大賣為 distress 症狀，應從機會型訊號排除',
+        );
+      });
+
+      test('注意股(ATTENTION)不從法人集中排除（避免誤殺高波動股）', () async {
+        await insertInstitutionalData(todayNet: 6000000.0);
+        await db.insertWarningData([
+          TradingWarningCompanion.insert(
+            symbol: '2330',
+            date: today.subtract(const Duration(days: 5)),
+            warningType: 'ATTENTION',
+          ),
+        ]);
+
+        final result = await service.detectAnomaliesByMarket(today);
+
+        expect(
+          result['TWSE']!.any(
+            (a) =>
+                a.type == ChipAnomalyType.institutionalSurge &&
+                a.symbol == '2330',
+          ),
+          isTrue,
+          reason: '注意股非處置，不應被排除',
+        );
+      });
+
       test('單日淨額 <= 30 日均量 × 5 不應被偵測', () async {
         // historyAvg = 1,000,000，today = 4,000,000 <= 5,000,000 ✗
         await insertInstitutionalData(todayNet: 4000000.0);
