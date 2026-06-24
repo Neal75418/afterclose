@@ -6,7 +6,6 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afterclose/data/database/app_database.dart';
-import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 
 void main() {
   late AppDatabase db;
@@ -121,49 +120,14 @@ void main() {
           ),
         ]);
 
-        // Step 5: 寫入推薦清單
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            symbol: '2330',
-            date: analysisDate,
-            score: 85.0,
-            rank: 1,
-            horizon: Horizon.short.name,
-          ),
-          DailyRecommendationCompanion.insert(
-            symbol: '2317',
-            date: analysisDate,
-            score: 72.0,
-            rank: 2,
-            horizon: Horizon.short.name,
-          ),
-        ]);
-
-        // Step 6: 查詢推薦清單
-        final recommendations = await db.getRecommendations(
-          analysisDate,
-          horizon: Horizon.short,
-        );
-        expect(recommendations.length, 2);
-        expect(recommendations.first.symbol, '2330');
-        expect(recommendations.first.score, 85.0);
-        expect(recommendations.first.rank, 1);
-        expect(recommendations.last.symbol, '2317');
-
-        // Step 7: 查詢推薦股的完整資料鏈
-        final recStock = await db.getStock(recommendations.first.symbol);
+        // Step 5: 查詢股票的完整資料鏈
+        final recStock = await db.getStock('2330');
         expect(recStock!.name, '台積電');
 
-        final recAnalysis = await db.getAnalysis(
-          recommendations.first.symbol,
-          analysisDate,
-        );
+        final recAnalysis = await db.getAnalysis('2330', analysisDate);
         expect(recAnalysis!.trendState, 'UP');
 
-        final recReasons = await db.getReasons(
-          recommendations.first.symbol,
-          analysisDate,
-        );
+        final recReasons = await db.getReasons('2330', analysisDate);
         expect(recReasons.length, 2);
         expect(recReasons.first.reasonType, 'GOLDEN_CROSS');
       },

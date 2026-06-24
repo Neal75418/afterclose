@@ -258,9 +258,8 @@ class ScoringService {
 
     // 依流動性加權分數（短線 horizon）排序
     //
-    // 預設回傳 short-sorted 清單給 caller，caller（update_service）
-    // 會自行呼叫 [splitScoredStocksIntoHorizons] 再排 long 版本，所以這邊
-    // 只要提供一個穩定的預設排序即可。
+    // 回傳一個穩定的 short-sorted 預設清單給 caller；caller 若需要 long
+    // 版本的排序自行重排即可。
     scoredStocks.sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
 
     return scoredStocks;
@@ -584,53 +583,4 @@ class ScoredStock {
     final max = (RuleParams.liquidityBonusMax * 100).toInt();
     return raw > max ? max : raw;
   }
-}
-
-/// 把 [ScoredStock] 清單切成 dual-horizon 的 Top N 推薦列表（純函式）
-///
-/// History：原為已退役的 daily_recommendation 產生流程的純邏輯部分（保留為
-/// 可重用工具 + 單元測試覆蓋）。決定 short / long 各自的 Top N 是兩次獨立的 sort + take + map，
-/// 抽出來讓單元測試可以直接驗證 per-horizon 排序 / minTurnover 過濾 /
-/// dailyTopN cap 這幾個行為，而不用把整個 update_service 拉進測試矩陣。
-///
-/// ## 語意
-///
-/// - [minTurnover] 門檻先套用一次，產生 liquid 候選池
-/// - 同一個 liquid 候選池分別用 `compareByWeightedScoreFor(Horizon.short)`
-///   與 `compareByWeightedScoreFor(Horizon.long)` 各 sort 一次
-/// - 每邊各 `.take(dailyTopN)`，產生兩份 [RecommendationData] 列表
-/// - 每份列表的 `score` 欄位用對應 horizon 的分數（不混用）
-({List<RecommendationData> shortRecs, List<RecommendationData> longRecs})
-splitScoredStocksIntoHorizons(
-  List<ScoredStock> scoredStocks, {
-  required int dailyTopN,
-  required double minTurnover,
-}) {
-  final liquid = scoredStocks.where((s) => s.turnover >= minTurnover).toList();
-
-  // 短線 Top N
-  final forShort = List<ScoredStock>.from(liquid)
-    ..sort(ScoredStock.compareByWeightedScoreFor(Horizon.short));
-  final shortRecs = forShort
-      .take(dailyTopN)
-      .map(
-        (s) => RecommendationData(
-          symbol: s.symbol,
-          score: s.scoreShort.toDouble(),
-        ),
-      )
-      .toList();
-
-  // 長線 Top N
-  final forLong = List<ScoredStock>.from(liquid)
-    ..sort(ScoredStock.compareByWeightedScoreFor(Horizon.long));
-  final longRecs = forLong
-      .take(dailyTopN)
-      .map(
-        (s) =>
-            RecommendationData(symbol: s.symbol, score: s.scoreLong.toDouble()),
-      )
-      .toList();
-
-  return (shortRecs: shortRecs, longRecs: longRecs);
 }

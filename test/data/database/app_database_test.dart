@@ -498,57 +498,6 @@ void main() {
       });
     });
 
-    group('Recommendation Operations', () {
-      setUp(() async {
-        await insertTestStocks();
-      });
-
-      test('insert and retrieve recommendations', () async {
-        final now = DateTime.now();
-        final today = DateTime.utc(now.year, now.month, now.day);
-
-        // First create the stocks (foreign key requirement)
-        await db.upsertStocks([
-          StockMasterCompanion.insert(
-            symbol: '2330',
-            name: '台積電',
-            market: 'TWSE',
-          ),
-          StockMasterCompanion.insert(
-            symbol: '2317',
-            name: '鴻海',
-            market: 'TWSE',
-          ),
-        ]);
-
-        await db.insertRecommendations([
-          DailyRecommendationCompanion.insert(
-            date: today,
-            symbol: '2330',
-            score: 50.0,
-            rank: 1,
-            horizon: Horizon.short.name,
-          ),
-          DailyRecommendationCompanion.insert(
-            date: today,
-            symbol: '2317',
-            score: 40.0,
-            rank: 2,
-            horizon: Horizon.short.name,
-          ),
-        ]);
-
-        final recommendations = await db.getRecommendations(
-          today,
-          horizon: Horizon.short,
-        );
-
-        expect(recommendations.length, 2);
-        expect(recommendations.first.symbol, '2330'); // Rank 1
-        expect(recommendations.last.symbol, '2317'); // Rank 2
-      });
-    });
-
     group('Settings Operations', () {
       test('set and get setting', () async {
         await db.setSetting('test_key', 'test_value');

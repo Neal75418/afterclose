@@ -23,8 +23,6 @@ class AnalysisRepository implements IAnalysisRepository {
   final AppClock _clock;
 
   /// Request deduplicators
-  final _todayRecommendationsDedup =
-      RequestDeduplicator<List<DailyRecommendationEntry>>();
   final _analysisDedup = RequestDeduplicator<DailyAnalysisEntry?>();
   final _reasonsDedup = RequestDeduplicator<List<DailyReasonEntry>>();
 
@@ -143,92 +141,6 @@ class AnalysisRepository implements IAnalysisRepository {
   }
 
   // ==================================================
-  // 每日推薦股
-  // ==================================================
-
-  /// 取得今日推薦股
-  ///
-  /// 智慧回退邏輯：依序嘗試最近 3 天的資料
-  /// 這處理以下情況：
-  /// - 週末/假日：顯示最近交易日資料
-  /// - 盤前：資料可能來自前一日
-  /// - API 日期延遲：TWSE/TPEX 資料日期可能落後
-  /// - 日期不同步：不同 API 返回不同日期
-  ///
-  /// 使用 Request Deduplication 防止同時多次查詢；dedup key 含 horizon
-  /// 避免不同 horizon 的查詢結果互相覆蓋。
-  @override
-  Future<List<DailyRecommendationEntry>> getTodayRecommendations({
-    required Horizon horizon,
-  }) async {
-    final cacheKey = 'today_recommendations_${horizon.name}';
-    return _todayRecommendationsDedup.call(cacheKey, () async {
-      final now = _clock.now();
-
-      // 依序嘗試今天、昨天、前天的資料
-      for (var daysAgo = 0; daysAgo <= 2; daysAgo++) {
-        final date = now.subtract(Duration(days: daysAgo));
-        final recs = await getRecommendations(date, horizon: horizon);
-        if (recs.isNotEmpty) {
-          return recs;
-        }
-      }
-
-      // 若最近 3 天都無資料，嘗試前一交易日（處理連續假期）
-      final prevTradingDay = TaiwanCalendar.getPreviousTradingDay(
-        now.subtract(const Duration(days: 3)),
-      );
-      return getRecommendations(prevTradingDay, horizon: horizon);
-    });
-  }
-
-  /// 取得某日期、指定 horizon 的推薦股
-  ///
-  /// Dual-horizon: [horizon] 必填，無預設值。
-  @override
-  Future<List<DailyRecommendationEntry>> getRecommendations(
-    DateTime date, {
-    required Horizon horizon,
-  }) {
-    return _db.getRecommendations(
-      DateContext.normalize(date),
-      horizon: horizon,
-    );
-  }
-
-  /// 儲存每日推薦股（原子性取代指定 horizon 的推薦）
-  ///
-  /// Dual-horizon: [horizon] 決定寫入哪個 pivot。同一日的
-  /// short 與 long 是兩組獨立資料，各自透過此 method 分別寫入。
-  @override
-  Future<void> saveRecommendations(
-    DateTime date,
-    List<RecommendationData> recommendations, {
-    required Horizon horizon,
-  }) async {
-    // 限制為 Top N
-    final limited = recommendations.take(RuleParams.dailyTopN).toList();
-    final normalizedDate = DateContext.normalize(date);
-
-    final entries = <DailyRecommendationCompanion>[];
-    for (var i = 0; i < limited.length; i++) {
-      final rec = limited[i];
-      entries.add(
-        DailyRecommendationCompanion.insert(
-          date: normalizedDate,
-          horizon: horizon.name,
-          rank: i + 1,
-          symbol: rec.symbol,
-          score: rec.score,
-        ),
-      );
-    }
-
-    // 使用原子性取代確保一致性（只影響此 horizon 的 rows）
-    await _db.replaceRecommendations(normalizedDate, horizon, entries);
-  }
-
-  // ==================================================
   // 智慧日期回退
   // ==================================================
 
@@ -282,53 +194,6 @@ class AnalysisRepository implements IAnalysisRepository {
   @override
   Future<int> clearAnalysisForDate(DateTime date) {
     return _db.clearAnalysisForDate(DateContext.normalize(date));
-  }
-
-  // ==================================================
-  // UI 用組合查詢
-  // ==================================================
-
-  /// 取得推薦股及其詳細資訊（批次查詢最佳化）
-  ///
-  /// 使用批次查詢避免 N+1 問題：
-  /// - 1 次查詢取得推薦股
-  /// - 1 次查詢取得所有股票資訊（批次）
-  /// - 1 次查詢取得所有原因（批次）
-  /// 共 3 次查詢，而非 1 + N*2 次
-  @override
-  Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
-    DateTime date, {
-    required Horizon horizon,
-  }) async {
-    final recs = await getRecommendations(date, horizon: horizon);
-    if (recs.isEmpty) return [];
-
-    // 收集所有股票代碼供批次查詢
-    final symbols = recs.map((r) => r.symbol).toList();
-    final normalizedDate = DateContext.normalize(date);
-
-    // 平行執行批次查詢，使用 Record unpacking 確保型別安全
-    final (stocksMap, reasonsMap) = await (
-      _db.getStocksBatch(symbols),
-      _db.getReasonsBatch(symbols, normalizedDate),
-    ).wait;
-
-    // 從批次資料組合結果
-    final output = <RecommendationWithStock>[];
-    for (final rec in recs) {
-      final stock = stocksMap[rec.symbol];
-      if (stock != null) {
-        output.add(
-          RecommendationWithStock(
-            recommendation: rec,
-            stock: stock,
-            reasons: reasonsMap[rec.symbol] ?? [],
-          ),
-        );
-      }
-    }
-
-    return output;
   }
 
   @override

@@ -44,38 +44,6 @@ abstract class IAnalysisRepository {
   );
 
   // ==================================================
-  // 每日推薦
-  // ==================================================
-
-  /// 取得今日推薦清單
-  ///
-  /// Stage 5c dual-horizon: [horizon] 必填，決定回傳哪一組 Top 20。
-  /// 智慧回退邏輯不變：依序嘗試最近 3 天 → 前一交易日。
-  Future<List<DailyRecommendationEntry>> getTodayRecommendations({
-    required Horizon horizon,
-  });
-
-  /// 取得指定日期的推薦清單
-  ///
-  /// Stage 5c dual-horizon: [horizon] 必填，決定查詢哪個 horizon pivot
-  /// 的 rows。同一日的 short 與 long 是兩組獨立資料。
-  Future<List<DailyRecommendationEntry>> getRecommendations(
-    DateTime date, {
-    required Horizon horizon,
-  });
-
-  /// 儲存每日推薦（原子性取代現有推薦）
-  ///
-  /// Dual-horizon: [horizon] 必填，只取代該 horizon 的推薦列，
-  /// 另一個 horizon 的列不受影響。每日最多 2 * [RuleParams.dailyTopN] 列
-  /// （短線 + 長線各一份 Top 20）。
-  Future<void> saveRecommendations(
-    DateTime date,
-    List<RecommendationData> recommendations, {
-    required Horizon horizon,
-  });
-
-  // ==================================================
   // 智慧日期回退
   // ==================================================
 
@@ -113,14 +81,6 @@ abstract class IAnalysisRepository {
   // UI 用組合查詢
   // ==================================================
 
-  /// 取得推薦及股票詳細資訊（已優化為批次查詢）
-  ///
-  /// Stage 5c dual-horizon: [horizon] 必填。
-  Future<List<RecommendationWithStock>> getRecommendationsWithDetails(
-    DateTime date, {
-    required Horizon horizon,
-  });
-
   /// Mode-based 股票分數加總
   ///
   /// 用於 Today screen 3-tab Mode UI。caller 傳入該 mode 內的所有 reason
@@ -156,25 +116,4 @@ class ReasonData {
   final String evidenceJson;
   final int scoreShort;
   final int scoreLong;
-}
-
-/// 儲存推薦的資料類別
-class RecommendationData {
-  const RecommendationData({required this.symbol, required this.score});
-
-  final String symbol;
-  final double score;
-}
-
-/// UI 顯示用的組合資料
-class RecommendationWithStock {
-  const RecommendationWithStock({
-    required this.recommendation,
-    required this.stock,
-    required this.reasons,
-  });
-
-  final DailyRecommendationEntry recommendation;
-  final StockMasterEntry stock;
-  final List<DailyReasonEntry> reasons;
 }
