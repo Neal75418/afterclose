@@ -355,6 +355,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             Expanded(
               child: Text(
                 _coverageLabel(state),
+                textAlign: TextAlign.center,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
