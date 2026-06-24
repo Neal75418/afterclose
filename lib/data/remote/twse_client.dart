@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:meta/meta.dart';
 
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/api_endpoints.dart';
@@ -66,11 +67,13 @@ class TwseClient {
         );
       }
 
-      final data = MarketClientMixin.decodeResponseData(
-        response.data,
-        _tag,
-        '全市場價格',
-      );
+      // TWSE 2026-06 起把 STOCK_DAY_ALL 的回應從 JSON 改成 CSV（同一端點、僅
+      // 格式變更）。偵測到 CSV 就就地轉成與 JSON 同 shape 的 Map，不動共用的
+      // decodeResponseData（零波及其他端點），且 TWSE 哪天又改回 JSON 也自動相容。
+      final raw = response.data;
+      final data = (raw is String && raw.trimLeft().startsWith('日期'))
+          ? parseDailyPriceCsvToMap(raw)
+          : MarketClientMixin.decodeResponseData(raw, _tag, '全市場價格');
       if (data == null) return [];
 
       final rows = MarketClientMixin.validateTwseStat(data, _tag, '全市場價格');
@@ -118,6 +121,48 @@ class TwseClient {
         );
       },
     );
+  }
+
+  /// 將 STOCK_DAY_ALL 的 CSV 回應轉成與 JSON 路徑相同 shape 的 Map
+  /// （`{stat, date, data}`），讓下游 [MarketClientMixin.validateTwseStat] 與
+  /// [_parseDailyPriceRow] 完全沿用、無需改動。
+  ///
+  /// 背景：TWSE 於 2026-06 把此端點回應從 JSON 改為 CSV（同端點、僅格式變更）。
+  ///
+  /// CSV 欄位：`[日期(民國), 證券代號, 證券名稱, 成交股數, 成交金額, 開, 高, 低,
+  /// 收, 漲跌價差, 成交筆數]`。剝掉首欄「日期」後，剩餘 10 欄即與 JSON `data`
+  /// row 同佈局（`[代號, 名稱, 成交股數, …]`）。日期改放頂層 `date`（轉 8 碼西元
+  /// 字串供 [TwParseUtils.parseAdDate] 沿用）。無有效資料列時回傳 null。
+  @visibleForTesting
+  static Map<String, dynamic>? parseDailyPriceCsvToMap(String csv) {
+    String? adDate;
+    final dataRows = <List<String>>[];
+    for (final line in csv.split(RegExp(r'\r?\n'))) {
+      final trimmed = line.trim();
+      // 跳過空行與 header（header 以未加引號的「日期」開頭）
+      if (trimmed.isEmpty || trimmed.startsWith('日期')) continue;
+      final cells = _splitQuotedCsvLine(trimmed);
+      if (cells.length < 11) continue;
+      final rocDate = TwParseUtils.parseCompactRocDate(cells[0]);
+      if (rocDate == null) continue;
+      // 整批同一交易日：取第一筆有效日期，轉 8 碼西元字串
+      adDate ??=
+          '${rocDate.year}'
+          '${rocDate.month.toString().padLeft(2, '0')}'
+          '${rocDate.day.toString().padLeft(2, '0')}';
+      dataRows.add(cells.sublist(1)); // 剝掉日期欄 → 同 JSON row 佈局
+    }
+    if (adDate == null || dataRows.isEmpty) return null;
+    return {'stat': 'OK', 'date': adDate, 'data': dataRows};
+  }
+
+  /// 拆解 TWSE CSV 資料行（每欄以雙引號包覆，如 `"1150624","2330",…`）。
+  /// 去除外層引號後以 `","` 切分，可正確處理欄位內含逗號（如千分位數字）。
+  static List<String> _splitQuotedCsvLine(String line) {
+    var s = line;
+    if (s.startsWith('"')) s = s.substring(1);
+    if (s.endsWith('"')) s = s.substring(0, s.length - 1);
+    return s.split('","');
   }
 
   /// 取得所有股票的法人買賣超資料
