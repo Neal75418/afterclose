@@ -495,11 +495,11 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
       result[market] = InstitutionalStreak(
         foreignStreak: _alignStreak(streak.foreignStreak, inst.foreignNet),
         trustStreak: _alignStreak(streak.trustStreak, inst.trustNet),
-        // 自營 streak 改用 dealer_self_net（自行買賣）計算，但 inst.dealerNet 是
-        // 含避險的「合計」；兩者因避險部位可能反號，用合計對齊會誤把真實自行買賣
-        // streak 重設掉。故自營 streak 直接採信 daily_institutional 來源、不做跨源
-        // 對齊（外資/投信維持對齊，其來源與對齊基準同口徑）。
-        dealerStreak: streak.dealerStreak,
+        // 自營 streak 由 dealer_self_net（自行買賣）算、顯示金額為含避險「合計」
+        // (inst.dealerNet)。兩者因避險部位可能反號，若不對齊，badge 會出現「連N日
+        // 買超」卻顯示負值的矛盾（散戶誤讀）。故與外資/投信一致對齊：方向不符即
+        // 重置 ±1（|streak|<2 → badge 隱藏），只在 streak 與顯示金額同向時才呈現。
+        dealerStreak: _alignStreak(streak.dealerStreak, inst.dealerNet),
       );
     }
     return result;

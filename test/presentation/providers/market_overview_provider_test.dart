@@ -561,12 +561,13 @@ void main() {
         );
       });
 
-      test('含避險合計反號不重設自行買賣 streak（自營不跨源對齊）', () async {
+      test('含避險合計反號 → 對齊重置自行買賣 streak（隱藏矛盾 badge）', () async {
         setupEmptyDefaults();
         // 自行買賣連 3 日買超 → self streak +3
         stubInstDaily([5.0, 4.0, 3.0, -2.0]);
-        // 但今日「含避險合計」為負（避險反向）：舊碼用合計對齊會把 +3 判為方向
-        // 矛盾、重設成 -1（badge 隱藏）；修後自營不跨源對齊 → 保留 +3
+        // 但今日「含避險合計」為負（避險反向）：與 self streak 方向矛盾。
+        // 與外資/投信一致對齊 → 重置 -1（|−1|<2 → badge 隱藏），避免「連3日買超」
+        // 配負值顯示金額的散戶誤讀。
         when(
           () => mockTwse.getInstitutionalAmounts(date: any(named: 'date')),
         ).thenAnswer(
@@ -584,8 +585,35 @@ void main() {
         final state = container.read(marketOverviewProvider);
         expect(
           state.institutionalStreakByMarket['TWSE']?.dealerStreak,
+          -1,
+          reason: '自營 streak 與含避險合計反號 → 對齊重置 -1，badge 隱藏',
+        );
+      });
+
+      test('含避險合計同號 → 保留自行買賣 streak（一致則照常顯示）', () async {
+        setupEmptyDefaults();
+        // 自行買賣連 3 日買超 → self streak +3
+        stubInstDaily([5.0, 4.0, 3.0, -2.0]);
+        // 今日「含避險合計」同為正：方向一致 → 保留 +3，badge 照常顯示。
+        when(
+          () => mockTwse.getInstitutionalAmounts(date: any(named: 'date')),
+        ).thenAnswer(
+          (_) async => TwseInstitutionalAmounts(
+            date: testDate,
+            foreignNet: 0,
+            trustNet: 0,
+            dealerNet: 9999,
+          ),
+        );
+
+        final notifier = container.read(marketOverviewProvider.notifier);
+        await notifier.loadData();
+
+        final state = container.read(marketOverviewProvider);
+        expect(
+          state.institutionalStreakByMarket['TWSE']?.dealerStreak,
           3,
-          reason: '自營 streak 採信 dealerSelfNet（+3），不因含避險合計反號被重設隱藏',
+          reason: '自營 streak 與含避險合計同號 → 保留 +3，badge 照常顯示',
         );
       });
 
