@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/constants/risk_warnings.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
