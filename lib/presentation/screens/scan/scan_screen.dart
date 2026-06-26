@@ -39,6 +39,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   final _scrollController = ScrollController();
   bool _isExporting = false;
 
+  /// 觀察區（接近觸發）section 是否展開（預設收摺，早期預警但不佔版面）
+  bool _observationExpanded = false;
+
   @override
   void initState() {
     super.initState();
@@ -442,15 +445,20 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final showLimitMarkers = ref.watch(
       settingsProvider.select((s) => s.limitAlerts),
     );
+    // 觀察區只在訊號全部載入後（!hasMore）才接在清單底部。
+    final hasObservation = !state.hasMore && state.observationCount > 0;
+    final footerCount = state.hasMore || hasObservation ? 1 : 0;
     return ListView.builder(
       controller: _scrollController,
       cacheExtent: 500,
       addAutomaticKeepAlives: false,
-      itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
+      itemCount: state.stocks.length + footerCount,
       itemBuilder: (context, index) {
-        // 在底部顯示載入指示器
+        // 底部：載入指示器（還有訊號要載）或觀察區（訊號載完）
         if (index == state.stocks.length) {
-          return _buildLoadingIndicator(state);
+          return state.hasMore
+              ? _buildLoadingIndicator(state)
+              : _buildObservationSection(context, state, showLimitMarkers);
         }
         return _buildStockCard(
           context,
@@ -460,6 +468,71 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           isGrid: false,
         );
       },
+    );
+  }
+
+  /// 觀察區（接近觸發）：可摺疊 section，接在訊號清單底部，預設收摺。
+  ///
+  /// 觀察區 = 分數落在 [observation, signal) 的「快觸發但未成立」股，給早期預警；
+  /// 與主清單（成立訊號）清楚分層、不混淆。
+  Widget _buildObservationSection(
+    BuildContext context,
+    ScanState state,
+    bool showLimitMarkers,
+  ) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 1),
+        InkWell(
+          onTap: () =>
+              setState(() => _observationExpanded = !_observationExpanded),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: context.responsiveHorizontalPadding,
+              vertical: 12,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _observationExpanded ? Icons.expand_less : Icons.expand_more,
+                  size: 20,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'scan.observationZone'.tr(
+                    namedArgs: {'count': state.observationCount.toString()},
+                  ),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'scan.observationHint'.tr(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_observationExpanded)
+          for (var i = 0; i < state.observations.length; i++)
+            _buildStockCard(
+              context,
+              state.observations[i],
+              i,
+              showLimitMarkers,
+              isGrid: false,
+            ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 

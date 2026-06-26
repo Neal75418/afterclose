@@ -240,6 +240,8 @@
     "more": "More",
     "stockCount": "{count} stocks",
     "stockCountLoaded": "{loaded}/{total} stocks loaded",
+    "observationZone": "Near-trigger ({count})",
+    "observationHint": "approaching, not yet a signal",
     "coverageFunnel": "{universe} tradeable → {signals} with signals",
     "coverageFunnelLoaded": "{universe} tradeable → {signals} with signals · {loaded} loaded",
     "view": "View",

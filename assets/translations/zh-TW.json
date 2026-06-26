@@ -240,6 +240,8 @@
     "more": "更多",
     "stockCount": "共 {count} 檔",
     "stockCountLoaded": "已載入 {loaded}/{total} 檔",
+    "observationZone": "觀察區 ({count})",
+    "observationHint": "接近觸發、訊號未成立",
     "coverageFunnel": "{universe} 可交易 → {signals} 有訊號",
     "coverageFunnelLoaded": "{universe} 可交易 → {signals} 有訊號 · 已載入 {loaded}",
     "view": "查看",

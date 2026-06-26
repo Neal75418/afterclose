@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/pagination.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -43,6 +44,8 @@ class ScanState {
     this.totalCount = 0,
     this.totalAnalyzedCount = 0,
     this.tradeableUniverseCount = 0,
+    this.observations = const [],
+    this.observationCount = 0,
     this.error,
   });
 
@@ -82,6 +85,12 @@ class ScanState {
   /// 讓使用者知道清單是訊號子集、非全市場。
   final int tradeableUniverseCount;
 
+  /// 「觀察區」（接近觸發、score 落在 [observation, signal) 區間）的前 N 檔。
+  final List<ScanStockItem> observations;
+
+  /// 觀察區總檔數（未截斷），供 section 標題顯示「觀察區 (N)」。
+  final int observationCount;
+
   final String? error;
 
   ScanState copyWith({
@@ -99,6 +108,8 @@ class ScanState {
     int? totalCount,
     int? totalAnalyzedCount,
     int? tradeableUniverseCount,
+    List<ScanStockItem>? observations,
+    int? observationCount,
     Object? error = _sentinel,
   }) {
     return ScanState(
@@ -118,6 +129,8 @@ class ScanState {
       totalAnalyzedCount: totalAnalyzedCount ?? this.totalAnalyzedCount,
       tradeableUniverseCount:
           tradeableUniverseCount ?? this.tradeableUniverseCount,
+      observations: observations ?? this.observations,
+      observationCount: observationCount ?? this.observationCount,
       error: error == _sentinel ? this.error : error as String?,
     );
   }
@@ -138,6 +151,7 @@ class ScanNotifier extends Notifier<ScanState> {
     // 重設所有可變快取，避免 Riverpod rebuild 時殘留舊資料
     // （_staticCachedIndustries 為 static，跨 instance 保留）
     _allAnalyses = [];
+    _observationAnalyses = [];
     _filteredAnalyses = [];
     _allReasons = {};
     _watchlistSymbols = {};
@@ -194,6 +208,7 @@ class ScanNotifier extends Notifier<ScanState> {
 
   // 分頁快取資料（於 build() 中重設）
   List<DailyAnalysisEntry> _allAnalyses = [];
+  List<DailyAnalysisEntry> _observationAnalyses = [];
   List<DailyAnalysisEntry> _filteredAnalyses = [];
   Map<String, List<DailyReasonEntry>> _allReasons = {};
   Set<String> _watchlistSymbols = {};
@@ -228,8 +243,17 @@ class ScanNotifier extends Notifier<ScanState> {
       // 更新 DateContext 以反映實際資料日期
       final dateCtx = DateContext.forDate(targetDate);
       _dateCtx = dateCtx;
-      // 掃描頁固定長線 → 以 scoreLong > 0 過濾 universe。
-      _allAnalyses = analyses.where((a) => a.scoreLong > 0).toList();
+      // 掃描頁固定長線。daily_analysis 持久化門檻已降到 observationScoreThreshold
+      // 供「觀察區」用，故 scoreLong>0 不再等於「訊號」。依持久化分層：
+      // - 主清單（訊號）：scoreLong>0 且 max(short,long) ≥ minScoreThreshold
+      //   （= 門檻調整前的 universe，主清單行為不變）
+      // - 觀察區（接近觸發）：scoreLong>0 且 max(short,long) 落在 [observation, signal)
+      _allAnalyses = analyses
+          .where((a) => a.scoreLong > 0 && isScanSignal(a))
+          .toList();
+      _observationAnalyses = analyses
+          .where((a) => a.scoreLong > 0 && isScanObservation(a))
+          .toList();
       _allReasons = {};
       // Lazy load：只在目前 filter 真正需要時才載入（切換 filter 時按需載入）
       if (_allAnalyses.isNotEmpty && state.filter != ScanFilter.all) {
@@ -270,6 +294,16 @@ class ScanNotifier extends Notifier<ScanState> {
       // 套用現有篩選條件（保留 filter + industry）
       _applyGlobalFilter(state.filter);
 
+      // 取得自選股清單供比對（主清單 + 觀察區共用）
+      final watchlist = await _db.getWatchlist();
+      _watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
+
+      // 觀察區（接近觸發）：取前 N 檔轉 item，不分頁、不受主清單 filter 影響。
+      final observationItems = await _loadItemsForAnalyses(
+        _observationAnalyses.take(kPageSize).toList(),
+      );
+      if (!_active) return;
+
       if (_filteredAnalyses.isEmpty) {
         state = state.copyWith(
           stocks: [],
@@ -280,13 +314,11 @@ class ScanNotifier extends Notifier<ScanState> {
           totalCount: 0,
           totalAnalyzedCount: _allAnalyses.length,
           tradeableUniverseCount: tradeableUniverse,
+          observations: observationItems,
+          observationCount: _observationAnalyses.length,
         );
         return;
       }
-
-      // 取得自選股清單供比對
-      final watchlist = await _db.getWatchlist();
-      _watchlistSymbols = watchlist.map((w) => w.symbol).toSet();
 
       // 載入第一頁
       final firstPageItems = await _loadItemsForAnalyses(
@@ -303,6 +335,8 @@ class ScanNotifier extends Notifier<ScanState> {
         totalCount: _filteredAnalyses.length,
         totalAnalyzedCount: _allAnalyses.length,
         tradeableUniverseCount: tradeableUniverse,
+        observations: observationItems,
+        observationCount: _observationAnalyses.length,
       );
     } catch (e, s) {
       state = state.copyWith(isLoading: false, error: ErrorDisplay.message(e));
@@ -527,3 +561,16 @@ class ScanNotifier extends Notifier<ScanState> {
 final scanProvider = NotifierProvider<ScanNotifier, ScanState>(
   ScanNotifier.new,
 );
+
+/// 成立訊號層：任一 horizon ≥ [RuleParams.minScoreThreshold]（與持久化口徑一致）。
+@visibleForTesting
+bool isScanSignal(DailyAnalysisEntry a) =>
+    a.scoreShort >= RuleParams.minScoreThreshold ||
+    a.scoreLong >= RuleParams.minScoreThreshold;
+
+/// 觀察層（接近觸發）：未達訊號、但任一 horizon ≥ [RuleParams.observationScoreThreshold]。
+@visibleForTesting
+bool isScanObservation(DailyAnalysisEntry a) =>
+    !isScanSignal(a) &&
+    (a.scoreShort >= RuleParams.observationScoreThreshold ||
+        a.scoreLong >= RuleParams.observationScoreThreshold);

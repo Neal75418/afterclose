@@ -523,4 +523,28 @@ void main() {
       expect(state.industryFilter, '金融業');
     });
   });
+
+  group('scan tiering — isScanSignal / isScanObservation', () {
+    DailyAnalysisEntry a(double s, double l) => DailyAnalysisEntry(
+      symbol: 'X',
+      date: DateTime.utc(2026, 2, 13),
+      trendState: 'UP',
+      reversalState: 'NONE',
+      scoreShort: s,
+      scoreLong: l,
+      computedAt: DateTime.utc(2026, 2, 13),
+    );
+
+    test('signal：任一 horizon ≥ minScoreThreshold(12)', () {
+      expect(isScanSignal(a(12, 3)), isTrue);
+      expect(isScanSignal(a(3, 15)), isTrue);
+      expect(isScanSignal(a(11, 8)), isFalse);
+    });
+
+    test('observation：未達訊號、但任一 horizon ≥ observationScoreThreshold(8)', () {
+      expect(isScanObservation(a(11, 8)), isTrue); // 8–11 接近觸發
+      expect(isScanObservation(a(7, 7)), isFalse); // < 8 雜訊
+      expect(isScanObservation(a(12, 3)), isFalse); // 已是訊號、非觀察
+    });
+  });
 }
