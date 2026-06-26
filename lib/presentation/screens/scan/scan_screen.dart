@@ -475,15 +475,18 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
   }
 
-  /// 觀察區（接近觸發）：可摺疊 section，接在訊號清單底部，預設收摺。
+  /// 觀察區（接近觸發）：可摺疊 section，放清單頂部，預設收摺。
   ///
   /// 觀察區 = 分數落在 [observation, signal) 的「快觸發但未成立」股，給早期預警；
-  /// 與主清單（成立訊號）清楚分層、不混淆。
+  /// 與主清單（成立訊號）清楚分層、不混淆。展開時依 [isGrid] 排成格狀（桌面）
+  /// 或直列（手機）。
   Widget _buildObservationSection(
     BuildContext context,
     ScanState state,
-    bool showLimitMarkers,
-  ) {
+    bool showLimitMarkers, {
+    bool isGrid = false,
+    int columns = 1,
+  }) {
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,14 +530,40 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           ),
         ),
         if (_observationExpanded) ...[
-          for (var i = 0; i < state.observations.length; i++)
-            _buildStockCard(
-              context,
-              state.observations[i],
-              i,
-              showLimitMarkers,
-              isGrid: false,
-            ),
+          if (isGrid)
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: context.responsiveHorizontalPadding,
+                vertical: context.responsiveCardSpacing,
+              ),
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: context.responsiveCardSpacing,
+                  mainAxisSpacing: context.responsiveCardSpacing,
+                  mainAxisExtent: DesignTokens.stockCardHeight,
+                ),
+                itemCount: state.observations.length,
+                itemBuilder: (context, i) => _buildStockCard(
+                  context,
+                  state.observations[i],
+                  i,
+                  showLimitMarkers,
+                  isGrid: true,
+                ),
+              ),
+            )
+          else
+            for (var i = 0; i < state.observations.length; i++)
+              _buildStockCard(
+                context,
+                state.observations[i],
+                i,
+                showLimitMarkers,
+                isGrid: false,
+              ),
           const Divider(height: 1), // 觀察股結束、以下為訊號清單
         ],
         const SizedBox(height: 8),
@@ -550,30 +579,45 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final padding = context.responsiveHorizontalPadding;
     final spacing = context.responsiveCardSpacing;
 
-    return GridView.builder(
+    return CustomScrollView(
       controller: _scrollController,
       cacheExtent: 500,
-      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: spacing,
-        mainAxisSpacing: spacing,
-        mainAxisExtent: DesignTokens.stockCardHeight,
-      ),
-      itemCount: state.stocks.length + (state.hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        // 在底部顯示載入指示器
-        if (index == state.stocks.length) {
-          return _buildLoadingIndicator(state);
-        }
-        return _buildStockCard(
-          context,
-          state.stocks[index],
-          index,
-          showLimitMarkers,
-          isGrid: true,
-        );
-      },
+      slivers: [
+        // 觀察區（接近觸發）放最上面、橫跨整列（與手機版一致：頂部才看得到）
+        if (state.observationCount > 0)
+          SliverToBoxAdapter(
+            child: _buildObservationSection(
+              context,
+              state,
+              showLimitMarkers,
+              isGrid: true,
+              columns: columns,
+            ),
+          ),
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
+          sliver: SliverGrid(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              mainAxisExtent: DesignTokens.stockCardHeight,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _buildStockCard(
+                context,
+                state.stocks[index],
+                index,
+                showLimitMarkers,
+                isGrid: true,
+              ),
+              childCount: state.stocks.length,
+            ),
+          ),
+        ),
+        if (state.hasMore)
+          SliverToBoxAdapter(child: _buildLoadingIndicator(state)),
+      ],
     );
   }
 
