@@ -445,25 +445,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     final showLimitMarkers = ref.watch(
       settingsProvider.select((s) => s.limitAlerts),
     );
-    // 觀察區只在訊號全部載入後（!hasMore）才接在清單底部。
-    final hasObservation = !state.hasMore && state.observationCount > 0;
-    final footerCount = state.hasMore || hasObservation ? 1 : 0;
+    // 觀察區放清單「最上面」（收摺 bar）。放底部會被一長串訊號 + 分頁埋住、
+    // 捲不到；放頂部立刻看得到、展開才列出接近觸發股。
+    final hasObservation = state.observationCount > 0;
+    final headerCount = hasObservation ? 1 : 0;
     return ListView.builder(
       controller: _scrollController,
       cacheExtent: 500,
       addAutomaticKeepAlives: false,
-      itemCount: state.stocks.length + footerCount,
+      itemCount: headerCount + state.stocks.length + (state.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        // 底部：載入指示器（還有訊號要載）或觀察區（訊號載完）
-        if (index == state.stocks.length) {
-          return state.hasMore
-              ? _buildLoadingIndicator(state)
-              : _buildObservationSection(context, state, showLimitMarkers);
+        // 頂部：觀察區（接近觸發）收摺 bar
+        if (hasObservation && index == 0) {
+          return _buildObservationSection(context, state, showLimitMarkers);
+        }
+        final stockIndex = index - headerCount;
+        // 底部：載入更多指示器
+        if (stockIndex == state.stocks.length) {
+          return _buildLoadingIndicator(state);
         }
         return _buildStockCard(
           context,
-          state.stocks[index],
-          index,
+          state.stocks[stockIndex],
+          stockIndex,
           showLimitMarkers,
           isGrid: false,
         );
@@ -522,7 +526,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             ),
           ),
         ),
-        if (_observationExpanded)
+        if (_observationExpanded) ...[
           for (var i = 0; i < state.observations.length; i++)
             _buildStockCard(
               context,
@@ -531,6 +535,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               showLimitMarkers,
               isGrid: false,
             ),
+          const Divider(height: 1), // 觀察股結束、以下為訊號清單
+        ],
         const SizedBox(height: 8),
       ],
     );
