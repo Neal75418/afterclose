@@ -514,11 +514,12 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
     if (reasons.isEmpty) continue;
 
-    // 7. 計算雙 horizon 分數，任一達到門檻就保留
+    // 7. 計算雙 horizon 分數。持久化門檻 = observationScoreThreshold（8）：
+    //    任一 horizon ≥ 8 即保留；掃描頁再依分數分層（≥ minScoreThreshold 12
+    //    = 成立訊號、8–11 = 「觀察區」接近觸發的早期預警）。低於 8 為雜訊、過濾。
     //
-    //    設計決議（設計 §9）：`minScoreThreshold` 兩 horizon 共用，
-    //    不做 per-horizon 拆分（YAGNI）。「任一通過」的語意能涵蓋
-    //    短線強勢 + 長線弱勢 或反之的候選。
+    //    設計決議（設計 §9）：門檻兩 horizon 共用、不做 per-horizon 拆分（YAGNI）。
+    //    「任一通過」的語意能涵蓋短線強勢 + 長線弱勢 或反之的候選。
 
     // H-1 fix：mutex 過濾用 horizon-aware calibrated lookup（caller 顯式
     // 控制 — calculateScore 是 pure arithmetic contract，不做 mutex）。
@@ -546,8 +547,8 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       calibratedScores: input.calibratedScores,
     );
 
-    if (scoreShort < RuleParams.minScoreThreshold &&
-        scoreLong < RuleParams.minScoreThreshold) {
+    if (scoreShort < RuleParams.observationScoreThreshold &&
+        scoreLong < RuleParams.observationScoreThreshold) {
       skippedLowScore++;
       continue;
     }

@@ -177,9 +177,10 @@ class ScoringService {
         calibratedScores: calibratedScores,
       );
 
-      // 任一 horizon 達標就保留（與 isolate 路徑對齊）
-      if (scoreShort < RuleParams.minScoreThreshold &&
-          scoreLong < RuleParams.minScoreThreshold) {
+      // 持久化門檻 = observationScoreThreshold（8）：任一 horizon ≥ 8 即保留，
+      // 掃描頁再分層（≥12 成立訊號 / 8–11 觀察區）。與 isolate 路徑對齊。
+      if (scoreShort < RuleParams.observationScoreThreshold &&
+          scoreLong < RuleParams.observationScoreThreshold) {
         skippedLowScore++;
         continue;
       }

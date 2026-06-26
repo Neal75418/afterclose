@@ -78,6 +78,18 @@ void main() {
         ruleScoreLong: const Value(25.0),
       ),
     ]);
+
+    // signal-tier daily_analysis：校準只學 ≥ minScoreThreshold 的股；少了這列，
+    // 其 reason 會被新的 signal-tier 過濾擋掉、不進校準樣本。
+    await db.insertAnalysis(
+      DailyAnalysisCompanion.insert(
+        symbol: symbol,
+        date: entryDate,
+        trendState: 'UP',
+        scoreShort: const Value(99.0),
+        scoreLong: const Value(99.0),
+      ),
+    );
   }
 
   Future<RuleAccuracyEntry?> fetchRuleAccuracy(
@@ -401,6 +413,15 @@ void main() {
           evidenceJson: '{}',
         ),
       ]);
+      await db.insertAnalysis(
+        DailyAnalysisCompanion.insert(
+          symbol: '2330',
+          date: entry,
+          trendState: 'UP',
+          scoreShort: const Value(99.0),
+          scoreLong: const Value(99.0),
+        ),
+      );
 
       await service.updateRuleAccuracyStats();
 

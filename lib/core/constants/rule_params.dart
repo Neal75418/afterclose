@@ -183,6 +183,11 @@ abstract final class RuleParams {
   /// 的股票仍被正確過濾掉。
   static const int minScoreThreshold = 12;
 
+  /// 觀察門檻：分數 ≥ 此值但 < [minScoreThreshold] = 「接近觸發」，進掃描頁
+  /// 「觀察區」（早期預警：盯著看但訊號尚未成立）。8 ≈ 走到訊號門檻 12 的
+  /// 2/3，算真的在接近；低於此值僅雜訊、不持久化。任一 horizon ≥ 此值即保留。
+  static const int observationScoreThreshold = 8;
+
   // ==================================================
   // 流動性加權排序
   // ==================================================

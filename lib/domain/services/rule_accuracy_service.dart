@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import 'package:afterclose/core/constants/calibration_thresholds.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
@@ -62,9 +63,13 @@ class RuleAccuracyService {
   /// 管線變成「強者恆強」的同義複製。
   ///
   /// 新實作直接掃 `daily_reason` — 每個觸發事件都計入，不再受 rank 偏見影響。
-  /// 因為 `scoring_service` 會把所有 score ≥ `minScoreThreshold` 股票的 triggered
-  /// reasons 寫進 `daily_reason`，這邊的 universe 是「全部被分析到的股票」而非
-  /// 「Top 20 推薦」，進一步消除 survivor bias。
+  /// universe 是「全部成立訊號的股票」而非「Top 20 推薦」，進一步消除 survivor bias。
+  ///
+  /// **註（觀察區）**：`daily_reason` 的持久化門檻已降到 `observationScoreThreshold`
+  /// （8，供掃描頁「觀察區」用），但校準須維持「只學成立訊號」。故
+  /// [_computeUnbiasedRuleStats] 顯式過濾到 signal-tier（任一 horizon ≥
+  /// `minScoreThreshold`）的 (symbol, date)，使校準樣本與門檻調整前一致、不被
+  /// 觀察層（8–11）污染。
   ///
   /// ## Algorithm
   ///
@@ -93,7 +98,31 @@ class RuleAccuracyService {
   ///   的全表掃緊得多。post-launch 累積數年資料時仍應再評估 chunked aggregation。
   /// - 嚴格 date match（無 ±1 日容忍）：trading calendar 精確計算，不需 legacy mitigation。
   Future<void> _computeUnbiasedRuleStats() async {
-    final reasons = await _db.select(_db.dailyReason).get();
+    // 只取「成立訊號」(任一 horizon ≥ minScoreThreshold) 的 (symbol, date)：
+    // daily_reason 持久化門檻已降到 observationScoreThreshold（8）供掃描頁觀察區，
+    // 但校準須維持只學成立訊號，過濾掉觀察層（8–11）的 reason，使樣本與門檻調整前一致。
+    final signalRows =
+        await (_db.select(_db.dailyAnalysis)..where(
+              (t) =>
+                  t.scoreShort.isBiggerOrEqualValue(
+                    RuleParams.minScoreThreshold.toDouble(),
+                  ) |
+                  t.scoreLong.isBiggerOrEqualValue(
+                    RuleParams.minScoreThreshold.toDouble(),
+                  ),
+            ))
+            .get();
+    final signalKeys = <String>{
+      for (final a in signalRows)
+        '${a.symbol}|${DateContext.normalize(a.date).millisecondsSinceEpoch}',
+    };
+    final reasons = (await _db.select(_db.dailyReason).get())
+        .where(
+          (r) => signalKeys.contains(
+            '${r.symbol}|${DateContext.normalize(r.date).millisecondsSinceEpoch}',
+          ),
+        )
+        .toList();
 
     // Empty guard: 若沒資料就不動 rule_accuracy，保留既有 valid stats
     if (reasons.isEmpty) {

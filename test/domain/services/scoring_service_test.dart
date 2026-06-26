@@ -604,18 +604,37 @@ void main() {
       );
     }
 
-    test('skip stock when score is below minScoreThreshold', () async {
-      final prices = validPrices('LOW');
-      setupFullPipeline(returnScore: RuleParams.minScoreThreshold - 1);
+    test('skip stock when score is below observationScoreThreshold', () async {
+      final prices = validPrices('NOISE');
+      setupFullPipeline(returnScore: RuleParams.observationScoreThreshold - 1);
 
       final result = await scoringService.scoreStocks(
-        candidates: ['LOW'],
+        candidates: ['NOISE'],
         date: DateTime(2025, 6, 15),
-        batchData: ScoringBatchData(pricesMap: {'LOW': prices}, newsMap: {}),
+        batchData: ScoringBatchData(pricesMap: {'NOISE': prices}, newsMap: {}),
       );
 
+      // 低於觀察門檻 = 雜訊，不持久化
       expect(result, isEmpty);
     });
+
+    test(
+      'keep stock as observation when score in [observation, signal)',
+      () async {
+        final prices = validPrices('OBS');
+        setupFullPipeline(returnScore: RuleParams.observationScoreThreshold);
+
+        final result = await scoringService.scoreStocks(
+          candidates: ['OBS'],
+          date: DateTime(2025, 6, 15),
+          batchData: ScoringBatchData(pricesMap: {'OBS': prices}, newsMap: {}),
+        );
+
+        // 8 ≥ 觀察門檻但 < 訊號門檻 12 → 保留為「觀察區」（接近觸發）
+        expect(result, isNotEmpty);
+        expect(result.first.scoreShort, RuleParams.observationScoreThreshold);
+      },
+    );
 
     test('include stock when score equals minScoreThreshold', () async {
       final prices = validPrices('BOUNDARY');

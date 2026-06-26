@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/reason_type.dart';
 import 'package:afterclose/core/constants/risk_warnings.dart';
+import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/constants/scoring_mode.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -123,6 +124,17 @@ double? computeRet60dForHistory(List<DailyPriceEntry>? history) {
   if (latest == null || old == null || old == 0) return null;
   return (latest - old) / old * 100;
 }
+
+/// 是否為「成立訊號」層（任一 horizon ≥ [RuleParams.minScoreThreshold]）。
+///
+/// daily_analysis 持久化門檻已降到 observationScoreThreshold（8）以供掃描頁
+/// 「觀察區」使用；mode tab 只收成立訊號（≥12），用此 predicate 還原該語意、
+/// 把觀察層（8–11）擋在三個訊號 tab 之外。analysis 為 null（無評分）視為不合格。
+@visibleForTesting
+bool isSignalTier(DailyAnalysisEntry? analysis) =>
+    analysis != null &&
+    (analysis.scoreShort >= RuleParams.minScoreThreshold ||
+        analysis.scoreLong >= RuleParams.minScoreThreshold);
 
 /// 判斷某檔股票是否「夠資格」指派到 [mode]。
 ///
@@ -289,6 +301,7 @@ final _modeAssignmentsProvider =
       var droppedNoEligible = 0;
       var droppedBelowFloor = 0;
       var droppedEtf = 0;
+      var droppedObservation = 0;
       for (final entry in stockModeScores.entries) {
         final symbol = entry.key;
         final modes = entry.value;
@@ -298,6 +311,14 @@ final _modeAssignmentsProvider =
         // user 決定 3 個 tab 全濾。stock_master.industry == 'ETF' 是乾淨標記。
         if (data.stocks[symbol]?.industry == 'ETF') {
           droppedEtf++;
+          continue;
+        }
+
+        // 觀察層（8–11 分）不路由進「訊號」mode tab。daily_analysis 持久化門檻已
+        // 降到 observationScoreThreshold（8）供掃描頁「觀察區」使用，此處還原 mode
+        // tab 的「只收成立訊號」語意：任一 horizon ≥ minScoreThreshold 才路由。
+        if (!isSignalTier(data.analyses[symbol])) {
+          droppedObservation++;
           continue;
         }
 
@@ -352,7 +373,8 @@ final _modeAssignmentsProvider =
             'C=${assignmentMap[ScoringMode.weaknessObserve]!.length} '
             'droppedNoEligible=$droppedNoEligible '
             'droppedBelowFloor=$droppedBelowFloor '
-            'droppedEtf=$droppedEtf',
+            'droppedEtf=$droppedEtf '
+            'droppedObservation=$droppedObservation',
       );
 
       // STEP 6 — Sort each mode

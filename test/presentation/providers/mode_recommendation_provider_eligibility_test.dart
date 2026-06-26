@@ -499,6 +499,34 @@ void main() {
       expect(computeRet60dForHistory(h), closeTo(10.0, 0.001));
     });
   });
+
+  group('isSignalTier — 觀察層擋在 mode tab 之外', () {
+    DailyAnalysisEntry analysis({
+      double scoreShort = 0,
+      double scoreLong = 0,
+    }) => DailyAnalysisEntry(
+      symbol: 'X',
+      date: DateTime(2025, 1, 15),
+      trendState: 'UP',
+      reversalState: 'NONE',
+      scoreShort: scoreShort,
+      scoreLong: scoreLong,
+      computedAt: DateTime(2025, 1, 15),
+    );
+
+    test('null（無評分）→ false', () {
+      expect(isSignalTier(null), isFalse);
+    });
+
+    test('雙 horizon < 12（觀察層 8–11）→ false', () {
+      expect(isSignalTier(analysis(scoreShort: 11, scoreLong: 8)), isFalse);
+    });
+
+    test('任一 horizon ≥ 12（成立訊號）→ true', () {
+      expect(isSignalTier(analysis(scoreShort: 12, scoreLong: 3)), isTrue);
+      expect(isSignalTier(analysis(scoreShort: 5, scoreLong: 20)), isTrue);
+    });
+  });
 }
 
 /// 建立 ModeStockScore 的 helper（test 內最常用 short 分數）
