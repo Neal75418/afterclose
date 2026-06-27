@@ -417,11 +417,29 @@ class RssNewsItem {
 
   /// 從標題擷取可能的股票代碼
   ///
-  /// 支援 4-6 位數代碼：一般股票（4 位）、ETF/權證（5-6 位）
+  /// 支援 4-6 位數代碼：一般股票（4 位）、ETF/權證（5-6 位）。
+  ///
+  /// **年份過濾**：4 位數落在 2000-2099 與鋼鐵股代號（20xx）衝突 — 文章裡的
+  /// 「2027年」「看好 2027 大爆發」會被誤當成大成鋼(2027)。此範圍要求明確股票
+  /// 上下文（括號包覆或 -TW 後綴，如「大成鋼(2027)」「(2027-TW)」）才採計；
+  /// 否則視為年份略過。代號 ≥ 2100（如 2330 台積電）不受影響。
   List<String> extractStockCodes() {
     final regex = RegExp(r'\b(\d{4,6})\b');
-    final matches = regex.allMatches(title);
-    return matches.map((m) => m.group(1)!).toList();
+    final codes = <String>[];
+    for (final m in regex.allMatches(title)) {
+      final code = m.group(1)!;
+      if (code.length == 4) {
+        final value = int.parse(code);
+        if (value >= 2000 && value <= 2099) {
+          final hasStockContext = RegExp(
+            '[（(]$code[)）]|$code-?TW',
+          ).hasMatch(title);
+          if (!hasStockContext) continue;
+        }
+      }
+      codes.add(code);
+    }
+    return codes;
   }
 }
 

@@ -171,5 +171,57 @@ void main() {
 
       expect(item.extractStockCodes(), isEmpty);
     });
+
+    test('skips year-range numbers without stock context（避免 2027年 撞代號）', () {
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '預期2027年很不一樣，看好2027大爆發',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), isEmpty);
+    });
+
+    test('keeps year-range code when in stock context（括號 / -TW）', () {
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '大成鋼(2027-TW)目標價調升至52元',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), equals(['2027']));
+    });
+
+    test('distinguishes real code（≥2100）from year（≤2099）', () {
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '台積電2330看好2027大爆發',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), equals(['2330']));
+    });
+
+    test('5-6 digit ETF codes unaffected by year filter', () {
+      final item = RssNewsItem(
+        id: '1',
+        source: 'Test',
+        title: '00919 配息創新高',
+        url: 'https://example.com',
+        publishedAt: DateTime(2025, 1, 15),
+        category: 'STOCK',
+      );
+
+      expect(item.extractStockCodes(), equals(['00919']));
+    });
   });
 }
