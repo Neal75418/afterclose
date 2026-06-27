@@ -60,9 +60,8 @@ class AnalysisRepository implements IAnalysisRepository {
 
   /// 儲存分析結果
   ///
-  /// Dual-horizon: 接受 [scoreShort] 跟 [scoreLong] 兩個分數。
-  /// 實作 Commit 2（本 commit）時 scoring pipeline 還是單分數，caller
-  /// 暫時傳相同值；Commit 3 的 pipeline 改動會真正產生不同值。
+  /// Dual-horizon: 接受 [scoreShort] 跟 [scoreLong] 兩個獨立分數（各 horizon
+  /// 由 scoring pipeline 分別計算，可不同）。
   @override
   Future<void> saveAnalysis({
     required String symbol,

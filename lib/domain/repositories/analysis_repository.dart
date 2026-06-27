@@ -15,9 +15,8 @@ abstract class IAnalysisRepository {
 
   /// 儲存分析結果
   ///
-  /// Dual-horizon: [scoreShort] 與 [scoreLong] 取代舊的單一 `score`。
-  /// Commit 2 時 scoring pipeline 仍為單分數，caller 暫時對兩個參數傳
-  /// 相同值；Commit 3 的 pipeline 改動會真正產生不同值。
+  /// Dual-horizon: [scoreShort] 與 [scoreLong] 取代舊的單一 `score`，由 scoring
+  /// pipeline 各 horizon 分別計算（兩者可不同）。
   Future<void> saveAnalysis({
     required String symbol,
     required DateTime date,

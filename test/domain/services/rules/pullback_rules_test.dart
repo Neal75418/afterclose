@@ -322,7 +322,6 @@ void main() {
   // ============================================================
   group('KdHighLevelPullbackRule (fixed window)', () {
     const rule = KdHighLevelPullbackRule();
-    final prices = buildPrices(count: 21);
     AnalysisContext kdCtx({
       double? kdK,
       double? kdD,

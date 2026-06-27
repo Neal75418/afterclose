@@ -97,8 +97,6 @@ mixin AnalysisDaoMixin on $AppDatabase {
   /// Mode-based 股票分數加總（每檔股票該 mode 內所有 rule 的 score 加總）
   ///
   /// 用於 Today screen 的 3-tab Mode UI — 起漲 / 強勢 / 弱勢 各自獨立排序。
-  /// 跟原本 `daily_recommendation` 的 horizon-based 推薦並存，不影響既有
-  /// horizon 系統。
   ///
   /// [reasonTypeCodes] 該 mode 內 ReasonType code 列表（UPPER_SNAKE_CASE）
   /// [date] 查詢日期

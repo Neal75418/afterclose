@@ -322,8 +322,8 @@ class IsolateReasonOutput {
 
 /// Isolate 評分輸出結果
 ///
-/// Dual-horizon: 每支股票攜帶兩個 horizon 的分數，主 isolate
-/// 依 horizon 分別做 Top N sort 後寫入 `daily_recommendation`。
+/// Dual-horizon: 每支股票攜帶 short / long 兩個 horizon 的分數，供主 isolate
+/// 寫入 `daily_analysis`（再依分數分層：訊號 / 觀察區）。
 class ScoringIsolateOutput {
   const ScoringIsolateOutput({
     required this.symbol,
