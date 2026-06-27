@@ -29,7 +29,6 @@ import 'package:afterclose/data/repositories/warning_repository.dart';
 import 'package:afterclose/data/repositories/insider_repository.dart';
 import 'package:afterclose/data/repositories/event_repository.dart';
 import 'package:afterclose/data/repositories/portfolio_repository.dart';
-import 'package:afterclose/data/repositories/screening_repository.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/services/cache_warmup_service.dart';
 import 'package:afterclose/domain/services/api_connection_service.dart';
@@ -201,11 +200,6 @@ final analysisRepositoryProvider = Provider<AnalysisRepository>((ref) {
     database: ref.watch(databaseProvider),
     clock: ref.watch(appClockProvider),
   );
-});
-
-/// 選股資料 + 策略儲存庫 Provider（SQL 篩選 + 策略 CRUD）
-final screeningRepositoryProvider = Provider<ScreeningRepository>((ref) {
-  return ScreeningRepository(database: ref.watch(databaseProvider));
 });
 
 /// 法人資料儲存庫 Provider

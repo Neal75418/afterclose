@@ -8,8 +8,6 @@ import 'package:afterclose/core/extensions/router_extensions.dart';
 
 import 'package:afterclose/presentation/screens/alerts/alerts_screen.dart';
 import 'package:afterclose/presentation/screens/onboarding/onboarding_screen.dart';
-import 'package:afterclose/presentation/screens/custom_screening/backtest/backtest_screen.dart';
-import 'package:afterclose/presentation/screens/custom_screening/custom_screening_screen.dart';
 import 'package:afterclose/presentation/screens/industry/industry_overview_screen.dart';
 import 'package:afterclose/presentation/screens/news/news_screen.dart';
 import 'package:afterclose/presentation/screens/portfolio/portfolio_tab.dart';
@@ -168,28 +166,12 @@ final router = GoRouter(
       builder: (context, state) => const IndustryOverviewScreen(),
     ),
 
-    // 自訂篩選（全螢幕，Shell 外）
-    GoRoute(
-      path: AppRoutes.customScreening,
-      name: 'customScreening',
-      builder: (context, state) => const CustomScreeningScreen(),
-    ),
-
     // 股票比較（全螢幕，Shell 外）
     GoRoute(
       path: AppRoutes.compare,
       name: 'comparison',
       builder: (context, state) {
         return ComparisonScreen(initialSymbols: state.symbolsExtra);
-      },
-    ),
-
-    // 回測（全螢幕，Shell 外）
-    GoRoute(
-      path: AppRoutes.backtest,
-      name: 'backtest',
-      builder: (context, state) {
-        return BacktestScreen(conditions: state.conditionsExtra);
       },
     ),
 

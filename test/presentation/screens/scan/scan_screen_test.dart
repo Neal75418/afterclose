@@ -128,17 +128,15 @@ void main() {
       expect(find.byType(AppBar), findsOneWidget);
     });
 
-    testWidgets('shows more menu with custom screening option', (tester) async {
+    testWidgets('shows more menu with extra scan options', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestWidget());
       await tester.pump(const Duration(seconds: 1));
 
-      // tune icon no longer directly visible in AppBar
-      expect(find.byIcon(Icons.tune), findsNothing);
       // more_vert menu is visible
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
 
-      // 點開選單後 tune icon 出現在 popup 中
+      // 點開選單後額外功能項目出現在 popup 中
       final originalOnError = FlutterError.onError;
       FlutterError.onError = (details) {
         // 忽略 popup 在測試 viewport 的 overflow（非真實 bug）
@@ -148,7 +146,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.byIcon(Icons.tune), findsOneWidget);
+      // 融券賣出排行（trending_down）為保留的選單項目之一
+      expect(find.byIcon(Icons.trending_down), findsOneWidget);
       FlutterError.onError = originalOnError;
     });
 

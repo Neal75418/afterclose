@@ -175,8 +175,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           tooltip: 'scan.more'.tr(),
           onSelected: (value) {
             switch (value) {
-              case 'custom_screening':
-                context.push(AppRoutes.customScreening);
               case 'short_sell_ranking':
                 context.push(AppRoutes.shortSellRanking);
               case 'industry_eps':
@@ -186,17 +184,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             }
           },
           itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'custom_screening',
-              child: Row(
-                children: [
-                  const Icon(Icons.tune, size: 20),
-                  const SizedBox(width: DesignTokens.spacing12),
-                  Text('customScreening.title'.tr()),
-                ],
-              ),
-            ),
-            const PopupMenuDivider(),
             PopupMenuItem(
               value: 'short_sell_ranking',
               child: Row(

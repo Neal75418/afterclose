@@ -8,7 +8,7 @@ import 'package:afterclose/data/database/tables/daily_price.drift.dart';
 import 'package:afterclose/core/constants/rule_params_alert.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 
-/// 使用者相關資料存取：自選股、設定、更新紀錄、股價提醒、選股策略
+/// 使用者相關資料存取：自選股、設定、更新紀錄、股價提醒
 mixin UserDaoMixin on $AppDatabase {
   // ==================================================
   // 自選股操作
@@ -516,36 +516,5 @@ mixin UserDaoMixin on $AppDatabase {
         }
       }
     }
-  }
-
-  // ==================================================
-  // 自訂選股策略操作
-  // ==================================================
-
-  /// 取得所有已儲存的選股策略
-  Future<List<ScreeningStrategyEntry>> getAllScreeningStrategies() {
-    return (select(
-      screeningStrategyTable,
-    )..orderBy([(t) => OrderingTerm.desc(t.updatedAt)])).get();
-  }
-
-  /// 新增選股策略，回傳自動產生的 ID
-  Future<int> insertScreeningStrategy(ScreeningStrategyTableCompanion entry) {
-    return into(screeningStrategyTable).insert(entry);
-  }
-
-  /// 更新選股策略
-  Future<void> updateScreeningStrategy(
-    int id,
-    ScreeningStrategyTableCompanion entry,
-  ) {
-    return (update(
-      screeningStrategyTable,
-    )..where((t) => t.id.equals(id))).write(entry);
-  }
-
-  /// 刪除選股策略
-  Future<void> deleteScreeningStrategy(int id) {
-    return (delete(screeningStrategyTable)..where((t) => t.id.equals(id))).go();
   }
 }
