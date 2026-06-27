@@ -120,12 +120,7 @@ class HealthyPullbackToMa20Rule extends StockRule {
     if (todayClose <= ma60) return null;
 
     // ---- Step 3: 過去 20 日強勢 ----
-    if (!wasStrongOverPeriod(
-      data,
-      ma20,
-      days: PullbackParams.strongLookbackDays,
-    ))
-      return null;
+    if (!wasStrongOverPeriod(data, ma20)) return null;
 
     // ---- Step 4: 拉回到 MA20 附近 (-1.5% ~ +3%) ----
     final distanceToMa20 = (todayClose - ma20) / ma20;
@@ -146,12 +141,7 @@ class HealthyPullbackToMa20Rule extends StockRule {
     if (isLimitDownDay(data)) return null;
 
     // ---- Step 8: 過去 5 日非瀑布跌（至少 1 根紅 K）----
-    if (!hasRecentBullishCandle(
-      data,
-      days: PullbackParams.recentBullishCandleDays,
-    )) {
-      return null;
-    }
+    if (!hasRecentBullishCandle(data)) return null;
 
     // ---- 全部過 → fire ----
     final past20Close =
@@ -233,12 +223,7 @@ class HealthyPullbackToMa10Rule extends StockRule {
     if (todayClose <= ma20) return null;
 
     // ---- Step 4: 過去 20 日強勢（錨在 ma10）----
-    if (!wasStrongOverPeriod(
-      data,
-      ma10,
-      days: PullbackParams.strongLookbackDays,
-    ))
-      return null;
+    if (!wasStrongOverPeriod(data, ma10)) return null;
 
     // ---- Step 5: 拉回到 MA10 附近 (-1.5% ~ +2.5%) ----
     final distanceToMa10 = (todayClose - ma10) / ma10;
@@ -259,12 +244,7 @@ class HealthyPullbackToMa10Rule extends StockRule {
     if (isLimitDownDay(data)) return null;
 
     // ---- Step 9: 過去 5 日非瀑布跌 ----
-    if (!hasRecentBullishCandle(
-      data,
-      days: PullbackParams.recentBullishCandleDays,
-    )) {
-      return null;
-    }
+    if (!hasRecentBullishCandle(data)) return null;
 
     final past20Close =
         data
@@ -326,12 +306,7 @@ class HammerAtSupportRule extends StockRule {
 
     // ---- Step 2: 多頭排列（簡化版：ma20 > ma60）+ 過去強勢 ----
     if (ma20 <= ma60) return null;
-    if (!wasStrongOverPeriod(
-      data,
-      ma20,
-      days: PullbackParams.strongLookbackDays,
-    ))
-      return null;
+    if (!wasStrongOverPeriod(data, ma20)) return null;
 
     // ---- Step 3: 錘子形狀 ----
     if (!isHammerShape(today)) return null;
