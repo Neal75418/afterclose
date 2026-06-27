@@ -52,7 +52,7 @@ dart format .                                                  # 格式化 (pre-
 
 | 路徑                                               | 說明                                    |
 |:-------------------------------------------------|:--------------------------------------|
-| `lib/core/constants/rule_params.dart`            | 規則參數 barrel（6 domain param 檔 + enums + scores） |
+| `lib/core/constants/rule_params.dart`            | 規則參數 barrel（7 domain param 檔 + enums + scores） |
 | `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                         |
 | `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                   |
 | `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制              |

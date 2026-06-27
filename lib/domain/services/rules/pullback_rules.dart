@@ -15,6 +15,7 @@
 // - 跌停日（pct ≤ -9.5%）一律 short-circuit return null（避免恐慌下殺誤判）
 
 import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:afterclose/core/constants/rule_params_pullback.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 import 'package:afterclose/domain/models/analysis_context.dart';
 import 'package:afterclose/domain/models/triggered_reason.dart';
@@ -30,12 +31,16 @@ import 'package:afterclose/domain/services/rules/stock_rules.dart';
 ///
 /// 用 N 日前的 close 跟今日的 ma20 比較：ma20 > pastClose * 1.05 代表中期
 /// 趨勢確實向上（不是 flat 累積）。
-bool wasStrongOverPeriod(StockData data, double ma20Now, {int days = 20}) {
+bool wasStrongOverPeriod(
+  StockData data,
+  double ma20Now, {
+  int days = PullbackParams.strongLookbackDays,
+}) {
   if (data.prices.length < days + 1) return false;
   final past = data.prices[data.prices.length - 1 - days];
   final pastClose = past.close;
   if (pastClose == null || pastClose <= 0) return false;
-  return ma20Now > pastClose * 1.05;
+  return ma20Now > pastClose * PullbackParams.wasStrongMinRatio;
 }
 
 /// 跌停日 guard（台股 ±10%、留 0.5% 安全 margin）
@@ -49,14 +54,17 @@ bool isLimitDownDay(StockData data) {
   final todayClose = today.close;
   final prevClose = prev.close;
   if (todayClose == null || prevClose == null || prevClose <= 0) return false;
-  return (todayClose - prevClose) / prevClose <= -0.095;
+  return (todayClose - prevClose) / prevClose <= PullbackParams.limitDownRatio;
 }
 
 /// 過去 N 日內至少 1 根紅 K（過濾瀑布跌、cascading decline）
 ///
 /// 連跌 5 天才碰 MA20 不是「健康回檔」、是 panicky decline、return false
 /// 阻止 fire。
-bool hasRecentBullishCandle(StockData data, {int days = 5}) {
+bool hasRecentBullishCandle(
+  StockData data, {
+  int days = PullbackParams.recentBullishCandleDays,
+}) {
   if (data.prices.length < days + 1) return false;
   final start = data.prices.length - days - 1;
   for (var i = start; i < data.prices.length - 1; i++) {
@@ -84,7 +92,7 @@ class HealthyPullbackToMa20Rule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // ---- Step 1: history / indicators 必備 ----
-    if (data.prices.length < 21) return null;
+    if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
     if (ind == null) return null;
     final ma5 = ind.ma5;
@@ -112,26 +120,45 @@ class HealthyPullbackToMa20Rule extends StockRule {
     if (todayClose <= ma60) return null;
 
     // ---- Step 3: 過去 20 日強勢 ----
-    if (!wasStrongOverPeriod(data, ma20, days: 20)) return null;
+    if (!wasStrongOverPeriod(
+      data,
+      ma20,
+      days: PullbackParams.strongLookbackDays,
+    ))
+      return null;
 
     // ---- Step 4: 拉回到 MA20 附近 (-1.5% ~ +3%) ----
     final distanceToMa20 = (todayClose - ma20) / ma20;
-    if (distanceToMa20 < -0.015 || distanceToMa20 > 0.03) return null;
+    if (distanceToMa20 < PullbackParams.ma20PullbackBandLow ||
+        distanceToMa20 > PullbackParams.ma20PullbackBandHigh) {
+      return null;
+    }
 
     // ---- Step 5: 今日收黑 ----
     if (todayClose >= yesterdayClose) return null;
 
     // ---- Step 6: 量縮 (< volumeMA20 * 0.85) ----
-    if (todayVolume >= volumeMA20 * 0.85) return null;
+    if (todayVolume >= volumeMA20 * PullbackParams.volumeShrinkRatio) {
+      return null;
+    }
 
     // ---- Step 7: 非跌停 ----
     if (isLimitDownDay(data)) return null;
 
     // ---- Step 8: 過去 5 日非瀑布跌（至少 1 根紅 K）----
-    if (!hasRecentBullishCandle(data, days: 5)) return null;
+    if (!hasRecentBullishCandle(
+      data,
+      days: PullbackParams.recentBullishCandleDays,
+    )) {
+      return null;
+    }
 
     // ---- 全部過 → fire ----
-    final past20Close = data.prices[data.prices.length - 1 - 20].close ?? 0;
+    final past20Close =
+        data
+            .prices[data.prices.length - 1 - PullbackParams.strongLookbackDays]
+            .close ??
+        0;
     final past20dGain = past20Close > 0 ? (ma20 / past20Close - 1) * 100 : 0.0;
 
     return TriggeredReason(
@@ -176,7 +203,7 @@ class HealthyPullbackToMa10Rule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // ---- Step 1: history / indicators 必備 ----
-    if (data.prices.length < 21) return null;
+    if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
     if (ind == null) return null;
     final ma10 = ind.ma10;
@@ -206,25 +233,44 @@ class HealthyPullbackToMa10Rule extends StockRule {
     if (todayClose <= ma20) return null;
 
     // ---- Step 4: 過去 20 日強勢（錨在 ma10）----
-    if (!wasStrongOverPeriod(data, ma10, days: 20)) return null;
+    if (!wasStrongOverPeriod(
+      data,
+      ma10,
+      days: PullbackParams.strongLookbackDays,
+    ))
+      return null;
 
     // ---- Step 5: 拉回到 MA10 附近 (-1.5% ~ +2.5%) ----
     final distanceToMa10 = (todayClose - ma10) / ma10;
-    if (distanceToMa10 < -0.015 || distanceToMa10 > 0.025) return null;
+    if (distanceToMa10 < PullbackParams.ma10PullbackBandLow ||
+        distanceToMa10 > PullbackParams.ma10PullbackBandHigh) {
+      return null;
+    }
 
     // ---- Step 6: 今日收黑 ----
     if (todayClose >= yesterdayClose) return null;
 
     // ---- Step 7: 量縮 (< volumeMA20 * 0.85) ----
-    if (todayVolume >= volumeMA20 * 0.85) return null;
+    if (todayVolume >= volumeMA20 * PullbackParams.volumeShrinkRatio) {
+      return null;
+    }
 
     // ---- Step 8: 非跌停 ----
     if (isLimitDownDay(data)) return null;
 
     // ---- Step 9: 過去 5 日非瀑布跌 ----
-    if (!hasRecentBullishCandle(data, days: 5)) return null;
+    if (!hasRecentBullishCandle(
+      data,
+      days: PullbackParams.recentBullishCandleDays,
+    )) {
+      return null;
+    }
 
-    final past20Close = data.prices[data.prices.length - 1 - 20].close ?? 0;
+    final past20Close =
+        data
+            .prices[data.prices.length - 1 - PullbackParams.strongLookbackDays]
+            .close ??
+        0;
     final past20dGain = past20Close > 0 ? (ma10 / past20Close - 1) * 100 : 0.0;
 
     return TriggeredReason(
@@ -262,7 +308,7 @@ class HammerAtSupportRule extends StockRule {
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
     // ---- Step 1: history / indicators 必備 ----
-    if (data.prices.length < 21) return null;
+    if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
     if (ind == null) return null;
     final ma20 = ind.ma20;
@@ -280,7 +326,12 @@ class HammerAtSupportRule extends StockRule {
 
     // ---- Step 2: 多頭排列（簡化版：ma20 > ma60）+ 過去強勢 ----
     if (ma20 <= ma60) return null;
-    if (!wasStrongOverPeriod(data, ma20, days: 20)) return null;
+    if (!wasStrongOverPeriod(
+      data,
+      ma20,
+      days: PullbackParams.strongLookbackDays,
+    ))
+      return null;
 
     // ---- Step 3: 錘子形狀 ----
     if (!isHammerShape(today)) return null;
@@ -293,21 +344,23 @@ class HammerAtSupportRule extends StockRule {
     // **2026-06-20 早期體檢修正（CALIBRATION_PENDING）**：原 ±1.5% 太緊 — 強股的
     // low 通常在 MA20 上方（實測中位數 +11.1%、只 7.8% 落 ±1.5%）、理論母體 ~0。
     // 放寬到 ±4%（對齊 strong-stock low p10≈-3.5%）讓「拉回測支撐」的強股進得來。
-    final touchMa20 = (low - ma20).abs() / ma20 <= 0.04;
-    final touchMa60 = (low - ma60).abs() / ma60 <= 0.04;
+    final touchMa20 =
+        (low - ma20).abs() / ma20 <= PullbackParams.hammerSupportTouchBand;
+    final touchMa60 =
+        (low - ma60).abs() / ma60 <= PullbackParams.hammerSupportTouchBand;
     if (!touchMa20 && !touchMa60) return null;
     final support = touchMa20 ? 'MA20' : 'MA60';
     final supportLevel = touchMa20 ? ma20 : ma60;
 
     // ---- Step 6: 收盤站穩支撐 (close >= supportLevel * 0.985) ----
-    if (close < supportLevel * 0.985) return null;
+    if (close < supportLevel * PullbackParams.hammerCloseHoldRatio) return null;
 
     // ---- Step 7: close 在 MA20 附近（≤ MA20 * 1.06）— 與 HangingMan 互斥位置 ----
     //
     // **2026-06-20 早期體檢修正**：原 ≤ MA20*1.03 配合 ±4% touch 放寬同步放寬到
     // 1.06，避免「low 觸支撐但 close 已彈回」的強股回檔被擋。仍保留上界讓真正高
     // 檔（HangingMan 區）交給 HangingManRule 處理。
-    if (close > ma20 * 1.06) return null;
+    if (close > ma20 * PullbackParams.hammerCloseMaxMa20Ratio) return null;
 
     // ---- Step 8: 非跌停 ----
     if (isLimitDownDay(data)) return null;
@@ -323,7 +376,8 @@ class HammerAtSupportRule extends StockRule {
         ? data.prices[data.prices.length - 2].close
         : null;
     final gapDown = (yesterdayClose != null && yesterdayClose > 0)
-        ? (yesterdayClose - open) / yesterdayClose > 0.01
+        ? (yesterdayClose - open) / yesterdayClose >
+              PullbackParams.hammerGapDownRatio
         : false;
 
     return TriggeredReason(
@@ -390,7 +444,7 @@ class KdHighLevelPullbackRule extends StockRule {
     //
     // **2026-06-20 早期體檢修正（CALIBRATION_PENDING）**：原 >= 80 太緊、80 邊緣
     // 回落進不來。放寬到 78 容納剛從超買區滑落的 case。
-    if (prevKdK < 78) return null;
+    if (prevKdK < PullbackParams.kdHighPrevMin) return null;
 
     // ---- Step 5: 今日 K 回落到 [60, 80) 區間 ----
     //
@@ -399,7 +453,10 @@ class KdHighLevelPullbackRule extends StockRule {
     // 78×2/3 = 52，[50,52) 物理上一天到不了；上緣 75 又把真實「高檔剛回落」帶
     // (75-80) 排除掉。改 [60, 80)：60 是 1/3 平滑可達的合理下緣、80 開區間排除
     // 「還在超買沒回落」。實測 prevKdK≥80 母體原 0 fire、改後預估 10-30 檔可進。
-    if (kdK < 60 || kdK >= 80) return null;
+    if (kdK < PullbackParams.kdPullbackBandLow ||
+        kdK >= PullbackParams.kdPullbackBandHigh) {
+      return null;
+    }
 
     // ---- Step 6: 未死叉（kdK > kdD）----
     //
@@ -408,14 +465,14 @@ class KdHighLevelPullbackRule extends StockRule {
     if (kdK <= kdD) return null;
 
     // ---- Step 7: 收盤未破 MA20 過深（>= ma20 * 0.99）----
-    if (todayClose < ma20 * 0.99) return null;
+    if (todayClose < ma20 * PullbackParams.kdCloseMinMa20Ratio) return null;
 
     // ---- Step 8: K 值漸降非崩跌（單日 K 跌幅 <= 30）----
     //
     // **2026-06-20 早期體檢修正**：原 <= 20 跟 [60,80) 窗口衝突（prevKdK 高時
     // drop 自然 > 20）、是窗口變窄元兇。放寬到 30 保留 panic 防護但不殺窗口。
     final kdKDailyDrop = prevKdK - kdK;
-    if (kdKDailyDrop > 30) return null;
+    if (kdKDailyDrop > PullbackParams.kdMaxDailyDrop) return null;
 
     // ---- Step 9: 非跌停 ----
     if (isLimitDownDay(data)) return null;

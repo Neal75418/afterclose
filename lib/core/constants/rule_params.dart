@@ -5,6 +5,7 @@ export 'package:afterclose/core/constants/rule_params_fundamental.dart';
 export 'package:afterclose/core/constants/rule_params_indicator.dart';
 export 'package:afterclose/core/constants/rule_params_institutional.dart';
 export 'package:afterclose/core/constants/rule_params_pattern.dart';
+export 'package:afterclose/core/constants/rule_params_pullback.dart';
 export 'package:afterclose/core/constants/rule_params_trend.dart';
 export 'package:afterclose/core/constants/rule_scores.dart';
 
@@ -17,6 +18,7 @@ export 'package:afterclose/core/constants/rule_scores.dart';
 /// - [InstitutionalParams] — 法人動向 / 籌碼面
 /// - [FundamentalParams] — 基本面 / EPS / ROE / 估值 / 董監持股
 /// - [PatternParams] — K 線型態
+/// - [PullbackParams] — 強股回檔進場（Mode C v2）
 /// - [AlertParams] — 警示系統
 ///
 /// ### 數值慣例
