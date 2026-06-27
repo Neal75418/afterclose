@@ -369,7 +369,7 @@ class HammerAtSupportRule extends StockRule {
         'support': support,
         'supportLevel': supportLevel,
         'distanceLowToSupportPct': (low - supportLevel) / supportLevel * 100,
-        if (volumeRatio != null) 'volumeRatio': volumeRatio,
+        'volumeRatio': ?volumeRatio,
         'gapDown': gapDown,
       },
     );
@@ -464,7 +464,7 @@ class KdHighLevelPullbackRule extends StockRule {
         'close': todayClose,
         'ma20': ma20,
         'ma60': ma60,
-        if (ind.rsi != null) 'rsi': ind.rsi!,
+        'rsi': ?ind.rsi,
       },
     );
   }
