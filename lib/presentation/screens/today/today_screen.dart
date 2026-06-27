@@ -25,6 +25,7 @@ import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/update_history_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/frosted_bar.dart';
 import 'package:afterclose/presentation/widgets/update_history_sheet.dart';
 import 'package:afterclose/presentation/widgets/market_dashboard/market_dashboard.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
@@ -257,11 +258,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
               pinned: true,
               floating: true,
               expandedHeight: 0, // Standard height
-              // 不用半透明（無 BackdropFilter 時會看到下方「資料日期」文字穿透
-              // 到 title 後方，視覺像 bleed-through）。要做 frosted glass 風格
-              // 需另接 BackdropFilter blur。
-              backgroundColor: theme.colorScheme.surface,
+              // 毛玻璃 header：blur 下方內容，半透質感又不會疊影穿透。
+              backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
+              flexibleSpace: const FrostedBackground(),
               title: Text(
                 S.appName,
                 style: const TextStyle(

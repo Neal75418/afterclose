@@ -21,6 +21,7 @@ import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_
 import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
 import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/frosted_bar.dart';
 import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
 import 'package:afterclose/presentation/widgets/shareable/shareable_analysis_card.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -111,12 +112,13 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
               )
             : NestedScrollView(
                 headerSliverBuilder: (context, innerBoxScrolled) => [
-                  // App Bar（不透明背景，避免捲動內容穿透固定 header）
+                  // App Bar（毛玻璃：blur 下方內容，半透質感又不會疊影穿透）
                   SliverAppBar(
                     pinned: true,
                     floating: true,
-                    backgroundColor: theme.colorScheme.surface,
+                    backgroundColor: Colors.transparent,
                     surfaceTintColor: Colors.transparent,
+                    flexibleSpace: const FrostedBackground(),
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -217,7 +219,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     child: AiSummaryCard(symbol: widget.symbol),
                   ),
 
-                  // Tab Bar（不透明背景，避免捲動內容穿透）
+                  // Tab Bar（毛玻璃，與 App Bar 一致）
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _TabBarDelegate(
@@ -333,8 +335,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     double shrinkOffset,
     bool overlapsContent,
   ) {
-    return Container(
-      color: theme.colorScheme.surface,
+    return FrostedBackground(
       child: TabBar(
         controller: tabController,
         isScrollable: true,
