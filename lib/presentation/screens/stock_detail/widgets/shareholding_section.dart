@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
+    show buildEmptyState;
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 
@@ -26,7 +28,7 @@ class ShareholdingSection extends StatelessWidget {
             icon: Icons.language,
           ),
           const SizedBox(height: DesignTokens.spacing12),
-          _buildEmpty(theme),
+          buildEmptyState(context, 'chip.noData'.tr()),
         ],
       );
     }
@@ -112,24 +114,6 @@ class ShareholdingSection extends StatelessWidget {
         // Trend chart
         MiniTrendChart(dataPoints: chartData, lineColor: AppTheme.foreignColor),
       ],
-    );
-  }
-
-  Widget _buildEmpty(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.spacing24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-      ),
-      child: Center(
-        child: Text(
-          'chip.noData'.tr(),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-      ),
     );
   }
 

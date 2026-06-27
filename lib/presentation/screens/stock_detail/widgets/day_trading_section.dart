@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/presentation/screens/stock_detail/tabs/fundamentals/fundamentals_helpers.dart'
+    show buildEmptyState;
 import 'package:afterclose/presentation/screens/stock_detail/widgets/mini_trend_chart.dart';
 import 'package:afterclose/presentation/widgets/section_header.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -26,7 +28,7 @@ class DayTradingSection extends StatelessWidget {
             icon: Icons.flash_on,
           ),
           const SizedBox(height: DesignTokens.spacing12),
-          _buildEmpty(theme),
+          buildEmptyState(context, 'chip.noData'.tr()),
         ],
       );
     }
@@ -125,24 +127,6 @@ class DayTradingSection extends StatelessWidget {
           minY: 0,
         ),
       ],
-    );
-  }
-
-  Widget _buildEmpty(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(DesignTokens.spacing24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
-      ),
-      child: Center(
-        child: Text(
-          'chip.noData'.tr(),
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.outline,
-          ),
-        ),
-      ),
     );
   }
 }

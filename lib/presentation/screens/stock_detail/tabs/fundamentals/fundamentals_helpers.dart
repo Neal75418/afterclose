@@ -77,17 +77,32 @@ Widget buildEmptyState(BuildContext context, String message) {
   final theme = Theme.of(context);
 
   return Container(
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.symmetric(
+      vertical: DesignTokens.spacing32,
+      horizontal: DesignTokens.spacing24,
+    ),
     decoration: BoxDecoration(
       color: theme.colorScheme.surfaceContainerLow,
       borderRadius: BorderRadius.circular(DesignTokens.radiusLg),
     ),
     child: Center(
-      child: Text(
-        message,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: theme.colorScheme.outline,
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: DesignTokens.iconSizeXl,
+            color: theme.colorScheme.outline,
+          ),
+          const SizedBox(height: DesignTokens.spacing8),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+        ],
       ),
     ),
   );
