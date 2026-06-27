@@ -111,13 +111,11 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
               )
             : NestedScrollView(
                 headerSliverBuilder: (context, innerBoxScrolled) => [
-                  // App Bar（半透明背景）
+                  // App Bar（不透明背景，避免捲動內容穿透固定 header）
                   SliverAppBar(
                     pinned: true,
                     floating: true,
-                    backgroundColor: theme.colorScheme.surface.withValues(
-                      alpha: 0.7,
-                    ),
+                    backgroundColor: theme.colorScheme.surface,
                     surfaceTintColor: Colors.transparent,
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +217,7 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                     child: AiSummaryCard(symbol: widget.symbol),
                   ),
 
-                  // Tab Bar（半透明背景）
+                  // Tab Bar（不透明背景，避免捲動內容穿透）
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _TabBarDelegate(
@@ -336,7 +334,7 @@ class _TabBarDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     return Container(
-      color: theme.colorScheme.surface.withValues(alpha: 0.85),
+      color: theme.colorScheme.surface,
       child: TabBar(
         controller: tabController,
         isScrollable: true,
