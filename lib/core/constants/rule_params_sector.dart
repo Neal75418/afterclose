@@ -6,13 +6,14 @@
 abstract final class SectorParams {
   /// 產業領導 tilt 權重（rank-blend：finalScore = (1−W)·baseRank + W·sectorRank）。
   ///
-  /// **0.15 = 啟用（保守、受 regime gate 保護）**。族群動能因子 regime-dependent：
-  /// 持續多頭有效（in-sample IC +0.054、regime-split 上升 IC +0.041~0.054）、空頭/
-  /// 轉折反向（2022 OOS IC −0.078 = momentum crash）。故 tilt **僅在市場上升 regime
-  /// 套用**（見 [regimeLookbackDays] 與 isMarketUptrend）；下降趨勢自動 effectiveW=0。
+  /// **0 = 停用（dormant）**。族群動能 tilt 在 `tool/calibration.db` **全期（2021-2026、
+  /// 含 2022 空頭）backtest 無持續 edge**：上升 regime IC −0.008、全期 −0.012、逐年
+  /// 2021~2025 皆 ≈0 或負。先前一度啟用 0.15 是因只用近期窗（2025-2026）的 +0.054，
+  /// 事後證實那是 **2026 單年 outlier**（+0.127）。未過「全期要變好」gate → roll 回 0。
   ///
-  /// 此值是上升 regime 下的 W。**rollback = 設回 0**（任何 regime 都不套）。
-  static const double tiltWeight = 0.15;
+  /// 機制（rank-blend + 下方 regime gate）已建好並 dormant。**設正值前必過 calibration.db
+  /// 全期 gate**（別只看近期窗 — 這就是當初誤啟用的教訓）。
+  static const double tiltWeight = 0.0;
 
   /// regime gate 的市場趨勢回看天數：全市場 [regimeLookbackDays]D 平均報酬 > 0 視為
   /// 上升 regime、才套 tilt。用長窗（120D）而非短窗：short window 會把空頭反彈誤判
