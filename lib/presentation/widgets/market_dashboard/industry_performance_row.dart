@@ -57,17 +57,35 @@ class IndustryPerformanceRow extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.spacing10),
         if (isDesktop)
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: DesignTokens.spacing8,
-            runSpacing: DesignTokens.spacing8,
-            children: _desktopItems().map((ind) {
-              return SizedBox(
-                width: 120,
-                height: 72,
-                child: _IndustryCard(industry: ind),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gap = DesignTokens.spacing8;
+              const minCardWidth = 120.0;
+              final items = _desktopItems();
+              final width = constraints.maxWidth;
+              // 依實際可用寬度（非整個視窗，避免 paired 欄位誤判）決定欄數，
+              // 卡片等寬填滿整列 → 不留右側空隙、版面對稱。8 張卡用 1/2/4 欄皆整除。
+              final fit = ((width + gap) / (minCardWidth + gap)).floor();
+              final cols = fit >= 4
+                  ? 4
+                  : fit >= 2
+                  ? 2
+                  : 1;
+              final cardWidth = (width - gap * (cols - 1)) / cols;
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: items
+                    .map(
+                      (ind) => SizedBox(
+                        width: cardWidth,
+                        height: 72,
+                        child: _IndustryCard(industry: ind),
+                      ),
+                    )
+                    .toList(),
               );
-            }).toList(),
+            },
           )
         else
           SizedBox(
