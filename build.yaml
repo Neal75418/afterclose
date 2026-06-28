@@ -15,10 +15,3 @@ targets:
       drift_dev:modular:
         enabled: true
         options: *drift_options
-
-      # JSON serialization
-      json_serializable:
-        options:
-          explicit_to_json: true
-          field_rename: snake
-          any_map: false
