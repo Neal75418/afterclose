@@ -48,12 +48,11 @@ jobs:
         with:
           path: |
             .dart_tool/build/
-            lib/**/*.g.dart
-            lib/**/*.freezed.dart
+            lib/**/*.drift.dart
           key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'lib/data/database/tables/**', 'lib/domain/models/**') }}
           restore-keys: build-runner-${{ runner.os }}-
 
-      - name: Generate code (Drift, Riverpod, Freezed)
+      - name: Generate code (Drift)
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Verify formatting
@@ -96,12 +95,11 @@ jobs:
         with:
           path: |
             .dart_tool/build/
-            lib/**/*.g.dart
-            lib/**/*.freezed.dart
+            lib/**/*.drift.dart
           key: build-runner-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'lib/data/database/tables/**', 'lib/domain/models/**') }}
           restore-keys: build-runner-${{ runner.os }}-
 
-      - name: Generate code (Drift, Riverpod, Freezed)
+      - name: Generate code (Drift)
         run: dart run build_runner build --delete-conflicting-outputs
 
       - name: Run tests
