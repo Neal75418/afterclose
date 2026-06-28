@@ -1,16 +1,12 @@
-import 'dart:typed_data';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/error_display.dart';
-import 'package:afterclose/core/utils/widget_capture.dart';
 import 'package:afterclose/presentation/providers/stock_detail_provider.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/alerts_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/tabs/chip_tab.dart';
@@ -19,11 +15,8 @@ import 'package:afterclose/presentation/screens/stock_detail/tabs/insider_tab.da
 import 'package:afterclose/presentation/screens/stock_detail/tabs/technical_tab.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/ai_summary_card.dart';
 import 'package:afterclose/presentation/screens/stock_detail/widgets/stock_detail_header.dart';
-import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/frosted_bar.dart';
-import 'package:afterclose/presentation/widgets/share_options_sheet.dart';
-import 'package:afterclose/presentation/widgets/shareable/shareable_analysis_card.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 
 /// 個股詳情畫面 - 以分頁顯示完整股票資訊
@@ -39,7 +32,6 @@ class StockDetailScreen extends ConsumerStatefulWidget {
 class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isExporting = false;
 
   @override
   void initState() {
@@ -140,23 +132,6 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
                       ],
                     ),
                     actions: [
-                      _isExporting
-                          ? const SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: Padding(
-                                padding: EdgeInsets.all(12),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                            )
-                          : IconButton(
-                              icon: const Icon(Icons.share_outlined),
-                              onPressed: () =>
-                                  _showShareOptions(ref.read(provider)),
-                              tooltip: 'export.title'.tr(),
-                            ),
                       IconButton(
                         icon: const Icon(Icons.compare_arrows),
                         onPressed: () {
@@ -241,78 +216,6 @@ class _StockDetailScreenState extends ConsumerState<StockDetailScreen>
               ),
       ),
     );
-  }
-
-  Future<void> _showShareOptions(StockDetailState state) async {
-    final format = await ShareOptionsSheet.show(context);
-    if (format == null || !mounted || _isExporting) return;
-
-    const shareService = ShareService();
-    const exportService = ExportService();
-
-    setState(() => _isExporting = true);
-    try {
-      switch (format) {
-        case ShareFormat.png:
-          final imageBytes = await _captureAnalysisCard(state);
-          if (imageBytes != null) {
-            await shareService.shareImage(
-              imageBytes,
-              '${widget.symbol}_analysis.png',
-            );
-          }
-        case ShareFormat.pdf:
-          final pdfBytes = await exportService.analysisDataToPdf(
-            widget.symbol,
-            state,
-          );
-          await shareService.sharePdf(
-            pdfBytes,
-            '${widget.symbol}_analysis.pdf',
-          );
-        case ShareFormat.csv:
-          final csv = exportService.analysisDataToCsv(widget.symbol, state);
-          await shareService.shareCsv(csv, '${widget.symbol}_analysis.csv');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'export.shareFailed'.tr(
-                namedArgs: {'error': ErrorDisplay.message(e)},
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isExporting = false);
-    }
-  }
-
-  Future<Uint8List?> _captureAnalysisCard(StockDetailState state) async {
-    final key = GlobalKey();
-    final overlay = Overlay.of(context);
-    final entry = OverlayEntry(
-      builder: (context) => Positioned(
-        left: -1000,
-        top: -1000,
-        child: RepaintBoundary(
-          key: key,
-          child: Material(child: ShareableAnalysisCard(state: state)),
-        ),
-      ),
-    );
-    overlay.insert(entry);
-    try {
-      await WidgetsBinding.instance.endOfFrame;
-      return await const WidgetCapture().captureFromKey(key);
-    } finally {
-      entry.remove();
-    }
   }
 }
 

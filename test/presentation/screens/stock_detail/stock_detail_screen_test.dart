@@ -181,14 +181,6 @@ void main() {
       expect(find.text('2330'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('shows share button', (tester) async {
-      widenViewport(tester);
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byIcon(Icons.share_outlined), findsOneWidget);
-    });
-
     testWidgets('shows compare button', (tester) async {
       widenViewport(tester);
       await tester.pumpWidget(buildTestWidget());

@@ -1,17 +1,12 @@
-import 'dart:io';
-
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'package:afterclose/core/theme/breakpoints.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
-import 'package:afterclose/core/utils/ics_generator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/event_calendar_provider.dart';
 import 'package:afterclose/presentation/screens/calendar/widgets/add_event_sheet.dart';
@@ -83,12 +78,6 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
                 ),
               ];
             },
-          ),
-          // 匯出 .ics
-          IconButton(
-            icon: const Icon(Icons.ios_share),
-            onPressed: _exportMonthEvents,
-            tooltip: 'calendar.export'.tr(),
           ),
           // 同步除權息
           if (state.isSyncing)
@@ -423,41 +412,6 @@ class _EventCalendarScreenState extends ConsumerState<EventCalendarScreen> {
             ),
           );
         }
-      }
-    }
-  }
-
-  Future<void> _exportMonthEvents() async {
-    final state = ref.read(eventCalendarProvider);
-    final allEvents = state.filteredEvents.values.expand((e) => e).toList();
-    if (allEvents.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('calendar.exportEmpty'.tr()),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-
-    try {
-      final icsContent = IcsGenerator.generateCalendar(allEvents);
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/afterclose_events.ics');
-      await file.writeAsString(icsContent);
-      if (!mounted) return;
-
-      await SharePlus.instance.share(ShareParams(files: [XFile(file.path)]));
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorDisplay.message(e)),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
       }
     }
   }

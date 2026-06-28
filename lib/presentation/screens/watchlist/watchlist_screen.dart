@@ -11,16 +11,13 @@ import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
-import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
 import 'package:afterclose/core/utils/responsive_helper.dart';
-import 'package:afterclose/presentation/providers/portfolio_provider.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/screens/watchlist/add_stock_dialog.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_group_header.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_stock_item.dart';
-import 'package:afterclose/presentation/services/export_service.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/stock_preview_sheet.dart';
@@ -138,37 +135,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     });
   }
 
-  Future<void> _exportCsv(bool isWatchlist) async {
-    const exportService = ExportService();
-    const shareService = ShareService();
-
-    try {
-      if (isWatchlist) {
-        final items = ref.read(watchlistProvider).filteredItems;
-        final csv = exportService.watchlistToCsv(items);
-        await shareService.shareCsv(csv, 'watchlist.csv');
-      } else {
-        final positions = ref.read(portfolioProvider).positions;
-        final csv = exportService.portfolioToCsv(positions);
-        await shareService.shareCsv(csv, 'portfolio.csv');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'export.shareFailed'.tr(
-                namedArgs: {'error': ErrorDisplay.message(e)},
-              ),
-            ),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(watchlistProvider);
@@ -248,7 +214,7 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
     );
   }
 
-  /// 更多選單（行事曆、匯出、分組）
+  /// 更多選單（比較、投資組合、行事曆、分組）
   Widget _buildMoreMenu(WatchlistState state) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
@@ -268,8 +234,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           case 'calendar':
             HapticFeedback.selectionClick();
             context.push(AppRoutes.calendar);
-          case 'export':
-            _exportCsv(true);
           case 'group_none':
             ref.read(watchlistProvider.notifier).setGroup(WatchlistGroup.none);
           case 'group_status':
@@ -309,16 +273,6 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               const Icon(Icons.calendar_month_outlined, size: 20),
               const SizedBox(width: DesignTokens.spacing12),
               Text('calendar.title'.tr()),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'export',
-          child: Row(
-            children: [
-              const Icon(Icons.file_download_outlined, size: 20),
-              const SizedBox(width: DesignTokens.spacing12),
-              Text('export.exportWatchlist'.tr()),
             ],
           ),
         ),

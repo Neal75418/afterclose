@@ -1,4 +1,3 @@
-import 'package:csv/csv.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,7 +8,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:afterclose/core/constants/animations.dart';
 import 'package:afterclose/core/constants/app_routes.dart';
-import 'package:afterclose/core/services/share_service.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/constants/filter_metadata.dart';
 import 'package:afterclose/core/constants/ui_constants.dart';
@@ -37,7 +35,6 @@ class ScanScreen extends ConsumerStatefulWidget {
 
 class _ScanScreenState extends ConsumerState<ScanScreen> {
   final _scrollController = ScrollController();
-  bool _isExporting = false;
 
   /// 觀察區（接近觸發）section 是否展開（預設收摺，早期預警但不佔版面）
   bool _observationExpanded = false;
@@ -130,20 +127,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
           tooltip: 'stockSearch.tooltip'.tr(),
           onPressed: () => _openGlobalSearch(context),
         ),
-        _isExporting
-            ? const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : IconButton(
-                icon: const Icon(Icons.ios_share),
-                onPressed: () => _exportScanCsv(state),
-                tooltip: 'export.exportCsv'.tr(),
-              ),
         PopupMenuButton<ScanSort>(
           icon: const Icon(Icons.sort),
           tooltip: 'scan.sort'.tr(),
@@ -792,58 +775,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     );
     if (symbol == null || !context.mounted) return;
     context.push(AppRoutes.stockDetail(symbol));
-  }
-
-  Future<void> _exportScanCsv(ScanState state) async {
-    if (_isExporting) return;
-    if (state.stocks.isEmpty) return;
-
-    setState(() => _isExporting = true);
-    try {
-      final csv = _scanStocksToCsv(state.stocks);
-      final date = DateFormat('yyyyMMdd').format(DateTime.now());
-      await const ShareService().shareCsv(csv, 'scan_$date.csv');
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(ErrorDisplay.message(e)),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isExporting = false);
-    }
-  }
-
-  String _scanStocksToCsv(List<ScanStockItem> stocks) {
-    final headers = [
-      'export.csvSymbol'.tr(),
-      'export.csvName'.tr(),
-      'export.csvMarket'.tr(),
-      'export.csvClose'.tr(),
-      'export.csvChange'.tr(),
-      'export.csvTrend'.tr(),
-      'export.csvScore'.tr(),
-    ];
-
-    final rows = stocks.map((s) {
-      return [
-        s.symbol,
-        s.stockName ?? '',
-        s.market ?? '',
-        s.latestClose?.toStringAsFixed(2) ?? '',
-        s.priceChange != null
-            ? '${s.priceChange! >= 0 ? "+" : ""}${s.priceChange!.toStringAsFixed(2)}%'
-            : '',
-        s.trendState ?? '',
-        s.score.toStringAsFixed(0),
-      ];
-    }).toList();
-
-    return const CsvEncoder().convert([headers, ...rows]);
   }
 
   /// 顯示股票操作選單（用於 Grid 佈局）

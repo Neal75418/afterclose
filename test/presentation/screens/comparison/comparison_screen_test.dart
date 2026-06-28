@@ -129,56 +129,6 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows share button when enough stocks', (tester) async {
-      widenViewport(tester);
-      final state = ComparisonState(
-        symbols: const ['2330', '2317'],
-        stocksMap: {
-          '2330': StockMasterEntry(
-            isActive: true,
-            updatedAt: DateTime(2026, 1, 1),
-            symbol: '2330',
-            name: 'TSMC',
-            market: 'TWSE',
-            industry: '半導體',
-          ),
-          '2317': StockMasterEntry(
-            isActive: true,
-            updatedAt: DateTime(2026, 1, 1),
-            symbol: '2317',
-            name: 'Foxconn',
-            market: 'TWSE',
-            industry: '電子',
-          ),
-        },
-      );
-      await tester.pumpWidget(buildTestWidget(comparisonState: state));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byIcon(Icons.share_outlined), findsOneWidget);
-    });
-
-    testWidgets('hides share button when only one stock', (tester) async {
-      widenViewport(tester);
-      final state = ComparisonState(
-        symbols: const ['2330'],
-        stocksMap: {
-          '2330': StockMasterEntry(
-            isActive: true,
-            updatedAt: DateTime(2026, 1, 1),
-            symbol: '2330',
-            name: 'TSMC',
-            market: 'TWSE',
-            industry: '半導體',
-          ),
-        },
-      );
-      await tester.pumpWidget(buildTestWidget(comparisonState: state));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(find.byIcon(Icons.share_outlined), findsNothing);
-    });
-
     testWidgets('shows add icon in AppBar when can add more', (tester) async {
       widenViewport(tester);
       final state = ComparisonState(
