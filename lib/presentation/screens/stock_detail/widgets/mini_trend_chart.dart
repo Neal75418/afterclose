@@ -42,8 +42,7 @@ class MiniTrendChart extends StatelessWidget {
       spots.add(FlSpot(i.toDouble(), dataPoints[i]));
     }
 
-    // 未指定 Y 範圍時自動加 ~8% 上下留白：避免線條緊貼上下緣、fill 被壓成一條，
-    // 也給曲線一點落點空間（搭配 preventCurveOverShooting + clipData）。
+    // 未指定 Y 範圍時自動加 ~8% 上下留白：避免線條緊貼上下緣、fill 被壓成一條。
     double? effMinY = minY;
     double? effMaxY = maxY;
     if (minY == null && maxY == null) {
@@ -66,17 +65,16 @@ class MiniTrendChart extends StatelessWidget {
             titlesData: const FlTitlesData(show: false),
             borderData: FlBorderData(show: false),
             lineTouchData: const LineTouchData(enabled: false),
-            // 殘餘 overshoot 裁在盒內，不會視覺斷頭/溢出（已有 Y padding 故不裁到線）
+            // 安全裁切在盒內（直線 + Y padding 下通常不會裁到線）
             clipData: const FlClipData.all(),
             minY: effMinY,
             maxY: effMaxY,
             lineBarsData: [
               LineChartBarData(
                 spots: spots,
-                isCurved: true,
-                curveSmoothness: 0.25,
-                // 消除 Catmull-Rom 曲線在資料點間「鼓出去」的波浪變形（醜的頭號元兇）
-                preventCurveOverShooting: true,
+                // 直線連接真實資料點（不做 bezier 平滑）：逐日走勢該有真實稜角，
+                // 平滑曲線會腦補出沒發生的轉折、看起來像裝飾波浪而非真實數據。
+                isCurved: false,
                 color: color,
                 barWidth: 3,
                 isStrokeCapRound: true,
