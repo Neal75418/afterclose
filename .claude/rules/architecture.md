@@ -19,7 +19,7 @@ flowchart TB
 
     subgraph Data["data/"]
         Database["database/ — Drift SQLite (tables + DAOs)"]
-        Remote["remote/ — TWSE, TPEX, FinMind, TDCC, RSS (6 clients)"]
+        Remote["remote/ — TWSE, TPEX, FinMind, TDCC, RSS (5 sources)"]
         Repos["repositories/ — 實作"]
     end
 
