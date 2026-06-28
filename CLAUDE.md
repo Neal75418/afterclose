@@ -39,7 +39,7 @@ flowchart LR
 
 ```bash
 flutter pub get                                                # 安裝依賴
-dart run build_runner build --delete-conflicting-outputs        # 程式碼生成 (Drift / Freezed / Riverpod)
+dart run build_runner build --delete-conflicting-outputs        # 程式碼生成 (僅 Drift)
 flutter test                                                   # 執行測試
 flutter test --coverage                                        # 含覆蓋率報告
 flutter analyze --no-fatal-infos                               # 靜態分析
