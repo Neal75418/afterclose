@@ -52,11 +52,11 @@ dart format .                                                  # 格式化 (pre-
 
 | 路徑                                               | 說明                                    |
 |:-------------------------------------------------|:--------------------------------------|
-| `lib/core/constants/rule_params.dart`            | 規則參數 barrel（7 domain param 檔 + enums + scores） |
+| `lib/core/constants/rule_params.dart`            | 規則參數 barrel（8 domain param 檔 + enums + scores） |
 | `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                         |
 | `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                   |
 | `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制              |
-| `lib/domain/services/rules/`                     | 60 條規則 (13 檔案)                        |
+| `lib/domain/services/rules/`                     | 60 條規則 (14 檔案)                        |
 | `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)            |
 | `lib/domain/services/update/`                    | 更新元件 (10 syncers + 3 helpers + coordinator) |
 | `lib/data/database/tables/`                      | Drift 資料表定義                           |
