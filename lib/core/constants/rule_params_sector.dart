@@ -6,13 +6,14 @@
 abstract final class SectorParams {
   /// 產業領導 tilt 權重（rank-blend：finalScore = (1−W)·baseRank + W·sectorRank）。
   ///
-  /// **0.15 = 啟用（保守）**。2026-06-28 backtest（2025-04~2026-05、IC +0.054、兩段
-  /// walk-forward 皆正、強族群 20D 超額 +6.2%）通過人工 review 後啟用。小 W = 溫和
-  /// 傾斜、主訊號仍主導。**rollback = 設回 0**（零成本、機制即休眠）。
+  /// **0 = 停用**。2026-06-28 in-sample（2025-04~2026-05）正向（IC +0.054、強族群 20D
+  /// 超額 +6.2%），一度啟用 0.15；但 2022 空頭 OOS 複驗顯示因子 **regime-dependent、
+  /// 空頭反向**（IC −0.039、後半 −0.079 = momentum crash）→ naive 常開未過完整 gate、
+  /// roll 回 0。
   ///
-  /// ⚠️ 驗證僅涵蓋近期單一 regime（無空頭 OOS）→ 待 2022 空頭年資料補深後跨 regime
-  /// 複驗，再決定維持 / 上調 0.20 / 調低。
-  static const double tiltWeight = 0.15;
+  /// 啟用條件改走「市場 regime gate」：僅大盤上升趨勢套 tilt、下降趨勢 W→0（待建 +
+  /// 重驗）。無條件設正值會在空頭系統性排錯。
+  static const double tiltWeight = 0.0;
 
   /// 「強產業」evidence chip 門檻：產業強弱百分位 ≥ 此值（前 20% 族群）視為強產業。
   static const double strongSectorChipThreshold = 0.8;
