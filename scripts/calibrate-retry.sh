@@ -64,7 +64,7 @@ set -uo pipefail
 
 # 自動切到 repo root（script 可能從任何目錄呼叫）
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$REPO_ROOT"
+cd "$REPO_ROOT" || { echo "❌ 無法切換到 repo root: $REPO_ROOT" >&2; exit 1; }
 
 # ============================================================================
 # Prerequisites
