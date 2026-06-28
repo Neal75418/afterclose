@@ -58,6 +58,7 @@ class IndustryPerformanceRow extends StatelessWidget {
         const SizedBox(height: DesignTokens.spacing10),
         if (isDesktop)
           Wrap(
+            alignment: WrapAlignment.center,
             spacing: DesignTokens.spacing8,
             runSpacing: DesignTokens.spacing8,
             children: _desktopItems().map((ind) {
