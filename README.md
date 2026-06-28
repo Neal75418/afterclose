@@ -11,7 +11,7 @@ _See what changed, without noise._
 [![Flutter](https://img.shields.io/badge/Flutter-3.38-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.10-0175C2?logo=dart&logoColor=white)](https://dart.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-2241_passing-brightgreen)](https://github.com/Neal75418/afterclose/actions)
+[![Tests](https://img.shields.io/badge/Tests-2507_passing-brightgreen)](https://github.com/Neal75418/afterclose/actions)
 [![CI](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml/badge.svg)](https://github.com/Neal75418/afterclose/actions/workflows/flutter.yml)
 [![codecov](https://codecov.io/gh/Neal75418/afterclose/branch/main/graph/badge.svg)](https://codecov.io/gh/Neal75418/afterclose)
 
@@ -34,40 +34,39 @@ _See what changed, without noise._
 
 ## 功能
 
-| 頁面                             | 功能                  |
-|:-------------------------------|:--------------------|
-| **Today**                      | 市場摘要 + 三模式選股（起漲候選 / 強勢觀察 / 回檔觀察）|
-| **Scan**                       | 上市櫃全市場掃描，依評分排序      |
-| **Watchlist**                  | 自選清單狀態追蹤 + 無限滾動分頁   |
-| **Stock Detail**               | 趨勢、關鍵價位、推薦理由、新聞     |
-| **Custom Screening**           | 自定義篩選策略 + 回測驗證      |
-| **Comparison**                 | 多檔股票並列比較            |
-| **Portfolio**                  | 持倉追蹤與損益計算           |
-| **News**                       | 多源 RSS 新聞彙整         |
-| **Alerts**                     | 23 種價格與技術指標警示       |
-| **Calendar**                   | 事件行事曆               |
-| **Industry**                   | 產業概覽                |
-| **Short Sell Ranking**         | 融券排行                |
-| **Recommendation Performance** | 推薦績效追蹤與回測           |
-| **Settings**                   | 偏好設定                |
-| **Onboarding**                 | 首次使用引導              |
+| 頁面                             | 功能                               |
+|:-------------------------------|:---------------------------------|
+| **Today**                      | 市場摘要 + 三模式選股（起漲候選 / 強勢觀察 / 回檔觀察） |
+| **Scan**                       | 上市櫃全市場掃描，依評分排序                   |
+| **Watchlist**                  | 自選清單狀態追蹤 + 無限滾動分頁                |
+| **Stock Detail**               | 趨勢、關鍵價位、推薦理由、新聞                  |
+| **Comparison**                 | 多檔股票並列比較                         |
+| **Portfolio**                  | 持倉追蹤與損益計算                        |
+| **News**                       | 多源 RSS 新聞彙整                      |
+| **Alerts**                     | 23 種價格與技術指標警示                    |
+| **Calendar**                   | 事件行事曆                            |
+| **Industry**                   | 產業概覽                             |
+| **Short Sell Ranking**         | 融券排行                             |
+| **Recommendation Performance** | 推薦績效追蹤與回測                        |
+| **Settings**                   | 偏好設定                             |
+| **Onboarding**                 | 首次使用引導                           |
 
 ---
 
 ## 技術棧
 
-| 類別              | 技術                                       | 版本               |
-|:----------------|:-----------------------------------------|:-----------------|
-| Framework       | Flutter + Dart                           | 3.38 / 3.10      |
-| State           | Riverpod                                 | 3.2.1            |
-| Database        | Drift (SQLite)                           | 2.32 (34 tables, 21 DAOs) |
-| Network         | Dio                                      | 5.9.2            |
-| Navigation      | GoRouter                                 | 17.1.0           |
-| Charts          | fl_chart + k_chart_plus + candlesticks   | —                |
-| Code Gen        | Freezed + Riverpod Generator + Drift Dev | —                |
-| Testing         | Flutter Test + Mocktail                  | 2241 cases      |
-| CI/CD           | GitHub Actions + Codecov                 | —                |
-| Crash Reporting | Sentry                                   | 9.14.0           |
+| 類別              | 技術                                       | 版本                        |
+|:----------------|:-----------------------------------------|:--------------------------|
+| Framework       | Flutter + Dart                           | 3.38 / 3.10               |
+| State           | Riverpod                                 | 3.2.1                     |
+| Database        | Drift (SQLite)                           | 2.32 (30 tables, 22 DAOs) |
+| Network         | Dio                                      | 5.9.2                     |
+| Navigation      | GoRouter                                 | 17.1.0                    |
+| Charts          | fl_chart + k_chart_plus                  | —                         |
+| Code Gen        | Drift Dev                                | —                         |
+| Testing         | Flutter Test + Mocktail                  | 2507 cases                |
+| CI/CD           | GitHub Actions + Codecov                 | —                         |
+| Crash Reporting | Sentry                                   | 9.15.0                    |
 
 ---
 
@@ -98,22 +97,22 @@ flowchart LR
     end
 
     subgraph Data["Data Layer"]
-        Remote["API Clients (6)"]
-        Repo["Repositories (18)"]
+        Remote["API Clients (5)"]
+        Repo["Repositories (17)"]
         TDCC["TDCC"]
-        DB[("SQLite\n34 tables")]
+        DB[("SQLite\n30 tables")]
     end
 
     subgraph Domain["Domain Layer"]
-        IF["Interfaces (10)"]
+        IF["Interfaces (12)"]
         Services["Analysis / Scoring"]
-        Rules["Rule Engine (62)"]
+        Rules["Rule Engine (64)"]
         Update["Update Services (14)"]
     end
 
     subgraph Presentation["Presentation"]
         Provider["Riverpod Providers"]
-        UI["15 Screens"]
+        UI["13 Screens"]
     end
 
     TWSE & TPEX & FM & TDCC & RSS --> Remote
@@ -130,30 +129,30 @@ flowchart LR
 ```
 lib/
 ├── core/
-│   ├── constants/       # 11 files — RuleParams (7 files, 200+ 參數), AnalysisParams, ApiConfig, etc.
+│   ├── constants/       # RuleParams (8 param 檔) + 閾值 / 設定常數
 │   ├── exceptions/      # AppException sealed hierarchy
 │   ├── services/        # CacheWarmup, Notification, Share
 │   ├── theme/           # AppTheme, DesignTokens, IndicatorColors
 │   └── utils/           # Logger, Result, Calendar, RequestDeduplicator, LruCache
 ├── data/
-│   ├── database/        # Drift SQLite (34 tables, 21 DAOs, BatchQueryHelper)
-│   ├── remote/          # TWSE, TPEX, FinMind, TDCC, RSS clients (6)
-│   ├── repositories/    # 18 files (15 repos + 3 helpers)
-│   └── models/          # DTOs with Freezed + JSON serialization
+│   ├── database/        # Drift SQLite (30 tables, 22 DAOs)
+│   ├── remote/          # TWSE, TPEX, FinMind, TDCC, RSS（5 資料源）
+│   ├── repositories/    # Repository 實作 + price source / filter helpers
+│   └── models/          # API DTOs（JSON serialization）
 ├── domain/
-│   ├── models/          # 8 domain model files
-│   ├── repositories/    # 10 abstract interfaces
+│   ├── models/          # Domain 模型
+│   ├── repositories/    # 抽象介面
 │   └── services/
-│       ├── rules/       # 62 stock rules (13 files)
-│       ├── update/      # 14 update components (9 syncers + 4 helpers + coordinator)
-│       ├── analysis/    # 4 analysis sub-services
-│       └── ...          # 25 service files (Scoring, Screening, RuleAccuracy, etc.)
+│       ├── rules/       # 64 條規則 (14 檔案)
+│       ├── update/      # 14 元件 (10 syncers + 3 helpers + coordinator)
+│       ├── analysis/    # 分析子服務
+│       └── ...          # Scoring / Screening / RuleAccuracy 等服務
 └── presentation/
-    ├── providers/       # 23 provider files (Notifiers, Loaders, State)
-    ├── screens/         # 15 screens
+    ├── providers/       # Riverpod Notifiers / Loaders / State
+    ├── screens/         # 13 screens
     ├── controllers/     # Business logic facades
-    ├── mappers/         # DTO → UI model conversion
-    └── widgets/         # Shared UI components
+    ├── mappers/         # DTO → UI model 轉換
+    └── widgets/         # 共用 UI 元件
 ```
 
 ---
@@ -213,7 +212,7 @@ flutter run
 
 ```bash
 flutter pub get                                                # 安裝依賴
-flutter test                                                   # 執行測試 (2241 cases)
+flutter test                                                   # 執行測試 (2507 cases)
 flutter analyze                                                # 靜態分析
 dart format .                                                  # 格式化程式碼
 dart run build_runner build --delete-conflicting-outputs        # 程式碼生成
@@ -225,7 +224,7 @@ dart run build_runner build --delete-conflicting-outputs        # 程式碼生�
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2241 |
+| 測試總數             | 2507  |
 | 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
