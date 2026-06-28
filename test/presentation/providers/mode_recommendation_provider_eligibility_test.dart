@@ -500,6 +500,77 @@ void main() {
     });
   });
 
+  group('computeRet20dForHistory', () {
+    test('null when history < 21', () {
+      expect(
+        computeRet20dForHistory(List.generate(20, (_) => _price(100))),
+        isNull,
+      );
+    });
+
+    test('null when endpoint close null', () {
+      final h = [
+        _price(null),
+        ...List.generate(19, (_) => _price(120)),
+        _price(150),
+      ];
+      expect(computeRet20dForHistory(h), isNull);
+    });
+
+    test('computes +20% (index length-21 = 100, last = 120)', () {
+      final h = [
+        _price(100),
+        ...List.generate(19, (_) => _price(110)),
+        _price(120),
+      ];
+      expect(computeRet20dForHistory(h), closeTo(20.0, 0.001));
+    });
+  });
+
+  group('computeIndustryMomentum', () {
+    // 各股 21 根，最後一根 close 決定 20D 報酬（起點固定 100）
+    List<DailyPriceEntry> hist(double last) => [
+      _price(100),
+      ...List.generate(19, (_) => _price(105)),
+      _price(last),
+    ];
+
+    test('groups by industry and takes member median', () {
+      final result = computeIndustryMomentum(
+        priceHistories: {
+          'A1': hist(110), // +10%
+          'A2': hist(130), // +30%  → 半導體 median(10,30)=20
+          'B1': hist(95), // -5%    → 金融 median(-5)=-5
+        },
+        industries: {'A1': '半導體業', 'A2': '半導體業', 'B1': '金融業'},
+      );
+      expect(result['半導體業'], closeTo(20.0, 0.001));
+      expect(result['金融業'], closeTo(-5.0, 0.001));
+    });
+
+    test('skips null-industry / insufficient-history stocks', () {
+      final result = computeIndustryMomentum(
+        priceHistories: {
+          'A1': hist(110),
+          'NOIND': hist(200), // 無產業 → 略過
+          'SHORT': List.generate(10, (_) => _price(100)), // 歷史不足 → 略過
+        },
+        industries: {'A1': '半導體業', 'NOIND': null, 'SHORT': '航運業'},
+      );
+      expect(result.keys, ['半導體業']);
+      expect(result['半導體業'], closeTo(10.0, 0.001));
+    });
+
+    test('odd member count uses middle median', () {
+      final result = computeIndustryMomentum(
+        priceHistories: {'A': hist(110), 'B': hist(120), 'C': hist(140)},
+        industries: {'A': '電子', 'B': '電子', 'C': '電子'},
+      );
+      // 報酬 10/20/40 → median 20
+      expect(result['電子'], closeTo(20.0, 0.001));
+    });
+  });
+
   group('isSignalTier — 觀察層擋在 mode tab 之外', () {
     DailyAnalysisEntry analysis({
       double scoreShort = 0,

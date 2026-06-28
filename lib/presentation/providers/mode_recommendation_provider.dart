@@ -9,6 +9,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/dao/analysis_dao.dart';
+import 'package:afterclose/domain/services/analysis/sector_strength_service.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -122,6 +123,46 @@ double? computeRet60dForHistory(List<DailyPriceEntry>? history) {
   final old = history[history.length - 61].close;
   if (latest == null || old == null || old == 0) return null;
   return (latest - old) / old * 100;
+}
+
+/// 20D 報酬（%），供「產業領導」聚合各產業動能。回 null 當 history < 21 筆 /
+/// 端點 close null / 起點 0。
+@visibleForTesting
+double? computeRet20dForHistory(List<DailyPriceEntry>? history) {
+  if (history == null || history.length < 21) return null;
+  final latest = history.last.close;
+  final old = history[history.length - 21].close;
+  if (latest == null || old == null || old == 0) return null;
+  return (latest - old) / old * 100;
+}
+
+/// 由個股 20D 報酬聚合各產業動能（成員股**中位數**），供 [SectorStrengthService]
+/// 排名。中位數抗離群；歷史不足 / 無產業的股票略過。
+///
+/// production 與 backtest 同口徑（皆由個股重建），避免官方產業指數歷史薄造成的
+/// production/backtest 分歧（spec §4a）。
+@visibleForTesting
+Map<String, double> computeIndustryMomentum({
+  required Map<String, List<DailyPriceEntry>> priceHistories,
+  required Map<String, String?> industries,
+}) {
+  final byIndustry = <String, List<double>>{};
+  for (final entry in priceHistories.entries) {
+    final industry = industries[entry.key];
+    if (industry == null || industry.isEmpty) continue;
+    final ret = computeRet20dForHistory(entry.value);
+    if (ret == null) continue;
+    byIndustry.putIfAbsent(industry, () => <double>[]).add(ret);
+  }
+  final result = <String, double>{};
+  for (final e in byIndustry.entries) {
+    final sorted = List<double>.from(e.value)..sort();
+    final mid = sorted.length ~/ 2;
+    result[e.key] = sorted.length.isOdd
+        ? sorted[mid]
+        : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return result;
 }
 
 /// 是否為「成立訊號」層（任一 horizon ≥ [RuleParams.minScoreThreshold]）。
@@ -389,8 +430,51 @@ final _modeAssignmentsProvider =
         final r = computeRet60dForHistory(data.priceHistories[s.symbol]);
         if (r != null) ret60ForB[s.symbol] = r;
       }
+
+      // **產業領導 tilt（rank-blend）**：強族群股加分上移、弱族群股壓低。
+      // SectorParams.tiltWeight = 0 → dormant（走原排序、production 零變更、不算
+      // sectorStrength 省成本）；> 0 才啟用（待離線 backtest 校準 W 後）。只套 A + B。
+      final tiltWeight = SectorParams.tiltWeight;
+      final sectorService = SectorStrengthService();
+      final sectorStrength = tiltWeight > 0
+          ? sectorService.rankByPercentile(
+              computeIndustryMomentum(
+                priceHistories: data.priceHistories,
+                industries: {
+                  for (final symbol in data.priceHistories.keys)
+                    symbol: data.stocks[symbol]?.industry,
+                },
+              ),
+            )
+          : const <String, double>{};
+
       for (final mode in assignmentMap.keys) {
-        if (mode == ScoringMode.strengthObserve) {
+        final applyTilt = tiltWeight > 0 && mode != ScoringMode.weaknessObserve;
+        if (applyTilt) {
+          final stocks = assignmentMap[mode]!;
+          // base 排序鍵：B = 60D 報酬（null 視為最弱）、A = mode 分數
+          final baseKey = <String, double>{
+            for (final s in stocks)
+              s.symbol: mode == ScoringMode.strengthObserve
+                  ? (ret60ForB[s.symbol] ?? double.negativeInfinity)
+                  : s.modeScoreShort,
+          };
+          final tilted = sectorService.sectorTiltedScores(
+            baseKeyBySymbol: baseKey,
+            industryBySymbol: {
+              for (final s in stocks) s.symbol: data.stocks[s.symbol]?.industry,
+            },
+            industryStrength: sectorStrength,
+            weight: tiltWeight,
+          );
+          stocks.sort((a, b) {
+            final byFinal = (tilted[b.symbol] ?? 0).compareTo(
+              tilted[a.symbol] ?? 0,
+            );
+            if (byFinal != 0) return byFinal;
+            return a.symbol.compareTo(b.symbol);
+          });
+        } else if (mode == ScoringMode.strengthObserve) {
           assignmentMap[mode]!.sort((a, b) {
             final ra = ret60ForB[a.symbol];
             final rb = ret60ForB[b.symbol];

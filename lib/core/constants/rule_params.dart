@@ -6,6 +6,7 @@ export 'package:afterclose/core/constants/rule_params_indicator.dart';
 export 'package:afterclose/core/constants/rule_params_institutional.dart';
 export 'package:afterclose/core/constants/rule_params_pattern.dart';
 export 'package:afterclose/core/constants/rule_params_pullback.dart';
+export 'package:afterclose/core/constants/rule_params_sector.dart';
 export 'package:afterclose/core/constants/rule_params_trend.dart';
 export 'package:afterclose/core/constants/rule_scores.dart';
 
