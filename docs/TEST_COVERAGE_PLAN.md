@@ -8,15 +8,16 @@
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 測試進度（2241 cases）
-    "Domain 層" : 815
-    "Data 層" : 567
-    "Presentation 層" : 859
+pie showData title 測試進度（2507 cases）
+    "Domain 層" : 702
+    "Data 層" : 455
+    "Presentation 層" : 978
+    "Tool / 其他" : 372
 ```
 
 | 指標               | 數值    |
 |:-----------------|:------|
-| 測試總數             | 2241  |
+| 測試總數             | 2507  |
 | 執行時間             | ~40 秒 |
 | Domain 覆蓋率       | 85%+  |
 | Data 覆蓋率         | 85%+  |
@@ -77,7 +78,7 @@ flowchart TB
 |:---|:--------------------------------------------------|
 | 檔案 | `test/domain/services/analysis_service_test.dart` |
 | 範圍 | 趨勢檢測、反轉檢測、協調器、邊界條件                                |
-| 備註 | 已拆分為 4 個子服務，可分別測試                                 |
+| 備註 | ✅ `analysis_service_test.dart` 已建立；UpdateService 整合測試仍待補 |
 
 ### 邊界情況補充
 

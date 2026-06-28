@@ -2,7 +2,7 @@
 
 > 這份文件說明 `tool/recalibrate.dart` 如何把歷史 `rule_accuracy` 統計轉成 calibrated rule scores JSON 檔，以及人工 review 工作流程。
 >
-> **狀態**：Stage 2 LEAN 已 ship — pipeline 建好但 scoring layer 還沒消費 JSON。等 Stage 5 才會有 runtime loader 把 calibrated scores 接進 `rule_scores.dart`。
+> **狀態**：pipeline + Stage 5 runtime loader 都已 ship — scoring 會透過 `calibrated_scores/` registry 消費 calibrated JSON，無資料時 fallback 到 `rule_scores.dart` 手調基礎分。目前 production JSON 多為 fallback（實質跑在手調分上，為設計非 bug）。
 
 ---
 

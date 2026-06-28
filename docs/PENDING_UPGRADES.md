@@ -4,6 +4,8 @@
 
 所有計劃中的 Major 版本升級已全部完成。
 
+> **註**：下表部分套件後續已移除，本表保留作升級歷史 — `freezed` / `riverpod_annotation` / `riverpod_generator`（codegen 實際未使用，2026-06 移除）、`csv` / `share_plus`（export/share 功能移除）。
+
 ---
 
 ## 升級路線圖
