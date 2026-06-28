@@ -57,36 +57,7 @@ class IndustryPerformanceRow extends StatelessWidget {
         ),
         const SizedBox(height: DesignTokens.spacing10),
         if (isDesktop)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const gap = DesignTokens.spacing8;
-              const minCardWidth = 120.0;
-              final items = _desktopItems();
-              final width = constraints.maxWidth;
-              // 依實際可用寬度（非整個視窗，避免 paired 欄位誤判）決定欄數，
-              // 卡片等寬填滿整列 → 不留右側空隙、版面對稱。8 張卡用 1/2/4 欄皆整除。
-              final fit = ((width + gap) / (minCardWidth + gap)).floor();
-              final cols = fit >= 4
-                  ? 4
-                  : fit >= 2
-                  ? 2
-                  : 1;
-              final cardWidth = (width - gap * (cols - 1)) / cols;
-              return Wrap(
-                spacing: gap,
-                runSpacing: gap,
-                children: items
-                    .map(
-                      (ind) => SizedBox(
-                        width: cardWidth,
-                        height: 72,
-                        child: _IndustryCard(industry: ind),
-                      ),
-                    )
-                    .toList(),
-              );
-            },
-          )
+          _desktopGrid(_desktopItems())
         else
           SizedBox(
             height: 72,
@@ -121,6 +92,39 @@ class IndustryPerformanceRow extends StatelessWidget {
       if (seen.add(item.industry)) result.add(item);
     }
     return result;
+  }
+
+  /// 桌面：等寬欄位填滿整列（Row + Expanded，相容外層 [IntrinsicHeight]）。
+  ///
+  /// 不能用 LayoutBuilder — 它不支援 IntrinsicHeight 的 intrinsic 量測，放進
+  /// 寬版雙欄（`_buildPairedRow` 的 IntrinsicHeight）會讓量測崩潰、sections
+  /// 互相重疊。Row+Expanded 支援 intrinsics，安全。
+  Widget _desktopGrid(List<IndustrySummary> items) {
+    const gap = DesignTokens.spacing8;
+    const cols = 4;
+    final rows = <Widget>[];
+    for (var i = 0; i < items.length; i += cols) {
+      final cells = <Widget>[];
+      for (var j = 0; j < cols; j++) {
+        if (j > 0) cells.add(const SizedBox(width: gap));
+        final idx = i + j;
+        cells.add(
+          Expanded(
+            child: idx < items.length
+                ? SizedBox(
+                    height: 72,
+                    child: _IndustryCard(industry: items[idx]),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        );
+      }
+      if (rows.isNotEmpty) rows.add(const SizedBox(height: gap));
+      rows.add(
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: cells),
+      );
+    }
+    return Column(children: rows);
   }
 }
 
