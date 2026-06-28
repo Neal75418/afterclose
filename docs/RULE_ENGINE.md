@@ -199,19 +199,16 @@ pie showData title 依類別分佈（66 reason / 64 規則）
 %%{init: {'theme': 'dark'}}%%
 flowchart LR
     Rules["Rule Scores"] --> Bonus["加成"]
-    Bonus --> Cooldown["冷卻"]
-    Cooldown --> Cap["0 ~ 80"]
+    Bonus --> Cap["0 ~ 80"]
 
     style Rules fill:#2563EB,color:#fff,stroke:#1D4ED8
     style Bonus fill:#059669,color:#fff,stroke:#047857
-    style Cooldown fill:#7C3AED,color:#fff,stroke:#6D28D9
     style Cap fill:#D97706,color:#fff,stroke:#B45309
 ```
 
 | 階段 | 邏輯                                                                                      |
 |:---|:----------------------------------------------------------------------------------------|
 | 加成 | 投信主導 +5（其餘 VOLUME / BREAKOUT 組合加成已於 2026-04 移除，改由個別規則內建量能要求） |
-| 冷卻 | 同股票 2 日內已推薦 → -15 分（固定扣分）                                                               |
 | 截斷 | 負分歸零、上限 80                                                                              |
 
 ---
