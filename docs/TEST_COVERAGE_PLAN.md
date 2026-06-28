@@ -74,10 +74,10 @@ flowchart TB
 
 ### AnalysisService 子服務測試
 
-| 項目 | 說明                                                |
-|:---|:--------------------------------------------------|
-| 檔案 | `test/domain/services/analysis_service_test.dart` |
-| 範圍 | 趨勢檢測、反轉檢測、協調器、邊界條件                                |
+| 項目 | 說明                                                       |
+|:---|:---------------------------------------------------------|
+| 檔案 | `test/domain/services/analysis_service_test.dart`        |
+| 範圍 | 趨勢檢測、反轉檢測、協調器、邊界條件                                       |
 | 備註 | ✅ `analysis_service_test.dart` 已建立；UpdateService 整合測試仍待補 |
 
 ### 邊界情況補充

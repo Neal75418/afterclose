@@ -169,23 +169,23 @@ score = 10 + (raw_weight - minRaw) / (maxRaw - minRaw) × 25
 
 規則會被判定為 `active: false` 並得分 0 的三種情況，check order 重要：
 
-| # | 門檻 | `cut_reason` | 觸發條件 | 為什麼先檢查 |
-|:---:|:---|:---|:---|:---|
-| 1 | samples | `sample_too_small` | `triggerCount < 30` | 樣本太少，所有統計都不可信 |
-| 2 | z-stat | `t_stat_below_threshold` | `z_stat < 1.5` | 顯著性測試失敗，效果可能是雜訊 |
-| 3 | hit_rate | `hit_rate_below_threshold` | `hit_rate < 0.55` | 顯著但勝率太低，實戰價值不足 |
+| # | 門檻       | `cut_reason`               | 觸發條件                | 為什麼先檢查          |
+|:-:|:---------|:---------------------------|:--------------------|:----------------|
+| 1 | samples  | `sample_too_small`         | `triggerCount < 30` | 樣本太少，所有統計都不可信   |
+| 2 | z-stat   | `t_stat_below_threshold`   | `z_stat < 1.5`      | 顯著性測試失敗，效果可能是雜訊 |
+| 3 | hit_rate | `hit_rate_below_threshold` | `hit_rate < 0.55`   | 顯著但勝率太低，實戰價值不足  |
 
 **Check order 的重要性**：檢查順序從「最嚴格 / 最通用」到「最細節」。樣本不足時無法做後續測試；z-stat 失敗時 hit_rate 數字本身不可靠。
 
 ### 邊界案例示意
 
-| Scenario | hit_rate | samples | z-stat | Cut reason |
-|:---|:---:|:---:|:---:|:---|
-| 新規則，資料不足 | 0.65 | 25 | — | sample_too_small |
-| 小樣本瞎貓撞死耗子 | 0.80 | 20 | — | sample_too_small |
-| 中性訊號 | 0.51 | 50 | 0.14 | t_stat_below_threshold |
-| 顯著但勝率邊緣 | 0.54 | 500 | 1.79 | hit_rate_below_threshold |
-| 顯著且強勢 | 0.65 | 100 | 3.15 | **active** ✅ |
+| Scenario  | hit_rate | samples | z-stat | Cut reason               |
+|:----------|:--------:|:-------:|:------:|:-------------------------|
+| 新規則，資料不足  |   0.65   |   25    |   —    | sample_too_small         |
+| 小樣本瞎貓撞死耗子 |   0.80   |   20    |   —    | sample_too_small         |
+| 中性訊號      |   0.51   |   50    |  0.14  | t_stat_below_threshold   |
+| 顯著但勝率邊緣   |   0.54   |   500   |  1.79  | hit_rate_below_threshold |
+| 顯著且強勢     |   0.65   |   100   |  3.15  | **active** ✅             |
 
 ---
 
@@ -226,22 +226,22 @@ score = 10 + (raw_weight - minRaw) / (maxRaw - minRaw) × 25
 
 ### 欄位說明
 
-| 欄位 | 型別 | 說明 |
-|:---|:---|:---|
-| `schema_version` | int | 目前固定為 1。升級公式（例如切到 IC-based）時 bump |
-| `generated_at` | ISO 8601 UTC string | 跑 `recalibrate.dart` 的時間戳 |
-| `horizon` | `"5d"` \| `"60d"` | 此檔對應的時間尺度 |
-| `backtest.window_days` | int | 回測天數（目前 504 = 2 trading years） |
-| `backtest.train_ratio` | float | Train/test split ratio（目前 0.7，但 Stage 2 LEAN 未實作 out-of-sample validation） |
-| `backtest.success_threshold_pct` | float | 對應 horizon 的 success 判定門檻。canonical 值由 [`CalibrationThresholds.successThresholds`](../lib/core/constants/calibration_thresholds.dart) 提供（5D=1.5%、60D=8.0%；drift guard 會把 JSON 對比 canonical 拒載失準版本）。 |
-| `backtest.formula` | string | 公式版本識別子，目前 `linear_map_v1` |
-| `rules.*.score` | int | 校準後分數（cut 為 0，active 為 [10, 35]） |
-| `rules.*.hit_rate` | float (4 dp) | 命中率 |
-| `rules.*.avg_return` | float (4 dp) | 平均報酬率（%） |
-| `rules.*.samples` | int | 觸發次數 |
-| `rules.*.t_stat` | float (4 dp) | Proportion z-test 值 |
-| `rules.*.active` | bool | 是否通過 cut |
-| `rules.*.cut_reason` | string (optional) | 只有 cut 規則有此欄位 |
+| 欄位                               | 型別                  | 說明                                                                                                                                                                                                  |
+|:---------------------------------|:--------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`                 | int                 | 目前固定為 1。升級公式（例如切到 IC-based）時 bump                                                                                                                                                                   |
+| `generated_at`                   | ISO 8601 UTC string | 跑 `recalibrate.dart` 的時間戳                                                                                                                                                                           |
+| `horizon`                        | `"5d"` \| `"60d"`   | 此檔對應的時間尺度                                                                                                                                                                                           |
+| `backtest.window_days`           | int                 | 回測天數（目前 504 = 2 trading years）                                                                                                                                                                      |
+| `backtest.train_ratio`           | float               | Train/test split ratio（目前 0.7，但 Stage 2 LEAN 未實作 out-of-sample validation）                                                                                                                          |
+| `backtest.success_threshold_pct` | float               | 對應 horizon 的 success 判定門檻。canonical 值由 [`CalibrationThresholds.successThresholds`](../lib/core/constants/calibration_thresholds.dart) 提供（5D=1.5%、60D=8.0%；drift guard 會把 JSON 對比 canonical 拒載失準版本）。 |
+| `backtest.formula`               | string              | 公式版本識別子，目前 `linear_map_v1`                                                                                                                                                                          |
+| `rules.*.score`                  | int                 | 校準後分數（cut 為 0，active 為 [10, 35]）                                                                                                                                                                    |
+| `rules.*.hit_rate`               | float (4 dp)        | 命中率                                                                                                                                                                                                 |
+| `rules.*.avg_return`             | float (4 dp)        | 平均報酬率（%）                                                                                                                                                                                            |
+| `rules.*.samples`                | int                 | 觸發次數                                                                                                                                                                                                |
+| `rules.*.t_stat`                 | float (4 dp)        | Proportion z-test 值                                                                                                                                                                                 |
+| `rules.*.active`                 | bool                | 是否通過 cut                                                                                                                                                                                            |
+| `rules.*.cut_reason`             | string (optional)   | 只有 cut 規則有此欄位                                                                                                                                                                                       |
 
 ---
 
