@@ -2,7 +2,7 @@
 
 > ← [Back to README](../README.md)
 
-AfterClose 推薦規則引擎 — **62 條異常偵測規則**
+AfterClose 推薦規則引擎 — **64 條異常偵測規則**（產生 66 種 reason type；2 條規則各發 2 種）
 
 ---
 
@@ -11,7 +11,7 @@ AfterClose 推薦規則引擎 — **62 條異常偵測規則**
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
 flowchart LR
-    Data["市場資料"] --> Engine["Rule Engine\n62 Rules"]
+    Data["市場資料"] --> Engine["Rule Engine\n64 Rules"]
     Engine --> Score["分數合成"]
     Score --> Modes["三模式選股<br/>起漲 / 強勢 / 回檔"]
 
@@ -34,12 +34,13 @@ flowchart LR
 
 ```mermaid
 %%{init: {'theme': 'dark'}}%%
-pie showData title 62 條規則分佈
+pie showData title 依類別分佈（66 reason / 64 規則）
     "技術型態 (21)" : 21
     "價量訊號 (12)" : 12
     "基本面 (15)" : 15
     "籌碼面 (7)" : 7
     "殺手級功能 (7)" : 7
+    "強股回檔 (4)" : 4
 ```
 
 ---
@@ -179,6 +180,19 @@ pie showData title 62 條規則分佈
 
 ---
 
+## 🔄 強股回檔（Mode C v2）
+
+### 回檔進場 (4)
+
+| 規則                |  分數 | 條件                            |
+|:------------------|----:|:------------------------------|
+| PULLBACK_TO_MA20  | +15 | 強勢趨勢拉回 MA20、量縮、趨勢未破           |
+| PULLBACK_TO_MA10  | +12 | 淺回檔至 MA10（close 仍在 MA20 上）、量縮 |
+| HAMMER_AT_SUPPORT | +18 | 拉回 MA20/MA60 支撐 + 錘子線止跌       |
+| KD_HIGH_PULLBACK  | +12 | KD 高檔回落未死叉、多頭排列維持            |
+
+---
+
 ## 🧮 分數合成
 
 ```mermaid
@@ -204,7 +218,7 @@ flowchart LR
 
 ## ⚙️ 關鍵參數
 
-> 來源：`lib/core/constants/rule_params.dart`（7 typed classes, 200+ 參數）
+> 來源：`lib/core/constants/rule_params.dart`（8 typed classes, 200+ 參數）
 
 | 參數                          |   值 | 說明         |
 |:----------------------------|----:|:-----------|

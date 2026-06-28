@@ -159,9 +159,9 @@ abstract final class RuleParams {
   // ==================================================
 
   /// 每檔股票最多理由數（資料庫儲存用，供篩選功能使用）
-  /// 設為 60 確保所有規則都能被儲存（目前共 60 條規則）
+  /// 設為 64 確保所有規則都能被儲存（目前 64 條規則；單股每規則最多 1 理由 → 上限 64）
   /// UI 顯示時會用 .take(2) 或 .take(3) 限制
-  static const int maxReasonsPerStock = 60;
+  static const int maxReasonsPerStock = 64;
 
   /// 每日 Top N 推薦數量
   ///

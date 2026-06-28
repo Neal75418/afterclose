@@ -243,9 +243,9 @@ void main() {
         verify(() => mockDb.replaceReasons('2330', date, any())).called(1);
       });
 
-      test('limits reasons to maxReasonsPerStock (60)', () async {
+      test('limits reasons to maxReasonsPerStock (64)', () async {
         final date = DateTime(2024, 6, 15);
-        // Create 70 reasons (exceeds the 60-rule cap)
+        // Create 70 reasons (exceeds the 64-rule cap)
         final reasons = List.generate(
           70,
           (i) => ReasonData(
