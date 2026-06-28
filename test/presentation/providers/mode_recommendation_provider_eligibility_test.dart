@@ -571,6 +571,39 @@ void main() {
     });
   });
 
+  group('isMarketUptrend（regime gate）', () {
+    // count 檔，每檔 len 根；最後一根對 [len-1-120] 漲 retPct%
+    Map<String, List<DailyPriceEntry>> universe(
+      int count,
+      double retPct,
+      int len,
+    ) {
+      return {
+        for (var i = 0; i < count; i++)
+          's$i': [
+            ...List.generate(len - 1, (_) => _price(100)),
+            _price(100 * (1 + retPct / 100)),
+          ],
+      };
+    }
+
+    test('有效股 < 50 → false（資料不足保守不套）', () {
+      expect(isMarketUptrend(universe(40, 10, 121), 120), isFalse);
+    });
+
+    test('全市場 120D 平均報酬 > 0 → true（上升 regime）', () {
+      expect(isMarketUptrend(universe(60, 10, 121), 120), isTrue);
+    });
+
+    test('全市場 120D 平均報酬 < 0 → false（下降 regime、gate 關）', () {
+      expect(isMarketUptrend(universe(60, -10, 121), 120), isFalse);
+    });
+
+    test('歷史不足 lookback+1 的股票被略過 → 不足 50 檔 → false', () {
+      expect(isMarketUptrend(universe(60, 10, 100), 120), isFalse);
+    });
+  });
+
   group('isSignalTier — 觀察層擋在 mode tab 之外', () {
     DailyAnalysisEntry analysis({
       double scoreShort = 0,

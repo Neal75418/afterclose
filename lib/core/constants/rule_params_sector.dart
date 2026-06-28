@@ -6,14 +6,18 @@
 abstract final class SectorParams {
   /// 產業領導 tilt 權重（rank-blend：finalScore = (1−W)·baseRank + W·sectorRank）。
   ///
-  /// **0 = 停用**。2026-06-28 in-sample（2025-04~2026-05）正向（IC +0.054、強族群 20D
-  /// 超額 +6.2%），一度啟用 0.15；但 2022 空頭 OOS 複驗顯示因子 **regime-dependent、
-  /// 空頭反向**（IC −0.039、後半 −0.079 = momentum crash）→ naive 常開未過完整 gate、
-  /// roll 回 0。
+  /// **0.15 = 啟用（保守、受 regime gate 保護）**。族群動能因子 regime-dependent：
+  /// 持續多頭有效（in-sample IC +0.054、regime-split 上升 IC +0.041~0.054）、空頭/
+  /// 轉折反向（2022 OOS IC −0.078 = momentum crash）。故 tilt **僅在市場上升 regime
+  /// 套用**（見 [regimeLookbackDays] 與 isMarketUptrend）；下降趨勢自動 effectiveW=0。
   ///
-  /// 啟用條件改走「市場 regime gate」：僅大盤上升趨勢套 tilt、下降趨勢 W→0（待建 +
-  /// 重驗）。無條件設正值會在空頭系統性排錯。
-  static const double tiltWeight = 0.0;
+  /// 此值是上升 regime 下的 W。**rollback = 設回 0**（任何 regime 都不套）。
+  static const double tiltWeight = 0.15;
+
+  /// regime gate 的市場趨勢回看天數：全市場 [regimeLookbackDays]D 平均報酬 > 0 視為
+  /// 上升 regime、才套 tilt。用長窗（120D）而非短窗：short window 會把空頭反彈誤判
+  /// 為上升（backtest 實測短窗 leak 22 個空頭反彈日、長窗只 leak 4 個）。
+  static const int regimeLookbackDays = 120;
 
   /// 「強產業」evidence chip 門檻：產業強弱百分位 ≥ 此值（前 20% 族群）視為強產業。
   static const double strongSectorChipThreshold = 0.8;

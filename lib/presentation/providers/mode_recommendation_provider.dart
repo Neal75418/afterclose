@@ -165,6 +165,31 @@ Map<String, double> computeIndustryMomentum({
   return result;
 }
 
+/// 市場是否處於上升 regime：載入 universe 的 [lookbackDays]D 平均報酬 > 0。
+///
+/// 產業領導 tilt 僅在上升 regime 套用 — backtest 顯示族群動能因子持續多頭有效
+/// （IC +0.054）、空頭/轉折反向（IC −0.078 = momentum crash）。用全市場長窗
+/// （[SectorParams.regimeLookbackDays]）平均報酬當趨勢訊號，可整段排除空頭（含反彈、
+/// 短窗會誤判）。有效股 < 50 視為資料不足 → 保守回 false（不套 tilt）。
+@visibleForTesting
+bool isMarketUptrend(
+  Map<String, List<DailyPriceEntry>> priceHistories,
+  int lookbackDays,
+) {
+  var sum = 0.0;
+  var n = 0;
+  for (final history in priceHistories.values) {
+    if (history.length < lookbackDays + 1) continue;
+    final latest = history.last.close;
+    final old = history[history.length - lookbackDays - 1].close;
+    if (latest == null || old == null || old <= 0) continue;
+    sum += (latest - old) / old;
+    n++;
+  }
+  if (n < 50) return false;
+  return sum / n > 0;
+}
+
 /// 是否為「成立訊號」層（任一 horizon ≥ [RuleParams.minScoreThreshold]）。
 ///
 /// daily_analysis 持久化門檻已降到 observationScoreThreshold（8）以供掃描頁
@@ -432,14 +457,22 @@ final _modeAssignmentsProvider =
       }
 
       // **產業領導 tilt（rank-blend）**：強族群股加分上移、弱族群股壓低。只套 A + B。
-      // tiltWeight > 0 → 啟用；= 0 → 走原排序、不算 sectorStrength（省成本、等同
-      // rollback）。W 經 backtest 校準（見 SectorParams.tiltWeight）。
-      // 用 `final` 不用 `const`：tiltWeight 可被設回 0（rollback），const 會讓 W=0
-      // 時下方 `tiltWeight > 0` 的 tilt 分支被判 dead_code。final 對任何 W 都安全。
-      // ignore: prefer_const_declarations
-      final tiltWeight = SectorParams.tiltWeight;
+      //
+      // **市場 regime gate**：tilt 僅在大盤上升趨勢套用。backtest 顯示族群動能因子
+      // regime-dependent — 持續多頭 IC +0.054、空頭/轉折反向（IC −0.078，momentum
+      // crash）。用全市場 [regimeLookbackDays]D 平均報酬 > 0 判上升 regime；下降趨勢
+      // effectiveW=0（不套、不算 sectorStrength），避開空頭反向。tiltWeight=0
+      // （rollback）同樣使 effectiveW=0。
+      final effectiveW =
+          SectorParams.tiltWeight > 0 &&
+              isMarketUptrend(
+                data.priceHistories,
+                SectorParams.regimeLookbackDays,
+              )
+          ? SectorParams.tiltWeight
+          : 0.0;
       final sectorService = SectorStrengthService();
-      final sectorStrength = tiltWeight > 0
+      final sectorStrength = effectiveW > 0
           ? sectorService.rankByPercentile(
               computeIndustryMomentum(
                 priceHistories: data.priceHistories,
@@ -452,7 +485,7 @@ final _modeAssignmentsProvider =
           : const <String, double>{};
 
       for (final mode in assignmentMap.keys) {
-        final applyTilt = tiltWeight > 0 && mode != ScoringMode.weaknessObserve;
+        final applyTilt = effectiveW > 0 && mode != ScoringMode.weaknessObserve;
         if (applyTilt) {
           final stocks = assignmentMap[mode]!;
           // base 排序鍵：B = 60D 報酬（null 視為最弱）、A = mode 分數
@@ -468,7 +501,7 @@ final _modeAssignmentsProvider =
               for (final s in stocks) s.symbol: data.stocks[s.symbol]?.industry,
             },
             industryStrength: sectorStrength,
-            weight: tiltWeight,
+            weight: effectiveW,
           );
           stocks.sort((a, b) {
             final byFinal = (tilted[b.symbol] ?? 0).compareTo(
