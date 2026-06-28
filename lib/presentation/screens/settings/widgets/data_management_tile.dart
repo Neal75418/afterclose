@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
+import 'package:afterclose/presentation/widgets/api_rate_limit_dialog.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/core/theme/design_tokens.dart';
@@ -70,16 +71,12 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
           .runUpdate(force: true);
 
       if (mounted) {
-        final hasRateLimitError = result.errors.any(
-          (e) =>
-              e.contains('流量') ||
-              e.contains('limit') ||
-              e.contains('quota') ||
-              e.contains('429'),
-        );
-
-        if (hasRateLimitError) {
-          _showRateLimitDialog();
+        final rateLimitErrors = result.errors.where(isRateLimitError).toList();
+        if (rateLimitErrors.isNotEmpty) {
+          showApiRateLimitDialog(
+            context,
+            finMind: rateLimitErrors.any(isFinMindRateLimit),
+          );
         }
 
         setState(() {
@@ -98,8 +95,9 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
       }
     } catch (e) {
       if (mounted) {
-        if (e.toString().contains('限制') || e.toString().contains('429')) {
-          _showRateLimitDialog();
+        final msg = e.toString();
+        if (isRateLimitError(msg)) {
+          showApiRateLimitDialog(context, finMind: isFinMindRateLimit(msg));
         }
 
         setState(() {
@@ -111,27 +109,6 @@ class _DataManagementTileState extends ConsumerState<DataManagementTile> {
         });
       }
     }
-  }
-
-  void _showRateLimitDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
-          Icons.warning_amber_rounded,
-          color: Colors.orange,
-          size: 48,
-        ),
-        title: Text('settings.rateLimitTitle'.tr()),
-        content: Text('settings.rateLimitMessage'.tr()),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('settings.rateLimitOk'.tr()),
-          ),
-        ],
-      ),
-    );
   }
 
   @override

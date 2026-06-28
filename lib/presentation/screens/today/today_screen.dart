@@ -22,6 +22,7 @@ import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/today_provider.dart';
 import 'package:afterclose/presentation/providers/update_history_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
+import 'package:afterclose/presentation/widgets/api_rate_limit_dialog.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/frosted_bar.dart';
 import 'package:afterclose/presentation/widgets/update_history_sheet.dart';
@@ -734,7 +735,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
 
       if (mounted) {
         if (result.hasRateLimitError) {
-          _showRateLimitDialog();
+          showApiRateLimitDialog(
+            context,
+            finMind: result.errors.any(isFinMindRateLimit),
+          );
         }
 
         final theme = Theme.of(context);
@@ -759,7 +763,10 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
     } catch (e) {
       if (mounted) {
         if (e is RateLimitException) {
-          _showRateLimitDialog();
+          showApiRateLimitDialog(
+            context,
+            finMind: isFinMindRateLimit(e.toString()),
+          );
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -826,27 +833,6 @@ class _TodayScreenState extends ConsumerState<TodayScreen> {
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(MaterialLocalizations.of(dialogContext).okButtonLabel),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRateLimitDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        icon: const Icon(
-          Icons.warning_amber_rounded,
-          color: Colors.orange,
-          size: 48,
-        ),
-        title: Text('settings.rateLimitTitle'.tr()),
-        content: Text('settings.rateLimitMessage'.tr()),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('settings.rateLimitOk'.tr()),
           ),
         ],
       ),
