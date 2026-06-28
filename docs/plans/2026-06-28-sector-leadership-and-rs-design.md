@@ -2,11 +2,14 @@
 
 > 把選股從「個股層級」升級到專業動能系統的兩個核心面向：**產業領導（強股 × 強產業）** 與 **相對強度 RS（贏大盤 / 贏產業，而非絕對漲幅）**。
 >
-> **狀態**：
-> - **Part 1 產業領導** = Design（待實作）。資料已備（官方產業類指數 + 個股歷史），可立即實作 + 過 backtest gate。
-> - **Part 2 RS** = Design（parked）。卡在指數歷史深度，需 `market_index` 回補到 ~200+ 根（回補機制已於 `MarketIndexSyncer` 開啟，`_backfillThreshold=200`/`_backfillCalendarDays=365`），補滿後才實作 + shadow 驗證。
+> **狀態：✅ 已全期驗證 → 兩部分皆不採用（CLOSED 2026-06-28）。**
 >
-> 兩者皆為**選股排序**改動，遵守既有紀律：離線 backtest 驗證 → 人工 review gate → ship，production scoring 在驗證通過前不動。
+> 用 `tool/calibration.db` 全期（2021-2026、含 2022 空頭多 regime）backtest 後，兩個動能因子**皆無持續 edge**，已結案。機制（rank-blend + regime gate）已實作但 **dormant（`SectorParams.tiltWeight = 0`）**。詳見下方「驗證結果」。下方 Part 1/2 設計章節保留作歷史紀錄。
+>
+> - **Part 1 產業領導**：族群 20D 動能 rank-blend。全期 IC −0.012、上升 regime −0.008、逐年 2021~2025 皆 ≈0/負，只有 **2026 +0.127（單年 outlier）**。一度啟用 0.15（用 live DB 近期窗的假陽性 +0.054）後 roll 回 0。
+> - **Part 2 RS**：(1) RS = 個股 60D − **大盤** 60D，橫斷面排序時大盤項是當日常數 → **排序與現行絕對 60D 排序同序、改了零變化**；(2) 個股 60D 動能因子全期 IC −0.008（上升 regime −0.001）→ 排序維度本身也無 edge。→ **不實作**。
+> - **Meta**：兩半都是動能家族因子，且**僅在 2026 這個 regime 有效**（sector 2026 +0.127、RS 2026 +0.166；2021-2025 全 ≈0）。近期窗會把單年 regime 運氣誤判成 edge。
+> - **教訓**：選股 factor 改動一律用 `tool/sector_factor_validate.py`（或同法）在 calibration.db **全期多 regime** 驗，別只看 live DB 近期窗。呼應 `score_validate.dart` 的「全期要變好」紀律。
 
 ---
 
