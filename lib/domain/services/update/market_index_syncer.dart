@@ -41,13 +41,14 @@ class MarketIndexSyncer {
 
   /// DB 中指數筆數低於此值時，自動觸發回補
   ///
-  /// 設為 200 以回補 ~1 年指數歷史，供「相對強度 RS（個股 vs 大盤 / 產業）」
-  /// 計算與回測驗證所需深度（原 20 僅夠走勢圖 ~20 個交易日）。
-  static const _backfillThreshold = 200;
+  /// 只需 ~20 個交易日供 Dashboard 走勢圖。曾為「相對強度 RS」拉到 200（~1 年深度），
+  /// 但 RS 已驗證無 edge 取消，且 200 會在 force re-sync 觸發 365 天逐日 TWSE 回補
+  /// burst → 撞 TWSE 反爬限流（redirect loop）→ 中止同步。已回退。
+  static const _backfillThreshold = 20;
 
-  /// 回補天數（日曆天，包含非交易日）。365 ≈ ~250 個交易日，供 RS 所需深度。
+  /// 回補天數（日曆天，包含非交易日）。45 ≈ ~20 個交易日，足夠走勢圖。
   /// 逐日查 TWSE MI_INDEX（免費、含加權與各產業類指數），不耗 FinMind 配額。
-  static const _backfillCalendarDays = 365;
+  static const _backfillCalendarDays = 45;
 
   /// 查詢 DB 時額外加入的緩衝天數，確保不遺漏邊界資料
   static const _queryBufferDays = 10;
