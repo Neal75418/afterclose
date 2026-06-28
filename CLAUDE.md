@@ -50,18 +50,18 @@ dart format .                                                  # 格式化 (pre-
 
 ## 關鍵路徑
 
-| 路徑                                               | 說明                                    |
-|:-------------------------------------------------|:--------------------------------------|
+| 路徑                                               | 說明                                             |
+|:-------------------------------------------------|:-----------------------------------------------|
 | `lib/core/constants/rule_params.dart`            | 規則參數 barrel（8 domain param 檔 + enums + scores） |
-| `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                         |
-| `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                   |
-| `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制              |
-| `lib/domain/services/rules/`                     | 64 條規則 (14 檔案)                        |
-| `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)            |
-| `lib/domain/services/update/`                    | 更新元件 (10 syncers + 3 helpers + coordinator) |
-| `lib/data/database/tables/`                      | Drift 資料表定義                           |
-| `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)              |
-| `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                      |
+| `lib/core/constants/analysis_params.dart`        | 分析摘要 + 交易成本參數                                  |
+| `lib/core/exceptions/app_exception.dart`         | 例外階層 (sealed class)                            |
+| `lib/core/utils/request_deduplicator.dart`       | Request Deduplication 機制                       |
+| `lib/domain/services/rules/`                     | 64 條規則 (14 檔案)                                 |
+| `lib/domain/services/scoring_isolate.dart`       | Isolate 評分 (typed DTO 序列化)                     |
+| `lib/domain/services/update/`                    | 更新元件 (10 syncers + 3 helpers + coordinator)    |
+| `lib/data/database/tables/`                      | Drift 資料表定義                                    |
+| `lib/data/database/dao/batch_query_mixin.dart`   | 批次查詢共享工具 (groupBySymbol)                       |
+| `lib/domain/services/rule_accuracy_service.dart` | 推薦績效回測引擎 (多週期驗證)                               |
 
 ---
 
@@ -86,10 +86,10 @@ flutter test
 ### 測試
 
 | Layer        | 覆蓋率目標 |
-|:-------------|:-------|
-| Domain       | 85%+   |
-| Data         | 85%+   |
-| Presentation | 70%+   |
+|:-------------|:------|
+| Domain       | 85%+  |
+| Data         | 85%+  |
+| Presentation | 70%+  |
 
 ```bash
 flutter test                                          # 快速測試
@@ -158,7 +158,7 @@ void main() {
 
 ## 按需載入的規則（`.claude/rules/`）
 
-| 規則檔 | 內容 | 載入條件（`paths:` frontmatter） |
-|---|---|---|
-| `architecture.md` | 四層架構 Mermaid 圖、資料流圖 | `lib/core/**`、`lib/data/**`、`lib/domain/**`、`lib/presentation/**` |
+| 規則檔                  | 內容                                                  | 載入條件（`paths:` frontmatter）                                                                                         |
+|----------------------|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `architecture.md`    | 四層架構 Mermaid 圖、資料流圖                                 | `lib/core/**`、`lib/data/**`、`lib/domain/**`、`lib/presentation/**`                                                  |
 | `update-pipeline.md` | Update Pipeline Mermaid 圖、10 syncers + 3 helpers 詳解 | `lib/domain/services/update/**`、`lib/data/remote/**`、`**/syncer*`、`**/Syncer*`、`**/BatchData*`、`**/rule_accuracy*` |
