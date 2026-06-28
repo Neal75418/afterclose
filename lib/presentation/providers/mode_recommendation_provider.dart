@@ -434,6 +434,9 @@ final _modeAssignmentsProvider =
       // **產業領導 tilt（rank-blend）**：強族群股加分上移、弱族群股壓低。
       // SectorParams.tiltWeight = 0 → dormant（走原排序、production 零變更、不算
       // sectorStrength 省成本）；> 0 才啟用（待離線 backtest 校準 W 後）。只套 A + B。
+      // 用 `final` 不用 `const`：const 0 會讓下方 `tiltWeight > 0` 的 tilt 分支被
+      // 判 dead_code（dormant 期間）。待 backtest 設正值後此考量自然消失。
+      // ignore: prefer_const_declarations
       final tiltWeight = SectorParams.tiltWeight;
       final sectorService = SectorStrengthService();
       final sectorStrength = tiltWeight > 0
