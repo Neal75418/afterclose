@@ -17,7 +17,10 @@
 `Watchlist` 表新增欄位:
 - `groupId` IntColumn nullable，`references(WatchlistGroups, #id, onDelete: KeyAction.setNull)`
 
-⚠️ **Schema 風險**:app `schemaVersion` 目前鎖 1 + pre-launch rebuild 機制(`app_database.dart`)。新表 + watchlist 新欄需走那套 rebuild，而 **watchlist 內有真實資料**，rebuild 必須**保留現有 rows**。實作前先在備份/測試 DB 驗證不清表。
+**Schema 套用方式(零資料損失,不重置)**:沿用 `app_database.dart` 既有的 idempotent pattern（`_ensureDealerSelfNetColumn` 就是先例:在既有 DB 上 `ALTER TABLE ADD COLUMN` 並保留全部資料）。在 `beforeOpen` 加兩段:
+- `CREATE TABLE IF NOT EXISTS WatchlistGroups`（缺才建）
+- 以 `PRAGMA table_info('watchlist')` 判斷後 `ALTER TABLE watchlist ADD COLUMN group_id`（缺才加）
+- **不 bump `_schemaFingerprint`** → 不觸發 reset → watchlist（在 `_userInputTableNames` 白名單內,本來就受保護）與行情資料全部保留。新表空、新欄對既有列為 null。
 
 ## 分組顯示(90% 沿用現有)
 - `WatchlistGroup` enum(`watchlist_types.dart`)新增值 `category`。
@@ -54,6 +57,6 @@
 | `dart run build_runner build` | 重新產 drift 程式碼 |
 | 測試 | DAO + provider 分組邏輯 |
 
-## 風險
-1. **真實 DB schema 變更**:watchlist 有正在使用的 11 檔。實作前必須確認 pre-launch rebuild 保留現有 watchlist 與新 groups 表、不清資料。
+## 風險(實際偏低)
+1. **Schema 套用**:用既有 `_ensureDealerSelfNetColumn` 的 idempotent pattern 即可,**零資料損失、不重置**(watchlist 本就在 `_userInputTableNames` 白名單)。唯一要記得:**不要 bump fingerprint**(bump 會 wipe derived 行情表,雖可重 sync 但沒必要)。
 2. **groupId FK + setNull** 行為需測(刪分組後成員確實變未分組、不被連帶刪)。
