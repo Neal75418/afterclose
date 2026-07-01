@@ -248,7 +248,8 @@ void main() {
 
   group('WatchlistNotifier loadData', () {
     test('sets empty items when watchlist is empty', () async {
-      when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
+      when(() => mockDb.getWatchlistWithGroups()).thenAnswer((_) async => []);
+      when(() => mockDb.getWatchlistGroups()).thenAnswer((_) async => []);
 
       final notifier = container.read(watchlistProvider.notifier);
       await notifier.loadData();
@@ -259,7 +260,10 @@ void main() {
     });
 
     test('handles error gracefully', () async {
-      when(() => mockDb.getWatchlist()).thenThrow(Exception('DB error'));
+      when(
+        () => mockDb.getWatchlistWithGroups(),
+      ).thenThrow(Exception('DB error'));
+      when(() => mockDb.getWatchlistGroups()).thenAnswer((_) async => []);
 
       final notifier = container.read(watchlistProvider.notifier);
       await notifier.loadData();
@@ -288,7 +292,8 @@ void main() {
     test('returns immediately when hasMore is false', () async {
       final notifier = container.read(watchlistProvider.notifier);
       // Manually set hasMore to false via empty watchlist
-      when(() => mockDb.getWatchlist()).thenAnswer((_) async => []);
+      when(() => mockDb.getWatchlistWithGroups()).thenAnswer((_) async => []);
+      when(() => mockDb.getWatchlistGroups()).thenAnswer((_) async => []);
       await notifier.loadData();
 
       await notifier.loadMore();

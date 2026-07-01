@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -36,11 +37,14 @@ class StockPreviewData {
 }
 
 /// 顯示股票預覽 bottom sheet
+///
+/// [onMoveToGroup] 非 null 時顯示「移到分組」動作（自選股清單長按才提供）。
 Future<void> showStockPreviewSheet({
   required BuildContext context,
   required StockPreviewData data,
   VoidCallback? onViewDetails,
   VoidCallback? onToggleWatchlist,
+  VoidCallback? onMoveToGroup,
 }) {
   HapticFeedback.mediumImpact();
 
@@ -53,6 +57,7 @@ Future<void> showStockPreviewSheet({
       data: data,
       onViewDetails: onViewDetails,
       onToggleWatchlist: onToggleWatchlist,
+      onMoveToGroup: onMoveToGroup,
     ),
   );
 }
@@ -64,11 +69,15 @@ class StockPreviewSheet extends StatelessWidget {
     required this.data,
     this.onViewDetails,
     this.onToggleWatchlist,
+    this.onMoveToGroup,
   });
 
   final StockPreviewData data;
   final VoidCallback? onViewDetails;
   final VoidCallback? onToggleWatchlist;
+
+  /// 「移到分組」動作（非 null 才顯示，僅自選股清單長按提供）
+  final VoidCallback? onMoveToGroup;
 
   /// 建構無障礙語義標籤（使用 AppStrings 集中管理的字串）
   String _buildSemanticLabel() {
@@ -313,6 +322,23 @@ class StockPreviewSheet extends StatelessWidget {
                         duration: AnimDurations.normal,
                       )
                       .slideY(begin: 0.2, duration: AnimDurations.normal),
+
+                  // 移到分組（僅自選股清單長按提供 onMoveToGroup 時顯示）
+                  if (onMoveToGroup != null) ...[
+                    const SizedBox(height: DesignTokens.spacing12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pop(context);
+                          onMoveToGroup!.call();
+                        },
+                        icon: const Icon(Icons.folder_outlined),
+                        label: Text('watchlist.moveToGroup'.tr()),
+                      ),
+                    ),
+                  ],
 
                   // 底部安全區域
                   SizedBox(

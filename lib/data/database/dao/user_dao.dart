@@ -8,6 +8,17 @@ import 'package:afterclose/data/database/tables/daily_price.drift.dart';
 import 'package:afterclose/core/constants/rule_params_alert.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 
+/// 自選股條目 + 其所屬分組名稱（未分組則 [groupName] 為 null）
+///
+/// [UserDaoMixin.getWatchlistWithGroups] 的回傳型別：把 watchlist entry 與
+/// LEFT JOIN 取得的分組名稱綁在一起，供 provider 一次組出帶分組資訊的項目。
+class WatchlistWithGroup {
+  const WatchlistWithGroup({required this.entry, this.groupName});
+
+  final WatchlistEntry entry;
+  final String? groupName;
+}
+
 /// 使用者相關資料存取：自選股、設定、更新紀錄、股價提醒
 mixin UserDaoMixin on $AppDatabase {
   // ==================================================
@@ -47,6 +58,78 @@ mixin UserDaoMixin on $AppDatabase {
     return (select(
       watchlist,
     )..where((t) => t.symbol.equals(symbol))).getSingleOrNull();
+  }
+
+  // ==================================================
+  // 自選股自訂分組操作（資料夾模式：一檔一組）
+  // ==================================================
+
+  /// 取得所有自訂分組（依 sortOrder、再依建立時間排序）
+  Future<List<WatchlistGroupEntry>> getWatchlistGroups() {
+    return (select(watchlistGroups)..orderBy([
+          (t) => OrderingTerm.asc(t.sortOrder),
+          (t) => OrderingTerm.asc(t.createdAt),
+        ]))
+        .get();
+  }
+
+  /// 建立新分組，回傳新分組的 id
+  ///
+  /// 新分組的 sortOrder 取現有最大值 +1，確保附加在清單末端。
+  Future<int> createWatchlistGroup(String name) async {
+    final existing = await getWatchlistGroups();
+    final nextSortOrder = existing.isEmpty
+        ? 0
+        : existing.map((g) => g.sortOrder).reduce((a, b) => a > b ? a : b) + 1;
+    return into(watchlistGroups).insert(
+      WatchlistGroupsCompanion.insert(
+        name: name,
+        sortOrder: Value(nextSortOrder),
+      ),
+    );
+  }
+
+  /// 重新命名分組
+  Future<void> renameWatchlistGroup(int id, String name) {
+    return (update(watchlistGroups)..where((t) => t.id.equals(id))).write(
+      WatchlistGroupsCompanion(name: Value(name)),
+    );
+  }
+
+  /// 刪除分組
+  ///
+  /// FK `onDelete: setNull` 會自動把成員的 groupId 清空（成員回到未分組、
+  /// 不刪股票）。注意：SQLite 需 `PRAGMA foreign_keys = ON` 才會觸發 setNull，
+  /// 此 pragma 已於 `beforeOpen` 設定。
+  Future<void> deleteWatchlistGroup(int id) {
+    return (delete(watchlistGroups)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// 指定股票到分組（[groupId] 為 null 代表移出分組）
+  Future<void> assignWatchlistGroup(String symbol, int? groupId) {
+    return (update(watchlist)..where((t) => t.symbol.equals(symbol))).write(
+      WatchlistCompanion(groupId: Value(groupId)),
+    );
+  }
+
+  /// 取得所有自選股，並附帶各檔所屬分組名稱（未分組則 groupName 為 null）
+  ///
+  /// 以 LEFT JOIN watchlist_groups，一次查詢取回 entry + 分組名稱，避免在
+  /// provider 端逐筆 lookup。回傳依 createdAt DESC（與 [getWatchlist] 一致）。
+  Future<List<WatchlistWithGroup>> getWatchlistWithGroups() async {
+    final query = select(watchlist).join([
+      leftOuterJoin(
+        watchlistGroups,
+        watchlistGroups.id.equalsExp(watchlist.groupId),
+      ),
+    ])..orderBy([OrderingTerm.desc(watchlist.createdAt)]);
+
+    final rows = await query.get();
+    return rows.map((row) {
+      final entry = row.readTable(watchlist);
+      final group = row.readTableOrNull(watchlistGroups);
+      return WatchlistWithGroup(entry: entry, groupName: group?.name);
+    }).toList();
   }
 
   // ==================================================

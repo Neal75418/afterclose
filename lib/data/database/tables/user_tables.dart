@@ -2,6 +2,26 @@ import 'package:drift/drift.dart';
 
 import 'package:afterclose/data/database/tables/stock_master.dart';
 
+/// 使用者自訂分組 Table（資料夾模式：一檔股票只歸屬一個分組）
+///
+/// 與內建的 `none/status/trend` 自動分組正交：此表是使用者手動建立、可命名的
+/// 分組。[Watchlist.groupId] 以 FK 指回此表，刪除分組時成員的 groupId 會被
+/// `KeyAction.setNull` 清空（成員回到「未分組」、不會連帶刪除股票）。
+@DataClassName('WatchlistGroupEntry')
+class WatchlistGroups extends Table {
+  /// 自動遞增 ID
+  IntColumn get id => integer().autoIncrement()();
+
+  /// 分組名稱（使用者自訂）
+  TextColumn get name => text().withLength(min: 1, max: 50)();
+
+  /// 排序順序（數字越小越前面，預設 0）
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// 建立時間
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 /// 使用者自選股清單 Table
 @DataClassName('WatchlistEntry')
 class Watchlist extends Table {
@@ -11,6 +31,15 @@ class Watchlist extends Table {
 
   /// 加入自選股的時間
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// 所屬自訂分組 ID（null 代表未分組）
+  ///
+  /// 刪除分組時 `KeyAction.setNull` 會把成員的 groupId 清空，不刪股票。
+  IntColumn get groupId => integer().nullable().references(
+    WatchlistGroups,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   @override
   Set<Column> get primaryKey => {symbol};

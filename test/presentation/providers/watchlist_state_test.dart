@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 void main() {
@@ -11,6 +12,8 @@ void main() {
       double? priceChange,
       String? trendState,
       bool hasSignal = false,
+      int? groupId,
+      String? groupName,
     }) {
       return WatchlistItemData(
         symbol: symbol,
@@ -18,6 +21,22 @@ void main() {
         priceChange: priceChange,
         trendState: trendState,
         hasSignal: hasSignal,
+        groupId: groupId,
+        groupName: groupName,
+      );
+    }
+
+    // Helper to build a WatchlistGroupEntry（自訂分組）
+    WatchlistGroupEntry createGroup({
+      required int id,
+      required String name,
+      int sortOrder = 0,
+    }) {
+      return WatchlistGroupEntry(
+        id: id,
+        name: name,
+        sortOrder: sortOrder,
+        createdAt: DateTime(2026),
       );
     }
 
@@ -160,6 +179,70 @@ void main() {
 
         final first = state.groupedByTrend;
         final second = state.groupedByTrend;
+
+        expect(identical(first, second), isTrue);
+      });
+    });
+
+    group('groupedByCategory lazy caching', () {
+      test('groups items by custom group, ungrouped bucket last', () {
+        final groups = [
+          createGroup(id: 1, name: '核心', sortOrder: 0),
+          createGroup(id: 2, name: '觀察', sortOrder: 1),
+        ];
+        final items = [
+          createItem(symbol: '2330', groupId: 1, groupName: '核心'),
+          createItem(symbol: '2454', groupId: 1, groupName: '核心'),
+          createItem(symbol: '2317', groupId: 2, groupName: '觀察'),
+          createItem(symbol: '3008'), // 未分組
+        ];
+        final state = WatchlistState(items: items, groups: groups);
+
+        final grouped = state.groupedByCategory;
+
+        // 桶順序：分組依 sortOrder，未分組在最後
+        final keys = grouped.keys.toList();
+        expect(keys.length, 3);
+        expect(keys[0], '核心');
+        expect(keys[1], '觀察');
+        expect(keys.last, 'watchlist.ungrouped'); // .tr() 未載入翻譯回傳 key
+
+        expect(grouped['核心']!.map((i) => i.symbol), ['2330', '2454']);
+        expect(grouped['觀察']!.single.symbol, '2317');
+        expect(grouped[keys.last]!.single.symbol, '3008');
+      });
+
+      test('empty group still gets a (empty) bucket', () {
+        final groups = [createGroup(id: 1, name: '空組')];
+        final items = [createItem(symbol: '2330')]; // 全未分組
+        final state = WatchlistState(items: items, groups: groups);
+
+        final grouped = state.groupedByCategory;
+
+        expect(grouped['空組'], isEmpty);
+        expect(grouped['watchlist.ungrouped']!.single.symbol, '2330');
+      });
+
+      test('item pointing to deleted group falls into ungrouped', () {
+        // groupId 指向不存在於 groups 的分組（如刪除後殘留）→ 歸未分組
+        final items = [
+          createItem(symbol: '2330', groupId: 99, groupName: '幽靈'),
+        ];
+        final state = WatchlistState(items: items, groups: const []);
+
+        final grouped = state.groupedByCategory;
+
+        expect(grouped['watchlist.ungrouped']!.single.symbol, '2330');
+      });
+
+      test('returns same cached instance on multiple accesses', () {
+        final state = WatchlistState(
+          items: [createItem(symbol: '2330')],
+          groups: const [],
+        );
+
+        final first = state.groupedByCategory;
+        final second = state.groupedByCategory;
 
         expect(identical(first, second), isTrue);
       });

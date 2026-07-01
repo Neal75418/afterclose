@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/constants/pagination.dart';
@@ -32,6 +33,7 @@ export 'package:afterclose/presentation/providers/watchlist_types.dart';
 class WatchlistState {
   WatchlistState({
     this.items = const [],
+    this.groups = const [],
     this.isLoading = false,
     this.error,
     this.sort = WatchlistSort.addedDesc,
@@ -42,11 +44,13 @@ class WatchlistState {
     this.displayedCount = kPageSize,
   }) : _filteredItems = _computeFilteredItems(items, searchQuery),
        _groupedByStatus = null,
-       _groupedByTrend = null;
+       _groupedByTrend = null,
+       _groupedByCategory = null;
 
   /// 內部建構子：copyWith 時保留快取值
   WatchlistState._internal({
     required this.items,
+    required this.groups,
     required this.isLoading,
     required this.error,
     required this.sort,
@@ -58,9 +62,13 @@ class WatchlistState {
     required List<WatchlistItemData> filteredItems,
   }) : _filteredItems = filteredItems,
        _groupedByStatus = null,
-       _groupedByTrend = null;
+       _groupedByTrend = null,
+       _groupedByCategory = null;
 
   final List<WatchlistItemData> items;
+
+  /// 使用者自訂分組清單（依 sortOrder 排序），供管理分組 / picker 使用
+  final List<WatchlistGroupEntry> groups;
   final bool isLoading;
   final String? error;
   final WatchlistSort sort;
@@ -81,6 +89,7 @@ class WatchlistState {
   // 延遲初始化的分組快取
   Map<WatchlistStatus, List<WatchlistItemData>>? _groupedByStatus;
   Map<WatchlistTrend, List<WatchlistItemData>>? _groupedByTrend;
+  Map<String, List<WatchlistItemData>>? _groupedByCategory;
 
   /// 搜尋過濾後的項目（已快取）
   List<WatchlistItemData> get filteredItems => _filteredItems;
@@ -98,6 +107,18 @@ class WatchlistState {
   /// 依趨勢分組（延遲初始化快取）
   Map<WatchlistTrend, List<WatchlistItemData>> get groupedByTrend {
     return _groupedByTrend ??= _computeGroupedByTrend(_filteredItems);
+  }
+
+  /// 依使用者自訂分組分組（延遲初始化快取）
+  ///
+  /// Key 為分組名稱（依 [groups] 的 sortOrder 排序），最後附上未分組桶
+  /// （i18n `watchlist.ungrouped`）。只保留「有成員」的分組桶，空分組不顯示
+  /// 標題（與 status/trend 分組的空桶過濾一致，由 UI 端負責）。
+  Map<String, List<WatchlistItemData>> get groupedByCategory {
+    return _groupedByCategory ??= _computeGroupedByCategory(
+      _filteredItems,
+      groups,
+    );
   }
 
   /// 根據搜尋關鍵字計算過濾結果
@@ -141,8 +162,39 @@ class WatchlistState {
     return result;
   }
 
+  /// 計算自訂分組（依 [groups] 的 sortOrder 排序，未分組放最後）
+  ///
+  /// 依 item 的 groupId 分桶；groupId 為 null 或對應分組已不存在的，歸入
+  /// 「未分組」桶。回傳的 Map 用 insertion order 保證顯示順序：先依
+  /// [groups] 順序，最後才是未分組。
+  static Map<String, List<WatchlistItemData>> _computeGroupedByCategory(
+    List<WatchlistItemData> items,
+    List<WatchlistGroupEntry> groups,
+  ) {
+    final ungroupedLabel = 'watchlist.ungrouped'.tr();
+    // 以 LinkedHashMap（Dart Map 預設保序）建立順序：分組在前、未分組在後
+    final result = <String, List<WatchlistItemData>>{};
+    final groupIdToName = <int, String>{};
+    for (final g in groups) {
+      result[g.name] = [];
+      groupIdToName[g.id] = g.name;
+    }
+    final ungrouped = <WatchlistItemData>[];
+    for (final item in items) {
+      final name = item.groupId != null ? groupIdToName[item.groupId] : null;
+      if (name != null) {
+        result[name]!.add(item);
+      } else {
+        ungrouped.add(item);
+      }
+    }
+    result[ungroupedLabel] = ungrouped;
+    return result;
+  }
+
   WatchlistState copyWith({
     List<WatchlistItemData>? items,
+    List<WatchlistGroupEntry>? groups,
     bool? isLoading,
     Object? error = sentinel,
     WatchlistSort? sort,
@@ -153,6 +205,7 @@ class WatchlistState {
     int? displayedCount,
   }) {
     final newItems = items ?? this.items;
+    final newGroups = groups ?? this.groups;
     final newSearchQuery = searchQuery ?? this.searchQuery;
     final newError = error == sentinel ? this.error : error as String?;
 
@@ -164,6 +217,7 @@ class WatchlistState {
     if (needsRecompute) {
       return WatchlistState(
         items: newItems,
+        groups: newGroups,
         isLoading: isLoading ?? this.isLoading,
         error: newError,
         sort: sort ?? this.sort,
@@ -175,9 +229,11 @@ class WatchlistState {
       );
     }
 
-    // 若只是 isLoading/error/sort/group 變更，保留現有快取
+    // 若只是 isLoading/error/sort/group/groups 變更，保留現有 filteredItems 快取
+    // （groups 變更只影響 groupedByCategory，內部建構子的該快取本就重置）
     return WatchlistState._internal(
       items: newItems,
+      groups: newGroups,
       isLoading: isLoading ?? this.isLoading,
       error: newError,
       sort: sort ?? this.sort,
@@ -233,20 +289,21 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
       final dateCtx = DateContext.now();
       final analysisRepo = ref.read(analysisRepositoryProvider);
 
-      // Group 1：平行取得自選清單 + 最新分析日期
-      final (watchlist, latestAnalysisDate) = await (
-        _db.getWatchlist(),
+      // Group 1：平行取得自選清單（含分組名稱）+ 自訂分組清單 + 最新分析日期
+      final (watchlist, groups, latestAnalysisDate) = await (
+        _db.getWatchlistWithGroups(),
+        _db.getWatchlistGroups(),
         analysisRepo.findLatestAnalysisDate(),
       ).wait;
       if (!_active) return;
 
       if (watchlist.isEmpty) {
-        state = state.copyWith(items: [], isLoading: false);
+        state = state.copyWith(items: [], groups: groups, isLoading: false);
         return;
       }
 
       // 收集所有代號進行批次查詢
-      final symbols = watchlist.map((w) => w.symbol).toList();
+      final symbols = watchlist.map((w) => w.entry.symbol).toList();
 
       // 取得實際分析日期（使用分析表的日期，而非價格表）
       // 價格表的 MAX(date) 可能因歷史同步而超前分析表，
@@ -289,11 +346,12 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
       // 從批次結果建構項目
       final items = watchlist.map((item) {
-        final stock = stocksMap[item.symbol];
-        final latestPrice = latestPricesMap[item.symbol];
-        final analysis = analysesMap[item.symbol];
-        final reasons = reasonsMap[item.symbol] ?? [];
-        final priceHistory = priceHistoriesMap[item.symbol] ?? [];
+        final symbol = item.entry.symbol;
+        final stock = stocksMap[symbol];
+        final latestPrice = latestPricesMap[symbol];
+        final analysis = analysesMap[symbol];
+        final reasons = reasonsMap[symbol] ?? [];
+        final priceHistory = priceHistoriesMap[symbol] ?? [];
 
         // 提取近期價格用於 sparkline
         final recentPrices = PriceCalculator.extractSparklinePrices(
@@ -304,26 +362,28 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
         // 受 showWarningBadges 設定控制
         final warningType = showBadges
             ? _determineWarningType(
-                symbol: item.symbol,
+                symbol: symbol,
                 warningsMap: warningsMap,
                 highPledgeMap: highPledgeMap,
               )
             : null;
 
         return WatchlistItemData(
-          symbol: item.symbol,
+          symbol: symbol,
           stockName: stock?.name,
           market: stock?.market,
           latestClose: latestPrice?.close,
-          priceChange: priceChanges[item.symbol],
+          priceChange: priceChanges[symbol],
           trendState: analysis?.trendState,
           // 自選股預設顯示短線分數，未來可加 horizon 切換
           score: analysis?.scoreShort,
           hasSignal: reasons.isNotEmpty,
-          addedAt: item.createdAt,
+          addedAt: item.entry.createdAt,
           recentPrices: recentPrices,
           reasons: reasons.map((r) => r.reasonType).toList(),
           warningType: warningType,
+          groupId: item.entry.groupId,
+          groupName: item.groupName,
         );
       }).toList();
 
@@ -336,6 +396,7 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
 
       state = state.copyWith(
         items: sortedItems,
+        groups: groups,
         isLoading: false,
         hasMore: hasMore,
         displayedCount: displayedCount,
@@ -440,6 +501,98 @@ class WatchlistNotifier extends Notifier<WatchlistState> {
   /// 設定分組選項
   void setGroup(WatchlistGroup group) {
     state = state.copyWith(group: group);
+  }
+
+  // ==================================================
+  // 自訂分組管理（資料夾模式：一檔一組）
+  // ==================================================
+
+  /// 重新載入自訂分組清單（不動 items）
+  Future<void> _reloadGroups() async {
+    final groups = await _db.getWatchlistGroups();
+    if (!_active) return;
+    state = state.copyWith(groups: groups);
+  }
+
+  /// 建立新分組，回傳新分組 id（失敗回 null）
+  Future<int?> createGroup(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
+    try {
+      final id = await _db.createWatchlistGroup(trimmed);
+      await _reloadGroups();
+      return id;
+    } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '建立分組失敗: $name', e);
+      state = state.copyWith(error: ErrorDisplay.message(e));
+      return null;
+    }
+  }
+
+  /// 重新命名分組（並同步更新受影響 items 的 groupName）
+  Future<void> renameGroup(int id, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    try {
+      await _db.renameWatchlistGroup(id, trimmed);
+      // 就地更新已載入 items 的 groupName，避免整批 reload
+      final newItems = state.items.map((item) {
+        if (item.groupId == id) {
+          return item.copyWith(groupName: trimmed);
+        }
+        return item;
+      }).toList();
+      state = state.copyWith(items: newItems);
+      await _reloadGroups();
+    } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '重新命名分組失敗: $id', e);
+      state = state.copyWith(error: ErrorDisplay.message(e));
+    }
+  }
+
+  /// 刪除分組（成員 groupId 由 FK setNull 清空，回到未分組、不刪股票）
+  Future<void> deleteGroup(int id) async {
+    try {
+      await _db.deleteWatchlistGroup(id);
+      // 就地把該分組成員改為未分組
+      final newItems = state.items.map((item) {
+        if (item.groupId == id) {
+          return item.copyWith(clearGroup: true);
+        }
+        return item;
+      }).toList();
+      state = state.copyWith(items: newItems);
+      await _reloadGroups();
+    } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '刪除分組失敗: $id', e);
+      state = state.copyWith(error: ErrorDisplay.message(e));
+    }
+  }
+
+  /// 指定股票到分組（[groupId] 為 null 代表移出分組）
+  Future<void> assignGroup(String symbol, int? groupId) async {
+    try {
+      await _db.assignWatchlistGroup(symbol, groupId);
+      final groupName = groupId == null
+          ? null
+          : state.groups
+                .where((g) => g.id == groupId)
+                .map((g) => g.name)
+                .firstOrNull;
+      // 就地更新該 item 的 groupId / groupName
+      final newItems = state.items.map((item) {
+        if (item.symbol == symbol) {
+          return groupId == null
+              ? item.copyWith(clearGroup: true)
+              : item.copyWith(groupId: groupId, groupName: groupName);
+        }
+        return item;
+      }).toList();
+      state = state.copyWith(items: newItems);
+    } catch (e) {
+      AppLogger.warning('WatchlistNotifier', '指定分組失敗: $symbol → $groupId', e);
+      state = state.copyWith(error: ErrorDisplay.message(e));
+    }
   }
 
   /// 設定搜尋關鍵字

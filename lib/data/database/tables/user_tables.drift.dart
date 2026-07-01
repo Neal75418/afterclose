@@ -4,19 +4,330 @@ import 'package:drift/drift.dart' as i0;
 import 'package:afterclose/data/database/tables/user_tables.drift.dart' as i1;
 import 'package:afterclose/data/database/tables/user_tables.dart' as i2;
 import 'package:drift/src/runtime/query_builder/query_builder.dart' as i3;
-import 'package:afterclose/data/database/tables/stock_master.drift.dart' as i4;
-import 'package:drift/internal/modular.dart' as i5;
+import 'package:drift/internal/modular.dart' as i4;
+import 'package:afterclose/data/database/tables/stock_master.drift.dart' as i5;
 
+typedef $$WatchlistGroupsTableCreateCompanionBuilder =
+    i1.WatchlistGroupsCompanion Function({
+      i0.Value<int> id,
+      required String name,
+      i0.Value<int> sortOrder,
+      i0.Value<DateTime> createdAt,
+    });
+typedef $$WatchlistGroupsTableUpdateCompanionBuilder =
+    i1.WatchlistGroupsCompanion Function({
+      i0.Value<int> id,
+      i0.Value<String> name,
+      i0.Value<int> sortOrder,
+      i0.Value<DateTime> createdAt,
+    });
+
+final class $$WatchlistGroupsTableReferences
+    extends
+        i0.BaseReferences<
+          i0.GeneratedDatabase,
+          i1.$WatchlistGroupsTable,
+          i1.WatchlistGroupEntry
+        > {
+  $$WatchlistGroupsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static i0.MultiTypedResultKey<i1.$WatchlistTable, List<i1.WatchlistEntry>>
+  _watchlistRefsTable(i0.GeneratedDatabase db) =>
+      i0.MultiTypedResultKey.fromTable(
+        i4.ReadDatabaseContainer(db).resultSet<i1.$WatchlistTable>('watchlist'),
+        aliasName: i0.$_aliasNameGenerator(
+          i4.ReadDatabaseContainer(
+            db,
+          ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups').id,
+          i4.ReadDatabaseContainer(
+            db,
+          ).resultSet<i1.$WatchlistTable>('watchlist').groupId,
+        ),
+      );
+
+  i1.$$WatchlistTableProcessedTableManager get watchlistRefs {
+    final manager = i1
+        .$$WatchlistTableTableManager(
+          $_db,
+          i4.ReadDatabaseContainer(
+            $_db,
+          ).resultSet<i1.$WatchlistTable>('watchlist'),
+        )
+        .filter((f) => f.groupId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_watchlistRefsTable($_db));
+    return i0.ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$WatchlistGroupsTableFilterComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$WatchlistGroupsTable> {
+  $$WatchlistGroupsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => i0.ColumnFilters(column),
+  );
+
+  i0.Expression<bool> watchlistRefs(
+    i0.Expression<bool> Function(i1.$$WatchlistTableFilterComposer f) f,
+  ) {
+    final i1.$$WatchlistTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i1.$WatchlistTable>('watchlist'),
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i1.$$WatchlistTableFilterComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i1.$WatchlistTable>('watchlist'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WatchlistGroupsTableOrderingComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$WatchlistGroupsTable> {
+  $$WatchlistGroupsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+
+  i0.ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => i0.ColumnOrderings(column),
+  );
+}
+
+class $$WatchlistGroupsTableAnnotationComposer
+    extends i0.Composer<i0.GeneratedDatabase, i1.$WatchlistGroupsTable> {
+  $$WatchlistGroupsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  i0.GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  i0.GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  i0.GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  i0.GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  i0.Expression<T> watchlistRefs<T extends Object>(
+    i0.Expression<T> Function(i1.$$WatchlistTableAnnotationComposer a) f,
+  ) {
+    final i1.$$WatchlistTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i1.$WatchlistTable>('watchlist'),
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i1.$$WatchlistTableAnnotationComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i1.$WatchlistTable>('watchlist'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$WatchlistGroupsTableTableManager
+    extends
+        i0.RootTableManager<
+          i0.GeneratedDatabase,
+          i1.$WatchlistGroupsTable,
+          i1.WatchlistGroupEntry,
+          i1.$$WatchlistGroupsTableFilterComposer,
+          i1.$$WatchlistGroupsTableOrderingComposer,
+          i1.$$WatchlistGroupsTableAnnotationComposer,
+          $$WatchlistGroupsTableCreateCompanionBuilder,
+          $$WatchlistGroupsTableUpdateCompanionBuilder,
+          (i1.WatchlistGroupEntry, i1.$$WatchlistGroupsTableReferences),
+          i1.WatchlistGroupEntry,
+          i0.PrefetchHooks Function({bool watchlistRefs})
+        > {
+  $$WatchlistGroupsTableTableManager(
+    i0.GeneratedDatabase db,
+    i1.$WatchlistGroupsTable table,
+  ) : super(
+        i0.TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              i1.$$WatchlistGroupsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              i1.$$WatchlistGroupsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () => i1
+              .$$WatchlistGroupsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                i0.Value<int> id = const i0.Value.absent(),
+                i0.Value<String> name = const i0.Value.absent(),
+                i0.Value<int> sortOrder = const i0.Value.absent(),
+                i0.Value<DateTime> createdAt = const i0.Value.absent(),
+              }) => i1.WatchlistGroupsCompanion(
+                id: id,
+                name: name,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                i0.Value<int> id = const i0.Value.absent(),
+                required String name,
+                i0.Value<int> sortOrder = const i0.Value.absent(),
+                i0.Value<DateTime> createdAt = const i0.Value.absent(),
+              }) => i1.WatchlistGroupsCompanion.insert(
+                id: id,
+                name: name,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  i1.$$WatchlistGroupsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({watchlistRefs = false}) {
+            return i0.PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (watchlistRefs)
+                  i4.ReadDatabaseContainer(
+                    db,
+                  ).resultSet<i1.$WatchlistTable>('watchlist'),
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (watchlistRefs)
+                    await i0.$_getPrefetchedData<
+                      i1.WatchlistGroupEntry,
+                      i1.$WatchlistGroupsTable,
+                      i1.WatchlistEntry
+                    >(
+                      currentTable: table,
+                      referencedTable: i1.$$WatchlistGroupsTableReferences
+                          ._watchlistRefsTable(db),
+                      managerFromTypedResult: (p0) => i1
+                          .$$WatchlistGroupsTableReferences(db, table, p0)
+                          .watchlistRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.groupId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$WatchlistGroupsTableProcessedTableManager =
+    i0.ProcessedTableManager<
+      i0.GeneratedDatabase,
+      i1.$WatchlistGroupsTable,
+      i1.WatchlistGroupEntry,
+      i1.$$WatchlistGroupsTableFilterComposer,
+      i1.$$WatchlistGroupsTableOrderingComposer,
+      i1.$$WatchlistGroupsTableAnnotationComposer,
+      $$WatchlistGroupsTableCreateCompanionBuilder,
+      $$WatchlistGroupsTableUpdateCompanionBuilder,
+      (i1.WatchlistGroupEntry, i1.$$WatchlistGroupsTableReferences),
+      i1.WatchlistGroupEntry,
+      i0.PrefetchHooks Function({bool watchlistRefs})
+    >;
 typedef $$WatchlistTableCreateCompanionBuilder =
     i1.WatchlistCompanion Function({
       required String symbol,
       i0.Value<DateTime> createdAt,
+      i0.Value<int?> groupId,
       i0.Value<int> rowid,
     });
 typedef $$WatchlistTableUpdateCompanionBuilder =
     i1.WatchlistCompanion Function({
       i0.Value<String> symbol,
       i0.Value<DateTime> createdAt,
+      i0.Value<int?> groupId,
       i0.Value<int> rowid,
     });
 
@@ -29,32 +340,64 @@ final class $$WatchlistTableReferences
         > {
   $$WatchlistTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static i4.$StockMasterTable _symbolTable(i0.GeneratedDatabase db) =>
-      i5.ReadDatabaseContainer(db)
-          .resultSet<i4.$StockMasterTable>('stock_master')
+  static i5.$StockMasterTable _symbolTable(i0.GeneratedDatabase db) =>
+      i4.ReadDatabaseContainer(db)
+          .resultSet<i5.$StockMasterTable>('stock_master')
           .createAlias(
             i0.$_aliasNameGenerator(
-              i5.ReadDatabaseContainer(
+              i4.ReadDatabaseContainer(
                 db,
               ).resultSet<i1.$WatchlistTable>('watchlist').symbol,
-              i5.ReadDatabaseContainer(
+              i4.ReadDatabaseContainer(
                 db,
-              ).resultSet<i4.$StockMasterTable>('stock_master').symbol,
+              ).resultSet<i5.$StockMasterTable>('stock_master').symbol,
             ),
           );
 
-  i4.$$StockMasterTableProcessedTableManager get symbol {
+  i5.$$StockMasterTableProcessedTableManager get symbol {
     final $_column = $_itemColumn<String>('symbol')!;
 
-    final manager = i4
+    final manager = i5
         .$$StockMasterTableTableManager(
           $_db,
-          i5.ReadDatabaseContainer(
+          i4.ReadDatabaseContainer(
             $_db,
-          ).resultSet<i4.$StockMasterTable>('stock_master'),
+          ).resultSet<i5.$StockMasterTable>('stock_master'),
         )
         .filter((f) => f.symbol.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_symbolTable($_db));
+    if (item == null) return manager;
+    return i0.ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static i1.$WatchlistGroupsTable _groupIdTable(i0.GeneratedDatabase db) =>
+      i4.ReadDatabaseContainer(db)
+          .resultSet<i1.$WatchlistGroupsTable>('watchlist_groups')
+          .createAlias(
+            i0.$_aliasNameGenerator(
+              i4.ReadDatabaseContainer(
+                db,
+              ).resultSet<i1.$WatchlistTable>('watchlist').groupId,
+              i4.ReadDatabaseContainer(
+                db,
+              ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups').id,
+            ),
+          );
+
+  i1.$$WatchlistGroupsTableProcessedTableManager? get groupId {
+    final $_column = $_itemColumn<int>('group_id');
+    if ($_column == null) return null;
+    final manager = i1
+        .$$WatchlistGroupsTableTableManager(
+          $_db,
+          i4.ReadDatabaseContainer(
+            $_db,
+          ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
+        )
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
     if (item == null) return manager;
     return i0.ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -76,24 +419,51 @@ class $$WatchlistTableFilterComposer
     builder: (column) => i0.ColumnFilters(column),
   );
 
-  i4.$$StockMasterTableFilterComposer get symbol {
-    final i4.$$StockMasterTableFilterComposer composer = $composerBuilder(
+  i5.$$StockMasterTableFilterComposer get symbol {
+    final i5.$$StockMasterTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.symbol,
-      referencedTable: i5.ReadDatabaseContainer(
+      referencedTable: i4.ReadDatabaseContainer(
         $db,
-      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
       getReferencedColumn: (t) => t.symbol,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => i4.$$StockMasterTableFilterComposer(
+          }) => i5.$$StockMasterTableFilterComposer(
             $db: $db,
-            $table: i5.ReadDatabaseContainer(
+            $table: i4.ReadDatabaseContainer(
               $db,
-            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  i1.$$WatchlistGroupsTableFilterComposer get groupId {
+    final i1.$$WatchlistGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i1.$$WatchlistGroupsTableFilterComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -118,24 +488,51 @@ class $$WatchlistTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
-  i4.$$StockMasterTableOrderingComposer get symbol {
-    final i4.$$StockMasterTableOrderingComposer composer = $composerBuilder(
+  i5.$$StockMasterTableOrderingComposer get symbol {
+    final i5.$$StockMasterTableOrderingComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.symbol,
-      referencedTable: i5.ReadDatabaseContainer(
+      referencedTable: i4.ReadDatabaseContainer(
         $db,
-      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
       getReferencedColumn: (t) => t.symbol,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => i4.$$StockMasterTableOrderingComposer(
+          }) => i5.$$StockMasterTableOrderingComposer(
             $db: $db,
-            $table: i5.ReadDatabaseContainer(
+            $table: i4.ReadDatabaseContainer(
               $db,
-            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  i1.$$WatchlistGroupsTableOrderingComposer get groupId {
+    final i1.$$WatchlistGroupsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: i4.ReadDatabaseContainer(
+        $db,
+      ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => i1.$$WatchlistGroupsTableOrderingComposer(
+            $db: $db,
+            $table: i4.ReadDatabaseContainer(
+              $db,
+            ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -158,30 +555,58 @@ class $$WatchlistTableAnnotationComposer
   i0.GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  i4.$$StockMasterTableAnnotationComposer get symbol {
-    final i4.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
+  i5.$$StockMasterTableAnnotationComposer get symbol {
+    final i5.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.symbol,
-      referencedTable: i5.ReadDatabaseContainer(
+      referencedTable: i4.ReadDatabaseContainer(
         $db,
-      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
       getReferencedColumn: (t) => t.symbol,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => i4.$$StockMasterTableAnnotationComposer(
+          }) => i5.$$StockMasterTableAnnotationComposer(
             $db: $db,
-            $table: i5.ReadDatabaseContainer(
+            $table: i4.ReadDatabaseContainer(
               $db,
-            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
                 $removeJoinBuilderFromRootComposer,
           ),
     );
+    return composer;
+  }
+
+  i1.$$WatchlistGroupsTableAnnotationComposer get groupId {
+    final i1.$$WatchlistGroupsTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.groupId,
+          referencedTable: i4.ReadDatabaseContainer(
+            $db,
+          ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => i1.$$WatchlistGroupsTableAnnotationComposer(
+                $db: $db,
+                $table: i4.ReadDatabaseContainer(
+                  $db,
+                ).resultSet<i1.$WatchlistGroupsTable>('watchlist_groups'),
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return composer;
   }
 }
@@ -199,7 +624,7 @@ class $$WatchlistTableTableManager
           $$WatchlistTableUpdateCompanionBuilder,
           (i1.WatchlistEntry, i1.$$WatchlistTableReferences),
           i1.WatchlistEntry,
-          i0.PrefetchHooks Function({bool symbol})
+          i0.PrefetchHooks Function({bool symbol, bool groupId})
         > {
   $$WatchlistTableTableManager(
     i0.GeneratedDatabase db,
@@ -218,20 +643,24 @@ class $$WatchlistTableTableManager
               ({
                 i0.Value<String> symbol = const i0.Value.absent(),
                 i0.Value<DateTime> createdAt = const i0.Value.absent(),
+                i0.Value<int?> groupId = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.WatchlistCompanion(
                 symbol: symbol,
                 createdAt: createdAt,
+                groupId: groupId,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required String symbol,
                 i0.Value<DateTime> createdAt = const i0.Value.absent(),
+                i0.Value<int?> groupId = const i0.Value.absent(),
                 i0.Value<int> rowid = const i0.Value.absent(),
               }) => i1.WatchlistCompanion.insert(
                 symbol: symbol,
                 createdAt: createdAt,
+                groupId: groupId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -242,7 +671,7 @@ class $$WatchlistTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({symbol = false}) {
+          prefetchHooksCallback: ({symbol = false, groupId = false}) {
             return i0.PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -275,6 +704,19 @@ class $$WatchlistTableTableManager
                               )
                               as T;
                     }
+                    if (groupId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.groupId,
+                                referencedTable: i1.$$WatchlistTableReferences
+                                    ._groupIdTable(db),
+                                referencedColumn: i1.$$WatchlistTableReferences
+                                    ._groupIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
 
                     return state;
                   },
@@ -299,7 +741,7 @@ typedef $$WatchlistTableProcessedTableManager =
       $$WatchlistTableUpdateCompanionBuilder,
       (i1.WatchlistEntry, i1.$$WatchlistTableReferences),
       i1.WatchlistEntry,
-      i0.PrefetchHooks Function({bool symbol})
+      i0.PrefetchHooks Function({bool symbol, bool groupId})
     >;
 typedef $$UpdateRunTableCreateCompanionBuilder =
     i1.UpdateRunCompanion Function({
@@ -730,29 +1172,29 @@ final class $$PriceAlertTableReferences
         > {
   $$PriceAlertTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static i4.$StockMasterTable _symbolTable(i0.GeneratedDatabase db) =>
-      i5.ReadDatabaseContainer(db)
-          .resultSet<i4.$StockMasterTable>('stock_master')
+  static i5.$StockMasterTable _symbolTable(i0.GeneratedDatabase db) =>
+      i4.ReadDatabaseContainer(db)
+          .resultSet<i5.$StockMasterTable>('stock_master')
           .createAlias(
             i0.$_aliasNameGenerator(
-              i5.ReadDatabaseContainer(
+              i4.ReadDatabaseContainer(
                 db,
               ).resultSet<i1.$PriceAlertTable>('price_alert').symbol,
-              i5.ReadDatabaseContainer(
+              i4.ReadDatabaseContainer(
                 db,
-              ).resultSet<i4.$StockMasterTable>('stock_master').symbol,
+              ).resultSet<i5.$StockMasterTable>('stock_master').symbol,
             ),
           );
 
-  i4.$$StockMasterTableProcessedTableManager get symbol {
+  i5.$$StockMasterTableProcessedTableManager get symbol {
     final $_column = $_itemColumn<String>('symbol')!;
 
-    final manager = i4
+    final manager = i5
         .$$StockMasterTableTableManager(
           $_db,
-          i5.ReadDatabaseContainer(
+          i4.ReadDatabaseContainer(
             $_db,
-          ).resultSet<i4.$StockMasterTable>('stock_master'),
+          ).resultSet<i5.$StockMasterTable>('stock_master'),
         )
         .filter((f) => f.symbol.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_symbolTable($_db));
@@ -807,24 +1249,24 @@ class $$PriceAlertTableFilterComposer
     builder: (column) => i0.ColumnFilters(column),
   );
 
-  i4.$$StockMasterTableFilterComposer get symbol {
-    final i4.$$StockMasterTableFilterComposer composer = $composerBuilder(
+  i5.$$StockMasterTableFilterComposer get symbol {
+    final i5.$$StockMasterTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.symbol,
-      referencedTable: i5.ReadDatabaseContainer(
+      referencedTable: i4.ReadDatabaseContainer(
         $db,
-      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
       getReferencedColumn: (t) => t.symbol,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => i4.$$StockMasterTableFilterComposer(
+          }) => i5.$$StockMasterTableFilterComposer(
             $db: $db,
-            $table: i5.ReadDatabaseContainer(
+            $table: i4.ReadDatabaseContainer(
               $db,
-            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -879,24 +1321,24 @@ class $$PriceAlertTableOrderingComposer
     builder: (column) => i0.ColumnOrderings(column),
   );
 
-  i4.$$StockMasterTableOrderingComposer get symbol {
-    final i4.$$StockMasterTableOrderingComposer composer = $composerBuilder(
+  i5.$$StockMasterTableOrderingComposer get symbol {
+    final i5.$$StockMasterTableOrderingComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.symbol,
-      referencedTable: i5.ReadDatabaseContainer(
+      referencedTable: i4.ReadDatabaseContainer(
         $db,
-      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
       getReferencedColumn: (t) => t.symbol,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => i4.$$StockMasterTableOrderingComposer(
+          }) => i5.$$StockMasterTableOrderingComposer(
             $db: $db,
-            $table: i5.ReadDatabaseContainer(
+            $table: i4.ReadDatabaseContainer(
               $db,
-            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -941,24 +1383,24 @@ class $$PriceAlertTableAnnotationComposer
   i0.GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  i4.$$StockMasterTableAnnotationComposer get symbol {
-    final i4.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
+  i5.$$StockMasterTableAnnotationComposer get symbol {
+    final i5.$$StockMasterTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.symbol,
-      referencedTable: i5.ReadDatabaseContainer(
+      referencedTable: i4.ReadDatabaseContainer(
         $db,
-      ).resultSet<i4.$StockMasterTable>('stock_master'),
+      ).resultSet<i5.$StockMasterTable>('stock_master'),
       getReferencedColumn: (t) => t.symbol,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => i4.$$StockMasterTableAnnotationComposer(
+          }) => i5.$$StockMasterTableAnnotationComposer(
             $db: $db,
-            $table: i5.ReadDatabaseContainer(
+            $table: i4.ReadDatabaseContainer(
               $db,
-            ).resultSet<i4.$StockMasterTable>('stock_master'),
+            ).resultSet<i5.$StockMasterTable>('stock_master'),
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -1320,6 +1762,316 @@ typedef $$ScreeningStrategyTableTableProcessedTableManager =
       i0.PrefetchHooks Function()
     >;
 
+class $WatchlistGroupsTable extends i2.WatchlistGroups
+    with i0.TableInfo<$WatchlistGroupsTable, i1.WatchlistGroupEntry> {
+  @override
+  final i0.GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $WatchlistGroupsTable(this.attachedDatabase, [this._alias]);
+  static const i0.VerificationMeta _idMeta = const i0.VerificationMeta('id');
+  @override
+  late final i0.GeneratedColumn<int> id = i0.GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: i0.GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const i0.VerificationMeta _nameMeta = const i0.VerificationMeta(
+    'name',
+  );
+  @override
+  late final i0.GeneratedColumn<String> name = i0.GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    additionalChecks: i0.GeneratedColumn.checkTextLength(
+      minTextLength: 1,
+      maxTextLength: 50,
+    ),
+    type: i0.DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const i0.VerificationMeta _sortOrderMeta = const i0.VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final i0.GeneratedColumn<int> sortOrder = i0.GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const i3.Constant(0),
+  );
+  static const i0.VerificationMeta _createdAtMeta = const i0.VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final i0.GeneratedColumn<DateTime> createdAt =
+      i0.GeneratedColumn<DateTime>(
+        'created_at',
+        aliasedName,
+        false,
+        type: i0.DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+        defaultValue: i3.currentDateAndTime,
+      );
+  @override
+  List<i0.GeneratedColumn> get $columns => [id, name, sortOrder, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'watchlist_groups';
+  @override
+  i0.VerificationContext validateIntegrity(
+    i0.Insertable<i1.WatchlistGroupEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = i0.VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<i0.GeneratedColumn> get $primaryKey => {id};
+  @override
+  i1.WatchlistGroupEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return i1.WatchlistGroupEntry(
+      id: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $WatchlistGroupsTable createAlias(String alias) {
+    return $WatchlistGroupsTable(attachedDatabase, alias);
+  }
+}
+
+class WatchlistGroupEntry extends i0.DataClass
+    implements i0.Insertable<i1.WatchlistGroupEntry> {
+  /// 自動遞增 ID
+  final int id;
+
+  /// 分組名稱（使用者自訂）
+  final String name;
+
+  /// 排序順序（數字越小越前面，預設 0）
+  final int sortOrder;
+
+  /// 建立時間
+  final DateTime createdAt;
+  const WatchlistGroupEntry({
+    required this.id,
+    required this.name,
+    required this.sortOrder,
+    required this.createdAt,
+  });
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    map['id'] = i0.Variable<int>(id);
+    map['name'] = i0.Variable<String>(name);
+    map['sort_order'] = i0.Variable<int>(sortOrder);
+    map['created_at'] = i0.Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  i1.WatchlistGroupsCompanion toCompanion(bool nullToAbsent) {
+    return i1.WatchlistGroupsCompanion(
+      id: i0.Value(id),
+      name: i0.Value(name),
+      sortOrder: i0.Value(sortOrder),
+      createdAt: i0.Value(createdAt),
+    );
+  }
+
+  factory WatchlistGroupEntry.fromJson(
+    Map<String, dynamic> json, {
+    i0.ValueSerializer? serializer,
+  }) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return WatchlistGroupEntry(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({i0.ValueSerializer? serializer}) {
+    serializer ??= i0.driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  i1.WatchlistGroupEntry copyWith({
+    int? id,
+    String? name,
+    int? sortOrder,
+    DateTime? createdAt,
+  }) => i1.WatchlistGroupEntry(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  WatchlistGroupEntry copyWithCompanion(i1.WatchlistGroupsCompanion data) {
+    return WatchlistGroupEntry(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WatchlistGroupEntry(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, sortOrder, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is i1.WatchlistGroupEntry &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.sortOrder == this.sortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class WatchlistGroupsCompanion
+    extends i0.UpdateCompanion<i1.WatchlistGroupEntry> {
+  final i0.Value<int> id;
+  final i0.Value<String> name;
+  final i0.Value<int> sortOrder;
+  final i0.Value<DateTime> createdAt;
+  const WatchlistGroupsCompanion({
+    this.id = const i0.Value.absent(),
+    this.name = const i0.Value.absent(),
+    this.sortOrder = const i0.Value.absent(),
+    this.createdAt = const i0.Value.absent(),
+  });
+  WatchlistGroupsCompanion.insert({
+    this.id = const i0.Value.absent(),
+    required String name,
+    this.sortOrder = const i0.Value.absent(),
+    this.createdAt = const i0.Value.absent(),
+  }) : name = i0.Value(name);
+  static i0.Insertable<i1.WatchlistGroupEntry> custom({
+    i0.Expression<int>? id,
+    i0.Expression<String>? name,
+    i0.Expression<int>? sortOrder,
+    i0.Expression<DateTime>? createdAt,
+  }) {
+    return i0.RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  i1.WatchlistGroupsCompanion copyWith({
+    i0.Value<int>? id,
+    i0.Value<String>? name,
+    i0.Value<int>? sortOrder,
+    i0.Value<DateTime>? createdAt,
+  }) {
+    return i1.WatchlistGroupsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, i0.Expression> toColumns(bool nullToAbsent) {
+    final map = <String, i0.Expression>{};
+    if (id.present) {
+      map['id'] = i0.Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = i0.Variable<String>(name.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = i0.Variable<int>(sortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = i0.Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('WatchlistGroupsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $WatchlistTable extends i2.Watchlist
     with i0.TableInfo<$WatchlistTable, i1.WatchlistEntry> {
   @override
@@ -1353,8 +2105,22 @@ class $WatchlistTable extends i2.Watchlist
         requiredDuringInsert: false,
         defaultValue: i3.currentDateAndTime,
       );
+  static const i0.VerificationMeta _groupIdMeta = const i0.VerificationMeta(
+    'groupId',
+  );
   @override
-  List<i0.GeneratedColumn> get $columns => [symbol, createdAt];
+  late final i0.GeneratedColumn<int> groupId = i0.GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    true,
+    type: i0.DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: i0.GeneratedColumn.constraintIsAlways(
+      'REFERENCES watchlist_groups (id) ON DELETE SET NULL',
+    ),
+  );
+  @override
+  List<i0.GeneratedColumn> get $columns => [symbol, createdAt, groupId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1381,6 +2147,12 @@ class $WatchlistTable extends i2.Watchlist
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1398,6 +2170,10 @@ class $WatchlistTable extends i2.Watchlist
         i0.DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      groupId: attachedDatabase.typeMapping.read(
+        i0.DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      ),
     );
   }
 
@@ -1414,12 +2190,24 @@ class WatchlistEntry extends i0.DataClass
 
   /// 加入自選股的時間
   final DateTime createdAt;
-  const WatchlistEntry({required this.symbol, required this.createdAt});
+
+  /// 所屬自訂分組 ID（null 代表未分組）
+  ///
+  /// 刪除分組時 `KeyAction.setNull` 會把成員的 groupId 清空，不刪股票。
+  final int? groupId;
+  const WatchlistEntry({
+    required this.symbol,
+    required this.createdAt,
+    this.groupId,
+  });
   @override
   Map<String, i0.Expression> toColumns(bool nullToAbsent) {
     final map = <String, i0.Expression>{};
     map['symbol'] = i0.Variable<String>(symbol);
     map['created_at'] = i0.Variable<DateTime>(createdAt);
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = i0.Variable<int>(groupId);
+    }
     return map;
   }
 
@@ -1427,6 +2215,9 @@ class WatchlistEntry extends i0.DataClass
     return i1.WatchlistCompanion(
       symbol: i0.Value(symbol),
       createdAt: i0.Value(createdAt),
+      groupId: groupId == null && nullToAbsent
+          ? const i0.Value.absent()
+          : i0.Value(groupId),
     );
   }
 
@@ -1438,6 +2229,7 @@ class WatchlistEntry extends i0.DataClass
     return WatchlistEntry(
       symbol: serializer.fromJson<String>(json['symbol']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      groupId: serializer.fromJson<int?>(json['groupId']),
     );
   }
   @override
@@ -1446,18 +2238,24 @@ class WatchlistEntry extends i0.DataClass
     return <String, dynamic>{
       'symbol': serializer.toJson<String>(symbol),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'groupId': serializer.toJson<int?>(groupId),
     };
   }
 
-  i1.WatchlistEntry copyWith({String? symbol, DateTime? createdAt}) =>
-      i1.WatchlistEntry(
-        symbol: symbol ?? this.symbol,
-        createdAt: createdAt ?? this.createdAt,
-      );
+  i1.WatchlistEntry copyWith({
+    String? symbol,
+    DateTime? createdAt,
+    i0.Value<int?> groupId = const i0.Value.absent(),
+  }) => i1.WatchlistEntry(
+    symbol: symbol ?? this.symbol,
+    createdAt: createdAt ?? this.createdAt,
+    groupId: groupId.present ? groupId.value : this.groupId,
+  );
   WatchlistEntry copyWithCompanion(i1.WatchlistCompanion data) {
     return WatchlistEntry(
       symbol: data.symbol.present ? data.symbol.value : this.symbol,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
     );
   }
 
@@ -1465,43 +2263,50 @@ class WatchlistEntry extends i0.DataClass
   String toString() {
     return (StringBuffer('WatchlistEntry(')
           ..write('symbol: $symbol, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('groupId: $groupId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(symbol, createdAt);
+  int get hashCode => Object.hash(symbol, createdAt, groupId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is i1.WatchlistEntry &&
           other.symbol == this.symbol &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.groupId == this.groupId);
 }
 
 class WatchlistCompanion extends i0.UpdateCompanion<i1.WatchlistEntry> {
   final i0.Value<String> symbol;
   final i0.Value<DateTime> createdAt;
+  final i0.Value<int?> groupId;
   final i0.Value<int> rowid;
   const WatchlistCompanion({
     this.symbol = const i0.Value.absent(),
     this.createdAt = const i0.Value.absent(),
+    this.groupId = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   });
   WatchlistCompanion.insert({
     required String symbol,
     this.createdAt = const i0.Value.absent(),
+    this.groupId = const i0.Value.absent(),
     this.rowid = const i0.Value.absent(),
   }) : symbol = i0.Value(symbol);
   static i0.Insertable<i1.WatchlistEntry> custom({
     i0.Expression<String>? symbol,
     i0.Expression<DateTime>? createdAt,
+    i0.Expression<int>? groupId,
     i0.Expression<int>? rowid,
   }) {
     return i0.RawValuesInsertable({
       if (symbol != null) 'symbol': symbol,
       if (createdAt != null) 'created_at': createdAt,
+      if (groupId != null) 'group_id': groupId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1509,11 +2314,13 @@ class WatchlistCompanion extends i0.UpdateCompanion<i1.WatchlistEntry> {
   i1.WatchlistCompanion copyWith({
     i0.Value<String>? symbol,
     i0.Value<DateTime>? createdAt,
+    i0.Value<int?>? groupId,
     i0.Value<int>? rowid,
   }) {
     return i1.WatchlistCompanion(
       symbol: symbol ?? this.symbol,
       createdAt: createdAt ?? this.createdAt,
+      groupId: groupId ?? this.groupId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1527,6 +2334,9 @@ class WatchlistCompanion extends i0.UpdateCompanion<i1.WatchlistEntry> {
     if (createdAt.present) {
       map['created_at'] = i0.Variable<DateTime>(createdAt.value);
     }
+    if (groupId.present) {
+      map['group_id'] = i0.Variable<int>(groupId.value);
+    }
     if (rowid.present) {
       map['rowid'] = i0.Variable<int>(rowid.value);
     }
@@ -1538,6 +2348,7 @@ class WatchlistCompanion extends i0.UpdateCompanion<i1.WatchlistEntry> {
     return (StringBuffer('WatchlistCompanion(')
           ..write('symbol: $symbol, ')
           ..write('createdAt: $createdAt, ')
+          ..write('groupId: $groupId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();

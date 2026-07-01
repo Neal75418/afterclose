@@ -35,6 +35,8 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
   late final i5.$RuleAccuracyTable ruleAccuracy = i5.$RuleAccuracyTable(this);
   late final i5.$RecommendationValidationTable recommendationValidation = i5
       .$RecommendationValidationTable(this);
+  late final i6.$WatchlistGroupsTable watchlistGroups = i6
+      .$WatchlistGroupsTable(this);
   late final i6.$WatchlistTable watchlist = i6.$WatchlistTable(this);
   late final i6.$UpdateRunTable updateRun = i6.$UpdateRunTable(this);
   late final i6.$AppSettingsTable appSettings = i6.$AppSettingsTable(this);
@@ -88,6 +90,7 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     dailyRecommendation,
     ruleAccuracy,
     recommendationValidation,
+    watchlistGroups,
     watchlist,
     updateRun,
     appSettings,
@@ -233,6 +236,13 @@ abstract class $AppDatabase extends i0.GeneratedDatabase {
     ),
     i0.WritePropagation(
       on: i0.TableUpdateQuery.onTableName(
+        'watchlist_groups',
+        limitUpdateKind: i0.UpdateKind.delete,
+      ),
+      result: [i0.TableUpdate('watchlist', kind: i0.UpdateKind.update)],
+    ),
+    i0.WritePropagation(
+      on: i0.TableUpdateQuery.onTableName(
         'stock_master',
         limitUpdateKind: i0.UpdateKind.delete,
       ),
@@ -367,6 +377,8 @@ class $AppDatabaseManager {
         _db,
         _db.recommendationValidation,
       );
+  i6.$$WatchlistGroupsTableTableManager get watchlistGroups =>
+      i6.$$WatchlistGroupsTableTableManager(_db, _db.watchlistGroups);
   i6.$$WatchlistTableTableManager get watchlist =>
       i6.$$WatchlistTableTableManager(_db, _db.watchlist);
   i6.$$UpdateRunTableTableManager get updateRun =>

@@ -29,7 +29,8 @@ enum WatchlistSort {
 enum WatchlistGroup {
   none,
   status,
-  trend;
+  trend,
+  category;
 
   String get label =>
       'watchlist.group${name[0].toUpperCase()}${name.substring(1)}'.tr();
@@ -80,6 +81,8 @@ class WatchlistItemData {
     this.recentPrices = const [],
     this.reasons = const [],
     this.warningType,
+    this.groupId,
+    this.groupName,
   });
 
   final String symbol;
@@ -99,6 +102,12 @@ class WatchlistItemData {
   /// 警示類型（處置 > 注意 > 高質押），用於顯示警示標記
   final WarningBadgeType? warningType;
 
+  /// 所屬自訂分組 ID（null 代表未分組）
+  final int? groupId;
+
+  /// 所屬自訂分組名稱（null 代表未分組）
+  final String? groupName;
+
   /// 取得狀態分類
   WatchlistStatus get status {
     if (hasSignal) return WatchlistStatus.signal;
@@ -115,5 +124,33 @@ class WatchlistItemData {
       TrendState.downCode => WatchlistTrend.down,
       _ => WatchlistTrend.sideways,
     };
+  }
+
+  /// 複製並覆寫部分欄位（主要供分組指定 / 改名 / 刪除時就地更新）
+  ///
+  /// [clearGroup] 為 true 時把 groupId、groupName 一併設為 null（移出分組）；
+  /// 因 groupId/groupName 本身可為 null，無法只靠 `?? this` 區分「不變」與
+  /// 「設為 null」，故用此旗標明確表達「清空分組」。
+  WatchlistItemData copyWith({
+    int? groupId,
+    String? groupName,
+    bool clearGroup = false,
+  }) {
+    return WatchlistItemData(
+      symbol: symbol,
+      stockName: stockName,
+      market: market,
+      latestClose: latestClose,
+      priceChange: priceChange,
+      trendState: trendState,
+      score: score,
+      hasSignal: hasSignal,
+      addedAt: addedAt,
+      recentPrices: recentPrices,
+      reasons: reasons,
+      warningType: warningType,
+      groupId: clearGroup ? null : (groupId ?? this.groupId),
+      groupName: clearGroup ? null : (groupName ?? this.groupName),
+    );
   }
 }

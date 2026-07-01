@@ -74,6 +74,9 @@ import 'package:afterclose/data/database/dao/valuation_dao.dart';
     RuleAccuracy,
     RecommendationValidation,
     // 使用者資料
+    // WatchlistGroups 必須排在 Watchlist 之前：Watchlist.groupId 以 FK 參照
+    // WatchlistGroups，createAll 依序建表時 parent 必須先存在。
+    WatchlistGroups,
     Watchlist,
     UpdateRun,
     AppSettings,
@@ -181,6 +184,7 @@ class AppDatabase extends $AppDatabase
       // 會把所有 Drift managed table drop 後由 Migrator 重建。
       await _ensureSchemaFingerprint();
       await _ensureDealerSelfNetColumn();
+      await _ensureWatchlistGroupsSchema();
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
@@ -210,6 +214,45 @@ class AppDatabase extends $AppDatabase
     AppLogger.info(
       'AppDatabase',
       '既有 DB 補上 daily_institutional.dealer_self_net 欄（保留既有資料）',
+    );
+  }
+
+  /// Pre-launch idempotent schema 套用：在「不」bump schema fingerprint（不 wipe
+  /// 既有 watchlist / 行情資料）的前提下，為既有 DB 補上 watchlist 自訂分組功能。
+  ///
+  /// 沿用 [_ensureDealerSelfNetColumn] 的先例（零資料損失、可安全重跑），分兩步：
+  ///
+  /// 1. **建新表 `watchlist_groups`**：直接用 Drift 自己的 [Migrator.createTable]，
+  ///    讓 DDL 與 generated schema 完全一致（避免手寫 CREATE TABLE 造成欄位/型別
+  ///    漂移）。Drift 的 `createTable` 內部用 `CREATE TABLE IF NOT EXISTS`，
+  ///    既有 DB 已建過便 no-op、全新安裝由 `createAll` 先建好這裡也是 no-op。
+  ///
+  /// 2. **為 `watchlist` 加 `group_id` 欄**：SQLite `ALTER TABLE ADD COLUMN`
+  ///    不支援 `IF NOT EXISTS`，故先以 `PRAGMA table_info('watchlist')` 判斷
+  ///    欄位是否存在，缺才補。既有自選股資料全部保留（新欄對既有列為 null =
+  ///    未分組）。
+  ///
+  /// 必須在 `PRAGMA foreign_keys = ON` 之前執行：欄位帶 FK 參照 watchlist_groups，
+  /// 在 FK 關閉狀態下做 DDL 較安全；且步驟 1 先於步驟 2，確保 FK 參照的 parent
+  /// 表已存在。
+  Future<void> _ensureWatchlistGroupsSchema() async {
+    // 步驟 1：建分組表（Drift 內建 CREATE TABLE IF NOT EXISTS，idempotent）
+    await createMigrator().createTable(watchlistGroups);
+
+    // 步驟 2：為既有 watchlist 表補 group_id 欄（缺才加）
+    final columns = await customSelect("PRAGMA table_info('watchlist')").get();
+    final hasColumn = columns.any(
+      (row) => row.read<String>('name') == 'group_id',
+    );
+    if (hasColumn) return;
+
+    await customStatement(
+      'ALTER TABLE watchlist ADD COLUMN group_id INTEGER '
+      'REFERENCES watchlist_groups(id) ON DELETE SET NULL',
+    );
+    AppLogger.info(
+      'AppDatabase',
+      '既有 DB 補上 watchlist.group_id 欄與 watchlist_groups 表（保留既有自選股）',
     );
   }
 
@@ -270,6 +313,7 @@ class AppDatabase extends $AppDatabase
     'portfolio_position',
     'portfolio_transaction',
     'watchlist',
+    'watchlist_groups',
     'price_alert',
     'screening_strategy_table',
     'stock_event',

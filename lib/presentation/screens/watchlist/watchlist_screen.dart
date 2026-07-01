@@ -17,6 +17,7 @@ import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/screens/watchlist/add_stock_dialog.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_group_header.dart';
+import 'package:afterclose/presentation/screens/watchlist/watchlist_group_sheets.dart';
 import 'package:afterclose/presentation/screens/watchlist/watchlist_stock_item.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
@@ -121,6 +122,12 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
       ),
       onViewDetails: () => context.push(AppRoutes.stockDetail(item.symbol)),
       onToggleWatchlist: () => _removeFromWatchlist(item.symbol),
+      onMoveToGroup: () => showMoveToGroupSheet(
+        context: context,
+        ref: ref,
+        symbol: item.symbol,
+        currentGroupId: item.groupId,
+      ),
     );
   }
 
@@ -242,6 +249,13 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
                 .setGroup(WatchlistGroup.status);
           case 'group_trend':
             ref.read(watchlistProvider.notifier).setGroup(WatchlistGroup.trend);
+          case 'group_category':
+            ref
+                .read(watchlistProvider.notifier)
+                .setGroup(WatchlistGroup.category);
+          case 'manage_groups':
+            HapticFeedback.selectionClick();
+            showManageGroupsSheet(context: context, ref: ref);
         }
       },
       itemBuilder: (context) => [
@@ -293,6 +307,17 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
             ),
           );
         }),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'manage_groups',
+          child: Row(
+            children: [
+              const Icon(Icons.folder_outlined, size: 20),
+              const SizedBox(width: DesignTokens.spacing12),
+              Text('watchlist.manageGroups'.tr()),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -417,6 +442,11 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
           getLabel: (t) => t.label,
           showLimitMarkers: showLimitMarkers,
         );
+      case WatchlistGroup.category:
+        list = _buildCategoryGroupedList(
+          state.groupedByCategory,
+          showLimitMarkers,
+        );
     }
 
     return AnimatedSwitcher(
@@ -537,6 +567,46 @@ class _WatchlistScreenState extends ConsumerState<WatchlistScreen> {
               itemCount: grouped[group]!.length,
               itemBuilder: (_, i) {
                 final item = grouped[group]![i];
+                return WatchlistStockItem(
+                  item: item,
+                  index: i,
+                  showLimitMarkers: showLimitMarkers,
+                  onView: () =>
+                      context.push(AppRoutes.stockDetail(item.symbol)),
+                  onRemove: () => _removeFromWatchlist(item.symbol),
+                  onLongPress: () => _showStockPreview(item),
+                );
+              },
+            ),
+          ],
+      ],
+    );
+  }
+
+  /// 自訂分組清單（key 為分組名稱，含末端「未分組」桶）
+  ///
+  /// 與 [_buildGroupedList] 的差異：分組桶 key 為使用者命名的 String，
+  /// 不是 enum。沿用相同的 header（folder emoji）+ sticky 結構，只渲染
+  /// 有成員的桶。Map 已由 provider 依 sortOrder 保序，未分組在最後。
+  Widget _buildCategoryGroupedList(
+    Map<String, List<WatchlistItemData>> grouped,
+    bool showLimitMarkers,
+  ) {
+    return CustomScrollView(
+      slivers: [
+        for (final entry in grouped.entries)
+          if (entry.value.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: WatchlistGroupHeader(
+                icon: '📁',
+                title: entry.key,
+                count: entry.value.length,
+              ),
+            ),
+            SliverList.builder(
+              itemCount: entry.value.length,
+              itemBuilder: (_, i) {
+                final item = entry.value[i];
                 return WatchlistStockItem(
                   item: item,
                   index: i,
