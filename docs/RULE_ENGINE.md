@@ -24,7 +24,7 @@ flowchart LR
 | 項目 | 說明                    |
 |:---|:----------------------|
 | 目的 | 異常提示（Attention Alert） |
-| 產出 | 每檔最多 2 個理由            |
+| 產出 | 每檔全部去重理由（UI 以 take(2)/take(3) 控制顯示數量） |
 | 分數 | 0 ~ 80（負分歸零，上限 80）    |
 | 輸出 | 三模式選股（起漲 / 強勢 / 回檔）   |
 
@@ -54,7 +54,7 @@ pie showData title 依類別分佈（66 reason / 64 規則）
 | REVERSAL_W2S        | +35 | 弱轉強：突破區間上緣                 |
 | REVERSAL_S2W        | -25 | 強轉弱：跌破支撐                   |
 | TECH_BREAKOUT       | +25 | 突破壓力位（3% buffer + MA20 確認） |
-| TECH_BREAKDOWN      | -20 | 跌破支撐位（3% buffer + MA20 確認） |
+| TECH_BREAKDOWN      | -20 | 跌破支撐位（3% buffer + 量能確認；無 MA20 過濾，多空不對稱為現狀，對稱化需回測驗證） |
 | VOLUME_SPIKE        | +22 | 量 >= 4x 均量且價變 >= 1.5%      |
 | PRICE_SPIKE         | +15 | 日漲跌幅 >= 5%                 |
 | INSTITUTIONAL_BUY   | +18 | 法人買超轉向                     |
@@ -246,7 +246,7 @@ flowchart LR
 | trading_warning      | 注意/處置股票  |
 | insider_holding      | 董監持股     |
 | daily_analysis       | 分析結果     |
-| daily_recommendation | 每日 Top N |
+| daily_reason         | 觸發理由（三模式選股即時聚合來源） |
 
 ---
 

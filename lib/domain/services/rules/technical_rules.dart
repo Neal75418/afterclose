@@ -76,7 +76,7 @@ class BreakoutRule extends StockRule {
     if (close == null) return null;
 
     if (context.resistanceLevel != null) {
-      // 使用突破緩衝區（1%）
+      // 使用突破緩衝區（TrendParams.breakoutBuffer = 3%）
       final breakoutLevel =
           context.resistanceLevel! * (1 + TrendParams.breakoutBuffer);
       if (close > breakoutLevel) {

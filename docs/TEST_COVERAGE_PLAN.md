@@ -6,22 +6,16 @@
 
 ## 📊 當前狀況
 
-```mermaid
-%%{init: {'theme': 'dark'}}%%
-pie showData title 測試進度（2507 cases）
-    "Domain 層" : 702
-    "Data 層" : 455
-    "Presentation 層" : 978
-    "Tool / 其他" : 372
-```
+> 測試總數與各層覆蓋率以 CI / Codecov 為準（本地：`flutter test --coverage`）。
+> 下表為 2026-07-08 實測快照（排除 `*.g.dart` / `*.drift.dart` 生成碼）。
 
-| 指標               | 數值    |
-|:-----------------|:------|
-| 測試總數             | 2507  |
-| 執行時間             | ~40 秒 |
-| Domain 覆蓋率       | 85%+  |
-| Data 覆蓋率         | 85%+  |
-| Presentation 覆蓋率 | 70%+  |
+| 層級           | 實測覆蓋率 | 目標   | 差距        |
+|:-------------|:------|:-----|:----------|
+| Core         | 73.2% | —    | —         |
+| Domain       | 68.2% | 85%+ | 主要在大型服務   |
+| Data         | 35.5% | 85%+ | ⚠️ 最大缺口：API client（twse 11% / tpex 8% / finmind 13%）與 repositories |
+| Presentation | 61.5% | 70%+ | widget 邊角 |
+| **手寫碼總體**    | 57.6% | —    | —         |
 
 ---
 
@@ -71,6 +65,7 @@ flowchart TB
 |:---|:------------------------------------------------|
 | 檔案 | `test/domain/services/update_service_test.dart` |
 | 範圍 | 同步流程協調、錯誤處理重試、進度追蹤、Rate Limit、Syncer 呼叫順序       |
+| 備註 | 🚧 2026-07-08 已建立最小 harness（輔助資料失敗可見性 4 例）；其餘範圍待補 |
 
 ### AnalysisService 子服務測試
 
@@ -100,4 +95,4 @@ flowchart TB
 
 ← [Back to README](../README.md) | 📚 [All Documentation](../README.md#文件)
 
-*最後更新: 2026-03-28*
+*最後更新: 2026-07-08*

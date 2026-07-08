@@ -1,7 +1,8 @@
 // 第 9 階段：強股回檔進場 (Mode C v2)
 //
-// 2026-06-19 workflow wf_6676643c-0e9 設計、3 條 buy-signal rule 識別「**之前
-// 強、現在剛開始拉回**」的進場時機。score 正分（跟 Mode A/B 一致）— 打破舊
+// 2026-06-19 workflow wf_6676643c-0e9 設計、4 條 buy-signal rule（2026-06-20
+// 追加 MA10 淺回檔）識別「**之前強、現在剛開始拉回**」的進場時機。score 正分
+// （跟 Mode A/B 一致）— 打破舊
 // 「Mode C 全負分 warning」invariant，因為新 Mode C 是「觀察機會 tab」而非
 // 「警示 tab」。
 //

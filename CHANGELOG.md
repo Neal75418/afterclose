@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### ✨ Added
 
+- **自選清單自訂分組**：watchlist 支援使用者自訂分組管理。
 - **3-Mode Today UI**：三個觀察模式取代雙 horizon tab：
   - **起漲候選**（momentumEntry）— 還沒漲、即將起漲（Stage 1→2）
   - **強勢觀察**（strengthObserve）— 已漲、強勢領導（Stage 2）
@@ -61,9 +62,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🧪 Tests
 
-- **2577 tests passing**（新增 risk_warnings taxonomy / RiskBadgeCluster widget /
-  乖離 + 60D helper / Mode C pullback rule 等測試；退役舊推薦系統後移除對應的
-  validation / cooldown 測試）。
+- 新增 risk_warnings taxonomy / RiskBadgeCluster widget / 乖離 + 60D helper /
+  Mode C pullback rule 等測試；退役舊推薦系統後移除對應的 validation / cooldown
+  測試（測試總數以 CI 為準）。
+
+## [0.5.1] — 2026-03-28
+
+### 🔧 Changed
+
+- **drift_flutter 遷移**：資料庫連線改用 drift_flutter；StockDetailHeader 以
+  `.select()` isolation 減少 rebuild。
+- **Schema version 重置為 1**（pre-launch、無既有使用者）。
+
+### 🐛 Fixed
+
+- CI build 失敗（pin `dart_style` 3.1.5）、平台設定與依賴清理。
+
+## [0.5.0] — 2026-03-28
+
+### ✨ Added
+
+- **Phase 1-4 功能收尾**：i18n、資料新鮮度指示、無障礙（Semantics）、空狀態；
+  alerts / events / transactions / strategies 的 CRUD 編輯；8 種進階 AlertType
+  評估邏輯；搜尋、分享、通知、undo。
+
+### 🐛 Fixed
+
+- 多輪 review 收尾：查詢去重、時間基準統一、排序契約、背景通知與股票股利缺口、
+  隱性 provider 耦合。
 
 ## [0.4.0] — 2026-03-25
 

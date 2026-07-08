@@ -296,8 +296,9 @@ abstract final class RuleScores {
   // 第 9 階段：強股回檔進場（Mode C v2）— 2026-06-19
   // ==================================================
   //
-  // 「強股剛開始拉回、找進場時機」3 條主訊號 rule。**正分**（buy signal）— 打破
-  // 舊「Mode C 全負分 warning tab」invariant，因為新 Mode C 是觀察機會 tab。
+  // 「強股剛開始拉回、找進場時機」4 條主訊號 rule（2026-06-20 追加 MA10 淺回檔）。
+  // **正分**（buy signal）— 打破舊「Mode C 全負分 warning tab」invariant，
+  // 因為新 Mode C 是觀察機會 tab。
   //
   // **CALIBRATION_PENDING**：threshold 是直覺值、缺台股 backtest。pre-launch 上線
   // 靠 telemetry 30 天累積樣本後校準。
@@ -321,7 +322,7 @@ abstract final class RuleScores {
 
   /// KD 高檔回落未死叉（動能稍歇）
   ///
-  /// KD 從 80+ 回落到 [50, 75] 區間但 K > D（未死叉）+ 多頭排列維持。技術指標
-  /// proxy、相對較弱訊號、給分較低。
+  /// KD 從 78+ 回落到 [60, 80) 區間但 K > D（未死叉）+ 多頭排列維持。技術指標
+  /// proxy、相對較弱訊號、給分較低。參數見 rule_params_pullback.dart。
   static const int kdHighPullback = 12;
 }
