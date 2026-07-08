@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:afterclose/core/theme/app_theme.dart';
 import 'package:afterclose/presentation/widgets/stock_card.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -138,6 +139,101 @@ void main() {
       await tester.pumpWidget(buildTestApp(const StockCard(symbol: '2330')));
 
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
+    });
+
+    testWidgets('displays close price and positive change', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(symbol: '2330', latestClose: 580.0, priceChange: 3.5),
+        ),
+      );
+
+      expect(find.text('580.00'), findsOneWidget);
+      // 格式包含絕對漲跌金額："+19.61 (+3.50%)"
+      expect(find.textContaining('+3.50%'), findsOneWidget);
+    });
+
+    testWidgets('displays negative change', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(
+            symbol: '2330',
+            latestClose: 580.0,
+            priceChange: -2.5,
+          ),
+        ),
+      );
+
+      expect(find.textContaining('-2.50%'), findsOneWidget);
+    });
+
+    testWidgets('displays reasons as tags', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(
+            symbol: '2330',
+            reasons: ['REVERSAL_W2S', 'VOLUME_SPIKE'],
+          ),
+        ),
+      );
+
+      // 測試環境未載入翻譯資源，.tr() 回傳原始 key
+      expect(find.text('reasons.reversalW2S'), findsOneWidget);
+      expect(find.text('reasons.volumeSpike'), findsOneWidget);
+    });
+
+    testWidgets('limits displayed reasons to 2', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          const StockCard(
+            symbol: '2330',
+            reasons: ['REVERSAL_W2S', 'VOLUME_SPIKE', 'TECH_BREAKOUT'],
+          ),
+        ),
+      );
+
+      expect(find.text('reasons.reversalW2S'), findsOneWidget);
+      expect(find.text('reasons.volumeSpike'), findsOneWidget);
+      expect(find.text('reasons.breakout'), findsNothing);
+    });
+
+    group('score badge colors', () {
+      /// 取 ScoreRing 中央分數文字的實際顏色（由 AppTheme.getScoreColor 決定）
+      Color? scoreTextColor(WidgetTester tester, String scoreText) {
+        return tester.widget<Text>(find.text(scoreText)).style?.color;
+      }
+
+      testWidgets('up color for score >= 50', (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const StockCard(symbol: '2330', score: 55.0)),
+        );
+
+        expect(scoreTextColor(tester, '55'), AppTheme.upColor);
+      });
+
+      testWidgets('warning color for score >= 35', (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const StockCard(symbol: '2330', score: 40.0)),
+        );
+
+        expect(scoreTextColor(tester, '40'), AppTheme.warningColor);
+      });
+
+      testWidgets('caution color for score >= 20', (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const StockCard(symbol: '2330', score: 25.0)),
+        );
+
+        expect(scoreTextColor(tester, '25'), AppTheme.cautionColor);
+      });
+
+      testWidgets('neutral color for score < 20', (tester) async {
+        await tester.pumpWidget(
+          buildTestApp(const StockCard(symbol: '2330', score: 15.0)),
+        );
+
+        expect(scoreTextColor(tester, '15'), AppTheme.neutralColor);
+      });
     });
   });
 }

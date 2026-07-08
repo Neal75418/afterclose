@@ -10,6 +10,7 @@ import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 import 'package:afterclose/presentation/screens/today/today_screen.dart';
 import 'package:afterclose/presentation/widgets/shimmer_loading.dart';
 import 'package:afterclose/presentation/widgets/empty_state.dart';
+import 'package:afterclose/presentation/widgets/update_progress_banner.dart';
 
 import '../../../helpers/provider_test_helpers.dart';
 import '../../../helpers/widget_test_helpers.dart';
@@ -245,8 +246,10 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 1));
 
-      // Should show date info text
-      expect(find.byType(Wrap), findsAtLeastNWidgets(1));
+      // 最後更新與資料日期兩個資訊區塊都應渲染
+      // （測試環境未載入翻譯，.tr() 回傳 key）
+      expect(find.text('today.lastUpdate'), findsOneWidget);
+      expect(find.text('today.dataDate'), findsOneWidget);
     });
 
     testWidgets('shows update progress banner', (tester) async {
@@ -268,8 +271,9 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tester.pump(const Duration(seconds: 1));
 
-      // UpdateProgressBanner should be visible
-      expect(find.byType(CircularProgressIndicator), findsAtLeastNWidgets(1));
+      // banner 本體必須渲染（AppBar 在 isUpdating 時本來就有一顆 spinner，
+      // 驗 CircularProgressIndicator 無法區分兩者）
+      expect(find.byType(UpdateProgressBanner), findsOneWidget);
     });
 
     testWidgets('shows section header for recommendations', (tester) async {
