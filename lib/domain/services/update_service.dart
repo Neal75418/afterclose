@@ -379,6 +379,7 @@ class UpdateService {
         ctx.result.recordError('TDCC 股權分散表同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', 'TDCC 股權分散表同步失敗', e);
+        ctx.result.recordError('TDCC 股權分散表同步失敗: $e', e);
       }
     }
 
@@ -394,12 +395,18 @@ class UpdateService {
                 '${divResult.meetingEventsCreated} 筆股東會',
           );
         }
+        // DividendSyncer 內部以 per-source catch 收集 generic 失敗，
+        // 不 throw — 必須讀取 errors 轉發，否則對使用者靜默
+        for (final err in divResult.errors) {
+          ctx.result.errors.add('股利/股東會同步失敗: $err');
+        }
       } on RateLimitException catch (e) {
         ctx.rateLimitedAbort = true;
         AppLogger.warning('UpdateService', '股利/股東會同步失敗 (rate limit)', e);
         ctx.result.recordError('股利/股東會同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', '股利/股東會同步失敗', e);
+        ctx.result.recordError('股利/股東會同步失敗: $e', e);
       }
     }
 
@@ -416,6 +423,7 @@ class UpdateService {
         ctx.result.recordError('內部人轉讓同步失敗 (rate limit): $e', e);
       } catch (e) {
         AppLogger.warning('UpdateService', '內部人轉讓同步失敗', e);
+        ctx.result.recordError('內部人轉讓同步失敗: $e', e);
       }
     }
   }
@@ -610,6 +618,7 @@ class UpdateService {
           ctx.result.recordError('上櫃自選基本面補充失敗 (rate limit): $e', e);
         } catch (e) {
           AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗', e);
+          ctx.result.recordError('上櫃自選基本面補充失敗: $e', e);
         }
       }
 
@@ -669,6 +678,7 @@ class UpdateService {
       ctx.result.recordError('財報資料同步失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '財報資料同步失敗', e);
+      ctx.result.recordError('財報資料同步失敗: $e', e);
     }
   }
 
@@ -753,6 +763,7 @@ class UpdateService {
       ctx.result.recordError('上櫃資料補充失敗 (rate limit): $e', e);
     } catch (e) {
       AppLogger.warning('UpdateService', '上櫃資料補充失敗', e);
+      ctx.result.recordError('上櫃資料補充失敗: $e', e);
     }
   }
 
