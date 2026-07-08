@@ -25,9 +25,21 @@ class MockAnalysisService extends Mock implements AnalysisService {}
 class MockRuleEngine extends Mock implements RuleEngine {}
 
 /// Mock 分析資料庫
+///
+/// [inTransaction] 供測試斷言某呼叫是否發生在 runInTransaction callback 內
+/// （清除與寫入必須同一 transaction，避免中斷留下當日分析真空）。
 class MockAnalysisRepository extends Mock implements AnalysisRepository {
+  bool inTransaction = false;
+
   @override
-  Future<T> runInTransaction<T>(Future<T> Function() action) => action();
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    inTransaction = true;
+    try {
+      return await action();
+    } finally {
+      inTransaction = false;
+    }
+  }
 }
 
 void main() {
@@ -71,6 +83,14 @@ void main() {
     registerFallbackValue(<NewsItemEntry>[]);
     registerFallbackValue(<DailyInstitutionalEntry>[]);
     registerFallbackValue(<MonthlyRevenueEntry>[]);
+
+    // 寫入 transaction 內的當日清除（clear-then-write 原子化）預設 no-op
+    when(
+      () => mockAnalysisRepository.clearReasonsForDate(any()),
+    ).thenAnswer((_) async => 0);
+    when(
+      () => mockAnalysisRepository.clearAnalysisForDate(any()),
+    ).thenAnswer((_) async => 0);
 
     // Default mocks to prevent Null type errors
     when(() => mockRuleEngine.getTopReasons(any())).thenAnswer(
@@ -398,6 +418,130 @@ void main() {
   // ==========================================
   // Group 2: 空值與早期回傳
   // ==========================================
+
+  group('ScoringService clear-then-write 原子性', () {
+    test('清除當日舊資料應發生在寫入 transaction 內', () async {
+      // Arrange：一檔可通過流動性過濾並成功評分的股票
+      final prices = [
+        ...generatePricesWithVolumeSpike(
+          days: 30,
+          normalVolume: 1000,
+          spikeVolume: 5000,
+        ),
+        DailyPriceEntry(
+          symbol: 'GOOD',
+          date: DateTime(2025, 6, 15),
+          open: 148,
+          high: 152,
+          low: 149,
+          close: 150,
+          volume: 3000000,
+        ),
+      ];
+      when(() => mockAnalysisService.analyzeStock(any())).thenReturn(
+        const AnalysisResult(
+          trendState: TrendState.up,
+          reversalState: ReversalState.none,
+          supportLevel: 140,
+          resistanceLevel: 160,
+        ),
+      );
+      when(
+        () => mockAnalysisService.buildContext(
+          any(),
+          priceHistory: any(named: 'priceHistory'),
+          marketData: any(named: 'marketData'),
+          evaluationTime: any(named: 'evaluationTime'),
+        ),
+      ).thenReturn(
+        AnalysisContext(
+          evaluationTime: DateTime(2025, 6, 1),
+          trendState: TrendState.up,
+        ),
+      );
+      when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn([
+        const TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 80,
+          description: 'Test Breakout',
+        ),
+      ]);
+      when(
+        () => mockRuleEngine.calculateScore(
+          any(),
+          horizon: any(named: 'horizon'),
+          calibratedScores: any(named: 'calibratedScores'),
+        ),
+      ).thenReturn(80);
+      // 記錄呼叫順序與 clear 當下的 transaction 狀態
+      final callOrder = <String>[];
+      final clearReasonsInTx = <bool>[];
+      final clearAnalysisInTx = <bool>[];
+      when(
+        () => mockAnalysisRepository.saveAnalysis(
+          symbol: any(named: 'symbol'),
+          date: any(named: 'date'),
+          trendState: any(named: 'trendState'),
+          reversalState: any(named: 'reversalState'),
+          supportLevel: any(named: 'supportLevel'),
+          resistanceLevel: any(named: 'resistanceLevel'),
+          scoreShort: any(named: 'scoreShort'),
+          scoreLong: any(named: 'scoreLong'),
+        ),
+      ).thenAnswer((_) async {
+        callOrder.add('saveAnalysis');
+      });
+      when(
+        () => mockAnalysisRepository.saveReasons(any(), any(), any()),
+      ).thenAnswer((_) async {
+        callOrder.add('saveReasons');
+      });
+      when(() => mockAnalysisRepository.clearReasonsForDate(any())).thenAnswer((
+        _,
+      ) async {
+        callOrder.add('clearReasons');
+        clearReasonsInTx.add(mockAnalysisRepository.inTransaction);
+        return 0;
+      });
+      when(() => mockAnalysisRepository.clearAnalysisForDate(any())).thenAnswer(
+        (_) async {
+          callOrder.add('clearAnalysis');
+          clearAnalysisInTx.add(mockAnalysisRepository.inTransaction);
+          return 0;
+        },
+      );
+
+      // Act
+      await scoringService.scoreStocks(
+        candidates: ['GOOD'],
+        date: DateTime(2025, 6, 15),
+        batchData: ScoringBatchData(pricesMap: {'GOOD': prices}, newsMap: {}),
+      );
+
+      // Assert：clear 必須在寫入 transaction 內執行——
+      // 若在 transaction 外先 clear，評分中斷會留下當日分析真空
+      expect(
+        clearReasonsInTx,
+        [true],
+        reason: 'clearReasonsForDate 必須在 runInTransaction 內被呼叫一次',
+      );
+      expect(
+        clearAnalysisInTx,
+        [true],
+        reason: 'clearAnalysisForDate 必須在 runInTransaction 內被呼叫一次',
+      );
+      // ordering：clear 必須發生在任何寫入之前，否則會清掉剛寫入的資料
+      final firstWrite = callOrder.indexWhere(
+        (c) => c == 'saveAnalysis' || c == 'saveReasons',
+      );
+      expect(firstWrite, greaterThan(-1), reason: '應有寫入發生');
+      expect(
+        callOrder.sublist(0, firstWrite),
+        containsAll(['clearReasons', 'clearAnalysis']),
+        reason: '兩個 clear 都必須在第一筆寫入之前',
+      );
+    });
+  });
 
   group('ScoringService Empty/Null Input', () {
     test('return empty list when candidates list is empty', () async {

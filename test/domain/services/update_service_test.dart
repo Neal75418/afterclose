@@ -152,13 +152,8 @@ void main() {
       () => mockDb.getDividendHistoryBatch(any()),
     ).thenAnswer((_) async => {});
     when(() => mockDb.getMaxRevenueBatch(any())).thenAnswer((_) async => {});
-    // 分析：清除 + 評分（空結果）
-    when(
-      () => mockAnalysisRepo.clearReasonsForDate(any()),
-    ).thenAnswer((_) async => 0);
-    when(
-      () => mockAnalysisRepo.clearAnalysisForDate(any()),
-    ).thenAnswer((_) async => 0);
+    // 評分（空結果）；當日清除已移入 ScoringService 的寫入 transaction，
+    // 此處 scoring 為 mock 故不需 stub clear
     when(
       () => mockScoring.scoreStocksInIsolate(
         candidates: any(named: 'candidates'),

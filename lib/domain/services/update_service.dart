@@ -776,9 +776,8 @@ class UpdateService {
       candidates,
     );
 
-    await _analysisRepo.clearReasonsForDate(ctx.normalizedDate);
-    await _analysisRepo.clearAnalysisForDate(ctx.normalizedDate);
-
+    // 當日舊資料的清除已移入 ScoringService 的寫入 transaction
+    // （clear-then-write 原子化，避免中斷留下當日分析真空）
     ctx.reportProgress(7, 10, '分析中 (${candidates.length} 檔)');
     final scoredStocks = await _scoring.scoreStocksInIsolate(
       candidates: candidates,

@@ -226,8 +226,12 @@ class ScoringService {
       );
     }
 
-    // 批次寫入（單一 transaction，與 Isolate 路徑對齊）
+    // 批次寫入（單一 transaction，與 Isolate 路徑對齊）。
+    // 清除當日舊資料必須與寫入同一 transaction：先清後寫若跨 transaction，
+    // 評分中斷（OS 殺程序、isolate 失敗）會留下當日分析真空。
     await _analysisRepo.runInTransaction(() async {
+      await _analysisRepo.clearReasonsForDate(date);
+      await _analysisRepo.clearAnalysisForDate(date);
       for (final p in pendingPersists) {
         await _persistAnalysisResult(
           symbol: p.symbol,
@@ -346,8 +350,12 @@ class ScoringService {
     // 記錄分析統計
     _logScoringResultsFromIsolate(result);
 
-    // 批次儲存分析結果（單一 transaction 減少 I/O）
+    // 批次儲存分析結果（單一 transaction 減少 I/O）。
+    // 清除當日舊資料必須與寫入同一 transaction（與主執行緒路徑對齊），
+    // 避免評分中斷留下當日分析真空。
     await _analysisRepo.runInTransaction(() async {
+      await _analysisRepo.clearReasonsForDate(date);
+      await _analysisRepo.clearAnalysisForDate(date);
       for (final output in result.outputs) {
         final reasonDataList = output.reasons
             .map(
