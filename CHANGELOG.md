@@ -51,6 +51,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### 🔧 Fixed
 
+- **輔助資料同步失敗不再靜默**：TDCC / 股利 / 內部人轉讓 / 財報 / 上櫃補充
+  的 generic 失敗原本只寫 log、UI 照樣顯示「更新完成」；現在記入 partial
+  警告（「N 項警告」可展開明細），規則用 stale 資料評分時使用者可察覺。
+- **評分中斷不再留下當日真空**：當日舊分析的清除移入寫入 transaction
+  （原本先清後寫跨 transaction，評分中途被殺會使三模式／掃描頁對該日全空）。
 - **ROE 死碼**：3 條 ROE rule 用幻影欄位 `NetIncome`（DB 0 筆）→ 改 `IncomeAfterTaxes`
   （稅後淨利、單季 ×4 年化），同步修個股詳情頁稅後淨利率 / ROE。
 - **priceHistory 窗口太短**：載入窗口僅 ~4 筆 → Mode A 漲幅 filter 從 commit 253f732
