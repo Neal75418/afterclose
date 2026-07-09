@@ -41,8 +41,14 @@ class BatchDataLoader {
     DateTime date,
     List<String> candidates,
   ) async {
+    // 與 HistoricalPriceSyncer 的充足性判斷窗（historyRequiredDays）同源。
+    // 舊值 lookbackPrice + 10（380 日曆日）比判斷窗（400）窄 20 天：
+    // syncer 在 400 天窗數到 ≥250 個交易日判定「夠、不回補」，本窗卻只
+    // 切出 ~247 個給規則 → 52 週新高/新低對幾乎全市場長期「資料不足
+    // (247/250)」。兩窗同源後縫隙不再存在（2026-06 修 syncer 早退條件
+    // 只治了一半，症狀從 221 變 247，根因在此）。
     final startDate = date.subtract(
-      const Duration(days: RuleParams.lookbackPrice + 10),
+      const Duration(days: RuleParams.historyRequiredDays),
     );
     final instStartDate = date.subtract(
       const Duration(days: InstitutionalParams.institutionalLookbackDays),
