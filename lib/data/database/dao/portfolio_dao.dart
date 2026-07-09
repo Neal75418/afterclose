@@ -77,14 +77,6 @@ mixin PortfolioDaoMixin on $AppDatabase {
     return (delete(portfolioTransaction)..where((t) => t.id.equals(id))).go();
   }
 
-  /// 取得某 symbol 的所有 BUY 交易（用於 FIFO 計算）
-  Future<List<PortfolioTransactionEntry>> getBuyTransactions(String symbol) {
-    return (select(portfolioTransaction)
-          ..where((t) => t.symbol.equals(symbol) & t.txType.equals('BUY'))
-          ..orderBy([(t) => OrderingTerm.asc(t.date)]))
-        .get();
-  }
-
   /// 取得所有交易紀錄（供績效計算）
   Future<List<PortfolioTransactionEntry>> getAllPortfolioTransactions() {
     return (select(

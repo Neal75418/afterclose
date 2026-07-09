@@ -498,16 +498,6 @@ mixin UserDaoMixin on $AppDatabase {
         .get();
   }
 
-  /// 取得指定股票的處置警示
-  Future<List<TradingWarningEntry>> getDisposalWarningsForSymbol(
-    String symbol,
-  ) async {
-    return (select(tradingWarning)
-          ..where((t) => t.symbol.equals(symbol))
-          ..where((t) => t.warningType.equals('DISPOSAL')))
-        .get();
-  }
-
   // ==================================================
   // 進階警示資料查詢（Phase 3）
   // ==================================================

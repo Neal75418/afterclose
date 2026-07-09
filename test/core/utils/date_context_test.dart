@@ -125,36 +125,6 @@ void main() {
       });
     });
 
-    group('earlierOf', () {
-      test('returns earlier date when both are non-null', () {
-        final earlier = DateTime(2024, 3, 10);
-        final later = DateTime(2024, 3, 15);
-
-        final result = DateContext.earlierOf(earlier, later);
-        expect(result, equals(DateContext.normalize(earlier)));
-
-        final result2 = DateContext.earlierOf(later, earlier);
-        expect(result2, equals(DateContext.normalize(earlier)));
-      });
-
-      test('returns normalized date when other is null', () {
-        final date = DateTime(2024, 3, 15, 10, 30);
-
-        expect(
-          DateContext.earlierOf(date, null),
-          equals(DateContext.normalize(date)),
-        );
-        expect(
-          DateContext.earlierOf(null, date),
-          equals(DateContext.normalize(date)),
-        );
-      });
-
-      test('returns null when both are null', () {
-        expect(DateContext.earlierOf(null, null), isNull);
-      });
-    });
-
     group('isBeforeOrEqual', () {
       test('returns true when a is before b', () {
         final a = DateTime(2024, 3, 10);

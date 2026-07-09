@@ -57,18 +57,6 @@ class DateContext {
     return isSameDay(aWeekStart, bWeekStart);
   }
 
-  /// 取得兩日期中較早的日期（已標準化）
-  ///
-  /// 若兩者皆為 null 則回傳 null。
-  static DateTime? earlierOf(DateTime? a, DateTime? b) {
-    if (a == null && b == null) return null;
-    if (a == null) return normalize(b!);
-    if (b == null) return normalize(a);
-    final normalA = normalize(a);
-    final normalB = normalize(b);
-    return normalA.isBefore(normalB) ? normalA : normalB;
-  }
-
   /// 檢查日期 a 是否早於或等於日期 b（標準化比較）
   static bool isBeforeOrEqual(DateTime a, DateTime b) {
     final normalA = normalize(a);

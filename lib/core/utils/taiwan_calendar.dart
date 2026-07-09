@@ -210,22 +210,4 @@ class TaiwanCalendar {
     }
     return current;
   }
-
-  /// 從指定日期往前推 N 個交易日
-  ///
-  /// 例如：週一 -1 交易日 = 上週五（跳過週末）。
-  static DateTime subtractTradingDays(DateTime date, int tradingDays) {
-    var current = date;
-    var count = 0;
-    var iterations = 0;
-    final maxIterations = tradingDays * 5 + 14; // 安全上限（含 14 天連假緩衝）
-    while (count < tradingDays && iterations < maxIterations) {
-      current = current.subtract(const Duration(days: 1));
-      iterations++;
-      if (isTradingDay(current)) {
-        count++;
-      }
-    }
-    return current;
-  }
 }
