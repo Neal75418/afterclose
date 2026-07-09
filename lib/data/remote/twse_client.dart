@@ -9,6 +9,7 @@ import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/twse/models.dart';
+import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
 
 export 'package:afterclose/data/models/twse/models.dart';
@@ -1207,28 +1208,13 @@ class TwseClient {
       options: Options(headers: {'Accept': 'application/json'}),
     );
 
-    final issuedSharesMap = <String, double>{};
-    if (stockInfoResponse.statusCode == 200) {
-      // OpenData API 回傳 List（Dio responseType: json 會自動解析）
-      final stockData = stockInfoResponse.data;
-      if (stockData is List) {
-        for (final item in stockData) {
-          if (item is! Map<String, dynamic>) continue;
-          final code = item['公司代號']?.toString().trim() ?? '';
-          // TWSE OpenData API 欄位名稱：已發行普通股數或TDR原股發行股數
-          final shares = item['已發行普通股數或TDR原股發行股數']?.toString().replaceAll(
-            ',',
-            '',
-          );
-          if (code.isNotEmpty && shares != null) {
-            final sharesNum = double.tryParse(shares);
-            if (sharesNum != null && sharesNum > 0) {
-              issuedSharesMap[code] = sharesNum;
-            }
-          }
-        }
-      }
-    }
+    final issuedSharesMap = stockInfoResponse.statusCode == 200
+        ? InsiderHoldingAggregator.parseIssuedShares(
+            stockInfoResponse.data,
+            codeKey: '公司代號',
+            sharesKey: '已發行普通股數或TDR原股發行股數',
+          )
+        : <String, double>{};
 
     AppLogger.debug(_tag, '已發行股數: ${issuedSharesMap.length} 家公司');
     return issuedSharesMap;
@@ -1260,45 +1246,11 @@ class TwseClient {
       return {};
     }
 
-    // 彙總計算每家公司的董監持股
-    final companyData = <String, InsiderAggregation>{};
-
-    for (final item in data) {
-      if (item is! Map<String, dynamic>) continue;
-
-      final code = item['公司代號']?.toString().trim() ?? '';
-      if (code.isEmpty || code.length < 4) continue;
-
-      final companyName = item['公司名稱']?.toString().trim() ?? '';
-      final position = item['職稱']?.toString() ?? '';
-      final personName = item['姓名']?.toString().trim() ?? '';
-
-      // 只計算董事和監察人的「本人」記錄
-      final isDirectorOrSupervisor =
-          (position.contains('董事') || position.contains('監察人')) &&
-          position.endsWith('本人');
-      if (!isDirectorOrSupervisor) continue;
-
-      // 解析日期
-      final dateStr = item['出表日期']?.toString();
-      final date = TwParseUtils.parseCompactRocDate(dateStr);
-      if (date == null) continue;
-
-      // 解析持股和質押數
-      final sharesStr = item['目前持股']?.toString().replaceAll(',', '') ?? '0';
-      final pledgedStr = item['設質股數']?.toString().replaceAll(',', '') ?? '0';
-      final shares = double.tryParse(sharesStr) ?? 0;
-      final pledged = double.tryParse(pledgedStr) ?? 0;
-
-      // 彙總（使用姓名去重）
-      companyData.putIfAbsent(
-        code,
-        () => InsiderAggregation(code: code, name: companyName, date: date),
-      );
-      companyData[code]!.addHoldingIfNew(personName, shares, pledged);
-    }
-
-    return companyData;
+    // 彙總計算每家公司的董監持股（共用 aggregator，與 TPEx 同一套業務規則）
+    return InsiderHoldingAggregator.aggregateRecords(
+      data,
+      codeFilter: (code) => code.length >= 4,
+    );
   }
 
   /// 計算董監持股比例和質押比例，建立最終結果
@@ -1309,29 +1261,17 @@ class TwseClient {
     Map<String, InsiderAggregation> companyData,
     Map<String, double> issuedSharesMap,
   ) {
-    // 計算比例並建立結果
-    final results = <TwseInsiderHolding>[];
-    for (final agg in companyData.values) {
-      final issuedShares = issuedSharesMap[agg.code];
-      if (issuedShares == null || issuedShares <= 0) continue;
-
-      final insiderRatio = (agg.totalShares / issuedShares) * 100;
-      final pledgeRatio = agg.totalShares > 0
-          ? (agg.totalPledged / agg.totalShares) * 100
-          : 0.0;
-
-      results.add(
-        TwseInsiderHolding(
-          date: agg.date,
-          code: agg.code,
-          insiderRatio: insiderRatio,
-          pledgeRatio: pledgeRatio,
-          sharesIssued: issuedShares,
-        ),
-      );
-    }
-
-    return results;
+    return InsiderHoldingAggregator.buildRatios(companyData, issuedSharesMap)
+        .map(
+          (r) => TwseInsiderHolding(
+            date: r.date,
+            code: r.code,
+            insiderRatio: r.insiderRatio,
+            pledgeRatio: r.pledgeRatio,
+            sharesIssued: r.sharesIssued,
+          ),
+        )
+        .toList();
   }
 
   /// 取得上市已宣告股利

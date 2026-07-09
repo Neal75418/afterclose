@@ -10,6 +10,7 @@ import 'package:afterclose/core/utils/lru_cache.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/tpex/models.dart';
 import 'package:afterclose/data/models/twse/twse_market_index.dart';
+import 'package:afterclose/data/remote/insider_holding_aggregator.dart';
 import 'package:afterclose/data/remote/market_client_mixin.dart';
 
 export 'package:afterclose/data/models/tpex/models.dart';
@@ -647,24 +648,13 @@ class TpexClient {
         options: Options(headers: {'Accept': 'application/json'}),
       );
 
-      final issuedSharesMap = <String, double>{};
-      if (stockInfoResponse.statusCode == 200) {
-        // OpenData API 回傳 List（Dio responseType: json 會自動解析）
-        final stockData = stockInfoResponse.data;
-        if (stockData is List) {
-          for (final item in stockData) {
-            if (item is! Map<String, dynamic>) continue;
-            final code = item['SecuritiesCompanyCode']?.toString().trim() ?? '';
-            final shares = item['IssueShares']?.toString().replaceAll(',', '');
-            if (code.isNotEmpty && shares != null) {
-              final sharesNum = double.tryParse(shares);
-              if (sharesNum != null && sharesNum > 0) {
-                issuedSharesMap[code] = sharesNum;
-              }
-            }
-          }
-        }
-      }
+      final issuedSharesMap = stockInfoResponse.statusCode == 200
+          ? InsiderHoldingAggregator.parseIssuedShares(
+              stockInfoResponse.data,
+              codeKey: 'SecuritiesCompanyCode',
+              sharesKey: 'IssueShares',
+            )
+          : <String, double>{};
 
       AppLogger.debug(_tag, '已發行股數: ${issuedSharesMap.length} 家公司');
 
@@ -682,71 +672,23 @@ class TpexClient {
           return [];
         }
 
-        // 3. 彙總計算每家公司的董監持股
-        // 使用 Map<公司代碼, Map<持股人姓名, 持股資料>> 來去重
-        final companyData = <String, InsiderAggregation>{};
-
-        for (final item in data) {
-          if (item is! Map<String, dynamic>) continue;
-
-          final code = item['公司代號']?.toString().trim() ?? '';
-          if (code.isEmpty || !StockPatterns.isTpexCode(code)) continue;
-
-          final companyName = item['公司名稱']?.toString().trim() ?? '';
-          final position = item['職稱']?.toString() ?? '';
-          final personName = item['姓名']?.toString().trim() ?? '';
-
-          // 只計算董事和監察人的「本人」記錄
-          // 職稱格式：「董事長本人」「董事本人」「獨立董事本人」「監察人本人」
-          // 排除「法人代表人」避免重複計算（法人的持股已在法人本人記錄中）
-          // 排除：總經理、副總經理、經理、大股東、財務/會計主管
-          final isDirectorOrSupervisor =
-              (position.contains('董事') || position.contains('監察人')) &&
-              position.endsWith('本人');
-          if (!isDirectorOrSupervisor) continue;
-
-          // 解析日期
-          final dateStr = item['出表日期']?.toString();
-          final date = TwParseUtils.parseCompactRocDate(dateStr);
-          if (date == null) continue;
-
-          // 解析持股和質押數
-          final sharesStr = item['目前持股']?.toString().replaceAll(',', '') ?? '0';
-          final pledgedStr =
-              item['設質股數']?.toString().replaceAll(',', '') ?? '0';
-          final shares = double.tryParse(sharesStr) ?? 0;
-          final pledged = double.tryParse(pledgedStr) ?? 0;
-
-          // 彙總（使用姓名去重，同一人可能有多個職稱但持股相同）
-          companyData.putIfAbsent(
-            code,
-            () => InsiderAggregation(code: code, name: companyName, date: date),
-          );
-          // 只有新的持股人才加入統計
-          companyData[code]!.addHoldingIfNew(personName, shares, pledged);
-        }
-
-        // 4. 計算比例並建立結果
-        final results = <TpexInsiderHolding>[];
-        for (final agg in companyData.values) {
-          final issuedShares = issuedSharesMap[agg.code];
-          if (issuedShares == null || issuedShares <= 0) continue;
-
-          final insiderRatio = (agg.totalShares / issuedShares) * 100;
-          final pledgeRatio = agg.totalShares > 0
-              ? (agg.totalPledged / agg.totalShares) * 100
-              : 0.0;
-
-          results.add(
-            TpexInsiderHolding(
-              date: agg.date,
-              code: agg.code,
-              insiderRatio: insiderRatio,
-              pledgeRatio: pledgeRatio,
-              sharesIssued: issuedShares,
-            ),
-          );
-        }
+        // 3-4. 彙總 + 比例計算（共用 aggregator，與 TWSE 同一套業務規則）
+        final companyData = InsiderHoldingAggregator.aggregateRecords(
+          data,
+          codeFilter: StockPatterns.isTpexCode,
+        );
+        final results =
+            InsiderHoldingAggregator.buildRatios(companyData, issuedSharesMap)
+                .map(
+                  (r) => TpexInsiderHolding(
+                    date: r.date,
+                    code: r.code,
+                    insiderRatio: r.insiderRatio,
+                    pledgeRatio: r.pledgeRatio,
+                    sharesIssued: r.sharesIssued,
+                  ),
+                )
+                .toList();
 
         AppLogger.info(_tag, '董監持股彙總: ${results.length} 家公司');
         return results;
