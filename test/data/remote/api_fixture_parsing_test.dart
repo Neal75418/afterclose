@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:afterclose/core/constants/api_endpoints.dart';
 import 'package:afterclose/data/remote/finmind_client.dart';
 import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -204,6 +205,69 @@ void main() {
       expect(formosa.close, 50938.02);
       // HTML 標記的方向欄必須被正確解讀為上漲 +280.61
       expect(formosa.change, 280.61);
+    });
+  });
+
+  group('董監持股彙總（TWSE/TPEx 真實 fixture）', () {
+    // 兩個 endpoint（發行股數 + 董監持股）需要 per-URL stub
+    void stubInsiderPair({
+      required String stockInfoUrl,
+      required String stockInfoFixture,
+      required String insiderUrl,
+      required String insiderFixture,
+    }) {
+      when(
+        () =>
+            mockDio.get<dynamic>(stockInfoUrl, options: any(named: 'options')),
+      ).thenAnswer(
+        (_) async => _response(jsonDecode(_fixture(stockInfoFixture))),
+      );
+      when(
+        () => mockDio.get<dynamic>(insiderUrl, options: any(named: 'options')),
+      ).thenAnswer(
+        (_) async => _response(jsonDecode(_fixture(insiderFixture))),
+      );
+    }
+
+    test('TWSE：只彙總「董事/監察人本人」、姓名去重、比例正確', () async {
+      stubInsiderPair(
+        stockInfoUrl: ApiEndpoints.twseStockInfo,
+        stockInfoFixture: 'twse_stock_info.json',
+        insiderUrl: ApiEndpoints.twseInsiderHolding,
+        insiderFixture: 'twse_insider_holding.json',
+      );
+      final client = TwseClient(dio: mockDio);
+
+      final holdings = await client.getInsiderHoldings();
+
+      // fixture：台泥 1101 共 54 筆內部人記錄，其中「董事/監察人本人」
+      // 去重後 14 人（副總/協理/會計主管等非董監記錄必須被排除）
+      expect(holdings, hasLength(1));
+      final h = holdings.first;
+      expect(h.code, '1101');
+      expect(h.insiderRatio, closeTo(8.3527, 0.001));
+      expect(h.pledgeRatio, closeTo(0.6525, 0.001));
+      expect(h.sharesIssued, 7523181742);
+    });
+
+    test('TPEx：同一套業務規則產出一致口徑', () async {
+      stubInsiderPair(
+        stockInfoUrl: ApiEndpoints.tpexStockInfo,
+        stockInfoFixture: 'tpex_stock_info.json',
+        insiderUrl: ApiEndpoints.tpexInsiderHolding,
+        insiderFixture: 'tpex_insider_holding.json',
+      );
+      final client = TpexClient(dio: mockDio);
+
+      final holdings = await client.getInsiderHoldings();
+
+      // fixture：康和證 6016 共 76 筆，「本人」去重後 9 人、無質押
+      expect(holdings, hasLength(1));
+      final h = holdings.first;
+      expect(h.code, '6016');
+      expect(h.insiderRatio, closeTo(7.3377, 0.001));
+      expect(h.pledgeRatio, 0.0);
+      expect(h.sharesIssued, 686595508);
     });
   });
 
