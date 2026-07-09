@@ -256,6 +256,24 @@ mixin PriceDaoMixin on $AppDatabase {
     });
   }
 
+  /// 計算某交易日、某市場（TWSE / TPEx）已寫入的價格筆數
+  ///
+  /// backfill per-day batch 的 resume 判斷用：該日該市場筆數達目標數量
+  /// 門檻即視為已完成、跳過 API 呼叫。以 stock_master.market 區分市場，
+  /// 避免 TWSE 已回補的日子讓 TPEx phase 誤判為完成（或反之）。
+  Future<int> countPricesByDateAndMarket(DateTime date, String market) async {
+    final result = await customSelect(
+      '''
+    SELECT COUNT(*) as cnt
+    FROM daily_price dp
+    INNER JOIN stock_master sm ON dp.symbol = sm.symbol
+    WHERE dp.date = ? AND sm.market = ?
+    ''',
+      variables: [Variable.withDateTime(date), Variable.withString(market)],
+    ).getSingle();
+    return result.read<int>('cnt');
+  }
+
   /// 取得候選股票歷史資料完成度
   ///
   /// 回傳 (已完成檔數, 總檔數)

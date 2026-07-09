@@ -123,6 +123,10 @@ void main() {
         targetSymbols: any(named: 'targetSymbols'),
       ),
     ).thenAnswer((_) async => 0);
+    // Default: 該日尚無既有價格 rows → 不觸發 per-day skip
+    when(
+      () => db.countPricesByDateAndMarket(any(), any()),
+    ).thenAnswer((_) async => 0);
   });
 
   BackfillConfig makeConfig({
@@ -721,6 +725,42 @@ void main() {
           endDate: any(named: 'endDate'),
         ),
       );
+    });
+  });
+
+  group('Backfiller per-day skip-existing（resume 不重打 API）', () {
+    test('該日該市場已有足量價格 rows → 跳過、完全不打 TWSE API', () async {
+      // 3 個 target symbols、每天已有 3 筆（100% ≥ 80% 門檻）
+      when(
+        () => db.countPricesByDateAndMarket(any(), any()),
+      ).thenAnswer((_) async => 3);
+
+      final backfiller = makeBackfiller(makeConfig());
+      await backfiller.run();
+
+      verifyNever(
+        () => priceRepo.backfillTwsePricesByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      );
+    });
+
+    test('該日 rows 不足門檻 → 照常打 API', () async {
+      // 只有 1/3（33% < 80%）→ 不能 skip（可能是 FinMind 補的部分子集）
+      when(
+        () => db.countPricesByDateAndMarket(any(), any()),
+      ).thenAnswer((_) async => 1);
+
+      final backfiller = makeBackfiller(makeConfig());
+      await backfiller.run();
+
+      verify(
+        () => priceRepo.backfillTwsePricesByDate(
+          date: any(named: 'date'),
+          targetSymbols: any(named: 'targetSymbols'),
+        ),
+      ).called(greaterThan(0));
     });
   });
 }

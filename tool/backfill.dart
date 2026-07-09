@@ -598,6 +598,23 @@ class Backfiller {
       }
 
       final dayStr = _formatDate(current);
+
+      // Resume：該日該市場已有足量 rows（≥80% target）→ 跳過、不打 API。
+      // TWSE 限流窗口有限（每輪 ~30-40 分鐘），沒有 per-day skip 的話
+      // retry 每輪都從頭重抓同一段、永遠推不到 abort 點之後。
+      // 門檻 80%（而非 >0）是因為 FinMind per-symbol phase 也寫
+      // daily_price：某日可能只有候選股子集的 rows，不能視為該市場已完成。
+      final existing = await deps.db.countPricesByDateAndMarket(
+        current,
+        MarketCode.twse,
+      );
+      if (existing >= targetSet.length * 0.8) {
+        daysSucceeded++;
+        daysProcessed++;
+        current = current.add(const Duration(days: 1));
+        continue;
+      }
+
       try {
         final count = await deps.priceRepo.backfillTwsePricesByDate(
           date: current,
@@ -688,6 +705,19 @@ class Backfiller {
       }
 
       final dayStr = _formatDate(current);
+
+      // Resume：與 prices:twse 對稱的 per-day skip（見該處說明）
+      final existing = await deps.db.countPricesByDateAndMarket(
+        current,
+        MarketCode.tpex,
+      );
+      if (existing >= targetSet.length * 0.8) {
+        daysSucceeded++;
+        daysProcessed++;
+        current = current.add(const Duration(days: 1));
+        continue;
+      }
+
       try {
         final count = await deps.priceRepo.backfillTpexPricesByDate(
           date: current,
