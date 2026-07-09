@@ -8,6 +8,7 @@ import 'package:afterclose/core/services/notification_service.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/presentation/providers/settings_provider.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/presentation/providers/price_alert_provider.dart';
 
@@ -24,17 +25,16 @@ class NotificationState {
   final String? error;
 
   // Sentinel：區分「未傳入」與「傳入 null」
-  static const _sentinel = Object();
 
   NotificationState copyWith({
     bool? isInitialized,
     bool? hasPermission,
-    Object? error = _sentinel,
+    Object? error = sentinel,
   }) {
     return NotificationState(
       isInitialized: isInitialized ?? this.isInitialized,
       hasPermission: hasPermission ?? this.hasPermission,
-      error: identical(error, _sentinel)
+      error: identical(error, sentinel)
           ? this.error
           : (error is String? ? error : error.toString()),
     );

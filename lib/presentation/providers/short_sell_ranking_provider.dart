@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/models/tpex/tpex_short_sell_ranking.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
 
@@ -26,13 +27,13 @@ class ShortSellRankingState {
   ShortSellRankingState copyWith({
     List<TpexShortSellRanking>? rankings,
     bool? isLoading,
-    String? error,
+    Object? error = sentinel,
     DateTime? fetchedAt,
   }) {
     return ShortSellRankingState(
       rankings: rankings ?? this.rankings,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: identical(error, sentinel) ? this.error : error as String?,
       fetchedAt: fetchedAt ?? this.fetchedAt,
     );
   }
@@ -59,6 +60,7 @@ class ShortSellRankingNotifier extends Notifier<ShortSellRankingState> {
       state = state.copyWith(
         rankings: rankings,
         isLoading: false,
+        error: null, // 成功後清除先前的錯誤
         fetchedAt: DateTime.now(),
       );
     } catch (e) {

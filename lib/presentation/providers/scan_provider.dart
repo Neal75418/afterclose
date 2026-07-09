@@ -7,6 +7,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
 import 'package:afterclose/data/repositories/analysis_repository.dart';
@@ -20,8 +21,6 @@ import 'package:afterclose/presentation/providers/watchlist_provider.dart';
 
 // Re-export（向後相容）
 export 'package:afterclose/domain/models/scan_models.dart';
-
-const _sentinel = Object();
 
 // ==================================================
 // 掃描狀態
@@ -110,7 +109,7 @@ class ScanState {
     int? tradeableUniverseCount,
     List<ScanStockItem>? observations,
     int? observationCount,
-    Object? error = _sentinel,
+    Object? error = sentinel,
   }) {
     return ScanState(
       stocks: stocks ?? this.stocks,
@@ -131,7 +130,7 @@ class ScanState {
           tradeableUniverseCount ?? this.tradeableUniverseCount,
       observations: observations ?? this.observations,
       observationCount: observationCount ?? this.observationCount,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
     );
   }
 }

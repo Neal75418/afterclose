@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/services/alert_evaluation_service.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -246,17 +247,15 @@ class PriceAlertState {
   final bool isLoading;
   final String? error;
 
-  static const _sentinel = Object();
-
   PriceAlertState copyWith({
     List<PriceAlertEntry>? alerts,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
   }) {
     return PriceAlertState(
       alerts: alerts ?? this.alerts,
       isLoading: isLoading ?? this.isLoading,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
     );
   }
 }

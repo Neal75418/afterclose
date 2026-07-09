@@ -11,6 +11,7 @@ import 'package:afterclose/core/constants/rule_params_institutional.dart';
 export 'package:afterclose/core/constants/market_index_names.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/core/utils/taiwan_calendar.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
@@ -159,8 +160,6 @@ class MarketOverviewState {
   /// 是否有任何有效資料
   bool get hasData => indices.isNotEmpty || advanceDecline.total > 0;
 
-  static const _sentinel = Object();
-
   MarketOverviewState copyWith({
     List<TwseMarketIndex>? indices,
     Map<String, List<double>>? indexHistory,
@@ -180,7 +179,7 @@ class MarketOverviewState {
     HistoryTrends? historyTrends,
     Map<String, List<ChipAnomaly>>? chipAnomaliesByMarket,
     bool? isLoading,
-    Object? error = _sentinel,
+    Object? error = sentinel,
     DateTime? dataDate,
     Map<String, DateTime>? sectionDates,
     Map<String, DateTime>? advanceDeclineStaleDates,
@@ -211,7 +210,7 @@ class MarketOverviewState {
       chipAnomaliesByMarket:
           chipAnomaliesByMarket ?? this.chipAnomaliesByMarket,
       isLoading: isLoading ?? this.isLoading,
-      error: error == _sentinel ? this.error : error as String?,
+      error: error == sentinel ? this.error : error as String?,
       dataDate: dataDate ?? this.dataDate,
       sectionDates: sectionDates ?? this.sectionDates,
       advanceDeclineStaleDates:

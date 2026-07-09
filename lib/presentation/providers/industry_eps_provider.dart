@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/models/tpex/tpex_industry_eps.dart';
 import 'package:afterclose/presentation/providers/data_update_epoch_provider.dart';
 import 'package:afterclose/presentation/providers/providers.dart';
@@ -56,7 +57,7 @@ class IndustryEpsState {
     List<TpexIndustryEps>? allData,
     bool? isLoading,
     String? error,
-    Object? selectedIndustry = _sentinel,
+    Object? selectedIndustry = sentinel,
     DateTime? fetchedAt,
   }) {
     return IndustryEpsState(
@@ -64,14 +65,12 @@ class IndustryEpsState {
       isLoading: isLoading ?? this.isLoading,
       error: error,
       fetchedAt: fetchedAt ?? this.fetchedAt,
-      selectedIndustry: selectedIndustry == _sentinel
+      selectedIndustry: selectedIndustry == sentinel
           ? this.selectedIndustry
           : selectedIndustry as String?,
     );
   }
 }
-
-const _sentinel = Object();
 
 // ==================================================
 // 產業 EPS Notifier
