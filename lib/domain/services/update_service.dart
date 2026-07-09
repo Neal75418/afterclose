@@ -604,14 +604,23 @@ class UpdateService {
         date: normalizedDate,
         force: ctx.force,
       );
+      // FundamentalSyncer 內部以 per-call catch 收集 generic 失敗（不
+      // throw）— 必須讀取 errors 轉發，否則對使用者靜默
+      for (final err in fundResult.errors) {
+        ctx.result.errors.add('基本面同步失敗: $err');
+      }
 
       // 補充上櫃自選股
       if (!ctx.rateLimitedAbort) {
         try {
-          await fundamentalSyncer.syncOtcWatchlistFundamentals(
-            date: normalizedDate,
-            force: ctx.force,
-          );
+          final otcResult = await fundamentalSyncer
+              .syncOtcWatchlistFundamentals(
+                date: normalizedDate,
+                force: ctx.force,
+              );
+          for (final err in otcResult.errors) {
+            ctx.result.errors.add('基本面同步失敗: $err');
+          }
         } on RateLimitException catch (e) {
           ctx.rateLimitedAbort = true;
           AppLogger.warning('UpdateService', '上櫃自選基本面補充失敗 (rate limit)', e);
@@ -737,6 +746,9 @@ class UpdateService {
           candidates: candidates,
           date: normalizedDate,
         );
+        for (final err in fundResult.errors) {
+          ctx.result.errors.add('上櫃候選基本面同步失敗: $err');
+        }
       }
 
       final marketUpdater = _marketDataUpdater;

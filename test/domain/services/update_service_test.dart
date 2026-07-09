@@ -257,6 +257,108 @@ void main() {
       expect(result.errors, anyElement(contains('股利')));
     });
 
+    test(
+      '全市場估值 generic 失敗（FundamentalSyncer 內部收集）應轉發到 result.errors',
+      () async {
+        final mockFundamental = MockFundamentalRepository();
+        when(
+          () => mockTdcc.getAllHoldingDistribution(),
+        ).thenAnswer((_) async => {});
+        // 估值 generic 失敗；營收成功
+        when(
+          () => mockFundamental.syncAllMarketValuation(
+            any(),
+            force: any(named: 'force'),
+          ),
+        ).thenThrow(Exception('BWIBBU format changed'));
+        when(
+          () => mockFundamental.syncAllMarketRevenue(
+            any(),
+            force: any(named: 'force'),
+          ),
+        ).thenAnswer((_) async => 0);
+        when(() => mockDb.getStocksByMarket(any())).thenAnswer((_) async => []);
+        when(
+          () => mockFundamental.syncFinancialStatements(
+            symbol: any(named: 'symbol'),
+            startDate: any(named: 'startDate'),
+            endDate: any(named: 'endDate'),
+          ),
+        ).thenAnswer((_) async => 0);
+
+        final service = buildService(fundamental: mockFundamental);
+        final result = await service.runDailyUpdate(forDate: tradingDay);
+
+        expect(result.success, isTrue);
+        // FundamentalSyncer 內部 catch 收集的失敗必須被 caller 轉發，否則靜默
+        expect(result.errors, anyElement(contains('估值')));
+      },
+    );
+
+    test('上櫃自選估值 generic 失敗（syncOtcWatchlistFundamentals）應轉發', () async {
+      final mockFundamental = MockFundamentalRepository();
+      when(
+        () => mockTdcc.getAllHoldingDistribution(),
+      ).thenAnswer((_) async => {});
+      when(
+        () => mockFundamental.syncAllMarketValuation(
+          any(),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockFundamental.syncAllMarketRevenue(
+          any(),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockFundamental.syncFinancialStatements(
+          symbol: any(named: 'symbol'),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+        ),
+      ).thenAnswer((_) async => 0);
+      // watchlist 含一檔上櫃股 → 觸發 OTC watchlist 補充
+      when(() => mockDb.getWatchlist()).thenAnswer(
+        (_) async => [
+          WatchlistEntry(symbol: '3567', createdAt: DateTime(2026, 1, 1)),
+        ],
+      );
+      when(() => mockDb.getStocksByMarket(any())).thenAnswer(
+        (_) async => [
+          StockMasterEntry(
+            symbol: '3567',
+            name: '逸昌',
+            market: 'TPEx',
+            isActive: true,
+            updatedAt: DateTime(2026, 7, 8),
+          ),
+        ],
+      );
+      // OTC 估值 generic 失敗（syncer 內部收集、不 throw）
+      when(
+        () => mockFundamental.syncOtcValuation(
+          any(),
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenThrow(Exception('OTC valuation broken'));
+      when(
+        () => mockFundamental.syncOtcRevenue(
+          any(),
+          date: any(named: 'date'),
+          force: any(named: 'force'),
+        ),
+      ).thenAnswer((_) async => 0);
+
+      final service = buildService(fundamental: mockFundamental);
+      final result = await service.runDailyUpdate(forDate: tradingDay);
+
+      expect(result.success, isTrue);
+      expect(result.errors, anyElement(contains('上櫃自選估值')));
+    });
+
     test('財報 generic 同步失敗應記錄到 result.errors', () async {
       final mockFundamental = MockFundamentalRepository();
       when(

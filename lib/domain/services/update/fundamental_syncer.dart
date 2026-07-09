@@ -35,6 +35,7 @@ class FundamentalSyncer {
   }) async {
     var valuationCount = 0;
     int? revenueCount = 0;
+    final errors = <String>[];
 
     try {
       valuationCount = await _fundamentalRepo.syncAllMarketValuation(
@@ -47,6 +48,7 @@ class FundamentalSyncer {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalSyncer', '估值資料同步失敗', e);
+      errors.add('全市場估值: $e');
     }
 
     try {
@@ -61,6 +63,7 @@ class FundamentalSyncer {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalSyncer', '營收資料同步失敗', e);
+      errors.add('全市場營收: $e');
     }
 
     final revenueLabel = revenueCount == null ? '已快取' : '$revenueCount';
@@ -72,6 +75,7 @@ class FundamentalSyncer {
     return FundamentalSyncResult(
       valuationCount: valuationCount,
       revenueCount: revenueCount,
+      errors: errors,
     );
   }
 
@@ -97,6 +101,7 @@ class FundamentalSyncer {
 
     var valuationCount = 0;
     var revenueCount = 0;
+    final errors = <String>[];
 
     try {
       valuationCount = await _fundamentalRepo.syncOtcValuation(
@@ -110,6 +115,7 @@ class FundamentalSyncer {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalSyncer', '上櫃自選估值同步失敗', e);
+      errors.add('上櫃自選估值: $e');
     }
 
     try {
@@ -124,6 +130,7 @@ class FundamentalSyncer {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalSyncer', '上櫃自選營收同步失敗', e);
+      errors.add('上櫃自選營收: $e');
     }
 
     AppLogger.info(
@@ -134,6 +141,7 @@ class FundamentalSyncer {
     return FundamentalSyncResult(
       valuationCount: valuationCount,
       revenueCount: revenueCount,
+      errors: errors,
     );
   }
 
@@ -169,6 +177,7 @@ class FundamentalSyncer {
 
     var valuationCount = 0;
     var revenueCount = 0;
+    final errors = <String>[];
 
     try {
       valuationCount = await _fundamentalRepo.syncOtcValuation(
@@ -181,6 +190,7 @@ class FundamentalSyncer {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalSyncer', '上櫃候選估值同步失敗', e);
+      errors.add('上櫃候選估值: $e');
     }
 
     try {
@@ -194,11 +204,13 @@ class FundamentalSyncer {
       rethrow;
     } catch (e) {
       AppLogger.warning('FundamentalSyncer', '上櫃候選營收同步失敗', e);
+      errors.add('上櫃候選營收: $e');
     }
 
     return FundamentalSyncResult(
       valuationCount: valuationCount,
       revenueCount: revenueCount,
+      errors: errors,
     );
   }
 
@@ -332,12 +344,18 @@ class FundamentalSyncResult {
   const FundamentalSyncResult({
     required this.valuationCount,
     required this.revenueCount,
+    this.errors = const [],
   });
 
   final int valuationCount;
 
   /// 營收同步筆數。null 表示已快取（跳過同步）。
   final int? revenueCount;
+
+  /// 內部以 per-call catch 收集的 generic 失敗（不 throw）。
+  /// caller 必須讀取並轉發到 UpdateResult，否則對使用者靜默
+  /// （與 DividendSyncResult.errors 同 pattern）。
+  final List<String> errors;
 
   bool get revenueCached => revenueCount == null;
   int get total => valuationCount + (revenueCount ?? 0);
