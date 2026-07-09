@@ -223,6 +223,40 @@ class MarketOverviewState {
 // 大盤總覽 Notifier
 // ==================================================
 
+/// [MarketOverviewNotifier.loadData] 三組 typed record `.wait` 的結果快照。
+///
+/// 分組與 loadData 的載入順序一一對應（record wait 上限 9 元素故分三組）；
+/// 新增載入項時同步改這裡——型別不合編譯器直接報錯，取代舊的
+/// untyped `List<Object?>` + magic-index cast。
+typedef _OverviewSnapshot = (
+  (
+    List<TwseMarketIndex>,
+    AdvanceDecline,
+    Map<String, List<double>>,
+    ({Map<String, AdvanceDecline> data, Map<String, DateTime> staleDates}),
+    ({Map<String, InstitutionalTotals> data, DateTime dataDate}),
+    ({Map<String, MarginTradingTotals> data, DateTime? dataDate}),
+    Map<String, TradingTurnover>,
+  ),
+  (
+    Map<String, LimitUpDown>,
+    Map<String, TurnoverComparison>,
+    Map<String, WarningCounts>,
+    Map<String, InstitutionalStreak>,
+    Map<String, List<IndustrySummary>>,
+    Map<String, List<DatedValue>>,
+    Map<String, List<DatedValue>>,
+  ),
+  (
+    Map<String, ({List<DatedValue> margin, List<double> short})>,
+    Map<String, List<DatedValue>>,
+    Map<String, List<ChipAnomaly>>,
+    Map<String, List<double>>,
+    Map<String, ({int newHighs, int newLows})>,
+    Map<String, List<double>>,
+  ),
+);
+
 class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   var _active = true;
   var _loadGeneration = 0;
@@ -265,59 +299,44 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
         dataDate.subtract(const Duration(days: 1)),
       );
 
-      // 平行載入所有資料（各 _load* 方法內部已處理錯誤）
-      // by-market 方法在主要日期無資料時會自動回退到 fallbackDate
-      final allTasks = Future.wait([
-        _loadIndices(), // [0] List<TwseMarketIndex>
-        _loadAdvanceDecline(dataDate), // [1] AdvanceDecline
-        _loadIndexHistory(), // [2] Map<String, List<double>>
-        _loadAdvanceDeclineByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [3] Map<String, AdvanceDecline>
-        _loadInstitutionalByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [4] Map<String, InstitutionalTotals>
-        _loadMarginByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [5] Map<String, MarginTradingTotals>
-        _loadTurnoverByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [6] Map<String, TradingTurnover>
-        _loadLimitUpDownByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [7] Map<String, LimitUpDown>
-        _loadTurnoverComparisonByMarket(
-          dataDate,
-        ), // [8] Map<String, TurnoverComparison>
-        _loadWarningCountsByMarket(), // [9] Map<String, WarningCounts>
-        _loadInstitutionalStreakByMarket(
-          dataDate,
-        ), // [10] Map<String, InstitutionalStreak>
-        _loadIndustrySummaryByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [11] Map<String, List<IndustrySummary>>
-        _loadInstitutionalHistoryByMarket(dataDate), // [12]
-        _loadTurnoverHistoryByMarket(dataDate), // [13]
-        _loadMarginHistoryByMarket(dataDate), // [14]
-        _loadAdvanceDeclineHistoryByMarket(dataDate), // [15]
-        _loadChipAnomalies(dataDate), // [16]
-        _loadIndexStageHistory(), // [17] Map<String, List<double>>
-        _loadNewHighLowByMarket(
-          dataDate,
-          fallbackDate: fallbackDate,
-        ), // [18] Map<String, ({int newHighs, int newLows})>
-        _loadAdLineByMarket(dataDate), // [19] Map<String, List<double>>
-      ]);
+      // 平行載入所有資料（各 _load* 方法內部已處理錯誤）。
+      // by-market 方法在主要日期無資料時會自動回退到 fallbackDate。
+      //
+      // 用 typed record `.wait` 分三組（record wait 上限 9 元素）取代
+      // untyped Future.wait + magic-index cast——重排/插入載入項時
+      // 編譯器直接報錯，不再依賴註解對齊索引。
+      final allTasks = (
+        (
+          _loadIndices(),
+          _loadAdvanceDecline(dataDate),
+          _loadIndexHistory(),
+          _loadAdvanceDeclineByMarket(dataDate, fallbackDate: fallbackDate),
+          _loadInstitutionalByMarket(dataDate, fallbackDate: fallbackDate),
+          _loadMarginByMarket(dataDate, fallbackDate: fallbackDate),
+          _loadTurnoverByMarket(dataDate, fallbackDate: fallbackDate),
+        ).wait,
+        (
+          _loadLimitUpDownByMarket(dataDate, fallbackDate: fallbackDate),
+          _loadTurnoverComparisonByMarket(dataDate),
+          _loadWarningCountsByMarket(),
+          _loadInstitutionalStreakByMarket(dataDate),
+          _loadIndustrySummaryByMarket(dataDate, fallbackDate: fallbackDate),
+          _loadInstitutionalHistoryByMarket(dataDate),
+          _loadTurnoverHistoryByMarket(dataDate),
+        ).wait,
+        (
+          _loadMarginHistoryByMarket(dataDate),
+          _loadAdvanceDeclineHistoryByMarket(dataDate),
+          _loadChipAnomalies(dataDate),
+          _loadIndexStageHistory(),
+          _loadNewHighLowByMarket(dataDate, fallbackDate: fallbackDate),
+          _loadAdLineByMarket(dataDate),
+        ).wait,
+      ).wait;
 
       // 超時機制：最多等 _loadTimeoutSec 秒
       // 超時後先結束 loading 顯示 DB 資料，API 在背景繼續載入
-      List<Object?> results;
+      _OverviewSnapshot results;
       try {
         results = await allTasks.timeout(
           const Duration(seconds: _loadTimeoutSec),
@@ -366,44 +385,42 @@ class MarketOverviewNotifier extends Notifier<MarketOverviewState> {
   }
 
   /// 從載入結果建構 state
-  MarketOverviewState _buildState(List<Object?> results, DateTime dataDate) {
-    // 集中解構所有 Future.wait 結果（索引對應 loadData 中的順序）
-    final indices = results[0] as List<TwseMarketIndex>;
-    final advanceDecline = results[1] as AdvanceDecline;
-    final rawHistory = results[2] as Map<String, List<double>>;
-    final advDecResult =
-        results[3]
-            as ({
-              Map<String, AdvanceDecline> data,
-              Map<String, DateTime> staleDates,
-            });
+  MarketOverviewState _buildState(
+    _OverviewSnapshot results,
+    DateTime dataDate,
+  ) {
+    // typed record pattern destructuring——順序/型別對不上會直接編譯錯誤
+    final (
+      (
+        indices,
+        advanceDecline,
+        rawHistory,
+        advDecResult,
+        instResult,
+        marginResult,
+        turnoverByMarket,
+      ),
+      (
+        limitUpDownByMarket,
+        turnoverCompByMarket,
+        warningCountsByMarket,
+        rawStreak,
+        industrySummaryByMarket,
+        instHistory,
+        turnoverHist,
+      ),
+      (
+        marginHistory,
+        advRatioHistory,
+        chipAnomalies,
+        rawStageHistory,
+        newHighLowByMarket,
+        adLineByMarket,
+      ),
+    ) = results;
     final advDecByMarket = advDecResult.data;
-    final instResult =
-        results[4]
-            as ({Map<String, InstitutionalTotals> data, DateTime dataDate});
     final instByMarket = instResult.data;
-    final marginResult =
-        results[5]
-            as ({Map<String, MarginTradingTotals> data, DateTime? dataDate});
     final marginByMarket = marginResult.data;
-    final turnoverByMarket = results[6] as Map<String, TradingTurnover>;
-    final limitUpDownByMarket = results[7] as Map<String, LimitUpDown>;
-    final turnoverCompByMarket = results[8] as Map<String, TurnoverComparison>;
-    final warningCountsByMarket = results[9] as Map<String, WarningCounts>;
-    final rawStreak = results[10] as Map<String, InstitutionalStreak>;
-    final industrySummaryByMarket =
-        results[11] as Map<String, List<IndustrySummary>>;
-    final instHistory = results[12] as Map<String, List<DatedValue>>;
-    final turnoverHist = results[13] as Map<String, List<DatedValue>>;
-    final marginHistory =
-        results[14]
-            as Map<String, ({List<DatedValue> margin, List<double> short})>;
-    final advRatioHistory = results[15] as Map<String, List<DatedValue>>;
-    final chipAnomalies = results[16] as Map<String, List<ChipAnomaly>>;
-    final rawStageHistory = results[17] as Map<String, List<double>>;
-    final newHighLowByMarket =
-        results[18] as Map<String, ({int newHighs, int newLows})>;
-    final adLineByMarket = results[19] as Map<String, List<double>>;
 
     // 複製歷史資料，避免原地修改導致重複追加
     final indexHistory = <String, List<double>>{
