@@ -136,3 +136,4 @@ secrets/
 
 # VS Code workspace files
 *.code-workspace
+tool/.calibrate.lock/
