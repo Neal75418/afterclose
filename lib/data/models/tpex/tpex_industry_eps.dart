@@ -1,4 +1,5 @@
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/constants/api_config.dart';
 
 /// TPEX 產業別 EPS 資料（來源：櫃買中心 ap14_O API）
 ///
@@ -29,7 +30,7 @@ class TpexIndustryEps {
     if (rocYear == null) {
       throw FormatException('無效的年度: "$yearStr"', json);
     }
-    final year = rocYear + 1911;
+    final year = rocYear + ApiConfig.rocYearOffset;
 
     final quarterStr = json['季別']?.toString().trim() ?? '';
     final quarter = int.tryParse(quarterStr);

@@ -1,4 +1,6 @@
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/utils/tw_parse_utils.dart';
 
 /// TPEX 已宣告股利資料（來源：櫃買中心 ap39_O API）
 ///
@@ -31,7 +33,7 @@ class TpexDeclaredDividend {
     return TpexDeclaredDividend(
       symbol: symbol,
       companyName: json['公司名稱']?.toString() ?? '',
-      dividendYear: rocYear + 1911,
+      dividendYear: rocYear + ApiConfig.rocYearOffset,
       // ⚠️ 同 TWSE：現金/股票股利為「多組成欄加總」，舊 code 讀 ap39_O 不存在的
       // '現金股利(元/股)'/'股票股利(元/股)' → 全 0（bug）。key 已對 live API 核實。
       // （TPEx 把法定盈餘公積、資本公積合併成一欄，故各加總 2 欄。）
@@ -66,22 +68,11 @@ class TpexDeclaredDividend {
   final DateTime? exDividendDate; // 除息交易日
   final DateTime? exRightsDate; // 除權交易日
 
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final cleaned = value.replaceAll(',', '').trim();
-      if (cleaned.isEmpty || cleaned == '--') return null;
-      return double.tryParse(cleaned);
-    }
-    return null;
-  }
-
   /// 加總多個 key 的數值（缺失/null 視為 0）。用於現金/股票股利的多組成欄。
   static double _sumDoubles(Map<String, dynamic> json, List<String> keys) {
     var sum = 0.0;
     for (final key in keys) {
-      sum += _parseDouble(json[key]) ?? 0.0;
+      sum += TwParseUtils.parseFormattedDouble(json[key]) ?? 0.0;
     }
     return sum;
   }

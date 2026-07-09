@@ -1,4 +1,5 @@
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/utils/tw_parse_utils.dart';
 
 /// TWSE 已宣告股利資料（來源：證交所 ap45_L API）
@@ -33,7 +34,7 @@ class TwseDeclaredDividend {
     return TwseDeclaredDividend(
       symbol: symbol,
       companyName: json['公司名稱']?.toString() ?? '',
-      dividendYear: rocYear + 1911,
+      dividendYear: rocYear + ApiConfig.rocYearOffset,
       // ⚠️ 現金/股票股利為「多組成欄加總」。舊 code 讀 '現金股利(元/股)'/
       // '股票股利(元/股)' 兩個在 ap45_L 不存在的 key → 全部 fallback 成 0（bug）。
       // 以下 key 已對 live API 核實。
@@ -76,23 +77,12 @@ class TwseDeclaredDividend {
   final DateTime? exRightsDate; // 除權交易日
   final DateTime? shareholderMeetingDate; // 股東會日期
 
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final cleaned = value.replaceAll(',', '').trim();
-      if (cleaned.isEmpty || cleaned == '--') return null;
-      return double.tryParse(cleaned);
-    }
-    return null;
-  }
-
   /// 加總多個 key 的數值（缺失/null 視為 0）。
   /// 用於現金/股票股利的多組成欄（盈餘 + 法定盈餘公積 + 資本公積）。
   static double _sumDoubles(Map<String, dynamic> json, List<String> keys) {
     var sum = 0.0;
     for (final key in keys) {
-      sum += _parseDouble(json[key]) ?? 0.0;
+      sum += TwParseUtils.parseFormattedDouble(json[key]) ?? 0.0;
     }
     return sum;
   }

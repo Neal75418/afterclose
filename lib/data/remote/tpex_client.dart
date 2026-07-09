@@ -916,7 +916,7 @@ class TpexClient {
       if (rocYear == null || month == null) return null;
       if (month < 1 || month > 12) return null;
 
-      final year = rocYear + 1911; // 轉換為西元年
+      final year = rocYear + ApiConfig.rocYearOffset; // 轉換為西元年
       final date = DateTime(year, month);
 
       // 解析數值

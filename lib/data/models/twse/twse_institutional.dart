@@ -1,4 +1,5 @@
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/tw_parse_utils.dart';
 import 'package:afterclose/data/models/twse/twse_daily_price.dart';
 
 /// TWSE 法人買賣超資料
@@ -34,16 +35,30 @@ class TwseInstitutional {
           : DateTime.now(),
       code: code.toString(),
       name: json['Name']?.toString() ?? '',
-      foreignBuy: _parseDouble(json['ForeignInvestorsBuy']) ?? 0,
-      foreignSell: _parseDouble(json['ForeignInvestorsSell']) ?? 0,
-      foreignNet: _parseDouble(json['ForeignInvestorsNetBuySell']) ?? 0,
-      investmentTrustBuy: _parseDouble(json['InvestmentTrustBuy']) ?? 0,
-      investmentTrustSell: _parseDouble(json['InvestmentTrustSell']) ?? 0,
-      investmentTrustNet: _parseDouble(json['InvestmentTrustNetBuySell']) ?? 0,
-      dealerBuy: _parseDouble(json['DealerTotalBuy']) ?? 0,
-      dealerSell: _parseDouble(json['DealerTotalSell']) ?? 0,
-      dealerNet: _parseDouble(json['DealerTotalNetBuySell']) ?? 0,
-      totalNet: _parseDouble(json['TotalNetBuySell']) ?? 0,
+      foreignBuy:
+          TwParseUtils.parseFormattedDouble(json['ForeignInvestorsBuy']) ?? 0,
+      foreignSell:
+          TwParseUtils.parseFormattedDouble(json['ForeignInvestorsSell']) ?? 0,
+      foreignNet:
+          TwParseUtils.parseFormattedDouble(
+            json['ForeignInvestorsNetBuySell'],
+          ) ??
+          0,
+      investmentTrustBuy:
+          TwParseUtils.parseFormattedDouble(json['InvestmentTrustBuy']) ?? 0,
+      investmentTrustSell:
+          TwParseUtils.parseFormattedDouble(json['InvestmentTrustSell']) ?? 0,
+      investmentTrustNet:
+          TwParseUtils.parseFormattedDouble(
+            json['InvestmentTrustNetBuySell'],
+          ) ??
+          0,
+      dealerBuy: TwParseUtils.parseFormattedDouble(json['DealerTotalBuy']) ?? 0,
+      dealerSell:
+          TwParseUtils.parseFormattedDouble(json['DealerTotalSell']) ?? 0,
+      dealerNet:
+          TwParseUtils.parseFormattedDouble(json['DealerTotalNetBuySell']) ?? 0,
+      totalNet: TwParseUtils.parseFormattedDouble(json['TotalNetBuySell']) ?? 0,
       // 此 named-key JSON 路徑（非每日 daily-sync 路徑）無自行買賣欄位，預設 0
       dealerSelfNet: 0,
     );
@@ -75,15 +90,4 @@ class TwseInstitutional {
   /// 自營商「自行買賣」買賣超（不含避險），供真實主動方向 streak。
   /// daily-sync 路徑由 T86 row[14] 解析；named-key fromJson 路徑無此欄，預設 0。
   final double dealerSelfNet;
-
-  static double? _parseDouble(dynamic value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    if (value is String) {
-      final cleaned = value.replaceAll(',', '').trim();
-      if (cleaned.isEmpty || cleaned == '--') return null;
-      return double.tryParse(cleaned);
-    }
-    return null;
-  }
 }

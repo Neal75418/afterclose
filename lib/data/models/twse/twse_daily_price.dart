@@ -1,4 +1,4 @@
-import 'package:afterclose/core/constants/api_config.dart';
+import 'package:afterclose/core/utils/tw_parse_utils.dart';
 
 /// TWSE 每日價格資料
 class TwseDailyPrice {
@@ -28,17 +28,12 @@ class TwseDailyPrice {
   ///
   /// 回傳 UTC 午夜時間以確保跨時區一致性
   static DateTime parseRocDate(String rocDate) {
-    if (rocDate.length != 7) {
+    // 委派 canonical parser（含月日越界驗證——舊實作對 2/30 這類日期會被
+    // DateTime 靜默正規化成 3/2，是髒資料入口）；解析失敗維持 throw 語意。
+    final parsed = TwParseUtils.parseCompactRocDate(rocDate);
+    if (parsed == null || rocDate.length != 7) {
       throw FormatException('Invalid ROC date format: $rocDate');
     }
-
-    final rocYear = int.parse(rocDate.substring(0, 3));
-    final month = int.parse(rocDate.substring(3, 5));
-    final day = int.parse(rocDate.substring(5, 7));
-
-    // 民國年 + ApiConfig.rocYearOffset = 西元年
-    final adYear = rocYear + ApiConfig.rocYearOffset;
-
-    return DateTime(adYear, month, day);
+    return parsed;
   }
 }
