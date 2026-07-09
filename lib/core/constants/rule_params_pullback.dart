@@ -16,6 +16,10 @@ abstract final class PullbackParams {
   static const int strongLookbackDays = 20;
 
   /// 跌停 guard：當日跌幅 ≤ -9.5%（台股 ±10%、留 0.5% margin）一律 short-circuit。
+  ///
+  /// 與 `PriceLimit.isLimitDown`（-9.85%，tick 捨入容差 0.15%）是**刻意不同**
+  /// 的兩個閾值：這裡是保守 guard（寧可多擋接近跌停的恐慌日），PriceLimit
+  /// 是精準的「觸及跌停板」顯示判斷。調整任一側時先確認語意差異仍成立。
   static const double limitDownRatio = -0.095;
 
   /// 過去 N 日內找至少 1 根紅 K 的窗口（過濾瀑布跌）。

@@ -9,6 +9,10 @@ class PriceLimit {
   static const double _limitPercent = 10.0;
 
   /// 判斷為漲/跌停的容差（考慮 tick 級距捨入誤差）
+  ///
+  /// 注意：`PullbackParams.limitDownRatio`（-9.5%）是另一個**刻意較寬**的
+  /// 跌停 guard（回檔規則用，寧可多擋恐慌日）；此處 -9.85% 是精準的
+  /// 「觸及跌停板」判斷。兩者語意不同，勿混用或擅自對齊。
   static const double _tolerance = 0.15;
 
   /// 判斷是否觸及漲停

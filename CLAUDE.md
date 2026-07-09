@@ -133,13 +133,13 @@ void main() {
 | 原則                        | 說明                                                                                                      |
 |:--------------------------|:--------------------------------------------------------------------------------------------------------|
 | **Repository Pattern**    | Domain 透過介面存取資料，Data 層提供實作                                                                              |
-| **錯誤處理**                  | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException`                          |
+| **錯誤處理**                  | `RateLimitException` / `NetworkException` 必須 rethrow，其餘包裝為 `DatabaseException`。例外：`UpdateService`（頂層 orchestrator）改以 `rateLimitedAbort` 旗標 + `recordError` 終止流程，不再往上拋 |
 | **Request Deduplication** | Repository 層使用 `RequestDeduplicator` 避免重複 API 呼叫                                                        |
 | **狀態管理**                  | `AsyncNotifier` / `StateNotifier`，避免 `StateProvider`                                                    |
 | **Rule Engine**           | 純函數：輸入 `AnalysisContext` → 輸出 `TriggeredReason`                                                         |
 | **配置集中**                  | 所有閾值放 `lib/core/constants/`，禁止魔術數字                                                                      |
 | **路由**                    | 使用 `AppRoutes` 常數，禁止硬編碼路由字串                                                                             |
-| **Isolate 通訊**            | 使用 typed DTO (`ShareholdingData`, `WarningDataContext`, `InsiderDataContext`)，避免 `Map<String, dynamic>` |
+| **Isolate 通訊**            | 使用 typed DTO (`ShareholdingData`, `WarningDataContext`, `InsiderDataContext`)，避免 `Map<String, dynamic>`。已知例外：`scoring_isolate.dart` 內部仍走 Map 序列化 roundtrip（`isolate_map_extensions.dart`），typed 物件實際已直接跨界、Map 層疑似冗餘——待實機驗證後移除 |
 | **OHLCV 提取**              | 使用 `prices.extractOhlcv()` extension，避免重複迴圈                                                             |
 | **Dart 3**                | Records, Pattern Matching, Sealed Classes                                                               |
 
