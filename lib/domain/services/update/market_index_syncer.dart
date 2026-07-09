@@ -204,6 +204,10 @@ class MarketIndexSyncer {
         await _db.upsertMarketIndices(companions);
         totalInserted += companions.length;
       } on RateLimitException {
+        // 刻意 break 而非 rethrow（與 NetworkException 不對稱是設計）：
+        // 歷史回補跑在「今日主同步已成功」之後、屬 best-effort——rethrow
+        // 會把已成功的主同步整段標成限流失敗。代價：caller 不知限流已
+        // 發生，下一個 syncer 會再撞一次才 abort（浪費一次呼叫，可接受）。
         AppLogger.warning(
           'MarketIndexSyncer',
           'API 限流，中止歷史回補 (已完成 $apiCalls 次呼叫)',

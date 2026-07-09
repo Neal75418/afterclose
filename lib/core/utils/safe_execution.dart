@@ -34,3 +34,35 @@ Future<T> safeAwait<T>(
     return defaultValue;
   }
 }
+
+/// Syncer 版 rethrow-guard：把 CLAUDE.md 的錯誤處理慣例封成型別保證。
+///
+/// [RateLimitException] / [NetworkException] 一律 rethrow（安全不變量，
+/// 不再靠手抄 try/catch 樣板維持）；其餘失敗記 warning、可選收集到
+/// [errors]（供 UpdateResult partial 警告顯示）後回傳 [fallback]。
+///
+/// - [label]：log 訊息主體（自動加「失敗」後綴）
+/// - [errorLabel]：收集進 [errors] 的前綴；null 或 [errors] 為 null 時
+///   僅 log 不收集（對應「刻意 best-effort」的呼叫點）
+Future<T> guardSync<T>({
+  required String tag,
+  required String label,
+  required T fallback,
+  List<String>? errors,
+  String? errorLabel,
+  required Future<T> Function() action,
+}) async {
+  try {
+    return await action();
+  } on RateLimitException {
+    rethrow;
+  } on NetworkException {
+    rethrow;
+  } catch (e) {
+    AppLogger.warning(tag, '$label失敗', e);
+    if (errors != null && errorLabel != null) {
+      errors.add('$errorLabel: $e');
+    }
+    return fallback;
+  }
+}

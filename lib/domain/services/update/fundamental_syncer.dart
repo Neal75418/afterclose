@@ -3,6 +3,7 @@ import 'package:afterclose/core/constants/market_codes.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/safe_execution.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/repositories/fundamental_repository.dart';
 import 'package:afterclose/data/repositories/market_data_repository.dart';
@@ -37,34 +38,25 @@ class FundamentalSyncer {
     int? revenueCount = 0;
     final errors = <String>[];
 
-    try {
-      valuationCount = await _fundamentalRepo.syncAllMarketValuation(
-        date,
-        force: force,
-      );
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '估值資料同步失敗', e);
-      errors.add('全市場估值: $e');
-    }
+    valuationCount = await guardSync(
+      tag: 'FundamentalSyncer',
+      label: '估值資料同步',
+      fallback: valuationCount,
+      errors: errors,
+      errorLabel: '全市場估值',
+      action: () => _fundamentalRepo.syncAllMarketValuation(date, force: force),
+    );
 
-    try {
-      // force 需轉給營收：否則強制同步時營收會因 skip-if-cached 而不重抓。
-      revenueCount = await _fundamentalRepo.syncAllMarketRevenue(
-        date,
-        force: force,
-      );
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '營收資料同步失敗', e);
-      errors.add('全市場營收: $e');
-    }
+    // force 需轉給營收：否則強制同步時營收會因 skip-if-cached 而不重抓。
+    // （guardSync<int?>：null 是合法回傳、代表營收已快取跳過同步）
+    revenueCount = await guardSync<int?>(
+      tag: 'FundamentalSyncer',
+      label: '營收資料同步',
+      fallback: revenueCount,
+      errors: errors,
+      errorLabel: '全市場營收',
+      action: () => _fundamentalRepo.syncAllMarketRevenue(date, force: force),
+    );
 
     final revenueLabel = revenueCount == null ? '已快取' : '$revenueCount';
     AppLogger.info(
@@ -103,35 +95,31 @@ class FundamentalSyncer {
     var revenueCount = 0;
     final errors = <String>[];
 
-    try {
-      valuationCount = await _fundamentalRepo.syncOtcValuation(
+    valuationCount = await guardSync(
+      tag: 'FundamentalSyncer',
+      label: '上櫃自選估值同步',
+      fallback: valuationCount,
+      errors: errors,
+      errorLabel: '上櫃自選估值',
+      action: () => _fundamentalRepo.syncOtcValuation(
         otcWatchlistSymbols,
         date: date,
         force: force,
-      );
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃自選估值同步失敗', e);
-      errors.add('上櫃自選估值: $e');
-    }
+      ),
+    );
 
-    try {
-      revenueCount = await _fundamentalRepo.syncOtcRevenue(
+    revenueCount = await guardSync(
+      tag: 'FundamentalSyncer',
+      label: '上櫃自選營收同步',
+      fallback: revenueCount,
+      errors: errors,
+      errorLabel: '上櫃自選營收',
+      action: () => _fundamentalRepo.syncOtcRevenue(
         otcWatchlistSymbols,
         date: date,
         force: force,
-      );
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃自選營收同步失敗', e);
-      errors.add('上櫃自選營收: $e');
-    }
+      ),
+    );
 
     AppLogger.info(
       'FundamentalSyncer',
@@ -179,33 +167,25 @@ class FundamentalSyncer {
     var revenueCount = 0;
     final errors = <String>[];
 
-    try {
-      valuationCount = await _fundamentalRepo.syncOtcValuation(
-        limitedOtcCandidates,
-        date: date,
-      );
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃候選估值同步失敗', e);
-      errors.add('上櫃候選估值: $e');
-    }
+    valuationCount = await guardSync(
+      tag: 'FundamentalSyncer',
+      label: '上櫃候選估值同步',
+      fallback: valuationCount,
+      errors: errors,
+      errorLabel: '上櫃候選估值',
+      action: () =>
+          _fundamentalRepo.syncOtcValuation(limitedOtcCandidates, date: date),
+    );
 
-    try {
-      revenueCount = await _fundamentalRepo.syncOtcRevenue(
-        limitedOtcCandidates,
-        date: date,
-      );
-    } on RateLimitException {
-      rethrow;
-    } on NetworkException {
-      rethrow;
-    } catch (e) {
-      AppLogger.warning('FundamentalSyncer', '上櫃候選營收同步失敗', e);
-      errors.add('上櫃候選營收: $e');
-    }
+    revenueCount = await guardSync(
+      tag: 'FundamentalSyncer',
+      label: '上櫃候選營收同步',
+      fallback: revenueCount,
+      errors: errors,
+      errorLabel: '上櫃候選營收',
+      action: () =>
+          _fundamentalRepo.syncOtcRevenue(limitedOtcCandidates, date: date),
+    );
 
     return FundamentalSyncResult(
       valuationCount: valuationCount,
