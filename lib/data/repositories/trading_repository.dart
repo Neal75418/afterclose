@@ -279,17 +279,19 @@ class TradingRepository implements ITradingRepository {
       final activeStocks = await _db.getAllActiveStocks();
       final validSymbols = activeStocks.map((s) => s.symbol).toSet();
 
-      // 建立融資融券 entries（TWSE 和 TPEx 單位皆為張，無需轉換）
-      MarginTradingCompanion buildEntry(
-        String code,
-        DateTime date,
-        double marginBuy,
-        double marginSell,
-        double marginBalance,
-        double shortBuy,
-        double shortSell,
-        double shortBalance,
-      ) {
+      // 建立融資融券 entries（TWSE 和 TPEx 單位皆為張，無需轉換）。
+      // named 參數：六個連續 double 用 positional 時任兩個對調
+      // 編譯器不會抓、資料靜默寫錯欄位。
+      MarginTradingCompanion buildEntry({
+        required String code,
+        required DateTime date,
+        required double marginBuy,
+        required double marginSell,
+        required double marginBalance,
+        required double shortBuy,
+        required double shortSell,
+        required double shortBalance,
+      }) {
         return MarginTradingCompanion.insert(
           symbol: code,
           date: date,
@@ -310,14 +312,14 @@ class TradingRepository implements ITradingRepository {
           )
           .map(
             (item) => buildEntry(
-              item.code,
-              item.date,
-              item.marginBuy,
-              item.marginSell,
-              item.marginBalance,
-              item.shortBuy,
-              item.shortSell,
-              item.shortBalance,
+              code: item.code,
+              date: item.date,
+              marginBuy: item.marginBuy,
+              marginSell: item.marginSell,
+              marginBalance: item.marginBalance,
+              shortBuy: item.shortBuy,
+              shortSell: item.shortSell,
+              shortBalance: item.shortBalance,
             ),
           )
           .toList();
@@ -330,14 +332,14 @@ class TradingRepository implements ITradingRepository {
           )
           .map(
             (item) => buildEntry(
-              item.code,
-              item.date,
-              item.marginBuy,
-              item.marginSell,
-              item.marginBalance,
-              item.shortBuy,
-              item.shortSell,
-              item.shortBalance,
+              code: item.code,
+              date: item.date,
+              marginBuy: item.marginBuy,
+              marginSell: item.marginSell,
+              marginBalance: item.marginBalance,
+              shortBuy: item.shortBuy,
+              shortSell: item.shortSell,
+              shortBalance: item.shortBalance,
             ),
           )
           .toList();
