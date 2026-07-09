@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:afterclose/core/constants/rule_params_alert.dart';
+import 'package:afterclose/core/constants/rule_params_indicator.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
@@ -105,15 +107,16 @@ enum AlertType {
     _ => '',
   };
 
-  /// 取得此警示類型的預設目標值
+  /// 取得此警示類型的預設目標值（常數集中於 AlertParams / IndicatorParams）
   double? get defaultTargetValue => switch (this) {
-    AlertType.rsiOverbought => 70.0,
-    AlertType.rsiOversold => 30.0,
-    AlertType.crossAboveMa || AlertType.crossBelowMa => 20.0, // 20-day MA
-    AlertType.volumeSpike => 2.0, // 2x average
-    AlertType.revenueYoySurge => 30.0, // 30% YoY growth
-    AlertType.highDividendYield => 5.0, // 5% yield
-    AlertType.peUndervalued => 10.0, // PE < 10
+    AlertType.rsiOverbought => IndicatorParams.rsiNeutralHigh,
+    AlertType.rsiOversold => IndicatorParams.rsiExtremeOversold,
+    AlertType.crossAboveMa ||
+    AlertType.crossBelowMa => AlertParams.defaultMaCrossDays,
+    AlertType.volumeSpike => AlertParams.defaultVolumeSpikeMultiplier,
+    AlertType.revenueYoySurge => AlertParams.defaultRevenueYoySurgePct,
+    AlertType.highDividendYield => AlertParams.defaultHighDividendYieldPct,
+    AlertType.peUndervalued => AlertParams.defaultPeUndervalued,
     _ => null,
   };
 

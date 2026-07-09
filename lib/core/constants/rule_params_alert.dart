@@ -63,4 +63,24 @@ abstract final class AlertParams {
   /// 250 交易日 ÷ 0.71（扣除週末假日比例）≈ 352 日曆日。
   /// 使用 370 日曆日確保有足夠緩衝（與 lookbackPrice 一致）。
   static const int week52LookbackDays = 370;
+
+  // --------------------------------------------------
+  // 新增警示時的預設目標值
+  // （RSI 沿用 IndicatorParams 的 70/30 門檻，單一事實來源）
+  // --------------------------------------------------
+
+  /// MA 交叉警示預設均線天數（20 日）
+  static const double defaultMaCrossDays = 20.0;
+
+  /// 爆量警示預設倍數（2 倍均量）
+  static const double defaultVolumeSpikeMultiplier = 2.0;
+
+  /// 營收 YoY 飆升警示預設門檻（+30%）
+  static const double defaultRevenueYoySurgePct = 30.0;
+
+  /// 高殖利率警示預設門檻（5%）
+  static const double defaultHighDividendYieldPct = 5.0;
+
+  /// 低本益比警示預設門檻（PE < 10）
+  static const double defaultPeUndervalued = 10.0;
 }
