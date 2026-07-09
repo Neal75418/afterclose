@@ -4,7 +4,7 @@ All notable changes to AfterClose will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased] — Today 三模式選股 analyst-grounded 重設計
+## [0.6.0] — 2026-07-09 — Today 三模式選股 analyst-grounded 重設計
 
 > 取代舊「短/長線」雙 horizon tab，改為對應「股票在趨勢中的階段」（Weinstein /
 > Minervini / CAN SLIM 框架）的三個觀察模式。
