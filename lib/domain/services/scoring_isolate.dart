@@ -3,14 +3,13 @@ import 'dart:isolate';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
-import 'package:afterclose/core/constants/rule_params.dart';
-import 'package:afterclose/core/utils/liquidity_checker.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
 import 'package:afterclose/domain/services/isolate_map_extensions.dart';
 import 'package:afterclose/domain/services/rule_engine.dart';
 import 'package:afterclose/domain/services/rules/stock_rules.dart';
+import 'package:afterclose/domain/services/scoring_pipeline.dart';
 
 /// Isolate 評分輸入資料
 ///
@@ -445,29 +444,23 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   var skippedLowScore = 0;
 
   for (final symbol in input.candidates) {
-    // 1. 取得並驗證價格資料
+    // 1-2. 資格檢查（共用 pipeline，與主執行緒路徑同一實作）
     final prices = input.pricesMap[symbol];
-    if (prices == null || prices.isEmpty) {
-      skippedNoData++;
-      continue;
-    }
-
-    if (prices.length < RuleParams.swingWindow) {
-      skippedInsufficientData++;
-      continue;
-    }
-
-    // 2. 流動性過濾
-    final latest = prices.last;
-    final liquidityResult = LiquidityChecker.checkCandidateLiquidity(latest);
-    if (liquidityResult != null) {
-      if (liquidityResult == 'MISSING_DATA') {
-        skippedNoData++;
-      } else {
-        skippedLowLiquidity++;
+    final skipReason = classifyCandidate(prices);
+    if (skipReason != null) {
+      switch (skipReason) {
+        case CandidateSkipReason.noData:
+          skippedNoData++;
+        case CandidateSkipReason.insufficientData:
+          skippedInsufficientData++;
+        case CandidateSkipReason.lowLiquidity:
+          skippedLowLiquidity++;
       }
       continue;
     }
+    prices!;
+    // classifyCandidate 通過保證 close/volume 非 null
+    final latest = prices.last;
     final turnover = latest.close! * latest.volume!;
 
     // 3. 技術分析
@@ -514,61 +507,28 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
 
     if (reasons.isEmpty) continue;
 
-    // 7. 計算雙 horizon 分數。持久化門檻 = observationScoreThreshold（8）：
-    //    任一 horizon ≥ 8 即保留；掃描頁再依分數分層（≥ minScoreThreshold 12
-    //    = 成立訊號、8–11 = 「觀察區」接近觸發的早期預警）。低於 8 為雜訊、過濾。
-    //
-    //    設計決議（設計 §9）：門檻兩 horizon 共用、不做 per-horizon 拆分（YAGNI）。
-    //    「任一通過」的語意能涵蓋短線強勢 + 長線弱勢 或反之的候選。
-
-    // H-1 fix：mutex 過濾用 horizon-aware calibrated lookup（caller 顯式
-    // 控制 — calculateScore 是 pure arithmetic contract，不做 mutex）。
-    // calibration 因此能在不同 horizon 翻轉 mutex 贏家。fallback 到
-    // hardcoded 維持 calibration 未載入時的等效行為。
-    final mutedShort = ruleEngine.applyMutexGroups(
-      reasons,
-      (r) =>
-          input.calibratedScores.lookup(Horizon.short, r.type.code) ?? r.score,
-    );
-    final mutedLong = ruleEngine.applyMutexGroups(
-      reasons,
-      (r) =>
-          input.calibratedScores.lookup(Horizon.long, r.type.code) ?? r.score,
-    );
-
-    final scoreShort = ruleEngine.calculateScore(
-      mutedShort,
-      horizon: Horizon.short,
+    // 7. 雙 horizon 評分核心（共用 pipeline，與主執行緒路徑同一實作；
+    //    mutex 策略、門檻語意與設計決議見 scoring_pipeline.dart）
+    final scored = scoreReasonsDualHorizon(
+      ruleEngine: ruleEngine,
+      reasons: reasons,
       calibratedScores: input.calibratedScores,
     );
-    final scoreLong = ruleEngine.calculateScore(
-      mutedLong,
-      horizon: Horizon.long,
-      calibratedScores: input.calibratedScores,
-    );
-
-    if (scoreShort < RuleParams.observationScoreThreshold &&
-        scoreLong < RuleParams.observationScoreThreshold) {
+    if (scored == null) {
       skippedLowScore++;
       continue;
     }
-
-    // UI 顯示用 hardcoded 分數做 mutex 過濾（保持「design intent 強度」可讀性，
-    // 與 evaluateStock 過去未拆分時等效）。scoring 路徑（mutedShort / mutedLong）
-    // 已在上方各自用 horizon-aware calibrated scoreOf 套過 mutex，此處互不影響。
-    final mutedForUi = ruleEngine.applyMutexGroups(reasons, (r) => r.score);
-    final topReasons = ruleEngine.getTopReasons(mutedForUi);
     outputs.add(
       ScoringIsolateOutput(
         symbol: symbol,
-        scoreShort: scoreShort,
-        scoreLong: scoreLong,
+        scoreShort: scored.scoreShort,
+        scoreLong: scored.scoreLong,
         turnover: turnover,
         trendState: analysisResult.trendState.code,
         reversalState: analysisResult.reversalState.code,
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
-        reasons: topReasons
+        reasons: scored.topReasons
             .map((r) => _reasonToOutput(r, input.calibratedScores))
             .toList(),
       ),
