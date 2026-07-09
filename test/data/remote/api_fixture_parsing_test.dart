@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:afterclose/data/remote/finmind_client.dart';
+import 'package:afterclose/data/remote/tdcc_client.dart';
 import 'package:afterclose/data/remote/tpex_client.dart';
 import 'package:afterclose/data/remote/twse_client.dart';
 import 'package:dio/dio.dart';
@@ -38,6 +39,14 @@ void main() {
         any(),
         queryParameters: any(named: 'queryParameters'),
       ),
+    ).thenAnswer((_) async => _response(data));
+    // OpenData 類 endpoint 不帶 queryParameters
+    when(
+      () => mockDio.get<dynamic>(any()),
+    ).thenAnswer((_) async => _response(data));
+    // TPEx OpenAPI 帶 Options(headers) 呼叫
+    when(
+      () => mockDio.get<dynamic>(any(), options: any(named: 'options')),
     ).thenAnswer((_) async => _response(data));
   }
 
@@ -96,6 +105,105 @@ void main() {
       expect(first.close, 57.80);
       expect(first.change, -0.10);
       expect(first.open, 58.40);
+    });
+  });
+
+  group('輔助資料 endpoint 真實 fixture 解析（每日更新 pipeline 依賴）', () {
+    test('TWSE 已宣告股利 OpenData 解析', () async {
+      stubGet(jsonDecode(_fixture('twse_declared_dividend.json')));
+      final client = TwseClient(dio: mockDio);
+
+      final dividends = await client.getDeclaredDividends();
+
+      expect(dividends, isNotEmpty);
+      final first = dividends.first;
+      expect(first.symbol, '1101');
+      expect(first.companyName, '台泥');
+      // 股利年度 114（民國）
+      expect(first.dividendYear, greaterThanOrEqualTo(2025));
+    });
+
+    test('TPEx 已宣告股利 OpenAPI 解析', () async {
+      stubGet(jsonDecode(_fixture('tpex_declared_dividend.json')));
+      final client = TpexClient(dio: mockDio);
+
+      final dividends = await client.getDeclaredDividends();
+
+      expect(dividends, isNotEmpty);
+      expect(dividends.first.symbol, '1240');
+      expect(dividends.first.companyName, '茂生農經');
+    });
+
+    test('TPEx 內部人轉讓解析', () async {
+      stubGet(jsonDecode(_fixture('tpex_insider_transfer.json')));
+      final client = TpexClient(dio: mockDio);
+
+      final transfers = await client.getInsiderTransfers();
+
+      expect(transfers, isNotEmpty);
+      final first = transfers.first;
+      expect(first.symbol, '3567');
+      expect(first.companyName, '逸昌');
+      expect(first.identity, '法人董事代表人配偶');
+      // 目前持有股數-自有持股 385000
+      expect(first.currentHolding, 385000);
+    });
+
+    test('TPEx 股東會公告解析', () async {
+      stubGet(jsonDecode(_fixture('tpex_shareholder_meeting.json')));
+      final client = TpexClient(dio: mockDio);
+
+      final meetings = await client.getShareholderMeetings();
+
+      expect(meetings, isNotEmpty);
+      final first = meetings.first;
+      expect(first.symbol, '1240');
+      expect(first.meetingType, '常會');
+      expect(first.hasBoardElection, isFalse);
+    });
+
+    test('TDCC 股權分散表解析（含 BOM key 防禦）', () async {
+      // fixture 保留 TDCC 真實回應的 ﻿ BOM key（「﻿資料日期」）
+      stubGet(jsonDecode(_fixture('tdcc_holding_distribution.json')));
+      final client = TdccClient(dio: mockDio);
+
+      final holdings = await client.getAllHoldingDistribution();
+
+      expect(holdings, isNotEmpty);
+      expect(holdings, contains('000218'));
+      final levels = holdings['000218']!;
+      expect(levels, isNotEmpty);
+      // BOM key 的資料日期 20260703 必須被正確解析（否則整筆被丟棄）
+      expect(levels.first.date, DateTime(2026, 7, 3));
+      expect(levels.first.level, isNonNegative);
+    });
+
+    test('TWSE 處置股公告解析', () async {
+      stubGet(jsonDecode(_fixture('twse_punish.json')));
+      final client = TwseClient(dio: mockDio);
+
+      final disposals = await client.getDisposalInfo();
+
+      // fixture 前 8 筆含權證與正股，至少正股應被解析
+      expect(disposals, isNotEmpty);
+      for (final d in disposals) {
+        expect(d.code, isNotEmpty);
+        expect(d.warningType, 'DISPOSAL');
+      }
+    });
+
+    test('TWSE 大盤指數（MI_INDEX，漲跌欄含 HTML 標記）解析', () async {
+      stubGet(jsonDecode(_fixture('twse_mi_index.json')));
+      final client = TwseClient(dio: mockDio);
+
+      final indices = await client.getMarketIndices(date: DateTime(2026, 7, 8));
+
+      expect(indices, isNotEmpty);
+      // 寶島股價指數 50,938.02、漲跌欄是 "<p style='color:red'>+</p>"
+      final formosa = indices.firstWhere((i) => i.name.contains('寶島'));
+      expect(formosa.close, 50938.02);
+      // HTML 標記的方向欄必須被正確解讀為上漲 +280.61
+      expect(formosa.change, 280.61);
     });
   });
 
