@@ -6,8 +6,12 @@
 // 「Mode C 全負分 warning」invariant，因為新 Mode C 是「觀察機會 tab」而非
 // 「警示 tab」。
 //
-// **CALIBRATION_PENDING**：閾值是直覺值、缺台股 backtest。pre-launch 上線
-// 後靠 telemetry 30 天累積樣本後校準。
+// **已校準（2026-07-09，2 年全市場回放）**：四條規則樣本 5.5K~42K。
+// 5D 無孤立 edge（勝率 42-44%、平均報酬 -0.1%~-0.4%，貼全體規則 median——
+// 剛回檔的幾天常續回，符合直覺）；60D 平均報酬 +0.4%~+1.2%（MA10 / KD
+// z≈2.5 顯著），方向符合 buy-the-dip 設計意圖。四條皆低於 active 門檻
+// （hit ≥55%）→ calibrated score 0 → runtime fallback 手調分，行為不變。
+// 閾值維持直覺值；詳細數據見 docs/CALIBRATION.md 校準紀錄。
 //
 // 設計原則：
 // - 每條 rule 用 MA stack（ma5 > ma20 > ma60）自驗多頭排列，不依賴
@@ -184,7 +188,8 @@ class HealthyPullbackToMa20Rule extends StockRule {
 /// **與 [HealthyPullbackToMa20Rule] 互斥**：要求 close > ma20（價還沒跌到深支撐），
 /// MA20 rule 要 close 在 ma20 附近 → 同一檔不會雙 fire（趨勢市 ma10 與 ma20 分離）。
 ///
-/// **CALIBRATION_PENDING**：閾值直覺值、缺 backtest。
+/// **已校準（2026-07-09）**：5D 勝率 42.7% 無孤立 edge、60D +1.08%（z=2.6
+/// 顯著，四條中最強）。閾值維持直覺值，見檔頭與 docs/CALIBRATION.md。
 class HealthyPullbackToMa10Rule extends StockRule {
   const HealthyPullbackToMa10Rule();
 

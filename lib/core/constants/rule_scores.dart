@@ -300,8 +300,9 @@ abstract final class RuleScores {
   // **正分**（buy signal）— 打破舊「Mode C 全負分 warning tab」invariant，
   // 因為新 Mode C 是觀察機會 tab。
   //
-  // **CALIBRATION_PENDING**：threshold 是直覺值、缺台股 backtest。pre-launch 上線
-  // 靠 telemetry 30 天累積樣本後校準。
+  // **已校準（2026-07-09，2 年回放）**：5D 無孤立 edge、60D 方向正但低於
+  // active 門檻 → calibrated score 0 → fallback 以下手調分（行為不變）。
+  // 詳見 pullback_rules.dart 檔頭與 docs/CALIBRATION.md 校準紀錄。
 
   /// 強勢回檔至 MA20（深回檔、量縮）
   ///

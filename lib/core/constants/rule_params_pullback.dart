@@ -3,8 +3,9 @@
 /// Used by: pullback_rules.dart
 /// (PullbackToMa20 / PullbackToMa10 / HammerAtSupport / KdHighPullback)
 ///
-/// **CALIBRATION_PENDING**：以下閾值為直覺值、缺台股 backtest。pre-launch 上線後
-/// 靠 telemetry 30 天累積樣本校準。集中於此供日後一處調參。
+/// **已校準（2026-07-09，2 年回放）**：5D 無孤立 edge、60D 方向正
+/// （詳見 pullback_rules.dart 檔頭與 docs/CALIBRATION.md）。閾值維持
+/// 直覺值。集中於此供日後一處調參。
 abstract final class PullbackParams {
   // ---- 共用 helper ----
 

@@ -291,6 +291,35 @@ dart run tool/recalibrate.dart --db /path/found/above
 
 ---
 
+## 校準紀錄
+
+### 2026-07-09 — Mode C 首份 baseline（決定：不 rename）
+
+**觸發**：4 條 Mode C 回檔規則（6/19 上線）的 CALIBRATION_PENDING。
+**範圍**：2 年全市場回放（2024-07 ~ 2026-07，backfill 補完 2024 下半年 gap
+後 88 萬+ firings、44 條規則）。
+
+| 規則 | 5D 勝率 | 5D 均報酬 | 60D 均報酬 | 60D z | 樣本 |
+|:--|:--|:--|:--|:--|:--|
+| PULLBACK_TO_MA20 | 43.7% | -0.12% | +0.53% | -4.8 | 28,038 |
+| PULLBACK_TO_MA10 | 42.7% | -0.22% | +1.08% | 2.6 | 42,032 |
+| HAMMER_AT_SUPPORT | 40.8% | -0.39% | +0.41% | -1.9 | 5,467 |
+| KD_HIGH_PULLBACK | 43.5% | -0.13% | +1.19% | 2.4 | 12,812 |
+
+**解讀**：四條皆 cut（hit < 55%），但屬全體常態（44 條僅 1 active，與現行
+production 1/40 一致）。5D 小幅負報酬符合「剛回檔的幾天常續回」直覺；60D
+方向正、MA10/KD 顯著，符合 buy-the-dip 觀察 tab 的設計意圖。不退役、不改分。
+
+**不 rename 的理由**：candidate 與 production 的唯一 active 差異是
+short 的 TECH_BREAKDOWN（n=6,992）被 EPS_CONSECUTIVE_GROWTH（n=45、
+long hit 100%——小樣本異象）取代，是變差不是變好；其餘 cut 規則
+runtime 皆 fallback 手調分、rename 與否行為不變。
+
+**附帶修復**：backfill TWSE/TPEx per-day batch 原無 skip-existing，
+rate-limit retry 每輪從頭重抓推不動（commit 8a4debd 修復）。
+
+---
+
 ## 設計背景
 
 完整的 Stage 2 LEAN 設計文件在 [`docs/plans/2026-04-11-scoring-stage2-design.md`](plans/2026-04-11-scoring-stage2-design.md)。
