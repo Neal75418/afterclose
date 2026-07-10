@@ -25,4 +25,10 @@ abstract final class StockPatterns {
 
   /// 檢查是否為上櫃股票代碼
   static bool isTpexCode(String code) => _tpexCode.hasMatch(code);
+
+  /// 檢查是否為 ETF/ETN 代碼（00 開頭，如 0050、00878、006208）
+  ///
+  /// 用途：回檔類規則排除 ETF（走勢平滑、淺回檔幾乎天天成立 = 雜訊，
+  /// 與 mode tab 的 ETF 過濾同一判斷）、財報同步跳過（ETF 無財報）。
+  static bool isEtfCode(String code) => code.startsWith('00');
 }

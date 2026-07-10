@@ -20,6 +20,7 @@
 // - 跌停日（pct ≤ -9.5%）一律 short-circuit return null（避免恐慌下殺誤判）
 
 import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/constants/rule_params_pullback.dart';
 import 'package:afterclose/core/constants/rule_scores.dart';
 import 'package:afterclose/domain/models/analysis_context.dart';
@@ -96,6 +97,10 @@ class HealthyPullbackToMa20Rule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    // ETF guard：走勢平滑、淺回檔幾乎天天成立 = 雜訊（與 mode tab 的
+    // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
+    if (StockPatterns.isEtfCode(data.symbol)) return null;
+
     // ---- Step 1: history / indicators 必備 ----
     if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
@@ -198,6 +203,10 @@ class HealthyPullbackToMa10Rule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    // ETF guard：走勢平滑、淺回檔幾乎天天成立 = 雜訊（與 mode tab 的
+    // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
+    if (StockPatterns.isEtfCode(data.symbol)) return null;
+
     // ---- Step 1: history / indicators 必備 ----
     if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
@@ -293,6 +302,10 @@ class HammerAtSupportRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    // ETF guard：走勢平滑、淺回檔幾乎天天成立 = 雜訊（與 mode tab 的
+    // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
+    if (StockPatterns.isEtfCode(data.symbol)) return null;
+
     // ---- Step 1: history / indicators 必備 ----
     if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
@@ -397,6 +410,10 @@ class KdHighLevelPullbackRule extends StockRule {
 
   @override
   TriggeredReason? evaluate(AnalysisContext context, StockData data) {
+    // ETF guard：走勢平滑、淺回檔幾乎天天成立 = 雜訊（與 mode tab 的
+    // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
+    if (StockPatterns.isEtfCode(data.symbol)) return null;
+
     // ---- Step 1: indicators 必備 ----
     final ind = context.indicators;
     if (ind == null) return null;

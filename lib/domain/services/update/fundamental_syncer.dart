@@ -1,5 +1,6 @@
 import 'package:afterclose/core/constants/api_config.dart';
 import 'package:afterclose/core/constants/market_codes.dart';
+import 'package:afterclose/core/constants/stock_patterns.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
 import 'package:afterclose/core/utils/clock.dart';
 import 'package:afterclose/core/utils/logger.dart';
@@ -201,7 +202,9 @@ class FundamentalSyncer {
   /// ETF（代碼以 00 開頭）無財報資料，自動過濾以避免無效 API 呼叫。
   Future<int> syncFinancialStatements({required List<String> symbols}) async {
     // 過濾 ETF：00 開頭的代碼（0050、00636、006205 等）沒有財報資料
-    final stockSymbols = symbols.where((s) => !s.startsWith('00')).toList();
+    final stockSymbols = symbols
+        .where((s) => !StockPatterns.isEtfCode(s))
+        .toList();
     if (stockSymbols.isEmpty) return 0;
 
     if (stockSymbols.length < symbols.length) {
@@ -257,7 +260,9 @@ class FundamentalSyncer {
   Future<int?> syncBalanceSheets({required List<String> symbols}) async {
     final marketDataRepo = _marketDataRepo;
     // 過濾 ETF：00 開頭的代碼（0050、00636、006205 等）沒有資產負債表資料
-    final stockSymbols = symbols.where((s) => !s.startsWith('00')).toList();
+    final stockSymbols = symbols
+        .where((s) => !StockPatterns.isEtfCode(s))
+        .toList();
     if (marketDataRepo == null || stockSymbols.isEmpty) return 0;
 
     if (stockSymbols.length < symbols.length) {

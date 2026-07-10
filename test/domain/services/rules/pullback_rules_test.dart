@@ -552,4 +552,115 @@ void main() {
       expect(rule.evaluate(ctx(indGolden), stock(p)), isNull);
     });
   });
+
+  // ============================================================
+  // ETF guard — 四條回檔規則對 ETF（00 開頭）一律不觸發
+  //
+  // 2026-06-20 mode tab 全濾 ETF 的判斷（「ETF 走勢平滑、淺回檔幾乎
+  // 天天成立 = 雜訊」）下放到 rule 層源頭：假訊號不再灌分數（掃描頁
+  // 訊號區曾有 9 檔 ETF 靠 pullback 訊號進入）、校準樣本不再被污染。
+  // ============================================================
+  group('ETF guard（00 開頭代碼一律 null）', () {
+    StockData etf(List<DailyPriceEntry> prices) =>
+        StockData(symbol: '00878', prices: prices);
+
+    test('HealthyPullbackToMa20Rule 對 ETF 不觸發（同 setup 個股會 fire）', () {
+      const rule = HealthyPullbackToMa20Rule();
+      final ind = const TechnicalIndicators(
+        ma5: 105,
+        ma20: 100,
+        ma60: 95,
+        volumeMA20: 1000,
+      );
+      final prices = buildPrices(
+        count: 21,
+        overrides: {
+          0: candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90),
+          15: candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99),
+          19: candle(dayIdx: 19, open: 102, high: 103, low: 101, close: 102),
+          20: candle(
+            dayIdx: 20,
+            open: 101,
+            high: 101,
+            low: 99,
+            close: 100,
+            volume: 800,
+          ),
+        },
+      );
+      // sanity：同 setup 個股確實 fire（測試有區分力）
+      expect(rule.evaluate(ctx(ind), stock(prices)), isNotNull);
+      expect(rule.evaluate(ctx(ind), etf(prices)), isNull);
+    });
+
+    test('HealthyPullbackToMa10Rule 對 ETF 不觸發', () {
+      const rule = HealthyPullbackToMa10Rule();
+      final ind = const TechnicalIndicators(
+        ma10: 100,
+        ma20: 95,
+        ma60: 90,
+        volumeMA20: 1000,
+      );
+      final prices = buildPrices(
+        count: 21,
+        overrides: {
+          0: candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90),
+          15: candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99),
+          19: candle(dayIdx: 19, open: 102, high: 103, low: 101, close: 102),
+          20: candle(
+            dayIdx: 20,
+            open: 101,
+            high: 101,
+            low: 99,
+            close: 100,
+            volume: 800,
+          ),
+        },
+      );
+      expect(rule.evaluate(ctx(ind), stock(prices)), isNotNull);
+      expect(rule.evaluate(ctx(ind), etf(prices)), isNull);
+    });
+
+    test('HammerAtSupportRule 對 ETF 不觸發', () {
+      const rule = HammerAtSupportRule();
+      final ind = const TechnicalIndicators(ma20: 100, ma60: 95);
+      final prices = buildPrices(count: 21);
+      prices[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      prices[20] = candle(
+        dayIdx: 20,
+        open: 101,
+        high: 101,
+        low: 97,
+        close: 100.5,
+        volume: 1000,
+      );
+      expect(rule.evaluate(ctx(ind), stock(prices)), isNotNull);
+      expect(rule.evaluate(ctx(ind), etf(prices)), isNull);
+    });
+
+    test('KdHighLevelPullbackRule 對 ETF 不觸發', () {
+      const rule = KdHighLevelPullbackRule();
+      final kdCtx = AnalysisContext(
+        trendState: TrendState.up,
+        evaluationTime: DateTime(2026, 1, 22),
+        indicators: const TechnicalIndicators(
+          kdK: 70,
+          kdD: 65,
+          prevKdK: 85,
+          ma20: 100,
+          ma60: 95,
+        ),
+      );
+      final prices = buildPrices(count: 21);
+      prices[20] = candle(
+        dayIdx: 20,
+        open: 100,
+        high: 101,
+        low: 99,
+        close: 100,
+      );
+      expect(rule.evaluate(kdCtx, stock(prices)), isNotNull);
+      expect(rule.evaluate(kdCtx, etf(prices)), isNull);
+    });
+  });
 }
