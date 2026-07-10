@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:afterclose/core/constants/fundamental_decay_groups.dart';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
@@ -208,6 +209,7 @@ class RuleEngine {
     List<TriggeredReason> reasons, {
     required Horizon horizon,
     CalibratedScoreContext calibratedScores = CalibratedScoreContext.empty,
+    Map<String, double>? decayMultipliers,
   }) {
     if (reasons.isEmpty) return 0;
 
@@ -215,14 +217,18 @@ class RuleEngine {
 
     // 1. 累計各規則的分數 — 優先用 calibrated 值，查無則 fallback 到
     //    hardcoded `reason.score`。多空訊號透過正負分數自然抵消。
+    //    [decayMultipliers]（基本面同組遞減，見
+    //    [computeFundamentalDecayMultipliers]）由呼叫端顯式傳入。
     //
     // 注意：本 method 是純算術契約（sum + clamp），不做 mutex
     // 過濾。Mutex 過濾應由呼叫端（scoring_isolate / scoring_service）
     // 用 horizon-aware scoreOf 呼叫 [applyMutexGroups] 後再傳進來 —
     // 這樣 calibration 才能影響哪條 rule 贏 mutex group。
     for (final reason in reasons) {
-      final calibrated = calibratedScores.lookup(horizon, reason.type.code);
-      score += calibrated ?? reason.score;
+      final code = reason.type.code;
+      final calibrated = calibratedScores.lookup(horizon, code);
+      final multiplier = decayMultipliers?[code] ?? 1.0;
+      score += (calibrated ?? reason.score) * multiplier;
     }
 
     // 2. 分數範圍限制（下限 0：僅推薦做多；上限 maxScore 避免多訊號膨脹）
@@ -230,6 +236,32 @@ class RuleEngine {
     if (score > RuleScores.maxScore) score = RuleScores.maxScore.toDouble();
 
     return score.round();
+  }
+
+  /// 基本面同組遞減係數（2026-07-10 影響分析後採用）
+  ///
+  /// 線性加總隱含「訊號互相獨立」，但同族基本面訊號高度相關（例：
+  /// ROE 優異與 ROE 改善是同一指標的兩個角度）——不處理會讓「基本面
+  /// 好」一件事重複計分（實測訊號區 21% 的股票同組疊 ≥2 條）。
+  ///
+  /// 對 [FundamentalDecayGroups] 三組（價值/營收/獲利）內的**正分**
+  /// 訊號，按設計分數 DESC 排名給遞減係數（1.0/0.5/0.25...）。
+  /// 回傳 code → 係數 map（只含被遞減影響的組員；組外訊號不入 map、
+  /// 呼叫端以 1.0 對待）。排序用 hardcoded 設計分數（horizon 無關——
+  /// 「證據邊際價值遞減」的語意與 horizon 無關）。
+  Map<String, double> computeFundamentalDecayMultipliers(
+    List<TriggeredReason> reasons,
+  ) {
+    final result = <String, double>{};
+    for (final group in FundamentalDecayGroups.all) {
+      final members =
+          reasons.where((r) => r.score > 0 && group.contains(r.type)).toList()
+            ..sort((a, b) => b.score.compareTo(a.score));
+      for (var i = 0; i < members.length; i++) {
+        result[members[i].type.code] = FundamentalDecayGroups.factorForRank(i);
+      }
+    }
+    return result;
   }
 
   /// 取得觸發原因（去重複）供資料庫儲存與篩選

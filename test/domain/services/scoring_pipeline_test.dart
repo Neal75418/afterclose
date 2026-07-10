@@ -59,6 +59,108 @@ void main() {
     });
   });
 
+  group('computeFundamentalDecayMultipliers 基本面遞減', () {
+    final engine = RuleEngine();
+
+    test('同組多條正分訊號按設計分數排序遞減 100/50/25', () {
+      const reasons = [
+        // 獲利組 4 條（2408 案例）：22 > 18 > 15，第 4 條也是 0.25
+        TriggeredReason(
+          type: ReasonType.epsConsecutiveGrowth,
+          score: 22,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.roeExcellent,
+          score: 18,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.roeImproving,
+          score: 15,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.epsYoYSurge,
+          score: 22,
+          description: '',
+        ),
+        // 營收組 1 條：獨占全分
+        TriggeredReason(
+          type: ReasonType.revenueYoySurge,
+          score: 20,
+          description: '',
+        ),
+        // 非基本面：不受影響
+        TriggeredReason(
+          type: ReasonType.techBreakout,
+          score: 25,
+          description: '',
+        ),
+      ];
+
+      final m = engine.computeFundamentalDecayMultipliers(reasons);
+
+      // 獲利組排序 22(epsConsecutive)=22(epsYoy) 同分 → 穩定序，
+      // 名次係數 1.0/0.5/0.25/0.25
+      final earningsFactors = [
+        m['EPS_CONSECUTIVE_GROWTH'],
+        m['EPS_YOY_SURGE'],
+        m['ROE_EXCELLENT'],
+        m['ROE_IMPROVING'],
+      ];
+      expect(earningsFactors..sort(), [0.25, 0.25, 0.5, 1.0]);
+      expect(m['REVENUE_YOY_SURGE'], 1.0);
+      expect(m.containsKey('TECH_BREAKOUT'), isFalse);
+    });
+
+    test('負分警訊不分組不遞減', () {
+      const reasons = [
+        TriggeredReason(
+          type: ReasonType.roeDeclining,
+          score: -10,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.roeExcellent,
+          score: 18,
+          description: '',
+        ),
+      ];
+      final m = engine.computeFundamentalDecayMultipliers(reasons);
+      expect(m['ROE_EXCELLENT'], 1.0);
+      expect(m.containsKey('ROE_DECLINING'), isFalse);
+    });
+
+    test('calculateScore 套用 multipliers 後總分遞減', () {
+      const reasons = [
+        TriggeredReason(
+          type: ReasonType.epsConsecutiveGrowth,
+          score: 22,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.roeExcellent,
+          score: 18,
+          description: '',
+        ),
+        TriggeredReason(
+          type: ReasonType.roeImproving,
+          score: 15,
+          description: '',
+        ),
+      ];
+      final m = engine.computeFundamentalDecayMultipliers(reasons);
+      final score = engine.calculateScore(
+        reasons,
+        horizon: Horizon.short,
+        decayMultipliers: m,
+      );
+      // 22*1.0 + 18*0.5 + 15*0.25 = 34.75 → round 35（原 55）
+      expect(score, 35);
+    });
+  });
+
   group('scoreReasonsDualHorizon 評分核心', () {
     late MockRuleEngine engine;
     const reasons = [
@@ -77,6 +179,9 @@ void main() {
       when(() => engine.applyMutexGroups(any(), any())).thenAnswer(
         (inv) => inv.positionalArguments[0] as List<TriggeredReason>,
       );
+      when(
+        () => engine.computeFundamentalDecayMultipliers(any()),
+      ).thenReturn(const {});
       when(() => engine.getTopReasons(any())).thenAnswer(
         (inv) => inv.positionalArguments[0] as List<TriggeredReason>,
       );
@@ -88,6 +193,7 @@ void main() {
           any(),
           horizon: Horizon.short,
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(25);
       when(
@@ -95,6 +201,7 @@ void main() {
           any(),
           horizon: Horizon.long,
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(0);
 
@@ -118,6 +225,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(RuleParams.observationScoreThreshold - 1);
 
@@ -136,6 +244,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(RuleParams.observationScoreThreshold);
 

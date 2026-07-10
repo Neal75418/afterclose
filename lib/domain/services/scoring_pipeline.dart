@@ -50,12 +50,23 @@ CandidateSkipReason? classifyCandidate(List<DailyPriceEntry>? prices) {
 ///    可讀性）再取 topReasons——與 scoring 路徑的 mutex 互不影響
 ///
 /// 回傳 null 表示兩 horizon 都低於觀察門檻、應過濾。
-({int scoreShort, int scoreLong, List<TriggeredReason> topReasons})?
+({
+  int scoreShort,
+  int scoreLong,
+  List<TriggeredReason> topReasons,
+  Map<String, double> decayMultipliers,
+})?
 scoreReasonsDualHorizon({
   required RuleEngine ruleEngine,
   required List<TriggeredReason> reasons,
   required CalibratedScoreContext calibratedScores,
 }) {
+  // 基本面同組遞減（對原始 reasons 算一次、兩 horizon 與持久化共用；
+  // 排序用 hardcoded 設計分數、horizon 無關）
+  final decayMultipliers = ruleEngine.computeFundamentalDecayMultipliers(
+    reasons,
+  );
+
   final mutedShort = ruleEngine.applyMutexGroups(
     reasons,
     (r) => calibratedScores.lookup(Horizon.short, r.type.code) ?? r.score,
@@ -69,11 +80,13 @@ scoreReasonsDualHorizon({
     mutedShort,
     horizon: Horizon.short,
     calibratedScores: calibratedScores,
+    decayMultipliers: decayMultipliers,
   );
   final scoreLong = ruleEngine.calculateScore(
     mutedLong,
     horizon: Horizon.long,
     calibratedScores: calibratedScores,
+    decayMultipliers: decayMultipliers,
   );
 
   if (scoreShort < RuleParams.observationScoreThreshold &&
@@ -84,5 +97,10 @@ scoreReasonsDualHorizon({
   final mutedForUi = ruleEngine.applyMutexGroups(reasons, (r) => r.score);
   final topReasons = ruleEngine.getTopReasons(mutedForUi);
 
-  return (scoreShort: scoreShort, scoreLong: scoreLong, topReasons: topReasons);
+  return (
+    scoreShort: scoreShort,
+    scoreLong: scoreLong,
+    topReasons: topReasons,
+    decayMultipliers: decayMultipliers,
+  );
 }

@@ -37,12 +37,14 @@ class AnalysisService {
     required DateTime evaluationTime,
     List<DailyPriceEntry>? priceHistory,
     MarketDataContext? marketData,
+    bool? isMarketUptrend,
   }) {
     return _coordinator.buildContext(
       result,
       priceHistory: priceHistory,
       marketData: marketData,
       evaluationTime: evaluationTime,
+      isMarketUptrend: isMarketUptrend,
     );
   }
 }

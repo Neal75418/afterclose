@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:afterclose/core/constants/rule_params_sector.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/data/database/app_database.dart';
 
@@ -24,6 +25,38 @@ class PriceCalculator {
   /// 60D 報酬與「全市場 60D percentile rank」同序（單調函數），
   /// Mode B 排序與掃描頁 rs60Desc 排序共用此鍵。
   /// 回 null 當 history < 61 筆 / 端點 close null / 起點 0。
+  /// 市場是否處於上升 regime：載入 universe 的 [lookbackDays]D 平均報酬 > 0。
+  ///
+  /// 產業領導 tilt 用。有效股不足視為資料不足 → 保守回 false（不套 tilt）。
+  /// 規則 gate 場景用 [marketUptrendOrNull]（資料不足回 null、不擋規則）。
+  static bool isMarketUptrend(
+    Map<String, List<DailyPriceEntry>> priceHistories,
+    int lookbackDays,
+  ) => marketUptrendOrNull(priceHistories, lookbackDays) ?? false;
+
+  /// [isMarketUptrend] 的三值版：有效股 < [SectorParams.regimeMinEligibleStocks]
+  /// 回 null（未知）。
+  ///
+  /// 回檔類規則的 regime gate 用——`AnalysisContext.isMarketUptrend == false`
+  /// 才擋，null 視為 permissive，避免 fresh DB / 歷史不足時誤殺訊號。
+  static bool? marketUptrendOrNull(
+    Map<String, List<DailyPriceEntry>> priceHistories,
+    int lookbackDays,
+  ) {
+    var sum = 0.0;
+    var n = 0;
+    for (final history in priceHistories.values) {
+      if (history.length < lookbackDays + 1) continue;
+      final latest = history.last.close;
+      final old = history[history.length - lookbackDays - 1].close;
+      if (latest == null || old == null || old <= 0) continue;
+      sum += (latest - old) / old;
+      n++;
+    }
+    if (n < SectorParams.regimeMinEligibleStocks) return null;
+    return sum / n > 0;
+  }
+
   static double? ret60d(List<DailyPriceEntry>? history) {
     if (history == null || history.length < 61) return null;
     final latest = history.last.close;

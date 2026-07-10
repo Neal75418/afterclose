@@ -560,6 +560,111 @@ void main() {
   // 天天成立 = 雜訊」）下放到 rule 層源頭：假訊號不再灌分數（掃描頁
   // 訊號區曾有 9 檔 ETF 靠 pullback 訊號進入）、校準樣本不再被污染。
   // ============================================================
+  group('Regime gate（大盤非上升趨勢一律 null）', () {
+    // 2026-07-10 回放分段實證：回檔進場 edge 幾乎全來自多頭 regime
+    // （MA20 60D 均報酬 多頭 +6.47% vs 空頭 -0.65%、各 ~4K 樣本）。
+    AnalysisContext regimeCtx(TechnicalIndicators ind, bool? uptrend) =>
+        AnalysisContext(
+          trendState: TrendState.up,
+          evaluationTime: DateTime(2026, 1, 22),
+          indicators: ind,
+          isMarketUptrend: uptrend,
+        );
+
+    final ma20Ind = const TechnicalIndicators(
+      ma5: 105,
+      ma20: 100,
+      ma60: 95,
+      volumeMA20: 1000,
+    );
+    List<DailyPriceEntry> ma20Golden() => buildPrices(
+      count: 21,
+      overrides: {
+        0: candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90),
+        15: candle(dayIdx: 15, open: 98, high: 100, low: 97, close: 99),
+        19: candle(dayIdx: 19, open: 102, high: 103, low: 101, close: 102),
+        20: candle(
+          dayIdx: 20,
+          open: 101,
+          high: 101,
+          low: 99,
+          close: 100,
+          volume: 800,
+        ),
+      },
+    );
+
+    test('空頭 regime 時四條回檔規則不觸發', () {
+      const rule = HealthyPullbackToMa20Rule();
+      // sanity：多頭 regime 同 setup 會 fire
+      expect(
+        rule.evaluate(regimeCtx(ma20Ind, true), stock(ma20Golden())),
+        isNotNull,
+      );
+      expect(
+        rule.evaluate(regimeCtx(ma20Ind, false), stock(ma20Golden())),
+        isNull,
+      );
+    });
+
+    test('regime 未知（null）不擋——permissive 語意', () {
+      const rule = HealthyPullbackToMa20Rule();
+      expect(
+        rule.evaluate(regimeCtx(ma20Ind, null), stock(ma20Golden())),
+        isNotNull,
+      );
+    });
+
+    test('MA10/Hammer/KD 三條同樣被空頭 regime 擋下', () {
+      // MA10
+      const ma10Rule = HealthyPullbackToMa10Rule();
+      final ma10Ind = const TechnicalIndicators(
+        ma10: 100,
+        ma20: 95,
+        ma60: 90,
+        volumeMA20: 1000,
+      );
+      expect(
+        ma10Rule.evaluate(regimeCtx(ma10Ind, false), stock(ma20Golden())),
+        isNull,
+      );
+      // Hammer
+      const hammerRule = HammerAtSupportRule();
+      final hammerInd = const TechnicalIndicators(ma20: 100, ma60: 95);
+      final hp = buildPrices(count: 21);
+      hp[0] = candle(dayIdx: 0, open: 90, high: 91, low: 89, close: 90);
+      hp[20] = candle(
+        dayIdx: 20,
+        open: 101,
+        high: 101,
+        low: 97,
+        close: 100.5,
+        volume: 1000,
+      );
+      expect(
+        hammerRule.evaluate(regimeCtx(hammerInd, true), stock(hp)),
+        isNotNull,
+      );
+      expect(
+        hammerRule.evaluate(regimeCtx(hammerInd, false), stock(hp)),
+        isNull,
+      );
+      // KD
+      const kdRule = KdHighLevelPullbackRule();
+      final kdInd = const TechnicalIndicators(
+        kdK: 70,
+        kdD: 65,
+        prevKdK: 85,
+        ma20: 100,
+        ma60: 95,
+      );
+      final kp = buildPrices(count: 21);
+      kp[20] = candle(dayIdx: 20, open: 100, high: 101, low: 99, close: 100);
+      expect(kdRule.evaluate(regimeCtx(kdInd, true), stock(kp)), isNotNull);
+      expect(kdRule.evaluate(regimeCtx(kdInd, false), stock(kp)), isNull);
+    });
+  });
+
   group('ETF guard（00 開頭代碼一律 null）', () {
     StockData etf(List<DailyPriceEntry> prices) =>
         StockData(symbol: '00878', prices: prices);

@@ -14,6 +14,7 @@ class AnalysisContext {
     this.rangeBottom,
     this.marketData,
     this.indicators,
+    this.isMarketUptrend,
   });
 
   final TrendState trendState;
@@ -24,6 +25,14 @@ class AnalysisContext {
   final double? rangeBottom;
   final MarketDataContext? marketData;
   final TechnicalIndicators? indicators;
+
+  /// 大盤是否處於上升 regime（全市場 120 交易日平均報酬 > 0）。
+  ///
+  /// null = 不知道（資料不足）→ 規則採 permissive 不擋。
+  /// 回檔類規則（buy-the-dip）在空頭 regime 一律不觸發——2026-07-10
+  /// 回放分段實證 edge 幾乎全來自多頭（MA20 60D 多頭 +6.47% vs
+  /// 空頭 -0.65%）；momentum 類因子空頭反轉（backtest IC -0.078）。
+  final bool? isMarketUptrend;
 
   /// 評估時間點，供規則判斷資料新鮮度等時間相關邏輯。
   ///

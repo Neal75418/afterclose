@@ -4,6 +4,7 @@ import 'package:afterclose/core/constants/calibrated_scores/calibrated_scores_re
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/exceptions/app_exception.dart';
+import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/core/utils/logger.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/repositories/analysis_repository.dart';
@@ -56,6 +57,13 @@ class ScoringService {
     // Pre-launch placeholder JSON 為空 → 兩 horizon 都走 fallback。
     final calibratedScores = CalibratedScoresRegistry.instance
         .snapshotForIsolate();
+
+    // 大盤 regime（供回檔類規則 gate）：候選池 120 交易日平均報酬。
+    // 有效股 < 50（fresh DB / 歷史不足）視為未知 → null、規則不擋。
+    final marketUptrend = PriceCalculator.marketUptrendOrNull(
+      batchData.pricesMap,
+      SectorParams.regimeLookbackDays,
+    );
 
     // 暫存待寫入的分析結果，於迴圈後以單一 transaction 批次寫入
     final pendingPersists =
@@ -119,6 +127,7 @@ class ScoringService {
         priceHistory: prices,
         marketData: marketData,
         evaluationTime: date,
+        isMarketUptrend: marketUptrend,
       );
 
       // 從批次載入的 map 取得可選資料
@@ -153,18 +162,27 @@ class ScoringService {
         skippedLowScore++;
         continue;
       }
-      final (:scoreShort, :scoreLong, :topReasons) = scored;
+      final (:scoreShort, :scoreLong, :topReasons, :decayMultipliers) = scored;
 
-      // 轉換為 dual-horizon ReasonData（每條 rule 都查兩個 horizon 的分數）
+      // 轉換為 dual-horizon ReasonData（每條 rule 都查兩個 horizon 的分數；
+      // 乘上基本面遞減係數 — 保持「總分 = reasons 加總」invariant，
+      // UI 顯示的即該訊號實際貢獻）
       final reasonDataList = topReasons.map((r) {
         final code = r.type.code;
+        final multiplier = decayMultipliers[code] ?? 1.0;
         return ReasonData(
           type: code,
           evidenceJson: r.evidenceJson != null
               ? jsonEncode(r.evidenceJson)
               : '{}',
-          scoreShort: calibratedScores.lookup(Horizon.short, code) ?? r.score,
-          scoreLong: calibratedScores.lookup(Horizon.long, code) ?? r.score,
+          scoreShort:
+              ((calibratedScores.lookup(Horizon.short, code) ?? r.score) *
+                      multiplier)
+                  .round(),
+          scoreLong:
+              ((calibratedScores.lookup(Horizon.long, code) ?? r.score) *
+                      multiplier)
+                  .round(),
         );
       }).toList();
 

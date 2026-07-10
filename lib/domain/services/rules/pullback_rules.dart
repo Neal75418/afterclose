@@ -101,6 +101,11 @@ class HealthyPullbackToMa20Rule extends StockRule {
     // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
     if (StockPatterns.isEtfCode(data.symbol)) return null;
 
+    // Regime gate：空頭 regime 的回檔是接刀不是機會（2026-07-10 回放
+    // 分段實證：60D 均報酬 多頭 +6.5% vs 空頭 -0.7%~+1.3%）。
+    // null（regime 未知）不擋 — permissive 與其他 null 語意一致。
+    if (context.isMarketUptrend == false) return null;
+
     // ---- Step 1: history / indicators 必備 ----
     if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
@@ -207,6 +212,11 @@ class HealthyPullbackToMa10Rule extends StockRule {
     // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
     if (StockPatterns.isEtfCode(data.symbol)) return null;
 
+    // Regime gate：空頭 regime 的回檔是接刀不是機會（2026-07-10 回放
+    // 分段實證：60D 均報酬 多頭 +6.5% vs 空頭 -0.7%~+1.3%）。
+    // null（regime 未知）不擋 — permissive 與其他 null 語意一致。
+    if (context.isMarketUptrend == false) return null;
+
     // ---- Step 1: history / indicators 必備 ----
     if (data.prices.length < PullbackParams.minHistoryDays) return null;
     final ind = context.indicators;
@@ -305,6 +315,11 @@ class HammerAtSupportRule extends StockRule {
     // ETF guard：走勢平滑、淺回檔幾乎天天成立 = 雜訊（與 mode tab 的
     // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
     if (StockPatterns.isEtfCode(data.symbol)) return null;
+
+    // Regime gate：空頭 regime 的回檔是接刀不是機會（2026-07-10 回放
+    // 分段實證：60D 均報酬 多頭 +6.5% vs 空頭 -0.7%~+1.3%）。
+    // null（regime 未知）不擋 — permissive 與其他 null 語意一致。
+    if (context.isMarketUptrend == false) return null;
 
     // ---- Step 1: history / indicators 必備 ----
     if (data.prices.length < PullbackParams.minHistoryDays) return null;
@@ -413,6 +428,11 @@ class KdHighLevelPullbackRule extends StockRule {
     // ETF guard：走勢平滑、淺回檔幾乎天天成立 = 雜訊（與 mode tab 的
     // ETF 過濾同一判斷、下放到源頭：假訊號不灌分數、不污染校準樣本）
     if (StockPatterns.isEtfCode(data.symbol)) return null;
+
+    // Regime gate：空頭 regime 的回檔是接刀不是機會（2026-07-10 回放
+    // 分段實證：60D 均報酬 多頭 +6.5% vs 空頭 -0.7%~+1.3%）。
+    // null（regime 未知）不擋 — permissive 與其他 null 語意一致。
+    if (context.isMarketUptrend == false) return null;
 
     // ---- Step 1: indicators 必備 ----
     final ind = context.indicators;

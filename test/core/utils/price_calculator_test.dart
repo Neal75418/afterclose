@@ -356,5 +356,61 @@ void main() {
         expect(result['BBBB'], isNull);
       });
     });
+
+    group('marketUptrendOrNull（規則 gate 用、資料不足回 null）', () {
+      // count 檔，每檔 len 根；最後一根對 [len-1-120] 漲 retPct%
+      Map<String, List<DailyPriceEntry>> universe(
+        int count,
+        double retPct,
+        int len,
+      ) {
+        return {
+          for (var i = 0; i < count; i++)
+            's$i': [
+              ...List.generate(
+                len - 1,
+                (d) => createTestPrice(
+                  symbol: 's$i',
+                  close: 100,
+                  date: DateTime(2025).add(Duration(days: d)),
+                ),
+              ),
+              createTestPrice(
+                symbol: 's$i',
+                close: 100 * (1 + retPct / 100),
+                date: DateTime(2025).add(Duration(days: len)),
+              ),
+            ],
+        };
+      }
+
+      test('有效股 < 50 → null（未知、caller 不擋）', () {
+        expect(
+          PriceCalculator.marketUptrendOrNull(universe(40, 10, 121), 120),
+          isNull,
+        );
+      });
+
+      test('≥ 50 檔且平均報酬 > 0 → true', () {
+        expect(
+          PriceCalculator.marketUptrendOrNull(universe(60, 10, 121), 120),
+          isTrue,
+        );
+      });
+
+      test('≥ 50 檔且平均報酬 < 0 → false', () {
+        expect(
+          PriceCalculator.marketUptrendOrNull(universe(60, -10, 121), 120),
+          isFalse,
+        );
+      });
+
+      test('歷史不足 lookback+1 被略過 → 有效股歸零 → null', () {
+        expect(
+          PriceCalculator.marketUptrendOrNull(universe(60, 10, 100), 120),
+          isNull,
+        );
+      });
+    });
   });
 }

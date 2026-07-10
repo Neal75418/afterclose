@@ -170,20 +170,7 @@ Map<String, double> computeIndustryMomentum({
 bool isMarketUptrend(
   Map<String, List<DailyPriceEntry>> priceHistories,
   int lookbackDays,
-) {
-  var sum = 0.0;
-  var n = 0;
-  for (final history in priceHistories.values) {
-    if (history.length < lookbackDays + 1) continue;
-    final latest = history.last.close;
-    final old = history[history.length - lookbackDays - 1].close;
-    if (latest == null || old == null || old <= 0) continue;
-    sum += (latest - old) / old;
-    n++;
-  }
-  if (n < 50) return false;
-  return sum / n > 0;
-}
+) => PriceCalculator.isMarketUptrend(priceHistories, lookbackDays);
 
 /// 是否為「成立訊號」層（任一 horizon ≥ [RuleParams.minScoreThreshold]）。
 ///

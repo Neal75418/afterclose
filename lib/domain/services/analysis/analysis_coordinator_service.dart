@@ -91,6 +91,7 @@ class AnalysisCoordinatorService {
     required DateTime evaluationTime,
     List<DailyPriceEntry>? priceHistory,
     MarketDataContext? marketData,
+    bool? isMarketUptrend,
   }) {
     TechnicalIndicators? indicators;
 
@@ -110,6 +111,7 @@ class AnalysisCoordinatorService {
       indicators: indicators,
       marketData: marketData,
       evaluationTime: evaluationTime,
+      isMarketUptrend: isMarketUptrend,
     );
   }
 

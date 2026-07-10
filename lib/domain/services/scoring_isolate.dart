@@ -3,6 +3,8 @@ import 'dart:isolate';
 
 import 'package:afterclose/core/constants/calibrated_scores/calibrated_score_context.dart';
 import 'package:afterclose/core/constants/calibrated_scores/horizon.dart';
+import 'package:afterclose/core/constants/rule_params_sector.dart';
+import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/domain/models/models.dart';
 import 'package:afterclose/domain/services/analysis_service.dart';
@@ -437,6 +439,13 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
   final analysisService = AnalysisService();
   final ruleEngine = RuleEngine();
 
+  // 大盤 regime（供回檔類規則 gate）：與主執行緒路徑同一計算，
+  // 對已跨界的 pricesMap 在 isolate 內算一次。有效股 < 50 → null 不擋。
+  final marketUptrend = PriceCalculator.marketUptrendOrNull(
+    input.pricesMap,
+    SectorParams.regimeLookbackDays,
+  );
+
   final outputs = <ScoringIsolateOutput>[];
   var skippedNoData = 0;
   var skippedInsufficientData = 0;
@@ -486,6 +495,7 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
       priceHistory: prices,
       marketData: marketData,
       evaluationTime: inputDate,
+      isMarketUptrend: marketUptrend,
     );
 
     // 6. 轉換批次資料並執行規則引擎
@@ -529,7 +539,13 @@ Map<String, dynamic> _evaluateStocksIsolated(Map<String, dynamic> inputMap) {
         supportLevel: analysisResult.supportLevel,
         resistanceLevel: analysisResult.resistanceLevel,
         reasons: scored.topReasons
-            .map((r) => _reasonToOutput(r, input.calibratedScores))
+            .map(
+              (r) => _reasonToOutput(
+                r,
+                input.calibratedScores,
+                scored.decayMultipliers,
+              ),
+            )
             .toList(),
       ),
     );
@@ -608,12 +624,17 @@ extension _MapIfEmpty<K, V> on Map<K, V> {
 IsolateReasonOutput _reasonToOutput(
   TriggeredReason reason,
   CalibratedScoreContext ctx,
+  Map<String, double> decayMultipliers,
 ) {
   final code = reason.type.code;
+  // 乘上基本面遞減係數（與主執行緒路徑一致、保持總分=SUM invariant）
+  final multiplier = decayMultipliers[code] ?? 1.0;
   return IsolateReasonOutput(
     type: code,
-    scoreShort: ctx.lookup(Horizon.short, code) ?? reason.score,
-    scoreLong: ctx.lookup(Horizon.long, code) ?? reason.score,
+    scoreShort: ((ctx.lookup(Horizon.short, code) ?? reason.score) * multiplier)
+        .round(),
+    scoreLong: ((ctx.lookup(Horizon.long, code) ?? reason.score) * multiplier)
+        .round(),
     description: reason.description,
     evidenceJson: reason.evidenceJson != null
         ? jsonEncode(reason.evidenceJson)

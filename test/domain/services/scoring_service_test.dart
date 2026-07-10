@@ -92,6 +92,11 @@ void main() {
       () => mockAnalysisRepository.clearAnalysisForDate(any()),
     ).thenAnswer((_) async => 0);
 
+    // 基本面遞減預設無作用（空 map）——需要驗證遞減行為的測試自行 override
+    when(
+      () => mockRuleEngine.computeFundamentalDecayMultipliers(any()),
+    ).thenReturn(const {});
+
     // Default mocks to prevent Null type errors
     when(() => mockRuleEngine.getTopReasons(any())).thenAnswer(
       (invocation) =>
@@ -262,6 +267,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(80);
 
@@ -351,6 +357,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenAnswer((invocation) {
         final reasons =
@@ -471,6 +478,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(80);
       // 記錄呼叫順序與 clear 當下的 transaction 狀態
@@ -660,6 +668,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       );
     });
@@ -710,6 +719,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(returnScore);
 
@@ -870,6 +880,7 @@ void main() {
           any(),
           horizon: any(named: 'horizon'),
           calibratedScores: any(named: 'calibratedScores'),
+          decayMultipliers: any(named: 'decayMultipliers'),
         ),
       ).thenReturn(30);
       when(() => mockRuleEngine.getTopReasons(any())).thenReturn([
