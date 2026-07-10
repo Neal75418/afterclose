@@ -19,6 +19,19 @@ class PriceCalculator {
   /// - latestPrice 為 null 或收盤價為 null
   /// - 無法計算前一日收盤價（歷史資料不足且無 priceChange）
   /// - 前一日收盤價為零或負數
+  /// 60 trading days 報酬（%）— 相對強度（RS）proxy。
+  ///
+  /// 60D 報酬與「全市場 60D percentile rank」同序（單調函數），
+  /// Mode B 排序與掃描頁 rs60Desc 排序共用此鍵。
+  /// 回 null 當 history < 61 筆 / 端點 close null / 起點 0。
+  static double? ret60d(List<DailyPriceEntry>? history) {
+    if (history == null || history.length < 61) return null;
+    final latest = history.last.close;
+    final old = history[history.length - 61].close;
+    if (latest == null || old == null || old == 0) return null;
+    return (latest - old) / old * 100;
+  }
+
   static double? calculatePriceChange(
     List<DailyPriceEntry> history,
     DailyPriceEntry? latestPrice,

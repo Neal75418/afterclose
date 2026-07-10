@@ -7,6 +7,7 @@ import 'package:afterclose/core/constants/rule_params.dart';
 import 'package:afterclose/core/utils/date_context.dart';
 import 'package:afterclose/core/utils/error_display.dart';
 import 'package:afterclose/core/utils/logger.dart';
+import 'package:afterclose/core/utils/price_calculator.dart';
 import 'package:afterclose/core/utils/sentinel.dart';
 import 'package:afterclose/data/database/app_database.dart';
 import 'package:afterclose/data/database/cached_accessor.dart';
@@ -32,7 +33,7 @@ class ScanState {
     /// 篩選/排序後的顯示清單
     this.stocks = const [],
     this.filter = ScanFilter.all,
-    this.sort = ScanSort.scoreDesc,
+    this.sort = ScanSort.rs60Desc,
     this.industryFilter,
     this.industries = const [],
     this.dataDate,
@@ -209,6 +210,8 @@ class ScanNotifier extends Notifier<ScanState> {
   List<DailyAnalysisEntry> _allAnalyses = [];
   List<DailyAnalysisEntry> _observationAnalyses = [];
   List<DailyAnalysisEntry> _filteredAnalyses = [];
+  Map<String, double> _ret60 = {};
+  Map<String, double> _priceChangeBySymbol = {};
   Map<String, List<DailyReasonEntry>> _allReasons = {};
   Set<String> _watchlistSymbols = {};
   Set<String>? _industrySymbols;
@@ -290,8 +293,34 @@ class ScanNotifier extends Notifier<ScanState> {
         _industrySymbols = null;
       }
 
-      // 套用現有篩選條件（保留 filter + industry）
+      // 排序 metrics：60D RS（rs60Desc 預設排序）與漲跌幅（priceChange 排序）。
+      // 95 日曆日 ≈ 65 交易日，足夠 60D 報酬 + 連假 margin。
+      final sortSymbols = [for (final a in _allAnalyses) a.symbol];
+      if (sortSymbols.isNotEmpty) {
+        final histories = await _db.getPriceHistoryBatch(
+          sortSymbols,
+          startDate: targetDate.subtract(const Duration(days: 95)),
+          endDate: targetDate,
+        );
+        final latestPrices = await _db.getLatestPricesBatch(sortSymbols);
+        _ret60 = {
+          for (final s in sortSymbols) s: ?PriceCalculator.ret60d(histories[s]),
+        };
+        final changes = PriceCalculator.calculatePriceChangesBatch(
+          histories,
+          latestPrices,
+        );
+        _priceChangeBySymbol = {
+          for (final e in changes.entries) e.key: ?e.value,
+        };
+      } else {
+        _ret60 = {};
+        _priceChangeBySymbol = {};
+      }
+
+      // 套用現有篩選條件（保留 filter + industry）+ 預設排序
       _applyGlobalFilter(state.filter);
+      _applyGlobalSort(state.sort);
 
       // 取得自選股清單供比對（主清單 + 觀察區共用）
       final watchlist = await _db.getWatchlist();
@@ -388,6 +417,7 @@ class ScanNotifier extends Notifier<ScanState> {
 
     // 套用全域篩選
     _applyGlobalFilter(filter);
+    _applyGlobalSort(state.sort);
 
     // 篩選切換使用 isFiltering（輕量 indicator），不替換為全骨架
     state = state.copyWith(filter: filter, isFiltering: true, stocks: []);
@@ -502,7 +532,13 @@ class ScanNotifier extends Notifier<ScanState> {
 
   /// 套用全域排序至 _filteredAnalyses
   void _applyGlobalSort(ScanSort sort) {
-    _service.applySort(_filteredAnalyses, sort, horizon: _horizon);
+    _service.applySort(
+      _filteredAnalyses,
+      sort,
+      horizon: _horizon,
+      ret60: _ret60,
+      priceChanges: _priceChangeBySymbol,
+    );
   }
 
   /// 從 watchlistProvider 同步自選清單狀態到 scan 畫面

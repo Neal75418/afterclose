@@ -305,6 +305,7 @@
     "groupPattern": "Patterns",
     "groupPriceVolume": "Price-Vol",
     "groupFundamental": "Fundamentals",
+    "sortRs60Desc": "RS 60D High→Low",
     "sortScoreDesc": "Score High→Low",
     "sortScoreAsc": "Score Low→High",
     "sortPriceChangeDesc": "Change High→Low",

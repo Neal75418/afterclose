@@ -65,14 +65,46 @@ class ScanFilterService {
     List<DailyAnalysisEntry> analyses,
     ScanSort sort, {
     Horizon horizon = Horizon.short,
+    Map<String, double>? ret60,
+    Map<String, double>? priceChanges,
   }) {
     double scoreOf(DailyAnalysisEntry a) =>
         horizon == Horizon.long ? a.scoreLong : a.scoreShort;
-    if (sort == ScanSort.scoreAsc) {
-      analyses.sort((a, b) => scoreOf(a).compareTo(scoreOf(b)));
-    } else {
-      // 預設：分數降冪
-      analyses.sort((b, a) => scoreOf(a).compareTo(scoreOf(b)));
+    switch (sort) {
+      case ScanSort.rs60Desc:
+        // 60D 相對強度 DESC（與 Mode B 同語意）：有值優先於無值、
+        // 無值者以分數 DESC 再 symbol ASC tiebreak（deterministic）
+        analyses.sort((a, b) {
+          final ra = ret60?[a.symbol];
+          final rb = ret60?[b.symbol];
+          if (ra != null && rb == null) return -1;
+          if (ra == null && rb != null) return 1;
+          if (ra != null && rb != null) {
+            final byRet = rb.compareTo(ra);
+            if (byRet != 0) return byRet;
+          }
+          final byScore = scoreOf(b).compareTo(scoreOf(a));
+          if (byScore != 0) return byScore;
+          return a.symbol.compareTo(b.symbol);
+        });
+      case ScanSort.priceChangeDesc || ScanSort.priceChangeAsc:
+        // 修復：這兩個選項原本落入 else 分支、實際仍按分數排（死選項）
+        final sign = sort == ScanSort.priceChangeDesc ? -1 : 1;
+        analyses.sort((a, b) {
+          final ca = priceChanges?[a.symbol];
+          final cb = priceChanges?[b.symbol];
+          if (ca != null && cb == null) return -1;
+          if (ca == null && cb != null) return 1;
+          if (ca != null && cb != null) {
+            final byChange = ca.compareTo(cb) * sign;
+            if (byChange != 0) return byChange;
+          }
+          return a.symbol.compareTo(b.symbol);
+        });
+      case ScanSort.scoreAsc:
+        analyses.sort((a, b) => scoreOf(a).compareTo(scoreOf(b)));
+      case ScanSort.scoreDesc:
+        analyses.sort((b, a) => scoreOf(a).compareTo(scoreOf(b)));
     }
   }
 

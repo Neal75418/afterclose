@@ -117,13 +117,8 @@ double? computeBiasMa20ForHistory(List<DailyPriceEntry>? history) {
 /// 回 null 當 history < 61 筆 / 端點 close null / 起點 0 → caller 視為「資料不足、
 /// 排最後」。
 @visibleForTesting
-double? computeRet60dForHistory(List<DailyPriceEntry>? history) {
-  if (history == null || history.length < 61) return null;
-  final latest = history.last.close;
-  final old = history[history.length - 61].close;
-  if (latest == null || old == null || old == 0) return null;
-  return (latest - old) / old * 100;
-}
+double? computeRet60dForHistory(List<DailyPriceEntry>? history) =>
+    PriceCalculator.ret60d(history);
 
 /// 20D 報酬（%），供「產業領導」聚合各產業動能。回 null 當 history < 21 筆 /
 /// 端點 close null / 起點 0。

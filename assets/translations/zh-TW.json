@@ -305,6 +305,7 @@
     "groupPattern": "K線型態",
     "groupPriceVolume": "價量背離",
     "groupFundamental": "基本面",
+    "sortRs60Desc": "60日強度高→低",
     "sortScoreDesc": "分數高→低",
     "sortScoreAsc": "分數低→高",
     "sortPriceChangeDesc": "漲幅高→低",

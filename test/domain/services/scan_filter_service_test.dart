@@ -174,6 +174,47 @@ void main() {
       expect(analyses[2].symbol, equals('A'));
     });
 
+    test('rs60Desc 按 60D 報酬降冪、null 排最後、tiebreak scoreLong', () {
+      final analyses = [
+        createAnalysis(symbol: 'A', score: 80), // ret60 缺 → 排最後
+        createAnalysis(symbol: 'B', score: 30),
+        createAnalysis(symbol: 'C', score: 50),
+        createAnalysis(symbol: 'D', score: 90), // ret60 缺、分數高於 A
+      ];
+
+      service.applySort(
+        analyses,
+        ScanSort.rs60Desc,
+        ret60: {'B': 12.5, 'C': 40.0},
+      );
+
+      // C(40%) > B(12.5%) > 無 ret60 者按 scoreLong DESC: D(90) > A(80)
+      expect(analyses.map((a) => a.symbol).toList(), ['C', 'B', 'D', 'A']);
+    });
+
+    test('priceChangeDesc/Asc 按漲跌幅排序（修復原 fallback 到 score 的死選項）', () {
+      final analyses = [
+        createAnalysis(symbol: 'A', score: 80),
+        createAnalysis(symbol: 'B', score: 30),
+        createAnalysis(symbol: 'C', score: 50),
+      ];
+      final changes = {'A': -2.0, 'B': 5.0, 'C': 1.0};
+
+      service.applySort(
+        analyses,
+        ScanSort.priceChangeDesc,
+        priceChanges: changes,
+      );
+      expect(analyses.map((a) => a.symbol).toList(), ['B', 'C', 'A']);
+
+      service.applySort(
+        analyses,
+        ScanSort.priceChangeAsc,
+        priceChanges: changes,
+      );
+      expect(analyses.map((a) => a.symbol).toList(), ['A', 'C', 'B']);
+    });
+
     test('sorts by score ascending', () {
       final analyses = [
         createAnalysis(symbol: 'A', score: 30),

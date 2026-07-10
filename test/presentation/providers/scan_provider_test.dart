@@ -150,6 +150,15 @@ void main() {
     when(
       () => mockDb.getReasonsBatch(any(), any()),
     ).thenAnswer((_) async => reasons ?? {});
+    // rs60Desc / priceChange 排序 metrics（預設空 → 排序 fallback tiebreak）
+    when(
+      () => mockDb.getPriceHistoryBatch(
+        any(),
+        startDate: any(named: 'startDate'),
+        endDate: any(named: 'endDate'),
+      ),
+    ).thenAnswer((_) async => {});
+    when(() => mockDb.getLatestPricesBatch(any())).thenAnswer((_) async => {});
     when(() => mockDb.getLatestDataDate()).thenAnswer((_) async => testDate);
     when(
       () => mockDb.getLatestInstitutionalDate(),
@@ -186,7 +195,7 @@ void main() {
 
       expect(state.stocks, isEmpty);
       expect(state.filter, ScanFilter.all);
-      expect(state.sort, ScanSort.scoreDesc);
+      expect(state.sort, ScanSort.rs60Desc);
       expect(state.industryFilter, isNull);
       expect(state.industries, isEmpty);
       expect(state.dataDate, isNull);
@@ -374,7 +383,7 @@ void main() {
       final notifier = container.read(scanProvider.notifier);
       final stateBefore = container.read(scanProvider);
 
-      notifier.setSort(ScanSort.scoreDesc); // same as default
+      notifier.setSort(ScanSort.rs60Desc); // same as default
 
       final stateAfter = container.read(scanProvider);
       expect(identical(stateBefore, stateAfter), isTrue);

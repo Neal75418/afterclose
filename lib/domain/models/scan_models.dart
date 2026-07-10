@@ -304,6 +304,12 @@ enum ScanFilterGroup {
 
 /// Sort options for scan screen
 enum ScanSort {
+  /// 60 日相對強度（RS proxy）高→低 — 預設排序。
+  ///
+  /// score 排序實測與後續報酬 corr ≈ 0.17 近乎無鑑別力（見 Mode B
+  /// 2026-06-20 Wave 2b 同一決策）；60D 報酬 spread +6.3% 單調、
+  /// 是有實證 edge 的排序鍵。score 退回過濾器角色（訊號門檻）。
+  rs60Desc('scan.sortRs60Desc'),
   scoreDesc('scan.sortScoreDesc'),
   scoreAsc('scan.sortScoreAsc'),
   priceChangeDesc('scan.sortPriceChangeDesc'),
