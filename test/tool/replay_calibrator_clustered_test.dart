@@ -1,0 +1,293 @@
+// 資料層測試 — per-date 聚類統計 + universe baseline + 持久化
+// (docs/plans/2026-07-10-excess-decision-layer-clustered-tstat.md)
+//
+// 驗證：
+//   1. RuleHorizonStats per-date 累加（dailyMeans / distinctDates）
+//   2. excess replay 計算 universe baseline hit（P(excess ≥ threshold)）
+//   3. rule_daily_stats / calibration_run_meta 寫入 + 冪等（重跑覆寫）
+import 'package:drift/drift.dart' show Value, Variable;
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+
+import 'package:afterclose/core/constants/reason_type.dart';
+import 'package:afterclose/core/constants/rule_enums.dart';
+import 'package:afterclose/data/database/app_database.dart';
+import 'package:afterclose/domain/models/models.dart';
+import 'package:afterclose/domain/services/analysis_service.dart';
+import 'package:afterclose/domain/services/rule_engine.dart';
+import 'package:afterclose/domain/services/rules/stock_rules.dart';
+
+import '../../tool/replay_calibrator.dart';
+
+class _MockAnalysisService extends Mock implements AnalysisService {}
+
+class _MockRuleEngine extends Mock implements RuleEngine {}
+
+void main() {
+  late AppDatabase db;
+  late _MockAnalysisService mockAnalysis;
+  late _MockRuleEngine mockRuleEngine;
+
+  setUpAll(() {
+    registerFallbackValue(
+      AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      ),
+    );
+    registerFallbackValue(const StockData(symbol: '', prices: []));
+    registerFallbackValue(
+      const AnalysisResult(
+        trendState: TrendState.up,
+        reversalState: ReversalState.none,
+        supportLevel: 0,
+        resistanceLevel: 0,
+      ),
+    );
+    registerFallbackValue(<DailyPriceEntry>[]);
+  });
+
+  setUp(() async {
+    db = AppDatabase.forTesting();
+    mockAnalysis = _MockAnalysisService();
+    mockRuleEngine = _MockRuleEngine();
+
+    when(() => mockAnalysis.analyzeStock(any())).thenReturn(
+      const AnalysisResult(
+        trendState: TrendState.up,
+        reversalState: ReversalState.none,
+        supportLevel: 100,
+        resistanceLevel: 120,
+      ),
+    );
+    when(
+      () => mockAnalysis.buildContext(
+        any(),
+        priceHistory: any(named: 'priceHistory'),
+        marketData: any(named: 'marketData'),
+        evaluationTime: any(named: 'evaluationTime'),
+      ),
+    ).thenReturn(
+      AnalysisContext(
+        evaluationTime: DateTime(2025, 6, 1),
+        trendState: TrendState.up,
+      ),
+    );
+    when(() => mockRuleEngine.evaluateStock(any(), any())).thenReturn(const [
+      TriggeredReason(
+        type: ReasonType.techBreakout,
+        score: 25,
+        description: 'x',
+      ),
+    ]);
+  });
+
+  tearDown(() async {
+    await db.close();
+  });
+
+  Future<void> seedStock(
+    String symbol, {
+    required int priceDays,
+    double startClose = 100.0,
+    double growthPerDay = 1.0,
+  }) async {
+    await db.upsertStocks([
+      StockMasterCompanion.insert(
+        symbol: symbol,
+        name: 'Test $symbol',
+        market: 'TWSE',
+      ),
+    ]);
+    final first = DateTime(2024, 1, 1);
+    final prices = <DailyPriceCompanion>[];
+    for (var i = 0; i < priceDays; i++) {
+      final close = startClose + growthPerDay * i;
+      prices.add(
+        DailyPriceCompanion.insert(
+          symbol: symbol,
+          date: first.add(Duration(days: i)),
+          open: Value(close),
+          high: Value(close * 1.01),
+          low: Value(close * 0.99),
+          close: Value(close),
+          volume: const Value(1000000),
+        ),
+      );
+    }
+    await db.insertPrices(prices);
+  }
+
+  ReplayCalibrator excessCalibrator({int minUniverseSymbols = 2}) {
+    return ReplayCalibrator(
+      db: db,
+      config: ReplayConfig(
+        dbPath: ':memory:',
+        minHistoryDays: 20,
+        minUniverseSymbols: minUniverseSymbols,
+      ),
+      analysisService: mockAnalysis,
+      ruleEngine: mockRuleEngine,
+      logger: (_) {},
+    );
+  }
+
+  // ==========================================================================
+  // 1. RuleHorizonStats — per-date 累加（純單元）
+  // ==========================================================================
+
+  group('RuleHorizonStats — per-date 累加', () {
+    test('同日多筆取均值、跨日各自一格', () {
+      final s = RuleHorizonStats();
+      final d1 = DateTime(2025, 1, 1);
+      final d2 = DateTime(2025, 1, 2);
+      s.addSample(1.0, 0, date: d1);
+      s.addSample(3.0, 0, date: d1);
+      s.addSample(5.0, 0, date: d2);
+
+      expect(s.distinctDates, 2);
+      // 日均值序列依日期升序：d1 → (1+3)/2 = 2.0；d2 → 5.0
+      expect(s.dailyMeans, [2.0, 5.0]);
+      // pooled 統計不受影響
+      expect(s.triggerCount, 3);
+      expect(s.avgReturn, closeTo(3.0, 1e-9));
+    });
+
+    test('不帶 date（舊 caller）→ 不進 per-date 統計、pooled 照常', () {
+      final s = RuleHorizonStats();
+      s.addSample(2.0, 0);
+      expect(s.triggerCount, 1);
+      expect(s.distinctDates, 0);
+      expect(s.dailyMeans, isEmpty);
+    });
+  });
+
+  // ==========================================================================
+  // 2. Universe baseline hit
+  // ==========================================================================
+
+  group('ReplayCalibrator — universe baseline hit', () {
+    test('excess 模式：baseline ∈ (0,1) 且非 null；絕對模式 → null', () async {
+      await seedStock('SLOW', priceDays: 200, growthPerDay: 0.5);
+      await seedStock('MED', priceDays: 200);
+      await seedStock('FAST', priceDays: 200, growthPerDay: 1.5);
+
+      final excess = await excessCalibrator().run();
+      expect(excess.universeBaselineHit5, isNotNull);
+      expect(excess.universeBaselineHit60, isNotNull);
+      // 三檔固定強弱序：FAST 恆贏均值、SLOW 恆輸 → baseline 落在中段
+      expect(excess.universeBaselineHit5!, inExclusiveRange(0.2, 0.8));
+      expect(excess.universeBaselineHit60!, inExclusiveRange(0.2, 0.8));
+
+      final absolute = await ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+      expect(absolute.universeBaselineHit5, isNull);
+      expect(absolute.universeBaselineHit60, isNull);
+    });
+  });
+
+  // ==========================================================================
+  // 3. 持久化 — rule_daily_stats + calibration_run_meta
+  // ==========================================================================
+
+  group('ReplayCalibrator — clustered 持久化', () {
+    test('rule_daily_stats：每 rule × period × 觸發日一列、n 正確', () async {
+      await seedStock('SLOW', priceDays: 200, growthPerDay: 0.5);
+      await seedStock('MED', priceDays: 200);
+      await seedStock('FAST', priceDays: 200, growthPerDay: 1.5);
+
+      final result = await excessCalibrator().run();
+      final stats = result.ruleStats[ReasonType.techBreakout.code]!;
+
+      final rows = await db
+          .customSelect(
+            'SELECT period, date, n, mean_return FROM rule_daily_stats '
+            'WHERE rule_id = ? ORDER BY period, date',
+            variables: [Variable(ReasonType.techBreakout.code)],
+          )
+          .get();
+      final shortRows = rows.where((r) => r.data['period'] == '5D').toList();
+      final longRows = rows.where((r) => r.data['period'] == '60D').toList();
+
+      // 每個觸發日一列，與 in-memory distinctDates 一致
+      expect(shortRows.length, stats.short.distinctDates);
+      expect(longRows.length, stats.long.distinctDates);
+      // 三檔同日全觸發 → 每日 n = 3
+      expect(shortRows.map((r) => r.data['n'] as int).toSet(), {3});
+      // DB 的日均值序列 == in-memory dailyMeans（同為日期升序）
+      expect(
+        shortRows
+            .map((r) => (r.data['mean_return'] as num).toDouble())
+            .toList(),
+        stats.short.dailyMeans.map((m) => closeTo(m, 1e-6)).toList(),
+      );
+    });
+
+    test('calibration_run_meta：mode/threshold/baseline 落檔且重跑覆寫', () async {
+      await seedStock('SLOW', priceDays: 200, growthPerDay: 0.5);
+      await seedStock('MED', priceDays: 200);
+      await seedStock('FAST', priceDays: 200, growthPerDay: 1.5);
+
+      final result = await excessCalibrator().run();
+
+      Future<Map<String, String>> readMeta() async {
+        final rows = await db
+            .customSelect('SELECT key, value FROM calibration_run_meta')
+            .get();
+        return {
+          for (final r in rows)
+            r.data['key'] as String: r.data['value'] as String,
+        };
+      }
+
+      final meta = await readMeta();
+      expect(meta['return_mode'], 'excess');
+      expect(double.parse(meta['excess_success_threshold']!), 0.0);
+      expect(
+        double.parse(meta['universe_baseline_hit_5d']!),
+        closeTo(result.universeBaselineHit5!, 1e-9),
+      );
+      expect(
+        double.parse(meta['universe_baseline_hit_60d']!),
+        closeTo(result.universeBaselineHit60!, 1e-9),
+      );
+
+      // 重跑（絕對模式）→ meta 覆寫、mode 翻轉、baseline 鍵移除
+      await ReplayCalibrator(
+        db: db,
+        config: const ReplayConfig(
+          dbPath: ':memory:',
+          minHistoryDays: 20,
+          excessReturn: false,
+        ),
+        analysisService: mockAnalysis,
+        ruleEngine: mockRuleEngine,
+        logger: (_) {},
+      ).run();
+      final meta2 = await readMeta();
+      expect(meta2['return_mode'], 'absolute');
+      expect(meta2.containsKey('universe_baseline_hit_5d'), isFalse);
+
+      // rule_daily_stats 也是整批覆寫（無殘留跨 run 混料）
+      final count = await db
+          .customSelect('SELECT COUNT(*) AS c FROM rule_daily_stats')
+          .getSingle();
+      final stats = (await excessCalibrator().run())
+          .ruleStats[ReasonType.techBreakout.code]!;
+      // 絕對模式 run 的列數 = 其自身觸發日數（非累加三個 run）
+      expect(
+        count.data['c'] as int,
+        lessThanOrEqualTo(stats.short.distinctDates + stats.long.distinctDates),
+      );
+    });
+  });
+}

@@ -144,10 +144,12 @@ class WalkForwardValidator {
       final newShort = _calibrateFromReplay(
         trainStats.ruleStats,
         WfHorizon.short,
+        baselineHit: trainStats.universeBaselineHit5,
       );
       final newLong = _calibrateFromReplay(
         trainStats.ruleStats,
         WfHorizon.long,
+        baselineHit: trainStats.universeBaselineHit60,
       );
 
       // 2. TEST：只跑測試年 → 樣本外 rule 統計
@@ -213,12 +215,15 @@ class WalkForwardValidator {
 
   /// 從 replay 的 in-memory ruleStats 校準出 NEW 分數（rule → score）。
   ///
-  /// 超額模式下 hitRate=「擊敗當日大盤的比例」，baseline 由建構就 ≈ 0.5
-  /// （橫斷面 demean 使半數 firing 超額為正）→ 用 calibrateAll 預設 baseline 0.5。
+  /// 走 **clustered 決策層**（與 CLI recalibrate 同一條路，消除先前
+  /// 「walkforward 用 0.5、CLI 用絕對 baseline」的雙路 drift）：
+  /// [baselineHit] 取自 train replay 對全 universe 實測的
+  /// P(excess ≥ threshold)；null（極小樣本測試情境）fallback 0.5。
   Map<String, int> _calibrateFromReplay(
     Map<String, RuleStats> replayStats,
-    WfHorizon horizon,
-  ) {
+    WfHorizon horizon, {
+    double? baselineHit,
+  }) {
     final list = <recal.RuleStats>[];
     for (final entry in replayStats.entries) {
       final h = horizon == WfHorizon.short
@@ -230,10 +235,14 @@ class WalkForwardValidator {
           hitRate: h.hitRate,
           avgReturn: h.avgReturn,
           triggerCount: h.triggerCount,
+          dailyMeans: h.dailyMeans,
         ),
       );
     }
-    final calibrated = recal.Calibrator.calibrateAll(list);
+    final calibrated = recal.Calibrator.calibrateAllClustered(
+      list,
+      baselineHit: baselineHit ?? 0.5,
+    );
     return {for (final e in calibrated.entries) e.key: e.value.score};
   }
 

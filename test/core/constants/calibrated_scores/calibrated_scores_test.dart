@@ -290,6 +290,60 @@ void main() {
     });
 
     // ==================================================
+    // Drift guard — excess 模式（return_mode 感知）
+    //
+    // excess JSON 的 success_threshold_pct 是「超額百分點」語意（canonical
+    // = CalibrationThresholds.excessSuccessThreshold = 0.0），不得拿絕對
+    // 門檻（1.5/8.0）誤判拒載。
+    // ==================================================
+
+    test('11f. drift_guard_excess_mode_threshold_0_accepted', () {
+      const json =
+          '{"schema_version": 1, '
+          '"backtest": {"success_threshold_pct": 0.0, "return_mode": "excess"}, '
+          '"rules": {"REVERSAL_W2S": {"score": 25}}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 1);
+      expect(warnings, isEmpty);
+      expect(table.lookup('REVERSAL_W2S'), 25);
+    });
+
+    test('11g. drift_guard_excess_mode_drifted_threshold_rejected', () {
+      // excess canonical = 0.0，JSON 卻聲明 1.5 → 拒載（門檻語意漂移）
+      const json =
+          '{"schema_version": 1, '
+          '"backtest": {"success_threshold_pct": 1.5, "return_mode": "excess"}, '
+          '"rules": {"REVERSAL_W2S": {"score": 25}}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 0);
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('success_threshold_pct drift'));
+    });
+
+    test('11h. drift_guard_absolute_mode_unchanged（return_mode 標註不影響絕對路徑）', () {
+      // return_mode: absolute + 正確絕對門檻 → 照常載入
+      const json =
+          '{"schema_version": 1, '
+          '"backtest": {"success_threshold_pct": 1.5, "return_mode": "absolute"}, '
+          '"rules": {"REVERSAL_W2S": {"score": 25}}}';
+      final (:table, :warnings) = CalibratedScoresTable.parseJson(
+        json,
+        horizon: Horizon.short,
+      );
+
+      expect(table.ruleCount, 1);
+      expect(warnings, isEmpty);
+    });
+
+    // ==================================================
     // Per-rule content errors (7 cases, scenarios 5a-6b + 7)
     // ==================================================
 

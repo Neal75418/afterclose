@@ -187,9 +187,14 @@ class CalibratedScoresTable {
     if (backtest is Map) {
       final declared = backtest['success_threshold_pct'];
       if (declared is num) {
-        final canonical =
-            CalibrationThresholds.successThresholds[horizon.tradingDays] ??
-            CalibrationThresholds.defaultSuccessThreshold;
+        // Mode-aware canonical：excess JSON 的 success_threshold_pct 是
+        // 「超額百分點」語意（canonical = excessSuccessThreshold），拿絕對
+        // 門檻（1.5/8.0）比對會把合法 excess JSON 全數誤殺。
+        final isExcess = backtest['return_mode'] == 'excess';
+        final canonical = isExcess
+            ? CalibrationThresholds.excessSuccessThreshold
+            : (CalibrationThresholds.successThresholds[horizon.tradingDays] ??
+                  CalibrationThresholds.defaultSuccessThreshold);
         if ((declared.toDouble() - canonical).abs() > 0.01) {
           warnings.add(
             'success_threshold_pct drift: JSON metadata $declared vs '

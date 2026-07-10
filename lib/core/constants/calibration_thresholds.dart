@@ -112,4 +112,33 @@ abstract final class CalibrationThresholds {
   ///
   /// 30 是統計顯著性實務常用下限。
   static const int sampleSizeCutThreshold = 30;
+
+  // ==========================================================================
+  // 超額模式（clustered 決策層）專用 — 見
+  // docs/plans/2026-07-10-excess-decision-layer-clustered-tstat.md
+  // ==========================================================================
+
+  /// 超額模式的 canonical success 門檻（超額百分點）。
+  ///
+  /// 0 = 「贏過當日大盤平均即命中」。replay（`ReplayConfig.excessSuccessThreshold`
+  /// 預設）與 app loader 的 drift guard（excess JSON 的
+  /// `success_threshold_pct` 比對基準）共用此值 —— 三個 writer/reader
+  /// 不得各自寫死。
+  static const double excessSuccessThreshold = 0.0;
+
+  /// 超額模式 hit-rate cut：`hitRate ≥ 實證 universe baseline + 此 lift`。
+  ///
+  /// 取代絕對 0.55 門檻（上方 [hitRateCutThreshold] docstring 標註的
+  /// known flaw）—— 絕對門檻的嚴格度隨 baseline 漂移（絕對模式 baseline
+  /// 0.35–0.40 時是 +15–20pp、超額模式 ≈0.47 時只剩 +8pp），
+  /// baseline-relative lift 才是固定 effect size。baseline 由 replay 對
+  /// 全 universe stock-day 實測（存 `calibration_run_meta`），不硬編碼。
+  static const double hitRateLiftThreshold = 0.05;
+
+  /// Clustered t-stat 的觸發「日」數下限。
+  ///
+  /// pooled n（十萬級 firings）因同日橫斷面相關 + 持有窗重疊是偽重複，
+  /// 有效樣本量級是「觸發日」數 —— clustered t 對日均值序列計算，樣本
+  /// 下限也以日數計。
+  static const int minDistinctDates = 30;
 }

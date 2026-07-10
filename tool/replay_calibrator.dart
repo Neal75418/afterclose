@@ -45,7 +45,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show Value, Variable;
 
 import 'package:afterclose/core/constants/calibration_thresholds.dart';
 import 'package:afterclose/core/constants/rule_params.dart';
@@ -68,7 +68,7 @@ class ReplayConfig {
     this.symbolsWhitelist,
     this.excessReturn = true,
     this.minUniverseSymbols = 100,
-    this.excessSuccessThreshold = 0.0,
+    this.excessSuccessThreshold = CalibrationThresholds.excessSuccessThreshold,
     this.dateFilter,
     this.excludeFilter,
   });
@@ -93,8 +93,9 @@ class ReplayConfig {
   final int minUniverseSymbols;
 
   /// 超額報酬模式下的命中門檻（百分點）。預設 0 = 「贏過當日大盤平均」。
-  /// 刻意不沿用 [CalibrationThresholds]（那是絕對報酬語意、且與 runtime
-  /// rule_accuracy 共用，改它會動到 app 顯示）。
+  /// canonical 來源 [CalibrationThresholds.excessSuccessThreshold]（與 app
+  /// loader drift guard 共用）；絕對門檻表（successThresholds）仍是另一套
+  /// 語意、不混用。
   final double excessSuccessThreshold;
 
   /// 可選日期過濾（含頭含尾）。供 walk-forward 限定校準窗使用。
@@ -143,16 +144,42 @@ class RuleHorizonStats {
   double sumReturn = 0;
   final List<double> returns = [];
 
-  void addSample(double returnPct, double threshold) {
+  /// Per-date 累加（clustered 決策層用）：date → (n, sum)。
+  /// caller 應傳入已正規化（去時間分量）的日期。
+  final Map<DateTime, ({int n, double sum})> _daily = {};
+
+  void addSample(double returnPct, double threshold, {DateTime? date}) {
     triggerCount++;
     sumReturn += returnPct;
     returns.add(returnPct);
     if (returnPct >= threshold) successCount++;
+    if (date != null) {
+      final prev = _daily[date];
+      _daily[date] = (n: (prev?.n ?? 0) + 1, sum: (prev?.sum ?? 0) + returnPct);
+    }
   }
 
   double get avgReturn => triggerCount == 0 ? 0.0 : sumReturn / triggerCount;
 
   double get hitRate => triggerCount == 0 ? 0.0 : successCount / triggerCount;
+
+  /// 觸發「日」數（clustered 有效樣本量級）。
+  int get distinctDates => _daily.length;
+
+  /// 每觸發日的平均報酬序列（依日期升序）— clustered t 的輸入。
+  List<double> get dailyMeans {
+    final dates = _daily.keys.toList()..sort();
+    return [for (final d in dates) _daily[d]!.sum / _daily[d]!.n];
+  }
+
+  /// (日期, n, 日均值) 列表（依日期升序）— 持久化 rule_daily_stats 用。
+  List<({DateTime date, int n, double mean})> get dailyRows {
+    final dates = _daily.keys.toList()..sort();
+    return [
+      for (final d in dates)
+        (date: d, n: _daily[d]!.n, mean: _daily[d]!.sum / _daily[d]!.n),
+    ];
+  }
 }
 
 /// 單一 rule 的所有 horizon 統計
@@ -172,6 +199,8 @@ class ReplayResult {
     required this.daysProcessed,
     required this.ruleStats,
     required this.duration,
+    this.universeBaselineHit5,
+    this.universeBaselineHit60,
   });
 
   final int rulesObserved;
@@ -180,6 +209,12 @@ class ReplayResult {
   final int daysProcessed;
   final Map<String, RuleStats> ruleStats;
   final Duration duration;
+
+  /// 全 universe stock-day 的 P(excess ≥ excessSuccessThreshold) — clustered
+  /// 決策層 hit-rate cut 的實證 H0 baseline。絕對模式為 null。
+  /// 與 firing 套用相同的 dateFilter / excludeFilter / universe 覆蓋 guard。
+  final double? universeBaselineHit5;
+  final double? universeBaselineHit60;
 }
 
 // ============================================================================
@@ -247,6 +282,7 @@ class ReplayCalibrator {
     // 2a. 橫斷面 universe 均值 forward return（每個交易日一個值）— 供超額
     // 報酬扣除多空 beta 用。只在 excessReturn 模式下計算。
     _UniverseMeans? universeMeans;
+    ({double? hit5, double? hit60}) baseline = (hit5: null, hit60: null);
     if (config.excessReturn) {
       _log('');
       _log('▶️  Computing cross-sectional universe mean returns...');
@@ -254,6 +290,12 @@ class ReplayCalibrator {
       _log(
         '✅ Universe means: ${universeMeans.mean5.length} days (5D), '
         '${universeMeans.mean60.length} days (60D)',
+      );
+      baseline = _computeUniverseBaselineHit(data, universeMeans);
+      _log(
+        '✅ Universe baseline hit: '
+        '5D=${baseline.hit5?.toStringAsFixed(4)}, '
+        '60D=${baseline.hit60?.toStringAsFixed(4)}',
       );
     }
 
@@ -296,11 +338,17 @@ class ReplayCalibrator {
       '✅ Replay complete: $totalFirings firings across ${ruleStats.length} rules',
     );
 
-    // 3. Write aggregated stats to rule_accuracy
+    // 3. Write aggregated stats to rule_accuracy + clustered 持久化
     _log('');
     _log('▶️  Writing rule_accuracy table...');
-    await _writeRuleAccuracy(ruleStats);
-    _log('✅ rule_accuracy 寫入完成');
+    await _ensureClusteredTables();
+    // 單一交易涵蓋兩組表：crash 不會留下「新 rule_accuracy + 舊 daily/meta」
+    // 的混合快照。
+    await db.transaction(() async {
+      await _writeRuleAccuracy(ruleStats);
+      await _writeClusteredStats(ruleStats, baseline);
+    });
+    _log('✅ rule_accuracy / rule_daily_stats / calibration_run_meta 寫入完成');
 
     final duration = DateTime.now().difference(overallStart);
     final result = ReplayResult(
@@ -310,6 +358,8 @@ class ReplayCalibrator {
       daysProcessed: daysProcessed,
       ruleStats: ruleStats,
       duration: duration,
+      universeBaselineHit5: baseline.hit5,
+      universeBaselineHit60: baseline.hit60,
     );
     _logSummary(result);
     return result;
@@ -496,11 +546,12 @@ class ReplayCalibrator {
         ));
       }
 
+      final entryDateKey = _dateKey(currentPrice.date);
       for (final reason in reasons) {
         final ruleId = reason.type.code;
         final stats = ruleStats.putIfAbsent(ruleId, RuleStats.new);
-        stats.short.addSample(shortReturn, shortThreshold);
-        stats.long.addSample(longReturn, longThreshold);
+        stats.short.addSample(shortReturn, shortThreshold, date: entryDateKey);
+        stats.long.addSample(longReturn, longThreshold, date: entryDateKey);
         firingsRecorded++;
       }
     }
@@ -688,6 +739,73 @@ class ReplayCalibrator {
     );
   }
 
+  /// 全 universe stock-day 的 P(excess ≥ excessSuccessThreshold)。
+  ///
+  /// Clustered 決策層 hit-rate cut 的實證 H0：「隨機股票日贏過當日大盤
+  /// 平均 threshold 以上」的機率。與 firing 蒐集套用**同一組過濾**
+  /// （dateFilter / excludeFilter / universe 覆蓋 guard），確保 H0 與
+  /// 樣本同分布 —— walk-forward train 窗排除測試年時，baseline 一併排除。
+  ///
+  /// 已知近似：entry 資格窗口與 firing 不完全一致（firing 另要求
+  /// minHistoryDays 前置歷史 + 完整 60D forward window；本函式 per-horizon
+  /// 各自判斷 forward）。demeaned 橫斷面下 P(excess ≥ 0) 沿序列平穩，
+  /// 視為 broad-market 近似、不構成方向性偏差。
+  ({double? hit5, double? hit60}) _computeUniverseBaselineHit(
+    _BackfilledData data,
+    _UniverseMeans means,
+  ) {
+    const shortDays = 5;
+    const longDays = 60;
+    var hits5 = 0;
+    var n5 = 0;
+    var hits60 = 0;
+    var n60 = 0;
+
+    for (final prices in data.pricesBySymbol.values) {
+      for (var i = 0; i < prices.length; i++) {
+        final entry = prices[i].close;
+        if (entry == null || entry <= 0) continue;
+        final date = prices[i].date;
+
+        // 與 _replaySymbol 相同的日期窗過濾
+        final df = config.dateFilter;
+        if (df != null) {
+          if (df.start != null && date.isBefore(df.start!)) continue;
+          if (df.end != null && date.isAfter(df.end!)) continue;
+        }
+        final ex = config.excludeFilter;
+        if (ex != null && !date.isBefore(ex.start) && !date.isAfter(ex.end)) {
+          continue;
+        }
+
+        final key = _dateKey(date);
+        if (i + shortDays < prices.length &&
+            (means.count5[key] ?? 0) >= config.minUniverseSymbols) {
+          final exit = prices[i + shortDays].close;
+          if (exit != null && exit > 0) {
+            final excess = (exit / entry - 1) * 100 - means.mean5[key]!;
+            n5++;
+            if (excess >= config.excessSuccessThreshold) hits5++;
+          }
+        }
+        if (i + longDays < prices.length &&
+            (means.count60[key] ?? 0) >= config.minUniverseSymbols) {
+          final exit = prices[i + longDays].close;
+          if (exit != null && exit > 0) {
+            final excess = (exit / entry - 1) * 100 - means.mean60[key]!;
+            n60++;
+            if (excess >= config.excessSuccessThreshold) hits60++;
+          }
+        }
+      }
+    }
+
+    return (
+      hit5: n5 == 0 ? null : hits5 / n5,
+      hit60: n60 == 0 ? null : hits60 / n60,
+    );
+  }
+
   /// 把 DateTime 正規化成 (年,月,日) 當 map key，避免時間分量造成同日不同 key。
   static DateTime _dateKey(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -723,8 +841,9 @@ class ReplayCalibrator {
   /// 每條 rule 寫入兩行：period = '5D' / '60D'，對齊 rule_accuracy_service
   /// 的 dual-horizon 行為。`tool/recalibrate.dart` 也只讀這兩個 period。
   /// 'ALL' period 已於 2026-04 移除（混 threshold 算 hit_rate 數學上沒意義）。
+  /// caller 須包在 transaction 內（與 [_writeClusteredStats] 同一交易）。
   Future<void> _writeRuleAccuracy(Map<String, RuleStats> ruleStats) async {
-    await db.transaction(() async {
+    {
       // 先清空既有的 rule_accuracy（replay 每次跑完全覆寫，不增量）
       await db.delete(db.ruleAccuracy).go();
 
@@ -758,7 +877,84 @@ class ReplayCalibrator {
               ),
             );
       }
-    });
+    }
+  }
+
+  /// 持久化 clustered 決策層所需的統計（見 design plan 4a）：
+  ///
+  /// - `rule_daily_stats`：每 rule × period × 觸發日的 (n, 日均值)
+  /// - `calibration_run_meta`：本次 replay 的模式 / 門檻 / universe baseline
+  ///
+  /// 兩表皆非 app Drift schema（raw SQL、只存在 calibration DB），每次
+  /// replay 全刪重寫 —— 與 rule_accuracy 同語意，recalibrate 讀到的永遠
+  /// 是同一次 run 的一致快照。
+  /// 建立 clustered 持久化表（idempotent）。DDL 須在交易外執行。
+  Future<void> _ensureClusteredTables() async {
+    await db.customStatement('''
+      CREATE TABLE IF NOT EXISTS rule_daily_stats (
+        rule_id TEXT NOT NULL,
+        period TEXT NOT NULL,
+        date TEXT NOT NULL,
+        n INTEGER NOT NULL,
+        mean_return REAL NOT NULL,
+        PRIMARY KEY (rule_id, period, date))''');
+    await db.customStatement('''
+      CREATE TABLE IF NOT EXISTS calibration_run_meta (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL)''');
+  }
+
+  /// caller 須先 [_ensureClusteredTables] 並包在 transaction 內。
+  Future<void> _writeClusteredStats(
+    Map<String, RuleStats> ruleStats,
+    ({double? hit5, double? hit60}) baseline,
+  ) async {
+    String dateStr(DateTime d) =>
+        '${d.year.toString().padLeft(4, '0')}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+
+    {
+      await db.customStatement('DELETE FROM rule_daily_stats');
+      await db.customStatement('DELETE FROM calibration_run_meta');
+
+      for (final entry in ruleStats.entries) {
+        for (final (period, h) in [
+          ('5D', entry.value.short),
+          ('60D', entry.value.long),
+        ]) {
+          for (final row in h.dailyRows) {
+            await db.customInsert(
+              'INSERT INTO rule_daily_stats '
+              '(rule_id, period, date, n, mean_return) VALUES (?, ?, ?, ?, ?)',
+              variables: [
+                Variable(entry.key),
+                Variable(period),
+                Variable(dateStr(row.date)),
+                Variable(row.n),
+                Variable(row.mean),
+              ],
+            );
+          }
+        }
+      }
+
+      final meta = <String, String>{
+        'return_mode': config.excessReturn ? 'excess' : 'absolute',
+        'excess_success_threshold': config.excessSuccessThreshold.toString(),
+        'generated_at': DateTime.now().toUtc().toIso8601String(),
+        if (baseline.hit5 != null)
+          'universe_baseline_hit_5d': baseline.hit5.toString(),
+        if (baseline.hit60 != null)
+          'universe_baseline_hit_60d': baseline.hit60.toString(),
+      };
+      for (final e in meta.entries) {
+        await db.customInsert(
+          'INSERT INTO calibration_run_meta (key, value) VALUES (?, ?)',
+          variables: [Variable(e.key), Variable(e.value)],
+        );
+      }
+    }
   }
 
   void _logDryRunPlan(_BackfilledData data) {

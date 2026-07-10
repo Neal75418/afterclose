@@ -51,6 +51,7 @@ class RuleStats {
     required this.hitRate,
     required this.avgReturn,
     required this.triggerCount,
+    this.dailyMeans = const [],
   });
 
   final String ruleId;
@@ -63,6 +64,11 @@ class RuleStats {
 
   /// 總觸發次數
   final int triggerCount;
+
+  /// 每個「觸發日」的橫斷面平均超額報酬（%）序列 — clustered 決策層的
+  /// 統計基礎（[Calibrator.clusteredTStat] / [Calibrator.rawWeightClustered]）。
+  /// 舊絕對路徑不填（空 list）。
+  final List<double> dailyMeans;
 }
 
 /// 單一規則的 calibration 結果
@@ -238,6 +244,122 @@ abstract final class Calibrator {
     return CalibratedRule.activeRule(stats: stats, tStat: tStat, score: score);
   }
 
+  // ==========================================================================
+  // 超額模式 clustered 決策層 — 見
+  // docs/plans/2026-07-10-excess-decision-layer-clustered-tstat.md
+  // ==========================================================================
+
+  /// Date-clustered one-sample t（Fama-MacBeth 式）。
+  ///
+  /// 對「日均值序列」計 t = mean / (sd / sqrt(D))，sd 用樣本標準差（÷(D−1)）。
+  /// 消除 pooled 統計的偽重複（同日橫斷面相關 + 持有窗重疊讓名目 n 遠大於
+  /// 有效樣本，|t| 動輒 >200 毫無意義）。
+  ///
+  /// Degenerate（D < 2 或 sd = 0）回 0.0（無法估變異 → 視為不顯著）。
+  static double clusteredTStat(List<double> dailyMeans) {
+    final d = dailyMeans.length;
+    if (d < 2) return 0.0;
+    final mean = dailyMeans.reduce((a, b) => a + b) / d;
+    var sq = 0.0;
+    for (final x in dailyMeans) {
+      sq += (x - mean) * (x - mean);
+    }
+    final sd = sqrt(sq / (d - 1));
+    if (sd <= 0) return 0.0;
+    return mean / (sd / sqrt(d));
+  }
+
+  /// Clustered raw weight：`hitRate × mean(dailyMeans) × sqrt(distinctDates)`。
+  ///
+  /// linear_map_v1 形狀不變，但輸入換聚類量 —— 頻繁觸發規則不再靠偽重複的
+  /// `sqrt(pooled n)` 撐權重，`sqrt(日數)` 才反映有效樣本規模。
+  static double rawWeightClustered(RuleStats stats) {
+    final d = stats.dailyMeans.length;
+    if (d == 0) return 0.0;
+    final mean = stats.dailyMeans.reduce((a, b) => a + b) / d;
+    return stats.hitRate * mean * sqrt(d);
+  }
+
+  /// 超額模式 cut predicate（與 [calibrateClustered] 共用，防 drift）。
+  ///
+  /// Cut order (first match wins)：
+  /// 1. `sample_too_small` — triggerCount < 30（沿用）
+  /// 2. `dates_too_few` — 觸發日數 < [CalibrationThresholds.minDistinctDates]
+  /// 3. `t_stat_below_threshold` — clustered t < 1.5
+  /// 4. `hit_rate_below_threshold` — hitRate < baseline + lift
+  static String? _clusteredCutReason(
+    RuleStats stats, {
+    required double baselineHit,
+  }) {
+    if (stats.triggerCount < sampleSizeCutThreshold) {
+      return 'sample_too_small';
+    }
+    if (stats.dailyMeans.length < CalibrationThresholds.minDistinctDates) {
+      return 'dates_too_few';
+    }
+    if (clusteredTStat(stats.dailyMeans) < tStatCutThreshold) {
+      return 't_stat_below_threshold';
+    }
+    if (stats.hitRate <
+        baselineHit + CalibrationThresholds.hitRateLiftThreshold) {
+      return 'hit_rate_below_threshold';
+    }
+    return null;
+  }
+
+  /// Calibrate 單一規則（clustered 路徑）。tStat 欄位記 clustered t。
+  static CalibratedRule calibrateClustered(
+    RuleStats stats, {
+    required double minRaw,
+    required double maxRaw,
+    required double baselineHit,
+  }) {
+    final tStat = clusteredTStat(stats.dailyMeans);
+    final cutReason = _clusteredCutReason(stats, baselineHit: baselineHit);
+    if (cutReason != null) {
+      return CalibratedRule.cutRule(
+        stats: stats,
+        tStat: tStat,
+        reason: cutReason,
+      );
+    }
+    final raw = rawWeightClustered(stats);
+    final score = linearMapScore(raw, minRaw, maxRaw);
+    return CalibratedRule.activeRule(stats: stats, tStat: tStat, score: score);
+  }
+
+  /// Calibrate 整組規則（clustered 路徑）。與 [calibrateAll] 同樣只用
+  /// **倖存者**算 normalization range。[baselineHit] 是同一次 replay 對全
+  /// universe stock-day 實測的 P(excess ≥ threshold)。
+  static Map<String, CalibratedRule> calibrateAllClustered(
+    List<RuleStats> allStats, {
+    required double baselineHit,
+  }) {
+    if (allStats.isEmpty) return {};
+
+    final survivors = allStats
+        .where((s) => _clusteredCutReason(s, baselineHit: baselineHit) == null)
+        .toList();
+
+    var minRaw = 0.0;
+    var maxRaw = 1.0;
+    if (survivors.isNotEmpty) {
+      final rawWeights = survivors.map(rawWeightClustered).toList();
+      minRaw = rawWeights.reduce(min);
+      maxRaw = rawWeights.reduce(max);
+    }
+
+    return {
+      for (final stats in allStats)
+        stats.ruleId: calibrateClustered(
+          stats,
+          minRaw: minRaw,
+          maxRaw: maxRaw,
+          baselineHit: baselineHit,
+        ),
+    };
+  }
+
   /// 規則是否通過所有 cut thresholds（倖存者判定 predicate）
   ///
   /// 2026-04 Stage 2 code review followup：抽出共享 predicate 給 Pass 1 使用，
@@ -295,6 +417,69 @@ abstract final class Calibrator {
     }
     return result;
   }
+}
+
+// ============================================================================
+// Clustered 分流 loaders（public 供測試）
+// ============================================================================
+
+/// 一次 replay run 的持久化 metadata（`calibration_run_meta` 表）。
+class RunMeta {
+  const RunMeta({
+    required this.returnMode,
+    required this.excessThreshold,
+    this.baselineHit5,
+    this.baselineHit60,
+  });
+
+  final String returnMode;
+  final double excessThreshold;
+  final double? baselineHit5;
+  final double? baselineHit60;
+
+  bool get isExcess => returnMode == 'excess';
+}
+
+/// 讀 `calibration_run_meta`。表不存在（舊 DB、replay 未重跑）→ null。
+RunMeta? readRunMeta(Database db) {
+  final ResultSet rows;
+  try {
+    rows = db.select('SELECT key, value FROM calibration_run_meta');
+  } on SqliteException {
+    return null;
+  }
+  final map = {for (final r in rows) r['key'] as String: r['value'] as String};
+  final mode = map['return_mode'];
+  if (mode == null) return null;
+  return RunMeta(
+    returnMode: mode,
+    excessThreshold:
+        double.tryParse(map['excess_success_threshold'] ?? '') ?? 0.0,
+    baselineHit5: double.tryParse(map['universe_baseline_hit_5d'] ?? ''),
+    baselineHit60: double.tryParse(map['universe_baseline_hit_60d'] ?? ''),
+  );
+}
+
+/// 讀 `rule_daily_stats` 還原每 rule 的日均值序列（依日期升序）。
+/// 表不存在 → 空 map（caller 應 fallback 舊路徑）。
+Map<String, List<double>> loadDailyMeans(Database db, String period) {
+  final ResultSet rows;
+  try {
+    rows = db.select(
+      'SELECT rule_id, mean_return FROM rule_daily_stats '
+      'WHERE period = ? ORDER BY rule_id, date',
+      [period],
+    );
+  } on SqliteException {
+    return {};
+  }
+  final result = <String, List<double>>{};
+  for (final r in rows) {
+    result
+        .putIfAbsent(r['rule_id'] as String, () => [])
+        .add((r['mean_return'] as num).toDouble());
+  }
+  return result;
 }
 
 // ============================================================================
@@ -434,11 +619,19 @@ HorizonOutput? _processHorizon(
 }) {
   final period = horizon == _horizonShort ? _periodShort : _periodLong;
   final threshold = horizon == _horizonShort ? _thresholdShort : _thresholdLong;
-  // 2026-06-18：拿掉「t-stat null hypothesis = 0.5」的 systematic bug。
-  // 用 (period, threshold) 查 canonical market baseline 機率，沒列出
-  // 的 period 走 0.5 fallback 保 backward compat。
+
+  // Clustered 分流：replay 落檔的 run meta 決定決策層走哪條路（不再盲猜
+  // rule_accuracy 是哪個模式產的）。excess → clustered t + baseline-relative
+  // hit cut；meta 缺失或 absolute → 舊 proportion z-test 路徑。
+  final runMeta = readRunMeta(db);
+  final isExcess = runMeta?.isExcess ?? false;
+  final baselineHit = horizon == _horizonShort
+      ? runMeta?.baselineHit5
+      : runMeta?.baselineHit60;
+
+  // 舊路徑的 H0 baseline（2026-06-18 修正：查實證表、非 0.5）。
   final tradingDays = horizon == _horizonShort ? 5 : 60;
-  final baseline =
+  final legacyBaseline =
       CalibrationThresholds.successProbabilityBaselines[tradingDays] ??
       CalibrationThresholds.defaultBaselineProbability;
 
@@ -454,6 +647,10 @@ HorizonOutput? _processHorizon(
     return null;
   }
 
+  final dailyMeansByRule = isExcess
+      ? loadDailyMeans(db, period)
+      : const <String, List<double>>{};
+
   final allStats = <RuleStats>[];
   for (final row in rows) {
     final triggerCount = row['trigger_count'] as int;
@@ -466,16 +663,35 @@ HorizonOutput? _processHorizon(
         hitRate: hitRate,
         avgReturn: avgReturn,
         triggerCount: triggerCount,
+        dailyMeans: dailyMeansByRule[row['rule_id'] as String] ?? const [],
       ),
     );
   }
 
-  final calibrated = Calibrator.calibrateAll(allStats, baseline: baseline);
+  final Map<String, CalibratedRule> calibrated;
+  if (isExcess && baselineHit != null) {
+    print(
+      '  🧮 clustered 決策層（excess）：baseline hit '
+      '${baselineHit.toStringAsFixed(4)} + ${CalibrationThresholds.hitRateLiftThreshold} lift',
+    );
+    calibrated = Calibrator.calibrateAllClustered(
+      allStats,
+      baselineHit: baselineHit,
+    );
+  } else {
+    if (isExcess) {
+      print('  ⚠️  excess run 但 meta 缺 baseline — fallback 舊決策層');
+    } else {
+      print('  🧮 舊決策層（absolute / meta 缺失）：baseline $legacyBaseline');
+    }
+    calibrated = Calibrator.calibrateAll(allStats, baseline: legacyBaseline);
+  }
 
   final activeCount = calibrated.values.where((r) => r.active).length;
   final cutCount = calibrated.values.where((r) => !r.active).length;
   print('  ${calibrated.length} 條規則：$activeCount active，$cutCount cut');
 
+  final usedClustered = isExcess && baselineHit != null;
   final payload = <String, dynamic>{
     'schema_version': 1,
     'generated_at': DateTime.now().toUtc().toIso8601String(),
@@ -483,8 +699,15 @@ HorizonOutput? _processHorizon(
     'backtest': {
       'window_days': _windowDays,
       'train_ratio': _trainRatio,
-      'success_threshold_pct': threshold,
+      // 誠實 metadata：超額模式記實際超額門檻（0.0），不再誤標絕對 8.0。
+      'success_threshold_pct': usedClustered
+          ? runMeta!.excessThreshold
+          : threshold,
       'formula': _formulaVersion,
+      'return_mode': usedClustered ? 'excess' : 'absolute',
+      if (usedClustered) 'stats_method': 'date_clustered_t_v1',
+      if (usedClustered)
+        'baseline_hit_rate': double.parse(baselineHit.toStringAsFixed(4)),
     },
     'rules': {
       for (final entry in calibrated.entries) entry.key: entry.value.toJson(),
