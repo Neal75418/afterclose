@@ -4,7 +4,8 @@
 > 損益大半由出場決定。本設計把「推薦」升級為可追蹤的「論點」：
 > 釘選 → 每日檢查失效條件 → 失效進警示頁。
 >
-> **狀態**：Design 定案（2026-07-11，與 Neal 三輪問答收斂）。
+> **狀態**：Design 定案（2026-07-11，三輪問答收斂 + 自審 6 項 +
+> 對抗性審查 16 項全數摺入）。
 > 實作順序：**先 replay gate 驗證出場條件有 edge，才寫 app 端**。
 
 ---
@@ -27,7 +28,18 @@
    （以該股價格列數計，非日曆差），且**從未**收高於參考價
    （語意 = 論點從未實現；rolling「連續 N 日未創 peak」版留 v2 由 gate 評估）
 
-先觸發者定 `invalidatedReason`；參數起始值由 replay gate 結果最終定案。
+**邊界規則（2026-07-11 對抗性審查補完）**：
+- **同日 tie-break**：多條件同日為真時優先序 HARD_STOP > TREND_BREAK >
+  TIME_STOP（`ExitParams` 常數，單元測試覆蓋同日 tie case）。
+- **MA60 資料不足**（釘選日前不足 60 根，新上市）：trendBreak **不判定**
+  （視為未觸發），只跑 hardStop/timeStop——比照 `MarketStage.insufficient`
+  語意。
+- **停牌不計入 timeStop**（刻意決策）：以價格列數計數，停牌期間倒數凍結。
+  已知限制：長停股會滯留 ACTIVE，v1 以「已下市/停牌 UI 提示」補償（§6）。
+- **基準分離**：觸發判斷永遠用 referencePrice（T0 收盤）；gate 的報酬計算
+  永遠用模擬進場價（T+1 收盤）——兩者不可互換。
+
+先觸發者（跨日）定 `invalidatedReason`；參數起始值由 replay gate 結果最終定案。
 
 **紀律語意（寫死）**：
 - 一旦 INVALIDATED **不自動復活**——價格回升不翻回 ACTIVE。重新看多請
@@ -43,6 +55,16 @@
 - **指標**：平均超額報酬差、勝率、最大回檔、平均持有天數。
 - **報告切面**：**按 mode 分組**（Mode A 剛突破離 MA60 近，trendBreak 可能
   過敏，不可一刀切）+ **逐年拆**（穩定性，防全期挑參數過擬合——tilt 教訓）。
+- **統計嚴謹度**：每個 (mode × 年) cell 樣本 < 30 者標灰不計入結論
+  （沿用 calibration `sampleSizeCutThreshold` 慣例）；上線需**逐年方向
+  一致**（多數年份同向），不接受單年暴衝拉平均——tilt 過擬合教訓。
+- **Survivorship 揭露**：60 日窗內無 exit price（下市/長停）的樣本比照
+  `RuleAccuracyService._BiasCounters` 模式計數並印進報告，不靜默跳過。
+- **漲跌停 flag**：釘選日或觸發日為漲/跌停的樣本在報告中標記
+  （用既有 `price_limit.dart` 判斷），v1 只觀察不特殊處理。
+- **方法論限制（報告必附）**：出場後以 0% 報酬計＝不含資金再部署效益，
+  gate 系統性低估出場紀律的實務價值——「沒 edge」應解讀為「單筆訊號品質
+  無差異」，不等於「紀律沒用」。
 - **上線標準**：某條件出場版平均超額 ≥ 持有版，或最大回檔顯著改善且報酬
   不明顯犧牲。沒 edge 的條件不進 app；參數被打臉就修或砍。跑一次認帳。
 
@@ -62,11 +84,20 @@
 | status | text | ACTIVE / INVALIDATED / ARCHIVED |
 | invalidatedDate | datetime? | |
 | invalidatedReason | text? | HARD_STOP / TREND_BREAK / TIME_STOP |
-| createdAt / updatedAt | datetime | |
+| lastCheckedDate | datetime? | monitor 每次跑必更新（staleness 顯示用） |
+| createdAt / updatedAt | datetime | updatedAt **僅於 status 實際變更時**更新 |
 
 **不存 peak/增量狀態**：monitor 每次跑對每筆 ACTIVE 從 pinnedDate
 **全量重算**三條件（釘選數 × ≤250 收盤，量極小）——冪等，App 跳幾天
 不更新也不會錯。
+
+**INVALIDATED 凍結**：monitor 只掃 `status = ACTIVE`——已失效者被排除於
+重算之外，`invalidatedDate/reason` 一經寫入即凍結（回填修史也不會動它），
+「不復活」由此在程式層面獲得保障。
+
+**一 symbol 一 ACTIVE**：app/service 層 enforcement（insert 前查
+`status = ACTIVE` 是否已存在），不做 partial unique index（單使用者
+單寫入路徑，SQLite 層約束過度工程）；此檢查需測試覆蓋。
 
 ## 5. 偵測服務（方案 A：更新管線整合）
 
@@ -90,6 +121,15 @@
 - **警示頁**：新「論點失效」section，讀 `status = INVALIDATED` 的釘選
   （不動 PriceAlert 表——那是使用者自訂價格提醒，語意不同）。
 - **封存**：失效卡片一鍵 ARCHIVED（保留紀錄、離開警示頁）。
+- **取消釘選**：ACTIVE 卡片提供次要操作「取消」＝物理刪除（誤觸/改變
+  心意情境，不需審計軌跡；與失效紀律流程分離——「INVALIDATED 不復活」
+  不等於「ACTIVE 不能反悔」）。
+- **現價來源**：`daily_price` 該股最新 close（明定，不走 daily_analysis）。
+- **Staleness / 下市提示**：卡片顯示「最後檢查 {lastCheckedDate}」；
+  `stock_master.isActive = false`（下市/長停）的 ACTIVE 釘選顯示
+  「已下市，價格未更新」警示——現價凍結在最後一筆，不得誤讀為健康追蹤。
+- **triggeredRules 快照 v1 不顯示**：保留給後續「當初為什麼釘選」回溯
+  功能（v1.5+），非漏刻。
 
 ## 7. 測試
 
